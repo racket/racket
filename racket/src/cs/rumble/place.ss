@@ -4,16 +4,21 @@
 ;; that are all in the same place.
 
 ;; The first slot in the vector holds a hash table for allocated
-;; place-local values, and the rest are used by the thread, io, etc.,
-;; layers for directly accessed variables.
+;; place-local values, the last is used by "async-callback.ss", and
+;; the rest are used by the thread, io, etc., layers for directly
+;; accessed variables.
 
-(define NUM-PLACE-REGISTERS 128)
+(define NUM-PLACE-REGISTERS 128) ; 3 thorugh 126 available for subsystems
+
+(define LOCAL_TABLE-INDEX 0)
+(define ASYNC-CALLBACK-REGISTER-INDEX 1)
+;; index 2 is available
 
 (define-virtual-register place-registers (#%make-vector NUM-PLACE-REGISTERS 0))
 (define place-register-inits (#%make-vector NUM-PLACE-REGISTERS 0))
 
 (define (init-place-locals!)
-  (#%vector-set! (place-registers) 0 (make-weak-hasheq)))
+  (#%vector-set! (place-registers) LOCAL_TABLE-INDEX (make-weak-hasheq)))
 
 (define-record place-local (default-v))
 
@@ -21,13 +26,13 @@
   (make-place-local v))
 
 (define (unsafe-place-local-ref pl)
-  (let ([v (hash-ref (#%vector-ref (place-registers) 0) pl none)])
+  (let ([v (hash-ref (#%vector-ref (place-registers) LOCAL_TABLE-INDEX) pl none)])
     (if (eq? v none)
         (place-local-default-v pl)
         v)))
 
 (define (unsafe-place-local-set! pl v)
-  (hash-set! (#%vector-ref (place-registers) 0) pl v))
+  (hash-set! (#%vector-ref (place-registers) LOCAL_TABLE-INDEX) pl v))
 
 (define (place-local-register-ref i)
   (#%vector-ref (place-registers) i))
@@ -44,6 +49,16 @@
 
 (define (set-place-registers! vec)
   (place-registers vec))
+
+;; ----------------------------------------
+
+(define place-async-callback-queue
+  (case-lambda
+   [() (let ([v (#%vector-ref (place-registers) ASYNC-CALLBACK-REGISTER-INDEX)])
+         (if (eqv? v 0)
+             #f
+             v))]
+   [(v) (#%vector-set! (place-registers) ASYNC-CALLBACK-REGISTER-INDEX v)]))
 
 ;; ----------------------------------------
 
@@ -70,6 +85,7 @@
                    (root-thread-cell-values (make-empty-thread-cell-values))
                    (init-place-locals!)
                    (register-as-place-main!)
+                   (async-callback-place-init!)
                    (let ([result (call/cc
                                   (lambda (esc)
                                     (set-box! place-esc-box esc)
@@ -90,7 +106,9 @@
   (set! do-start-place proc))
 
 (define (start-place pch path sym in out err cust plumber)
-  (do-start-place pch path sym in out err cust plumber))
+  (let ([finish (do-start-place pch path sym in out err cust plumber)])
+    (reset-async-callback-poll-wakeup!)
+    finish))
 
 (define (place-exit v)
   (let ([esc (unbox place-esc-box)])

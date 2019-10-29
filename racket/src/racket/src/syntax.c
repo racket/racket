@@ -114,6 +114,7 @@ void scheme_init_stx(Scheme_Startup_Env *env)
   empty_srcloc->line = -1;
   empty_srcloc->col = -1;
   empty_srcloc->pos = -1;
+  empty_srcloc->span = -1;
 
   REGISTER_SO(scheme_paren_shape_symbol);
   scheme_paren_shape_symbol = scheme_intern_symbol("paren-shape");

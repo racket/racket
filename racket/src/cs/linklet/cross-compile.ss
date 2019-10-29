@@ -64,10 +64,10 @@
      (cache-cross-compiler a))))
 
 (define (cross-compile machine v)
-  (do-cross 'compile machine v))
+  (do-cross 'c machine v))
 
 (define (cross-fasl-to-string machine v)
-  (do-cross 'fasl machine v))
+  (do-cross 'f machine v))
 
 ;; Start a compiler as a Racket thread under the root custodian.
 ;; Using Racket's scheduler lets us use the event and I/O system,
@@ -104,26 +104,30 @@
                          (subprocess #f #f (get-original-error-port)
                                      exe
                                      "--cross-server"
+                                     (symbol->string machine)
                                      (patchfile "compile")
                                      (patchfile "library"))])
-             (define (->string v) (#%format "~s\n" v))
-             (define (string-> str) (#%read (open-string-input-port str)))
              ;; If this compiler instance becomes unreachable because the
              ;; called is interrupted, then shut this compiler down:
              (will-register we msg-ch (lambda (msg-ch) (custodian-shutdown-all c)))
              (let loop ()
                (let ([msg (channel-get msg-ch)])
                  ;; msg is (list <command> <value> <reply-channel>)
-                 (write-string (->string (car msg)) to)
-                 (write-string (->string (fasl-to-bytevector (cadr msg))) to)
+                 (write-string (#%format "~a\n" (car msg)) to)
+                 (let ([bv (fasl-to-bytevector (cadr msg))])
+                   (write-bytes (integer->integer-bytes (bytevector-length bv) 8 #f #f) to)
+                   (write-bytes bv to))
                  (flush-output to)
-                 (channel-put (caddr msg) (string-> (read-line from)))
+                 (let* ([len-bstr (read-bytes 8 from)]
+                        [len (integer-bytes->integer len-bstr #f #f)]
+                        [bv (read-bytes len from)])
+                   (channel-put (caddr msg) bv))
                  (loop)))))))
       (list machine msg-ch))))
 
 (define (fasl-to-bytevector v)
   (let-values ([(o get) (open-bytevector-output-port)])
-    (fasl-write v o)
+    (fasl-write* v o)
     (get)))
 
 (define (find-exe exe)

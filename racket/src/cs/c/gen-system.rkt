@@ -44,7 +44,9 @@
           'library-subpath-convention (if windows? 'windows 'unix)
           'so-suffix (if windows? #".dll" (system-type 'so-suffix))
           'so-mode 'local
-          'fs-change '#(#f #f #f #f)
+          'fs-change (if windows?
+                         '#(supported scalable low-latency #f)
+                         (system-type 'fs-change))
           'target-machine (if (equal? "any" (vector-ref (current-command-line-arguments) 2))
                               #f
                               machine)))

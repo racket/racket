@@ -242,6 +242,28 @@
        (check #t (evt? (sync (place-dead-evt pl4))))
        (check #t (evt? (sync/timeout 0.01 (place-dead-evt pl4))))))
 
+   (let ()
+     (check 'ok (touch (future (lambda () 'ok))))
+     (check 'ok (touch (would-be-future (lambda () 'ok))))
+     (check 'ok (touch (would-be-future (lambda () (touch (would-be-future (lambda () 'ok))))))))
+
+   (let ()
+     (define fts (let loop ([i 0])
+                   (if (= i 50)
+                       '()
+                       (cons
+                        (future (lambda ()
+                                  (let loop ([i i])
+                                    (if (zero? i)
+                                        i
+                                        (add1 (loop (sub1 i)))))))
+                        (loop (add1 i))))))
+     (check (let loop ([i 0])
+              (if (= i 50)
+                  '()
+                  (cons i (loop (add1 i)))))
+            (map touch fts)))
+
    ;; Measure thread quantum:
    #;
    (let ([t1 (thread (lambda () (let loop () (loop))))]

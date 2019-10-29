@@ -1,11 +1,15 @@
 #lang racket/base
-(require "../compile/serialize-property.rkt"
+(require racket/private/place-local
+         racket/fixnum
+         "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
          "../common/set.rkt"
          "../common/inline.rkt"
+         "../namespace/inspector.rkt"
          "preserved.rkt"
          "tamper.rkt"
-         "datum-map.rkt")
+         "datum-map.rkt"
+         "weaker-inspector.rkt")
 
 (provide
  (struct-out syntax) ; includes `syntax?`
@@ -28,7 +32,9 @@
  
  deserialize-syntax
  deserialize-datum->syntax
- current-arm-inspectors)
+ current-arm-inspectors
+
+ syntax-place-init!)
 
 (struct syntax ([content #:mutable] ; datum and nested syntax objects; mutated for lazy propagation
                 scopes  ; scopes that apply at all phases
@@ -184,10 +190,13 @@
 (define (syntax->datum s)
   (syntax-map s (lambda (tail? x) x) (lambda (s d) d) syntax-content))
 
+(define-place-local known-syntax-pairs (make-weak-hasheq))
+
 (define (datum->syntax stx-c s [stx-l #f] [stx-p #f])
   (cond
    [(syntax? s) s]
    [else
+    (define insp (if (syntax? s) 'not-needed (current-module-code-inspector)))
     (define (wrap content)
       (syntax content
               (if stx-c
@@ -204,13 +213,21 @@
                   empty-mpi-shifts)
               (and stx-l (syntax-srcloc stx-l))
               empty-props
-              (and stx-c
-                   (syntax-inspector stx-c))))
+              (and insp
+                   stx-c
+                   (weaker-inspector insp (syntax-inspector stx-c)))))
     (define result-s
       (non-syntax-map s
-                      (lambda (tail? x) (if tail? x (wrap x)))
+                      (lambda (tail? x) (cond
+                                          [tail?
+                                           (when (and (fx> tail? 32)
+                                                      (fx= 0 (fxand tail? (fx- tail? 1))))
+                                             (hash-set! known-syntax-pairs x #t))
+                                           x]
+                                          [else (wrap x)]))
                       (lambda (s) s)
-                      disallow-cycles))
+                      disallow-cycles
+                      known-syntax-pairs))
     (if (and stx-p (not (eq? (syntax-props stx-p) empty-props)))
         (struct-copy syntax result-s
                      [props (syntax-props stx-p)])
@@ -244,14 +261,15 @@
 ;;  when a syntax object is found, it is just passed to `s->` --- so there's
 ;;  no `d->s` or `s-e`, since they would not be called
 
-(define-inline (non-syntax-map s f [s-> (lambda (x) x)] [seen #f])
+(define-inline (non-syntax-map s f [s-> (lambda (x) x)] [seen #f] [known-pairs #f])
   (datum-map s
              f
              (lambda (tail? v)
                (cond
                 [(syntax? v) (s-> v)]
                 [else (f tail? v)]))
-             seen))
+             seen
+             known-pairs))
 
 (define disallow-cycles
   (hasheq 'cycle-fail
@@ -260,12 +278,16 @@
                                    "cannot create syntax from cyclic datum"
                                    "datum" s))))
 
+(define (syntax-place-init!)
+  (set! known-syntax-pairs (make-weak-hasheq)))
+
 ;; ----------------------------------------
 
 ;; When serializing syntax objects, let nested objects know the
 ;; content of an enclosing syntax object, so sharing is enabled if the
 ;; nested syntax objects have the same context and source location.
-(struct syntax-state ([all-sharing? #:mutable] context-triple srcloc))
+(struct syntax-state ([all-sharing? #:mutable] context-triple srcloc)
+  #:authentic)
 
 ;; When sharing syntax information in serialization, we have to be
 ;; careful not to lose syntax objects that wrap a pair in a `cdr` (and

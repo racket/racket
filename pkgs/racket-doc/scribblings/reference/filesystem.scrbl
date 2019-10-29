@@ -598,11 +598,9 @@ Returns @racket[#t] if @racket[v] is a @tech{filesystem change
 event}, @racket[#f] otherwise.}
 
 
-@defproc*[([(filesystem-change-evt [path path-string?])
-            filesystem-change-evt?]
-           [(filesystem-change-evt [path path-string?]
-                                   [failure-thunk (-> any)])
-            any])]{
+@defproc[(filesystem-change-evt [path path-string?]
+                                [failure-thunk (or/c (-> any) #f) #f])
+         (or/c filesystem-change-evt? any)]{
 
 Creates a @deftech{filesystem change event}, which is a
 @tech{synchronizable event} that becomes @tech{ready for
@@ -635,22 +633,25 @@ event's @tech{synchronization result} is the event itself.
 
 If the current platform does not support filesystem-change
 notifications, then the @exnraise[exn:fail:unsupported] if
-@racket[failure-thunk] is not provided, or @racket[failure-thunk] is
+@racket[failure-thunk] is not provided as a procedure, or @racket[failure-thunk] is
 called in tail position if provided. Similarly, if there is any
 operating-system error when creating the event (such as a non-existent
 file), then the @exnraise[exn:fail:filesystem] or @racket[failure-thunk]
 is called.
 
-Creation of a @tech{filesystem change event} allocates resources at the
+Creation of a filesystem change event allocates resources at the
 operating-system level. The resources are released at latest when the
-event is sychronized and @tech{ready for synchronization} or when the
-event is canceled with @racket[filesystem-change-evt-cancel].
-See also @racket[system-type] in @racket['fs-change] mode.
+event is sychronized and @tech{ready for synchronization}, when the
+event is canceled with @racket[filesystem-change-evt-cancel], or when
+the garbage collector determine that the filesystem change event is
+unreachable. See also @racket[system-type] in @racket['fs-change] mode.
 
-A @tech{filesystem change event} is placed under the management of the
+A filesystem change event is placed under the management of the
 @tech{current custodian} when it is created. If the @tech{custodian}
 is shut down, @racket[filesystem-change-evt-cancel] is applied to the
-event.}
+event.
+
+@history[#:changed "7.3.0.8" @elem{Allow @racket[#f] for @racket[failure-thunk].}]}
 
 
 @defproc[(filesystem-change-evt-cancel [evt filesystem-change-evt?])
@@ -777,7 +778,9 @@ follows from the @racket[define-runtime-path] syntactic form:
        determined by preserving the original expression as a syntax
        object, extracting its source module path at run time (again
        using @racket[syntax-source-module]), and then resolving the
-       resulting module path index.}
+       resulting module path index. Note that @racket[syntax-source-module]
+       is based on a syntax object's @tech{lexical information}, not its
+       source location.}
 
  @item{If the expression has no source module, the
        @racket[syntax-source] location associated with the form is

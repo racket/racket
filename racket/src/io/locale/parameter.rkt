@@ -19,7 +19,8 @@
                   (lambda (v)
                     (unless (or (not v) (string? v))
                       (raise-argument-error 'current-locale "(or/c #f string?)" v))
-                    (and v (string->immutable-string v)))))
+                    (and v (string->immutable-string v)))
+                  'current-locale))
 
 (define-place-local installed-locale #f)
 

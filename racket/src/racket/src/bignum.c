@@ -459,7 +459,7 @@ static Scheme_Object *make_single_bigdig_result(int pos, bigdig d)
   /* May not need to allocate: */
   sm = &quick;
   sm->o.iso.so.type = scheme_bignum_type;
-  SCHEME_SET_BIGPOS(sm, pos);
+  SCHEME_INIT_BIGPOS(sm, pos);
   SCHEME_BIGLEN(sm) = 1;
   SCHEME_BIGDIG(sm) = sm->v;
   sm->v[0] = d;

@@ -101,10 +101,10 @@ with @racket['result], @racket['abort], or @racket['suspend]; and
 
 In process 0, some event pairs can be nested within other event pairs:
 @racket['sync], @racket['block], or @racket['touch] with
-@racket['result] or @racket['abort]; and @racket['touch-pause] with
-@racket['touch-resume].
+@racket['result] or @racket['abort]; @racket['touch-pause] with
+@racket['touch-resume]; and @racket['start-work] with @racket['end-work].
 
-An @racket['block] in process 0 is generated when an unsafe operation 
+A @racket['block] in process 0 is generated when an unsafe operation 
 is handled.  This type of event will contain a symbol in the 
 @racket[unsafe-op-name] field that is the name of the operation.  In all 
 other cases, this field contains @racket[#f].
@@ -123,10 +123,10 @@ values depending on both the @racket[action] and @racket[prim-name] fields:
  @item{@racket['touch] on process 0: contains the integer ID of the future 
         being touched.}
   
- @item{@racket['sync] and @racket[prim-name] = @racket[|allocate memory|]: 
+ @item{@racket['sync] and @racket[prim-name] is @racket['|allocate memory|]: 
         The size (in bytes) of the requested allocation.}
  
- @item{@racket['sync] and @racket[prim-name] = @racket[|jit_on_demand|]: 
+ @item{@racket['sync] and @racket[prim-name] is @racket['|jit_on_demand|]: 
         The runtime thread is performing a JIT compilation on behalf of the 
         future @racket[future-id].  The field contains the name of the function 
         being JIT compiled (as a symbol).}

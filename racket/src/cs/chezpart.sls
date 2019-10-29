@@ -39,7 +39,11 @@
 			   threaded?
                            map for-each andmap ormap
                            char-general-category
-                           make-vector make-string)
+                           make-vector make-string
+                           bitwise-ior
+                           bitwise-xor
+                           bitwise-and
+                           bitwise-not)
                    [make-parameter chez:make-parameter]
                    [date-second chez:date-second]
                    [date-minute chez:date-minute]

@@ -653,7 +653,7 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
           return read_quote("quasiquoting #`", quasisyntax_symbol, 2, port, params);
 	case ',':
           if (scheme_peekc(port) == '@') {
-            ch = scheme_getc(port); /* must be '@' */
+            (void)scheme_getc(port); /* must be '@' */
             return read_quote("unquoting #`@", unsyntax_splicing_symbol, 3, port, params);
           } else
             return read_quote("unquoting #`", unsyntax_symbol, 2, port, params);
@@ -2738,10 +2738,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         Scheme_Object *k;
 
 	kind = read_compact_number(port);
+        if ((kind < 0) || (kind > 2))
+          scheme_ill_formed_code(port);
 	len = read_compact_number(port);
 
         ht = scheme_make_hash_tree(kind);
-	while (len--) {
+        while (len--) {
 	  k = read_compact(port, 0);
 	  v = read_compact(port, 0);
           ht = scheme_hash_tree_set(ht, k, v);

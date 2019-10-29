@@ -121,7 +121,10 @@
                                      'read
                                      (if (check-parameter read-decimal-as-inexact config)
                                          'decimal-as-inexact
-                                         'decimal-as-exact))))
+                                         'decimal-as-exact)
+                                     (if (check-parameter read-single-flonum config)
+                                         'single
+                                         'double))))
     (when (string? num)
       (reader-error in config "~a" num))
 

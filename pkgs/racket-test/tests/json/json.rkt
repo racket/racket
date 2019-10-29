@@ -1,6 +1,6 @@
 #lang at-exp racket/base
 
-;; Mathias, added test for contracts on read-json 
+;; Mathias, added test for contracts on read-json
 
 (require json racket/string tests/eli-tester)
 (require racket/port)
@@ -95,6 +95,7 @@
 
 (define (parse-tests)
   (test (string->jsexpr @T{  0   }) =>  0
+        (string->jsexpr @T{  0x  }) =>  0 ; not clearly a good idea, but preserve old behavior
         (string->jsexpr @T{  1   }) =>  1
         (string->jsexpr @T{ -1   }) => -1 ; note: `+' is forbidden
         (string->jsexpr @T{ -12  }) => -12
@@ -106,8 +107,12 @@
         (string->jsexpr @T{ -1.3 }) => -1.3
         (string->jsexpr @T{-10.34}) => -10.34
         (string->jsexpr @T{-10.34e3}) => -10340.0
+        (string->jsexpr @T{-10.34e03}) => -10340.0
         (string->jsexpr @T{-10.34e+3}) => -10340.0
+        (string->jsexpr @T{-10.34e+03}) => -10340.0
+        (string->jsexpr @T{-10.34e+0x}) => -10.340 ; preserve old behavior
         (string->jsexpr @T{-10.34e-3}) => -1.034e-2
+        (string->jsexpr @T{-10.34e-03}) => -1.034e-2
         (string->jsexpr @T{-10.34e+31}) => -1.034e32
         (string->jsexpr @T{ true  }) => #t
         (string->jsexpr @T{ false }) => #f
@@ -121,14 +126,14 @@
         (string->jsexpr @T{ {} }) => '#hasheq()
         (string->jsexpr @T{ {"x":1} }) => '#hasheq([x . 1])
         (string->jsexpr @T{ {"x":1,"y":2} }) => '#hasheq([x . 1] [y . 2])
-        (string->jsexpr @T{ [{"x": 1}, {"y": 2}] }) => 
+        (string->jsexpr @T{ [{"x": 1}, {"y": 2}] }) =>
                         '(#hasheq([x . 1]) #hasheq([y . 2]))
 
         ;; string escapes
         (string->jsexpr @T{ " \b\n\r\f\t\\\"\/ " }) => " \b\n\r\f\t\\\"/ "
         (string->jsexpr @T{ "\uD834\uDD1E" }) => "\U1D11E"
         (string->jsexpr @T{ "\ud834\udd1e" }) => "\U1d11e"
-	;; INPUT PORT is optional 
+	;; INPUT PORT is optional
 	(with-input-from-string "[]" read-json)
 	=> (parameterize ((json-null '())) (json-null))
         ;; EOF detection

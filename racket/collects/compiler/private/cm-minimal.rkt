@@ -17,6 +17,7 @@
          managed-compile-zo
          make-caching-managed-compile-zo
          trust-existing-zos
+         managed-recompile-only
          manager-compile-notify-handler
          manager-skip-file-handler
          manager-trace-handler
@@ -55,6 +56,7 @@
 (define manager-trace-handler (make-parameter default-manager-trace-handler))
 (define indent (make-parameter 0))
 (define trust-existing-zos (make-parameter #f))
+(define managed-recompile-only (make-parameter #f))
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
 (define depth (make-parameter 0))
 (define parallel-lock-client (make-parameter #f))
@@ -156,16 +158,23 @@
   (and (pair? p) (cdr p)))
 (define deps-imports cdddr)
 
-(define (get-compilation-path path->mode roots path)
+(define (get-compilation-path path->mode roots path #:for-lock? [for-lock? #f])
   (let-values ([(dir name) (get-compilation-dir+name path
                                                      #:modes (list (path->mode path))
-                                                     #:roots roots
+                                                     #:roots (if for-lock?
+                                                                 ;; When taking a lock, we need to consistently
+                                                                 ;; use the main destination (where we'll write)
+                                                                 ;; and not find a ".zo" file that exists in an
+                                                                 ;; ealier root:
+                                                                 (list (car roots))
+                                                                 roots)
                                                      ;; In cross-multi mode, we need to default to the
                                                      ;; ".zo" file that is written first, otherwise we
                                                      ;; may pick the first root where there's no ".dep"
                                                      ;; written yet when the second root on has a ".dep"
                                                      ;; and the ".zo" is not yet in place
-                                                     #:default-root (if (cross-multi-compile? roots)
+                                                     #:default-root (if (and (not for-lock?)
+                                                                             (cross-multi-compile? roots))
                                                                         (cadr roots)
                                                                         (car roots)))])
     (build-path dir name)))
@@ -370,6 +379,11 @@
                                    #:recompile-from recompile-from
                                    #:assume-compiled-sha1 assume-compiled-sha1
                                    #:use-existing-deps use-existing-deps)
+  (when (and (not recompile-from)
+             (managed-recompile-only))
+    (error 'compile-zo 
+           "compile from source disallowed\n  module: ~a"
+           path))
   (cond
     [(cross-multi-compile? roots)
      (define running-root (car roots))
@@ -695,6 +709,12 @@
             (touch zo-name)
             #f]
            [else
+            (define lock-zo-name (if (cross-multi-compile? roots)
+                                     ;; Make sure we use a file path for the lock that is consistent
+                                     ;; with being in a phase of compiling for the current machine:
+                                     (path-add-extension (get-compilation-path path->mode roots path #:for-lock? #t)
+                                                         #".zo")
+                                     zo-name))
             ;; Called when `tryng-sha1?` is #f and this process (or some process)
             ;; needs to compile, recompile, or touch:
             (define (build #:just-touch? [just-touch? #f]
@@ -704,7 +724,7 @@
                            #:use-existing-deps [use-existing-deps #f])
               (define lc (parallel-lock-client))
               (when lc (log-compile-event path 'locking))
-              (define locked? (and lc (lc 'lock zo-name)))
+              (define locked? (and lc (lc 'lock lock-zo-name)))
               (define ok-to-compile? (or (not lc) locked?))
               (dynamic-wind
                (lambda () (void))
@@ -749,7 +769,7 @@
                                                [else 'finish-compile])
                                              'already-done))
                  (when locked?
-                   (lc 'unlock zo-name))))
+                   (lc 'unlock lock-zo-name))))
               #f)
             ;; Called to recompile bytecode that is currently in
             ;; machine-independent form:
@@ -769,8 +789,8 @@
             (define (build/sync)
               (define lc (parallel-lock-client))
               (when lc
-                (when (lc 'lock zo-name)
-                  (lc 'unlock zo-name)))
+                (when (lc 'lock lock-zo-name)
+                  (lc 'unlock lock-zo-name)))
               #f)
             ;; ----------------------------------------
             ;; Determine whether and how to rebuild the file:

@@ -1069,3 +1069,193 @@
    (unit/c (import) (export x^) (init-depend)))
 
   (void))
+
+;; ----------------------------------------
+;; Ensure contracted bindings have the right scopes across modules (racket/racket#1652)
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module sig racket/base
+      (require racket/contract racket/unit)
+      (provide foo^)
+      (define-signature foo^
+        [foo?
+         (contracted [make-foo (-> foo?)])])))
+  (eval
+   '(module unit racket/base
+      (require racket/unit 'sig)
+      (provide foo@)
+      (define-unit foo@
+        (import)
+        (export foo^)
+        (define (foo? x) #f)
+        (define (make-foo) #f))))
+  (eval
+   '(module use racket/base
+      (require racket/unit 'unit)
+      (define-values/invoke-unit/infer foo@)
+      (make-foo)))
+  (test-runtime-error exn:fail:contract?
+                      "make-foo: broke its own contract"
+                      (dynamic-require ''use #f)))
+
+;; ----------------------------------------
+;; Ellipses in signature bodies should not cause problems due to syntax template misuse
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module m racket/base
+      (require racket/contract
+               racket/unit)
+
+      (provide result)
+
+      (define-signature foo^
+        [(contracted [foo (-> integer? ... integer?)])])
+
+      (define-unit foo@
+        (import)
+        (export foo^)
+        (define (foo . xs) (apply + xs)))
+
+      (define (foo+1@ foo-base@)
+        (define-values/invoke-unit foo-base@
+          (import)
+          (export (prefix base: foo^)))
+        (unit
+          (import)
+          (export foo^)
+          (define (foo . xs) (add1 (apply base:foo xs)))))
+
+      (define-values/invoke-unit (foo+1@ foo@)
+        (import)
+        (export foo^))
+
+      (define result (foo 1 2 3))))
+  (test 7 (dynamic-require ''m 'result)))
+
+;; ----------------------------------------
+;; Contracts that use other contracted bindings work when exporting through define-values/invoke-unit
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module m racket/base
+      (require racket/contract
+               racket/unit)
+
+      (provide g)
+
+      (define-signature a^
+        [(contracted
+          [f (-> integer? contract?)]
+          [g (f 10)])])
+
+      (define-unit a@
+        (import)
+        (export a^)
+        (define (f x) (>=/c x))
+        (define g 11))
+
+      (define-values/invoke-unit a@
+        (import)
+        (export a^))))
+  (test 11 (dynamic-require ''m 'g)))
+
+;; ----------------------------------------
+;; Contracts in signatures that use bindings in the signature should work no matter what order
+;; they’re declared in
+
+(let ()
+  (define-signature a^
+    [(contracted
+      [pred? (-> any/c boolean?)]
+      [proc (-> pred? pred?)])])
+
+  (define-signature b^
+    [(contracted
+      [proc (-> pred? pred?)]
+      [pred? (-> any/c boolean?)])])
+
+  (define-values [a@ b@]
+    (let ()
+      (define (pred? x) (integer? x))
+      (define (proc x) (add1 x))
+
+      (values (unit-from-context a^)
+              (unit-from-context b^))))
+
+  (define-unit c@
+    (import)
+    (export a^)
+
+    (define (pred? x) (integer? x))
+    (define (proc x) (add1 x)))
+
+  (define-unit d@
+    (import)
+    (export a^)
+
+    (define (proc x) (add1 x))
+    (define (pred? x) (integer? x)))
+
+  (define-values/invoke-unit a@
+    (import)
+    (export (prefix a: a^)))
+  (define-values/invoke-unit b@
+    (import)
+    (export (prefix b: b^)))
+  (define-values/invoke-unit c@
+    (import)
+    (export (prefix c: a^)))
+  (define-values/invoke-unit d@
+    (import)
+    (export (prefix d: a^)))
+
+  (test 11 (a:proc 10))
+  (test 11 (b:proc 10))
+  (test 11 (c:proc 10))
+  (test 11 (d:proc 10))
+
+  (test-contract-error top-level "a:proc" "pred?" (a:proc 'not-an-integer))
+  (test-contract-error top-level "b:proc" "pred?" (b:proc 'not-an-integer))
+  (test-contract-error top-level "c:proc" "pred?" (c:proc 'not-an-integer))
+  (test-contract-error top-level "d:proc" "pred?" (d:proc 'not-an-integer)))
+
+;; ----------------------------------------
+;; Signature definitions created with define-values-for-export are inside the contract boundary
+
+(let ()
+  (define-signature a^
+    [(contracted
+      [only-ints-please (-> integer? any/c)])
+     (define-values-for-export [inside] (only-ints-please 'not-an-integer))
+     inside])
+
+  (define-unit a@
+    (import)
+    (export a^)
+    (define (only-ints-please x) x))
+
+  (define-values/invoke-unit/infer a@)
+
+  (test 'not-an-integer inside))
+
+;; ----------------------------------------
+;; Contracted bindings work even if the export is renamed
+
+(let ()
+  (define-signature a^
+    [(contracted
+      [ctc contract?]
+      [proc (-> ctc any/c)])])
+
+  (define-unit a@
+    (import)
+    (export (rename a^ [val/c ctc]))
+    (define val/c integer?)
+    (define proc add1))
+
+  (define-values/invoke-unit/infer a@)
+
+  (test 11 (proc 10))
+  (test-contract-error top-level "proc" "integer?" (proc 'not-an-integer)))

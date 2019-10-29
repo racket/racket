@@ -265,4 +265,18 @@
   (((curryr list 1) 2 3) . => . '(2 3 1))
   )
 
+;; Regression test for arity checking and a large number of arguments
+;; (thanks to James Bornholt)
+(let ()
+  (define extreme
+    (case-lambda
+      [(op x) x]
+      [(op x y) (if (op x y) x y)]
+      [(op x y . z) (apply extreme op (extreme op x y) z)]))
+
+  (define @max (curry extreme >=))
+
+  (define l (for/list ([i 100]) 0))
+  (test 0 apply @max l))
+
 (report-errs)

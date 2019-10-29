@@ -1648,6 +1648,157 @@
   (check #t #t))
 
 ;; ----------------------------------------
+;; equal? on classes
+
+(let ()
+  (define a%
+    (class object%
+      (init-field x)
+      (super-new)
+      (define/public (m) #f)))
+
+  ; subclasses are never equal? to their superclasses
+  (define b%
+    (class a%
+      (super-new)))
+  (test #f equal? a% b%)
+  (test #f equal? b% a%)
+
+  ; class contracts do not affect equality
+  (define/contract a%+c1
+    (class/c (init-field [x integer?])
+             [m (->m integer?)])
+    a%)
+  (test #t equal? a% a%+c1)
+  (test #t equal? a%+c1 a%)
+  (test #f equal? a%+c1 b%)
+  (test #f equal? b% a%+c1)
+
+  ; still equal? even with different contracts
+  (define/contract a%+c2
+    (class/c (init-field [x string?])
+             [m (->m string?)])
+    a%)
+  (test #t equal? a%+c1 a%+c2)
+  (test #t equal? a%+c2 a%+c1))
+
+;; ----------------------------------------
+;; equal? on objects with (inspect #f)
+
+(let ()
+  (define no-fields/opaque%
+    (class object%
+      (super-new)))
+  (test #f equal? (new no-fields/opaque%) (new no-fields/opaque%))
+
+  (define no-fields/transparent%
+    (class object%
+      (inspect #f)
+      (super-new)))
+  (test #t equal? (new no-fields/transparent%) (new no-fields/transparent%))
+
+  (define two-fields/transparent%
+    (class object%
+      (inspect #f)
+      (init-field a b)
+      (super-new)))
+  (test #t equal? (new two-fields/transparent% [a 1] [b 2]) (new two-fields/transparent% [a 1] [b 2]))
+  (test #f equal? (new two-fields/transparent% [a 2] [b 1]) (new two-fields/transparent% [a 1] [b 2]))
+  (test #f equal?
+        (new two-fields/transparent% [a #t] [b #t])
+        (new two-fields/transparent% [a #t] [b #f]))
+  (test #t equal?
+        (new two-fields/transparent% [a (list 1)] [b (list 2)])
+        (new two-fields/transparent% [a (list 1)] [b (list 2)]))
+
+  ; having a transparent superclass doesn’t matter if you are opaque
+  (define no-new-fields/opaque%
+    (class two-fields/transparent%
+      (super-new)))
+  (test #f equal? (new no-new-fields/opaque% [a 1] [b 2]) (new no-new-fields/opaque% [a 1] [b 2]))
+
+  ; transparent subclasses are equal? to other objects of the same class, but not of superclasses
+  (define no-new-fields/transparent%
+    (class two-fields/transparent%
+      (inspect #f)
+      (super-new)))
+  (test #t equal?
+        (new no-new-fields/transparent% [a 1] [b 2])
+        (new no-new-fields/transparent% [a 1] [b 2]))
+  (test #f equal?
+        (new no-new-fields/transparent% [a 2] [b 1])
+        (new no-new-fields/transparent% [a 1] [b 2]))
+  (test #f equal?
+        (new two-fields/transparent% [a 1] [b 2])
+        (new no-new-fields/transparent% [a 1] [b 2]))
+  (test #f equal?
+        (new no-new-fields/transparent% [a 1] [b 2])
+        (new two-fields/transparent% [a 1] [b 2]))
+
+  ; transparent subclasses are only equal if all their fields are the same, including in superclasses
+  (define one-new-field%
+    (class two-fields/transparent%
+      (inspect #f)
+      (init-field c)
+      (super-new)))
+  (test #t equal? (new one-new-field% [a 1] [b 2] [c 3]) (new one-new-field% [a 1] [b 2] [c 3]))
+  (test #f equal?
+        (new one-new-field% [a #t] [b #t] [c #t])
+        (new one-new-field% [a #t] [b #t] [c #f]))
+  (test #f equal?
+        (new one-new-field% [a #t] [b #t] [c #t])
+        (new one-new-field% [a #f] [b #t] [c #t]))
+
+  ; classes with opaque superclasses are never equal?, even if they are transparent
+  (define two-fields/opaque%
+    (class object%
+      (init-field a b)
+      (super-new)))
+  (define no-new-fields/parent-opaque%
+    (class two-fields/opaque%
+      (inspect #f)
+      (super-new)))
+  (define one-new-fields/parent-opaque%
+    (class two-fields/opaque%
+      (inspect #f)
+      (init-field c)
+      (super-new)))
+  (test #f equal?
+        (new no-new-fields/parent-opaque% [a 1] [b 2])
+        (new no-new-fields/parent-opaque% [a 1] [b 2]))
+  (test #f equal?
+        (new one-new-fields/parent-opaque% [a 1] [b 2] [c 3])
+        (new one-new-fields/parent-opaque% [a 1] [b 2] [c 3]))
+
+  ; class contracts do not affect object equality
+  (define/contract two-fields/transparent%+c
+    (class/c (init-field [a integer?] [b (vectorof symbol?)]))
+    two-fields/transparent%)
+  (test #t equal?
+        (new two-fields/transparent% [a 1] [b (vector 'x)])
+        (new two-fields/transparent%+c [a 1] [b (vector 'x)]))
+  (test #f equal?
+        (new two-fields/transparent% [a 1] [b (vector 'x)])
+        (new two-fields/transparent%+c [a 2] [b (vector 'x)]))
+  (test #f equal?
+        (new two-fields/transparent% [a 1] [b (vector 'x)])
+        (new two-fields/transparent%+c [a 1] [b (vector 'y)]))
+
+  ; object contracts do not affect object equality
+  (define/contract (make-two-fields/transparent%+c a b)
+    (-> integer? (vectorof symbol?) (object/c (field [a integer?] [b (vectorof symbol?)])))
+    (new two-fields/transparent% [a a] [b b]))
+  (test #t equal?
+        (new two-fields/transparent% [a 1] [b (vector 'x)])
+        (make-two-fields/transparent%+c 1 (vector 'x)))
+  (test #f equal?
+        (new two-fields/transparent% [a 1] [b (vector 'x)])
+        (make-two-fields/transparent%+c 2 (vector 'x)))
+  (test #f equal?
+        (new two-fields/transparent% [a 1] [b (vector 'x)])
+        (make-two-fields/transparent%+c 1 (vector 'y))))
+
+;; ----------------------------------------
 ;; Implementing equal<%>
 
 (let ()
@@ -2148,6 +2299,29 @@
   (for ([r (in-list refs)])
     (test #t 'has-binding-match? (for/or ([b (in-list binds)])
                                    (free-identifier=? r b)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `define/public` doesn't add a dye pack unnecessarily
+
+(define-syntax (change-five-to-six stx)
+  (syntax-case stx ()
+    [(_ e)
+     (let loop ([e (local-expand #'e (syntax-local-context) (list #'begin #'define))])
+       (syntax-case e (begin)
+         [(begin . e)
+          #`(begin #,@(map loop (syntax->list #'e)))]
+         [(define id rhs)
+          #`(define id #,(loop #'rhs))]
+         [5 #'6]
+         [_ e]))]))
+
+(let ()
+  (define-local-member-name x y)
+  (test 6 values (send (new (class object%
+                              (change-five-to-six
+                               (define/public (x) 5))
+                              (super-new)))
+                       x)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

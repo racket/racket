@@ -625,10 +625,16 @@
       (define pkg-dir
         (if in-place?
             (if strip-mode
-                (pkg-error "cannot strip directory in place")
+                (cond
+                  [in-place-clean?
+                   (unless force-strip?
+                     (check-strip-compatible strip-mode pkg-name pkg-path pkg-error))
+                   (generate-stripped-directory strip-mode pkg-path pkg-path)
+                   pkg-path]
+                  [else
+                   (pkg-error "cannot strip directory in place\n  path: ~a" pkg-path)])
                 pkg-path)
             (let ([pkg-dir (make-temporary-file "pkg~a" 'directory)])
-              (delete-directory pkg-dir)
               (if strip-mode
                   (begin
                     (unless force-strip?
@@ -637,6 +643,7 @@
                     (generate-stripped-directory strip-mode pkg-path pkg-dir))
                   (begin
                     (make-parent-directory* pkg-dir)
+                    (delete-directory pkg-dir)
                     (copy-directory/files pkg-path pkg-dir #:keep-modify-seconds? #t)))
               pkg-dir)))
       (when (or (not in-place?)
@@ -897,10 +904,11 @@
 
 (define (drop-redundant-files pkg-dir)
   ;; Ad hoc space-saving rule: for an installation-wide package, remove
-  ;; any redundant "COPYING.txt" or "COPYING_LESSER.txt" files.
+  ;; any redundant license files.
   (when (and (eq? 'installation (current-pkg-scope))
              (find-share-dir))
-    (for ([i (in-list '("COPYING.txt" "COPYING_LESSER.txt"))])
+    (for ([i (in-list '("COPYING.txt" "COPYING_LESSER.txt" "COPYRIGHT.txt"
+                                      "LICENSE-APACHE" "LICENSE-MIT"))])
       (define pkg-file (build-path pkg-dir i))
       (define share-file (build-path (find-share-dir) i))
       (when (and (file-exists? pkg-file)

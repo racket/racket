@@ -18,7 +18,8 @@ Returns @racket[#t] if @racket[v] is a @deftech{foreign-library value},
                   [version (or/c string? (listof (or/c string? #f)) #f) #f]
 		  [#:get-lib-dirs get-lib-dirs (-> (listof path?)) get-lib-search-dirs]
 		  [#:fail fail (or/c #f (-> any)) #f]
-                  [#:global? global? any/c (eq? 'global (system-type 'so-mode))])
+                  [#:global? global? any/c (eq? 'global (system-type 'so-mode))]
+                  [#:custodian custodian (or/c 'place custodian? #f) #f])
          any]{
 
 Returns a @tech{foreign-library value} or the result of @racket[fail]. 
@@ -115,16 +116,43 @@ library's symbols are not made available for future resolution. This
 local-versus-global choice does not affect whether the library's
 symbols are available via @racket[(ffi-lib #f)].
 
-Due to the way the operating system performs dynamic binding, loaded
-libraries are associated with Racket (or DrRacket) for the duration of
-the process. Re-evaluating @racket[ffi-lib] (or hitting the
-@onscreen{Run} button in DrRacket) will not force a re-load of the
+If @racket[custodian] is @racket['place] or a custodian, the
+library is unloaded when a custodian is shut down---either the given
+custodian or the place's main custodian if @racket[custodian] is
+@racket['place]. When a library is unloaded, all references to the
+library become invalid. Supplying @racket['place] for
+@racket[custodian] is consistent with finalization via
+@racketmodname[ffi/unsafe/alloc] but will not, for example, unload the
+library when hitting in the @onscreen{Run} button in DrRacket.
+Supplying @racket[(current-custodian)] for @racket[custodian] tends to
+unload the library for eagerly, but requires even more care to ensure
+that library references are not accessed after the library is
+unloaded.
+
+If @racket[custodian] is @racket[#f], the loaded library is associated
+with Racket (or DrRacket) for the duration of the process. Loading
+again with @racket[ffi-lib], will not force a re-load of the
 corresponding library.
+
+When @racket[ffi-lib] returns a reference to a library that was
+previously loaded within the current place, it increments a
+reference count on the loaded library rather than loading the library
+fresh. Unloading a library reference decrements the reference count
+and requests unloading at the operating-system level only if the
+reference count goes to zero.
+
+The @racket[ffi-lib] procedure logs (see @secref["logging" #:doc '(lib
+"scribblings/reference/reference.scrbl")]) on the topic
+@racket['ffi-lib]. In particular, on failure it logs the paths
+attempted according to the rules above, but it cannot report the
+paths tried due to the operating system's library search path.
 
 @history[#:changed "6.1.0.5" @elem{Changed the way a version number is
                                    added with a @filepath{.dll} suffix
                                    to place it before the suffix,
-                                   instead of after.}]}
+                                   instead of after.}
+         #:changed "7.3.0.3" @elem{Added logging.}
+         #:changed "7.4.0.7" @elem{Added the @racket[#:custodian] argument.}]}
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]
                       [lib (or/c ffi-lib? path-string? #f)]

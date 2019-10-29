@@ -7,7 +7,7 @@
 @defmodule[racket/extflonum]
 
 An @deftech{extflonum} is an extended-precision (80-bit)
-floating-point number. extflonum arithmetic is supported on
+floating-point number. Extflonum arithmetic is supported on
 platforms with extended-precision hardware and where the
 extflonum implementation does not conflict with normal
 double-precision arithmetic (i.e., on x86 and x86_64 platforms when
@@ -140,7 +140,7 @@ and if the values in corresponding slots of the @tech{extflvectors} are
 @defproc[(extflvector? [v any/c]) boolean?]
 @defproc[(extflvector [x extflonum?] ...) extflvector?]
 @defproc[(make-extflvector [size exact-nonnegative-integer?]
-                           [x extflonum? 0.0l0])
+                           [x extflonum? 0.0t0])
          extflvector?]
 @defproc[(extflvector-length [vec extflvector?]) exact-nonnegative-integer?]
 @defproc[(extflvector-ref [vec extflvector?] [pos exact-nonnegative-integer?])
@@ -176,11 +176,15 @@ and @racket[flvector-copy], but for @tech{extflvectors}.}
 Like @racket[in-flvector], @racket[for/flvector], and @racket[for*/flvector],
 but for @tech{extflvectors}.}
 
+@deftogether[(
+@defproc[(shared-extflvector [x extflonum?] ...) extflvector?]
 @defproc[(make-shared-extflvector [size exact-nonnegative-integer?]
-                                  [x extflonum? 0.0l0]) 
-         extflvector?]{
+                                  [x extflonum? 0.0t0])
+         extflvector?]
+)]{
 
-Like @racket[make-shared-flvector], but for @tech{extflvectors}.}
+Like @racket[shared-flvector] and @racket[make-shared-flvector],
+but for @tech{extflvectors}.}
 
 @; ------------------------------------------------------------
 

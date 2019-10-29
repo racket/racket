@@ -33,7 +33,7 @@
                  ((null? (cdddr p))
                   (int-prc3 (caddr       expr) (car p) (cadr p) (caddr p) env))
                  (else
-                  (error "too many parameters")))))
+                  (error 'int "too many parameters")))))
         ((null? (cdr expr))
          (int-ap0 (car expr) env))
         ((null? (cddr expr))
@@ -43,7 +43,7 @@
         ((null? (cddddr expr))
          (int-ap3 (car expr) (cadr expr) (caddr expr) (cadddr expr) env))
         (else
-         (error "too many arguments"))))
+         (error 'int "too many arguments"))))
 
 ;- -- interpretation of constants ---
 

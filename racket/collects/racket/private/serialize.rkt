@@ -99,7 +99,9 @@
         s))
 
   (define deserialize-module-guard (make-parameter (lambda (mod-path sym) 
-                                                     (void))))
+                                                     (void))
+                                                   #f
+                                                   'deserialize-module-guard))
   (define varref (#%variable-reference varref))
 
   (define (collapse/resolve-module-path-index mpi deser-path->relative-path)
@@ -253,8 +255,10 @@
 	  (set! cycle-stack (cons v cycle-stack))
 	  (cond
 	   [(serializable-struct? v)
-	    (let ([info (serializable-info v)])
-	      (for-each loop (vector->list ((serialize-info-vectorizer info) v))))]
+            (let* ([info (serializable-info v)]
+                   [vec ((serialize-info-vectorizer info) v)])
+              (for ([x (in-vector vec)])
+                (loop x)))]
            [(and (struct? v)
                  (prefab-struct-key v))
             (for-each loop (struct->list v))]
@@ -266,7 +270,8 @@
 	    ;; No sub-structure
 	    (void)]
 	   [(vector? v)
-	    (for-each loop (vector->list v))]
+            (for ([x (in-vector v)])
+              (loop x))]
            [(flvector? v) (void)] 
            [(fxvector? v) (void)] 
 	   [(pair? v)
@@ -342,9 +347,10 @@
        [(serializable-struct? v)
 	(let ([info (serializable-info v)])
 	  (cons (mod-to-id info mod-map mod-map-cache deser-path->relative-path) 
-		(map (serial #t)
-		     (vector->list
-		      ((serialize-info-vectorizer info) v)))))]
+                (let ([loop (serial #t)]
+                      [vec ((serialize-info-vectorizer info) v)])
+                  (for/list ([x (in-vector vec)])
+                    (loop x)))))]
        [(and (struct? v)
              (prefab-struct-key v))
         => (lambda (k)
@@ -361,7 +367,10 @@
               (cons 'p* v-rel)
               (list* 'p+ (path->bytes v) (path-convention-type v))))]
        [(vector? v)
-        (define elems (map (serial #t) (vector->list v)))
+        (define elems
+          (let ([loop (serial #t)])
+            (for/list ([x (in-vector v)])
+              (loop x))))
         (if (and (immutable? v)
                  (andmap quotable? elems))
             (cons 'q v)
@@ -620,7 +629,7 @@
          ;; Prefab
          (let ([s (apply make-prefab-struct 
                          (cadr v)
-                         (vector->list (make-vector (cddr v) #f)))])
+                         (make-list (cddr v) #f))])
            (vector-set! fixup n (lambda (v)
                                   (let-values ([(si skipped?) (struct-info s)])
                                     (let loop ([si si])

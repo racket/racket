@@ -109,7 +109,7 @@
                         body1 body ...))]))
 
   (define (current-parameterization)
-    (extend-parameterization (continuation-mark-set-first #f parameterization-key)))
+    (continuation-mark-set-first #f parameterization-key))
   
   (define (call-with-parameterization paramz thunk)
     (unless (parameterization? paramz)

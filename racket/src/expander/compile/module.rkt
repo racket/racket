@@ -36,7 +36,6 @@
                         #:to-correlated-linklet? [to-correlated-linklet? #f]
                         #:modules-being-compiled [modules-being-compiled (make-hasheq)]
                         #:need-compiled-submodule-rename? [need-compiled-submodule-rename? #t])
-
   (define full-module-name (let ([parent-full-name (compile-context-full-module-name cctx)]
                                  [name (syntax-e (parsed-module-name-id p))])
                              (if parent-full-name
@@ -55,9 +54,9 @@
                           (not (parsed-module-compiled-module p)))
                      (update-submodule-names (cdr star?+compiled) name full-module-name)
                      (cdr star?+compiled)))))
-  (define pre-submodules (get-submodules #f))
-  (define post-submodules (get-submodules #t))
-  
+  (define pre-submodules (sort (get-submodules #f) symbol<? #:key car))
+  (define post-submodules (sort (get-submodules #t) symbol<? #:key car))
+
   (cond
    [(parsed-module-compiled-module p)
     => (lambda (c)
@@ -81,17 +80,17 @@
                                 #:pre-submodules pre-submodules
                                 #:post-submodules post-submodules
                                 #:need-compiled-submodule-rename? need-compiled-submodule-rename?)]))
-  
+
 ;; ------------------------------------------------------------
-   
+
 (define (compile-module-from-parsed p cctx
                                     #:full-module-name full-module-name
                                     #:force-linklet-directory? force-linklet-directory?
                                     #:serializable? serializable?
                                     #:to-correlated-linklet? to-correlated-linklet?
                                     #:modules-being-compiled modules-being-compiled
-                                    #:pre-submodules pre-submodules
-                                    #:post-submodules post-submodules
+                                    #:pre-submodules pre-submodules   ; sorted by name
+                                    #:post-submodules post-submodules ; sorted by name
                                     #:need-compiled-submodule-rename? need-compiled-submodule-rename?)
   (performance-region
    ['compile 'module]
@@ -265,7 +264,7 @@
                            (make-correlated-linklet s 'syntax-literals-data)
                            (performance-region
                             ['compile 'module 'linklet]
-                            (compile-linklet s 'syntax-literals-data #f #f '(serializable uninterned-literal)))))
+                            (compile-linklet s 'syntax-literals-data #f #f '(serializable)))))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -291,7 +290,7 @@
                             ['compile 'module 'linklet]
                             (compile-linklet s 'data))))
            (generate-module-data-linklet mpis))))
-   
+
    ;; Combine linklets with other metadata as the bundle:
    (define bundle
      (let* ([bundle (hash-set body-linklets 'name full-module-name)]

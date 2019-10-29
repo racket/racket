@@ -2857,8 +2857,8 @@ static int runstack_val_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   intptr_t *s = (intptr_t *)p;
   void **a, **b;
-  a = (void **)s + 5 + s[2];
-  b = (void **)s + 5 + s[3];
+  a = (void **)s + RUNSTACK_HEADER_FIELDS + s[2];
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + s[3];
   while (a < b) {
     gcMARK2(*a, gc);
     a++;
@@ -2866,14 +2866,14 @@ static int runstack_val_MARK(void *p, struct NewGC *gc) {
 
   /* Zero out the part that we didn't mark, in case it becomes
      live later. */
-  a = (void **)s + 5;
-  b = (void **)s + 5 + s[2];
+  a = (void **)s + RUNSTACK_HEADER_FIELDS;
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + s[2];
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
   }
-  a = (void **)s + 5 + s[3];
-  b = (void **)s + 5 + (s[1] - 5);
+  a = (void **)s + RUNSTACK_HEADER_FIELDS + s[3];
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + (s[1] - RUNSTACK_HEADER_FIELDS);
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
@@ -2892,8 +2892,8 @@ static int runstack_val_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   intptr_t *s = (intptr_t *)p;
   void **a, **b;
-  a = (void **)s + 5 + s[2];
-  b = (void **)s + 5 + s[3];
+  a = (void **)s + RUNSTACK_HEADER_FIELDS + s[2];
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + s[3];
   while (a < b) {
     gcFIXUP2(*a, gc);
     a++;
@@ -2925,8 +2925,12 @@ static int prompt_val_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcMARK2(pr->boundary_overflow_id, gc);
-  if (!GC_merely_accounting())
-    gcMARK2(pr->runstack_boundary_start, gc);
+  if (!GC_merely_accounting()) {
+    if (pr->is_barrier)
+      gcMARK2(pr->u.runstack_boundary_start_ref, gc);
+    else
+      gcMARK2(pr->u.runstack_boundary_start, gc);
+  }
   gcMARK2(pr->tag, gc);
   gcMARK2(pr->id, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -2942,8 +2946,12 @@ static int prompt_val_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcFIXUP2(pr->boundary_overflow_id, gc);
-  if (!GC_merely_accounting())
-    gcFIXUP2(pr->runstack_boundary_start, gc);
+  if (!GC_merely_accounting()) {
+    if (pr->is_barrier)
+      gcFIXUP2(pr->u.runstack_boundary_start_ref, gc);
+    else
+      gcFIXUP2(pr->u.runstack_boundary_start, gc);
+  }
   gcFIXUP2(pr->tag, gc);
   gcFIXUP2(pr->id, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS

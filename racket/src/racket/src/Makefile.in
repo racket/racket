@@ -209,6 +209,7 @@ fun.@LTO@: $(srcdir)/fun.c
 future.@LTO@: $(srcdir)/future.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/future.c -o future.@LTO@
 gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h \
+           $(srcdir)/gmp/gmp.h $(srcdir)/gmp/gmp-impl.h $(srcdir)/gmp/gmp-mparam.h \
            $(srcdir)/../include/schthread.h $(srcdir)/../sconfig.h
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(srcdir)/hash.c $(srcdir)/hamt_subset.inc
@@ -300,6 +301,8 @@ vector.@LTO@: $(srcdir)/vector.c
 
 gmp_alpha_gcc.@LTO@: $(srcdir)/gmp/gmp_alpha_gcc.s
 	$(AS) -o gmp_alpha_gcc.@LTO@ $(srcdir)/gmp/gmp_alpha_gcc.s
+gmp_arm_gcc.@LTO@: $(srcdir)/gmp/gmp_arm_gcc.s
+	$(AS) -o gmp_arm_gcc.@LTO@ $(srcdir)/gmp/gmp_arm_gcc.s
 
 SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 

@@ -21,6 +21,7 @@ Symbolic links (on Unix and Mac OS) are not followed by default.}
               [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
               [#:path-prefix path-prefix (or/c #f path-string?) #f]
               [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
+              [#:timestamp timestamp (or/c #f exact-integer?) #f]
               [#:get-timestamp get-timestamp
                                (path? . -> . exact-integer?)
                                (if timestamp
@@ -60,7 +61,8 @@ date to record in the archive for each file or directory.
          #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}
          #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
                                    effectively changed its default from @racket['ustar]
-                                   to @racket['pax].}]}
+                                   to @racket['pax].}
+         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}]}
 
 
 @defproc[(tar->output [paths (listof path?)]
@@ -69,6 +71,7 @@ date to record in the archive for each file or directory.
                       [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
                       [#:path-prefix path-prefix (or/c #f path-string?) #f]
                       [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
+                      [#:timestamp timestamp (or/c #f exact-integer?) #f]
                       [#:get-timestamp get-timestamp
                                        (path? . -> . exact-integer?)
                                        (if timestamp
@@ -87,7 +90,8 @@ without parent directories.
          #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}
          #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
                                    effectively changed its default from @racket['ustar]
-                                   to @racket['pax].}]}
+                                   to @racket['pax].}
+         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}]}
 
 
 @defproc[(tar-gzip [tar-file path-string?]
@@ -96,6 +100,7 @@ without parent directories.
                    [#:exists-ok? exists-ok? any/c #f]
                    [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
                    [#:path-prefix path-prefix (or/c #f path-string?) #f]
+                   [#:timestamp timestamp (or/c #f exact-integer?) #f]
                    [#:get-timestamp get-timestamp
                                     (path? . -> . exact-integer?)
                                     (if timestamp
@@ -110,4 +115,5 @@ Like @racket[tar], but compresses the resulting file with @racket[gzip].
          #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}
          #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
                                    effectively changed its default from @racket['ustar]
-                                   to @racket['pax].}]}
+                                   to @racket['pax].}
+         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}]}

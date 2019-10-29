@@ -9,4 +9,5 @@
   (make-parameter 64
                   (lambda (v)
                     (check who exact-positive-integer? v)
-                    v)))
+                    v)
+                  'current-thread-initial-stack-size))

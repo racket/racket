@@ -37,7 +37,7 @@ struct rktio_fd_set_data_t {
   int skip_sleep;
 };
 
-static rktio_poll_set_t *alloc_fdset_arrays()
+static rktio_poll_set_t *alloc_fdset_arrays(rktio_t *rktio)
 {
   struct rktio_fd_set_data_t *data;
   rktio_poll_set_t *r, *w, *e;
@@ -303,16 +303,41 @@ struct rktio_poll_set_t {
   fd_set data;
 };
 
+# ifdef RKTIO_GROWABLE_FDSET
+/* In growable mode, a `rktio_poll_set_t` is an array whose first
+   element points to an array of three `fd_set`s. The array also has
+   elements (after a "header") that contain 0, 1, and 2, and the
+   default or "read" array corresponds to pointing at the 0 element,
+   while the "exn" array is represented by poinitng at the 2 index.
+   The three `fd_set`s are resized as needed when encountering a file
+   descriptor whose value is larger than the current allocated
+   size. */
+# define GROWABLE_CONTENT_INDEX 0
+# define GROWABLE_SIZE_INDEX 1
+# define GROWABLE_RKTIO_INDEX 2
+# define GROWABLE_HEADER_SIZE 3
+# else
 /* initialized early via rktio_alloc_global_poll_set */
 static int dynamic_fd_size;
+# endif
 
 # define STORED_ACTUAL_FDSET_LIMIT
-# define FDSET_LIMIT(fd) (*(int *)((char *)fd + dynamic_fd_size))
+# define FDSET_LIMIT(fd, dynamic_fd_size) (*(int *)((char *)fd + dynamic_fd_size))
 
-static rktio_poll_set_t *alloc_fdset_arrays()
+static rktio_poll_set_t *alloc_fdset_arrays(rktio_t *rktio)
 {
   void *p;
-  
+
+#ifdef RKTIO_GROWABLE_FDSET
+  int dynamic_fd_size = 2 * rktio->max_fd_so_far;
+  if (dynamic_fd_size == 0)
+    dynamic_fd_size = 64;
+  /* divide by bits-per-byte: */
+  dynamic_fd_size = (dynamic_fd_size + 7) >> 3;
+  /* word-align: */
+  if (dynamic_fd_size % sizeof(void*))
+    dynamic_fd_size += sizeof(void*) - (dynamic_fd_size % sizeof(void*));
+#else
   if (!dynamic_fd_size) {
 # ifdef USE_ULIMIT
     dynamic_fd_size = ulimit(4, 0);
@@ -325,38 +350,136 @@ static rktio_poll_set_t *alloc_fdset_arrays()
     if (dynamic_fd_size % sizeof(void*))
       dynamic_fd_size += sizeof(void*) - (dynamic_fd_size % sizeof(void*));
   }
+#endif
 
   /* Allocate an array with 1 extra intptr_t in each set to hold a
      "max" fd counter, and 1 extra intger used to record "no
      sleeping" */
 
   p = malloc(3 * (dynamic_fd_size + sizeof(intptr_t) + sizeof(int)));
-  
+
+#ifdef RKTIO_GROWABLE_FDSET
+  {
+    void **p2 = malloc(6 * sizeof(void*));
+    p2[GROWABLE_CONTENT_INDEX] = p;
+    p2[GROWABLE_SIZE_INDEX] = (void *)(intptr_t)dynamic_fd_size;
+    p2[GROWABLE_RKTIO_INDEX] = &rktio->max_fd_so_far;
+    p2[GROWABLE_HEADER_SIZE] = (void *)0; /* point here for read set */
+    p2[GROWABLE_HEADER_SIZE+1] = (void *)1; /* point here for write set */
+    p2[GROWABLE_HEADER_SIZE+2] = (void *)2; /* point here for error set */
+    p = &p2[GROWABLE_HEADER_SIZE];
+  }
+#endif
+
   return p;
 }
 
+#ifdef RKTIO_GROWABLE_FDSET
+# define GROWABLE_START(fd, index) ((rktio_poll_set_t *)(((void **)fd) - (index) - GROWABLE_HEADER_SIZE))
+#endif
+
+#ifdef RKTIO_GROWABLE_FDSET
+static void maybe_grow(rktio_poll_set_t *fd, int n)
+{
+  int index = *((intptr_t *)fd);
+  fd = GROWABLE_START(fd, index);
+
+  if (((int **)fd)[GROWABLE_RKTIO_INDEX][0] < n)
+    ((int **)fd)[GROWABLE_RKTIO_INDEX][0] = n;
+
+  if (((intptr_t *)fd)[GROWABLE_SIZE_INDEX] <= (n >> 3)) {
+    void *p2, *p = ((void **)fd)[GROWABLE_CONTENT_INDEX];
+    int extra = sizeof(intptr_t) + sizeof(int);
+    int old_size = ((intptr_t *)fd)[GROWABLE_SIZE_INDEX];
+    int new_size = ((2 * n + 7) >> 3);
+    if (new_size % sizeof(void*))
+      new_size += sizeof(void*) - (new_size % sizeof(void*));
+
+    p2 = malloc(3 * (new_size + extra));
+    memset(p2, 0, 3*new_size);
+
+    /* copy currently set bits: */
+    memcpy(p2, p, old_size);
+    memcpy((char *)p2 + (new_size + extra), (char *)p + (old_size + extra), old_size);
+    memcpy((char *)p2 + 2*(new_size + extra), (char *)p + 2*(old_size + extra), old_size);
+
+    /* copy over size and nosleep */
+    memcpy((char *)p2 + new_size, (char *)p + old_size, extra);
+
+    ((void **)fd)[GROWABLE_CONTENT_INDEX] = p2;
+    ((intptr_t *)fd)[GROWABLE_SIZE_INDEX] = new_size;
+
+    free(p);
+  }
+}
+#endif
+
 static void free_fdset_arrays(rktio_poll_set_t *fds)
 {
+#ifdef RKTIO_GROWABLE_FDSET
+  fds = GROWABLE_START(fds, 0);
+  free(((void **)fds)[GROWABLE_CONTENT_INDEX]);
+#endif
   free(fds);
 }
 
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 {
+#ifdef RKTIO_GROWABLE_FDSET
+  return (rktio_poll_set_t *)(((void **)fdarray) + pos);
+#else
   return (rktio_poll_set_t *)(((char *)fdarray) + (pos * (dynamic_fd_size + sizeof(intptr_t) + sizeof(int))));
+#endif
 }
+
+#ifdef RKTIO_GROWABLE_FDSET
+rktio_poll_set_t *growable_resolve(rktio_poll_set_t *fd, int *_dynamic_fd_size)
+{
+  int index = ((intptr_t *)fd)[0];
+  int dynamic_fd_size;
+
+  fd = GROWABLE_START(fd, index);
+  dynamic_fd_size = ((intptr_t *)fd)[GROWABLE_SIZE_INDEX];
+  if (_dynamic_fd_size)
+    *_dynamic_fd_size = dynamic_fd_size;
+
+  return (rktio_poll_set_t *)((char *)(((void **)fd)[GROWABLE_CONTENT_INDEX])
+                              + index * (dynamic_fd_size  + sizeof(intptr_t) + sizeof(int)));
+}
+
+void *rktio_resolve_fds(rktio_poll_set_t *fd)
+{
+  return growable_resolve(fd, NULL);
+}
+#endif
 
 void rktio_fdzero(rktio_poll_set_t *fd)
 {
+#ifdef RKTIO_GROWABLE_FDSET
+  int dynamic_fd_size;
+  fd = growable_resolve(fd, &dynamic_fd_size);
+#endif
+
   memset(fd, 0, dynamic_fd_size + sizeof(intptr_t) + sizeof(int));
 }
 
 void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
 {
+#ifdef RKTIO_GROWABLE_FDSET
+  int dynamic_fd_size;
+  fds = growable_resolve(fds, &dynamic_fd_size);
+#endif
+
   *(int *)((char *)fds + dynamic_fd_size + sizeof(intptr_t)) = 1;
 }
 
 static int fdset_has_nosleep(rktio_poll_set_t *fds)
 {
+#ifdef RKTIO_GROWABLE_FDSET
+  int dynamic_fd_size;
+  fds = growable_resolve(fds, &dynamic_fd_size);
+#endif
+
   return *(int *)((char *)fds + dynamic_fd_size + sizeof(intptr_t));
 }
 
@@ -425,7 +548,7 @@ static void init_fdset_array(rktio_poll_set_t *fdarray, int count)
   }
 }
 
-static rktio_poll_set_t *alloc_fdset_arrays()
+static rktio_poll_set_t *alloc_fdset_arrays(rktio_t *rktio)
 {
   rktio_poll_set_t *fdarray;
 
@@ -759,7 +882,7 @@ void rktio_collapse_win_fd(rktio_poll_set_t *fds)
 /* Plain fd_set variant                                                   */
 /*========================================================================*/
 
-static rktio_poll_set_t *alloc_fdset_arrays()
+static rktio_poll_set_t *alloc_fdset_arrays(rktio_t *rktio)
 {
   return malloc(3 * sizeof(rktio_poll_set_t));
 }
@@ -798,37 +921,74 @@ static int fdset_has_nosleep(rktio_poll_set_t *fds)
 
 void rktio_fdclr(rktio_poll_set_t *fd, intptr_t n)
 {
+# ifdef RKTIO_GROWABLE_FDSET
+  fd = growable_resolve(fd, NULL);
+# endif
   FD_CLR(n, &(fd)->data);
 }
 
 void rktio_fdset(rktio_poll_set_t *fd, intptr_t n)
 {
-# ifdef STORED_ACTUAL_FDSET_LIMIT
-  int mx;
-  mx = FDSET_LIMIT(fd);
-  if (n > mx)
-    FDSET_LIMIT(fd) = n;
+# ifdef RKTIO_GROWABLE_FDSET
+  int dynamic_fd_size;
+  maybe_grow(fd, n);
+  fd = growable_resolve(fd, &dynamic_fd_size);
 # endif
+# ifdef STORED_ACTUAL_FDSET_LIMIT
+  {
+    int mx;
+    mx = FDSET_LIMIT(fd, dynamic_fd_size);
+    if (n > mx) {
+      FDSET_LIMIT(fd, dynamic_fd_size) = n;
+    }
+  }
+# endif
+
   FD_SET(n, &(fd)->data);
 }
 
 int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n)
 {
+# ifdef RKTIO_GROWABLE_FDSET
+  fd = growable_resolve(fd, NULL);
+# endif
   return FD_ISSET(n, &(fd)->data);
 }
 
 void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 {
   int i, j;
+  rktio_poll_set_t *fds_j, *src_fds_j;
   unsigned char *p, *sp;
+# ifdef RKTIO_GROWABLE_FDSET
+  int dynamic_fd_size;
+  int s_dynamic_fd_size;
+# elif defined (STORED_ACTUAL_FDSET_LIMIT)
+  int s_dynamic_fd_size = dynamic_fd_size;
+# endif
+
   for (j = 0; j < 3; j++) {
-    p = (unsigned char *)rktio_get_fdset(fds, j);
-    sp = (unsigned char *)rktio_get_fdset(src_fds, j);
+    src_fds_j = rktio_get_fdset(src_fds, j);
+# ifdef RKTIO_GROWABLE_FDSET
+    src_fds_j = growable_resolve(src_fds_j, &s_dynamic_fd_size);
+# endif
+    sp = (unsigned char *)src_fds_j;
+
+# ifdef RKTIO_GROWABLE_FDSET
+    maybe_grow(fds, FDSET_LIMIT(sp, s_dynamic_fd_size));
+# endif
+
+    fds_j = rktio_get_fdset(fds, j);
+# ifdef RKTIO_GROWABLE_FDSET
+    fds_j = growable_resolve(fds_j, &dynamic_fd_size);
+# endif
+    p = (unsigned char *)fds_j;
+
 # ifdef STORED_ACTUAL_FDSET_LIMIT
-    i = FDSET_LIMIT(p);
-    if (FDSET_LIMIT(sp) > i) {
-      i = FDSET_LIMIT(sp);
-      FDSET_LIMIT(p) = i;
+    i = FDSET_LIMIT(p, dynamic_fd_size);
+    if (FDSET_LIMIT(sp, s_dynamic_fd_size) > i) {
+      i = FDSET_LIMIT(sp, s_dynamic_fd_size);
+      FDSET_LIMIT(p, dynamic_fd_size) = i;
     }
     /* `i` is max fd, so add 1 to get count, then convert to bytes (rounding up) */
     i = (i + 1 + 7) >> 3;
@@ -837,10 +997,12 @@ void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 # else
     i = sizeof(fd_set);
 # endif
+
     for (; i--; p++, sp++) {
       *p |= *sp;
     }
   }
+
   if (fdset_has_nosleep(src_fds))
     rktio_poll_set_add_nosleep(NULL, fds);
 }
@@ -856,16 +1018,20 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
 # ifdef STORED_ACTUAL_FDSET_LIMIT
   {
     fd_set *rd, *wr, *ex;
+#  ifdef RKTIO_GROWABLE_FDSET
+    int dynamic_fd_size;
+    (void)growable_resolve(fds, &dynamic_fd_size);
+#  endif
 
     rd = RKTIO_FDS(fds);
     wr = RKTIO_FDS(RKTIO_GET_FDSET(fds, 1));
     ex = RKTIO_FDS(RKTIO_GET_FDSET(fds, 2));
 
-    actual_limit = FDSET_LIMIT(rd);
-    if (FDSET_LIMIT(wr) > actual_limit)
-      actual_limit = FDSET_LIMIT(wr);
-    if (FDSET_LIMIT(ex) > actual_limit)
-      actual_limit = FDSET_LIMIT(ex);
+    actual_limit = FDSET_LIMIT(rd, dynamic_fd_size);
+    if (FDSET_LIMIT(wr, dynamic_fd_size) > actual_limit)
+      actual_limit = FDSET_LIMIT(wr, dynamic_fd_size);
+    if (FDSET_LIMIT(ex, dynamic_fd_size) > actual_limit)
+      actual_limit = FDSET_LIMIT(ex, dynamic_fd_size);
     actual_limit++;
   }
 # elif defined (USE_ULIMIT)
@@ -897,7 +1063,7 @@ void rkio_reset_sleep_backoff(rktio_t *rktio) { }
 
 void rktio_alloc_global_poll_set(rktio_t *rktio) {
 #ifdef USE_FAR_RKTIO_FDCALLS
-  rktio->rktio_global_poll_set = alloc_fdset_arrays();
+  rktio->rktio_global_poll_set = alloc_fdset_arrays(rktio);
 #endif
 }
 
@@ -916,7 +1082,7 @@ void rktio_free_global_poll_set(rktio_t *rktio) {
 
 rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio)
 {
-  rktio_poll_set_t *fds = alloc_fdset_arrays();
+  rktio_poll_set_t *fds = alloc_fdset_arrays(rktio);
 
   RKTIO_FD_ZERO(fds);
   RKTIO_FD_ZERO(RKTIO_GET_FDSET(fds, 1));
@@ -1077,8 +1243,11 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
   if (fds && lt) {
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
     int fd = rktio_ltps_get_fd(lt);
-    RKTIO_FD_SET(fd, fds);
-    RKTIO_FD_SET(fd, RKTIO_GET_FDSET(fds, 2));
+    /* `fd` can be -1, because the file descriptor is created lazily */
+    if (fd != -1) {
+      RKTIO_FD_SET(fd, fds);
+      RKTIO_FD_SET(fd, RKTIO_GET_FDSET(fds, 2));
+    }
 #else
     rktio_merge_fd_sets(fds, rktio_ltps_get_fd_set(lt)); 
 #endif

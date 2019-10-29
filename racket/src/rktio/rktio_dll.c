@@ -9,6 +9,8 @@ typedef struct rktio_dll_object_t rktio_dll_object_t;
 static void get_dl_error(rktio_t *rktio);
 #endif
 
+static void free_dll(rktio_dll_t *dll);
+
 /*========================================================================*/
 /* Opening a DLL                                                          */
 /*========================================================================*/
@@ -21,11 +23,13 @@ typedef void *dll_handle_t;
 #ifdef RKTIO_SYSTEM_WINDOWS
 typedef HANDLE dll_handle_t;
 static dll_open_proc LoadLibraryHook;
+static dll_close_proc FreeLibraryHook;
 static dll_find_object_proc GetProcAddressHook;
 #endif
 
 struct rktio_dll_t {
   void *handle;
+  int refcount;
 #ifdef RKTIO_SYSTEM_WINDOWS
   int hook_handle;
 #endif
@@ -33,7 +37,7 @@ struct rktio_dll_t {
   rktio_hash_t *objects_by_name;
   rktio_dll_object_t *all_objects;
   int search_exe;
-  rktio_dll_t *all_next; /* chain for all DLLs */
+  rktio_dll_t *all_next, *all_prev; /* chain for all DLLs */
   rktio_dll_t *hash_next; /* chain for hash collisions */
 };
 
@@ -67,8 +71,10 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
     dll = dll->hash_next;
   }
 
-  if (dll)
+  if (dll) {
+    dll->refcount++;
     return dll;
+  }
 
 #ifdef RKTIO_SYSTEM_UNIX
 # if defined(__ANDROID__)
@@ -116,12 +122,84 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
   dll->search_exe = (name == NULL);
   
   dll->all_next = rktio->all_dlls;
+  dll->all_prev = NULL;
+  if (rktio->all_dlls)
+    rktio->all_dlls->all_prev = dll;
   rktio->all_dlls = dll;
 
   dll->hash_next = dlls;
   rktio_hash_set(rktio->dlls_by_name, key, dll);
 
+  dll->refcount = 1;
+
   return dll;
+}
+
+rktio_ok_t rktio_dll_close(rktio_t *rktio, rktio_dll_t *dll)
+{
+  int ok = 1;
+
+  if (!dll->name)
+    return ok;
+  
+  dll->refcount--;
+  if (dll->refcount)
+    return ok;
+
+  if (!dll->refcount) {
+#ifdef RKTIO_SYSTEM_UNIX
+    if (dlclose(dll->handle)) {
+      ok = 0;
+      get_dl_error(rktio);
+    }
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+    if (dll->hook_handle) {
+      FreeLibraryHook((void *)dll->handle);
+      /* assuming success! */
+    } else {
+      if (!FreeLibrary((HMODULE)dll->handle)) {
+        ok = 0;
+        get_windows_error();
+      }
+    }
+#endif
+  }
+
+  if (ok) {
+    intptr_t key;
+    rktio_dll_t *dlls;
+
+    if (dll->name)
+      key = rktio_hash_string(dll->name);
+    else
+      key = 0;
+
+    dlls = rktio_hash_get(rktio->dlls_by_name, key);
+    if (dlls == dll)
+      rktio_hash_set(rktio->dlls_by_name, key, dll->hash_next);
+    else if (dlls) {
+      while (dlls->hash_next) {
+        if (dlls->hash_next == dll) {
+          dlls->hash_next = dll->hash_next;
+          break;
+        } else
+          dlls = dlls->hash_next;
+      }
+    }
+
+    if (dll->all_next)
+      dll->all_next->all_prev = dll->all_prev;
+    if (dll->all_prev)
+      dll->all_prev->all_next = dll->all_next;
+    else
+      rktio->all_dlls = dll->all_next;
+
+    free_dll(dll);
+  }
+
+  return ok;
 }
 
 /*========================================================================*/
@@ -350,11 +428,14 @@ RKTIO_EXTERN char *rktio_dll_get_error(rktio_t *rktio)
 /* Support in-memory DLLs and similar by allowing the application to
    install replacements for LoadLibrary and GetProcAddress. */
 
-void rktio_set_dll_procs(dll_open_proc dll_open, dll_find_object_proc dll_find_object)
+void rktio_set_dll_procs(dll_open_proc dll_open,
+                         dll_find_object_proc dll_find_object,
+                         dll_close_proc dll_close)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   LoadLibraryHook = dll_open;
   GetProcAddressHook = dll_find_object;
+  FreeLibraryHook = dll_close;
 #endif
 }
 
@@ -375,23 +456,29 @@ void *rktio_get_proc_address(HANDLE m, rktio_const_string_t name)
 /* Clean up                                                               */
 /*========================================================================*/
 
+static void free_dll(rktio_dll_t *dll)
+{
+  rktio_dll_object_t *obj, *next_obj;
+
+  for (obj = dll->all_objects; obj; obj = next_obj) {
+    next_obj = obj->all_next;
+    free(obj->name);
+    free(obj);
+  }
+  if (dll->name)
+    free(dll->name); 
+  if (dll->objects_by_name)
+    rktio_hash_free(dll->objects_by_name, 0);
+  free(dll);
+}
+
 void rktio_dll_clean(rktio_t *rktio)
 {
   rktio_dll_t *dll, *next_dll;
-  rktio_dll_object_t *obj, *next_obj;
 
   for (dll = rktio->all_dlls; dll; dll = next_dll) {
     next_dll = dll->all_next;
-    for (obj = dll->all_objects; obj; obj = next_obj) {
-      next_obj = obj->all_next;
-      free(obj->name);
-      free(obj);
-    }
-    if (dll->name)
-      free(dll->name); 
-    if (dll->objects_by_name)
-      rktio_hash_free(dll->objects_by_name, 0);
-    free(dll);
+    free_dll(dll);
   }
 
   if (rktio->dlls_by_name)

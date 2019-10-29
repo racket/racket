@@ -1,5 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base racket/struct-info))
+(require (for-syntax racket/base racket/list racket/struct-info))
 (provide match match-lambda ?)
 
 (define-syntax (match-lambda stx)
@@ -28,15 +28,14 @@
 
 (define-syntax match-c
   (syntax-rules ()
-    [(match-c x)
-     (error 'minimatch)]
+    [(match-c x) (void)]
     [(match-c x [pattern result ...] clause ...)
      (let ([fail (lambda () (match-c x clause ...))])
        (match-p x pattern (let () result ...) (fail)))]))
 
 ;; (match-p id Pattern SuccessExpr FailureExpr)
 (define-syntax (match-p stx)
-  (syntax-case stx (quote cons list vector STRUCT ?)
+  (syntax-case stx (quote cons list vector ?)
     [(match-p x wildcard success failure)
      (and (identifier? #'wildcard) (free-identifier=? #'wildcard #'_))
      #'success]
@@ -55,21 +54,22 @@
     [(match-p x (list p1 p ...) success failure)
      #'(match-p x (cons p1 (list p ...)) success failure)]
     [(match-p x (vector p ...) success failure)
-     #'(if (and (vector? x) (= (vector-length x) (length '(p ...))))
-           (let ([x* (vector->list x)])
-             (match-p x* (list p ...) success failure))
-           failure)]
+     (with-syntax ([(i ...) (range (length (syntax->list #'(p ...))))])
+       #'(if (and (vector? x) (= (vector-length x) (length '(p ...))))
+             (match-ep* ([(vector-ref x 'i) p] ...) success failure)
+             failure))]
     [(match-p x var success failure)
      (identifier? #'var)
      #'(let ([var x]) success)]
-    [(match-p x (STRUCT S (p ...)) success failure)
+    [(match-p x (? predicate pat ...) success failure)
+     #'(if (predicate x)
+           (match-ep* ((x pat) ...) success failure)
+           failure)]
+    [(match-p x (S p ...) success failure)
      (identifier? #'S)
      (let ()
-       (define (not-a-struct)
-         (raise-syntax-error #f "expected struct name" #'S))
-       (define si (syntax-local-value #'S not-a-struct))
-       (unless (struct-info? si)
-         (not-a-struct))
+       (define si (syntax-local-value #'S (lambda () #f)))
+       (unless (struct-info? si) (raise-syntax-error #f "bad minimatch form" stx #'S))
        (let* ([si (extract-struct-info si)]
               [predicate (list-ref si 2)]
               [accessors (reverse (list-ref si 3))])
@@ -80,40 +80,19 @@
          (with-syntax ([predicate predicate]
                        [(accessor ...) accessors])
            #'(if (predicate x)
-                 (let ([y (list (accessor x) ...)])
-                   (match-p y (list p ...) success failure))
+                 (match-ep* ([(accessor x) p] ...) success failure)
                  failure))))]
-    [(match-p x (? predicate pat ...) success failure)
-     #'(if (predicate x)
-           (match-p* ((x pat) ...) success failure)
-           failure)]
-    [(match-p x (S p ...) success failure)
-     (identifier? #'S)
-     (if (struct-info? (syntax-local-value #'S (lambda () #f)))
-         #'(match-p x (STRUCT S (p ...)) success failure)
-         (raise-syntax-error #f "bad minimatch form" stx #'S))]
-    [(match-p x s success failure)
-     (prefab-struct-key (syntax-e #'s))
-     (with-syntax ([key (prefab-struct-key (syntax-e #'s))]
-                   [(p ...) (cdr (vector->list (struct->vector (syntax-e #'s))))])
-       #'(let ([xkey (prefab-struct-key x)])
-           (if (equal? xkey 'key)
-               (let ([xps (cdr (vector->list (struct->vector x)))])
-                 (match-p xps (list p ...) success failure))
-               failure)))]
     [(match-p x pattern success failure)
      (raise-syntax-error 'minimatch "bad pattern" #'pattern)]
     ))
 
-(define-syntax match-p*
+(define-syntax match-ep*
   (syntax-rules ()
-    [(match-p* () success failure)
+    [(match-ep* () success failure)
      success]
-    [(match-p* ((x1 p1) . rest) success failure)
-     (match-p x1 p1 (match-p* rest success failure) failure)]))
+    [(match-ep* ((e1 p1) . rest) success failure)
+     (let ([y e1]) (match-p y p1 (match-ep* rest success failure) failure))]))
 
 (define-syntax ?
   (lambda (stx)
     (raise-syntax-error #f "illegal use of minimatch form '?'" stx)))
-
-(define-syntax STRUCT #f) ;; internal keyword

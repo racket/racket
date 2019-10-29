@@ -223,10 +223,15 @@ Copies @racket[src-dir] to @racket[dest-dir] with file/directory
 omissions and updates corresponding to the creation of a @tech{source
 package}, @tech{binary package}, @tech{binary library package}, or @tech{built package} as indicated
 by @racket[mode]. The given @racket[src-dir] and @racket[dest-dir] must both exist already.
+If @racket[src-dir] and @racket[dest-dir] are the same, then @racket[src-dir] is
+modified directly, which may involve deleting files.
 
 Note that @racket[generate-stripped-directory] does not compile or render source files
 found in the @racket[src-dir]. To perform precompilation or rendering before stripping the source directory,
-use @exec{raco setup} or @exec{raco make}.}
+use @exec{raco setup} or @exec{raco make}.
+
+@history[#:changed "7.2.0.10" @elem{Added support for @racket[src-dir] and @racket[dest-dir]
+                                    as the same path.}]}
 
 
 @defproc[(check-strip-compatible [mode (or/c 'source 'binary 'binary-lib 'built)]

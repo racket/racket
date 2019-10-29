@@ -101,13 +101,14 @@
 
 (define-virtual-register current-metacontinuation '())
 
-(define-record metacontinuation-frame (tag          ; continuation prompt tag or #f
-                                       resume-k     ; delivers values to the prompt, also keeps mark stack as attachments
-                                       winders      ; `dynamic-wind` winders
-                                       mark-splice  ; extra part of mark stack to restore
-                                       mark-chain   ; #f or a cached list of mark-chain-frame or elem+cache
-                                       traces       ; #f or a cached list of traces
-                                       cc-guard))   ; for impersonated tag, initially #f
+(define-record metacontinuation-frame (tag           ; continuation prompt tag or #f
+                                       resume-k      ; delivers values to the prompt, also keeps mark stack as attachments
+                                       winders       ; `dynamic-wind` winders
+                                       mark-splice   ; extra part of mark stack to restore
+                                       mark-chain    ; #f or a cached list of mark-chain-frame or elem+cache
+                                       traces        ; #f or a cached list of traces
+                                       cc-guard      ; for impersonated tag, initially #f
+                                       avail-cache)) ; cache for `continuation-pompt-available?`
 
 ;; Messages to `resume-k[/no-wind]`:
 (define-record aborting (args))
@@ -139,41 +140,70 @@
 ;; To support special treatment of break parameterizations, and also
 ;; to initialize disabled breaks for `dynamic-wind` pre and post
 ;; thunks:
-(define break-enabled-key (gensym 'break-enabled))
+(define break-enabled-key '#{break-enabled n1kcvqw4c9hh8t3fi3659ci94-2})
 
-;; FIXME: add caching to avoid full traversal
 (define/who (continuation-prompt-available? tag)
   (check who continuation-prompt-tag? tag)
+  (maybe-future-barricade tag)
   (let ([tag (strip-impersonator tag)])
     (or (eq? tag the-default-continuation-prompt-tag)
         (eq? tag the-root-continuation-prompt-tag)
-        (let loop ([mc (current-metacontinuation)])
-          (cond
-           [(null? mc)
-            (eq? tag the-default-continuation-prompt-tag)]
-           [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car mc))))
-            #t]
-           [else (loop (cdr mc))])))))
+        ;; Looks through metacontinuation cache, but cache a search result
+        ;; half-way up if the chain is deep enough
+        (let ([mc (current-metacontinuation)])
+          (let loop ([mc mc] [slow-mc mc] [slow-step? #f] [steps 0])
+            (cond
+             [(null? mc)
+              (cache-prompt-available-conclusion tag #f slow-mc steps)]
+             [else
+              (let ([mf (car mc)])
+                (cond
+                 [(eq? tag (strip-impersonator (metacontinuation-frame-tag mf)))
+                  (cache-prompt-available-conclusion tag #t slow-mc steps)]
+                 [else
+                  (let* ([avail-cache (metacontinuation-frame-avail-cache mf)]
+                         [avail (and avail-cache (eq-hashtable-ref avail-cache tag #f))])
+                    (cond
+                     [avail
+                      (cache-prompt-available-conclusion tag (eq? avail 'yes) slow-mc steps)]
+                     [else
+                      (loop (cdr mc)
+                            (if slow-step? (cdr slow-mc) slow-mc)
+                            (not slow-step?)
+                            (add1 steps))]))]))]))))))
 
-(define/who (maybe-future-barricade tag)
-  (when (future? (current-future)) ;; running in a future
-    (check who continuation-prompt-tag? tag)
+(define (cache-prompt-available-conclusion tag avail? slow-mc steps)
+  (when (> steps 32)
+    ;; cache conclusion halfway
+    (let* ([mf (car slow-mc)]
+           [avail-cache (or (metacontinuation-frame-avail-cache mf)
+                            (let ([ht (make-weak-eq-hashtable)])
+                              (set-metacontinuation-frame-avail-cache! mf ht)
+                              ht))])
+      (eq-hashtable-set! avail-cache tag (if avail? 'yes 'no))))
+  avail?)
+
+(define (maybe-future-barricade tag)
+  (when (current-future)
     (let ([fp (strip-impersonator (current-future-prompt))]
           [tag (strip-impersonator tag)])
       (cond
+       [(eq? fp tag)
+        ;; shortcut: boundary is the future prompt
+        (void)]
        [(eq? tag the-root-continuation-prompt-tag)
-        (block)]
+        (block-future)]
        [else
         (let loop ([mc (current-metacontinuation)])
           (cond
            [(null? mc)
             ;; Won't happen normally, since every thread starts with a explicit prompt
-            (block)]
+            (block-future)]
            [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car mc))))
             (void)]
            [(eq? (metacontinuation-frame-tag (car mc)) fp)
             ;; tag must be above future prompt
-            (block)]
+            (block-future)]
            [else
             (loop (cdr mc))]))]))))
 
@@ -191,7 +221,7 @@
       (wrap-handler-for-impersonator
        tag
        (or handler (make-default-abort-handler tag)))
-      #f ; not a tail call
+      empty-mark-frame ; new splice
       (lambda ()
         (end-uninterrupted 'prompt)
         ;; Finally, apply the given function:
@@ -219,81 +249,115 @@
     (current-winders (metacontinuation-frame-winders mf))
     (current-mark-splice (metacontinuation-frame-mark-splice mf))))
 
-(define (call-in-empty-metacontinuation-frame tag handler tail? proc)
+(define (call-in-empty-metacontinuation-frame tag handler new-splice proc)
   ;; Call `proc` in an empty metacontinuation frame, reifying the
   ;; current metacontinuation as needed (i.e., if non-empty) as a new
   ;; frame on `*metacontinuations*`; if the tag is #f and the
   ;; current metacontinuation frame is already empty, don't push more
   (assert-in-uninterrupted)
   (assert-not-in-system-wind)
-  (call-with-current-continuation-attachment
+  (let ([r ; a list of results, or a non-list for special handling
+         (call/cc
+          (lambda (resume-k)
+            ;; the `call/cc` to get `k` created a new stack
+            ;; segment; by dropping the link from the current
+            ;; segment to the return context referenced by `k`,
+            ;; we actually delimit the current continuation:
+            (#%$current-stack-link #%$null-continuation)
+            (current-mark-stack '())
+            (let-values ([results
+                          ;; mark the "empty" continuation frame
+                          ;; that just continues the metacontinuation:
+                          (call-setting-continuation-attachment
+                           'empty
+                           (lambda ()
+                             (let ([mf (make-metacontinuation-frame tag
+                                                                    resume-k
+                                                                    (current-winders)
+                                                                    (current-mark-splice)
+                                                                    #f
+                                                                    #f
+                                                                    #f
+                                                                    #f)])
+                               (current-winders '())
+                               (current-mark-splice new-splice)
+                               ;; push the metacontinuation:
+                               (current-metacontinuation (cons mf (current-metacontinuation)))
+                               ;; ready:
+                               (proc))))])
+              ;; Prepare to use cc-guard, if one was enabled:
+              (let ([cc-guard (metacontinuation-frame-cc-guard (car (current-metacontinuation)))])
+                ;; Continue normally; the metacontinuation could be different
+                ;; than when we captured this metafunction frame, though:
+                (resume-metacontinuation
+                 ;; Apply the cc-guard, if any, outside of the prompt:
+                 (if cc-guard
+                     (lambda () (apply cc-guard results))
+                     results))))))])
+    (cond
+     [(aborting? r)
+      ;; Remove the prompt as we call the handler:
+      (pop-metacontinuation-frame)
+      (end-uninterrupted/call-hook 'handle)
+      (apply handler
+             (aborting-args r))]
+     [else
+      ;; We're returning normally; the metacontinuation frame has
+      ;; been popped already by `resume-metacontinuation`
+      (end-uninterrupted 'resume)
+      (if (#%procedure? r)
+          (r)
+          (if (and (pair? r) (null? (cdr r)))
+              (car r)
+              (#%apply values r)))])))
+
+;; Simplified `call-in-empty-metacontinuation-frame` suitable for swapping engines:
+(define (call-with-empty-metacontinuation-frame-for-swap proc)
+  (assert-in-uninterrupted)
+  (assert-not-in-system-wind)
+  (call/cc
+   (lambda (resume-k)
+     (#%$current-stack-link #%$null-continuation)
+     (current-mark-stack '())
+     (let ([mf (make-metacontinuation-frame #f
+                                            resume-k
+                                            (current-winders)
+                                            (current-mark-splice)
+                                            #f
+                                            #f
+                                            #f
+                                            #f)])
+       (current-winders '())
+       (current-mark-splice empty-mark-frame)
+       (current-metacontinuation (cons mf (current-metacontinuation)))
+       (let ([r (proc (current-metacontinuation))])
+         (let ([mf (car (current-metacontinuation))])
+           (pop-metacontinuation-frame)
+           ((metacontinuation-frame-resume-k mf) r)))))))
+
+(define (call-in-empty-metacontinuation-frame-for-compose proc)
+  (call-getting-continuation-attachment
    'none
    (lambda (at)
      (cond
-      [(and (eq? tag the-compose-prompt-tag)
-            (eq? at 'empty))
+      [(eq? at 'empty)
        ;; empty continuation in the current frame; don't push a new
        ;; metacontinuation frame
        (proc)]
       [else
-       ((if tail? call/cc (lambda (proc) (proc #f)))
+       (call/cc
         (lambda (from-k)
-          (let ([new-splice (if tail?
-                                (keep-immediate-attachment (current-mark-stack)
-                                                           (continuation-next-attachments from-k))
-                                empty-mark-frame)])
-            (when tail?
-              ;; Prune splicing marks from `resume-k` by dropping the difference
-              ;; between `from-k` and `resume-k`:
-              (current-mark-stack (continuation-next-attachments from-k)))
-            (let ([r ; a list of results, or a non-list for special handling
-                   (call/cc
-                    (lambda (resume-k)
-                      ;; the `call/cc` to get `k` created a new stack
-                      ;; segment; By dropping the link from the current
-                      ;; segment to the return context referenced by `k`,
-                      ;; we actually delimit the current continuation:
-                      (#%$current-stack-link #%$null-continuation)
-                      (current-mark-stack '())
-                      (let-values ([results
-                                    ;; mark the "empty" continuation frame
-                                    ;; that just continues the metacontinuation:
-                                    (call-setting-continuation-attachment
-                                     'empty
-                                     (lambda ()
-                                       (let ([mf (make-metacontinuation-frame tag
-                                                                              resume-k
-                                                                              (current-winders)
-                                                                              (current-mark-splice)
-                                                                              #f
-                                                                              #f
-                                                                              #f)])
-                                         (current-winders '())
-                                         (current-mark-splice new-splice)
-                                         ;; push the metacontinuation:
-                                         (current-metacontinuation (cons mf (current-metacontinuation)))
-                                         ;; ready:
-                                         (proc))))])
-                        ;; Prepare to use cc-guard, if one was enabled:
-                        (let ([cc-guard (or (metacontinuation-frame-cc-guard (car (current-metacontinuation)))
-                                            values)])
-                          ;; Continue normally; the metacontinuation could be different
-                          ;; than when we captured this metafunction frame, though:
-                          (resume-metacontinuation
-                           ;; Apply the cc-guard, if any, outside of the prompt:
-                           (lambda () (apply cc-guard results)))))))])
-              (cond
-               [(aborting? r)
-                ;; Remove the prompt as we call the handler:
-                (pop-metacontinuation-frame)
-                (end-uninterrupted/call-hook 'handle)
-                (apply handler
-                       (aborting-args r))]
-               [else
-                ;; We're returning normally; the metacontinuation frame has
-                ;; been popped already by `resume-metacontinuation`
-                (end-uninterrupted 'resume)
-                (r)])))))]))))
+          (let ([new-splice (keep-immediate-attachment (current-mark-stack)
+                                                       (continuation-next-attachments from-k))])
+            ;; Prune splicing marks from `resume-k` by dropping the difference
+            ;; between `from-k` and `resume-k`:
+            (current-mark-stack (continuation-next-attachments from-k))
+            ;; Call
+            (call-in-empty-metacontinuation-frame
+             the-compose-prompt-tag
+             fail-abort-to-delimit-continuation
+             new-splice
+             proc))))]))))
 
 (define (metacontinuation-frame-update-mark-splice current-mf mark-splice)
   (make-metacontinuation-frame (metacontinuation-frame-tag current-mf)
@@ -302,7 +366,8 @@
                                mark-splice
                                #f
                                #f
-                               (metacontinuation-frame-cc-guard current-mf)))
+                               (metacontinuation-frame-cc-guard current-mf)
+                               #f))
 
 (define (metacontinuation-frame-update-cc-guard current-mf cc-guard)
   ;; Ok to keep caches, since the cc-guard doesn't affect them
@@ -312,7 +377,8 @@
                                (metacontinuation-frame-mark-splice current-mf)
                                (metacontinuation-frame-mark-chain current-mf)
                                (metacontinuation-frame-traces current-mf)
-                               cc-guard))
+                               cc-guard
+                               (metacontinuation-frame-avail-cache current-mf)))
  
 ;; ----------------------------------------
 
@@ -353,11 +419,11 @@
      '()
      ;; No winders left:
      (lambda ()
-       (do-abort-current-continuation who tag args wind?))
+       (do-abort-current-continuation who tag args #t))
      ;; If the metacontinuation changes, check target before retrying:
      (lambda ()
        (check-prompt-still-available who tag)
-       (do-abort-current-continuation who tag args wind?)))]))
+       (do-abort-current-continuation who tag args #t)))]))
 
 (define (check-prompt-still-available who tag)
   (unless (continuation-prompt-available? tag)
@@ -381,7 +447,7 @@
   (call-in-empty-metacontinuation-frame
    the-barrier-prompt-tag ; <- recognized as a barrier by continuation capture or call
    #f
-   #f ; not a tail call
+   empty-mark-frame ; new splice
    (lambda ()
      (end-uninterrupted 'barrier)
      (|#%app| p))))
@@ -391,8 +457,7 @@
 
 (define-record continuation ())
 (define-record full-continuation continuation (k winders mark-stack mark-splice mc tag))
-(define-record composable-continuation full-continuation ())
-(define-record composable-continuation/no-wind composable-continuation ())
+(define-record composable-continuation full-continuation (wind?))
 (define-record non-composable-continuation full-continuation ())
 (define-record escape-continuation continuation (tag))
 
@@ -404,7 +469,7 @@
      (check who (procedure-arity-includes/c 1) proc)
      (check who continuation-prompt-tag? tag)
      (maybe-future-barricade tag)
-     (call/cc/end-uninterrupted
+     (call/cc
       (lambda (k)
         (|#%app|
          proc
@@ -413,7 +478,7 @@
           (current-winders)
           (current-mark-stack)
           (current-mark-splice)
-          (extract-metacontinuation 'call-with-current-continuation (strip-impersonator tag) #t)
+          (extract-metacontinuation who (strip-impersonator tag) #t)
           tag))))]))
 
 (define/who call-with-composable-continuation
@@ -426,19 +491,18 @@
      (call-with-composable-continuation* p tag #t)]))
 
 (define (call-with-composable-continuation* p tag wind?)
-  (call/cc/end-uninterrupted
+  (call/cc
    (lambda (k)
      (|#%app|
       p
-      ((if wind?
-           make-composable-continuation
-           make-composable-continuation/no-wind)
+      (make-composable-continuation
        k
        (current-winders)
        (current-mark-stack)
        (current-mark-splice)
        (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f)
-       tag)))))
+       tag
+       wind?)))))
 
 (define (unsafe-call-with-composable-continuation/no-wind p tag)
   (call-with-composable-continuation* p tag #f))
@@ -452,93 +516,133 @@
      tag
      values)))
 
-;; Applying a continuation calls this internal function:
 (define (apply-continuation c args)
-  (start-uninterrupted 'continue)
   (cond
    [(composable-continuation? c)
-    ;; To compose the metacontinuation, first make sure the current
-    ;; continuation is reified in `(current-metacontinuation)`:
-    (call-in-empty-metacontinuation-frame
-     the-compose-prompt-tag
-     fail-abort-to-delimit-continuation
-     #t ; a tail call
-     (lambda ()
-       ;; The current metacontinuation frame has an
-       ;; empty continuation, so we can "replace" that
-       ;; with the composable one:
-       (if (composable-continuation/no-wind? c)
-           (apply-immediate-continuation/no-wind c args)
-           (apply-immediate-continuation c (reverse (full-continuation-mc c)) args))))]
+    (apply-composable-continuation c args)]
    [(non-composable-continuation? c)
     (apply-non-composable-continuation c args)]
    [(escape-continuation? c)
-    (let ([tag (escape-continuation-tag c)])
-      (unless (continuation-prompt-available? tag)
-        (end-uninterrupted 'escape-fail)
-        (raise-continuation-error '|continuation application|
-                                  "attempt to jump into an escape continuation"))
-      (do-abort-current-continuation '|continuation application| tag args #t))]))
+    (apply-escape-continuation c args)]
+   [else
+    (raise-argument-error 'apply-continuation "continuation?" c)]))
 
+;; Applying a composable continuation calls this internal function:
+(define (apply-composable-continuation c args)
+  (start-uninterrupted 'continue)
+  ;; To compose the metacontinuation, first make sure the current
+  ;; continuation is reified in `(current-metacontinuation)`:
+  (call-in-empty-metacontinuation-frame-for-compose
+   (lambda ()
+     ;; The current metacontinuation frame has an
+     ;; empty continuation, so we can "replace" that
+     ;; with the composable one:
+     (cond
+      [(and (null? (full-continuation-mc c))
+            (null? (full-continuation-winders c))
+            (eq? (current-mark-splice) (full-continuation-mark-splice c))
+            (let ([marks (continuation-next-attachments (full-continuation-k c))])
+              (or (null? marks)
+                  (and (null? (cdr marks))
+                       (eq? (car marks) 'empty)))))
+       ;; Shortcut for no winds and no change to break status:
+       (end-uninterrupted 'cc)
+       (#%apply (full-continuation-k c) args)]
+      [(not (composable-continuation-wind? c))
+       (apply-immediate-continuation/no-wind c args)]
+      [else
+       (apply-immediate-continuation c (reverse (full-continuation-mc c)) args)]))))
+
+;; Applying an escape continuation calls this internal function:
+(define (apply-escape-continuation c args)
+  (start-uninterrupted 'continue)
+  (let ([tag (escape-continuation-tag c)])
+    (unless (continuation-prompt-available? tag)
+      (end-uninterrupted 'escape-fail)
+      (raise-continuation-error '|continuation application|
+                                "attempt to jump into an escape continuation"))
+    (do-abort-current-continuation '|continuation application| tag args #t)))
+
+;; Applying a non-composable continuation calls this internal function:
 (define (apply-non-composable-continuation c args)
+  (start-uninterrupted 'continue)
+  (apply-non-composable-continuation* c args))
+
+(define (apply-non-composable-continuation* c args)
   (assert-in-uninterrupted)
-  (let* ([tag (full-continuation-tag c)])
-    (let-values ([(common-mc   ; shared part of the current metacontinuation
-                   rmc-append) ; non-shared part of the destination metacontinuation
-                  ;; We check every time, just in case control operations
-                  ;; change the current continuation out from under us.
-                  (find-common-metacontinuation (full-continuation-mc c)
-                                                (current-metacontinuation)
-                                                (strip-impersonator tag))])
-      (let loop ()
-        (cond
-         [(eq? common-mc (current-metacontinuation))
-          ;; Replace the current metacontinuation frame's continuation
-          ;; with the saved one; this replacement will take care of any
-          ;; shared winders within the frame.
-          (apply-immediate-continuation c rmc-append args)]
-         [else
-          ;; Unwind this metacontinuation frame:
-          (wind-to
-           '()
-           ;; If all winders complete simply:
-           (lambda ()
-             (pop-metacontinuation-frame)
-             (loop))
-           ;; If a winder changes the metacontinuation, then
-           ;; start again:
-           (lambda ()
-             (apply-non-composable-continuation c args)))])))))
+  (let ([mc (current-metacontinuation)]
+        [c-mc (full-continuation-mc c)]
+        [tag (full-continuation-tag c)])
+    (cond
+     [(and (null? c-mc)
+           (pair? mc)
+           (not (impersonator? tag))
+           (eq? tag (metacontinuation-frame-tag (car mc)))
+           (same-winders? (current-winders) (full-continuation-winders c))
+           (eq? (current-mark-splice) (full-continuation-mark-splice c))
+           (eq? (continuation-next-attachments (full-continuation-k c))
+                (current-mark-stack)))
+      ;; Short cut: jump within the same metacontinuation, no winder
+      ;; changes or changes to marks (so no break-enabled changes),
+      ;; and no tag impersonators to deal with
+      (end-uninterrupted 'cc)
+      (#%apply (full-continuation-k c) args)]
+     [else
+      (let-values ([(common-mc   ; shared part of the current metacontinuation
+                     rmc-append) ; non-shared part of the destination metacontinuation
+                    ;; We check every time, just in case control operations
+                    ;; change the current continuation out from under us.
+                    (find-common-metacontinuation  c-mc
+                                                   mc
+                                                   (strip-impersonator tag))])
+        (let loop ()
+          (cond
+           [(eq? common-mc (current-metacontinuation))
+            ;; Replace the current metacontinuation frame's continuation
+            ;; with the saved one; this replacement will take care of any
+            ;; shared winders within the frame.
+            (apply-immediate-continuation c rmc-append args)]
+           [else
+            ;; Unwind this metacontinuation frame:
+            (wind-to
+             '()
+             ;; If all winders complete simply:
+             (lambda ()
+               (pop-metacontinuation-frame)
+               (loop))
+             ;; If a winder changes the metacontinuation, then
+             ;; start again:
+             (lambda ()
+               (apply-non-composable-continuation* c args)))])))])))
 
 ;; Apply a continuation within the current metacontinuation frame:
 (define (apply-immediate-continuation c rmc args)
   (assert-in-uninterrupted)
-  (call-with-appended-metacontinuation
-   rmc
-   c
-   args
-   (lambda ()
-     (let ([mark-stack (full-continuation-mark-stack c)])
-       (current-mark-splice (let ([mark-splice (full-continuation-mark-splice c)])
-                              (if (composable-continuation? c)
-                                  (merge-mark-splice mark-splice (current-mark-splice))
-                                  mark-splice)))
-       (wind-to
-        (full-continuation-winders c)
-        ;; When no winders are left:
-        (lambda ()
-          (when (non-composable-continuation? c)
-            ;; Activate/add cc-guards in target prompt; any user-level
-            ;; callbacks here are run with a continuation barrier, so
-            ;; the metacontinuation won't change (except by escaping):
-            (activate-and-wrap-cc-guard-for-impersonator!
-             (full-continuation-tag c)))
-          ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
-        ;; If a winder changed the meta-continuation, try again for a
-        ;; non-composable continuation:
-        (and (non-composable-continuation? c)
-             (lambda ()
-               (apply-non-composable-continuation c args))))))))
+  (apply-continuation-with-appended-metacontinuation rmc c args))
+
+(define (apply-continuation-within-metacontinuation c args)
+  (let ([mark-stack (full-continuation-mark-stack c)])
+    (current-mark-splice (let ([mark-splice (full-continuation-mark-splice c)])
+                           (if (composable-continuation? c)
+                               (merge-mark-splice mark-splice (current-mark-splice))
+                               mark-splice)))
+    (wind-to
+     (full-continuation-winders c)
+     ;; When no winders are left:
+     (lambda ()
+       (when (non-composable-continuation? c)
+         ;; Activate/add cc-guards in target prompt; any user-level
+         ;; callbacks here are run with a continuation barrier, so
+         ;; the metacontinuation won't change (except by escaping):
+         (activate-and-wrap-cc-guard-for-impersonator!
+          (full-continuation-tag c)))
+       (end-uninterrupted 'cc)
+       (apply-with-break-transition (full-continuation-k c) args))
+     ;; If a winder changed the meta-continuation, try again for a
+     ;; non-composable continuation:
+     (and (non-composable-continuation? c)
+          (lambda ()
+            (apply-non-composable-continuation* c args))))))
 
 ;; Like `apply-immediate-continuation`, but don't run winders
 (define (apply-immediate-continuation/no-wind c args)
@@ -547,7 +651,8 @@
                              (current-metacontinuation)))
   (current-winders (full-continuation-winders c))
   (current-mark-splice (full-continuation-mark-splice c))
-  ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
+  (end-uninterrupted 'cc)
+  (apply-with-break-transition (full-continuation-k c) args))
 
 ;; Used as a "handler" for a prompt without a tag, which is used for
 ;; composable continuations
@@ -621,15 +726,17 @@
                             "attempt to cross a continuation barrier"))
 
 (define (set-continuation-applicables!)
-  (let ([add (lambda (rtd)
-               (struct-property-set! prop:procedure
-                                     rtd
-                                     (lambda (c . args)
-                                       (apply-continuation c args))))])
-    (add (record-type-descriptor composable-continuation))
-    (add (record-type-descriptor composable-continuation/no-wind))
-    (add (record-type-descriptor non-composable-continuation))
-    (add (record-type-descriptor escape-continuation))))
+  ;; These procedure registrations may be short-circuited by a special
+  ;; case that dispatches directly to `apply-continuation`
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor composable-continuation)
+                        (lambda (c . args) (apply-composable-continuation c args)))
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor non-composable-continuation)
+                        (lambda (c . args) (apply-non-composable-continuation c args)))
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor escape-continuation)
+                        (lambda (c . args) (apply-escape-continuation c args))))
 
 ;; ----------------------------------------
 ;; Metacontinuation operations for continutions
@@ -670,7 +777,7 @@
                             exn:fail:contract:continuation
                             (list "tag" tag)))
 
-(define (call-with-appended-metacontinuation rmc dest-c dest-args proc)
+(define (apply-continuation-with-appended-metacontinuation rmc dest-c dest-args)
   ;; Assumes that the current metacontinuation frame is ready to be
   ;; replaced with `mc` (reversed as `rmc`) plus `proc`.
   ;; In the simple case of no winders and an empty frame immediate
@@ -681,7 +788,7 @@
   (assert-in-uninterrupted)
   (let loop ([rmc rmc])
     (cond
-     [(null? rmc) (proc)]
+     [(null? rmc) (apply-continuation-within-metacontinuation dest-c dest-args)]
      [else
       (let ([mf (maybe-merge-splice (composable-continuation? dest-c)
                                     (metacontinuation-frame-clear-cache (car rmc)))]
@@ -700,7 +807,7 @@
          ;; for a non-composable continuation:
          (and (non-composable-continuation? dest-c)
               (lambda ()
-                (apply-non-composable-continuation dest-c dest-args)))))])))
+                (apply-non-composable-continuation* dest-c dest-args)))))])))
 
 (define (metacontinuation-frame-clear-cache mf)
   (metacontinuation-frame-update-mark-splice mf
@@ -887,32 +994,60 @@
    [(elem+cache? a) (extract-mark-from-frame* (elem+cache-elem a) key default-v wrapper)]
    [else default-v]))
 
-;; See copy in "expander.sls"
 (define-syntax with-continuation-mark
   (syntax-rules ()
     [(_ key val body)
-     (call-with-current-continuation-attachment
-      empty-mark-frame
-      (lambda (a)
-        (call-setting-continuation-attachment
-         (mark-frame-update a key val)
-         (lambda ()
-           body))))]))
+     (let* ([k key]
+            [v val])
+       (call-consuming-continuation-attachment
+        empty-mark-frame
+        (lambda (a)
+          (call-setting-continuation-attachment
+           (mark-frame-update a k v)
+           (lambda ()
+             body)))))]))
 
-;; Return a continuation that expects a thunk to resume. That way, we
-;; can can an `(end-uninterrupted)` and check for breaks in the
-;; destination continuation
-(define (call/cc/end-uninterrupted proc)
-  ((call/cc
-    (lambda (k)
-      (lambda ()
-        (proc k))))))
-
-;; Called on the arguments to return to a continuation
-;; captured by `call/cc/end-uninterrupted`:
-(define (end-uninterrupted-with-values args)
-  (end-uninterrupted/call-hook 'cc)
-  (apply values args))
+;; Specializations of `with-continuation-mark*` as determined by a mode:
+(define-syntax with-continuation-mark*
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ mode key val body)
+       (case (syntax->datum #'mode)
+         [(general)
+          #'(with-continuation-mark key val body)]
+         [(push)
+          ;; Assume no mark in place for this frame
+          #'(let* ([k key]
+                   [v val])
+              (call-setting-continuation-attachment
+               (if (impersonator? k)
+                   (mark-frame-update empty-mark-frame k v)
+                   (cons k v))
+               (lambda ()
+                 body)))]
+         [(authentic)
+          ;; Assume `key` produces an authentic value
+          #'(let* ([k key]
+                   [v val])
+              (call-consuming-continuation-attachment
+               empty-mark-frame
+               (lambda (a)
+                 (call-setting-continuation-attachment
+                  (if a
+                      (mark-frame-update a k v)
+                      (cons k v))
+                  (lambda ()
+                    body)))))]
+         [(push-authentic)
+          ;; Assume no mark in place, and `key` produces an authentic value
+          #'(let* ([k key]
+                   [v val])
+              (call-setting-continuation-attachment
+               (cons k v)
+               (lambda ()
+                 body)))]
+         [else
+          (#%error 'with-continuation-mark* "unrecognized mode: ~s" #'mode)])])))
 
 (define (current-mark-chain)
   (get-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
@@ -991,14 +1126,16 @@
 (define (elem+cache-strip t) (if (elem+cache? t) (elem+cache-elem t) t))
 
 ;; Export this form renamed to `call-with-immediate-continuation-mark`.
-;; It's a macro to ensure that the underlying `call-with-current-continuation-attachment`
+;; It's a macro to ensure that the underlying `call-getting-continuation-attachment`
 ;; is exposed.
 (define-syntax (call-with-immediate-continuation-mark/inline stx)
-  (syntax-case stx (lambda)
+  (syntax-case stx (lambda |#%name|)
     [(_ key-expr proc-expr)
      #'(call-with-immediate-continuation-mark/inline key-expr proc-expr #f)]
+    [(_ key-expr (|#%name| _ (lambda (arg) body ...)) default-v-expr)
+     #'(call-with-immediate-continuation-mark/inline key-expr (lambda (arg) body ...) default-v-expr)]
     [(_ key-expr (lambda (arg) body ...) default-v-expr)
-     #'(call-with-current-continuation-attachment
+     #'(call-getting-continuation-attachment
         empty-mark-frame
         (lambda (a)
           (let* ([key key-expr]
@@ -1021,18 +1158,47 @@
   (case-lambda
     [(marks key) (continuation-mark-set-first marks key #f)]
     [(marks key none-v)
-     (continuation-mark-set-first marks key none-v
-                                  ;; Treat `break-enabled-key` and `parameterization-key`, specially
-                                  ;; so that things like `current-break-parameterization` work without
-                                  ;; referencing the root continuation prompt tag
-                                  (if (or (eq? key break-enabled-key)
-                                          (eq? key parameterization-key))
-                                      the-root-continuation-prompt-tag
-                                      the-default-continuation-prompt-tag))]
+     (let ([prompt-tag
+            ;; Treat `break-enabled-key` and `parameterization-key`, specially
+            ;; so that things like `current-break-parameterization` work without
+            ;; referencing the root continuation prompt tag
+            (if (or (eq? key break-enabled-key)
+                    (eq? key parameterization-key))
+                the-root-continuation-prompt-tag
+                the-default-continuation-prompt-tag)])
+       (cond
+         [(not (or marks
+                   (impersonator? key)
+                   (current-future)))
+          ;; Fast path for simple and common case:
+          (let ([v (marks-search (current-mark-stack)
+                                 key
+                                 #f ; at-outer?
+                                 prompt-tag
+                                 #f)])
+            (if (eq? v none)
+                (let ([v (marks-search (get-rest-mark-chain (current-mark-splice) (current-metacontinuation))
+                                       key
+                                       #t ; at-outer?
+                                       prompt-tag
+                                       #f)])
+                  (if (eq? v none)
+                      (cond
+                        [(eq? key parameterization-key)
+                         empty-parameterization]
+                        [(eq? key break-enabled-key)
+                         (current-engine-init-break-enabled-cell none-v)]
+                        [else
+                         none-v])
+                      v))
+                v))]
+         [else
+          ;; General path:
+          (continuation-mark-set-first marks key none-v prompt-tag)]))]
     [(marks key none-v orig-prompt-tag)
      (check who continuation-mark-set? :or-false marks)
      (check who continuation-prompt-tag? orig-prompt-tag)
-     (maybe-future-barricade orig-prompt-tag)
+     (unless marks (maybe-future-barricade orig-prompt-tag))
      (let ([prompt-tag (strip-impersonator orig-prompt-tag)])
        (let-values ([(key wrapper) (extract-continuation-mark-key-and-wrapper 'continuation-mark-set-first key)])
          (let* ([v0 (if marks
@@ -1076,16 +1242,17 @@
 ;; The result is `none` is not found.
 ;; The result is `none2` if `need-tag?` and the prompt tag is never found.
 (define (marks-search elems key at-outer? prompt-tag need-tag?)
-  (let loop ([elems elems] [elems/cache-pos elems] [cache-step? #f] [depth 0])
+  (let loop ([elems elems] [elems/cache-pos elems] [depth 0])
     (cond
      [(or (null? elems)
           (and at-outer?
+               (not (eq? prompt-tag the-root-continuation-prompt-tag))
                (eq? (mark-chain-frame-tag (elem+cache-strip (car elems))) prompt-tag)))
       ;; Not found
       (cond
        [(and need-tag? (null? elems)) none2]
        [else
-        (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
+        (cache-result! elems/cache-pos depth key none at-outer? prompt-tag)
         none])]
      [else
       (let t-loop ([t (car elems)])
@@ -1109,11 +1276,11 @@
                   (t-loop (elem+cache-elem t))]
                  [(eq? v none)
                   ;; The cache records that it's not in the rest:
-                  (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
+                  (cache-result! elems/cache-pos depth key none at-outer? prompt-tag)
                   none]
                  [else
                   ;; The cache provides a value from the rest:
-                  (cache-result! elems elems/cache-pos depth key v at-outer? prompt-tag)
+                  (cache-result! elems/cache-pos depth key v at-outer? prompt-tag)
                   v]))]))]
          [else
           ;; Try the element:
@@ -1124,23 +1291,30 @@
                              none
                              (marks-search marks key #f #f #f)))
                        ;; We're looking at just one frame:
-                       (extract-mark-from-frame* t key none #f))])
+                       (cond
+                         ;; Inline common cases:
+                         [(pair? t)
+                          (if (eq? (car t) key)
+                              (cdr t)
+                              none)]
+                         [(eq? t 'empty) none]
+                         [else
+                          (extract-mark-from-frame* t key none #f)]))])
             (cond
              [(eq? v none)
               ;; Not found at this point; keep looking
               (loop (cdr elems)
-                    (if cache-step? (cdr elems/cache-pos) elems/cache-pos)
-                    (not cache-step?)
+                    (if (fxodd? depth) (cdr elems/cache-pos) elems/cache-pos)
                     (fx+ 1 depth))]
              [else
               ;; Found it
-              (cache-result! elems elems/cache-pos depth key v at-outer? prompt-tag)
+              (cache-result! elems/cache-pos depth key v at-outer? prompt-tag)
               v]))]))])))
 
 ;; To make `continuation-mark-set-first` constant-time, cache
 ;; a key--value mapping at a point that's half-way in
-(define (cache-result! marks marks/cache-pos depth key v at-outer? prompt-tag)
-  (unless (< depth 16)
+(define (cache-result! marks/cache-pos depth key v at-outer? prompt-tag)
+  (unless (< depth 8)
     (let* ([t (car marks/cache-pos)]
            [new-t (if (elem+cache? t)
                       t
@@ -1152,8 +1326,8 @@
                                                (if at-outer?
                                                    ;; At the metacontinuation level, cache depends on the
                                                    ;; prompt tag:
-                                                   (let ([old (intmap-ref (elem+cache-cache new-t) key none2)])
-                                                     (intmap-set (if (eq? old none2) empty-hasheq old) prompt-tag v))
+                                                   (let ([old (intmap-ref (elem+cache-cache new-t) key empty-hasheq)])
+                                                     (intmap-set old prompt-tag v))
                                                    v))))))
 
 (define/who continuation-mark-set->list
@@ -1272,8 +1446,8 @@
      (maybe-future-barricade orig-tag)
      (let ([tag (strip-impersonator orig-tag)])
        (cond
-        [(#%procedure? k)
-         (let ([mc (saved-metacontinuation-mc (k))])
+        [(#%procedure? k) ; => an engine
+         (let ([mc (k)])
            (make-continuation-mark-set
             (prune-mark-chain-suffix
              who
@@ -1648,7 +1822,7 @@
               (current-winders winders)
               (call-winder-thunk 'dw-post post)
               (end-uninterrupted/call-hook 'dw)
-              (lambda () (apply values args))))))))))
+              (lambda () (#%apply values args))))))))))
 
 (define (call-winder-thunk who thunk)
   (with-continuation-mark
@@ -1746,36 +1920,35 @@
 (define (set-break-enabled-transition-hook! proc)
   (set! break-enabled-transition-hook proc))
 
+(define (apply-with-break-transition k args)
+  ;; Install attachments of `k` before calling
+  ;; `break-enabled-transition-hook`. Technically, the hook is called
+  ;; with the wrong Scheme continuation, which might keep the
+  ;; continuation live longer than it should. But the hook can't see
+  ;; the difference, and its only options are to return or escape.
+  (current-mark-stack (continuation-next-attachments k))
+  (break-enabled-transition-hook)
+  (#%apply k args))
+
 ;; ----------------------------------------
 ;; Metacontinuation swapping for engines
 
-(define-record saved-metacontinuation (mc system-winders exn-state))
-
-(define empty-metacontinuation (make-saved-metacontinuation '() '() (create-exception-state)))
+(define empty-metacontinuation '())
 
 ;; Similar to `call-with-current-continuation` plus
 ;; applying an old continuation, but does not run winders;
 ;; this operation makes sense for thread or engine context
 ;; switches
-(define (swap-metacontinuation saved proc)
+(define (call-with-current-metacontinuation proc)
   (cond
    [(current-system-wind-start-k)
-    => (lambda (k) (swap-metacontinuation-with-system-wind saved proc k))]
+    => (lambda (k) (call-with-current-metacontinuation-with-system-wind proc k))]
    [else
-    (call-in-empty-metacontinuation-frame
-     #f
-     fail-abort-to-delimit-continuation
-     #f ; don't try to shift continuation marks
-     (lambda ()
-       (let ([now-saved (make-saved-metacontinuation
-                         (current-metacontinuation)
-                         (#%$current-winders)
-                         (current-exception-state))])
-         (current-metacontinuation (saved-metacontinuation-mc saved))
-         (#%$current-winders (saved-metacontinuation-system-winders saved))
-         (current-exception-state (saved-metacontinuation-exn-state saved))
-         (set! saved #f) ; break link for space safety
-         (proc now-saved))))]))
+    (call-with-empty-metacontinuation-frame-for-swap proc)]))
+
+(define (apply-meta-continuation saved k)
+  (current-metacontinuation saved)
+  (k))
 
 ;; ----------------------------------------
 
@@ -1800,17 +1973,17 @@
              proc
            (lambda args
              (lambda ()
-               (apply values args)))))
+               (#%apply values args)))))
        (lambda () (current-system-wind-start-k #f)))))))
 
-(define (swap-metacontinuation-with-system-wind saved proc start-k)
+(define (call-with-current-metacontinuation-with-system-wind proc start-k)
   (current-system-wind-start-k #f)
   (call/cc
    (lambda (system-wind-k) ; continuation with system `dynamic-wind` behavior
      ;; escape to starting point, running winders, before
      ;; capturing the rest of the metacontinuation:
      (start-k (lambda ()
-                (let ([prefix (swap-metacontinuation saved proc)])
+                (let ([prefix (call-with-current-metacontinuation proc)])
                   (current-system-wind-start-k start-k)
                   (system-wind-k prefix)))))))
 

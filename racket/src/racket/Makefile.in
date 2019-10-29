@@ -32,7 +32,6 @@ CPP = @CPP@
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@ 
 CPPFLAGS =  @PREFLAGS@
 
-NICEAR = $(mainsrcdir)/utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -144,7 +143,7 @@ sproc-extra-lib:
 	$(MAKE) sproc.@LTO@
 
 gc.@LIBSFX@:
-	$(NICEAR) $(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
+	$(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
 
 # Compilation of the foreign libraries (this compiles all of them)
 foreign-stuff:
@@ -194,8 +193,7 @@ LIBRKTIO_FOR_DLL = $(LIBRKTIO_FOR_DLL_@LIBSFX@)
 LIBRKTIO_FOR_LIB = $(LIBRKTIO_FOR_LIB_@LIBSFX@)
 
 libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB) $(LIBRKTIO_FOR_DLL)
-	$(NICEAR) $(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(LIBRKTIO_FOR_DLL) @LIBRACKET_DEP@
-	$(RANLIB) libracket.@LIBSFX@
+	$(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(LIBRKTIO_FOR_DLL) @LIBRACKET_DEP@
 
 # Irix sproc, only
 sproc.@LTO@: @GCDIR@/sproc.@LTO@
@@ -205,6 +203,7 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 
 racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(LIBRKTIO_FOR_LIB) $(SPECIALIZINGOBJECTS)
 	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO_FOR_LIB) @LDFLAGS@ @LIBS@
+	@POST_LINKER@ racket@CGC@
 
 mzcom@CGC@@NOT_MINGW@:
 	$(NOOP)

@@ -10,6 +10,7 @@
          xml/plist
          setup/dirs
          setup/variant
+         setup/collects
          file/ico
          racket/private/so-search
          setup/cross-system
@@ -318,12 +319,12 @@
 ;; Represent modules with lists starting with the filename, so we
 ;; can use assoc:
 (define (make-mod normal-file-path normal-module-path 
-                  code name prefix full-name relative-mappings-box 
+                  code name full-name relative-mappings-box 
                   runtime-paths runtime-module-syms
                   actual-file-path
                   use-source?)
   (list normal-file-path normal-module-path code
-        name prefix full-name relative-mappings-box
+        name full-name relative-mappings-box
         runtime-paths runtime-module-syms 
         actual-file-path
         use-source?))
@@ -332,16 +333,40 @@
 (define (mod-mod-path m) (cadr m))
 (define (mod-code m) (caddr m))
 (define (mod-name m) (list-ref m 3))
-(define (mod-prefix m) (list-ref m 4))
-(define (mod-full-name m) (list-ref m 5))
-(define (mod-mappings m) (unbox (list-ref m 6)))
-(define (mod-runtime-paths m) (list-ref m 7))
-(define (mod-runtime-module-syms m) (list-ref m 8))
-(define (mod-actual-file m) (list-ref m 9))
-(define (mod-use-source? m) (list-ref m 10))
+(define (mod-full-name m) (list-ref m 4))
+(define (mod-mappings m) (unbox (list-ref m 5)))
+(define (mod-runtime-paths m) (list-ref m 6))
+(define (mod-runtime-module-syms m) (list-ref m 7))
+(define (mod-actual-file m) (list-ref m 8))
+(define (mod-use-source? m) (list-ref m 9))
 
-(define (generate-prefix)
-  (format "#%embedded:~a:" (gensym)))
+(define (file-mod-name-base path)
+  (define-values (base name dir?) (split-path path))
+  (path->string (path-replace-extension name #"")))
+
+(struct file-mod-name-state (path->relative-cache used wrt-path))
+(define (make-generate-file-mod-name-state wrt-path)
+  (file-mod-name-state (make-hash) (make-hasheq) wrt-path))
+
+(define (generate-file-mod-name gen-state path)
+  (define mp (path->module-path path
+                                #:cache (file-mod-name-state-path->relative-cache gen-state)))
+  (define str
+    (cond
+      [(and mp (pair? mp) (eq? (car mp) 'lib) (null? (cddr mp)))
+       (cadr mp)]
+      [else
+       (define rel (find-relative-path (file-mod-name-state-wrt-path gen-state) path))
+       (path->string rel)]))
+  (define sym (string->symbol (regexp-replace #rx"[.](?:ss|rkt)$" str "")))
+  (define used (file-mod-name-state-used gen-state))
+  (let loop ([sym sym])
+    (cond
+      [(hash-ref used sym #f)
+       (loop (string->symbol (format "~a>" sym)))]
+      [else
+       (hash-set! used sym #t)
+       (format "#%embedded:~a:" sym)])))
 
 (define (normalize filename)
   (if (pair? filename)
@@ -421,8 +446,8 @@
 (define-struct extension (path))
 
 ;; Loads module code, using .zo if there, compiling from .scm if not
-(define (get-code filename module-path ready-code use-submods codes prefixes verbose? collects-dest on-extension 
-                  compiler expand-namespace src-filter get-extra-imports working)
+(define (get-code filename module-path ready-code use-submods codes file-mod-names verbose? collects-dest on-extension 
+                  compiler expand-namespace src-filter get-extra-imports working gen-state)
   ;; filename can have the form `(submod ,filename ,sym ...)
   (let* ([a (assoc filename (unbox codes))]
          ;; If we didn't fine `filename` as-is, check now for
@@ -472,14 +497,19 @@
              [just-filename (strip-submod filename)]
              [root-module-path (strip-submod module-path)]
              [actual-filename just-filename] ; `set!'ed below to adjust file extension
-             [name (let-values ([(base name dir?) (split-path just-filename)])
-                     (path->string (path-replace-extension name #"")))]
-             [prefix (let ([a (assoc just-filename prefixes)])
-                       (if a
-                           (cdr a)
-                           (generate-prefix)))]
+             [name (file-mod-name-base just-filename)]
+             [file-mod-name (let ([a
+                                   ;; Try path with a submodule, first, then fall back to
+                                   ;; just the path part if there was a `submod` wrapper:
+                                   (or (assoc filename file-mod-names)
+                                       (and (pair? filename)
+                                            (assoc just-filename file-mod-names)))])
+                              (if a
+                                  (cdr a)
+                                  (generate-file-mod-name gen-state just-filename)))]
              [full-name (string->symbol
-                         (format "~a~a~a" prefix name
+                         (format "~a~a"
+                                 file-mod-name
                                  (if (null? submod-path)
                                      ""
                                      submod-path)))])
@@ -518,7 +548,7 @@
               (eprintf " using extension: ~s\n" (extension-path code)))
             (set-box! codes
                       (cons (make-mod filename module-path code 
-                                      name prefix full-name
+                                      name full-name
                                       (box null) null null
                                       actual-filename
                                       #f)
@@ -614,14 +644,15 @@
                     (define (get-one-code sub-filename sub-path ready-code)
                       (get-code sub-filename sub-path ready-code null
                                 codes
-                                prefixes
+                                file-mod-names
                                 verbose?
                                 collects-dest
                                 on-extension
                                 compiler
                                 expand-namespace
                                 src-filter get-extra-imports
-                                working))
+                                working
+                                gen-state))
                     (define (get-one-submodule-code m)
                       (define name (cadr (module-compiled-name m)))
                       (define mp `(submod "." ,name))
@@ -658,7 +689,7 @@
                           ;; Record module as copied
                           (set-box! codes
                                     (cons (make-mod filename module-path #f
-                                                    #f #f #f
+                                                    #f #f
                                                     (box null) null null
                                                     actual-filename
                                                     use-source?)
@@ -708,7 +739,7 @@
                           ;; Record the module
                           (set-box! codes
                                     (cons (make-mod filename module-path code 
-                                                    name prefix full-name
+                                                    name full-name
                                                     mappings-box
                                                     runtime-paths
                                                     ;; extract runtime-path module symbols:
@@ -734,7 +765,7 @@
            [else
             (set-box! codes
                       (cons (make-mod filename module-path code 
-                                      name #f #f
+                                      name #f
                                       null null null
                                       actual-filename
                                       use-source?)
@@ -1144,12 +1175,17 @@
          [collapse-one (lambda (mp)
                          (collapse-module-path mp (build-path (current-directory) "dummy.rkt")))]
          [collapsed-mps (map collapse-one module-paths)]
-         [prefix-mapping (map (lambda (f m)
-                                (cons f (let ([p (car m)])
+         [gen-state (make-generate-file-mod-name-state (or (and (pair? files)
+                                                                (let-values ([(base name dir) (split-path (car files))])
+                                                                  base))
+                                                           (current-directory)))]
+         [file-mod-names (map (lambda (f m)
+                                (cons f (let ([p (car m)]
+                                              [f (strip-submod f)])
                                           (cond
-                                            [(symbol? p) (symbol->string p)]
-                                            [(eq? p #t) (generate-prefix)]
-                                            [(not p) ""]
+                                            [(symbol? p) (format "~a~a" p (file-mod-name-base f))]
+                                            [(eq? p #t) (generate-file-mod-name gen-state f)]
+                                            [(not p) (file-mod-name-base f)]
                                             [else (error
                                                    'write-module-bundle
                                                    "bad prefix: ~e"
@@ -1160,10 +1196,10 @@
          ;; loading imports, so the list in the right order.
          [codes (box null)]
          [get-code-at (lambda (f mp submods)
-                        (get-code f mp #f submods codes prefix-mapping verbose? collects-dest
+                        (get-code f mp #f submods codes file-mod-names verbose? collects-dest
                                   on-extension compiler expand-namespace
                                   src-filter get-extra-imports
-                                  (make-hash)))]
+                                  (make-hash) gen-state))]
          [__
           ;; Load all code:
           (for-each get-code-at files collapsed-mps use-submoduless)]

@@ -1,5 +1,5 @@
 # The "build" and "bundle" directories are used when creating installers
-# via the `server', `client', and/or `farm' maefile targets.
+# via the `server', `client', and/or `farm' makefile targets.
 /build/
 /bundle/
 

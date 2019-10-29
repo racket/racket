@@ -884,7 +884,7 @@ static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
 /*                                                                    */
 /**********************************************************************/
 
-char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
+char *scheme_os_getcwd(char *buf, size_t buflen, int *actlen, int noexn)
 {
   char *s;
   int slen;
@@ -5097,9 +5097,11 @@ wchar_t *scheme_get_dll_path(wchar_t *p)
   return r2;
 }
 
-void scheme_set_dll_procs(scheme_dll_open_proc dll_open, scheme_dll_find_object_proc find_obj)
+void scheme_set_dll_procs(scheme_dll_open_proc dll_open,
+                          scheme_dll_find_object_proc find_obj,
+                          scheme_dll_close_proc dll_close)
 {
-  rktio_set_dll_procs(dll_open, find_obj);
+  rktio_set_dll_procs(dll_open, find_obj, dll_close);
   alt_dll_open = dll_open;
   alt_find_obj = find_obj;
 }

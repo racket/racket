@@ -23,11 +23,13 @@
                ['output (printf " Output from: ~a\n~a~a" work out err)]
                [else (eprintf " Error compiling ~a\n~a\n~a~a" work msg out err)])))
 
+(define compiled (car (use-compiled-file-paths)))
+
 (define (delete-files f)
   (delete-file f)
   (let-values ([(base name dir?) (split-path f)])
-    (delete-file (build-path base "compiled" (path-add-suffix name #".dep")))
-    (delete-file (build-path base "compiled" (path-add-suffix name #".zo")))))
+    (delete-file (build-path base compiled (path-add-suffix name #".dep")))
+    (delete-file (build-path base compiled (path-add-suffix name #".zo")))))
 
 (delete-files tmp1)
 (delete-files tmp2)

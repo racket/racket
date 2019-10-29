@@ -73,13 +73,16 @@ of signatures easier for reified syntax-classes.
 ;; IAttr operations
 
 ;; append-iattrs : (listof (listof IAttr)) -> (listof IAttr)
+;; Assumes that each sublist is duplicate-free.
 (define (append-iattrs attrss)
-  (let* ([all (apply append attrss)]
-         [names (map attr-name all)]
-         [dup (check-duplicate-identifier names)])
-    (when dup
-      (wrong-syntax dup "duplicate attribute"))
-    all))
+  (cond [(null? attrss) null]
+        [(null? (cdr attrss)) (car attrss)]
+        [else
+         (let* ([all (apply append attrss)]
+                [names (map attr-name all)]
+                [dup (and (pair? names) (check-duplicate-identifier names))])
+           (when dup (wrong-syntax dup "duplicate attribute"))
+           all)]))
 
 ;; union-iattrs : (listof (listof IAttr)) -> (listof IAttr)
 (define (union-iattrs attrss)

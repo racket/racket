@@ -40,6 +40,7 @@
          "collection-name.rkt"
          "private/format-error.rkt"
          "private/encode-relative.rkt"
+         "private/time.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -148,6 +149,17 @@
                      'path->main-lib-relative
                      'main-lib-relative->path))
 
+  ;; For checking and debugging memory leaks; set `PLT_SETUP_DMS_ARGS`
+  ;; to an S-expression list and use `-j 1` to run a non-parallel setup:
+  (define post-collection-dms-args
+    (let ([v (getenv "PLT_SETUP_DMS_ARGS")])
+      (and v (read (open-input-string v)))))
+
+  ;; Also help to check for leaks: set `PLT_SETUP_LIMIT_CACHE` to
+  ;; avoid caching compile-file information across different collections:
+  (define limit-cross-collection-cache?
+    (getenv "PLT_SETUP_LIMIT_CACHE"))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,7 +213,7 @@
 
   (define (done)
     (unless (null? errors)
-      (setup-printf #f "--- summary of errors ---")
+      (setup-printf #f (add-time "--- summary of errors ---"))
       (show-errors (current-error-port))
       (when (pause-on-errors)
         (eprintf "INSTALLATION FAILED.\nPress Enter to continue...\n")
@@ -213,7 +225,7 @@
   (define (manage-prevous-and-next)
     (define prev (previous-error-in-file))
     (when (and prev (file-exists? prev))
-      (setup-printf #f "--- previous errors ---")
+      (setup-printf #f (add-time "--- previous errors ---"))
       (setup-printf #f "errors were~a reported by a previous process"
                     (if (zero? exit-code) "" " also"))
       (set! exit-code 1))
@@ -509,11 +521,12 @@
               #:when (directory-exists? (build-path cp collection)))
           (cc! (list collection) #:path (build-path cp collection)))]
        [else ; must be a hash table that simulates a links file:
-        (for ([(coll-sym dir) (in-hash inst-links)])
+        (for* ([(coll-sym dir-list) (in-hash inst-links)]
+               [dir (in-list dir-list)])
           (cond
-           [coll-sym
-            ;; A single collection
-            (cc! (string-split "/" (symbol->string coll-sym)) #:path dir)]
+            [coll-sym
+             ;; A single collection
+             (cc! (map string->path (string-split (symbol->string coll-sym) "/")) #:path dir)]
            [(directory-exists? dir)
             ;; A directory that holds collections:
             (for ([collection (directory-list dir)]
@@ -840,7 +853,7 @@
                 [else (void)])))))
 
   (define (clean-step)
-    (setup-printf #f "--- cleaning collections ---")
+    (setup-printf #f (add-time "--- cleaning collections ---"))
     (define dependencies (make-hash))
     ;; Main deletion:
     (for ([cc ccs-to-compile]) (clean-collection cc dependencies))
@@ -883,11 +896,12 @@
 
   (define (do-install-part part)
     (when (if (eq? part 'post) (call-post-install) (call-install))
-      (setup-printf #f (format "--- ~ainstalling collections ---"
-                               (case part
-                                 [(pre) "pre-"]
-                                 [(general) ""]
-                                 [(post) "post-"])))
+      (setup-printf #f (add-time
+                        (format "--- ~ainstalling collections ---"
+                                (case part
+                                  [(pre) "pre-"]
+                                  [(general) ""]
+                                  [(post) "post-"]))))
       (for ([cc ccs-to-call-installers])
         (let/ec k
           (begin-record-error cc (case part
@@ -1061,8 +1075,10 @@
 
   ;; We keep timestamp information for all files that we try to compile.
   ;; That's O(N) for an installation of size N, but the constant is small,
-  ;; and it makes a do-nothing setup complete much faster.
-  (define caching-managed-compile-zo (make-caching-managed-compile-zo))
+  ;; and it makes a do-nothing setup complete much faster. But set the
+  ;; `PLT_SETUP_LIMIT_CACHE` environment variable to disable it.
+  (define caching-managed-compile-zo (and (not limit-cross-collection-cache?)
+                                          (make-caching-managed-compile-zo)))
 
   (define (compile-cc cc gcs has-module-suffix?)
     (parameterize ([current-namespace (make-base-empty-namespace)])
@@ -1082,9 +1098,13 @@
                                   #:verbose (verbose)
                                   #:has-module-suffix? has-module-suffix?
                                   #:omit-root (cc-omit-root cc)
-                                  #:managed-compile-zo caching-managed-compile-zo
+                                  #:managed-compile-zo (or caching-managed-compile-zo
+                                                           (make-caching-managed-compile-zo))
                                   #:skip-path (and (avoid-main-installation) main-collects-dir)
                                   #:skip-doc-sources? (not make-docs?))))))
+    (when post-collection-dms-args
+      (collect-garbage)
+      (apply dump-memory-stats post-collection-dms-args))
     (if (eq? 0 gcs)
         0
         (begin (collect-garbage) (sub1 gcs))))
@@ -1115,7 +1135,7 @@
                  #:group 'libs
                  #:namespace info-ns)])
         (lambda (p) (regexp-match? rx p))))
-    (setup-printf #f "--- compiling collections ---")
+    (setup-printf #f (add-time "--- compiling collections ---"))
     (if ((parallel-workers) . > . 1)
       (begin
         (when (or no-specific-collections?
@@ -1136,9 +1156,13 @@
             (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct
                               #:use-places? (parallel-use-places)
-                              #:options (if (not (current-compile-target-machine))
-                                            '(compile-any)
-                                            '()))
+                              #:options (append
+                                         (if (not (current-compile-target-machine))
+                                             '(compile-any)
+                                             '())
+                                         (if (managed-recompile-only)
+                                             '(recompile-only)
+                                             '())))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode
@@ -1153,7 +1177,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-info-domain-step)
-    (setup-printf #f "--- updating info-domain tables ---")
+    (setup-printf #f (add-time "--- updating info-domain tables ---"))
     ;; Each ht maps a collection root dir to an info-domain table. Even when
     ;; `collections-to-compile' is a subset of all collections, we only care
     ;; about those collections that exist in the same root as the ones in
@@ -1395,7 +1419,7 @@
               setup-printf))
 
   (define (make-docs-step)
-    (setup-printf #f "--- building documentation ---")
+    (setup-printf #f (add-time "--- building documentation ---"))
     (set-doc:verbose)
     (with-handlers ([exn:fail?
                      (lambda (exn)
@@ -1408,7 +1432,7 @@
       (doc:setup-scribblings #f auto-start-doc?)))
 
   (define (doc-pdf-dest-step)
-    (setup-printf #f "--- building PDF documentation (via pdflatex) ---")
+    (setup-printf #f (add-time "--- building PDF documentation (via pdflatex) ---"))
     (define dest-dir (path->complete-path (doc-pdf-dest)))
     (unless (directory-exists? dest-dir)
       (make-directory dest-dir))
@@ -1439,7 +1463,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-launchers-step)
-    (setup-printf #f "--- creating launchers ---")
+    (setup-printf #f (add-time "--- creating launchers ---"))
     (define (name-list l)
       (unless (list-of relative-path-string? l)
         (error "result is not a list of relative path strings:" l)))
@@ -1744,7 +1768,7 @@
                                fixup-lib
                                copy-user-lib)
     (define (make-libs-step)
-      (setup-printf #f (format "--- installing ~a ---" whats))
+      (setup-printf #f (add-time (format "--- installing ~a ---" whats)))
       (define installed-libs (make-hash))
       (define dests (make-hash))
       (for ([cc ccs-to-compile])
@@ -2019,7 +2043,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (do-check-package-dependencies)
-    (setup-printf #f (format "--- checking package dependencies ---"))
+    (setup-printf #f (add-time (format "--- checking package dependencies ---")))
     (unless (check-package-dependencies (map cc-path ccs-to-compile)
                                         (map cc-collection ccs-to-compile)
                                         (map cc-main? ccs-to-compile)
@@ -2034,6 +2058,9 @@
                                                      'build
                                                      'run))))
                                         setup-printf setup-fprintf
+                                        (lambda (exn)
+                                          (set! exit-code 1)
+                                          (setup-printf #f "check failure: ~a" (exn->string exn)))
                                         (check-unused-dependencies)
                                         (fix-dependencies)
                                         (verbose)
@@ -2048,7 +2075,10 @@
   (setup-printf "version" "~a" (version))
   (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
   (setup-printf "target machine" "~a" (or (current-compile-target-machine)
-                                          (cross-system-type 'target-machine)
+                                          ;; Check for `cross-multi-compile?` mode like compiler/cm:
+                                          (and ((length (current-compiled-file-roots)) . > . 1)
+                                               (cross-installation?)
+                                               (cross-system-type 'target-machine))
                                           'any))
   (when (cross-installation?)
     (setup-printf "cross-installation" "yes"))

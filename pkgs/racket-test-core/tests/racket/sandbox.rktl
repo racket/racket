@@ -332,12 +332,15 @@
    (let* ([tmp       (make-temporary-file "sandboxtest~a" 'directory)]
           [strpath   (lambda xs (path->string (apply build-path xs)))]
           [racketlib (strpath (path-only (collection-file-path "main.rkt" "racket")))]
+          [compiled (if (null? (use-compiled-file-paths))
+                        "compiled"
+                        (car (use-compiled-file-paths)))]
           [list-lib  (strpath racketlib "list.rkt")]
-          [list-zo   (strpath racketlib "compiled" "list_rkt.zo")]
+          [list-zo   (strpath racketlib compiled "list_rkt.zo")]
           [test-lib  (strpath tmp "sandbox-test.rkt")]
-          [test-zo   (strpath tmp "compiled" "sandbox-test_rkt.zo")]
+          [test-zo   (strpath tmp compiled "sandbox-test_rkt.zo")]
           [test2-lib (strpath tmp "sandbox-test2.rkt")]
-          [test2-zo  (strpath tmp "compiled" "sandbox-test2_rkt.zo")]
+          [test2-zo  (strpath tmp compiled "sandbox-test2_rkt.zo")]
           [test3-file "sandbox-test3.rkt"]
           [test3-lib  (strpath tmp test3-file)]
           [make-module-evaluator/rel (lambda (mod
@@ -442,7 +445,7 @@
         ;; (directory-list tmp) =err> "file access denied"
         --top--
         ;; explicitly allow access to tmp, and write access to a single file
-        (make-directory (build-path tmp "compiled"))
+        (make-directory* (build-path tmp compiled))
         (parameterize ([sandbox-path-permissions
                         `((read ,tmp) (write ,test-zo)
                           ,@(sandbox-path-permissions))])
@@ -459,9 +462,7 @@
         (copy-file ,test-zo ,list-zo) =err> "access denied"
         ;; timestamp .zo file (needed under Windows):
         (file-or-directory-modify-seconds ,test-zo (current-seconds))
-        ;; loading test gets 'list module declaration via ".zo", thanks
-        ;; to delayed parsing of the bytecode (so this test doesn't work
-        ;; if delay-loading is disabled):
+        ;; loading 'test gets 'list module declaration via ".zo"
         (load/use-compiled ,test-lib) =err> "cannot use linklet loaded with non-original code inspector"
         (delete-file ,test-zo) => (void)
         (delete-file ,test-lib) =err> "`delete' access denied"
@@ -477,7 +478,7 @@
           (when (file-exists? to) (delete-file to))
           (copy-file from to))
         (cp ,list-lib ,test-lib)  (cp ,list-zo ,test-zo)
-        (cp ,list-lib ,test2-lib) (cp ,list-zo   ,test2-zo)
+        (cp ,list-lib ,test2-lib) (cp ,list-zo ,test2-zo)
         ;; bytecode from test-lib is bad, even when we can read/write to it
         (load/use-compiled ,test-zo) =err> "cannot use linklet loaded with non-original code inspector"
         ;; bytecode from test2-lib is explicitly allowed
@@ -574,7 +575,7 @@
    --top--
    (when (custodian-memory-accounting-available?)
      (t --top--
-        (parameterize ([sandbox-eval-limits '(10 5)]
+        (parameterize ([sandbox-eval-limits '(100 5)]
                        [sandbox-memory-limit 100])
           (make-base-evaluator!))
         --eval--

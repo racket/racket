@@ -5,7 +5,8 @@
          "known.rkt"
          "find-known.rkt"
          "mutated-state.rkt"
-         "literal.rkt")
+         "literal.rkt"
+         "fold.rkt")
 
 (provide optimize
          optimize*)
@@ -14,12 +15,14 @@
 ;; on each schemified form, which means that subexpressions of the
 ;; immediate expression have already been optimized.
 
-(define (optimize v prim-knowns knowns imports mutated)
+(define (optimize v prim-knowns primitives knowns imports mutated)
   (match v
     [`(if ,t ,e1 ,e2)
      (if (literal? t)
          (if (unwrap t) e1 e2)
          v)]
+    [`(begin (quote ,_) ,e . ,es) ; avoid `begin` that looks like it provides a name
+     (optimize (reannotate v `(begin ,e . ,es)) prim-knowns primitives knowns imports mutated)]
     [`(not ,t)
      (if (literal? t)
          `,(not (unwrap t))
@@ -45,6 +48,19 @@
             '#t
             v)]
        [else v])]
+    [`(,rator . ,rands)
+     (define u-rator (unwrap rator))
+     (define k (and (symbol? u-rator) (hash-ref prim-knowns u-rator #f)))
+     (cond
+       [(and k
+             (or (known-procedure/folding? k)
+                 (known-procedure/pure/folding? k)
+                 (known-procedure/has-unsafe/folding? k))
+             (for/and ([rand (in-list rands)])
+               (literal? rand))
+             (try-fold-primitive u-rator k rands prim-knowns primitives))
+        => (lambda (l) (car l))]
+       [else v])]
     [`,_
      (define u (unwrap v))
      (cond
@@ -53,7 +69,7 @@
         (cond
           [(and (known-literal? k)
                 (simple-mutated-state? (hash-ref mutated u #f)))
-           (known-literal-expr k)]
+           (wrap-literal (known-literal-value k))]
           ;; Note: we can't do `known-copy?` here, because a copy of
           ;; an imported or exported name will need to be schemified
           ;; to a different name
@@ -62,12 +78,12 @@
 
 ;; ----------------------------------------
 
-;; Recursive optimization --- useful when not fused with schemify,
-;; such as for an initial optimization pass on a definition of a
+;; Recursive optimization on pre-schemified --- useful when not fused with
+;; schemify, such as for an initial optimization pass on a definition of a
 ;; function that can be inlined (where converting away
 ;; `variable-reference-from-unsafe?` is particularly important)
 
-(define (optimize* v prim-knowns knowns imports mutated unsafe-mode?)
+(define (optimize* v prim-knowns primitives knowns imports mutated unsafe-mode?)
   (define (optimize* v)
     (define new-v
       (reannotate
@@ -98,7 +114,7 @@
          [`(,rator ,exps ...)
           `(,(optimize* rator) ,@(optimize*-body exps))]
          [`,_ v])))
-    (optimize new-v prim-knowns knowns imports mutated))
+    (optimize new-v prim-knowns primitives knowns imports mutated))
 
   (define (optimize*-body body)
     (for/list ([v (in-wrap-list body)])

@@ -195,6 +195,10 @@
 (test-sequence [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 6 2))
 (test-sequence [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 2 -2))
 
+;; test malformed in-flvector
+(err/rt-test (for/list ([x (in-flvector)]) x))
+(err/rt-test (in-flvector))
+
 ;; flvector sequence tests
 
 (test-sequence [(1.0 2.0 3.0)] (flvector 1.0 2.0 3.0))
@@ -340,6 +344,23 @@
   (check-equal? (flexpt +nan.0 -0.0) +1.0)
   (check-equal? (flexpt +1.0 +nan.0) +1.0)
   (check-equal? (flexpt -1.0 +nan.0) +nan.0))
+
+;; ----------------------------------------
+
+(test -inf.0 fllog 0.0)
+(test -inf.0 fllog -0.0)
+(test +nan.0 fllog -1.0)
+(test +nan.0 log (fllog -1.0))
+
+(test -0.0 flsqrt -0.0)
+(test +nan.0 log (flsqrt -1.0))
+
+;; ----------------------------------------
+;; Make sure `flvector` is not incorrectly constant-folded
+
+(let ([v (flvector 1.0 2.0 3.0)])
+  (unsafe-flvector-set! v 0 10.0)
+  (test 10.0 'ref (unsafe-flvector-ref v 0)))
 
 ;; ----------------------------------------
 

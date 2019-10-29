@@ -25,4 +25,10 @@
         unsafe-place-local-set!
         unsafe-add-global-finalizer
         unsafe-strip-impersonator
-        prop:unsafe-authentic-override)
+        prop:unsafe-authentic-override
+        set-fs-change-properties!
+        malloc-immobile-cell
+        free-immobile-cell
+        immobile-cell-ref
+        immobile-cell->address
+        address->immobile-cell)

@@ -1,7 +1,7 @@
 #lang racket/base
 (require '#%linklet
          (only-in '#%foreign
-                  make-stubborn-will-executor)
+                  make-late-will-executor)
          "../common/queue.rkt")
 
 ;; Simulate engines by using the host system's threads.
@@ -13,7 +13,7 @@
 (provide register-place-symbol!
          set-io-place-init!)
 
-(define (make-engine thunk prompt-tag init-break-enabled-cell empty-config?)
+(define (make-engine thunk prompt-tag abort-handler init-break-enabled-cell empty-config?)
   (define ready-s (make-semaphore))
   (define s (make-semaphore))
   (define prefix void)
@@ -62,13 +62,15 @@
   (semaphore-wait ready-s)
   (thread-suspend t)
   (semaphore-post s)
-  (define (go ticks next-prefix complete expire)
+  (define (go ticks next-prefix complete-or-expire)
     (set! prefix next-prefix)
     (break-thread t)
     (thread-resume t)
+    (define timeout? #f)
     (define t2
       (thread (lambda ()
                 (sleep (/ ticks 1000000.0))
+                (set! timeout? #t)
                 (thread-suspend t))))
     ;; Limited break propagation while syncing:
     (call-with-exception-handler
@@ -83,9 +85,9 @@
        (sync t t2 (thread-suspend-evt t))))
     (cond
      [(thread-dead? t)
-      (apply complete 0 results)]
+      (complete-or-expire #f results 0)]
      [else
-      (expire go)]))
+      (complete-or-expire go #f (if timeout? 0 10))]))
   go)
 
 (define (engine-block)
@@ -93,6 +95,9 @@
 
 (define (engine-timeout)
   (void))
+
+(define (call-with-engine-completion proc)
+  (proc values))
 
 (define ctl-c-handler #f)
 
@@ -120,8 +125,8 @@
 (define (make-will-executor/notify notify)
   (do-make-will-executor/notify make-will-executor notify))
 
-(define (make-stubborn-will-executor/notify notify)
-  (do-make-will-executor/notify make-stubborn-will-executor notify))
+(define (make-late-will-executor/notify notify [keep? #t])
+  (do-make-will-executor/notify make-late-will-executor notify))
 
 (define (will-register/notify we/n v proc)
   (will-register (will-executor/notify-we we/n)
@@ -149,7 +154,7 @@
     [(v) (unsafe-place-local-set! l v)]))
 
 (define initial-place-local-table (make-hasheq))
-(define place-local-table (make-parameter initial-place-local-table))
+(define place-local-table (make-parameter initial-place-local-table #f 'place-local-table))
 
 (define (unsafe-make-place-local v)
   (define key (vector v 'place-locale))
@@ -223,21 +228,22 @@
                   'unsafe-place-local-set! unsafe-place-local-set!
                   'unsafe-add-global-finalizer (lambda (v proc) (void))
                   'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
-                  'break-enabled-key break-enabled-key))
+                  'break-enabled-key break-enabled-key
+                  'engine-block engine-block))
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
-                  'engine-block engine-block
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
+                  'call-with-engine-completion call-with-engine-completion
                   'current-process-milliseconds current-process-milliseconds
                   'set-ctl-c-handler! set-ctl-c-handler!
                   'set-break-enabled-transition-hook! void
                   'continuation-marks continuation-marks ; doesn't work on engines
                   'poll-will-executors poll-will-executors
                   'make-will-executor make-will-executor/notify
-                  'make-stubborn-will-executor make-stubborn-will-executor/notify
+                  'make-late-will-executor make-late-will-executor/notify
                   'will-executor? will-executor/notify?
                   'will-register will-register/notify
                   'will-try-execute will-try-execute/notify
@@ -274,11 +280,12 @@
                   'condition-broadcast (lambda args
                                          (error "condition-broadcast: not ready"))
                   'threaded? (lambda () #f)
-                  'current-engine-state (lambda args
-                                          (error "current-engine state: not ready"))
                   'make-mutex (lambda () (make-semaphore 1))
                   'mutex-acquire (lambda (s) (semaphore-wait s))
-                  'mutex-release (lambda (s) (semaphore-post s))))
+                  'mutex-release (lambda (s) (semaphore-post s))
+                  'call-as-asynchronous-callback (lambda (thunk) (thunk))
+                  'post-as-asynchronous-callback (lambda (thunk) (thunk))
+                  'continuation-current-primitive (lambda (k) #f)))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

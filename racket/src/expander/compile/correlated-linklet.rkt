@@ -53,7 +53,7 @@
 
 (define correlated-linklet-vm-bytes #"linklet")
 
-(struct faslable-correlated (e source position line column span name)
+(struct faslable-correlated (e source position line column span props)
   #:prefab)
 
 (struct faslable-correlated-linklet (expr name)
@@ -81,7 +81,14 @@
       (correlated-line v)
       (correlated-column v)
       (correlated-span v)
-      (correlated-property v 'inferred-name))]
+      (for/fold ([ht #f]) ([k (in-list '(inferred-name
+                                         undefined-error-name
+                                         method-arity-error
+                                         compiler-hint:cross-module-inline))])
+        (define p (correlated-property v k))
+        (if p
+            (hash-set (or ht '#hasheq()) k p)
+            ht)))]
     [(hash? v)
      (cond
        [(hash-eq? v)
@@ -101,7 +108,7 @@
 ;; ----------------------------------------
 
 (define (read-correlated-linklet-bundle-hash in)
-  (faslable-> (fasl->s-exp in)))
+  (faslable-> (fasl->s-exp in #:datum-intern? #t)))
 
 (define (faslable-> v)
   (cond
@@ -113,7 +120,7 @@
          v
          (cons a d))]
     [(faslable-correlated? v)
-     (define name (faslable-correlated-name v))
+     (define props (faslable-correlated-props v))
      (define c (datum->correlated (faslable-> (faslable-correlated-e v))
                                   (vector
                                    (faslable-correlated-source v)
@@ -121,8 +128,9 @@
                                    (faslable-correlated-column v)
                                    (faslable-correlated-position v)
                                    (faslable-correlated-span v))))
-     (if name
-         (correlated-property c 'inferred-name name)
+     (if props
+         (for/fold ([c c]) ([(k p) (in-hash props)])
+           (correlated-property c k p))
          c)]
     [(hash? v)
      (cond

@@ -84,7 +84,10 @@
        (correlated-property a key)))
 
 (define (wrap-property-set a key val)
-  (correlated-property a key val))
+  (let ([a (if (correlated? a)
+               a
+               (datum->correlated #f a #f #f))])
+    (correlated-property a key val)))
 
 (define (wrap-source a)
   (cond

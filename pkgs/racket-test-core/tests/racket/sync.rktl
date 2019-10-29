@@ -347,6 +347,20 @@
 (test #f handle-evt? (wrap-evt always-evt void))
 (test #f handle-evt? (choice-evt (wrap-evt always-evt void) (wrap-evt always-evt void)))
 
+(let ()
+  (define (check-handle evt)
+    (test 'yes 'handle-evt-tail
+          (with-continuation-mark
+           'here 'yes
+           (sync (handle-evt evt
+                             (lambda (v)
+                               (call-with-immediate-continuation-mark
+                                'here
+                                (lambda (v) v))))))))
+  (check-handle always-evt)
+  (let ([t (thread (lambda () (void)))])
+    (check-handle (thread-dead-evt t))))
+
 ;; ----------------------------------------
 ;; Nack waitables
 
@@ -565,6 +579,15 @@
                                   (test #f values poll?)
                                   s))
                 (make-semaphore))))
+
+(let ()
+  (define k #f)
+  (test always-evt sync (poll-guard-evt
+                         (lambda (poll?)
+                           (let/cc now-k
+                             (set! k now-k))
+                           always-evt)))
+  (err/rt-test (k 10)))
 
 ;; ----------------------------------------
 ;; Replace waitables
@@ -1004,6 +1027,15 @@
                                 (unsafe-poll-ctx-milliseconds-wakeup wakeups (current-inexact-milliseconds)))
                               (values #f self)]))))
   (test #t sync (p)))
+
+(let ()
+  (struct not-ever-evt ()
+    #:property prop:evt
+    (unsafe-poller
+     (lambda (self wakeups)
+       (printf "~s\n" wakeups)
+       (values #f never-evt))))
+  (test #f sync/timeout 0 (not-ever-evt)))
 
 ;; ----------------------------------------
 ;;  Garbage collection
@@ -1518,6 +1550,22 @@
   (thread-resume t)
   (void (sync t))
   (test 'ok values v))
+
+;; ----------------------------------------
+;; Try to make a semaphore-post succeed at exactly
+;; the same time that a `sync/timeout` times out
+
+(for ([i 10])
+  (define s (make-semaphore))
+  (define t (thread
+             (lambda ()
+               (sleep (- 0.1 (* 0.001 (random))))
+               (semaphore-post s))))
+  (define r (sync/timeout 0.1 s))
+  (unless r
+    ;; This will get stuck if the success of time sync got lost
+    (sync s))
+  (thread-wait t))
 
 ;; ----------------------------------------
 

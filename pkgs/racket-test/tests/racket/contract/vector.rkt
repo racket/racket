@@ -275,4 +275,24 @@
    'vectorof-or/c-first-order-pass
    '(contract (or/c (vectorof integer?) (vectorof string?)) (vector 1) 'pos 'neg))
 
-  )
+  (test/spec-passed/result
+   'vector-error-message.1
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"promised a vector\n"
+                                                     (exn-message x)))])
+      (contract (vector/c any/c #:immutable #f) 5 'pos 'neg)
+      "no exn")
+   #t)
+
+  (test/spec-passed/result
+   'vector-error-message.2
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"promised an immutable vector\n"
+                                                     (exn-message x)))])
+      (contract (vector/c any/c #:immutable #t) (vector 1) 'pos 'neg))
+   #t)
+
+  (test/spec-passed/result
+   'vector-error-message.3
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"promised a mutable vector\n"
+                                                     (exn-message x)))])
+      (contract (vector/c any/c #:immutable #f) (vector-immutable 1) 'pos 'neg))
+   #t))

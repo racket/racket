@@ -14,7 +14,6 @@ mainsrcdir = @srcdir@/../..
 CC = @CC@
 CXX = @CXX@
 RANLIB = @RANLIB@
-NICEAR = $(srcdir)/../../utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 
@@ -27,7 +26,7 @@ SRCS =  $(srcdir)/sgc.c
 
 ../libmzgc.@LIBSFX@: $(OBJS)
 	$(MAKE) gcobjects
-	$(NICEAR) $(AR) $(ARFLAGS) ../libmzgc.@LIBSFX@ $(OBJS)
+	$(AR) $(ARFLAGS) ../libmzgc.@LIBSFX@ $(OBJS)
 	$(RANLIB) ../libmzgc.@LIBSFX@
 
 test: $(OBJS) test.@LTO@

@@ -4,6 +4,7 @@
          "header.rkt"
          "eager-instance.rkt"
          "reserved-symbol.rkt"
+         "correlated-linklet.rkt"
          "../host/linklet.rkt")
 
 (provide build-shared-data-linklet)
@@ -21,7 +22,8 @@
 ;; compilation. See "../eval/multi-top.rkt" for that part, which is
 ;; the run-time complement to the encoding here.
 
-(define (build-shared-data-linklet cims ns)
+(define (build-shared-data-linklet cims ns
+                                   #:to-correlated-linklet? to-correlated-linklet?)
   ;; Gather all mpis:
   (define mpis (make-module-path-index-table))
   (define mpi-trees
@@ -64,7 +66,7 @@
       ,@(for/list ([phase-to-link-module-uses (in-list (reverse module-uses-tables))])
           (serialize-phase-to-link-module-uses phase-to-link-module-uses mpis))))
   
-  (compile-linklet
+  (define linklet-s
    `(linklet
      ;; imports
      (,deserialize-imports
@@ -82,7 +84,11 @@
      (define-values (phase-to-link-modules-vector) ,phase-to-link-module-uses-expr)
      (define-values (phase-to-link-modules-trees) ',phase-to-link-module-uses-trees)
      (define-values (syntax-literals) ,syntax-literals-expr)
-     (define-values (syntax-literals-trees) ',syntax-literals-trees))))
+     (define-values (syntax-literals-trees) ',syntax-literals-trees)))
+
+  (if to-correlated-linklet?
+      (make-correlated-linklet linklet-s #f)
+      (compile-linklet linklet-s)))
 
 ;; ----------------------------------------
 

@@ -208,6 +208,8 @@
            (untgz (open-input-bytes bad-tar.gz) #:filter (lambda args #f))))))
 
 (module+ main (tests))
+;; Use "main.rkt" with `raco test`, instead of this file
+
 (define (tests)
   (test do (untar-tests)
         do (unzip-tests)

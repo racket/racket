@@ -119,8 +119,8 @@
 (module check-wrong-arity-many-arguments racket/base
     ((lambda (a b c d e f g h i j k l m n o p q r s t u v w x y)
        1)))
-(err/rt-test (dynamic-require ''check-wrong-arity-many-arguments #f)
-             exn:fail:contract:arity?)
+(err/rt-test/once (dynamic-require ''check-wrong-arity-many-arguments #f)
+                  exn:fail:contract:arity?)
 
 (err/rt-test (letrec ([not-ready not-ready]) 5)
              (lambda (exn)
@@ -715,6 +715,7 @@
 (test 5 'let* (let* ([x 4][x 5]) x))
 (error-test-let #'(() (define x 10)))
 (error-test-let #'(() (define x 10) (define y 20)))
+(error-test-let #'(() 8 (define-syntax-rule (m) 10)))
 
 (define (do-error-test-let-values/no-* expr syntax-test)
   (syntax-test (datum->syntax #f (cons 'let-values expr) #f))
@@ -2221,6 +2222,38 @@
           (begin
             (define x (param))))
         x))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check interpreted `begin0`, 0 results, and
+;; non-0 results along the way
+
+;; This is a regression test for a bug that caused a crash
+(let ()
+  (define f
+    (impersonate-procedure
+     (λ (x) #f)
+     (λ (x) (values (λ (x) x) x))))
+
+  (call-with-values
+   (λ ()
+     (begin0
+       ((lambda (pos)
+          (set! pos pos)
+          (values))
+        0)
+       (f #f)))
+   (λ args (void))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `compile` works on non-serializable
+
+(let ([c (compile (let ([c #f])
+                    (lambda (v)
+                      (begin0 c (set! c v)))))])
+  (test #t values (compiled-expression? c))
+  (test #t procedure? (eval c))
+  (err/rt-test (write c (open-output-bytes))
+               exn:fail?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

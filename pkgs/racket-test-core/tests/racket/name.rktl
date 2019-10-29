@@ -13,6 +13,8 @@
 (test #f object-name 'hello)
 (test #f object-name "hi")
 
+(test 'eval object-name eval)
+
 (define (src-name? s)
   (and (symbol? s)
        (regexp-match ":[0-9]+.[0-9]+$" (symbol->string s))
@@ -27,6 +29,24 @@
 ; Test constructs that don't provide a name
 (test #t src-name? (object-name (let ([x (cons (lambda () 10) 0)]) (car x))))
 (test #t src-name? (object-name (let ([x (let ([y (lambda (x) x)]) (y (lambda () 10)))]) x)))
+
+(define (false-or-unknown? v)
+  (or (not v)
+      (eq? v 'unknown)))
+
+; Test constructs that provide no name and no source location
+(test #t false-or-unknown? (let-syntax ([no-name (lambda (s)
+                                                   (datum->syntax #'here `(lambda (x) x)))])
+                             (object-name (no-name))))
+(test #t false-or-unknown? (let-syntax ([no-name (lambda (s)
+                                                   (datum->syntax #'here `(lambda ([x #f]) x)))])
+                             (object-name (no-name))))
+(test #t false-or-unknown? (let-syntax ([no-name (lambda (s)
+                                                   (datum->syntax #'here `(lambda (#:x x) x)))])
+                             (object-name (no-name))))
+(test #t false-or-unknown? (let-syntax ([no-name (lambda (s)
+                                                   (datum->syntax #'here `(lambda (#:x [x #f]) x)))])
+                             (object-name (no-name))))
 
 ; Test ok when name for proc
 (define f (lambda () 0))
@@ -106,6 +126,9 @@
   (test (string->symbol "CP")
 	object-name
 	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)"))))
+  (test (string->symbol "mk-CP")
+	object-name
+	(eval (read (open-input-string "(let () (struct CP (a) #:constructor-name mk-CP) mk-CP)"))))
   (test (string->symbol "CP?")
 	object-name
 	(eval (read (open-input-string "(let () (define-struct CP (a)) CP?)"))))
@@ -169,5 +192,13 @@
             (define x 8)
             (m)))
         norm))
+
+(test 'one object-name (let ([one (lambda args #f)]) (make-keyword-procedure one)))
+(test 'two object-name (let ([one (lambda args #f)]
+                             [two (lambda args #f)])
+                         (make-keyword-procedure one two)))
+(test #t false-or-unknown? (let-syntax ([no-name (lambda (s)
+                                                   (datum->syntax #'here '(lambda args #f)))])
+                             (object-name (make-keyword-procedure (no-name)))))
 
 (report-errs)

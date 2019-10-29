@@ -39,7 +39,7 @@
             blame
             #:missing-party neg-party
             val
-            '(expected "an mutable vector" given: "~e")
+            '(expected "a mutable vector" given: "~e")
             val)]
           [else #f])]
        [else #t])]
@@ -48,7 +48,7 @@
       blame
       #:missing-party neg-party
       val
-      '(expected "an immutable vector" given: "~e")
+      '(expected "a vector" given: "~e")
       val)]
     [else #f]))
 

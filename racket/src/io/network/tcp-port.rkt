@@ -63,7 +63,8 @@
         [name name]
         [fd fd]
         [fd-refcount fd-refcount]
-        [buffer-mode 'block])))
+        [buffer-mode 'block])
+   #:plumber #f))
 
 ;; ----------------------------------------
 

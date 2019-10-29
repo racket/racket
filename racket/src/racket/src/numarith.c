@@ -124,9 +124,9 @@ void scheme_init_numarith(Scheme_Startup_Env *env)
 
   p = scheme_make_folding_prim(scheme_abs, "abs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_WANTS_NUMBER
+                                                            | SCHEME_PRIM_WANTS_REAL
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
-                                                            | SCHEME_PRIM_PRODUCES_NUMBER
+                                                            | SCHEME_PRIM_PRODUCES_REAL
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
   scheme_addto_prim_instance("abs", p, env);
   

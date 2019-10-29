@@ -16,7 +16,8 @@
          "file-port.rkt"
          "file-stream.rkt"
          (only-in "fd-port.rkt"
-                  terminal-port?)
+                  terminal-port?
+                  port-waiting-peer?)
          "file-identity.rkt"
          "file-lock.rkt"
          "bytes-port.rkt"
@@ -112,6 +113,7 @@
 
          file-stream-port?
          terminal-port?
+         port-waiting-peer?
 
          open-input-bytes
          open-output-bytes

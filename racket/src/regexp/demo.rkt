@@ -160,6 +160,10 @@
        #"aB"
        1)
 
+(check #"\\p{^Ll}"
+       #"aB"
+       1)
+
 (check #".*"
        #"abaacacaaacacaaacd"
        100000)

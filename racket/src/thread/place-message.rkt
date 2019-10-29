@@ -31,7 +31,10 @@
         (symbol? v)
         (and (or (string? v)
                  (bytes? v))
-             (or (not direct?) (immutable? v)))
+             (or (not direct?)
+                 (immutable? v)
+                 (and (bytes? v)
+                      (place-shared? v))))
         (null? v)
         (and (pair? v)
              (or (hash-ref graph v #f)
@@ -42,25 +45,29 @@
              (or (not direct?)
                  (and (immutable? v)
                       (not (impersonator? v))))
-             (let ([graph (hash-set graph v #t)])
-               (for/and ([e (in-vector v)])
-                 (loop e graph))))
+             (or (hash-ref graph v #f)
+                 (let ([graph (hash-set graph v #t)])
+                   (for/and ([e (in-vector v)])
+                     (loop e graph)))))
         (and (immutable-prefab-struct-key v)
-             (let ([graph (hash-set graph v #t)])
-               (for/and ([e (in-vector (struct->vector v))])
-                 (loop e graph))))
+             (or (hash-ref graph v #f)
+                 (let ([graph (hash-set graph v #t)])
+                   (for/and ([e (in-vector (struct->vector v))])
+                     (loop e graph)))))
         (and (hash? v)
              (or (not direct?)
                  (and (immutable? v)
                       (not (impersonator? v))))
-             (let ([graph (hash-set graph v #t)])
-               (for/and ([(k v) (in-hash v)])
-                 (and (loop k graph)
-                      (loop v graph)))))
+             (or (hash-ref graph v #f)
+                 (let ([graph (hash-set graph v #t)])
+                   (for/and ([(k v) (in-hash v)])
+                     (and (loop k graph)
+                          (loop v graph))))))
         (and (not direct?)
              (or (cpointer? v)
                  (and (or (fxvector? v)
-                          (flvector? v))
+                          (flvector? v)
+                          (bytes? v))
                       (place-shared? v))
                  (and (place-message? v)
                       ((place-message-ref v) v)
@@ -80,12 +87,14 @@
 (define (message-ize v fail)
   (define graph #f)
   (define used #f)
-  (define (maybe-ph ph v)
-    (if (and used (hash-ref used ph #f))
-        (begin
-          (placeholder-set! ph v)
-          ph)
-        v))
+  (define (maybe-ph ph v new-v)
+    (cond
+      [(and used (hash-ref used ph #f))
+       (placeholder-set! ph new-v)
+       ph]
+      [else
+       (hash-remove! graph v)
+       new-v]))
   (define new-v
     (let loop ([v v])
       (cond
@@ -100,7 +109,9 @@
         [(string? v)
          (string->immutable-string v)]
         [(bytes? v)
-         (bytes->immutable-bytes v)]
+         (if (place-shared? v)
+             v
+             (bytes->immutable-bytes v))]
         [else
          (unless graph (set! graph (make-hasheq)))
          (cond
@@ -112,19 +123,20 @@
            [(pair? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
-            (maybe-ph ph (cons (loop (car v))
-                               (loop (cdr v))))]
+            (maybe-ph ph v (cons (loop (car v))
+                                 (loop (cdr v))))]
            [(vector? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
-            (maybe-ph ph (for/vector #:length (vector-length v) ([e (in-vector v)])
-                           (loop e)))]
+            (maybe-ph ph v (for/vector #:length (vector-length v) ([e (in-vector v)])
+                             (loop e)))]
            [(immutable-prefab-struct-key v)
             => (lambda (k)
                  (define ph (make-placeholder #f))
                  (hash-set! graph v ph)
                  (maybe-ph
                   ph
+                  v
                   (apply make-prefab-struct
                          k
                          (for/list ([e (in-vector (struct->vector v) 1)])
@@ -132,16 +144,19 @@
            [(hash? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
-            (cond
-              [(hash-eq? v)
-               (for/hasheq ([(k v) (in-hash v)])
-                 (values (loop k) (loop v)))]
-              [(hash-eqv? v)
-               (for/hasheqv ([(k v) (in-hash v)])
-                 (values (loop k) (loop v)))]
-              [else
-               (for/hash ([(k v) (in-hash v)])
-                 (values (loop k) (loop v)))])]
+            (maybe-ph
+             ph
+             v
+             (cond
+               [(hash-eq? v)
+                (for/hasheq ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]
+               [(hash-eqv? v)
+                (for/hasheqv ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]
+               [else
+                (for/hash ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]))]
            [(cpointer? v)
             (ptr-add v 0)]
            [(and (or (fxvector? v)

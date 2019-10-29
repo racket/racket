@@ -2115,7 +2115,7 @@ Scheme_Object *scheme_bytes_to_integer(char *str, int slen, int sgned, int rshft
   switch(slen) {
   case 1:
     if (sgned) {
-      char val;
+      signed char val;
       memcpy(&val, str, sizeof(char));
       return scheme_make_integer(val);
     } else {

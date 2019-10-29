@@ -62,6 +62,7 @@
                      [l (regexp-replace #rx"^XFORM_NONGCING " l "")]
                      [l (regexp-replace #rx"^XFORM_NONGCING_NONALIASING " l "")]
                      [l (regexp-replace #rx"^MZ_EXTERN " l "")]
+                     [l (regexp-replace #rx"^MZ_NORETURN " l "")]
                      [l (regexp-replace #rx"^THREAD_LOCAL " l "")]
                      [l2 (regexp-replace #rx"^volatile " l "")]
                      [volatile (if (equal? l l2) "" "volatile ")]

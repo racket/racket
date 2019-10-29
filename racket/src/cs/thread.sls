@@ -10,10 +10,9 @@
                   [unsafe-place-local-set! rumble:unsafe-place-local-set!]
                   ;; These are extracted via `#%linklet`:
                   [make-engine rumble:make-engine]
-                  [engine-block rumble:engine-block]
                   [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
-                  [current-engine-state rumble:current-engine-state]
+                  [call-with-engine-completion rumble:call-with-engine-completion]
                   [make-condition rumble:make-condition]
                   [condition-wait rumble:condition-wait]
                   [condition-signal rumble:condition-signal]
@@ -29,39 +28,56 @@
                   [get-thread-id rumble:get-thread-id]
                   [get-initial-pthread rumble:get-initial-pthread]
                   [current-place-roots rumble:current-place-roots]
+                  [call-as-asynchronous-callback rumble:call-as-asynchronous-callback]
+                  [post-as-asynchronous-callback rumble:post-as-asynchronous-callback]
                   [set-ctl-c-handler! rumble:set-ctl-c-handler!]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]
                   [set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!]
                   [set-custodian-memory-use-proc! rumble:set-custodian-memory-use-proc!]
-                  [set-immediate-allocation-check-proc! rumble:set-immediate-allocation-check-proc!]))
+                  [set-immediate-allocation-check-proc! rumble:set-immediate-allocation-check-proc!]
+                  [continuation-current-primitive rumble:continuation-current-primitive]))
 
   (include "place-register.ss")
   (define-place-register-define place:define thread-register-start thread-register-count)
   
-  ;; Special handling of `current-atomic`: use the last virtual register;
-  ;; we rely on the fact that the register's default value is 0.
+  ;; Special handling of `current-atomic` to use the last virtual register, and
+  ;; similarr for other. We rely on the fact that the register's default value is 0
+  ;; or the rumble layer installs a suitable default. Also, force inline a few
+  ;; functions and handle other special cases.
   (define-syntax (define stx)
-    (syntax-case stx (current-atomic end-atomic-callback make-pthread-parameter unsafe-make-place-local)
-      ;; Recognize definition of `current-atomic`:
-      [(_ current-atomic (make-pthread-parameter 0))
-       (with-syntax ([(_ id _) stx]
-                     [n (datum->syntax #'here (- (virtual-register-count) 1))])
-         #'(define-syntax id
-             (syntax-rules ()
-               [(_) (virtual-register n)]
-               [(_ v) (set-virtual-register! n v)])))]
-      ;; Recognize definition of `end-atomic-callback`:
-      [(_ end-atomic-callback (make-pthread-parameter 0))
-       (with-syntax ([(_ id _) stx]
-                     [n (datum->syntax #'here (- (virtual-register-count) 2))])
-         #'(define-syntax id
-             (syntax-rules ()
-               [(_) (virtual-register n)]
-               [(_ v) (set-virtual-register! n v)])))]
-      ;; Workaround for redirected access of `unsafe-make-place-local` from #%pthread:
-      [(_ alias-id unsafe-make-place-local) #'(begin)]
-      ;; Chain to place-register handling:
-      [(_ . rest) #'(place:define . rest)]))
+    (let ([define-as-virtual-register
+            (lambda (stx n)
+              (with-syntax ([(_ id _) stx]
+                            [n (datum->syntax #'here n)])
+                #'(define-syntax id
+                    (syntax-rules ()
+                      [(_) (virtual-register n)]
+                      [(_ v) (set-virtual-register! n v)]))))])
+      (syntax-case stx (current-atomic end-atomic-callback current-future$1
+                                       lambda make-pthread-parameter unsafe-make-place-local)
+        ;; Recognize definition of `current-atomic`:
+        [(_ current-atomic (make-pthread-parameter 0))
+         (define-as-virtual-register stx current-atomic-virtual-register)]
+        ;; Recognize definition of `end-atomic-callback`:
+        [(_ end-atomic-callback (make-pthread-parameter 0))
+         (define-as-virtual-register stx end-atomic-virtual-register)]
+        ;; Recognize definition of `current-future`:
+        [(_ current-future$1 (make-pthread-parameter #f))
+         (define-as-virtual-register stx current-future-virtual-register)]
+        ;; Force-inline `start-atomic`, `end-atomic`, and `future-barrier`,
+        ;; at least within the core layers:
+        [(_ id (lambda () expr ...))
+         (#%memq (syntax->datum #'id) '(start-atomic end-atomic future-barrier))
+         #'(begin
+             (define proc (let ([id (lambda () expr ...)]) id))
+             (define-syntax (id stx)
+               (syntax-case stx ()
+                 [(_) #'(let () expr ...)]
+                 [_ #'proc])))]
+        ;; Workaround for redirected access of `unsafe-make-place-local` from #%pthread:
+        [(_ alias-id unsafe-make-place-local) #'(begin)]
+        ;; Chain to place-register handling:
+        [(_ . rest) #'(place:define . rest)])))
 
   ;; This implementation of `sleep`, `get-wakeup-handle`, and `wakeup` is relevant
   ;; only for running the places part of the thread demo. The relevant callbacks get
@@ -98,13 +114,14 @@
       [(|#%pthread|)
        ;; Entries in the `#%pthread` table are referenced more
        ;; directly in "compiled/thread.scm". To make that work, the
-       ;; entries need to be registered as built-in names with the
-       ;; expander, and they need to be listed in
-       ;; "primitives/internal.ss".
+       ;; entries need to be either primitives in all Racket
+       ;; implemenations or registered as built-in names with the
+       ;; expander and listed in "primitive/internal.ss".
        (hasheq
         'make-pthread-parameter make-pthread-parameter
         'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
         'break-enabled-key break-enabled-key
+        'engine-block engine-block
         ;; These are actually redirected by "place-register.ss", but
         ;; we list them here for compatibility with the bootstrapping
         ;; variant of `#%pthread`
@@ -114,14 +131,13 @@
       [(|#%engine|)
        (hasheq
         'make-engine rumble:make-engine
-        'engine-block rumble:engine-block
         'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
-        'current-engine-state (lambda (v) (rumble:current-engine-state v))
+        'call-with-engine-completion rumble:call-with-engine-completion
         'set-ctl-c-handler! rumble:set-ctl-c-handler!
         'poll-will-executors poll-will-executors
         'make-will-executor rumble:make-will-executor
-        'make-stubborn-will-executor rumble:make-stubborn-will-executor
+        'make-late-will-executor rumble:make-late-will-executor
         'will-executor? rumble:will-executor?
         'will-register rumble:will-register
         'will-try-execute rumble:will-try-execute
@@ -148,6 +164,8 @@
         'call-with-current-pthread-continuation call/cc
         'exit place-exit
         'pthread? rumble:thread?
+        'call-as-asynchronous-callback rumble:call-as-asynchronous-callback
+        'post-as-asynchronous-callback rumble:post-as-asynchronous-callback
         'get-thread-id rumble:get-thread-id
         'make-condition rumble:make-condition
         'condition-wait rumble:condition-wait
@@ -156,7 +174,8 @@
         'make-mutex rumble:make-mutex
         'mutex-acquire rumble:mutex-acquire
         'mutex-release rumble:mutex-release
-        'threaded? rumble:threaded?)]
+        'threaded? rumble:threaded?
+        'continuation-current-primitive rumble:continuation-current-primitive)]
       [else #f]))
 
   ;; Tie knots:
@@ -171,13 +190,12 @@
      (|#%app| (|#%app| 1/exit-handler) v)))
 
   (set-scheduler-lock-callbacks! (lambda () (1/make-semaphore 1))
-                                 1/semaphore-wait
-                                 1/semaphore-post)
+                                 unsafe-semaphore-wait
+                                 unsafe-semaphore-post)
 
   (set-scheduler-atomicity-callbacks! (lambda ()
                                         (current-atomic (fx+ (current-atomic) 1)))
                                       (lambda ()
                                         (current-atomic (fx- (current-atomic) 1))))
 
-  (set-future-callbacks! 1/future? 1/current-future
-                         future-block future-wait current-future-prompt))
+  (set-future-callbacks! future-block future-sync current-future-prompt))

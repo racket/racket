@@ -151,11 +151,11 @@
                                  (hash-ref seen-defns (car (defn-syms d)) #f))
                     #:break (not (safe-defn-or-expr? d))
                     #:when (defn? d))
-               (add-defn-known! seen-defns (defn-syms d) (defn-rhs d)))
+               (add-defn-known! seen-defns all-mutated-vars (defn-syms d) (defn-rhs d)))
              (define e (car body))
              (define new-defn 
                (list 'define-values (defn-syms e) (simplify-expr (defn-rhs e) all-mutated-vars safe-ref? seen-defns)))
-             (add-defn-known! seen-defns (defn-syms e) (defn-rhs e))
+             (add-defn-known! seen-defns all-mutated-vars (defn-syms e) (defn-rhs e))
              (cons new-defn (loop (cdr body)))]
             [else
              (define e

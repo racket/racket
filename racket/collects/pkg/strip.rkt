@@ -224,18 +224,20 @@
        [(and keep? (file-exists? old-p))
         (when drop-all-by-default?
           (make-directory* (path-only new-p)))
-        (copy-file old-p new-p)
-        (file-or-directory-modify-seconds
-         new-p
-         (file-or-directory-modify-seconds old-p))
+        (unless (equal? old-p new-p)
+          (copy-file old-p new-p)
+          (file-or-directory-modify-seconds
+           new-p
+           (file-or-directory-modify-seconds old-p)))
         (fixup new-p path base level)]
        [(directory-exists? old-p)
         (define-values (new-drops new-keeps)
           (add-drop+keeps old-p p drops keeps))
-        (when keep?
-          (if drop-all-by-default?
-              (make-directory* new-p)
-              (make-directory new-p)))
+        (unless (equal? old-p new-p)
+          (when keep?
+            (if drop-all-by-default?
+                (make-directory* new-p)
+                (make-directory new-p))))
         (explore p
                  (directory-list old-p)
                  new-drops
@@ -243,6 +245,7 @@
                  (not keep?)
                  next-level)]
        [keep? (error 'strip "file or directory disappeared?")]
+       [(equal? old-p new-p) (delete-directory/files old-p)]
        [else (void)])))
 
   (define-values (drops keeps)

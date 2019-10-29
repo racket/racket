@@ -177,10 +177,6 @@ With @racket[require] specifications at the top of the implementation
 @; -----------------------------------------------------------------------------
 @subsection{Provide}
 
-@(define 1/2-line
-   @t{---------------------------------})
-
-
 A module's interface describes the services it provides; its body
  implements these services. Others have to read the interface if the
  external documentation doesn't suffice:
@@ -211,7 +207,7 @@ This helps people find the relevant information quickly.
   ;; tree traversal
   ai-strategy)
 
- (code:comment #, @1/2-line)
+ (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
  (require "basics.rkt")
@@ -236,7 +232,7 @@ This helps people find the relevant information quickly.
  ;; This module implements
  ;; several strategies.
 
- (code:comment #, @1/2-line)
+ (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
  (require "basics.rkt")
@@ -323,8 +319,9 @@ Pick a rule for consistently naming and ordering the parameters of your
 Finally pick the same name for all function/method arguments in a module
  that refer to the same kind of data---regardless of whether the module
  implements a common data structure. For example, in
- @filepath{collects/setup/scribble}, all functions use @racket[latex-dest]
- to refer to the same kind of data, even those that are not exported.
+ @hyperlink["https://github.com/racket/racket/blob/master/pkgs/racket-index/setup/scribble.rkt"]{@filepath{pkgs/racket-index/setup/scribble.rkt}},
+ all functions use @racket[latex-dest] to refer to the same kind of data, 
+ even those that are not exported.
 
 @subsection{Sections and Sub-modules}
 
@@ -530,3 +527,4 @@ recursive fashion, submodule contract boundaries cannot enforce constraints
 on mutually recursive functions. It would thus be impossible to distribute
 the @racket[find-path] and @racket[find-path*] functions from the preceding
 code display into two distinct submodules.
+

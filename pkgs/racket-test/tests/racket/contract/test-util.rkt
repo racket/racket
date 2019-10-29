@@ -351,7 +351,8 @@
 
 ;; blame : (or/c 'pos 'neg string?)
 ;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
-(define (test/spec-failed name expression blame)
+;;   if header-of-message is a string, look for it at the start of the message
+(define (test/spec-failed name expression blame #:header-of-message [header-of-message #f])
   (define (has-proper-blame? msg)
     (define reg
       (cond
@@ -360,6 +361,11 @@
         [(string? blame) (string-append "blaming: " (regexp-quote blame))]
         [else #f]))
     (and reg (regexp-match? reg msg)))
+  (define (has-right-header? msg)
+    (cond
+      [header-of-message
+       (regexp-match? (format "^[^\n]*~a\n" (regexp-quote header-of-message)) msg)]
+      [else #t]))
   (contract-eval
    #:test-case-name name
    `(,test-an-error
@@ -368,7 +374,8 @@
      ',expression
      (lambda (exn)
        (and (exn:fail:contract:blame? exn)
-            (,has-proper-blame? (exn-message exn))))))
+            (,has-proper-blame? (exn-message exn))
+            (,has-right-header? (exn-message exn))))))
   (define (rewrite-test wrapper wrapper-name short-wrapper-name)
     (unless (member short-wrapper-name (contract-rewrite-tests-to-skip))
       (let/ec k
@@ -381,12 +388,17 @@
              ',rewritten
              (lambda (exn)
                (and (exn:fail:contract:blame? exn)
-                    (,has-proper-blame? (exn-message exn))))))))))
+                    (,has-proper-blame? (exn-message exn))
+                    (,has-right-header? (exn-message exn))))))))))
   (rewrite-test rewrite-to-add-opt/c  "rewrite-to-add-opt/c"   "opt/c")
   (rewrite-test rewrite-to-multi-wrap "rewrite-to-double-wrap" "double"))
 
-(define (test/pos-blame name expression) (test/spec-failed name expression 'pos))
-(define (test/neg-blame name expression) (test/spec-failed name expression 'neg))
+(define (test/pos-blame name expression #:header-of-message [header-of-message #f])
+  (test/spec-failed name expression 'pos
+                    #:header-of-message header-of-message))
+(define (test/neg-blame name expression #:header-of-message [header-of-message #f])
+  (test/spec-failed name expression 'neg
+                    #:header-of-message header-of-message))
 
 (define-syntax (ctest/rewrite stx)
   (syntax-case stx ()

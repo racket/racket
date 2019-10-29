@@ -266,18 +266,29 @@ reverse order: @litchar{#b}, @litchar{#o}, @litchar{#d}, or
 @litchar{#x} followed by @litchar{#e} or @litchar{#i}.
 
 An @nunterm{exponent-mark} in an inexact number serves both to specify
-an exponent and to specify a numerical precision. If single-precision
-IEEE floating point is supported (see @secref["numbers"]), the marks
-@litchar{f} and @litchar{s} specify single-precision. Otherwise, or
-with any other mark, double-precision IEEE floating point is used.
-In addition, single- and double-precision specials are distinct;
-specials with the @litchar{.0} suffix, like @racket[-nan.0] are
-double-precision, whereas specials with the @litchar{.f} suffix are
-single-precision.
+an exponent and to specify a numerical precision. If
+@tech{single-flonums} are supported (see @secref["numbers"]) and the
+@racket[read-single-flonum] @tech{parameter} is set to @racket[#t],
+the marks @litchar{f} and @litchar{s} specify single-flonums. If
+@racket[read-single-flonum] is set to @racket[#f], or with any other
+mark, a double-precision @tech{flonum} is produced. If single-flonums
+are not supported and @racket[read-single-flonum] is set to
+@racket[#t], then the @exnraise[exn:fail:unsupported] when a single-flonum
+would otherwise be produced. Special infinity and not-a-number flonums
+and single-flonums are distinct; specials with the @litchar{.0}
+suffix, like @racket[+nan.0], are double-precision flonums, while
+specials with the @litchar{.f} suffix, like @racketvalfont{+nan.0}, 
+are single-flonums if enabled though @racket[read-single-flonum].
 
 A @litchar{#} in an @nunterm{inexact} number is the same as
 @litchar{0}, but @litchar{#} can be used to suggest
 that the digit's actual value is unknown.
+
+All letters in a number representation are parsed case-insensitively,
+independent of the @racket[read-case-sensitive] parameter. For
+example, @litchar{#I#D+InF.F+3I} is parsed the same as
+@litchar{#i#d+inf.f+3i}. In the grammar below, each literal lowercase
+letter stands for both itself and its uppercase form.
 
 @BNF[(list @nunterm{number} @BNF-alt[@nunterm{exact}
                                      @nunterm{inexact}])

@@ -33,7 +33,7 @@ Returns @racket[#t] if @racket[v] is a @tech{syntax object} and
 ]}
 
 
-@defproc[(syntax-source [stx syntax?]) any]{
+@defproc[(syntax-source [stx syntax?]) any/c]{
 
 Returns the source for the @tech{syntax object} @racket[stx], or @racket[#f]
 if none is known. The source is represented by an arbitrary value
@@ -104,10 +104,14 @@ can be inferred from its lexical context.  If
 @racket[source?] is @racket[#f], then result is a module path index or
 symbol (see @secref["modpathidx"]) or a @tech{resolved module path}; if @racket[source?] is true, the
 result is a path or symbol corresponding to the loaded module's
-source in the sense of @racket[current-module-declare-source].}
+source in the sense of @racket[current-module-declare-source].
+
+Note that @racket[syntax-source-module] does @emph{not} consult the
+source location of @racket[stx]. The result is based on the
+@tech{lexical information} of @racket[stx].}
 
 
-@defproc[(syntax-e [stx syntax?]) any]{
+@defproc[(syntax-e [stx syntax?]) any/c]{
 
 Unwraps the immediate datum structure from a @tech{syntax object},
 leaving nested syntax structure (if any) in place.  The result of
@@ -183,7 +187,7 @@ object in the result of @racket[(syntax->list stx)] is @tech{tainted}.
 ]}
 
 
-@defproc[(syntax->datum [stx syntax?]) any]{
+@defproc[(syntax->datum [stx syntax?]) any/c]{
 
 Returns a datum by stripping the lexical information, source-location
 information, properties, and tamper status from @racket[stx]. Inside of
@@ -247,7 +251,12 @@ is a pair, vector, box, immutable @tech{hash table}, or immutable
 @tech{prefab} structure, recursively converted values are not given
 properties. If @racket[ctxt] is @tech{tainted} or
 @tech{armed}, then the resulting syntax object from
-@racket[datum->syntax] is @tech{tainted}.
+@racket[datum->syntax] is @tech{tainted}. The @tech{code inspector}
+of @racket[ctxt], if any, is compared to the code inspector of the
+module for the macro currently being transformed, if any; if both
+inspectors are available and if one is the same as or inferior to the
+other, then the result syntax has the same/inferior inspector,
+otherwise it has no code inspector.
 
 Any of @racket[ctxt], @racket[srcloc], or @racket[prop] can be
 @racket[#f], in which case the resulting syntax has no lexical
@@ -282,7 +291,7 @@ and has no effect on the returned syntax object.}
 @deftogether[(
 @defproc[(syntax-binding-set? [v any/c]) boolean?]
 @defproc[(syntax-binding-set) syntax-binding-set?]
-@defproc[(syntax-binding-set->syntax [binding-set syntax-binding-set?] [datum any/c]) syntax-binding-set?]
+@defproc[(syntax-binding-set->syntax [binding-set syntax-binding-set?] [datum any/c]) syntax?]
 @defproc[(syntax-binding-set-extend [binding-set syntax-binding-set?]
                                     [symbol symbol?]
                                     [phase (or/c exact-integer? #f)]
@@ -300,7 +309,7 @@ and has no effect on the returned syntax object.}
 A @deftech{syntax binding set} supports explicit construction of
 binding information for a syntax object. Start by creating an empty
 binding set with @racket[syntax-binding-set], add bindings with
-@racket[binding-set-extend], and create a syntax object that has the
+@racket[syntax-binding-set-extend], and create a syntax object that has the
 bindings as its @tech{lexical information} using
 @racket[syntax-binding-set->syntax].
 

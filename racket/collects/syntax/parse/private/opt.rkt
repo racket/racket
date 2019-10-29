@@ -8,10 +8,6 @@
 (provide (struct-out pk1)
          (rename-out [optimize-matrix0 optimize-matrix]))
 
-;; controls debugging output for optimization successes and failures
-(define DEBUG-OPT-SUCCEED #f)
-(define DEBUG-OPT-FAIL #f)
-
 ;; ----
 
 ;; A Matrix is a (listof PK) where each PK has same number of columns
@@ -34,13 +30,13 @@
 
 ;; Can factor pattern P given clauses like
 ;;   [ P P1 ... | e1]     [  | [P1 ... | e1] ]
-;;   [ P  ⋮     |  ⋮]  => [P | [ ⋮     |  ⋮] ]
- ;   [ P PN ... | eN]     [  | [PN ... | eN] ]
+;;   [ P  :     |  :]  => [P | [ :     |  :] ]
+;;   [ P PN ... | eN]     [  | [PN ... | eN] ]
 ;; if P cannot cut and P succeeds at most once (otherwise may reorder backtracking)
 
 ;; Can unfold pair patterns as follows:
 ;;   [ (P11 . P12) P1 ... | e1 ]                [ P11 P12 P1 ... | e1 ]
-;;   [      ⋮      ⋮      |  ⋮ ] => check pair, [      ⋮         |  ⋮ ]
+;;   [      :       :     |  : ] => check pair, [      :         |  : ]
 ;;   [ (PN1 . PN2) PN ... | eN ]                [ PN1 PN2 PN ... | eN ]
 
 ;; Can unfold ~and patterns similarly; ~and patterns can hide
@@ -48,20 +44,44 @@
 
 ;; ----
 
+;; FIXME: New (unimplemented) optimization ideas
+
+;; (1) When collecting pair patterns, can reorder rows with pair vs never-pair
+;; first columns:
+;;   [ (P11 . P12) P1 ... | e1 ]      [ (P11 . P12) P1 ... | e1 ]
+;;   [     P21     P2 ... | e2 ]  =>  [ (P31 . P32) P3 ... | e3 ]
+;;   [ (P31 . P32) P3 ... | e3 ]      [     P21     P2 ... | e2 ]
+;; provided P21 does not cut and cannot match a pair term.
+;; Likewise for literals and never-symbol patterns.
+
+;; (2) If a row has a non-rejecting pattern (ie, always matches) in its first
+;; column, then the rows above it do not need to produce failure information
+;; *for their first columns*. For example, in the following matrix
+;;   [ P11 P1 ... | e1 ]
+;;   [ P21 P2 ... | e2 ]
+;;   [ P31 P3 ... | e3 ]
+;; Suppose that P21 always matches (eg _) and assume P{1,3}1 are cut-free. Then
+;; P{1,3}1 do not need to produce failure info (set es = #f, etc). Here's why.
+;; If control reaches row 2, then since P21 cannot fail, if it fails the
+;; progress must be greater than P11 or P31. FIXME: Must also check neither P11
+;; nor P31 use ~post (or call stxclass that uses ~post, etc)!
+
+
+;; ----
+
 (define (optimize-matrix0 rows)
   (define now (current-inexact-milliseconds))
-  (when (and DEBUG-OPT-SUCCEED (> (length rows) 1))
-    (eprintf "\n%% optimizing (~s):\n" (length rows))
-    (pretty-write (matrix->sexpr rows) (current-error-port)))
+  (when (and (> (length rows) 1))
+    (log-syntax-parse-debug "OPT matrix (~s rows)\n~a" (length rows)
+                            (pretty-format (matrix->sexpr rows) #:mode 'print)))
   (define result (optimize-matrix rows))
   (define then (current-inexact-milliseconds))
-  (when (and DEBUG-OPT-SUCCEED (> (length rows) 1))
+  (when (and (> (length rows) 1))
     (cond [(= (length result) (length rows))
-           (eprintf "%% !! FAILED !! (~s ms)\n\n" (floor (- then now)))]
+           (log-syntax-parse-debug "OPT FAILED (~s ms)" (floor (- then now)))]
           [else
-           (eprintf "==> (~s ms)\n" (floor (- then now)))
-           (pretty-write (matrix->sexpr result) (current-error-port))
-           (eprintf "\n")]))
+           (log-syntax-parse-debug "OPT ==> (~s ms)\n~a" (floor (- then now))
+                                   (pretty-format (matrix->sexpr result) #:mode 'print))]))
   result)
 
 ;; optimize-matrix : (listof pk1) -> Matrix
@@ -115,8 +135,7 @@
     [(pat:pair head tail)
      (values (lambda (p) (pat:pair? p))
              (lambda (rows)
-               (when DEBUG-OPT-SUCCEED
-                 (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
+               (log-syntax-parse-debug "-- got ~s pair rows like ~e" (length rows) (pattern->sexpr pat1))
                (cond [(> (length rows) 1)
                       (pk/pair (optimize-matrix
                                 (for/list ([row (in-list rows)])
@@ -130,8 +149,7 @@
     [(? pattern-factorable?)
      (values (lambda (pat2) (pattern-equal? pat1 pat2))
              (lambda (rows)
-               (when DEBUG-OPT-SUCCEED
-                 (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
+               (log-syntax-parse-debug "-- got ~s factorable like ~e" (length rows) (pattern->sexpr pat1))
                (cond [(> (length rows) 1)
                       (pk/same pat1
                                (optimize-matrix
@@ -139,11 +157,7 @@
                                   (pk1 (cdr (pk1-patterns row)) (pk1-k row)))))]
                      [else (car rows)])))]
     [_
-     (values (lambda (pat2)
-               (when DEBUG-OPT-FAIL
-                 (when (pattern-equal? pat1 pat2)
-                   (eprintf "** cannot factor: ~e\n" (syntax->datum #`#,pat2))))
-               #f)
+     (values (lambda (pat2) #f)
              (lambda (rows)
                ;; (length rows) = 1
                (car rows)))]))
@@ -157,71 +171,40 @@
      (let* ([first-sub (car subpatterns)]
             [rest-subs (cdr subpatterns)])
        (cond [(not (pat:action? first-sub))
-              (when #f ;; DEBUG-OPT-SUCCEED
-                (eprintf ">> unfolding: ~e\n" p))
               (unfold-and first-sub (*append rest-subs onto))]
              [else (values p onto)]))]
     [_ (values p onto)]))
 
-(define (pattern-factorable? p)
-  ;; Can factor out p if p can succeed at most once, does not cut
-  ;;  - if p can succeed multiple times, then factoring changes success order
-  ;;  - if p can cut, then factoring changes which choice points are discarded (too few)
-  (match p
-    [(pat:any) #t]
-    [(pat:svar _n) #t]
-    [(pat:var/p _ _ _ _ _ (scopts _ commit? _ _))
-     ;; commit? implies delimit-cut
-     commit?]
-    [(? pat:integrated?) #t]
-    [(pat:literal _lit _ip _lp) #t]
-    [(pat:datum _datum) #t]
-    [(pat:action _act _pat) #f]
-    [(pat:head head tail)
-     (and (pattern-factorable? head)
-          (pattern-factorable? tail))]
-    [(pat:dots heads tail)
-     ;; Conservative approximation for common case: one head pattern
-     ;; In general, check if heads don't overlap, don't overlap with tail.
-     (and (= (length heads) 1)
-          (let ([head (car heads)])
-            (and (pattern-factorable? head)))
-          (equal? tail (pat:datum '())))]
-    [(pat:and patterns)
-     (andmap pattern-factorable? patterns)]
-    [(pat:or _ patterns _) #f]
-    [(pat:not pattern) #f] ;; FIXME: ?
-    [(pat:pair head tail)
-     (and (pattern-factorable? head)
-          (pattern-factorable? tail))]
-    [(pat:vector pattern)
-     (pattern-factorable? pattern)]
-    [(pat:box pattern)
-     (pattern-factorable? pattern)]
-    [(pat:pstruct key pattern)
-     (pattern-factorable? pattern)]
-    [(pat:describe pattern _desc _trans _role)
-     (pattern-factorable? pattern)]
-    [(pat:delimit pattern)
-     (pattern-factorable? pattern)]
-    [(pat:commit pattern) #t]
-    [(? pat:reflect?) #f]
-    [(pat:ord pattern _ _)
-     (pattern-factorable? pattern)]
-    [(pat:post pattern)
-     (pattern-factorable? pattern)]
-    ;; ----
-    [(hpat:var/p _ _ _ _ _ (scopts _ commit? _ _))
-     commit?]
-    [(hpat:seq inner)
-     (pattern-factorable? inner)]
-    [(hpat:commit inner) #t]
-    ;; ----
-    [(ehpat _ head repc _)
-     (and (equal? repc #f)
-          (pattern-factorable? head))]
-    ;; ----
-    [else #f]))
+;; pattern-factorable? : *Pattern -> Boolean
+(define (pattern-factorable? p) (not (pattern-unfactorable? p)))
+
+;; pattern-unfactorable? : *Pattern -> Boolean
+(define (pattern-unfactorable? p)
+  ;; Cannot factor out p if
+  ;; - if p can succeed multiple times (factoring changes success order)
+  ;; - if p can cut (factoring changes which choice points are discarded (too few))
+  ;; Note: presence of sub-expressions handled by pattern-equal?.
+  (define (for-pattern p recur)
+    (match p
+      [(pat:var/p _ _ _ _ _ (scopts _ commit? _ _)) (not commit?)]
+      [(pat:action _act _pat) #t]
+      [(pat:dots heads tail)
+       ;; Conservative approximation for common case: one head pattern
+       ;; In general, check if heads don't overlap, don't overlap with tail.
+       (or (> (length heads) 1)
+           (not (equal? tail (pat:datum '())))
+           (recur))]
+      [(pat:or _ patterns _) #t]
+      [(pat:not pattern) #t]
+      [(pat:commit pattern) #f]
+      [(? pat:reflect?) #t]
+      [(hpat:var/p _ _ _ _ _ (scopts _ commit? _ _)) (not commit?)]
+      [(hpat:commit inner) #f]
+      [(ehpat _ head repc _)
+       (or (not (equal? repc #f))
+           (recur))]
+      [_ (recur)]))
+  (pattern-ormap p for-pattern))
 
 (define (subpatterns-equal? as bs)
   (and (= (length as) (length bs))
@@ -290,7 +273,10 @@
                 (equal? (pat:ord-index a) (pat:ord-index b)))]
           [(and (pat:post? a) (pat:post? b))
            (pattern-equal? (pat:post-pattern a) (pat:post-pattern b))]
+          [(and (pat:seq-end? a) (pat:seq-end? b)) #t]
           ;; ---
+          [(and (hpat:single? a) (hpat:single? b))
+           (pattern-equal? (hpat:single-pattern a) (hpat:single-pattern b))]
           [(and (hpat:var/p? a) (hpat:var/p? b))
            (and (free-id/f-equal? (hpat:var/p-parser a) (hpat:var/p-parser b))
                 (bound-id/f-equal? (hpat:var/p-name a) (hpat:var/p-name b))
@@ -306,10 +292,10 @@
                 (pattern-equal? (ehpat-head a) (ehpat-head b)))]
           ;; FIXME: more?
           [else #f]))
-  (when DEBUG-OPT-FAIL
-    (when (and (eq? result #f)
-               (equal? (syntax->datum #`#,a) (syntax->datum #`#,b)))
-      (eprintf "** pattern-equal? failed on ~e\n" a)))
+  (when (and (log-level? syntax-parse-logger 'debug)
+             (eq? result #f)
+             (equal? (syntax->datum #`#,a) (syntax->datum #`#,b)))
+    (log-syntax-parse-debug "** pattern-equal? failed on ~e" a))
   result)
 
 (define (equal-iattrs? as bs)
@@ -416,15 +402,55 @@
                  (format-symbol "~a:~a" (or name '_) (cadr m)))]
            [else
             (if name (syntax-e name) '_)])]
-    [(? pat:literal?) `(quote ,(syntax->datum (pat:literal-id p)))]
-    [(pat:datum datum) datum]
-    [(? pat:action?) 'ACTION]
+    [(? pat:literal?) `(syntax ,(syntax->datum (pat:literal-id p)))]
+    [(pat:datum datum)
+     (cond [(or (symbol? datum) (pair? datum))
+            `(quote ,datum)]
+           [else datum])]
+    [(pat:action action (pat:any)) (pattern->sexpr action)]
+    [(pat:action action inner) (list '~AAND (pattern->sexpr action) (pattern->sexpr inner))]
+    [(pat:and patterns) (cons '~and (map pattern->sexpr patterns))]
+    [(pat:or _ patterns _) (cons '~or (map pattern->sexpr patterns))]
+    [(pat:not pattern) (list '~not (pattern->sexpr pattern))]
     [(pat:pair head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:head head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:dots (list eh) tail)
      (list* (pattern->sexpr eh) '... (pattern->sexpr tail))]
-    [(ehpat _as hpat '#f _cn)
-     (pattern->sexpr hpat)]
-    [_ 'PATTERN]))
+    [(pat:dots ehs tail)
+     (list* (cons '~alt (map pattern->sexpr ehs)) '... (pattern->sexpr tail))]
+    [(pat:describe sp _ _ _) (list '~describe (pattern->sexpr sp))]
+    [(pat:delimit sp) (list '~delimit-cut (pattern->sexpr sp))]
+    [(pat:commit sp) (list '~commit (pattern->sexpr sp))]
+    [(pat:ord pattern _ _) (list '~ord (pattern->sexpr pattern))]
+    [(pat:post sp) (list '~post (pattern->sexpr sp))]
+    [(pat:seq-end) '()]
+    [(action:cut) '~!]
+    [(action:fail cnd msg) (list '~fail)]
+    [(action:bind attr expr) (list '~bind)]
+    [(action:and as) (cons '~and (map pattern->sexpr as))]
+    [(action:parse sp expr) (list '~parse (pattern->sexpr sp))]
+    [(action:do stmts) (list '~do)]
+    [(action:undo stmts) (list '~undo)]
+    [(action:ord ap _ _) (list '~ord (pattern->sexpr ap))]
+    [(action:post ap) (list '~post (pattern->sexpr ap))]
+    [(hpat:single sp) (pattern->sexpr sp)]
+    [(hpat:var/p name parser _ _ _ _)
+     (cond [(and parser (regexp-match #rx"^parser-(.*)$" (symbol->string (syntax-e parser))))
+            => (lambda (m) (format-symbol "~a:~a" (or name '_) (cadr m)))]
+           [else (if name (syntax-e name) '_)])]
+    [(hpat:seq lp) (cons '~seq (pattern->sexpr lp))]
+    [(hpat:action ap hp) (list '~AAND (pattern->sexpr ap) (pattern->sexpr hp))]
+    [(hpat:and hp sp) (list '~and (pattern->sexpr hp) (pattern->sexpr sp))]
+    [(hpat:or _ hps _) (cons '~or (map pattern->sexpr hps))]
+    [(hpat:describe hp _ _ _) (list '~describe (pattern->sexpr hp))]
+    [(hpat:delimit hp) (list '~delimit-cut (pattern->sexpr hp))]
+    [(hpat:commit hp) (list '~commit (pattern->sexpr hp))]
+    [(hpat:ord hp _ _) (list '~ord (pattern->sexpr hp))]
+    [(hpat:post hp) (list '~post (pattern->sexpr hp))]
+    [(hpat:peek hp) (list '~peek (pattern->sexpr hp))]
+    [(hpat:peek-not hp) (list '~peek-not (pattern->sexpr hp))]
+    [(ehpat _as hpat repc _cn)
+     (if (eq? repc #f) (pattern->sexpr hpat) (list '~REPC (pattern->sexpr hpat)))]
+    [_ '<Pattern>]))

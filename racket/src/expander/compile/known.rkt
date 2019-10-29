@@ -3,6 +3,7 @@
 (provide (struct-out known-defined)
          (struct-out known-defined/delay)
          (struct-out known-property)
+         (struct-out known-property-of-function)
          (struct-out known-function)
          (struct-out known-function-of-satisfying)
          (struct-out known-predicate)
@@ -21,8 +22,12 @@
 (struct known-property () #:prefab)
 ;; defined as a struct property with no guard
 
+(struct known-property-of-function (arity) #:prefab)
+;; a struct type property with a guard that is pure as long as
+;; it is given a function with a known arity
+
 (struct known-function (arity pure?) #:prefab)
-;; function of known arity and maybe known pure, where
+;; function of known arity and maybe known pure (at least, no side effect), where
 ;; pure must return 1 value
 
 (struct known-function-of-satisfying (arg-predicate-keys) #:prefab)

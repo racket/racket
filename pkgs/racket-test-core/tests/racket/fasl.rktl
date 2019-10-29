@@ -3,7 +3,12 @@
 
 (Section 'fasl)
 
-(require racket/fasl)
+(require racket/fasl
+         (only-in racket/linklet
+                  correlated?
+                  correlated-e
+                  datum->correlated
+                  correlated-property))
 
 (define immutables
   ;; If you update this list, then also update `immutable-regression-bstr`:
@@ -33,17 +38,21 @@
       44+100i
       45.0+100.0i
       ;; 46f0 <- test separately, because RacketCS doesn't support single-precision
-      (srcloc "x" 1 2 3 4)))
+      ,(srcloc "x" 1 2 3 4)))
 
 ;; The fasl format is meant to be forward-compatible:
 (define immutables-regression-bstr
-  #"racket/fasl:\0\200@\1\34&n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\16\bnineteen\200\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\355\376\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\201\177?\362\351\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\b\203\25cd4a0619fb0907bc00000\b\203\26-cd4a0619fb0907bc00000\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@\34\6\16\6srcloc\23\1xopqr")
+  #"racket/fasl:\0\2007\1\34&n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\16\bnineteen\200\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\355\376\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\201\177?\362\351\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\b\203\25cd4a0619fb0907bc00000\b\203\26-cd4a0619fb0907bc00000\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@&\23\1xopqr")
 
 (for ([i (in-list immutables)])
   (test i fasl->s-exp (s-exp->fasl i)))
 
-(test 46f0 fasl->s-exp (s-exp->fasl 46f0))
-(test (vector #t 46f0) fasl->s-exp (s-exp->fasl (vector #t 46f0)))
+(when (single-flonum-available?)
+  (let ([n46f0 (real->single-flonum 46.0)])
+    (test n46f0 fasl->s-exp (s-exp->fasl n46f0))
+    (test (vector #t n46f0) fasl->s-exp (s-exp->fasl (vector #t n46f0))))
+  (let ([nan (real->single-flonum +nan.0)])
+    (test #t eqv? nan (fasl->s-exp (s-exp->fasl nan)))))
 
 (test "4.5t0" format "~a" (fasl->s-exp (s-exp->fasl 4.5t0)))
 
@@ -93,6 +102,17 @@
   (test #t equal? r1 (fasl->s-exp (s-exp->fasl r1) #:datum-intern? #f))
   (test #t equal? r2 (fasl->s-exp (s-exp->fasl r2) #:datum-intern? #f))
   (test #t equal? r3 (fasl->s-exp (s-exp->fasl r3) #:datum-intern? #f)))
+
+(let* ([s (gensym)]
+       [c (datum->correlated (list s s)
+                             (vector s 1 2 3 4))]
+       [c (correlated-property c 'key s)])
+  (define c2 (fasl->s-exp (s-exp->fasl c)))
+  (test #t correlated? c2)
+  (define e (correlated-e c2))
+  (test #t pair? e)
+  (test #t eq? (car e) (cadr e))
+  (test #t eq? (car e) (correlated-property c2 'key)))
 
 (define (check-hash make-hash hash)
   (let ([mut (make-hash)]
@@ -188,5 +208,8 @@
    (parameterize ([current-write-relative-directory root]
                   [current-load-relative-directory #f])
      (fasl->s-exp (s-exp->fasl (build-path root 'same))))))
+
+(test (list (dynamic-require 'racket/unsafe/undefined 'unsafe-undefined))
+      fasl->s-exp (s-exp->fasl (list (dynamic-require 'racket/unsafe/undefined 'unsafe-undefined))))
 
 (report-errs)

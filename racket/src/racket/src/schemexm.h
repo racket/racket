@@ -692,7 +692,7 @@
 #define scheme_make_ephemeron (scheme_extension_table->scheme_make_ephemeron)
 #define scheme_ephemeron_value (scheme_extension_table->scheme_ephemeron_value)
 #define scheme_ephemeron_key (scheme_extension_table->scheme_ephemeron_key)
-#define scheme_make_stubborn_will_executor (scheme_extension_table->scheme_make_stubborn_will_executor)
+#define scheme_make_late_will_executor (scheme_extension_table->scheme_make_late_will_executor)
 #define scheme_load (scheme_extension_table->scheme_load)
 #define scheme_load_extension (scheme_extension_table->scheme_load_extension)
 #define scheme_register_extension_global (scheme_extension_table->scheme_register_extension_global)

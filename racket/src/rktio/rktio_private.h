@@ -68,6 +68,9 @@ struct rktio_t {
   /* A single fdset that can be reused for immediate actions: */
   struct rktio_poll_set_t *rktio_global_poll_set;
 #endif
+#ifdef RKTIO_GROWABLE_FDSET
+  int max_fd_so_far;
+#endif
 
 #if defined(RKTIO_SYSTEM_WINDOWS) || defined(RKTIO_USE_PTHREADS)
   int ghbn_started, ghbn_run;
@@ -164,7 +167,12 @@ int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n);
 # define RKTIO_FD_ISSET(n, p) rktio_fdisset(p, n)
 
 # if !defined(HAVE_POLL_SYSCALL) && !defined(RKTIO_SYSTEM_WINDOWS)
-#  define RKTIO_FDS(p) ((fd_set *)p)
+#  ifdef RKTIO_GROWABLE_FDSET
+#   define RKTIO_FDS(p) ((fd_set *)rktio_resolve_fds(p))
+void *rktio_resolve_fds(rktio_poll_set_t *fd);
+#  else
+#   define RKTIO_FDS(p) ((fd_set *)p)
+#  endif
 # endif
 
 #else
@@ -225,7 +233,7 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   
 void rktio_free_ghbn(rktio_t *rktio);
 
-const char *rktio_gai_strerror(int errnum);
+const char *rktio_gai_strerror(rktio_t *rktio, int errnum);
 
 /*========================================================================*/
 /* Processes                                                              */
@@ -325,10 +333,28 @@ void *rktio_get_proc_address(HANDLE m, rktio_const_string_t name);
 #ifdef RKTIO_SYSTEM_UNIX
 int rktio_reliably_close_err(intptr_t s);
 void rktio_reliably_close(intptr_t s);
-void rktio_close_fds_after_fork(int skip1, int skip2, int skip3);
+int rktio_close_fds_len();
+void rktio_close_fds_after_fork(int len, int skip1, int skip2, int skip3);
 #endif
 
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
+
+#ifdef RKTIO_USE_PTHREADS
+# define RKTIO_USE_PENDING_OPEN
+#endif
+
+#ifdef RKTIO_USE_PENDING_OPEN
+struct open_in_thread_t;
+rktio_fd_t *rktio_pending_system_fd(rktio_t *rktio, struct open_in_thread_t *oit, int modes);
+void rktio_update_system_fd(rktio_t *rktio, rktio_fd_t *rfd, int fd, int modes);
+int rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit);
+void rktio_poll_add_pending_open(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit, rktio_poll_set_t *fds);
+void rktio_pending_open_detach(rktio_t *rktio, struct open_in_thread_t *oit);
+void rktio_pending_open_attach(rktio_t *rktio, struct open_in_thread_t *oit);
+void rktio_pending_open_retain(rktio_t *rktio, struct open_in_thread_t *oit);
+int rktio_pending_open_release(rktio_t *rktio, struct open_in_thread_t *oit);
+#endif
 
 void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 

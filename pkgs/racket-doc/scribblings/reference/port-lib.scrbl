@@ -655,7 +655,18 @@ closes @racket[in].}
 Returns a @tech{synchronizable event} that is ready when
 @racket[in] produces an @racket[eof]. If @racket[in] produces a
 mid-stream @racket[eof], the @racket[eof] is consumed by the event
-only if the event is chosen in a synchronization.}
+only if the event is chosen in a synchronization.
+
+If attempting to read from @racket[in] raises an exception during a
+synchronization attempt, then the exception may be reported during the
+synchronization attempt, but it will silently discarded if some another
+event in the same synchronization is selected or if some other event
+raises an exception first.
+
+@history[#:changed "7.5.0.3" @elem{Changed handling of read errors so
+                                   they are propagated to a synchronization attempt,
+                                   instead of treated as unhandled errors in a
+                                   background thread.}]}
 
 
 @defproc[(read-bytes-evt [k exact-nonnegative-integer?] [in input-port?]) 
@@ -681,12 +692,14 @@ concurrently---and each synchronization corresponds to a distinct read
 request.
 
 The @racket[in] must support progress events, and it must not produce
-a special non-byte value during the read attempt.}
+a special non-byte value during the read attempt.
+
+Exceptions attempting to read from @racket[in] are handled in the same
+way as by @racket[eof-evt].}
 
 
 @defproc[(read-bytes!-evt [bstr (and/c bytes? (not/c immutable?))]
-                          [in input-port?]
-                          [progress-evt (or/c progress-evt? #f)])
+                          [in input-port?])
          evt?]{
 
 Like @racket[read-bytes-evt], except that the read bytes are placed
@@ -703,7 +716,10 @@ might be mutated if the event is not selected by a synchronzation;
 nevertheless, multiple synchronization attempts can use the same
 result from @racket[read-bytes!-evt] as long as there is no
 intervening read on @racket[in] until one of the synchronization
-attempts selects the event.}
+attempts selects the event.
+
+Exceptions attempting to read from @racket[in] are handled in the same
+way as by @racket[eof-evt].}
 
 
 @defproc[(read-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [in input-port?]) 
@@ -730,7 +746,7 @@ a byte string.}
 
 
 @defproc[(read-line-evt [in input-port?]
-                        [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one)])
+                        [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
          evt?]{
 
 Returns a @tech{synchronizable event} that is ready when a line of
@@ -741,11 +757,14 @@ separator).
 
 A line is read from the port if and only if the event is chosen in a
 synchronization, and the returned line always represents contiguous
-bytes in the port's stream.}
+bytes in the port's stream.
+
+Exceptions attempting to read from @racket[in] are handled in the same
+way as by @racket[eof-evt].}
 
 
 @defproc[(read-bytes-line-evt [in input-port?]
-                              [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one)])
+                              [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
          evt?]{
  
 Like @racket[read-line-evt], but returns a byte string instead of a
@@ -762,7 +781,7 @@ string.}
            [(peek-string!-evt [str (and/c string? (not/c immutable?))] [skip exact-nonnegative-integer?]
                               [progress-evt (or/c progress-evt? #f)] [in input-port?]) evt?])]{
 
-Like the @racket[read-...-evt] functions, but for peeking. The
+Like the @racket[read-bytes-evt], etc., functions, but for peeking. The
 @racket[skip] argument indicates the number of bytes to skip, and
 @racket[progress-evt] indicates an event that effectively cancels the peek
 (so that the event never becomes ready). The @racket[progress-evt]
@@ -796,7 +815,10 @@ each synchronization corresponds to a distinct match request.
 
 The @racket[in] port must support progress events. If @racket[in]
 returns a special non-byte value during the match attempt, it is
-treated like @racket[eof].}
+treated like @racket[eof].
+
+Exceptions attempting to read from @racket[in] are handled in the same
+way as by @racket[eof-evt].}
 
 @; ----------------------------------------------------------------------
 

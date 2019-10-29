@@ -41,7 +41,7 @@
 	((vector? obj)
 	 (sort! (vector-copy obj) pred))
 	(else
-	 (error "sort: argument should be a list or vector" obj))))
+	 (error 'sort "argument should be a list or vector ~s" obj))))
 
 ;; This merge sort is stable for partial orders (for predicates like
 ;; <=, rather than like <).
@@ -68,7 +68,7 @@
 		       (loop (+ p 1) p1 (+ p2 1)))))))))
 
   (if (not (vector? v))
-      (error "sort!: argument not a vector" v))
+      (error 'sort! "argument not a vector ~s" v))
 
   (sort-internal! v
 		  (vector-copy v)
@@ -140,7 +140,7 @@
 (define (make-edge-getter selector)
   (lambda (node)
     (if (or (none-node? node) (any-node? node))
-	(error "Can't get edges from the ANY or NONE nodes")
+	(error 'getter "Can't get edges from the ANY or NONE nodes")
 	(selector node))))
 (define red-edges (make-edge-getter internal-node-red-edges))
 (define green-edges (make-edge-getter internal-node-green-edges))
@@ -150,7 +150,7 @@
 
 (define (make-edge-setter mutator!)
   (lambda (node value)
-    (cond ((any-node? node) (error "Can't set edges from the ANY node"))
+    (cond ((any-node? node) (error 'setter "Can't set edges from the ANY node"))
 	  ((none-node? node) 'OK)
 	  (else (mutator! node value)))))
 (define set-red-edges! (make-edge-setter set-internal-node-red-edges!))
@@ -421,7 +421,7 @@
 
 (define (find-canonical-representative element classification)
   (let loop ((classes classification))
-    (cond ((null? classes) (error "Can't classify" element)) 
+    (cond ((null? classes) (error 'canonical "Can't classify ~s" element)) 
 	  ((memq element (car classes)) (car (car classes)))
 	  (else (loop (cdr classes))))))
 

@@ -15,8 +15,20 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
+;; Use only `eq-hashtable-try-atomic-cell` on this table,
+;; except in `update-eq-hash-code-table-size!`:
 (define codes (make-weak-eq-hashtable))
+
 (define counter 12345)
+
+;; Called by the collect handler when no other threads are running.
+;; Calling `eq-hashtable-set!` and `eq-hashtable-delete!` here gives
+;; the table a chance to resize either larger or smaller, since we
+;; otherwise use only `eq-hashtable-try-atomic-cell` on the table.
+(define (update-eq-hash-code-table-size!)
+  (let ([p (cons #f #f)])
+    (eq-hashtable-set! codes p 0)
+    (eq-hashtable-delete! codes p)))
 
 (define (eq-hash-code x)
   (cond
@@ -29,18 +41,22 @@
    [(number? x) (number-hash x)]
    [(char? x) (char->integer x)]
    [else
-    (with-global-lock
-     (or (eq-hashtable-ref codes x #f)
-         (let ([c (fx1+ counter)])
-           (set! counter c)
-           (eq-hashtable-set! codes x counter)
-           c)))]))
+    (let ([p (eq-hashtable-try-atomic-cell codes x counter)])
+      (cond
+       [p
+        (let ([n (cdr p)])
+          (when (fx= counter n)
+            (set! counter (fx1+ n)))
+          n)]
+       [else
+        ;; There was contention, so try again
+        (eq-hash-code x)]))]))
 
 ;; Mostly copied from Chez Scheme's "newhash.ss":
 (define number-hash
   (lambda (z)
     (cond
-     [(fixnum? z) (if (fx< z 0) (fxnot z) z)]
+     [(fixnum? z) (if (fx< z 0) (fxand z (most-positive-fixnum)) z)]
      [(flonum? z) (#3%$flhash z)]
      [(bignum? z) (modulo z (most-positive-fixnum))]
      [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
@@ -81,7 +97,7 @@
   (let* ([+/fx
           (lambda (hc k)
             (#3%fx+ hc k))]
-         [sll/fs
+         [sll/fx
           (lambda (hc i)
             (#3%fxsll hc i))]
          [->fx
@@ -91,10 +107,11 @@
                 (modulo v (greatest-fixnum))))]
          [mix1
           (lambda (hc)
-            (+/fx hc (sll/fs hc 3)))]
+            (let ([hc2 (+/fx hc (sll/fx hc 10))])
+              (fxlogxor hc2 (fxsrl hc2 6))))]
          [mix2
           (lambda (hc)
-            (+/fx hc (sll/fs hc 5)))])
+            (mix1 hc))])
     (cond
      [(fx> burn MAX-HASH-BURN) (values hc burn)]
      [(boolean? x) (values (+/fx hc (if x #x0ace0120 #x0cafe121)) burn)]

@@ -167,9 +167,10 @@ be used to implement any of the methods documented as
 }
 
 @defthing[prop:dict struct-type-property?]{
-  A deprecated structure type property used to define custom extensions
-  to the dictionary API. Use @racket[gen:dict] instead. Accepts a vector
-  of 10 method implementations:
+  A structure type property used to define custom extensions
+  to the dictionary API. Using the @racket[prop:dict] property is
+  discouraged; use the @racket[gen:dict] @tech{generic interface}
+  instead. Accepts a vector of 10 method implementations:
 
   @itemize[
            @item{@racket[dict-ref]}
@@ -198,7 +199,7 @@ only supported for dictionary types that directly implement them.
 
 Returns the value for @racket[key] in @racket[dict]. If no value
 is found for @racket[key], then @racket[failure-result] determines the
-result: 
+result:
 
 @itemize[
 
@@ -489,7 +490,7 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 
 Composes @racket[dict-ref] and @racket[dict-set!] to update an
 existing mapping in @racket[dict], where the optional @racket[failure-result]
-argument is used as in @racket[dict-ref] when no mapping exists for 
+argument is used as in @racket[dict-ref] when no mapping exists for
 @racket[key] already.
 
 Supported for any @racket[dict] that implements @racket[dict-ref] and
@@ -516,7 +517,7 @@ v
 
 Composes @racket[dict-ref] and @racket[dict-set] to functionally
 update an existing mapping in @racket[dict], where the optional @racket[failure-result]
-argument is used as in @racket[dict-ref] when no mapping exists for 
+argument is used as in @racket[dict-ref] when no mapping exists for
 @racket[key] already.
 
 Supported for any @racket[dict] that implements @racket[dict-ref] and
@@ -563,7 +564,7 @@ Supported for any @racket[dict] that implements @racket[dict-iterate-first],
 
 @examples[
 #:eval dict-eval
-(dict-for-each #hash((a . "apple") (b . "banana")) 
+(dict-for-each #hash((a . "apple") (b . "banana"))
                (lambda (k v)
                  (printf "~a = ~s\n" k v)))
 ]}
@@ -656,7 +657,7 @@ table
 
 }
 
-@defproc[(dict-keys [dict dict?]) list?]{ 
+@defproc[(dict-keys [dict dict?]) list?]{
 Returns a list of the keys from
 @racket[dict] in an unspecified order.
 
@@ -669,7 +670,7 @@ Supported for any @racket[dict] that implements @racket[dict-iterate-first],
 (dict-keys h)
 ]}
 
-@defproc[(dict-values [dict dict?]) list?]{ 
+@defproc[(dict-values [dict dict?]) list?]{
 Returns a list of the values from
 @racket[dict] in an unspecified order.
 
@@ -682,7 +683,7 @@ Supported for any @racket[dict] that implements @racket[dict-iterate-first],
 (dict-values h)
 ]}
 
-@defproc[(dict->list [dict dict?]) list?]{ 
+@defproc[(dict->list [dict dict?]) list?]{
 Returns a list of the associations from
 @racket[dict] in an unspecified order.
 
@@ -794,7 +795,7 @@ iterators, respectively, if @racket[d] implements the
 
 @section{Custom Hash Tables}
 
-@defform[(define-custom-hash-types name 
+@defform[(define-custom-hash-types name
                                    optional-predicate
                                    comparison-expr
                                    optional-hash-functions)
@@ -998,7 +999,7 @@ See also @racket[define-custom-hash-types].
                               (string=? (format "~a" a)
                                         (format "~a" b)))
                             (lambda (a)
-                              (equal-hash-code 
+                              (equal-hash-code
                                (format "~a" a)))))
 (dict-set! h 1 'one)
 (dict-ref h "1")

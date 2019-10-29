@@ -1871,11 +1871,10 @@
                 "use of a class keyword is not in a class top-level"
                 stx))
              (let-values ([(id rhs) (normalize-definition stx #'lambda #f #t)])
-               (class-syntax-protect
-                (quasisyntax/loc stx
-                  (begin
-                    (#,decl-form #,id)
-                    (define #,id #,rhs)))))))])
+               (quasisyntax/loc stx
+                 (begin
+                   (#,decl-form #,id)
+                   (define #,id #,rhs))))))])
     (values
      (mk #'private)
      (mk #'public)
@@ -2074,7 +2073,11 @@
                       check-undef?   ; objects need an unsafe-undefined guarding chaperone?
                       
                       no-super-init?); #t => no super-init needed
-  #:inspector insp)
+  #:inspector insp
+  #:property prop:equal+hash
+  (list (λ (cls-a cls-b recur) (eq? (class-orig-cls cls-a) (class-orig-cls cls-b)))
+        (λ (cls recur) (eq-hash-code (class-orig-cls cls)))
+        (λ (cls recur) (eq-hash-code (class-orig-cls cls)))))
 
 #|
 
@@ -3267,6 +3270,32 @@ An example
     (make-struct-type name type 0 0 #f props insp))
   make-)
 
+(define not-all-visible (gensym 'not-all-visible))
+(define (inspectable-struct->vector v)
+  (define vec (struct->vector v not-all-visible))
+  (and (for/and ([elem (in-vector vec)])
+         (not (eq? elem not-all-visible)))
+       vec))
+
+; Even though equality on objects is morally just struct equality, we have to reimplement it here
+; because of the way class contracts work. Every time a class contract is applied, it creates a new
+; class, which in turn creates a new struct. This breaks equal? on objects, since two structs of
+; different types are never equal? (without a custom prop:equal+hash), even if one is a subtype of the
+; other. Therefore, we need to emulate what the behavior of equal? would have been if class contracts
+; didn’t create new struct types. (This can go away if class/c is ever rewritten to use chaperones.)
+(define (object-equal? obj-a obj-b recur)
+  (and (equal? (object-ref obj-a) (object-ref obj-b))
+       (let ([vec-a (inspectable-struct->vector obj-a)])
+         (and vec-a (let ([vec-b (inspectable-struct->vector obj-b)])
+                      (and vec-b (for/and ([elem-a (in-vector vec-a 1)]
+                                           [elem-b (in-vector vec-b 1)])
+                                   (recur elem-a elem-b))))))))
+(define (object-hash-code obj recur)
+  (let ([vec (inspectable-struct->vector obj)])
+    (if vec
+        (recur (vector (object-ref obj) vec))
+        (eq-hash-code obj))))
+
 (define object<%> ((make-naming-constructor struct:interface 'interface:object% #f)
                    'object% null #f null (make-immutable-hash) #f null))
 (setup-all-implemented! object<%>)
@@ -3307,7 +3336,13 @@ An example
 (vector-set! (class-supers object%) 0 object%)
 (set-class-orig-cls! object% object%)
 (let*-values ([(struct:obj make-obj obj? -get -set!)
-               (make-struct-type 'object #f 0 0 #f (list (cons prop:object object%)) #f)])
+               (make-struct-type 'object #f 0 0 #f
+                                 (list (cons prop:object object%)
+                                       (cons prop:equal+hash
+                                             (list object-equal?
+                                                   object-hash-code
+                                                   object-hash-code)))
+                                 #f)])
   (set-class-struct:object! object% struct:obj)
   (set-class-make-object! object% make-obj))
 (set-class-object?! object% object?) ; don't use struct pred; it wouldn't work with prim classes

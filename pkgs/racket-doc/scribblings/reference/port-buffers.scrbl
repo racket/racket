@@ -54,7 +54,15 @@ the default port read handler (see @racket[port-read-handler]).
 output port to be physically written. Only @tech{file-stream ports},
 TCP ports, and custom ports (see @secref["customport"]) use
 buffers; when called on a port without a buffer, @racket[flush-output]
-has no effect.}
+has no effect.
+
+If flushing a @tech{file-stream port} or @tech{TCP port} encounters an
+error when writing, then all buffered bytes in the port are discarded.
+Consequently, a further attempt to flush or close the port will not
+fail.
+
+@history[#:changed "7.4.0.10" @elem{Consistently, discard buffered bytes on error,
+                                    including in a TCP output port.}]}
 
 @defproc*[([(file-stream-buffer-mode [port port?]) (or/c 'none 'line 'block #f)]
            [(file-stream-buffer-mode [port port?] [mode (or/c 'none 'line 'block)]) void?])]{
@@ -99,11 +107,16 @@ called with a position argument on such a @tech{file-stream port}, the
 @exnraise[exn:fail:filesystem].
 
 When @racket[file-position] sets the position @racket[pos] beyond the
-current size of an output file or (byte) string, the file/string is enlarged
-to size @racket[pos] and the new region is filled with @racket[0]
-bytes.  If @racket[pos] is beyond the end of an input file or (byte) string,
-then reading thereafter returns @racket[eof] without changing the
-port's position.
+current size of an output file or (byte) string, the file/string is
+enlarged to size @racket[pos] and the new region is filled with
+@racket[0] bytes; in the case of a file. In the case of a file output
+port, the file might not be enlarged until more data is written to the
+file; in that case, beware that writing to a file opened in
+@racket['append] mode on Unix and Mac OS will reset the file pointer
+to the end of a file @emph{before} each write, which defeats file
+enlargement via @racket[file-position]. If @racket[pos] is beyond the
+end of an input file or (byte) string, then reading thereafter returns
+@racket[eof] without changing the port's position.
 
 When changing the file position for an output port, the port is first
 flushed if its buffer is not empty. Similarly, setting the position

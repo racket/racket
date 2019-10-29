@@ -38,6 +38,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
              (build-contract-property
+              #:trusted trust-me
               #:name (lambda (c)
                        (build-compound-type-name
                         'struct-type-property/c

@@ -83,7 +83,7 @@
     [(eq? state 'continues)
      (cond
        [(and get-index? ((+ start initial-used-bytes) . < . end))
-        initial-used-bytes]
+        (+ initial-used-bytes start)]
        [else
         ;; Get one more byte
         (define str (and (not get-index?) (make-string 1)))
@@ -98,7 +98,7 @@
                (or (and (eq? state 'complete)
                         (= got-chars 1))))
            (if get-index?
-               initial-used-bytes
+               (+ initial-used-bytes start)
                (string-ref str 0))]
           [else #f])])]
     [else #f]))

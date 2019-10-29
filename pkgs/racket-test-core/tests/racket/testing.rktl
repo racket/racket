@@ -220,12 +220,17 @@ transcript.
     [(expr exn-type?) (thunk-error-test (lambda () (eval expr)) expr exn-type?)]))
 
 (require (only-in racket/base [lambda err:mz:lambda])) ; so err/rt-test works with beginner.rktl
-(define-syntax err/rt-test
+(define-syntax-rule (err/rt-test e . rest)
+  (begin
+    (do-err/rt-test e . rest)
+    (do-err/rt-test (let () e 'not-an-error) . rest)))
+(define-syntax-rule (err/rt-test/once e . rest)
+  (do-err/rt-test e . rest))
+(define-syntax do-err/rt-test
   (lambda (stx)
     (syntax-case stx ()
       [(_ e exn?)
-       (syntax
-	(thunk-error-test (err:mz:lambda () e) (quote-syntax e) exn?))]
+       #'(thunk-error-test (err:mz:lambda () e) (quote-syntax e) exn?)]
       [(_ e exn? msg-rx)
        #'(thunk-error-test
           (err:mz:lambda () e)
@@ -234,8 +239,7 @@ transcript.
             (and (exn? exn)
                  (regexp-match? msg-rx (exn-message exn)))))]
       [(_ e)
-       (syntax
-	(err/rt-test e exn:application:type?))])))
+       #'(do-err/rt-test e exn:application:type?)])))
 
 (define no-extra-if-tests? #f)
 

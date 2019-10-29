@@ -1007,6 +1007,29 @@
     (compile-eval m2-expr)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; disabling module constants
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module m racket/base (define x 1) (provide x)))
+  (eval '(require 'm))
+  (err/rt-test (eval '(module m racket/base (define x 2) (provide x)))
+               exn:fail:contract:variable?))
+
+(parameterize ([current-namespace (make-base-namespace)]
+               [compile-enforce-module-constants #f])
+  (eval '(module m racket/base (define x 1) (provide x)))
+  (eval '(require 'm))
+  (eval '(module m racket/base (define x 2) (provide x)))
+  (test 2 eval 'x))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module m racket/base (define x 1) (provide x)))
+  (eval '(require 'm))
+  (parameterize ([compile-enforce-module-constants #f])
+    (err/rt-test (eval '(module m racket/base (define x 2) (provide x)))
+                 exn:fail:contract:variable?)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check JIT treatement of seemingly constant imports
 
 (let ()
@@ -1152,10 +1175,10 @@
   (require 'avail-z)
   (eval-syntax #'(foo 10)))
 
-(err/rt-test (dynamic-require ''avail-y #f)
-             (lambda (exn) (and (exn? exn)
-                                (regexp-match? #rx"module that is not available"
-                                               (exn-message exn)))))
+(err/rt-test/once (dynamic-require ''avail-y #f)
+                  (lambda (exn) (and (exn? exn)
+                                     (regexp-match? #rx"module that is not available"
+                                                    (exn-message exn)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that a `syntax-local-ift-require' into a top-level context
@@ -1277,8 +1300,8 @@
   (define x (let/cc k k))
   (x 5))
 
-(err/rt-test (dynamic-require ''tries-to-assign-to-variable-through-a-continuation #f)
-             exn:fail:contract:variable?)
+(err/rt-test/once (dynamic-require ''tries-to-assign-to-variable-through-a-continuation #f)
+                  exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that skipping definitions (but continuing
@@ -1293,8 +1316,8 @@
 
   (error "no"))
 
-(err/rt-test (dynamic-require ''disallowed-definition-avoider #f)
-             exn:fail:contract:variable?)
+(err/rt-test/once (dynamic-require ''disallowed-definition-avoider #f)
+                  exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `syntax-local-lift-require` works interactively
@@ -2820,18 +2843,18 @@ case of module-leve bindings; it doesn't cover local bindings.
   (f 42)
   (define g (if (zero? (random 1)) 'ok 'oops)))
 
-(err/rt-test (dynamic-require ''fails-after-f-and-before-g #f)
-             (lambda (x) (and (exn:fail? x)
-                              (regexp-match? #rx"boom" (exn-message x)))))
+(err/rt-test/once (dynamic-require ''fails-after-f-and-before-g #f)
+                  (lambda (x) (and (exn:fail? x)
+                                   (regexp-match? #rx"boom" (exn-message x)))))
 (test #t procedure? (eval 'f (module->namespace ''fails-after-f-and-before-g)))
 
 (module uses-fails-after-f-and-before-g racket/base
   (require 'fails-after-f-and-before-g)
   g)
 
-(err/rt-test (dynamic-require ''uses-fails-after-f-and-before-g #f)
-             (lambda (x) (and (exn:fail? x)
-                              (regexp-match? #rx"uninitialized" (exn-message x)))))
+(err/rt-test/once (dynamic-require ''uses-fails-after-f-and-before-g #f)
+                  (lambda (x) (and (exn:fail? x)
+                                   (regexp-match? #rx"uninitialized" (exn-message x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2909,7 +2932,119 @@ case of module-leve bindings; it doesn't cover local bindings.
 
   (define re-o2 (open-output-bytes))
   (write re-m2 re-o2)
-  (check-vm (get-output-bytes re-o2) (system-type 'vm)))
+  (check-vm (get-output-bytes re-o2) (system-type 'vm))
+
+  ;; Check top-level compilation:
+  (define tl-o (open-output-bytes))
+  (parameterize ([current-compile-target-machine #f])
+    (write (compile '(begin (display "hi") (newline))) tl-o))
+  (check-vm (get-output-bytes tl-o) 'linklet))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `(define-values (id ...) (values rhs ...))` is not
+;; split if one of the `id`s is referenced early
+
+(module uses-a-in-define-values-before-a-is-defined racket/base
+  (define-values (a b)
+    (values 'a a)))
+
+(err/rt-test/once (dynamic-require ''uses-a-in-define-values-before-a-is-defined #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that inlining doesn't duplicated a quoted list
+
+(let ([e (compile
+          '(module check-with-inlining-duplicates-by-using-submodules racket/base
+             (provide check)
+
+             (module m racket/base
+               (provide f)
+               (define (f x) '(1 2)))
+
+             (module n racket/base
+               (require (submod ".." m))
+               (provide v)
+               (define v (f 0)))
+
+             (require 'm 'n)
+
+             (define check (eq? (f 0) v))))])
+  (define-values (i o) (make-pipe))
+  (write e o)
+  (close-output-port o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read i)))
+  (test #t dynamic-require ''check-with-inlining-duplicates-by-using-submodules 'check))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check copy propagation across module boundaries
+
+(module defines-also-something-as-alias-for-something racket/base
+
+  (provide also-something)
+
+  (define something (list 1 2 3))
+  (define also-something something))
+
+
+(module uses-also-something-via-local-alias racket/base
+  (require 'defines-also-something-as-alias-for-something)
+
+  (provide v)
+
+  (define copy also-something)
+  (define v (list copy)))
+
+(test '((1 2 3)) dynamic-require ''uses-also-something-via-local-alias 'v)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check resolution of module paths in a namespace produced by `module->namespace`
+
+(err/rt-test (eval '(require (submod "." inner)))
+             (lambda (exn) (and (exn:fail? exn)
+                                (regexp-match? #rx"no base path for relative submodule path" (exn-message exn)))))
+
+(module defines-a-submodule-named-inner racket/base
+  (module inner racket/base
+    (provide i)
+    (define i 'yes)))
+
+(dynamic-require ''defines-a-submodule-named-inner #f)
+(parameterize ([current-namespace (module->namespace ''defines-a-submodule-named-inner)])
+  (eval '(require (submod "." inner)))
+  (test 'yes eval 'i))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check reporting of require conflicts includes "who" provided the binding first
+
+(module require-conflict-is-sourced-a racket/base
+  (provide x)
+  (define x 'a))
+
+(module require-conflict-is-sourced-b racket/base
+  (provide x)
+  (define x 'b))
+
+(err/rt-test
+ (eval
+  '(module m racket/base
+     (require 'require-conflict-is-sourced-a
+              'require-conflict-is-sourced-b)))
+ (lambda (exn)
+   (regexp-match? #rx"already required\n  at: x\n  in: \\(quote require-conflict-is-sourced-b\\)\n  also provided by: \\(quote require-conflict-is-sourced-a\\)" (exn-message exn))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the error is reasonable if `current-compile`
+;; is used directly and the result abused:
+
+(parameterize ([current-compile
+                (let ([orig-compile (current-compile)])
+                  (lambda (stx im?)
+                    (orig-compile stx #t)))]) ; #t argument sets up the abuse
+  (define c (compile '(module m racket/base)))
+  (err/rt-test (write c (open-output-bytes))
+               exn:fail:contract?
+               #rx"write: linklet is not serializable"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -18,7 +18,6 @@ mainsrcdir = @srcdir@/../..
 CC = @CC@
 CPP = @CPP@
 CXX = @CXX@
-NICEAR = $(mainsrcdir)/utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -503,6 +502,11 @@ foreign.@LTO@: $(XSRCDIR)/foreign.c
 main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
+$(SRCDIR)/gmp_alpha_gcc.@LTO@: $(SRCDIR)/gmp/gmp_alpha_gcc.s
+	$(AS) -o $(SRCDIR)/gmp_alpha_gcc.@LTO@ $(SRCDIR)/gmp/gmp_alpha_gcc.s
+$(SRCDIR)/gmp_arm_gcc.@LTO@: $(SRCDIR)/gmp/gmp_arm_gcc.s
+	$(AS) -o $(SRCDIR)/gmp_arm_gcc.@LTO@ $(SRCDIR)/gmp/gmp_arm_gcc.s
+
 mzcom.@LTO@: $(srcdir)/../../mzcom/mzcom.cxx
 	$(CC) -DMZCOM_3M $(ALL_CFLAGS) -fno-exceptions -c $(srcdir)/../../mzcom/mzcom.cxx -o mzcom.@LTO@
 mzobj.@LTO@: $(XSRCDIR)/mzobj.cxx
@@ -577,18 +581,18 @@ LIBRKTIO_FOR_DLL = $(LIBRKTIO_FOR_DLL_@LIBSFX@)
 LIBRKTIO_FOR_LIB = $(LIBRKTIO_FOR_LIB_@LIBSFX@)
 LIBRKTIO_UP_FOR_LIB = $(LIBRKTIO_UP_FOR_LIB_@LIBSFX@)
 
-EXTRA_GMP_DEP_FILE = ../src/@EXTRA_GMP_OBJ@
+EXTRA_GMP_DEP_FILE = $(SRCDIR)/@EXTRA_GMP_OBJ@
 EXTRA_GMP = @EXTRA_GMP_DEP@
 
 EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB) $(LIBRKTIO_FOR_DLL)
 EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(LIBRKTIO_FOR_DLL)
 
 ../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
-	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
-	$(RANLIB) ../libracket3m.@LIBSFX@
+	$(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
 
 ../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@ $(LIBRKTIO_FOR_LIB)
 	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ $(LIBRKTIO_UP_FOR_LIB) @LDFLAGS@ $(LIBS)
+	@POST_LINKER@ ../racket@MMM@
 
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative

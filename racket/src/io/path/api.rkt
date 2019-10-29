@@ -37,30 +37,34 @@
 ;; ----------------------------------------
 
 (define (make-guard-paths who normalize?)
-  (case-lambda
-    [()
-     (security-guard-check-file who #f '(exists))
-     (values)]
-    [(path)
-     (cond
-       [(path-string? path)
-        (->host path who '(exists))
-        (if normalize?
-            (path->directory-path (simplify-path path))
-            path)]
-       [else path])]))
+  (lambda (path)
+    (cond
+      [(path-string? path)
+       (->host path who '(exists))
+       (if normalize?
+           (path->directory-path (simplify-path path))
+           path)]
+      [else path])))
+
+(define (make-wrap-paths who)
+  (lambda (path)
+    (security-guard-check-file who #f '(exists))
+    path))
 
 (define/who current-directory
-  (let ([guard (make-guard-paths who #t)])
-    (make-derived-parameter raw:current-directory guard guard)))
+  (make-derived-parameter raw:current-directory
+                          (make-guard-paths who #t)
+                          (make-wrap-paths who)))
 
-(define/who current-directory-for-path->complete-path
-  (let ([guard (make-guard-paths 'path->complete-path #f)])
-    (make-derived-parameter raw:current-directory guard guard)))
+(define current-directory-for-path->complete-path
+  (make-derived-parameter raw:current-directory
+                          (make-guard-paths 'path->complete-path #f)
+                          (make-wrap-paths 'path->complete-path)))
 
 (define/who current-directory-for-user
-  (let ([guard (make-guard-paths who #t)])
-    (make-derived-parameter raw:current-directory-for-user guard guard)))
+  (make-derived-parameter raw:current-directory-for-user
+                          (make-guard-paths who #t)
+                          (make-wrap-paths who)))
 
 (define/who current-load-relative-directory
   (let ([guard (make-guard-paths who #f)])

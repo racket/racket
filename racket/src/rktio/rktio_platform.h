@@ -193,6 +193,8 @@
 
 # define UDP_DISCONNECT_EADRNOTAVAIL_OK
 
+# define RKTIO_GROWABLE_FDSET
+
 # endif
 
   /************ QNX *************/
@@ -327,6 +329,10 @@
     option doesn't work, then the IPv6 addresses are silently ignored
     when creating the listener (but only where there is at least once
     IPv4 address). */
+
+ /* RKTIO_GROWABLE_FDSET enables fd-set array sizing dynamically based
+    on the file descriptor values that occur at runtime (as opposed to
+    querying the OS for the size, possibly because the size can change). */
 
   /***********************/
  /* Signals             */

@@ -45,7 +45,7 @@ AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket to build;
 
 m4_include(../ac/path_arg.m4)
 
-AC_ARG_ENABLE(natipkg, [  --enable-natipkg        add "-natipkg" to library subpath])
+m4_include(../ac/natipkg_arg.m4)
 
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
@@ -60,9 +60,10 @@ AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
-AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
+AC_ARG_ENABLE(generations,[  --enable-generations    3m: support generational GC (enabled by default)], , enable_generations=yes)
+AC_ARG_ENABLE(backtrace,  [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
-AC_ARG_ENABLE(backtrace, [  --enable-cify           compile startup code to C instead of bytecode])
+AC_ARG_ENABLE(cify,       [  --enable-cify           compile startup code to C instead of bytecode])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
@@ -77,7 +78,7 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 
 m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
-AC_ARG_ENABLE(ubsan,   [  --enable-ubsan          compile with -fsanitize=undefined)])
+m4_include(../ac/ubsan_arg.m4)
 AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
 
 m4_include(../ac/crossany_arg.m4)
@@ -179,7 +180,7 @@ show_explicitly_enabled "${enable_csdefault}" "CS will be default"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
-show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+m4_include(../ac/natipkg_show.m4)
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
@@ -204,6 +205,7 @@ show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
+show_explicitly_disabled "${enable_generations}" "3m generational GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 show_explicitly_enabled "${enable_cify}" "Startup compiled to C"
 show_explicitly_disabled "${enable_cify}" "Startup compiled to C"
@@ -281,6 +283,8 @@ LIBRACKET_DEP=""
 
 EXE_SUFFIX=
 SO_SUFFIX=.so
+
+POST_LINKER="echo"
 
 MMM=3m
 MMM_INSTALLED=
@@ -452,8 +456,9 @@ if test "$AR" = '' ; then
   fi
 fi
 if test "$ARFLAGS" = '' ; then 
-  ARFLAGS=ruv
+  ARFLAGS=rc
 fi
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then 
@@ -571,6 +576,7 @@ case "$host_os" in
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    POST_LINKER="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -597,6 +603,10 @@ case "$host_os" in
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
+       ;;
+      arm*)
+       EXTRA_GMP_OBJ="gmp_arm_gcc.o"
+       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       *)
        ;;
@@ -767,7 +777,12 @@ if test "${enable_cgcdefault}" ; then
    MAIN_VARIANT=cgc
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
-CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
+
+if test "${enable_racket}" = "" ; then
+  CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
+else
+  CS_BOOTSTRAP_HELP="no-${MAIN_VARIANT}"
+fi
 
 if test "${enable_csdefault}" ; then
    MMM_INSTALLED=3m
@@ -785,6 +800,12 @@ fi
 if test "${enable_sgc}" = "yes" ; then
   GCDIR=sgc
   OPTIONS="$OPTIONS -DUSE_SENORA_GC"
+fi
+
+if test "${enable_generations}" = "yes" ; then
+  AC_DEFINE(USE_GC_GENS, 1,[GC Generations])
+else
+  AC_DEFINE(USE_GC_GENS, 0,[GC Generations])
 fi
 
 ############## Strip tool ################
@@ -1281,13 +1302,7 @@ fi
 
 ############## ubsan ################
 
-if test "${enable_ubsan}" = "yes" ; then
-   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
-   CFLAGS="$CFLAGS $UBSAN"
-   CPPFLAGS="$CPPFLAGS $UBSAN"
-   PREFLAGS="$PREFLAGS $UBSAN"
-   LDFLAGS="$LDFLAGS $UBSAN"
-fi
+m4_include(../ac/ubsan.m4)
 
 ############## usersetup ################
 
@@ -1429,6 +1444,7 @@ AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
+AC_SUBST(POST_LINKER)
 AC_SUBST(PLAIN_CC)
 AC_SUBST(DYN_CFLAGS)
 

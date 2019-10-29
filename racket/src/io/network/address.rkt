@@ -34,7 +34,7 @@
       (lambda (lookup-box)
         (define lookup (unbox lookup-box))
         (when lookup
-          (rktio_addrinfo_lookup_stop lookup)))
+          (rktio_addrinfo_lookup_stop rktio lookup)))
       ;; in atomic mode
       (lambda (lookup-box)
         (define lookup (unbox lookup-box))

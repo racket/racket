@@ -21,7 +21,8 @@
          "private/arrow-val-first.rkt"
          "private/orc.rkt"
          "private/list.rkt"
-         "private/and.rkt")
+         "private/and.rkt"
+         "private/property.rkt")
 
 (provide
  base->?
@@ -33,8 +34,7 @@
  matches-arity-exactly?
  keywords-match
  bad-number-of-results
- (for-syntax check-tail-contract
-             parse-leftover->*)
+ (for-syntax check-tail-contract)
  tail-marks-match?
  values/drop
  arity-checking-wrapper
@@ -142,6 +142,7 @@
  get/build-late-neg-projection
  get/build-val-first-projection
 
+ property/c
  suggest/c
  struct-guard/c
 

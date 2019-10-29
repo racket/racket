@@ -64,7 +64,6 @@
          collapsible-contract-continuation-mark-key
          with-collapsible-contract-continuation-mark
          
-         (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
          (rename-out [contract-custom-write-property-proc custom-write-property-proc])
 
@@ -327,8 +326,6 @@
              xs))
     ctc))
 
-;; coerce-contract/f : any -> (or/c #f contract?)
-;; returns #f if the argument could not be coerced to a contract
 (define-values (name-default name-default?)
   (let ()
     (struct name-default ())
@@ -370,6 +367,8 @@
   (set! integer-in-0f 0f)
   (set! integer-in-1f 1f))
 
+;; coerce-contract/f : any -> (or/c #f contract?)
+;; returns #f if the argument could not be coerced to a contract
 (define (coerce-contract/f x [name name-default])
   (cond
     [(coerce-simple-value name x) => values]
@@ -437,7 +436,7 @@
                                x)
                            name))]
     [(char? x) (make-char-in/c x x)]
-    [(or (bytes? x) (string? x) (equal? +nan.0 x) (equal? +nan.f x))
+    [(or (bytes? x) (string? x) (and (real? x) (nan? x)))
      (make-equal-contract x (if (name-default? name) x name))]
     [(number? x)
      (make-=-contract x (if (name-default? name) x name))]
@@ -447,9 +446,6 @@
 (define the-known-good-contracts
   (let-syntax ([m (λ (x) #`(list #,@(known-good-contracts)))])
     (m)))
-
-(struct wrapped-extra-arg-arrow (real-func extra-neg-party-argument)
-  #:property prop:procedure 0)
 
 (define-syntax (define/final-prop stx)
   (syntax-case stx ()
@@ -577,6 +573,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
    #:name (λ (ctc) (eq-contract-name ctc))
    #:generate
@@ -605,6 +602,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
    #:name (λ (ctc) (equal-contract-name ctc))
    #:stronger
@@ -629,6 +627,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
    #:name (λ (ctc) (=-contract-name ctc))
    #:stronger
@@ -656,21 +655,17 @@
          [(zero? v)
           ;; zero has a whole bunch of different numbers that
           ;; it could be, so just pick one of them at random
-          (λ ()
-            (oneof '(0
-                     -0.0 0.0 0.0f0 -0.0f0
-                     0.0+0.0i 0.0f0+0.0f0i 0+0.0i 0.0+0i)))]
+          (λ () (oneof all-zeros))]
          [else
           (λ ()
             (case (random 10)
               [(0)
-               (define inf/nan '(+inf.0 -inf.0 +inf.f -inf.f +nan.0 +nan.f))
                ;; try the inexact/exact variant (if there is one)
                (cond
                  [(exact? v)
                   (define iv (exact->inexact v))
                   (if (= iv v) iv v)]
-                 [(and (inexact? v) (not (memv v inf/nan)))
+                 [(and (inexact? v) (not (infinite? v)) (not (nan? v)))
                   (define ev (inexact->exact v))
                   (if (= ev v) ev v)]
                  [else v])]
@@ -686,6 +681,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order
    (λ (ctc)
      (define low (char-in/c-low ctc))
@@ -738,6 +734,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order
    (λ (ctc)
      (define reg (regexp/c-reg ctc))
@@ -759,6 +756,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:stronger predicate-contract-equivalent
    #:equivalent predicate-contract-equivalent
    #:name (λ (ctc) (predicate-contract-name ctc))

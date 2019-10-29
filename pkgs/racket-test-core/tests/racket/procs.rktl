@@ -254,7 +254,10 @@
                              [(equal? allowed '(#:a #:b))
                               (err/rt-test ((car p) 1 #:a 1 #:b 1))]
                              [(equal? allowed #f)
-                              (err/rt-test ((car p) 1 #:a 1 #:b 1))])))))))
+                              (err/rt-test ((car p) 1 #:a 1 #:b 1))])))
+                      ;; Try supplying many arguments
+                      (when (procedure-arity-includes? (car p) 100)
+                        (test #t list? (apply (car p) (for/list ([i 100]) i))))))))
               (map
                add-chaperone
                (append procs
@@ -595,7 +598,54 @@
     (write (compile '(f)) o)
     (test #t 'same? (eval (parameterize ([read-accept-compiled #t])
                             (read (open-input-bytes (get-output-bytes o))))))))
-           
+
+;; ----------------------------------------
+;; Check prop:arity-string
+
+(err/rt-test (let ()
+               (struct a (x)
+                 #:property prop:arity-string 'bad)
+               (a 0)))
+
+(err/rt-test (let ()
+               (struct evens (proc)
+                 #:property prop:procedure (struct-field-index proc)
+                 #:property prop:arity-string
+                 (lambda (p)
+                   "an even number of arguments"))
+               ((evens (lambda (x y) x)) 100))
+             exn:fail:contract?
+             #rx"an even number of arguments")
+
+;; ----------------------------------------
+;; procedure-specialize
+
+(let ([make-f (lambda (x)
+                (procedure-specialize
+                 (lambda (y)
+                   (cons x y))))])
+  (set! make-f make-f)
+  (test '(5 . 6) (make-f 5) 6))
+
+(let ([make-f (lambda (x)
+                (lambda (y)
+                  (cons x y)))])
+  (set! make-f make-f)
+  (let ([f (make-f 5)])
+    (test '(5 . 6) (procedure-specialize f) 6)
+    (test '(5 . 6) f 6)
+    (test '(7 . 8) (make-f 7) 8)))
+
+(define top-level-variable-to-mutate-form-specialized 'no)
+
+(let ([f (procedure-specialize
+          (lambda (y)
+            (set! top-level-variable-to-mutate-form-specialized 'yes)
+            y))])
+  (set! f f)
+  (test 'done f 'done)
+  (test 'yes values top-level-variable-to-mutate-form-specialized))
+
 ;; ----------------------------------------
 
 (report-errs)

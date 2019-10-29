@@ -789,7 +789,7 @@ The first such directory that contains a file whose name matches
 @racket[path] with @filepath{.zo} added (in the sense of
 @racket[path-add-suffix]) is reported as the return directory path.
 If no such file is found, the result corresponds to the first element
-of @racket[modes] combined with @racket[default-roots].
+of @racket[modes] combined with @racket[default-root].
 
 @history[#:changed "7.1.0.9" @elem{Added the @racket[#:default-root] argument.}]}
 

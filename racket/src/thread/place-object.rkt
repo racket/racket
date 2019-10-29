@@ -19,14 +19,16 @@
                custodian                 ; root custodian
                [custodian-ref #:mutable] ; owning custodian
                [host-thread #:mutable]   ; host thread, needed for memory accounting
+               [id #:mutable]            ; matches id of the host thread
                [host-roots #:mutable]    ; continuation-independent state, needed for memory accounting
                [current-thread #:mutable] ; running Racket thread, needed for accounting
                [post-shutdown #:mutable] ; list of callbacks
                [pumpers #:mutable]       ; vector of up to three pumper threads
-               [pending-break #:mutable] ; #f, 'break, 'hangup, or 'terminate
+               [pending-break #:mutable] ; #f, 'break, 'hang-up, or 'terminate
                done-waiting              ; hash table of places to ping when this one ends
                [wakeup-handle #:mutable]
-               [dequeue-semas #:mutable]) ; semaphores reflecting place-channel waits to recheck
+               [dequeue-semas #:mutable] ; semaphores reflecting place-channel waits to recheck
+               [future-scheduler #:mutable]) ; #f or a scheduler of futures
   #:property prop:evt (struct-field-index pch)
   #:property prop:place-message (lambda (self) (lambda () (lambda () (place-pch self)))))
 
@@ -42,6 +44,7 @@
          cust
          #f
          #f                   ; host thread
+         0                    ; id
          #f                   ; host roots
          #f                   ; running thread
          '()                  ; post-shutdown
@@ -49,7 +52,8 @@
          #f                   ; pending-break
          (make-hasheq)        ; done-waiting
          #f                   ; wakeup-handle
-         '()))                ; dequeue-semas
+         '()                  ; dequeue-semas
+         #f))                 ; future scheduler
 
 (define initial-place (make-place (host:make-mutex)
                                   root-custodian))

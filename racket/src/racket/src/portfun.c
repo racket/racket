@@ -8,8 +8,8 @@
 static Scheme_Object *input_port_p (int, Scheme_Object *[]);
 static Scheme_Object *output_port_p (int, Scheme_Object *[]);
 static Scheme_Object *port_closed_p (int, Scheme_Object *[]);
-static Scheme_Object *current_input_port (int, Scheme_Object *[]);
 static Scheme_Object *string_port_p(int, Scheme_Object *[]);
+static Scheme_Object *current_input_port (int, Scheme_Object *[]);
 static Scheme_Object *current_output_port (int, Scheme_Object *[]);
 static Scheme_Object *current_error_port (int, Scheme_Object *[]);
 static Scheme_Object *make_input_port (int, Scheme_Object *[]);
@@ -221,6 +221,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("file-stream-port?",      scheme_file_stream_port_p,  1, 1, 1, env);
   ADD_FOLDING_PRIM("string-port?",           string_port_p,              1, 1, 1, env);
   ADD_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
+  ADD_FOLDING_PRIM("port-waiting-peer?",     scheme_port_waiting_peer_p, 1, 1, 1, env);
 
   ADD_NONCM_PRIM("port-closed?",             port_closed_p,          1, 1, env); 
   ADD_NONCM_PRIM("open-input-file",          open_input_file,        1, 3, env);
@@ -4350,13 +4351,18 @@ static Scheme_Object *set_port_next_location(int argc, Scheme_Object *argv[])
 static Scheme_Object *filesystem_change_evt(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *e;
+  int raise_errs = 1;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("filesystem-change-evt", "path-string?", 0, argc, argv);
-  if (argc > 1)
-    scheme_check_proc_arity("filesystem-change-evt", 0, 1, argc, argv);
+  if (argc > 1) {
+    if (!SCHEME_FALSEP(argv[1])) {
+      scheme_check_proc_arity2("filesystem-change-evt", 0, 1, argc, argv, 1);
+      raise_errs = 0;
+    }
+  }
 
-  e = scheme_filesystem_change_evt(argv[0], 0, (argc < 2));
+  e = scheme_filesystem_change_evt(argv[0], 0, raise_errs);
 
   if (!e)
     return _scheme_tail_apply(argv[1], 0, NULL);

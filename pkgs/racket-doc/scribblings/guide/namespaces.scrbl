@@ -519,3 +519,56 @@ DrRacket's @onscreen{Check Syntax} tool cannot tell that the second
 @racket[good] is a reference to the first, and the unbound reference
 to @racket[bad] is reported only at run time instead of rejected
 syntactically.
+
+@;------------------------------------------------------------------------
+@section[#:tag "code-inspectors+protect"]{Code Inspectors for Trusted and Untrusted Code}
+
+@deftech{Code inspectors} provide the mechanism for determining which
+modules are trusted to use functions like @racket[module->namespace]
+or unsafe modules like @racket[ffi/unsafe]. When a module is declared,
+the value of @racket[current-code-inspector] is associated to the
+module declaration. When a module is instantiated (i.e., when the body
+of the declaration is actually executed), a sub-inspector is created
+to guard the module's exports. Access to the module's @tech{protected}
+exports requires a code inspector that is stronger (i.e., higher in
+the inspector hierarchy) than the module's instantiation inspector;
+note that a module's declaration inspector is always stronger than its
+instantiation inspector, so modules are declared with the same code
+inspector can access each other's exports.
+
+To distinguish between trusted an untrusted code, load trusted code
+first, then set @racket[current-code-inspector] to the result of
+@racket[(make-inspector (current-code-inspector))] to install a weaker
+inspector, and finally load untrusted code with the weaker inspector
+in place. The weaker inspector should stay in place when any untrusted
+code is run. If necessary, trusted code can restore the original
+inspector temporarily during the dynamic extent of trusted code (as
+long as it does not call back into untrusted code).
+
+Syntax-object constants within a module, such as literal identifiers
+in a template, retain the inspector of their source module. In this
+way, a macro from a trusted module can be used within an untrusted
+module, and @tech{protected} identifiers in the macro expansion still
+work, even through they ultimately appear in an untrusted module.
+Typically, such identifiers should be @tech{arm}ed, so that they
+cannot be extracted from the macro expansion and abused by untrusted
+code.
+
+When @racket[datum->syntax] is used to transfer the context of a
+syntax object to another, then it may taint the resulting syntax
+object. Even if the source syntax object is not @tech{arm}ed, however,
+the resulting syntax object may have limited access to bindings;
+@racket[datum->syntax] will not transfer an inspector from the source
+syntax object unless @racket[datum->syntax] is called during the
+expansion of a macro whose module's declaration-time code inspector.
+More generally, @racket[datum->syntax] chooses the strongest inspector
+that is the same or weaker than the inspector of the currently
+expanding macro's module and the source syntax object's inspector.
+
+Compiled code from a @filepath{.zo} file is inherently untrustworthy,
+unfortunately, since it can be synthesized by means other than
+@racket[compile]. When compiled code is written to a @filepath{.zo}
+file, syntax-object constants within the compiled code lose their
+inspectors. All syntax-object constants within compiled code acquire
+the enclosing module's declaration-time inspector when the code is
+loaded.

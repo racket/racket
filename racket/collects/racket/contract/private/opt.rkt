@@ -82,10 +82,14 @@
       [(and (pair? konst) (eq? (car konst) 'quote))
        (values #`(eq? #,konst #,v)
                "eq?")]
-      [(or (boolean? konst) (char? konst) (null? konst))
+      [(or (boolean? konst) (null? konst))
        (values #`(eq? #,konst #,v)
                "eq?")]
-      [(or (string? konst) (bytes? konst) (equal? konst +nan.0) (equal? konst +nan.f))
+      [(or (char? konst) (equal? konst +nan.0) (and (single-flonum-available?)
+                                                    (equal? konst (real->single-flonum +nan.0))))
+       (values #`(eqv? #,konst #,v)
+               "eqv?")]
+      [(or (string? konst) (bytes? konst))
        (values #`(equal? #,konst #,v)
                "equal?")]
       [(number? konst)
@@ -379,6 +383,7 @@
   (λ (val port mode) (fprintf port "#<opt-flat-contract: ~.s>" (opt-contract-name val)))
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
    #:first-order (λ (ctc) (flat-opt-contract-predicate ctc))
    #:name (λ (ctc) (opt-contract-name ctc))

@@ -24,7 +24,10 @@
   (void
    (let loop ([i 0])
      (vector-set-performance-stats! results)
-     (if (zero? (vector-ref results 5))
+     (if (and (zero? (vector-ref results 5))
+              ;; No "stack overflow" on Chez Scheme, so pick a depth
+              (or (eq? 'racket (system-type 'vm))
+                  (i . < . 50000)))
          (let ([v (loop (add1 i))])
            (if (zero? v)
                (begin

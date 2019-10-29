@@ -287,7 +287,9 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define-values (actual-benchmarks-to-run 
                   actual-implementations-to-run 
-                  num-iterations)
+                  num-iterations
+                  executables
+                  names)
     (process-command-line benchmark-names null
                           (map car testers) non-defaults
                           3))

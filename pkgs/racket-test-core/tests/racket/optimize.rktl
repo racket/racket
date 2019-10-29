@@ -610,6 +610,17 @@
 (test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
            '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
 
+(test-comp '(lambda (z) (fl+ z z))
+           '(lambda (z) (real->double-flonum (fl+ z z))))
+(test-comp '(lambda (z) (fl+ z z))
+           '(lambda (z) (exact->inexact (fl+ z z))))
+(test-comp '(lambda (z) (real->double-flonum z))
+           '(lambda (z) (real->double-flonum (real->double-flonum z))))
+(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+           '(lambda (z) (real->double-flonum (fx+ z z))))
+(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+           '(lambda (z) (exact->inexact (fx+ z z))))
+
 ; Test that the optimizer infers correctly the type of all the arguments
 ; and the type of the return value. Use #f in case the type is unknown.
 (define (test-arg-types proc/args? val? 
@@ -3280,6 +3291,74 @@
                        'UNEXPECTED!))
            #f)
 
+(let ()
+  (define (check-empty-allocation hash-sym)
+    (test-comp `(lambda () (,hash-sym) 5)
+               '(lambda () 5))
+    (test-comp `(lambda (x) (,hash-sym x) 5) ; x may not have the right shape
+               '(lambda (x) 5)
+               #f))
+  (check-empty-allocation 'hash)
+  (check-empty-allocation 'hasheqv)
+  (check-empty-allocation 'hasheq)
+  (check-empty-allocation 'make-hash)
+  (check-empty-allocation 'make-hasheqv)
+  (check-empty-allocation 'make-hasheq)
+  (check-empty-allocation 'make-weak-hash)
+  (check-empty-allocation 'make-weak-hasheqv)
+  (check-empty-allocation 'make-weak-hasheq)
+  (check-empty-allocation 'make-immutable-hash)
+  (check-empty-allocation 'make-immutable-hasheqv)
+  (check-empty-allocation 'make-immutable-hasheq)
+
+  (test-comp `(lambda (x y) (hash x y) 5) ; can trigger equal callbacks
+             '(lambda () 5)
+             #f)
+  (test-comp `(lambda (x y) (hasheqv x y) 5)
+             '(lambda (x y) 5))
+  (test-comp `(lambda (x y) (hasheq x y) 5)
+             '(lambda (x y) 5))
+
+  ;; Wrong arity
+  (test-comp `(lambda (x y) (hash x) 5)
+             '(lambda (x) 5)
+             #f)
+  (test-comp `(lambda (x) (hasheqv x) 5)
+             '(lambda (x) 5)
+             #f)
+  (test-comp `(lambda (x) (hasheq x) 5)
+             '(lambda (x) 5)
+             #f))
+
+(let ()
+  ;; Although these are unsafe operations, they are obliged to
+  ;; raise an exception if the iteration value used to be
+  ;; ok and has become not ok due to a mutation (possibly
+  ;; by the GC to drop a weakly held key)
+  (define (check-keep-iterate op-name)
+    (test-comp `(lambda (ht i) (,op-name ht i) 5)
+               `(lambda (ht i) 5)
+               #f))
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-next)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-next)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-key)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-key)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-value)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-value)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-key+value)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-key+value)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-pair)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-pair)
+
+  (define (check-discard-iterate op-name)
+    (test-comp `(lambda (ht i) (,op-name ht i) 5)
+               `(lambda (ht i) 5)))
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-next)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-key)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-value)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-key+value)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-pair))
+
 ;; Check elimination of ignored structure predicate
 ;; and constructor applications:
 
@@ -3635,7 +3714,18 @@
              (make-struct-type-property 'a)
              10)
            '(lambda ()
-             10))
+              10))
+
+(test-comp '(lambda ()
+              (make-struct-type-property 'a (lambda () 'was-wrong-arity))
+              5)
+           '(lambda () 5)
+           #f)
+(test-comp '(lambda ()
+              (make-struct-type-property 'a (lambda (x) 'was-wrong-arity))
+              5)
+           '(lambda () 5)
+           #f)
 
 (test-comp '(module m racket/base
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
@@ -3698,6 +3788,13 @@
              (define (g y) (list y)))
            #f)
 
+(test-comp '(lambda ()
+              ;; The built-in `prop:object-name` property has a guard:
+              (make-struct-type 'bad #f 2 0 #f (list (cons prop:object-name 'bad-spec)))
+              5)
+           '(lambda () 5)
+           #f)
+
 (module struct-type-property-a racket/base
   (provide prop:a)
   (define-values (prop:a a? a-ref) (make-struct-type-property 'a)))
@@ -3727,6 +3824,26 @@
              (define (f x) (list (list x) g))
              (struct b () #:property prop:a 'a)
              (define (g y) (list y)))
+           #f)
+
+(test-comp '(module m racket/base
+              (struct posn (x y) #:prefab)
+              (let ()
+                ;; Should be able to tell that `struct:posn` is prefab
+                (make-struct-type 'also-posn struct:posn 2 0 #f null 'prefab)
+                (void))
+              (posn 1 2))
+           '(module m racket/base
+              (struct posn (x y) #:prefab)
+              (let ()
+                (void))
+              (posn 1 2)))
+
+(test-comp '(lambda ()
+              ;; `struct:date` is not prefab
+              (make-struct-type 'bad struct:date 2 0 #f null 'prefab)
+              5)
+           '(lambda () 5)
            #f)
 
 ;; A function with a required optional argument creates a pattern like
@@ -3988,6 +4105,13 @@
   (check-number-op-unary 'add1)
   (check-number-op-unary 'sub1)
   (check-number-op-unary 'abs))
+
+;; `abs` wants and produces reals, not arbitrary numbers:
+(test-comp '(lambda (x) (when (number? x) (abs x)) 5)
+           '(lambda (x) 5)
+           #f)
+(test-comp '(lambda (x) (real? (abs x)))
+           '(lambda (x) (abs x) #t))
 
 (test-comp '(lambda () (-) (void))
            '(lambda () (void))
@@ -4485,7 +4609,7 @@
   (f)
   (define i 9)
   (set! i 10))
-(err/rt-test (dynamic-require ''bad-order #f))
+(err/rt-test/once (dynamic-require ''bad-order #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6427,6 +6551,33 @@
   (provide result))
 
 (test #f dynamic-require ''optimizes-to-with-immediate-continuation-mark-in-noninlined 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module regression-for-letrec-check-non-app-tracking racket/base
+  (require racket/match)
+
+  (define (j-emit j)
+    (struct :ec (x defs) #:transparent)
+    (struct :def (x e) #:transparent)
+    (define (e->c^ j) '(1 2 3))
+    (define (es->c^ js)
+      (define n (gensym))
+      (match js
+        ['() (e->c '(:con 'void))]
+        [(cons a d)
+         (match-define (:ec ax adefs) (e->c a))
+         (match-define (:ec dx ddefs) (es->c d))
+         (:ec n (list* (:def n 9)
+                       (append ddefs adefs)))]))
+
+    (define ((make-e->c e->c^) j)
+      (match-define (and r (:ec n defs)) (e->c^ j))
+      r)
+    (define e->c (make-e->c e->c^))
+    (define es->c (make-e->c es->c^))
+
+    6))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -57,7 +57,7 @@ sub-submodule named @racketidfont{declare-preserve-for-embedding}
 
 Language reader modules that are used only via @hash-lang[] are also
 not automatically embedded. To support dynamic use of @hash-lang[]
-with a language specifcation, supply the @DPFlag{lang} flag to
+with a language specification, supply the @DPFlag{lang} flag to
 @exec{raco exe}. The argument after @DPFlag{lang} can be a language
 name, but more generally it can be text to appear just after
 @hash-lang[]. For example, @litchar{at-exp racket/base} makes sense as
@@ -71,6 +71,21 @@ that are automatically loaded from @racket[(build-path "compiled"
 @racket[require]---are treated like other run-time files: a generated
 executable uses them from their original location, and they are copied
 and packaged together when creating a distribution.
+
+When a module is embedded in an executable, it gets a symbolic name
+instead of its original filesystem-based name. The module-name
+resolver is configured in the embedding executable to map
+collection-based module paths to the embedded symbolic name, but no
+such mapping is created for filesystem paths. By default, a module's
+symbolic name is generated in an unspecified but deterministic
+way where the name starts with @as-index{@litchar{#%embedded:}},
+except that the main module is prefixed with @litchar{#%mzc:}. The
+relative lack of specification for module names can be be a problem
+form language constructs that are sensitive to a module names, such as
+serialization. To take more control over a module's symbolic name, use
+the @DPFlag{named-lib} or @DPFlag{named-file} argument to specify a
+prefix that is appended before the module's base name to generate a
+symbolic name.
 
 The @exec{raco exe} command works only with module-based programs. The
 @racketmodname[compiler/embed] library provides a more general
@@ -192,6 +207,23 @@ The @exec{raco exe} command accepts the following command-line flags:
    @racketmodname[syntax/module-reader] support that key
    automatically.}
 
+ @item{@DPFlag{named-lib} @nonterm{prefix} @nonterm{module-path} ---
+   like @DPFlag{lib}, but the embedded module's symbolic name is
+   specified to be @nonterm{prefix} appended before the library file's
+   base name. Specifying a module's symbolic name can be useful with
+   language constructs that depend reflexively on a module name, such
+   as a serialization format (where a module name is record so that a
+   function can be found later for deserialization).}
+
+ @item{@DPFlag{named-file} @nonterm{prefix} @nonterm{file-path} ---
+   include @nonterm{file-path} in the executable, even if it is not
+   referenced by the main program, and use @nonterm{prefix} before the
+   file's base name as the embedded module's symbolic name. Since the
+   embedded module's symbolic name is predictable, the module might be
+   accessed at run time via @racket[dynamic-require]. A predictable
+   module name can also help with serialized data in the same way as
+   @DPFlag{named-lib}.}
+
  @item{@DPFlag{exf} @nonterm{flag} --- provide the @nonterm{flag}
    command-line argument on startup to the embedded @exec{racket} or
    @exec{gracket}.}
@@ -217,7 +249,10 @@ The @exec{raco exe} command accepts the following command-line flags:
 @history[#:changed "6.3.0.11" @elem{Added support for
                                     @racketidfont{declare-preserve-for-embedding}.}
          #:changed "6.90.0.23" @elem{Added @DFlag{embed-dlls}.}
-         #:changed "7.0.0.17" @elem{Added @DPFlag{lang}.}]
+         #:changed "7.0.0.17" @elem{Added @DPFlag{lang}.}
+         #:changed "7.3.0.6" @elem{Added @DPFlag{named-lib} and @DPFlag{named-file},
+                                   and changed generation of symbolic names for embedded
+                                   modules to make it deterministic.}]
 
 @; ----------------------------------------------------------------------
 

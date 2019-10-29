@@ -161,13 +161,24 @@ essentially equivalent to the following:
 The context is cached, so different calls to
 @racket[ssl-secure-client-context] return the same context unless
 @racket[(ssl-default-verify-sources)] has changed.
+
+Note that @racket[(ssl-secure-client-context)] returns a sealed
+context, so it is not possible to add a private key and certificate
+chain to it. If client credentials are required, use
+@racket[ssl-make-client-context] instead.
 }
 
 
 @defproc[(ssl-make-client-context
           [protocol (or/c 'secure 'auto
                           'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                    'auto])
+                    'auto]
+          [#:private-key private-key
+                         (or/c (list/c 'pem path-string?)
+                               (list/c 'der path-string?)
+                               #f)
+                         #f]
+          [#:certificate-chain certificate-chain (or/c path-string? #f) #f])
          ssl-client-context?]{
 
 Creates a context to be supplied to @racket[ssl-connect]. The context
@@ -208,11 +219,19 @@ details. See also
 @racket[supported-client-protocols] and
 @racket[supported-server-protocols].
 
+If @racket[private-key] and @racket[certificate-chain] are provided,
+they are loaded into the context using @racket[ssl-load-private-key!]
+and @racket[ssl-load-certificate-chain!], respectively. Client
+credentials are rarely used with HTTPS, but they are occasionally used
+in other kind of servers.
+
 @history[
 #:changed "6.1" @elem{Added @racket['tls11] and @racket['tls12].}
 #:changed "6.1.1.3" @elem{Default to new @racket['auto] and disabled SSL
                           2.0 and 3.0 by default.}
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
+#:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
+arguments.}
 ]}
 
 
@@ -309,7 +328,8 @@ Analogous to @racket[tcp-abandon-port].}
 
 @defproc[(ssl-addresses [p (or/c ssl-port? ssl-listener?)]
                         [port-numbers? any/c #f])
-         void?]{
+         (or/c (values string? string?)
+               (values string? port-number? string? listen-port-number?))]{
 
 Analogous to @racket[tcp-addresses].}
 
@@ -325,14 +345,28 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 @defproc[(ssl-make-server-context
           [protocol (or/c 'secure 'auto
                           'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                    'auto])
+                    'auto]
+          [#:private-key private-key
+                         (or/c (list/c 'pem path-string?)
+                               (list/c 'der path-string?)
+                               #f)
+                         #f]
+          [#:certificate-chain certificate-chain (or/c path-string? #f) #f])
          ssl-server-context?]{
 
 Like @racket[ssl-make-client-context], but creates a server context.
 For a server context, the @racket['secure] protocol is the same as
 @racket['auto].
 
-@history[#:changed "6.3.0.12" @elem{Added @racket['secure].}]}
+If @racket[private-key] and @racket[certificate-chain] are provided,
+they are loaded into the context using @racket[ssl-load-private-key!]
+and @racket[ssl-load-certificate-chain!], respectively.
+
+@history[
+#:changed "6.3.0.12" @elem{Added @racket['secure].}
+#:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
+arguments.}
+]}
 
 
 @defproc[(ssl-server-context? [v any/c]) boolean?]{
@@ -365,7 +399,7 @@ current platform for server connections.
 @defproc[(ports->ssl-ports
            [input-port input-port?]
 	   [output-port output-port?]
-           [#:mode mode symbol? 'accept]
+           [#:mode mode (or/c 'connect 'accept) 'accept]
 	   [#:context context
                       (or/c ssl-client-context? ssl-server-context?)
                       ((if (eq? mode 'accept)

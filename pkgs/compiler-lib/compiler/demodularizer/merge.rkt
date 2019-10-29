@@ -120,15 +120,25 @@
                         #:application-hook
                         (lambda (rator rands remap)
                           ;; Check for a `(.get-syntax-literal! '<pos>)` call
+                          ;; or a `(.set-transformer! '<sym> <expr>)` call
                           (cond
                             [(and (toplevel? rator)
                                   (let ([i (hash-ref pos-to-name/import (toplevel-pos rator))])
                                     (and (import? i)
-                                         (eqv? syntax-literals-pos (import-pos i)))))
-                             ;; This is a `(.get-syntax-literal! '<pos>)` call
-                             (application (remap rator)
-                                          ;; To support syntax objects, change the offset
-                                          rands)]
+                                         i)))
+                             => (lambda (i)
+                                  (cond
+                                    [(and any-syntax-literals?
+                                          (eqv? syntax-literals-pos (import-pos i)))
+                                     ;; This is a `(.get-syntax-literal! '<pos>)` call
+                                     (application (remap rator)
+                                                  ;; To support syntax objects, change the offset
+                                                  rands)]
+                                    [(and any-transformer-registers?
+                                          (eqv? transformer-register-pos (import-pos i)))
+                                     ;; This is a `(.set-transformer! '<sym> <expr>)` call
+                                     (void)]
+                                    [else #f]))]
                             [else #f]))))))
 
   (values body

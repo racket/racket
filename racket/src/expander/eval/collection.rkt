@@ -2,7 +2,9 @@
 (require racket/private/check
          racket/private/config
          racket/private/place-local
+         ffi/unsafe/atomic
          "parameter.rkt"
+         "shadow-directory.rkt"
          ;; Avoid keyword-argument variant:
          (only-in '#%kernel directory-list))
 
@@ -210,7 +212,8 @@
                              (current-continuation-marks))))
             (void))
         (when ts
-          (hash-set! links-cache links-path (cons ts #hasheq())))
+          (call-as-atomic
+           (lambda () (hash-set! links-cache links-path (cons ts #hasheq())))))
         (if (exn:fail? exn)
             (esc (make-hasheq))
             ;; re-raise the exception (which is probably a break)
@@ -218,7 +221,7 @@
     (call-with-exception-handler
      (make-handler #f)
      (lambda ()
-       (define links-stamp+cache (hash-ref links-cache links-path '(#f . #hasheq())))
+       (define links-stamp+cache (call-as-atomic (lambda () (hash-ref links-cache links-path '(#f . #hasheq())))))
        (define a-links-stamp (car links-stamp+cache))
        (define ts (file->stamp links-path a-links-stamp))
        (cond
@@ -291,7 +294,7 @@
                  ht
                  (lambda (k v) (hash-set! ht k (reverse v))))
                 ;; save table & file content:
-                (hash-set! links-cache links-path (cons ts ht))
+                (call-as-atomic (lambda () (hash-set! links-cache links-path (cons ts ht))))
                 ht))))])))))
 
 (define (normalize-collection-reference collection collection-path)
@@ -356,9 +359,10 @@
         (build-path p c)
         ;; box => from links table for c
         (unbox p)))
-  (define (*directory-exists? orig p)
+  (define (*directory-exists? orig collection p)
     (if (path? orig)
-        (directory-exists? p)
+        ;; orig is path => collection directory
+        (directory-exists?/shadow-filesystem p orig collection)
         ;; orig is box => from links table
         #t))
   (define (to-string p) (if (path? p) (path->string p) p))
@@ -409,7 +413,7 @@
                                          (filter box? all-paths))))
                            "")))))
         (let ([dir (*build-path-rep (car paths) collection)])
-          (if (*directory-exists? (car paths) dir)
+          (if (*directory-exists? (car paths) collection dir)
               (let ([cpath (apply build-path dir collection-path)])
                 (if (if (null? collection-path)
                         #t

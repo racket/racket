@@ -6,17 +6,48 @@
                                             'racket/contract/private/guts
                                             'racket/contract/private/blame
                                             'racket/contract/private/arrow-val-first
+                                            'racket/contract/private/provide
                                             'racket/contract/private/arity-checking)])
+
+  (contract-eval '(require (for-syntax racket/base)))
   (contract-eval
-   '(define (neg-party-fn c val)
-      (define blame (make-blame (srcloc #f #f #f #f #f)
-                                'a-name
-                                (λ () (contract-name c))
-                                'pos
-                                #f #t))
-      (wrapped-extra-arg-arrow-extra-neg-party-argument
-       (((contract-struct-val-first-projection c) blame) val))))
+   '(define-syntax (define-the-neg-party-accepting-function stx)
+      (syntax-case stx ()
+        [(_ neg-party-fn-id ctc fn-id)
+         (let ()
+           (define-values (arrow? definition-of-plus-one-acceptor the-valid-app-shapes)
+             (build-definition-of-plus-one-acceptor #'ctc
+                                                    #'fn-id
+                                                    #'neg-party-fn-id
+                                                    #'the-contract
+                                                    #'blame-id))
+           (if arrow?
+               #`(begin
+                   (define the-contract ctc)
+                   (define blame-id
+                     (make-blame (srcloc '#,(syntax-source stx)
+                                         '#,(syntax-line stx)
+                                         '#,(syntax-column stx)
+                                         '#,(syntax-position stx)
+                                         '#,(syntax-span stx))
+                                 fn-id
+                                 (λ () (contract-name the-contract))
+                                 'pos #f #t))
+                   #,definition-of-plus-one-acceptor)
+               #`(error 'allow-neg-party.rkt
+                        "no neg-party-acceptor defined for ~s"
+                        '#,(syntax->datum #'ctc))))])))
   
+  (contract-eval
+   '(define-syntax (neg-party-fn stx)
+      (syntax-case stx ()
+        [(_ c val)
+         #'(let ()
+             (define the-value val)
+             (define-the-neg-party-accepting-function the-neg-party-accepting-function
+               c the-value)
+             the-neg-party-accepting-function)])))
+
   (test/spec-passed/result 
    'arity-as-string1
    '(arity-as-string (let ([f (λ (x) x)]) f))
@@ -62,7 +93,7 @@
       (-> integer? integer?)
       (λ (x) x))
      'neg 1))
-  
+
   (test/neg-blame
    '->neg-party2
    '((neg-party-fn
@@ -97,14 +128,13 @@
       (-> integer? integer?)
       (λ (x) (values x x)))
      'neg 1))
-  
+
   (test/spec-passed
    '->*neg-party1
    '((neg-party-fn
       (->* (integer?) integer?)
       (λ (x) x))
      'neg 1))
-  
   (test/neg-blame
    '->*neg-party2
    '((neg-party-fn
@@ -125,14 +155,14 @@
       (->* (integer?) (#:x integer?) any)
       (λ (x #:x [y #f]) y))
      'neg 1 #:x #f))
-  
+
   (test/neg-blame
    '->*neg-party5
    '((neg-party-fn
       (->* (integer?) #:pre #f any)
       (λ (x) y))
      'neg 1))
-  
+
   (test/pos-blame
    '->*neg-party6
    '((neg-party-fn
@@ -301,4 +331,20 @@
       (-> any/c boolean?)
       (λ (x) #t))
      'neg 1)
-   #t))
+   #t)
+
+  (test/neg-blame
+   '->neg-party25
+   '((neg-party-fn
+      (->* () () #:pre/desc "get-apples not allowed" any)
+      (λ () #t))
+     'neg))
+
+  (test/pos-blame
+   '->neg-party26
+   '((neg-party-fn
+      (->* () () any/c #:post/desc "put-apples not allowed")
+      (λ () #t))
+     'neg))
+
+  )

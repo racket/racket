@@ -1,5 +1,7 @@
 #lang racket/base
-(require racket/match
+(require racket/list
+         racket/match
+         "../common/set.rkt"
          "../run/status.rkt"
          "../compile/side-effect.rkt"
          "../compile/known.rkt")
@@ -7,11 +9,15 @@
 
 (struct struct-shape (num-fields num-parent-fields op-types))
 
-(define (add-defn-known! seen-defns syms rhs)
+(define (add-defn-known! seen-defns all-mutated-vars syms rhs)
   (for ([s (in-list syms)])
     (unless (hash-ref seen-defns s #f)
       (hash-set! seen-defns s (known-defined))))
-  (cond 
+  (cond
+   [(for/or ([s (in-list syms)])
+      (set-member? all-mutated-vars s))
+    ;; Don't record anything more specific for a mutated definition
+    (void)]
    ;; Recognize known-arity `lambda` and `case-lambda`
    [(and (= 1 (length syms)) (lambda-arity rhs))
     =>
@@ -37,10 +43,12 @@
                                             (struct-shape-num-parent-fields shape))]
                                         [else (struct-shape-num-fields shape)]))))))]
    ;; Recognize structure-property declaration
-   [(and (= 3 (length syms)) (simple-property? rhs))
-    (hash-set! seen-defns (list-ref syms 0) (known-property))
-    (hash-set! seen-defns (list-ref syms 1) (known-function 1 #t))
-    (hash-set! seen-defns (list-ref syms 2) (known-function 1 #t))]))
+   [(expr-known-property rhs)
+    => (lambda (vals)
+         (when (= (length syms) (length vals))
+           (for ([sym (in-list syms)]
+                 [val (in-list vals)])
+             (hash-set! seen-defns sym val))))]))
 
 (define (lambda-arity e)
   (match e
@@ -69,9 +77,10 @@
       [`(begin (quote ,_) ,e) e]
       [else orig-body]))
   (cond
-   [(and (pair? body)
-         (eq? (car body) self-id)
-         ((sub1 (length body)) . > . (length args)))
+   [(let ([result (extract-result body)])
+      (and (pair? result)
+           (eq? (car result) self-id)
+           ((sub1 (length result)) . > . (length args))))
     ;; Allow a self-call as pure, as long as the number of arguments
     ;; grows. We'll only conclude that the function is pure overall if
     ;; that assumption now as justified, but we require the number of
@@ -90,6 +99,11 @@
     (not (any-side-effects? body 1
                             #:known-defns seen-defns
                             #:known-locals locals))]))
+
+(define (extract-result body)
+  (match body
+    [`(let-values ,_ ,e) (extract-result e)]
+    [_ body]))
 
 (define struct-general-op-types
   '(struct-type constructor predicate general-accessor general-mutator))
@@ -133,8 +147,45 @@
                                         'mutator)))))]
       [_ #f])))
 
-;; checks for properties without guards
-(define (simple-property? e)
+;; checks for properties without guards or with guards for procedures of a known arity
+(define (expr-known-property e)
   (match e
-    [`(make-struct-type-property ,_) #t]
+    [`(make-struct-type-property ,name)
+     (expr-known-property `(make-struct-type-property ,name #f))]
+    [`(make-struct-type-property ,name ,guard)
+     (expr-known-property `(make-struct-type-property ,name ,guard '()))]
+    [`(make-struct-type-property ,name ,guard ,supers)
+     (expr-known-property `(make-struct-type-property ,name ,guard ,supers #f))]
+    [`(make-struct-type-property ,_ ,guard ,(or ''() 'null) ,_)
+     (define prop (cond
+                    [(not guard)
+                     (known-property)]
+                    [(property-function-guard-arity guard)
+                     => known-property-of-function]
+                    [else #f]))
+     (and prop (list prop
+                     (known-function 1 #t)
+                     (known-function 1 #f)))]
+    [`(let-values ([(,xs ...) ,mstp])
+        (values ,vs ...))
+     (define vals (expr-known-property mstp))
+     (and vals
+          (= (length xs) (length vals))
+          (for/and ([v (in-list vs)])
+            (memq v xs))
+          (for/list ([v (in-list vs)])
+            (list-ref vals (index-of xs v eq?))))]
+    [_ #f]))
+
+(define (property-function-guard-arity e)
+  (match e
+    [`(lambda (,v ,_)
+        (begin
+          (if (if (procedure? ,v)
+                  (procedure-arity-includes? ,v ,(? exact-nonnegative-integer? arity))
+                  #f)
+              (void)
+              ,_)
+          ,v))
+     arity]
     [_ #f]))

@@ -37,6 +37,7 @@
         thread-resume
         make-semaphore
         semaphore-post
+        semaphore-post-all
         semaphore-wait
         semaphore-peek-evt
         make-channel
@@ -76,6 +77,7 @@
          in-atomic-mode?
          unsafe-custodian-register
          unsafe-custodian-unregister
+         unsafe-make-custodian-at-root
          thread-push-kill-callback!
          thread-pop-kill-callback!
          unsafe-add-pre-poll-callback!

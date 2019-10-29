@@ -18,6 +18,11 @@
 #define CENTRALIZED_SIGCHILD
 #endif
 
+#ifdef RKTIO_SYSTEM_UNIX
+static void reliably_copy_or_move_fd(int src_fd, int target_fd, int move);
+static void close_non_standard_fd(int fd);
+#endif
+
 /*========================================================================*/
 /* Process data structure                                                 */
 /*========================================================================*/
@@ -493,8 +498,10 @@ static void add_group_signal_fd(rktio_signal_handle_t *signal_fd)
     signal_fd_count = (signal_fd_count + 4) * 2;
     a = malloc(sizeof(Group_Signal_FD) * signal_fd_count);
     memset(a, 0, sizeof(Group_Signal_FD) * signal_fd_count);
-    memcpy(a, signal_fds, sizeof(Group_Signal_FD) * count);
-    if (signal_fds) free(signal_fds);
+    if (signal_fds) {
+      memcpy(a, signal_fds, sizeof(Group_Signal_FD) * count);
+      free(signal_fds);
+    }
     signal_fds = a;
   }
 
@@ -1222,6 +1229,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #endif
   void *env;
   rktio_process_t *subproc;
+  int close_after_len;
+  rktio_const_string_t *new_argv;
 #if defined(RKTIO_SYSTEM_WINDOWS)
   intptr_t spawn_status;
 #endif
@@ -1345,6 +1354,18 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     init_sigchld(rktio);
 #endif
 
+    close_after_len = rktio_close_fds_len();
+
+    /* add a NULL terminator */
+    {
+      int i;
+      new_argv = malloc(sizeof(char *) * (argc + 1));
+      for (i = 0; i < argc; i++) {
+        new_argv[i] = argv[i];
+      }
+      new_argv[i] = NULL;
+    }
+
 #if defined(__QNX__)
     pid = vfork();
 #elif defined(SUBPROCESS_USE_FORK1)
@@ -1352,8 +1373,6 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #else
     pid = fork();
 #endif
-
-    
 
     if (pid > 0) {
       /* This is the original process, which needs to manage the 
@@ -1437,42 +1456,62 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 		  
       if (env)
         free(env);
+      free(new_argv);
 
       return NULL;
 
     case 0: /* child */
 
       {
-        int errid;
-        
-	/* Copy pipe descriptors to stdin and stdout */
-	do {
-	  errid = MSC_IZE(dup2)(to_subprocess[0], 0);
-	} while (errid == -1 && errno == EINTR);
-	do {
-	  errid = MSC_IZE(dup2)(from_subprocess[1], 1);
-	} while (errid == -1 && errno == EINTR);
-	do {
-	  errid = MSC_IZE(dup2)(err_subprocess[1], 2);
-	} while (errid == -1 && errno == EINTR);
+	int in_fd, out_fd, err_fd;
+	in_fd = to_subprocess[0];
+	out_fd = from_subprocess[1];
+	err_fd = err_subprocess[1];
+
+	/* Make sure out/err descriptors don't get clobbered by moving
+	   them if they're occupying a file descriptor we need to move
+	   a different descriptor into. (Note that while it's unlikely
+	   that input/output file descriptors will be the same, it
+	   isn't impossible, so handle that, too.) */
+	if ((err_fd == 0 && err_fd != in_fd)
+	    || (err_fd == 1 && err_fd != out_fd)) {
+	  int new_err_fd = 2;
+	  while (new_err_fd == in_fd || new_err_fd == out_fd) {
+	    new_err_fd++;
+	  }
+	  reliably_copy_or_move_fd(err_fd, new_err_fd, err_fd != in_fd);
+	  if (out_fd == err_fd) {
+	    out_fd = new_err_fd;
+	  }
+	  err_fd = new_err_fd;
+	}
+	if (out_fd == 0 && out_fd != in_fd) {
+	  int new_out_fd = 1;
+	  while (new_out_fd == in_fd || new_out_fd == err_fd) {
+	    new_out_fd++;
+	  }
+	  reliably_copy_or_move_fd(out_fd, new_out_fd, out_fd != in_fd);
+	  out_fd = new_out_fd;
+	}
+
+	/* Assign new process stdin/stdout/stderr, closing old
+	   descriptors when not used by some other descriptor */
+	reliably_copy_or_move_fd(in_fd, 0, in_fd != out_fd && in_fd != err_fd);
+	reliably_copy_or_move_fd(out_fd, 1, out_fd > 0 && out_fd != err_fd);
+	reliably_copy_or_move_fd(err_fd, 2, err_fd > 1);
 
 	/* Close unwanted descriptors */
 	if (!stdin_fd) {
-	  rktio_reliably_close(to_subprocess[0]);
-	  rktio_reliably_close(to_subprocess[1]);
+	  close_non_standard_fd(to_subprocess[1]);
 	}
 	if (!stdout_fd) {
-	  rktio_reliably_close(from_subprocess[0]);
-	  rktio_reliably_close(from_subprocess[1]);
+	  close_non_standard_fd(from_subprocess[0]);
 	}
-	if (!stderr_fd) {
-          if (!stderr_is_stdout) {
-            rktio_reliably_close(err_subprocess[0]);
-            rktio_reliably_close(err_subprocess[1]);
-          }
+	if (!stderr_fd && !stderr_is_stdout) {
+	  close_non_standard_fd(err_subprocess[0]);
 	}
 
-        rktio_close_fds_after_fork(0, 1, 2);
+        rktio_close_fds_after_fork(close_after_len, 0, 1, 2);
       }
 
       /* Set real CWD: */
@@ -1484,25 +1523,21 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       /* Exec new process */
 
       {
-	int err, i;
-        rktio_const_string_t *new_argv;
-
-        /* add a NULL terminator */
-        new_argv = malloc(sizeof(char *) * (argc + 1));
-        for (i = 0; i < argc; i++) {
-          new_argv[i] = argv[i];
-        }
-        new_argv[i] = NULL;
+	int err;
+        char **use_env;
 
         if (!env)
-          env = rktio_get_environ_array();
-        
-	err = MSC_IZE(execve)(command, (char **)new_argv, (char **)env);
+          use_env = rktio_get_environ_array();
+        else
+          use_env = env;
+
+	err = MSC_IZE(execve)(command, (char **)new_argv, use_env);
         if (err)
           err = errno;
 
         if (env)
           free(env);
+        free(new_argv);
 
 	/* If we get here it failed; give up */
 
@@ -1514,6 +1549,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       }
 
     default: /* parent */
+
+      free(new_argv);
 
       break;
     }
@@ -1585,10 +1622,32 @@ int rktio_process_pid(rktio_t *rktio, rktio_process_t *sp)
 }
 
 #ifdef RKTIO_SYSTEM_UNIX
-void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
+static void reliably_copy_or_move_fd(int src_fd, int target_fd, int move)
+{
+  if (src_fd != target_fd) {
+    int errid;
+    do {
+      errid = MSC_IZE(dup2)(src_fd, target_fd);
+    } while (errid == -1 && errno == EINTR);
+    if (move) {
+      rktio_reliably_close(src_fd);
+    }
+  }
+}
+
+static void close_non_standard_fd(int fd)
+{
+  if (fd != 0 && fd != 1 && fd != 2) {
+    rktio_reliably_close(fd);
+  }
+}
+
+int rktio_close_fds_len()
 {
   int i;
 
+  /* These functions are not async-signal safe, so use them before
+     a fork: */
 # ifdef USE_ULIMIT
   i = ulimit(4, 0);
 # elif defined(__ANDROID__)
@@ -1596,12 +1655,18 @@ void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
 # else
   i = getdtablesize();
 # endif
+
+  return i;
+}
+
+void rktio_close_fds_after_fork(int i, int skip1, int skip2, int skip3)
+{
+  /* incoming `i` should be the result of `rktio_close_fds_len` before
+     a fork */
+
   while (i--) {
-    int cr;
     if ((i != skip1) && (i != skip2) && (i != skip3)) {
-      do {
-        cr = close(i);
-      } while ((cr == -1) && (errno == EINTR));
+      rktio_reliably_close(i);
     }
   }
 }

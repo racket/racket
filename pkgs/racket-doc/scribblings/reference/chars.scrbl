@@ -254,7 +254,12 @@ contains two integers and a boolean; the first integer is a starting
 code-point value (inclusive), the second integer is an ending
 code-point value (inclusive), and the boolean is @racket[#t] when all
 characters in the code-point range have identical results for all of
-the character predicates above. The three-element lists are ordered in
+the character predicates above, have analogous transformations
+(shifting by the same amount, if any, in code-point space) for
+@racket[char-downcase], @racket[char-upcase], and
+@racket[char-titlecase], and have the same
+decomposition--normalization behavior.
+The three-element lists are ordered in
 the overall result list such that later lists represent larger
 code-point values, and all three-element lists are separated from
 every other by at least one code-point value that is not specified by

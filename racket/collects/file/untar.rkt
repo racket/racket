@@ -212,6 +212,12 @@
     #f]
    [else
     ;; traditional:
+    (define skip-head
+      (or (for/or ([i (in-range len)])
+            (case (integer->char (bytes-ref bstr i))
+              [(#\space #\nul) #f]
+              [else i]))
+          (error 'untar "bad number ~e at ~a" bstr (file-position in))))
     (define skip-tail
       (- len
          (or (for/or ([i (in-range len 0 -1)])
@@ -219,7 +225,7 @@
                  [(#\space #\nul) #f]
                  [else i]))
              (error 'untar "bad number ~e at ~a" bstr (file-position in)))))
-    (for/fold ([v 0]) ([i (in-range (- len skip-tail))])
+    (for/fold ([v 0]) ([i (in-range skip-head (- len skip-tail))])
       (define b (bytes-ref bstr i))
       (if (<= (char->integer #\0) b (char->integer #\7))
           (+ (* v 8) (- b (char->integer #\0)))

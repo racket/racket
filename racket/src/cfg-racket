@@ -691,6 +691,7 @@ x_libraries
 x_includes
 DYN_CFLAGS
 PLAIN_CC
+POST_LINKER
 MZLINKER
 REZ
 CC_FOR_BUILD
@@ -828,7 +829,9 @@ enable_csdefault
 enable_cgcdefault
 enable_sgc
 enable_sgcdebug
+enable_generations
 enable_backtrace
+enable_cify
 enable_pthread
 enable_stackup
 enable_bigendian
@@ -1475,6 +1478,7 @@ Optional Features:
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
+  --enable-sdk9=<path>    use Mac OS 10.9 SDK directory
   --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
@@ -1486,6 +1490,7 @@ Optional Features:
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
   --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)
   --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)
+  --enable-generations    3m: support generational GC (enabled by default)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
   --enable-cify           compile startup code to C instead of bytecode
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
@@ -1496,7 +1501,7 @@ Optional Features:
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-noopt          drop -O C flags (useful for low-level debugging)
-  --enable-ubsan          compile with -fsanitize=undefined)
+  --enable-ubsan          compile with -fsanitize=undefined
   --enable-jitframe       x86_64: use frame pointer for internal calls
   --enable-crossany       Record own cross target as machine-independent
 
@@ -2693,6 +2698,7 @@ if test "${enable_natipkg+set}" = set; then :
 fi
 
 
+
 # Check whether --enable-shared was given.
 if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
@@ -2723,6 +2729,11 @@ else
   enable_libffi=default
 fi
 
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
 
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
@@ -2800,15 +2811,22 @@ if test "${enable_sgcdebug+set}" = set; then :
   enableval=$enable_sgcdebug;
 fi
 
+# Check whether --enable-generations was given.
+if test "${enable_generations+set}" = set; then :
+  enableval=$enable_generations;
+else
+  enable_generations=yes
+fi
+
 # Check whether --enable-backtrace was given.
 if test "${enable_backtrace+set}" = set; then :
   enableval=$enable_backtrace;
 fi
 
 
-# Check whether --enable-backtrace was given.
-if test "${enable_backtrace+set}" = set; then :
-  enableval=$enable_backtrace;
+# Check whether --enable-cify was given.
+if test "${enable_cify+set}" = set; then :
+  enableval=$enable_cify;
 fi
 
 
@@ -2868,6 +2886,7 @@ fi
 if test "${enable_ubsan+set}" = set; then :
   enableval=$enable_ubsan;
 fi
+
 
 # Check whether --enable-jitframe was given.
 if test "${enable_jitframe+set}" = set; then :
@@ -2967,50 +2986,52 @@ fi
 
 
 unixstyle=no
-if test "${prefix}" != "NONE" ; then
-  if test "${enable_origtree}" != "yes" ; then
+if test "${enable_origtree}" != "yes" ; then
+  if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
-fi
-if test "${exec_prefix}" != "NONE" ; then
- unixstyle=yes
-fi
-if test "${bindir}" != '${exec_prefix}/bin' ; then
- unixstyle=yes
-fi
-if test "${datadir}" != '${prefix}/share' ; then
- # Newer autoconf uses datarootdir:
- if test "${datadir}" = '${datarootdir}' ; then
-   if test "${datarootdir}" != '${prefix}/share' ; then
+  if test "${exec_prefix}" != "NONE" ; then
+   unixstyle=yes
+  fi
+  if test "${bindir}" != '${exec_prefix}/bin' ; then
+   unixstyle=yes
+  fi
+  if test "${datadir}" != '${prefix}/share' ; then
+   # Newer autoconf uses datarootdir:
+   if test "${datadir}" = '${datarootdir}' ; then
+     if test "${datarootdir}" != '${prefix}/share' ; then
+      unixstyle=yes
+     fi
+   else
+     unixstyle=yes
+   fi
+  fi
+  if test "${libdir}" != '${exec_prefix}/lib' ; then
+   if test "${libdir}" != '${exec_prefix}/lib64' ; then
     unixstyle=yes
    fi
- else
+  fi
+  if test "${includedir}" != '${prefix}/include' ; then
    unixstyle=yes
- fi
-fi
-if test "${libdir}" != '${exec_prefix}/lib' ; then
- unixstyle=yes
-fi
-if test "${includedir}" != '${prefix}/include' ; then
- unixstyle=yes
-fi
-if test "${mandir}" != '${prefix}/man' ; then
- if test "${mandir}" = '${datarootdir}/man' ; then
-   if test "${datarootdir}" != '${prefix}/share' ; then
-    unixstyle=yes
+  fi
+  if test "${mandir}" != '${prefix}/man' ; then
+   if test "${mandir}" = '${datarootdir}/man' ; then
+     if test "${datarootdir}" != '${prefix}/share' ; then
+      unixstyle=yes
+     fi
+   else
+     unixstyle=yes
    fi
- else
-   unixstyle=yes
- fi
-fi
-if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
-  unixstyle=yes
-fi
-if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
-  unixstyle=yes
-fi
-if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
-  unixstyle=yes
+  fi
+  if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
+    unixstyle=yes
+  fi
+  if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
+    unixstyle=yes
+  fi
+  if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
+    unixstyle=yes
+  fi
 fi
 
 MAKE_COPYTREE=no
@@ -3178,6 +3199,7 @@ show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
 show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
 
+
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
@@ -3201,6 +3223,7 @@ show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
+show_explicitly_disabled "${enable_generations}" "3m generational GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 show_explicitly_enabled "${enable_cify}" "Startup compiled to C"
 show_explicitly_disabled "${enable_cify}" "Startup compiled to C"
@@ -3349,6 +3372,8 @@ LIBRACKET_DEP=""
 
 EXE_SUFFIX=
 SO_SUFFIX=.so
+
+POST_LINKER="echo"
 
 MMM=3m
 MMM_INSTALLED=
@@ -4578,8 +4603,9 @@ fi
   fi
 fi
 if test "$ARFLAGS" = '' ; then
-  ARFLAGS=ruv
+  ARFLAGS=rc
 fi
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then
@@ -4786,6 +4812,7 @@ case "$host_os" in
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    POST_LINKER="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -4812,6 +4839,10 @@ case "$host_os" in
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
+       ;;
+      arm*)
+       EXTRA_GMP_OBJ="gmp_arm_gcc.o"
+       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       *)
        ;;
@@ -4921,6 +4952,14 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     if test "${enable_sdk6}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    if test "${enable_sdk9}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
@@ -5038,7 +5077,12 @@ if test "${enable_cgcdefault}" ; then
    MAIN_VARIANT=cgc
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
-CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
+
+if test "${enable_racket}" = "" ; then
+  CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
+else
+  CS_BOOTSTRAP_HELP="no-${MAIN_VARIANT}"
+fi
 
 if test "${enable_csdefault}" ; then
    MMM_INSTALLED=3m
@@ -5056,6 +5100,16 @@ fi
 if test "${enable_sgc}" = "yes" ; then
   GCDIR=sgc
   OPTIONS="$OPTIONS -DUSE_SENORA_GC"
+fi
+
+if test "${enable_generations}" = "yes" ; then
+
+$as_echo "#define USE_GC_GENS 1" >>confdefs.h
+
+else
+
+$as_echo "#define USE_GC_GENS 0" >>confdefs.h
+
 fi
 
 ############## Strip tool ################
@@ -6738,6 +6792,7 @@ if test "${enable_ubsan}" = "yes" ; then
    LDFLAGS="$LDFLAGS $UBSAN"
 fi
 
+
 ############## usersetup ################
 
 if test "${enable_usersetup}" != "yes" ; then
@@ -6861,6 +6916,7 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

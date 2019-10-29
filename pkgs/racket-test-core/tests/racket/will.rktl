@@ -3,8 +3,8 @@
 
 (Section 'wills)
 
-(collect-garbage 'major)
-(collect-garbage 'minor)
+(test (void) collect-garbage 'major)
+(test (void) collect-garbage 'minor)
 (err/rt-test (collect-garbage 'other))
 
 (test #t exact-nonnegative-integer? (current-memory-use))
@@ -67,6 +67,32 @@
 (arity-test will-try-execute 1 2)
 
 ;; ----------------------------------------
+;; Will executors as events
+
+(let ([we (make-will-executor)])
+  (let loop ([n 10])
+    (unless (zero? n)
+      (will-register we (cons n null)
+                     (lambda (s)
+                       (set! counter (cons (car s) counter))
+                       12))
+      (loop (sub1 n))))
+  (collect-garbage)
+  (test we sync/timeout #f we)
+
+  (define evt-checked 0)
+  (define val-checked 0)
+  (test we sync/timeout #f (chaperone-evt we
+                                          (lambda (e)
+                                            (test #t eq? we e)
+                                            (set! evt-checked (add1 evt-checked))
+                                            (values e (lambda (val)
+                                                        (test #t eq? we e)
+                                                        (set! val-checked (add1 val-checked))
+                                                        val)))))
+  (test '(1 1) list evt-checked val-checked))
+
+;; ----------------------------------------
 ;; Test custodian boxes
 
 (let ([c (make-custodian)]
@@ -125,9 +151,11 @@
                  c)])
     ;; Each custodian must be charged at least 100000 bytes:
     (collect-garbage)
-    (test #t andmap (lambda (c)
-                      ((current-memory-use c) . >= . 100000))
-          c)))
+    (test #t andmap (lambda (v)
+                      (v . >= . 100000))
+          (map current-memory-use c))
+    ;; Make sure boxes are retained:
+    (test #t andmap custodian-box? b)))
 
 (let ()
   (define c1 (make-custodian (current-custodian)))
@@ -145,6 +173,25 @@
       (test #t andmap (lambda (b) (number? (custodian-box-value b))) l)
       (custodian-shutdown-all c)
       (test #f ormap (lambda (b) (number? (custodian-box-value b))) l))))
+
+;; Check chain of unreachable custodians:
+(let ()
+  (define start-c (make-custodian))
+  (define wbs+cbs
+    (let loop ([i 20] [parent start-c])
+      (if (zero? i)
+          null
+          (let ([c (make-custodian parent)])
+            (cons (cons (make-weak-box c)
+                        (make-custodian-box c 'on))
+                  (loop (sub1 i) c))))))
+  (collect-garbage)
+  (test #t < 10 (for/sum ([wb+cb (in-list wbs+cbs)])
+                  (if (weak-box-value (car wb+cb)) 1 0)))
+  (custodian-shutdown-all start-c)
+  (test #t andmap
+        (lambda (wb+cb) (not (custodian-box-value (cdr wb+cb))))
+        wbs+cbs))
 
 ;; check synchronization again:
 (let ()
@@ -339,25 +386,26 @@
                       'done
                       (unbox (loop (sub1 n)))))))))
 
-(let ([init-memory-use (current-memory-use)])
-  (define done? #f)
-  (define t (thread (lambda ()
-                      ((dynamic-require ''allocates-many-vectors 'go))
-                      (set! done? #t))))
-  (define watcher-t (thread
-                     (lambda ()
-                       (let loop ()
-                         (sleep 0.1)
-                         (define mu (current-memory-use))
-                         (printf "~s\n" mu)
-                         (cond
-                          [(mu . < . (+ init-memory-use (* 100 1024 1024)))
-                           (loop)]
-                          [else
-                           (kill-thread t)])))))
-  (sync t)
-  (kill-thread watcher-t)
-  (test #t 'many-vectors-in-reasonable-space? done?))
+(unless (eq? 'cgc (system-type 'gc))
+  (let ([init-memory-use (current-memory-use)])
+    (define done? #f)
+    (define t (thread (lambda ()
+                        ((dynamic-require ''allocates-many-vectors 'go))
+                        (set! done? #t))))
+    (define watcher-t (thread
+                       (lambda ()
+                         (let loop ()
+                           (sleep 0.1)
+                           (define mu (current-memory-use))
+                           (printf "~s\n" mu)
+                           (cond
+                             [(mu . < . (+ init-memory-use (* 100 1024 1024)))
+                              (loop)]
+                             [else
+                              (kill-thread t)])))))
+    (sync t)
+    (kill-thread watcher-t)
+    (test #t 'many-vectors-in-reasonable-space? done?)))
 
 ;; ----------------------------------------
 ;; Check that a thread that has a reference to
@@ -488,6 +536,31 @@
     (apply f (mk val (make-weak-box val) void)))
   
   (test #t < retained 3))
+
+;; ----------------------------------------
+;; Make sure that a weak box is not cleared before an associated
+;; will is run
+
+;; Put test in a `lambda` to make sure it's JITted:
+(define (check-weak-box-before-will)
+  (define v (gensym))
+  
+  (define w (make-will-executor))
+  (will-register w v (lambda (v) 'done))
+  
+  (define wb (make-weak-box v))
+  
+  (set! v #f)
+  (collect-garbage)
+  (let ([wv (weak-box-value wb)]
+        [we (will-try-execute w)])
+    (test 'done values we)
+    (test #t symbol? wv))
+  
+  (collect-garbage)
+  (test #f weak-box-value wb))
+
+(check-weak-box-before-will)
 
 ;; ----------------------------------------
 

@@ -27,7 +27,9 @@
          "stack-size.rkt"
          "place.rkt"
          "place-message.rkt"
+         "place-logging.rkt"
          "future.rkt"
+         "future-logging.rkt"
          "fsemaphore.rkt"
          "os-thread.rkt")
 
@@ -63,12 +65,15 @@
 
          make-semaphore
          semaphore-post
+         semaphore-post-all
          semaphore-wait
          semaphore-try-wait?
          semaphore?
          semaphore-wait/enable-break
          call-with-semaphore
          call-with-semaphore/enable-break
+         unsafe-semaphore-post
+         unsafe-semaphore-wait
 
          semaphore-peek-evt
          semaphore-peek-evt?
@@ -119,7 +124,7 @@
          custodian-shut-down?
 
          make-will-executor
-         make-stubborn-will-executor
+         make-late-will-executor
          will-executor?
          will-register
          will-try-execute
@@ -176,6 +181,7 @@
 
          set-make-place-ports+fds!
          place-pumper-threads
+         install-place-logging-procs!
          unsafe-add-post-custodian-shutdown
 
          futures-enabled?
@@ -185,10 +191,12 @@
          would-be-future
          current-future
          future-block
-         future-wait
+         future-sync
          current-future-prompt
          reset-future-logs-for-tracing!
          mark-future-trace-end!
+         set-processor-count!
+         install-future-logging-procs!
 
          fsemaphore?
          make-fsemaphore
@@ -204,5 +212,3 @@
          unsafe-os-semaphore-wait
 
          #%thread-instance)
-
-(module main racket/base)

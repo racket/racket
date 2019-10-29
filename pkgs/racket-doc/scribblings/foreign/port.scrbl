@@ -63,7 +63,17 @@ previously created with @racket[unsafe-file-descriptor->semaphore] or
 )]{
 
 Returns a file descriptor (which is a @tt{HANDLE} value on Windows) of
-a socket for @racket[port] if it has one, @racket[#f] otherwise.}
+a socket for @racket[port] if it has one, @racket[#f] otherwise.
+
+On Unix and Mac OS, the result of
+@racket[unsafe-port->file-descriptor] can be @racket[#f] if it
+corresponds to a port that is waiting for its peer as reported by
+@racket[port-waiting-peer?], such as the write end of a fifo where no
+reader is connected. Wait until such is ready by using @racket[sync]).
+
+@history[#:changed "7.4.0.5" @elem{Accommodate a fifo write
+                                   end blocked on a reader by
+                                   returning @racket[#f].}]}
 
 
 @deftogether[(
@@ -108,7 +118,8 @@ previously created for the given file descriptor or socket. Semaphores
 must be unregistered before the file descriptor or socket is closed.
 Beware that closing a port from @racket[unsafe-file-descriptor->port]
 or @racket[unsafe-socket->port] will also ready and unregister
-semaphores.}
+semaphores. In all of those cases, however, the semaphore is made
+ready asynchronously, so there may be a detectable delay.}
 
 
 @defproc[(unsafe-fd->evt [fd exact-integer?]
@@ -142,9 +153,9 @@ socketin the specified mode.
 The @racket['remove] mode readies and unregisters any events
 previously created for the given file descriptor or socket. Events
 must be unregistered before the file descriptor or socket is
-closed. Unlike @racket[unsafe-file-descriptor->semaphore] and
-@racket[unsafe-socket->semaphore], closing a port from
-@racket[unsafe-file-descriptor->port] or @racket[unsafe-socket->port]
-does not unregister events.
+closed. Unlike the semaphore result of @racket[unsafe-file-descriptor->semaphore] and
+@racket[unsafe-socket->semaphore], the event result of
+@racket[unsafe-fd->evt] is not triggered or unregistered by closing a port---not
+even a port from @racket[unsafe-file-descriptor->port] or @racket[unsafe-socket->port].
 
 @history[#:added "7.2.0.6"]}

@@ -682,7 +682,61 @@
             (sync (system-idle-evt))
             (write-char #\b o)))
   (test 1 peek-bytes-avail! (make-bytes 1) 2 #f (make-limited-input-port i 10)))
-	     
+
+;; ----------------------------------------
+;; Check that events raise an exception in the right thread
+;; when a point goes bad
+
+(let ()
+  (define (check make-evt)
+    (define-values (p fail)
+      (let* ([s (make-semaphore)]
+             [e (wrap-evt (semaphore-peek-evt s)
+                          (lambda (v) 0))])
+        (values
+         (make-input-port
+          'test
+          (lambda (bsr)
+            (if (sync/timeout 0 e)
+                (raise 'forced-failure)
+                e))
+          (lambda (bstr offset evt)
+            (if (sync/timeout 0 e)
+                (raise 'forced-failure)
+                e))
+          void
+          (lambda ()
+            (make-semaphore))
+          (lambda (n evt1 evt2)
+            (error "no")))
+         (lambda ()
+           (semaphore-post s)))))
+    
+    (thread (lambda ()
+              (sync (system-idle-evt))
+              (fail)))
+    
+    (err/rt-test (sync (make-evt p))
+                 (lambda (exn) (eq? exn 'forced-failure))))
+
+  (check (lambda (p) (eof-evt p)))
+  (check (lambda (p) (read-bytes-evt 10 p)))
+  (check (lambda (p) (read-bytes!-evt (make-bytes 10) p)))
+  (check (lambda (p) (read-bytes-avail!-evt (make-bytes 10) p)))
+  (check (lambda (p) (read-string-evt 10 p)))
+  (check (lambda (p) (read-string!-evt (make-string 10) p)))
+  (check (lambda (p) (read-line-evt p)))
+  (check (lambda (p) (read-bytes-line-evt p)))
+  (check (lambda (p) (peek-bytes-evt 10 0 #f p)))
+  (check (lambda (p) (peek-bytes!-evt (make-bytes 10) 0 #f p)))
+  (check (lambda (p) (peek-bytes!-evt (make-bytes 10) 0 (port-progress-evt p) p)))
+  (check (lambda (p) (peek-bytes-avail!-evt (make-bytes 10) 0 #f p)))
+  (check (lambda (p) (peek-bytes-avail!-evt (make-bytes 10) 0 (port-progress-evt p) p)))
+  (check (lambda (p) (peek-string-evt 10 0 #f p)))
+  (check (lambda (p) (peek-string-evt 10 0 (port-progress-evt p) p)))
+  (check (lambda (p) (peek-string!-evt (make-string 10) 0 #f p)))
+  (check (lambda (p) (peek-string!-evt (make-string 10) 0 (port-progress-evt p) p))))
+
 ;; ----------------------------------------
 ;; Conversion wrappers
 

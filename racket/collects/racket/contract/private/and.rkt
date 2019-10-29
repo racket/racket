@@ -148,6 +148,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:late-neg-projection first-order-late-neg-and-proj
    #:name and-name
    #:first-order and-first-order
@@ -158,6 +159,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection late-neg-and-proj
    #:name and-name
    #:first-order and-first-order
@@ -168,6 +170,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection late-neg-and-proj
    #:name and-name
    #:first-order and-first-order
@@ -356,6 +359,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name integer-in-name
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger
@@ -365,6 +369,7 @@
 (struct renamed-integer-in integer-in-ctc (name)
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name (λ (ctc) (renamed-integer-in-name ctc))
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger

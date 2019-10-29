@@ -74,7 +74,8 @@
   ;; be exposed to untrusted code, and instead of should be copied if
   ;; necessary. The return values are the same as documented for
   ;; `make-input-port`, except that a pipe result is not allowed (or,
-  ;; more precisely, it's treated as an event).
+  ;; more precisely, it's treated as an event), and a semaphore is
+  ;; treated like an event that produces 0.
   [read-in (lambda (bstr start end copy?) eof)]
 
   ;; port or (bytes start-k end-k skip-k progress-evt copy? -*> (or/c integer? ...))

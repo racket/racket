@@ -36,7 +36,8 @@
   [close-peek-buffer
    (lambda ()
      (purge-buffer)
-     (set! bstr #""))]
+     (set! bstr #"")
+     (progress!))]
 
   [buffer-adjust-pos
    (lambda (i)

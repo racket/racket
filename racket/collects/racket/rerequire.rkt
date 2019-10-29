@@ -49,7 +49,8 @@
                            ;; submodule is not found
                            (void))])
           (let* ([code (get-module-code
-                        path "compiled"
+                        path (let ([l (use-compiled-file-paths)])
+                               (if (pair? l) (car l) "compiled"))
                         (lambda (e)
                           (parameterize ([compile-enforce-module-constants #f])
                             (compile e)))

@@ -454,11 +454,13 @@
                                       (loop (sub1 i) (cons (v-ref v i) r))))))))))))
           ->list)))
 
+  (define (flvector->list v)
+    (for/list ([x (in-flvector v)]) x))
+  (define (fxvector->list v)
+    (for/list ([x (in-fxvector v)]) x))
   (mkvector->repeatless-list vector->repeatless-list vector-length vector-ref eq? vector->list)
-  (mkvector->repeatless-list flvector->repeatless-list flvector-length flvector-ref equal?
-                             (lambda (v) (for/list ([x (in-flvector v)]) x)))
-  (mkvector->repeatless-list fxvector->repeatless-list fxvector-length fxvector-ref eq?
-                             (lambda (v) (for/list ([x (in-fxvector v)]) x)))
+  (mkvector->repeatless-list flvector->repeatless-list flvector-length flvector-ref equal? flvector->list)
+  (mkvector->repeatless-list fxvector->repeatless-list fxvector-length fxvector-ref eq? fxvector->list)
 
   (define (extract-sub-objects obj pport)
     (let ([p (open-output-nowhere 'null (port-writes-special? pport))]
@@ -482,7 +484,10 @@
                    (and (custom-write? obj)
                         (not (struct-type? obj)))
                    (and (struct? obj) print-struct?)
-                   (and (hash? obj) print-hash-table?))
+                   (and (hash? obj)
+                        (not (and (zero? (hash-count obj))
+                                  (immutable? obj)))
+                        print-hash-table?))
                (or (hash-ref table obj #f)
                    (begin
                      (hash-set! table obj #t)
@@ -525,7 +530,10 @@
                 (and (custom-write? obj)
                      (not (struct-type? obj)))
                 (and (struct? obj) print-struct?)
-                (and (hash? obj) print-hash-table?))
+                (and (hash? obj)
+                     (not (and (zero? (hash-count obj))
+                               (immutable? obj)))
+                     print-hash-table?))
             ;; A little confusing: use #t for not-found
             (let ([p (hash-ref table obj #t)])
               (when (not (mark? p))
@@ -634,7 +642,9 @@
                        (not (prefab-struct-key obj)))
                    (escapes! obj))]
              [(hash? obj)
-              (is-compound! obj)
+              (unless (and (zero? (hash-count obj))
+                           (immutable? obj))
+                (is-compound! obj))
               (and (for/fold ([esc? #f]) ([(k v) (in-hash obj)])
                      (or (orf (loop v) 
                               (loop k))
@@ -769,10 +779,13 @@
             (cond
               [(and (or (eq? (car expr) 'unquote)
                         (eq? (car expr) 'unsyntax))
-                    (symbol? (cadr expr)))
+                    ;; don't use cadr here since `car` and `cdr` are arguments to
+                    ;; this function
+                    (symbol? (car (cdr expr))))
+               (define v (car (cdr expr)))
                (define s (if display?
-                             (symbol->string (cadr expr))
-                             (format "~s" (cadr expr))))
+                             (symbol->string v)
+                             (format "~s" v)))
                (when (and (positive? (string-length s))
                           (eqv? #\@ (string-ref s 0)))
                  ;; Avoid ambiguity by adding a space
@@ -846,10 +859,11 @@
            #f #f
            (lambda ()
              (let* ([qd (to-quoted out qd obj)]
-                    [pair (if (and qd (zero? qd))
+                    [unquoted? (and qd (zero? qd))]
+                    [pair (if unquoted?
                               (convert-pair obj)
                               obj)])
-               (wr-expr pair depth pair? car cdr pair-open pair-close qd))))]
+               (wr-expr pair depth pair? car cdr (if unquoted? "(" pair-open) (if unquoted? ")" pair-close) qd))))]
          [(mpair? obj) 
           (check-expr-found
            obj pport #t
@@ -857,7 +871,7 @@
            (lambda ()
              (if (and qd (zero? qd))
                  (wr-expr (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                          depth pair? car cdr pair-open pair-close qd)
+                          depth pair? car cdr "(" ")" qd)
                  (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))))]
          [(null? obj)
           (let ([qd (to-quoted out qd obj)])
@@ -867,44 +881,44 @@
            obj pport #t
            #f #f
            (lambda ()
-             (let ([qd (to-quoted out qd obj)]
-                   [vecl (vector->repeatless-list obj)])
+             (let ([qd (to-quoted out qd obj)])
                (if (and qd (zero? qd))
-                   (wr-lst (cons (make-unquoted 'vector) vecl)
+                   (wr-lst (cons (make-unquoted 'vector) (vector->list obj))
                            #f depth pair? car cdr "(" ")" qd)
                    (begin
                      (out "#")
                      (when print-vec-length?
                        (out (number->string (vector-length obj))))
-                     (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
+                     (wr-lst (vector->repeatless-list obj)
+                             #f depth pair? car cdr "(" ")" qd))))))]
          [(flvector? obj)   
           (check-expr-found
            obj pport #t
            #f #f
            (lambda ()
-             (let ([vecl (flvector->repeatless-list obj)])
-               (if (and qd (zero? qd))
-                   (wr-lst (cons (make-unquoted 'flvector) vecl)
-                           #f depth pair? car cdr "(" ")" qd)
-                   (begin
-                     (out "#fl")
-                     (when print-vec-length?
-                       (out (number->string (flvector-length obj))))
-                     (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
+             (if (and qd (zero? qd))
+                 (wr-lst (cons (make-unquoted 'flvector) (flvector->list obj))
+                         #f depth pair? car cdr "(" ")" qd)
+                 (begin
+                   (out "#fl")
+                   (when print-vec-length?
+                     (out (number->string (flvector-length obj))))
+                   (wr-lst (flvector->repeatless-list obj)
+                           #f depth pair? car cdr "(" ")" qd)))))]
          [(fxvector? obj)   
           (check-expr-found
            obj pport #t
            #f #f
            (lambda ()
-             (let ([vecl (fxvector->repeatless-list obj)])
-               (if (and qd (zero? qd))
-                   (wr-lst (cons (make-unquoted 'fxvector) vecl)
-                           #f depth pair? car cdr "(" ")" qd)
-                   (begin
-                     (out "#fx")
-                     (when print-vec-length?
-                       (out (number->string (fxvector-length obj))))
-                     (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
+             (if (and qd (zero? qd))
+                 (wr-lst (cons (make-unquoted 'fxvector) (fxvector->list obj))
+                         #f depth pair? car cdr "(" ")" qd)
+                 (begin
+                   (out "#fx")
+                   (when print-vec-length?
+                     (out (number->string (fxvector-length obj))))
+                   (wr-lst (fxvector->repeatless-list obj)
+                           #f depth pair? car cdr "(" ")" qd)))))]
          [(and (box? obj)
                print-box?)
           (check-expr-found
@@ -945,21 +959,29 @@
                #f #f
                (lambda ()
                  (let* ([v (struct->vector obj struct-ellipses)]
-                        [pf? (prefab?! obj v)])
-                   (let ([qd (if pf?
-                                 (to-quoted out qd obj)
-                                 qd)])
-                     (when (or (not qd) (positive? qd))
+                        [pf? (prefab?! obj v)]
+                        [print-vec-length? (and print-vec-length? (not pf?))]
+                        [qd (if pf?
+                                (to-quoted out qd obj)
+                                qd)]
+                        [as-expr? (and qd (zero? qd))]
+                        [l (cond
+                             [as-expr?
+                              (cons (make-unquoted (object-name obj))
+                                    (cdr (vector->list v)))]
+                             [print-vec-length?
+                              (vector->repeatless-list v)]
+                             [else
+                              (vector->list v)])])
+                     (unless as-expr?
                        (out "#")
-                       (when pf? (out "s")))
-                     (wr-lst (let ([l (vector->list v)])
-                               (if (and qd (zero? qd))
-                                   (cons (make-unquoted (object-name obj))
-                                         (cdr l))
-                                   l))
-                             #f (dsub1 depth) pair? car cdr "(" ")" 
-                             qd)))))
-              (parameterize ([print-struct #f])
+                       (when pf?
+                         (out "s"))
+                       (when print-vec-length?
+                         (out (number->string (vector-length v)))))
+                     (wr-lst l
+                             #f (dsub1 depth) pair? car cdr "(" ")" qd))))
+            (parameterize ([print-struct #f])
                 ((if display? orig-display orig-write) obj pport)))]
          [(hash? obj)  
           (if (and print-hash-table?
@@ -1081,64 +1103,65 @@
                       (cond
                        [(pair? obj) 
                         (let* ([qd (to-quoted out qd obj)]
-                               [pair (if (and qd (zero? qd))
+                               [unquoted? (and qd (zero? qd))]
+                               [pair (if unquoted?
                                          (convert-pair obj)
                                          obj)])
                           (pp-pair pair extra depth 
-                                   pair? car cdr pair-open pair-close
+                                   pair? car cdr (if unquoted? "(" pair-open) (if unquoted? ")" pair-close)
                                    qd))]
                        [(mpair? obj)
                         (if (and qd (zero? qd))
                             (pp-pair (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                                     extra depth 
-                                     pair? car cdr pair-open pair-close
+                                     extra depth
+                                     pair? car cdr "(" ")"
                                      qd)
                             (pp-pair obj extra depth 
                                      mpair? mcar mcdr mpair-open mpair-close
                                      qd))]
                        [(vector? obj)
-                        (let ([qd (to-quoted out qd obj)]
-                              [vecl (vector->repeatless-list obj)])
+                        (let ([qd (to-quoted out qd obj)])
                           (if (and qd (zero? qd))
-                              (pp-pair (cons (make-unquoted 'vector) vecl)
-                                       extra depth 
+                              (pp-pair (cons (make-unquoted 'vector) (vector->list obj))
+                                       extra depth
                                        pair? car cdr pair-open pair-close
                                        qd)
                               (begin
                                 (out "#")
                                 (when print-vec-length?
                                   (out (number->string (vector-length obj))))
-                                (pp-list vecl extra pp-expr #f depth
+                                (pp-list (vector->repeatless-list obj)
+                                         extra pp-expr #f depth
                                          pair? car cdr pair-open pair-close
                                          qd))))]
                        [(flvector? obj)
-                        (let ([vecl (flvector->repeatless-list obj)])
-                          (if (and qd (zero? qd))
-                              (pp-pair (cons (make-unquoted 'flvector) vecl)
-                                       extra depth
+                        (if (and qd (zero? qd))
+                            (pp-pair (cons (make-unquoted 'flvector) (flvector->list obj))
+                                     extra depth
+                                     pair? car cdr pair-open pair-close
+                                     qd)
+                            (begin
+                              (out "#fl")
+                              (when print-vec-length?
+                                (out (number->string (flvector-length obj))))
+                              (pp-list (flvector->repeatless-list obj)
+                                       extra pp-expr #f depth
                                        pair? car cdr pair-open pair-close
-                                       qd)
-                              (begin
-                                (out "#fl")
-                                (when print-vec-length?
-                                  (out (number->string (flvector-length obj))))
-                                (pp-list vecl extra pp-expr #f depth
-                                         pair? car cdr pair-open pair-close
-                                         qd))))]
+                                       qd)))]
                        [(fxvector? obj)
-                        (let ([vecl (fxvector->repeatless-list obj)])
-                          (if (and qd (zero? qd))
-                              (pp-pair (cons (make-unquoted 'fxvector) vecl)
-                                       extra depth
+                        (if (and qd (zero? qd))
+                            (pp-pair (cons (make-unquoted 'fxvector) (fxvector->list obj))
+                                     extra depth
+                                     pair? car cdr pair-open pair-close
+                                     qd)
+                            (begin
+                              (out "#fx")
+                              (when print-vec-length?
+                                (out (number->string (fxvector-length obj))))
+                              (pp-list (fxvector->repeatless-list obj)
+                                       extra pp-expr #f depth
                                        pair? car cdr pair-open pair-close
-                                       qd)
-                              (begin
-                                (out "#fx")
-                                (when print-vec-length?
-                                  (out (number->string (fxvector-length obj))))
-                                (pp-list vecl extra pp-expr #f depth
-                                         pair? car cdr pair-open pair-close
-                                         qd))))]
+                                       qd)))]
                        [(and (custom-write? obj)
                              (not (struct-type? obj)))
                         (let ([qd (let ([kind (if (custom-print-quotable? obj)
@@ -1150,21 +1173,29 @@
                           (write-custom pp* obj pport depth display? width qd #t))]
                        [(struct? obj) ; print-struct is on if we got here
                         (let* ([v (struct->vector obj struct-ellipses)]
-                               [pf? (prefab?! obj v)])
-                          (let ([qd (if pf?
-                                        (to-quoted out qd obj)
-                                        qd)])
-                            (when (or (not qd) (positive? qd))
-                              (out "#")
-                              (when pf? (out "s")))
-                            (pp-list (let ([l (vector->list v)])
-                                       (if (and qd (zero? qd))
-                                           (cons (make-unquoted (object-name obj))
-                                                 (cdr l))
-                                           l))
-                                     extra pp-expr #f depth
-                                     pair? car cdr pair-open pair-close
-                                     qd)))]
+                               [pf? (prefab?! obj v)]
+                               [print-vec-length? (and print-vec-length? (not pf?))]
+                               [qd (if pf?
+                                       (to-quoted out qd obj)
+                                       qd)]
+                               [as-expr? (and qd (zero? qd))]
+                               [l (cond
+                                    [as-expr?
+                                     (cons (make-unquoted (object-name obj))
+                                           (cdr (vector->list v)))]
+                                    [print-vec-length?
+                                     (vector->repeatless-list v)]
+                                    [else
+                                     (vector->list v)])])
+                          (unless as-expr?
+                            (out "#")
+                            (when pf?
+                              (out "s"))
+                            (when print-vec-length?
+                              (out (number->string (vector-length v)))))
+                          (pp-list l
+                                   extra pp-expr #f depth
+                                   pair? car cdr pair-open pair-close qd))]
                        [(hash? obj)
                         (let* ([qd (to-quoted out qd obj)]
                                [expr? (and qd (zero? qd))])
@@ -1211,11 +1242,12 @@
                 (let ((proc (style head expr apair? acar acdr)))
                   (if proc
                       (let* ([qd (to-quoted out qd expr)]
-                             [pair (if (and qd (zero? qd))
+                             [unquote? (and qd (zero? qd))]
+                             [pair (if unquote?
                                        (cons (make-unquoted 'list) obj)
                                        obj)])
                         (proc expr extra depth
-                              apair? acar acdr open close
+                              apair? acar acdr (if unquote? "(" open) (if unquote? ")" close)
                               qd))
                       (if (and #f
                                ;; Why this special case? Currently disabled.

@@ -312,15 +312,15 @@ static void letrec_check_lets_resume(Letrec_Check_Frame *frame, Scheme_IR_Let_He
        that we have invalidated; i.e., adding check-undefineds around
        references means there is one (more) instance where the LHS
        variable is not used in application position */
-    k = head->count;
+    k = 0;
     for (i = head->num_clauses; i--;) {
       irlv = (Scheme_IR_Let_Value *) body;
-      k -= irlv->count;
       for (j = 0; j < irlv->count; j++) {
         was_checked = (frame->ref[k + j] & LET_CHECKED);
         if (was_checked)
           irlv->vars[j]->non_app_count = irlv->vars[j]->use_count;
       }
+      k += irlv->count;
       body = irlv->body;
     }
   }
@@ -411,10 +411,9 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
   return o;
 }
 
-static int is_effect_free_prim(Scheme_Object *rator)
+static int is_effect_free_prim(Scheme_Object *rator, int argc)
 {
-  if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_OMITABLE_ANY))
+  if (SCHEME_PRIMP(rator) && scheme_is_omitable_primitive(rator, argc))
     return 1;
 
   return 0;
@@ -431,7 +430,7 @@ static Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Fr
   /* we'll have to check the rator and all the arguments */
   n = 1 + app->num_args;
 
-  if (is_effect_free_prim(app->args[0])) {
+  if (is_effect_free_prim(app->args[0], app->num_args)) {
     /* an immediate prim cannot call anything among its arguments */
   } else {
     /* argument might get applied */
@@ -453,7 +452,7 @@ static Scheme_Object *letrec_check_application2(Scheme_Object *o, Letrec_Check_F
 
   app = (Scheme_App2_Rec *)o;
     
-  if (is_effect_free_prim(app->rator)) {
+  if (is_effect_free_prim(app->rator, 1)) {
     /* an immediate prim cannot call anything among its arguments */
   } else {
     /* argument might get applied */
@@ -475,7 +474,7 @@ static Scheme_Object *letrec_check_application3(Scheme_Object *o, Letrec_Check_F
 
   app = (Scheme_App3_Rec *)o;
 
-  if (is_effect_free_prim(app->rator)) {
+  if (is_effect_free_prim(app->rator, 2)) {
     /* an immediate prim cannot call anything among its arguments */
   } else {
     /* argument might get applied */

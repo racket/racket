@@ -203,12 +203,15 @@ static Scheme_Object *extfl_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_to_extfl(int argc, Scheme_Object *argv[]);
 #endif
 
+static Scheme_Object *single_flonum_available_p(int argc, Scheme_Object *argv[]);
+
 /* globals */
 READ_ONLY Scheme_Object *scheme_unsafe_fxnot_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxand_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxior_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxxor_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxrshift_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_to_fl_proc;
 
 READ_ONLY double scheme_infinity_val;
 READ_ONLY double scheme_minus_infinity_val;
@@ -221,9 +224,10 @@ READ_ONLY Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_na
 
 #define zeroi scheme_exact_zero
 
-READ_ONLY Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
+READ_ONLY Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_minus_half_pi;
+READ_ONLY Scheme_Object *scheme_plus_i, *scheme_minus_i;
 #ifdef MZ_USE_SINGLE_FLOATS
-READ_ONLY Scheme_Object *scheme_zerof, *scheme_nzerof, *scheme_single_pi, *scheme_single_half_pi;
+READ_ONLY Scheme_Object *scheme_zerof, *scheme_nzerof, *scheme_single_pi, *scheme_single_half_pi, *scheme_single_minus_half_pi;
 READ_ONLY Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_object, *scheme_single_nan_object;
 #endif
 
@@ -256,14 +260,14 @@ READ_ONLY Scheme_Object *scheme_zerol, *scheme_nzerol, *scheme_long_pi,
    Make x87 computations double-precision instead of 
    extended-precision, so that if/when the JIT generates
    x87 instructions, it's consistent with everything else. */
-static void to_double_prec(void)
+XFORM_NONGCING static void to_double_prec(void)
 {
   int _dblprec = 0x27F;
   asm ("fldcw %0" : : "m" (_dblprec));
 }
 #endif
 #if defined(ASM_DBLPREC_CONTROL_87) || defined(ASM_EXTPREC_CONTROL_87)
-static void to_extended_prec(void)
+XFORM_NONGCING static void to_extended_prec(void)
 {
   int _extprec = 0x37F;
   asm ("fldcw %0" : : "m" (_extprec));
@@ -327,11 +331,13 @@ scheme_init_number (Scheme_Startup_Env *env)
 
   REGISTER_SO(scheme_pi);
   REGISTER_SO(scheme_half_pi);
+  REGISTER_SO(scheme_minus_half_pi);
   REGISTER_SO(scheme_zerod);
   REGISTER_SO(scheme_nzerod);
 #ifdef MZ_USE_SINGLE_FLOATS
   REGISTER_SO(scheme_single_pi);
   REGISTER_SO(scheme_single_half_pi);
+  REGISTER_SO(scheme_single_minus_half_pi);
   REGISTER_SO(scheme_zerof);
   REGISTER_SO(scheme_nzerof);
 #endif
@@ -387,15 +393,16 @@ scheme_init_number (Scheme_Startup_Env *env)
   
   scheme_pi = scheme_make_double(atan2(0.0, -1.0));
   scheme_half_pi = scheme_make_double(atan2(0.0, -1.0)/2);
+  scheme_minus_half_pi = scheme_make_double(-SCHEME_DBL_VAL(scheme_half_pi));
 #ifdef MZ_USE_SINGLE_FLOATS
   scheme_zerof = scheme_make_float(0.0f);
   scheme_nzerof = scheme_make_float(-0.0f);
   scheme_single_pi = scheme_make_float(SCHEME_DBL_VAL(scheme_pi));
   scheme_single_half_pi = scheme_make_float(SCHEME_DBL_VAL(scheme_half_pi));
+  scheme_single_minus_half_pi = scheme_make_float(SCHEME_DBL_VAL(scheme_minus_half_pi));
 #endif
   scheme_plus_i = scheme_make_complex(scheme_make_integer(0), scheme_make_integer(1));
   scheme_minus_i = scheme_make_complex(scheme_make_integer(0), scheme_make_integer(-1));
-  
   scheme_inf_object = scheme_make_double(scheme_infinity_val);
   scheme_minus_inf_object = scheme_make_double(scheme_minus_infinity_val);
 #ifdef NAN_EQUALS_ANYTHING
@@ -534,6 +541,8 @@ scheme_init_number (Scheme_Startup_Env *env)
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  flags |= (SCHEME_PRIM_PRODUCES_FLONUM
+            | SCHEME_PRIM_AD_HOC_OPT);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
   scheme_addto_prim_instance("real->double-flonum", p, env);
 
@@ -733,12 +742,16 @@ scheme_init_number (Scheme_Startup_Env *env)
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  flags |= SCHEME_PRIM_AD_HOC_OPT;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
   scheme_addto_prim_instance("exact->inexact", p, env);
 
   p = scheme_make_folding_prim(scheme_inexact_to_exact, "inexact->exact", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_addto_prim_instance("inexact->exact", p, env);
+
+  p = scheme_make_folding_prim(single_flonum_available_p, "single-flonum-available?", 0, 0, 1);
+  scheme_addto_prim_instance("single-flonum-available?", p, env);
 }
 
 void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
@@ -1365,6 +1378,8 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("unsafe-fx->fl", p, env);
+  REGISTER_SO(scheme_unsafe_fx_to_fl_proc);
+  scheme_unsafe_fx_to_fl_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fl_to_fx, "unsafe-fl->fx", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -2126,6 +2141,16 @@ real_to_long_double_flonum (int argc, Scheme_Object *argv[])
 #endif
 }
 
+static Scheme_Object *single_flonum_available_p(int argc, Scheme_Object *argv[])
+{
+#ifdef MZ_USE_SINGLE_FLOATS
+  return scheme_true;
+#else
+  return scheme_false;
+#endif
+}
+
+
 int scheme_is_exact(const Scheme_Object *n)
 {
   if (SCHEME_INTP(n)) {
@@ -2741,18 +2766,6 @@ static Scheme_Object *get_frac(char *name, int low_p,
     return n;
 }
 
-#ifdef USE_SINGLE_FLOATS
-XFORM_NONGCING static int complex_single_flonum_p(Scheme_Object *c)
-{
-  Scheme_Complex *cb = (Scheme_Complex *)c;
-  
-  if (SCHEME_FLTP(cb->r) || SCHEME_FLTP(cb->i))
-    return 1;
-  
-  return 0;
-}
-#endif
-
 static Scheme_Object *un_exp(Scheme_Object *o);
 static Scheme_Object *un_log(Scheme_Object *o);
 
@@ -2832,8 +2845,6 @@ static Scheme_Object *bignum_log(Scheme_Object *b)
   return scheme_make_double(d);
 }
 
-static Scheme_Object *complex_sin(Scheme_Object *c);
-
 static Scheme_Object *complex_sin(Scheme_Object *c)
 {
   Scheme_Object *i_c;
@@ -2844,8 +2855,6 @@ static Scheme_Object *complex_sin(Scheme_Object *c)
 					 un_exp(scheme_bin_minus(zeroi, i_c))),
 			scheme_bin_mult(scheme_make_integer(2), scheme_plus_i));
 }
-
-static Scheme_Object *complex_cos(Scheme_Object *c);
 
 static Scheme_Object *complex_cos(Scheme_Object *c)
 {
@@ -2858,65 +2867,23 @@ static Scheme_Object *complex_cos(Scheme_Object *c)
 			scheme_make_integer(2));
 }
 
-static Scheme_Object *complex_tan(Scheme_Object *c);
-
 static Scheme_Object *complex_tan(Scheme_Object *c)
 {
   return scheme_bin_div(complex_sin(c), complex_cos(c));
 }
 
-static Scheme_Object *complex_asin(Scheme_Object *c);
-static Scheme_Object *complex_atan(Scheme_Object *c);
-
 static Scheme_Object *complex_asin(Scheme_Object *c)
 {
-  Scheme_Object *one_minus_c_sq, *sqrt_1_minus_c_sq;
-
-  one_minus_c_sq = scheme_bin_minus(scheme_make_integer(1),
-				    scheme_bin_mult(c, c));
-  sqrt_1_minus_c_sq = scheme_sqrt(1, &one_minus_c_sq);
-  return scheme_bin_mult(scheme_make_integer(2),
-                         complex_atan(scheme_bin_div(c,
-                                                     scheme_bin_plus(scheme_make_integer(1),
-                                                                     sqrt_1_minus_c_sq))));
+  return scheme_complex_asin(c);
 }
-
-static Scheme_Object *complex_acos(Scheme_Object *c);
 
 static Scheme_Object *complex_acos(Scheme_Object *c)
 {
-  Scheme_Object *a, *r;
-  a = complex_asin(c);
-  if (scheme_is_zero(_scheme_complex_imaginary_part(c))
-      && (scheme_bin_gt(_scheme_complex_real_part(c), scheme_make_integer(1))
-          || scheme_bin_lt(_scheme_complex_real_part(c), scheme_make_integer(-1)))) {
-    /* Make sure real part is 0 or pi */
-    if (scheme_is_negative(_scheme_complex_real_part(c))) {
-#ifdef MZ_USE_SINGLE_FLOATS
-      if (complex_single_flonum_p(c))
-        r = scheme_single_pi;
-      else
-#endif
-        r = scheme_pi;
-    } else
-      r = scheme_make_integer(0);
-    return scheme_make_complex(r, scheme_bin_minus(scheme_make_integer(0),
-                                                   _scheme_complex_imaginary_part(a)));
-  } else {
-#ifdef MZ_USE_SINGLE_FLOATS
-    if (complex_single_flonum_p(c))
-      r = scheme_single_half_pi;
-    else
-#endif
-      r = scheme_half_pi;
-    return scheme_bin_minus(r, a);
-  }
+  return scheme_complex_acos(c);
 }
 
 static Scheme_Object *complex_atan(Scheme_Object *c)
 {
-  Scheme_Object *one_half = NULL;
-
   if (SAME_OBJ(_scheme_complex_real_part(c), scheme_make_integer(0))) {
     Scheme_Object *i = _scheme_complex_imaginary_part(c);
     if (SAME_OBJ(i, scheme_make_integer(1)) || SAME_OBJ(i, scheme_make_integer(-1))) {
@@ -2935,19 +2902,7 @@ static Scheme_Object *complex_atan(Scheme_Object *c)
     }
   }
 
-  /* select single versus complex: */
-#ifdef MZ_USE_SINGLE_FLOATS
-  if (complex_single_flonum_p(c))
-    one_half = scheme_make_float(0.5);
-  else
-#endif
-    one_half = scheme_make_double(0.5);
-
-  return scheme_bin_mult(scheme_plus_i,
-			 scheme_bin_mult(one_half,
-					 un_log(scheme_bin_div(scheme_bin_plus(scheme_plus_i, c),
-							       scheme_bin_plus(scheme_plus_i, 
-									       scheme_bin_minus(zeroi, c))))));
+  return scheme_complex_atan(c);
 }
 
 #define GEN_ZERO_IS_ZERO() if (o == zeroi) return zeroi;
@@ -2961,7 +2916,7 @@ static Scheme_Object *complex_atan(Scheme_Object *c)
 #define OVER_ONE_MAG_USES_COMPLEX(d) (d > 1.0) || (d < -1.0)
 
 #ifdef TRIG_ZERO_NEEDS_SIGN_CHECK
-#define MK_SCH_TRIG(SCH_TRIG, c_trig) static double SCH_TRIG(double d) { if (d == 0.0) return d; else return c_trig(d); }
+#define MK_SCH_TRIG(SCH_TRIG, c_trig) XFORM_NONGCING static double SCH_TRIG(double d) { if (d == 0.0) return d; else return c_trig(d); }
 MK_SCH_TRIG(SCH_TAN, tan)
 MK_SCH_TRIG(SCH_SIN, sin)
 MK_SCH_TRIG(SCH_ASIN, asin)
@@ -2969,7 +2924,7 @@ MK_SCH_TRIG(SCH_ASIN, asin)
 #else
 # ifdef SIN_COS_NEED_DEOPTIMIZE
 #  pragma optimize("g", off)
-#  define MK_SCH_TRIG(SCH_TRIG, c_trig) static double SCH_TRIG(double d) { return c_trig(d); }
+#  define MK_SCH_TRIG(SCH_TRIG, c_trig) XFORM_NONGCING static double SCH_TRIG(double d) { return c_trig(d); }
 MK_SCH_TRIG(SCH_SIN, sin)
 MK_SCH_TRIG(SCH_COS, cos)
 MK_SCH_TRIG(SCH_TAN, tan)
@@ -2982,7 +2937,7 @@ MK_SCH_TRIG(SCH_TAN, tan)
 # define SCH_ASIN asin
 #endif
 
-static double SCH_ATAN(double v)
+XFORM_NONGCING static double SCH_ATAN(double v)
 {
 #ifdef TRIG_ZERO_NEEDS_SIGN_CHECK
   if (v == 0.0) {
@@ -2993,7 +2948,7 @@ static double SCH_ATAN(double v)
   return v;
 }
 
-static double SCH_ATAN2(double v, double v2)
+XFORM_NONGCING static double SCH_ATAN2(double v, double v2)
 {
 #ifdef ATAN2_DOESNT_WORK_WITH_INFINITIES
   if (MZ_IS_INFINITY(v) && MZ_IS_INFINITY(v2)) {
@@ -3010,7 +2965,6 @@ static double SCH_ATAN2(double v, double v2)
   return atan2(v, v2);
 }
 
-
 #ifdef LOG_ZERO_ISNT_NEG_INF
 static double SCH_LOG(double d) { if (d == 0.0) return scheme_minus_infinity_val; else return log(d); }
 #else
@@ -3026,6 +2980,7 @@ double scheme_double_acos(double x) { return acos(x); }
 double scheme_double_atan(double x) { return SCH_ATAN(x); }
 double scheme_double_log(double x) { return SCH_LOG(x); }
 double scheme_double_exp(double x) { return exp(x); }
+double scheme_double_atan2(double v, double v2) { return SCH_ATAN2(v, v2); }
 
 #ifdef MZ_LONG_DOUBLE
 long_double scheme_long_double_sin(long_double x) { return long_double_sin(x); }
@@ -3039,25 +2994,65 @@ long_double scheme_long_double_exp(long_double x) { return long_double_exp(x); }
 #endif
 
 
-static Scheme_Object *scheme_inf_plus_pi()
+static Scheme_Object *inf_plus_pi_i()
 {
   return scheme_make_complex(scheme_inf_object, scheme_pi);
 }
 
+static Scheme_Object *half_pi_minus_inf_i()
+{
+  return scheme_make_complex(scheme_half_pi, scheme_minus_inf_object);
+}
+
+static Scheme_Object *minus_half_pi_plus_inf_i()
+{
+  return scheme_make_complex(scheme_minus_half_pi, scheme_inf_object);
+}
+
+static Scheme_Object *zero_plus_inf_i()
+{
+  return scheme_make_complex(scheme_zerod, scheme_inf_object);
+}
+
+static Scheme_Object *pi_minus_inf_i()
+{
+  return scheme_make_complex(scheme_pi, scheme_minus_inf_object);
+}
+
 #ifdef MZ_USE_SINGLE_FLOATS
-static Scheme_Object *scheme_single_inf_plus_pi()
+static Scheme_Object *single_inf_plus_pi_i()
 {
   return scheme_make_complex(scheme_single_inf_object, scheme_single_pi);
+}
+
+static Scheme_Object *single_half_pi_minus_inf_i()
+{
+  return scheme_make_complex(scheme_single_half_pi, scheme_single_minus_inf_object);
+}
+
+static Scheme_Object *single_minus_half_pi_plus_inf_i()
+{
+  return scheme_make_complex(scheme_single_minus_half_pi, scheme_single_inf_object);
+}
+
+static Scheme_Object *single_zero_plus_inf_i()
+{
+  return scheme_make_complex(scheme_zerof, scheme_single_inf_object);
+}
+
+static Scheme_Object *single_pi_minus_inf_i()
+{
+  return scheme_make_complex(scheme_single_pi, scheme_single_minus_inf_object);
 }
 #endif
 
 GEN_UNARY_OP(exp_prim, exp, exp, scheme_inf_object, scheme_single_inf_object, scheme_zerod, scheme_zerof, scheme_nan_object, scheme_single_nan_object, complex_exp, GEN_ZERO_IS_ONE, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
-GEN_UNARY_OP(log_e_prim, log, SCH_LOG, scheme_inf_object, scheme_single_inf_object, scheme_inf_plus_pi(), scheme_single_inf_plus_pi(), scheme_nan_object, scheme_single_nan_object, complex_log, GEN_ONE_IS_ZERO_AND_ZERO_IS_ERR, NEGATIVE_USES_COMPLEX, BIGNUM_LOG)
+GEN_UNARY_OP(log_e_prim, log, SCH_LOG, scheme_inf_object, scheme_single_inf_object, inf_plus_pi_i(), single_inf_plus_pi_i(), scheme_nan_object, scheme_single_nan_object, complex_log, GEN_ONE_IS_ZERO_AND_ZERO_IS_ERR, NEGATIVE_USES_COMPLEX, BIGNUM_LOG)
 GEN_UNARY_OP(sin_prim, sin, SCH_SIN, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_sin, GEN_ZERO_IS_ZERO, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
 GEN_UNARY_OP(cos_prim, cos, SCH_COS, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_cos, GEN_ZERO_IS_ONE, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
 GEN_UNARY_OP(tan_prim, tan, SCH_TAN, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_tan, GEN_ZERO_IS_ZERO, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
-GEN_UNARY_OP(asin_prim, asin, SCH_ASIN, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_asin, GEN_ZERO_IS_ZERO, OVER_ONE_MAG_USES_COMPLEX, BIGNUMS_AS_DOUBLES)
-GEN_UNARY_OP(acos_prim, acos, acos, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_acos, GEN_ONE_IS_ZERO, OVER_ONE_MAG_USES_COMPLEX, BIGNUMS_AS_DOUBLES)
+GEN_UNARY_OP(asin_prim, asin, SCH_ASIN, half_pi_minus_inf_i(), single_half_pi_minus_inf_i(), minus_half_pi_plus_inf_i(), single_minus_half_pi_plus_inf_i(), scheme_nan_object, scheme_single_nan_object, complex_asin, GEN_ZERO_IS_ZERO, OVER_ONE_MAG_USES_COMPLEX, BIGNUMS_AS_DOUBLES)
+GEN_UNARY_OP(acos_prim, acos, acos, zero_plus_inf_i(), single_zero_plus_inf_i(), pi_minus_inf_i(), single_pi_minus_inf_i(), scheme_nan_object, scheme_single_nan_object, complex_acos, GEN_ONE_IS_ZERO, OVER_ONE_MAG_USES_COMPLEX, BIGNUMS_AS_DOUBLES)
 
 static Scheme_Object *
 log_prim (int argc, Scheme_Object *argv[])
@@ -3356,7 +3351,7 @@ static Scheme_Object *fixnum_expt(intptr_t x, intptr_t y)
 }
 
 #ifdef ASM_DBLPREC_CONTROL_87
-static double protected_pow(double x, double y)
+XFORM_NONGCING static double protected_pow(double x, double y)
 {
   /* libm's pow() implementation seems to sometimes rely on
      extended precision in pow(), so reset the control
@@ -3395,7 +3390,7 @@ static long_double protected_powl(long_double x, long_double y)
 #  define sch_powl protected_powl
 # endif
 #else
-static double sch_pow(double x, double y)
+XFORM_NONGCING static double sch_pow(double x, double y)
 {
   /* Explciitly handle all cases described by C99 */
   if (x == 1.0)
@@ -5484,7 +5479,7 @@ static Scheme_Object *fold_fixnum_bitwise_shift(int argc, Scheme_Object *argv[])
 #define UNSAFE_FX(name, op, fold, type, no_args)             \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   intptr_t v;                                               \
+   type v;                                                   \
    int i;                                                    \
    if (!argc) return no_args;                                \
    if (scheme_current_thread->constant_folding) return fold(argc, argv);     \

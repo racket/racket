@@ -17,7 +17,9 @@
                   ;; Remapped to place-local register operations:
                   [unsafe-make-place-local rumble:unsafe-make-place-local]
                   [unsafe-place-local-ref rumble:unsafe-place-local-ref]
-                  [unsafe-place-local-set! rumble:unsafe-place-local-set!])
+                  [unsafe-place-local-set! rumble:unsafe-place-local-set!]
+                  [immobile-cell->address rumble:immobile-cell->address]
+                  [address->immobile-cell rumble:address->immobile-cell])
           (thread))
 
   (include "place-register.ss")
@@ -44,7 +46,7 @@
 
   ;; ----------------------------------------
 
-  (module (|#%rktio-instance| ptr->address)
+  (module (|#%rktio-instance| ptr->address address->ptr)
     (meta define (convert-type t)
           (syntax-case t (ref *ref rktio_bool_t rktio_const_string_t)
             [(ref . _) #'uptr]
@@ -360,6 +362,12 @@
                                 form ...)]))
         (include "../rktio/rktio.rktl"))))
 
+  (define (immobile-cell->address p)
+    (address->ptr (rumble:immobile-cell->address p)))
+
+  (define (address->immobile-cell p)
+    (rumble:address->immobile-cell (ptr->address p)))
+
   ;; ----------------------------------------
 
   (define format
@@ -468,6 +476,9 @@
                              (1/log-message (|#%app| 1/current-logger) level str #f)))
   (set-error-display-eprintf! (lambda (fmt . args)
                                 (apply 1/fprintf (|#%app| 1/current-error-port) fmt args)))
-  (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ptr->address)
+  (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ffi-unload-lib ptr->address)
   (set-make-async-callback-poll-wakeup! unsafe-make-signal-received)
-  (set-get-machine-info! get-machine-info))
+  (set-get-machine-info! get-machine-info)
+  (set-processor-count! (1/processor-count))
+  (install-future-logging-procs! logging-future-events? log-future-event)
+  (install-place-logging-procs! logging-place-events? log-place-event))

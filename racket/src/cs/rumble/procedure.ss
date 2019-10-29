@@ -2,7 +2,11 @@
   (make-struct-type-property 'method-arity-error))
 
 (define-values (prop:arity-string arity-string? arity-string-ref)
-  (make-struct-type-property 'arity-string))
+  (make-struct-type-property 'arity-string (lambda (v info)
+                                             (check 'guard-for-prop:arity-string
+                                                    (procedure-arity-includes/c 1)
+                                                    v)
+                                             v)))
 
 (define-values (prop:procedure procedure-struct? procedure-struct-ref)
   (make-struct-type-property 'procedure (lambda (v info)
@@ -38,24 +42,25 @@
     [(proc args)
      (if (#%procedure? proc)
          (#2%apply proc args)
-         (#2%apply (extract-procedure proc (length args)) args))]
+         (#2%apply (extract-procedure proc (and (#%list? args) (length args))) args))]
     [(proc)
      (raise-arity-error 'apply (|#%app| arity-at-least 2) proc)]
     [(proc . argss)
      (if (#%procedure? proc)
          (#2%apply #2%apply proc argss)
-         (let ([len (let loop ([argss argss])
+         (let ([len (let loop ([argss argss] [accum 0])
                       (cond
-                       [(null? (cdr argss)) (length (car argss))]
-                       [else (fx+ 1 (loop (cdr argss)))]))])
+                       [(null? (cdr argss)) (let ([l (car argss)])
+                                              (and (#%list? l)
+                                                   (+ accum (length l))))]
+                       [else (loop (cdr argss) (fx+ 1 accum))]))])
            (#2%apply #2%apply (extract-procedure proc len) argss)))]))
 
-;; See copy in "expander.sls"
 (define-syntax (|#%app| stx)
   (syntax-case stx ()
     [(_ rator rand ...)
      (with-syntax ([n-args (length #'(rand ...))])
-       #'((extract-procedure rator n-args) rand ...))]))
+       #'(#3%$app (extract-procedure rator n-args) rand ...))]))
 
 (define |#%call-with-values|
   (|#%name|
@@ -68,10 +73,11 @@
            receiver
            (lambda args (apply receiver args)))))))
 
-(define (extract-procedure f n-args)
-  (cond
-   [(#%procedure? f) f]
-   [else (slow-extract-procedure f n-args)]))
+(define-syntax-rule (extract-procedure f n-args)
+  (let ([tmp f])
+    (if (#%procedure? tmp)
+        tmp
+        (slow-extract-procedure tmp n-args))))
 
 (define (slow-extract-procedure f n-args)
   (pariah ; => don't inline enclosing procedure
@@ -83,11 +89,18 @@
 (define (do-extract-procedure f orig-f n-args success-k fail-k)
   (cond
    [(#%procedure? f)
-    (if (chez:procedure-arity-includes? f n-args)
+    (if (or (not n-args)
+            (chez:procedure-arity-includes? f n-args))
         (if success-k
             (success-k f)
             f)
         (wrong-arity-wrapper orig-f))]
+   [(continuation? f)
+    (let ([p (lambda args
+               (apply-continuation f args))])
+      (if success-k
+          (success-k p)
+          p))]
    [(record? f)
     (let* ([rtd (record-rtd f)]
            [v (struct-property-ref prop:procedure rtd none)])
@@ -96,7 +109,7 @@
        [(fixnum? v)
         (let ([a (struct-property-ref prop:procedure-arity rtd #f)])
           (cond
-           [(and a (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
+           [(and a n-args (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
             (wrong-arity-wrapper orig-f)]
            [else
             (do-extract-procedure (unsafe-struct-ref f v) orig-f n-args success-k wrong-arity-wrapper)]))]
@@ -112,13 +125,13 @@
        [else
         (let ([a (struct-property-ref prop:procedure-arity rtd #f)])
           (cond
-           [(and a (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
+           [(and a n-args (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
             (wrong-arity-wrapper orig-f)]
            [else
             (do-extract-procedure
              v
              orig-f
-             (fx+ n-args 1)
+             (and n-args (fx+ n-args 1))
              (lambda (v)
                (cond
                 [(not v) (case-lambda)]
@@ -156,7 +169,7 @@
 (define/who procedure-arity-includes?
   (case-lambda
    [(f n incomplete-ok?)
-    (let ([mask (get-procedure-arity-mask who f incomplete-ok?)])
+    (let ([mask (get-procedure-arity-mask who f incomplete-ok? #f)])
       (check who exact-nonnegative-integer? n)
       (bitwise-bit-set? mask n))]
    [(f n) (procedure-arity-includes? f n #f)]))
@@ -164,18 +177,24 @@
 (define (chez:procedure-arity-includes? proc n)
   (bitwise-bit-set? (#%procedure-arity-mask proc) n))
 
+;; assumes that `n` is an exact nonnegative integer
+(define (unsafe-procedure-and-arity-includes? p n)
+  (if (#%procedure? p)
+      (chez:procedure-arity-includes? p n)
+      (bitwise-bit-set? (get-procedure-arity-mask #f p #f 0) n)))
+
 (define (procedure-arity orig-f)
-  (mask->arity (get-procedure-arity-mask 'procedure-arity orig-f #t)))
+  (mask->arity (get-procedure-arity-mask 'procedure-arity orig-f #t #f)))
 
 (define/who (procedure-arity-mask orig-f)
-  (get-procedure-arity-mask who orig-f #t))
+  (get-procedure-arity-mask who orig-f #t #f))
 
-(define (get-procedure-arity-mask who orig-f incomplete-ok?)
+(define (get-procedure-arity-mask who orig-f incomplete-ok? fail-v)
   (cond
    [(#%procedure? orig-f)
     (#%procedure-arity-mask orig-f)]
    [else
-    (let proc-arity-mask ([f orig-f] [shift 0])
+    (let proc-arity-mask ([f orig-f] [shift 0] [fail-v fail-v])
       (cond
        [(#%procedure? f)
         (bitwise-arithmetic-shift-right (#%procedure-arity-mask f) shift)]
@@ -193,14 +212,14 @@
                 (let ([v (struct-property-ref prop:procedure rtd #f)])
                   (cond
                    [(fixnum? v)
-                    (proc-arity-mask (unsafe-struct-ref f v) shift)]
+                    (proc-arity-mask (unsafe-struct-ref f v) shift 0)]
                    [(eq? v 'unsafe)
-                    (proc-arity-mask (impersonator-next f) shift)]
+                    (proc-arity-mask (impersonator-next f) shift 0)]
                    [else
-                    (proc-arity-mask v (add1 shift))]))]))]))]
-       [(eq? f orig-f)
-        (raise-argument-error who "procedure?" orig-f)]
-       [else 0]))]))
+                    (proc-arity-mask v (add1 shift) 0)]))]))]))]
+       [else
+        (or fail-v
+            (raise-argument-error who "procedure?" orig-f))]))]))
 
 (define (procedure-incomplete-arity? f)
   (cond
@@ -307,6 +326,7 @@
 ;;                                      <symbol-or-#f> or name of <proc>
 ;;  - (vector <symbol-or-#f> <proc> 'method) => is a method
 ;;  - (box <symbol>) => JIT function generated, name is <symbol>, not a method
+;;  - <parameter-data> => parameter
 
 ;; ----------------------------------------
 
@@ -497,6 +517,7 @@
      [(#%box? name) (#%unbox name)]
      [(#%vector? name) (or (#%vector-ref name 0)
                            (object-name (#%vector-ref name 1)))]
+     [(parameter-data? name) (parameter-data-name name)]
      [else name])))
 
 ;; ----------------------------------------
@@ -863,13 +884,6 @@
 
 (define (set-primitive-applicables!)
   (struct-property-set! prop:procedure
-                        (record-type-descriptor parameter)
-                        0)
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor derived-parameter)
-                        0)
-
-  (struct-property-set! prop:procedure
                         (record-type-descriptor position-based-accessor)
                         (lambda (pba s p)
                           (cond
@@ -887,7 +901,8 @@
                                                (unsafe-struct*-ref s (+ p (position-based-accessor-offset pba))))
                                              (position-based-accessor-rtd pba)
                                              p
-                                             s)]
+                                             s
+                                             #f #f)]
                            [else (error 'struct-ref "bad access")])))
 
   (struct-property-set! prop:procedure
@@ -911,7 +926,8 @@
                                                 p
                                                 abs-pos
                                                 s
-                                                v))]
+                                                v
+                                                #f #f))]
                            [else
                             (error 'struct-set! "bad assignment")])))
 

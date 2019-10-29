@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../port/parameter.rkt"
+         "../print/parameter.rkt"
          "../port/output-port.rkt"
          "../port/string-port.rkt"
          "../string/convert.rkt"
@@ -34,7 +35,9 @@
 
 (define (simple-format a)
   (cond
-    [(boolean? a) (string-copy (if a "#t" "#f"))]
+    [(boolean? a) (string-copy (if (print-boolean-long-form)
+                                   (if a "#true" "#false")
+                                   (if a "#t" "#f")))]
     [(number? a) (number->string a)]
     [(keyword? a) (string-append "#:" (keyword->string a))]
     [else #f]))

@@ -50,9 +50,11 @@ done
 if test "$use_cs" = "yes" ; then
   if test "$supplied_scheme" = "no" ; then
     if ! test -d ChezScheme ; then
-      echo $0: supply --enable-scheme=... or check out a Chez Scheme
-      echo build directory as '"ChezScheme"' in the current directory
-      exit 1
+      if ! test -d "$dir/ChezScheme" ; then
+        echo $0: supply --enable-scheme=... or check out a Chez Scheme
+        echo build directory as '"ChezScheme"' in the current directory
+        exit 1
+      fi
     fi
   fi
 
@@ -70,10 +72,10 @@ if test "$use_cs" = "yes" ; then
   mkdir -p cs/c
   case "$dir" in
     /*)
-     cd cs/c && "$dir/cs/c/configure" ${1+"$@"} && cd ../..
+     (cd cs/c && "$dir/cs/c/configure" ${1+"$@"})
      ;;
     *)
-     cd cs/c && "../../$dir/cs/c/configure" ${1+"$@"} && cd ../..
+     (cd cs/c && "../../$dir/cs/c/configure" ${1+"$@"})
      ;;
   esac
 fi

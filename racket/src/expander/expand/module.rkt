@@ -118,7 +118,7 @@
    
    (define enclosing-mod (and enclosing-self
                               (module-path-index-join '(submod "..") self)))
-   (when (and enclosing-mod mpis-for-enclosing-reset)
+   (when (and #;enclosing-mod mpis-for-enclosing-reset)
      (set-box! mpis-for-enclosing-reset
                (cons enclosing-mod (unbox mpis-for-enclosing-reset))))
    

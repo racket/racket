@@ -55,6 +55,7 @@ values would be equal. See also @racket[gen:equal+hash] and @racket[prop:imperso
 @examples[
 (equal? 'yes 'yes)
 (equal? 'yes 'no)
+(equal? (* 6 7) 42)
 (equal? (expt 2 100) (expt 2 100))
 (equal? 2 2.0)
 (let ([v (mcons 1 2)]) (equal? v v))
@@ -82,6 +83,7 @@ in the case of @tech{complex numbers}. Two characters are
 @examples[
 (eqv? 'yes 'yes)
 (eqv? 'yes 'no)
+(eqv? (* 6 7) 42)
 (eqv? (expt 2 100) (expt 2 100))
 (eqv? 2 2.0)
 (let ([v (mcons 1 2)]) (eqv? v v))
@@ -95,11 +97,14 @@ in the case of @tech{complex numbers}. Two characters are
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
 Return @racket[#t] if @racket[v1] and @racket[v2] refer to the same
-object, @racket[#f] otherwise. See also @secref["model-eq"].
+object, @racket[#f] otherwise. As a special case among @tech{numbers},
+two @tech{fixnums} that are @racket[=] are also the same according
+to @racket[eq?]. See also @secref["model-eq"].
 
 @examples[
 (eq? 'yes 'yes)
 (eq? 'yes 'no)
+(eq? (* 6 7) 42)
 (eq? (expt 2 100) (expt 2 100))
 (eq? 2 2.0)
 (let ([v (mcons 1 2)]) (eq? v v))
@@ -254,11 +259,21 @@ non-@racket[#f] value when applied to the structure.
 
 @defthing[prop:equal+hash struct-type-property?]{
 
-A deprecated @tech{structure type property} (see @secref["structprops"])
+A @tech{structure type property} (see @secref["structprops"])
 that supplies an equality predicate and hashing functions for a structure
-type. The @racket[gen:equal+hash] @tech{generic interface} should be used,
-instead. A @racket[prop:equal+hash] property value is a list of
-three procedures that correspond to the methods of @racket[gen:equal+hash].
+type. Using the @racket[prop:equal+hash] property is discouraged; the
+@racket[gen:equal+hash] @tech{generic interface} should be used instead.
+A @racket[prop:equal+hash] property value is a list of three procedures
+that correspond to the methods of @racket[gen:equal+hash]:
+
+@itemize[
+ @item{@racket[_equal-proc : (any/c any/c (any/c any/c . ->
+        . boolean?)  . -> . any/c)]}
+ @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) . ->
+       . exact-integer?)]}
+ @item{@racket[_hash2-proc : (any/c (any/c . -> . exact-integer?) . ->
+       . exact-integer?)]}
+]
 }
 
 @section{Boolean Aliases}
@@ -284,7 +299,7 @@ Returns @racket[(not v)].}
 @defform[(nand expr ...)]{
   Same as @racket[(not (and expr ...))].
 
-  @examples[#:eval 
+  @examples[#:eval
             bool-eval
             (nand #f #t)
             (nand #f (error 'ack "we don't get here"))]
@@ -295,22 +310,22 @@ Returns @racket[(not v)].}
 
   In the two argument case, returns @racket[#t] if neither of the
   arguments is a true value.
-  
-  @examples[#:eval 
+
+  @examples[#:eval
             bool-eval
             (nor #f #t)
             (nor #t (error 'ack "we don't get here"))]
 
-          
+
 }
 
 @defform[(implies expr1 expr2)]{
   Checks to be sure that the first
   expression implies the second.
-  
+
   Same as @racket[(if expr1 expr2 #t)].
-  
-  @examples[#:eval 
+
+  @examples[#:eval
             bool-eval
             (implies #f #t)
             (implies #f #f)

@@ -19,7 +19,11 @@
                     [v (or/c string? symbol? identifier? keyword? char? number?)] ...
                     [#:source src (or/c syntax? #f) #f]
                     [#:props props (or/c syntax? #f) #f]
-                    [#:cert ignored (or/c syntax? #f) #f])
+                    [#:cert ignored (or/c syntax? #f) #f]
+                    [#:subs? subs? boolean? #f]
+                    [#:subs-intro subs-introducer
+                                  (-> syntax? syntax?)
+                                  (if (syntax-transforming?) syntax-local-introduce values)])
          identifier?]{
 
 Like @racket[format], but produces an identifier using @racket[lctx]
@@ -47,6 +51,21 @@ in the argument list are automatically converted to symbols.
 
 (Scribble doesn't show it, but the DrRacket pinpoints the location of
 the second error but not of the first.)
+
+If @racket[subs?] is @racket[#t], then a @racket['sub-range-binders]
+syntax property is added to the result that records the position of
+each identifier in the @racket[v]s. The @racket[subs-intro] procedure
+is applied to each identifier, and its result is included in the
+sub-range binder record. This property value overrides a
+@racket['sub-range-binders] property copied from @racket[props].
+
+@examples[#:eval the-eval
+(syntax-property (format-id #'here "~a/~a-~a" #'point 2 #'y #:subs? #t)
+                 'sub-range-binders)
+]
+
+@history[#:changed "7.4.0.5" @elem{Added the @racket[#:subs?] and
+@racket[#:subs-intro] arguments.}]
 }
 
 @defproc[(format-symbol [fmt string?]
@@ -164,19 +183,23 @@ does not satisfy the predicate, @racket[#f] is returned and the
 identifier is not recorded as a disappeared use.
 }
 
-@defproc[(record-disappeared-uses [id (or/c identifier? (listof identifier?))])
+@defproc[(record-disappeared-uses [id (or/c identifier? (listof identifier?))]
+                                  [intro? boolean? (syntax-transforming?)])
          void?]{
 
-Add @racket[id] to @racket[(current-recorded-disappeared-uses)] after calling
-@racket[syntax-local-introduce] on the identifier. If @racket[id] is a list,
-perform the same operation on all the identifiers.
+Add @racket[id] to @racket[(current-recorded-disappeared-uses)]. If
+@racket[id] is a list, perform the same operation on all the
+identifiers. If @racket[intro?] is true, then
+@racket[syntax-local-introduce] is first called on the identifiers.
 
 If not used within the extent of a @racket[with-disappeared-uses] 
 form or similar, has no effect.
 
 @history[#:changed "6.5.0.7"
          @elem{Added the option to pass a single identifier instead of
-               requiring a list.}]
+               requiring a list.}
+         #:changed "7.2.0.11"
+         @elem{Added the @racket[intro?] argument.}]
 }
 
 

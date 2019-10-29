@@ -143,12 +143,13 @@
                                (seteq))))
   (define delta-scs (set->list (set-subtract ext-scs use-base-scs)))
   (define maybe-taint (if (syntax-clean? ext-s) values syntax-taint))
+  (define shifts (syntax-mpi-shifts ext-s))
   (lambda (s [mode 'add])
     (maybe-taint
      (case mode
-       [(add) (add-scopes s delta-scs)]
+       [(add) (syntax-add-shifts (add-scopes s delta-scs) shifts #:non-source? #t)]
        [(remove) (remove-scopes s delta-scs)]
-       [(flip) (flip-scopes s delta-scs)]
+       [(flip) (syntax-add-shifts (flip-scopes s delta-scs) shifts #:non-source? #t)]
        [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)]))))
 
 (define/who (syntax-local-make-delta-introducer id-stx)
@@ -198,8 +199,8 @@
         (cond
          [(rename-transformer? v)
           (if immediate?
-              (values v (rename-transformer-target v))
-              (loop (rename-transformer-target v)))]
+              (values v (rename-transformer-target-in-context v ctx))
+              (loop (rename-transformer-target-in-context v ctx)))]
          [immediate? (values v #f)]
          [else v])])])))
 

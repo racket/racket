@@ -1138,17 +1138,21 @@
        (nack-guard-evt
         (lambda (nack)
           (define ch (make-channel))
+          (define exn-ch (make-channel))
           (define ready (make-semaphore))
           (let ([t (thread (lambda ()
                              (parameterize-break #t
-                               (with-handlers ([exn:break? void])
+                               (with-handlers ([(lambda (exn) #t)
+                                                (lambda (exn)
+                                                  (channel-put exn-ch exn))])
                                  (semaphore-post ready)
                                  (go nack ch #f)))))])
             (thread (lambda ()
                       (sync nack)
                       (semaphore-wait ready)
                       (break-thread t))))
-          ch))))))
+          (choice-evt ch
+                      (wrap-evt exn-ch (lambda (exn) (raise exn))))))))))
 
 (define (read-at-least-bytes!-evt orig-bstr input-port need-more? shrink combo
                                   peek-offset prog-evt)

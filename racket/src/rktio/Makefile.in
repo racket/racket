@@ -7,7 +7,6 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 RKTLINKER = @RKTLINKER@
 
-NICEAR = $(srcdir)/../utils/nicear
 STATIC_AR = @STATIC_AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -21,7 +20,7 @@ libdir = @libdir@
 
 RACKET = racket
 
-RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h rktio_config.h
+RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h $(srcdir)/rktio_platform.h rktio_config.h
 
 OBJS = rktio_fs.@LTO@ \
        rktio_fd.@LTO@ \
@@ -57,8 +56,7 @@ default_rktio:
 	$(MAKE) librktio.@LTA@
 
 @HIDE_NOT_STANDALONE@librktio.@LTA@: $(OBJS)
-	$(NICEAR) $(STATIC_AR) $(ARFLAGS) @HIDE_NOT_STANDALONE@librktio.@LTA@ $(OBJS)
-	$(RANLIB) @HIDE_NOT_STANDALONE@librktio.@LTA@
+	$(STATIC_AR) $(ARFLAGS) @HIDE_NOT_STANDALONE@librktio.@LTA@ $(OBJS)
 
 demo: rktio_demo
 	./rktio_demo $(ARGS)
@@ -175,7 +173,7 @@ $(srcdir)/rktio.def: $(srcdir)/rktio.h $(srcdir)/parse.rkt
 
 # Builds a shared object; requires `configure --enable-standalone`
 @HIDE_STANDALONE@librktio.@LIBSFX@: $(OBJS)
-	$(NICEAR) $(AR) @HIDE_STANDALONE@librktio.@LIBSFX@ $(OBJS) $(LDFLAGS) $(LIBS)
+	$(AR) @HIDE_STANDALONE@librktio.@LIBSFX@ $(OBJS) $(LDFLAGS) $(LIBS)
 
 # Builds a shared object and installs it to `configure --prefix=...` target
 install-shared-object:

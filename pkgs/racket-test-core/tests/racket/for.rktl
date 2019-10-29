@@ -12,11 +12,19 @@
 (test-sequence [(3.0 4.0 5.0)] (in-range 3.0 6.0))
 (test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5)] (in-range 3.0 6.0 0.5))
 (test-sequence [(3.0 3.1 3.2)] (in-range 3.0 3.3 0.1))
+(err/rt-test (for/list ([x (in-range)]) x))
+(err/rt-test (in-range))
+(err/rt-test (for/list ([x (in-naturals 0 1)]) x))
+(err/rt-test (in-naturals 0 1))
 
 (test-sequence [(a b c)] '(a b c))
 (test-sequence [(a b c)] (in-list '(a b c)))
+(err/rt-test (for/list ([x (in-list '(a b c) '?)]) x))
+(err/rt-test (in-list '(a b c) '?))
 (test-sequence [(a b c)] (mcons 'a (mcons 'b (mcons 'c empty))))
 (test-sequence [(a b c)] (in-mlist (mcons 'a (mcons 'b (mcons 'c empty)))))
+(err/rt-test (for/list ([x (in-mlist (mcons 'a (mcons 'b (mcons 'c empty))) '?)]) x))
+(err/rt-test (in-mlist (mcons 'a (mcons 'b (mcons 'c empty))) '?))
 (test-sequence [(a b c)] #(a b c))
 (test-sequence [(a b c)] (in-vector #(a b c)))
 (test-sequence [(a b c)] (in-vector (chaperone-vector #(a b c) (lambda (vec i val) val) (lambda (vec i val) val))))
@@ -30,6 +38,8 @@
 ;; Test indices out of bounds
 (err/rt-test (for/list ([x (in-vector #(a b c d) 0 6 2)]) x) exn:fail:contract?)
 (err/rt-test (for/list ([x (in-vector #(a b c d) 6 0 -2)]) x) exn:fail:contract?)
+(err/rt-test (for/list ([x (in-vector)]) x))
+(err/rt-test (in-vector))
 (test-sequence [(#\a #\b #\c)] "abc")
 (test-sequence [(#\a #\u3bb #\c)] "a\u03BBc")
 (test-sequence [(#\a #\b #\c)] (in-string "abc"))
@@ -39,6 +49,8 @@
 (test-sequence [(#\a #\b #\c)] (in-string "zzabcqq" 2 5))
 (test-sequence [(#\a #\b #\c)] (in-string "zzaxbyc" 2 #f 2))
 (test-sequence [(#\a #\b #\c)] (in-string "zzaxbycy" 2 #f 2))
+(err/rt-test (for/list ([x (in-string)]) x))
+(err/rt-test (in-string))
 (test-sequence [(65 66 67)] #"ABC")
 (test-sequence [(65 66 67)] (in-bytes #"ABC"))
 (test-sequence [(65 66 67)] (in-bytes #"ZZABC" 2))
@@ -46,9 +58,15 @@
 (test-sequence [(65 66 67)] (in-bytes #"ZZABCQQ" 2 5))
 (test-sequence [(65 66 67)] (in-bytes #"ZZAXBYC" 2 #f 2))
 (test-sequence [(65 66 67)] (in-bytes #"ZZAXBYCY" 2 #f 2))
+(err/rt-test (for/list ([x (in-bytes)]) x))
+(err/rt-test (in-bytes))
 (test-sequence [(#\a #\b #\c)] (in-input-port-chars (open-input-string "abc")))
+(err/rt-test (for/list ([c (in-input-port-chars (open-input-string "abc") '?)]) c))
+(err/rt-test (in-input-port-chars (open-input-string "abc") '?))
 (test-sequence [(65 66 67)] (open-input-bytes #"ABC"))
 (test-sequence [(65 66 67)] (in-input-port-bytes (open-input-bytes #"ABC")))
+(err/rt-test (for/list ([b (in-input-port-bytes (open-input-bytes #"ABC") '?)]) b))
+(err/rt-test (in-input-port-bytes (open-input-bytes #"ABC") '?))
 
 ;; Test optimized:
 (test '(2) 'in-list-of-list (for/list ([v (in-list (list 1))]) (add1 v)))
@@ -59,7 +77,13 @@
 (test-sequence [(65 66 67)] (in-port read-byte (open-input-string "ABC")))
 
 (test-sequence [("abc" "def")] (in-lines (open-input-string "abc\ndef")))
+(test-sequence [("abc" "def")] (in-lines (open-input-string "abc\ndef") 'any))
+(err/rt-test (for/list ([l (in-lines (open-input-string "abc\ndef") 'any '?)]) l))
+(err/rt-test (in-lines (open-input-string "abc\ndef") 'any '?))
 (test-sequence [(#"abc" #"def")] (in-bytes-lines (open-input-string "abc\ndef")))
+(test-sequence [(#"abc" #"def")] (in-bytes-lines (open-input-string "abc\ndef") 'any))
+(err/rt-test (for/list ([l (in-bytes-lines (open-input-string "abc\ndef") 'any '?)]) l))
+(err/rt-test (in-bytes-lines (open-input-string "abc\ndef") 'any '?))
 
 (test-sequence [(0 1 2 3 4 5)] (in-sequences (in-range 6)))
 (test-sequence [(0 1 2 3 4 5)] (in-sequences (in-range 4) '(4 5)))
@@ -97,6 +121,10 @@
 (test-sequence [(3 4 5)] (stop-before (in-naturals 3) (lambda (x) (= x 6))))
 
 (test-sequence [(a b c) (0 1 2)] (in-indexed '(a b c)))
+(err/rt-test (for/list ([(x y) (in-indexed '(a b c) '?)]) x))
+(err/rt-test (for/list ([(x y) (in-indexed '(a b c) '?)]) x))
+(err/rt-test (for/list ([x (in-indexed '(a b c))]) x))
+(err/rt-test (in-indexed '(a b c) '?))
 
 ;; Make sure `in-indexed` doesn't provide a bad position to the underlying
 ;; sequence
@@ -123,7 +151,9 @@
   (test-sequence [(1/2 1 3/2 2 5/2 3 7/2 4 9/2)]
     (for/list ([x (in-producer (counter) 5 1/2)]) x))
   ;; test in-producer outside of for loops
-  (test 6 sequence-ref (in-producer (counter)) 5))
+  (test 6 sequence-ref (in-producer (counter)) 5)
+  (err/rt-test (for/list ([x (in-producer)]) x))
+  (err/rt-test (in-producer)))
 
 (test-sequence [(1 2 3 4 5)]
   (parameterize ([current-input-port (open-input-string "1 2 3\n4 5")])
@@ -398,6 +428,8 @@
               a))
 
 (test '(11) 'in-value (for/list ([i (in-value 11)]) i))
+(err/rt-test (for/list ([i (in-value 1 2)]) i))
+(err/rt-test (in-value 1 2))
 (let-values ([(more? next) (sequence-generate (in-value 13))])
   (test #t more?)
   (test 13 next)
@@ -776,6 +808,18 @@
 (err/rt-test (for/sum ([x (in-weak-set '(1 2))]) x)
              exn:fail:contract?
              #rx"not a hash set")
+(err/rt-test (for/sum ([x (in-weak-set (set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
+(err/rt-test (for/sum ([x (in-mutable-set (set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
+(err/rt-test (for/sum ([x (in-immutable-set (mutable-set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
+(err/rt-test (for/sum ([x (in-immutable-set (weak-set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
 (test 10 'in-hash-set (for/sum ([x (in-immutable-set (set 1 2 3 4))]) x))
 (test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-set 1 2 3 4))]) x))
 (test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-set 1 2 3 4))]) x))
@@ -943,6 +987,143 @@
   (check for/list values for-each)
   (check for/list values ormap)
   (check for/list values andmap))
+
+;; ----------------------------------------
+;; `for/foldr`
+
+(test '(0 1 2 3 4)
+      'for/foldr-one-seq
+      (for/foldr ([lst '()])
+                 ([x (in-range 5)])
+        (cons x lst)))
+(test '((0 5) (1 6) (2 7) (3 8) (4 9))
+      'for/foldr-two-seqs
+      (for/foldr ([lst '()])
+                 ([x (in-range 5)]
+                  [y (in-range 5 10)])
+        (cons (list x y) lst)))
+(test '((0 5 10) (1 6 11) (2 7 12) (3 8 13) (4 9 14))
+      'for/foldr-three-seqs
+      (for/foldr ([lst '()])
+                 ([x (in-range 5)]
+                  [y (in-range 5 10)]
+                  [z (in-range 10 15)])
+        (cons (list x y z) lst)))
+
+(test '(0 1 2)
+      'for*/foldr-one-seq
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)])
+        (cons x lst)))
+(test '((0 0) (0 1) (0 2) (1 1) (1 2) (1 3) (2 2) (2 3) (2 4))
+      'for*/foldr-two-seqs
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)]
+                   [y (in-range x (+ x 3))])
+        (cons (list x y) lst)))
+
+(test '((0 0) (0 1) (0 2) (2 2) (2 3) (2 4))
+      'for/foldr-guard
+      (for/foldr ([lst '()])
+                 ([x (in-range 3)]
+                  #:unless (= x 1)
+                  [y (in-range x (+ x 3))])
+        (cons (list x y) lst)))
+(test '((0 0) (0 1) (0 2) (1 1) (1 2) (1 3) (2 2))
+      'for*/foldr-break
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)]
+                   [y (in-range x (+ x 3))]
+                   #:break (and (= x 2) (= y 3)))
+        (cons (list x y) lst)))
+(test '((0 0) (0 1) (0 2) (1 1) (1 2) (1 3) (2 2) (2 3))
+      'for*/foldr-final
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)]
+                   [y (in-range x (+ x 3))]
+                   #:final (and (= x 2) (= y 3)))
+        (cons (list x y) lst)))
+
+(test '(408 . 20400)
+      'for/foldr-two-accs
+      (for/foldr ([a 1] [b 1] #:result (cons a b))
+                 ([n (in-range 5)])
+        (values b (* a (+ b n)))))
+
+(test #t 'for/foldr-delay-init
+      (for/foldr ([acc (error "never gets here")] #:delay)
+                 ([v (in-value #t)])
+        v))
+
+(test '(0 1 4 9 16)
+      'for/foldr-stream-finite
+      (stream->list
+       (for/foldr ([s empty-stream] #:delay)
+                  ([v (in-range 5)])
+         (stream-cons (sqr v) (force s)))))
+(test '(0 1 4 9 16)
+      'for/foldr-stream-infinite
+      (stream->list
+       (stream-take
+        (for/foldr ([s (error "never gets here")] #:delay)
+                   ([v (in-naturals)])
+          (stream-cons (sqr v) (force s)))
+        5)))
+
+(test '(0 1 4 9 16)
+      'for/foldr-stream-finite/thunk
+      (stream->list
+       (for/foldr ([s empty-stream] #:delay-with thunk)
+                  ([v (in-range 5)])
+         (stream-cons (sqr v) (s)))))
+(test '(0 1 4 9 16)
+      'for/foldr-stream-infinite/thunk
+      (stream->list
+       (stream-take
+        (for/foldr ([s (error "never gets here")] #:delay-with thunk)
+                   ([v (in-naturals)])
+          (stream-cons (sqr v) (s)))
+        5)))
+
+(test '(4 9 16 4 9 16 4 9 16 4)
+      'for/foldr-stream-circular
+      (letrec ([s (for/foldr ([s s] #:delay)
+                             ([v (in-range 2 5)])
+                    (stream-cons (sqr v) (force s)))])
+        (stream->list (stream-take s 10))))
+(test '(0 1 1 2 3 5 8 13 21 34)
+      'for/foldr-stream-self-iter
+      (letrec ([fibs (stream* 0 1 (for/foldr ([more (error "never gets here")] #:delay)
+                                             ([a (in-stream fibs)]
+                                              [b (in-stream (stream-rest fibs))])
+                                    (stream-cons (+ a b) (force more))))])
+        (stream->list (stream-take fibs 10))))
+
+(test '(0 -1 2 -3 0 1 -2 3 0 -1)
+      'for/foldr-stream-twist
+      (letrec-values ([(s1 s2) (for/foldr ([s1 s2] [s2 s1] #:delay)
+                                          ([n (in-range 4)])
+                                 (values (stream-cons n (force s2))
+                                         (stream-cons (- n) (force s1))))])
+        (stream->list (stream-take s1 10))))
+(test '(0 -1 2 -3 0 1 -2 3 0 -1)
+      'for/foldr-stream-twist/thunk
+      (letrec-values ([(s1 s2)
+                       (for/foldr ([s1 s2] [s2 s1] #:delay-with thunk #:delay-as get-next)
+                                  ([n (in-range 4)])
+                         (define next (delay (get-next)))
+                         (values (stream-cons n (let-values ([(s1 s2) (force next)]) s2))
+                                 (stream-cons (- n) (let-values ([(s1 s2) (force next)]) s1))))])
+        (stream->list (stream-take s1 10))))
+
+;; `#:delay` applies inside `#:result`
+(let ()
+  (define evaluated? #f)
+  (define result (for/foldr ([acc (set! evaluated? #t)] #:result acc #:delay) ()
+                   (force acc)))
+  (test #f 'for/foldr-result-delay-1 evaluated?)
+  (test (void) 'for/foldr-result-delay-2 (force result))
+  (test #t 'for/foldr-result-delay-3 evaluated?))
 
 ;; ----------------------------------------
 

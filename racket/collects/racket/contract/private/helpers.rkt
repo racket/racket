@@ -21,7 +21,7 @@
 (define (update-loc stx loc)
   (datum->syntax stx (syntax-e stx) loc))
 
-;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
+;; lookup-struct-info : syntax -> (union #f struct-info?)
 (define (lookup-struct-info stx provide-stx)
   (define id (syntax-case stx ()
                [(a b) (syntax a)]
@@ -34,7 +34,7 @@
        (syntax-e #'x)]
       [_ 'provide/contract]))
   (if (struct-info? v)
-      (extract-struct-info v)
+      v
       (raise-syntax-error error-name
                           "expected a struct name"
                           provide-stx

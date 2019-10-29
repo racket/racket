@@ -175,7 +175,7 @@
                             #:leaf-datum-stx [leaf-datum #'values]
                             #:pvar-save [pvar->d (lambda (x) #f)]
                             #:pvar-restore-stx [pvar->s #'(lambda (d s) s)]
-                            #:cons-stx [pcons cons]
+                            #:cons-stx [pcons #'cons]
                             #:ellipses-end-stx [ellipses-end #'values]
                             #:constant-as-leaf? [const-leaf? #f])
   (let* ([tmap (make-template-map template-stx const-leaf?)]

@@ -53,6 +53,7 @@
 ;; ----------------------------------------
 
 ;; insert : tree X Y (X X -> bool) -> tree
+;; Updates existing value ifthe key is already in the tree.
 (define (insert t key val <?)
   (cond
     [(not t) (combine key val #f #f)]
@@ -66,7 +67,7 @@
                 node-right
                 node-left
                 reverse-combine)]
-    [else t]))
+    [else (struct-copy node t [val val])]))
 
 ;; insert-to : tree X Y (X X -> bool) 
 ;;             (tree-of-X -> tree-of-X) 

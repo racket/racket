@@ -27,6 +27,7 @@
           'thread-resume thread-resume
           'make-semaphore make-semaphore
           'semaphore-post semaphore-post
+          'semaphore-post-all semaphore-post-all
           'semaphore-wait semaphore-wait
           'semaphore-peek-evt semaphore-peek-evt
           'make-channel make-channel
@@ -64,6 +65,7 @@
           'plumber-flush-handle-remove! plumber-flush-handle-remove!
           'unsafe-custodian-register unsafe-custodian-register
           'unsafe-custodian-unregister unsafe-custodian-unregister
+          'unsafe-make-custodian-at-root unsafe-make-custodian-at-root
           'thread-push-kill-callback! thread-push-kill-callback!
           'thread-pop-kill-callback! thread-pop-kill-callback!
           'unsafe-add-pre-poll-callback! unsafe-add-pre-poll-callback!

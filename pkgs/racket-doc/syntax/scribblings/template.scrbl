@@ -13,7 +13,7 @@
                              [#:leaf-datum-stx leaf-datum-proc-stx syntax? #'(lambda (v) v)]
                              [#:pvar-save pvar-save-proc (identifier? . -> . any/c) (lambda (x) #f)]
                              [#:pvar-restore-stx pvar-restore-stx syntax? #'(lambda (d stx) stx)]
-                             [#:cons-stx cons-proc-stx syntax? cons]
+                             [#:cons-stx cons-proc-stx syntax? #'cons]
                              [#:ellipses-end-stx ellipses-end-stx syntax? #'values]
                              [#:constant-as-leaf? constant-as-leaf? boolean? #f])
          syntax?]{

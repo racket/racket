@@ -1,7 +1,10 @@
 #lang racket/base
-(require racket/extflonum)
+(require racket/extflonum
+         racket/fixnum
+         racket/unsafe/undefined)
 
-(provide lift-quoted?)
+(provide lift-quoted?
+         large-quoted?)
 
 ;; Check whether a quoted value needs to be lifted to run-time construction
 (define (lift-quoted? q for-cify? datum-intern?)
@@ -30,4 +33,28 @@
       [(box? q) (lift-quoted? (unbox q))]
       [(prefab-struct-key q) #t]
       [(extflonum? q) #t]
-      [else #f])))
+      [(or (null? q)
+           (number? q)
+           (char? q)
+           (boolean? q)
+           (symbol? q)
+           (eof-object? q)
+           (void? q)
+           (eq? q unsafe-undefined))
+       #f]
+      [else #t])))
+
+;; Check whether a quoted value is large enough to be worth representing
+;; in fasl format:
+(define (large-quoted? q)
+  (define fuel
+    (let remain ([q q] [fuel 128])
+      (cond
+        [(fx= fuel 0) 0]
+        [(pair? q) (remain (cdr q) (remain (car q) (fx- fuel 1)))]
+        [(vector? q) (for/fold ([fuel (fx- fuel 1)]) ([e (in-vector q)])
+                       (remain e fuel))]
+        [(box? q) (remain (unbox q) (fx- fuel 1))]
+        [(prefab-struct-key q) (remain (struct->vector q) fuel)]
+        [else (fx- fuel 1)])))
+  (fx= fuel 0))

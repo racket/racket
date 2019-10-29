@@ -741,6 +741,8 @@
                           (lambda ()
                             (cond
                               [(and info-name (not name-only?))
+                               (when omit-define-syntaxes?
+                                 (raise-syntax-error #f "#:extra-name cannot be combined with #:omit-define-syntaxes" stx))
                                ; reuse existing value
                                (list #`(define-syntaxes (#,info-name) (syntax-local-value #'#,id)))]
                               [else null]))])

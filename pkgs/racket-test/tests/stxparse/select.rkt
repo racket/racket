@@ -341,3 +341,11 @@
                   #:with w #'whatever
                   #:fail-unless #f "message2" ;; (post 'g2 3), incomp w/ above
                   'ok]))))
+
+;; from Alexis King, #2627 (4/2019)
+(test-case "opaque ~describe w/o description is still opaque"
+  (check-exn (lambda (e)
+               (not (regexp-match? #rx"literal 0" (exn-message e))))
+             (lambda ()
+               (syntax-parse '(m #f)
+                 [(_ (~describe #:opaque #f 0)) 'ok]))))

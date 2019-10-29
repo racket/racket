@@ -1203,8 +1203,12 @@
                           stx))]
                        [(names) (map import-local-id imports)]
                        [(reqd-names)
-                        (let ([ctx (syntax-local-get-shadower (datum->syntax #f (gensym)))])
-                          (map (lambda (n) (datum->syntax ctx (syntax-e n) n)) names))]
+                        ;; Could be just `(generate-temporaries names)`, but using the
+                        ;; exported name turns out to be a hint to Check Syntax for binding
+                        ;; arrows, for now:
+                        (let ([intro (make-syntax-introducer)])
+                          (map (lambda (n) (intro (datum->syntax #f (syntax-e n) n)))
+                               names))]
                        [(renamed-imports) (map rename-import imports reqd-names)]
                        [(raw-specs) (map import->raw-require-spec renamed-imports)]
                        [(lifts) (map syntax-local-lift-require raw-specs reqd-names)])

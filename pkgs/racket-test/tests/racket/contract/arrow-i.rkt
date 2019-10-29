@@ -1238,6 +1238,39 @@
       b)
    '(3 2 1 2 1)
    do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i60
+   '(let ([order '()])
+      ((contract (->i ([x (λ (xyzpdq) (set! order (cons 0 order)) (integer? xyzpdq))])
+                      #:pre (x) (begin (set! order (cons 1 order)) #t)
+                      #:pre () (begin (set! order (cons 2 order)) #t)
+                      any)
+                 (λ (x) x)
+                 'pos 'neg)
+       1)
+      (reverse order))
+   ;; we see `0` twice because we check the indy contracts
+   '(2 0 0 1)
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i61
+   '(let ([order '()])
+      ((contract (->i ([x (λ (xyzpdq) (set! order (cons 0 order)) (integer? xyzpdq))])
+                      #:pre (x) (begin (set! order (cons 1 order)) #t)
+                      #:pre () (begin (set! order (cons 2 order)) #t)
+                      [res (λ (x) (set! order (cons 3 order)) #t)]
+                      #:post () (begin (set! order (cons 4 order)) #t)
+                      #:post (x) (begin (set! order (cons 5 order)) #t)
+                      #:post (res) (begin (set! order (cons 6 order)) #t))
+                 (λ (x) x)
+                 'pos 'neg)
+       1)
+      (reverse order))
+   ;; we see `0` and the `3` twice because we check the indy contracts
+   '(2 0 0 1 4 5 3 3 6)
+   do-not-double-wrap)
   
   (test/pos-blame
    '->i-arity1

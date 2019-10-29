@@ -22,7 +22,7 @@
 #define HOOK_SHARED_OK /* EMPTY */
 #endif
 
-#ifdef OS_X
+#if defined(OS_X) || defined(__linux__)
 # define MZ_CHECK_ASSERTS
 #endif
 
@@ -77,50 +77,50 @@
 /* indicates that a primitive call can be dropped, but it allocates,
    so it's not as reorderable as it might be otherwise: */
 #define SCHEME_PRIM_IS_OMITABLE_ALLOCATION (1 << 5)
+#define SCHEME_PRIM_IS_ARITY_0_OMITABLE_ALLOCATION (1 << 6)
+#define SCHEME_PRIM_IS_EVEN_ARITY_OMITABLE_ALLOCATION (1 << 7)
 /* indicates that a primitive call will produce the same results for the same
    inputs; note that UNSAFE_FUNCTIONAL is stronger than UNSAFE_OMITABLE: */
-#define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL   (1 << 6)
+#define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL   (1 << 8)
 /* the SCHEME_PRIMT_WANTS_... flags indicate a primitive that
    expects certain kinds of arguments and can encourage unboxing: */
-#define SCHEME_PRIM_WANTS_FLONUM_FIRST     (1 << 7)
-#define SCHEME_PRIM_WANTS_FLONUM_SECOND    (1 << 8)
-#define SCHEME_PRIM_WANTS_FLONUM_THIRD     (1 << 9)
-#define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST  (1 << 10)
-#define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND (1 << 11)
-#define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD  (1 << 12)
+#define SCHEME_PRIM_WANTS_FLONUM_FIRST     (1 << 9)
+#define SCHEME_PRIM_WANTS_FLONUM_SECOND    (1 << 10)
+#define SCHEME_PRIM_WANTS_FLONUM_THIRD     (1 << 11)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST  (1 << 12)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND (1 << 13)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD  (1 << 14)
 /* indicates an unsafe operation that does not allocate: */
-#define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE  (1 << 13)
+#define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE  (1 << 15)
 /* indicates a primitive that always raises an exception or
    otherwise escapes from the current continuation: */
-#define SCHEME_PRIM_ALWAYS_ESCAPES         (1 << 14)
+#define SCHEME_PRIM_ALWAYS_ESCAPES         (1 << 16)
 /* indicates a primitive that is JIT-inlined on some platforms,
    but not the current one: */
-#define SCHEME_PRIM_SOMETIMES_INLINED      (1 << 15)
+#define SCHEME_PRIM_SOMETIMES_INLINED      (1 << 17)
 /* indicates a primitive that produces a real or number (or
    errors): */
-#define SCHEME_PRIM_PRODUCES_REAL          (1 << 16)
-#define SCHEME_PRIM_PRODUCES_NUMBER        (1 << 17)
+#define SCHEME_PRIM_PRODUCES_REAL          (1 << 18)
+#define SCHEME_PRIM_PRODUCES_NUMBER        (1 << 19)
 /* indicates a primitive that requires certain argument types (all the
    same type): */
-#define SCHEME_PRIM_WANTS_REAL             (1 << 18)
-#define SCHEME_PRIM_WANTS_NUMBER           (1 << 19)
+#define SCHEME_PRIM_WANTS_REAL             (1 << 20)
+#define SCHEME_PRIM_WANTS_NUMBER           (1 << 21)
 /* indicates a primitive that always succeed when given
    arguments of the expected type: */
-#define SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS (1 << 20)
+#define SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS (1 << 22)
 /* indicates a primitive that produces a real number when
    given real-number arguments: */
-#define SCHEME_PRIM_CLOSED_ON_REALS        (1 << 21)
+#define SCHEME_PRIM_CLOSED_ON_REALS        (1 << 23)
 /* indicates the presence of an ad-hoc optimization
    in one of the application optimization passes */
-#define SCHEME_PRIM_AD_HOC_OPT             (1 << 22)
+#define SCHEME_PRIM_AD_HOC_OPT             (1 << 24)
 /* a primitive that produces a booeal or errors: */
-#define SCHEME_PRIM_PRODUCES_BOOL          (1 << 23)
+#define SCHEME_PRIM_PRODUCES_BOOL          (1 << 25)
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           24
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           26
 #define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
-
-#define SCHEME_PRIM_IS_OMITABLE_ANY (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION | SCHEME_PRIM_IS_UNSAFE_OMITABLE)
 
 #define SCHEME_PRIM_PRODUCES_FLONUM (SCHEME_LOCAL_TYPE_FLONUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_PRODUCES_FIXNUM (SCHEME_LOCAL_TYPE_FIXNUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
@@ -326,6 +326,7 @@ void scheme_init_struct_wait();
 void scheme_init_list(Scheme_Startup_Env *env);
 void scheme_init_unsafe_list(Scheme_Startup_Env *env);
 void scheme_init_unsafe_hash(Scheme_Startup_Env *env);
+void scheme_init_hash_tree(void);
 void scheme_init_stx(Scheme_Startup_Env *env);
 void scheme_init_module(Scheme_Startup_Env *env);
 void scheme_init_module_path_table(void);
@@ -369,9 +370,7 @@ void scheme_init_bool(Scheme_Startup_Env *env);
 void scheme_init_syntax(Scheme_Startup_Env *env);
 void scheme_init_marshal(Scheme_Startup_Env *env);
 void scheme_init_error(Scheme_Startup_Env *env);
-#ifndef NO_SCHEME_EXNS
 void scheme_init_exn(Scheme_Startup_Env *env);
-#endif
 void scheme_init_debug(Scheme_Startup_Env *env);
 void scheme_init_thread(Scheme_Startup_Env *env);
 void scheme_init_unsafe_port(Scheme_Startup_Env *env);
@@ -437,6 +436,7 @@ void scheme_register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
+void scheme_clear_locale_cache(void);
 
 XFORM_NONGCING int scheme_is_multithreaded(int now);
 
@@ -463,9 +463,7 @@ void scheme_init_port_fun_config(void);
 void scheme_init_resolver_config(void);
 Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *c);
 void scheme_init_error_config(void);
-#ifndef NO_SCHEME_EXNS
 void scheme_init_exn_config(void);
-#endif
 #ifdef WINDOWS_PROCESSES
 void scheme_init_thread_memory(void);
 #endif
@@ -545,6 +543,7 @@ extern Scheme_Object *scheme_list_p_proc;
 extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_list_pair_p_proc;
+extern Scheme_Object *scheme_append_proc;
 extern Scheme_Object *scheme_vector_proc;
 extern Scheme_Object *scheme_vector_p_proc;
 extern Scheme_Object *scheme_vector_length_proc;
@@ -565,6 +564,9 @@ extern Scheme_Object *scheme_unsafe_struct_ref_proc;
 extern Scheme_Object *scheme_unsafe_struct_star_ref_proc;
 extern Scheme_Object *scheme_unsafe_struct_set_proc;
 extern Scheme_Object *scheme_unsafe_struct_star_set_proc;
+extern Scheme_Object *scheme_hash_proc;
+extern Scheme_Object *scheme_hasheq_proc;
+extern Scheme_Object *scheme_hasheqv_proc;
 extern Scheme_Object *scheme_hash_ref_proc;
 extern Scheme_Object *scheme_box_p_proc;
 extern Scheme_Object *scheme_box_proc;
@@ -586,6 +588,7 @@ extern Scheme_Object *scheme_unsafe_fxand_proc;
 extern Scheme_Object *scheme_unsafe_fxior_proc;
 extern Scheme_Object *scheme_unsafe_fxxor_proc;
 extern Scheme_Object *scheme_unsafe_fxrshift_proc;
+extern Scheme_Object *scheme_unsafe_fx_to_fl_proc;
 extern Scheme_Object *scheme_unsafe_pure_proc;
 
 extern Scheme_Object *scheme_string_p_proc;
@@ -731,6 +734,10 @@ THREAD_LOCAL_DECL(extern MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 # define MZ_CONT_MARK_POS (scheme_current_thread->cont_mark_pos)
 #endif
 
+#ifdef MZ_PRECISE_GC
+# define RUNSTACK_HEADER_FIELDS 5
+#endif
+
 THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
@@ -843,6 +850,7 @@ struct Scheme_Custodian {
   Scheme_Close_Custodian_Client **closers;
   void **data;
   void ***data_ptr; /* points to `data`, registered as finalizer data for strong retention */
+  Scheme_Object *post_callbacks; /* additional callbacks run after all others */
 
   /* weak indirections: */
   Scheme_Custodian_Reference *parent;
@@ -870,7 +878,6 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 Scheme_Custodian *scheme_get_current_custodian(void);
 void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt);
 void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
-void scheme_run_post_custodian_shutdown();
 
 typedef struct Scheme_Security_Guard {
   Scheme_Object so;
@@ -1019,19 +1026,22 @@ Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
 
+Scheme_Object *scheme_hash_get_key(Scheme_Hash_Table *table, Scheme_Object *key);
 Scheme_Object *scheme_hash_get_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key,
-                                           Scheme_Object *key_wraps);
+                                           Scheme_Object *key_wraps, Scheme_Object **_interned_key);
 void scheme_hash_set_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val,
                                  Scheme_Object *key_wraps);
+Scheme_Object *scheme_lookup_key_in_table(Scheme_Bucket_Table *table, const char *key);
 Scheme_Bucket *scheme_bucket_or_null_from_table_w_key_wraps(Scheme_Bucket_Table *table,
                                                             const char *key, int add,
                                                             Scheme_Object *key_wraps);
 void scheme_add_to_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key, void *val, 
                                      int constant, Scheme_Object *key_wraps);
 void *scheme_lookup_in_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key,
-                                         Scheme_Object *key_wraps);
+                                         Scheme_Object *key_wraps, Scheme_Object **_interned_key);
+Scheme_Object *scheme_hash_tree_get_key(Scheme_Hash_Tree *tree, Scheme_Object *key);
 Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key,
-                                                Scheme_Object *key_wraps);
+                                                Scheme_Object *key_wraps, Scheme_Object **_interned_key);
 Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val,
                                                    Scheme_Object *key_wraps);
 
@@ -1264,6 +1274,7 @@ Scheme_Object *scheme_chaperone_props_get(Scheme_Object *props, Scheme_Object *p
 Scheme_Object *scheme_chaperone_props_remove(Scheme_Object *props, Scheme_Object *prop);
 
 Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key);
+Scheme_Object *scheme_chaperone_hash_get_key(Scheme_Object *table, Scheme_Object *key);
 Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key, Scheme_Object **alt_key);
 void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
 
@@ -1972,18 +1983,23 @@ typedef struct Scheme_Meta_Continuation {
 
 typedef struct Scheme_Prompt {
   Scheme_Object so;
-  char is_barrier, has_chaperone;
+  char is_barrier, has_chaperone, weak_boundary;
   Scheme_Object *tag;
   Scheme_Object *id;                  /* created as needed; allows direct-jump optimization for cont app */
   void *stack_boundary;               /* where to stop copying the C stack */
   void *boundary_overflow_id;         /* indicates the C stack segment */
   MZ_MARK_STACK_TYPE mark_boundary;   /* where to stop copying cont marks */
   MZ_MARK_POS_TYPE boundary_mark_pos; /* mark position of prompt */
-  Scheme_Object **runstack_boundary_start; /* which stack has runstack_boundary */
+  union {
+    Scheme_Object **runstack_boundary_start;    /* which stack has runstack_boundary */
+    Scheme_Object *runstack_boundary_start_ref; /* weak-ref variant, used when `weak_boundary` */
+  } u;
   intptr_t runstack_boundary_offset;      /* where to stop copying the Scheme stack */
   mz_jmp_buf *prompt_buf;             /* to jump directly to the prompt */
   intptr_t runstack_size;                 /* needed for restore */
 } Scheme_Prompt;
+
+XFORM_NONGCING Scheme_Object **scheme_prompt_runstack_boundary_start(Scheme_Prompt *p);
 
 /* Compiler helper: */
 #define ESCAPED_BEFORE_HERE  return NULL
@@ -2155,11 +2171,13 @@ typedef struct {
 #ifdef MZ_PRECISE_GC
 # define SCHEME_BIGPOS(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x1)
 # define SCHEME_SET_BIGPOS(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = ((v) | SCHEME_BIGINLINE(b))
+# define SCHEME_INIT_BIGPOS(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = (v)
 # define SCHEME_BIGINLINE(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x2)
 # define SCHEME_SET_BIGINLINE(b) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) |= (0x2 | SCHEME_BIGPOS(b))
 #else
 # define SCHEME_BIGPOS(b) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso)
 # define SCHEME_SET_BIGPOS(b, v) SCHEME_BIGPOS(b) = v
+# define SCHEME_INIT_BIGPOS(b, v) SCHEME_SET_BIGPOS(b, v)
 #endif
 
 #define SCHEME_BIGLEN(b) (((Scheme_Bignum *)b)->len)
@@ -2287,6 +2305,9 @@ Scheme_Object *scheme_complex_multiply(const Scheme_Object *a, const Scheme_Obje
 Scheme_Object *scheme_complex_divide(const Scheme_Object *n, const Scheme_Object *d);
 Scheme_Object *scheme_complex_power(const Scheme_Object *a, const Scheme_Object *b);
 Scheme_Object *scheme_complex_sqrt(const Scheme_Object *a);
+Scheme_Object *scheme_complex_atan(const Scheme_Object *c);
+Scheme_Object *scheme_complex_asin(const Scheme_Object *c);
+Scheme_Object *scheme_complex_acos(const Scheme_Object *c);
 XFORM_NONGCING int scheme_is_complex_exact(const Scheme_Object *o);
 
 /****** Inexacts ******/
@@ -2402,7 +2423,8 @@ extern int scheme_is_nan(double);
 extern double scheme_infinity_val, scheme_minus_infinity_val;
 extern double scheme_floating_point_zero;
 extern double scheme_floating_point_nzero;
-extern Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
+extern Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_minus_half_pi;
+extern Scheme_Object *scheme_plus_i, *scheme_minus_i;
 extern Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_nan_object;
 #ifdef MZ_LONG_DOUBLE
 extern long_double scheme_long_infinity_val, scheme_long_minus_infinity_val;
@@ -2506,19 +2528,20 @@ intptr_t scheme_rand(Scheme_Random_State *rs);
 
 /***** flonums *****/
 
-double scheme_double_truncate(double x);
-double scheme_double_round(double x);
-double scheme_double_floor(double x);
-double scheme_double_ceiling(double x);
-double scheme_double_sin(double x);
-double scheme_double_cos(double x);
-double scheme_double_tan(double x);
-double scheme_double_asin(double x);
-double scheme_double_acos(double x);
-double scheme_double_atan(double x);
-double scheme_double_log(double x);
-double scheme_double_exp(double x);
-double scheme_double_expt(double x, double y);
+XFORM_NONGCING double scheme_double_truncate(double x);
+XFORM_NONGCING double scheme_double_round(double x);
+XFORM_NONGCING double scheme_double_floor(double x);
+XFORM_NONGCING double scheme_double_ceiling(double x);
+XFORM_NONGCING double scheme_double_sin(double x);
+XFORM_NONGCING double scheme_double_cos(double x);
+XFORM_NONGCING double scheme_double_tan(double x);
+XFORM_NONGCING double scheme_double_asin(double x);
+XFORM_NONGCING double scheme_double_acos(double x);
+XFORM_NONGCING double scheme_double_atan(double x);
+XFORM_NONGCING double scheme_double_atan2(double v, double v2);
+XFORM_NONGCING double scheme_double_log(double x);
+XFORM_NONGCING double scheme_double_exp(double x);
+XFORM_NONGCING double scheme_double_expt(double x, double y);
 
 /***** extflonums *****/
 #ifdef MZ_LONG_DOUBLE
@@ -3046,7 +3069,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
 
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
-int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+XFORM_NONGCING int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+XFORM_NONGCING int scheme_is_omitable_primitive(Scheme_Object *rator, int num_args);
 
 typedef struct {
   int uses_super;
@@ -3057,6 +3081,7 @@ typedef struct {
   int indexed_ops; /* do selectors have the index built in (as opposed to taking an index argument)? */
   int authentic; /* conservatively 0 is ok */
   int nonfail_constructor;
+  int prefab;
   int num_gets, num_sets;
   int setter_fields; /* if indexed, bitmap for first 32 fields to indicate which have setters */
 } Simple_Struct_Type_Info;
@@ -3094,7 +3119,8 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
 #define STRUCT_PROC_SHAPE_MASK    0xF
 #define STRUCT_PROC_SHAPE_AUTHENTIC       0x10
 #define STRUCT_PROC_SHAPE_NONFAIL_CONSTR  0x20
-#define STRUCT_PROC_SHAPE_SHIFT   6
+#define STRUCT_PROC_SHAPE_PREFAB  0x40
+#define STRUCT_PROC_SHAPE_SHIFT   7
 
 typedef struct Scheme_Struct_Proc_Shape {
   Scheme_Object so;
@@ -3292,6 +3318,7 @@ struct Scheme_Linklet
 
   char jit_ready; /* true if the linklet is in has been prepared for the JIT */
   char reject_eval; /* true when loaded without the root inspector, for example */
+  char serializable; /* record whether the linklet was intended to be serialized */
 
   Scheme_Hash_Table *constants; /* holds info about the linklet's body for inlining */
 
@@ -3371,7 +3398,7 @@ void scheme_rktio_error(const char *name, const char *what);
 
 void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
-void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
+MZ_NORETURN void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
 
 char *scheme_make_srcloc_string(Scheme_Object *stx, intptr_t *len);
 
@@ -3580,6 +3607,7 @@ void scheme_flush_orig_outputs(void);
 void scheme_flush_if_output_fds(Scheme_Object *o);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
+Scheme_Object *scheme_port_waiting_peer_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
                                          int internal, int for_module);
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
@@ -3802,6 +3830,7 @@ Scheme_Object *scheme_copy_list(Scheme_Object *l);
 Scheme_Object *scheme_append_strings(Scheme_Object *s1, Scheme_Object *s2);
 
 Scheme_Object *scheme_unsafe_make_location(void);
+Scheme_Object *scheme_unsafe_make_srcloc(int argc, Scheme_Object **argv);
 
 void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 

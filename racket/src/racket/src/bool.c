@@ -726,6 +726,14 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
           if (procs2) { obj2 = procs2; orig_obj2 = obj2; }
           goto top_after_next;
         } else {
+          /* don't discard `prop:impersonator-of` if checking for `impersonator-of?`
+             or `chaperone-of?` */
+          if (eql->for_chaperone) {
+            procs2 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st2);
+            if (procs2 && scheme_apply_impersonator_of(eql->for_chaperone, procs2, obj2))
+              return 0;
+          }
+          
           procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
           if (procs1 && (st1 != st2)) {
             procs2 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st2);

@@ -143,7 +143,7 @@
        (for/or ([old-ctc (in-list contract-list)])
          (and old-ctc
               (flat-contract-struct? new-ctc)
-              (contract-struct-stronger? old-ctc new-ctc)))))
+              (trusted-contract-struct-stronger? old-ctc new-ctc)))))
 
 ;; join two collapsible-leaf contracts
 (define (join-collapsible-leaf/c new-collapsible new-neg old-collapsible old-neg)
@@ -183,7 +183,11 @@
                  ([flat (in-list flats)]
                   [i (in-naturals)])
          (cond
-           [(or (flat-contract-struct? flat) (chaperone-contract-struct? flat))
+           [(or (flat-contract-struct? flat)
+                (trusted-contract-struct? flat))
+            ;; Drop contracts that (1) do not change their behavior and (2) are
+            ;; between other eq? contracts. (Trusted chaperones and
+            ;; impersonators definitely don't change themselves.)
             (cond
               [(hash-ref seen flat #f)
                (define maybe-index (hash-ref maybe-drop flat #f))
@@ -217,11 +221,9 @@
 ;; A specialized version of append that will immediately return if either
 ;; argument is empty
 (define (fast-append l1 l2)
-  (cond
-    [(null? l2) l1]
-    [(null? l1) l2]
-    [else
-     (cons (car l1) (fast-append (cdr l1) l2))]))
+  (if (null? l2)
+    l1
+    (append l1 l2)))
 
 ;; Assuming that merging is symmetric, ie old-can-merge? iff new-can-merge?
 ;; This is true of the current c-c implementation, but if it ever changes

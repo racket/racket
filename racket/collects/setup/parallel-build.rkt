@@ -12,6 +12,7 @@
          racket/place
          syntax/modresolve
          "private/format-error.rkt"
+         "private/time.rkt"
          (for-syntax racket/base))
 
 
@@ -328,6 +329,9 @@
                           [current-compile-target-machine (if (memq 'compile-any options)
                                                               #f
                                                               (current-compile-target-machine))]
+                          [managed-recompile-only (if (memq 'recompile-only options)
+                                                      #t
+                                                      (managed-recompile-only))]
                           [current-load-relative-directory dir]
                           [current-input-port (open-input-string "")]
                           [current-output-port out-str-port]
@@ -368,7 +372,8 @@
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree
                           #:options [options '()]
                           #:use-places? [use-places? #t])
-  (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
+  (setup-fprintf (current-output-port) #f (add-time
+                                           (format "--- parallel build using ~a jobs ---" worker-count)))
   (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error
                                       (append options '(set-directory))))
   (parallel-build collects-queue worker-count
@@ -407,9 +412,14 @@
                  (define path
                    (let loop ([prev prev])
                      (cond
-                      [(submod? prev)
-                       (loop (cadr prev))]
-                      [else (resolve-module-path prev (build-path dir "dummy.rkt"))])))
+                       [(submod? prev)
+                        (define base (cadr prev))
+                        (cond
+                          [(or (equal? base "..") (equal? base "."))
+                           #f]
+                          [else
+                           (loop (cadr prev))])]
+                       [else (resolve-module-path prev (build-path dir "dummy.rkt"))])))
                  (when (path? path)
                    (send/add path)))
                p])))

@@ -1,7 +1,8 @@
 
 (load-relative "loadtest.rktl")
 (require ffi/file
-         ffi/unsafe)
+         ffi/unsafe
+         compiler/find-exe)
 
 (Section 'file)
 
@@ -913,6 +914,39 @@
 (err/rt-test (port-write-handler sp (lambda (x) 9)))
 (err/rt-test (port-write-handler sp (lambda (x y z) 9)))
 
+;; Check use of handlers by `printf`
+(let ()
+  (define p (open-output-bytes))
+  (port-display-handler p (lambda (x p)
+                            (write-bytes #"D" p)))
+  (port-write-handler p (lambda (x p)
+                          (write-bytes #"W" p)))
+  (port-print-handler p (lambda (x p [d 0])
+                          (write-bytes #"P" p)))
+
+  (display 'x p)
+  (fprintf p "~a" 'y)
+  (fprintf p "~.a" 'z) ; does not use handler
+
+  (write 'x p)
+  (fprintf p "~s" 'y)
+  (fprintf p "~.s" 'z) ; does not use handler
+
+  (print 'x p)
+  (fprintf p "~v" 'y)
+  (fprintf p "~.v" 'z) ; does not use handler
+
+  (test #"DDzWWzPP'z" get-output-bytes p))
+
+;; Make sure `printf` works with wrapped ports
+(let ()
+  (struct w (p) #:property prop:output-port (struct-field-index p))
+  (define o (open-output-bytes))
+  (define p (w o))
+
+  (fprintf p "0~a~a~s~v~.a~a~.s~.v" 1 #"1" 2 3 4 #"4" 5 6)
+  (test #"011234456" get-output-bytes o))
+
 ;;------------------------------------------------------------
 ;; peek-string and variants:
 
@@ -1166,6 +1200,79 @@
   (delete-file tempfilename))
 
 ;;------------------------------------------------------------
+;; File-stream ports and blocking behavior
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+
+  (err/rt-test
+   (peek-bytes-avail! (make-bytes 10) 0 #f i)
+   exn:fail?)
+
+  (close-output-port o)
+  (close-input-port e)
+  (subprocess-wait s))
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+
+  (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i)
+
+  (close-output-port o)
+  (close-input-port e)
+  (subprocess-wait s))
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+
+  ;; Short not get stuck:
+  (sync (port-progress-evt i))
+
+  (close-output-port o)
+  (close-input-port e)
+  (subprocess-wait s))
+
+(for ([force-close? '(#t #f)])
+  (define c (make-custodian))
+
+  (define-values (s i o e)
+    (parameterize ([current-custodian c])
+      (subprocess #f #f #f (find-exe) "-e" "(let loop () (write-bytes (make-bytes 1024)) (loop))")))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (if (or force-close?
+                    ;; For really old Windows, we need a close that doesn't try
+                    ;; to flush, because there's no way to avoid
+                    ;; buffering at the rktio level:
+                    (and (eq? 'windows (system-type))
+                         (not (regexp-match? "Windows NT" (system-type 'machine)))))
+                (custodian-shutdown-all c)
+                (close-output-port o))))
+
+  (err/rt-test
+   (let loop ()
+     (write-bytes-avail #"hello" o)
+     (loop))
+   exn:fail?)
+
+  (close-input-port i)
+  (close-input-port e)
+  (subprocess-wait s))
+
+;;------------------------------------------------------------
 
 ;; Test custom output port
 (let ([l null]
@@ -1217,6 +1324,17 @@
     (set! l 10)
     (test (void) close-output-port p)
     (test 10 values l)))
+
+(let ()
+  (define-struct myport (port)
+    #:property prop:output-port 0)
+  (define o (open-output-string))
+
+  (define out (make-myport o))
+  (test (void) newline out)
+  (test "\n" get-output-string o)
+
+  (err/rt-test (newline 9)))
 
 ; --------------------------------------------------
 
@@ -1394,9 +1512,7 @@
   (test #f environment-variables-ref env #"BANANA")
   (test #f getenv "BANANA")
 
-  (let ([apple (if (eq? 'windows (system-type))
-                   #"apple"
-                   #"APPLE")])
+  (let ([apple #"APPLE"])
     (test apple car (member apple (environment-variables-names env))))
   (test #f member #"BANANA" (environment-variables-names env))
   (test #f member #"banana" (environment-variables-names env)))
@@ -1406,6 +1522,16 @@
                  (current-environment-variables))])
   (env-var-tests))
 (env-var-tests)
+
+;; Partly a test of case-normalization:
+(let* ([e (current-environment-variables)]
+       [e2 (environment-variables-copy e)]
+       [names2 (environment-variables-names e2)])
+  (test (length (environment-variables-names e)) length names2)
+  (for ([k (in-list (environment-variables-names e))])
+    (test #t 'name (and (member k names2) #t))
+    (test (environment-variables-ref e k)
+          environment-variables-ref e2 k)))
 
 (arity-test getenv 1 1)
 (arity-test putenv 2 2)
@@ -1544,6 +1670,12 @@
 
   (check "f1" "f2" #t known-file-supported?)
   (check "f1d" "f2d" #f known-supported?)
+
+  (let ([no-file (build-path dir "no-such-file-here")])
+    (test 'no filesystem-change-evt no-file (lambda () 'no))
+    (err/rt-test (filesystem-change-evt no-file) (lambda (x)
+                                                   (or (exn:fail:filesystem? x)
+                                                       (exn:fail:unsupported? x)))))
 
   (delete-directory/files dir))
 
@@ -1699,6 +1831,60 @@
 (for ([f '("tmp1" "tmp2" "tmp3")] #:when (file-exists? f)) (delete-file f))
 
 (current-directory original-dir)
+
+(unless (eq? 'windows (system-type))
+  (define can-open-nonblocking-fifo?
+    ;; The general implementation of fifo-write ports requires
+    ;; OS-managed threads internally. Use support forr futures and/or
+    ;; places as an indication that OS threads are available.
+    (or (place-enabled?)
+        (futures-enabled?)))
+
+  (define fifo (build-path work-dir "ff"))
+  (system* (find-executable-path "mkfifo") fifo)
+
+  (define i1 (open-input-file fifo))
+  (define o1 (open-output-file fifo #:exists 'update))
+  (write-bytes #"abc" o1)
+  (flush-output o1)
+  (test #"abc" read-bytes 3 i1)
+  (close-input-port i1)
+  (close-output-port o1)
+
+  (define (check-output-blocking do-write-abc)
+    ;; Make sure an output fifo blocks until there's a reader
+    (define t1
+      (thread
+       (lambda ()
+         (define o2 (open-output-file fifo #:exists 'update))
+         (test #t port-waiting-peer? o2)
+         (do-write-abc o2)
+         (close-output-port o2))))
+    (define t2
+      (thread
+       (lambda ()
+         (sync (system-idle-evt))
+         (define i2 (open-input-file fifo))
+         (test #"abc" read-bytes 3 i2)
+         (close-input-port i2))))
+    (sync t1)
+    (sync t2))
+
+  (when can-open-nonblocking-fifo?
+    (check-output-blocking (lambda (o2) (write-bytes #"abc" o2)))
+    (check-output-blocking (lambda (o2)
+                             (parameterize ([current-output-port o2])
+                               (system* (find-executable-path "echo")
+                                        "-n"
+                                        "abc")))))
+
+  (delete-file fifo))
+
+(test #f port-waiting-peer? (current-input-port))
+(test #f port-waiting-peer? (current-output-port))
+(test #f port-waiting-peer? (open-input-bytes #""))
+(err/rt-test (port-waiting-peer? 10))
+
 (delete-directory work-dir)
 
 ;; Network - - - - - - - - - - - - - - - - - - - - - -
@@ -1834,6 +2020,116 @@
     (sc-run #f priv-mod '(read write delete))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that when flushing a TCP output port fails, it
+;; clears the buffer
+
+(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-n")])
+
+  ;; A flush will eventually fail:
+  (with-handlers ([exn:fail:filesystem? void])
+    (let loop ()
+      (write-bytes #"foo" stdin)
+      (flush-output stdin)
+      (loop)))
+
+  ;; Next flush should not fail, because the buffer content
+  ;; should have been discarded by a failed flush:
+  (test (void) flush-output stdin)
+  
+  ;; Closing should not fail:
+  (test (void) close-output-port stdin)
+
+  (close-input-port stderr)
+  (close-input-port stdout)
+
+  (subprocess-wait subproc))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that when flushing an OS-level pipe fails, it
+;; clears the buffer
+
+(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-n")])
+
+  ;; A flush will eventually fail:
+  (with-handlers ([exn:fail:filesystem? void])
+    (let loop ()
+      (write-bytes #"foo" stdin)
+      (flush-output stdin)
+      (loop)))
+
+  ;; Next flush should not fail, because the buffer content
+  ;; should have been discarded by a failed flush:
+  (test (void) flush-output stdin)
+  
+  ;; Closing should not fail:
+  (test (void) close-output-port stdin)
+
+  (close-input-port stderr)
+  (close-input-port stdout)
+
+  (subprocess-wait subproc))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that an asynchronous break that interrupts a flush
+;; doesn't lose buffered bytes
+
+(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-e"
+                                                        (format "~s"
+                                                                '(begin
+                                                                   (define noise (make-bytes 256 (char->integer #\x)))
+                                                                   ;; Fill up the OS-level output pipe:
+                                                                   (let loop ()
+                                                                     (unless (zero? (write-bytes-avail* noise (current-output-port)))
+                                                                       (loop)))
+                                                                   ;; Wait until the other end has read:
+                                                                   (write-bytes-avail #"noise" (current-output-port))
+                                                                   (close-output-port (current-output-port))
+                                                                   ;; Drain the OS-level input pipe, suceeding if we
+                                                                   ;; find a "!".
+                                                                   (let loop ()
+                                                                     (define b (read-byte (current-input-port)))
+                                                                     (when (eqv? b (char->integer #\!))
+                                                                       (exit 0))
+                                                                     (when (eof-object? b)
+                                                                       (exit 1))
+                                                                     (loop)))))])
+
+  ;; Fill up the OS-level output pipe:
+  (let loop ()
+    (unless (zero? (write-bytes-avail* #"?????" stdin))
+      (loop)))
+
+  ;; At this point, the other end is still waiting for us to read.
+  ;; Add something to the Racket-level buffer that we want to make sure
+  ;; doesn't get lost
+  (write-bytes #"!" stdin)
+
+  ;; Thread will get stuck trying to flush:
+  (define t (thread (lambda ()
+                      (with-handlers ([exn:break? void])
+                        (flush-output stdin)))))
+
+  (sync (system-idle-evt))
+  (break-thread t)
+  (thread-wait t)
+
+  ;; Drain output from subprocess, so it can be unblocked:
+  (let loop ()
+    (unless (eof-object? (read-bytes-avail! (make-bytes 10) stdout))
+      (loop)))
+
+  ;; Subprocess should be reading at this point
+  (flush-output stdin)
+
+  (close-output-port stdin)
+  (close-input-port stderr)
+  (close-input-port stdout)
+
+  (subprocess-wait subproc)
+
+  (test 0 subprocess-status subproc))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check `in-directory'
 
 (let ([tmp-dir (make-temporary-file "rktindir~a" 'directory)])
@@ -1900,6 +2196,8 @@
           (parameterize ([current-directory tmp-dir])
             (for/hash ([f (mk)])
               (values f #t)))))
+  (err/rt-test (for/list ([f (in-directory tmp-dir #f '?)]) f))
+  (err/rt-test (in-directory tmp-dir #f '?))
   (delete-directory/files tmp-dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -6,13 +6,14 @@
          "xify.rkt"
          "path.rkt"
          "interpret.rkt"
-         "size.rkt")
+         "size.rkt"
+         "fasl.rkt")
 
 (provide schemify-linklet
          schemify-body
          
          (all-from-out "known.rkt")
-         
+
          lift-in-schemified-linklet
          lift-in-schemified-body
 
@@ -27,4 +28,7 @@
          interpretable-jitified-linklet
          interpret-linklet
 
-         linklet-bigger-than?)
+         linklet-bigger-than?
+
+         ->fasl
+         fasl->)

@@ -981,13 +981,13 @@
     (set! x 2)
     (define x 1)))
 
-(err/rt-test
+(err/rt-test/once
  (dynamic-require '(submod 'variable-error-message-in-submodule m1) #f)
  (λ (x) (and (exn:fail? x)
              (regexp-match (regexp-quote "(submod 'variable-error-message-in-submodule m1)")
                            (exn-message x)))))
 
-(err/rt-test
+(err/rt-test/once
  (dynamic-require '(submod 'variable-error-message-in-submodule m2) #f)
  (λ (x) (and (exn:fail? x)
              (regexp-match (regexp-quote "(submod 'variable-error-message-in-submodule m2)")

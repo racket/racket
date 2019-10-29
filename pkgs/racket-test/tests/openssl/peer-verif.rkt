@@ -44,6 +44,13 @@
                                          (regexp-match? #rx"accept failed" (exn-message x))))
                         (lambda (x) (ssl-close ssl-listener))]
                        [(lambda (x) (and verify-fail? (eq? x 'escape)))
+                        (lambda (x) (void))]
+                       [(lambda (x) (and (eq? later-mode 'req)
+                                         (not valid?)
+                                         verify-fail?
+                                         (exn? x)
+                                         ;; late checking may abandon the connection
+                                         (regexp-match? #rx"^tcp-(?:read|write):" (exn-message x))))
                         (lambda (x) (void))])
          (let-values ([(in out) (ssl-accept ssl-listener)])
            (check "Server: Accepted connection.~n" #t #t)
@@ -120,6 +127,6 @@
   (unless (regexp-match?  #rx"connect failed" s)
     (error 'test "failed: ~s" s)))
 
-(check-fail (lambda () (go #f #:early 'req #:accept-fail? #t)))
+(check-fail (lambda () (go #f #:early 'req #:accept-fail? #t)));
 (go #f #:later 'req #:verify-fail? #t)
 

@@ -2,7 +2,7 @@ The "cify" compiler takes a linklet with no imports as produced by
 "schemify" and compiles it to C code suitable for including as part of
 the Racket virtual machine's implementation.
 
-The schmeify compiler is lightly customized by a `for-cify?` flag to
+The schemify compiler is lightly customized by a `for-cify?` flag to
 make it produce output friendlier for cify. In cify mode, schemify
 avoids obscuring structure-type creation, and it lifts all constants
 to the top.
@@ -20,8 +20,8 @@ Compilation by cify is UNSAFE. For example:
    within the linklet with the right number of arguments.
 
 The cify pass relies on the schemify pass lift functions to avoid
-closure allocation whenevr possible. The schemify pass also performs
-some basic inlining, constant propoagation, and compy propagation ---
+closure allocation whenever possible. The schemify pass also performs
+some basic inlining, constant propagation, and copy propagation ---
 but it's designed to defer significantly to the back end to perform
 more of that. So, cify includes some copy propagation support,
 especially for bindings that are outside of any `lambda` form.

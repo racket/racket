@@ -270,6 +270,7 @@
        (runstack-push! runstack vals-id)
        (out "int ~a_count;" vals-id)
        (generate (multiple-return (lambda (s)
+                                    (out-open "{")
                                     (out "~a = ~a;" (runstack-assign runstack vals-id) s)
                                     (out-open "if (~a == SCHEME_MULTIPLE_VALUES) {" (runstack-ref runstack vals-id #:values-ok? #t))
                                     (out "Scheme_Object **~a_vals;" vals-id)
@@ -280,7 +281,8 @@
                                     (out "~a = (Scheme_Object *)~a_vals;" (runstack-assign runstack vals-id) vals-id)
                                     (out-close+open "} else")
                                     (out "~a_count = 1;" vals-id)
-                                    (out-close!)))
+                                    (out-close!)
+                                    (out-close "}")))
                  e env)
        (generate (multiple-return "") `(begin . ,r) env)
        (runstack-sync! runstack)
@@ -989,9 +991,12 @@
          [(eqv? e +inf.0) "scheme_inf_object"]
          [(eqv? e -inf.0) "scheme_minus_inf_object"]
          [(eqv? e +nan.0) "scheme_nan_object"]
-         [(eqv? e +inf.f) "scheme_single_inf_object"]
-         [(eqv? e -inf.f) "scheme_single_minus_inf_object"]
-         [(eqv? e +nan.f) "scheme_single_nan_object"]
+         [(and (single-flonum-available?) (eqv? e (real->single-flonum +inf.0)))
+          "scheme_single_inf_object"]
+         [(and (single-flonum-available?) (eqv? e (real->single-flonum -inf.0)))
+          "scheme_single_minus_inf_object"]
+         [(and (single-flonum-available?) (eqv? e (real->single-flonum +nan.0)))
+          "scheme_single_nan_object"]
          [else
           (format "scheme_make_double(~a)" e)])]
       [(boolean? e) (if e "scheme_true" "scheme_false")]

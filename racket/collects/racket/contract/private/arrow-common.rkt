@@ -33,14 +33,14 @@
 ;; kwd-infos : (listof kwd-info)
 ;; rest : (or/c #f contract?)
 ;; pre? : (or/c #f 'pre 'pre/desc)
+;; pre-thunk : (or/c #f thunk)
 ;; rngs : (listof contract?)
 ;; post? : (or/c #f 'post 'post/desc)
-;; plus-one-arity-function : procedure? -- special, +1 argument wrapper that accepts neg-party
+;; post-thunk : (or/c #f thunk)
 ;; chaperone-constructor ; procedure? -- function that builds a projection tailored to this arrow
 ;; method? : boolean?
-(define-struct base-> (min-arity doms kwd-infos rest pre? rngs post?
-                                 plus-one-arity-function chaperone-constructor
-                                 method?)
+(define-struct base-> (min-arity doms kwd-infos rest pre? pre-thunk rngs post? post-thunk
+                                 chaperone-constructor method?)
   #:property prop:custom-write custom-write-property-proc)
 
 (define-struct unsupplied-arg ())

@@ -5,6 +5,7 @@
          make-plumber
          plumber?
          plumber-flush-all
+         plumber-flush-all/wrap
          plumber-add-flush!
          plumber-flush-handle?
          plumber-flush-handle-remove!
@@ -22,7 +23,8 @@
   (make-parameter (make-plumber)
                   (lambda (v)
                     (check who plumber? v)
-                    v)))
+                    v)
+                  'current-plumber))
 
 (struct plumber-flush-handle (plumber))
 
@@ -39,10 +41,17 @@
 
 (define/who (plumber-flush-all p)
   (check who plumber? p)
-  (for ([(h proc) (in-hash (plumber-callbacks p))])
-    (proc h))
-  (for ([(h proc) (in-hash (plumber-weak-callbacks p))])
-    (proc h)))
+  (plumber-flush-all/wrap p (lambda (proc h) (proc h))))
+
+(define (plumber-flush-all/wrap p app)
+  ;; Spec requires getting all callbacks before running any
+  (define procs+hs
+    (for*/list ([cbs (in-list (list (plumber-callbacks p)
+                                    (plumber-weak-callbacks p)))]
+                [(h proc) (in-hash cbs)])
+      (cons proc h)))
+  (for ([proc+h (in-list procs+hs)])
+    (app (car proc+h) (cdr proc+h))))
 
 (define/who (plumber-flush-handle-remove! h)
   (check who plumber-flush-handle? h)

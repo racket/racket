@@ -7,8 +7,6 @@
           begin0
           $value
 
-          letrec*/names
-
           dynamic-wind
           call-with-current-continuation
           call-with-composable-continuation
@@ -31,6 +29,7 @@
           unsafe-call-with-composable-continuation/no-wind
 
           with-continuation-mark
+          with-continuation-mark* ; not exported to Racket
           (rename [call-with-immediate-continuation-mark/inline
                    call-with-immediate-continuation-mark]
                   [call-with-immediate-continuation-mark
@@ -48,16 +47,17 @@
           chaperone-continuation-mark-key
           call-with-system-wind ; not exported to Racket
 
+          ;; not exported to Racket:
           make-engine
           engine-block
           engine-timeout
           engine-return
-          current-engine-state  ; not exported to Racket
-          set-ctl-c-handler! ; not exported to Racket
-          get-ctl-c-handler  ; not exported to Racket
-          set-scheduler-lock-callbacks! ; not exported to Racket
-          set-scheduler-atomicity-callbacks! ; not exported to Racket
-          set-engine-exit-handler! ; not exported to Racket
+          call-with-engine-completion
+          set-ctl-c-handler!
+          get-ctl-c-handler
+          set-scheduler-lock-callbacks!
+          set-scheduler-atomicity-callbacks!
+          set-engine-exit-handler!
 
           make-thread-cell
           thread-cell?
@@ -83,7 +83,7 @@
           uncaught-exception-handler
           error-display-handler
           error-escape-handler
-          register-linklet-instantiate-continuation! ; not exported to Racket
+          linklet-instantiate-key ; not exported to Racket
           set-error-display-eprintf! ; not exported to Racket
           set-log-system-message! ; not exported to Racket
 
@@ -91,6 +91,7 @@
           make-inspector
           make-sibling-inspector
           current-code-inspector
+          root-inspector ; not exported to Racket
 
           struct:exn exn exn? exn-message exn-continuation-marks
           struct:exn:break exn:break exn:break? exn:break-continuation
@@ -255,7 +256,7 @@
           make-hash make-hasheqv make-hasheq
           make-immutable-hash make-immutable-hasheqv make-immutable-hasheq
           make-weak-hash make-weak-hasheq make-weak-hasheqv
-          hash-ref hash-set hash-set! hash-remove hash-remove!
+          hash-ref hash-ref-key hash-set hash-set! hash-remove hash-remove!
           hash-for-each hash-map hash-copy hash-clear hash-clear!
           hash-iterate-first hash-iterate-next
           hash-iterate-key hash-iterate-value
@@ -269,11 +270,13 @@
           unsafe-weak-hash-iterate-first unsafe-weak-hash-iterate-next
           unsafe-weak-hash-iterate-key unsafe-weak-hash-iterate-value
           unsafe-weak-hash-iterate-key+value unsafe-weak-hash-iterate-pair
+          unsafe-hash-seal!    ; not exported to racket
 
           hash? hash-eq? hash-equal? hash-eqv? hash-weak? immutable-hash?
           hash-count
           hash-keys-subset?
           eq-hashtable->hash   ; not exported to racket
+          hash->eq-hashtable   ; not exported to racket
 
           datum-intern-literal
           set-intern-regexp?!  ; not exported to racket
@@ -372,9 +375,14 @@
           byte?
           double-flonum?
           single-flonum?
+          single-flonum-available?
           real->double-flonum
           real->single-flonum
           arithmetic-shift
+          bitwise-ior
+          bitwise-xor
+          bitwise-and
+          bitwise-not
           integer-sqrt
           integer-sqrt/remainder
           integer->integer-bytes
@@ -399,12 +407,7 @@
 
           random
           random-seed
-          pseudo-random-generator?
-          make-pseudo-random-generator
           current-pseudo-random-generator
-          vector->pseudo-random-generator
-          vector->pseudo-random-generator!
-          pseudo-random-generator->vector
           pseudo-random-generator-vector?
 
           mpair?
@@ -475,7 +478,7 @@
           ;; not the same as Racket will executors:
           (rename
            [make-will-executor rumble:make-will-executor]
-           [make-stubborn-will-executor rumble:make-stubborn-will-executor]
+           [make-late-will-executor rumble:make-late-will-executor]
            [will-executor? rumble:will-executor?]
            [will-register rumble:will-register]
            [will-try-execute rumble:will-try-execute])
@@ -490,6 +493,7 @@
           system-library-subpath-string ; not exported to Racket
           set-get-machine-info!         ; not exported to Racket
           set-cross-mode!               ; not exported to Racket
+          set-fs-change-properties!     ; not exported to Racket
 
           unsafe-car
           unsafe-cdr
@@ -604,7 +608,7 @@
           ctype-alignof ctype-basetype ctype-c->scheme ctype-scheme->c ctype-sizeof ctype?
           end-stubborn-change extflvector->cpointer
           ffi-call ffi-call-maker ffi-callback ffi-callback-maker ffi-callback?
-          ffi-lib-name ffi-lib? ffi-obj ffi-obj-lib
+          ffi-lib-name ffi-lib? ffi-obj ffi-obj-lib ffi-lib-unload
           ffi-obj-name  ffi-obj? flvector->cpointer free free-immobile-cell lookup-errno
           make-array-type make-cstruct-type make-ctype make-late-weak-box make-late-weak-hasheq
           make-sized-byte-string make-union-type malloc malloc-immobile-cell
@@ -612,14 +616,28 @@
           ptr-set! saved-errno set-cpointer-tag! set-ptr-offset! vector->cpointer
           unsafe-register-process-global unsafe-add-global-finalizer
           (rename [ffi-lib* ffi-lib])
+          immobile-cell-ref               ; not exported to Racket
+          immobile-cell->address          ; not exported to Racket
+          address->immobile-cell          ; not exported to Racket
           set-ffi-get-lib-and-obj!        ; not exported to Racket
           poll-async-callbacks            ; not exported to Racket
           set-make-async-callback-poll-wakeup! ; not exported to Racket
           set-foreign-eval!               ; not exported to Racket
 
-          unsafe-unbox
+          ptr-ref/int8 ptr-set!/int8      ; not exported to Racket
+          ptr-ref/uint8 ptr-set!/uint8    ; not exported to Racket
+          ptr-ref/int16 ptr-set!/int16    ; not exported to Racket
+          ptr-ref/uint16 ptr-set!/uint16  ; not exported to Racket
+          ptr-ref/int32 ptr-set!/int32    ; not exported to Racket
+          ptr-ref/uint32 ptr-set!/uint32  ; not exported to Racket
+          ptr-ref/int64 ptr-set!/int64    ; not exported to Racket
+          ptr-ref/uint64 ptr-set!/uint64  ; not exported to Racket
+          ptr-ref/double ptr-set!/double  ; not exported to Racket
+          ptr-ref/float ptr-set!/float    ; not exported to Racket
+
+          (rename [inline:unsafe-unbox unsafe-unbox]
+                  [inline:unsafe-set-box! unsafe-set-box!])
           unsafe-unbox*
-          unsafe-set-box!
           unsafe-set-box*!
           unsafe-box*-cas!
 
@@ -628,12 +646,12 @@
           unsafe-set-mcar!
           unsafe-set-mcdr!
 
-          unsafe-vector-ref
-          unsafe-vector-set!
+          (rename [inline:unsafe-vector-ref unsafe-vector-ref]
+                  [inline:unsafe-vector-set! unsafe-vector-set!]
+                  [inline:unsafe-vector-length unsafe-vector-length])
           unsafe-vector*-ref
           unsafe-vector*-set!
           unsafe-vector*-cas!
-          unsafe-vector-length
           unsafe-vector*-length
 
           unsafe-fxvector-length
@@ -652,8 +670,8 @@
           unsafe-string-ref
           unsafe-string-set!
 
-          unsafe-struct-ref
-          unsafe-struct-set!
+          (rename [inline:unsafe-struct-ref unsafe-struct-ref]
+                  [inline:unsafe-struct-set! unsafe-struct-set!])
           unsafe-struct*-ref
           unsafe-struct*-set!
           unsafe-struct*-cas!
@@ -682,7 +700,16 @@
           mutex-acquire
           mutex-release
           threaded?
-          set-future-callbacks!)
+          set-future-callbacks!
+          install-primitives-table!
+          continuation-current-primitive
+          call-as-asynchronous-callback
+          post-as-asynchronous-callback
+
+          ;; compile-time use in "thread.sls"
+          current-atomic-virtual-register
+          end-atomic-virtual-register
+          current-future-virtual-register)
   (import (rename (chezpart)
                   [define define/no-lift])
 	  (rename (only (chezscheme) sleep)
@@ -700,13 +727,14 @@
                 record-field-accessor
                 record-field-mutator))
 
-  (define/no-lift none (chez:gensym "none"))
-  (define/no-lift none2 (chez:gensym "none2")) ; never put this in an emphemeron
+  ;; Internal tokens that are different from all possible user-level values:
+  (define/no-lift none '#{none kwcju864gpycc2h151s9atbmo-1})
+  (define/no-lift none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
 
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
+  (include "rumble/layout.ss")
   (include "rumble/begin0.ss")
-  (include "rumble/letrec.ss")
   (include "rumble/syntax-rule.ss")
   (include "rumble/value.ss")
   (include "rumble/lock.ss")
@@ -741,6 +769,7 @@
   (include "rumble/bytes.ss")
   (include "rumble/string.ss")
   (include "rumble/char.ss")
+  (include "rumble/char-range.ss")
   (include "rumble/list.ss")
   (include "rumble/vector.ss")
   (include "rumble/box.ss")
@@ -761,6 +790,7 @@
   (include "rumble/place.ss")
   (include "rumble/errno-data.ss")
   (include "rumble/foreign.ss")
+  (include "rumble/async-callback.ss")
   (include "rumble/future.ss")
   (include "rumble/inline.ss")
 
@@ -774,6 +804,8 @@
   (set-base-exception-handler!)
   (init-place-locals!)
   (register-as-place-main!)
+  (async-callback-place-init!)
+  (remember-original-place!)
   (set-collect-handler!)
   (set-primitive-applicables!)
   (set-continuation-applicables!)
@@ -786,4 +818,5 @@
   (set-procedure-impersonator-hash!)
   (set-vector-impersonator-hash!)
   (set-box-impersonator-hash!)
-  (set-cpointer-hash!))
+  (set-cpointer-hash!)
+  (set-exn-srcloc-properties!))

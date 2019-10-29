@@ -1,6 +1,7 @@
 #lang info
 
-(define test-omit-paths '("spellcheck.rkt"))
+(define test-omit-paths '("spellcheck.rkt"
+                          "reversecomplement.rkt"))
 
 (define test-command-line-arguments
   '(("ackermann.rkt" ("10"))

@@ -79,7 +79,7 @@ special characters:
 
 @t{
   @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
-  @litchar["}"] @litchar["}"]
+  @litchar["{"] @litchar["}"]
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
   @litchar{;} @litchar{\}
 }
@@ -622,7 +622,7 @@ For internal testing purposes, when the
 @as-index{@envvar{PLT_VALIDATE_LOAD}} environment variable is set, the
 reader runs a validator on bytecode parsed from @litchar{#~}. The
 validator may catch miscompilations or bytecode-file corruption. The
-validtor may run lazily, such as checking a procedure only when the
+validator may run lazily, such as checking a procedure only when the
 procedure is called.
 
 @history[#:changed "6.90.0.21" @elem{Adjusted the effect of changing

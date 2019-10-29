@@ -263,30 +263,61 @@
 (err/rt-test (readstr "#\"\u0100\"") exn:fail:read?)
 (err/rt-test (readstr "#\"\u03BB\"") exn:fail:read?)
 
+(define (check-all-numbers number-table)
+  (let loop ([l number-table])
+    (unless (null? l)
+      (let* ([pair (car l)]
+             [v (car pair)]
+             [s (cadr pair)])
+        (for ([s (in-list (list s (string-upcase s)))])
+          (cond
+            [(memq v '(X DBZ NOE))
+             (err/rt-test (readstr s) exn:fail:read?)
+             (test #f string->number s)
+             (test #t string? (string->number s 10 'read))]
+            [v 
+             (test v readstr s)
+             (test (if (symbol? v) #f v) string->number s)
+             (test (if (symbol? v) #f v) string->number s 10 'read)]
+            [else 
+             (test (string->symbol s) readstr s)
+             (test #f string->number s)
+             (test #f string->number s 10 'read)
+             (unless (regexp-match "#" s)
+               (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
+               (test #f string->number (string-append "#d" s))
+               (test #t string? (string->number (string-append "#d" s) 10 'read)))])))
+      (loop (cdr l)))))
+
 (load-relative "numstrs.rktl")
-(let loop ([l number-table])
-  (unless (null? l)
-    (let* ([pair (car l)]
-           [v (car pair)]
-           [s (cadr pair)])
-      (cond
-       [(memq v '(X DBZ NOE))
-        (err/rt-test (readstr s) exn:fail:read?)
-        (test #f string->number s)
-        (test #t string? (string->number s 10 'read))]
-       [v 
-        (test v readstr s)
-        (test (if (symbol? v) #f v) string->number s)
-        (test (if (symbol? v) #f v) string->number s 10 'read)]
-       [else 
-        (test (string->symbol s) readstr s)
-        (test #f string->number s)
-        (test #f string->number s 10 'read)
-        (unless (regexp-match "#" s)
-          (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
-          (test #f string->number (string-append "#d" s))
-          (test #t string? (string->number (string-append "#d" s) 10 'read)))]))
-    (loop (cdr l))))
+(check-all-numbers number-table)
+
+;; single-flonums disabled by default
+(check-all-numbers '((10.0 "1f1")
+                     (10.0 "#i1f1")))
+
+(when (single-flonum-available?)
+  (parameterize ([read-single-flonum #t])
+    (define def (call-with-input-file*
+                 (build-path (or (current-load-relative-directory)
+                                 (current-directory))
+                             "numstrs.rktl")
+                 (lambda (i) (read i))))
+    (check-all-numbers (eval (caddr def)))))
+
+(unless (single-flonum-available?)
+  (parameterize ([read-single-flonum #t])
+    (err/rt-test (read (open-input-string "3.4f5"))
+                 exn:fail:unsupported?)))
+
+(test 5 string->number "5" 10 'number-or-false)
+(test 5 string->number "5.0" 10 'number-or-false 'decimal-as-exact)
+(test 5.0 string->number "5.0" 10 'number-or-false 'decimal-as-inexact)
+(test 5.0 string->number "5.0f0" 10 'number-or-false 'decimal-as-inexact 'double)
+(if (single-flonum-available?)
+    (test (real->single-flonum 5.0) string->number "5.0f0" 10 'number-or-false 'decimal-as-inexact 'single)
+    (err/rt-test (string->number "5.0f0" 10 'number-or-false 'decimal-as-inexact 'single)
+                 exn:fail:unsupported?))
 
 (define (make-exn:fail:read:eof?/span start span)
   (lambda (exn)
@@ -425,6 +456,10 @@
 (err/rt-test (readstr "#0=#hash#0#") exn:fail:read?)
 (err/rt-test (readstr "#0=#hash(#0#)") exn:fail:read?)
 (err/rt-test (readstr "#hash([1 . 2))") exn:fail:read?)
+
+(test #t eq? (readstr "#hash()") (hash))
+(test #t eq? (readstr "#hasheq()") (hasheq))
+(test #t eq? (readstr "#hasheqv()") (hasheqv))
 
 (define (test-ht t size eq? key val)
   (test #t hash? t)
@@ -1087,7 +1122,8 @@
 		 (parameterize ([print-unreadable #f])
 		   (display x p)))
 	   (err/rt-test (parameterize ([print-unreadable #f])
-			  (write x p))))]
+			  (write x p))
+                        exn:fail?))]
 	[try-good
 	 (lambda (x)
 	   (test (void) (list x)
@@ -1304,6 +1340,24 @@
   (err/rt-test (read-language p)
                (lambda (exn) (regexp-match? #rx"read-language" (exn-message exn)))))
 
+(parameterize ([read-accept-reader #t])
+  (err/rt-test (read (open-input-string "#lang"))
+               (lambda (exn) (regexp-match? #rx"expected a single space" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang "))
+               (lambda (exn) (regexp-match? #rx"expected a non-empty sequence of" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang  "))
+               (lambda (exn) (regexp-match? #rx"expected a single space" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang  x"))
+               (lambda (exn) (regexp-match? #rx"expected a single space" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang ."))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang x."))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang \n"))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang \nx"))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (require racket/flonum
@@ -1438,6 +1492,37 @@
                   (parameterize ([read-accept-reader #t])
                     (read-syntax 'm (open-input-string "#lang reader 'provides-a-reader-to-check-phase"))))])
     (anything)))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([read-case-sensitive #t])
+  (define (myread [in (current-input-port)])
+    (parameterize-read
+     (lambda () (read in))))
+
+  (define (parameterize-read do-read)
+    (parameterize ([current-readtable (make-a-readtable (current-readtable))])
+      (do-read)))
+  
+  (define (make-a-readtable base)
+    (make-readtable base
+                    #\! 'dispatch-macro read-directive
+                    #f  'non-terminating-macro (reparameterize-read base)))
+
+  (define (reparameterize-read base)
+    (case-lambda
+      [(c in)                  (read/recursive in c base)]
+      [(c in src line col pos) (read-syntax/recursive src in c base)]))
+  
+  (define (read-directive c in src line col pos)
+    (read-case-sensitive #f)
+    (make-special-comment #f))
+
+  ;; Parameter change takes effect for recursive read:
+  (test 'abc myread (open-input-string "#!ABC"))
+  ;; Change also sticks:
+  (test 'abc myread (open-input-string "ABC")))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

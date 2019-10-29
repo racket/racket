@@ -113,7 +113,9 @@ both user and system time.
 
  @item{If @racket[scope] is a thread, the result is specific to the
        time while the thread ran, but it may include time for other
-       @tech{places}.}
+       @tech{places}. The more a thread synchronizes with other
+       threads, the less precisely per-thread processor time is
+       recorded.}
 
  @item{If @racket[scope] is @racket['subprocesses], the result is the
        sum of process times for known-completed subprocesses (see
@@ -237,3 +239,13 @@ calculations.}
 
 Converts a Julian number (Scaliger's off-by-one version) into a
 string.}
+
+
+@deftogether[(
+@defproc[(date->julian/scalinger [date date?]) exact-integer?]
+@defproc[(julian/scalinger->string [date-number exact-integer?])
+         string?]
+)]{
+
+The same as @racket[date->julian/scaliger] and
+@racket[julian/scaliger->string], but misspelled.}

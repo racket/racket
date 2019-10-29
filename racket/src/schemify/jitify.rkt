@@ -88,10 +88,12 @@
                 ,name)]
             [else v])))
     (define arity-mask (argss->arity-mask argss))
+    (define i-name (or (wrap-property v 'inferred-name)
+                       name))
     (cond
       [(and (null? captures)
             (no-lifts? body-lifts))
-       (define e (extractable-annotation jitted-proc arity-mask name))
+       (define e (extractable-annotation jitted-proc arity-mask i-name))
        (define-values (get-e new-lifts)
          (cond
            [(convert-mode-need-lift? convert-mode) (add-lift e lifts)]
@@ -101,12 +103,14 @@
                    get-e)
                new-lifts)]
       [else
-       (define e (extractable-annotation `(lambda ,(if (no-lifts? body-lifts)
-                                                       captures
-                                                       (cons lifts-id captures))
-                                            ,jitted-proc)
-                                        arity-mask
-                                        name))
+       (define e (extractable-annotation (reannotate
+                                          v
+                                          `(lambda ,(if (no-lifts? body-lifts)
+                                                        captures
+                                                        (cons lifts-id captures))
+                                             ,jitted-proc))
+                                         arity-mask
+                                         i-name))
        (define-values (all-captures new-lifts)
          (cond
            [(no-lifts? body-lifts)
@@ -146,6 +150,8 @@
           (match v
             [`(variable-set! ,var-id ,id . ,_)
              (hash-set env (unwrap id) `(variable-ref ,(unwrap var-id)))]
+            [`(variable-set!/define ,var-id ,id . ,_)
+             (hash-set env (unwrap id) `(variable-ref ,(unwrap var-id)))]
             [`(call-with-module-prompt ,_ ',ids ,_ ,var-ids ...)
              (for/fold ([env env]) ([id (in-list ids)]
                                     [var-id (in-list var-ids)])
@@ -159,7 +165,7 @@
     (let loop ([body body])
       (for/list ([v (in-list body)])
         (match v
-          [`(variable-set! ,var-id ,id ',constance)
+          [`(variable-set!/define ,var-id ,id ',constance)
            (when constance
              ;; From now on, a direct reference is ok
              (set! top-env (hash-set top-env (unwrap id) '#:direct)))
@@ -282,7 +288,7 @@
        (values (reannotate v `(if ,new-tst ,new-thn ,new-els))
                new-free/els
                new-lifts/els)]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (define sub-convert-mode (convert-mode-non-tail convert-mode))
        (define-values (new-key new-free/key new-lifts/key)
          (jitify-expr key env mutables free lifts sub-convert-mode #f in-name))
@@ -290,7 +296,7 @@
          (jitify-expr val env mutables new-free/key new-lifts/key sub-convert-mode #f in-name))
        (define-values (new-body new-free/body new-lifts/body)
          (jitify-expr body env mutables new-free/val new-lifts/val convert-mode name in-name))
-       (values (reannotate v `(with-continuation-mark ,new-key ,new-val ,new-body))
+       (values (reannotate v `(with-continuation-mark* ,mode ,new-key ,new-val ,new-body))
                new-free/body
                new-lifts/body)]
       [`(quote ,_) (values v free lifts)]
@@ -316,7 +322,7 @@
             (match (hash-ref env id '#:direct)
               [`#:direct (reannotate v `(set! ,var ,new-rhs))]
               [`(self ,m . ,_) (error 'set! "[internal error] self-referenceable ~s" id)]
-              [`(variable-ref ,var-id) (reannotate v `(variable-set! ,var-id ,new-rhs '#f))]
+              [`(variable-ref ,var-id) (reannotate v `(variable-set! ,var-id ,new-rhs))]
               [`(unbox ,box-id) (reannotate v `(set-box! ,box-id ,new-rhs))]
               [`(unbox/check-undefined ,box-id ,_) (reannotate v `(set-box!/check-undefined ,box-id ,new-rhs ',var))]))
           (values new-v newer-free new-lifts)])]
@@ -647,7 +653,7 @@
        (find-mutable env tst
                      (find-mutable env thn
                                    (find-mutable env els accum)))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (find-mutable env key
                      (find-mutable env val
                                    (find-mutable env body accum)))]
@@ -793,7 +799,7 @@
           (record-sizes! tst sizes)
           (record-sizes! thn sizes)
           (record-sizes! els sizes))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (+ 1
           (record-sizes! key sizes)
           (record-sizes! val sizes)
@@ -834,9 +840,9 @@
                                                        [selfy (lambda (x) (vector (selfy x) selfy))])
                                                 (odd 5)))
                                   (define top-selfx (lambda (x) (top-selfx x)))
-                                  (variable-set! top-selfx-var top-selfx 'const)
+                                  (variable-set!/define top-selfx-var top-selfx 'const)
                                   (define top-selfy (lambda (x) (vector (top-selfy x) top-selfy)))
-                                  (variable-set! top-selfy-var top-selfy 'const)
+                                  (variable-set!/define top-selfy-var top-selfy 'const)
                                   (call-with-values (lambda (x) (x (lambda (w) (w))))
                                     (lambda (z w) 10))
                                   (call-with-values (lambda (x) (x (lambda (w) (w))))
@@ -851,7 +857,7 @@
                                   (define x1 (lambda () (lambda () (other iv))))
                                   (define x2 (lambda () (letrec ([other (lambda () (other iv))])
                                                           other)))
-                                  (define whatever (begin (variable-set! xv x 'const) (void)))
+                                  (define whatever (begin (variable-set!/define xv x 'const) (void)))
                                   (define end (letrec ([w (lambda (x) (let ([proc (lambda (x) x)])
                                                                         (proc q)))]
                                                        [q q])
@@ -859,7 +865,7 @@
                                   (define topz (letrec ([helper (lambda (x)
                                                                   (helper (topz x)))])
                                                  (lambda (y) (helper y))))
-                                  (variable-set! topz-var topz 'const)
+                                  (variable-set!/define topz-var topz 'const)
                                   (do-immediate topz)
                                   (define sets-arg (lambda (x)
                                                      (values (lambda () (set! x (add1 x)))

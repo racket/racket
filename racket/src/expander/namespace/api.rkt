@@ -143,6 +143,8 @@
                                  ns
                                  (namespace-phase ns)
                                  (make-requires+provides #f)
+                                 #:copy-variable-phase-level copy-variable-phase-level
+                                 #:copy-variable-as-constant? copy-variable-as-constant?
                                  #:skip-variable-phase-level skip-variable-phase-level
                                  #:who who)]))
 

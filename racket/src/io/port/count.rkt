@@ -24,7 +24,7 @@
          port-count-byte-all!)
 
 (define port-count-lines-enabled
-  (make-parameter #f (lambda (v) (and v #t))))
+  (make-parameter #f (lambda (v) (and v #t)) 'port-count-lines-enabled))
 
 (define (finish-port/count p)
   (when (port-count-lines-enabled)

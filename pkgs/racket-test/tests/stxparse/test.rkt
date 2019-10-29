@@ -633,7 +633,7 @@
        #rx"identifier bound to number")
 
 (test-case "static: works"
-  (check-equal? 
+  (check-equal?
    (convert-syntax-error
     (let ()
       (define-syntax zero 0)
@@ -765,7 +765,7 @@
   (let ()
     (define-splicing-syntax-class binding #:literals (=)
       [pattern (~seq name:id = expr:expr)])
-    
+
     (define-syntax ~separated
       (pattern-expander
        (lambda (stx)
@@ -775,18 +775,18 @@
               #'((~seq pat (~or* (~peek-not _)
                                  (~seq sep (~peek _))))
                  ooo))]))))
-    
+
     (define-splicing-syntax-class bindings
       [pattern (~separated (~datum /) b:binding)
                #:with (name ...) #'(b.name ...)
                #:with (expr ...) #'(b.expr ...)])
-    
+
     (define (parse-my-let stx)
       (syntax-parse stx
         [(_ bs:bindings body)
          #'(let ([bs.name bs.expr] ...)
              body)]))
-    
+
     (check-equal? (syntax->datum
                    (parse-my-let #'(my-let (x = 1 / y = 2 / z = 3)
                                      (+ x y z))))
@@ -995,3 +995,67 @@
     (syntax-parse #'bad
       [(~var y thing #:attr-name-separator "_") #'y_a]))
    'okay))
+
+;; prop:syntax-class with id
+(let ()
+  (define (is-id? stx)
+    (define-syntax indirect-id
+      (let ()
+        (struct indirect-stxclass ()
+          #:property prop:syntax-class #'id)
+        (indirect-stxclass)))
+    (syntax-parse stx
+      [_:indirect-id #t]
+      [_ #f]))
+  (check-true (is-id? #'x))
+  (check-false (is-id? #'42)))
+
+;; prop:syntax-class with procedure
+(let ()
+  (define (type-of stx)
+    (define-syntaxes [indirect-id indirect-string]
+      (let ()
+        (struct indirect-stxclass (id)
+          #:property prop:syntax-class (lambda (v) (indirect-stxclass-id v)))
+        (values (indirect-stxclass #'id) (indirect-stxclass #'string))))
+    (syntax-parse stx
+      [_:indirect-id 'id]
+      [_:indirect-string 'string]
+      [_ #f]))
+  (check-equal? (type-of #'x) 'id)
+  (check-equal? (type-of #'"hello") 'string)
+  (check-equal? (type-of #'42) #f))
+
+;; prop:syntax-class to non-stxclass
+(check-exn
+ (lambda (exn) (and (exn:fail:syntax? exn)
+                    (string=? (exn-message exn) "syntax-parse: not defined as syntax class")
+                    (equal? (map syntax-e (exn:fail:syntax-exprs exn))
+                            (list 'not-a-syntax-class 'indirect-bad))))
+ (lambda ()
+   (convert-syntax-error
+    (let ()
+      (define-syntax indirect-bad
+        (let ()
+          (struct indirect-stxclass ()
+            #:property prop:syntax-class #'not-a-syntax-class)
+          (indirect-stxclass)))
+      (syntax-parse #'#f
+        [_:indirect-bad #t]
+        [_ #f])))))
+
+;; from turnstile, action pattern in ~seq (6/2019)
+(let ()
+  ;; The regression required the following circumstances:
+  ;; - the action pattern must be able to fail, so subsequent pattern gets an ORD frame
+  ;; - the ~seq cannot be inlined away, like (a (~seq b c) d) => (a b c d), so use ~or
+  (convert-syntax-error
+   (syntax-parse #'(m 1 2 3)
+     [(_ (~or (~seq a b c (~parse (d e f) #'(a b c)))
+              (~seq x:id ...)))
+      (void)])))
+
+;; from @jjsimpso, ~between pattern (10/2019)
+(convert-compile-time-error
+ (syntax-parse #'(1 2 'bar 4 5 'bar 'foo)
+   [((~seq (~between x:nat 2 2) ... z) ...+ expr) (void)]))

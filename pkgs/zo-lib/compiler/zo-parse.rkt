@@ -208,7 +208,7 @@
     [(22) 'case-lambda-sequence-type]
     [(23) 'inline-variant-type]
     [(25) 'linklet-type]
-    [(89) 'prefix-type]
+    [(88) 'prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 ;; ----------------------------------------
@@ -406,6 +406,7 @@
                           [read-square-bracket-as-paren #t]
                           [read-curly-brace-as-paren #t]
                           [read-decimal-as-inexact #t]
+                          [read-single-flonum (single-flonum-available?)] ;; not the default!
                           [read-accept-dot #t]
                           [read-accept-infix-dot #t]
                           [read-accept-quasiquote #t]

@@ -3,39 +3,48 @@
 ;; for when a will becomes ready
 
 (define-thread-local the-will-guardian (make-guardian))
-(define-thread-local the-stubborn-will-guardian (make-guardian #t))
+(define-thread-local the-late-will-guardian (make-guardian #t))
 
 ;; Guardian callbacks are called fifo, but will executors are called
 ;; lifo. The `will-stacks` tables map a finalized value to a list
 ;; of finalizers, where each finalizer is an ephemeron pairing a will
 ;; executor with a will function (so that the function is not retained
-;; if the will executor is dropped)
+;; if the will executor is dropped).
 (define-thread-local the-will-stacks (make-weak-eq-hashtable))
-(define-thread-local the-stubborn-will-stacks (make-weak-eq-hashtable))
+(define-thread-local the-late-will-stacks (make-weak-eq-hashtable))
+
+(define-thread-local late-will-executors-with-pending (make-eq-hashtable))
 
 (define-record-type (will-executor create-will-executor will-executor?)
-  (fields guardian will-stacks (mutable ready) notify))
+  (fields guardian will-stacks (mutable ready) notify keep?))
 
 (define (make-will-executor notify)
-  (create-will-executor the-will-guardian the-will-stacks '() notify))
+  (create-will-executor the-will-guardian the-will-stacks '() notify #f))
 
-;; A "stubborn" will executor corresponds to an ordered guardian. It
+;; A "late" will executor corresponds to an ordered guardian. It
 ;; doesn't need to make any guarantees about order for multiple
 ;; registrations, so use a fresh guardian each time.
-(define (make-stubborn-will-executor notify)
-  (create-will-executor the-stubborn-will-guardian the-stubborn-will-stacks '() notify))
+;; A late executor is treated a little specially in `will-register`.
+(define make-late-will-executor
+  (case-lambda
+   [(notify) (make-late-will-executor notify #t)]
+   [(notify keep?)
+    (create-will-executor the-late-will-guardian the-late-will-stacks '() notify keep?)]))
 
 (define/who (will-register executor v proc)
   (check who will-executor? executor)
   (check who (procedure-arity-includes/c 1) proc)
   (disable-interrupts)
   (let ([l (hashtable-ref (will-executor-will-stacks executor) v '())]
-        ;; By using an ephemeron pair, if the excutor becomes
+        ;; By using an ephemeron pair, if the executor becomes
         ;; unreachable, then we can drop the finalizer procedure. That
         ;; pattern prevents unbreakable cycles by an untrusted process
         ;; that has no access to a will executor that outlives the
-        ;; process.
-        [e+proc (ephemeron-cons executor proc)])
+        ;; process. But late will executors persist as long as
+        ;; a will is registered.
+        [e+proc (if (will-executor-keep? executor)
+                    (cons executor proc)
+                    (ephemeron-cons executor proc))])
     (hashtable-set! (will-executor-will-stacks executor) v (cons e+proc l))
     (when (null? l)
       ((will-executor-guardian executor) v)))
@@ -52,6 +61,9 @@
     (cond
      [(pair? l)
       (will-executor-ready-set! executor (cdr l))
+      (when (and (will-executor-keep? executor)
+                 (null? (cdr l)))
+        (hashtable-delete! late-will-executors-with-pending executor))
       (enable-interrupts)
       (car l)]
      [else
@@ -67,7 +79,8 @@
     (let ([v (guardian)])
       (when v
         (let we-loop ([l (hashtable-ref will-stacks v '())])
-          (when (pair? l)
+          (cond
+           [(pair? l)
             (let* ([e+proc (car l)]
                    [e (car e+proc)]
                    [proc (cdr e+proc)]
@@ -85,9 +98,15 @@
                   (hashtable-set! will-stacks v l)
                   (guardian v)])
                 ((will-executor-notify e))
-                (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))]))))
+                (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
+                (when (will-executor-keep? e)
+                  ;; Ensure that a late will executor stays live
+                  ;; in this place as long as there are wills to execute
+                  (hashtable-set! late-will-executors-with-pending e #t))]))]
+           [else
+            (hashtable-delete! will-stacks v)]))
         (loop)))))
 
 (define (poll-will-executors)
   (poll-guardian the-will-guardian the-will-stacks)
-  (poll-guardian the-stubborn-will-guardian the-stubborn-will-stacks))
+  (poll-guardian the-late-will-guardian the-late-will-stacks))

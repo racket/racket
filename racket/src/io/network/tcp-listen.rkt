@@ -4,6 +4,7 @@
          "../host/rktio.rkt"
          "../security/main.rkt"
          "../sandman/main.rkt"
+         "../format/main.rkt"
          "port-number.rkt"
          "address.rkt"
          "error.rkt")
@@ -18,7 +19,6 @@
 (struct tcp-listener (lnr
                       closed ; boxed boolean
                       custodian-reference)
-  #:authentic
   #:property prop:evt (poller (lambda (l ctx) (poll-listener l ctx))))
 
 (define/who (tcp-listen port-no [max-allow-wait 4] [reuse? #f] [hostname #f])
@@ -40,6 +40,8 @@
       ;; or might return a listener
       (call-with-resolved-address
        hostname port-no
+       #:family family
+       #:passive? #t
        ;; in atomic mode
        (lambda (addr)
          (cond

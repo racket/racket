@@ -5,9 +5,14 @@
 ;;  * allocating shared arrays, and 
 ;;  * putting messages into an channel with no receiver
 
-(define (check shared?)
+(module+ test
+  (module config info
+    (define timeout 200)))
+
+(define (check mode)
   (for ([i 20])
     (printf "iter ~a\n" i)
+    (collect-garbage)
     (let ([c (make-custodian)])
       (custodian-limit-memory c (* 1024 1024 10) c)
       (parameterize ([current-custodian c])
@@ -15,10 +20,21 @@
          (thread
           (lambda ()
             (define-values (a b) (place-channel))
-            (for/fold ([v 0]) ([i (in-range 999999999)]) 
-              (if shared?
-                  (cons (make-shared-bytes 1024) v)
-                  (place-channel-put b (list 1 2 3 4)))))))))))
+            (list
+             (for/fold ([v 0]) ([i (in-range 999999999)])
+               (case mode
+                 [(bytes)
+                  ;; Not really about places or channels, but worth checking, too
+                  (cons (make-bytes 1024) v)]
+                 [(shared-bytes)
+                  (cons (make-shared-bytes 1024) v)]
+                 [(messages)
+                  (place-channel-put b (list 1 2 3 4 (make-vector 500)))]))
+             (log-error "shouldn't get done")
+             ;; Remember `a`, just in case the runtime system is smart
+             ;; enough to discard messages that have no destination
+             a))))))))
 
-(check #t)
-(check #t)
+(check 'bytes)
+(check 'shared-bytes)
+(check 'messages)

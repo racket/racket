@@ -692,7 +692,7 @@
   scheme_extension_table->scheme_make_ephemeron = scheme_make_ephemeron;
   scheme_extension_table->scheme_ephemeron_value = scheme_ephemeron_value;
   scheme_extension_table->scheme_ephemeron_key = scheme_ephemeron_key;
-  scheme_extension_table->scheme_make_stubborn_will_executor = scheme_make_stubborn_will_executor;
+  scheme_extension_table->scheme_make_late_will_executor = scheme_make_late_will_executor;
   scheme_extension_table->scheme_load = scheme_load;
   scheme_extension_table->scheme_load_extension = scheme_load_extension;
   scheme_extension_table->scheme_register_extension_global = scheme_register_extension_global;

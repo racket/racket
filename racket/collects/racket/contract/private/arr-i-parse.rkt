@@ -55,6 +55,8 @@ code does the parsing and validation of the syntax.
 ;;         'desc => #:pre/desc or #:post/desc
 ;;         'bool => #:pre or #:post
 (struct pre/post (vars kind exp quoted-dep-src-code) #:transparent)
+(struct pre/post-pre pre/post () #:transparent)
+(struct pre/post-post pre/post () #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
@@ -487,12 +489,12 @@ code does the parsing and validation of the syntax.
                           [x (void)])
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (loop #'pre-leftover 
-                              (cons (pre/post (syntax->list #'(id ...)) 
-                                              (if (equal? '#:pre/desc (syntax-e #'kwd))
-                                                  'desc
-                                                  'bool)
-                                              #'pre-cond
-                                              (compute-quoted-src-expression #'pre-cond))
+                              (cons (pre/post-pre (syntax->list #'(id ...))
+                                                  (if (equal? '#:pre/desc (syntax-e #'kwd))
+                                                      'desc
+                                                      'bool)
+                                                  #'pre-cond
+                                                  (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
                      [(kwd . rest)
                       (or (equal? (syntax-e #'kwd) '#:pre)
@@ -523,10 +525,10 @@ code does the parsing and validation of the syntax.
                            stx
                            #'str))
                         (loop #'pre-leftover
-                              (cons (pre/post (syntax->list #'(id ...)) 
-                                              (syntax-e #'str)
-                                              #'pre-cond
-                                              (compute-quoted-src-expression #'pre-cond))
+                              (cons (pre/post-pre (syntax->list #'(id ...))
+                                                  (syntax-e #'str)
+                                                  #'pre-cond
+                                                  (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
                      [(#:pre/name . rest)
                       (raise-syntax-error
@@ -564,12 +566,12 @@ code does the parsing and validation of the syntax.
                                 stx #'post-cond)]
                           [_ (void)])
                         (loop #'leftover
-                              (cons (pre/post (syntax->list #'(id ...))
-                                              (if (equal? (syntax-e #'kwd) '#:post/desc)
-                                                  'desc
-                                                  'bool)
-                                              #'post-cond
-                                              (compute-quoted-src-expression #'post-cond))
+                              (cons (pre/post-post (syntax->list #'(id ...))
+                                                   (if (equal? (syntax-e #'kwd) '#:post/desc)
+                                                       'desc
+                                                       'bool)
+                                                   #'post-cond
+                                                   (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]
                      [(kwd a b . stuff)
                       (or (equal? (syntax-e #'kwd) '#:post/desc)
@@ -589,7 +591,7 @@ code does the parsing and validation of the syntax.
                          (format "expected a sequence of variables and an expression to follow ~a"
                                  (syntax-e #'kwd))
                          stx #'a))]
-                     [(#:post/name (id ...) str post-cond . pre-leftover)
+                     [(#:post/name (id ...) str post-cond . post-leftover)
                       (begin
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (syntax-case range (any)
@@ -604,9 +606,10 @@ code does the parsing and validation of the syntax.
                             " declaration to be a string")
                            stx
                            #'str))
-                        (loop #'pre-leftover
-                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'post-cond
-                                              (compute-quoted-src-expression #'post-cond))
+                        (loop #'post-leftover
+                              (cons (pre/post-post (syntax->list #'(id ...)) (syntax-e #'str)
+                                                   #'post-cond
+                                                   (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]
                      [(#:post/name . stuff)
                       (begin
@@ -629,36 +632,13 @@ code does the parsing and validation of the syntax.
       [_
        (raise-syntax-error #f "bad syntax" stx)])))
 
-(define (->i-valid-app-shapes stx)
-  (define an-istx (parse-->i stx))
-  (define mans 0)
-  (define opts 0)
-  (define man-kwds '())
-  (define opt-kwds '())
-  (for ([arg (in-list (istx-args an-istx))])
-    (define kwd (arg-kwd arg))
-    (define opt? (arg-optional? arg))
-    (cond
-      [(and kwd opt?)
-       (set! opt-kwds (cons kwd opt-kwds))]
-      [(and kwd (not opt?))
-       (set! man-kwds (cons kwd man-kwds))]
-      [(and (not kwd) opt?)
-       (set! opts (+ opts 1))]
-      [(and (not kwd) (not opt?))
-       (set! mans (+ mans 1))]))
-  (valid-app-shapes-from-man/opts mans 
-                                  opts
-                                  (istx-rst an-istx)
-                                  man-kwds
-                                  opt-kwds))
-
 (provide
  parse-->i
- ->i-valid-app-shapes
  (struct-out istx)
  (struct-out arg/res)
  (struct-out arg)
  (struct-out lres)
  (struct-out eres)
- (struct-out pre/post))
+ (struct-out pre/post)
+ (struct-out pre/post-pre)
+ (struct-out pre/post-post))

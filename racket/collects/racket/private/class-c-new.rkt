@@ -4,8 +4,6 @@
          "class-wrapped.rkt"
          "../contract/base.rkt"
          "../contract/combinator.rkt"
-         (only-in "../contract/private/guts.rkt"
-                  wrapped-extra-arg-arrow?)
          (for-syntax racket/base
                      syntax/name
                      syntax/stx))
@@ -206,17 +204,14 @@
       (define projd-mth (w/blame m-mth))
       (hash-set! neg-acceptors-ht mth-name projd-mth)
       (define neg-extra-arg
-        (cond
-          [(wrapped-extra-arg-arrow? projd-mth)
-           (wrapped-extra-arg-arrow-extra-neg-party-argument projd-mth)]
-          [else 
-           ;; if some contract doesn't subscribe to the wrapped-extra-arg-arrow
-           ;; protocol, then make an inefficient wrapper for it.
-           (make-keyword-procedure
-            (λ (kwds kwd-args neg-party . args)
-              (keyword-apply (projd-mth neg-party) kwds kwd-args args))
-            (λ (neg-party . args)
-              (apply (projd-mth neg-party) args)))]))
+        ;; the way extra args worked changed so we cannot use it here anymore
+        ;; keep an inefficient wrapper (but maybe this whole approach should
+        ;; go away)
+        (make-keyword-procedure
+         (λ (kwds kwd-args neg-party . args)
+           (keyword-apply (projd-mth neg-party) kwds kwd-args args))
+         (λ (neg-party . args)
+           (apply (projd-mth neg-party) args))))
       (vector-set! neg-extra-arg-vec mth-idx neg-extra-arg)))
   
   (define absent-methods (ext-class/c-contract-absent-methods this))

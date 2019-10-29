@@ -28,7 +28,8 @@
                          props                  ; map full props to previously calculated
                          interned-props         ; intern filtered props
                          syntax-context         ; used to collapse encoding of syntax literals
-                         sharing-syntaxes))     ; record which syntax objects are `datum->syntax` form
+                         sharing-syntaxes)      ; record which syntax objects are `datum->syntax` form
+  #:authentic)
 
 (define (make-serialize-state reachable-scopes)
   (define state

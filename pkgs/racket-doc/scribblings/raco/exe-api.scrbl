@@ -113,9 +113,7 @@ The embedded code consists of module declarations followed by
 additional (arbitrary) code. When a module is embedded, every module
 that it imports is also embedded. Library modules are embedded so that
 they are accessible via their @racket[lib] paths in the initial
-namespace except as specified in @racket[mod-list], other modules
-(accessed via local paths and absolute paths) are embedded with a
-generated prefix, so that they are not directly accessible.
+namespace.
 
 The @racket[#:modules] argument @racket[mod-list] designates modules
 to be embedded, as described below. The @racket[#:early-literal-expressions], @racket[#:literal-files], and
@@ -163,6 +161,16 @@ to go with the above might be @racket['(require m)]. When submodules
 are available and included, the submodule is given a name by
 symbol-appending the @racket[write] form of the submodule path to the
 enclosing module's name.
+
+When an embedded module is not listed in the @racket[#:modules]
+argument or not given a prefix there, a symbolic name for the embedded
+module is generated automatically. The names are generated in a
+deterministic but unspecified way, so that they are not conveniently
+accessible. The generated names may depend on the path of the first
+element of @racket[mod-list]. Modules that were included via a
+collection-based path remain accessible at run time through their
+collection-based paths (via a module name resolver that is installed
+for the embedding executable).
 
 Modules are normally compiled before they are embedded into the target
 executable; see also @racket[#:compiler] and @racket[#:src-filter]
@@ -378,7 +386,9 @@ actual file name (e.g., @filepath{.ss}/@filepath{.rkt} conversions
 have been applied as needed to refer to the existing file).
 
 @history[#:changed "6.90.0.23" @elem{Added @racket[embed-dlls?] as an
-                                     @racket[#:aux] key.}]}
+                                     @racket[#:aux] key.}
+         #:changed "7.3.0.6" @elem{Changed generation of symbolic names for embedded
+                                   modules to make it deterministic.}]}
 
 
 @defproc[(make-embedding-executable [dest path-string?]

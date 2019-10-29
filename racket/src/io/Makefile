@@ -36,7 +36,7 @@ io-src: $(RKTIO_DEP)
 	$(RACO) make ../expander/bootstrap-run.rkt
 	$(MAKE) io-src-generate
 
-GENERATE_ARGS = -t main.rkt --submod main \
+GENERATE_ARGS = -t main.rkt \
                 --check-depends $(BUILDDIR)compiled/io-dep.rktd \
                 ++depend-module ../expander/bootstrap-run.rkt \
                 ++depend ../rktio/rktio.rktl \

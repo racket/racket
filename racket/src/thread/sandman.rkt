@@ -41,9 +41,6 @@
          sandman-wakeup
          sandman-any-sleepers?
          sandman-sleepers-external-events
-         sandman-condition-wait
-         sandman-condition-poll
-         sandman-any-waiters?
 
          current-sandman)
 
@@ -64,8 +61,11 @@
   ((sandman-do-remove-thread! the-sandman) th h))
 
 ;; in atomic mode
-(define (sandman-poll mode thread-wakeup)
-  ((sandman-do-poll the-sandman) mode thread-wakeup))
+;; The `thread-wakeup` callback can be called with #f
+;; to indicate that a thread was potentially woken up
+;; some other way, such as by a semaphore post
+(define (sandman-poll thread-wakeup)
+  ((sandman-do-poll the-sandman) thread-wakeup))
 
 ;; in atomic mode
 (define (sandman-sleep exts)
@@ -86,31 +86,6 @@
 ;; in atomic mode
 (define (sandman-sleepers-external-events)
   ((sandman-do-sleepers-external-events the-sandman)))
-
-;; in atomic mode
-(define (sandman-condition-wait thread)
-  ((sandman-do-condition-wait the-sandman) thread))
-
-;; in atomic mode
-(define (sandman-condition-poll mode thread-wakeup)
-  ((sandman-do-condition-poll the-sandman) mode thread-wakeup))
-
-;; in atomic mode
-(define (sandman-any-waiters?)
-  ((sandman-do-any-waiters? the-sandman)))
-
-;; created simple lock here to avoid cycle in loading from using lock defined in future.rkt
-(define (make-lock)
-  (box 0))
-
-(define (lock-acquire box)
-  (let loop ()
-    (unless (and (= 0 (unbox box)) (box-cas! box 0 1))
-      (loop))))
-
-(define (lock-release box)
-  (unless (box-cas! box 1 0)
-    (internal-error "Failed to release lock\n")))
 
 (define-place-local waiting-threads '())
 (define-place-local awoken-threads '())
@@ -136,8 +111,7 @@
      (host:sleep (max 0.0 (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0))))
 
    ;; poll
-   (lambda (mode wakeup)
-     ;; This check is fast, so do it in all modes
+   (lambda (wakeup)
      (unless (tree-empty? sleeping-threads)
        (define-values (timeout-at threads) (tree-min sleeping-threads))
        (when (timeout-at . <= . (current-inexact-milliseconds))
@@ -194,37 +168,7 @@
          (min sleep-until timeout-at)
          timeout-at))
    ;; extract-timeout
-   (lambda (sleep-until) sleep-until)
-   
-   ;; condition-wait
-   (lambda (t)
-     (lock-acquire (sandman-lock the-sandman))
-     (set! waiting-threads (cons t waiting-threads))
-     (lock-release (sandman-lock the-sandman))
-     ;; awoken callback. for when thread is awoken
-     (lambda (root-thread)
-       (lock-acquire (sandman-lock the-sandman))
-       (if (memq t waiting-threads)
-           (begin
-             (set! waiting-threads (remove t waiting-threads eq?))
-             (set! awoken-threads (cons t awoken-threads)))
-           (internal-error "thread is not a member of waiting-threads\n"))
-       (lock-release (sandman-lock the-sandman))))
-
-   ;; condition-poll
-   (lambda (mode wakeup)
-     (lock-acquire (sandman-lock the-sandman))
-     (define at awoken-threads)
-     (set! awoken-threads '())
-     (lock-release (sandman-lock the-sandman))
-     (for-each (lambda (t)
-                 (wakeup t)) at))
-
-   ;; any waiters?
-   (lambda ()
-     (or (not (null? waiting-threads)) (not (null? awoken-threads))))
-
-   (make-lock)))
+   (lambda (sleep-until) sleep-until)))
 
 (void (current-sandman the-default-sandman))
 

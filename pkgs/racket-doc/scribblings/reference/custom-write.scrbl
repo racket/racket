@@ -89,16 +89,18 @@ This function is often used in conjunction with @racket[make-constructor-style-p
        (make-constructor-style-printer
         (lambda (obj) 'point)
         (lambda (obj) (list (point-x obj) (point-y obj)))))]))
- 
+
   (print (point 1 2))
 
   (write (point 1 2))]
 }
 
 @defthing[prop:custom-write struct-type-property?]{
-A deprecated @tech{structure type property} (see @secref["structprops"])
+A @tech{structure type property} (see @secref["structprops"])
 that supplies a procedure that corresponds to @racket[gen:custom-write]'s
-@racket[write-proc]. Use @racket[gen:custom-write], instead.
+@racket[write-proc]. Using the @racket[prop:custom-write] property is
+discouraged; use the @racket[gen:custom-write] @tech{generic interface}
+instead.
 }
 
 @defproc[(custom-write? [v any/c]) boolean?]{
@@ -108,7 +110,7 @@ property, @racket[#f] otherwise.}
 
 
 @defproc[(custom-write-accessor [v custom-write?])
-         (custom-write? output-port? boolean? . -> . any)]{
+         (custom-write? output-port? (or/c #t #f 0 1) . -> . any)]{
 
 Returns the custom-write procedure associated with @racket[v].}
 

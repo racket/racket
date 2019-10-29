@@ -27,6 +27,12 @@
 (err/rt-test (foldl cons 0 '() '()))
 (err/rt-test (foldl list 0 '() 10))
 (err/rt-test (foldl list 0 '() '() 10))
+(err/rt-test (foldl list 0 '() '() 10)
+             exn:fail:contract?
+             "expected.*list\\?.*5th")
+(err/rt-test (foldl list 0 '() '() '() 10)
+             exn:fail:contract?
+             "expected.*list\\?.*6th")
 (err/rt-test (let/ec k (foldl k 0 '(1 2) '(1 2 3))))
 (err/rt-test (let/ec k (foldl k 0 '(1 2) '(1 2) '(1 2 3))))
 (err/rt-test (foldr 'list 0 10))
@@ -35,6 +41,12 @@
 (err/rt-test (foldr cons 0 '() '()))
 (err/rt-test (foldr list 0 '() 10))
 (err/rt-test (foldr list 0 '() '() 10))
+(err/rt-test (foldr list 0 '() '() 10)
+             exn:fail:contract?
+             "expected.*list\\?.*5th")
+(err/rt-test (foldr list 0 '() '() '() 10)
+             exn:fail:contract?
+             "expected.*list\\?.*6th")
 (err/rt-test (let/ec k (foldr k 0 '(1 2) '(1 2 3))))
 (err/rt-test (let/ec k (foldr k 0 '(1 2) '(1 2) '(1 2 3))))
 

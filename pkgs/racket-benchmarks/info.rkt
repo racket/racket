@@ -8,7 +8,10 @@
                "scheme-lib"
                "racket-test"
                "typed-racket-lib"
-               "gui-lib"))
+               "plot"
+               "draw-lib"
+               "gui-lib"
+               "pict-lib"))
 
 (define pkg-desc "Racket benchmarks")
 (define pkg-authors '(eli jay mflatt robby samth stamourv))

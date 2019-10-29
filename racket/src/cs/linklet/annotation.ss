@@ -10,21 +10,6 @@
                  [(and (eq? a (car v))
                        (eq? d (cdr v)))
                   (values v v)]
-                 [(and (eq? stripped-a 'letrec*)
-                       (pair? (cdr v)))
-                  (let ([names (let loop ([clauses (cadr v)])
-                                 (cond
-                                  [(null? clauses) '()]
-                                  [else
-                                   (let ([id (caar clauses)])
-                                     (cons (or (and (correlated? id)
-                                                    (correlated-property id 'undefined-error-name))
-                                               (if (correlated? id)
-                                                   (correlated-e id)
-                                                   id))
-                                           (loop (cdr clauses))))]))])
-                    (values (list* 'letrec*/names names d)
-                            (list* 'letrec*/names names stripped-d)))]
                  [else (values (cons a d)
                                (cons stripped-a stripped-d))]))]
    [(correlated? v) (let-values ([(e stripped-e) (correlated->annotation* (correlated-e v))])
@@ -44,6 +29,15 @@
                                  (add-name stripped-e)))))]
    ;; correlated will be nested only in pairs with current expander
    [else (values v v)]))
+
+(define (extract-inferred-name expr default-name)
+  (let ([name (and (correlated? expr)
+                   (correlated-property expr 'inferred-name))])
+    (cond
+     [(void? name) #f]
+     [(correlated? name) (correlated-e name)]
+     [(symbol? name) name]
+     [else default-name])))
 
 (define (transfer-srcloc v e stripped-e)
   (let ([src (correlated-source v)]

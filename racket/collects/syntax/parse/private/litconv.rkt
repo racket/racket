@@ -176,7 +176,7 @@
                                                     'datum-external)
                                 ...))))
                (begin-for-syntax/once
-                (for ([x (in-list (syntax->list #'(external ...)))])
+                (for ([x (in-list (list (quote-syntax external) ...))])
                   (unless (identifier-binding x 'relphase)
                     (raise-syntax-error #f
                                         (format "literal is unbound in phase ~a~a~a"

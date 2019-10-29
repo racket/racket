@@ -1066,15 +1066,17 @@
 
 (define (racket-launcher-up-to-date? dest [aux null])
   (cond
-    ;; When running Setup PLT under Windows, the
+    ;; When running "raco.exe" under Windows, the
     ;;  launcher process stays running until Racket
     ;;  completes, which means that it cannot be
-    ;;  overwritten at that time. So we assume
-    ;;  that a Setup-PLT-style independent launcher
-    ;;  is always up-to-date.
-    [(eq? 'windows (cross-system-type))
-     (and (let ([m (assq 'independent? aux)]) (and m (cdr m)))
-          (file-exists? dest))]
+    ;;  overwritten at that time. Only update that
+    ;;  kind of launcher if the environment variable
+    ;;  `PLT_REPLACE_INDEPENDENT_LAUNCHERS` is set.
+    [(and (eq? 'windows (system-type))
+          (let ([m (assq 'independent? aux)]) (and m (cdr m)))
+          (file-exists? dest)
+          (not (getenv "PLT_REPLACE_INDEPENDENT_LAUNCHERS")))
+     #t]
     ;; For any other setting, we could implement
     ;;  a fancy check, but for now always re-create
     ;;  launchers.

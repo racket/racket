@@ -3,6 +3,7 @@
          "host.rkt"
          "place-local.rkt"
          "internal-error.rkt"
+         "parameter.rkt"
          "debug.rkt")
 
 (provide atomically
@@ -17,16 +18,18 @@
 
          in-atomic-mode?
 
+         future-barrier
+
          add-end-atomic-callback!
 
          start-implicit-atomic-mode
          end-implicit-atomic-mode
-         assert-atomic-mode)
+         assert-atomic-mode
 
-;; This definition is specially recognized for Racket on
-;; Chez Scheme and converted to use a virtual register:
-(define current-atomic (make-pthread-parameter 0))
+         set-future-block!)
 
+;; "atomically" is atomic within a place; when a future-running
+;; pthread tries to enter atomic mode, it is suspended
 (define-syntax-rule (atomically expr ...)
   (begin
     (start-atomic)
@@ -41,9 +44,12 @@
      (let () expr ...)
      (end-atomic/no-interrupts))))
 
+;; inlined in Chez Scheme embedding:
 (define (start-atomic)
+  (future-barrier)
   (current-atomic (fx+ (current-atomic) 1)))
 
+;; inlined in Chez Scheme embedding:
 (define (end-atomic)
   (define n (fx- (current-atomic) 1))
   (cond
@@ -82,6 +88,11 @@
 (define (in-atomic-mode?)
   (positive? (current-atomic)))
 
+;; inlined in Chez Scheme embedding:
+(define (future-barrier)
+  (when (current-future)
+    (future-block-for-atomic)))
+
 ;; ----------------------------------------
 
 ;; A "list" of callbacks to run when exiting atomic mode,
@@ -94,8 +105,22 @@
 ;; no race with the scheduler
 (define (add-end-atomic-callback! cb)
   (host:disable-interrupts)
-  (end-atomic-callback (cons cb (end-atomic-callback)))
+  (define all-cbs (end-atomic-callback))
+  (let loop ([cbs all-cbs])
+    (cond
+      [(eq? cbs 0)
+       (end-atomic-callback (cons cb all-cbs))]
+      [else
+       (unless (eq? (car cbs) cb)
+         (loop (cdr cbs)))]))
   (host:enable-interrupts))
+
+;; ----------------------------------------
+
+(define future-block-for-atomic (lambda () (void)))
+
+(define (set-future-block! block)
+  (set! future-block-for-atomic block))
 
 ;; ----------------------------------------
 

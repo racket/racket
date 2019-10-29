@@ -97,7 +97,11 @@
 
 (module+ test
   (require racket/vector syntax/location)
-  (parameterize ([current-command-line-arguments (vector-append #("-c") (current-command-line-arguments))])
-    (dynamic-require (quote-module-path ".." main) #f))
+  (cond
+    [(eq? 'racket (system-type 'vm))
+     (parameterize ([current-command-line-arguments (vector-append #("-c") (current-command-line-arguments))])
+       (dynamic-require (quote-module-path ".." main) #f))]
+    [else
+     (printf "This test only works when (system-type 'vm) is 'racket\n")])
   (module config info
     (define random? #t)))

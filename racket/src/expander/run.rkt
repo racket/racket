@@ -6,19 +6,25 @@
                   [eval host:eval]
                   [namespace-require host:namespace-require]
                   [current-library-collection-paths host:current-library-collection-paths]
-                  [current-library-collection-links host:current-library-collection-links])
+                  [current-library-collection-links host:current-library-collection-links]
+                  [current-namespace host:current-namespace]
+                  [make-base-namespace host:make-base-namespace])
          compiler/depend
          "common/set.rkt"
          "main.rkt"
          "namespace/namespace.rkt"
          "common/module-path.rkt"
          "eval/module-read.rkt"
+         "compile/linklet-api.rkt"
          "boot/kernel.rkt"
          "run/cache.rkt"
          "boot/runtime-primitive.rkt"
          "host/linklet.rkt"
          "run/status.rkt"
          "run/submodule.rkt"
+         (only-in "run/linklet.rkt"
+                  linklet-as-s-expr?
+                  linklet-as-s-expr)
          "host/correlate.rkt"
          "extract/main.rkt"
          (only-in "run/linklet.rkt" linklet-compile-to-s-expr))
@@ -167,8 +173,10 @@
                                                #f)])
          (let ([l (call-with-input-file file read)])
            (and (list? l)
+                (pair? l)
                 (andmap bytes? l)
-                (map bytes->path l))))))
+                (cons (car l)
+                      (map bytes->path (cdr l))))))))
 
 (when check-dependencies
   (unless print-extracted-to
@@ -178,7 +186,9 @@
          ts
          (let ([l (read-dependencies-from-file check-dependencies)])
            (and l
-                (for/and ([dep (in-list l)])
+                (pair? l)
+                (equal? (car l) (string->bytes/utf-8 (version)))
+                (for/and ([dep (in-list (cdr l))])
                   (<= (file-or-directory-modify-seconds dep #f (lambda () +inf.0))
                       ts)))))
     (log-status "No dependencies are newer")
@@ -216,7 +226,10 @@
     (host:current-library-collection-paths l))
   (let ([l (list #f
                  (build-path checkout-directory "share" "links.rktd"))])
-    (host:current-library-collection-links l)))
+    (host:current-library-collection-links l))
+  ;; Need to start with a fresh namespace when we adjust the
+  ;; collection and links paths; otherwise, caching can interfere
+  (host:current-namespace (host:make-base-namespace)))
 
 (current-library-collection-paths (host:current-library-collection-paths))
 (current-library-collection-links (host:current-library-collection-links))
@@ -299,7 +312,9 @@
 
 (define (apply-to-module proc mod-path)
   (define path (resolved-module-path-name
-                (resolve-module-path mod-path #f)))
+                (module-path-index-resolve
+                 (module-path-index-join mod-path #f)
+                 #f)))
   (define-values (dir file dir?) (split-path path))
   (parameterize ([current-load-relative-directory dir])
     (proc (call-with-input-file*
@@ -312,23 +327,44 @@
                     (read-syntax (object-name i) i)
                     path))))))))
 
+(define (extract-linklets l)
+  (cond
+    [(linklet-bundle? l)
+     (for/hasheq ([(k v) (in-hash (linklet-bundle->hash l))])
+       (values k (extract-linklets v)))]
+    [(linklet-directory? l)
+     (for/hasheq ([(k v) (in-hash (linklet-directory->hash l))])
+       (values k (extract-linklets v)))]
+    [(linklet-as-s-expr? l) (linklet-as-s-expr l)]
+    [else l]))
+
+(define startup-submodule
+  (if submod-name
+      `(submod ,startup-module ,submod-name)
+      startup-module))
+
 (cond
  [expand?
   (pretty-write (syntax->datum (apply-to-module expand startup-module)))]
  [linklets?
   (pretty-write (correlated->datum
                  (datum->correlated
-                  (apply-to-module compile startup-module) #f)))]
+                  (extract-linklets
+                   (apply-to-module compile startup-module))
+                  #f)))]
+ [extract?
+  (unless cache-dir (error 'run "extract mode requires a cache directory"))
+  ;; Put target module in the cache without running it
+  (dynamic-require startup-module (void))]
  [else
   ;; Load and run the requested module
   (parameterize ([current-command-line-arguments (list->vector args)])
-    (namespace-require (if submod-name
-                           `(submod ,startup-module ,submod-name)
-                           startup-module)))])
+    (namespace-require startup-submodule))])
+
 
 (when extract?
   ;; Extract a bootstrapping slice of the requested module
-  (extract startup-module cache
+  (extract startup-submodule cache
            #:print-extracted-to print-extracted-to
            #:as-c? extract-to-c?
            #:as-decompiled? extract-to-decompiled?
@@ -363,8 +399,10 @@
    dependencies-file
    #:exists 'truncate/replace
    (lambda (o)
-     (writeln (for/list ([dep (in-hash-keys dependencies)])
-                (path->bytes dep))
+     (writeln (cons
+               (string->bytes/utf-8 (version))
+               (for/list ([dep (in-hash-keys dependencies)])
+                 (path->bytes dep)))
               o))))
 
 (when makefile-dependencies-file

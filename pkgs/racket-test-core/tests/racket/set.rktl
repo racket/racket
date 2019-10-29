@@ -632,7 +632,10 @@
         (mutable-set 1)
         (λ (s) (set-remove! s 1))
         #f)
-  (test '((inject 2) (equal-key 2) (equal-key 2))
+  (test (if (eq? 'chez-scheme (system-type 'vm))
+            ;; No secondary hash on Racket CS:
+            '((inject 2) (equal-key 2))
+            '((inject 2) (equal-key 2) (equal-key 2)))
         counting-chaperone
         (set 2)
         (λ (s) (set-member? s 2))

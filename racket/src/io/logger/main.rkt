@@ -23,7 +23,11 @@
          add-stderr-log-receiver!
          add-stdout-log-receiver!
          add-syslog-log-receiver!
-         logger-init!)
+         logger-init!
+         logging-future-events?
+         log-future-event
+         logging-place-events?
+         log-place-event)
 
 (define (make-root-logger)
   (create-logger #:topic #f #:parent #f #:propagate-filters 'none))
@@ -35,7 +39,8 @@
                   (lambda (l)
                     (unless (logger? l)
                       (raise-argument-error 'current-logger "logger?" l))
-                    l)))
+                    l)
+                  'current-logger))
 
 (define (logger-init!)
   (set! root-logger (make-root-logger))
@@ -61,6 +66,14 @@
   (check who #:or-false symbol? topic)
   (atomically/no-interrupts/no-wind
    (log-level?* logger level topic)))
+
+(define (logging-future-events?)
+  (atomically/no-interrupts/no-wind
+   (log-level?* root-logger 'debug 'future)))
+
+(define (logging-place-events?)
+  (atomically/no-interrupts/no-wind
+   (log-level?* root-logger 'debug 'place)))
 
 ;; In atomic mode with interrupts disabled
 (define/who (log-level?* logger level topic)
@@ -129,12 +142,20 @@
   (atomically/no-interrupts/no-wind
    (log-message* logger level topic message data prefix? #f)))
 
+(define (log-future-event message data)
+  (atomically/no-interrupts/no-wind
+   (log-message* root-logger 'debug 'future message data #t #f)))
+
+(define (log-place-event message data)
+  (atomically/no-interrupts/no-wind
+   (log-message* root-logger 'debug 'place message data #t #f)))
+
 ;; In atomic mode with interrupts disabled
 ;; Can be called in any host Scheme thread and in interrupt handler,
 ;; like `log-level?*`
 (define (log-message* logger level topic message data prefix? in-interrupt?)
   (define msg #f)
-  (when ((logger-max-wanted-level logger) . level>=? . level)
+  (when ((logger-max-wanted-level* logger) . level>=? . level)
     (let loop ([logger logger])
       (for ([r (in-list (logger-receivers logger))])
         (when ((filters-level-for-topic (log-receiver-filters r) topic) . level>=? . level)

@@ -1,13 +1,15 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval "guide-utils.rkt")
 
-@title[#:tag "stx-certs" #:style 'quiet]{Syntax Taints}
+@title[#:tag "stx-certs" #:style 'quiet]{Code Inspectors and Syntax Taints}
 
-A use of a macro can expand into a use of an identifier that is not
-exported from the module that binds the macro. In general, such an
-identifier must not be extracted from the expanded expression and used
-in a different context, because using the identifier in a different
-context may break invariants of the macro's module.
+Modules often contain definitions that are meant only for use within
+the same module and not exported with @racket[provide]. Still, a use
+of a macro defined in the module can expand into a reference of an
+unexported identifier. In general, such an identifier must not be
+extracted from the expanded expression and used in a different
+context, because using the identifier in a different context may break
+invariants of the macro's module.
 
 For example, the following module exports a macro @racket[go] that
 expands to a use of @racket[unchecked-go]:
@@ -23,8 +25,8 @@ racket
 
 (define-syntax (go stx)
   (syntax-case stx ()
-   [(_ x)
-    #'(unchecked-go 8 x)]))
+    [(_ x)
+     #'(unchecked-go 8 x)]))
 ]
 
 If the reference to @racket[unchecked-go] is extracted from the
@@ -34,15 +36,33 @@ expression, @racket[(unchecked-go #f 'a)], leading to disaster. The
 references to an unexported identifier, even when no macro expansion
 includes a reference to the identifier.
 
-To prevent such abuses of unexported identifiers, the @racket[go]
-macro must explicitly protect its expansion by using
-@racket[syntax-protect]:
+Ultimately, protection of a module's private bindings depends on
+changing the current @tech{code inspector} by setting the
+@racket[current-code-inspector] parameter. That's because a code
+inspector controls access to a module's internal state through
+functions like @racket[module->namespace]. The current code inspector
+also gates access to the exports of unsafe modules like
+@racketmodname[racket/unsafe/ops].
+
+To some extent, a code inspector also constrains access to bindings
+via @racket[datum->syntax] (see @secref["code-inspectors+protect"]),
+but a code inspector does not control the use of @racket[expand] or
+@racket[local-expand]. To prevent misuse of its module's bindings and
+imports in general, a macro should enable syntax @deftech{taints} via
+@racket[syntax-protect] on its result syntax object.
+
+@;------------------------------------------------------------------------
+@section[#:tag "syntax-protect"]{Using @racket[syntax-protect] for Macro Results}
+
+To prevent abuses of unexported identifiers, the @racket[go] macro
+from the preceding example must explicitly protect its expansion by
+using @racket[syntax-protect]:
 
 @racketblock[
 (define-syntax (go stx)
   (syntax-case stx ()
-   [(_ x)
-    (syntax-protect #'(unchecked-go 8 x))]))
+    [(_ x)
+     (syntax-protect #'(unchecked-go 8 x))]))
 ]
 
 The @racket[syntax-protect] function causes any syntax object that is
@@ -51,7 +71,7 @@ macro expander rejects tainted identifiers, so attempting to extract
 @racket[unchecked-go] from the expansion of @racket[(go 'a)] produces
 an identifier that cannot be used to construct a new expression (or, at
 least, not one that the macro expander will accept). The
-@racket[syntax-rules], @racket[syntax-id-rule], and
+@racket[syntax-rules], @racket[syntax-id-rules], and
 @racket[define-syntax-rule] forms automatically protect their
 expansion results.
 
@@ -183,9 +203,9 @@ into a transformer's result.
 
 Tools that are intended to be privileged (such as a debugging
 transformer) must disarm dye packs in expanded programs.  Privilege is
-granted through @deftech{code inspectors}. Each dye pack records an
+granted through @tech{code inspectors}. Each dye pack records an
 inspector, and a syntax object can be disarmed using a sufficiently
-powerful inspector.
+strong inspector.
 
 When a module is declared, the declaration captures the current value
 of the @racket[current-code-inspector] parameter.  The captured
@@ -194,7 +214,7 @@ transformer that is defined within the module. A tool can disarm the
 resulting syntax object by supplying @racket[syntax-disarm] with
 an inspector that is the same or a super-inspector of the module's
 inspector. Untrusted code is ultimately run after setting
-@racket[current-code-inspector] to a less powerful inspector (after
+@racket[current-code-inspector] to a weaker inspector (after
 trusted code, such as debugging tools, have been loaded).
 
 With this arrangement, macro-generating macros require some care,
@@ -259,40 +279,21 @@ racket
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "code-inspectors+protect"]{Protected Exports}
+@section[#:tag "protect-out"]{Protected Exports}
 
 Sometimes, a module needs to export bindings to some modules---other
 modules that are at the same trust level as the exporting module---but
 prevent access from untrusted modules. Such exports should use the
 @racket[protect-out] form in @racket[provide]. For example,
-@racket[ffi/unsafe] exports all of its unsafe bindings as
+@racketmodname[ffi/unsafe] exports all of its unsafe bindings as
 @deftech{protected} in this sense.
 
-Code inspectors, again, provide the mechanism for determining which
-modules are trusted and which are untrusted. When a module is
-declared, the value of @racket[current-code-inspector] is associated
-to the module declaration. When a module is instantiated (i.e., when the
-body of the declaration is actually executed), a sub-inspector is
-created to guard the module's exports. Access to the module's
-@tech{protected} exports requires a code inspector higher in the
-inspector hierarchy than the module's instantiation inspector; note
-that a module's declaration inspector is always higher than its
-instantiation inspector, so modules are declared with the same code
-inspector can access each other's exports.
+Only modules loaded with an equally strong code inspector as an
+exporting module can use protected bindings from the exporting module.
+Operations like @racket[dynamic-require] are granted access depending
+on the current code inspector as determined by
+@racket[current-code-inspector].
 
-Syntax-object constants within a module, such as literal identifiers
-in a template, retain the inspector of their source module. In this
-way, a macro from a trusted module can be used within an untrusted
-module, and @tech{protected} identifiers in the macro expansion still
-work, even through they ultimately appear in an untrusted
-module. Naturally, such identifiers should be @tech{arm}ed, so that
-they cannot be extracted from the macro expansion and abused by
-untrusted code.
-
-Compiled code from a @filepath{.zo} file is inherently untrustworthy,
-unfortunately, since it can be synthesized by means other than
-@racket[compile]. When compiled code is written to a @filepath{.zo}
-file, syntax-object constants within the compiled code lose their
-inspectors. All syntax-object constants within compiled code acquire
-the enclosing module's declaration-time inspector when the code is
-loaded.
+When a module re-exports a protected binding, it does not need to use
+@racket[protect-out] again. Access is always determined by the code
+inspector of the module that originally defines a protected binding.

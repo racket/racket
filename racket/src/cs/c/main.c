@@ -1,3 +1,5 @@
+#include "cs_config.h"
+
 #ifndef WIN32
 # include <unistd.h>
 #endif
@@ -5,7 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #ifdef WIN32
-# include <Windows.h>
+# include <windows.h>
 # define DOS_FILE_SYSTEM
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 			      char *dest, int dest_len, int get_utf16);
@@ -32,17 +34,23 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 #ifdef WIN32
 typedef void *(*scheme_dll_open_proc)(const char *name, int as_global);
 typedef void *(*scheme_dll_find_object_proc)(void *h, const char *name);
+typedef void (*scheme_dll_close_proc)(void *h);
 static scheme_dll_open_proc embedded_dll_open;
 static scheme_dll_find_object_proc scheme_dll_find_object;
-static void scheme_set_dll_procs(scheme_dll_open_proc open, scheme_dll_find_object_proc find)
+static scheme_dll_close_proc embedded_dll_close;
+static void scheme_set_dll_procs(scheme_dll_open_proc open,
+                                 scheme_dll_find_object_proc find,
+                                 scheme_dll_close_proc close)
 {
   embedded_dll_open = open;
   scheme_dll_find_object = find;
+  embedded_dll_close = close;
 }
 # include "../../start/embedded_dll.inc"
 #else
 # define embedded_dll_open NULL
 # define scheme_dll_find_object NULL
+# define embedded_dll_close NULL
 #endif
 
 char *boot_file_data = "BooT FilE OffsetS:xxxxyyyyyzzzz";
@@ -98,6 +106,36 @@ static char *get_self_path(char *exec_file)
 # undef USE_GENERIC_GET_SELF_PATH
 #endif
 
+#if defined(__FreeBSD__)
+# include <sys/sysctl.h>
+# include <errno.h>
+static char *get_self_path(char *exec_file)
+{
+  int mib[4];
+  char *s;
+  size_t len;
+  int r;
+
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PATHNAME;
+  mib[3] = -1;
+
+  r = sysctl(mib, 4, NULL, &len, NULL, 0);
+  if (r < 0) {
+      fprintf(stderr, "failed to get self (%d)\n", errno);
+      exit(1);
+  }
+  s = malloc(len);
+  r = sysctl(mib, 4, s, &len, NULL, 0);
+  if (r < 0) {
+      fprintf(stderr, "failed to get self (%d)\n", errno);
+      exit(1);
+  }
+  return s;
+}
+# undef USE_GENERIC_GET_SELF_PATH
+#endif
 
 #ifdef ELF_FIND_BOOT_SECTION
 # include <elf.h>
@@ -106,8 +144,13 @@ static char *get_self_path(char *exec_file)
 static long find_boot_section(char *me)
 {
   int fd, i;
+#if SIZEOF_VOID_P == 4
+  Elf32_Ehdr e;
+  Elf32_Shdr s;
+#else
   Elf64_Ehdr e;
   Elf64_Shdr s;
+#endif
   char *strs;
 
   fd = open(me, O_RDONLY, 0);
@@ -371,7 +414,7 @@ static int bytes_main(int argc, char **argv,
               pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI,
 	      wm_is_gracket_or_x11_arg_count, gracket_guid_or_x11_args,
-	      embedded_dll_open, scheme_dll_find_object);
+	      embedded_dll_open, scheme_dll_find_object, embedded_dll_close);
   
   return 0;
 }

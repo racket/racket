@@ -496,17 +496,17 @@ primitive.}
 
 @deftogether[(
 @defproc[(correlated? [v any/c]) boolean?]
-@defproc[(correlated-source [stx correlated?]) any]
-@defproc[(correlated-line [stx correlated?])
+@defproc[(correlated-source [crlt correlated?]) any]
+@defproc[(correlated-line [crlt correlated?])
          (or/c exact-positive-integer? #f)]
-@defproc[(correlated-column [stx correlated?])
+@defproc[(correlated-column [crlt correlated?])
          (or/c exact-nonnegative-integer? #f)]
-@defproc[(correlated-position [stx correlated?])
+@defproc[(correlated-position [crlt correlated?])
          (or/c exact-positive-integer? #f)]
-@defproc[(correlated-span [stx correlated?])
+@defproc[(correlated-span [crlt correlated?])
          (or/c exact-nonnegative-integer? #f)]
-@defproc[(correlated-e [stx correlated?]) any]
-@defproc[(correlated->datum [stx (or/c correlated? any/c)]) any]
+@defproc[(correlated-e [crlt correlated?]) any]
+@defproc[(correlated->datum [crlt (or/c correlated? any/c)]) any]
 @defproc[(datum->correlated [v any/c]
                         [srcloc (or/c correlated? #f
                                       (list/c any/c
@@ -520,14 +520,14 @@ primitive.}
                                                (or/c exact-positive-integer? #f)
                                                (or/c exact-nonnegative-integer? #f)))
                                 #f]
-                         [prop (or/c correlated? #f)])
+                         [prop (or/c correlated? #f) #f])
           correlated?]
-@defproc*[([(correlated-property [stx correlated?]
+@defproc*[([(correlated-property [crlt correlated?]
                                  [key any/c]
                                  [val any/c])
              correlated?]
-           [(correlated-property [stx correlated?] [key any/c]) any/c])]
-@defproc[(correlated-property-symbol-keys [stx correlated?]) list?]
+           [(correlated-property [crlt correlated?] [key any/c]) any/c])]
+@defproc[(correlated-property-symbol-keys [crlt correlated?]) list?]
 )]{
 
 Like @racket[syntax?], @racket[syntax-source], @racket[syntax-line],

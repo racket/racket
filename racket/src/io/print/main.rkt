@@ -16,6 +16,7 @@
          "char.rkt"
          "list.rkt"
          "mlist.rkt"
+         "vector.rkt"
          "hash.rkt"
          "named.rkt"
          "parameter.rkt"
@@ -44,7 +45,11 @@
          (all-from-out "parameter.rkt"))
 
 (module+ internal
-  (provide do-display
+  (provide display-via-handler
+           write-via-handler
+           print-via-handler
+
+           do-display
            do-write
            do-print
            do-global-print
@@ -52,6 +57,9 @@
            install-do-global-print!))
 
 (define/who (display v [o (current-output-port)])
+  (display-via-handler who v o))
+
+(define (display-via-handler who v o)
   (let ([co (->core-output-port o who)])
     (define display-handler (core-output-port-display-handler co))
     (if display-handler
@@ -73,6 +81,9 @@
      (void)]))
 
 (define/who (write v [o (current-output-port)])
+  (write-via-handler who v o))
+
+(define (write-via-handler who v o)
   (let ([co (->core-output-port o who)])
     (define write-handler (core-output-port-write-handler co))
     (if write-handler
@@ -86,6 +97,9 @@
   (void))
 
 (define/who (print v [o (current-output-port)] [quote-depth PRINT-MODE/UNQUOTED])
+  (print-via-handler who v o quote-depth))
+
+(define/who (print-via-handler who v o quote-depth)
   (let ([co (->core-output-port o who)])
     (check who print-mode? #:contract "(or/c 0 1)" quote-depth)
     (define print-handler (core-output-port-print-handler co))
@@ -103,8 +117,9 @@
 
 (define (install-do-global-print! param default-value)
   (set! do-global-print
-        (lambda (who v o [quote-depth PRINT-MODE/UNQUOTED] [max-length #f])
+        (lambda (who v o [quote-depth-in PRINT-MODE/UNQUOTED] [max-length #f])
           (define global-print (param))
+          (define quote-depth (if (print-as-expression) quote-depth-in WRITE-MODE))
           (cond
             [(eq? global-print default-value)
              (do-print who v o quote-depth max-length)]
@@ -126,8 +141,7 @@
           (void))))
 
 (define/who (newline [o (current-output-port)])
-  (check who output-port? o)
-  (unsafe-write-bytes 'newline #"\n" o)
+  (unsafe-write-bytes 'newline #"\n" (->core-output-port o who))
   (void))
 
 ;; ----------------------------------------
@@ -236,34 +250,11 @@
     [(pair? v)
      (print-list p who v mode o max-length graph config #f #f)]
     [(vector? v)
-     (cond
-       [(and (not (eq? mode PRINT-MODE/UNQUOTED))
-             (config-get config print-vector-length))
-        (define len (vector-length v))
-        (define same-n
-          (cond
-            [(zero? len) 0]
-            [else
-             (let loop ([i (sub1 len)] [accum 0])
-               (cond
-                 [(zero? i) accum]
-                 [(eq? (vector-ref v (sub1 i)) (vector-ref v i))
-                  (loop (sub1 i) (add1 accum))]
-                 [else accum]))]))
-        (define lst (if (zero? same-n)
-                        (vector->list v)
-                        (for/list ([e (in-vector v 0 (- len same-n))])
-                          e)))
-        (define lbl (string-append "#" (number->string len) "("))
-        (print-list p who lst mode o max-length graph config lbl "(vector")]
-       [else
-        (print-list p who (vector->list v) mode o max-length graph config "#(" "(vector")])]
+     (print-vector p who v mode o max-length graph config "" vector-length vector-ref eq?)]
     [(flvector? v)
-     (define l (for/list ([e (in-flvector v)]) e))
-     (print-list p who l mode o max-length graph config "#fl(" "(flvector")]
+     (print-vector p who v mode o max-length graph config "fl" flvector-length flvector-ref equal?)]
     [(fxvector? v)
-     (define l (for/list ([e (in-fxvector v)]) e))
-     (print-list p who l mode o max-length graph config "#fx(" "(fxvector")]
+     (print-vector p who v mode o max-length graph config "fx" fxvector-length fxvector-ref eq?)]
     [(box? v)
      (cond
        [(config-get config print-box)

@@ -4,7 +4,7 @@
          "../common/internal-error.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
-         "lock.rkt")
+         "ltps.rkt")
 
 ;; Create an extended sandman that can sleep with a rktio poll set. An
 ;; external-event set might be naturally implemented with a poll set,
@@ -21,7 +21,7 @@
          sandman-poll-ctx-add-poll-set-adder!
          sandman-poll-ctx-merge-timeout
          sandman-set-background-sleep!
-         sandman-place-init!)
+         sandman-poll-ctx-poll?)
 
 (struct exts (timeout-at fd-adders))
 
@@ -45,6 +45,8 @@
                                  (schedule-info-current-exts sched-info)
                                  timeout))))
 
+(define (sandman-poll-ctx-poll? poll-ctx)
+  (poll-ctx-poll? poll-ctx))
 
 (define-place-local background-sleep #f)
 (define-place-local background-sleep-fd #f)
@@ -52,13 +54,6 @@
 (define (sandman-set-background-sleep! sleep fd)
   (set! background-sleep sleep)
   (set! background-sleep-fd fd))
-
-(define-place-local lock (make-lock))
-(define-place-local waiting-threads '())
-(define-place-local awoken-threads '())
-
-(define (sandman-place-init!)
-  (set! lock (make-lock)))
 
 (void
  (current-sandman
@@ -82,18 +77,18 @@
        (unless (and sleep-secs (sleep-secs . <= . 0.0))
          (cond
            [background-sleep
-            (rktio_start_sleep rktio (or sleep-secs 0.0) ps rktio_NULL background-sleep-fd)
+            (rktio_start_sleep rktio (or sleep-secs 0.0) ps shared-ltps background-sleep-fd)
             (background-sleep)
             (rktio_end_sleep rktio)]
            [else
             (rktio_sleep rktio
                          (or sleep-secs 0.0)
                          ps
-                         rktio_NULL)]))
+                         shared-ltps)]))
        (rktio_poll_set_forget rktio ps))
      
      ;; poll
-     (lambda (mode wakeup)
+     (lambda (wakeup)
        (let check-signals ()
          (define v (rktio_poll_os_signal rktio))
          (unless (eqv? v RKTIO_OS_SIGNAL_NONE)
@@ -101,8 +96,11 @@
                                         [(eqv? v RKTIO_OS_SIGNAL_HUP) 'hang-up]
                                         [(eqv? v RKTIO_OS_SIGNAL_TERM) 'terminate]
                                         [else 'break]))
+           (wakeup #f)
            (check-signals)))
-       ((sandman-do-poll timeout-sandman) mode wakeup))
+       (when (fd-semaphore-poll-ready?)
+         (wakeup #f))
+       ((sandman-do-poll timeout-sandman) wakeup))
 
      ;; get-wakeup
      (lambda ()
@@ -160,37 +158,4 @@
      
      ;; extract-timeout
      (lambda (exts)
-       (exts-timeout-at exts))
-
-     ;; condition-wait
-     (lambda (t)
-       (lock-acquire lock)
-       (set! waiting-threads (cons t waiting-threads))
-       (lock-release lock)
-       ;; awoken callback. for when thread is awoken
-       (lambda ()
-         (lock-acquire lock)
-         (if (memq t waiting-threads)
-             (begin
-               (set! waiting-threads (remove t waiting-threads eq?))
-               (set! awoken-threads (cons t awoken-threads))
-               (rktio_signal_received_at (rktio_get_signal_handle rktio))) ;; wakeup main thread if sleeping
-             (internal-error "thread is not a member of waiting-threads\n"))
-         (lock-release lock)))
-
-     ;; condition-poll
-     (lambda (mode wakeup)
-       (lock-acquire lock)
-       (define at awoken-threads)
-       (set! awoken-threads '())
-       (lock-release lock)
-       (for-each (lambda (t)
-                   (wakeup t)) at))
-
-     ;; any-waiters?
-     (lambda ()
-       (or (not (null? waiting-threads)) (not (null? awoken-threads))))
-            
-
-     ;; lock
-     lock))))
+       (exts-timeout-at exts))))))

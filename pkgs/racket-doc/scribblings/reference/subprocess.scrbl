@@ -71,6 +71,10 @@ returned by @racket[subprocess]. The @racket[stderr] argument can be
 that is supplied as standard output is also used for standard error.
 For each port or @racket['stdout] that is provided, no
 pipe is created and the corresponding returned value is @racket[#f].
+If @racket[stdout] or @racket[stderr] is a port for which
+@racket[port-waiting-peer?] returns true, then @racket[subprocess]
+waits for the port to become ready for writing before proceeding with
+the subprocess creation.
 
 If @racket[group] is @racket['new], then the new process is created as
 a new OS-level process group. In that case, @racket[subprocess-kill]
@@ -132,7 +136,9 @@ A subprocess can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A subprocess value is @tech{ready for synchronization} when
 @racket[subprocess-wait] would not block; @resultItself{subprocess value}.
 
-@history[#:changed "6.11.0.1" @elem{Added the @racket[group] argument.}]}
+@history[#:changed "6.11.0.1" @elem{Added the @racket[group] argument.}
+         #:changed "7.4.0.5" @elem{Added waiting for a fifo without a reader
+                                   as @racket[stdout] and/or @racket[stderr].}]}
 
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{

@@ -17,7 +17,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
    instance of the same app. */
 char *check_for_another = "yes, please check for another";
 
-# include <Windows.h>
+# include <windows.h>
 # include "../start/win_single.inc"
 # define CHECK_SINGLE_INSTANCE
 #endif

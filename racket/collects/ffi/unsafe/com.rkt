@@ -4,6 +4,7 @@
          ffi/winapi
          ffi/unsafe/atomic
          ffi/unsafe/custodian
+         ffi/file
          racket/date
          racket/runtime-path
          racket/list
@@ -555,9 +556,6 @@
 
 (struct com-type (type-info clsid))
 
-(define scheme_security_check_file
-  (get-ffi-obj 'scheme_security_check_file #f (_fun _string _path _int -> _void)))
-
 (define SCHEME_GUARD_FILE_EXECUTE #x4)
 
 (define (register-with-custodian obj)
@@ -582,11 +580,11 @@
   ;; check. Putting it in the Windows system folder suggests
   ;; an appropriate level of trust: outside of the Racket installation,
   ;; but installed on the current machine.
-  (scheme_security_check_file "com-create-instance"
-                              (build-path (find-system-path 'sys-dir) 
-                                          "com"
-                                          (guid->string clsid))
-                              SCHEME_GUARD_FILE_EXECUTE)
+  (security-guard-check-file 'com-create-instance
+                             (build-path (find-system-path 'sys-dir) 
+                                         "com"
+                                         (guid->string clsid))
+                             '(execute))
 
   (define machine
     (cond

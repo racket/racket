@@ -12,6 +12,8 @@
 /*                      platform-specific handlers                            */
 /******************************************************************************/
 
+#ifdef USE_GC_GENS
+
 /* ========== Linux signal handler ========== */
 #if defined(linux)
 #include <signal.h>
@@ -203,6 +205,8 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
 }
+#endif
+
 #endif
 
 /******************************************************************************/

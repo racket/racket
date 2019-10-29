@@ -13,6 +13,8 @@
          contract-struct-late-neg-projection
          contract-struct-collapsible-late-neg-projection
          contract-struct-stronger?
+         trusted-contract-struct?
+         trusted-contract-struct-stronger?
          contract-struct-equivalent?
          contract-struct-generate
          contract-struct-exercise
@@ -52,7 +54,9 @@
 
          prop:any/c prop:any/c?
          
-         build-context)
+         build-context
+
+         (protect-out trust-me))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,8 +74,8 @@
                                    val-first-projection
                                    late-neg-projection
                                    collapsible-late-neg-projection
-                                   list-contract? ]
-  #:omit-define-syntaxes)
+                                   list-contract? ])
+(define-struct (trusted-contract-property contract-property) ())
 
 (define (contract-property-guard prop info)
   (unless (contract-property? prop)
@@ -85,6 +89,11 @@
 
 (define-values [ prop:contract contract-struct? contract-struct-property ]
   (make-struct-type-property 'prop:contract contract-property-guard))
+
+;; determines if `c` is a contract that is trusted
+(define (trusted-contract-struct? c)
+  (and (contract-struct? c)
+       (trusted-contract-property? (contract-struct-property c))))
 
 (define (contract-struct-name c)
   (let* ([prop (contract-struct-property c)]
@@ -121,6 +130,7 @@
   (and get-collapsible-projection
        (get-collapsible-projection c)))
 
+(define only-trusted? (make-parameter #f))
 (define (contract-struct-stronger/equivalent?
          a b
          trail
@@ -132,6 +142,9 @@
                 (chaperone-contract-struct? a))
             (equal? a b))
        #t]
+      [(and (only-trusted?)
+            (not (trusted-contract-struct? a)))
+       #f]
       [else
        (define prop (contract-struct-property a))
        (define stronger/equivalent? (contract-property-stronger/equivalent prop))
@@ -192,6 +205,12 @@
    stronger-trail
    contract-property-stronger
    #t))
+
+;; determines if `a` is stronger than `b` but using
+;; the contract-stronger method only on trusted contracts
+(define (trusted-contract-struct-stronger? a b)
+  (parameterize ([only-trusted? #t])
+    (contract-struct-stronger? a b)))
 
 (define equivalent-trail (make-parameter #f))
 (define (contract-struct-equivalent? a b)
@@ -298,7 +317,7 @@
 
 (define-logger racket/contract)
 
-(define ((build-property mk default-name proc-name first-order? equivalent-equal?)
+(define ((build-property mk trusted-mk default-name proc-name first-order? equivalent-equal?)
          #:name [get-name #f]
          #:first-order [get-first-order #f]
          #:projection [get-projection #f]
@@ -309,7 +328,8 @@
          #:equivalent [equivalent #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
-         #:list-contract? [list-contract? (λ (c) #f)])
+         #:list-contract? [list-contract? (λ (c) #f)]
+         #:trusted [trusted #f])
   (unless (or get-first-order
               get-projection
               get-val-first-projection
@@ -340,7 +360,8 @@
             "  in the #:list-contract? argument")
            list-contract?))
 
-  (mk (or get-name (λ (c) default-name))
+  ((if (equal? trusted trust-me) trusted-mk mk)
+   (or get-name (λ (c) default-name))
       (or get-first-order get-any?)
       get-projection
       (or stronger weakest)
@@ -358,6 +379,8 @@
       get-collapsible-late-neg-projection
       list-contract?))
 
+(define trust-me (gensym 'trustme))
+
 (define (build-context)
   (apply
    string-append
@@ -367,18 +390,21 @@
     
 (define build-contract-property
   (procedure-rename
-   (build-property make-contract-property 'anonymous-contract 'build-contract-property #f #f)
+   (build-property make-contract-property make-trusted-contract-property
+                   'anonymous-contract 'build-contract-property #f #f)
    'build-contract-property))
 
 (define build-flat-contract-property
   (procedure-rename
    (build-property (compose make-flat-contract-property make-contract-property)
+                   (compose make-flat-contract-property make-trusted-contract-property)
                    'anonymous-flat-contract 'build-flat-contract-property #t #t)
    'build-flat-contract-property))
 
 (define build-chaperone-contract-property
   (procedure-rename
    (build-property (compose make-chaperone-contract-property make-contract-property)
+                   (compose make-chaperone-contract-property make-trusted-contract-property)
                    'anonymous-chaperone-contract 'build-chaperone-contract-property #f #t)
    'build-chaperone-contract-property))
 

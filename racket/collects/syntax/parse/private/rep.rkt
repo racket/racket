@@ -29,16 +29,16 @@
   (-> syntax?
       boolean?)]
  [parse-rhs
-  (-> syntax? boolean?
-      #:context (or/c false/c syntax?)
-      rhs?)]
+  (->* [syntax? boolean? #:context (or/c false/c syntax?)]
+       [#:default-description (or/c #f string?)]
+       rhs?)]
  [parse-pattern+sides
   (-> syntax? syntax?
       #:splicing? boolean?
       #:decls DeclEnv/c
       #:context syntax?
       any)]
- [parse*-ellipsis-head-pattern
+ [parse-EH-variant
   (-> syntax? DeclEnv/c boolean?
       #:context syntax?
       any)]
@@ -163,9 +163,7 @@
 ;;   otherwise, just a var
 (define stxclass-colon-notation? (make-parameter #t))
 
-
-;; ---
-
+;; disappeared! : (U Identifier (Stxpair Identifier Any)) -> Void
 (define (disappeared! x)
   (cond [(identifier? x)
          (record-disappeared-uses (list x))]
@@ -176,10 +174,16 @@
                            "identifier or syntax with leading identifier"
                            x)]))
 
-;; ---
+(define (propagate-disappeared! stx)
+  (cond [(and (syntax? stx) (syntax-property stx 'disappeared-use))
+         => (lambda (xs) (record-disappeared-uses (filter identifier? (flatten xs)) #f))]))
 
-;; parse-rhs : Syntax Boolean #:context Syntax -> RHS
-(define (parse-rhs stx splicing? #:context ctx)
+
+;; ============================================================
+;; Entry points to pattern/rhs parsing
+
+;; parse-rhs : Syntax Boolean #:context Syntax #:default-description (U String #f) -> RHS
+(define (parse-rhs stx splicing? #:context ctx #:default-description [default-description #f])
   (call/txlifts
    (lambda ()
      (parameterize ((current-syntax-context ctx))
@@ -194,7 +198,7 @@
          (or attributes
              (filter (lambda (a) (symbol-interned? (attr-name a)))
                      (intersect-sattrss (map variant-attrs variants)))))
-       (make rhs sattrs transp? description variants
+       (make rhs sattrs transp? (or description #`(quote #,default-description)) variants
              (append (get-txlifts-as-definitions) defs)
              commit? delimit-cut?)))))
 
@@ -218,8 +222,6 @@
   (define-values (decls defs) (get-decls+defs chunks))
   (values rest description transparent? attributes auto-nested? colon-notation?
           decls defs commit? delimit-cut?))
-
-;; ----
 
 (define (parse-variants rest decls splicing?)
   (define (gather-variants stx)
@@ -252,7 +254,7 @@
     (append/check-lits+litsets lits datum-lits litsets))
   (define-values (convs-rules convs-defs)
     (for/fold ([convs-rules null] [convs-defs null])
-        ([conv-entry (in-list convs)])
+              ([conv-entry (in-list convs)])
       (let* ([c (car conv-entry)]
              [argu (cdr conv-entry)]
              [get-parser-id (conventions-get-procedures c)]
@@ -337,6 +339,7 @@
     [(pattern p . rest)
      (let-values ([(rest pattern defs)
                    (parse-pattern+sides #'p #'rest
+                                        #:simplify? #f
                                         #:splicing? splicing?
                                         #:decls decls0
                                         #:context stx)])
@@ -348,19 +351,26 @@
               [sattrs (iattrs->sattrs attrs)])
          (make variant stx sattrs pattern defs)))]))
 
+;; parse-EH-variant : Syntax DeclEnv Boolean
+;;                 -> (Listof (list EllipsisHeadPattern Syntax/EH-Alternative))
+(define (parse-EH-variant stx decls allow-or? #:context [ctx (current-syntax-context)])
+  (parse*-ellipsis-head-pattern stx decls allow-or? #:context ctx))
+
 ;; parse-pattern+sides : stx stx <options> -> (values stx Pattern (listof stx))
 ;; Parses pattern, side clauses; desugars side clauses & merges with pattern
 (define (parse-pattern+sides p-stx s-stx
                              #:splicing? splicing?
                              #:decls decls0
-                             #:context ctx)
+                             #:context ctx
+                             #:simplify? [simplify? #t])
   (let-values ([(rest decls defs sides)
                 (parse-pattern-directives s-stx
                                           #:allow-declare? #t
                                           #:decls decls0
                                           #:context ctx)])
     (let* ([pattern0 (parse-whole-pattern p-stx decls splicing? #:context ctx #:kind 'main)]
-           [pattern (combine-pattern+sides pattern0 sides splicing?)])
+           [pattern (combine-pattern+sides pattern0 sides splicing?)]
+           [pattern (if simplify? (simplify-pattern pattern) pattern)])
       (values rest pattern defs))))
 
 ;; parse-whole-pattern : stx DeclEnv boolean -> Pattern
@@ -387,15 +397,8 @@
 ;; combine-pattern+sides : Pattern (listof SideClause) -> Pattern
 (define (combine-pattern+sides pattern sides splicing?)
   (check-pattern
-   (cond [(pair? sides)
-          (define actions-pattern
-            (create-action:and (ord-and-patterns sides (gensym*))))
-          (define and-patterns
-            (ord-and-patterns (list pattern (pat:action actions-pattern (pat:any)))
-                              (gensym*)))
-          (cond [splicing? (apply hpat:and and-patterns)]
-                [else (pat:and and-patterns)])]
-         [else pattern])))
+   (cond [splicing? (hpat:andu (cons pattern sides))]
+         [else (pat:andu (cons pattern sides))])))
 
 ;; gensym* : -> UninternedSymbol
 ;; Like gensym, but with deterministic name from compilation-local counter.
@@ -404,7 +407,9 @@
   (set! gensym*-counter (add1 gensym*-counter))
   (string->uninterned-symbol (format "group~a" gensym*-counter)))
 
-;; ----
+
+;; ============================================================
+;; Parsing patterns
 
 ;; parse-single-pattern : stx DeclEnv -> SinglePattern
 (define (parse-single-pattern stx decls)
@@ -412,7 +417,7 @@
 
 ;; parse-head-pattern : stx DeclEnv -> HeadPattern
 (define (parse-head-pattern stx decls)
-  (parse-*-pattern stx decls #t #f))
+  (coerce-head-pattern (parse-*-pattern stx decls #t #f)))
 
 ;; parse-action-pattern : Stx DeclEnv -> ActionPattern
 (define (parse-action-pattern stx decls)
@@ -447,6 +452,7 @@
           [else
            (wrong-syntax stx "action pattern not allowed here")]))
   (define not-shadowed? (make-not-shadowed? decls))
+  (propagate-disappeared! stx)
   (check-pattern
   (syntax-case* stx (~var ~literal ~datum ~and ~or ~or* ~alt ~not ~rest ~describe
                      ~seq ~optional ~! ~bind ~fail ~parse ~do ~undo
@@ -585,9 +591,7 @@
            [tailp (parse-single-pattern #'tail decls)])
        (cond [(action-pattern? headp)
               (pat:action headp tailp)]
-             [(head-pattern? headp)
-              (pat:head headp tailp)]
-             [else (pat:pair headp tailp)]))]
+             [else (pat:head (coerce-head-pattern headp) tailp)]))]
     [#(a ...)
      (let ([lp (parse-single-pattern (syntax/loc stx (a ...)) decls)])
        (pat:vector lp))]
@@ -622,6 +626,7 @@
     (unless (stx-list? stx) (wrong-syntax stx "expected sequence of patterns"))
     (apply append (map recur (cdr (stx->list stx)))))
   (define not-shadowed? (make-not-shadowed? decls))
+  (propagate-disappeared! stx)
   (syntax-case* stx (~eh-var ~or ~alt ~between ~optional ~once)
                 (make-not-shadowed-id=? decls)
     [id
@@ -695,7 +700,7 @@
                (declenv-check-unbound decls name (syntax-e suffix) #:blame-declare? #t)
                (define entry (declenv-lookup decls suffix))
                (cond [(or (den:lit? entry) (den:datum-lit? entry))
-                      (pat:and (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
+                      (pat:andu (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
                      [else (parse-stxclass-use id allow-head? name suffix no-arguments "." #f)])])]
         [(declenv-apply-conventions decls id)
          => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
@@ -780,17 +785,15 @@
 ;; ----
 
 (define (parse-stxclass-use stx allow-head? varname scname argu pfx role [parser* #f])
-  (cond [(and (memq (stxclass-lookup-config) '(yes try)) (get-stxclass scname #t))
+  (define config (stxclass-lookup-config))
+  (cond [(and (memq config '(yes try)) (get-stxclass scname (eq? config 'try)))
          => (lambda (sc)
               (unless parser*
                 (check-stxclass-arity sc stx (length (arguments-pargs argu)) (arguments-kws argu)))
               (parse-stxclass-use* stx allow-head? varname sc argu pfx role parser*))]
-        [(memq (stxclass-lookup-config) '(try no))
+        [else
          (define bind (name->bind varname))
-         (pat:fixup stx bind varname scname argu pfx role parser*)]
-        [else (wrong-syntax scname "not defined as syntax class (config=~s)"
-                            ;; XXX FIXME
-                            (stxclass-lookup-config))]))
+         (pat:fixup stx bind varname scname argu pfx role parser*)]))
 
 ;; ----
 
@@ -870,9 +873,8 @@
      (let* ([chunks (parse-keyword-options/eol #'more phase-directive-table
                                                #:no-duplicates? #t
                                                #:context stx)]
-            [phase (options-select-value chunks '#:phase
-                                         #:default #'(syntax-local-phase-level))])
-       ;; FIXME: Duplicates phase expr!
+            [phase (options-select-value chunks '#:phase #:default #f)]
+            [phase (if phase (txlift phase) #'(syntax-local-phase-level))])
        (pat:literal #'lit phase phase))]
     [_
      (wrong-syntax stx "bad ~~literal pattern")]))
@@ -914,46 +916,28 @@
 (define (parse-pat:and stx decls allow-head? allow-action?)
   ;; allow-action? = allowed to *return* pure action pattern;
   ;; all ~and patterns are allowed to *contain* action patterns
-  (define patterns0 (parse-cdr-patterns stx decls allow-head? #t))
-  (cond [(andmap action-pattern? patterns0)
+  (define patterns (parse-cdr-patterns stx decls allow-head? #t))
+  (cond [(andmap action-pattern? patterns)
          (cond [allow-action?
-                (define patterns1 (ord-and-patterns patterns0 (gensym*)))
-                (action:and patterns1)]
+                (action:and patterns)]
                [allow-head?
                 (wrong-syntax stx "expected at least one head or single-term pattern")]
                [else
                 (wrong-syntax stx "expected at least one single-term pattern")])]
         [(memq (stxclass-lookup-config) '(no try))
-         (pat:and/fixup stx patterns0)]
-        [else (parse-pat:and/k stx patterns0)]))
+         (pat:and/fixup stx patterns)]
+        [else (parse-pat:and/k stx patterns)]))
 
-(define (parse-pat:and/k stx patterns0)
-  ;; PRE: patterns0 not all action patterns
-  (define patterns1 (ord-and-patterns patterns0 (gensym*)))
-  (define-values (actions patterns) (split-prefix patterns1 action-pattern?))
-  (add-actions actions (parse-pat:and/k* stx (length actions) patterns)))
-
-(define (parse-pat:and/k* stx actions-len patterns)
-  ;; PRE: patterns non-empty, starts with non-action pattern
-  (cond [(null? (cdr patterns))
-         (car patterns)]
-        [(ormap head-pattern? patterns)
-         ;; Check to make sure *all* are head patterns
+(define (parse-pat:and/k stx patterns)
+  ;; PRE: patterns not all action patterns
+  (cond [(ormap head-pattern? patterns)
+         ;; Check to make sure *all* are head patterns (and action patterns)
          (for ([pattern (in-list patterns)]
-               [pattern-stx (in-list (drop (stx->list (stx-cdr stx)) actions-len))])
+               [pattern-stx (in-list (stx->list (stx-cdr stx)))])
            (unless (or (action-pattern? pattern) (head-pattern? pattern))
-             (wrong-syntax
-              pattern-stx
-              "single-term pattern not allowed after head pattern")))
-         (let ([p0 (car patterns)]
-               [lps (map action/head-pattern->list-pattern (cdr patterns))])
-           (hpat:and p0 (pat:and lps)))]
-        [else
-         (pat:and
-          (for/list ([p (in-list patterns)])
-            (if (action-pattern? p)
-                (action-pattern->single-pattern p)
-                p)))]))
+             (wrong-syntax pattern-stx "single-term pattern not allowed after head pattern")))
+         (hpat:andu patterns)]
+        [else (pat:andu patterns)]))
 
 (define (split-prefix xs pred)
   (let loop ([xs xs] [rprefix null])
@@ -975,7 +959,7 @@
          (car patterns)]
         [else
          (cond [(ormap head-pattern? patterns)
-                (create-hpat:or patterns)]
+                (create-hpat:or (map coerce-head-pattern patterns))]
                [else
                 (create-pat:or patterns)])]))
 
@@ -1021,7 +1005,7 @@
   (syntax-case stx ()
     [(_ clause ...)
      (let ([clauses (check-bind-clause-list #'(clause ...) stx)])
-       (create-action:and clauses))]))
+       (action:and clauses))]))
 
 (define (parse-pat:fail stx decls)
   (syntax-case stx ()
@@ -1032,12 +1016,11 @@
                                           #:incompatible '((#:when #:unless))
                                           #:no-duplicates? #t)])
        (let ([condition
-              (if (null? chunks)
-                  #'#t
-                  (let ([chunk (car chunks)])
-                    (if (eq? (car chunk) '#:when)
-                        (caddr chunk)
-                        #`(not #,(caddr chunk)))))])
+              (cond [(options-select-value chunks '#:when #:default #f)
+                     => values]
+                    [(options-select-value chunks '#:unless #:default #f)
+                     => (lambda (expr) #`(not #,expr))]
+                    [else #'#t])])
          (syntax-case rest ()
            [(message)
             (action:fail condition #'message)]
@@ -1103,7 +1086,7 @@
     (parse*-optional-pattern stx decls h-optional-directive-table))
   (create-hpat:or
    (list head
-         (hpat:action (create-action:and defaults)
+         (hpat:action (action:and defaults)
                       (hpat:seq (pat:datum '()))))))
 
 ;; parse*-optional-pattern : stx DeclEnv table
@@ -1193,36 +1176,42 @@
               [name
                (options-select-value chunks '#:name #:default #'#f)])
          (list (create-ehpat head
-                             (make rep:bounds #'min #'max
+                             (make rep:bounds minN maxN
                                    name too-few-msg too-many-msg)
                              #'p)
                #'p)))]))
 
 
 ;; ============================================================
+;; Fixup pass (also does simplify-pattern)
 
-(define (fixup-rhs the-rhs allow-head? expected-attrs)
+(define (fixup-rhs the-rhs head? expected-attrs)
   (match the-rhs
     [(rhs attrs tr? desc vs defs commit? delimit-cut?)
-     (define vs* (for/list ([v (in-list vs)]) (fixup-variant v allow-head? expected-attrs)))
+     (define vs* (for/list ([v (in-list vs)]) (fixup-variant v head? expected-attrs)))
      (rhs attrs tr? desc vs* defs commit? delimit-cut?)]))
 
-(define (fixup-variant v allow-head? expected-attrs)
+(define (fixup-variant v head? expected-attrs)
   (match v
     [(variant stx sattrs p defs)
      (parameterize ((current-syntax-context stx))
-       (define p*
+       (define p1
          (parameterize ((stxclass-lookup-config 'yes))
-           (fixup-pattern p allow-head?)))
-       ;; (eprintf "~v\n===>\n~v\n\n" p p*)
+           (fixup-pattern p head?)))
+       ;; (eprintf "~v\n===>\n~v\n\n" p p1)
+       (unless (if head? (wf-H? p1) (wf-S? p1))
+         (error 'fixup-variant "result is not well-formed"))
+       (define p* (simplify-pattern p1))
+       ;; (eprintf "=2=>\n~v\n\n" p*)
        ;; Called just for error-reporting
        (reorder-iattrs expected-attrs (pattern-attrs p*))
        (variant stx sattrs p* defs))]))
 
-(define (fixup-pattern p0 allow-head?)
+(define (fixup-pattern p0 head?)
   (define (S p) (fixup p #f))
   (define (S* p) (fixup p #t))
-  (define (A/S* p) (if (action-pattern? p) (A p) (S* p)))
+  (define (A/S p) (if (action-pattern? p) (A p) (S p)))
+  (define (A/H p) (if (action-pattern? p) (A p) (H p)))
 
   (define (A p)
     (match p
@@ -1286,22 +1275,20 @@
       [(pat:head headp tailp)
        (pat:head (H headp) (S tailp))]
       ;; --- The following patterns may change if a subpattern switches to head pattern ----
-      [(pat:pair headp tailp)
-       (let ([headp (S* headp)] [tailp (S tailp)])
-         (if (head-pattern? headp) (pat:head headp tailp) (pat:pair headp tailp)))]
+      [(pat:pair headp tailp) (error 'fixup-pattern "internal error: pat:pair in stage 0")]
       [(pat:action a sp)
        (let ([a (A a)] [sp (I sp)])
          (if (head-pattern? sp) (hpat:action a sp) (pat:action a sp)))]
       [(pat:describe sp desc tr? role)
        (let ([sp (I sp)])
          (if (head-pattern? sp) (hpat:describe sp desc tr? role) (pat:describe sp desc tr? role)))]
-      [(pat:and ps)
-       (let ([ps (map I ps)])
-         (pat:and ps))]
+      [(pat:andu ps)
+       (let ([ps (map A/S ps)])
+         (pat:andu ps))]
       [(pat:and/fixup stx ps)
        (let ([ps (for/list ([p (in-list ps)])
                    (cond [(action-pattern? p) (A p)]
-                         [allow-head? (H p)]
+                         [(head-pattern? p) (H p)]
                          [else (I p)]))])
          (parse-pat:and/k stx ps))]
       [(pat:or _ ps _)
@@ -1323,6 +1310,9 @@
 
   (define (H p)
     (match p
+      [(hpat:single sp)
+       (let ([sp (fixup sp #t)])
+         (if (head-pattern? sp) sp (hpat:single sp)))]
       ;; [(hpat:var/p name parser argu nested-attrs role scopts)
       ;;  (hpat:var/p name parser argu nested-attrs role scopts)]
       ;; [(hpat:reflect obj argu attr-decls name nested-attrs)
@@ -1333,8 +1323,9 @@
        (hpat:action (A a) (H hp))]
       [(hpat:describe hp desc tr? role)
        (hpat:describe (H hp) desc tr? role)]
-      [(hpat:and hp sp)
-       (hpat:and (H hp) (S sp))]
+      [(hpat:andu ps)
+       (let ([ps (map A/H ps)])
+         (hpat:andu ps))]
       [(hpat:or _ ps _)
        (create-hpat:or (map H ps))]
       [(hpat:delimit hp)
@@ -1357,9 +1348,154 @@
       ;; Default: no sub-patterns, just return
       [p p]))
 
-  (if allow-head? (H p0) (S p0)))
+  (if head? (H p0) (S p0)))
+
 
 ;; ============================================================
+;; Simplify pattern
+
+;;(begin (require racket/pretty) (pretty-print-columns 160))
+
+;; simplify-pattern : *Pattern -> *Pattern
+(define (simplify-pattern p0)
+  ;;(eprintf "-- simplify --\n")
+  ;;(eprintf "~a\n" (pretty-format p0))
+  (define p1 (simplify:specialize-pairs p0))
+  ;; (eprintf "=1=>\n~a\n" (pretty-format p1))
+  (define p2 (simplify:normalize-and p1))
+  ;;(eprintf "=2=>\n~a\n" (pretty-format p2))
+  (define p3 (simplify:order-and p2))
+  ;;(eprintf "=3=>\n~a\n" (pretty-format p3))
+  (define p4 (simplify:add-seq-end p3))
+  ;;(eprintf "=4=>\n~a\n" (pretty-format p4))
+  p4)
+
+;; ----------------------------------------
+;; Add pair patterns
+
+(define (simplify:specialize-pairs p)
+  (define (for-pattern p)
+    (match p
+      [(pat:head (hpat:single headp) tailp)
+       (pat:pair headp tailp)]
+      [(pat:head (hpat:seq lp) tailp)
+       (list-pattern-replace-end lp tailp)]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; list-pattern-replace-end : ListPattern {L,S}Pattern -> {L,S}Pattern
+(define (list-pattern-replace-end lp endp)
+  (let loop ([lp lp])
+    (match lp
+      [(pat:datum '()) endp]
+      [(pat:seq-end) endp]
+      [(pat:action ap sp) (pat:action ap (loop sp))]
+      [(pat:head hp tp) (pat:head hp (loop tp))]
+      [(pat:dots hs tp) (pat:dots hs (loop tp))]
+      [(pat:ord sp group index)
+       ;; This is awkward, but it is needed to pop the ORD progress frame on success.
+       (define sp* (list-pattern-replace-end sp (pat:seq-end)))
+       (pat:head (hpat:ord (hpat:seq sp*) group index) endp)]
+      [(pat:pair hp tp) (pat:pair hp (loop tp))])))
+
+;; ----------------------------------------
+;; Normalize *:andu patterns, drop useless actions
+
+(define (simplify:normalize-and p)
+  (define (pattern->list p)
+    (match p
+      [(pat:any) null]
+      [(pat:action ap sp) (append (pattern->list ap) (pattern->list sp))]
+      [(pat:andu ps) (apply append (map pattern->list ps))]
+      [(hpat:action ap hp) (append (pattern->list ap) (pattern->list hp))]
+      [(hpat:andu ps) (apply append (map pattern->list ps))]
+      [(action:and as) (apply append (map pattern->list as))]
+      [(action:do '()) null]
+      [(action:undo '()) null]
+      [_ (list p)]))
+  (define (for-pattern p)
+    (match p
+      [(pat:action ap sp)
+       (pat:andu (append (pattern->list ap) (pattern->list sp)))]
+      [(pat:andu ps)
+       (pat:andu (apply append (map pattern->list ps)))]
+      [(hpat:action ap hp)
+       (hpat:andu (append (pattern->list ap) (pattern->list hp)))]
+      [(hpat:andu ps)
+       (hpat:andu (apply append (map pattern->list ps)))]
+      [(action:post ap)
+       (match (pattern->list ap)
+         ['() (action:and '())]
+         [(list ap*) (action:post ap*)]
+         [as* (action:post (action:and as*))])]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; ----------------------------------------
+;; Add *:ord and translate back to *:and, *:action
+
+(define (simplify:order-and p)
+  (define (A->S p) (if (action-pattern? p) (pat:action p (pat:any)) p))
+  (define (for-pattern p)
+    (match p
+      [(pat:andu ps0)
+       (define ord-ps (ord-and-patterns ps0 (gensym*)))
+       (define-values (as ps) (split-pred action-pattern? ord-ps))
+       (define sp* (list->single-pattern (map A->S ps)))
+       (add-action-patterns as sp*)]
+      [(hpat:andu ps0)
+       (define ord-ps (ord-and-patterns ps0 (gensym*)))
+       (define-values (as ps) (split-pred action-pattern? ord-ps))
+       (match ps
+         ['() (error 'simplify:order-ands "internal error: no head pattern")]
+         [(list hp) (add-action-patterns as hp)]
+         [(cons hp1 hps)
+          (define sp* (list->single-pattern (map action/head-pattern->list-pattern hps)))
+          (define hp* (hpat:and hp1 sp*))
+          (add-action-patterns as hp*)])]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; add-action-patterns : (Listof ActionPattern) *Pattern -> *Pattern
+(define (add-action-patterns as p)
+  (if (pair? as)
+      (let ([ap (list->action-pattern as)])
+        (cond [(single-pattern? p) (pat:action ap p)]
+              [(head-pattern? p) (hpat:action ap p)]))
+      p))
+
+;; list->action-pattern : (Listof ActionPattern) -> ActionPattern
+(define (list->action-pattern as)
+  (match as
+    [(list ap) ap]
+    [_ (action:and as)]))
+
+;; list->single-pattern : (Listof SinglePattern) -> SinglePattern
+(define (list->single-pattern ps)
+  (match ps
+    ['() (pat:any)]
+    [(list p) p]
+    [_ (pat:and ps)]))
+
+(define (split-pred pred? xs)
+  (let loop ([xs xs] [acc null])
+    (if (and (pair? xs) (pred? (car xs)))
+        (loop (cdr xs) (cons (car xs) acc))
+        (values (reverse acc) xs))))
+
+;; ----------------------------------------
+;; Add pat:seq-end to end of list-patterns in seq
+
+(define (simplify:add-seq-end p)
+  (define (for-pattern p)
+    (match p
+      [(hpat:seq lp)
+       (hpat:seq (list-pattern-replace-end lp (pat:seq-end)))]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; ============================================================
+;; Parsing pattern directives
 
 ;; parse-pattern-directives : stxs(PatternDirective) <kw-args>
 ;;                         -> stx DeclEnv (listof stx) (listof SideClause)
@@ -1459,8 +1595,99 @@
   (loop chunks decls0))
 
 
-;; ----
+;; ============================================================
+;; Arguments and Arities
 
+;; parse-argu : (listof stx) -> Arguments
+(define (parse-argu args #:context [ctx (current-syntax-context)])
+  (parameterize ((current-syntax-context ctx))
+    (define (loop args rpargs rkws rkwargs)
+      (cond [(null? args)
+             (arguments (reverse rpargs) (reverse rkws) (reverse rkwargs))]
+            [(keyword? (syntax-e (car args)))
+             (let ([kw (syntax-e (car args))]
+                   [rest (cdr args)])
+               (cond [(memq kw rkws)
+                      (wrong-syntax (car args) "duplicate keyword")]
+                     [(null? rest)
+                      (wrong-syntax (car args)
+                                    "missing argument expression after keyword")]
+                     #| Overzealous, perhaps?
+                     [(keyword? (syntax-e (car rest)))
+                      (wrong-syntax (car rest) "expected expression following keyword")]
+                     |#
+                     [else
+                      (loop (cdr rest) rpargs (cons kw rkws) (cons (car rest) rkwargs))]))]
+            [else
+             (loop (cdr args) (cons (car args) rpargs) rkws rkwargs)]))
+    (loop args null null null)))
+
+;; parse-kw-formals : stx -> Arity
+(define (parse-kw-formals formals #:context [ctx (current-syntax-context)])
+  (parameterize ((current-syntax-context ctx))
+    (define id-h (make-bound-id-table))
+    (define kw-h (make-hasheq)) ;; keyword => 'mandatory or 'optional
+    (define pos 0)
+    (define opts 0)
+    (define (add-id! id)
+      (when (bound-id-table-ref id-h id #f)
+        (wrong-syntax id "duplicate formal parameter" ))
+      (bound-id-table-set! id-h id #t))
+    (define (loop formals)
+      (cond [(and (stx-pair? formals) (keyword? (syntax-e (stx-car formals))))
+             (let* ([kw-stx (stx-car formals)]
+                    [kw (syntax-e kw-stx)]
+                    [rest (stx-cdr formals)])
+               (cond [(hash-ref kw-h kw #f)
+                      (wrong-syntax kw-stx "duplicate keyword")]
+                     [(stx-null? rest)
+                      (wrong-syntax kw-stx "missing formal parameter after keyword")]
+                     [else
+                      (let-values ([(formal opt?) (parse-formal (stx-car rest))])
+                        (add-id! formal)
+                        (hash-set! kw-h kw (if opt? 'optional 'mandatory)))
+                      (loop (stx-cdr rest))]))]
+            [(stx-pair? formals)
+             (let-values ([(formal opt?) (parse-formal (stx-car formals))])
+               (when (and (positive? opts) (not opt?))
+                 (wrong-syntax (stx-car formals)
+                               "mandatory argument may not follow optional argument"))
+               (add-id! formal)
+               (set! pos (add1 pos))
+               (when opt? (set! opts (add1 opts)))
+               (loop (stx-cdr formals)))]
+            [(identifier? formals)
+             (add-id! formals)
+             (finish #t)]
+            [(stx-null? formals)
+             (finish #f)]
+            [else
+             (wrong-syntax formals "bad argument sequence")]))
+    (define (finish has-rest?)
+      (arity (- pos opts)
+             (if has-rest? +inf.0 pos)
+             (sort (for/list ([(k v) (in-hash kw-h)]
+                              #:when (eq? v 'mandatory))
+                     k)
+                   keyword<?)
+             (sort (hash-map kw-h (lambda (k v) k))
+                   keyword<?)))
+    (loop formals)))
+
+;; parse-formal : stx -> (values id bool)
+(define (parse-formal formal)
+  (syntax-case formal ()
+    [param
+     (identifier? #'param)
+     (values #'param #f)]
+    [(param default)
+     (identifier? #'param)
+     (values #'param #t)]
+    [_
+     (wrong-syntax formal
+                   "expected formal parameter with optional default")]))
+
+;; ============================================================
 ;; Keyword Options & Checkers
 
 ;; check-attr-arity-list : stx stx -> (listof SAttr)
@@ -1558,9 +1785,8 @@
                                                #:no-duplicates? #t
                                                #:context ctx)]
             [lctx (options-select-value chunks '#:at #:default #'litset)]
-            [phase (options-select-value chunks '#:phase
-                                         #:default #'(syntax-local-phase-level))])
-       (elaborate #'litset lctx (txlift phase)))]
+            [phase (options-select-value chunks '#:phase #:default #f)])
+       (elaborate #'litset lctx (if phase (txlift phase) #'(syntax-local-phase-level))))]
     [litset
      (identifier? #'litset)
      (elaborate #'litset #'litset #'(syntax-local-phase-level))]
@@ -1659,98 +1885,8 @@
     [_
      (raise-syntax-error #f "expected list of expressions and definitions" ctx stx)]))
      
-;; Arguments and Arities
 
-;; parse-argu : (listof stx) -> Arguments
-(define (parse-argu args #:context [ctx (current-syntax-context)])
-  (parameterize ((current-syntax-context ctx))
-    (define (loop args rpargs rkws rkwargs)
-      (cond [(null? args)
-             (arguments (reverse rpargs) (reverse rkws) (reverse rkwargs))]
-            [(keyword? (syntax-e (car args)))
-             (let ([kw (syntax-e (car args))]
-                   [rest (cdr args)])
-               (cond [(memq kw rkws)
-                      (wrong-syntax (car args) "duplicate keyword")]
-                     [(null? rest)
-                      (wrong-syntax (car args)
-                                    "missing argument expression after keyword")]
-                     #| Overzealous, perhaps?
-                     [(keyword? (syntax-e (car rest)))
-                      (wrong-syntax (car rest) "expected expression following keyword")]
-                     |#
-                     [else
-                      (loop (cdr rest) rpargs (cons kw rkws) (cons (car rest) rkwargs))]))]
-            [else
-             (loop (cdr args) (cons (car args) rpargs) rkws rkwargs)]))
-    (loop args null null null)))
-
-;; parse-kw-formals : stx -> Arity
-(define (parse-kw-formals formals #:context [ctx (current-syntax-context)])
-  (parameterize ((current-syntax-context ctx))
-    (define id-h (make-bound-id-table))
-    (define kw-h (make-hasheq)) ;; keyword => 'mandatory or 'optional
-    (define pos 0)
-    (define opts 0)
-    (define (add-id! id)
-      (when (bound-id-table-ref id-h id #f)
-        (wrong-syntax id "duplicate formal parameter" ))
-      (bound-id-table-set! id-h id #t))
-    (define (loop formals)
-      (cond [(and (stx-pair? formals) (keyword? (syntax-e (stx-car formals))))
-             (let* ([kw-stx (stx-car formals)]
-                    [kw (syntax-e kw-stx)]
-                    [rest (stx-cdr formals)])
-               (cond [(hash-ref kw-h kw #f)
-                      (wrong-syntax kw-stx "duplicate keyword")]
-                     [(stx-null? rest)
-                      (wrong-syntax kw-stx "missing formal parameter after keyword")]
-                     [else
-                      (let-values ([(formal opt?) (parse-formal (stx-car rest))])
-                        (add-id! formal)
-                        (hash-set! kw-h kw (if opt? 'optional 'mandatory)))
-                      (loop (stx-cdr rest))]))]
-            [(stx-pair? formals)
-             (let-values ([(formal opt?) (parse-formal (stx-car formals))])
-               (when (and (positive? opts) (not opt?))
-                 (wrong-syntax (stx-car formals)
-                               "mandatory argument may not follow optional argument"))
-               (add-id! formal)
-               (set! pos (add1 pos))
-               (when opt? (set! opts (add1 opts)))
-               (loop (stx-cdr formals)))]
-            [(identifier? formals)
-             (add-id! formals)
-             (finish #t)]
-            [(stx-null? formals)
-             (finish #f)]
-            [else
-             (wrong-syntax formals "bad argument sequence")]))
-    (define (finish has-rest?)
-      (arity (- pos opts)
-             (if has-rest? +inf.0 pos)
-             (sort (for/list ([(k v) (in-hash kw-h)]
-                              #:when (eq? v 'mandatory))
-                     k)
-                   keyword<?)
-             (sort (hash-map kw-h (lambda (k v) k))
-                   keyword<?)))
-    (loop formals)))
-
-;; parse-formal : stx -> (values id bool)
-(define (parse-formal formal)
-  (syntax-case formal ()
-    [param
-     (identifier? #'param)
-     (values #'param #f)]
-    [(param default)
-     (identifier? #'param)
-     (values #'param #t)]
-    [_
-     (wrong-syntax formal
-                   "expected formal parameter with optional default")]))
-
-
+;; ============================================================
 ;; Directive tables
 
 ;; common-parse-directive-table

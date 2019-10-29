@@ -2,7 +2,8 @@
 
 ;; Mutable queue
 
-(provide make-queue
+(provide queue
+         make-queue
          queue-empty?
          queue-remove!
          queue-fremove!

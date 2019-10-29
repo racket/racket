@@ -170,8 +170,20 @@
              (loop (caddr (correlated->list rhs)))
              (loop #f))]
         [else
-         (for/fold ([locals locals]) ([id (in-list (correlated->list ids))])
-           (hash-set locals (correlated-e id) #t))]))))
+         (define ids* (correlated->list ids))
+         (cond
+           [(and (pair? ids*) (null? (cdr ids*)))
+            (hash-set locals (correlated-e (car ids*)) (infer-known rhs))]
+           [else
+            (for/fold ([locals locals]) ([id (in-list ids*)])
+              (hash-set locals (correlated-e id) #t))])]))))
+
+(define (infer-known e)
+  (case (and (pair? (correlated-e e))
+             (correlated-e (car (correlated-e e))))
+    [(lambda case-lambda)
+     (known-satisfies 'procedure)]
+    [else #t]))
 
 ;; ----------------------------------------
 
@@ -184,7 +196,7 @@
                          (lambda (v) (quoted? symbol? v))
                          (lambda (v) (is-lambda? v 2 defns))
                          (lambda (v) (ok-make-struct-type-property-super? v defns))
-                         (lambda (v) (any-side-effects? v 1 #:known-defns defns))))])
+                         (lambda (v) (not (any-side-effects? v 1 #:known-defns defns)))))])
          (pred arg))))
 
 (define (ok-make-struct-type-property-super? v defns)
@@ -197,8 +209,10 @@
                   (let ([prop+val (correlated->list prop+val)])
                     (and (eq? 'cons (correlated-e (car prop+val)))
                          (or (memq (correlated-e (list-ref prop+val 1))
-                                   '(prop:procedure prop:equal+hash prop:custom-write))
-                             (known-property? (lookup-defn defns (correlated-e (list-ref prop+val 1)))))
+                                   '(prop:procedure prop:equal+hash))
+                             (let ([o (lookup-defn defns (correlated-e (list-ref prop+val 1)))])
+                               (or (known-property? o)
+                                   (known-property-of-function? o))))
                          (not (any-side-effects? (list-ref prop+val 2) 1 #:known-defns defns))))))
            ;; All properties must be distinct
            (= (sub1 (correlated-length v))
@@ -301,27 +315,24 @@
                     (immutable-field? val-expr immutables-expr))]
     [(prop:procedure) (or (is-lambda? val-expr 1 defns)
                           (immutable-field? val-expr immutables-expr))]
-    [(prop:custom-write) (is-lambda? val-expr 3 defns)]
     [(prop:equal+hash)
      (define l (correlated->list val-expr))
      (and (eq? 'list (car l))
           (is-lambda? (list-ref l 1) 3 defns)
           (is-lambda? (list-ref l 2) 2 defns)
           (is-lambda? (list-ref l 3) 2 defns))]
-    [(prop:method-arity-error prop:incomplete-arity)
-     (not (any-side-effects? val-expr 1 #:known-defns defns))]
-    [(prop:impersonator-of)
-     (is-lambda? val-expr 1 defns)]
-    [(prop:arity-string) (is-lambda? val-expr 1 defns)]
     [(prop:checked-procedure)
      (and (quoted? false? super-expr)
           ;; checking that we have at least 2 fields
           (immutable-field? 1 immutables-expr))]
     [else
      (define o (lookup-defn defns prop-name))
-     (and o
-          (known-property? o)
-          (not (any-side-effects? val-expr 1 #:known-defns defns)))]))
+     (cond
+       [(known-property? o)
+        (not (any-side-effects? val-expr 1 #:known-defns defns))]
+       [(known-property-of-function? o)
+        (is-lambda? val-expr (known-property-of-function-arity o) defns)]
+       [else #f])]))
 
 ;; is expr a procedure of specified arity? (arity irrelevant if #f)
 (define (is-lambda? expr arity defns)
@@ -390,7 +401,9 @@
                      (lookup-defn defns (correlated-e (list-ref l 1))))))
   (and (known-struct-op? a)
        (eq? (known-struct-op-type a) type)
-       ((field-count-expr-to-field-count (list-ref l 2)) . < . (known-struct-op-field-count a))
+       (let ([c (field-count-expr-to-field-count (list-ref l 2))])
+         (and c
+              (c . < . (known-struct-op-field-count a))))
        (or (= (length l) 3) (quoted? symbol? (list-ref l 3)))))
 
 ;; ----------------------------------------

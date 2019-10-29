@@ -1,15 +1,26 @@
 (load-relative "loadtest.rktl")
 (Section 'fixnum)
-(require scheme/fixnum
-         scheme/unsafe/ops
+(require racket/fixnum
+         racket/unsafe/ops
          "for-util.rkt")
 
-(define 64-bit? (fixnum? (expt 2 33)))
+(define 64-bit? (= (system-type 'word) 64))
 
-(define (fixnum-width) (if 64-bit? 63 31))
-(define (least-fixnum) (if 64-bit? (- (expt 2 62)) -1073741824))
-(define (greatest-fixnum) (if 64-bit? (- (expt 2 62) 1) +1073741823))
+(define (fixnum-width) (if (eq? 'racket (system-type))
+                           (if 64-bit? 63 31)
+                           (if 64-bit? 61 30)))
+(define (least-fixnum) (- (expt 2 (fixnum-width))))
+(define (greatest-fixnum) (sub1 (expt 2 (fixnum-width))))
 
+(test #t fixnum-for-every-system? 0)
+(test #t fixnum-for-every-system? -100)
+(test #t fixnum-for-every-system? 100)
+(test #t fixnum-for-every-system? (- (expt 2 29)))
+(test #t fixnum-for-every-system? (sub1 (expt 2 29)))
+(test #t fixnum? (- (expt 2 29)))
+(test #t fixnum? (sub1 (expt 2 29)))
+(test #f fixnum-for-every-system? (sub1 (- (expt 2 29))))
+(test #f fixnum-for-every-system? (expt 2 29))
 
 (define unary-table 
   (list (list fxnot unsafe-fxnot)
@@ -234,6 +245,10 @@
 (test-sequence [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 6 2))
 (test-sequence [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 2 -2))
 
+;; test malformed in-fxvector
+(err/rt-test (for/list ([x (in-fxvector)]) x))
+(err/rt-test (in-fxvector))
+
 ;; fxvector sequence tests
 (test-sequence [(1 2 3)] (fxvector 1 2 3))
 (test '() 'empty-fxvector-sequence (for/list ([i (fxvector)]) i))
@@ -245,5 +260,13 @@
 (err/rt-test (for/fxvector #:length 5 #:fill 0.0 ([i 5]) 8))
 (err/rt-test (for/fxvector #:length 10 #:fill 0.0 ([i 5]) 8))
 
+;; ----------------------------------------
+;; Make sure `fxvector` is not incorrectly constant-folded
+
+(let ([v (fxvector 1 2 3)])
+  (unsafe-fxvector-set! v 0 10)
+  (test 10 'ref (unsafe-fxvector-ref v 0)))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -177,6 +177,7 @@ different purposes.
 
 An ExpectStack (during parsing) is one of
   - (expect:thing Progress String Boolean String/#f ExpectStack)
+  - (expect:thing Progress #f     #f      String/#f ExpectStack)
   * (expect:message String ExpectStack)
   * (expect:atom Datum ExpectStack)
   * (expect:literal Identifier ExpectStack)
@@ -229,7 +230,7 @@ RExpectList when the most specific information comes last.
       (expect:proper-pair? x)))
 
 (define (es-add-thing ps description transparent? role next)
-  (if (and next description)
+  (if (and next (or description (not transparent?)))
       (expect:thing ps description transparent? role next)
       next))
 

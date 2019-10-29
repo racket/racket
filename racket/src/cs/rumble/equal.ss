@@ -12,17 +12,19 @@
             ;; For immutable hashes, it's ok for the two objects to not be eq,
             ;; as long as the interpositions are the same and the underlying
             ;; values are `{impersonator,chaperone}-of?`:
-            (and (eq? (hash-impersonator-procs a)
-                      (hash-impersonator-procs b))
-                 (loop (impersonator-next a)
-                       (impersonator-next b)))]
+            (if (eq? (hash-impersonator-procs a)
+                     (hash-impersonator-procs b))
+                (loop (impersonator-next a)
+                      (impersonator-next b))
+                (loop (impersonator-next a) b))]
            [(and (hash-chaperone? a)
                  (hash-chaperone? b))
             ;; Same as above
-            (and (eq? (hash-chaperone-procs a)
-                      (hash-chaperone-procs b))
-                 (loop (impersonator-next a)
-                       (impersonator-next b)))]
+            (if (eq? (hash-chaperone-procs a)
+                     (hash-chaperone-procs b))
+                (loop (impersonator-next a)
+                      (impersonator-next b))
+                (loop (impersonator-next a) b))]
            [(and (props-impersonator? b)
                  (not (eq? mode 'chaperone-of?)))
             (loop a (impersonator-next b))]
@@ -42,8 +44,7 @@
                          (let ([ctx (deeper-context ctx)])
                            (equal? a2 b ctx)))]
                  [else #f]))]
-             [(and (eq? mode 'chaperone-of?)
-                   (chaperone? b))
+             [(eq? mode 'chaperone-of?)
               ;; `a` does not include `b`, so give up
               #f]
              [else
@@ -101,6 +102,11 @@
                      (or (check-union-find ctx a b)
                          (let ([ctx (deeper-context ctx)])
                            (equal? (or a2 a) (or b2 b) ctx)))]
+                    [(and (not (eq? mode 'equal?))
+                          (extract-impersonator-of mode b))
+                     ;; Second argument is an impersonator, so
+                     ;; `impersonator-of?` or `chaperone-of?` fails
+                     #f]
                     [else
                      ;; No `prop:impersonator-of`, so check for
                      ;; `prop:equal+hash` or transparency
@@ -189,7 +195,7 @@
 ;; continuation maps `key-equality-wrap-key` to a key-wrapping
 ;; function.
 
-(define key-equality-wrap-key (gensym))
+(define key-equality-wrap-key '#{equality n1kcvqw4c9hh8t3fi3659ci94-0})
 
 ;; Looking in the continaution is expensive relative to `equal?`, so
 ;; look in a box as a quick pre-test. Multiple threads may increment

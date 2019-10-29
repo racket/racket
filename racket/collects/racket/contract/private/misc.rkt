@@ -191,6 +191,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name
    (λ (ctc)
      (cond
@@ -236,6 +237,7 @@
 
 (define (make-</c->/c-contract-property name </> -/+ less/greater)
   (build-flat-contract-property
+   #:trusted trust-me
    #:name (λ (c)
             (cond
               [(renamed-<-ctc? c) (renamed-<-ctc-name c)]
@@ -378,6 +380,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name (λ (ctc) (build-compound-type-name 'syntax/c (syntax-ctc-ctc ctc)))
    #:stronger (λ (this that)
                 (and (syntax-ctc? that)
@@ -472,6 +475,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name promise-contract-name
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
@@ -482,6 +486,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name promise-contract-name
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
@@ -508,6 +513,7 @@
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection
    (λ (ctc)
      (define in-proc (get/build-late-neg-projection (parameter/c-in ctc)))
@@ -571,6 +577,7 @@
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:stronger procedure-arity-includes-equivalent?
    #:equivalent procedure-arity-includes-equivalent?
    #:name (λ (ctc) `(procedure-arity-includes/c ,(procedure-arity-includes/c-n ctc)))
@@ -648,6 +655,7 @@
   #:property prop:any/c #f
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)
    #:stronger (λ (this that) (any/c? that))
    #:equivalent (λ (this that) (any/c? that))
@@ -676,6 +684,7 @@
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:late-neg-projection none-curried-late-neg-proj
    #:stronger (λ (this that) #t)
    #:equivalent (λ (this that) (none/c? that))
@@ -784,6 +793,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection (prompt-tag/c-late-neg-proj #t)
    #:first-order (λ (ctc) continuation-prompt-tag?)
    #:stronger prompt-tag/c-stronger?
@@ -794,6 +804,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection (prompt-tag/c-late-neg-proj #f)
    #:first-order (λ (ctc) continuation-prompt-tag?)
    #:stronger prompt-tag/c-stronger?
@@ -863,6 +874,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection (continuation-mark-key/c-late-neg-proj chaperone-continuation-mark-key)
    #:first-order (λ (ctc) continuation-mark-key?)
    #:stronger continuation-mark-key/c-stronger?
@@ -875,6 +887,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection (continuation-mark-key/c-late-neg-proj impersonate-continuation-mark-key)
    #:first-order (λ (ctc) continuation-mark-key?)
    #:stronger continuation-mark-key/c-stronger?
@@ -956,6 +969,7 @@
 (define-struct chaperone-evt/c (ctcs)
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection evt/c-proj
    #:first-order evt/c-first-order
    #:stronger evt/c-stronger?
@@ -1030,6 +1044,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection (channel/c-late-neg-proj chaperone-channel)
    #:first-order channel/c-first-order
    #:stronger channel/c-stronger?
@@ -1041,6 +1056,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection (channel/c-late-neg-proj impersonate-channel)
    #:first-order channel/c-first-order
    #:stronger channel/c-stronger?
@@ -1178,6 +1194,7 @@
 (define-struct (chaperone-if/c base-if/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection if/c-late-neg-proj
    #:first-order if/c-first-order
    #:name if/c-name))
@@ -1185,6 +1202,7 @@
 (define-struct (impersonator-if/c base-if/c) ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection if/c-late-neg-proj
    #:first-order if/c-first-order
    #:name if/c-name))

@@ -16,8 +16,6 @@
   (test/no-error '(->* ((flat-contract integer?)) () #:pre #t (flat-contract integer?) #:post #t))
   (test/no-error '(->* (any/c) () #:pre/desc #t (flat-contract integer?) #:post/desc #t))
   
-  
-  
   (test/spec-passed
    'contract-arrow-star0a
    '(contract (->* (integer?) () integer?)

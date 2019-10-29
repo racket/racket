@@ -204,6 +204,7 @@
   (int is224)))
 (define-type dll_open_proc function-pointer)
 (define-type dll_find_object_proc function-pointer)
+(define-type dll_close_proc function-pointer)
 (define-function () (ref rktio_t) rktio_init ())
 (define-function () void rktio_destroy (((ref rktio_t) rktio)))
 (define-function () void rktio_free (((ref void) p)))
@@ -254,6 +255,11 @@
  ()
  rktio_bool_t
  rktio_fd_is_text_converted
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function
+ ()
+ rktio_bool_t
+ rktio_fd_is_pending_open
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function
  ()
@@ -1263,6 +1269,11 @@
   (intptr_t out_end)))
 (define-function
  ()
+ void
+ rktio_convert_reset
+ (((ref rktio_t) rktio) ((ref rktio_converter_t) cvt)))
+(define-function
+ ()
  (ref char)
  rktio_locale_recase
  (((ref rktio_t) rktio) (rktio_bool_t to_up) (rktio_const_string_t in)))
@@ -1362,6 +1373,12 @@
  rktio_dll_find_object
  (((ref rktio_t) rktio) ((ref rktio_dll_t) dll) (rktio_const_string_t name)))
 (define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_dll_close
+ (((ref rktio_t) rktio) ((ref rktio_dll_t) dll)))
+(define-function/errno
  NULL
  ()
  (ref char)
@@ -1371,7 +1388,9 @@
  ()
  void
  rktio_set_dll_procs
- ((dll_open_proc dll_open) (dll_find_object_proc dll_find_object)))
+ ((dll_open_proc dll_open)
+  (dll_find_object_proc dll_find_object)
+  (dll_close_proc dll_close)))
 (define-function () int rktio_get_last_error_kind (((ref rktio_t) rktio)))
 (define-function () int rktio_get_last_error (((ref rktio_t) rktio)))
 (define-function () int rktio_get_last_error_step (((ref rktio_t) rktio)))

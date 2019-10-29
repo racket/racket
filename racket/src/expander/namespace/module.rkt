@@ -372,9 +372,7 @@
                                        #:seen [seen #hasheq()])
   (unless (module-path-index? mpi)
     (error "not a module path index:" mpi))
-  (define name (performance-region
-                ['eval 'resolve]
-                (module-path-index-resolve mpi #t)))
+  (define name (module-path-index-resolve mpi #t))
   (define m (namespace->module ns name))
   (unless m (raise-unknown-module-error 'instantiate name))
   (define (instantiate! instance-phase run-phase ns)

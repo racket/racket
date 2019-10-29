@@ -1230,6 +1230,72 @@
       (eval '(dynamic-require ''provide/contract66-m2 #f)))
    "provide/contract66-m1")
 
+  (test/spec-passed
+   'provide/contract67
+   ;; https://github.com/racket/racket/issues/2469
+   '(let ()
+      (eval '(module provide/contract67-a racket/base
+               (require racket/contract/base)
+               (struct stream (x [y #:mutable]))
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
+
+      (eval '(module provide/contract67-b racket/base
+               (require 'provide/contract67-a racket/contract/base)
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))))
+
+  (test/spec-passed/result
+   'provide/contract68
+   '(let ()
+      (eval '(module provide/contract68-a racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule unsafe
+                         [f (-> integer? (listof integer?))]))
+               (define (f x) (list x))))
+
+      (eval '(module provide/contract68-b racket/base
+               (require (submod 'provide/contract68-a unsafe))
+               (define answer (f #f))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract68-b 'answer)))
+   '(#f))
+
+  (test/spec-passed/result
+   'provide/contract69
+   '(let ()
+      (eval '(module provide/contract69-a racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule no-contract
+                         (struct s ([x integer?]))))
+               (struct s (x))))
+
+      (eval '(module provide/contract69-b racket/base
+               (require (submod 'provide/contract69-a no-contract))
+               (define answer (s-x (s #f)))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract69-b 'answer)))
+   '#f)
+
+  (test/spec-passed
+   'provide/contract70
+   ;; https://github.com/racket/racket/issues/2572
+   '(let ()
+      (eval '(module provide/contract70-a racket/base
+               (require racket/contract/base)
+               (struct stream (x [y #:mutable]))
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
+
+      (eval '(module provide/contract70-b racket/base
+               (require 'provide/contract70-a racket/contract/base)
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
+
+      (eval '(module provide/contract70-c racket/base
+               (require 'provide/contract70-b racket/contract/base)
+               (void stream stream? stream-x stream-y set-stream-y!)))))
+
   (contract-error-test
    'provide/contract-struct-out
    #'(begin

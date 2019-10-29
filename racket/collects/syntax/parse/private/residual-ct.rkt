@@ -11,11 +11,15 @@
          (struct-out den:lit)
          (struct-out den:datum-lit)
          (struct-out den:delayed)
+         prop:syntax-class
+         has-stxclass-prop?
+         stxclass-prop-ref
          alt-stxclass-mapping
          log-syntax-parse-error
          log-syntax-parse-warning
          log-syntax-parse-info
          log-syntax-parse-debug
+         syntax-parse-logger
          prop:pattern-expander
          pattern-expander?
          pattern-expander-proc
@@ -38,6 +42,9 @@
    opts         ;; scopts
    inline       ;; Id/#f, reference to a predicate
    ) #:prefab)
+
+(define-values [prop:syntax-class has-stxclass-prop? stxclass-prop-ref]
+  (make-struct-type-property 'syntax-class))
 
 ;; alt-stxclass-mapping : (boxof (listof (pair Identifier Stxclass)))
 ;; Maps existing bindings (can't use syntax-local-value mechanism) to stxclasses.

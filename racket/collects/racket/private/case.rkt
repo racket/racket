@@ -3,11 +3,10 @@
 ;;       [http://scheme2006.cs.uchicago.edu/07-clinger.pdf]
 
 (module case '#%kernel
-  (#%require '#%paramz '#%unsafe "small-scheme.rkt" "define.rkt"
+  (#%require '#%paramz '#%unsafe "small-scheme.rkt" "define.rkt" "fixnum.rkt"
              (for-syntax '#%kernel "small-scheme.rkt" "stxcase-scheme.rkt"
-                         "qqstx.rkt" "define.rkt" "sort.rkt"))
+                         "qqstx.rkt" "define.rkt" "sort.rkt" "fixnum.rkt"))
   (#%provide case)
-  
   
   (define-syntax (case stx)
     (syntax-case stx (else)
@@ -158,13 +157,12 @@
                                          #,exp))]
                           [exp (if (null? (consts-fixnum ks))
                                    exp
-                                   #`(if (fixnum? v)
+                                   #`(if (fixnum-for-every-system? v)
                                          #,(dispatch-fixnum #'v (consts-fixnum ks))
                                          #,exp))])
                      exp)])
             #,(index-binary-search #'index #'([xs ...] [es ...] ...))))]))
 
-    
   (begin-for-syntax
     (define *sequential-threshold* 12)
     (define *hash-threshold*       10)
@@ -196,7 +194,7 @@
                             [else
                              (let ([y (syntax->datum (car ys))])
                                (cond [(duplicate? y) (inner f s c o (cdr ys))]
-                                     [(fixnum? y)    (inner (add f y idx) s c o (cdr ys))]
+                                     [(fixnum-for-every-system? y) (inner (add f y idx) s c o (cdr ys))]
                                      [(symbol? y)    (inner f (add s y idx) c o (cdr ys))]
                                      [(keyword? y)   (inner f (add s y idx) c o (cdr ys))]
                                      [(char? y)      (inner f s (add c y idx) o (cdr ys))]

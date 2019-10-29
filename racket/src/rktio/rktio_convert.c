@@ -37,6 +37,9 @@ static iconv_t iconv_open(const char *to, const char *from) { return -1; }
 static void iconv_close(iconv_t cd) { }
 static void init_iconv() { }
 
+void rktio_set_dll_path(rktio_char16_t *p) { }
+rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s) { return NULL; }
+
 #elif defined(RKTIO_SYSTEM_WINDOWS)
 
 static wchar_t *dlldir;
@@ -502,6 +505,11 @@ rktio_convert_result_t *rktio_convert_in(rktio_t *rktio,
   r->converted = converted;
 
   return r;
+}
+
+void rktio_convert_reset(rktio_t *rktio, rktio_converter_t *cvt)
+{
+  (void)iconv(cvt->cd, NULL, NULL, NULL, NULL);
 }
 
 /*============================================================*/

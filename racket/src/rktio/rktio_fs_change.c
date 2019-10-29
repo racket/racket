@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #if defined(HAVE_KQUEUE_SYSCALL)
 # include <fcntl.h>
 #endif
@@ -169,17 +170,19 @@ static void fs_change_release(rktio_t *rktio, rktio_fs_change_t *fc)
 # elif defined(HAVE_INOTIFY_SYSCALL)
   do_inotify_remove(rktio, fc->fd);
 # elif defined(HAVE_KQUEUE_SYSCALL)
-  if (rktio_ltps_handle_get_data(rktio, fc->lth)) {
-    /* Not zeroed, so never signaled. Change the auto behavior
-       to free the handle, and deregsiter the file descriptor. */
+  {
     rktio_fd_t *rfd;
-    rktio_ltps_handle_set_auto(rktio, fc->lth, RKTIO_LTPS_HANDLE_FREE);
     rfd = rktio_system_fd(rktio, fc->fd, 0);
-    (void)rktio_ltps_add(rktio, fc->lt, rfd, RKTIO_LTPS_REMOVE_VNODE);
+    if (rktio_ltps_handle_get_data(rktio, fc->lth)) {
+      /* Not zeroed, so never signaled. Change the auto behavior
+         to free the handle, and deregsiter the file descriptor. */
+      rktio_ltps_handle_set_auto(rktio, fc->lth, RKTIO_LTPS_HANDLE_FREE);
+      (void)rktio_ltps_add(rktio, fc->lt, rfd, RKTIO_LTPS_REMOVE_VNODE);
+    } else {
+      /* Was signaled, so we need to free it. */
+      free(fc->lth);
+    }
     rktio_close(rktio, rfd);
-  } else {
-    /* Was signaled, so we need to free it. */
-    free(fc->lth);
   }
 #endif
 

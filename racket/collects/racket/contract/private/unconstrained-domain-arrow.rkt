@@ -112,6 +112,7 @@
   #:property
   prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name unconstrained-domain->-name
    #:first-order unconstrained-domain->-first-order
    #:late-neg-projection unconstrained-domain->-projection
@@ -121,6 +122,7 @@
   #:property
   prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name unconstrained-domain->-name
    #:first-order unconstrained-domain->-first-order
    #:late-neg-projection unconstrained-domain->-projection

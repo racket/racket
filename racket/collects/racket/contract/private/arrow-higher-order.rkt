@@ -21,7 +21,10 @@
          ->-proj
          check-pre-cond
          check-post-cond
-         arity-checking-wrapper)
+         check-pre-cond/desc
+         check-post-cond/desc
+         arity-checking-wrapper
+         build-subcontract-late-negs)
 
 (define-for-syntax (build-chaperone-constructor/real ;; (listof (or/c #f stx))
                                                      ;; #f => syntactically known to be any/c
@@ -41,14 +44,20 @@
                 [(mandatory-dom-kwd-proj ...) (nvars (length mandatory-dom-kwds) 'mandatory-dom-proj)]
                 [(optional-dom-kwd-proj ...) (nvars (length optional-dom-kwds) 'optional-dom-proj)]
                 [(rng-proj ...) (if rngs (generate-temporaries rngs) '())]
-                [(rest-proj ...) (if rest (generate-temporaries '(rest-proj)) '())])
+                [(rest-proj ...) (if rest (generate-temporaries '(rest-proj)) '())]
+                [(pre-thunk pre/desc-thunk post-thunk post/desc-thunk)
+                 (generate-temporaries '(pre-thunk pre/desc-thunk post-thunk post/desc-thunk))])
     #`(λ (blame f neg-party blame-party-info is-impersonator? rng-ctcs
-                mandatory-dom-proj ...  
-                optional-dom-proj ... 
+                mandatory-dom-proj ...
+                optional-dom-proj ...
                 rest-proj ...
-                mandatory-dom-kwd-proj ... 
-                optional-dom-kwd-proj ... 
-                rng-proj ...)
+                mandatory-dom-kwd-proj ...
+                optional-dom-kwd-proj ...
+                #,@(if pre (list #'pre-thunk) (list))
+                #,@(if pre/desc (list #'pre/desc-thunk) (list))
+                rng-proj ...
+                #,@(if post (list #'post-thunk) (list))
+                #,@(if post/desc (list #'post/desc-thunk) (list)))
         (define blame+neg-party (cons blame neg-party))
         #,(create-chaperone
            #'blame #'neg-party #'blame+neg-party #'blame-party-info #'is-impersonator? #'f #'rng-ctcs
@@ -62,41 +71,47 @@
            (map list 
                 optional-dom-kwds
                 (syntax->list #'(optional-dom-kwd-proj ...)))
-           pre pre/desc
+           (if pre #'pre-thunk #f)
+           (if pre/desc #'pre/desc-thunk #f)
            (if rest (car (syntax->list #'(rest-proj ...))) #f)
            (if rngs (syntax->list #'(rng-proj ...)) #f)
-           post post/desc
+           (if post #'post-thunk #f)
+           (if post/desc #'post/desc-thunk #f)
            method?))))
 
 
-(define (check-pre-cond pre blame neg-party blame+neg-party val)
+(define (check-pre-cond pre blame+neg-party val)
   (with-contract-continuation-mark
    blame+neg-party
    (unless (pre)
-     (raise-blame-error (blame-swap blame)
-                        #:missing-party neg-party
+     (raise-blame-error (blame-swap (car blame+neg-party))
+                        #:missing-party (cdr blame+neg-party)
                         val "#:pre condition"))))
 
-(define (check-post-cond post blame neg-party blame+neg-party val)
+(define (check-post-cond post blame+neg-party val)
   (with-contract-continuation-mark
    blame+neg-party
    (unless (post)
-     (raise-blame-error blame
-                        #:missing-party neg-party
+     (raise-blame-error (car blame+neg-party)
+                        #:missing-party (cdr blame+neg-party)
                         val "#:post condition"))))
 
-(define (check-pre-cond/desc post blame neg-party val)
-  (handle-pre-post/desc-string #t post blame neg-party val))
-(define (check-post-cond/desc post blame neg-party val)
-  (handle-pre-post/desc-string #f post blame neg-party val))
-(define (handle-pre-post/desc-string pre? thunk blame neg-party val)
-  (define condition-result (thunk))
+(define (check-pre-cond/desc post blame+neg-party val)
+  (handle-pre-post/desc-string #t post blame+neg-party val))
+(define (check-post-cond/desc post blame+neg-party val)
+  (handle-pre-post/desc-string #f post blame+neg-party val))
+(define (handle-pre-post/desc-string pre? thunk blame+neg-party val)
+  (define condition-result
+    (with-contract-continuation-mark blame+neg-party
+      (thunk)))
   (cond
     [(equal? condition-result #t) 
      (void)]
     [else
      (define msg
        (arrow:pre-post/desc-result->string condition-result pre? '->*))
+     (define blame (car blame+neg-party))
+     (define neg-party (cdr blame+neg-party))
      (raise-blame-error (if pre? (blame-swap blame) blame)
                         #:missing-party neg-party
                         val "~a" msg)]))
@@ -117,16 +132,16 @@
     (with-syntax ([(pre ...) 
                    (cond
                      [pre
-                      (list #`(check-pre-cond #,pre blame neg-party blame+neg-party val))]
+                      (list #`(check-pre-cond #,pre blame+neg-party val))]
                      [pre/desc
-                      (list #`(check-pre-cond/desc #,pre/desc blame neg-party val))]
+                      (list #`(check-pre-cond/desc #,pre/desc blame+neg-party val))]
                      [else null])]
                   [(post ...)
                    (cond
                      [post
-                      (list #`(check-post-cond #,post blame neg-party blame+neg-party val))]
+                      (list #`(check-post-cond #,post blame+neg-party val))]
                      [post/desc
-                      (list #`(check-post-cond/desc #,post/desc blame neg-party val))]
+                      (list #`(check-post-cond/desc #,post/desc blame+neg-party val))]
                      [else null])])
       (with-syntax ([(dom-x ...) (generate-temporaries doms)]
                     [(opt-dom-ctc ...) opt-doms]
@@ -541,8 +556,8 @@
 
 (define (->-proj is-impersonator? ctc
                  ;; fields of the 'ctc' struct
-                 min-arity doms kwd-infos rest pre? rngs post?
-                 plus-one-arity-function chaperone-constructor method?
+                 min-arity doms kwd-infos rest pre? pre-thunk rngs post? post-thunk
+                 chaperone-constructor method?
                  late-neg?)
   (define has-c-c-support?
     (->-contract-has-collapsible-support? ctc))
@@ -558,65 +573,24 @@
          (andmap any/c? doms)
          (= optionals-length 0)))
   (λ (orig-blame)
-    (define rng-blame (arrow:blame-add-range-context orig-blame))
-    (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
+    (define-values (partial-doms
+                    partial-rests
+                    man-then-opt-partial-kwds
+                    partial-ranges
+                    c-c-doms
+                    maybe-c-c-ranges)
+      (build-subcontract-late-negs orig-blame doms rest rngs kwd-infos method?))
+    (define the-args (append partial-doms
+                             partial-rests
+                             man-then-opt-partial-kwds
+                             (if pre-thunk (list pre-thunk) '())
+                             partial-ranges
+                             (if post-thunk (list post-thunk) '())))
 
-    ;; if the ctc supports c-c mode, there are only positional args
-    (define-values (partial-doms c-c-doms)
-      (for/lists (projs ses)
-                 ([dom (in-list doms)]
-                  [n (in-naturals 1)])
-        (define dom-blame
-          (blame-add-context orig-blame
-                             (nth-argument-of (if method? (sub1 n) n))
-                             #:swap? #t))
-        (define prepared (get/build-collapsible-late-neg-projection dom))
-        (prepared dom-blame)))
-
-    (define rest-blame
-      (if (ellipsis-rest-arg-ctc? rest)
-          (blame-swap orig-blame)
-          (blame-add-context orig-blame "the rest argument of"
-                             #:swap? #t)))
-    (define partial-rest (and rest
-                              ((get/build-late-neg-projection rest)
-                               rest-blame)))
-    (define-values (partial-ranges maybe-c-c-ranges)
-      (cond
-        [rngs
-         (for/lists (proj c-c)
-                    ([rng (in-list rngs)])
-           (define prepared (get/build-collapsible-late-neg-projection rng))
-           (prepared rng-blame))]
-        [else (values '() #f)]))
-    (define partial-kwds 
-      (for/list ([kwd-info (in-list kwd-infos)]
-                 [kwd (in-list kwd-infos)])
-        ((get/build-late-neg-projection (kwd-info-ctc kwd-info))
-         (blame-add-context orig-blame
-                            (format "the ~a argument of" (kwd-info-kwd kwd))
-                            #:swap? #t))))
-    (define man-then-opt-partial-kwds
-      (append (for/list ([partial-kwd (in-list partial-kwds)]
-                         [kwd-info (in-list kwd-infos)]
-                         #:when (kwd-info-mandatory? kwd-info))
-                partial-kwd)
-              (for/list ([partial-kwd (in-list partial-kwds)]
-                         [kwd-info (in-list kwd-infos)]
-                         #:unless (kwd-info-mandatory? kwd-info))
-                partial-kwd)))
     (define c-c-mergable
       (and has-c-c-support?
            (build-collapsible-arrow (car maybe-c-c-ranges) c-c-doms ctc orig-blame chaperone?)))
-    (define the-args (append partial-doms
-                             (if partial-rest (list partial-rest) '())
-                             man-then-opt-partial-kwds
-                             partial-ranges))
-    (define plus-one-constructor-args
-      (append partial-doms
-              man-then-opt-partial-kwds
-              partial-ranges
-              (if partial-rest (list partial-rest) '())))
+
     (define blame-party-info (arrow:get-blame-party-info orig-blame))
     (define (successfully-got-the-right-kind-of-function val neg-party)
       (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
@@ -718,31 +692,74 @@
            (or c-c-mergable (build-collapsible-leaf arrow-higher-order:lnp ctc orig-blame)))])]
       [else
        (define (arrow-higher-order:vfp val)
-         (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
-           (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
          (cond
            [(do-arity-checking orig-blame val doms rest min-arity kwd-infos method?)
             =>
             (λ (neg-party-acceptor)
-              ;; probably don't need to include the wrapped-extra-arrow wrapper
-              ;; here, but it is easier to reason about the contract-out invariant
-              ;; with it here
-              (wrapped-extra-arg-arrow neg-party-acceptor normal-proc))]
+              neg-party-acceptor)]
            [else
-            (wrapped-extra-arg-arrow
-             (λ (neg-party)
-               (successfully-got-the-right-kind-of-function val neg-party))
-             (if (equal? (procedure-result-arity val) expected-number-of-results)
-                 proc-with-no-result-checking
-                 normal-proc))]))
+            (λ (neg-party)
+              (successfully-got-the-right-kind-of-function val neg-party))]))
        (if okay-to-do-only-arity-check?
            (λ (val)
              (cond
                [(arrow:procedure-arity-exactly/no-kwds val min-arity)
-                (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
-                  (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
-                (wrapped-extra-arg-arrow 
-                 (λ (neg-party) val)
-                 normal-proc)]
+                (λ (neg-party) val)]
                [else (arrow-higher-order:vfp val)]))
            arrow-higher-order:vfp)])))
+
+(define (build-subcontract-late-negs orig-blame doms rest rngs kwd-infos method?)
+  (define rng-blame (arrow:blame-add-range-context orig-blame))
+  (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
+
+  ;; if the ctc supports c-c mode, there are only positional args
+  (define-values (partial-doms c-c-doms)
+    (for/lists (projs ses)
+               ([dom (in-list doms)]
+                [n (in-naturals 1)])
+      (define dom-blame
+        (blame-add-context orig-blame
+                           (nth-argument-of (if method? (sub1 n) n))
+                           #:swap? #t))
+      (define prepared (get/build-collapsible-late-neg-projection dom))
+      (prepared dom-blame)))
+
+  (define rest-blame
+    (if (ellipsis-rest-arg-ctc? rest)
+        (blame-swap orig-blame)
+        (blame-add-context orig-blame "the rest argument of"
+                           #:swap? #t)))
+  (define partial-rest (and rest
+                            ((get/build-late-neg-projection rest)
+                             rest-blame)))
+  (define-values (partial-ranges maybe-c-c-ranges)
+    (cond
+      [rngs
+       (for/lists (proj c-c)
+                  ([rng (in-list rngs)])
+         (define prepared (get/build-collapsible-late-neg-projection rng))
+         (prepared rng-blame))]
+      [else (values '() #f)]))
+  (define partial-kwds
+    (for/list ([kwd-info (in-list kwd-infos)]
+               [kwd (in-list kwd-infos)])
+      ((get/build-late-neg-projection (kwd-info-ctc kwd-info))
+       (blame-add-context orig-blame
+                          (format "the ~a argument of" (kwd-info-kwd kwd))
+                          #:swap? #t))))
+  (define man-then-opt-partial-kwds
+    (append (for/list ([partial-kwd (in-list partial-kwds)]
+                       [kwd-info (in-list kwd-infos)]
+                       #:when (kwd-info-mandatory? kwd-info))
+              partial-kwd)
+            (for/list ([partial-kwd (in-list partial-kwds)]
+                       [kwd-info (in-list kwd-infos)]
+                       #:unless (kwd-info-mandatory? kwd-info))
+              partial-kwd)))
+
+  (values partial-doms
+          (if partial-rest (list partial-rest) '())
+          man-then-opt-partial-kwds
+          partial-ranges
+          c-c-doms
+          maybe-c-c-ranges))

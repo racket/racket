@@ -162,7 +162,10 @@ rename transformer:
   (free-identifier=? #'my-or #'or)
 ]
 
-@history[#:changed "6.3" @elem{Removed an optional second argument.}]}
+@history[#:changed "6.3" @elem{Removed an optional second argument.}
+         #:changed "7.4.0.10" @elem{Adjust rename-transformer expansion
+                                    to add a macro-introduction scope, the
+                                    same as regular macro expansion.}]}
 
 
 @defproc[(rename-transformer-target [transformer rename-transformer?])

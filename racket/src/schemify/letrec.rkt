@@ -1,9 +1,12 @@
 #lang racket/base
 (require "wrap.rkt"
-         "infer-known.rkt")
+         "match.rkt"
+         "infer-known.rkt"
+         "mutated-state.rkt")
 
 (provide letrec-splitable-values-binding?
-         letrec-split-values-binding)
+         letrec-split-values-binding
+         letrec-conversion)
 
 ;; Detect binding of lambdas that were probably generated from an
 ;; R[56]RS program
@@ -24,3 +27,24 @@
                      `[(,id) ,rhs])
      . ,bodys))
 
+(define (letrec-conversion ids mutated for-cify? e)
+  (define need-convert?
+    (and (not for-cify?)
+         (let loop ([ids ids])
+           (cond
+             [(symbol? ids)
+              (needs-letrec-convert-mutated-state? (hash-ref mutated ids #f))]
+             [(wrap? ids) (loop (unwrap ids))]
+             [(pair? ids) (or (loop (car ids))
+                              (loop (cdr ids)))]
+             [else #f]))))
+  (if need-convert?
+      (match e
+        [`(,_ ([,ids ,rhss] ...) . ,body)
+         `(let ,(for/list ([id (in-list ids)])
+                  `[,id unsafe-undefined])
+            ,@(for/list ([id (in-list ids)]
+                         [rhs (in-list rhss)])
+                `(set! ,id ,rhs))
+            . ,body)])
+      e))

@@ -166,6 +166,8 @@ static char *string_to_from_locale(int to_bytes,
 				   intptr_t *olen, int perm,
 				   int *no_cvt);
 
+static void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le);
+
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
 ROSYM static Scheme_Object *sys_symbol;
@@ -183,6 +185,10 @@ SHARED_OK static Scheme_Object *vers_str;
 SHARED_OK static Scheme_Object *banner_str;
 
 THREAD_LOCAL_DECL(static Scheme_Object *fs_change_props);
+
+THREAD_LOCAL_DECL(static char *cached_locale_encoding_name);
+THREAD_LOCAL_DECL(struct rktio_converter_t *cached_locale_to_converter);
+THREAD_LOCAL_DECL(struct rktio_converter_t *cached_locale_from_converter);
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
@@ -664,7 +670,7 @@ scheme_init_string (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("bytes->immutable-bytes", p, env);
 
-  p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 4);
+  p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 5);
   /* Incorrect, since the result can be #f:
      SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM); */
   scheme_addto_prim_instance("bytes-utf-8-index", p, env);
@@ -2030,6 +2036,10 @@ int scheme_any_string_has_null(Scheme_Object *o)
 /* Environment Variables                                               */
 /***********************************************************************/
 
+/* A `scheme_environment_variables_type` record wraps a hash table
+   that maps normalized keys to (cons <key> <val>), where the key
+   in the pair preserves its original case. */
+
 #define SCHEME_ENVVARS_TABLE(ev) ((Scheme_Hash_Tree *)SCHEME_PTR_VAL(ev))
 
 Scheme_Object *scheme_make_environment_variables(Scheme_Hash_Tree *ht)
@@ -2146,13 +2156,13 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   } else {
     bs = normalize_env_case(bs);
     val = scheme_hash_tree_get(ht, bs);
-    return val ? val : scheme_false;
+    return val ? SCHEME_CDR(val) : scheme_false;
   }
 }
 
 static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *varbs, *valbs, *ev;
+  Scheme_Object *varbs, *valbs, *norm_varbs, *ev;
   Scheme_Hash_Tree *ht;
   char *var;
   char *val;
@@ -2177,14 +2187,20 @@ static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
   ht = SCHEME_ENVVARS_TABLE(ev);
 
   if (ht) {
-    varbs = normalize_env_case(varbs);
+    norm_varbs = normalize_env_case(varbs);
 
     if (SCHEME_FALSEP(valbs)) {
-      ht = scheme_hash_tree_set(ht, varbs, NULL);
+      ht = scheme_hash_tree_set(ht, norm_varbs, NULL);
     } else {
-      varbs = byte_string_to_immutable(1, &varbs);
+      if (SAME_OBJ(varbs, norm_varbs)) {
+        varbs = byte_string_to_immutable(1, &varbs);
+        norm_varbs = varbs;
+      } else {
+        varbs = byte_string_to_immutable(1, &varbs);
+        norm_varbs = byte_string_to_immutable(1, &norm_varbs);
+      }
       valbs = byte_string_to_immutable(1, &valbs);
-      ht = scheme_hash_tree_set(ht, varbs, valbs);
+      ht = scheme_hash_tree_set(ht, norm_varbs, scheme_make_pair(varbs, valbs));
     }
 
     SCHEME_PTR_VAL(ev) = (Scheme_Object *)ht;
@@ -2230,14 +2246,16 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
   {
     intptr_t i;
     rktio_envvars_t *envvars;
-    Scheme_Object *var, *val;
+    Scheme_Object *var, *val, *norm_var;
 
     envvars = rktio_envvars(scheme_rktio);
     for (i = rktio_envvars_count(scheme_rktio, envvars); i--; ) {
       var = scheme_make_immutable_sized_byte_string(rktio_envvars_name_ref(scheme_rktio, envvars, i), -1, 1);
       val = scheme_make_immutable_sized_byte_string(rktio_envvars_value_ref(scheme_rktio, envvars, i), -1, 1);
-      var = normalize_env_case(var);
-      ht = scheme_hash_tree_set(ht, var, val);
+      norm_var = normalize_env_case(var);
+      if (!SAME_OBJ(var, norm_var))
+        norm_var = byte_string_to_immutable(1, &norm_var);
+      ht = scheme_hash_tree_set(ht, norm_var, scheme_make_pair(var, val));
     }
 
     rktio_envvars_free(scheme_rktio, envvars);
@@ -2249,7 +2267,7 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
 static Scheme_Object *env_make(int argc, Scheme_Object *argv[])
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *varbs, *valbs;
+  Scheme_Object *varbs, *valbs, *norm_varbs;
   int i;
 
   ht = scheme_make_hash_tree(SCHEME_hashtr_equal);
@@ -2274,11 +2292,12 @@ static Scheme_Object *env_make(int argc, Scheme_Object *argv[])
             || scheme_byte_string_has_null(valbs)))
       scheme_wrong_contract("make-environment-variables", "(or/c bytes-no-nuls? #f)", i+1, argc, argv);
 
-    varbs = normalize_env_case(varbs);
-
     varbs = byte_string_to_immutable(1, &varbs);
     valbs = byte_string_to_immutable(1, &valbs);
-    ht = scheme_hash_tree_set(ht, varbs, valbs);
+    norm_varbs = normalize_env_case(varbs);
+    if (!SAME_OBJ(varbs, norm_varbs))
+      norm_varbs = byte_string_to_immutable(1, &norm_varbs);
+    ht = scheme_hash_tree_set(ht, norm_varbs, scheme_make_pair(varbs, valbs));
   }
 
   return scheme_make_environment_variables(ht);
@@ -2302,7 +2321,7 @@ static Scheme_Object *sch_getenv_names(int argc, Scheme_Object *argv[])
 
   for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
     scheme_hash_tree_index(ht, i, &key, &val);
-    r = scheme_make_pair(key, r);
+    r = scheme_make_pair(SCHEME_CAR(val), r);
   }
 
   return r;
@@ -2325,8 +2344,8 @@ rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev)
     
     rktio_envvars_set(scheme_rktio,
                       envvars,
-                      SCHEME_BYTE_STR_VAL(key),
-                      SCHEME_BYTE_STR_VAL(val));
+                      SCHEME_BYTE_STR_VAL(SCHEME_CAR(val)),
+                      SCHEME_BYTE_STR_VAL(SCHEME_CDR(val)));
   }
   
   return envvars;
@@ -2558,6 +2577,18 @@ static Scheme_Object *system_language_country(int argc, Scheme_Object *argv[])
   return s;
 }
 
+static void do_convert_close(rktio_converter_t *cd, int cache_mode, const char *to_e, const char *from_e)
+/* If `cache_mode` is -1, then `to_e` needs to be freed (or cached).
+   If `cache_mode` is 1, then `from_e` needs to be freed (or cached). */
+{
+  if (cache_mode == -1)
+    cache_locale_or_close(1, cd, (char *)to_e);
+  else if (cache_mode == 1)
+    cache_locale_or_close(0, cd, (char *)from_e);
+  else if (!cache_mode)
+    rktio_converter_close(scheme_rktio, cd);
+}
+
 static char *do_convert(rktio_converter_t *cd,
 			/* if !cd and either from_e or to_e can be NULL, then
 			   reset_locale() must have been called */
@@ -2585,7 +2616,7 @@ static char *do_convert(rktio_converter_t *cd,
 			   1 for more avail */
 			int *status)
 {
-  int dip, dop, close_it = 0, mz_utf8 = 0;
+  int dip, dop, close_it = 0, cache_mode = 0, mz_utf8 = 0;
   intptr_t il, ol, r;
   GC_CAN_IGNORE char *ip, *op;
 
@@ -2598,6 +2629,12 @@ static char *do_convert(rktio_converter_t *cd,
   if (!cd) {
     if (rktio_convert_properties(scheme_rktio) & RKTIO_CONVERTER_SUPPORTED) {
       char *tmp_from_e = NULL, *tmp_to_e = NULL;
+
+      if (!to_e && !strcmp(from_e, MZ_UCS4_NAME))
+        cache_mode = -1;
+      else if (!from_e && !strcmp(to_e, MZ_UCS4_NAME))
+        cache_mode = 1;
+
       if (!from_e) {
 	tmp_from_e = rktio_locale_encoding(scheme_rktio);
         from_e = tmp_from_e;
@@ -2606,10 +2643,23 @@ static char *do_convert(rktio_converter_t *cd,
 	tmp_to_e = rktio_locale_encoding(scheme_rktio);
         to_e = tmp_to_e;
       }
-      cd = rktio_converter_open(scheme_rktio, to_e, from_e);
+
+      if ((cache_mode == -1)
+          && cached_locale_to_converter
+          && !strcmp(to_e, cached_locale_encoding_name)) {
+        cd = cached_locale_to_converter;
+        cached_locale_to_converter = NULL;
+      } else if ((cache_mode == 1)
+                 && cached_locale_from_converter
+                 && !strcmp(from_e, cached_locale_encoding_name)) {
+        cd = cached_locale_from_converter;
+        cached_locale_from_converter = NULL;
+      } else {
+        cd = rktio_converter_open(scheme_rktio, to_e, from_e);
+      }
       close_it = 1;
-      if (tmp_from_e) free(tmp_from_e);
-      if (tmp_to_e) free(tmp_to_e);
+      if (tmp_from_e && ((cache_mode != 1) || !cd)) free(tmp_from_e);
+      if (tmp_to_e && ((cache_mode != -1) || !cd)) free(tmp_to_e);
     } else if (to_from_utf8) {
       /* Assume UTF-8 */
       mz_utf8 = 1;
@@ -2724,7 +2774,7 @@ static char *do_convert(rktio_converter_t *cd,
 	} else {
 	  *status = 1;
 	  if (close_it)
-	    rktio_converter_close(scheme_rktio, cd);
+            do_convert_close(cd, cache_mode, to_e, from_e);
 	  while (extra--) {
 	    out[od + dop + extra] = 0;
 	  }
@@ -2735,7 +2785,7 @@ static char *do_convert(rktio_converter_t *cd,
 	if (icerr == RKTIO_ERROR_CONVERT_BAD_SEQUENCE)
 	  *status = -2;
 	if (close_it)
-	  rktio_converter_close(scheme_rktio, cd);
+          do_convert_close(cd, cache_mode, to_e, from_e);
 	while (extra--) {
 	  out[od + dop + extra] = 0;
 	}
@@ -2753,7 +2803,7 @@ static char *do_convert(rktio_converter_t *cd,
       } else {
 	*status = 0;
 	if (close_it)
-          rktio_converter_close(scheme_rktio, cd);
+          do_convert_close(cd, cache_mode, to_e, from_e);
 	while (extra--) {
 	  out[od + dop + extra] = 0;
 	}
@@ -2779,17 +2829,31 @@ static char *string_to_from_locale(int to_bytes,
   rktio_converter_t *cd;
 
   le = rktio_locale_encoding(scheme_rktio);
-  if (to_bytes)
-    cd = rktio_converter_open(scheme_rktio, le, MZ_UCS4_NAME);
-  else
-    cd = rktio_converter_open(scheme_rktio, MZ_UCS4_NAME, le);
-  free(le);
-  
+  if (cached_locale_encoding_name
+      && !strcmp(le, cached_locale_encoding_name)
+      && (to_bytes ? cached_locale_to_converter : cached_locale_from_converter)) {
+    if (to_bytes) {
+      cd = cached_locale_to_converter;
+      cached_locale_to_converter = NULL;
+    } else {
+      cd = cached_locale_from_converter;
+      cached_locale_from_converter = NULL;
+    }
+  } else {  
+    if (to_bytes)
+      cd = rktio_converter_open(scheme_rktio, le, MZ_UCS4_NAME);
+    else
+      cd = rktio_converter_open(scheme_rktio, MZ_UCS4_NAME, le);
+  }
+
   if (!cd) {
+    free(le);
     *no_cvt = 1;
     return NULL;
   }
   *no_cvt = 0;
+
+  status = 0;
 
   while (len) {
     /* We might have conversion errors... */
@@ -2805,6 +2869,7 @@ static char *string_to_from_locale(int to_bytes,
 
     if ((perm < 0) && (used < len)) {
       rktio_converter_close(scheme_rktio, cd);
+      free(le);
       return NULL;
     }
 
@@ -2819,7 +2884,7 @@ static char *string_to_from_locale(int to_bytes,
 	*olen = (clen >> 2);
 	((mzchar *)c)[*olen] = 0;
       }
-      rktio_converter_close(scheme_rktio, cd);
+      cache_locale_or_close(to_bytes, cd, le);
       return c;
     }
 
@@ -2851,7 +2916,7 @@ static char *string_to_from_locale(int to_bytes,
     }
   }
 
-  rktio_converter_close(scheme_rktio, cd);
+  cache_locale_or_close(to_bytes, cd, le);
 
   if (to_bytes) {
     parts = append_all_byte_strings_backwards(parts);
@@ -2863,6 +2928,42 @@ static char *string_to_from_locale(int to_bytes,
     *olen = SCHEME_CHAR_STRTAG_VAL(parts);
 
     return (char *)SCHEME_CHAR_STR_VAL(parts);
+  }
+}
+
+void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le)
+{
+  if (to_bytes ? cached_locale_to_converter : cached_locale_from_converter) {
+    rktio_converter_close(scheme_rktio, cd);
+    free(le);
+  } else {
+    if (!cached_locale_encoding_name || strcmp(le, cached_locale_encoding_name)) {
+      scheme_clear_locale_cache();
+      cached_locale_encoding_name = le;
+    } else
+      free(le);
+
+    rktio_convert_reset(scheme_rktio, cd);
+    if (to_bytes)
+      cached_locale_to_converter = cd;
+    else
+      cached_locale_from_converter = cd;
+  }
+}
+
+void scheme_clear_locale_cache(void)
+{
+  if (cached_locale_encoding_name) {
+    if (cached_locale_to_converter) {
+      rktio_converter_close(scheme_rktio, cached_locale_to_converter);
+      cached_locale_to_converter = NULL;
+    }
+    if (cached_locale_from_converter) {
+      rktio_converter_close(scheme_rktio, cached_locale_from_converter);
+      cached_locale_from_converter = NULL;
+    }
+    free(cached_locale_encoding_name);
+    cached_locale_encoding_name = NULL;
   }
 }
 

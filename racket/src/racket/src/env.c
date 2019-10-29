@@ -156,6 +156,7 @@ Scheme_Env *scheme_basic_env()
 
   scheme_init_finalization();
 
+  scheme_init_hash_tree();
   scheme_init_portable_case();
   scheme_init_compenv();
   scheme_init_letrec_check();
@@ -278,9 +279,7 @@ static void init_startup_env(void)
   MZTIMEIT(eval, scheme_init_eval(env));
   MZTIMEIT(struct, scheme_init_struct(env));
   MZTIMEIT(error, scheme_init_error(env));
-#ifndef NO_SCHEME_EXNS
   MZTIMEIT(exn, scheme_init_exn(env));
-#endif
   MZTIMEIT(process, scheme_init_thread(env));
   scheme_init_port_wait();
   scheme_init_inspector();
@@ -477,9 +476,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_port_fun_config();
   scheme_init_error_config();
   scheme_init_logger_config();
-#ifndef NO_SCHEME_EXNS
   scheme_init_exn_config();
-#endif
   scheme_init_error_config();
   scheme_init_place_per_place();
 
@@ -574,8 +571,6 @@ void scheme_place_instance_destroy(int force)
   else
     scheme_run_atexit_closers_on_all(force_more_closed_after);
 
-  scheme_run_post_custodian_shutdown();
-
   scheme_release_fd_semaphores();
   
   scheme_release_file_descriptor();
@@ -589,6 +584,7 @@ void scheme_place_instance_destroy(int force)
   GC_destruct_child_gc();
 #endif
   scheme_free_all_code();
+  scheme_clear_locale_cache();
   rktio_destroy(scheme_rktio);
 }
 

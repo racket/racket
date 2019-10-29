@@ -2,49 +2,151 @@
 (require syntax/parse/private/residual-ct ;; keep abs. path
          "rep-attrs.rkt"
          "minimatch.rkt"
+         "tree-util.rkt"
          racket/syntax)
 (provide (all-defined-out))
+
+;; Uses Arguments from kws.rkt
+
+;; ------------------------------------------------------------
+;; Stage 1: Parsing, first pass
 
 ;; Pattern parsing is done (in rep.rkt) in two passes. In pass 1, stxclass refs
 ;; are not required to be bound, and so patterns like `x:sc` and `(~var x sc)`
 ;; are left as "fixup" patterns to be resolved in pass 2.
 
-;; Uses Arguments from kws.rkt
+;; SinglePattern ::=
+;; | (pat:any)
+;; | (pat:svar id)  -- "simple" var, no stxclass
+;; | (pat:var/p Id Id Arguments (Listof IAttr) Syntax SCOpts) -- var with parser
+;; | (pat:literal Id Syntax Syntax)
+;; | (pat:datum Datum)
+;; | (pat:action ActionPattern SinglePattern)
+;; | (pat:head HeadPattern SinglePattern)
+;; | (pat:dots (listof EllipsisHeadPattern) SinglePattern)
+;; | (pat:andu (Listof (U SinglePattern ActionPattern)))
+;; | (pat:or (listof IAttr) (listof SinglePattern) (listof (listof IAttr)))
+;; | (pat:not SinglePattern)
+;; | (pat:vector SinglePattern)
+;; | (pat:box SinglePattern)
+;; | (pat:pstruct key SinglePattern)
+;; | (pat:describe SinglePattern Syntax Boolean Syntax)
+;; | (pat:delimit SinglePattern)
+;; | (pat:commit SinglePattern)
+;; | (pat:reflect stx Arguments (listof SAttr) id (listof IAttr))
+;; | (pat:post SinglePattern)
+;; | (pat:integrated Id/#f Id String Syntax)
+;; | (pat:fixup Syntax Identifier/#f Identifier Identifier Arguments String Syntax/#f Id/#f)
+;; | (pat:and/fixup Syntax (Listof (U {S,H,A}Pattern)))
 
-#|
-A SinglePattern is one of
-  (pat:any)
-  (pat:svar id)  -- "simple" var, no stxclass
-  (pat:var/p Id Id Arguments (Listof IAttr) Stx scopts) -- var with parser
-  (pat:literal identifier Stx Stx)
-  (pat:datum datum)
-  (pat:action ActionPattern SinglePattern)
-  (pat:head HeadPattern SinglePattern)
-  (pat:dots (listof EllipsisHeadPattern) SinglePattern)
-  (pat:and (listof SinglePattern))
-  (pat:or (listof IAttr) (listof SinglePattern) (listof (listof IAttr)))
-  (pat:not SinglePattern)
-  (pat:pair SinglePattern SinglePattern)
-  (pat:vector SinglePattern)
-  (pat:box SinglePattern)
-  (pat:pstruct key SinglePattern)
-  (pat:describe SinglePattern stx boolean stx)
-  (pat:delimit SinglePattern)
-  (pat:commit SinglePattern)
-  (pat:reflect stx Arguments (listof SAttr) id (listof IAttr))
-  (pat:ord SinglePattern UninternedSymbol Nat)
-  (pat:post SinglePattern)
-  (pat:integrated id/#f id string stx)
-* (pat:fixup Syntax Identifier/#f Identifier Identifier Arguments String Syntax/#f Id/#f)
-* (pat:and/fixup Syntax (Listof *Pattern))
+;; ListPattern ::=
+;; | (pat:datum '())
+;; | (pat:action ActionPattern ListPattern)
+;; | (pat:head HeadPattern ListPattern)
+;; | (pat:pair SinglePattern ListPattern)
+;; | (pat:dots EllipsisHeadPattern ListPattern)
 
-A ListPattern is a subtype of SinglePattern; one of
-  (pat:datum '())
-  (pat:action ActionPattern ListPattern)
-  (pat:head HeadPattern ListPattern)
-  (pat:pair SinglePattern ListPattern)
-  (pat:dots EllipsisHeadPattern ListPattern)
-|#
+;; ActionPattern ::=
+;; | (action:cut)
+;; | (action:fail Syntax Syntax)
+;; | (action:bind IAttr Syntax)
+;; | (action:and (Listof ActionPattern))
+;; | (action:parse SinglePattern Syntax)
+;; | (action:do (Listof Syntax))
+;; | (action:undo (Listof Syntax))
+;; | (action:post ActionPattern)
+
+;; HeadPattern ::=
+;; | (hpat:single SinglePattern)
+;; | (hpat:var/p Id Id Arguments (Listof IAttr) Syntax SCOpts)
+;; | (hpat:seq ListPattern)
+;; | (hpat:action ActionPattern HeadPattern)
+;; | (hpat:andu (Listof (U Headpattern ActionPattern))) -- at least one HeadPattern
+;; | (hpat:or (Listof IAttr) (Listof HeadPattern) (Listof (Listof IAttr)))
+;; | (hpat:describe HeadPattern Syntax/#f Boolean Syntax)
+;; | (hpat:delimit HeadPattern)
+;; | (hpat:commit HeadPattern)
+;; | (hpat:reflect Syntax Arguments (Listof SAttr) Id (Listof IAttr))
+;; | (hpat:post HeadPattern)
+;; | (hpat:peek HeadPattern)
+;; | (hpat:peek-not HeadPattern)
+
+;; EllipsisHeadPattern ::=
+;; | (ehpat (Listof IAttr) HeadPattern RepConstraint Boolean)
+
+;; RepConstraint ::=
+;; | (rep:once Syntax Syntax Syntax)
+;; | (rep:optional Syntax Syntax (Listof BindAction))
+;; | (rep:bounds Nat PosInt/+inf.0 Syntax Syntax Syntax)
+;; | #f
+
+;; BindAction ::= (action:bind IAttr Syntax)
+;; SideClause ::= ActionPattern
+
+;; ------------------------------------------------------------
+;; Stage 2: Parsing, pass 2
+
+;; SinglePattern ::= ....
+;; X (pat:fixup Syntax Identifier/#f Identifier Identifier Arguments String Syntax/#f Id/#f)
+;; X (pat:and/fixup Syntax (Listof (U {S,H,A}Pattern)))
+
+;; Note: pat:action can change to hpat:action; pat:andu cannot change.
+
+;; ------------------------------------------------------------
+;; Stage 3: Specialize pair patterns
+
+;; Rewrite (pat:head (hpat:single headp) tailp) => (pat:pair headp tailp).
+;; Rewrite (pat:head (hpat:seq lp[end]) tailp) -> lp[tailp].
+
+;; FIXME/TODO: also do the following:
+;; - add pat:seq-end
+;; - rewrite (pat:head (hpat:seq (pat:head h1 t1)) t2) => (pat:head h1 (pat:head (hpat:seq t1) t2))
+
+;; SinglePattern ::= ....
+;; + (pat:pair SinglePattern SinglePattern)
+
+;; ListPattern ::=
+;; + (pat:pair SinglePattern ListPattern)
+
+;; ------------------------------------------------------------
+;; Stage 4a: Normalize and patterns
+
+;; SinglePattern ::= ....
+;; X (pat:action ActionPattern SinglePattern)
+
+;; ActionPattern ::= ....
+;; X (action:and (Listof ActionPattern))
+
+;; HeadPattern ::=
+;; X (hpat:action ActionPattern HeadPattern)
+
+;; ------------------------------------------------------------
+;; Stage 4b: Add *:ord wrappers for *:and components
+
+;; SinglePattern ::= ....
+;; X (pat:andu (Listof (U SinglePattern ActionPattern)))
+;; + (pat:action ActionPattern SinglePattern)
+;; + (pat:and (Listof SinglePattern))
+;; + (pat:ord SinglePattern UninternedSymbol Nat)
+
+;; ActionPattern ::= ....
+;; + (action:ord ActionPattern UninternedSymbol Nat)
+;; + (action:and (Listof ActionPattern))
+
+;; HeadPattern ::= ....
+;; X (hpat:andu (Listof (U HeadPattern ActionPattern)))
+;; + (hpat:action ActionPattern HeadPattern)
+;; + (hpat:and HeadPattern SinglePattern)
+;; + (hpat:ord HeadPattern UninternedSymbol Nat)
+
+;; ------------------------------------------------------------
+;; Stage 5: Switch to pat:seq-end in list patterns
+
+;; ListPattern ::= ...
+;; X (pat:datum '())
+;; + (pat:seq-end)
+
+;; ------------------------------------------------------------
 
 (define-struct pat:any () #:prefab)
 (define-struct pat:svar (name) #:prefab)
@@ -54,6 +156,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:action (action inner) #:prefab)
 (define-struct pat:head (head tail) #:prefab)
 (define-struct pat:dots (heads tail) #:prefab)
+(define-struct pat:andu (patterns) #:prefab)
 (define-struct pat:and (patterns) #:prefab)
 (define-struct pat:or (attrs patterns attrss) #:prefab)
 (define-struct pat:not (pattern) #:prefab)
@@ -70,22 +173,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:integrated (name predicate description role) #:prefab)
 (define-struct pat:fixup (stx bind varname scname argu sep role parser*) #:prefab)
 (define-struct pat:and/fixup (stx patterns) #:prefab)
-
-#|
-A ActionPattern is one of
-  (action:cut)
-  (action:fail stx stx)
-  (action:bind IAttr Stx)
-  (action:and (listof ActionPattern))
-  (action:parse SinglePattern stx)
-  (action:do (listof stx))
-  (action:undo (listof stx))
-  (action:ord ActionPattern UninternedSymbol Nat)
-  (action:post ActionPattern)
-
-A BindAction is (action:bind IAttr Stx)
-A SideClause is just an ActionPattern
-|#
+(define-struct pat:seq-end () #:prefab)
 
 (define-struct action:cut () #:prefab)
 (define-struct action:fail (when message) #:prefab)
@@ -97,26 +185,11 @@ A SideClause is just an ActionPattern
 (define-struct action:ord (pattern group index) #:prefab)
 (define-struct action:post (pattern) #:prefab)
 
-#|
-A HeadPattern is one of 
-  (hpat:var/p Id Id Arguments (Listof IAttr) Stx scopts)
-  (hpat:seq ListPattern)
-  (hpat:action ActionPattern HeadPattern)
-  (hpat:and HeadPattern SinglePattern)
-  (hpat:or (listof IAttr) (listof HeadPattern) (listof (listof IAttr)))
-  (hpat:describe HeadPattern stx/#f boolean stx)
-  (hpat:delimit HeadPattern)
-  (hpat:commit HeadPattern)
-  (hpat:reflect stx Arguments (listof SAttr) id (listof IAttr))
-  (hpat:ord HeadPattern UninternedSymbol Nat)
-  (hpat:post HeadPattern)
-  (hpat:peek HeadPattern)
-  (hpat:peek-not HeadPattern)
-|#
-
+(define-struct hpat:single (pattern) #:prefab)
 (define-struct hpat:var/p (name parser argu nested-attrs role scopts) #:prefab)
 (define-struct hpat:seq (inner) #:prefab)
 (define-struct hpat:action (action inner) #:prefab)
+(define-struct hpat:andu (patterns) #:prefab)
 (define-struct hpat:and (head single) #:prefab)
 (define-struct hpat:or (attrs patterns attrss) #:prefab)
 (define-struct hpat:describe (pattern description transparent? role) #:prefab)
@@ -128,23 +201,14 @@ A HeadPattern is one of
 (define-struct hpat:peek (pattern) #:prefab)
 (define-struct hpat:peek-not (pattern) #:prefab)
 
-#|
-An EllipsisHeadPattern is
-  (ehpat (Listof IAttr) HeadPattern RepConstraint Boolean)
-
-A RepConstraint is one of
-  (rep:once stx stx stx)
-  (rep:optional stx stx (listof BindAction))
-  (rep:bounds nat posint/+inf.0 stx stx stx)
-  #f
-|#
-
 (define-struct ehpat (attrs head repc check-null?) #:prefab)
 (define-struct rep:once (name under-message over-message) #:prefab)
 (define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
 
-(define (pattern? x)
+;; ============================================================
+
+(define (single-pattern? x)
   (or (pat:any? x)
       (pat:svar? x)
       (pat:var/p? x)
@@ -153,6 +217,7 @@ A RepConstraint is one of
       (pat:action? x)
       (pat:head? x)
       (pat:dots? x)
+      (pat:andu? x)
       (pat:and? x)
       (pat:or? x)
       (pat:not? x)
@@ -168,7 +233,8 @@ A RepConstraint is one of
       (pat:post? x)
       (pat:integrated? x)
       (pat:fixup? x)
-      (pat:and/fixup? x)))
+      (pat:and/fixup? x)
+      (pat:seq-end? x)))
 
 (define (action-pattern? x)
   (or (action:cut? x)
@@ -182,9 +248,11 @@ A RepConstraint is one of
       (action:post? x)))
 
 (define (head-pattern? x)
-  (or (hpat:var/p? x)
+  (or (hpat:single? x)
+      (hpat:var/p? x)
       (hpat:seq? x)
       (hpat:action? x)
+      (hpat:andu? x)
       (hpat:and? x)
       (hpat:or? x)
       (hpat:describe? x)
@@ -199,11 +267,146 @@ A RepConstraint is one of
 (define (ellipsis-head-pattern? x)
   (ehpat? x))
 
-(define single-pattern? pattern?)
-
 (define (single-or-head-pattern? x)
   (or (single-pattern? x)
       (head-pattern? x)))
+
+(define (*pattern? x)
+  (and (struct? x)
+       (or (single-pattern? x)
+           (action-pattern? x)
+           (head-pattern? x)
+           (ellipsis-head-pattern? x))))
+
+;; ============================================================
+
+(define (wf-S? x)
+  (match x
+    [(pat:any) #t]
+    [(pat:svar name) #t]
+    [(pat:var/p name parser argu nested-attrs role opts) #t]
+    [(pat:literal id input-phase lit-phase) #t]
+    [(pat:datum datum) #t]
+    [(pat:action ap sp) (and (wf-A? ap) (wf-S? sp))]
+    [(pat:head headp tailp) (and (wf-H? headp) (wf-S? tailp))]
+    [(pat:dots heads tailp) (and (andmap wf-EH? heads) (wf-S? tailp))]
+    [(pat:andu ps) (andmap wf-A/S? ps)]
+    [(pat:and ps) (andmap wf-S? ps)]
+    [(pat:or attrs ps attrss) (andmap wf-S? ps)]
+    [(pat:not sp) (wf-S? sp)]
+    [(pat:pair headp tailp) (and (wf-S? headp) (wf-S? tailp))]
+    [(pat:vector sp) (wf-S? sp)]
+    [(pat:box sp) (wf-S? sp)]
+    [(pat:pstruct key sp) (wf-S? sp)]
+    [(pat:describe sp description transparent? role) (wf-S? sp)]
+    [(pat:delimit sp) (wf-S? sp)]
+    [(pat:commit sp) (wf-S? sp)]
+    [(pat:reflect obj argu attr-decls name nested-attrs) #t]
+    [(pat:ord sp group index) (wf-S? sp)]
+    [(pat:post sp) (wf-S? sp)]
+    [(pat:integrated name predicate description role) #t]
+    [(pat:fixup stx bind varname scname argu sep role parser*) #t]
+    [(pat:and/fixup stx ps) (andmap wf-A/S/H? ps)]
+    [(pat:seq-end) #f] ;; Should only occur in ListPattern!
+    [_ #f]))
+
+(define (wf-L? x)
+  (match x
+    [(pat:datum '()) #t]
+    [(pat:seq-end) #t]
+    [(pat:action ap sp) (and (wf-A? ap) (wf-L? sp))]
+    [(pat:head headp tailp) (and (wf-H? headp) (wf-L? tailp))]
+    [(pat:dots heads tailp) (and (andmap wf-EH? heads) (wf-L? tailp))]
+    [(pat:pair headp tailp) (and (wf-S? headp) (wf-L? tailp))]
+    [_ #f]))
+
+(define (wf-A? x)
+  (match x
+    [(action:cut) #t]
+    [(action:fail cnd msg) #t]
+    [(action:bind attr expr) #t]
+    [(action:and ps) (andmap wf-A? ps)]
+    [(action:parse sp expr) (wf-S? sp)]
+    [(action:do stmts) #t]
+    [(action:undo stmts) #t]
+    [(action:ord sp group index) (wf-A? sp)]
+    [(action:post sp) (wf-A? sp)]
+    [_ #f]))
+
+(define (wf-H? x)
+  (match x
+    [(hpat:single sp) (wf-S? sp)]
+    [(hpat:var/p name parser argu nested-attrs role scopts) #t]
+    [(hpat:seq sp) (wf-L? sp)]
+    [(hpat:action ap sp) (and (wf-A? ap) (wf-H? sp))]
+    [(hpat:andu ps) (andmap wf-A/H? ps)]
+    [(hpat:and hp sp) (and (wf-H? hp) (wf-S? sp))]
+    [(hpat:or attrs ps attrss) (andmap wf-H? ps)]
+    [(hpat:describe sp description transparent? role) (wf-H? sp)]
+    [(hpat:delimit sp) (wf-H? sp)]
+    [(hpat:commit sp) (wf-H? sp)]
+    [(hpat:reflect obj argu attr-decls name nested-attrs) #t]
+    [(hpat:ord sp group index) (wf-H? sp)]
+    [(hpat:post sp) (wf-H? sp)]
+    [(hpat:peek sp) (wf-H? sp)]
+    [(hpat:peek-not sp) (wf-H? sp)]
+    [_ #f]))
+
+(define (wf-EH? x)
+  (match x
+    [(ehpat _ hp _ _) (wf-H? hp)]
+    [_ #f]))
+
+(define (wf-A/S? p)
+  (cond [(action-pattern? p) (wf-A? p)]
+        [(single-pattern? p) (wf-S? p)]
+        [else #f]))
+
+(define (wf-A/H? p)
+  (cond [(action-pattern? p) (wf-A? p)]
+        [(head-pattern? p) (wf-H? p)]
+        [else #f]))
+
+(define (wf-A/S/H? p)
+  (cond [(action-pattern? p) (wf-A? p)]
+        [(single-pattern? p) (wf-S? p)]
+        [(head-pattern? p) (wf-H? p)]
+        [else #f]))
+
+;; ============================================================
+
+;; pattern-transform : *Pattern (*Pattern -> *Pattern) -> *Pattern
+(define (pattern-transform p for-pattern [root? #t])
+  (define (for-node x) (if (*pattern? x) (for-pattern x) x))
+  (tree-transform p for-node root?))
+
+;; pattern-transform-preorder : *Pattern (*Pattern (X -> X) -> *Pattern) -> *Pattern
+(define (pattern-transform-preorder p for-pattern [root? #t])
+  (define (for-node x recur) (if (*pattern? x) (for-pattern x recur) (recur)))
+  (tree-transform-preorder p for-node root?))
+
+;; pattern-reduce{,-left} : *Pattern (*Pattern -> X) (X ... -> X) -> X
+(define (pattern-reduce p for-pattern reduce [root? #t])
+  (define (for-node x recur) (if (*pattern? x) (for-pattern x recur) (recur)))
+  (tree-reduce p for-node reduce root?))
+(define (pattern-reduce-left p for-pattern reduce [root? #t])
+  (define (for-node x recur) (if (*pattern? x) (for-pattern x recur) (recur)))
+  (tree-reduce-left p for-node reduce root?))
+
+;; pattern-ormap : *Pattern (*Pattern -> X/#f) -> X/#f
+(define (pattern-ormap p for-pattern [root? #t])
+  (define (for-node x recur) (if (*pattern? x) (for-pattern x recur) (recur)))
+  (tree-ormap p for-node root?))
+
+;; ============================================================
+
+(define pattern? single-pattern?)
+
+(define (coerce-head-pattern p)
+  (if (head-pattern? p) p (hpat:single p)))
+
+(define (head-pattern-not-single? hp)
+  (and (head-pattern? hp) (not (hpat:single? hp))))
 
 ;; check-pattern : *Pattern -> *Pattern
 ;; Does attr computation to catch errors, but returns same pattern.
@@ -216,176 +419,63 @@ A RepConstraint is one of
 
 ;; pattern-attrs : *Pattern -> (Listof IAttr)
 (define (pattern-attrs p)
-  (hash-ref! pattern-attrs-table p (lambda () (pattern-attrs* p))))
+  (define (for-pattern p recur)
+    (hash-ref! pattern-attrs-table p (lambda () (for-pattern* p recur))))
+  (define (for-pattern* p recur)
+    (match p
+      ;; -- S patterns
+      [(pat:svar name)
+       (list (attr name 0 #t))]
+      [(pat:var/p name _ _ nested-attrs _ _)
+       (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+      [(pat:reflect _ _ _ name nested-attrs)
+       (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+      [(pat:or iattrs ps _)
+       iattrs]
+      [(pat:not _)
+       null]
+      [(pat:integrated name _ _ _)
+       (if name (list (attr name 0 #t)) null)]
+      [(pat:fixup _ bind _ _ _ _ _ _)
+       (if bind (list (attr bind 0 #t)) null)]
+      ;; -- A patterns
+      [(action:bind attr expr)
+       (list attr)]
+      ;; -- H patterns
+      [(hpat:var/p name _ _ nested-attrs _ _)
+       (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+      [(hpat:reflect _ _ _ name nested-attrs)
+       (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+      [(hpat:or iattrs ps _)
+       iattrs]
+      [(hpat:peek-not _)
+       null]
+      ;; EH patterns
+      [(ehpat iattrs _ _ _)
+       iattrs]
+      [_ (recur)]))
+  (pattern-reduce p for-pattern (lambda iattrss (append-iattrs iattrss))))
 
-(define (pattern-attrs* p)
-  (match p
-    ;; -- S patterns
-    [(pat:any)
-     null]
-    [(pat:svar name)
-     (list (attr name 0 #t))]
-    [(pat:var/p name _ _ nested-attrs _ _)
-     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
-    [(pat:reflect _ _ _ name nested-attrs)
-     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
-    [(pat:datum _)
-     null]
-    [(pat:literal _ _ _)
-     null]
-    [(pat:action a sp)
-     (append-iattrs (map pattern-attrs (list a sp)))]
-    [(pat:head headp tailp)
-     (append-iattrs (map pattern-attrs (list headp tailp)))]
-    [(pat:pair headp tailp)
-     (append-iattrs (map pattern-attrs (list headp tailp)))]
-    [(pat:vector sp)
-     (pattern-attrs sp)]
-    [(pat:box sp)
-     (pattern-attrs sp)]
-    [(pat:pstruct key sp)
-     (pattern-attrs sp)]
-    [(pat:describe sp _ _ _)
-     (pattern-attrs sp)]
-    [(pat:and ps)
-     (append-iattrs (map pattern-attrs ps))]
-    [(pat:or _ ps _)
-     (union-iattrs (map pattern-attrs ps))]
-    [(pat:not _)
-     null]
-    [(pat:dots headps tailp)
-     (append-iattrs (map pattern-attrs (append headps (list tailp))))]
-    [(pat:delimit sp)
-     (pattern-attrs sp)]
-    [(pat:commit sp)
-     (pattern-attrs sp)]
-    [(pat:ord sp _ _)
-     (pattern-attrs sp)]
-    [(pat:post sp)
-     (pattern-attrs sp)]
-    [(pat:integrated name _ _ _)
-     (if name (list (attr name 0 #t)) null)]
-    [(pat:fixup _ bind _ _ _ _ _ _)
-     (if bind (list (attr bind 0 #t)) null)]
-    [(pat:and/fixup _ ps)
-     (append-iattrs (map pattern-attrs ps))]
-
-    ;; -- A patterns
-    [(action:cut)
-     null]
-    [(action:fail _ _)
-     null]
-    [(action:bind attr expr)
-     (list attr)]
-    [(action:and ps)
-     (append-iattrs (map pattern-attrs ps))]
-    [(action:parse sp _)
-     (pattern-attrs sp)]
-    [(action:do _)
-     null]
-    [(action:undo _)
-     null]
-    [(action:ord sp _ _)
-     (pattern-attrs sp)]
-    [(action:post sp)
-     (pattern-attrs sp)]
-
-    ;; -- H patterns
-    [(hpat:var/p name _ _ nested-attrs _ _)
-     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
-    [(hpat:reflect _ _ _ name nested-attrs)
-     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
-    [(hpat:seq lp)
-     (pattern-attrs lp)]
-    [(hpat:action a hp)
-     (append-iattrs (map pattern-attrs (list a hp)))]
-    [(hpat:describe hp _ _ _)
-     (pattern-attrs hp)]
-    [(hpat:and hp sp)
-     (append-iattrs (map pattern-attrs (list hp sp)))]
-    [(hpat:or _ ps _)
-     (union-iattrs (map pattern-attrs ps))]
-    [(hpat:delimit hp)
-     (pattern-attrs hp)]
-    [(hpat:commit hp)
-     (pattern-attrs hp)]
-    [(hpat:ord hp _ _)
-     (pattern-attrs hp)]
-    [(hpat:post hp)
-     (pattern-attrs hp)]
-    [(hpat:peek hp)
-     (pattern-attrs hp)]
-    [(hpat:peek-not hp)
-     null]
-
-    ;; EH patterns
-    [(ehpat iattrs _ _ _)
-     iattrs]
-    ))
-
-;; ----
+;; ------------------------------------------------------------
 
 ;; pattern-has-cut? : *Pattern -> Boolean
 ;; Returns #t if p *might* cut (~!, not within ~delimit-cut).
 (define (pattern-has-cut? p)
-  (match p
-    ;; -- S patterns
-    [(pat:any) #f]
-    [(pat:svar name) #f]
-    [(pat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
-    [(pat:reflect _ _ _ name nested-attrs) #f]
-    [(pat:datum _) #f]
-    [(pat:literal _ _ _) #f]
-    [(pat:action a sp) (or (pattern-has-cut? a) (pattern-has-cut? sp))]
-    [(pat:head headp tailp) (or (pattern-has-cut? headp) (pattern-has-cut? tailp))]
-    [(pat:pair headp tailp) (or (pattern-has-cut? headp) (pattern-has-cut? tailp))]
-    [(pat:vector sp) (pattern-has-cut? sp)]
-    [(pat:box sp) (pattern-has-cut? sp)]
-    [(pat:pstruct key sp) (pattern-has-cut? sp)]
-    [(pat:describe sp _ _ _) (pattern-has-cut? sp)]
-    [(pat:and ps) (ormap pattern-has-cut? ps)]
-    [(pat:or _ ps _) (ormap pattern-has-cut? ps)]
-    [(pat:not _) #f]
-    [(pat:dots headps tailp) (or (ormap pattern-has-cut? headps) (pattern-has-cut? tailp))]
-    [(pat:delimit sp) #f]
-    [(pat:commit sp) #f]
-    [(pat:ord sp _ _) (pattern-has-cut? sp)]
-    [(pat:post sp) (pattern-has-cut? sp)]
-    [(pat:integrated name _ _ _) #f]
-    [(pat:fixup _ _ _ _ _ _ _ _) #t]
-    [(pat:and/fixup _ ps) (ormap pattern-has-cut? ps)]
+  (define (for-pattern p recur)
+    (match p
+      [(pat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
+      [(pat:not _) #f]
+      [(pat:delimit _) #f]
+      [(pat:commit _) #f]
+      [(pat:fixup _ _ _ _ _ _ _ _) #t]
+      [(action:cut) #t]
+      [(hpat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
+      [(hpat:delimit _) #f]
+      [(hpat:commit _) #f]
+      [_ (recur)]))
+  (pattern-reduce p for-pattern (lambda xs (ormap values xs))))
 
-    ;; -- A patterns
-    [(action:cut) #t]
-    [(action:fail _ _) #f]
-    [(action:bind attr expr) #f]
-    [(action:and ps) (ormap pattern-has-cut? ps)]
-    [(action:parse sp _) (pattern-has-cut? sp)]
-    [(action:do _) #f]
-    [(action:undo _) #f]
-    [(action:ord sp _ _) (pattern-has-cut? sp)]
-    [(action:post sp) (pattern-has-cut? sp)]
-
-    ;; -- H patterns
-    [(hpat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
-    [(hpat:reflect _ _ _ name nested-attrs) #f]
-    [(hpat:seq lp) (pattern-has-cut? lp)]
-    [(hpat:action a hp) (or (pattern-has-cut? a) (pattern-has-cut? hp))]
-    [(hpat:describe hp _ _ _) (pattern-has-cut? hp)]
-    [(hpat:and hp sp) (or (pattern-has-cut? hp) (pattern-has-cut? sp))]
-    [(hpat:or _ ps _) (ormap pattern-has-cut? ps)]
-    [(hpat:delimit hp) #f]
-    [(hpat:commit hp) #f]
-    [(hpat:ord hp _ _) (pattern-has-cut? hp)]
-    [(hpat:post hp) (pattern-has-cut? hp)]
-    [(hpat:peek hp) (pattern-has-cut? hp)]
-    [(hpat:peek-not hp) (pattern-has-cut? hp)]
-
-    ;; EH patterns
-    [(ehpat _ hp _ _) (pattern-has-cut? hp)]
-    ))
-
-;; ----
+;; ============================================================
 
 (define (create-pat:or ps)
   (define attrss (map pattern-attrs ps))
@@ -449,7 +539,7 @@ A RepConstraint is one of
       (lambda (x)
         (hash-ref! memo-table x (lambda () body ...))))))
 
-;; ----
+;; ============================================================
 
 ;; An AbsFail is a Nat encoding the bitvector { sub? : 1, post? : 1 }
 ;; Finite abstraction of failuresets based on progress bins. That is:
@@ -458,8 +548,8 @@ A RepConstraint is one of
 (define AF-POST 2)  ;; can fail with progress >= POST
 (define AF-ANY  3)  ;; can fail with progress either < or >= POST
 
-;; AF-nz? : AbsFail -> {0, 1}
-(define (AF-nz? af) (if (= af AF-NONE) 0 1))
+;; AF-nz? : AbsFail -> Boolean
+(define (AF-nz? af) (not (= af AF-NONE)))
 
 ;; AF<? : AbsFail AbsFail -> Boolean
 ;; True if every failure in af1 has strictly less progress than any failure in af2.
@@ -470,45 +560,34 @@ A RepConstraint is one of
       (= af2 AF-NONE)
       (and (= af1 AF-SUB) (= af2 AF-POST))))
 
-;; pattern-absfail : *Pattern -> AbsFail
-(define/memo (pattern-AF p)
-  (define (patterns-AF ps)
-    (for/fold ([af 0]) ([p (in-list ps)]) (bitwise-ior af (pattern-AF p))))
-  (cond [(pat:any? p) AF-NONE]
-        [(pat:svar? p) AF-NONE]
-        [(pat:var/p? p) AF-ANY]
-        [(pat:literal? p) AF-SUB]
-        [(pat:datum? p) AF-SUB]
-        [(pat:action? p) (bitwise-ior (pattern-AF (pat:action-action p))
-                                      (pattern-AF (pat:action-inner p)))]
-        [(pat:head? p) AF-ANY]
-        [(pat:dots? p) AF-ANY]
-        [(pat:and? p) (patterns-AF (pat:and-patterns p))]
-        [(pat:or? p) (patterns-AF (pat:or-patterns p))]
-        [(pat:not? p) AF-SUB]
-        [(pat:pair? p) AF-SUB]
-        [(pat:vector? p) AF-SUB]
-        [(pat:box? p) AF-SUB]
-        [(pat:pstruct? p) AF-SUB]
-        [(pat:describe? p) (pattern-AF (pat:describe-pattern p))]
-        [(pat:delimit? p) (pattern-AF (pat:delimit-pattern p))]
-        [(pat:commit? p) (pattern-AF (pat:commit-pattern p))]
-        [(pat:reflect? p) AF-ANY]
-        [(pat:ord? p) (pattern-AF (pat:ord-pattern p))]
-        [(pat:post? p) (if (AF-nz? (pattern-AF (pat:post-pattern p))) AF-POST AF-NONE)]
-        [(pat:integrated? p) AF-SUB]
-        ;; Action patterns
-        [(action:cut? p) AF-NONE]
-        [(action:fail? p) AF-SUB]
-        [(action:bind? p) AF-NONE]
-        [(action:and? p) (patterns-AF (action:and-patterns p))]
-        [(action:parse? p) (if (AF-nz? (pattern-AF (action:parse-pattern p))) AF-SUB AF-NONE)]
-        [(action:do? p) AF-NONE]
-        [(action:undo? p) AF-SUB]
-        [(action:ord? p) (pattern-AF (action:ord-pattern p))]
-        [(action:post? p) (if (AF-nz? (pattern-AF (action:post-pattern p))) AF-POST AF-NONE)]
-        ;; Head patterns, eh patterns, etc
-        [else AF-ANY]))
+;; pattern-AF-table : Hasheq[*Pattern => AbsFail]
+(define pattern-AF-table (make-weak-hasheq))
+
+;; pattern-AF : *Pattern -> AbsFail
+(define (pattern-AF p)
+  (define (for-pattern p recur)
+    (hash-ref pattern-AF-table p (lambda () (for-pattern* p recur))))
+  (define (for-pattern* p recur)
+    (cond [(pat:var/p? p) AF-ANY]
+          [(pat:literal? p) AF-SUB]
+          [(pat:datum? p) AF-SUB]
+          [(pat:head? p) AF-ANY]
+          [(pat:dots? p) AF-ANY]
+          [(pat:not? p) AF-SUB]
+          [(pat:pair? p) AF-SUB]
+          [(pat:vector? p) AF-SUB]
+          [(pat:box? p) AF-SUB]
+          [(pat:pstruct? p) AF-SUB]
+          [(pat:reflect? p) AF-ANY]
+          [(pat:post? p) (if (AF-nz? (pattern-AF (pat:post-pattern p))) AF-POST AF-NONE)]
+          [(pat:integrated? p) AF-SUB]
+          [(action:fail? p) AF-SUB]
+          [(action:parse? p) (if (AF-nz? (pattern-AF (action:parse-pattern p))) AF-SUB AF-NONE)]
+          [(action:ord? p) (pattern-AF (action:ord-pattern p))]
+          [(action:post? p) (if (AF-nz? (pattern-AF (action:post-pattern p))) AF-POST AF-NONE)]
+          [(head-pattern? p) AF-ANY] ;; this case should not be reachable
+          [else (recur)]))
+  (pattern-reduce-left p for-pattern bitwise-ior))
 
 ;; pattern-cannot-fail? : *Pattern -> Boolean
 (define (pattern-cannot-fail? p)
@@ -535,7 +614,7 @@ A RepConstraint is one of
   (and (not (ormap pattern-has-cut? patterns))
        (ormap pattern-cannot-fail? patterns)))
 
-;; ----
+;; ============================================================
 
 ;; An AbsNullable is 'yes | 'no | 'unknown (3-valued logic)
 
@@ -563,6 +642,7 @@ A RepConstraint is one of
     [(pat:pair sp lp) 'no]
     [(pat:dots ehps lp) (3and (3andmap ehpat-nullable ehps) (lpat-nullable lp))]
     ;; For hpat:and, handle the following which are not ListPatterns
+    [(pat:andu lps) (3andmap lpat-nullable (filter single-pattern? lps))]
     [(pat:and lps) (3andmap lpat-nullable lps)]
     [(pat:any) #t]
     [_ 'unknown]))
@@ -570,8 +650,10 @@ A RepConstraint is one of
 ;; hpat-nullable : HeadPattern -> AbsNullable
 (define/memo (hpat-nullable hp)
   (match hp
+    [(hpat:single sp) 'no]
     [(hpat:seq lp) (lpat-nullable lp)]
     [(hpat:action ap hp) (hpat-nullable hp)]
+    [(hpat:andu ps) (3andmap hpat-nullable (filter head-pattern? ps))]
     [(hpat:and hp sp) (3and (hpat-nullable hp) (lpat-nullable sp))]
     [(hpat:or _attrs hps _attrss) (3ormap hpat-nullable hps)]
     [(hpat:describe hp _ _ _) (hpat-nullable hp)]
@@ -579,7 +661,6 @@ A RepConstraint is one of
     [(hpat:commit hp) (hpat-nullable hp)]
     [(hpat:ord hp _ _) (hpat-nullable hp)]
     [(hpat:post hp) (hpat-nullable hp)]
-    [(? pattern? hp) 'no]
     [_ 'unknown]))
 
 ;; ehpat-nullable : EllipsisHeadPattern -> AbsNullable
@@ -594,7 +675,7 @@ A RepConstraint is one of
         [(and (rep:bounds? repc) (> (rep:bounds-min repc) 0)) 'no]
         [else 'yes]))
 
-;; ----
+;; ============================================================
 
 ;; create-post-pattern : *Pattern -> *Pattern
 (define (create-post-pattern p)
@@ -612,7 +693,7 @@ A RepConstraint is one of
 (define (create-ord-pattern p group index)
   (cond [(pattern-cannot-fail? p)
          p]
-        [(pattern? p)
+        [(single-pattern? p)
          (pat:ord p group index)]
         [(head-pattern? p)
          (hpat:ord p group index)]
@@ -629,9 +710,3 @@ A RepConstraint is one of
         [else
          (for/list ([p (in-list patterns)] [index (in-naturals)])
            (create-ord-pattern p group index))]))
-
-;; create-action:and : (Listof ActionPattern) -> ActionPattern
-(define (create-action:and actions)
-  (match actions
-    [(list action) action]
-    [_ (action:and actions)]))

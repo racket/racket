@@ -149,6 +149,28 @@
     (test #f unbox b)
     (test #f unbox b2)))
 
+;; check that `set-box!` uses the result of chaperone/impersonator
+(as-chaperone-or-impersonator
+ ([chaperone-box impersonate-box])
+ (let ([b (box (vector 1))])
+   (let ([b2 (chaperone-box b 
+                            (lambda (b v) v)
+                            (lambda (b v)
+                              (chaperone-vector
+                               v
+                               (lambda (b i v) (if (eq? v 'ok)
+                                                   v
+                                                   (error "oops")))
+                               (lambda (b i v) #f))))])
+     (test (void) 'ok-vector-set! (set-box! b2 (vector 8)))
+     (let ([inner (unbox b2)])
+       (test 'oops 'bad-vector-ref-from-box
+             (with-handlers ([exn:fail? (lambda (exn) 'oops)])
+               (vector-ref inner 0))))
+     (test (void) 'ok-set-box! (set-box! b2 (vector 'ok)))
+     (let ([inner (unbox b2)])
+       (test 'ok 'ok-vector-ref-from-box (vector-ref inner 0))))))
+
 ;; ----------------------------------------
 
 (test #t chaperone?/impersonator (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
@@ -196,6 +218,15 @@
    (test (void) vector-set! b2 1 'fine)
    (test 'fine vector-ref b 1)))
 
+;; impersonator-of does not imply chaperone-of
+(let ()
+  (define vec1 (vector 1 2 3))
+  (define vec2 (impersonate-vector vec1 (lambda (v i x) x) (lambda (v i x) x)))
+  (test #t impersonator-of? vec2 vec1)
+  (test #f chaperone-of? vec2 vec1)
+  (test #f impersonator-of? vec1 vec2)
+  (test #f chaperone-of? vec1 vec2))
+
 ;; test chaperone-of checks in a chaperone:
 (let ([b (vector 0)])
   (let ([b2 (chaperone-vector b 
@@ -207,6 +238,28 @@
     (test (void) 'ok-vector-set! (vector-set! b2 0 #f))
     (test #f vector-ref b2 0)
     (err/rt-test (vector-set! b2 0 0))))
+
+;; check that `vector-set!` uses the result of chaperone/impersonator
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector])
+ (let ([b (vector (vector 1))])
+   (let ([b2 (chaperone-vector b 
+                               (lambda (b i v) v)
+                               (lambda (b i v)
+                                 (chaperone-vector
+                                  v
+                                  (lambda (b i v) (if (eq? v 'ok)
+                                                      v
+                                                      (error "oops")))
+                                  (lambda (b i v) #f))))])
+     (test (void) 'ok-vector-set! (vector-set! b2 0 (vector 8)))
+     (let ([inner (vector-ref b2 0)])
+       (test 'oops 'bad-vector-ref
+             (with-handlers ([exn:fail? (lambda (exn) 'oops)])
+               (vector-ref inner 0))))
+     (test (void) 'ok-vector-set! (vector-set! b2 0 (vector 'ok)))
+     (let ([inner (vector-ref b2 0)])
+       (test 'ok 'ok-vector-ref (vector-ref inner 0))))))
 
 ;; no impersonator-of checks in a impersonator:
 (let ([b (vector 0)])
@@ -1953,14 +2006,18 @@
       (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
       (test 'val2 hash-ref h2 'key2 #f)
       (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (test 'key2 hash-ref-key h1 'key2 #f)
+      (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (test 'key2 hash-ref-key h2 'key2 #f)
+      (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
       (test (void) hash-remove! h2 'key3)
-      (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
       (test 'val2 hash-ref h2 'key2)
-      (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
       (test (void) hash-remove! h2 'key2)
-      (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
       (test #f hash-ref h2 'key2 #f)
-      (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
       (hash-for-each h2 void)
       (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
       (set! get-k #f)
@@ -2024,14 +2081,16 @@
          (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
          (test 'val2 hash-ref h2 'key2 #f)
          (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+         (test 'key2 hash-ref-key h2 'key2)
+         (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
          (let ([h2 (hash-remove h2 'key3)])
-           (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
            (test 'val2 hash-ref h2 'key2)
-           (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
            (let ([h2 (hash-remove h2 'key2)])
-             (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
              (test #f hash-ref h2 'key2 #f)
-             (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
              (hash-for-each h2 void)
              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
              (set! get-k #f)
@@ -2069,6 +2128,38 @@
      (test #f chaperone-of? (hash-set h3 1 sub1) h3)
      (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
  (list #hash() #hasheq() #hasheqv()))
+
+;; Make sure that multiple chaperone/impersonator layers
+;; are allowed by `chaperone-of?` and `impersonator-of?`
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash]
+  [chaperone-of? impersonator-of?])
+ (define ht (make-hash))
+
+ (define (chaperone ht)
+   (chaperone-hash
+    ht
+    (lambda (ht k) (values k (lambda (hc k v) v)))
+    (lambda (ht k v)
+      (values (chaperone-hash
+               k
+               (lambda (ht k) (values k (lambda (hc k v) v)))
+               (lambda (ht k v) (values k v))
+               (lambda (ht k) k)
+               (lambda (ht k) k))
+              v))
+    (lambda (ht k) k)
+    (lambda (ht k) k)))
+
+ (define ht0 (chaperone ht))
+ (define ht1 (chaperone ht0))
+
+ (test #t chaperone-of? ht1 ht)
+ (test #t chaperone-of? ht1 ht0)
+ (test #f chaperone-of? ht ht1)
+ (test #f chaperone-of? ht0 ht1)
+ (hash-set! ht1 (make-hash '((a . b))) 'ok)
+ (test 'ok hash-ref ht1 (make-hash '((a . b)))))
 
 ;; ----------------------------------------
 
@@ -2257,7 +2348,7 @@
       (test 2 length (hash-keys cht)) ; can extract keys without hashing or comparing
       (test 'vec2 hash-ref ht key)
       (test 'vec7 hash-ref ht key7)
-      (err/rt-test (hash-ref cht (vector 1 2) #f) one-exn?))))
+      (err/rt-test/once (hash-ref cht (vector 1 2) #f) one-exn?))))
 
 ;; ----------------------------------------
 ;; Make sure chaperoned hash tables use a lock
@@ -2634,10 +2725,10 @@
 (err/rt-test (chaperone-channel 5 (lambda (c) (values c values)) (lambda (c v) v)))
 (let ([ch (make-channel)])
   (thread (lambda () (channel-put ch 3.14)))
-  (err/rt-test (channel-get (impersonate-channel ch (lambda (c) c) (lambda (c v) v)))))
+  (err/rt-test/once (channel-get (impersonate-channel ch (lambda (c) c) (lambda (c v) v)))))
 (let ([ch (make-channel)])
   (thread (lambda () (channel-put ch 3.14)))
-  (err/rt-test (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
+  (err/rt-test/once (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
 
 ;; ----------------------------------------
 
@@ -2680,6 +2771,8 @@
     (test #t impersonator-of? (make-a #f 2) a1)
     (test #t chaperone-of? (make-a #f 2) a1)
     (test #t impersonator-of? (make-a a1 3) a1)
+    (test #f impersonator-of? a1 (make-a a1 2))
+    (test #f chaperone-of? a1 (make-a a1 2))
     (test #t impersonator-of? (make-a-more a1 3 8) a1)
     (test #f chaperone-of? (make-a a1 3) a1)
     (test #t equal? (make-a a1 3) a1)
@@ -3399,6 +3492,90 @@
                   gen])
     (test gen current-pseudo-random-generator)
     (test gen impersonated-current-pseudo-random-generator)))
+
+;; ----------------------------------------
+;; Test keyword-argument procedures and impersonator properties
+
+(let ()
+  (define (group-rows #:group x) 1)
+  
+  (define-values (impersonator-prop:contracted 
+                  has-impersonator-prop:contracted? 
+                  get-impersonator-prop:contracted)
+    (make-impersonator-property 'impersonator-prop:contracted))
+
+  (define group-rows*
+    (chaperone-procedure group-rows
+                         (λ (#:group x) (list x))
+                         impersonator-prop:contracted 2))
+  
+  (test #t procedure? group-rows*)
+  (test #t has-impersonator-prop:contracted? group-rows*)
+  (test 1 'apply (group-rows* #:group 10)))
+
+;; ----------------------------------------
+;; Check that position-consuming accessor and mutators work with
+;; `impersonate-struct`.
+
+(let ()
+  (define-values (struct:s make-s s? s-ref s-set!)
+    (make-struct-type 's #f 1 0 #f))
+
+  (define a-s (make-s 0))
+  
+  (test '(0)
+        s-ref
+        (impersonate-struct
+         a-s
+         s-ref
+         (lambda (k v) (list v))
+         s-set!
+         (lambda (k v) (list v)))
+        0)
+  
+  (test (void)
+        s-set!
+        (impersonate-struct
+         a-s
+         s-ref
+         (lambda (k v) (list v))
+         s-set!
+         (lambda (k v) (list v)))
+        0
+        7)
+
+  (test '(7) s-ref a-s 0))
+  
+;; ----------------------------------------
+;; Check that `hash-ref-key` works with
+;; multiple layers of impersonation.
+
+(let ()
+  (define (ref-proc ht k)
+    (values (string-append "-" k)
+            (lambda (ht k v) v)))
+
+  (define (set-proc ht k v)
+    (values (string-append "-" k)
+            v))
+
+  (define (rem-proc ht k)
+    (string-append "-" k))
+
+  (define (key-proc ht k)
+    (substring k 1))
+
+  (define ht0 (make-hash))
+  (define ht1 (impersonate-hash ht0 ref-proc set-proc rem-proc key-proc))
+  (define ht2 (impersonate-hash ht1 ref-proc set-proc rem-proc key-proc))
+
+  (hash-set! ht2 "key" "value")
+  (test #t hash-has-key? ht0 "--key")
+  (test "key" hash-ref-key ht2 "key")
+  (test "-key" hash-ref-key ht1 "-key")
+  (test #f hash-ref-key ht2 "absent" #f)
+  (test #f hash-ref-key ht1 "absent" #f)
+  (err/rt-test (hash-ref-key ht2 "absent") exn:fail:contract?))
 
 ;; ----------------------------------------
 

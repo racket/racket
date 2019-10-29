@@ -5,7 +5,8 @@
 
 In the same way that inspectors control access to structure fields
 (see @secref["inspectors"]), inspectors also control access to
-@tech{module bindings}. The default inspector for @tech{module
+@tech{module bindings}. Inspectors used this way are @deftech{code
+inspectors}. The default code inspector for @tech{module
 bindings} is determined by the @racket[current-code-inspector]
 parameter, instead of the @racket[current-inspector] parameter.
 

@@ -47,65 +47,6 @@ int GC_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*sta
 int GC_pthread_detach(pthread_t thread);
 #endif
 
-void mzrt_set_user_break_handler(void (*user_break_handler)(int))
-{
-#ifdef WIN32
-#else
-  signal(SIGINT, user_break_handler);
-#endif
-}
-
-static void rungdb() {
-#ifdef WIN32
-#else
-  pid_t pid = getpid();
-  char outbuffer[100];
-  char inbuffer[10];
-
-  fprintf(stderr, "pid # %i resume(r)/gdb(d)/exit(e)?\n", pid);
-  fflush(stderr);
-
-  while(1) {
-    while(read(fileno(stdin), inbuffer, 10) <= 0){
-      if(errno != EINTR){
-        fprintf(stderr, "Error detected %i\n", errno);
-      }
-    }
-    switch(inbuffer[0]) {
-      case 'r':
-        return;
-        break;
-      case 'd':
-        snprintf(outbuffer, 100, "xterm -e gdb ./racket3m %d &", pid);
-        fprintf(stderr, "%s\n", outbuffer);
-        if(system(outbuffer)) 
-          fprintf(stderr, "system failed\n");
-        break;
-      case 'e':
-      default:
-        exit(1);
-        break;
-    }
-  }
-#endif
-}
-
-#ifndef WIN32
-static void segfault_handler(int signal_num) {
-  pid_t pid = getpid();
-  fprintf(stderr, "sig# %i pid# %i\n", signal_num, pid);
-  rungdb();
-}
-#endif
-
-void mzrt_set_segfault_debug_handler()
-{
-#ifdef WIN32
-#else
-  signal(SIGSEGV, segfault_handler);
-#endif
-}
-
 void mzrt_sleep(int seconds)
 {
 #ifdef WIN32

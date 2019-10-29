@@ -4,7 +4,8 @@
 (require '#%foreign setup/dirs racket/unsafe/ops racket/private/for
          (only-in '#%unsafe
                   unsafe-thread-at-root
-                  unsafe-make-security-guard-at-root)
+                  unsafe-make-security-guard-at-root
+                  unsafe-add-post-custodian-shutdown)
          (for-syntax racket/base racket/list syntax/stx racket/syntax
                      racket/struct-info))
 
@@ -123,12 +124,15 @@
                                     (not (equal? lib-suffix "dll"))))
 (define version-sep (if (equal? lib-suffix "dll") "-" "."))
 
+(define-logger ffi-lib)
+
 (provide (protect-out (rename-out [get-ffi-lib ffi-lib]))
          ffi-lib? ffi-lib-name)
 (define (get-ffi-lib name [version/s ""]
 		     #:fail [fail #f]
 		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs]
-                     #:global? [global? (eq? (system-type 'so-mode) 'global)])
+                     #:global? [global? (eq? (system-type 'so-mode) 'global)]
+                     #:custodian [custodian #f])
   (cond
    [(not name) (ffi-lib name)] ; #f => NULL => open this executable
    [(not (or (string? name) (path? name)))
@@ -143,13 +147,24 @@
     ;; file-not-found error.  This is because the dlopen doesn't provide a
     ;; way to distinguish different errors (only dlerror, but that's
     ;; unreliable).
+    (define (fullpath p) (path->complete-path (cleanse-path p)))
+    (define tried '()) ;; (listof path-string), mutated
+    (define (try-lib name)
+      (let ([lib (ffi-lib name #t global?)])
+        (cond [lib (log-ffi-lib-debug "loaded ~e" name)]
+              [else (set! tried (cons name tried))])
+        lib))
+    (define (skip-lib name)
+      (begin (set! tried (cons name tried)) #f))
+    (define (try-lib-if-exists? name)
+      (cond [(file-exists?/insecure name) (try-lib (fullpath name))]
+            [else (skip-lib (fullpath name))]))
     (let* ([versions (if (list? version/s) version/s (list version/s))]
 	   [versions (map (lambda (v)
 			    (if (or (not v) (zero? (string-length v)))
 				""
                                 (string-append version-sep v)))
 			  versions)]
-	   [fullpath (lambda (p) (path->complete-path (cleanse-path p)))]
 	   [absolute? (absolute-path? name)]
 	   [name0 (path->string (cleanse-path name))]     ; orig name
 	   [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
@@ -158,31 +173,49 @@
 			     (if suffix-before-version?
 				 (string-append name0 "." lib-suffix v)
 				 (string-append name0 v "." lib-suffix))))
-		       versions)]
-	   [ffi-lib*  (lambda (name) (ffi-lib name #t global?))])
-      (or ;; try to look in our library paths first
-       (and (not absolute?)
-	    (ormap (lambda (dir)
-		     ;; try good names first, then original
-		     (or (ormap (lambda (name)
-				  (ffi-lib* (build-path dir name)))
-				names)
-			 (ffi-lib* (build-path dir name0))))
-		   (get-lib-dirs)))
-       ;; try a system search
-       (ormap ffi-lib* names)    ; try good names first
-       (ffi-lib* name0)          ; try original
-       (ormap (lambda (name)     ; try relative paths
-		(and (file-exists?/insecure name) (ffi-lib* (fullpath name))))
-	      names)
-       (and (file-exists?/insecure name0) ; relative with original
-	    (ffi-lib* (fullpath name0)))
-       ;; give up: by default, call ffi-lib so it will raise an error
-       (if fail
-	   (fail)
-	   (if (pair? names)
-	       (ffi-lib (car names) #f global?)
-	       (ffi-lib name0 #f global?)))))]))
+		       versions)])
+      (define lib
+        (or ;; try to look in our library paths first
+         (and (not absolute?)
+              (ormap (lambda (dir)
+                       ;; try good names first, then original
+                       (or (ormap (lambda (name) (try-lib (build-path dir name)))
+                                  names)
+                           (try-lib (build-path dir name0))))
+                     (get-lib-dirs)))
+         ;; try a system search
+         (ormap try-lib names)              ; try good names first
+         (try-lib name0)                    ; try original
+         (ormap try-lib-if-exists? names)   ; try relative paths
+         (try-lib-if-exists? name0)         ; relative with original
+         ;; give up: by default, call ffi-lib so it will raise an error
+         (begin
+           (log-ffi-lib-debug
+            "failed for (ffi-lib ~v ~v), tried: ~a"
+            name0 version/s
+            (apply
+             string-append
+             (for/list ([attempt (reverse tried)])
+               (format "\n  ~e~a" attempt
+                       (cond [(absolute-path? attempt)
+                              (cond [(file-exists?/insecure attempt) " (exists)"]
+                                    [else " (no such file)"])]
+                             [else " (using OS library search path)"])))))
+           (and (not fail)
+                (if (pair? names)
+                    (ffi-lib (car names) #f global?)
+                    (ffi-lib name0 #f global?))))))
+      (cond
+        [lib
+         (when custodian
+           (unsafe-add-post-custodian-shutdown (lambda () (ffi-lib-unload lib))
+                                               (if (eq? custodian 'place)
+                                                   #f
+                                                   custodian)))
+         lib]
+        [fail
+         (fail)]
+        [else (error 'ffi-lib "internal error; shouldn't get here")]))]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))
@@ -1081,6 +1114,13 @@
                  pre:  (x => (vector->cblock x t))
                  post: (x => (cblock->vector x t n)))]))
 
+;; Reflect the difference between 'racket and 'chez-scheme
+;; VMs for `_bytes` in `_bytes*`:
+(define _pointer/maybe-gcable
+  (if (eq? 'racket (system-type 'vm))
+      _gcpointer
+      _pointer))
+
 ;; _bytes or (_bytes o n) is for a memory block represented as a Scheme byte
 ;; string.  _bytes is just like a byte-string, and (_bytes o n) is for
 ;; pre-malloc of the string.  There is no need for other modes: i or io would
@@ -1090,7 +1130,7 @@
 (provide (rename-out [_bytes* _bytes]))
 (define-fun-syntax _bytes*
   (syntax-id-rules (o)
-    [(_ o n) (type: _gcpointer
+    [(_ o n) (type: _pointer/maybe-gcable
               pre:  (make-bytes-argument n)
               ;; post is needed when this is used as a function output type
               post: (x => (receive-bytes-result x n)))]
@@ -1525,7 +1565,7 @@
                        #:malloc-mode [malloc-mode 'atomic]
                        type . types)
   (let* ([types   (cons type types)]
-         [stype   (make-cstruct-type types #f alignment)]
+         [stype   (make-cstruct-type types #f alignment malloc-mode)]
          [offsets (compute-offsets types alignment (map (lambda (x) #f) types))]
          [len     (length types)])
     (make-ctype stype
@@ -1705,7 +1745,7 @@
             (define all-tags (cons ^TYPE-tag super-tags))
             (define _TYPE
               ;; c->scheme adjusts all tags
-              (let* ([cst (make-cstruct-type types #f alignment-v)]
+              (let* ([cst (make-cstruct-type types #f alignment-v malloc-mode)]
                      [t (_cpointer ^TYPE-tag cst)]
                      [c->s (ctype-c->scheme t)])
                 (wrap-TYPE-type
@@ -2042,8 +2082,8 @@
   ;; We bind `killer-executor' as a location variable, instead of a module
   ;; variable, so that the loop for `killer-thread' doesn't have a namespace
   ;; (via a prefix) in its continuation:
-  (let ([killer-executor (make-stubborn-will-executor)])
-    ;; The "stubborn" kind of will executor (for `killer-executor') is
+  (let ([killer-executor (make-late-will-executor)])
+    ;; The "late" kind of will executor (for `killer-executor') is
     ;; provided by '#%foreign, and it doesn't get GC'ed if any
     ;; finalizers are attached to it (while the normal kind can get
     ;; GCed even if a thread that is otherwise inaccessible is blocked

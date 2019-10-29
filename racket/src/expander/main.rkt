@@ -1,6 +1,5 @@
 #lang racket/base
 (require "common/set.rkt"
-         "common/fasl.rkt"
          "common/module-path.rkt"
          "namespace/namespace.rkt"
          "eval/main.rkt"
@@ -35,9 +34,11 @@
                   compiled-expression-recompile)
          (only-in racket/private/config find-main-config)
          (only-in "syntax/cache.rkt" cache-place-init!)
+         (only-in "syntax/syntax.rkt" syntax-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
-         (only-in "common/performance.rkt" performance-place-init!))
+         (only-in "common/performance.rkt" performance-place-init!)
+         (only-in "eval/shadow-directory.rkt" shadow-directory-place-init!))
 
 ;; All bindings provided by this module must correspond to variables
 ;; (as opposed to syntax). Provided functions must not accept keyword
@@ -118,8 +119,6 @@
          compile-keep-source-locations! ; to enable if the back end wants them
 
          expander-place-init!
-
-         fasl->s-exp/intern  ; for Chez Scheme as "primitive" and in linklet layer
 
          ;; The remaining functions are provided for basic testing
          ;; (such as "demo.rkt")
@@ -209,11 +208,13 @@
   (datum->syntax core-stx s))
 
 (define (expander-place-init!)
+  (syntax-place-init!)
   (scope-place-init!)
   (cache-place-init!)
   (core-place-init!)
   (module-path-place-init!)
   (module-cache-place-init!)
+  (shadow-directory-place-init!)
   (collection-place-init!)
   (performance-place-init!)
   (namespace-init!))

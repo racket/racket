@@ -1,1 +1,2 @@
-
+/* The size of a `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P

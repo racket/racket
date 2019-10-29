@@ -11,7 +11,9 @@
 
          get-module-code
          get-module-path
-         get-metadata-path)
+         get-metadata-path
+
+         default-compiled-sub-path)
 
 (define moddep-current-open-input-file
   (make-parameter open-input-file))

@@ -104,6 +104,7 @@ GRACKETMZOBJS_la =
 
 ../gracket@MMM@@NOT_OSX@@NOT_MINGW@: grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(LIBRKTIO_@LIBSFX@)
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
+	@POST_LINKER@ ../gracket@MMM@
 
 ../gracket@MMM@@EXE_SUFFIX@@MINGW@: grmain.@LTO@ ../../racket/MemoryModule.@LTO@ ../../racket/gc2/libracket3m.dll.a ../gres.o
 	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@@EXE_SUFFIX@ grmain.@LTO@ ../../racket/MemoryModule.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp -static-libgcc

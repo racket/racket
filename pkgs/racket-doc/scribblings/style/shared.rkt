@@ -3,19 +3,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 ; things to be shared among all sections of the style guide
 
-(require (for-label racket)
-         scribble/base
-         scribble/manual
-         scribble/struct
-         (only-in scribble/core table-columns table-cells style plain
-                  color-property)
-         scribble/html-properties
-         racket/list)
-
 (provide (for-label (all-from-out racket))
          (all-from-out scribble/manual))
 
 (provide
+  1/2-line
   LINEWIDTH
   eli
   codebox
@@ -26,11 +18,22 @@
   row-table
   rkt rkt/base rkt/gui xml)
 
+(require (for-label racket)
+         scribble/base
+         scribble/manual
+         scribble/struct
+         (only-in scribble/core table-columns table-cells style plain
+                  color-property)
+         scribble/html-properties
+         racket/list)
+
 (define eli "eli@barzilay.org")
 
 (define (LINEWIDTH) "102")
 
 ;; ---------------------------------------------------------------------------------------------------
+
+(define (1/2-line (n 11)) (t (string-join (map string (make-list n #\-)))))
 
 (define (rkt) (racketmodname racket))
 (define (rkt/base) (racketmodname racket/base))

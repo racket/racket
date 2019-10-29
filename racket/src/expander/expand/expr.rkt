@@ -25,7 +25,8 @@
          "reference-record.rkt"
          "prepare.rkt"
          "log.rkt"
-         "parsed.rkt")
+         "parsed.rkt"
+         "../compile/correlate.rkt")
 
 ;; ----------------------------------------
 
@@ -414,7 +415,7 @@
           (list (core-id 'quote phase)
                 null)))]
     [else
-     (define keep-for-parsed? (eq? (system-type 'vm) 'chez-scheme))
+     (define keep-for-parsed? keep-source-locations?)
      (define rebuild-s (keep-as-needed ctx s #:keep-for-parsed? keep-for-parsed?))
      (define prefixless (cdr (syntax-e disarmed-s)))
      (define rebuild-prefixless (and (syntax? prefixless)

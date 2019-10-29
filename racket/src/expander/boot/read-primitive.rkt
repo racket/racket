@@ -32,6 +32,7 @@
                 read-accept-box
                 ;; read-accept-bar-quote - shared with printer
                 read-decimal-as-inexact
+                read-single-flonum
                 read-accept-dot
                 read-accept-infix-dot
                 read-accept-quasiquote

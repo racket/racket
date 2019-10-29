@@ -78,7 +78,7 @@ identifier's @tech{symbol} and @tech{scope set} to its meaning: a
 @tech{variable}, a @tech{syntactic form}, or a @tech{transformer}. An
 identifier refers to a particular binding when the reference's symbol
 and the identifier's symbol are the same, and when the reference's
-@tech{scope set} is a subset of the binding's
+@tech{scope set} is a superset of the binding's
 @tech{scope set}. For a given identifier, multiple bindings may have
 @tech{scope sets} that are subsets of the identifier's; in that case,
 the identifier refers to the binding whose set is a superset of all
@@ -315,7 +315,7 @@ In a fully expanded program for a namespace whose @tech{base phase} is
 @racket[begin-for-syntax] and @racket[define-syntaxes] forms---not
 counting any @racket[begin-for-syntax] forms that wrap a
 @racket[module] or @racket[module*] form for the body of the @racket[module]
-or @racket[module*], unless a @racket[module*] form as @racket[#f] in place
+or @racket[module*], unless a @racket[module*] form has @racket[#f] in place
 of a @racket[_module-path] after the @racket[_id]. The
 @racket[_datum] in a @racket[quote-syntax] form
 preserves its information for all @tech{phase level}s.
@@ -606,7 +606,7 @@ is
 @racketblock[
 (define x 12)
 (define-syntax m ....)
-(let-values ([(x) 10]) x)
+(let ([x 10]) x)
 ]
 
 However, the result of the last expression is @racket[12], not

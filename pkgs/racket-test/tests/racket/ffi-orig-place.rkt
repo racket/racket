@@ -2,12 +2,16 @@
 (require ffi/unsafe)
 
 (module+ test
+  (self)
   (main))
 
 ;; Make sure that `#:in-original-place?' doesn't lead to deadlock:
 
 (define scheme_malloc_atomic
-  (get-ffi-obj 'GC_malloc_atomic #f (_fun #:in-original-place? #t _long -> _pointer)))
+  (get-ffi-obj 'GC_malloc_atomic #f (_fun #:in-original-place? #t _long -> _pointer)
+               (lambda ()
+                 ;; Try something that will often work with CS; the leak doesn't matter
+                 (get-ffi-obj 'malloc #f (_fun #:in-original-place? #t _long -> _pointer)))))
 
 (define (x-main)
   (define ps
@@ -15,7 +19,7 @@
       (define p
         (place pch
                (define j (place-channel-get pch))
-               ;; Start a thread that keep having to wait on the original place:
+               ;; Start a thread that keeps having to wait on the original place:
                (thread
                 (lambda ()
                   (let loop ()
@@ -36,3 +40,17 @@
   (for ([i 5])
     (printf "iter ~a\n" i)
     (x-main)))
+
+(define pthread_self
+  (get-ffi-obj 'pthread_self #f (_fun #:in-original-place? #t -> _pointer)
+               (lambda () #f)))
+
+(define (self)
+  (when pthread_self
+    (define here (cast (pthread_self) _pointer _intptr))
+    (define pl
+      (place pch
+             (place-channel-put pch (cast (pthread_self) _pointer _intptr))))
+    (define from-there (place-channel-get pl))
+    (unless (equal? here from-there)
+      (error "didn't run in main place"))))

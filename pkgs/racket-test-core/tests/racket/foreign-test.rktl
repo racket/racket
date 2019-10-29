@@ -5,6 +5,7 @@
 
 (require ffi/unsafe
          ffi/unsafe/cvector
+         ffi/unsafe/alloc
          ffi/unsafe/define
          ffi/unsafe/define/conventions
          ffi/vector
@@ -277,6 +278,10 @@
         ((ffi 'hoho (_fun _int (_fun _int -> (_fun _int -> _int)) -> _int))
          3 (lambda (x) (lambda (y) (+ y (* x x))))))
   ;; ---
+  ;; FIXME: this test is broken, because the array allocated by `(_list io _int len)`
+  ;; has no reason to stay in place; a GC during the callback may move it.
+  ;; The solution is probably to extend `_list` so that an allocation mode like
+  ;; 'atomic-interior can be supplied.
   (let ([qsort (get-ffi-obj 'qsort #f
                             (_fun (l    : (_list io _int len))
                                   (len  : _int = (length l))
@@ -307,6 +312,17 @@
     (t 1212       'charint_to_int (_fun _charint -> _int)     '(12 1200))
     (t '(123 123) 'int_to_charint (_fun _int -> _charint)     123)
     (t '(255 1)   'charint_swap   (_fun _charint -> _charint) '(1 255)))
+  ;; Make sure allocation mode is used for function result
+  (let ()
+    (define-cstruct _charint ([b _byte]
+                              [i _int])
+      #:malloc-mode 'atomic-interior)
+    (define v ((ffi 'int_to_charint (_fun _int -> _charint)) 77))
+    (define addr (cast v _pointer _intptr))
+    (test 77 charint-b v)
+    (test 77 charint-b v)
+    (collect-garbage)
+    (test #t eqv? (cast v _pointer _intptr) addr))
   ;; ---
   ;; test sending a callback for C to hold, preventing the callback from GCing
   (let ([with-keeper
@@ -1288,6 +1304,11 @@
   (eq? (tagged-obj3 o) obj3)
   (= (tagged-non2 o) obj2-addr)
   (= (tagged-non4 o) obj4-addr))
+
+;; ----------------------------------------
+
+(test #t procedure? ((allocator void) void))
+(test #f (allocator void) #f)
 
 ;; ----------------------------------------
 

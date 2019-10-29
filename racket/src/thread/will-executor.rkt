@@ -10,14 +10,13 @@
 ;; `will-execute` here, because it has to block when no will is ready.
 
 (provide make-will-executor
-         make-stubborn-will-executor
+         make-late-will-executor
          will-executor?
          will-register
          will-try-execute
          will-execute)
 
 (struct will-executor (host-we sema)
-  #:authentic
   #:property prop:evt (lambda (we)
                         (wrap-evt (semaphore-peek-evt (will-executor-sema we))
                                   (lambda (v) we))))
@@ -32,8 +31,11 @@
 (define (make-will-executor)
   (do-make-will-executor host:make-will-executor))
 
-(define (make-stubborn-will-executor)
-  (do-make-will-executor host:make-stubborn-will-executor))
+;; The returned wrapper will executor isn't necessarily retained when
+;; there are pending wills, but the underlying one is retained, and
+;; that implies that finalized values won't get lost
+(define (make-late-will-executor)
+  (do-make-will-executor host:make-late-will-executor))
 
 (define/who (will-register we v proc)
   (check who will-executor? we)

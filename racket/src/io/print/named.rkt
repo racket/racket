@@ -13,8 +13,7 @@
          [max-length (write-string/max what o max-length)]
          [name-str
           (cond
-            [(symbol? name)
-             (symbol->print-string name #:for-type? #t)]
+            [(symbol? name) (symbol->string name)]
             [(path? name) ; especially for input & output ports
              (path->string name)]
             [(string? name)

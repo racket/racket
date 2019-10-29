@@ -82,6 +82,7 @@
 (define-flag-param always-check-dependencies #f)
 (define-flag-param fix-dependencies #f)
 (define-flag-param check-unused-dependencies #f)
+(define-flag-param recompile-only #f)
 (define-flag-param call-install #t)
 (define-flag-param call-post-install #t)
 (define-flag-param pause-on-errors #f)

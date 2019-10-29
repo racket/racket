@@ -14,7 +14,6 @@
          peek-some-bytes!
 
          read-a-byte
-         read-byte-via-bytes
          peek-a-byte
          peek-byte-via-bytes
 
@@ -102,6 +101,21 @@
                                             "result" v
                                             "byte-string length" (- end start))])]
                  [(eof-object? v) eof]
+                 [(semaphore? v)
+                  ;; A semaphore is treated as a special case, making
+                  ;; it equivalent to an evt that returns 0
+                  (cond
+                    [zero-ok?
+                     ;; Poll:
+                     (cond
+                       [(semaphore-try-wait? v)
+                        (loop in extra-count-ins)]
+                       [else 0])]
+                    [else
+                     (if enable-break?
+                         (semaphore-wait/enable-break v)
+                         (semaphore-wait v))
+                     (loop in extra-count-ins)])]
                  [(evt? v)
                   ;; If `zero-ok?`, we should at least poll the event
                   (define timeout (if zero-ok? (lambda () 0) #f))
@@ -187,6 +201,14 @@
                                             "result" v
                                             "byte-string length" (- end start))])]
                  [(eof-object? v) eof]
+                 [(semaphore? v)
+                  (cond
+                    [zero-ok? 0]
+                    [else
+                     (if enable-break?
+                         (semaphore-wait/enable-break v)
+                         (semaphore-wait v))
+                     (loop in)])]
                  [(evt? v)
                   (cond
                     [zero-ok? 0]
@@ -222,12 +244,12 @@
      b]
     [else
      (end-atomic)
-     (read-byte-via-bytes in #:special-ok? special-ok?)]))
+     (read-byte-via-bytes who in #:special-ok? special-ok?)]))
 
 ;; Use the general path; may return a procedure for a special
-(define (read-byte-via-bytes in #:special-ok? [special-ok? #t])
+(define (read-byte-via-bytes who in #:special-ok? [special-ok? #t])
   (define bstr (make-bytes 1))
-  (define v (read-some-bytes! 'read-byte in bstr 0 1
+  (define v (read-some-bytes! who in bstr 0 1
                               #:copy-bstr? #f
                               #:special-ok? special-ok?
                               #:limit-special-arity? #f))
@@ -247,14 +269,14 @@
      b]
     [else
      (end-atomic)
-     (peek-byte-via-bytes in skip-k #:special-ok? special-ok?)]))
+     (peek-byte-via-bytes who in skip-k #:special-ok? special-ok?)]))
 
 ;; Use the general path; may return a procedure for a special
-(define (peek-byte-via-bytes in skip-k
+(define (peek-byte-via-bytes who in skip-k
                              #:special-ok? [special-ok? #t]
                              #:progress-evt [progress-evt #f])
   (define bstr (make-bytes 1))
-  (define v (peek-some-bytes! 'peek-byte in bstr 0 1 skip-k
+  (define v (peek-some-bytes! who in bstr 0 1 skip-k
                               #:copy-bstr? #f
                               #:special-ok? special-ok?
                               #:limit-special-arity? #f

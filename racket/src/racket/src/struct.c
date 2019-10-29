@@ -306,6 +306,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
   /* Add poller structure: */
   REGISTER_SO(poller_struct);
   poller_struct = scheme_make_struct_type_from_string("unsafe-poller", NULL, 1, NULL, NULL, 1);
+  REGISTER_SO(scheme_unsafe_poller_proc);
   scheme_unsafe_poller_proc = make_struct_proc((Scheme_Struct_Type *)poller_struct, "unsafe-poller", SCHEME_CONSTR, 1);
 
   REGISTER_SO(write_property);
@@ -1564,11 +1565,6 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Object *v;
 
-  if (sinfo->false_positive_ok) {
-    sinfo->potentially_false_positive = 1;
-    return 1;
-  }
-
   v = scheme_struct_type_property_ref(evt_property, o);
 
   if (!v) {
@@ -1660,7 +1656,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
           v = scheme_make_closed_prim_w_arity(return_wrapped, (void *)v, "wrapper", 1, 1);
       }
       scheme_set_sync_target(sinfo, v, (done ? v : NULL), NULL, 0, 0, NULL);
-      return 1;
+      return done;
     }
   }
 
@@ -2338,9 +2334,10 @@ static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_
                                       "calling guard procedure");
             return NULL;
           }
-          if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES))
-            memcpy(guard_argv, scheme_multiple_array, gcount * sizeof(Scheme_Object *));
-          else
+          if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
+            if (gcount)
+              memcpy(guard_argv, scheme_multiple_array, gcount * sizeof(Scheme_Object *));
+          } else
             guard_argv[0] = v;
           guard_argv[gcount] = guard_argv[argc];
         }
@@ -3422,6 +3419,10 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
                 | ((st->nonfail_constructor
                     && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
                    ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
+                   : 0)
+                | ((st->prefab_key
+                    && (!expected || (v & STRUCT_PROC_SHAPE_PREFAB)))
+                   ? STRUCT_PROC_SHAPE_PREFAB
                    : 0));
   } else if (!SCHEME_PRIMP(e)) {
     want_v = -1;
@@ -3850,12 +3851,6 @@ static int chaperone_evt_is_ready(Scheme_Object *obj, Scheme_Schedule_Info *sinf
   Scheme_Object *o = obj;
   Scheme_Chaperone *px;
   int redirected = 0;
-
-  if (sinfo->false_positive_ok) {
-    /* Safer, though maybe unnecessarily conservative: */
-    sinfo->potentially_false_positive = 1;
-    return 1;
-  }
 
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
@@ -5761,6 +5756,21 @@ Scheme_Object *scheme_unsafe_make_location(void)
   /* caller must initialize content */
   
   return (Scheme_Object *)inst;
+}
+
+Scheme_Object *scheme_unsafe_make_srcloc(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *srcloc;
+
+  srcloc = scheme_unsafe_make_location();
+
+  ((Scheme_Structure *)srcloc)->slots[0] = argv[0];
+  ((Scheme_Structure *)srcloc)->slots[1] = argv[1];
+  ((Scheme_Structure *)srcloc)->slots[2] = argv[2];
+  ((Scheme_Structure *)srcloc)->slots[3] = argv[3];
+  ((Scheme_Structure *)srcloc)->slots[4] = argv[4];
+
+  return srcloc;
 }
 
 int scheme_is_location(Scheme_Object *o)

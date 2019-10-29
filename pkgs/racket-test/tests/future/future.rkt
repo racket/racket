@@ -1,8 +1,10 @@
 #lang scheme/base
 
-(require scheme/future 
-         scheme/list 
-         rackunit)
+(require scheme/future
+         scheme/list
+         (rename-in rackunit
+                    [check-equal? real:check-equal?])
+         (for-syntax racket/base))
 
 #|Need to add expressions which raise exceptions inside a 
 future thunk which can be caught at the touch site 
@@ -12,28 +14,44 @@ Both future and touch should be called from within a future thunk.
 
 We should also test deep continuations.
 
-|# 
+|#
+
+(define-syntax (check-equal? stx)
+  (syntax-case stx ()
+    [(_ e ...)
+     #`(begin
+         (writeln `(check-equal? e ...))
+         #,(syntax/loc stx (real:check-equal? e ...)))]))
 
 ;Tests specific to would-be-future 
 (define-struct future-event (future-id process-id what time prim-name target-fid) 
     #:prefab)
 
-(define (get-events-of-type type log) 
-    (filter (λ (e) 
-              (equal? (future-event-what e) type)) 
+(define (get-events-of-type type log)
+    (filter (λ (e)
+              (equal? (future-event-what e) type))
             log))
 
 (define (get-blocks log)
-    (get-events-of-type 'block log))
+  (get-events-of-type 'block log))
   
-  (define (get-touch-blocks log) 
-    (get-events-of-type 'touch log))
+(define (get-sync-blocks log)
+  (get-events-of-type 'sync log))
   
-  (define (get-blocks-on prim log) 
-    (filter (λ (e) 
-              (equal? (future-event-prim-name e) 
-                      prim)) 
-            (get-blocks log)))
+(define (get-touch-blocks log)
+  (get-events-of-type 'touch log))
+
+(define (get-blocks-on prim log)
+  (filter (λ (e)
+            (equal? (future-event-prim-name e)
+                    prim))
+          (get-blocks log)))
+
+(define (get-sync-blocks-on prim log)
+  (filter (λ (e)
+            (equal? (future-event-prim-name e)
+                    prim))
+          (get-sync-blocks log)))
 
 (when (futures-enabled?)
   (define recv (make-log-receiver (current-logger) 'debug)) 
@@ -53,8 +71,17 @@ We should also test deep continuations.
                               (printf "hello3")))]) 
     (touch f) 
     (let ([log (raw-log-output)])
-      (check-equal? 3 (length (get-blocks log))) 
-      (check-equal? 3 (length (get-blocks-on 'printf log))) 
+      ;; Racket CS would-be futures behave slightly differently
+      ;; --- reflecting the way that futures always suspend
+      ;; when they hit a blocking operation
+      (case (system-type 'vm)
+        [(chez-scheme)
+         (check-equal? 1 (length (get-blocks log)))
+         ;; `printf` is ok up to the point that it tries to get the currrent output port:
+         (check-equal? 1 (length (get-blocks-on 'continuation-mark-set-first log)))]
+        [else
+         (check-equal? 3 (length (get-blocks log)))
+         (check-equal? 3 (length (get-blocks-on 'printf log)))])
       (check-equal? 0 (length (get-touch-blocks log)))))
   
   (let ([f1 (would-be-future 
@@ -68,14 +95,39 @@ We should also test deep continuations.
                                            42))))))]) 
     (touch f1) 
     (let ([log (raw-log-output)])
-      (check-equal? 5 (length (get-blocks log))) 
-      (check-equal? 1 (length (get-touch-blocks log)))
-      (check-equal? 4 (length (get-blocks-on 'printf log))) 
-      (check-equal? 1 (length (get-blocks-on 'would-be-future log))))))
+      (case (system-type 'vm)
+        [(chez-scheme)
+         (check-equal? 2 (length (get-blocks log)))
+         (check-equal? 0 (length (get-touch-blocks log)))
+         (check-equal? 2 (length (get-blocks-on 'continuation-mark-set-first log)))
+         (check-equal? 0 (length (get-blocks-on 'would-be-future log)))]
+        [else
+         (check-equal? 5 (length (get-blocks log)))
+         (check-equal? 1 (length (get-touch-blocks log)))
+         (check-equal? 4 (length (get-blocks-on 'printf log)))
+         (check-equal? 1 (length (get-blocks-on 'would-be-future log)))])))
+
+  (let ([f (let ([ht (make-hasheq)])
+             (would-be-future (λ ()
+                                (hash-set! ht 'ok 5)
+                                (hash-ref ht 'ok))))])
+    (touch f)
+    (let ([log (raw-log-output)])
+      ;; Racket CS syncs on hash-ref, traditional Racket blocks
+      (case (system-type 'vm)
+        [(chez-scheme)
+         (check-equal? 2 (length (get-sync-blocks log)))
+         (check-equal? 1 (length (get-sync-blocks-on 'hash-set! log)))
+         (check-equal? 1 (length (get-sync-blocks-on 'hash-ref log)))]
+        [else
+         (check-equal? 2 (length (get-blocks log)))
+         (check-equal? 1 (length (get-blocks-on 'hash-set! log)))
+         (check-equal? 1 (length (get-blocks-on 'hash-ref log)))])
+      (check-equal? 0 (length (get-touch-blocks log))))))
 
 ;; ----------------------------------------
 
-(define (run-tests func) 
+(define (run-tests func)
   (check-equal?
    'yes
    (let/ec k
@@ -854,7 +906,8 @@ We should also test deep continuations.
       (define f (func (lambda () (loop i))))
       (sleep 0.1)
       (with-handlers ([exn:fail? (lambda (exn)
-                                   (unless (regexp-match #rx"expected number of values not received" (exn-message exn))
+                                   (unless (or (regexp-match #rx"expected number of values not received" (exn-message exn))
+                                               (regexp-match #rx"returned two values to single value return context" (exn-message exn)))
                                      (raise exn)))])
         (touch f))))
 

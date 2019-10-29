@@ -33,7 +33,7 @@
 ;; Modules that are defined via `embedded-load` can be "predefined",
 ;; because they can be defined in every place as the embedded load
 ;; is replayed in each place
-(define current-module-declare-as-predefined (make-parameter #f))
+(define current-module-declare-as-predefined (make-parameter #f #f 'current-module-declare-as-predefined))
 
 (define (eval-module c
                      #:namespace [ns (current-namespace)]
@@ -190,8 +190,13 @@
 
                                    (define module-body-instance-instance
                                      (make-module-body-instance-instance
-                                      #:set-transformer! (lambda (name val)
-                                                           (namespace-set-transformer! ns (sub1 phase-level) name val))))
+                                      #:set-transformer! (cond
+                                                          [(zero-phase? phase-level)
+                                                           (lambda (name val)
+                                                             (error 'define-syntax "should not happen at phase level 0"))]
+                                                          [else
+                                                           (lambda (name val)
+                                                             (namespace-set-transformer! ns (sub1 phase-level) name val))])))
 
                                    (define (instantiate-body)
                                      (instantiate-linklet phase-linklet

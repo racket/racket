@@ -99,6 +99,16 @@ Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
 
 Safe versions of @racket[unsafe-fx->fl] and @racket[unsafe-fl->fx].}
 
+
+@defproc[(fixnum-for-every-system? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @tech{fixnum} and is
+represented by fixnum by every Racket implementation, @racket[#f]
+otherwise.
+
+@history[#:added "7.3.0.11"]}
+
+
 @; ------------------------------------------------------------
 
 @section[#:tag "fxvectors"]{Fixnum Vectors}

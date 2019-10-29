@@ -252,11 +252,27 @@ extern "C"
 {
 #endif
 
-#if defined(MZ_DECLARE_NORETURN) && defined(__GNUC__)
-#define NORETURN __attribute__((__noreturn__))
-#else
-#define NORETURN
-#endif
+#if !defined(MZ_NORETURN)
+# if !defined(MZ_PRECISE_RETURN_SPEC)
+#  define MZ_NORETURN
+# elif defined(__GNUC__) || defined(__clang__)
+#  define MZ_NORETURN __attribute__((noreturn))
+# elif defined(_MSC_VER)
+#  define MZ_NORETURN __declspec(noreturn)
+# else
+#  define MZ_NORETURN
+# endif /* defined(__GNUC__) || defined(__clang__) */
+#endif /* !defined(MZ_NORETURN) */
+
+#if !defined(MZ_UNREACHABLE)
+# if (defined(__GNUC__) && (__GNUC__ > 4)) || defined(__clang__)
+#  define MZ_UNREACHABLE __builtin_unreachable()
+# elif defined(_MSC_VER)
+#  define MZ_UNREACHABLE __assume(0)
+# else
+#  define MZ_UNREACHABLE
+# endif /* defined(__GNUC__) || defined(__clang__) */
+#endif /* !defined(MZ_UNREACHABLE) */
 
 /* Allowed by all configurations, currently: */
 #define MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
@@ -1670,7 +1686,7 @@ MZ_EXTERN Scheme_Object *scheme_eval_waiting;
 #endif
 
 #ifdef MZ_USE_JIT
-MZ_EXTERN void scheme_jit_longjmp(mz_jit_jmp_buf b, int v);
+MZ_EXTERN MZ_NORETURN void scheme_jit_longjmp(mz_jit_jmp_buf b, int v);
 MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
 # define scheme_jit_setjmp(b) (scheme_jit_setjmp_prepare(b), scheme_call_mz_setjmp((b)->jb))
 #else
@@ -1919,7 +1935,10 @@ MZ_EXTERN void scheme_set_compiled_file_roots(Scheme_Object *list);
 MZ_EXTERN void scheme_set_dll_path(wchar_t *s);
 typedef void *(*scheme_dll_open_proc)(const char *name, int as_global);
 typedef void *(*scheme_dll_find_object_proc)(void *h, const char *name);
-MZ_EXTERN void scheme_set_dll_procs(scheme_dll_open_proc, scheme_dll_find_object_proc);
+typedef void (*scheme_dll_close_proc)(void *h);
+MZ_EXTERN void scheme_set_dll_procs(scheme_dll_open_proc,
+                                    scheme_dll_find_object_proc,
+                                    scheme_dll_close_proc);
 #endif
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);

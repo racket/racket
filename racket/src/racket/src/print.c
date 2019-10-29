@@ -142,6 +142,12 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
 #define SCHEME_CHAPERONE_HASHTPx(obj) (SCHEME_HASHTPx(obj) \
                                        || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))))
 
+#define SCHEME_CHAPERONE_NONEMPTY_HASHTRP(obj) (SCHEME_CHAPERONEP(obj)  \
+                                                ? (SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj)) \
+                                                   && ((Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj))->count) \
+                                                : (SCHEME_HASHTRP(obj)  \
+                                                   && ((Scheme_Hash_Tree *)(obj))->count))
+
 #define HAS_SUBSTRUCT(obj, qk) \
    (SCHEME_PAIRP(obj) \
     || SCHEME_MUTABLE_PAIRP(obj) \
@@ -154,7 +160,7 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
 	   && PRINTABLE_STRUCT(obj, pp), 0)) \
     || (qk(SCHEME_CHAPERONE_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
     || (qk(pp->print_struct, 1) && SCHEME_CHAPERONE_STRUCTP(obj) && SCHEME_PREFABP(obj)) \
-    || (qk(pp->print_hash_table, 1) && (SCHEME_CHAPERONE_HASHTPx(obj) || SCHEME_CHAPERONE_HASHTRP(obj))))
+    || (qk(pp->print_hash_table, 1) && (SCHEME_CHAPERONE_HASHTPx(obj) || SCHEME_CHAPERONE_NONEMPTY_HASHTRP(obj))))
 #define ssQUICK(x, isbox) x
 #define ssQUICKp(x, isbox) (pp ? x : isbox)
 #define ssALLp(x, isbox) isbox
@@ -2290,7 +2296,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (notdisplay == 3) {
             vec = scheme_vector_to_list(vec);
             vec = scheme_make_pair(scheme_object_name(obj), SCHEME_CDR(vec));
-            print_pair(vec, notdisplay, compact, ht, mt, pp, scheme_pair_type, !pp->print_pair_curly, 1);
+            print_pair(vec, notdisplay, compact, ht, mt, pp, scheme_pair_type, 1, 1);
           } else {
             if (SCHEME_TRUEP(prefab))
               SCHEME_VEC_ELS(vec)[0] = prefab;
@@ -2327,12 +2333,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	      name = SCHEME_STRUCT_NAME_SYM(obj);
             }
 
-            s = scheme_symbol_name_and_size(name, (uintptr_t *)&l, 
-                                            (pp->print_struct
-                                             ? SCHEME_SNF_FOR_TS
-                                             : (pp->can_read_pipe_quote 
-                                                ? SCHEME_SNF_PIPE_QUOTE
-                                                : SCHEME_SNF_NO_PIPE_QUOTE)));
+            s = scheme_symbol_val(name);
+            l = SCHEME_SYM_LEN(name);
+
             print_utf8_string(pp, s, 0, l);
 	    PRINTADDRESS(pp, obj);
 	    print_utf8_string(pp, ">", 0, 1);
@@ -3654,7 +3657,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 } while(0);
 #define F_0 print_utf8_string(pp, "#0(", 0, 3)
 #define F_D sprintf(buffer, "#%d(", size)
-#define F_VECTOR print_utf8_string(pp, "(vector ", 0, 8)
+#define F_VECTOR print_utf8_string(pp, "(vector", 0, 7)
 #define F_ print_utf8_string(pp, "#(", 0, 2)
 #define PRINT_ELM() do {\
   print(elem, notdisplay, compact, ht, mt, pp); \
@@ -3674,7 +3677,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 #define DO_ELM_SELECTOR()  elem = SCHEME_FLVEC_ELS(vec)[i];
 #define F_0 print_utf8_string(pp, "#fl0(", 0, 5)
 #define F_D sprintf(buffer, "#fl%d(", size)
-#define F_VECTOR print_utf8_string(pp, "(flvector ", 0, 10)
+#define F_VECTOR print_utf8_string(pp, "(flvector", 0, 9)
 #define F_ print_utf8_string(pp, "#fl(", 0, 4)
 #define PRINT_ELM() do {\
   print_utf8_string(pp, scheme_double_to_string(elem, buffer, 100, 0, &used_buffer), 0, -1); \
@@ -3694,7 +3697,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 #define DO_ELM_SELECTOR()  elem = SCHEME_FXVEC_ELS(vec)[i];
 #define F_0 print_utf8_string(pp, "#fx0(", 0, 5)
 #define F_D sprintf(buffer, "#fx%d(", size)
-#define F_VECTOR print_utf8_string(pp, "(fxvector ", 0, 10)
+#define F_VECTOR print_utf8_string(pp, "(fxvector", 0, 9)
 #define F_ print_utf8_string(pp, "#fx(", 0, 4)
 #define PRINT_ELM() do {\
   print(elem, notdisplay, compact, ht, mt, pp); \

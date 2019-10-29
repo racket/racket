@@ -17,7 +17,8 @@
 (define/who executable-yield-handler
   (make-parameter void (lambda (p)
                          (check who (procedure-arity-includes/c 1) p)
-                         p)))
+                         p)
+                  'executable-yield-handler))
 
 (define/who current-command-line-arguments
   (make-parameter '#() (lambda (v)
@@ -26,7 +27,8 @@
                          (unless (and (vector? v)
                                       (andmap string? l))
                            (raise-argument-error who "(vectorof string?)" l))
-                         (list->vector (map string->immutable-string l)))))
+                         (list->vector (map string->immutable-string l)))
+                  'current-command-line-arguments))
 
 (define/who current-print
   (make-parameter (lambda (v)
@@ -35,7 +37,8 @@
                       (newline)))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 1) p)
-                    p)))
+                    p)
+                  'current-print))
 
 (define/who current-read-interaction
   (make-parameter (lambda (src in)
@@ -44,7 +47,8 @@
                       (installed-read-syntax src in)))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
-                    p)))
+                    p)
+                  'current-read-interaction))
 
 (define/who current-prompt-read
   (make-parameter (lambda ()
@@ -53,13 +57,15 @@
                       ((current-read-interaction) (object-name in) in)))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 0) p)
-                    p)))
+                    p)
+                  'current-prompt-read))
 
 (define/who current-get-interaction-input-port
   (make-parameter (lambda () (current-input-port))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 0) p)
-                    p)))
+                    p)
+                  'current-get-interaction-input-port))
 
 ;; ----------------------------------------
 

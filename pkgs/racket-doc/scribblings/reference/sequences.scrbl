@@ -1,9 +1,11 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/scheme
+@(require "mz.rkt"
+          scribble/scheme
           (for-syntax racket/base)
           (for-label racket/generator
                      racket/generic
-                     compatibility/mlist))
+                     compatibility/mlist
+                     syntax/stx))
 
 @(define (info-on-seq where what)
    @margin-note{See @secref[where] for information on using @|what| as
@@ -173,11 +175,11 @@ each element in the sequence.
   @racket[step] is non-negative, or less or equal to @racket[end] if
   @racket[step] is negative.  @speed[in-range "number"]
 
-  
+
   @examples[#:label "Example: gaussian sum" #:eval sequence-evaluator
     (for/sum ([x (in-range 10)]) x)]
 
-  
+
   @examples[#:label "Example: sum of even numbers" #:eval sequence-evaluator
     (for/sum ([x (in-range 0 100 2)]) x)]
 
@@ -257,12 +259,12 @@ each element in the sequence.
 
   If @racket[stop] is not in [-1, @racket[(vector-length vec)]],
   then the @exnraise[exn:fail:contract].
-  
+
   If @racket[start] is less than
   @racket[stop] and @racket[step] is negative, then the
-  @exnraise[exn:fail:contract:mismatch].  Similarly, if @racket[start]
+  @exnraise[exn:fail:contract].  Similarly, if @racket[start]
   is more than @racket[stop] and @racket[step] is positive, then the
-  @exnraise[exn:fail:contract:mismatch].
+  @exnraise[exn:fail:contract].
 
   @speed[in-vector "vector"]
 
@@ -401,7 +403,7 @@ each element in the sequence.
   Returns a sequence whose elements are pairs, each containing a key
   and its value from @racket[hash] (as opposed to using @racket[hash]
   directly as a sequence to get the key and value as separate values
-  for each element). 
+  for each element).
 
   The @racket[bad-index-v] argument, if supplied, is used in the same
   way as by @racket[in-hash]. When an invalid index is encountered,
@@ -416,39 +418,39 @@ each element in the sequence.
   @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
 @deftogether[(
-@defproc[(in-mutable-hash 
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+@defproc[(in-mutable-hash
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
-         (in-mutable-hash 
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c]) 
+         (in-mutable-hash
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-keys
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-keys
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-values
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-values
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-pairs
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-pairs
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
-@defproc[(in-immutable-hash 
+@defproc[(in-immutable-hash
           [hash (and/c hash? immutable?)])
 	  sequence?]
 @defproc[#:link-target? #f
-         (in-immutable-hash 
+         (in-immutable-hash
           [hash (and/c hash? immutable?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-immutable-hash-keys
@@ -472,29 +474,29 @@ each element in the sequence.
          (in-immutable-hash-pairs
           [hash (and/c hash? immutable?)] [bad-index-v any/c])
 	  sequence?]
-@defproc[(in-weak-hash 
-          [hash (and/c hash? hash-weak?)]) 
+@defproc[(in-weak-hash
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
-         (in-weak-hash 
+         (in-weak-hash
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-keys
-          [hash (and/c hash? hash-weak?)]) 
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-weak-hash-keys
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-values
-          [hash (and/c hash? hash-weak?)]) 
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-weak-hash-keys
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-pairs
-          [hash (and/c hash? hash-weak?)]) 
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-weak-hash-pairs
@@ -502,9 +504,9 @@ each element in the sequence.
 	  sequence?]
 )]{
    Sequence constructors for specific kinds of hash tables.
-   These may perform better than the analogous @racket[in-hash] 
+   These may perform better than the analogous @racket[in-hash]
    forms.
-   
+
    @history[#:added "6.4.0.6"
             #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]
 }
@@ -532,47 +534,28 @@ each element in the sequence.
   @racket[path<?], and the content of a subdirectory is reported
   before subsequent paths within the directory.
 
-@examples[
-    (code:comment @#,t{Given a directory tree:})
-    (code:comment @#,t{})
-    (code:comment @#,t{ /example})
-    (code:comment @#,t{ ├── a})
-    (code:comment @#,t{ │   ├── alpha})
-    (code:comment @#,t{ │   └── apple})
-    (code:comment @#,t{ ├── b})
-    (code:comment @#,t{ │   └── beta})
-    (code:comment @#,t{ └── c})
-    (code:comment @#,t{})
-    (eval:alts
-      (parameterize ([current-directory "/example"])
-        (for ([p (in-directory)])
-          (printf "~a\n" p)))
-      (for ([p (in-list '("a"
-                          "a/alpha"
-                          "a/apple"
-                          "b"
-                          "b/beta"
-                          "c"))])
-        (printf "~a\n" p)))
-    (eval:alts
-      (for ([p (in-directory "/example")])
-        (printf "~a\n" p))
-      (for ([p (in-list '("/example/a"
-                          "/example/a/alpha"
-                          "/example/a/apple"
-                          "/example/b"
-                          "/example/b/beta"
-                          "/example/c"))])
-        (printf "~a\n" p)))
-    (eval:alts
-      (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" path))])
-        (for ([p (in-directory "/example" f)])
-          (printf "~a\n" p)))
-      (for ([p (in-list '("/example/a"
-                          "/example/b"
-                          "/example/b/beta"
-                          "/example/c"))])
-        (printf "~a\n" p)))]
+  @examples[
+    (eval:alts (current-directory (collection-path "info"))
+               (void))
+    (eval:alts (for/list ([f (in-directory)])
+                  f)
+               (map string->path '("main.rkt"
+                                   "compiled"
+                                   "compiled/main_rkt.dep"
+                                   "compiled/main_rkt.zo")))
+    (eval:alts (for/list ([f (in-directory "compiled")])
+                 f)
+               (map string->path '("main_rkt.dep"
+                                   "main_rkt.zo")))
+    (eval:alts (for/list ([f (in-directory "compiled")])
+                 f)
+               (map string->path '("compiled/main_rkt.dep"
+                                   "compiled/main_rkt.zo")))
+    (eval:alts (for/list ([f (in-directory #f (lambda (p)
+                                                (not (regexp-match? #rx"compiled" p))))])
+                  f)
+               (map string->path '("main.rkt" "compiled")))
+  ]
 
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}
          #:changed "6.6.0.4" @elem{Added guarantee of sorted results.}]}
@@ -701,7 +684,7 @@ each element in the sequence.
   @itemize[
     @item{The first result is a @racket[_pos->element] procedure that
       takes the current position and returns the value(s) for the
-      current element.}      
+      current element.}
     @item{The optional second result is an @racket[_early-next-pos]
       procedure that is described further below. Alternatively, the
       optional second result can be @racket[#f], which is equivalent
@@ -1004,7 +987,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 @defproc[(in-syntax [stx syntax?]) sequence?]{
   Produces a sequence whose elements are the successive subparts of
   @racket[stx].
-  Equivalent to @racket[(syntax->list lst)].
+  Equivalent to @racket[(stx->list lst)].
   @speed[in-syntax "syntax"]
 
 @examples[#:eval sequence-evaluator
@@ -1243,7 +1226,7 @@ stream, but plain lists can be used as streams, and functions such as
        (define (stream-first stream)
          (first (list-stream-v stream)))
        (define (stream-rest stream)
-         (rest (list-stream-v stream)))])
+         (list-stream (rest (list-stream-v stream))))])
 
     (define l1 (list-stream '(1 2)))
     (stream? l1)
@@ -1252,10 +1235,11 @@ stream, but plain lists can be used as streams, and functions such as
 }
 
 @defthing[prop:stream struct-type-property?]{
-  A deprecated structure type property used to define custom
-  extensions to the stream API. Use @racket[gen:stream] instead.
-  Accepts a vector of three procedures taking the same arguments as
-  the methods in @racket[gen:stream].
+  A structure type property used to define custom
+  extensions to the stream API. Using the @racket[prop:stream] property
+  is discouraged; use the @racket[gen:stream] @tech{generic interface}
+  instead. Accepts a vector of three procedures taking the same arguments
+  as the methods in @racket[gen:stream].
 }
 
 @defproc[(stream/c [c contract?]) contract?]{
@@ -1381,7 +1365,7 @@ values from the generator.
     (welcome)]}
 
 @defform/subs[(in-generator maybe-arity body ...+)
-              ([maybe-arity code:blank 
+              ([maybe-arity code:blank
                             (code:line #:arity arity-k)])]{
   Produces a @tech{sequence} that encapsulates the @tech{generator}
   formed by @racket[(generator () body ...+)]. The values produced by
@@ -1404,7 +1388,7 @@ values from the generator.
   values for each element, its arity should be declared with an
   @racket[#:arity arity-k] clause; the @racket[arity-k] must be a
   literal, exact, non-negative integer.
-  
+
   @examples[#:eval generator-eval
     (eval:error
      (let ([g (in-generator

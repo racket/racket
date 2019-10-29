@@ -1,7 +1,8 @@
 #lang racket/base
 (require "check.rkt"
          "thread.rkt"
-         "time.rkt")
+         "time.rkt"
+         "schedule.rkt")
 
 (provide vector-set-performance-stats!)
 
@@ -19,7 +20,7 @@
      (maybe-set! 1 (current-milliseconds))
      (maybe-set! 2 (current-gc-milliseconds))
      (maybe-set! 3 0) ; # of GCs
-     (maybe-set! 4 0) ; # of thread switches
+     (maybe-set! 4 thread-swap-count) ; # of thread swaps
      (maybe-set! 5 0) ; # of stack overflows
      (maybe-set! 6 0) ; # of threads scheduled for running
      (maybe-set! 7 0) ; # of syntax objects read

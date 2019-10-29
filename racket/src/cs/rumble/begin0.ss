@@ -1,7 +1,7 @@
 
-;; See copy in "expander.sls"
 (define-syntax begin0
-  (syntax-rules ()
+  (syntax-rules (void)
+    [(_ expr0) expr0]
     [(_ expr0 expr ...)
      (call-with-values (lambda ()
                          (call-with-values (lambda () expr0)

@@ -69,7 +69,11 @@
                "expected at least one expression on the right-hand side after #:when clause"
                clause)]
              [(#:when e rest ...) (mk #f #'((if e (let () rest ...) (fail))))]
-             [(((~datum =>) unm) . rhs) (mk #'unm #'rhs)]
+             [(((~datum =>) unm:id) . rhs) (mk #'unm #'rhs)]
+             [(((~datum =>) unm) . rhs)
+              (raise-syntax-error 'match
+                                  "expected an identifier after `=>`"
+                                  #'unm)]
              [_ (mk #f rhs)])))
        (define/with-syntax body 
          (compile* (syntax->list #'(xs ...)) parsed-clauses #'outer-fail))

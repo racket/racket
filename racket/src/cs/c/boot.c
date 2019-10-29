@@ -98,6 +98,26 @@ static ptr parse_coldirs(char *s)
   }
 }
 
+static void run_cross_server(char **argv)
+{
+  ptr c, a;
+  const char *target_machine = argv[1];
+  const char *cross_server_patch_file = argv[2];
+  const char *cross_server_library_file = argv[3];
+
+  c = Stop_level_value(Sstring_to_symbol("load")); /* original `load` */
+  a = Sstring(cross_server_patch_file);
+  (void)Scall1(c, a);
+
+  c = Stop_level_value(Sstring_to_symbol("load")); /* this is the patched `load` */
+  a = Sstring(cross_server_library_file);
+  (void)Scall1(c, a);
+  c = Stop_level_value(Sstring_to_symbol("serve-cross-compile"));
+
+  a = Sstring(target_machine);
+  (void)Scall1(c, a);
+}
+
 static void racket_exit(int v)
 {
   exit(v);
@@ -122,7 +142,7 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
                  int cs_compiled_subdir, int is_gui,
 		 int wm_is_gracket_or_x11_arg_count,
                  char *gracket_guid_or_x11_args,
-		 void *dll_open, void *dll_find_object)
+		 void *dll_open, void *dll_find_object, void *dll_close)
 /* exe argument already stripped from argv */
 {
 #if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
@@ -134,21 +154,19 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
 #ifdef RACKET_USE_FRAMEWORK
   const char *fw_path;
 #endif
-  const char *cross_server_patch_file = NULL;
-  const char *cross_server_library_file = NULL;
+  int cross_server = 0;
 
 #ifdef WIN32
   if (dlldir)
     rktio_set_dll_path((wchar_t *)dlldir);
   if (dll_open)
-    rktio_set_dll_procs(dll_open, dll_find_object);
+    rktio_set_dll_procs(dll_open, dll_find_object, dll_close);
 #endif
 
   Sscheme_init(NULL);
 
-  if ((argc == 3) && !strcmp(argv[0], "--cross-server")) {
-    cross_server_patch_file = argv[1];
-    cross_server_library_file = argv[2];
+  if ((argc == 4) && !strcmp(argv[0], "--cross-server")) {
+    cross_server = 1;
 #ifdef RACKET_AS_BOOT
     skip_racket_boot = 1;
 #endif
@@ -188,18 +206,10 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
 
   Sbuild_heap(NULL, init_foreign);
 
-  if (cross_server_patch_file) {
+  if (cross_server) {
     /* Don't run Racket as usual. Instead, load the patch
        file and run `serve-cross-compile` */
-    ptr c, a;
-    c = Stop_level_value(Sstring_to_symbol("load"));
-    a = Sstring(cross_server_patch_file);
-    (void)Scall1(c, a);
-    c = Stop_level_value(Sstring_to_symbol("load")); /* this is the patched load */
-    a = Sstring(cross_server_library_file);
-    (void)Scall1(c, a);
-    c = Stop_level_value(Sstring_to_symbol("serve-cross-compile"));
-    (void)Scall0(c);
+    run_cross_server(argv);
     racket_exit(0);
   }
 

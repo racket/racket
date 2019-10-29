@@ -47,7 +47,7 @@
                                   in source-name skip-k
                                   special-wrap))]
       [else
-       (extract-special-value (peek-byte-via-bytes in skip-k #:progress-evt progress-evt)
+       (extract-special-value (peek-byte-via-bytes who in skip-k #:progress-evt progress-evt)
                               in source-name skip-k
                               special-wrap)])))
 
@@ -58,20 +58,26 @@
                                   [source-name #f])
   (let ([in (->core-input-port in who)])
     (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
-    (extract-special-value (read-a-char who in #:special-ok? #t)
-                           in source-name -1
-                           special-wrap)))
+    (define c (read-a-char who in #:special-ok? #t))
+    (cond
+      [(char? c) c]
+      [else (extract-special-value c
+                                   in source-name -1
+                                   special-wrap)])))
 
 (define/who (peek-char-or-special [in (current-input-port)]
                                   [skip-k 0]
                                   [special-wrap #f]
                                   [source-name #f])
-  (check who input-port? in)
-  (check who exact-nonnegative-integer? skip-k)
-  (check who special-wrap-for-peek? #:contract special-wrap-for-peek/c-str special-wrap)
-  (extract-special-value (peek-a-char who in skip-k #:special-ok? #t)
-                         in source-name skip-k
-                         special-wrap))
+  (let ([in (->core-input-port in who)])
+    (check who exact-nonnegative-integer? skip-k)
+    (check who special-wrap-for-peek? #:contract special-wrap-for-peek/c-str special-wrap)
+    (define c (peek-a-char who in skip-k #:special-ok? #t))
+    (cond
+      [(char? c) c]
+      [else (extract-special-value c
+                                   in source-name skip-k
+                                   special-wrap)])))
 
 ;; ----------------------------------------
 

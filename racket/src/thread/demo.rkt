@@ -562,6 +562,35 @@
    (check (vector 'again) got5)
    (check 0 (place-wait pl5))
 
+   (check #f (current-future))
+
+   (define f (future (lambda () 10)))
+   (check 10 (touch f))
+
+   (check 11 (touch (would-be-future (lambda () 11))))
+   (check 12 (touch (would-be-future (lambda () (sleep) 12)))) ; blocks on `(sleep)`
+
+   (define fx (future (lambda () (current-future))))
+   (check fx (touch fx))
+
+   (define f0s (for/list ([i (in-range 50)])
+                 (future (lambda ()
+                           (let loop ([i i])
+                             (if (zero? i)
+                                 i
+                                 (add1 (loop (sub1 i)))))))))
+   (check (for/list ([i (in-range 50)]) i) (map touch f0s))
+
+   (define fs (make-fsemaphore 0))
+   (check (void) (fsemaphore-post fs))
+   (check (void) (fsemaphore-wait fs))
+   (define f1 (future (lambda () (fsemaphore-wait fs) 'f1)))
+   (define f2 (future (lambda () (touch f1) 'f2)))
+   (sync (system-idle-evt))
+   (check (void) (fsemaphore-post fs))
+   (check 'f2 (touch f2))
+   (check 'f1 (touch f1))
+
    (set! done? #t)))
 
 (unless done?

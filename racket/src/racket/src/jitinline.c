@@ -172,7 +172,7 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
     }
   }
 
-  return check_val_struct_prim(o, 1);
+  return check_val_struct_prim(o, arity);
 }
 
 int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter)
@@ -4459,6 +4459,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
+      mz_rs_sync();
       
       allocate_rectangular(jitter, dest);
 

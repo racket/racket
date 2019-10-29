@@ -733,6 +733,7 @@
 (define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name struct/dc-name
    #:first-order struct/dc-first-order
    #:late-neg-projection struct/dc-late-neg-proj
@@ -744,6 +745,7 @@
 (define-struct (flat-struct/dc base-struct/dc) ()
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name struct/dc-name
    #:first-order struct/dc-flat-first-order
    #:late-neg-projection struct/dc-late-neg-proj
@@ -755,6 +757,7 @@
 (define-struct (impersonator-struct/dc base-struct/dc) ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name struct/dc-name
    #:first-order struct/dc-first-order
    #:late-neg-projection struct/dc-late-neg-proj

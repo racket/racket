@@ -26,7 +26,8 @@
   (make-parameter root-security-guard
                   (lambda (v)
                     (check who security-guard? v)
-                    v)))
+                    v)
+                  'current-security-guard))
 
 (define/who (make-security-guard parent
                                  file-guard

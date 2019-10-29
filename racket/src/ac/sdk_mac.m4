@@ -37,6 +37,14 @@
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
     fi
 
+    if test "${enable_sdk9}" != "" ; then 
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
     # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
       if test "$host_cpu" != "powerpc" ; then

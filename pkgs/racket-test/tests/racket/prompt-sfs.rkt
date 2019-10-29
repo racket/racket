@@ -20,7 +20,7 @@ process.
     (let ([p (open-output-bytes)])
       (parameterize ([current-error-port p])
         (system* f "-l" "tests/racket/prompt-sfs" "sub"))
-      (unless (regexp-match? #rx"<will-executor>: +1 +" (get-output-bytes p))
+      (unless (regexp-match? #rx"<will-executor>:? +1 +" (get-output-bytes p))
         (error "wrong output")
         (exit 1))))
   (exit 0))

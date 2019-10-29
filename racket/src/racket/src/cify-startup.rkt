@@ -7,6 +7,9 @@
          "../../schemify/serialize.rkt"
          "../../schemify/known.rkt"
          "../../schemify/lift.rkt"
+         "../../schemify/reinfer-name.rkt"
+         "../../schemify/wrap.rkt"
+         "../../schemify/match.rkt"
          "../../cify/main.rkt"
          "help-startup.rkt")
 
@@ -74,7 +77,7 @@
 (printf "Schemify...\n")
 (define body
   (time
-   (schemify-body bodys/re-uniqued prim-knowns #hasheq() #hasheq()
+   (schemify-body (recognize-inferred-names bodys/re-uniqued) prim-knowns #hasheq() #hasheq() #hasheq()
                   ;; for cify:
                   #t
                   ;; unsafe mode:
@@ -92,7 +95,28 @@
             (cons 'define p))
           lifted-body))
 
-(cify dest (caddr content) `(begin . ,converted-body) prim-knowns
+;; Convert 'inferred-name properties back to `(lambda <formals> (begin 'name <expr>))` form
+(define (restore-inferred-names e)
+  (cond
+    [(wrap? e)
+     (cond
+       [(wrap-property e 'inferred-name)
+        => (lambda (name)
+             (match e
+               [`(lambda ,formals ,expr)
+                `(lambda ,formals (begin ',name ,(restore-inferred-names expr)))]
+               [`(case-lambda [,formals ,expr] . ,rest)
+                `(case-lambda [,formals (begin ',name ,(restore-inferred-names expr))]
+                              . ,(restore-inferred-names rest))]
+               [`,_
+                (restore-inferred-names (unwrap e))]))]
+       [else
+        (restore-inferred-names (unwrap e))])]
+    [(not (pair? e)) e]
+    [else (cons (restore-inferred-names (car e))
+                (restore-inferred-names (cdr e)))]))
+
+(cify dest (caddr content) `(begin . ,(restore-inferred-names converted-body)) prim-knowns
       #:debug? debug?
       #:preamble (append (list version-line
                                (format "#if 0 ~a" version-comparisons)

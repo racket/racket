@@ -87,7 +87,25 @@ A curried variant of @racket[ffi-callback] that takes the callback procedure
 separately.}
 
 
-@defproc[(ffi-callback? [x any/c]) boolean?]{
+@defproc[(ffi-callback? [v any/c]) boolean?]{
 
 A predicate for callback values that are created by @racket[ffi-callback].
 }
+
+
+@defproc[(make-late-will-executor) will-executor?]{
+
+Creates a ``late'' will executor that readies a will for a value
+@scheme[_v] only if no normal will executor has a will registered for
+@scheme[_v]. In addition, for the @3m[] and @CGC[] variants of Racket,
+normal weak references to @scheme[_v] are cleared before a will for
+@racket[_v] is readied by the late will executor, but late weak
+references created by @racket[make-late-weak-box] and
+@racket[make-late-weak-hasheq] are not.
+
+Unlike a normal will executor, if a late will executor becomes
+inaccessible, the values for which it has pending wills are retained
+within the late will executor's place.
+
+A late will executor is intended for use in the implementation of
+@racket[register-finalizer].}

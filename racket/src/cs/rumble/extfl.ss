@@ -23,71 +23,138 @@
 
 (define-syntax (define-extfl-ids stx)
   (syntax-case stx ()
-    [(_ id ...)
+    [(_ (id arg ...) ...)
      #'(begin
-         (define (id v)
-           (raise-unsupported-error 'id))
+         (define/who (id arg ...)
+           (check who extflonum? arg) ...
+           (raise-unsupported-error who))
          ...)]))
 
 (define-extfl-ids
-  extfl*
-  extfl+
-  extfl-
-  ->extfl
-  extfl->exact
-  extfl->exact-integer
-  extfl->floating-point-bytes
-  extfl->fx
-  extfl->inexact
-  extfl/
-  extfl<
-  extfl<=
-  extfl=
-  extfl>
-  extfl>=
-  extflabs
-  extflacos
-  extflasin
-  extflatan
-  extflceiling
-  extflcos
-  extflexp
-  extflexpt
-  floating-point-bytes->extfl
-  extflfloor
-  fx->extfl
-  extfllog
-  make-shared-extflvector
-  make-extflvector
-  extflmax
-  extflmin
-  real->extfl
-  extflround
-  shared-extflvector
-  extflsin
-  extflsqrt
-  extfltan
-  extfltruncate
-  extflvector
-  extflvector-length
-  extflvector-ref
-  extflvector-set!
+  (extfl* a b)
+  (extfl+ a b)
+  (extfl- a b)
+  (extfl->exact a)
+  (extfl->exact-integer a)
+  (extfl->floating-point-bytes a)
+  (extfl->fx a)
+  (extfl->inexact a)
+  (extfl/ a b)
+  (extfl< a b)
+  (extfl<= a b)
+  (extfl= a b)
+  (extfl> a b)
+  (extfl>= a b)
+  (extflabs a)
+  (extflacos a)
+  (extflasin a)
+  (extflatan a)
+  (extflceiling a)
+  (extflcos a)
+  (extflexp a)
+  (extflexpt a b)
+  (extflfloor a)
+  (extfllog a)
+  (extflmax a b)
+  (extflmin a b)
+  (extflround a)
+  (extflsin a)
+  (extflsqrt a)
+  (extfltan a)
+  (extfltruncate a)
 
-  unsafe-extfl*
-  unsafe-extfl+
-  unsafe-extfl-
-  unsafe-extfl/
-  unsafe-extfl<
-  unsafe-extfl<=
-  unsafe-extfl=
-  unsafe-extfl>
-  unsafe-extfl>=
-  unsafe-extflabs
-  unsafe-extflmax
-  unsafe-extflmin
-  unsafe-extflsqrt
-  unsafe-extfl->fx
-  unsafe-fx->extfl
-  unsafe-extflvector-length
-  unsafe-extflvector-ref
-  unsafe-extflvector-set!)
+  (unsafe-extfl* a b)
+  (unsafe-extfl+ a b)
+  (unsafe-extfl- a b)
+  (unsafe-extfl/ a b)
+  (unsafe-extfl< a b)
+  (unsafe-extfl<= a b)
+  (unsafe-extfl= a b)
+  (unsafe-extfl> a b)
+  (unsafe-extfl>= a b)
+  (unsafe-extflabs a b)
+  (unsafe-extflmax a b)
+  (unsafe-extflmin a b)
+  (unsafe-extflsqrt a)
+  (unsafe-extfl->fx a)
+  (unsafe-fx->extfl a))
+
+(define/who (->extfl a)
+  (check who exact-integer? a)
+  (raise-unsupported-error who))
+
+(define/who (fx->extfl a)
+  (check who fixnum? a)
+  (raise-unsupported-error who))
+
+(define/who (real->extfl a)
+  (check who real? a)
+  (raise-unsupported-error who))
+
+(define/who floating-point-bytes->extfl
+  (case-lambda
+   [(bstr big-endian? start end)
+    (check who bytes? bstr)
+    (check who exact-nonnegative-integer? start)
+    (check who exact-nonnegative-integer? end)
+    (case (- end start)
+      [(10) (raise-unsupported-error who)]
+      [else
+       (raise-arguments-error who
+                              "length is not 10 bytes"
+                              "length" (- end start))])]
+   [(bstr)
+    (floating-point-bytes->extfl bstr (system-big-endian?) 0 (and (bytes? bstr) (bytes-length bstr)))]
+   [(bstr big-endian?)
+    (floating-point-bytes->extfl bstr big-endian? 0 (and (bytes? bstr) (bytes-length bstr)))]
+   [(bstr big-endian? start)
+    (floating-point-bytes->extfl bstr big-endian? start (and (bytes? bstr) (bytes-length bstr)))]))
+
+(define/who make-extflvector
+  (case-lambda
+   [(len)
+    (check who exact-nonnegative-integer? len)
+    (raise-unsupported-error who)]
+   [(len v)
+    (check who exact-nonnegative-integer? len)
+    (check who extflonum? v)
+    (raise-unsupported-error who)]))
+
+(define/who make-shared-extflvector
+  (case-lambda
+   [(len)
+    (check who exact-nonnegative-integer? len)
+    (raise-unsupported-error who)]
+   [(len v)
+    (check who exact-nonnegative-integer? len)
+    (check who extflonum? v)
+    (raise-unsupported-error who)]))
+
+(define/who (extflvector . args)
+  (for-each (lambda (a) (check who extflonum? a))
+            args)
+  (raise-unsupported-error who))
+
+(define/who (shared-extflvector . args)
+  (for-each (lambda (a) (check who extflonum? a))
+            args)
+  (raise-unsupported-error who))
+
+(define/who (extflvector-length a)
+  (check who extflvector? a)
+  ;; won't get here
+  (raise-unsupported-error who))
+
+(define/who (extflvector-ref a i)
+  (check who extflvector? a)
+  ;; won't get here
+  (raise-unsupported-error who))
+
+(define/who (extflvector-set! a i v)
+  (check who extflvector? a)
+  ;; won't get here
+  (raise-unsupported-error who))
+
+(define/who (unsafe-extflvector-length a) (extflvector-length a))
+(define/who (unsafe-extflvector-ref a i) (extflvector-ref a i))
+(define/who (unsafe-extflvector-set! a i v) (extflvector-set! a i v))

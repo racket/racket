@@ -15,6 +15,22 @@
 (path->string (current-directory))
 (set-string->number?! string->number)
 
+(let ()
+  (define-values (i o) (make-pipe 4096))
+
+  (define done? #f)
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (set! done? #t)
+            (close-input-port i)))
+
+  ;; Should error:
+  (let loop ()
+    (write-bytes #"hello" o)
+    (unless done?
+      (loop))))
+
 (define-syntax-rule (test expect rhs)
   (let ([e expect]
         [v rhs])
@@ -762,6 +778,19 @@
   (test eof (read-line o))
   (test (void) (subprocess-wait sp))
   (test #t (zero? (subprocess-status sp))))
+
+;; ----------------------------------------
+
+(call-with-output-file "compiled/demo-file3" void 'replace)
+(define e (filesystem-change-evt "compiled/demo-file3" (lambda () 'no)))
+(unless (eq? e 'no)
+  (test #t (evt? e))
+  ;; (test #f (sync/timeout 0.01 e)) ; bootstrap doesn't handle this
+  (call-with-output-file "compiled/demo-file3" (lambda (o) (write-char #\x o)) 'append)
+  (test e (sync/timeout 0.01 e))
+  (test e (sync/timeout 0.01 e))
+  (filesystem-change-evt-cancel e))
+(delete-file "compiled/demo-file3")
 
 ;; ----------------------------------------
 

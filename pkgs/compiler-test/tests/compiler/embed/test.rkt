@@ -8,6 +8,9 @@
          compiler/distribute
          (only-in pkg/lib installed-pkg-names))
 
+(define skip-mred? (and (getenv "PLT_TEST_NO_GUI")
+                        #t))
+
 (define (test expect f/label . args)
   (define r (apply (if (procedure? f/label)
                        f/label
@@ -46,15 +49,15 @@
 
 (define (call-with-retries thunk)
   (let loop ([sleep-time 0.01])
-    (with-handlers ([exn:fail:filesystem? (lambda (exn)
-					    ;; Accommodate Windows background tasks,
-					    ;; like anti-virus software and indexing,
-					    ;; that can prevent an ".exe" from being deleted
-					    (if (= sleep-time 1.0)
-						(raise exn)
-						(begin
-						  (sleep sleep-time)
-						  (loop (* 2 sleep-time)))))])
+    (with-handlers* ([exn:fail:filesystem? (lambda (exn)
+                                             ;; Accommodate Windows background tasks,
+                                             ;; like anti-virus software and indexing,
+                                             ;; that can prevent an ".exe" from being deleted
+                                             (if (= sleep-time 1.0)
+                                                 (raise exn)
+                                                 (begin
+                                                   (sleep sleep-time)
+                                                   (loop (* 2 sleep-time)))))])
        (thunk))))
 
 (define (prepare exe src)
@@ -290,16 +293,17 @@
 
 (define (try-basic)
   (mz-tests #f)
-  (mz-tests #t)
-  (begin
-    (prepare mr-dest "embed-me5.rkt")
-    (make-embedding-executable 
-     mr-dest #t #f
-     `((#t (lib "embed-me5.rkt" "tests" "compiler" "embed")))
-     null
-     #f
-     `("-l" "tests/compiler/embed/embed-me5.rkt"))
-    (try-exe mr-dest "This is 5: #<class:button%>\n" #t)))
+  (unless skip-mred?
+    (mz-tests #t)
+    (begin
+      (prepare mr-dest "embed-me5.rkt")
+      (make-embedding-executable 
+       mr-dest #t #f
+       `((#t (lib "embed-me5.rkt" "tests" "compiler" "embed")))
+       null
+       #f
+       `("-l" "tests/compiler/embed/embed-me5.rkt"))
+      (try-exe mr-dest "This is 5: #<class:button%>\n" #t))))
 
 (define (try-embedded-dlls)
   (prepare mz-dest "embed-me1.rkt")
@@ -311,16 +315,17 @@
    `("-l" "tests/compiler/embed/embed-me1.rkt")
    '((embed-dlls? . #t)))
   (try-exe mz-dest "This is 1\n" #t)
-  
-  (prepare mr-dest "embed-me5.rkt")
-  (make-embedding-executable 
-   mr-dest #t #f
-   `((#t (lib "embed-me5.rkt" "tests" "compiler" "embed")))
-   '()
-   #f
-   `("-l" "tests/compiler/embed/embed-me5.rkt")
-   '((embed-dlls? . #t)))
-  (try-exe mr-dest "This is 5: #<class:button%>\n" #t))
+
+  (unless skip-mred?
+    (prepare mr-dest "embed-me5.rkt")
+    (make-embedding-executable 
+     mr-dest #t #f
+     `((#t (lib "embed-me5.rkt" "tests" "compiler" "embed")))
+     '()
+     #f
+     `("-l" "tests/compiler/embed/embed-me5.rkt")
+     '((embed-dlls? . #t)))
+    (try-exe mr-dest "This is 5: #<class:button%>\n" #t)))
 
 ;; Try the raco interface:
 (require setup/dirs
@@ -328,7 +333,7 @@
          compiler/find-exe)
 (define (add-suffixes s)
   (define me (path-replace-suffix (find-exe) #""))
-  (define ending (regexp-match #rx#"(?i:racket)([cs3mg]*)$" me))
+  (define ending (regexp-match #rx#"(?i:racket([cs3mg]*))$" me))
   (define s2 (string-append s (bytes->string/utf-8 (cadr ending))))
   (if (eq? 'windows (system-type))
       (string-append s2 ".exe")
@@ -517,7 +522,8 @@
 
 (define (try-mzc)
   (mzc-tests #f)
-  (short-mzc-tests #t))
+  (unless skip-mred?
+    (short-mzc-tests #t)))
 
 (require dynext/file)
 (define (extension-test mred?)
@@ -576,16 +582,18 @@
 
 (define (try-extension)
   (extension-test #f)
-  (extension-test #t))
+  (unless skip-mred?
+    (extension-test #t)))
 
 (define (try-gracket)
-  ;; A GRacket-specific test with mzc:
-  (parameterize ([current-directory (find-system-path 'temp-dir)])
-    (system+ mzc 
-             "--gui-exe"
-             (path->string (mk-dest #t))
-             (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me5.rkt")))
-    (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t)))
+  (unless skip-mred?
+    ;; A GRacket-specific test with mzc:
+    (parameterize ([current-directory (find-system-path 'temp-dir)])
+      (system+ mzc 
+               "--gui-exe"
+               (path->string (mk-dest #t))
+               (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me5.rkt")))
+      (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t))))
 
 ;; Try including source that needs a reader extension
 
@@ -630,7 +638,8 @@
 (define (try-reader)
   (for ([12? (in-list '(#f #t))])
     (try-reader-test 12? #f #f #f)
-    (try-reader-test 12? #t #f #f)
+    (unless skip-mred?
+      (try-reader-test 12? #t #f #f))
     (try-reader-test 12? #f #t #f)
     (try-reader-test 12? #f #f #t)))
 
@@ -650,6 +659,36 @@
            "++lang" "at-exp racket/base"
            (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me33.rkt")))
   (try-exe (mk-dest #f) "This is 33.\n" #f))
+
+;; ----------------------------------------
+
+(define (try-prefix)
+  (system+ raco
+           "exe"
+           "-o" (path->string (mk-dest #f))
+           "++named-lib"
+           "basic:"
+           "racket/base"
+           "++named-file"
+           "mine:"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37b.rkt"))
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37.rkt")))
+  (try-exe (mk-dest #f) "'(b mine:embed-me37b)\n'(a #%mzc:embed-me37)\n" #f)
+  
+  (system+ raco
+           "exe"
+           "-o" (path->string (mk-dest #f))
+           "++named-lib"
+           "basic:"
+           "racket/base"
+           "++named-file"
+           "mine:"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37b.rkt"))
+           "++named-file"
+           "main:"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37.rkt"))
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37.rkt")))
+  (try-exe (mk-dest #f) "'(b mine:embed-me37b)\n'(a main:embed-me37)\n" #f))
 
 ;; ----------------------------------------
 
@@ -746,7 +785,7 @@
   (try-one "embed-isl.rkt")
   (try-one "embed-isll.rkt")
   (try-one "embed-asl.rkt"))
-  
+
 ;; ----------------------------------------
 
 (try-basic)
@@ -757,6 +796,7 @@
 (try-gracket)
 (try-reader)
 (try-lang)
+(try-prefix)
 (try-planet)
 (try-*sl)
 (try-source)
@@ -774,4 +814,3 @@
   (parameterize ([read-accept-reader #t]
                  [current-namespace (make-base-namespace)])
     (eval (read (open-input-string "#lang racket 10")))))
-

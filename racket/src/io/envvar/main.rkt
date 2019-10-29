@@ -13,6 +13,9 @@
          environment-variables-copy
          environment-variables-names)
 
+;; Keep a mapping from normalized <key> to (cons <key> <val>).
+;; That way, we can find values based on the normalized key,
+;; but we preserve the original case.
 (struct environment-variables ([ht #:mutable]) ; #f => use OS-level environment variables
   #:authentic)
 
@@ -20,7 +23,8 @@
   (make-parameter (environment-variables #f)
                   (lambda (v)
                     (check who environment-variables? v)
-                    v)))
+                    v)
+                  'current-environment-variables))
 
 (define/who (make-environment-variables . args)
   (let loop ([args args] [ht #hash()])
@@ -43,7 +47,7 @@
                            (bytes->immutable-bytes val0)
                            val0))
           (check who bytes-no-nuls? val)
-          (loop (cddr args) (hash-set ht (normalize-key key) val))])])))
+          (loop (cddr args) (hash-set ht (normalize-key key) (cons key val)))])])))
 
 (define/who (environment-variables-ref e k)
   (check who environment-variables? e)
@@ -60,7 +64,7 @@
      (end-atomic)
      s]
     [else
-     (hash-ref ht (normalize-key k) #f)]))
+     (cdr (hash-ref ht (normalize-key k) '(#f . #f)))]))
 
 (define none (gensym 'none))
 
@@ -83,7 +87,9 @@
          [else (fail)]))]
     [else
      (define nk (normalize-key k))
-     (set-environment-variables-ht! e (if v (hash-set ht nk v) (hash-remove ht nk)))]))
+     (set-environment-variables-ht! e (if v
+                                          (hash-set ht nk (cons k v))
+                                          (hash-remove ht nk)))]))
 
 (define/who (environment-variables-copy e)
   (check who environment-variables? e)
@@ -101,13 +107,17 @@
             (for/hash ([i (in-range (rktio_envvars_count rktio ev))])
               (define k (rktio_envvars_name_ref rktio ev i))
               (define v (rktio_envvars_value_ref rktio ev i))
+              (define case-k
+                (begin0
+                  (bytes->immutable-bytes (rktio_to_bytes k))
+                  (rktio_free k)))
               (values
-               (begin0
-                 (bytes->immutable-bytes (rktio_to_bytes k))
-                 (rktio_free k))
-               (begin0
-                 (bytes->immutable-bytes (rktio_to_bytes v))
-                 (rktio_free v))))
+               (normalize-key case-k)
+               (cons
+                case-k
+                (begin0
+                  (bytes->immutable-bytes (rktio_to_bytes v))
+                  (rktio_free v)))))
             (rktio_envvars_free rktio ev))]))
      (end-atomic)
      (environment-variables ht)]
@@ -120,6 +130,8 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (map normalize-key (environment-variables-names (environment-variables-copy e)))]
+     (environment-variables-names (environment-variables-copy e))]
     [else
-     (hash-keys ht)]))
+     ;; Return unnormalized keys, which makes sense for preserving
+     ;; the original case
+     (map car (hash-values ht))]))

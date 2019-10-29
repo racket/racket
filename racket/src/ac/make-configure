@@ -45,6 +45,7 @@ exit 0
 	 sharedstatedir
 	 localstatedir
 	 oldincludedir
+	 runstatedir
 	 infodir
          htmldir
          ;; dvidir - converted to "collectsdir"

@@ -339,7 +339,6 @@ HOSTCFLAGS=$(BASEFLAGS)
 #
 
 CXXFLAGS= $(ALL_CFLAGS) 
-NICEAR = $(mainsrcdir)/utils/nicear
 AR= @AR@
 ARFLAGS= @ARFLAGS@
 RANLIB= @RANLIB@
@@ -503,7 +502,7 @@ tests:
 
 # PLTSCHEME: make ../libmzgc.a, and use $(AR), $(RANLIB), and @LIBSFX@:
 base_lib ../libmzgc.@LIBSFX@: $(OBJS) dyn_load.@LTO@ $(UTILS)
-	$(NICEAR) $(AR) $(ARFLAGS) ../libmzgc.@LIBSFX@ $(OBJS) dyn_load.@LTO@
+	$(AR) $(ARFLAGS) ../libmzgc.@LIBSFX@ $(OBJS) dyn_load.@LTO@
 	$(RANLIB) ../libmzgc.@LIBSFX@
 
 cords: $(CORD_OBJS) cord/cordtest $(UTILS)

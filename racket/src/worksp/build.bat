@@ -30,7 +30,7 @@ if errorlevel 1 exit /B 1
 if errorlevel 1 exit /B 1
 msbuild racket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 
-if not defined BUILD_LEVEL set BUILD_LEVEL="3m"
+if not defined BUILD_LEVEL set BUILD_LEVEL="all"
 if "%BUILD_LEVEL%"=="cgc" goto doneBuilding
 
 cd ..\gracket
@@ -42,9 +42,11 @@ REM  Assumes that Racket is started in a subdirectory of here:
 set BOOT_SETUP=-W "info@compiler/cm error" -l- setup --boot ../../setup-go.rkt ../compiled
 
 cd gc2
-..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt
+..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt --build-level %BUILD_LEVEL%
 if errorlevel 1 exit /B 1
 cd ..
+
+if "%BUILD_LEVEL%"=="3m" goto doneBuilding
 
 cd mzstart
 msbuild mzstart%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
@@ -69,13 +71,14 @@ msbuild mzcom%PLTSLNVER%.sln /p:Configuration=3m /p:Platform=%BUILDMODE%
 if errorlevel 1 exit /B 1
 cd ..
 
-copy ..\COPYING-libscheme.txt ..\..\share\
+copy ..\LICENSE-libscheme.txt ..\..\share\
 if errorlevel 1 exit /B 1
-copy ..\COPYING_LESSER.txt ..\..\share\
+copy ..\LICENSE-LGPL.txt ..\..\share\
 if errorlevel 1 exit /B 1
-copy ..\COPYING.txt ..\..\share\
+copy ..\LICENSE-GPL.txt ..\..\share\
 if errorlevel 1 exit /B 1
 
+set PLT_REPLACE_INDEPENDENT_LAUNCHERS=yes
 ..\..\racket -G %BUILD_CONFIG% -N "raco" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1
 

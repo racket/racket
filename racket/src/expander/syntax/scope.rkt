@@ -163,7 +163,7 @@
 ;; be small.
 (struct multi-scope (id       ; identity
                      name     ; for debugging
-                     scopes   ; phase -> representative-scope
+                     scopes   ; box of table: phase -> representative-scope
                      shifted  ; box of table: interned shifted-multi-scopes for non-label phases
                      label-shifted) ; box of table: interned shifted-multi-scopes for label phases
   #:authentic
@@ -174,10 +174,9 @@
     ;; Prune to reachable representative scopes
     (define multi-scope-tables (serialize-state-multi-scope-tables state))
     (ser-push! (or (hash-ref multi-scope-tables (multi-scope-scopes ms) #f)
-                   (let ([ht (make-hasheqv)])
-                     (for ([(phase sc) (in-hash (multi-scope-scopes ms))])
-                       (when (set-member? (serialize-state-reachable-scopes state) sc)
-                         (hash-set! ht phase sc)))
+                   (let ([ht (for/hasheqv ([(phase sc) (in-hash (unbox (multi-scope-scopes ms)))]
+                                           #:when (set-member? (serialize-state-reachable-scopes state) sc))
+                               (values phase sc))])
                      (hash-set! multi-scope-tables (multi-scope-scopes ms) ht)
                      ht))))
   #:property prop:reach-scopes
@@ -199,12 +198,12 @@
     ;; To make that work, `binding-table-register-reachable`
     ;; needs to recognize representative scopes and treat
     ;; them differently, hence `prop:implicitly-reachable`.
-    (for ([sc (in-hash-values (multi-scope-scopes ms))])
+    (for ([sc (in-hash-values (unbox (multi-scope-scopes ms)))])
       (unless (binding-table-empty? (scope-binding-table sc))
         (reach sc)))))
 
 (define (deserialize-multi-scope name scopes)
-  (multi-scope (new-deserialize-scope-id!) name scopes (box (hasheqv)) (box (hash))))
+  (multi-scope (new-deserialize-scope-id!) name (box scopes) (box (hasheqv)) (box (hash))))
 
 (struct representative-scope scope (owner   ; a multi-scope for which this one is a phase-specific identity
                                     phase)  ; phase of this scope
@@ -340,19 +339,21 @@
            (ephemeron-value new))))))
 
 (define (new-multi-scope [name #f])
-  (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (make-hasheqv) (box (hasheqv)) (box (hash)))))
+  (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (box (hasheqv)) (box (hasheqv)) (box (hash)))))
 
 (define (multi-scope-to-scope-at-phase ms phase)
   ;; Get the identity of `ms` at phase`
-  (or (hash-ref (multi-scope-scopes ms) phase #f)
-      (let ([s (representative-scope (if (deserialized-scope-id? (multi-scope-id ms))
-                                         (new-deserialize-scope-id!)
-                                         (new-scope-id!))
-                                     'module
-                                     empty-binding-table
-                                     ms phase)])
-        (hash-set! (multi-scope-scopes ms) phase s)
-        s)))
+  (let ([scopes (unbox (multi-scope-scopes ms))])
+    (or (hash-ref scopes phase #f)
+        (let ([s (representative-scope (if (deserialized-scope-id? (multi-scope-id ms))
+                                           (new-deserialize-scope-id!)
+                                           (new-scope-id!))
+                                       'module
+                                       empty-binding-table
+                                       ms phase)])
+          (if (box-cas! (multi-scope-scopes ms) scopes (hash-set scopes phase s))
+              s
+              (multi-scope-to-scope-at-phase ms phase))))))
 
 (define (scope>? sc1 sc2)
   ((scope-id sc1) . > . (scope-id sc2)))

@@ -15,7 +15,8 @@
          ->correlated
          correlate-source-name
 
-         compile-keep-source-locations!)
+         compile-keep-source-locations!
+         keep-source-locations?)
 
 (define keep-source-locations? #f)
 

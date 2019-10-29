@@ -9,7 +9,7 @@
 (define-syntax-rule (define-boolean-parameter print-x init-val)
   (begin
     (provide print-x)
-    (define print-x (make-parameter init-val (lambda (v) (and v #t))))))
+    (define print-x (make-parameter init-val (lambda (v) (and v #t)) 'print-x))))
 
 (define-boolean-parameter print-graph #f)
 (define-boolean-parameter print-struct #t)
@@ -46,7 +46,8 @@
                        (cond
                          [(string? v) (->path v)]
                          [(pair? v) (cons (->path (car v)) (->path (cdr v)))]
-                         [else v]))))
+                         [else v]))
+                  'current-write-relative-directory))
 
 (define print-syntax-width
   (make-parameter 32 (lambda (v)
@@ -56,6 +57,7 @@
                          (raise-argument-error 'print-syntax-width
                                                "(or/c +inf.0 0 (and/c exact-integer? (>/c 3)))"
                                                v))
-                       v)))
+                       v)
+                  'print-syntax-width))
 
 

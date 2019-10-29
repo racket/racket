@@ -241,6 +241,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name hash/c-name
    #:first-order hash/c-first-order
    #:generate hash/c-generate
@@ -359,6 +360,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name hash/c-name
    #:first-order hash/c-first-order
    #:generate hash/c-generate
@@ -372,6 +374,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name hash/c-name
    #:first-order hash/c-first-order
    #:stronger hash/c-stronger
@@ -437,6 +440,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name hash/dc-name
    #:first-order hash/dc-first-order
    #:equivalent hash/dc-equivalent
@@ -446,6 +450,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name hash/dc-name
    #:first-order hash/dc-first-order
    #:stronger hash/dc-stronger
@@ -455,6 +460,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name hash/dc-name
    #:first-order hash/dc-first-order
    #:stronger hash/dc-stronger

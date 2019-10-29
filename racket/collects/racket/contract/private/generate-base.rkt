@@ -15,7 +15,9 @@
   env-item-ctc
   
   predicate-generator-table
-  exact-nonnegative-integer-gen)
+  exact-nonnegative-integer-gen
+
+  all-zeros)
 
  
 ;; generate 
@@ -167,4 +169,10 @@
     [else (cons (string->symbol (string-append "x-" (number->string st-num)))
                 (gen-arg-names (+ st-num 1) (- size 1)))]))
 
-
+(define all-zeros
+  (if (single-flonum-available?)
+      (list 0
+            -0.0 0.0 (real->single-flonum 0.0) (real->single-flonum -0.0)
+            0.0+0.0i (make-rectangular (real->single-flonum 0.0) (real->single-flonum 0.0))
+            0+0.0i 0.0+0i)
+      '(0 -0.0 0.0 0.0+0.0i 0+0.0i 0.0+0i)))

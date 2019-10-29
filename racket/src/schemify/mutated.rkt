@@ -21,7 +21,10 @@
 ;; definition of an identifier, because that will abort the enclosing
 ;; linklet.
 
-(define (mutated-in-body l exports prim-knowns knowns imports unsafe-mode?)
+;; This pass is also responsible for recording when a letrec binding
+;; must be mutated implicitly via `call/cc`.
+
+(define (mutated-in-body l exports prim-knowns knowns imports simples unsafe-mode? enforce-constant?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -35,7 +38,11 @@
     (match form
       [`(define-values (,ids ...) ,rhs)
        (for ([id (in-list ids)])
-         (hash-set! mutated (unwrap id) 'not-ready))]
+         (hash-set! mutated (unwrap id) (if enforce-constant?
+                                            'not-ready
+                                            ;; If constants should not be enforced, then
+                                            ;; treat all variable as mutated:
+                                            'set!ed)))]
       [`,_ (void)]))
   ;; Walk through the body:
   (for/fold ([prev-knowns knowns]) ([form (in-list l)])
@@ -46,7 +53,7 @@
     ;; that information is correct, because it dynamically precedes
     ;; the `set!`
     (define-values (knowns info)
-      (find-definitions form prim-knowns prev-knowns imports mutated unsafe-mode?
+      (find-definitions form prim-knowns prev-knowns imports mutated simples unsafe-mode?
                         #:optimize? #f))
     (match form
       [`(define-values (,ids ...) ,rhs)
@@ -56,10 +63,10 @@
          (for ([e (in-list (struct-type-info-rest info))]
                [pos (in-naturals)])
            (unless (and (= pos struct-type-info-rest-properties-list-pos)
-                        (pure-properties-list? e prim-knowns knowns imports mutated))
-             (find-mutated! e ids prim-knowns knowns imports mutated)))]
+                        (pure-properties-list? e prim-knowns knowns imports mutated simples))
+             (find-mutated! e ids prim-knowns knowns imports mutated simples)))]
         [else
-         (find-mutated! rhs ids prim-knowns knowns imports mutated)])
+         (find-mutated! rhs ids prim-knowns knowns imports mutated simples)])
        ;; For any among `ids` that didn't get a delay and wasn't used
        ;; too early, the variable is now ready, so remove from
        ;; `mutated`:
@@ -68,7 +75,7 @@
            (when (eq? 'not-ready (hash-ref mutated id #f))
              (hash-remove! mutated id))))]
       [`,_
-       (find-mutated! form #f prim-knowns knowns imports mutated)])
+       (find-mutated! form #f prim-knowns knowns imports mutated simples)])
     knowns)
   ;; For definitions that are not yet used, force delays:
   (for ([form (in-list l)])
@@ -87,7 +94,7 @@
 
 ;; Schemify `let-values` to `let`, etc., and
 ;; reorganize struct bindings.
-(define (find-mutated! v ids prim-knowns knowns imports mutated)
+(define (find-mutated! v ids prim-knowns knowns imports mutated simples)
   (define (delay! ids thunk)
     (define done? #f)
     (define force (lambda () (unless done?
@@ -131,14 +138,39 @@
           (for* ([ids (in-list idss)]
                  [id (in-wrap-list ids)])
             (hash-set! mutated (unwrap id) 'not-ready))
-          (for ([ids (in-list idss)]
-                [rhs (in-list rhss)])
+          (for/fold ([maybe-cc? #f]) ([ids (in-list idss)]
+                                      [rhs (in-list rhss)])
             (find-mutated! rhs (unwrap-list ids))
+            (define new-maybe-cc? (or maybe-cc?
+                                      (not (simple? rhs prim-knowns knowns imports mutated simples
+                                                    #:pure? #f))))
             ;; Each `id` in `ids` is now ready (but might also hold a delay):
             (for ([id (in-wrap-list ids)])
-              (let ([id (unwrap id)])
-                (when (eq? 'not-ready (hash-ref mutated id))
-                  (hash-remove! mutated id)))))
+              (let ([u-id (unwrap id)])
+                (define state (hash-ref mutated u-id))
+                (define (add-too-early-name!)
+                  (cond
+                    [(and (eq? 'too-early state)
+                          (wrap-property id 'undefined-error-name))
+                     => (lambda (name)
+                          (hash-set! mutated u-id (too-early name #f)))]
+                    [(and (eq? 'set!ed-too-early state)
+                          (wrap-property id 'undefined-error-name))
+                     => (lambda (name)
+                          (hash-set! mutated u-id (too-early name #t)))]))
+                (cond
+                  [new-maybe-cc?
+                   (cond
+                     [(or (eq? 'not-ready state)
+                          (delayed-mutated-state? state))
+                      (hash-set! mutated u-id 'implicitly-set!ed)]
+                     [else (add-too-early-name!)])
+                   (when (delayed-mutated-state? state)
+                     (state))]
+                  [(eq? 'not-ready state)
+                   (hash-remove! mutated u-id)]
+                  [else (add-too-early-name!)])))
+            new-maybe-cc?)
           (find-mutated!* bodys ids)])]
       [`(if ,tst ,thn ,els)
        (find-mutated! tst #f)
@@ -156,7 +188,7 @@
       [`(set! ,id ,rhs)
        (let ([id (unwrap id)])
          (define old-state (hash-ref mutated id #f))
-         (hash-set! mutated id 'set!ed)
+         (hash-set! mutated id (state->set!ed-state old-state))
          (when (delayed-mutated-state? old-state)
            (old-state)))
        (find-mutated! rhs #f)]
@@ -170,7 +202,7 @@
                         (and (known-constructor? v)
                              (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
                       (for/and ([exp (in-list exps)])
-                        (simple? exp prim-knowns knowns imports mutated)))))
+                        (simple? exp prim-knowns knowns imports mutated simples)))))
           ;; Can delay construction
           (delay! ids (lambda () (find-mutated!* exps #f)))]
          [else
@@ -212,7 +244,9 @@
                  [(lambda? rhs #:simple? #t)
                   (for ([id (in-list ids)])
                     (define u-id (unwrap id))
-                    (when (too-early-mutated-state? (hash-ref mutated u-id #f))
+                    (define state (hash-ref mutated u-id #f))
+                    (when (and (too-early-mutated-state? state)
+                               (not (set!ed-mutated-state? state)))
                       (hash-set! mutated u-id 'too-early/ready)))
                   (loop (wrap-cdr mut-l))]
                  [else mut-l])]

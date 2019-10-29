@@ -22,7 +22,7 @@
 (require (prefix-in for: racket/private/for))
 
 (provide stream-null stream-cons stream? stream-null? stream-pair?
-         stream-car stream-cdr stream-lambda)
+         stream-car stream-cdr stream-lambda stream-lazy)
 
 (define-syntax stream-lazy
  (syntax-rules ()

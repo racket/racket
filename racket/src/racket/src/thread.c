@@ -103,6 +103,7 @@ THREAD_LOCAL_DECL(static int swap_no_setjmp = 0);
 THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
+THREAD_LOCAL_DECL(static intptr_t process_time_skips);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
 #ifdef MZ_PRECISE_GC
@@ -125,6 +126,8 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
 READ_ONLY static Scheme_Object *initial_inspector;
 
 THREAD_LOCAL_DECL(static Scheme_Plumber *initial_plumber);
+
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *late_will_executors_with_pending = NULL);
 
 THREAD_LOCAL_DECL(Scheme_Config *initial_config);
 
@@ -567,7 +570,7 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PARAMETER("current-thread-group", current_thread_set, MZCONFIG_THREAD_SET, env);
 
   ADD_PRIM_W_ARITY("parameter?"            , parameter_p           , 1, 1, env);
-  ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 2, env);
+  ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 3, env);
   ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 3, env);
   ADD_PRIM_W_ARITY("parameter-procedure=?" , parameter_procedure_eq, 2, 2, env);
   ADD_PRIM_W_ARITY("parameterization?"     , parameterization_p    , 1, 1, env);
@@ -647,7 +650,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-custodian-register", unsafe_custodian_register, 5, 5, env);
   ADD_PRIM_W_ARITY("unsafe-custodian-unregister", unsafe_custodian_unregister, 2, 2, env);
 
-  ADD_PRIM_W_ARITY("unsafe-add-post-custodian-shutdown", unsafe_add_post_custodian_shutdown, 1, 1, env);
+  ADD_PRIM_W_ARITY("unsafe-add-post-custodian-shutdown", unsafe_add_post_custodian_shutdown, 1, 2, env);
 
   ADD_PRIM_W_ARITY("unsafe-register-process-global", unsafe_register_process_global, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-get-place-table", unsafe_get_place_table, 0, 0, env);
@@ -692,6 +695,8 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("unsafe-place-local-set!", p, env);
+
+  ADD_PRIM_W_ARITY("unsafe-make-srcloc", scheme_unsafe_make_srcloc, 5, 5, env);
 }
 
 void scheme_init_thread_places(void) {
@@ -850,7 +855,7 @@ static void adjust_limit_table(Scheme_Custodian *c)
 {
   /* If a custodian has a limit and any object or children, then it
      must not be collected and merged with its parent. To prevent
-     collection, we register the custodian in the `limite_custodians'
+     collection, we register the custodian in the `limited_custodians'
      table. */
   if (c->has_limit) {
     if (c->elems || CUSTODIAN_FAM(c->children)) {
@@ -1231,6 +1236,8 @@ Scheme_Custodian *scheme_make_custodian(Scheme_Custodian *parent)
   data_ptr = (void ***)scheme_malloc(sizeof(void**));
   m->data_ptr = data_ptr;
 
+  m->post_callbacks = scheme_null;
+
   insert_custodian(m, parent);
 
   scheme_add_finalizer(m, do_adjust_custodian_family, data_ptr);
@@ -1548,6 +1555,17 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     }
 #endif
 
+    if (SCHEME_PAIRP(m->post_callbacks)) {
+      Scheme_Object *proc;
+      scheme_start_in_scheduler();
+      while (SCHEME_PAIRP(m->post_callbacks)) {
+        proc = SCHEME_CAR(m->post_callbacks);
+        m->post_callbacks = SCHEME_CDR(m->post_callbacks);
+        _scheme_apply_multi(proc, 0, NULL);
+      }
+      scheme_end_in_scheduler();
+    }
+
     m->count = 0;
     m->alloc = 0;
     m->elems = 0;
@@ -1558,15 +1576,17 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     m->mrefs = NULL;
     m->shut_down = 1;
     
-    if (SAME_OBJ(m, start))
+    if (SAME_OBJ(m, start)) {
+      adjust_limit_table(m);
       break;
+    }
     next_m = CUSTODIAN_FAM(m->global_prev);
 
     /* Remove this custodian from its parent */
     adjust_custodian_family(m, m);
 
     adjust_limit_table(m);
-    
+
     m = next_m;
   }
 
@@ -1945,36 +1965,31 @@ void do_run_atexit_closers_on_all()
 
 static Scheme_Object *unsafe_add_post_custodian_shutdown(int argc, Scheme_Object *argv[])
 {
+  Scheme_Custodian *c;
+  Scheme_Object *l;
+  
   scheme_check_proc_arity("unsafe-add-post-custodian-shutdown", 0, 0, argc, argv);
 
+  if ((argc > 1)
+      && !(SCHEME_FALSEP(argv[1])
+           || SCHEME_CUSTODIANP(argv[1])))
+    scheme_wrong_contract("unsafe-add-post-custodian-shutdown", "custodian?", 1, argc, argv);
+
+  if ((argc > 1) && !SCHEME_FALSEP(argv[1]))
+    c = (Scheme_Custodian *)argv[1];
+  else
+    c = main_custodian;
+
 #if defined(MZ_USE_PLACES)
-  if (!RUNNING_IN_ORIGINAL_PLACE) {
-    if (!post_custodian_shutdowns) {
-      REGISTER_SO(post_custodian_shutdowns);
-      post_custodian_shutdowns = scheme_null;
-    }
-    
-    post_custodian_shutdowns = scheme_make_pair(argv[0], post_custodian_shutdowns);
-  }
+  if (RUNNING_IN_ORIGINAL_PLACE
+      && (c == main_custodian))
+    return scheme_void;
 #endif
+      
+  l = scheme_make_pair(argv[0], c->post_callbacks);
+  c->post_callbacks = l;
   
   return scheme_void;
-}
-
-void scheme_run_post_custodian_shutdown()
-{
-#if defined(MZ_USE_PLACES)
-  if (post_custodian_shutdowns) {
-    Scheme_Object *proc;
-    scheme_start_in_scheduler();
-    while (SCHEME_PAIRP(post_custodian_shutdowns)) {
-      proc = SCHEME_CAR(post_custodian_shutdowns);
-      post_custodian_shutdowns = SCHEME_CDR(post_custodian_shutdowns);
-      _scheme_apply_multi(proc, 0, NULL);
-    }
-    scheme_end_in_scheduler();
-  }
-#endif
 }
 
 void scheme_set_atexit(Scheme_At_Exit_Proc p)
@@ -2026,6 +2041,8 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
 static void check_scheduled_kills()
 {
+  int force_gc = 0;
+
   if (scheme_no_stack_overflow) {
     /* don't shutdown something that may be in an atomic callback */
     return;
@@ -2036,6 +2053,16 @@ static void check_scheduled_kills()
     k = SCHEME_CAR(scheduled_kills);
     scheduled_kills = SCHEME_CDR(scheduled_kills);
     do_close_managed((Scheme_Custodian *)k);
+    force_gc = 1;
+  }
+
+  if (force_gc) {
+    /* A shutdown in response to a memory limit merits another major
+       GC to clean up and reset the expected heap size. Otherwise, if
+       another limit is put in place, it will be checked (on a major
+       GC) even later, which will set the major-GC trigger even
+       higher, and so on. */
+    scheme_collect_garbage();
   }
 }
 
@@ -2735,7 +2762,7 @@ Scheme_Object **scheme_alloc_runstack(intptr_t len)
 #ifdef MZ_PRECISE_GC
   intptr_t sz;
   void **p;
-  sz = sizeof(Scheme_Object*) * (len + 5);
+  sz = sizeof(Scheme_Object*) * (len + RUNSTACK_HEADER_FIELDS);
   p = (void **)GC_malloc_tagged_allow_interior(sz);
   *(Scheme_Type *)(void *)p = scheme_rt_runstack;
   ((intptr_t *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
@@ -2743,7 +2770,7 @@ Scheme_Object **scheme_alloc_runstack(intptr_t len)
   ((intptr_t *)(void *)p)[3] = len;
 # define MZ_RUNSTACK_OVERFLOW_CANARY 0xFF77FF77
   ((intptr_t *)(void *)p)[4] = MZ_RUNSTACK_OVERFLOW_CANARY;
-  return (Scheme_Object **)(p + 5);
+  return (Scheme_Object **)(p + RUNSTACK_HEADER_FIELDS);
 #else
   return (Scheme_Object **)scheme_malloc_allow_interior(sizeof(Scheme_Object*) * len);
 #endif
@@ -2983,11 +3010,12 @@ static void do_swap_thread()
   } else {
     Scheme_Thread *new_thread = swap_target;
 
-    {
+    if ((!scheme_fuel_counter) || (++process_time_skips >= 100)) {
       intptr_t cpm;
       cpm = scheme_get_process_milliseconds();
       scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
       process_time_at_swap = cpm;
+      process_time_skips = 0;
     }
 
     swap_target = NULL;
@@ -3210,18 +3238,10 @@ static void remove_thread(Scheme_Thread *r)
   } else {
     /* Only this thread used the runstack, so clear/free it
        as aggressively as possible */
-#if defined(SENORA_GC_NO_FREE) || defined(MZ_PRECISE_GC)
     memset(r->runstack_start, 0, r->runstack_size * sizeof(Scheme_Object*));
-#else
-    GC_free(r->runstack_start);
-#endif
     r->runstack_start = NULL;
     for (saved = r->runstack_saved; saved; saved = saved->prev) {
-#if defined(SENORA_GC_NO_FREE) || defined(MZ_PRECISE_GC)
       memset(saved->runstack_start, 0, saved->runstack_size * sizeof(Scheme_Object*));
-#else
-      GC_free(saved->runstack_start);
-#endif
       saved->runstack_start = NULL;
     }
   }
@@ -7844,11 +7864,18 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
   Scheme_Object *p, *cell, *a[1];
   ParamData *data;
   void *k;
+  const char *name;
 
   k = scheme_make_pair(scheme_true, scheme_false); /* generates a key */
 
   if (argc > 1)
-    scheme_check_proc_arity("make-parameter", 1, 1, argc, argv);
+    scheme_check_proc_arity2("make-parameter", 1, 1, argc, argv, 1);
+  if (argc > 2) {
+    if (!SCHEME_SYMBOLP(argv[2]))
+      scheme_wrong_contract("make-parameter", "parameter?", 2, argc, argv);
+    name = scheme_symbol_val(argv[2]);
+  } else
+    name = "parameter-procedure";
 
   data = MALLOC_ONE_RT(ParamData);
 #ifdef MZTAG_REQUIRED
@@ -7857,11 +7884,11 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
   data->key = (Scheme_Object *)k;
   cell = scheme_make_thread_cell(argv[0], 1);
   data->defcell = cell;
-  data->guard = ((argc > 1) ? argv[1] : NULL);
+  data->guard = (((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL);
 
   a[0] = (Scheme_Object *)data;
   p = scheme_make_prim_closure_w_arity(do_param_fast, 1, a, 
-                                       "parameter-procedure", 0, 1);
+                                       name, 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;
@@ -8641,7 +8668,7 @@ typedef struct WillExecutor {
   Scheme_Object so;
   Scheme_Object *sema;
   ActiveWill *first, *last;
-  int is_stubborn;
+  int is_late;
 } WillExecutor;
 
 static void activate_will(void *o, void *data) 
@@ -8672,6 +8699,16 @@ static void activate_will(void *o, void *data)
       w->first = a;
     w->last = a;
     scheme_post_sema(w->sema);
+
+    if (w->is_late) {
+      /* Ensure that a late will executor stays live in this place
+         as long as there are wills to execute. */
+      if (!late_will_executors_with_pending) {
+        REGISTER_SO(late_will_executors_with_pending);
+        late_will_executors_with_pending = scheme_make_hash_table(SCHEME_hash_ptr);
+      }
+      scheme_hash_set(late_will_executors_with_pending, (Scheme_Object *)w, scheme_true);
+    }
   }
 }
 
@@ -8682,8 +8719,11 @@ static Scheme_Object *do_next_will(WillExecutor *w)
 
   a = w->first;
   w->first = a->next;
-  if (!w->first)
+  if (!w->first) {
     w->last = NULL;
+    if (w->is_late)
+      scheme_hash_set(late_will_executors_with_pending, (Scheme_Object *)w, NULL);
+  }
   
   o[0] = a->o;
   a->o = NULL;
@@ -8703,17 +8743,17 @@ static Scheme_Object *make_will_executor(int argc, Scheme_Object **argv)
   w->first = NULL;
   w->last = NULL;
   w->sema = sema;
-  w->is_stubborn = 0;
+  w->is_late = 0;
 
   return (Scheme_Object *)w;
 }
 
-Scheme_Object *scheme_make_stubborn_will_executor()
+Scheme_Object *scheme_make_late_will_executor()
 {
   WillExecutor *w;
 
   w = (WillExecutor *)make_will_executor(0, NULL);
-  w->is_stubborn = 1;
+  w->is_late = 1;
 
   return (Scheme_Object *)w;
 }
@@ -8733,7 +8773,7 @@ static Scheme_Object *register_will(int argc, Scheme_Object **argv)
     scheme_wrong_contract("will-register", "will-executor?", 0, argc, argv);
   scheme_check_proc_arity("will-register", 1, 2, argc, argv);
 
-  if (((WillExecutor *)argv[0])->is_stubborn) {
+  if (((WillExecutor *)argv[0])->is_late) {
     e = scheme_make_pair(argv[0], argv[2]);
     scheme_add_finalizer(argv[1], activate_will, e);
   } else {
@@ -9074,7 +9114,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       Scheme_Object **rs_start;
 
       /* If there's a meta-prompt, we can also zero out past the unused part */
-      if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == p->runstack_start)) {
+      if (p->meta_prompt && (scheme_prompt_runstack_boundary_start(p->meta_prompt) == p->runstack_start)) {
         rs_end = p->meta_prompt->runstack_boundary_offset;
       } else {
         rs_end = p->runstack_size;
@@ -9096,7 +9136,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       for (saved = p->runstack_saved; saved; saved = saved->prev) {
 	RUNSTACK_TUNE( size += saved->runstack_size; );
 
-        if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == saved->runstack_start)) {
+        if (p->meta_prompt && (scheme_prompt_runstack_boundary_start(p->meta_prompt) == saved->runstack_start)) {
           rs_end = p->meta_prompt->runstack_boundary_offset;
         } else {
           rs_end = saved->runstack_size;

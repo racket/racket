@@ -138,8 +138,8 @@ Scheme_On_Atomic_Timeout_Proc (*scheme_set_on_atomic_timeout)(Scheme_On_Atomic_T
 /*========================================================================*/
 /*                              error handling                            */
 /*========================================================================*/
-void (*scheme_signal_error)(const char *msg, ...) NORETURN;
-void (*scheme_raise_exn)(int exnid, ...) NORETURN;
+void (*scheme_signal_error)(const char *msg, ...);
+void (*scheme_raise_exn)(int exnid, ...);
 void (*scheme_warning)(char *msg, ...);
 void (*scheme_raise)(Scheme_Object *exn);
 int (*scheme_log_level_p)(Scheme_Logger *logger, int level);
@@ -159,17 +159,17 @@ void (*scheme_log_warning)(char *buffer);
 void (*scheme_glib_log_message)(const char *log_domain, int log_level, const char *message, void *user_data);
 void *(*scheme_glib_log_message_test)(char *str);
 void (*scheme_out_of_memory_abort)();
-void (*scheme_wrong_count)(const char *name, int minc, int maxc, int argc, Scheme_Object **argv) NORETURN;
-void (*scheme_wrong_count_m)(const char *name, int minc, int maxc, int argc, Scheme_Object **argv, int is_method) NORETURN;
-void (*scheme_case_lambda_wrong_count)(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...) NORETURN;
-void (*scheme_wrong_type)(const char *name, const char *expected, int which, int argc, Scheme_Object **argv) NORETURN;
-void (*scheme_wrong_contract)(const char *name, const char *expected, int which, int argc, Scheme_Object **argv) NORETURN;
-void (*scheme_wrong_field_type)(Scheme_Object *c_name, const char *expected, Scheme_Object *o) NORETURN;
-void (*scheme_wrong_field_contract)(Scheme_Object *c_name, const char *expected, Scheme_Object *o) NORETURN;
-void (*scheme_arg_mismatch)(const char *name, const char *msg, Scheme_Object *o) NORETURN;
-void (*scheme_contract_error)(const char *name, const char *msg, ...) NORETURN;
-void (*scheme_wrong_return_arity)(const char *where, int expected, int got, Scheme_Object **argv, const char *context_detail, ...) NORETURN;
-void (*scheme_unbound_global)(Scheme_Bucket *b) NORETURN;
+void (*scheme_wrong_count)(const char *name, int minc, int maxc, int argc, Scheme_Object **argv);
+void (*scheme_wrong_count_m)(const char *name, int minc, int maxc, int argc, Scheme_Object **argv, int is_method);
+void (*scheme_case_lambda_wrong_count)(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...);
+void (*scheme_wrong_type)(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+void (*scheme_wrong_contract)(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+void (*scheme_wrong_field_type)(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
+void (*scheme_wrong_field_contract)(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
+void (*scheme_arg_mismatch)(const char *name, const char *msg, Scheme_Object *o);
+void (*scheme_contract_error)(const char *name, const char *msg, ...);
+void (*scheme_wrong_return_arity)(const char *where, int expected, int got, Scheme_Object **argv, const char *context_detail, ...);
+void (*scheme_unbound_global)(Scheme_Bucket *b);
 Scheme_Object *(*scheme_dynamic_wind)(void (*pre)(void *),
 					     Scheme_Object *(* volatile act)(void *),
 					     void (* volatile post)(void *),
@@ -757,7 +757,7 @@ int (*scheme_directory_exists)(char *dirname);
 char *(*scheme_expand_filename)(char* filename, int ilen, const char *errorin, int *ex, int guards);
 char *(*scheme_expand_user_filename)(char* filename, int ilen, const char *errorin, int *ex, int guards);
 char *(*scheme_expand_string_filename)(Scheme_Object *f, const char *errorin, int *ex, int guards);
-char *(*scheme_os_getcwd)(char *buf, int buflen, int *actlen, int noexn);
+char *(*scheme_os_getcwd)(char *buf, size_t buflen, int *actlen, int noexn);
 int (*scheme_os_setcwd)(char *buf, int noexn);
 char *(*scheme_getdrive)(void);
 Scheme_Object *(*scheme_split_path)(const char *path, int len, Scheme_Object **base, int *isdir, int kind);
@@ -933,7 +933,7 @@ Scheme_Object *(*scheme_make_late_weak_box)(Scheme_Object *v);
 Scheme_Object *(*scheme_make_ephemeron)(Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_ephemeron_value)(Scheme_Object *o);
 Scheme_Object *(*scheme_ephemeron_key)(Scheme_Object *o);
-Scheme_Object *(*scheme_make_stubborn_will_executor)();
+Scheme_Object *(*scheme_make_late_will_executor)();
 Scheme_Object *(*scheme_load)(const char *file);
 Scheme_Object *(*scheme_load_extension)(const char *filename, Scheme_Env *env);
 void (*scheme_register_extension_global)(void *ptr, intptr_t size);

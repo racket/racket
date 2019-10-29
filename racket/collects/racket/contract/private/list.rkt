@@ -235,6 +235,7 @@
 
 (define flat-prop
   (build-flat-contract-property
+   #:trusted trust-me
    #:name list-name
    #:first-order list-fo-check
    #:late-neg-projection listof-late-neg-projection
@@ -245,6 +246,7 @@
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define chap-prop
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name list-name
    #:first-order list-fo-check
    #:late-neg-projection listof-late-neg-projection
@@ -255,6 +257,7 @@
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define full-prop
   (build-contract-property
+   #:trusted trust-me
    #:name list-name
    #:first-order list-fo-check
    #:late-neg-projection listof-late-neg-projection
@@ -440,6 +443,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:late-neg-projection (cons/c-late-neg-ho-check (λ (v a d) v))
    #:name cons/c-name
    #:first-order cons/c-first-order
@@ -451,6 +455,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection (cons/c-late-neg-ho-check (λ (v a d) (cons a d)))
    #:name cons/c-name
    #:first-order cons/c-first-order
@@ -462,6 +467,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection (cons/c-late-neg-ho-check (λ (v a d) (cons a d)))
    #:name cons/c-name
    #:first-order cons/c-first-order
@@ -565,6 +571,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:late-neg-projection cons/dc-late-neg-projection
    #:name cons/dc-name
    #:first-order cons/dc-first-order
@@ -576,6 +583,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection cons/dc-late-neg-projection
    #:name cons/dc-name
    #:first-order cons/dc-first-order
@@ -587,6 +595,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection cons/dc-late-neg-projection
    #:name cons/dc-name
    #:first-order cons/dc-first-order
@@ -728,6 +737,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name list/c-name-proc
    #:first-order list/c-first-order
    #:generate list/c-generate
@@ -817,6 +827,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name list/c-name-proc
    #:first-order list/c-first-order
    #:generate list/c-generate
@@ -830,6 +841,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name list/c-name-proc
    #:first-order list/c-first-order
    #:generate list/c-generate
@@ -1015,6 +1027,7 @@
 (struct flat-*list/c *list-ctc ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name *list/c-name-proc
    #:first-order *list/c-first-order
    #:generate *list/c-generate
@@ -1026,6 +1039,7 @@
 (struct chaperone-*list/c *list-ctc ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name *list/c-name-proc
    #:first-order *list/c-first-order
    #:generate *list/c-generate
@@ -1037,6 +1051,7 @@
 (struct impersonator-*list/c *list-ctc ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name *list/c-name-proc
    #:first-order *list/c-first-order
    #:generate *list/c-generate
@@ -1081,6 +1096,7 @@
 (struct flat-ellipsis-rest-arg ellipsis-rest-arg-ctc ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name (λ (ctc) (error 'flat-ellipsis-rest-arg "the name property shouldn't be called!"))
    #:first-order *list/c-first-order
    #:generate *list/c-generate
@@ -1093,6 +1109,7 @@
 (struct chaperone-ellipsis-rest-arg ellipsis-rest-arg-ctc ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name (λ (ctc) (error 'flat-ellipsis-rest-arg "the name property shouldn't be called!"))
    #:first-order *list/c-first-order
    #:generate *list/c-generate
@@ -1105,6 +1122,7 @@
 (struct impersonator-ellipsis-rest-arg ellipsis-rest-arg-ctc ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name (λ (ctc) (error 'flat-ellipsis-rest-arg "the name property shouldn't be called!"))
    #:first-order *list/c-first-order
    #:generate *list/c-generate

@@ -110,6 +110,7 @@ both:
 
 gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(MRSTATIC_STUB) $(GRACKETRESDEP)
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o gracket@CGC@ $(GRACKETOBJECTS) $(GRACKETRES) $(GRACKETLDLIBS) $(MRSTATIC_STUB)
+	@POST_LINKER@ gracket@CGC@
 
 gres.o : $(srcdir)/../worksp/gracket/gracket.rc
 	@WINDRES@ -i $(srcdir)/../worksp/gracket/gracket.rc -o gres.o

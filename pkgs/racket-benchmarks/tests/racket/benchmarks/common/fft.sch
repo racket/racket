@@ -55,7 +55,7 @@
                  (loop))
           #t))
     (cond ((not (= n (expt 2 m)))
-           (error "array size not a power of two.")))
+           (error 'init "array size not a power of two.")))
     ;; interchange elements in bit-reversed order
     (set! j 1)
     (set! i 1)

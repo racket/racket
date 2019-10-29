@@ -19,6 +19,7 @@
          namespace-get-root-expand-ctx
          namespace-set-root-expand-ctx!
          namespace-self-mpi
+         namespace-self-mpi/no-top-level
          namespace->namespace-at-phase
          namespace->module
          namespace-mpi
@@ -129,7 +130,8 @@
                                               (raise-argument-error 'current-namespace
                                                                     "namespace?"
                                                                     v))
-                                            v)))
+                                            v)
+                                          'current-namespace))
 
 (define (namespace-get-root-expand-ctx ns)
   (force (unbox (namespace-root-expand-ctx ns))))
@@ -139,6 +141,12 @@
 
 (define (namespace-self-mpi ns)
   (root-expand-context-self-mpi (namespace-get-root-expand-ctx ns)))
+
+(define (namespace-self-mpi/no-top-level ns)
+  (define mpi (root-expand-context-self-mpi (namespace-get-root-expand-ctx ns)))
+  (if (and mpi (top-level-module-path-index? mpi))
+      #f
+      mpi))
 
 (define (namespace->module ns name)
   (or (small-hash-ref (namespace-submodule-declarations ns) name #f)

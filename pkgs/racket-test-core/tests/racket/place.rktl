@@ -52,8 +52,11 @@
     ;interned into the same table as us and us2
     ;because the same place sends and receives
     (test #t equal? us (car r2))
-    (test #t equal? us2 (cdr r2))))
-  
+    (test #t equal? us2 (cdr r2)))
+
+  (place-channel-put out (make-prefab-struct 'vec (vector) (vector)))
+  (test (make-prefab-struct 'vec (vector) (vector)) place-channel-get in))
+
 (let ([p (place/splat (p1 ch)
           (printf "Hello form place 2\n")
           (exit 99))])
@@ -97,6 +100,7 @@
   (test #t place-message-allowed? v)
   (test #t place-message-allowed? (list v))
   (test #t place-message-allowed? (vector v)))
+(test #t place-message-allowed? (vector))
 
 (for ([v (list (lambda () 10)
                add1)])
@@ -105,6 +109,20 @@
   (test (not (place-enabled?)) place-message-allowed? (cons 1 v))
   (test (not (place-enabled?)) place-message-allowed? (cons v 1))
   (test (not (place-enabled?)) place-message-allowed? (vector v)))
+
+(let ()
+  (struct s (a) #:prefab)
+  (struct p (x))
+  (define c (chaperone-struct (p 1)
+                              p-x
+                              (lambda (s v) v)))
+  (test (not (place-enabled?)) place-message-allowed? (s (lambda () 1)))
+  (test (not (place-enabled?)) place-message-allowed? (s c))
+  (test (not (place-enabled?)) place-message-allowed? (hasheq c 5))
+  (test (not (place-enabled?)) place-message-allowed? (hasheq 5 c))
+  (test (not (place-enabled?)) place-message-allowed? (vector c))
+  (test (not (place-enabled?)) place-message-allowed? (cons c 6))
+  (test (not (place-enabled?)) place-message-allowed? (cons 6 c)))
 
 ;; ----------------------------------------
 ;; Place messages and chaperones
@@ -161,6 +179,19 @@
     (test #t 'equal? (equal? v (place-channel-get in))))
 
   (void))
+
+;; ----------------------------------------
+
+(let ()
+  (define-values (in out) (place-channel))
+
+  (define (try v)
+    (place-channel-put in v)
+    (test #t eq? v (place-channel-get out)))
+
+  (try (shared-bytes 0))
+  (try (make-shared-bytes 10))
+  (try (make-shared-bytes 10 3)))
 
 ;; ----------------------------------------
 

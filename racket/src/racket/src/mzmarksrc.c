@@ -810,8 +810,8 @@ runstack_val {
   intptr_t *s = (intptr_t *)p;
  mark:
   void **a, **b;
-  a = (void **)s + 5 + s[2];
-  b = (void **)s + 5 + s[3];
+  a = (void **)s + RUNSTACK_HEADER_FIELDS + s[2];
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + s[3];
   while (a < b) {
     gcMARK2(*a, gc);
     a++;
@@ -820,14 +820,14 @@ runstack_val {
   START_MARK_ONLY;
   /* Zero out the part that we didn't mark, in case it becomes
      live later. */
-  a = (void **)s + 5;
-  b = (void **)s + 5 + s[2];
+  a = (void **)s + RUNSTACK_HEADER_FIELDS;
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + s[2];
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
   }
-  a = (void **)s + 5 + s[3];
-  b = (void **)s + 5 + (s[1] - 5);
+  a = (void **)s + RUNSTACK_HEADER_FIELDS + s[3];
+  b = (void **)s + RUNSTACK_HEADER_FIELDS + (s[1] - RUNSTACK_HEADER_FIELDS);
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
@@ -842,8 +842,12 @@ prompt_val {
  mark: 
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcMARK2(pr->boundary_overflow_id, gc);
-  if (!GC_merely_accounting())
-    gcMARK2(pr->runstack_boundary_start, gc);
+  if (!GC_merely_accounting()) {
+    if (pr->is_barrier)
+      gcMARK2(pr->u.runstack_boundary_start_ref, gc);
+    else
+      gcMARK2(pr->u.runstack_boundary_start, gc);
+  }
   gcMARK2(pr->tag, gc);
   gcMARK2(pr->id, gc);
  size:
@@ -1687,6 +1691,7 @@ mark_custodian_val {
   gcMARK2(m->closers, gc);
   gcMARK2(m->data, gc);
   gcMARK2(m->data_ptr, gc);
+  gcMARK2(m->post_callbacks, gc);
 
   gcMARK2(m->parent, gc);
   gcMARK2(m->sibling, gc);

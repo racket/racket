@@ -6,6 +6,7 @@
          "../string/utf-16-encode.rkt"
          "../string/utf-16-decode.rkt"
          "../converter/main.rkt"
+         "cache.rkt"
          "parameter.rkt"
          "string.rkt"
          "nul-char.rkt"
@@ -64,9 +65,10 @@
      ;; encoding-error bytes alone.
      (define c #f)
      (define in-bstr (string->bytes/ucs-4 s 0 (string-length s)))
+     (define enc (locale-string-encoding))
      (dynamic-wind
       (lambda ()
-        (set! c (bytes-open-converter ucs-4-encoding (locale-string-encoding))))
+        (set! c (bytes-open-converter/cached-to enc)))
       (lambda ()
         (let loop ([pos 0])
           (cond
@@ -94,7 +96,7 @@
                     (apply string-append ls err-s r)
                     (list* ls err-s r))])])))
       (lambda ()
-        (bytes-close-converter c)))]))
+        (bytes-close-converter/cached-to c enc)))]))
 
 ;; in atomic mode
 ;; Assumes that the locale is sync'ed

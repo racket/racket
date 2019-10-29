@@ -626,6 +626,7 @@ INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 RUN_RACKET
 CROSS_COMPILE_TARGET_KIND
+COMP_SUBDIR_CONFIGURE_ARGS
 CS_COMPILED_SUBDIR
 CS_INSTALLED
 FRAMEWORK_REL_INSTALL
@@ -636,12 +637,18 @@ SCHEME_CONFIG_ARGS
 MAKE_BUILD_SCHEME
 SCHEME_SRC
 ELF_COMP
+BOOT_COMPRESS_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
+LZ4_LIB
+LZ4_LIB_DEP
+Z_LIB
+Z_LIB_DEP
 NOT_MINGW
 MINGW
 NOT_OSX
 OSX
+SETUP_BOOT_MODE
 TT_CROSS_MODE
 T_CROSS_MODE
 CROSS_MODE
@@ -653,6 +660,7 @@ RACKET
 RKTL_POST
 RKTL_PRE
 INCLUDEDEP
+POST_LINKER
 RKTLINKER
 STRIP_LIB_DEBUG
 STRIP_DEBUG
@@ -762,6 +770,7 @@ enable_standalone
 enable_pthread
 enable_iconv
 enable_compress
+enable_compressboot
 enable_origtree
 enable_pkgscope
 enable_docs
@@ -770,6 +779,7 @@ enable_racket
 enable_scheme
 enable_mach
 enable_target
+enable_natipkg
 enable_sdk
 enable_xonx
 enable_macprefix
@@ -777,10 +787,13 @@ enable_libfw
 enable_userfw
 enable_mac64
 enable_noopt
+enable_ubsan
 enable_csdefault
 enable_csonly
 enable_parent
 enable_crossany
+enable_libz
+enable_liblz4
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1398,7 +1411,8 @@ Optional Features:
   --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
-  --enable-compress       compress compiled code
+  --enable-compress       compress compiled code (enabled by default)
+  --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
@@ -1407,9 +1421,11 @@ Optional Features:
   --enable-scheme=<path>  Chez Scheme build directory at <path>
   --enable-mach=<mach>    Use Chez Scheme machine type <mach>
   --enable-target=<mach>  Cross-build for Chez Scheme machine type <mach>
+  --enable-natipkg        add "-natipkg" to library subpath
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
+  --enable-sdk9=<path>    use Mac OS 10.9 SDK directory
   --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
@@ -1418,10 +1434,13 @@ Optional Features:
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-strip          strip debug on install (usually enabled by default)
+  --enable-ubsan          compile with -fsanitize=undefined
   --enable-csdefault      use CS as default build
   --enable-csonly         build CS only
   --enable-parent         Create "../Makefile" (internal use)
   --enable-crossany       Record own cross target as machine-independent
+  --enable-libz           use installed libz if available
+  --enable-liblz4         use installed liblz4 if available
 
 Some influential environment variables:
   CC          C compiler command
@@ -1793,6 +1812,189 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_header_compile
+
+# ac_fn_c_compute_int LINENO EXPR VAR INCLUDES
+# --------------------------------------------
+# Tries to find the compile-time value of EXPR in a program that includes
+# INCLUDES, setting VAR accordingly. Returns whether the value could be
+# computed
+ac_fn_c_compute_int ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  if test "$cross_compiling" = yes; then
+    # Depending upon the size, compute the lo and hi bounds.
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+static int test_array [1 - 2 * !(($2) >= 0)];
+test_array [0] = 0;
+return test_array [0];
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_lo=0 ac_mid=0
+  while :; do
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+static int test_array [1 - 2 * !(($2) <= $ac_mid)];
+test_array [0] = 0;
+return test_array [0];
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_hi=$ac_mid; break
+else
+  as_fn_arith $ac_mid + 1 && ac_lo=$as_val
+			if test $ac_lo -le $ac_mid; then
+			  ac_lo= ac_hi=
+			  break
+			fi
+			as_fn_arith 2 '*' $ac_mid + 1 && ac_mid=$as_val
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+static int test_array [1 - 2 * !(($2) < 0)];
+test_array [0] = 0;
+return test_array [0];
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_hi=-1 ac_mid=-1
+  while :; do
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+static int test_array [1 - 2 * !(($2) >= $ac_mid)];
+test_array [0] = 0;
+return test_array [0];
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_lo=$ac_mid; break
+else
+  as_fn_arith '(' $ac_mid ')' - 1 && ac_hi=$as_val
+			if test $ac_mid -le $ac_hi; then
+			  ac_lo= ac_hi=
+			  break
+			fi
+			as_fn_arith 2 '*' $ac_mid && ac_mid=$as_val
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  ac_lo= ac_hi=
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+# Binary search between lo and hi bounds.
+while test "x$ac_lo" != "x$ac_hi"; do
+  as_fn_arith '(' $ac_hi - $ac_lo ')' / 2 + $ac_lo && ac_mid=$as_val
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+static int test_array [1 - 2 * !(($2) <= $ac_mid)];
+test_array [0] = 0;
+return test_array [0];
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_hi=$ac_mid
+else
+  as_fn_arith '(' $ac_mid ')' + 1 && ac_lo=$as_val
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+case $ac_lo in #((
+?*) eval "$3=\$ac_lo"; ac_retval=0 ;;
+'') ac_retval=1 ;;
+esac
+  else
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+static long int longval () { return $2; }
+static unsigned long int ulongval () { return $2; }
+#include <stdio.h>
+#include <stdlib.h>
+int
+main ()
+{
+
+  FILE *f = fopen ("conftest.val", "w");
+  if (! f)
+    return 1;
+  if (($2) < 0)
+    {
+      long int i = longval ();
+      if (i != ($2))
+	return 1;
+      fprintf (f, "%ld", i);
+    }
+  else
+    {
+      unsigned long int i = ulongval ();
+      if (i != ($2))
+	return 1;
+      fprintf (f, "%lu", i);
+    }
+  /* Do not output a trailing newline, as this causes \r\n confusion
+     on some platforms.  */
+  return ferror (f) || fclose (f) != 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  echo >>conftest.val; read $3 <conftest.val; ac_retval=0
+else
+  ac_retval=1
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+rm -f conftest.val
+
+  fi
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_compute_int
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -2317,6 +2519,11 @@ if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
 fi
 
+# Check whether --enable-compressboot was given.
+if test "${enable_compressboot+set}" = set; then :
+  enableval=$enable_compressboot;
+fi
+
 
 # Check whether --enable-origtree was given.
 if test "${enable_origtree+set}" = set; then :
@@ -2360,6 +2567,17 @@ fi
 # Check whether --enable-target was given.
 if test "${enable_target+set}" = set; then :
   enableval=$enable_target;
+fi
+
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
 fi
 
 # Check whether --enable-sdk was given.
@@ -2427,6 +2645,12 @@ strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
 
+# Check whether --enable-ubsan was given.
+if test "${enable_ubsan+set}" = set; then :
+  enableval=$enable_ubsan;
+fi
+
+
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2447,6 +2671,16 @@ if test "${enable_crossany+set}" = set; then :
   enableval=$enable_crossany;
 fi
 
+
+# Check whether --enable-libz was given.
+if test "${enable_libz+set}" = set; then :
+  enableval=$enable_libz;
+fi
+
+# Check whether --enable-liblz4 was given.
+if test "${enable_liblz4+set}" = set; then :
+  enableval=$enable_liblz4;
+fi
 
 
 
@@ -2502,12 +2736,17 @@ show_explicitly_set()
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
-show_explicitly_enabled "${enable_compress}" "Compressed code"
+show_explicitly_disabled "${enable_compress}" "Compressed code"
+show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+
+show_explicitly_enabled "${enable_libz}" "Installed libz"
+show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 
 if test "${enable_csonly}" = "yes" ; then
   enable_csdefault=yes
@@ -2609,10 +2848,11 @@ if test "${enable_csdefault}" = "yes" ; then
 fi
 
 CS_COMPILED_SUBDIR=1
+COMP_SUBDIR_CONFIGURE_ARGS=
 if test "${enable_csdefault}" = "yes" ; then
   CS_COMPILED_SUBDIR=0
+  COMP_SUBDIR_CONFIGURE_ARGS=--enable-csdefault
 fi
-
 
 ############## Install targets ################
 
@@ -2620,50 +2860,52 @@ PREFIX_PATH_RELATIVE=/../..
 
 
 unixstyle=no
-if test "${prefix}" != "NONE" ; then
-  if test "${enable_origtree}" != "yes" ; then
+if test "${enable_origtree}" != "yes" ; then
+  if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
-fi
-if test "${exec_prefix}" != "NONE" ; then
- unixstyle=yes
-fi
-if test "${bindir}" != '${exec_prefix}/bin' ; then
- unixstyle=yes
-fi
-if test "${datadir}" != '${prefix}/share' ; then
- # Newer autoconf uses datarootdir:
- if test "${datadir}" = '${datarootdir}' ; then
-   if test "${datarootdir}" != '${prefix}/share' ; then
+  if test "${exec_prefix}" != "NONE" ; then
+   unixstyle=yes
+  fi
+  if test "${bindir}" != '${exec_prefix}/bin' ; then
+   unixstyle=yes
+  fi
+  if test "${datadir}" != '${prefix}/share' ; then
+   # Newer autoconf uses datarootdir:
+   if test "${datadir}" = '${datarootdir}' ; then
+     if test "${datarootdir}" != '${prefix}/share' ; then
+      unixstyle=yes
+     fi
+   else
+     unixstyle=yes
+   fi
+  fi
+  if test "${libdir}" != '${exec_prefix}/lib' ; then
+   if test "${libdir}" != '${exec_prefix}/lib64' ; then
     unixstyle=yes
    fi
- else
+  fi
+  if test "${includedir}" != '${prefix}/include' ; then
    unixstyle=yes
- fi
-fi
-if test "${libdir}" != '${exec_prefix}/lib' ; then
- unixstyle=yes
-fi
-if test "${includedir}" != '${prefix}/include' ; then
- unixstyle=yes
-fi
-if test "${mandir}" != '${prefix}/man' ; then
- if test "${mandir}" = '${datarootdir}/man' ; then
-   if test "${datarootdir}" != '${prefix}/share' ; then
-    unixstyle=yes
+  fi
+  if test "${mandir}" != '${prefix}/man' ; then
+   if test "${mandir}" = '${datarootdir}/man' ; then
+     if test "${datarootdir}" != '${prefix}/share' ; then
+      unixstyle=yes
+     fi
+   else
+     unixstyle=yes
    fi
- else
-   unixstyle=yes
- fi
-fi
-if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
-  unixstyle=yes
-fi
-if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
-  unixstyle=yes
-fi
-if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
-  unixstyle=yes
+  fi
+  if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
+    unixstyle=yes
+  fi
+  if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
+    unixstyle=yes
+  fi
+  if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
+    unixstyle=yes
+  fi
 fi
 
 MAKE_COPYTREE=no
@@ -2805,16 +3047,24 @@ MINGW="not_mingw"
 NOT_MINGW=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
+BOOT_COMPRESS_COMP=""
 ELF_COMP=""
+POST_LINKER="echo"
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
 RUN_RACKET='$(RUN_THIS_RACKET)'
+SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
+
+Z_LIB_DEP='$(OWN_Z_LIB)'
+Z_LIB='$(OWN_Z_LIB)'
+LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
+LZ4_LIB='$(OWN_LZ4_LIB)'
 
 enable_pthread_by_default=yes
 
@@ -3844,10 +4094,8 @@ fi
   fi
 fi
 if test "$ARFLAGS" = '' ; then
-  ARFLAGS=ruv
+  ARFLAGS=rc
 fi
-
-LD="${ac_tool_prefix}ld"
 
 WINDRES=windres
 
@@ -3868,9 +4116,18 @@ case "$host_os" in
     ;;
   *freebsd*)
     MACH_OS=fb
+    CFLAGS="${CFLAGS} -I/usr/local/include"
+    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
     ;;
   openbsd*)
     MACH_OS=ob
+    CFLAGS="${CFLAGS} -I/usr/local/include"
+    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
+    LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
     ;;
   bitrig*)
     ;;
@@ -3878,6 +4135,10 @@ case "$host_os" in
     ;;
   netbsd*)
     MACH_OS=nb
+    LIBS="${LIBS} /usr/lib/i18n/libiconv_std.a -lm -lpthread"
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
+    POST_LINKER="paxctl +m"
     ;;
   irix*)
     ;;
@@ -3907,6 +4168,7 @@ case "$host_os" in
     PREFLAGS="$PREFLAGS -DOS_X"
     MACH_OS=osx
     LIBS="${LIBS} -lncurses -framework CoreFoundation"
+    LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     if test "${enable_xonx}" == "no" ; then
       INCLUDEDEP="-include"
       OSX=""
@@ -3951,6 +4213,14 @@ case "$host_os" in
     if test "${enable_sdk6}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    if test "${enable_sdk9}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
@@ -4021,6 +4291,8 @@ if test "${enable_pthread}" = "" ; then
     enable_pthread=yes
   fi
 fi
+
+############## machine type ################
 
 thread_prefix=""
 if test "${enable_pthread}" = "yes" ; then
@@ -4117,23 +4389,32 @@ fi
 # `TARGET_MACH` is the target that we're building for (which
 # is different in cross-build mode).
 
+############## Racket and Chez Scheme ################
+
 SCHEME_SRC=../../ChezScheme
-MAKE_BUILD_SCHEME=y
+MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
   SCHEME_SRC="${enable_scheme}"
-  MAKE_BUILD_SCHEME=n
+  MAKE_BUILD_SCHEME=none
+else
+  # Check for a directory packaged with a source distribution
+  if test -d "${srcdir}/../../ChezScheme" ; then
+    MAKE_BUILD_SCHEME=copy
+  fi
 fi
 
 if test "${enable_racket}" != "" ; then
   RACKET="${enable_racket}"
+  SETUP_BOOT_MODE=--chain
 fi
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
-
-if test "${enable_compress}" = "yes" ; then
+if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
+fi
+
+if test "${enable_compressboot}" = "yes" ; then
+  BOOT_COMPRESS_COMP="--compress"
 fi
 
 DIFF_MACH=skip
@@ -4286,11 +4567,28 @@ $as_echo "$set_strip_lib" >&6; }
 fi
 
 
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+fi
+
+############## ubsan ################
+
+if test "${enable_ubsan}" = "yes" ; then
+   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
+   CFLAGS="$CFLAGS $UBSAN"
+   CPPFLAGS="$CPPFLAGS $UBSAN"
+   PREFLAGS="$PREFLAGS $UBSAN"
+   LDFLAGS="$LDFLAGS $UBSAN"
+fi
+
+
 ############## Makefile includes ################
 
 if test "$INCLUDEDEP" = "#" ; then
   is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" = "" ; then
+  if test "$is_gmake" != "" ; then
      INCLUDEDEP="-include"
   fi
 fi
@@ -4830,6 +5128,96 @@ $as_echo "#define RKTIO_USE_PTHREADS 1" >>confdefs.h
 
 fi
 
+############## zlib and LZ4 ################
+
+if test "${enable_libz}" != "no" ; then
+  if test ! -d "$SCHEME_SRC/zlib" ; then
+    echo "No libz in Scheme directory, so trying installed"
+    enable_libz=yes
+  fi
+fi
+
+if test "${enable_liblz4}" != "no" ; then
+  if test ! -d "$SCHEME_SRC/lz4" ; then
+    echo "No lz4 in Scheme directory, so trying installed"
+    enable_liblz4=yes
+  fi
+fi
+
+if test "${enable_libz}" = "yes" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libz" >&5
+$as_echo_n "checking for libz... " >&6; }
+
+  OLD_LIBS="${LIBS}"
+  LIBS="${LIBS} -lz"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <zlib.h>
+int
+main ()
+{
+zlibVersion();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  have_zlib=yes
+else
+  have_zlib=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_zlib" >&5
+$as_echo "$have_zlib" >&6; }
+
+  if test "${have_zlib}" = "no" ; then
+    LIBS="${OLD_LIBS}"
+    echo "Building own libz"
+  else
+    Z_LIB_DEP=""
+    Z_LIB="-lz"
+    extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
+  fi
+fi
+
+if test "${enable_liblz4}" = "yes" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for liblz4" >&5
+$as_echo_n "checking for liblz4... " >&6; }
+
+  OLD_LIBS="${LIBS}"
+  LIBS="${LIBS} -llz4"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <lz4.h>
+int
+main ()
+{
+LZ4_versionString();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  have_lz4=yes
+else
+  have_lz4=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_lz4" >&5
+$as_echo "$have_lz4" >&6; }
+
+  if test "${have_lz4}" = "no" ; then
+    LIBS="${OLD_LIBS}"
+    echo "Building own liblz4"
+  else
+    LZ4_LIB_DEP=""
+    LZ4_LIB="-llz4"
+    extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
+  fi
+fi
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -4891,6 +5279,42 @@ else
   fi
 fi
 
+############## other inferred machine properties ################
+
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of void *" >&5
+$as_echo_n "checking size of void *... " >&6; }
+if ${ac_cv_sizeof_void_p+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (void *))" "ac_cv_sizeof_void_p"        "$ac_includes_default"; then :
+
+else
+  if test "$ac_cv_type_void_p" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute sizeof (void *)
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_sizeof_void_p=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_void_p" >&5
+$as_echo "$ac_cv_sizeof_void_p" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
+_ACEOF
+
+
+
 ############## final output ################
 
 # Pass certain configure args on to rktio
@@ -4914,15 +5338,24 @@ done
 
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
-
-############## final output ################
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+
+
+
+
+
+
+
+
 
 
 

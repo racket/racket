@@ -12,6 +12,12 @@
     (eprintf "test failed: ~.s; expected: ~e; actual: ~e\n" 
              expr expect val)))
 
+(define compiled (car (use-compiled-file-paths)))
+
+(module+ test
+  (module config info
+    (define timeout 180)))
+
 ;; ----------------------------------------
 ;; set up
 
@@ -101,7 +107,7 @@
 (test-racket "'m1" '("-l" "c1/m1"))
 
 (run-setup "c1")
-(test #t (file-exists? (build-path c1-dir "compiled" "m1_rkt.zo")))
+(test #t (file-exists? (build-path c1-dir compiled "m1_rkt.zo")))
 
 ;; ----------------------------------------
 ;; splicing with "mzlib"
@@ -122,7 +128,7 @@
 (test-racket "#<channel>" '("-l" "racket/base" "-l" "mzlib/cml" "-e" "(channel)"))
 
 (run-setup "mzlib" #:no-docs? #t)
-(test #t (file-exists? (build-path mzlib-dir "compiled" "m1_rkt.zo")))
+(test #t (file-exists? (build-path mzlib-dir compiled "m1_rkt.zo")))
 
 ;; ----------------------------------------
 ;; splicing via new root directory
@@ -148,9 +154,9 @@
 (test-racket "'m3" '("-l" "c1/m3"))
 
 (run-setup "c1")
-(test #t (file-exists? (build-path c1-dir "compiled" "m1_rkt.zo")))
-(test #t (file-exists? (build-path another-c1-dir "compiled" "m2_rkt.zo")))
-(test #t (file-exists? (build-path c1-dir "compiled" "m3_rkt.zo")))
+(test #t (file-exists? (build-path c1-dir compiled "m1_rkt.zo")))
+(test #t (file-exists? (build-path another-c1-dir compiled "m2_rkt.zo")))
+(test #t (file-exists? (build-path c1-dir compiled "m3_rkt.zo")))
 
 ;; original "c1" should take precdence over the new addition,
 ;; just based on the order of addition
@@ -162,7 +168,7 @@
 
 (run-setup "c1")
 ;; questionable: maybe modules unreachable via `require' shouldn't be compiled:
-(test #t (file-exists? (build-path another-c1-dir "compiled" "m3_rkt.zo")))
+(test #t (file-exists? (build-path another-c1-dir compiled "m3_rkt.zo")))
 
 (with-output-to-file (build-path another-c1-dir "m4.rkt")
   (lambda ()
@@ -201,8 +207,8 @@
 
 (run-setup "c1")
 
-(test #f (file-exists? (build-path c1-dir "compiled" "b1_rkt.zo")))
-(test #f (file-exists? (build-path another-c1-dir "compiled" "b2_rkt.zo")))
+(test #f (file-exists? (build-path c1-dir compiled "b1_rkt.zo")))
+(test #f (file-exists? (build-path another-c1-dir compiled "b2_rkt.zo")))
 
 ;; ----------------------------------------
 ;; subcollections:
@@ -225,9 +231,9 @@
 (test-racket "'n2" '("-l" "c1/s2/n2"))
 
 (run-setup "c1/s1")
-(test #t (file-exists? (build-path c1/s1-dir "compiled" "n1_rkt.zo")))
+(test #t (file-exists? (build-path c1/s1-dir compiled "n1_rkt.zo")))
 (run-setup "c1/s2")
-(test #t (file-exists? (build-path c1/s2-dir "compiled" "n2_rkt.zo")))
+(test #t (file-exists? (build-path c1/s2-dir compiled "n2_rkt.zo")))
 
 ;; ----------------------------------------
 ;; sandbox:

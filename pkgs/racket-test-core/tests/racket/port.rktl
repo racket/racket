@@ -95,6 +95,51 @@
 (test #t string-port? (open-output-bytes))
 (test #t string-port? (open-output-string))
 
+;; concurrent close on input fails
+(let ()
+  (define-values (i o) (make-pipe))
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+  (err/rt-test
+   (peek-bytes-avail! (make-bytes 10) 0 #f i)
+   exn:fail?))
+
+;; concurrent close on input triggers progress
+(let ()
+  (define-values (i o) (make-pipe))
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+  (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
+
+;; concurrent close on output fails
+(let ()
+  (define-values (i o) (make-pipe 4096))
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-output-port o)))
+  (err/rt-test
+   (let loop ()
+     (write-bytes #"hello" o)
+     (loop))
+   exn:fail?))
+
+;; concurrent close of input unblocks limited output
+(let ()
+  (define-values (i o) (make-pipe 4096))
+  (define done? #f)
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (set! done? #t)
+            (close-input-port i)))
+
+  ;; Shouldn't get stuck:
+  (let loop ()
+    (write-bytes #"hello" o)
+    (unless done?
+      (loop))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Based on the Racket manual...
 

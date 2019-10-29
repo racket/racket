@@ -10,6 +10,11 @@ organized into two layers:
    wrapper executables that combine Chez Scheme with the Racket
    functionality implemented in this immediate directory.
 
+In addition, "bootstrap" implements a simulation of Chez Scheme in
+Racket that can be used to bootstrap Chez Scheme from source (i.e.,
+using an existing Racket build, but without an existing Chez Scheme
+build).
+
 
 ========================================================================
  Requirements
@@ -23,13 +28,15 @@ Racket-on-Chez version. In the worst case, it must be exactly the same
 version (using the traditional Racket implementation) as the one
 you're trying to build.
 
-When you use `configure --enable-cs` or similar as described in
-"../README.txt", then a bootstrapping variant of Racket is built
-automatically. You can select a different Racket excutable by
-supplying `--enable-racket=...` to `configure`.
+  Note: When you use `configure --enable-cs` or similar as described
+  in "../README.txt", then a bootstrapping variant of Racket is built
+  automatically. You can select a different Racket excutable by
+  supplying `--enable-racket=...` to `configure`.
 
 The Chez Scheme build must also be sufficiently new. See
-"../README.txt" for information on obtaining Chez Scheme.
+"../README.txt" for information on obtaining Chez Scheme (when not
+using a source Racket distribution that includes Chez Scheme's source
+already), and see "Building Chez Scheme" below for building.
 
 
 ========================================================================
@@ -51,7 +58,8 @@ Scheme installation.
 
 For this development mode, either Chez Scheme needs to be installed as
 `scheme`, or you must use `make SCHEME=...` to set the command for
-`scheme`.
+`scheme`. For information on building Chez Scheme from source, see
+"Building Chez Scheme" below.
 
 Development mode also needs a Racket installation with at least the
 "compiler-lib" package installed. By default, the makefile looks for
@@ -61,13 +69,13 @@ with
 
       make PKGS="compiler-lib"
 
-in the clone's root directory. Alternatively, use use `make
-RACKET=...` to set the command for `racket`.
+in the clone's root directory. Alternatively, use `make RACKET=...`
+to set the command for `racket`.
 
 The use of development mode is described in more detail further below.
 
 Development mode currently doesn't work on Windows, because the
-makefile makes too many Unix-ish assuptions.
+makefile makes too many Unix-ish assumptions.
 
 Build Mode
 ----------
@@ -106,7 +114,7 @@ build directory to use for building Racket-on-Chez:
 
 The resulting Racket-on-Chez executable has the suffix "cs". To
 generate an executable without the "cs" suffix, supply
-`--enable-csdefault` to `configure`. The precense or absence of "cs"
+`--enable-csdefault` to `configure`. The presence or absence of "cs"
 affects the location of ".zo" files.
 
 Compilation on Windows does not use the `configure` script in "c".
@@ -128,7 +136,7 @@ Racket-on-Chez currently supports two compilation modes:
    linklets) or functions within linklets (with a "bytecode"
    interpreter around the compiled parts).
 
-   Select this mode by seting the `PLT_CS_MACH` environment variable,
+   Select this mode by setting the `PLT_CS_MACH` environment variable,
    but it's currently the default.
 
    In development mode or when the "cs" suffix is used for build mode,
@@ -143,7 +151,7 @@ Racket-on-Chez currently supports two compilation modes:
  * JIT mode --- The compiled form of a module is an S-expression where
    individual `lambda`s are compiled on demand.
 
-   Select this mode by seting the `PLT_CS_JIT` environment variable.
+   Select this mode by setting the `PLT_CS_JIT` environment variable.
 
    In development mode or when the "cs" suffix is used for build mode,
    compiled ".zo" files in this mode are written to a "cs"
@@ -162,6 +170,33 @@ for ".zo" files. For example, you may want to preserve a normal build
 while also building in machine-code mode with `PLT_CS_DEBUG` set, in
 which case setting `PLT_ZO_PATH` to something like "a6osx-debug" could
 be a good idea.
+
+
+========================================================================
+ Building Chez Scheme
+========================================================================
+
+The Racket variant of Chez Scheme does not include boot files needed
+to compile Chez Scheme using Chez Scheme, but Racket can load enough
+of Chez Scheme to compile Chez Scheme boot files.
+
+ * Obtain a sufficiently new Racket implementation, possibly by
+   following the directions in "../README.txt" to build the
+   traditional implemenation of Racket. No extra packages are needed
+   beyond a minimal Racket build.
+
+ * Set the current directory to a "ChezScheme" directory --- either a
+   checkout of the Git repository for the Racket branch of Chez Scheme
+   or the "ChezScheme" directory in the Racket source distribution.
+
+ * In "ChezScheme", run "main.rkt" in the "bootstrap" subdirectory of
+   this directory:
+
+      racket [here]/bootstrap/main.rkt
+
+   Alternatively, install the "cs-bootstrap" package and run
+
+      racket -l cs-bootstrap
 
 
 ========================================================================
@@ -274,7 +309,7 @@ Files in this directory:
          works. For example "demo/regexp.ss" runs the regexp matcher
          on a few examples. To run "demo/*.ss", use `make *-demo`.
 
- other *.rkt - Racket scripts like "convert.rkt" or comparisions like
+ other *.rkt - Racket scripts like "convert.rkt" or comparisons like
          "demo/regexp.rkt". For example, you can run "demo/regexp.rkt"
          and compare the reported timing to "demo/regexp.ss".
 
@@ -284,7 +319,7 @@ From Primitives to Modules
 The "expander" layer, as turned into a Chez Scheme library by
 "expander.sls", synthesizes primitive Racket modules such as
 `'#%kernel` and `'#%network`. The content of those primitive _modules_
-at the expander layer is based on primitve _instances_ (which are just
+at the expander layer is based on primitive _instances_ (which are just
 hash tables) as populated by tables in the "primitive" directory. For
 example, "primitive/network.scm" defines the content of the
 `'#network` primitive instance, which is turned into the primitive
@@ -317,19 +352,25 @@ pre-conversion form. Set `PLT_LINKLET_SHOW_JIT_DEMAND` to see forms as
 they are compiled on demand.
 
 In machine-code mode, set `PLT_LINKLET_SHOW_LAMBDA` to see individual
-compiled terms when a linklet is not compliled whole; set
-`PLT_LINKLET_SHOW_POST_LAMBDA` to see the linlet reorganized around
+compiled terms when a linklet is not compiled whole; set
+`PLT_LINKLET_SHOW_POST_LAMBDA` to see the linklet reorganized around
 those compiled parts; and/or set `PLT_LINKLET_SHOW_POST_INTERP` to see
 the "bytecode" form.
 
-Set `PLT_LINKLET_SHOW_CP0` to see the Schmeified form of a linklet
+Set `PLT_LINKLET_SHOW_CP0` to see the Schemified form of a linklet
 after expansion and optimization by Chez Scheme's cp0.
+
+Set `PLT_LINKLET_SHOW_ASM` to see the assembly form of a linklet after
+compilation by Chez Scheme. Assembly format uses Chez Scheme's
+abstraction of architecture-specific machine instructions (where the
+assembly is translated to actual machine code in a fairly
+straightforward way).
 
 Safety and Debugging Mode
 -------------------------
 
 If you make changes to files in "rumble", you should turn off
-`[RUMBLE_]UNSAFE_COMP` in the makefile.
+`UNSAFE_COMP` in the makefile.
 
 You may want to turn on `DEBUG_COMP` in the makefile, so that
 backtraces provide expression-specific source locations instead of
@@ -345,9 +386,7 @@ for a suggestion on setting `PLT_ZO_PATH`.
 When you change "rumble" or other layers, you can continue to use
 Racket modules that were previously compiled to ".zo" form... usually,
 but inlining optimizations and similar compiler choices can break
-compatibility. Set `compile-as-independent?` to #t in "expander.sls"
-to make compiled Racket modules reliably compatible with changes to
-the layers here (at the expense of some performance).
+compatibility.
 
 FFI Differences
 ---------------
@@ -408,20 +447,18 @@ atomic regions:
  * For critical sections with respect to Chez Scheme / OS threads, use
    a mutex or a spinlock.
 
-   For example, the implementation of `eq?` and `eqv?`-based hash
-   tables uses a spinlock to guard hash tables, so they can be
-   accessed concurrently from futures. In contrast, `equal?`-based
-   hash table operations are not atomic from the Racket perspective,
-   so they can't be locked by a mutex or spinlock; they use
-   Racket-thread locks, instead. The "rumble/lock.ss" layer skips the
-   `eq?`/`eqv?`-table spinlock when threads are not enabled at the
-   Chez Scheme level.
+   For example, `eq?` and `eqv?`-based hash tables can be accessed
+   concurrently from Chez Scheme threads as long as they are guarded
+   by a mutex or spinlock. In contrast, `equal?`-based hash table
+   operations are not atomic from the Racket perspective, so they
+   can't be locked by a mutex or spinlock; they use Racket-thread
+   locks, instead.
 
-   Chez Scheme deactivates a thread that is blocked on a mutex, so you
-   don't have to worry about waiting on a mutex blocking GCs. However,
-   if a lock guards a value that is also used by a GC callback, then
-   interrupts should be disabled before taking the lock to avoid
-   deadlock.
+   Chez Scheme deactivates a thread that is blocked on a mutex, as
+   long as interrupts are not disabled, so you don't have to worry
+   about waiting on a mutex blocking GCs. However, if a lock guards a
+   value that is also used by a GC callback, then interrupts should be
+   disabled before taking the lock to avoid deadlock.
 
  * For critical sections at the Racket level, there are multiple
    possibilities:
@@ -429,7 +466,7 @@ atomic regions:
      - The Racket "thread" layer provides `start-atomic` and
        `end-atomic` to prevent Racket-thread swaps.
 
-       These are the same opertations as provided by
+       These are the same operations as provided by
        `ffi/unsafe/atomic`.
 
      - Disabling Chez Scheme interrupts will also disable Racket
@@ -442,7 +479,7 @@ atomic regions:
        disabling interrupts will prevent GC interrupts.
 
        The Racket "thread" layer provides `start-atomic/no-interrupts`
-       and `end-atomic/no-interrupts` for both declaing atomicity at
+       and `end-atomic/no-interrupts` for both declaring atomicity at
        the Racket level and turning off Chez Scheme interrupts. The
        combination is useful for implementing functionality that might
        be called in response to a GC and might also be called by
@@ -458,36 +495,6 @@ atomic regions:
        It may be tempting to use that flag for other purposes, as a
        cheap way to disable thread swaps. For now, don't do that.
 
-
-Status and Thoughts on Various Racket Subsystems
-------------------------------------------------
-
- * Applicable structs work by adding an indirection to each function
-   call when the target is not obviously a plain procedure; with the
-   analysis in "../schemify/schemify.rkt", the indirection is not
-   needed often in a typical program, and the overhead appears to be
-   light when it is needed.
-
- * The "rktio" library fills the gap between Racket and Chez Scheme's
-   native I/O. The "rktio" library provides a minimal, non-blocking,
-   non-GCed interface to OS-specific functionality. Its' compiled to a
-   shared library and loadied into Chez Scheme, and then Racket's I/O
-   API is implemented in Racket by calling rktio as a kind of foreign
-   library.
-
- * The Racket and Chez Scheme numeric systems likely differ in some
-   ways, and I don't know how much work that will be.
-
- * For futures, Chez Scheme exposes OS-level threads with limited
-   safety guarantees. An implementation of futures can probably take
-   advantage of threads with thread-unsafe primitives wrapped to
-   divert to a barrier when called in a future.
-
- * GC-based memory accounting requires new support from Chez Scheme.
-
- * Extflonums will probably exist only on the traditional Racket
-   implementation for a long while.
-
 Performance Notes
 -----------------
 
@@ -499,23 +506,6 @@ configuration:
    Effectiveness: Can mean a 10-20% improvement in loading
    `racket/base` from source. Since the implementation is in pretty
    good shape, `UNSAFE_COMP` is enabled by default.
-
- * `compile-as-independent?` is #f in "expander.sls" --- currently set
-   to #f by default. See "Development Mode" above for more
-   information.
-
-   Effectiveness: Without also enabling `UNSAFE_COMP`, setting
-   `compile-as-independent?` to #f slows down tasks like loading
-   `racket/base` from source, but substantially improves programs
-   where the Chez Scheme optimizer needs to recognize uses of
-   primitives (e.g., microbenchmarks). Combining with `UNSAFE_COMP`
-   speeds up loading `racket/base` from source, too.
-
-   The combination of `UNSAFE_COMP` and `compile-as-independent?`
-   enables inlining of unsafe function bodies. For example,
-   `variable-ref/no-check` inlines as lots of code in safe mode and
-   little code in unsafe mode; lots of code doesn't run more slowly,
-   but it compiles more slowly.
 
  * `DEBUG_COMP` not enabled --- or, if you enable it, run `make
    strip`.

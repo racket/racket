@@ -131,6 +131,8 @@
                  (error 'parse "typedef struct names don't match at ~s" $5))]
             [(TYPEDEF <type> STAR OPEN STAR <id> CLOSE OPEN <params> SEMI)
              `(define-type ,$6 function-pointer)]
+            [(TYPEDEF <type> OPEN STAR <id> CLOSE OPEN <params> SEMI)
+             `(define-type ,$5 function-pointer)]
             [(<extern> <blocking> <return-type> <id> OPEN <params> SEMI)
              (let ([r-type (shift-stars $4 $3)]
                    [id (unstar $4)])

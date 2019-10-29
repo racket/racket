@@ -261,7 +261,7 @@ GC2_EXTERN void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val);
 /*
    Alloc an array of weak pointers, initially zeroed.  When a value in
    the array is collected, it's replaced by `replace-val'. The
-   precense of a pointer in the array doesn't keep the referenced
+   presence of a pointer in the array doesn't keep the referenced
    memory from being collected. See also README for information about
    the structure of the array. */
 

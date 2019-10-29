@@ -83,7 +83,8 @@
                         (raise-argument-error 'current-require-module-path 
                                               "(or/c module-path-index? #f)"
                                               v))
-                      v)))
+                      v)
+                    'current-require-module-path))
 
   ;; a simplified version of `collapse-module-path-index', where
   ;; we don't have to normalize:

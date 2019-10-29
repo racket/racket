@@ -2,9 +2,15 @@
 (require (only-in '#%linklet primitive-table)
          (only-in '#%unsafe
                   unsafe-custodian-register
-                  unsafe-custodian-unregister)
+                  unsafe-custodian-unregister
+                  unsafe-make-custodian-at-root)
          "../../thread/current-sandman.rkt"
          ffi/unsafe/atomic
+         (only-in ffi/unsafe
+                  malloc-immobile-cell
+                  free-immobile-cell
+                  ptr-ref
+                  _racket)
          "bootstrap-rktio.rkt")
 
 ;; Approximate scheduler cooperation where `async-evt` can be used
@@ -37,20 +43,21 @@
 
 (define (poll-ctx-sched-info ctx) #f)
 
-(struct control-state-evt (evt interrupt abandon retry)
+(struct control-state-evt (evt wrap interrupt abandon retry)
   #:property prop:evt (lambda (cse)
                         (nack-guard-evt
                          (lambda (nack)
                            (thread (lambda () (sync nack) ((control-state-evt-abandon cse))))
-                           (control-state-evt-evt cse)))))
+                           (wrap-evt (control-state-evt-evt cse)
+                                     (control-state-evt-wrap cse))))))
 
-(define current-async-semaphore (make-parameter #f))
+(define current-async-semaphore (make-parameter #f #f 'current-async-semaphore))
 
 (define (async-evt)
   (or (current-async-semaphore)
       (error 'async-evt "not in a `poller` callback")))
 
-(define current-kill-callbacks (make-parameter '()))
+(define current-kill-callbacks (make-parameter '() #f 'current-kill-callbacks))
 
 (define (thread-push-kill-callback! p)
   (current-kill-callbacks (cons p (current-kill-callbacks))))
@@ -83,7 +90,13 @@
                          'unsafe-place-local-set! set-box!
                          'unsafe-add-global-finalizer (lambda (v proc) (void))
                          'unsafe-strip-impersonator (lambda (v) v)
-                         'prop:unsafe-authentic-override prop:unsafe-authentic-override))
+                         'prop:unsafe-authentic-override prop:unsafe-authentic-override
+                         'malloc-immobile-cell malloc-immobile-cell
+                         'free-immobile-cell free-immobile-cell
+                         'immobile-cell-ref (lambda (ib) (ptr-ref ib _racket))
+                         'immobile-cell->address (lambda (b) b)
+                         'address->immobile-cell (lambda (b) b)
+                         'set-fs-change-properties! void))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread
@@ -93,6 +106,8 @@
                          'thread-resume thread-resume
                          'make-semaphore make-semaphore
                          'semaphore-post semaphore-post
+                         'semaphore-post-all (lambda (s) (for ([i (in-range 100)])
+                                                           (semaphore-post s)))
                          'semaphore-wait semaphore-wait
                          'semaphore-peek-evt semaphore-peek-evt
                          'make-channel make-channel
@@ -135,6 +150,7 @@
                          'plumber-flush-handle-remove! plumber-flush-handle-remove!
                          'unsafe-custodian-register unsafe-custodian-register
                          'unsafe-custodian-unregister unsafe-custodian-unregister
+                         'unsafe-make-custodian-at-root unsafe-make-custodian-at-root
                          'thread-push-kill-callback! thread-push-kill-callback!
                          'thread-pop-kill-callback! thread-pop-kill-callback!
                          'unsafe-add-pre-poll-callback! (lambda (proc) (void))

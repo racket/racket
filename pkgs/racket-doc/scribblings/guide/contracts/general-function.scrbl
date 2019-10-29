@@ -12,8 +12,7 @@ supplies additional contract constructors, notably @racket[->*] and
 
 @ctc-section[#:tag "optional"]{Optional Arguments}
 
-Take a look at this excerpt from a string-processing module, inspired by the
-@link["http://schemecookbook.org"]{Scheme cookbook}: 
+Take a look at this excerpt from a string-processing module:
 
 @racketmod[
 racket
@@ -543,16 +542,20 @@ Now, suppose that we also want to ensure that the first result of
  first contract strengthens the old one so that the result is a prefix of
  the given word. 
 
-This contract is expensive to check, of course. Here is a slightly
-  cheaper version: 
+This contract is expensive to check, of course. Here is a 
+  cheaper, though less stringent, version: 
 @racketblock[
 (provide
  (contract-out
   [split (->i ([fl (listof char?)])
-              (values [s (fl) (string-len/c (length fl))]
+              (values [s (fl) (string-len/c (+ 1 (length fl)))]
                       [c (listof char?)]))]))
 ]
+Stop! Why did we add @racket[1] to the length of @racket[fl]?
 
+@;{
+Running @racket[(split '())] would reveal this documentation bug.
+}
 
 @ctc-section[#:tag "no-domain"]{Fixed but Statically Unknown Arities}
 
@@ -608,7 +611,7 @@ glance, this appears to suggest a contract that assigns a
 This contract, however, says that the function must accept @emph{any}
 number of arguments, not a @emph{specific} but
 @emph{undetermined} number. Thus, applying @racket[n-step] to
-@racket[(lambda (x) x)] and @racket[(list 1)] breaks the contract
+@racket[(lambda (x) x)] and @racket[(list 1 2)] breaks the contract
 because the given function accepts only one argument. 
 
  The correct contract uses the @racket[unconstrained-domain->]

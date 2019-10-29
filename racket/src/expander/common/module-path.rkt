@@ -2,6 +2,7 @@
 (require racket/private/place-local
          ffi/unsafe/atomic
          "../compile/serialize-property.rkt"
+         "../common/performance.rkt"
          "contract.rkt"
          "parse-module-path.rkt"
          "intern.rkt")
@@ -200,13 +201,15 @@
 (define/who (module-path-index-resolve mpi [load? #f])
   (check who module-path-index? mpi)
   (or (module-path-index-resolved mpi)
-      (let ([mod-name ((current-module-name-resolver)
-                       (module-path-index-path mpi)
-                       (module-path-index-resolve/maybe
-                        (module-path-index-base mpi)
-                        load?)
-                       #f
-                       load?)])
+      (let ([mod-name (performance-region
+                       ['eval 'resolver]
+                       ((current-module-name-resolver)
+                        (module-path-index-path mpi)
+                        (module-path-index-resolve/maybe
+                         (module-path-index-base mpi)
+                         load?)
+                        #f
+                        load?))])
         (unless (resolved-module-path? mod-name)
           (raise-arguments-error 'module-path-index-resolve
                                  "current module name resolver's result is not a resolved module path"
@@ -460,7 +463,8 @@
        (raise-argument-error 'current-module-name-resolver
                              "(and/c (procedure-arity-includes/c 2) (procedure-arity-includes/c 4))"
                              v))
-     v)))
+     v)
+   'current-module-name-resolver))
 
 ;; ----------------------------------------
 
@@ -472,7 +476,8 @@
                       (raise-argument-error 'current-module-declare-name
                                             "(or/c #f resolved-module-path?)"
                                             r))
-                    r)))
+                    r)
+                  'current-module-declare-name))
 
 (define current-module-declare-source
   (make-parameter #f
@@ -483,7 +488,8 @@
                       (raise-argument-error 'current-module-declare-source
                                             "(or/c #f symbol? (and/c path? complete-path?))"
                                             s))
-                    s)))
+                    s)
+                  'current-module-declare-source))
 
 (define (substitute-module-declare-name default-name)
   (define current-name (current-module-declare-name))

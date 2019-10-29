@@ -29,8 +29,13 @@
                   (define b 'b)
                   (provide b))))))
 
-  (when (directory-exists? (build-path tmp-dir "compiled"))
-    (delete-directory/files (build-path tmp-dir "compiled")))
+  (define compiled-dir (let ([l (use-compiled-file-paths)])
+                         (if (pair? l)
+                             (car l)
+                             "compiled")))
+
+  (when (directory-exists? (build-path tmp-dir compiled-dir))
+    (delete-directory/files (build-path tmp-dir compiled-dir)))
 
   (define (do-test a b where)
     (unless (equal? a b)
@@ -75,7 +80,7 @@
     ;; eval compiled code directly:
     (parameterize ([current-module-declare-name (make-resolved-module-path (build-path tmp-dir tmp-file-name))]
                    [read-accept-compiled #t])
-      (with-input-from-file (build-path tmp-dir "compiled" (path-add-suffix tmp-file-name #".zo"))
+      (with-input-from-file (build-path tmp-dir compiled-dir (path-add-suffix tmp-file-name #".zo"))
         (lambda () (eval (read)))))
     ;; It's as if we read from source:
     (test 'm (dynamic-require tmp-file 'm))

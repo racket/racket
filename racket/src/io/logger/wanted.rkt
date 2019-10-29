@@ -6,6 +6,7 @@
 
 (provide logger-wanted-level      ; ok to call in host-Scheme interrupt handler
          logger-max-wanted-level
+         logger-max-wanted-level*
          logger-all-levels)
 
 ;; in atomic mode with interrupts disabled
@@ -31,14 +32,18 @@
 
 (define (logger-max-wanted-level logger)
   (atomically/no-interrupts/no-wind
-   (cond
-     [((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
-      ;; Cached value is up-to-date
-      (logger-max-receiver-level logger)]
-     [else
-      ;; Traverse to set cache:
-      (update-logger-wanted-level! logger #f)
-      (logger-max-receiver-level logger)])))
+   (logger-max-wanted-level* logger)))
+
+;; in atomic mode with interrupts disabled
+(define (logger-max-wanted-level* logger)
+  (cond
+    [((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
+     ;; Cached value is up-to-date
+     (logger-max-receiver-level logger)]
+    [else
+     ;; Traverse to set cache:
+     (update-logger-wanted-level! logger #f)
+     (logger-max-receiver-level logger)]))
 
 (define (update-logger-wanted-level! logger topic)
   (unless ((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))

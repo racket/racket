@@ -5,7 +5,8 @@
          racket/runtime-path
 	 compiler/find-exe
 	 racket/system
-	 "cs/prep.rkt")
+	 "cs/prep.rkt"
+	 "cs/recompile.rkt")
 
 (define-runtime-path here ".")
 
@@ -67,44 +68,72 @@
 
 ;; ----------------------------------------
 
-(unless (directory-exists? scheme-dir)
+;; Download Chez Scheme source
+(let ([submodules '("nanopass"  "stex"   "zlib"   "lz4")]
+      [readmes    '("ReadMe.md" "ReadMe" "README" "README.md")])  
   (define (clone from to [git-clone-args '()])
     (apply system*! (append
                      (list "git"
                            "clone")
                      git-clone-args
                      (list from to))))
+  (define bundled-src-dir (build-path here 'up "ChezScheme"))
   (cond
+    [(directory-exists? bundled-src-dir)
+     (unless (directory-exists? scheme-dir)
+       (copy-directory/files bundled-src-dir scheme-dir))]
     [extra-repos-base
-     ;; Intentionally not using `git-clone-args`
-     (clone (format "~aChezScheme/.git" extra-repos-base)
-            scheme-dir)
-     (clone (format "~ananopass/.git" extra-repos-base)
-            (build-path scheme-dir "nanopass"))
-     (clone (format "~astex/.git" extra-repos-base)
-            (build-path scheme-dir "stex"))
-     (clone (format "~azlib/.git" extra-repos-base)
-            (build-path scheme-dir "zlib"))]
+     ;; Intentionally not using `git-clone-args`, because dumb transport
+     ;; (likely for `extra-repos-base`) does not support shallow copies
+     (unless (directory-exists? scheme-dir)
+       (clone (format "~aChezScheme/.git" extra-repos-base)
+              scheme-dir))
+     (for ([submodule (in-list submodules)]
+           [readme (in-list readmes)])
+       (define dir (build-path scheme-dir submodule))
+       (unless (file-exists? (build-path dir readme))
+         (clone (format "~a~a/.git" extra-repos-base submodule)
+                (build-path scheme-dir submodule))))
+     (when pull?
+       (parameterize ([current-directory scheme-dir])
+         (system*! "git" "pull")
+         (for ([submodule (in-list submodules)])
+           (parameterize ([current-directory (build-path submodule)])
+             (system*! "git" "pull" "origin" "master")))))]
     [else
-     (clone "https://github.com/mflatt/ChezScheme"
-            scheme-dir
-            git-clone-args)]))
+     (unless (directory-exists? scheme-dir)
+       (clone "https://github.com/racket/ChezScheme"
+              scheme-dir
+              git-clone-args))
+     (when pull?
+       (parameterize ([current-directory scheme-dir])
+         (system*! "git" "pull")
+         (system*! "git" "submodule" "init")
+         (system*! "git" "submodule" "update")))]))
 
-(when pull?
-  (unless scheme-dir-provided?
-    (parameterize ([current-directory scheme-dir])
-      (system*! "git" "pull"))))
+;; Bootstrap Chez Scheme boot files
+(let/ec esc
+  (parameterize ([current-environment-variables
+		  (environment-variables-copy (current-environment-variables))]
+		 [exit-handler (let ([orig-exit (exit-handler)])
+				 (lambda (v)
+				   (if (zero? v)
+				       (esc)
+				       (orig-exit v))))])
+    (putenv "SCHEME_SRC" (path->string scheme-dir))
+    (putenv "MACH" machine)
+    (dynamic-require (build-path here 'up "cs" "bootstrap" "make-boot.rkt") #f)))
 
-(unless (file-exists? (build-path scheme-dir "zlib" "Makefile"))
-  (parameterize ([current-directory scheme-dir])
-    (system*! "git" "submodule" "init")
-    (system*! "git" "submodule" "update")))
-
+;; Prepare to use Chez Scheme makefile
 (prep-chez-scheme scheme-dir machine)
 
+;; Finish building Chez Scheme
 (parameterize ([current-directory (build-path scheme-dir machine "c")])
   (system*! "nmake"
 	    (format "Makefile.~a" machine)))
+
+;; Replace Chez-on-Racket-built bootfiles with Chez-built bootfiles
+(recompile scheme-dir machine #:system* system*!)
 
 ;; ----------------------------------------
 
@@ -167,12 +196,16 @@
 
 ;; ----------------------------------------
 
-;; The library name changes with the version:
+;; The library name changes with the version, so extract it from the
+;; Chez Scheme makefile
 (define scheme-lib
-  (parameterize ([current-directory (build-path scheme-dir machine "boot" machine)])
-    (for/or ([f (in-list (directory-list))]
-	     #:when (regexp-match? #rx"^csv.*mt.lib$" f))
-      f)))
+  (call-with-input-file*
+   (build-path scheme-dir "c" (format "Makefile.~a" machine))
+   (lambda (i)
+     (for/or ([l (in-lines i)])
+       (define m (regexp-match #rx"MTKernelLib *= *.*(csv.*mt.lib)" l))
+       (and m
+            (cadr m))))))
 
 (define rel2-scheme-dir (build-path 'up
 				    (if (relative-path? scheme-dir)
@@ -259,14 +292,14 @@
 (make-directory* "../../doc")
 (make-directory* "../../share")
 
-(copy-file "../COPYING-libscheme.txt"
-           "../../share/COPYING-libscheme.txt"
+(copy-file "../LICENSE-libscheme.txt"
+           "../../share/LICENSE-libscheme.txt"
            #t)
-(copy-file "../COPYING_LESSER.txt"
-           "../../share/COPYING_LESSER.txt"
+(copy-file "../LICENSE-LGPL.txt"
+           "../../share/LICENSE-LGPL.txt"
            #t)
-(copy-file "../COPYING.txt"
-           "../../share/COPYING.txt"
+(copy-file "../LICENSE-GPL.txt"
+           "../../share/LICENSE-GPL.txt"
            #t)
 
 (parameterize ([current-directory "mzstart"])
