@@ -17,6 +17,8 @@
   [udp-close (known-procedure 2)]
   [udp-connect! (known-procedure 8)]
   [udp-connected? (known-procedure 2)]
+  [udp-set-ttl! (known-procedure 4)]
+  [udp-ttl (known-procedure 2)]
   [udp-multicast-interface (known-procedure 2)]
   [udp-multicast-join-group! (known-procedure 8)]
   [udp-multicast-leave-group! (known-procedure 8)]

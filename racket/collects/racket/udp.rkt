@@ -24,6 +24,8 @@
              udp-send-evt
              udp-send-to-evt
              udp-addresses
+             udp-ttl
+             udp-set-ttl!
              udp-multicast-loopback?
              udp-multicast-set-loopback!
              udp-multicast-ttl
