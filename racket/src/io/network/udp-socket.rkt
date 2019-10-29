@@ -151,3 +151,25 @@
   
 (define (udp-default-family)
   (rktio_get_ipv4_family rktio))
+
+
+;; ----------------------------------------
+
+(define/who (udp-ttl u)
+  (check who udp? u)
+  (atomically
+   (check-udp-closed who u)
+   (define v (rktio_udp_ttl rktio (udp-s u)))
+   (cond
+     [(rktio-error? v)
+      (raise-option-error who "get" v)]
+     [else v])))
+
+(define/who (udp-set-ttl! u ttl)
+  (check who udp? u)
+  (check who byte? ttl)
+  (atomically
+   (check-udp-closed who u)
+   (define r (rktio_udp_set_ttl rktio (udp-s u) ttl))
+   (when (rktio-error? r)
+     (raise-option-error who "set" r))))

@@ -1912,6 +1912,39 @@ int rktio_udp_set_receive_buffer_size(rktio_t *rktio, rktio_fd_t *rfd, int size)
     return 1;
 }
 
+int rktio_udp_get_ttl(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  u_char ttl;
+  rktio_sockopt_len_t ttl_len = sizeof(ttl);
+  int status;
+
+  status = getsockopt(s, IPPROTO_IP, IP_TTL, (void *)&ttl, &ttl_len);
+
+  if (status) {
+    get_socket_error();
+    return RKTIO_PROP_ERROR;
+  } else
+    return ttl;
+}
+
+int rktio_udp_set_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
+{
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  u_char ttl = ttl_val;
+  rktio_sockopt_len_t ttl_len = sizeof(ttl);
+  int status;
+
+  status = setsockopt(s, IPPROTO_IP, IP_TTL, (void *)&ttl, ttl_len);
+
+  if (status) {
+    get_socket_error();
+    return 0;
+  } else
+    return 1;
+}
+
+
 int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);

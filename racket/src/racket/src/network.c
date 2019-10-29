@@ -76,6 +76,8 @@ static Scheme_Object *udp_write_ready_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_read_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_write_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_write_to_evt(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_ttl(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_set_ttl(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_multicast_loopback_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_multicast_set_loopback(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_multicast_ttl(int argc, Scheme_Object *argv[]);
@@ -139,6 +141,9 @@ void scheme_init_network(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY  ( "udp-send-evt"              , udp_write_evt            , 2 , 4 , env) ;
   ADD_PRIM_W_ARITY  ( "udp-send-to-evt"           , udp_write_to_evt         , 4 , 6 , env) ;
 
+  ADD_PRIM_W_ARITY  ( "udp-ttl"                   , udp_ttl        , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-set-ttl!"              , udp_set_ttl    , 2 , 2 , env) ;
+  
   ADD_PRIM_W_ARITY  ( "udp-multicast-loopback?"   , udp_multicast_loopback_p , 1 , 1 , env) ;
   ADD_PRIM_W_ARITY  ( "udp-multicast-set-loopback!", udp_multicast_set_loopback,2, 2 , env) ;
   ADD_PRIM_W_ARITY  ( "udp-multicast-ttl"         , udp_multicast_ttl        , 1 , 1 , env) ;
@@ -2421,6 +2426,49 @@ static void udp_check_open(char const *name, int argc, Scheme_Object *argv[])
                      name, udp);
   }
 }
+
+static Scheme_Object *
+udp_ttl(int argc, Scheme_Object *argv[])
+{
+  Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+  int r;
+
+  udp_check_open("udp-ttl", argc, argv);
+
+  r = rktio_udp_get_ttl(scheme_rktio, udp->s);
+
+  if (r == RKTIO_PROP_ERROR)
+    scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                     "udp-ttl: getsockopt failed\n"
+                     "  system error: %R");
+
+  return scheme_make_integer(r);
+}
+
+static Scheme_Object *
+udp_set_ttl(int argc, Scheme_Object *argv[])
+{
+  Scheme_UDP *udp = (Scheme_UDP *)argv[0];
+
+  if (!SCHEME_UDPP(argv[0]))
+    scheme_wrong_contract("udp-set-ttl!", "udp?", 0, argc, argv);
+
+  if (!SCHEME_INTP(argv[1]) || (SCHEME_INT_VAL(argv[1]) < 0) || (SCHEME_INT_VAL(argv[1]) >= 256)) {
+    scheme_wrong_contract("udp-set-ttl!", "byte?", 1, argc, argv);
+    return NULL;
+  }
+
+  udp_check_open("udp-set-ttl!", argc, argv);
+
+  if (!rktio_udp_set_ttl(scheme_rktio, udp->s, SCHEME_INT_VAL(argv[1])))
+    scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                     "udp-set-ttl!: setsockopt failed\n"
+                     "  system error: %R");
+
+  return scheme_void;
+}
+
+
 
 static Scheme_Object *
 udp_multicast_loopback_p(int argc, Scheme_Object *argv[])
