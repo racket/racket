@@ -347,6 +347,20 @@
 (test #f handle-evt? (wrap-evt always-evt void))
 (test #f handle-evt? (choice-evt (wrap-evt always-evt void) (wrap-evt always-evt void)))
 
+(let ()
+  (define (check-handle evt)
+    (test 'yes 'handle-evt-tail
+          (with-continuation-mark
+           'here 'yes
+           (sync (handle-evt evt
+                             (lambda (v)
+                               (call-with-immediate-continuation-mark
+                                'here
+                                (lambda (v) v))))))))
+  (check-handle always-evt)
+  (let ([t (thread (lambda () (void)))])
+    (check-handle (thread-dead-evt t))))
+
 ;; ----------------------------------------
 ;; Nack waitables
 
