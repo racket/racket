@@ -29,7 +29,7 @@ certain algorithms. Use @racket[immutable?] to check whether a hash
 table is immutable.
 
 @margin-note{Immutable hash tables actually provide @math{O(log N)}
-access and update (where the base of the @math{log} is 32.
+access and update (where the base of the @math{log} is 32).
 Since @math{N} is limited by the address space so
 that @math{log N} is limited to less than 7 or 13 (depending on the
 platform), @math{log N} can be treated reasonably as a constant.}
