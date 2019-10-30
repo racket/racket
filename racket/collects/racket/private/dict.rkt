@@ -131,7 +131,7 @@
      [else
       (let ([a (car xd)])
         (if (equal? (car a) key)
-            (cdr xd)
+            (loop (cdr xd))
             (cons a (loop (cdr xd)))))])))
 
 (define (vector-iterate-first d)
@@ -156,17 +156,93 @@
 
 (define vector-iterate-value vector-ref)
 
-(define (assoc-count d)
+(define (vector-has-key? vec key)
+  (and (exact-nonnegative-integer? key)
+       (< key (vector-length vec))))
+
+(define (vector-map-as-dict vec proc)
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-argument-error 'dict-map "(procedure-arity-includes/c 2)" proc))
+  (for/list ([k (in-naturals)] [v (in-vector vec)])
+    (proc k v)))
+
+(define (vector-for-each vec proc)
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-argument-error 'dict-for-each "(procedure-arity-includes/c 2)" proc))
+  (for ([k (in-naturals)] [v (in-vector vec)])
+    (proc k v)))
+
+(define (vector-keys vec)
+  (build-list (vector-length vec) values))
+
+(define (vector->assoc vec)
+  (for/list ([k (in-naturals)] [v (in-vector vec)])
+    (cons k v)))
+
+(define (vector-empty? vec)
+  (zero? (vector-length vec)))
+
+(define (assoc-fold-unique f init d #:who [who 'assoc-fold-unique])
   (unless (assoc? d)
-    (raise-argument-error 'dict-count "dict?" d))
-  (length d))
+    (raise-argument-error who "dict?" d))
+  (let loop ([xd d]
+             [acc init]
+             [seen (make-immutable-hash)])
+    (cond
+      [(null? xd) acc]
+      [else
+       (let ([a (car xd)])
+         (if (hash-has-key? seen (car a))
+             (loop (cdr xd) acc seen)
+             (loop (cdr xd) (f a acc) (hash-set seen (car a) #t))))])))
+
+(define (assoc-has-key? d key)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-has-key? "dict?" d))
+  (pair? (assoc key d)))
+
+(define (assoc-map d proc)
+  (for/list ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-map "dict?" d))
+    (proc (car x) (cdr x))))
+
+(define (assoc-for-each d proc)
+  (for ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-for-each "dict?" d))
+    (proc (car x) (cdr x))))
+
+(define (assoc-count d)
+  (assoc-fold-unique (lambda (a acc) (+ acc 1)) 0 d #:who dict-count))
+
+(define (assoc-keys d)
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (car a) acc)) null d #:who 'dict-keys)))
+
+(define (assoc-values d)
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc)) null d #:who 'dict-values)))
+
+(define (assoc->list d)
+  (reverse (assoc-fold-unique cons null d #:who 'dict->list)))
+
+(define (fallback-copy d)
+  (unless (dict-implements? d 'dict-clear dict-set!)
+    (raise-support-error 'dict-copy d))
+  (define d2 (dict-clear d))
+  (for ([(k v) (in-dict d)])
+    (dict-set! d2 k v))
+  d2)
+
+(define (assoc-clear d) '())
 
 (struct assoc-iter (head pos))
 
 (define (assoc-iterate-first d)
   (unless (assoc? d)
     (raise-argument-error 'dict-iterate-first "dict?" d))
-  (if (null? d) #f (assoc-iter d d)))
+  (if (null? d) #f (assoc-iter d (assoc->list d))))
 
 (define (assoc-iterate-next d i)
   (cond
@@ -204,73 +280,6 @@
       "invalid iteration position for association list: "
       i)]
     [else (raise-argument-error 'dict-iterate-value "dict?" d)]))
-
-(define (vector-has-key? vec key)
-  (and (exact-nonnegative-integer? key)
-       (< key (vector-length vec))))
-
-(define (vector-map-as-dict vec proc)
-  (unless (and (procedure? proc)
-               (procedure-arity-includes? proc 2))
-    (raise-argument-error 'dict-map "(procedure-arity-includes/c 2)" proc))
-  (for/list ([k (in-naturals)] [v (in-vector vec)])
-    (proc k v)))
-
-(define (vector-for-each vec proc)
-  (unless (and (procedure? proc)
-               (procedure-arity-includes? proc 2))
-    (raise-argument-error 'dict-for-each "(procedure-arity-includes/c 2)" proc))
-  (for ([k (in-naturals)] [v (in-vector vec)])
-    (proc k v)))
-
-(define (vector-keys vec)
-  (build-list (vector-length vec) values))
-
-(define (vector->assoc vec)
-  (for/list ([k (in-naturals)] [v (in-vector vec)])
-    (cons k v)))
-
-(define (vector-empty? vec)
-  (zero? (vector-length vec)))
-
-(define (assoc-has-key? d key)
-  (unless (assoc? d)
-    (raise-argument-error 'dict-has-key? "dict?" d))
-  (pair? (assoc key d)))
-
-(define (assoc-map d proc)
-  (for/list ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-map "dict?" d))
-    (proc (car x) (cdr x))))
-
-(define (assoc-for-each d proc)
-  (for ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-for-each "dict?" d))
-    (proc (car x) (cdr x))))
-
-(define (assoc-keys d)
-  (for/list ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-keys "dict?" d))
-    (car x)))
-
-(define (assoc-values d)
-  (for/list ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-values "dict?" d))
-    (cdr x)))
-
-(define (fallback-copy d)
-  (unless (dict-implements? d 'dict-clear dict-set!)
-    (raise-support-error 'dict-copy d))
-  (define d2 (dict-clear d))
-  (for ([(k v) (in-dict d)])
-    (dict-set! d2 k v))
-  d2)
-
-(define (assoc-clear d) '())
 
 (define (fallback-clear d)
   (unless (dict-implements? d 'dict-remove)
@@ -406,7 +415,7 @@
     (define dict-for-each assoc-for-each)
     (define dict-keys assoc-keys)
     (define dict-values assoc-values)
-    (define dict->list values)
+    (define dict->list assoc->list)
     (define dict-empty? null?)
     (define dict-clear assoc-clear)])
   #:defaults ()
