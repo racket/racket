@@ -1,4 +1,7 @@
 #lang racket/base
+(module+ test
+  (module config info
+    (define timeout 300)))
 
 (define (go n)
   (for ([i n])
