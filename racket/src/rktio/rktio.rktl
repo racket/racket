@@ -597,6 +597,18 @@
  rktio_udp_set_receive_buffer_size
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (int size)))
 (define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_udp_set_ttl
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (int ttl_val)))
+(define-function/errno
+ RKTIO_PROP_ERROR
+ ()
+ rktio_tri_t
+ rktio_udp_get_ttl
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/errno
  RKTIO_PROP_ERROR
  ()
  rktio_tri_t

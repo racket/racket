@@ -620,6 +620,20 @@ If the given port has been closed, the @exnraise[exn:fail:network].}
 
 
 @deftogether[(
+@defproc[(udp-set-ttl! [udp-socket udp?] [ttl byte?]) void?]
+@defproc[(udp-ttl [udp-socket udp?]) byte?]
+)]{
+
+@margin-note{Time-to-live settings correspond to the
+@as-index{@tt{IP_TTL}} setting of the socket.}
+
+Sets or retrieves the current time-to-live setting of
+@racket[udp-socket].
+
+@history[#:added "7.5.0.5"]}
+
+
+@deftogether[(
 @defproc[(udp-multicast-join-group! [udp-socket udp?]
 				    [multicast-addr string?]
 				    [hostname (or/c string? #f)]) void?]

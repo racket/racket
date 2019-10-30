@@ -1955,7 +1955,7 @@ int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on)
 int rktio_udp_get_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  u_char ttl;
+  int ttl;
   rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
 
@@ -1971,7 +1971,7 @@ int rktio_udp_get_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 int rktio_udp_set_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  u_char ttl = ttl_val;
+  int ttl = ttl_val;
   rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
 

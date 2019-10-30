@@ -67,7 +67,7 @@
 
 (define (raise-option-error who mode v)
   (end-atomic)
-  (raise-network-error who v (string-append mode "sockopt failed")))
+  (raise-network-option-error who mode v))
 
 ;; ----------------------------------------
 

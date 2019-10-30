@@ -17,6 +17,9 @@
          udp-bind!
          udp-connect!
 
+         udp-ttl
+         udp-set-ttl!
+
          check-udp-closed
          handle-error-immediately
          udp-default-family
@@ -158,10 +161,11 @@
   (check who udp? u)
   (atomically
    (check-udp-closed who u)
-   (define v (rktio_udp_ttl rktio (udp-s u)))
+   (define v (rktio_udp_get_ttl rktio (udp-s u)))
    (cond
      [(rktio-error? v)
-      (raise-option-error who "get" v)]
+      (end-atomic)
+      (raise-network-option-error who "get" v)]
      [else v])))
 
 (define/who (udp-set-ttl! u ttl)
@@ -171,4 +175,5 @@
    (check-udp-closed who u)
    (define r (rktio_udp_set_ttl rktio (udp-s u) ttl))
    (when (rktio-error? r)
-     (raise-option-error who "set" r))))
+     (end-atomic)
+     (raise-network-option-error who "set" r))))

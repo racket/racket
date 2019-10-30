@@ -11,6 +11,8 @@
          udp-connected?
          udp-bind!
          udp-connect!
+         udp-ttl
+         udp-set-ttl!
 
          udp-send
          udp-send*
