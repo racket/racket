@@ -2504,6 +2504,56 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+(module m1-expansion-defines-and-provides-m2 racket/base
+  (require (for-syntax racket/base))
+  (provide m1)
+  (define-syntax (m1 stx)
+    #'(begin
+        (provide m2)
+        (define m2 42))))
+
+(module defines-and-provides-m2 racket/base
+  (provide add1)
+  (require 'm1-expansion-defines-and-provides-m2)
+  (m1))
+
+
+(let-values ([(vals stxes) (module->exports ''defines-and-provides-m2 'defined-names)])
+  (test '(3 3) map length (cdr (assq 0 vals)))
+  (test (string->unreadable-symbol "m2.1") 'module->exports
+        (for/first ([v (in-list (cdr (assq 0 vals)))]
+                    #:when (eq? (car v) 'm2))
+          (caddr v)))
+  (test #t 'module->exports (and (memq 'add1 (map car (cdr (assq 0 vals)))) #t))
+  (test null values stxes))
+
+(let-values ([(vals stxes) (module->exports ''defines-and-provides-m2)])
+  (test '(2 2) map length (cdr (assq 0 vals))))
+  
+(err/rt-test (module->exports ''no-such-module-defined 'not-a-valid-verbosity)
+             exn:fail:contract?
+             #rx"not-a-valid-verbosity")
+
+(let-values ([(vals stxes) (module-compiled-exports (compile '(module m racket/kernel
+                                                                (define-values (x) 1)
+                                                                (#%provide x))))])
+  (test null values stxes)
+  (test '(2) map length (cdr (assq 0 vals))))
+
+(let-values ([(vals stxes) (module-compiled-exports (compile '(module m racket/kernel
+                                                                (define-values (x) 1)
+                                                                (#%provide x)))
+                                                    'defined-names)])
+  (test null values stxes)
+  (test '(3) map length (cdr (assq 0 vals))))
+
+(err/rt-test (module-compiled-exports 'no #f))
+(err/rt-test (module-compiled-exports (compile '(module m racket/kernel)) 'not-a-valid-verbosity)
+             #rx"not-a-valid-verbosity")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (let ([check
        (lambda (later rx)
          (err/rt-test (expand `(module m racket/base
