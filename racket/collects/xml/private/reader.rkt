@@ -306,7 +306,7 @@
                                          [(pcdata? entity)
                                           (string->list (pcdata-string entity))]
                                          [(number? (entity-text entity))
-                                          (string (integer->char (entity-text entity)))]
+                                          (list (integer->char (entity-text entity)))]
                                          ;; more here - do something with user defined entites
                                          [else '()])
                                        (read-more)))]
