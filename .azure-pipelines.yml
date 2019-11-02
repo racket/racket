@@ -31,7 +31,7 @@ jobs:
       raco test -l tests/openssl/https
       raco test -l tests/match/main
       raco test -l tests/zo-path
-      raco test -l tests/xml/test
+      raco test -l tests/xml
       raco test -l tests/db/all-tests
       raco test -c tests/stxparse
     displayName: test
@@ -66,7 +66,7 @@ jobs:
       racket\raco.exe test -l tests/openssl/https
       racket\raco.exe test -l tests/match/main
       racket\raco.exe test -l tests/zo-path
-      racket\raco.exe test -l tests/xml/test
+      racket\raco.exe test -l tests/xml
       racket\raco.exe test -c tests/db/all-tests
       racket\raco.exe test -c tests/stxparse
     displayName: Test
@@ -98,7 +98,7 @@ jobs:
       raco test -l tests/openssl/https
       raco test -l tests/match/main
       raco test -l tests/zo-path
-      raco test -l tests/xml/test
+      raco test -l tests/xml
       raco test -l tests/db/all-tests
       raco test -c tests/stxparse
     displayName: test

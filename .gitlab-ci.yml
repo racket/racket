@@ -360,7 +360,7 @@ scan:racket:cs:
     - linux
     - x86_64
   script:
-    - raco test -l tests/xml/test 2>&1 | tee test.log
+    - raco test -l tests/xml 2>&1 | tee test.log
   artifacts:
     when: always
     paths:
@@ -1033,7 +1033,7 @@ test:ubsan:
     - raco test -l tests/openssl/https 2>&1 | tee logs/openssl-https-test.log
     - raco test -l tests/match/main 2>&1 | tee logs/match-main-test.log
     - raco test -l tests/zo-path 2>&1 | tee logs/zo-path-test.log
-    - raco test -l tests/xml/test 2>&1 | tee logs/xml-test.log
+    - raco test -l tests/xml 2>&1 | tee logs/xml-test.log
     - raco test -l tests/db/all-tests 2>&1 | tee logs/db-test.log
     - raco test -c tests/stxparse 2>&1 | tee logs/stxparse-test.log
   after_script:
@@ -1066,7 +1066,7 @@ test:ubsan:cs:
     - racocs test -l tests/openssl/https 2>&1 | tee cs-logs/openssl-https-test.log
     - racocs test -l tests/match/main 2>&1 | tee cs-logs/match-main-test.log
     - racocs test -l tests/zo-path 2>&1 | tee cs-logs/zo-path-test.log
-    - racocs test -l tests/xml/test 2>&1 | tee cs-logs/xml-test.log
+    - racocs test -l tests/xml 2>&1 | tee cs-logs/xml-test.log
     - racocs test -l tests/db/all-tests 2>&1 | tee cs-logs/db-test.log
     - racocs test -c tests/stxparse 2>&1 | tee cs-logs/stxparse-test.log
   after_script:

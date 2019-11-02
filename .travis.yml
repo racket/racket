@@ -49,7 +49,7 @@ script:
 - raco test -l tests/openssl/https
 - raco test -l tests/match/main
 - raco test -l tests/zo-path
-- raco test -l tests/xml/test
+- raco test -l tests/xml
 - raco test -l tests/db/all-tests
 - raco test -c tests/stxparse
 notifications:
