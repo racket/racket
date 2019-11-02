@@ -180,7 +180,7 @@
     [(gt) ">"]
     [(quot) "\""]
     [(apos) "'"]
-    [else #f]))
+    [else (and (number? name) (string (integer->char name)))]))
 
 (define-struct (EOF source) ())
 
