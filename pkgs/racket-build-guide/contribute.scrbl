@@ -2,7 +2,7 @@
 @(require "common.rkt"
           (for-label (only-in scribble/manual history)))
 
-@title[#:tag "contribute"]{Contibuting to Racket Development}
+@title[#:tag "contribute"]{Contributing to Racket Development}
 
 The Racket developers are happy to receive bug reports and
 improvements to the implementation and documentation through GitHub
@@ -105,9 +105,9 @@ Some information that might improve your experience:
        if you want to make changes and then run @exec{raco setup}
        yourself.}
 
- @item{A package is sometimes a subdirectory within a Git respository,
+ @item{A package is sometimes a subdirectory within a Git repository,
        and it would be better if the checkout in @filepath{extra-pkgs}
-       matched the respoitory name instead of the package name. If you
+       matched the repository name instead of the package name. If you
        know the repository name, you can use
 
        @commandline{raco pkg update --clone extra-pkgs/@nonterm{repo-name} @nonterm{pkg-name}}
@@ -115,7 +115,7 @@ Some information that might improve your experience:
        to make the distinction.}
 
  @item{This same approach will generally work if you're starting from
-       a distribution installer instead of the checkout of the Raclet
+       a distribution installer instead of the checkout of the Racket
        sources from the main Git repository. You'll need write
        permission to the installation, though, so that @exec{raco pkg
        update} can redirect the package. Also, there's no particular
