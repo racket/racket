@@ -4,7 +4,7 @@ repositories, mostly under [the Racket GitHub
 organization](https://github.com/racket).
 
 Quick Start
-------------------------------
+-----------
 
 Pre-built versions of Racket for a variety of operating systems and
 architectures, as well as convienient source distributions are
