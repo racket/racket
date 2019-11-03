@@ -28,7 +28,7 @@ and how to contribute to Racket development.
 >> [2.4 Separate Server and Clients](#24-separate-server-and-clients)  
 >> [2.5 Creating a Client from an Installer Web Site](#25-creating-a-client-from-an-installer-web-site)  
   
-> [3 Contibuting to Racket Development](#3-contibuting-to-racket-development)  
+> [3 Contributing to Racket Development](#3-contributing-to-racket-development)  
 >> [3.1 Main-Repository Contributions](#31-main-repository-contributions)  
 >> [3.2 Distribution-Package Contributions](#32-distribution-package-contributions)  
 >> [3.3 General Contribution Guidelines](#33-general-contribution-guidelines)  
@@ -691,7 +691,7 @@ passing suitable values for `DIST_CATALOGS_q`, `DOC_SEARCH`,
 suitable variables, such as `DIST_NAME` or `RELEASE_MODE`, the same as
 for `make client`.
 
-## 3. Contibuting to Racket Development
+## 3. Contributing to Racket Development
 
 The Racket developers are happy to receive bug reports and improvements
 to the implementation and documentation through GitHub issues and pull
@@ -783,9 +783,9 @@ Some information that might improve your experience:
   `raco setup` step, which makes sense if you want to make changes and
   then run `raco setup` yourself.
 
-* A package is sometimes a subdirectory within a Git respository, and it
+* A package is sometimes a subdirectory within a Git repository, and it
   would be better if the checkout in `"extra-pkgs"` matched the
-  respoitory name instead of the package name. If you know the
+  repository name instead of the package name. If you know the
   repository name, you can use
 
     `raco pkg update –clone extra-pkgs/<repo-name> <pkg-name>`
@@ -793,7 +793,7 @@ Some information that might improve your experience:
   to make the distinction.
 
 * This same approach will generally work if you’re starting from a
-  distribution installer instead of the checkout of the Raclet sources
+  distribution installer instead of the checkout of the Racket sources
   from the main Git repository. You’ll need write permission to the
   installation, though, so that `raco pkg update` can redirect the
   package. Also, there’s no particular reason to use `extra-pkgs` in
