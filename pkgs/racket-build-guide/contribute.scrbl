@@ -86,7 +86,7 @@ the package name.
 To start working on a package @nonterm{pkg-name}, it's usually best to
 go to the root directory of your Racket repository checkout and run
 
-@commandline{raco pkg update --clone extra-pkgs/@nonterm{pkg-name}}
+@commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{pkg-name}}
 
 That will create @filepath{extra-pkgs/@nonterm{pkg-name}} as a clone
 of the package's source Git repository, it will replace the current
@@ -110,7 +110,7 @@ Some information that might improve your experience:
        matched the repository name instead of the package name. If you
        know the repository name, you can use
 
-       @commandline{raco pkg update --clone extra-pkgs/@nonterm{repo-name} @nonterm{pkg-name}}
+       @commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{repo-name} @nonterm{pkg-name}}
 
        to make the distinction.}
 
@@ -124,7 +124,7 @@ Some information that might improve your experience:
  @item{If you're done and want to go back to the normal installation
        for @nonterm{pkg-name}, use
 
-        @commandline{raco pkg update --catalog @nonterm{pkg-name}}}
+        @commandline{raco pkg update @DFlag{catalog} @nonterm{pkg-name}}}
 
  @item{See @secref["git-workflow" #:doc '(lib
        "pkg/scribblings/pkg.scrbl")] for more information about how
