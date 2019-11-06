@@ -3097,5 +3097,26 @@ case of module-leve bindings; it doesn't cover local bindings.
                #rx"write: linklet is not serializable"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that re-exports at higher phases correctly track whether
+;; the export is a variable or syntax
+
+(for ([meta '(1 2)])
+  (define name (string->symbol (format "submodule-reexports-macro-at-meta-~a" meta)))
+  (eval `(module ,name racket/base
+           (module foo racket/base
+             (require (for-syntax racket/base))
+             (provide x)
+             (define-syntax x 5))
+           (module bar racket/base
+             (require (for-meta ,meta (submod ".." foo)))
+             (provide (for-meta ,meta x)))))
+
+  (namespace-require `(submod ',name bar))
+
+  (let-values ([(vals stxes) (module->exports `(submod ',name bar))])
+    (test 0 length vals)
+    (test 1 length stxes)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

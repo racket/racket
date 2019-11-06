@@ -25,6 +25,7 @@
    [else
     ;; Use `binding-lookup` to both check for taints and determine whether the
     ;; binding is a transformer or variable binding
+    (namespace-visit-available-modules! ns (+ at-phase (module-binding-phase b)))
     (define-values (val primitive? insp protected?)
       (binding-lookup b empty-env null ns at-phase id))
     (not (variable? val))]))
