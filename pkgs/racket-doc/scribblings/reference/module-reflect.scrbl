@@ -689,7 +689,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 
 
 @defproc[(module->exports
-          [mod (or/c module-path? resolved-module-path?)]
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)]
           [verbosity (or/c #f 'defined-names) #f])
          (values (listof (cons/c (or/c exact-integer? #f) list?))
                  (listof (cons/c (or/c exact-integer? #f) list?)))]{
@@ -712,7 +713,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 
 
 @defproc[(module->indirect-exports
-          [mod (or/c module-path? resolved-module-path?)])
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)])
          (listof (cons/c exact-integer? (listof symbol?)))]{
 
  Like @racket[module-compiled-indirect-exports], but produces the
@@ -732,7 +734,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 @history[#:added "6.5.0.5"]}
 
 @defproc[(module-predefined?
-          [mod (or/c module-path? resolved-module-path?)])
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)])
          boolean?]{
 
 Reports whether @racket[mod] refers to a module that is predefined for
