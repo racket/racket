@@ -1,3 +1,6 @@
+Version 7.5, November 2019
+Bug repairs and other changes noted in the documentation
+
 Version 7.4, July 2019
 Disabled single-flonum reading by default and added
  `read-single-flonum` and `single-flonum-available?`
