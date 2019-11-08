@@ -463,7 +463,11 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
 
 # If using gcc, we want all warnings:
-if test "$CC" = "gcc" ; then 
+changequote(<<, >>)dnl
+is_gcc=`$CC -v 2>&1 | tail -n 1 | grep -E '^gcc version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ \([^\)]+\)[[:space:]]*$'`
+changequote([, ])dnl
+
+if test "$is_gcc" != "" ; then
   COMPFLAGS="$COMPFLAGS -Wall"
 
   # Use -MMD when we have gcc and gnumake:
