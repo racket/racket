@@ -68,16 +68,6 @@
 (define (browser-preference? x)
   (or (not x) (memq x unix-browser-list) (custom-browser? x) (procedure? x)))
 
-;; like (system-type), but return the real OS for OSX with XonX
-;;  (could do the same for Cygwin, but it doesn't have shell-execute)
-(define systype
-  (delay/sync (let ([t (system-type)])
-                (cond [(not (eq? t 'unix)) t]
-                      [(regexp-match? #rx"-darwin($|/)"
-                                      (path->string (system-library-subpath)))
-                       'macosx]
-                      [else t]))))
-
 (define (%escape str)
   (apply string-append
          (map (lambda (b)
@@ -93,24 +83,23 @@
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?]
                   #:escape? [escape? #t])
-  (define stype (force systype))
   (unless (string? url-str)
     (error 'send-url "expected a string, got ~e" url-str))
   (let ([url-str (if escape? (escape-url url-str) url-str)])
     (if (procedure? (external-browser))
       ((external-browser) url-str)
-      (case stype
-        [(macosx)  (send-url/mac url-str)]
-        [(windows) (send-url/win url-str)]
-        [(unix)    (send-url/unix url-str (force separate-window?))]
+      (case (system-type)
+        ['macosx  (send-url/mac url-str)]
+        ['windows (send-url/win url-str)]
+        ['unix    (send-url/unix url-str (force separate-window?))]
         [else (error 'send-url
-                     "don't know how to open URL on platform: ~s" stype)])))
+                     "don't know how to open URL on platform: ~s" (system-type))])))
   (void))
 
 (define (send-url/file path [separate-window? separate-by-default?]
                        #:fragment [fragment #f] #:query [query #f])
   (let* ([path (path->string (path->complete-path path))]
-         [path (if (eq? 'windows (force systype))
+         [path (if (eq? 'windows (system-type))
                  ;; see http://msdn2.microsoft.com/en-us/library/ms775098.aspx
                  (let* ([path (regexp-replace* #rx"\\\\" path "/")]
                         [slashes (cdar (regexp-match-positions #rx"^/*" path))])
