@@ -1,4 +1,6 @@
 Version 7.5, November 2019
+Re-license Racket code as well as most C code under a permissive
+ license; see LICENSE for more details
 Bug repairs and other changes noted in the documentation
 
 Version 7.4, July 2019
