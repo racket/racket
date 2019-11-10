@@ -6874,7 +6874,20 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/racket/src/schvers.h | cut -d '"' -f 2`
+    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+
+    if test "${VERSION_W}" != "0" ; then
+      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+    else
+      if test "${VERSION_Z}" != "0" ; then
+        plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
+      else
+        plt_lib_version="${VERSION_X}.${VERSION_Y}"
+      fi
+    fi
   fi
 
   AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
