@@ -120,7 +120,7 @@ Returns a new immutable box that contains @racket[v].}
 Returns the content of @racket[box].}
 
 
-For any @racket[v], @racket[(unbox (box v))] returns @racket[v].
+For any @racket[v], @racket[(unbox (box v))] and @racket[(unbox (box-immutable v))] returns @racket[v].
 
 
 @defproc[(set-box! [box (and/c box? (not/c immutable?))]
