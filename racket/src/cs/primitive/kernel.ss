@@ -187,6 +187,7 @@
   [cons (known-procedure/pure 4)]
   [continuation-mark-key? (known-procedure/pure/folding 2)]
   [continuation-mark-set->context (known-procedure/no-prompt 2)]
+  [continuation-mark-set->iterator (known-procedure/no-prompt 28)]
   [continuation-mark-set->list (known-procedure/no-prompt 12)]
   [continuation-mark-set->list* (known-procedure/no-prompt 28)]
   [continuation-mark-set-first (known-procedure/no-prompt 28)]

@@ -10,9 +10,10 @@
          (do-raise v))]))
 
 (define (do-raise v)
-  (let ([hs (continuation-mark-set->list (current-continuation-marks/no-trace)
-                                         exception-handler-key
-                                         the-root-continuation-prompt-tag)]
+  (let ([get-next-h (continuation-mark-set->iterator (current-continuation-marks/no-trace)
+                                                     (list exception-handler-key)
+                                                     #f
+                                                     the-root-continuation-prompt-tag)]
         [init-v (condition->exn v)])
     (let ([call-with-nested-handler
            (lambda (thunk)
@@ -20,20 +21,20 @@
               (make-nested-exception-handler "exception handler" init-v)
               (lambda ()
                 (call-with-break-disabled thunk))))])
-      (let loop ([hs hs] [v init-v])
-        (cond
-         [(null? hs)
-          (call-with-nested-handler
-           (lambda () (|#%app| (|#%app| uncaught-exception-handler) v)))
-          ;; Use `nested-exception-handler` if the uncaught-exception
-          ;; handler doesn't escape:
-          ((make-nested-exception-handler #f v) #f)]
-         [else
-          (let ([h (car hs)]
-                [hs (cdr hs)])
-            (let ([new-v (call-with-nested-handler
-                          (lambda () (|#%app| h v)))])
-              (loop hs new-v)))])))))
+      (let loop ([get-next-h get-next-h] [v init-v])
+        (let-values ([(hv get-next-h) (get-next-h)])
+          (cond
+           [(not hv)
+            (call-with-nested-handler
+             (lambda () (|#%app| (|#%app| uncaught-exception-handler) v)))
+            ;; Use `nested-exception-handler` if the uncaught-exception
+            ;; handler doesn't escape:
+            ((make-nested-exception-handler #f v) #f)]
+           [else
+            (let ([h (vector-ref hv 0)])
+              (let ([new-v (call-with-nested-handler
+                            (lambda () (|#%app| h v)))])
+                (loop get-next-h new-v)))]))))))
 
 ;; ----------------------------------------
 

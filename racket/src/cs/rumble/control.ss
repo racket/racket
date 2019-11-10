@@ -1366,51 +1366,74 @@
     [(marks keys) (continuation-mark-set->list* marks keys #f the-default-continuation-prompt-tag)]
     [(marks keys none-v) (continuation-mark-set->list* marks keys none-v the-default-continuation-prompt-tag)]
     [(marks keys none-v prompt-tag)
-     (check who continuation-mark-set? :or-false marks)
-     (check who list? keys)
-     (check who continuation-prompt-tag? prompt-tag)
-     (maybe-future-barricade prompt-tag)
-     (let ([prompt-tag (strip-impersonator prompt-tag)])
-       (let-values ([(all-keys all-wrappers)
-                     (map/2-values (lambda (k)
-                                     (extract-continuation-mark-key-and-wrapper 'continuation-mark-set->list* k))
-                                   keys)])
-         (let* ([n (length all-keys)]
-                [tmp (#%make-vector n)])
-           (let chain-loop ([mark-chain (or (and marks
-                                                 (continuation-mark-set-mark-chain marks))
-                                            (current-mark-chain))])
-             (cond
-              [(null? mark-chain)
-               null]
-              [else
-               (let* ([mcf (elem+cache-strip (car mark-chain))])
-                 (cond
-                  [(eq? (mark-chain-frame-tag mcf) prompt-tag)
-                   null]
-                  [else
-                   (let loop ([marks (mark-chain-frame-marks mcf)])
-                     (cond
-                      [(null? marks)
-                       (chain-loop (cdr mark-chain))]
-                      [else
-                       (let ([t (elem+cache-strip (car marks))])
-                         (let key-loop ([keys all-keys] [wrappers all-wrappers] [i 0] [found? #f])
-                           (cond
-                            [(null? keys)
-                             (if found?
-                                 (let ([vec (vector-copy tmp)])
-                                   (cons vec (loop (cdr marks))))
-                                 (loop (cdr marks)))]
-                            [else
-                             (let ([v (extract-mark-from-frame* t (car keys) none (car wrappers))])
-                               (cond
-                                [(eq? v none)
-                                 (vector-set! tmp i none-v)
-                                 (key-loop (cdr keys) (cdr wrappers) (add1 i) found?)]
-                                [else
-                                 (vector-set! tmp i v)
-                                 (key-loop (cdr keys) (cdr wrappers) (add1 i) #t)]))])))]))]))])))))]))
+     ((do-continuation-mark-set->list* who #f marks keys none-v prompt-tag))]))
+
+(define/who continuation-mark-set->iterator
+  (case-lambda
+    [(marks keys) (continuation-mark-set->iterator marks keys #f the-default-continuation-prompt-tag)]
+    [(marks keys none-v) (continuation-mark-set->iterator marks keys none-v the-default-continuation-prompt-tag)]
+    [(marks keys none-v prompt-tag)
+     (let ([next (do-continuation-mark-set->list* who #t marks keys none-v prompt-tag)])
+       ;; Each `next` call returns `null` when no more values are
+       ;; available, otherwise a vector and a new next
+       (lambda ()
+         (let loop ([next next])
+           (call-with-values next
+             (case-lambda
+              [(done)
+               (values #f (lambda () (loop (lambda () null))))]
+              [(v new-next)
+               (values v (lambda () (loop new-next)))])))))]))
+
+(define (do-continuation-mark-set->list* who iterator? marks keys none-v prompt-tag)
+  (check who continuation-mark-set? :or-false marks)
+  (check who list? keys)
+  (check who continuation-prompt-tag? prompt-tag)
+  (maybe-future-barricade prompt-tag)
+  (let ([prompt-tag (strip-impersonator prompt-tag)])
+    (let-values ([(all-keys all-wrappers)
+                  (map/2-values (lambda (k)
+                                  (extract-continuation-mark-key-and-wrapper who k))
+                                keys)])
+      (lambda ()
+        (let* ([n (length all-keys)]
+               [tmp (#%make-vector n)])
+          (let chain-loop ([mark-chain (or (and marks
+                                                (continuation-mark-set-mark-chain marks))
+                                           (current-mark-chain))])
+            (cond
+             [(null? mark-chain)
+              null]
+             [else
+              (let* ([mcf (elem+cache-strip (car mark-chain))])
+                (cond
+                 [(eq? (mark-chain-frame-tag mcf) prompt-tag)
+                  null]
+                 [else
+                  (let loop ([marks (mark-chain-frame-marks mcf)])
+                    (cond
+                     [(null? marks)
+                      (chain-loop (cdr mark-chain))]
+                     [else
+                      (let ([t (elem+cache-strip (car marks))])
+                        (let key-loop ([keys all-keys] [wrappers all-wrappers] [i 0] [found? #f])
+                          (cond
+                           [(null? keys)
+                            (if found?
+                                (let ([vec (vector-copy tmp)])
+                                  (if iterator?
+                                      (values vec (lambda () (loop (cdr marks))))
+                                      (cons vec (loop (cdr marks)))))
+                                (loop (cdr marks)))]
+                           [else
+                            (let ([v (extract-mark-from-frame* t (car keys) none (car wrappers))])
+                              (cond
+                               [(eq? v none)
+                                (vector-set! tmp i none-v)
+                                (key-loop (cdr keys) (cdr wrappers) (add1 i) found?)]
+                               [else
+                                (vector-set! tmp i v)
+                                (key-loop (cdr keys) (cdr wrappers) (add1 i) #t)]))])))]))]))])))))))
 
 (define/who (continuation-mark-set->context marks)
   (check who continuation-mark-set? marks)

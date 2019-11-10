@@ -37,6 +37,7 @@
           continuation-mark-set-first
           continuation-mark-set->list
           continuation-mark-set->list*
+          continuation-mark-set->iterator
           continuation-mark-set->context
           current-continuation-marks
           (rename [continuation-marks rumble:continuation-marks]) ; wrapped at threads layer
