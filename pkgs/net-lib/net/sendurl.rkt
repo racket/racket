@@ -60,9 +60,6 @@
 (define (browser-preference? x)
   (or (not x) (memq x unix-browser-list) (custom-browser? x) (procedure? x)))
 
-(define (url-contains-query-or-fragment url)
-  (regexp-match? #rx"[#?]" url))
-
 (define (%escape str)
   (apply string-append
          (map (lambda (b)
@@ -83,12 +80,14 @@
   (let ([url-str (if escape? (escape-url url-str) url-str)])
     (if (procedure? (external-browser))
       ((external-browser) url-str)
-      (case (system-type)
-        [(macosx)  (send-url/mac url-str)]
-        [(windows) (send-url/win url-str)]
-        [(unix)    (send-url/unix url-str separate-window?)]
-        [else (error 'send-url
-                     "don't know how to open URL on platform: ~s" (system-type))])))
+      (if (regexp-match? #rx"[#?]" url-str)
+          (send-url/trampoline url-str separate-window?)
+          (case (system-type)
+            [(macosx)  (send-url/mac url-str)]
+            [(windows) (send-url/win url-str)]
+            [(unix)    (send-url/unix url-str separate-window?)]
+            [else (error 'send-url
+                         "don't know how to open URL on platform: ~s" (system-type))]))))
   (void))
 
 (define (send-url/file path [separate-window? separate-by-default?]
@@ -148,6 +147,9 @@
         (browser-run browser-command "-a" browser url)
         (browser-run browser-command url))))
 
+(define (send-url/win url)
+  (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))
+
 (define (send-url/unix url [separate-window? separate-by-default?])
   ;; in cases where a browser was uninstalled, we might get a preference that
   ;; is no longer valid, this will turn it back to #f
@@ -165,10 +167,6 @@
           [else #f]))
   (define (simple) (browser-run exe url))
   (define (w/arg a) (browser-run exe a url))
-  (define (trampoline)
-    (if (url-contains-query-or-fragment url)
-        (send-url/trampoline url separate-window?)
-        (browser-run exe url)))
   (define (try-remote)
     (or (browser-run exe "-remote" (format "openURL(~a~a)" url
                                            (if separate-window? ",new-window" "")))
@@ -187,21 +185,12 @@
     ;; finally, deal with the actual browser process
     [else
      (case browser
-       [(xdg-open) (trampoline)]
-       [(sensible-browser x-www-browser firefox konqueror google-chrome chromium-browser)
+       [(xdg-open sensible-browser x-www-browser firefox konqueror google-chrome chromium-browser)
         (simple)]
        ;; don't really know how to run these
        [(epiphany) (if separate-window? (w/arg "--new-window") (simple))]
        [(seamonkey opera) (try-remote)]
        [else (error 'send-url "internal error")])]))
-
-;; Windows can directly launch URLs, but silently drops the fragment and
-;; query from file URLs that have them, so use send-url/trampoline in that
-;; case.
-(define (send-url/win url)
-  (if (not (url-contains-query-or-fragment url))
-      (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL)
-      (send-url/trampoline url)))
 
 ;; Write and use (via `send-url/contents') a trampoline html that redirects
 ;; to the actual file and fragment, for launchers that can't cope with query
