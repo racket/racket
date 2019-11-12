@@ -611,7 +611,7 @@
 
   (parameterize ([print-reader-abbreviations #t]
                  [pretty-print-abbreviate-read-macros #t])
-    (for*/parameterize ([print-mpair-curly-braces (in-list '(#t #f))])
+    (for*/parameterize (#;[print-mpair-curly-braces (in-list '(#t #f))])
       (parameterize ([print-pair-curly-braces #f])
         (test-print/all (list 'banana 4)
                         "(banana 4)" "(banana 4)" "(banana 4)" "'(banana 4)" "(banana 4)")
@@ -633,7 +633,7 @@
 
   (parameterize ([print-reader-abbreviations #t]
                  [pretty-print-abbreviate-read-macros #t])
-    (for*/parameterize ([print-pair-curly-braces (in-list '(#t #f))])
+    (for*/parameterize (#;[print-pair-curly-braces (in-list '(#t #f))])
       (define (mlist x y) (mcons x (mcons y '())))
       (parameterize ([print-mpair-curly-braces #f])
         (test-print/all (mlist 'banana 4)
