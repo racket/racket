@@ -96,8 +96,6 @@ static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Objec
 static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
-static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
-
 static Scheme_Object *make_struct_type(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_field_accessor(int argc, Scheme_Object *argv[]);
@@ -322,13 +320,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
                                                       scheme_struct_property_type);
     scheme_addto_prim_instance("prop:custom-write", write_property, env);
     scheme_addto_prim_instance("custom-write?", pred, env);
-
-    a[0] = access;
-    scheme_addto_prim_instance("custom-write-accessor", 
-                               scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
-                                                                "custom-write-accessor",
-                                                                1, 1),
-                               env);
+    scheme_addto_prim_instance("custom-write-accessor", access, env);
   }
 
   REGISTER_SO(print_attribute_property);
@@ -344,13 +336,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
                                                                 scheme_struct_property_type);
     scheme_addto_prim_instance("prop:custom-print-quotable", print_attribute_property, env);
     scheme_addto_prim_instance("custom-print-quotable?", pred, env);
-
-    a[0] = access;
-    scheme_addto_prim_instance("custom-print-quotable-accessor", 
-                               scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
-                                                                "custom-print-quotable-accessor",
-                                                                1, 1),
-                               env);
+    scheme_addto_prim_instance("custom-print-quotable-accessor", access, env);
   }
   
   REGISTER_SO(evt_property);
@@ -1870,13 +1856,6 @@ Scheme_Object *scheme_is_writable_struct(Scheme_Object *s)
 Scheme_Object *scheme_print_attribute_ref(Scheme_Object *s)
 {
   return scheme_struct_type_property_ref(print_attribute_property, s);
-}
-
-static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self)
-{
-  Scheme_Object *acc = SCHEME_PRIM_CLOSURE_ELS(self)[0];
-
-  return _scheme_apply(acc, argc, argv);
 }
 
 /*========================================================================*/

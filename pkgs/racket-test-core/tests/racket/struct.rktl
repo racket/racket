@@ -14,6 +14,8 @@
   (arity-test struct-type-property? 1 1)
   (test #t struct-type-property? prop:p)
   (test #f struct-type-property? 5)
+  (test #t struct-type-property-accessor-procedure? p-ref)
+  (test #t struct-type-property-accessor-procedure? p2-ref)
   (let-values ([(type make pred sel set) (make-struct-type 'a #f 2 1 'un (list (cons prop:p 87)) (make-inspector insp1))]
 	       [(typex makex predx selx setx) (make-struct-type 'ax #f 0 5 #f null (make-inspector insp2))])
     (arity-test make-struct-type 4 11)
@@ -1334,6 +1336,11 @@
                    #rx"make-struct-field-accessor: contract violation")
 (try-failing-extra (make-struct-field-mutator -ref 0 'name)
                    #rx"make-struct-field-mutator: contract violation")
+
+;; ----------------------------------------
+
+(test #t struct-type-property-accessor-procedure? custom-write-accessor)
+(test #t struct-type-property-accessor-procedure? custom-print-quotable-accessor)
 
 ;; ----------------------------------------
 
