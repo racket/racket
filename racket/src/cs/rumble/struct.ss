@@ -800,30 +800,36 @@
                            "current inspector cannot extract info for structure type"
                            "structure type" rtd)))
 
-(define/who (struct-type-make-constructor rtd)
-  (check who struct-type? rtd)
-  (let ([rtd* (strip-impersonator rtd)])
-    (check-inspector-access who rtd*)
-    (let ([ctr (struct-type-constructor-add-guards
-                (let* ([c (record-constructor rtd*)]
-                       [fi (struct-type-field-info rtd*)]
-                       [auto-field-adder (get-field-info-auto-adder fi)])
-                  (cond
-                   [auto-field-adder
-                    (procedure-maybe-rename
-                     (procedure-reduce-arity
-                      (lambda args
-                        (apply c (reverse (auto-field-adder (reverse args)))))
-                      (get-field-info-init*-count fi))
-                     (object-name c))]
-                   [else c]))
-                rtd*
-                #f)])
-      (register-struct-constructor! ctr)
-      (cond
-       [(struct-type-chaperone? rtd)
-        (chaperone-constructor rtd ctr)]
-       [else ctr]))))
+(define/who struct-type-make-constructor
+  (case-lambda
+   [(rtd) (struct-type-make-constructor rtd #f)]
+   [(rtd name)
+    (check who struct-type? rtd)
+    (check who symbol? :or-false name)
+    (let ([rtd* (strip-impersonator rtd)])
+      (check-inspector-access who rtd*)
+      (let ([ctr (struct-type-constructor-add-guards
+                  (let* ([c (record-constructor rtd*)]
+                         [fi (struct-type-field-info rtd*)]
+                         [auto-field-adder (get-field-info-auto-adder fi)]
+                         [name (or name
+                                   (string->symbol (format "make-~a" (record-type-name rtd*))))])
+                    (cond
+                     [auto-field-adder
+                      (procedure-rename
+                       (procedure-reduce-arity
+                        (lambda args
+                          (apply c (reverse (auto-field-adder (reverse args)))))
+                        (get-field-info-init*-count fi))
+                       name)]
+                     [else (procedure-rename c name)]))
+                  rtd*
+                  #f)])
+        (register-struct-constructor! ctr)
+        (cond
+         [(struct-type-chaperone? rtd)
+          (chaperone-constructor rtd ctr)]
+         [else ctr])))]))
 
 ;; Called directly from a schemified declaration that has a guard:
 (define (struct-type-constructor-add-guards ctr rtd name)

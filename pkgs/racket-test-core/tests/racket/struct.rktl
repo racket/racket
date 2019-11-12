@@ -59,6 +59,8 @@
       (test #f struct-mutator-procedure? sel1)
       (test #f struct-accessor-procedure? set1)
       (err/rt-test (make-struct-field-accessor sel 3) exn:application:mismatch?)
+      (test 'make-a object-name (struct-type-make-constructor type))
+      (test 'some-other-name object-name (struct-type-make-constructor type 'some-other-name))
       (let ([an-a (make 'one 'two)]
 	    [an-ax (makex)])
         (test #f procedure-struct-type? type)
