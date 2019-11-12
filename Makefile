@@ -123,7 +123,7 @@ cpus-as-is:
 	$(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
 
 plain-as-is:
-	$(MAKE) base
+	$(MAKE) plain-base
 	$(MAKE) in-place-setup
 
 win32-as-is:
@@ -151,7 +151,7 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base $(UNIXSTYLE_CONFIG_qq) $(UNIX_BASE_ARGS)
+	$(MAKE) plain-base $(UNIXSTYLE_CONFIG_qq) $(UNIX_BASE_ARGS)
 	$(MAKE) set-src-catalog
 	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
@@ -702,7 +702,7 @@ server:
 
 plain-server:
 	rm -rf build/zo
-	$(MAKE) base
+	$(MAKE) plain-base
 	$(MAKE) server-from-base
 
 server-from-base:
