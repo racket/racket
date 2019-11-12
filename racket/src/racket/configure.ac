@@ -467,7 +467,11 @@ changequote(<<, >>)dnl
 is_gcc=`$CC -v 2>&1 | tail -n 1 | grep -E '^gcc version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ \([^\)]+\)[[:space:]]*$'`
 changequote([, ])dnl
 
-if test "$is_gcc" != "" ; then
+# We also need to test if $CC is gcc itself because on mac,
+# where clang impersonates gcc, although is_gcc is false, we want
+# to use it as if it was gcc.
+# See https://github.com/racket/racket/pull/2897#pullrequestreview-314906673
+if test "$is_gcc" != "" || test "`basename $CC`" = "gcc"; then
   COMPFLAGS="$COMPFLAGS -Wall"
 
   # Use -MMD when we have gcc and gnumake:
