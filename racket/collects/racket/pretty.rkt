@@ -762,7 +762,7 @@
                                 (pair? (cdr l))
                                 (null? (cdr (cdr l))))
                            (begin
-                             (out " . ,")
+                             (out " . #;HERE ,")
                              (wr (car (cdr l)) (dsub1 depth) qd)
                              (out close))
                            (begin
