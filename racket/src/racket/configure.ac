@@ -460,21 +460,26 @@ if test "$ARFLAGS" = '' ; then
 fi
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
+is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then 
   COMPFLAGS="$COMPFLAGS -Wall"
 
   # Use -MMD when we have gcc and gnumake:
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
   if test "$is_gmake" = "" ; then
     WX_MMD_FLAG=""
   else
     WX_MMD_FLAG="-MMD"
-    INCLUDEDEP="-include"
   fi
 
   # Compile mzdyn.o with -fPIC
   DYN_CFLAGS="-fPIC"
+fi
+
+# When GNU Make is present, use version.mak
+if test "$is_gmake" != ""; then
+   INCLUDEDEP="-include"
 fi
 
 if test "$REZ" = '' ; then 
