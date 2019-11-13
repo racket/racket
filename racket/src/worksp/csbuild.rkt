@@ -295,6 +295,12 @@
 (copy-file "../LICENSE-libscheme.txt"
            "../../share/LICENSE-libscheme.txt"
            #t)
+(copy-file "../LICENSE-MIT.txt"
+           "../../share/LICENSE-MIT.txt"
+           #t)
+(copy-file "../LICENSE-APACHE.txt"
+           "../../share/LICENSE-APACHE.txt"
+           #t)
 (copy-file "../LICENSE-LGPL.txt"
            "../../share/LICENSE-LGPL.txt"
            #t)

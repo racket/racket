@@ -73,6 +73,10 @@ cd ..
 
 copy ..\LICENSE-libscheme.txt ..\..\share\
 if errorlevel 1 exit /B 1
+copy ..\LICENSE-MIT.txt ..\..\share\
+if errorlevel 1 exit /B 1
+copy ..\LICENSE-APACHE.txt ..\..\share\
+if errorlevel 1 exit /B 1
 copy ..\LICENSE-LGPL.txt ..\..\share\
 if errorlevel 1 exit /B 1
 copy ..\LICENSE-GPL.txt ..\..\share\
