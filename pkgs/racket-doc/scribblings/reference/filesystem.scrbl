@@ -728,6 +728,14 @@ a platform-specific shared-library extension---as produced by
 @racket[(system-type 'so-suffix)]. A @racket[_vers]
 can be a string, or it can be a list of strings and @racket[#f].
 
+If @racket[expr] produces a list of the form @racket[(list 'share
+_str)], the value bound to @racket[id] can be either @racket[_str] or
+an absolute path; it is an absolute path when searching in the
+directories reported by @racket[find-user-share-dir] and
+@racket[find-share-dir] (in that order) locates the path. In this way,
+files that are installed in Racket's @filepath{share} directory get
+carried along in distributions.
+
 If @racket[expr] produces a list of the form @racket[(list 'module
 _module-path _var-ref)] or @racket[(list 'so _str (list
 _str-or-false ...))], the value bound to @racket[id] is a
@@ -798,7 +806,8 @@ In the latter two cases, the path is normally preserved in
 result of @racket[collection-file-path], then the path is record as
 relative to the corresponding module path.
 
-@history[#:changed "6.0.1.6" @elem{Preserve relative paths only within a package.}]
+@history[#:changed "6.0.1.6" @elem{Preserve relative paths only within a package.}
+         #:changed "7.5.0.7" @elem{Added support for @racket['share] in @racket[expr].}]
 
 Examples:
 

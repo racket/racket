@@ -272,7 +272,8 @@
     (one-mz-test "embed-me31.rkt" "This is 31.\n" #f)
     (one-mz-test "embed-me34.rkt" "This is 34 in a second place.\n" #f)
     (one-mz-test "embed-me35.rkt" "'ok-35\n" #f)
-    (one-mz-test "embed-me36.rkt" "'ok-36\n" #f))
+    (one-mz-test "embed-me36.rkt" "'ok-36\n" #f)
+    (one-mz-test "embed-me38.rkt" "\"found license\"\n" #f))
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")

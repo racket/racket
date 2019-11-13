@@ -13,6 +13,7 @@
          setup/collects
          file/ico
          racket/private/so-search
+         racket/private/share-search
          setup/cross-system
          "private/winsubsys.rkt"
          "private/macfw.rkt"
@@ -1306,6 +1307,7 @@
 									 ;; record the whole DLL in the executable
 									 #f]
 									[else path])]
+                                                                     [(share-spec? p) (share-find p)]
                                                                      [(and (list? p)
                                                                            (eq? 'lib (car p)))
                                                                       (let ([p (if (null? (cddr p))

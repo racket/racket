@@ -4,6 +4,7 @@
 
 (require racket/list
          "private/so-search.rkt"
+         "private/share-search.rkt"
          "private/this-expression-source-directory.rkt"
          (only-in "private/runtime-path-table.rkt" table)
          (for-syntax racket/base))
@@ -97,6 +98,8 @@
               [(path? p) p]
               [(so-spec? p) (or (so-find p)
                                 (cadr p))]
+              [(share-spec? p) (or (share-find p)
+                                   (cadr p))]
               [(and (list? p)
                     ((length p) . > . 1)
                     (eq? 'lib (car p))
