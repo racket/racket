@@ -27,7 +27,10 @@
             (cond
               [(eq? 'code:blank (syntax-e c))
                (advance c init-line!)]
-              [(eq? '_ (syntax-e c)) (void)]
+              [(eq? '_ (syntax-e c)) 
+               (advance c init-line!)
+               (printf "_")
+               (set! col (+ col 1))]
               [(eq? '... (syntax-e c))
                (void)]
               [(and (pair? (syntax-e c))
@@ -58,7 +61,19 @@
                (define c-paren-shape (syntax-property c 'paren-shape))
                (printf "~a" (or c-paren-shape #\())
                (set! col (+ col 1))
-               (map (loop init-line!) (syntax->list c))
+               (define se (syntax-e c))
+               (define (build-string-from-pair sp)
+                 (cond
+                   [(syntax? sp)
+                    (printf " . ")
+                    (set! col (+ col 3))
+                    ((loop init-line!) sp)]
+                   [else
+                    ((loop init-line!) (car sp))
+                    (build-string-from-pair (cdr sp))]))
+               (if (list? se)
+                   (map (loop init-line!) se)
+                   (build-string-from-pair se))
                (printf (case c-paren-shape
                          [(#\[) "]"]
                          [(#\{) "}"]
