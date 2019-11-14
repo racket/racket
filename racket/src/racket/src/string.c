@@ -1587,11 +1587,11 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
   utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		us, 0, 1,
 		&ipos, &opos,
-		0, 0, NULL, 0, perm ? 0xFFFF : 0);
+		0, 0, NULL, 0, perm ? 0xFFFFFF : 0);
 
   if (opos < 1)
     return scheme_false;
-  else if (us[0] == 0xFFFF)
+  else if (us[0] == 0xFFFFFF)
     return perm;
   else
     return scheme_make_character(us[0]);
