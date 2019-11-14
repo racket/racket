@@ -139,7 +139,7 @@
 (struct module-instance (namespace
                          module                        ; can be #f for the module being expanded
                          [shifted-requires #:mutable]  ; computed on demand; shifted from `module-requires`
-                         phase-level-to-state          ; phase-level -> #f, 'available, or 'started
+                         phase-level-to-state          ; phase-level -> #f, 'available, 'trying-to-start, or 'started
                          [made-available? #:mutable]   ; no #f in `phase-level-to-state`?
                          [attached? #:mutable]         ; whether the instance has been attached elsewhere
                          data-box)                     ; for use by module implementation
@@ -417,7 +417,9 @@
    (define instance-phase (namespace-0-phase m-ns))
    (define run-phase-level (phase- run-phase instance-phase))
    (unless (and (or skip-run?
-                    (eq? 'started (small-hash-ref (module-instance-phase-level-to-state mi) run-phase-level #f)))
+                    (let ([v (small-hash-ref (module-instance-phase-level-to-state mi) run-phase-level #f)])
+                      (or (eq? 'started v)
+                          (eq? 'trying-to-start v))))
                 (or (not otherwise-available?)
                     (module-instance-made-available? mi)))
      ;; Something to do...
@@ -430,7 +432,14 @@
      
      (when (hash-ref seen mi #f)
        (error 'require "import cycle detected during module instantiation"))
-     
+
+     (unless (or skip-run?
+                 (eq? (small-hash-ref (module-instance-phase-level-to-state mi) run-phase-level #f) 'started))
+       ;; In case instantiating imported modules does something that triggers
+       ;; a force of available modules, make sure we don't try to instantiate
+       ;; while we're in the process of instantiating:
+       (small-hash-set! (module-instance-phase-level-to-state mi) run-phase-level 'trying-to-start))
+
      ;; If we haven't shifted required mpis already, do that
      (unless (module-instance-shifted-requires mi)
        (set-module-instance-shifted-requires!

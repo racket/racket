@@ -3118,5 +3118,31 @@ case of module-leve bindings; it doesn't cover local bindings.
     (test 1 length stxes)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that a `local-expand`-triggered lazy instantiation does not
+;; re-enter an instantiation that is already in progress
+
+(module uses-local-expand-at-phase-1-instantiation racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base)))
+  (provide (for-syntax true))
+  (struct Π- (X))
+  (begin-for-syntax
+    (define TY/internal+ (local-expand #'Π- 'expression null))
+    (define true (lambda (x) #t))))
+
+(module imports-uses-local-expand-at-phase-1-instantiation racket/base
+  (require (for-syntax racket/base)
+           'uses-local-expand-at-phase-1-instantiation)
+  (provide #%module-begin)
+  (define-for-syntax predicate true))
+
+(module lang-is-imports-uses-local-expand 'imports-uses-local-expand-at-phase-1-instantiation)
+
+(let ()
+  ;; important that both of these are in the same top-level evaluation:
+  (test (void) namespace-require ''lang-is-imports-uses-local-expand)
+  (test #t namespace? (module->namespace ''lang-is-imports-uses-local-expand)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
