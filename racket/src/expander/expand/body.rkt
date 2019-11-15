@@ -29,7 +29,7 @@
 (define (expand-body bodys ctx
                      #:source s
                      #:stratified? [stratified? #f])
-  (log-expand ctx 'enter-block (datum->syntax #f bodys))
+  (log-expand ctx 'enter-block bodys)
   ;; In principle, we have an outside-edge scope that identifies the
   ;; original content of the definition context --- but a body always
   ;; exists inside some binding form, so that form's scope will do;
@@ -39,7 +39,7 @@
   (define init-bodys
     (for/list ([body (in-list bodys)])
       (add-scope body inside-sc)))
-  (log-expand ctx 'block-renames (datum->syntax #f init-bodys) (datum->syntax #f bodys))
+  (log-expand ctx 'block-renames init-bodys bodys)
   (define phase (expand-context-phase ctx))
   (define frame-id (make-reference-record)) ; accumulates info on referenced variables
   (define def-ctx-scopes (box null))
@@ -128,7 +128,7 @@
          (log-expand body-ctx 'prim-define-values)
          (define-match m disarmed-exp-body '(define-values (id ...) rhs))
          (define ids (remove-use-site-scopes (m 'id) body-ctx))
-         (log-expand body-ctx 'rename-one (datum->syntax #f (list ids (m 'rhs))))
+         (log-expand body-ctx 'rename-one (list ids (m 'rhs)))
          (define new-dups (check-no-duplicate-ids ids phase exp-body dups))
          (define counter (root-expand-context-counter ctx))
          (define local-sym (and (expand-context-normalize-locals? ctx) 'loc))
@@ -178,7 +178,7 @@
          (log-expand body-ctx 'prim-define-syntaxes)
          (define-match m disarmed-exp-body '(define-syntaxes (id ...) rhs))
          (define ids (remove-use-site-scopes (m 'id) body-ctx))
-         (log-expand body-ctx 'rename-one (datum->syntax #f (list ids (m 'rhs))))
+         (log-expand body-ctx 'rename-one (list ids (m 'rhs)))
          (define new-dups (check-no-duplicate-ids ids phase exp-body dups))
          (define counter (root-expand-context-counter ctx))
          (define local-sym (and (expand-context-normalize-locals? ctx) 'mac))
