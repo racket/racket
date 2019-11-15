@@ -33,7 +33,7 @@
   var i = 0, j = 0;
   var ilen = plt_search_data.length;
   var jlen = plt_user_search_data.length;
-  var result = []
+  var result = [];
   while ((i < ilen) || (j < jlen)) {
     if (j >= jlen) {
       if (rev_map[i]) plt_manual_ptrs[rev_map[i]] = result.length;
