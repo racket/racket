@@ -39,12 +39,12 @@
  'define-syntaxes
  (lambda (s ctx)
    (log-expand ctx 'prim-define-syntaxes)
-   (log-expand ctx 'prepare-env)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not in a definition context" s))
    (define disarmed-s (syntax-disarm s))
    (define-match m disarmed-s '(define-syntaxes (id ...) rhs))
    (define-values (ids syms) (as-expand-time-top-level-bindings (m 'id) s ctx))
+   (log-expand ctx 'prepare-env)
    (define exp-rhs (expand-transformer (m 'rhs) (as-named-context ctx ids)))
    (if (expand-context-to-parsed? ctx)
        (parsed-define-syntaxes s ids syms exp-rhs)
@@ -55,10 +55,10 @@
 (add-core-form!
  'begin-for-syntax
  (lambda (s ctx)
+   (log-expand ctx 'prim-begin-for-syntax)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not in a definition context" s))
    (define-match m s '(begin-for-syntax form ...))
-   (log-expand ctx 'prim-begin-for-syntax)
    (log-expand ctx 'prepare-env)
    (define trans-ctx (context->transformer-context ctx 'top-level #:keep-stops? #t))
    (define lift-ctx (make-lift-context
