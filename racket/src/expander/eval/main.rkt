@@ -399,15 +399,12 @@
      (define-match m new-s '(begin e ...))
      (...log-expand obs
                     ['visit new-s] ['resolve (m 'begin)]
-                    ['enter-prim new-s] ['prim-begin]
-                    ['enter-list (m 'e)]))))
+                    ['enter-prim new-s] ['prim-begin]))))
 
 (define (log-top-begin-after ctx new-s)
   (log-expand...
    ctx
    (lambda (obs)
-     (define-match m new-s '(begin e ...))
      (log-expand* ctx
-                  ['exit-list (m 'e)]
                   ['exit-prim new-s]
                   ['return new-s]))))

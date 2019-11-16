@@ -398,7 +398,7 @@
      (define rebuild-prefixless (and (syntax? prefixless)
                                      (keep-as-needed ctx prefixless #:keep-for-parsed? keep-for-parsed?)))
      (define expr-ctx (as-expression-context ctx))
-     (log-expand* expr-ctx ['enter-list es] ['next])
+     (log-expand expr-ctx 'next)
      (define rest-es (cdr es))
      (define exp-rator (expand (car es) expr-ctx))
      (define exp-es (for/list ([e (in-list rest-es)])
@@ -412,7 +412,6 @@
                      (if rebuild-prefixless
                          (rebuild rebuild-prefixless exp-es)
                          exp-es)))
-        (log-expand expr-ctx 'exit-list es)
         (rebuild rebuild-s (cons (m '#%app) es))])])))
 
 
@@ -498,7 +497,6 @@
         (list (m 'with-continuation-mark) exp-key exp-val exp-body)))))
 
 (define (make-begin log-tag parsed-begin
-                    #:list-start-index list-start-index
                     #:last-is-tail? last-is-tail?)
  (lambda (s ctx)
    (log-expand ctx log-tag)
@@ -509,13 +507,7 @@
                         (as-expression-context ctx)))
    (define rebuild-s (keep-as-needed ctx s))
    (define exp-es
-     (let loop ([es (m 'e)] [index list-start-index])
-       (when (zero? index)
-         (log-expand... ctx
-                        (lambda (obs)
-                          (unless (zero? list-start-index)
-                            (...log-expand obs ['next]))
-                          (...log-expand obs ['enter-list es]))))
+     (let loop ([es (m 'e)])
        (cond
         [(null? es) null]
         [else
@@ -524,8 +516,7 @@
          (cons (expand (car es) (if (and last-is-tail? (null? rest-es))
                                     (as-tail-context expr-ctx #:wrt ctx)
                                     expr-ctx))
-               (loop rest-es (sub1 index)))])))
-   (log-expand ctx 'exit-list (list-tail exp-es list-start-index))
+               (loop rest-es))])))
    (if (expand-context-to-parsed? ctx)
        (parsed-begin rebuild-s exp-es)
        (rebuild
@@ -534,7 +525,7 @@
 
 (add-core-form!
  'begin
- (let ([nonempty-begin (make-begin 'prim-begin parsed-begin #:list-start-index 0 #:last-is-tail? #t)])
+ (let ([nonempty-begin (make-begin 'prim-begin parsed-begin #:last-is-tail? #t)])
    (lambda (s ctx)
      ;; Empty `begin` allowed in 'top-level and 'module contexts,
      ;; which might get here via `local-expand`:
@@ -551,7 +542,7 @@
 
 (add-core-form!
  'begin0
- (make-begin 'prim-begin0 parsed-begin0 #:list-start-index 1 #:last-is-tail? #f))
+ (make-begin 'prim-begin0 parsed-begin0 #:last-is-tail? #f))
 
 (define (register-eventual-variable!? id ctx)
   (cond
