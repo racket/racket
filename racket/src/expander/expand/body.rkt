@@ -277,7 +277,7 @@
   ;; Helper to expand and wrap the ending expressions in `begin`, if needed:
   (define (finish-bodys)
     (define last-i (sub1 (length done-bodys)))
-    (log-expand body-ctx 'enter-list (datum->syntax #f done-bodys))
+    (log-expand body-ctx 'enter-list done-bodys)
     (define exp-bodys
       (for/list ([done-body (in-list done-bodys)]
                  [i (in-naturals)])
@@ -286,7 +286,7 @@
                               (struct*-copy expand-context finish-ctx
                                             [name name])
                               finish-ctx))))
-    (log-expand body-ctx 'exit-list (datum->syntax #f exp-bodys))
+    (log-expand body-ctx 'exit-list exp-bodys)
     (reference-record-clear! frame-id)
     exp-bodys)
   (cond

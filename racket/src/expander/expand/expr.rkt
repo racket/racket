@@ -421,7 +421,7 @@
      (define rebuild-prefixless (and (syntax? prefixless)
                                      (keep-as-needed ctx prefixless #:keep-for-parsed? keep-for-parsed?)))
      (define expr-ctx (as-expression-context ctx))
-     (log-expand* expr-ctx ['enter-list (datum->syntax #f es s)] ['next])
+     (log-expand* expr-ctx ['enter-list es] ['next])
      (define rest-es (cdr es))
      (define exp-rator (expand (car es) expr-ctx))
      (define exp-es (for/list ([e (in-list rest-es)])
@@ -435,7 +435,7 @@
                      (if rebuild-prefixless
                          (rebuild rebuild-prefixless exp-es)
                          exp-es)))
-        (log-expand expr-ctx 'exit-list (datum->syntax #f es rebuild-s))
+        (log-expand expr-ctx 'exit-list es)
         (rebuild rebuild-s (cons (m '#%app) es))])])))
 
 
@@ -538,7 +538,7 @@
                         (lambda (obs)
                           (unless (zero? list-start-index)
                             (...log-expand obs ['next]))
-                          (...log-expand obs ['enter-list (datum->syntax #f es rebuild-s)]))))
+                          (...log-expand obs ['enter-list es]))))
        (cond
         [(null? es) null]
         [else
@@ -548,7 +548,7 @@
                                     (as-tail-context expr-ctx #:wrt ctx)
                                     expr-ctx))
                (loop rest-es (sub1 index)))])))
-   (log-expand ctx 'exit-list (datum->syntax #f (list-tail exp-es list-start-index) rebuild-s))
+   (log-expand ctx 'exit-list (list-tail exp-es list-start-index))
    (if (expand-context-to-parsed? ctx)
        (parsed-begin rebuild-s exp-es)
        (rebuild

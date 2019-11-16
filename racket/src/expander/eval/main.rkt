@@ -400,7 +400,7 @@
      (...log-expand obs
                     ['visit new-s] ['resolve (m 'begin)]
                     ['enter-prim new-s] ['prim-begin]
-                    ['enter-list (datum->syntax #f (m 'e) new-s)]))))
+                    ['enter-list (m 'e)]))))
 
 (define (log-top-begin-after ctx new-s)
   (log-expand...
@@ -408,6 +408,6 @@
    (lambda (obs)
      (define-match m new-s '(begin e ...))
      (log-expand* ctx
-                  ['exit-list (datum->syntax #f (m 'e) new-s)]
+                  ['exit-list (m 'e)]
                   ['exit-prim new-s]
                   ['return new-s]))))

@@ -68,13 +68,13 @@
                                      [lifts lift-ctx]))
    (define all-exp-forms
      (let loop ([forms (m 'form)])
-       (log-expand ctx 'enter-list (datum->syntax #f (m 'form) s))
+       (log-expand ctx 'enter-list (m 'form))
        (define exp-forms
          (let loop ([forms forms] [accum null])
            (cond
              [(null? forms)
               (define forms (reverse accum))
-              (log-expand ctx 'exit-list (datum->syntax #f forms s))
+              (log-expand ctx 'exit-list forms)
               forms]
              [else
               (log-expand ctx 'next)
