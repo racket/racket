@@ -211,6 +211,7 @@
                                 keep-enclosing-scope-at-phase)]))
    (log-expand init-ctx 'prepare-env)
    (initial-require! #:bind? #t)
+   (log-expand init-ctx 'rename-one bodys)
 
    ;; To detect whether the body is expanded multiple times:
    (define again? #f)
@@ -501,7 +502,8 @@
                           #:def-ctx-scopes mb-def-ctx-scopes
                           #:phase phase
                           #:s s))
-   
+   (log-expand ctx 'next)
+
    ;; Expand the body
    (define expanded-mb (performance-region
                         ['expand 'module-begin]
@@ -588,7 +590,6 @@
      [(= 1 (length bodys))
       ;; Maybe it's already a `#%module-begin` form, or maybe it
       ;; will expand to one
-      (log-expand ctx 'rename-one (car bodys))
       (cond
        [(eq? '#%module-begin (core-form-sym (syntax-disarm (car bodys)) phase))
         ;; Done
@@ -626,8 +627,6 @@
     (raise-syntax-error #f "no #%module-begin binding in the module's language" s))
   (define mb (datum->syntax disarmed-scopes-s `(,mb-id ,@bodys) s s))
   (log-expand mb-ctx 'tag mb)
-  (when log-rename-one?
-    (log-expand mb-ctx 'rename-one mb))
   (define partly-expanded-mb (performance-region
                               ['expand 'module-begin]
                               (expand (add-enclosing-name-property mb module-name-sym)
@@ -1445,8 +1444,7 @@
                       ['resolve (m 'define-values)]
                       ['enter-prim s-lifted-defn]
                       ['prim-stop]
-                      ['exit-prim s-lifted-defn]
-                      ['return s-lifted-defn]
+                      ['exit-prim/return s-lifted-defn]
                       ['rename-one s-lifted-defn]
                       ['enter-prim s-lifted-defn]
                       ['prim-define-values]
@@ -1461,8 +1459,7 @@
                     ['resolve (m 'form-id)]
                     ['enter-prim exp-body]
                     ['prim-stop]
-                    ['exit-prim exp-body]
-                    ['return exp-body]))))
+                    ['exit-prim/return exp-body]))))
 
 (define (log-defn-enter ctx defn)
   (log-expand...
@@ -1485,5 +1482,4 @@
                             ,exp-rhs)
                       (semi-parsed-define-values-s defn)))
      (...log-expand obs
-                    ['exit-prim s-defn]
-                    ['return s-defn]))))
+                    ['exit-prim/return s-defn]))))

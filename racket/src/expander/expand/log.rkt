@@ -98,6 +98,10 @@
         (track-origin  . 2)
         (local-value   . 1)
         (local-value-result . 1)
+        (exit-prim/return . 1)
+        (stop/return   . 1)
+        (tag/context   . 1)
+        (rename-transformer . 1)
 
         ;; renames tokens **
         (lambda-renames . 2)
