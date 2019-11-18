@@ -46,7 +46,7 @@ PLT_SETUP_OPTIONS =
 
 # Belongs in the "Configuration options" section, but here
 # to accomodate nmake:
-SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+SRC_CATALOG = "https://download.racket-lang.org/releases/7.5/catalog/"
 
 CPUS = 
 
@@ -272,7 +272,7 @@ MAKE_BUILD_SCHEME = checkout
 # for Chez Scheme, and add `-b <branch>` to `GIT_CLONE_ARGS_qq`
 # to clone a particular branch from that repo
 CHEZ_SCHEME_REPO = https://github.com/racket/ChezScheme
-GIT_CLONE_ARGS_qq = -q --depth 1
+GIT_CLONE_ARGS_qq = -q --depth 1 -b racket-v7.5
 
 # Altenative source for Chez Scheme repo, normally set by
 # the distro-build client driver
