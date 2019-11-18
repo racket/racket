@@ -647,6 +647,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -670,6 +671,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_origtree
+enable_useprefix
 enable_pkgscope
 enable_docs
 enable_usersetup
@@ -721,6 +723,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -973,6 +976,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1110,7 +1122,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1287,6 +1299,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-origtree       install with original directory structure
+  --disable-useprefix     ignore any --prefix setting
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
@@ -1881,6 +1894,11 @@ if test "${enable_origtree+set}" = set; then :
   enableval=$enable_origtree;
 fi
 
+# Check whether --enable-useprefix was given.
+if test "${enable_useprefix+set}" = set; then :
+  enableval=$enable_useprefix;
+fi
+
 # Check whether --enable-pkgscope was given.
 if test "${enable_pkgscope+set}" = set; then :
   enableval=$enable_pkgscope;
@@ -2014,7 +2032,7 @@ fi
 
 
 unixstyle=no
-if test "${enable_origtree}" != "yes" ; then
+if test "${enable_useprefix}" = "yes" -a "${prefix}" != "NONE" ; then
   if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
@@ -2064,7 +2082,7 @@ fi
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
-  if test "${prefix}" = "NONE" ; then
+  if test "${enable_useprefix}" = "no" -o "${prefix}" = "NONE" ; then
     inplacebuild=yes
     prefix=`cd "${srcdir}/..${PREFIX_PATH_RELATIVE}" && pwd`
   else

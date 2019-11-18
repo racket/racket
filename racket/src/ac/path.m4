@@ -1,6 +1,6 @@
 
 unixstyle=no
-if test "${enable_origtree}" != "yes" ; then
+if test "${enable_useprefix}" = "yes" -a "${prefix}" != "NONE" ; then
   if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
@@ -50,7 +50,7 @@ fi
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
-  if test "${prefix}" = "NONE" ; then
+  if test "${enable_useprefix}" = "no" -o "${prefix}" = "NONE" ; then
     inplacebuild=yes
     prefix=`cd "${srcdir}/..${PREFIX_PATH_RELATIVE}" && pwd`
   else
