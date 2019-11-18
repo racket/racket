@@ -1,0 +1,186 @@
+name: CI
+
+on: [push]
+
+jobs:
+  
+# Build jobs
+# These jobs build each Racket component separately and tests on the component start as soon as each
+# component finishes building.
+
+  build-racketcgc:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+        cify: [cify, nocify]
+          
+    runs-on: ${{ matrix.os }}
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup OS specific configure args
+      if:  runner.os == 'macOS'
+      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
+    - name: Setup cify if enabled
+      if: matrix.cify == 'cify'
+      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+    - name: Setup cify if disabled
+      if: matrix.cify == 'nocify'
+      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    - name: Configuring Racket CGC
+      working-directory: ./racket/src
+      run: >
+        ./configure 
+        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        $RACKET_EXTRA_CONFIGURE_ARGS 
+        --enable-cgcdefault 
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        $CIFY_OPTION
+        --enable-pthread
+        --disable-docs 
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
+    - name: Installing
+      working-directory: ./racket/src
+      run: make -j  $((cpus+1)) install
+    - name: Tarballing
+      working-directory: ../
+      run: tar -cvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
+    - uses: actions/upload-artifact@master
+      with:
+        name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
+        path: ../racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+
+  build-racket3m:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+        cify: [cify, nocify]
+            
+    runs-on: ${{ matrix.os }}
+    
+    needs: build-racketcgc
+    
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup OS specific configure args
+      if:  runner.os == 'macOS'
+      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
+    - name: Setup cify if enabled
+      if: matrix.cify == 'cify'
+      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+    - name: Setup cify if disabled
+      if: matrix.cify == 'nocify'
+      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    - uses: actions/download-artifact@master
+      with:
+        name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
+        path: ../
+    - name: Untar
+      working-directory: ../
+      run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
+    - name: Configuring Racket 3m
+      working-directory: ./racket/src
+      run: >
+        ./configure
+        --prefix=$GITHUB_WORKSPACE/../racket3m 
+        $RACKET_EXTRA_CONFIGURE_ARGS 
+        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float 
+        --disable-docs 
+        $CIFY_OPTION 
+        --enable-pthread
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
+    - name: Installing
+      working-directory: ./racket/src
+      run: make -j  $((cpus+1)) install
+    - name: Tarballing
+      working-directory: ../
+      run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
+    - uses: actions/upload-artifact@master
+      with:
+        name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
+        path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+
+  build-racketcs:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+            
+    runs-on: ${{ matrix.os }}
+    needs: build-racketcgc
+    
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+      
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup OS specific configure args
+      if:  runner.os == 'macOS'
+      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
+    - uses: actions/download-artifact@master
+      with:
+        name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
+        path: ../
+    - name: Untar
+      working-directory: ../
+      run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha}}.tar.bz2
+    - name: Install pkg dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt update
+        sudo apt install -y git uuid-dev
+    - name: Checking out ChezScheme
+      working-directory: ./racket/src
+      run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
+    - name: Configuring Racket CS
+      working-directory: ./racket/src
+      run: >
+        ./configure 
+        --prefix=$GITHUB_WORKSPACE/../racketcs
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-compress 
+        --disable-docs 
+        --enable-pthread 
+        --enable-csdefault 
+        --enable-csonly
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make -l $cpus -j $((cpus+1))
+    - name: Installing
+      working-directory: ./racket/src
+      run: make -j  $((cpus+1)) install
+    - name: Tarballing
+      working-directory: ../
+      run: tar -cvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha}}.tar.bz2 racketcs
+    - uses: actions/upload-artifact@master
+      with:
+        name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
+        path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
+
