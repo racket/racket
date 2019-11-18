@@ -228,7 +228,7 @@ win32-remove-setup-dlls:
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
 SRC_MAKEFILE_CONFIG = configure
-CONFIG_IN_PLACE_ARGS = --enable-origtree
+CONFIG_IN_PLACE_ARGS = --disable-useprefix --enable-origtree
 
 racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
 	mkdir -p racket/src/build
