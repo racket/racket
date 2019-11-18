@@ -56,6 +56,8 @@
         (exit-bind     . 0)
         (exit-local-bind . 0)
         (prepare-env   . 0)
+        (enter-begin-for-syntax . 0)
+        (exit-begin-for-syntax . 0)
 
         ;; basic tokens
         (visit         . 1)
@@ -101,6 +103,11 @@
         (local-value   . 1)
         (local-value-result . 1)
         (rename-transformer . 1)
+        (module-end-lifts . 1)
+        (module-pass1-lifts . 3)
+        (module-pass2-lifts . 3)
+        (module-pass1-case . 1)
+        (exit-case . 1)
 
         ;; renames tokens **
         (lambda-renames . 2)
