@@ -1,0 +1,64 @@
+name: CI: Pull Request
+
+on: [pull_request]
+
+jobs:
+
+  buildtest-unixstyle:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
+    - name: Test
+      run: |
+        export PATH=$PATH:`pwd`/racket/bin
+        raco test -l tests/racket/test
+        racket -l tests/racket/contract/all
+        raco test -l tests/json/json
+        raco test -l tests/file/main
+        raco test -l tests/net/head
+        raco test -l tests/net/uri-codec
+        raco test -l tests/net/url
+        raco test -l tests/net/url-port
+        raco test -l tests/net/encoders
+        raco test -l tests/openssl/basic
+        raco test -l tests/openssl/https
+        raco test -l tests/match/main
+        raco test -l tests/zo-path
+        raco test -c tests/xml/test
+        raco test -c tests/db/all-tests
+        raco test -c tests/stxparse
+
+  buildtest-win:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\vc\vcvarsall.bat" x86
+        nmake win32-in-place PKGS="racket-test unstable-flonum-lib net-test"
+    - name: Test
+      run: |
+        racket\raco.exe test -l tests/racket/test
+        racket\racket.exe -l tests/racket/contract/all
+        racket\raco.exe test -l tests/json/json
+        racket\raco.exe test -l tests/file/main
+        racket\raco.exe test -l tests/net/head
+        racket\raco.exe test -l tests/net/uri-codec
+        racket\raco.exe test -l tests/net/url
+        racket\raco.exe test -l tests/net/url-port
+        racket\raco.exe test -l tests/net/encoders
+        racket\raco.exe test -l tests/openssl/basic
+        racket\raco.exe test -l tests/openssl/https
+        racket\raco.exe test -l tests/match/main
+        racket\raco.exe test -l tests/zo-path
+        racket\raco.exe test -c tests/xml/test
+        racket\raco.exe test -c tests/db/all-tests
+        racket\raco.exe test -c tests/stxparse
