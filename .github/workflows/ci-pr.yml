@@ -31,7 +31,7 @@ jobs:
         raco test -l tests/openssl/https
         raco test -l tests/match/main
         raco test -l tests/zo-path
-        raco test -c tests/xml/test
+        raco test -c tests/xml
         raco test -c tests/db/all-tests
         raco test -c tests/stxparse
 
@@ -47,12 +47,14 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build
       working-directory: .\racket\src\worksp
+      shell: cmd
       run: |
         msvcprep.bat x86_amd64
         build.bat
         ..\..\racket.exe csbuild.rkt
         ..\..\raco.exe pkg install racket-lib
     - name: Test
+      shell: cmd
       run: |
         racket\raco.exe test -l tests/racket/test
         racket\racket.exe -l tests/racket/contract/all
@@ -67,6 +69,6 @@ jobs:
         racket\raco.exe test -l tests/openssl/https
         racket\raco.exe test -l tests/match/main
         racket\raco.exe test -l tests/zo-path
-        racket\raco.exe test -c tests/xml/test
+        racket\raco.exe test -c tests/xml
         racket\raco.exe test -c tests/db/all-tests
         racket\raco.exe test -c tests/stxparse
