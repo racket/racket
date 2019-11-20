@@ -21,6 +21,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 100
     - name: Setup OS specific configure args
       if:  runner.os == 'macOS'
       run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
@@ -77,6 +79,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 100
     - name: Setup OS specific configure args
       if:  runner.os == 'macOS'
       run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
@@ -138,6 +142,8 @@ jobs:
       
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 100
     - name: Setup OS specific configure args
       if:  runner.os == 'macOS'
       run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
