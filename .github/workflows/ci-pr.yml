@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Build
-      run: make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS="3" PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
       run: |
         export PATH=$PATH:`pwd`/racket/bin
