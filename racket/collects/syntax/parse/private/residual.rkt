@@ -110,12 +110,12 @@
               (sub1 n)))))
 
 ;; check-attr-value : Any d:Nat b:Boolean Syntax/#f -> (Listof^d (if b Syntax Any))
-(define (check-attr-value v0 depth0 base? ctx)
+(define (check-attr-value v0 depth0 stx? ctx)
   (define (bad kind v)
     (raise-syntax-error #f (format "attribute contains non-~s value\n  value: ~e" kind v) ctx))
   (define (depthloop depth v)
     (if (zero? depth)
-        (if base? (baseloop v) v)
+        (baseloop v)
         (let listloop ([v v] [root? #t])
           (cond [(null? v) null]
                 [(pair? v) (let ([new-car (depthloop (sub1 depth) (car v))]
@@ -126,8 +126,9 @@
                 [(and root? (eq? v #f)) (begin (signal-absent-pvar) (bad 'list v))]
                 [else (bad 'list v)]))))
   (define (baseloop v)
-    (cond [(syntax? v) v]
-          [(promise? v) (baseloop (force v))]
+    (cond [(promise? v) (baseloop (force v))]
+          [(not stx?) v]
+          [(syntax? v) v]
           [(eq? v #f) (begin (signal-absent-pvar) (bad 'syntax v))]
           [else (bad 'syntax v)]))
   (depthloop depth0 v0))
