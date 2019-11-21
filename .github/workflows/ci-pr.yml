@@ -52,7 +52,7 @@ jobs:
         call msvcprep.bat x86_amd64
         call build.bat
         call ..\..\racket.exe csbuild.rkt
-        ..\..\raco.exe pkg install --auto racket-lib
+        ..\..\raco.exe pkg install --auto racket-test unstable-flonum-lib net-test
     - name: Test
       shell: cmd
       run: |
