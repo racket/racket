@@ -57,14 +57,14 @@
        (list (ast:bind #'x (list #'1)) (ast:bind #'y #f)))
 
 ;; ------------------------------------------------------------
-;; The strange corner cases...
+;; The corner cases...
 
 (require racket/list racket/promise)
 
-;; The following are two consequences of the decision to make (datum a)
-;; equivalent to (attribute a), where a is an attribute. Thus if a is "absent"
-;; (has the value #f), (datum a) returns #f rather than signaling an
-;; error. Likewise, if the value of a is a promise, it just returns the promise.
+;; The following is a consequences of the decision to make (datum a) equivalent,
+;; or nearly so, to (attribute a), where a is an attribute. In particular, if a
+;; is "absent" (has the value #f), (datum a) returns #f rather than signaling an
+;; error. However, if value of a is a promise, it forces the promise.
 
 ;; 1: ~? catches attempts to iterate over absent attrs, but not uses of absent
 ;; attrs. Maybe add some sort of annotation to get other behavior?
@@ -77,7 +77,7 @@
                 [(_ (~optional (x:id ...))) (datum (~? (x ...) default))])
               'default)
 
-;; 2: Promises are forced only when necessary for iterating over lists.
+;; 2: Unlike attribute, datum forces promises.
 
 (define-syntax-class nrange #:attributes ([r 0] [k 1])
   (pattern n:nat
@@ -85,10 +85,8 @@
            #:attr [r 0] (delay (range (syntax-e #'n)))
            #:attr [k 1] (delay (range (syntax-e #'n)))))
 
-;; This returns a list of numbers:
 (check-equal? (syntax-parse #'(m 10) [(_ n:nrange) (datum (n.k ...))])
               (range 10))
 
-;; But this returns a promise:
-(check-pred promise?
-            (syntax-parse #'(m 10) [(_ n:nrange) (datum n.r)]))
+(check-equal? (syntax-parse #'(m 10) [(_ n:nrange) (datum n.r)])
+              (range 10))
