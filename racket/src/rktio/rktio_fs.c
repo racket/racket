@@ -1487,12 +1487,13 @@ char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
   while ((e = readdir(dl->dir))) {
     int nlen;
 
-# ifdef DIRENT_NO_NAMLEN
-    nlen = strlen(e->d_name);
-# elif defined(__QNX__) || defined(__QNXNTO__)
+# ifdef HAVE_DIRENT_NAMLEN
+    nlen = e->d_namlen;
+# elif HAVE_DIRENT_NAMELEN
+    /* Case for QNX - which seems to define d_namelen instead */
     nlen = e->d_namelen;
 # else
-    nlen = e->d_namlen;
+    nlen = strlen(e->d_name);
 # endif
 
 # if defined(RKTIO_SYSTEM_UNIX) || defined(RKTIO_SYSTEM_WINDOWS)
