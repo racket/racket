@@ -364,7 +364,7 @@
     (define (lookup id depth0)
       (define (make-pvar var check pvar-depth)
         (define (make-ref var)
-          (cond [check `(t-check-var (,check ,var 0 #t (quote-syntax ,id)))]
+          (cond [check `(t-check-var (,check ,var 0 ,stx? (quote-syntax ,id)))]
                 [else `(t-var ,var)]))
         (define (make-src-ref var id)
           (cond [check `(#%expression (,check ,var 1 #f (quote-syntax ,id)))]
@@ -386,7 +386,7 @@
                         (dotsframe-add! (car depth) iter src (make-src-ref src id))
                         iter))]))))
       (let ([v (syntax-local-value id (lambda () #f))])
-        (cond [(and stx? (syntax-pattern-variable? v))
+        (cond [(syntax-pattern-variable? v)
                (define pvar-depth (syntax-mapping-depth v))
                (define attr
                  (let ([attr (syntax-local-value (syntax-mapping-valvar v) (lambda () #f))])
