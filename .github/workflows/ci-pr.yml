@@ -32,7 +32,7 @@ jobs:
         raco test -l tests/match/main
         raco test -l tests/zo-path
         raco test -c tests/xml
-        raco test -c tests/db/all-tests
+        raco test -l tests/db/all-tests
         raco test -c tests/stxparse
 
   buildtest-win:
@@ -52,7 +52,7 @@ jobs:
         call msvcprep.bat x86_amd64
         call build.bat
         call ..\..\racket.exe csbuild.rkt
-        ..\..\raco.exe pkg install racket-lib
+        ..\..\raco.exe pkg install --auto racket-lib
     - name: Test
       shell: cmd
       run: |
@@ -70,5 +70,5 @@ jobs:
         call racket\raco.exe test -l tests/match/main
         call racket\raco.exe test -l tests/zo-path
         call racket\raco.exe test -c tests/xml
-        call racket\raco.exe test -c tests/db/all-tests
+        call racket\raco.exe test -l tests/db/all-tests
         racket\raco.exe test -c tests/stxparse
