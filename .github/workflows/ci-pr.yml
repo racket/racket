@@ -1,0 +1,74 @@
+name: CI Pull Request
+
+on: [pull_request]
+
+jobs:
+
+  buildtest-unixstyle:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: make CPUS="3" PKGS="racket-test db-test unstable-flonum-lib net-test"
+    - name: Test
+      run: |
+        export PATH=$PATH:`pwd`/racket/bin
+        raco test -l tests/racket/test
+        racket -l tests/racket/contract/all
+        raco test -l tests/json/json
+        raco test -l tests/file/main
+        raco test -l tests/net/head
+        raco test -l tests/net/uri-codec
+        raco test -l tests/net/url
+        raco test -l tests/net/url-port
+        raco test -l tests/net/encoders
+        raco test -l tests/openssl/basic
+        raco test -l tests/openssl/https
+        raco test -l tests/match/main
+        raco test -l tests/zo-path
+        raco test -c tests/xml
+        raco test -l tests/db/all-tests
+        raco test -c tests/stxparse
+
+  buildtest-win:
+    runs-on: windows-latest
+
+    # According to
+    # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#windows-server-2019
+    # VS2019 is what is installed in the hosted runners:
+    #   Version: VisualStudio/16.3.6+29418.71
+    #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      working-directory: .\racket\src\worksp
+      shell: cmd
+      run: |
+        call msvcprep.bat x86_amd64
+        call build.bat
+        call ..\..\racket.exe csbuild.rkt
+        ..\..\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
+    - name: Test
+      shell: cmd
+      run: |
+        call racket\raco.exe test -l tests/racket/test
+        call racket\racket.exe -l tests/racket/contract/all
+        call racket\raco.exe test -l tests/json/json
+        call racket\raco.exe test -l tests/file/main
+        call racket\raco.exe test -l tests/net/head
+        call racket\raco.exe test -l tests/net/uri-codec
+        call racket\raco.exe test -l tests/net/url
+        call racket\raco.exe test -l tests/net/url-port
+        call racket\raco.exe test -l tests/net/encoders
+        call racket\raco.exe test -l tests/openssl/basic
+        call racket\raco.exe test -l tests/openssl/https
+        call racket\raco.exe test -l tests/match/main
+        call racket\raco.exe test -l tests/zo-path
+        call racket\raco.exe test -c tests/xml
+        call racket\raco.exe test -l tests/db/all-tests
+        racket\raco.exe test -c tests/stxparse
