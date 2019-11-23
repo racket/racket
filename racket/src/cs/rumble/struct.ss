@@ -664,9 +664,9 @@
               (procedure-rename
                 (lambda (v)
                   ($value
-                   (if (impersonator? v)
-                       (impersonate-ref p rtd pos v rec-name (or name 'field))
-                       (p v))))
+                   (if (record? v rtd)
+                       (p v)
+                       (impersonate-ref p rtd pos v rec-name (or name 'field)))))
                 (string->symbol (string-append (symbol->string rec-name)
                                                "-"
                                                (if name
@@ -702,9 +702,9 @@
               (procedure-rename
                (if (struct-type-field-mutable? rtd pos)
                    (lambda (v a)
-                     (if (impersonator? v)
-                         (impersonate-set! p rtd pos abs-pos v a rec-name (or name 'field))
-                         (p v a)))
+                     (if (record? v rtd)
+                         (p v a)
+                         (impersonate-set! p rtd pos abs-pos v a rec-name (or name 'field))))
                    (lambda (v a)
                      (raise-arguments-error name
                                             "cannot modify value of immutable field in structure"
