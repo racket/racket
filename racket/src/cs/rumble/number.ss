@@ -432,3 +432,8 @@
       (cond
        [(null? ms) n]
        [else (loop (lcm n (car ms)) (cdr ms))]))]))
+
+(define (fllog n) (#2%fllog n))
+(define (flatan n) (#2%flatan n))
+
+(define (fxquotient n d) (#2%fxquotient n d))

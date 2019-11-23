@@ -19,7 +19,7 @@
 (define unsafe-fx+ (unsafe-primitive fx+))
 (define unsafe-fx- (unsafe-primitive fx-))
 (define unsafe-fx* (unsafe-primitive fx*))
-(define unsafe-fxquotient (unsafe-primitive fxquotient))
+(define (unsafe-fxquotient n d) (#3%fxquotient n d))
 (define unsafe-fxremainder (unsafe-primitive fxremainder))
 (define unsafe-fxmodulo (unsafe-primitive fxmodulo))
 (define unsafe-fxabs (unsafe-primitive fxabs))

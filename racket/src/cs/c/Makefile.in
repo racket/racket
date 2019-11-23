@@ -56,6 +56,7 @@ cs:
 	$(MAKE) racket-so
 	cd rktio; $(MAKE)
 	$(MAKE) racketcs
+	$(MAKE) check-racketcs
 	$(MAKE) gracketcs
 	$(MAKE) starter
 
@@ -465,6 +466,12 @@ macos-install-gracket:
 	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
 	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
+
+# ----------------------------------------
+# Check
+
+check-racketcs:
+	./racketcs $(srcdir)/../known.rkt $(srcdir)/..
 
 # ----------------------------------------
 # Reconfigure

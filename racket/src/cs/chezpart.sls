@@ -43,7 +43,9 @@
                            bitwise-ior
                            bitwise-xor
                            bitwise-and
-                           bitwise-not)
+                           bitwise-not
+                           fllog flatan
+                           fxquotient)
                    [make-parameter chez:make-parameter]
                    [date-second chez:date-second]
                    [date-minute chez:date-minute]

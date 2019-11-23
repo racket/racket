@@ -228,8 +228,12 @@
     [(who what pos arg . args)
      (do-raise-argument-error 'raise-argument-error "given" who what pos arg args)]))
 
-(define (raise-result-error who what arg)
-  (do-raise-argument-error 'raise-result-error "result" who what #f arg #f))
+(define raise-result-error
+  (case-lambda
+    [(who what arg)
+     (do-raise-argument-error 'raise-result-error "result" who what #f arg #f)]
+    [(who what pos arg . args)
+     (do-raise-argument-error 'raise-result-error "result" who what pos arg args)]))
 
 (define (do-raise-type-error e-who tag who what pos arg args)
   (unless (symbol? who)
@@ -269,7 +273,7 @@
     [(who what pos arg . args)
      (do-raise-type-error 'raise-argument-error "given" who what pos arg args)]))
 
-(define/who (raise-mismatch-error in-who what . more)
+(define/who (raise-mismatch-error in-who what v . more)
   (check who symbol? in-who)
   (check who string? what)
   (raise
@@ -280,7 +284,7 @@
      (symbol->string in-who)
      ": "
      what
-     (let loop ([more more])
+     (let loop ([more (cons v more)])
        (cond
         [(null? more) '()]
         [else

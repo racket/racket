@@ -828,10 +828,14 @@
       (hash-iterate-next ht i)
       (unsafe-intmap-iterate-next ht i)))
 
-(define (unsafe-immutable-hash-iterate-key ht i)
-  (if (iterator-for-impersonator? i)
-      (hash-iterate-key ht i)
-      (unsafe-intmap-iterate-key ht i)))
+(define unsafe-immutable-hash-iterate-key
+  (case-lambda
+   [(ht i)
+    (unsafe-immutable-hash-iterate-key ht i none)]
+   [(ht i bad-index-v)
+    (if (iterator-for-impersonator? i)
+        (hash-iterate-key ht i)
+        (unsafe-intmap-iterate-key ht i))]))
 
 (define unsafe-immutable-hash-iterate-value
   (case-lambda

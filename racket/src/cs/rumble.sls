@@ -405,6 +405,8 @@
           make-flrectangular
           gcd
           lcm
+          fllog flatan
+          fxquotient
 
           random
           random-seed

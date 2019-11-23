@@ -103,12 +103,12 @@
           [else #f])])]
     [else #f]))
 
-(define/who (bytes-utf-8-ref bstr [skip 0] [err-char #f] [start 0] [end (and (bytes? bstr)
-                                                                             (bytes-length bstr))])
+(define/who (bytes-utf-8-ref bstr skip [err-char #f] [start 0] [end (and (bytes? bstr)
+                                                                         (bytes-length bstr))])
   (do-bytes-utf-8-ref who bstr skip err-char start end))
 
-(define/who (bytes-utf-8-index bstr [skip 0] [err-char #f] [start 0] [end (and (bytes? bstr)
-                                                                               (bytes-length bstr))])
+(define/who (bytes-utf-8-index bstr skip [err-char #f] [start 0] [end (and (bytes? bstr)
+                                                                           (bytes-length bstr))])
   (do-bytes-utf-8-ref who bstr skip err-char start end #:get-index? #t))
 
 ;; ----------------------------------------

@@ -292,9 +292,9 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_NONCM_PRIM("port-commit-peeked",             peeked_read,                    3, 4, env);
   ADD_NONCM_PRIM("port-progress-evt",              progress_evt,                   0, 1, env);
   ADD_NONCM_PRIM("progress-evt?",                  is_progress_evt,                1, 2, env);
-  ADD_NONCM_PRIM("port-closed-evt",                closed_evt,                     0, 1, env);
+  ADD_NONCM_PRIM("port-closed-evt",                closed_evt,                     1, 1, env);
   ADD_NONCM_PRIM("write-bytes-avail-evt",          write_bytes_avail_evt,          1, 4, env);
-  ADD_NONCM_PRIM("write-special-evt",              write_special_evt,              2, 2, env);
+  ADD_NONCM_PRIM("write-special-evt",              write_special_evt,              1, 2, env);
   ADD_NONCM_PRIM("port-read-handler",              port_read_handler,              1, 2, env);
   ADD_NONCM_PRIM("port-display-handler",           port_display_handler,           1, 2, env);
   ADD_NONCM_PRIM("port-write-handler",             port_write_handler,             1, 2, env);

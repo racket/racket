@@ -37,7 +37,7 @@
   (let ([in (->core-input-port in)])
     (and (method core-input-port in get-progress-evt) #t)))
 
-(define/who (port-progress-evt orig-in)
+(define/who (port-progress-evt [orig-in (current-input-port)])
   (check who input-port? orig-in)
   (let ([in (->core-input-port orig-in)])
     (define get-progress-evt (method core-input-port in get-progress-evt))

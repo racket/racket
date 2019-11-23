@@ -528,13 +528,13 @@ scheme_init_string (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("bytes-convert",
 			     scheme_make_prim_w_arity2(byte_string_convert,
 						       "bytes-convert",
-						       1, 7,
+						       2, 7,
 						       3, 3),
 			     env);
   scheme_addto_prim_instance("bytes-convert-end",
 			     scheme_make_prim_w_arity2(byte_string_convert_end,
 						       "bytes-convert-end",
-						       0, 3,
+						       1, 4,
 						       2, 2),
 			     env);
   scheme_addto_prim_instance("bytes-open-converter",

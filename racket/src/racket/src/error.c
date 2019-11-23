@@ -796,7 +796,7 @@ void scheme_init_error(Scheme_Startup_Env *env)
   scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
   scheme_addto_prim_instance("raise-arity-error",  scheme_raise_arity_error_proc, env);
   ESCAPING_NONCM_PRIM("raise-arity-mask-error",     raise_arity_mask_error, 2, -1, env);
-  ESCAPING_NONCM_PRIM("raise-result-arity-error",   raise_result_arity_error, 2, -1, env);
+  ESCAPING_NONCM_PRIM("raise-result-arity-error",   raise_result_arity_error, 3, -1, env);
 
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
   ADD_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
