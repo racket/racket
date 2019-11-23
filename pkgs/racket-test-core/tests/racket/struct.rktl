@@ -867,6 +867,8 @@
   (define-values (s:tuple make-tuple tuple? tuple-ref tuple-set!)
     (make-struct-type 'tuple #f 1 0 #f
 		      (list (cons prop:custom-write tuple-print))))
+
+  (test "#<struct-type:tuple>" values (format "~s" s:tuple)) ; shouldn't trigger custom write
   
   (define (with-output-string thunk)
     (let ([p (open-output-string)])

@@ -200,6 +200,7 @@
               (hash? v)
               (prefab-struct-key v)
               (and (custom-write? v)
+                   (not (struct-type? v))
                    (not (printable-regexp? v))
                    (not (eq? 'self (custom-print-quotable-accessor v 'self))))))
      ;; Since this value is not marked for constructor mode,
@@ -292,7 +293,8 @@
      (fail-unreadable who v)]
     [(mpair? v)
      (print-mlist p who v mode o max-length graph config)]
-    [(custom-write? v)
+    [(and (not (struct-type? v))
+          (custom-write? v))
      (let ([o/m (make-output-port/max o max-length)])
        (set-port-handlers-to-recur!
         o/m
