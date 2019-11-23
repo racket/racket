@@ -142,15 +142,31 @@
 ;; thunks:
 (define break-enabled-key '#{break-enabled n1kcvqw4c9hh8t3fi3659ci94-2})
 
-(define/who (continuation-prompt-available? tag)
-  (check who continuation-prompt-tag? tag)
+(define/who continuation-prompt-available?
+  (case-lambda
+   [(tag)
+    (check who continuation-prompt-tag? tag)
+    (is-continuation-prompt-available? tag (current-metacontinuation))]
+   [(tag k)
+    (check who continuation-prompt-tag? tag)
+    (check who continuation? k)
+    (when (escape-continuation? k)
+      (unless (is-continuation-prompt-available? (escape-continuation-tag k) #f)
+        (raise-continuation-error who
+                                  "escape continuation not in the current thread's continuation")))
+    (or (is-continuation-prompt-available? tag (continuation-mc k))
+        (and (non-composable-continuation? k)
+             (eq? (strip-impersonator tag) (strip-impersonator (full-continuation-tag k)))))]))
+
+(define (is-continuation-prompt-available? tag mc)
   (maybe-future-barricade tag)
   (let ([tag (strip-impersonator tag)])
-    (or (eq? tag the-default-continuation-prompt-tag)
-        (eq? tag the-root-continuation-prompt-tag)
+    (or (and (not mc)
+             (or (eq? tag the-default-continuation-prompt-tag)
+                 (eq? tag the-root-continuation-prompt-tag)))
         ;; Looks through metacontinuation cache, but cache a search result
         ;; half-way up if the chain is deep enough
-        (let ([mc (current-metacontinuation)])
+        (let ([mc (or mc (current-metacontinuation))])
           (let loop ([mc mc] [slow-mc mc] [slow-step? #f] [steps 0])
             (cond
              [(null? mc)
@@ -426,7 +442,7 @@
        (do-abort-current-continuation who tag args #t)))]))
 
 (define (check-prompt-still-available who tag)
-  (unless (continuation-prompt-available? tag)
+  (unless (is-continuation-prompt-available? tag #f)
     (end-uninterrupted 'escape-fail)
     (raise-continuation-error who
                               (string-append
@@ -455,8 +471,8 @@
 ;; ----------------------------------------
 ;; Capturing and applying continuations
 
-(define-record continuation ())
-(define-record full-continuation continuation (k winders mark-stack mark-splice mc tag))
+(define-record continuation (mc))
+(define-record full-continuation continuation (k winders mark-stack mark-splice tag))
 (define-record composable-continuation full-continuation (wind?))
 (define-record non-composable-continuation full-continuation ())
 (define-record escape-continuation continuation (tag))
@@ -474,11 +490,11 @@
         (|#%app|
          proc
          (make-non-composable-continuation
+          (extract-metacontinuation who (strip-impersonator tag) #t)
           k
           (current-winders)
           (current-mark-stack)
           (current-mark-splice)
-          (extract-metacontinuation who (strip-impersonator tag) #t)
           tag))))]))
 
 (define/who call-with-composable-continuation
@@ -496,11 +512,11 @@
      (|#%app|
       p
       (make-composable-continuation
+       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f)
        k
        (current-winders)
        (current-mark-stack)
        (current-mark-splice)
-       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f)
        tag
        wind?)))))
 
@@ -512,7 +528,7 @@
   (let ([tag (make-continuation-prompt-tag)])
     (call-with-continuation-prompt
      (lambda ()
-       (|#%app| p (make-escape-continuation tag)))
+       (|#%app| p (make-escape-continuation (current-metacontinuation) tag)))
      tag
      values)))
 
@@ -538,7 +554,7 @@
      ;; empty continuation, so we can "replace" that
      ;; with the composable one:
      (cond
-      [(and (null? (full-continuation-mc c))
+      [(and (null? (continuation-mc c))
             (null? (full-continuation-winders c))
             (eq? (current-mark-splice) (full-continuation-mark-splice c))
             (let ([marks (continuation-next-attachments (full-continuation-k c))])
@@ -551,13 +567,13 @@
       [(not (composable-continuation-wind? c))
        (apply-immediate-continuation/no-wind c args)]
       [else
-       (apply-immediate-continuation c (reverse (full-continuation-mc c)) args)]))))
+       (apply-immediate-continuation c (reverse (continuation-mc c)) args)]))))
 
 ;; Applying an escape continuation calls this internal function:
 (define (apply-escape-continuation c args)
   (start-uninterrupted 'continue)
   (let ([tag (escape-continuation-tag c)])
-    (unless (continuation-prompt-available? tag)
+    (unless (is-continuation-prompt-available? tag #f)
       (end-uninterrupted 'escape-fail)
       (raise-continuation-error '|continuation application|
                                 "attempt to jump into an escape continuation"))
@@ -571,7 +587,7 @@
 (define (apply-non-composable-continuation* c args)
   (assert-in-uninterrupted)
   (let ([mc (current-metacontinuation)]
-        [c-mc (full-continuation-mc c)]
+        [c-mc (continuation-mc c)]
         [tag (full-continuation-tag c)])
     (cond
      [(and (null? c-mc)
@@ -647,7 +663,7 @@
 ;; Like `apply-immediate-continuation`, but don't run winders
 (define (apply-immediate-continuation/no-wind c args)
   (current-metacontinuation (append
-                             (map metacontinuation-frame-clear-cache (full-continuation-mc c))
+                             (map metacontinuation-frame-clear-cache (continuation-mc c))
                              (current-metacontinuation)))
   (current-winders (full-continuation-winders c))
   (current-mark-splice (full-continuation-mark-splice c))
@@ -769,7 +785,7 @@
                                      (eq? a-tag the-barrier-prompt-tag))))]))]))))
 
 (define (check-prompt-tag-available who tag)
-  (unless (continuation-prompt-available? tag)
+  (unless (is-continuation-prompt-available? tag #f)
     (raise-no-prompt-tag who tag)))
 
 (define (raise-no-prompt-tag who tag)
@@ -1487,11 +1503,11 @@
                 orig-tag)
            (get-mark-chain (full-continuation-mark-stack k)
                            (full-continuation-mark-splice k)
-                           (full-continuation-mc k)))
+                           (continuation-mc k)))
           (cons (continuation->trace (full-continuation-k k))
-                (get-metacontinuation-traces (full-continuation-mc k))))]
+                (get-metacontinuation-traces (continuation-mc k))))]
         [(escape-continuation? k)
-         (unless (continuation-prompt-available? (escape-continuation-tag k))
+         (unless (is-continuation-prompt-available? (escape-continuation-tag k) #f)
            (raise-continuation-error '|continuation application|
                                      "escape continuation not in the current continuation"))
          (make-continuation-mark-set

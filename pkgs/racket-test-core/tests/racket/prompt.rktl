@@ -588,4 +588,76 @@
 
 ;;----------------------------------------
 
+(let* ([t (make-continuation-prompt-tag 't)])
+  (test #t continuation-prompt-available? t
+        (call-with-continuation-prompt
+         (lambda ()
+           (call/cc (lambda (k) k)
+                    t))
+         t))
+  (test #f continuation-prompt-available? t
+        (call-with-continuation-prompt
+         (lambda ()
+           (call-with-composable-continuation
+            (lambda (k) k)
+            t))
+         t))
+  (let ([k (call-with-continuation-prompt
+            (lambda ()
+              ((call-with-composable-continuation
+                (lambda (k) (lambda () k))
+                t)))
+            t)])
+    (test #f continuation-prompt-available? t k)
+    (test #f values
+          (k (lambda ()
+               (continuation-prompt-available? t))))
+    (test #f continuation-prompt-available? (default-continuation-prompt-tag) k))
+  (let ([k (call-with-continuation-prompt
+            (lambda ()
+              ((call-with-current-continuation
+                (lambda (k) (lambda () k))
+                t)))
+            t)])
+    (test #t continuation-prompt-available? t k)
+    (test #t values
+          (call-with-continuation-prompt
+            (lambda ()
+              (k (lambda ()
+                   (continuation-prompt-available? t))))
+            t))
+    (test #f continuation-prompt-available? (default-continuation-prompt-tag) k))
+  (test #t continuation-prompt-available? t
+        (call-with-continuation-prompt
+         (lambda ()
+           (call-with-continuation-prompt
+            (lambda ()
+              (call-with-current-continuation
+               (lambda (k) k)))
+            t))))
+  (test #t continuation-prompt-available? t
+        (call-with-continuation-prompt
+         (lambda ()
+           (call-with-continuation-prompt
+            (lambda ()
+              (call-with-composable-continuation
+               (lambda (k) k)))
+            t))))
+  (test #t 'continuation-prompt-available?
+        (call-with-continuation-prompt
+         (lambda ()
+           (call-with-escape-continuation
+            (lambda (k) (continuation-prompt-available? t k))))
+         t))
+  (err/rt-test (continuation-prompt-available?
+                t
+                (call-with-continuation-prompt
+                 (lambda ()
+                   (call-with-escape-continuation
+                    (lambda (k) k)))
+                 t))
+               exn:fail:contract:continuation?))
+
+;;----------------------------------------
+
 (report-errs)

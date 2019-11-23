@@ -7642,7 +7642,8 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
                                          Scheme_Meta_Continuation *mc,
                                          Scheme_Object *prompt_tag,
                                          char *who,
-					 int just_chain)
+					 int just_chain,
+                                         int use_boundary_prompt)
      /* cont => p is not used */
 {
   Scheme_Cont *cont = (Scheme_Cont *)_cont, *top_cont;
@@ -7656,7 +7657,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag))
     prompt_tag = NULL;
 
-  if (cont && SAME_OBJ(cont->prompt_tag, prompt_tag))
+  if (cont
+      && (use_boundary_prompt || !cont->composable)
+      && SAME_OBJ(cont->prompt_tag, prompt_tag))
     found_tag = 1;
   if (!prompt_tag)
     found_tag = 1;
@@ -7898,6 +7901,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
                        "%s: no corresponding prompt in the continuation\n"
                        "  tag: %V",
                        who, prompt_tag);
+    } else if (!use_boundary_prompt) {
+      /* Don't treat default tag as found */
+      return NULL;
     }
   }
 
@@ -7950,7 +7956,7 @@ Scheme_Object *scheme_current_continuation_marks(Scheme_Object *prompt_tag)
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
                             prompt_tag ? prompt_tag : scheme_default_prompt_tag,
                             "continuation-marks",
-                            0);
+                            0, 1);
 }
 
 Scheme_Object *scheme_all_current_continuation_marks()
@@ -7958,7 +7964,7 @@ Scheme_Object *scheme_all_current_continuation_marks()
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
                             NULL,
                             "continuation-marks",
-                            0);
+                            0, 1);
 }
 
 static Scheme_Object *
@@ -8027,7 +8033,7 @@ cont_marks(int argc, Scheme_Object *argv[])
       mc = scheme_get_meta_continuation(argv[0]);
 
       return continuation_marks(scheme_current_thread, NULL, argv[0], mc, prompt_tag, 
-                                "continuation-marks", 0);
+                                "continuation-marks", 0, 1);
     }
   } else if (SCHEME_THREADP(argv[0])) {
     Scheme_Thread *t = (Scheme_Thread *)argv[0];
@@ -8062,7 +8068,7 @@ cont_marks(int argc, Scheme_Object *argv[])
     }
   } else {
     return continuation_marks(NULL, argv[0], NULL, NULL, prompt_tag, 
-                              "continuation-marks", 0);
+                              "continuation-marks", 0, 1);
   }
 }
 
@@ -8881,11 +8887,11 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
         mc = scheme_get_meta_continuation(argv[1]);
         
         if (continuation_marks(scheme_current_thread, NULL, argv[1], mc, prompt_tag, 
-                               NULL, 0))
+                               NULL, 0, 0))
           return scheme_true;
       }
     } else if (SCHEME_CONTP(argv[1])) {
-      if (continuation_marks(NULL, argv[1], NULL, NULL, prompt_tag, NULL, 0))
+      if (continuation_marks(NULL, argv[1], NULL, NULL, prompt_tag, NULL, 0, 0))
         return scheme_true;
     } else {
       scheme_wrong_contract("continuation-prompt-available?", "continuation?",
