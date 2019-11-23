@@ -83,6 +83,11 @@ END_XFORM_ARITH;
 # define _jit_epilog scheme_jit_epilog
 #endif
 
+/* The ABI for _CALL_DARWIN or JIT_X86_64 requires alignment. Even
+   when it's not required, it's better for performance when flonums
+   are stored on the stack. */
+#define JIT_X86_ALIGN_STACK 1
+
 #ifndef DEFINE_LIGHTNING_FUNCS
 # define SUPPRESS_LIGHTNING_FUNCS
 #endif
@@ -936,11 +941,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_get_local_p_x(x, l, FP) jit_ldxi_p((x), FP, (l))
 # define mz_patch_branch_at(a, v) jit_patch_branch_at(a, v)
 # define mz_patch_ucbranch_at(a, v) jit_patch_ucbranch_at(a, v)
-  /* The ABI for _CALL_DARWIN or JIT_X86_64 requires alignment. Even
-     when it's not required, it's better for performance when flonums
-     are stored on the stack. */
-# define X86_ALIGN_STACK 1
-# ifdef X86_ALIGN_STACK
+# ifdef JIT_X86_ALIGN_STACK
    /* Maintain 16-byte stack alignment. */
 #  ifdef JIT_X86_64
 #   define STACK_ALIGN_WORDS 1

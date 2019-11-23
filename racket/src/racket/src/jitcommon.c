@@ -82,7 +82,7 @@ static int save_struct_temp(mz_jit_state *jitter, int reg)
   jit_movr_p(JIT_V(3), reg);
 #endif
 #ifdef MZ_USE_JIT_I386
-# ifdef X86_ALIGN_STACK
+# ifdef JIT_X86_ALIGN_STACK
   mz_set_local_p(reg, JIT_LOCAL3);
 # else
   jit_pushr_p(reg);
@@ -101,7 +101,7 @@ static int restore_struct_temp(mz_jit_state *jitter, int reg)
   jit_movr_p(reg, JIT_V(3));
 #endif
 #ifdef MZ_USE_JIT_I386
-# ifdef X86_ALIGN_STACK
+# ifdef JIT_X86_ALIGN_STACK
   mz_get_local_p(reg, JIT_LOCAL3);
 # else
   jit_popr_p(reg);
@@ -1714,7 +1714,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     } else {
       mz_patch_ucbranch(bref_true);
 #ifdef MZ_USE_JIT_I386
-# ifndef X86_ALIGN_STACK
+# ifndef JIT_X86_ALIGN_STACK
       jit_popr_p(JIT_V1);
 # endif
 #endif
