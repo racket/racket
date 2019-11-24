@@ -8156,7 +8156,7 @@ iterate_cc_markses(const char *who,
                    Scheme_Cont_Mark_Chain **_chain)
 {
   Scheme_Cont_Mark_Chain *chain = *_chain;
-  intptr_t last_pos, i;
+  intptr_t last_pos = -1, i;
   Scheme_Object *vals = NULL;
   
   prompt_tag = SCHEME_PTR_VAL(prompt_tag);
