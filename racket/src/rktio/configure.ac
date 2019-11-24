@@ -149,7 +149,7 @@ if test "${endianness}" = "big" ; then
 fi
 
 # Struct dirent
-AC_CHECK_MEMBERS([struct dirent.d_namelen, struct dirent.d_namlen])
+AC_CHECK_MEMBERS([struct dirent.d_namelen, struct dirent.d_namlen],,,[#include <dirent.h>])
 
 AC_MSG_CHECKING([for getaddrinfo])
 AC_TRY_LINK([#include <sys/types.h>

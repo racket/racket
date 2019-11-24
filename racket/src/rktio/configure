@@ -4167,7 +4167,8 @@ $as_echo "#define RKTIO_BIG_ENDIAN 1" >>confdefs.h
 fi
 
 # Struct dirent
-ac_fn_c_check_member "$LINENO" "struct dirent" "d_namelen" "ac_cv_member_struct_dirent_d_namelen" "$ac_includes_default"
+ac_fn_c_check_member "$LINENO" "struct dirent" "d_namelen" "ac_cv_member_struct_dirent_d_namelen" "#include <dirent.h>
+"
 if test "x$ac_cv_member_struct_dirent_d_namelen" = xyes; then :
 
 cat >>confdefs.h <<_ACEOF
@@ -4176,7 +4177,8 @@ _ACEOF
 
 
 fi
-ac_fn_c_check_member "$LINENO" "struct dirent" "d_namlen" "ac_cv_member_struct_dirent_d_namlen" "$ac_includes_default"
+ac_fn_c_check_member "$LINENO" "struct dirent" "d_namlen" "ac_cv_member_struct_dirent_d_namlen" "#include <dirent.h>
+"
 if test "x$ac_cv_member_struct_dirent_d_namlen" = xyes; then :
 
 cat >>confdefs.h <<_ACEOF
