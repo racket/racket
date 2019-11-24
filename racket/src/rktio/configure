@@ -621,6 +621,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+HAVE_DIRENT_NAMELEN
+HAVE_DIRENT_NAMLEN
 RKTIO_NO_ICONV
 HIDE_STANDALONE
 HIDE_NOT_STANDALONE
@@ -4171,20 +4173,23 @@ ac_fn_c_check_member "$LINENO" "struct dirent" "d_namelen" "ac_cv_member_struct_
 "
 if test "x$ac_cv_member_struct_dirent_d_namelen" = xyes; then :
 
-cat >>confdefs.h <<_ACEOF
-#define HAVE_STRUCT_DIRENT_D_NAMELEN 1
-_ACEOF
+$as_echo "#define HAVE_DIRENT_NAMELEN 1" >>confdefs.h
 
+else
+
+$as_echo "#define HAVE_DIRENT_NAMELEN 0" >>confdefs.h
 
 fi
+
 ac_fn_c_check_member "$LINENO" "struct dirent" "d_namlen" "ac_cv_member_struct_dirent_d_namlen" "#include <dirent.h>
 "
 if test "x$ac_cv_member_struct_dirent_d_namlen" = xyes; then :
 
-cat >>confdefs.h <<_ACEOF
-#define HAVE_STRUCT_DIRENT_D_NAMLEN 1
-_ACEOF
+$as_echo "#define HAVE_DIRENT_NAMLEN 1" >>confdefs.h
 
+else
+
+$as_echo "#define HAVE_DIRENT_NAMLEN 0" >>confdefs.h
 
 fi
 
