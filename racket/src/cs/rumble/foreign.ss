@@ -1276,11 +1276,11 @@
                              "destination" to)]
      [else
       (with-interrupts-disabled*
-       (let ([to (fx+ (cpointer*-address to) to-offset)])
+       (let ([to (+ (cpointer*-address to) to-offset)])
          (let loop ([to to] [len len])
            (unless (fx= len 0)
              (foreign-set! 'unsigned-8 to 0 byte)
-             (loop (fx+ to 1) (fx- len 1))))))])))
+             (loop (+ to 1) (fx- len 1))))))])))
 
 (define/who memset
   (case-lambda
