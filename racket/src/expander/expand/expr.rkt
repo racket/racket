@@ -31,7 +31,7 @@
 ;; ----------------------------------------
 
 ;; Common expansion for `lambda` and `case-lambda`
-(define (lambda-clause-expander s disarmed-s formals bodys ctx log-renames-tag)
+(define (lambda-clause-expander s disarmed-s formals bodys ctx)
   (define sc (new-scope 'local))
   (define phase (expand-context-phase ctx))
   ;; Parse and check formal arguments:
@@ -48,7 +48,7 @@
                      (env-extend env key (local-variable id))))
   (define sc-formals (add-scope formals sc))
   (define sc-bodys (for/list ([body (in-list bodys)]) (add-scope body sc)))
-  (log-expand ctx log-renames-tag sc-formals (datum->syntax #f sc-bodys))
+  (log-expand ctx 'lambda-renames sc-formals (datum->syntax #f sc-bodys))
   ;; Expand the function body:
   (define body-ctx (struct*-copy expand-context ctx
                                  [env body-env]
@@ -70,7 +70,7 @@
     (define-match m disarmed-s '(lambda formals body ...+))
     (define rebuild-s (keep-as-needed ctx s #:keep-for-parsed? #t))
     (define-values (formals body)
-      (lambda-clause-expander s disarmed-s (m 'formals) (m 'body) ctx 'lambda-renames))
+      (lambda-clause-expander s disarmed-s (m 'formals) (m 'body) ctx))
     (if (expand-context-to-parsed? ctx)
         (parsed-lambda rebuild-s formals body)
         (rebuild
@@ -113,7 +113,7 @@
        (log-expand ctx 'next)
        (define rebuild-clause (keep-as-needed ctx clause))
        (define-values (exp-formals exp-body)
-         (lambda-clause-expander s disarmed-s formals body ctx 'lambda-renames))
+         (lambda-clause-expander s disarmed-s formals body ctx))
        (if (expand-context-to-parsed? ctx)
            (list exp-formals exp-body)
            (rebuild rebuild-clause `[,exp-formals ,@exp-body]))))
