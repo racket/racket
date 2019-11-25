@@ -4175,10 +4175,6 @@ if test "x$ac_cv_member_struct_dirent_d_namelen" = xyes; then :
 
 $as_echo "#define HAVE_DIRENT_NAMELEN 1" >>confdefs.h
 
-else
-
-$as_echo "#define HAVE_DIRENT_NAMELEN 0" >>confdefs.h
-
 fi
 
 ac_fn_c_check_member "$LINENO" "struct dirent" "d_namlen" "ac_cv_member_struct_dirent_d_namlen" "#include <dirent.h>
@@ -4186,10 +4182,6 @@ ac_fn_c_check_member "$LINENO" "struct dirent" "d_namlen" "ac_cv_member_struct_d
 if test "x$ac_cv_member_struct_dirent_d_namlen" = xyes; then :
 
 $as_echo "#define HAVE_DIRENT_NAMLEN 1" >>confdefs.h
-
-else
-
-$as_echo "#define HAVE_DIRENT_NAMLEN 0" >>confdefs.h
 
 fi
 
@@ -4595,6 +4587,9 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+
+
 
 
 

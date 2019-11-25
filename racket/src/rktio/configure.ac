@@ -150,12 +150,10 @@ fi
 
 # Struct dirent
 AC_CHECK_MEMBER([struct dirent.d_namelen],
-                [AC_DEFINE(HAVE_DIRENT_NAMELEN, 1, [struct dirent has field namelen])],
-		[AC_DEFINE(HAVE_DIRENT_NAMELEN, 0, [struct dirent has NOT field namelen])],
+                [AC_DEFINE(HAVE_DIRENT_NAMELEN, 1, [struct dirent has field namelen])],,
 		[#include <dirent.h>])
 AC_CHECK_MEMBER([struct dirent.d_namlen],
-                [AC_DEFINE(HAVE_DIRENT_NAMLEN, 1, [struct dirent has field namlen])],
-		[AC_DEFINE(HAVE_DIRENT_NAMLEN, 0, [struct dirent has NOT field namlen])],
+                [AC_DEFINE(HAVE_DIRENT_NAMLEN, 1, [struct dirent has field namlen])],,
 		[#include <dirent.h>])
 
 AC_MSG_CHECKING([for getaddrinfo])
