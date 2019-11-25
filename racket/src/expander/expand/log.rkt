@@ -101,8 +101,7 @@
 
         ;; renames tokens **
         (lambda-renames . 2)
-        (let-renames    . any)  ;; renames consed by expander... sometimes
-        (letrec-syntaxes-renames . any)  ;; renames consed by expander... sometimes
+        (letX-renames   . 5)
         (block-renames  . 2)
 
         ;; prim tokens
