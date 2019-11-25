@@ -309,8 +309,9 @@
                              #:post-wrap
                              (lambda (s phase require-lift-ctx)
                                (wrap-form '#%require (add-scope s sc) phase))))
-  (namespace-visit-available-modules! (expand-context-namespace ctx)
-                                      (expand-context-phase ctx))
+  (without-expand-context
+   (namespace-visit-available-modules! (expand-context-namespace ctx)
+                                       (expand-context-phase ctx)))
   (define result-s (add-scope use-s sc))
   (log-expand ctx 'lift-require added-s use-s result-s)
   result-s)
