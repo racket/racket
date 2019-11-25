@@ -48,7 +48,7 @@
                      (env-extend env key (local-variable id))))
   (define sc-formals (add-scope formals sc))
   (define sc-bodys (for/list ([body (in-list bodys)]) (add-scope body sc)))
-  (log-expand ctx 'lambda-renames sc-formals (datum->syntax #f sc-bodys))
+  (log-expand ctx 'lambda-renames sc-formals sc-bodys)
   ;; Expand the function body:
   (define body-ctx (struct*-copy expand-context ctx
                                  [env body-env]
