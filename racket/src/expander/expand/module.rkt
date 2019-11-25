@@ -1444,40 +1444,6 @@
   (for/list ([lifted-defn (in-list lifted-defns)])
     (defn-extract-syntax lifted-defn)))
 
-(define (log-lifted-defns partial-body-ctx lifted-defns exp-body rest-bodys)
-  (log-expand...
-   partial-body-ctx
-   (lambda (obs)
-     (define s-lifted-defns (lifted-defns-extract-syntax lifted-defns))
-     (...log-expand obs ['rename-list (cons exp-body rest-bodys)] ['module-lift-loop s-lifted-defns])
-     ;; The old expander retried expanding the lifted definitions.
-     ;; We know that they immediately stop, so we don't do that here,
-     ;; but we simulate the observer events.
-     (for ([s-lifted-defn (in-list s-lifted-defns)])
-       (define-match m s-lifted-defn '(define-values _ ...))
-       (...log-expand obs
-                      ['next]
-                      ['visit s-lifted-defn]
-                      ['resolve (m 'define-values)]
-                      ['enter-prim s-lifted-defn]
-                      ['prim-stop]
-                      ['exit-prim/return s-lifted-defn]
-                      ['rename-one s-lifted-defn]
-                      ['enter-prim s-lifted-defn]
-                      ['prim-define-values]
-                      ['exit-prim s-lifted-defn]))
-     ;; A 'next, etc., to simulate retrying the expression that
-     ;; generated the lifts --- which we know must be a stop form,
-     ;; but we need to simulate the trip back around the loop:
-     (define-match m exp-body '(form-id . _))
-     (...log-expand obs
-                    ['next]
-                    ['visit exp-body]
-                    ['resolve (m 'form-id)]
-                    ['enter-prim exp-body]
-                    ['prim-stop]
-                    ['exit-prim/return exp-body]))))
-
 (define (log-defn-enter ctx defn)
   (log-expand...
    ctx
