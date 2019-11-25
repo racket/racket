@@ -1027,8 +1027,8 @@
       (unless no-lifts? (log-expand body-ctx 'next))
       (append
        lifted-requires
-       exp-lifted-defns
        exp-lifted-modules
+       exp-lifted-defns
        (cons exp-body
              (loop tail? rest-bodys)))])))
 
