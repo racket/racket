@@ -6,6 +6,13 @@
 ;; Count set bits for 30 bit number in 5 steps.
 ;; for 62 bit number in 6, for 8 bit numbers in 3
 
+(define-for-syntax lut29
+  #(#x0AAAAAAA
+    #x0CCCCCCC
+    #x10F0F0F0
+    #x1F00FF00
+    #x1FFF0000))
+
 (define-for-syntax lut30
   #(#x2AAAAAAA
     #x0CCCCCCC
@@ -41,9 +48,10 @@
             [bits (or bits 
                       ;; for portable bytecode, use a fixnum size tha
                       ;; always works:
-                      30)]
+                      29)]
             [lut
              (cond [(<= bits 8) lut8]
+                   [(<= bits 29) lut29]
                    [(<= bits 30) lut30]
                    [(<= bits 62) lut62]
                    [else (raise-syntax-error "bit width too big" stx #'bits0)])])
