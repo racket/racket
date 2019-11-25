@@ -1403,7 +1403,7 @@
    [(eq? mode 'atomic)
     (make-cpointer (make-bytevector size 0) #f)]
    [(eq? mode 'nonatomic)
-    (make-cpointer (#%make-vector (quotient size 8) 0) #f)]
+    (make-cpointer (#%make-vector (quotient size ptr-size-in-bytes) 0) #f)]
    [(eq? mode 'atomic-interior)
     ;; This is not quite the same as traditional Racket, because
     ;; a finalizer is associated with the cpointer (as opposed to
