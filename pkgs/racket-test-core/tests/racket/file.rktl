@@ -863,9 +863,15 @@
   (parameterize ([global-port-print-handler oldd])
      (test (void) print "hello" sp)
      (test (adding "hello") get-output-string sp))
+  (parameterize ([global-port-print-handler (lambda (v p [depth 0])
+                                              (test #t pair? (member depth '(0 1)))
+                                              (write 'changes-to-Y p))])
+    (test (void) print "hello" sp)
+    (parameterize ([print-as-expression #f])
+      (test (void) print "hello" sp))
+    (test (adding "YY") get-output-string sp))
   (test (void) print "hello" sp)
   (test (adding "\"hello\"") get-output-string sp)
-		
 
   (port-print-handler sp (lambda (v p) (oldd "Z" p) 5))
   (test (void) display "hello" sp)
@@ -922,6 +928,7 @@
   (port-write-handler p (lambda (x p)
                           (write-bytes #"W" p)))
   (port-print-handler p (lambda (x p [d 0])
+                          (test #t pair? (memq d '(0 1)))
                           (write-bytes #"P" p)))
 
   (display 'x p)

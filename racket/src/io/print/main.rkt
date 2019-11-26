@@ -119,19 +119,19 @@
   (set! do-global-print
         (lambda (who v o [quote-depth-in PRINT-MODE/UNQUOTED] [max-length #f])
           (define global-print (param))
-          (define quote-depth (if (print-as-expression) quote-depth-in WRITE-MODE))
           (cond
             [(eq? global-print default-value)
+             (define quote-depth (if (print-as-expression) quote-depth-in WRITE-MODE))
              (do-print who v o quote-depth max-length)]
             [(not max-length)
-             (global-print v o quote-depth)]
+             (global-print v o quote-depth-in)]
             [else
              ;; There's currently no way to communicate `max-length`
              ;; to the `global-print` function, but we should only get
              ;; here when `o` is a string port for errors, so write to
              ;; a fresh string port and truncate as needed.
              (define o2 (open-output-bytes))
-             (global-print v o2 quote-depth)
+             (global-print v o2 quote-depth-in)
              (define bstr (get-output-bytes o2))
              (if ((bytes-length bstr) . <= . max-length)
                  (unsafe-write-bytes who bstr o)
