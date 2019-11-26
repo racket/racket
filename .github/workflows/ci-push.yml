@@ -68,7 +68,7 @@ jobs:
         path: ../racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
-    <<: *.build-strategy    
+    <<: *build-strategy    
     needs: build-racketcgc
     
     env:
@@ -126,7 +126,7 @@ jobs:
         path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
-    <<: *.build-strategy
+    <<: *build-strategy
     needs: build-racketcgc
     
     env:
