@@ -442,6 +442,15 @@
   (struct s () #:transparent)
   (define x (s)) ; a shared value to use in the test
 
+  (struct s+ (v) #:transparent)
+  (struct sub s+ ())
+  (test-print/all (sub '(x))
+                  "#(struct:sub (x) ...)"
+                  "#(struct:sub (x) ...)"
+                  "#(struct:sub (x) ...)"
+                  "(sub '(x) ...)"
+                  "#(struct:sub (x) ...)")
+
   (parameterize ([print-graph #t])
   (for*/parameterize ([print-pair-curly-braces (in-list '(#t #f))]
                       [print-mpair-curly-braces (in-list '(#t #f))])

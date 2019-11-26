@@ -306,7 +306,7 @@
           (config-get config print-struct))
      (cond
        [(eq? mode PRINT-MODE/UNQUOTED)
-        (define l (vector->list (struct->vector v)))
+        (define l (vector->list (struct->vector v struct-dots)))
         (define alt-list-constructor
           ;; strip "struct:" from the first element of `l`:
           (string-append "(" (substring (symbol->string (car l)) 7)))
@@ -350,3 +350,5 @@
   (when (and (eq? mode WRITE-MODE)
              (not (config-get config print-unreadable)))
     (fail-unreadable who v)))
+
+(define struct-dots (unquoted-printing-string "..."))
