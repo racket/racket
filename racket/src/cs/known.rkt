@@ -68,6 +68,7 @@
 
   (command-line
    #:args (dir)
+   (printf "Checking primitive arity information\n")
    (parameterize ([current-directory dir])
      (define prim-knowns (get-prim-knowns))
      (define primitives (get-primitives))

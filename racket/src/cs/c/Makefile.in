@@ -470,8 +470,10 @@ macos-install-gracket:
 # ----------------------------------------
 # Check
 
+CHECK_BOOT = -O 'info@compiler/cm' -l- setup --boot $(srcdir)/../../setup-go.rkt $(builddir)/compiled/cs ignored $(builddir)/ignored.d
+
 check-racketcs:
-	./racketcs $(srcdir)/../known.rkt $(srcdir)/..
+	./racketcs $(CHECK_BOOT) $(srcdir)/../known.rkt $(srcdir)/..
 
 # ----------------------------------------
 # Reconfigure
