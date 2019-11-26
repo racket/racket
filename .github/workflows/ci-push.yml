@@ -190,11 +190,29 @@ jobs:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
         path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
 
-# Tests
-# Unfortunately Actions does not support atm yaml anchors
-# otherwise all the following jobs could be simplified
-# Note: the reason we cannot transform this into a matrix
-# build is because we cannot use variables in the needs keyword.
+  build-win:
+    runs-on: windows-latest
+
+    # According to
+    # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#windows-server-2019
+    # VS2019 is what is installed in the hosted runners:
+    #   Version: VisualStudio/16.3.6+29418.71
+    #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      working-directory: .\racket\src\worksp
+      shell: cmd
+      run: |
+        call msvcprep.bat x86_amd64
+        call build.bat
+        call ..\..\racket.exe csbuild.rkt
+
+  # Tests
+  # Unfortunately Actions does not support atm yaml anchors
+  # otherwise all the following jobs could be simplified
+  # Note: the reason we cannot transform this into a matrix
+  # build is because we cannot use variables in the needs keyword.
   test-cgc:
     strategy:
       fail-fast: false
