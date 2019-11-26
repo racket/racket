@@ -316,4 +316,4 @@ jobs:
           raco pkg install --auto racket-test
       - name: Run tests
         working-directory: pkgs/racket-test-core/tests/racket
-        run: for section in $SECTIONS; do racket -f quiet.rktl $section; done
+        run: for section in $TEST_SECTIONS; do racket -f quiet.rktl $section; done
