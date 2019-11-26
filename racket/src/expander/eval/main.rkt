@@ -248,7 +248,7 @@
      [else
       (case (core-form-sym disarmed-exp-s phase)
         [(begin)
-         (log-expand ctx 'prim-begin)
+         (log-expand ctx 'prim-begin disarmed-exp-s)
          (define-match m disarmed-exp-s '(begin e ...))
          ;; Map `loop` over the `e`s, but in the case of `eval`,
          ;; tail-call for last one:
@@ -275,7 +275,7 @@
             new-s]
            [else (begin-loop (m 'e))])]
         [(begin-for-syntax)
-         (log-expand tl-ctx 'prim-begin-for-syntax)
+         (log-expand tl-ctx 'prim-begin-for-syntax disarmed-exp-s)
          (define-match m disarmed-exp-s '(begin-for-syntax e ...))
          (define next-phase (add1 phase))
          (define next-ns (namespace->namespace-at-phase ns next-phase))

@@ -46,7 +46,7 @@
  'module
  (lambda (s ctx)
    (unless (eq? (expand-context-context ctx) 'top-level)
-     (log-expand ctx 'prim-module)
+     (log-expand ctx 'prim-module #f)
      (raise-syntax-error #f "allowed only at the top level" s))
    (performance-region
     ['expand 'module]
@@ -55,13 +55,13 @@
 (add-core-form!
  'module*
  (lambda (s ctx)
-   (log-expand ctx 'prim-module)
+   (log-expand ctx 'prim-module #f)
    (raise-syntax-error #f "illegal use (not in a module top-level)" s)))
 
 (add-core-form!
  '#%module-begin
  (lambda (s ctx)
-   (log-expand ctx 'prim-module-begin)
+   (log-expand ctx 'prim-module-begin #f)
    (unless (eq? (expand-context-context ctx) 'module-begin)
      (raise-syntax-error #f "not in a module-definition context" s))
    (unless (expand-context-module-begin-k ctx)
@@ -77,7 +77,7 @@
 (add-core-form!
  '#%declare
  (lambda (s ctx)
-   (log-expand ctx 'prim-declare)
+   (log-expand ctx 'prim-declare #f)
    ;; The `#%module-begin` expander handles `#%declare`
    (raise-syntax-error #f "not allowed outside of a module body" s)))
 
@@ -91,8 +91,8 @@
                        #:mpis-for-enclosing-reset [mpis-for-enclosing-reset #f]
                        ;; For cross-linklet inlining among submodules compiled together:
                        #:modules-being-compiled [modules-being-compiled (make-hasheq)])
-   (log-expand init-ctx 'prim-module)
    (define disarmed-s (syntax-disarm s))
+   (log-expand init-ctx 'prim-module disarmed-s)
    (define-match m disarmed-s '(module id:module-name initial-require body ...))
 
    (define rebuild-s (keep-as-needed init-ctx s #:keep-for-parsed? #t #:keep-for-error? #t))
@@ -751,14 +751,14 @@
        ;; Dispatch on form revealed by partial expansion
        (case (core-form-sym disarmed-exp-body phase)
          [(begin)
-          (log-expand partial-body-ctx 'prim-begin)
+          (log-expand partial-body-ctx 'prim-begin disarmed-exp-body)
           (define-match m disarmed-exp-body '(begin e ...))
           (define (track e) (syntax-track-origin e exp-body))
           (define spliced-bodys (append (map track (m 'e)) rest-bodys))
           (log-expand partial-body-ctx 'splice spliced-bodys)
           (loop tail? spliced-bodys)]
          [(begin-for-syntax)
-          (log-expand partial-body-ctx 'prim-begin-for-syntax)
+          (log-expand partial-body-ctx 'prim-begin-for-syntax disarmed-exp-body)
           (define-match m disarmed-exp-body '(begin-for-syntax e ...))
           (log-expand partial-body-ctx 'prepare-env)
           (define ct-m-ns (namespace->namespace-at-phase m-ns (add1 phase)))
@@ -777,7 +777,7 @@
            (semi-parsed-begin-for-syntax exp-body nested-bodys)
            (loop tail? rest-bodys))]
          [(define-values)
-          (log-expand partial-body-ctx 'prim-define-values)
+          (log-expand partial-body-ctx 'prim-define-values disarmed-exp-body)
           (define-match m disarmed-exp-body '(define-values (id ...) rhs))
           (define ids (remove-use-site-scopes (m 'id) partial-body-ctx))
           (check-no-duplicate-ids ids phase exp-body)
@@ -796,7 +796,7 @@
            (semi-parsed-define-values exp-body syms ids (m 'rhs))
            (loop tail? rest-bodys))]
          [(define-syntaxes)
-          (log-expand partial-body-ctx 'prim-define-syntaxes)
+          (log-expand partial-body-ctx 'prim-define-syntaxes disarmed-exp-body)
           (define-match m disarmed-exp-body '(define-syntaxes (id ...) rhs))
           (log-expand partial-body-ctx 'prepare-env)
           (prepare-next-phase-namespace partial-body-ctx)
@@ -839,7 +839,7 @@
                      parsed-body))
                 (loop tail? rest-bodys))]
          [(#%require)
-          (log-expand partial-body-ctx 'prim-require)
+          (log-expand partial-body-ctx 'prim-require disarmed-exp-body)
           (define ready-body (remove-use-site-scopes disarmed-exp-body partial-body-ctx))
           (define-match m ready-body '(#%require req ...))
           (parse-and-perform-requires! (m 'req) exp-body #:self self
@@ -851,13 +851,13 @@
           (cons exp-body
                 (loop tail? rest-bodys))]
          [(#%provide)
-          (log-expand partial-body-ctx 'prim-stop)
+          (log-expand partial-body-ctx 'prim-stop #f)
           ;; save for last pass
           (cons exp-body
                 (loop tail? rest-bodys))]
          [(module)
           ;; Submodule to parse immediately
-          (log-expand partial-body-ctx 'prim-submodule)
+          (log-expand partial-body-ctx 'prim-submodule #f)
           (define ready-body (remove-use-site-scopes exp-body partial-body-ctx))
           (define submod
             (expand-submodule ready-body self partial-body-ctx
@@ -870,11 +870,11 @@
                 (loop tail? rest-bodys))]
          [(module*)
           ;; Submodule to save for after this module
-          (log-expand partial-body-ctx 'prim-stop)
+          (log-expand partial-body-ctx 'prim-stop #f)
           (cons exp-body
                 (loop tail? rest-bodys))]
          [(#%declare)
-          (log-expand partial-body-ctx 'prim-declare)
+          (log-expand partial-body-ctx 'prim-declare disarmed-exp-body)
           (define-match m disarmed-exp-body '(#%declare kw ...))
           (for ([kw (in-list (m 'kw))])
             (unless (keyword? (syntax-e kw))
@@ -891,7 +891,7 @@
                 (loop tail? rest-bodys))]
          [else
           ;; save expression for next pass
-          (log-expand partial-body-ctx 'prim-stop)
+          (log-expand partial-body-ctx 'prim-stop #f)
           (cons exp-body
                 (loop tail? rest-bodys))]))])))
 
@@ -1101,7 +1101,7 @@
        (define disarmed-body (syntax-disarm (car bodys)))
        (case (core-form-sym disarmed-body phase)
          [(#%provide)
-          (log-expand* ctx ['enter-prim (car bodys)] ['prim-provide])
+          (log-expand* ctx ['enter-prim (car bodys)] ['prim-provide disarmed-body])
           (define-match m disarmed-body '(#%provide spec ...))
           (define-values (track-stxes specs)
             (parse-and-expand-provides! (m 'spec) (car bodys)
@@ -1341,7 +1341,7 @@
                           #:declared-submodule-names declared-submodule-names
                           #:compiled-submodules compiled-submodules
                           #:modules-being-compiled modules-being-compiled)
-  (log-expand* ctx ['enter-prim s] [(if is-star? 'prim-submodule* 'prim-submodule)])
+  (log-expand* ctx ['enter-prim s] [(if is-star? 'prim-submodule* 'prim-submodule) #f])
 
   ;; Register name and check for duplicates
   (define-match m s '(module name . _))
@@ -1454,7 +1454,7 @@
                     ['visit s-defn]
                     ['resolve (m 'define-values)]
                     ['enter-prim s-defn]
-                    ['prim-define-values]))))
+                    ['prim-define-values #f]))))
 
 (define (log-defn-exit ctx defn exp-rhs)
   (log-expand...

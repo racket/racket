@@ -22,10 +22,10 @@
 (add-core-form!
  'define-values
  (lambda (s ctx)
-   (log-expand ctx 'prim-define-values)
+   (define disarmed-s (syntax-disarm s))
+   (log-expand ctx 'prim-define-values disarmed-s)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not allowed in an expression position" s))
-   (define disarmed-s (syntax-disarm s))
    (define-match m s '(define-values (id ...) rhs))
    (define-values (ids syms) (as-expand-time-top-level-bindings (m 'id) s ctx))
    (define exp-rhs (expand (m 'rhs) (as-named-context (as-expression-context ctx) ids)))
@@ -38,10 +38,10 @@
 (add-core-form!
  'define-syntaxes
  (lambda (s ctx)
-   (log-expand ctx 'prim-define-syntaxes)
+   (define disarmed-s (syntax-disarm s))
+   (log-expand ctx 'prim-define-syntaxes disarmed-s)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not in a definition context" s))
-   (define disarmed-s (syntax-disarm s))
    (define-match m disarmed-s '(define-syntaxes (id ...) rhs))
    (define-values (ids syms) (as-expand-time-top-level-bindings (m 'id) s ctx))
    (log-expand ctx 'prepare-env)
@@ -55,7 +55,7 @@
 (add-core-form!
  'begin-for-syntax
  (lambda (s ctx)
-   (log-expand ctx 'prim-begin-for-syntax)
+   (log-expand ctx 'prim-begin-for-syntax #f)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "not in a definition context" s))
    (define-match m s '(begin-for-syntax form ...))
@@ -97,10 +97,10 @@
 (add-core-form!
  '#%require
  (lambda (s ctx)
-   (log-expand ctx 'prim-require)
+   (define disarmed-s (syntax-disarm s))
+   (log-expand ctx 'prim-require disarmed-s)
    (unless (eq? (expand-context-context ctx) 'top-level)
      (raise-syntax-error #f "allowed only in a module or the top level" s))
-   (define disarmed-s (syntax-disarm s))
    (define-match m disarmed-s '(#%require req ...))
    (define sc (new-scope 'macro)) ; to hide bindings
    (define ns (expand-context-namespace ctx))
@@ -125,5 +125,5 @@
 (add-core-form!
  '#%provide
  (lambda (s ctx)
-   (log-expand ctx 'prim-provide)
+   (log-expand ctx 'prim-provide #f)
    (raise-syntax-error #f "not allowed outside of a module body" s)))
