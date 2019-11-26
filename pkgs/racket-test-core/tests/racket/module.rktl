@@ -3144,13 +3144,15 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test #t namespace? (module->namespace ''lang-is-imports-uses-local-expand)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check order of checking for redefinition of a constant
 
-(test '(1 2 3)
-      call-with-continuation-prompt
-      (lambda ()
-        (eval (quote (begin (abort-current-continuation (default-continuation-prompt-tag) 1 2 3) 10))))
-      (default-continuation-prompt-tag)
-      list)
+(let ([e '(module defines-a-spider-struct-type racket/base
+            (struct spider (legs)))])
+  (eval e)
+  (namespace-require ''defines-a-spider-struct-type)
+  (err/rt-test (eval e)
+               exn:fail:contract:variable?
+               #rx"struct:spider"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

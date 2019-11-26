@@ -243,8 +243,7 @@
           (cond
            [(null? accum-exprs) '((void))]
            [else (reverse accum-exprs)])]
-         [else (append (reverse accum-exprs)
-                       set-vars)])]
+         [else (reverse (append set-vars accum-exprs))])]
        [else
         (define form (car l))
         (define schemified (schemify form
