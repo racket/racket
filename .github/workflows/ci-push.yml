@@ -11,6 +11,9 @@ on: [push]
           
   runs-on: ${{ matrix.os }}
 
+  env:
+    RACKET_EXTRA_CONFIGURE_ARGS: ""
+
 jobs:
   
 # Build jobs
@@ -19,9 +22,6 @@ jobs:
 
   build-racketcgc:
     <<: *build-strategy
-
-    env:
-      RACKET_EXTRA_CONFIGURE_ARGS: ""
     
     steps:
     - uses: actions/checkout@v1
@@ -70,9 +70,6 @@ jobs:
   build-racket3m:
     <<: *build-strategy    
     needs: build-racketcgc
-    
-    env:
-      RACKET_EXTRA_CONFIGURE_ARGS: ""
     
     steps:
     - uses: actions/checkout@v1
@@ -128,10 +125,7 @@ jobs:
   build-racketcs:
     <<: *build-strategy
     needs: build-racketcgc
-    
-    env:
-      RACKET_EXTRA_CONFIGURE_ARGS: ""
-      
+          
     steps:
     - uses: actions/checkout@v1
       with:
