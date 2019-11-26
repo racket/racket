@@ -14,6 +14,17 @@ on: [push]
   env:
     RACKET_EXTRA_CONFIGURE_ARGS: ""
 
+.build-setup-extra-flags: &build-setup-extra-flags
+  - name: Setup OS specific configure args
+    if:  runner.os == 'macOS'
+    run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
+  - name: Setup cify if enabled
+    if: matrix.cify == 'cify'
+    run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+  - name: Setup cify if disabled
+    if: matrix.cify == 'nocify'
+    run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+
 jobs:
   
 # Build jobs
@@ -27,15 +38,7 @@ jobs:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 100
-    - name: Setup OS specific configure args
-      if:  runner.os == 'macOS'
-      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
-    - name: Setup cify if enabled
-      if: matrix.cify == 'cify'
-      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
-    - name: Setup cify if disabled
-      if: matrix.cify == 'nocify'
-      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    <<: *build-setup-extra-flags
     - name: Configuring Racket CGC
       working-directory: ./racket/src
       run: >
@@ -75,15 +78,7 @@ jobs:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 100
-    - name: Setup OS specific configure args
-      if:  runner.os == 'macOS'
-      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
-    - name: Setup cify if enabled
-      if: matrix.cify == 'cify'
-      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
-    - name: Setup cify if disabled
-      if: matrix.cify == 'nocify'
-      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    <<: *build-setup-extra-flags
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
