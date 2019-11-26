@@ -419,8 +419,8 @@
      (if who (string-append (symbol->string who) ": ") "")
      "result arity mismatch;\n"
      " expected number of values not received\n"
-     "  received: " (number->string (length args)) "\n" 
-     "  expected: " (number->string num-expected-args)
+     "  expected: " (number->string num-expected-args) "\n"
+     "  received: " (number->string (length args))
      (or where "")
      (arguments->context-string args))
     (current-continuation-marks))))

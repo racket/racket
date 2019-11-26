@@ -244,9 +244,17 @@
         (apply proc args)))]))
 
 (define (make-default-abort-handler tag)
-  (lambda (abort-thunk)
+  (case-lambda
+   [(abort-thunk)
     (check 'default-continuation-prompt-handler (procedure-arity-includes/c 0) abort-thunk)
-    (call-with-continuation-prompt abort-thunk tag #f)))
+    (call-with-continuation-prompt abort-thunk tag #f)]
+   [args
+    ;; report arity error as result-arity error
+    (apply raise-result-arity-error
+           'call-with-continuation-prompt
+           1
+           "\n  in: application of default prompt handler"
+           args)]))
 
 (define (resume-metacontinuation results)
   ;; pop a metacontinuation frame

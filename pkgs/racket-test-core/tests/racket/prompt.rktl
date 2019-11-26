@@ -669,5 +669,21 @@
       list)
 
 ;;----------------------------------------
+;; Check error message as "result" or not
+
+(err/rt-test (call-with-continuation-prompt (lambda () (abort-current-continuation (default-continuation-prompt-tag))))
+             exn:fail:contract:arity?
+             #rx"result arity mismatch")
+(err/rt-test (call-with-continuation-prompt (lambda () (abort-current-continuation (default-continuation-prompt-tag)))
+                                            (default-continuation-prompt-tag))
+             exn:fail:contract:arity?
+             #rx"result arity mismatch")
+(err/rt-test (call-with-continuation-prompt (lambda () (abort-current-continuation (default-continuation-prompt-tag)))
+                                            (default-continuation-prompt-tag)
+                                            (lambda (x) x))
+             exn:fail:contract:arity?
+             #rx": arity mismatch")
+
+;;----------------------------------------
 
 (report-errs)
