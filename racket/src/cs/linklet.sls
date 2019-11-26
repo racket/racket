@@ -1074,10 +1074,11 @@
   ;; --------------------------------------------------
 
   (define module-prompt-handler
-    (lambda (arg)
-      (abort-current-continuation
+    (lambda args
+      (apply
+       abort-current-continuation
        (default-continuation-prompt-tag)
-       arg)))
+       args)))
 
   (define call-with-module-prompt
     (case-lambda

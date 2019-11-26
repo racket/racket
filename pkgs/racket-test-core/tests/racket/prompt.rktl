@@ -659,5 +659,15 @@
                exn:fail:contract:continuation?))
 
 ;;----------------------------------------
+;; Make sure prompt at top level can propagate multiple values
+
+(test '(1 2 3)
+      call-with-continuation-prompt
+      (lambda ()
+        (eval (quote (begin (abort-current-continuation (default-continuation-prompt-tag) 1 2 3) 10))))
+      (default-continuation-prompt-tag)
+      list)
+
+;;----------------------------------------
 
 (report-errs)

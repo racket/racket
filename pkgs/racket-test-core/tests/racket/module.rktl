@@ -3145,4 +3145,13 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test '(1 2 3)
+      call-with-continuation-prompt
+      (lambda ()
+        (eval (quote (begin (abort-current-continuation (default-continuation-prompt-tag) 1 2 3) 10))))
+      (default-continuation-prompt-tag)
+      list)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
