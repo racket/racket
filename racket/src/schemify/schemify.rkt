@@ -224,7 +224,7 @@
     (let loop ([l l] [in-mut-l l] [accum-exprs null] [accum-ids null] [knowns knowns])
       (define mut-l (update-mutated-state! l in-mut-l mutated))
       (define (make-set-variables)
-        (for/list ([id (in-wrap-list accum-ids)]
+        (for/list ([id (in-list accum-ids)]
                    #:when (hash-ref exports (unwrap id) #f))
           (make-set-variable id exports knowns mutated)))
       (define (make-expr-defns es)
@@ -284,22 +284,22 @@
             schemified
             (let id-loop ([ids ids] [accum-exprs null] [accum-ids accum-ids])
               (cond
-                [(wrap-null? ids) (if next-k
-                                      (next-k accum-exprs accum-ids next-knowns)
-                                      (loop (wrap-cdr l) mut-l accum-exprs accum-ids next-knowns))]
+                [(null? ids) (if next-k
+                                 (next-k accum-exprs accum-ids next-knowns)
+                                 (loop (cdr l) mut-l accum-exprs accum-ids next-knowns))]
                 [(or (or for-jitify? for-cify?)
-                     (via-variable-mutated-state? (hash-ref mutated (unwrap (wrap-car ids)) #f)))
-                 (define id (unwrap (wrap-car ids)))
+                     (via-variable-mutated-state? (hash-ref mutated (unwrap (car ids)) #f)))
+                 (define id (unwrap (car ids)))
                  (cond
                    [(hash-ref exports id #f)
-                    (id-loop (wrap-cdr ids)
+                    (id-loop (cdr ids)
                              (cons (make-set-variable id exports knowns mutated)
                                    accum-exprs)
                              accum-ids)]
                    [else
-                    (id-loop (wrap-cdr ids) accum-exprs accum-ids)])]
+                    (id-loop (cdr ids) accum-exprs accum-ids)])]
                 [else
-                 (id-loop (wrap-cdr ids) accum-exprs (cons (wrap-car ids) accum-ids))])))))
+                 (id-loop (cdr ids) accum-exprs (cons (car ids) accum-ids))])))))
         ;; For the case when the right-hand side might capture a
         ;; continuation or return multiple times, so we need a prompt.
         ;; The `variable` records are set within the prompt, while
@@ -315,7 +315,7 @@
              [no-prompt?
               (cons
                schemified
-               (loop (wrap-cdr l) mut-l null ids knowns))]
+               (loop (cdr l) mut-l null ids knowns))]
              [else
               (define expr
                 `(call-with-module-prompt
@@ -332,7 +332,7 @@
                (if for-jitify?
                    expr
                    (make-expr-defn expr))
-               (append defns (loop (wrap-cdr l) mut-l null null knowns)))])))
+               (append defns (loop (cdr l) mut-l null null knowns)))])))
         ;; Dispatch on the schemified form, distinguishing definitions
         ;; from expressions:
         (match schemified
@@ -356,7 +356,7 @@
                             (simple? rhs prim-knowns knowns imports mutated simples)))
                      (let values-loop ([ids ids] [rhss rhss] [accum-exprs accum-exprs] [accum-ids accum-ids] [knowns knowns])
                        (cond
-                         [(null? ids) (loop (wrap-cdr l) mut-l accum-exprs accum-ids knowns)]
+                         [(null? ids) (loop (cdr l) mut-l accum-exprs accum-ids knowns)]
                          [else
                           (define id (car ids))
                           (define rhs (car rhss))
@@ -380,14 +380,14 @@
              [`,_
               (cond
                 [(simple? #:pure? #f schemified prim-knowns knowns imports mutated simples)
-                 (loop (wrap-cdr l) mut-l (cons schemified accum-exprs) accum-ids knowns)]
+                 (loop (cdr l) mut-l (cons schemified accum-exprs) accum-ids knowns)]
                 [else
                  ;; In case `schemified` triggers an error, sync exported variables
                  (define set-vars (make-set-variables))
                  (define expr (if no-prompt?
                                   schemified
                                   `(call-with-module-prompt (lambda () ,schemified))))
-                 (loop (wrap-cdr l) mut-l (cons expr (append set-vars accum-exprs)) null knowns)])])])])))
+                 (loop (cdr l) mut-l (cons expr (append set-vars accum-exprs)) null knowns)])])])])))
   ;; Return both schemified and known-binding information, where
   ;; the later is used for cross-linklet optimization
   (values (add-extra-variables schemified) final-knowns mutated))
@@ -556,7 +556,7 @@
                 idss mutated for-cify?
                 `(letrec* ,(apply
                             append
-                            (for/list ([ids (in-wrap-list idss)]
+                            (for/list ([ids (in-list idss)]
                                        [rhs (in-list rhss)])
                               (let ([rhs (schemify rhs 'fresh)])
                                 (cond
@@ -696,24 +696,24 @@
                  ;; Try to line up `formal-args` with `exps`
                  (let loop ([formal-args formal-args] [args exps] [binds '()])
                    (cond
-                     [(wrap-null? formal-args)
-                      (and (wrap-null? args)
+                     [(null? formal-args)
+                      (and (null? args)
                            (schemify/knowns knowns
                                             inline-fuel
                                             wcm-state
                                             `(let-values ,(reverse binds) . ,bodys)))]
                      [(null? args) #f]
-                     [(not (wrap-pair? formal-args))
+                     [(not (pair? formal-args))
                       (loop '() '() (cons (list (list formal-args)
-                                                (if (wrap-null? args)
+                                                (if (null? args)
                                                     ''()
                                                     (cons 'list args)))
                                           binds))]
                      [else
-                      (loop (wrap-cdr formal-args)
-                            (wrap-cdr args)
-                            (cons (list (list (wrap-car formal-args))
-                                        (wrap-car args))
+                      (loop (cdr formal-args)
+                            (cdr args)
+                            (cons (list (list (car formal-args))
+                                        (car args))
                                   binds))]))]
                 [`(case-lambda [,formal-args ,bodys ...] . ,rest)
                  (or (left-left-lambda-convert `(lambda ,formal-args . ,bodys) inline-fuel)
