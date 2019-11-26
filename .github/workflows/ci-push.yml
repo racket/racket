@@ -2,7 +2,7 @@ name: CI
 
 on: [push]
 
-.build-strategy:
+.build-strategy: &build-strategy
   strategy:
     fail-fast: false
     matrix:
@@ -18,7 +18,7 @@ jobs:
 # component finishes building.
 
   build-racketcgc:
-    <<: *.build-strategy
+    <<: *build-strategy
 
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
