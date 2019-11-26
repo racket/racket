@@ -608,20 +608,28 @@
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]
-                                                  [path (source-file-descriptor-path (source-object-sfd src))])
+                                                  [path (convert-source-file-descriptor-path
+                                                         (source-file-descriptor-path (source-object-sfd src)))])
                                              (if (source-object-line src)
                                                  (values path
                                                          (source-object-line src)
-                                                         (source-object-column src))
+                                                         (source-object-column src)
+                                                         (source-object-bfp src)
+                                                         (source-object-efp src))
                                                  (values path
-                                                         (source-object-bfp src)))))
+                                                         (source-object-bfp src)
+                                                         (source-object-efp src)))))
                          (case-lambda
                           [() #f]
-                          [(path line col) (|#%app| srcloc path line (sub1 col) #f #f)]
-                          [(path pos) (|#%app| srcloc path #f #f (add1 pos) #f)])))])
+                          [(path line col pos end) (|#%app| srcloc path line (sub1 col) (add1 pos) (- end pos))]
+                          [(path pos end) (|#%app| srcloc path #f #f (add1 pos) (- end pos))])))])
         (if (or name loc)
             (cons (cons name loc) (loop (cdr l) ls))
             (loop (cdr l) ls)))])))
+
+(define convert-source-file-descriptor-path (lambda (s) s))
+(define (set-convert-source-file-descriptor-path! proc)
+  (set! convert-source-file-descriptor-path proc))
 
 (define (default-error-display-handler msg v)
   (eprintf "~a" msg)
