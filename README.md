@@ -6,9 +6,8 @@ organization](https://github.com/racket).
 Quick Start
 -----------
 
-Pre-built versions of Racket for a variety of operating systems and
-architectures, as well as convienient source distributions are
-available at
+ Racket is a general-purpose programming language as well as the world’s first 
+ ecosystem for language-oriented programming. This Racket Github Repository contains the source code for the core of Racket plus some related packages.The rest of the Racket distribution source code is in other repositories, mostly under the Racket GitHub organization.
 
   [https://download.racket-lang.org](https://download.racket-lang.org)
 
