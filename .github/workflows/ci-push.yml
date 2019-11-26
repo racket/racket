@@ -190,3 +190,130 @@ jobs:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
         path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
 
+# Tests
+  test-cgc:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+        cify: [cify, nocify]
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-racketcgc
+
+    # These sections were generated from pkgs/racket-test-core/tests/racket with
+    # egrep -R "\(Section '" * | cut -d ':' -f 1 | sed ':a;N;$!ba;s/\n/ /g'
+    #
+    # Sections places and generators have been removed due to flakiness
+    # See https://github.com/racket/racket/issues/2930
+    env:
+      TEST_SECTIONS: async-channel.rktl \
+                     basic.rktl \
+		     boundmap-test.rktl \
+		     bytes.rktl \
+		     chaperone.rktl \
+		     cmdline.rktl \
+		     cm.rktl \
+		     collects.rktl \
+		     contmark.rktl \
+		     control.rktl \
+		     cstruct.rktl \
+		     date.rktl \
+		     deep.rktl \
+		     dict.rktl \
+		     expand.rktl \
+		     expobs.rktl \
+		     extflonum.rktl \
+		     fasl.rktl \
+		     filelib.rktl \
+		     file.rktl \
+		     fixnum.rktl \
+		     flonum.rktl \
+		     foreign-test.rktl \
+		     for.rktl \
+		     function.rktl \
+		     generator.rktl \
+		     hash.rktl \
+		     id-set-test.rktl \
+		     id-table-test.rktl \
+		     jitinline.rktl \
+		     letrec.rktl \
+		     list.rktl \
+		     logger.rktl \
+		     macro.rktl \
+		     math.rktl \
+		     moddep.rktl \
+		     modprot.rktl \
+		     module-reader.rktl \
+		     module.rktl \
+		     name.rktl \
+		     namespac.rktl \
+		     number.rktl \
+		     object.rktl \
+		     optimize.rktl \
+		     pack.rktl \
+		     param.rktl \
+		     pathlib.rktl \
+		     path.rktl \
+		     place.rktl \
+		     portlib.rktl \
+		     port.rktl \
+		     pretty.rktl \
+		     print.rktl \
+		     procs.rktl \
+		     prompt.rktl \
+		     read.rktl \
+		     readtable.rktl \
+		     resource.rktl \
+		     rx.rktl \
+		     sandbox.rktl \
+		     sequence.rktl \
+		     serialize.rktl \
+		     set.rktl \
+		     setup.rktl \
+		     shared.rktl \
+		     srcloc.rktl \
+		     stream.rktl \
+		     string.rktl \
+		     struct.rktl \
+		     stxparam.rktl \
+		     stx.rktl \
+		     submodule.rktl \
+		     subprocess.rktl \
+		     sync.rktl \
+		     syntaxlibs.rktl \
+		     syntax.rktl \
+		     thread.rktl \
+		     trace.rktl \
+		     trait.rktl \
+		     udp.rktl \
+		     unicode.rktl \
+		     uni-norm.rktl \
+		     unsafe.rktl \
+		     vector.rktl \
+		     version.rktl \
+		     will.rktl
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/download-artifact@master
+        with:
+          name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
+          path: ../
+      - name: Untar
+        working-directory: ../
+        run: tar -xvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+      - name: Extend PATH with Racket executable
+        working-directory: ../
+        run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
+      - name: Check for Racket
+        run: racket --version
+      - name: Install catalog and required packages
+        run: |
+          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
+          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
+          raco pkg install --auto racket-test
+      - name: Run tests
+        working-directory: pkgs/racket-test-core/tests/racket
+        run: for section in $SECTIONS; do racket -f quiet.rktl $section; done
