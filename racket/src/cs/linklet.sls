@@ -1187,4 +1187,5 @@
   (set-foreign-eval! eval/foreign)
 
   (enable-arithmetic-left-associative #t)
-  (expand-omit-library-invocations #t))
+  (expand-omit-library-invocations #t)
+  (enable-error-source-expression #f))
