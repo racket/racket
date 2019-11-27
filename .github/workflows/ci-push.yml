@@ -207,6 +207,7 @@ jobs:
     #
     # Sections places and generators have been removed due to flakiness
     # See https://github.com/racket/racket/issues/2930
+    # Section(expand) removed because of missing mz-tests.rktl file
     env:
       TEST_SECTIONS: async-channel.rktl
                      basic.rktl
@@ -222,7 +223,6 @@ jobs:
                      date.rktl
                      deep.rktl
                      dict.rktl
-                     expand.rktl
                      expobs.rktl
                      extflonum.rktl
                      fasl.rktl
