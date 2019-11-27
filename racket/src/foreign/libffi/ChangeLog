@@ -310,7 +310,7 @@ Date:   Sat Mar 22 10:00:53 2014 -0700
     win32.S: Add handling for position-independent code on Darwin
     
     Newer versions of Darwin generate the necessary stub functions
-    automatically and just need a call instruction, but accomodating older
+    automatically and just need a call instruction, but accommodating older
     versions as well requires adding the stub.
 
 commit ef5890ebafb7cd2fbf9acf161edb55fe1382871c

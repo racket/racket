@@ -14,7 +14,7 @@
 ;; The `string->number` parser is responsible for handling Racket's
 ;; elaborate number syntax (mostly inherited from Scheme). It relies
 ;; on a host-system `string->number` only for generating
-;; psuedo-extflonums when flonums aren't really supported. Otherwise,
+;; pseudo-extflonums when flonums aren't really supported. Otherwise,
 ;; the parser here performs all checking and arithmetic that the
 ;; reader needs.
 

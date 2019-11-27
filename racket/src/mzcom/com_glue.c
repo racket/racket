@@ -438,7 +438,7 @@ static STDMETHODIMP GetConnectionPointContainer(IConnectionPoint *com_obj, IConn
 // app object from which we can request the app to give us its IMzObjEvents. All of
 // this convoluted stuff is a combination of poor pre-planning by Microsoft
 // programmers when they designed this stuff, as well as the colossal blunder of
-// designing COM to accomodate the limitations of early, primitive editions of
+// designing COM to accommodate the limitations of early, primitive editions of
 // Visual Basic.
 //
 // The second arg passed here is some app object whose QueryInterface function

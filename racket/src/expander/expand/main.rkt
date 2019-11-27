@@ -177,7 +177,7 @@
          (cond
            [(transformer? t)
             (define fail-non-transformer
-              ;; Make sure a rename transformer eventualy leads to syntax
+              ;; Make sure a rename transformer eventually leads to syntax
               (and (rename-transformer? t)
                    (lambda ()
                      (raise-syntax-implicit-error s sym trigger-id ctx))))
@@ -359,8 +359,8 @@
 
 ;; Given a macro transformer `t`, apply it --- adding appropriate
 ;; scopes to represent the expansion step; the `insp-of-t` inspector
-;; is the inspector of the module that defines `t`, which gives it
-;; priviledge for `syntax-arm` and similar
+;; is the inspector of the module that defines `t`, which gives its
+;; privilege for `syntax-arm` and similar
 (define (apply-transformer t insp-of-t s id ctx binding
                            #:origin-id [origin-id #f])
   (performance-region

@@ -273,7 +273,7 @@
   (unless (vector? vec)
     (raise-argument-error 'vector-sort "vector?" vec))
   
-  ;; calulate end if not provided
+  ;; calculate end if not provided
   (let ([end (or end (vector-length vec))])
     (perform-common-sort-arg-checks vector-sort vec less? start end getkey)
     (if getkey
@@ -290,7 +290,7 @@
                           "(and/c vector? (not/c immutable?))"
                           vec))
   
-  ;; calulate end if not provided
+  ;; calculate end if not provided
   (let ([end (or end (vector-length vec))])
     (perform-common-sort-arg-checks vector-sort! vec less? start end getkey)
     (if getkey

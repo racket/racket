@@ -17,7 +17,7 @@ interface.}
 @margin-note{The @racketmodname[ffi/com] library is based on the
 @deftech{MysterX} library by Paul Steckler. MysterX is included with
 Racket but deprecated, and it will be replaced in the next version
-with a partial compability library that redirects to this one.}
+with a partial compatibility library that redirects to this one.}
 
 @; ----------------------------------------
 

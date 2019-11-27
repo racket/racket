@@ -547,7 +547,7 @@
   (test #f string-contains? "" "racket")
   (test #f string-contains? "racket" "a..e")
   (test #t string-contains? "ra..et" "a..e")
-  ; string-contains? sometimes uses diferent code paths for short and long string,
+  ; string-contains? sometimes uses different code paths for short and long string,
   ; so add some long test too.
   (test #t string-contains? "racket012345678901234567890123456789012345678901234567890123456789racket"
                             "racket012345678901234567890123456789012345678901234567890123456789racket")

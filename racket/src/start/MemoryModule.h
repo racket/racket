@@ -139,7 +139,7 @@ BOOL MemoryDefaultFree(LPVOID, SIZE_T, DWORD, void *);
 
 /**
  * Default implementation of CustomLoadLibraryFunc that calls LoadLibraryA
- * internally to load an additional libary.
+ * internally to load an additional library.
  *
  * This is the default as used by MemoryLoadLibrary.
  */
@@ -155,7 +155,7 @@ FARPROC MemoryDefaultGetProcAddress(HCUSTOMMODULE, LPCSTR, void *);
 
 /**
  * Default implementation of CustomFreeLibraryFunc that calls FreeLibrary
- * internally to release an additional libary.
+ * internally to release an additional library.
  *
  * This is the default as used by MemoryLoadLibrary.
  */

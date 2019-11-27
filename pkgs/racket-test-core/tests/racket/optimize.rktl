@@ -914,7 +914,7 @@
 (test-comp '(lambda (w) (cons))
            '(lambda (w) (cons) (k:random)))
 
-; test for unary aplications
+; test for unary applications
 (test-comp -1
            '(- 1))
 (test-comp '(lambda (f) (begin (f) -1))
@@ -1205,7 +1205,7 @@
               x)
            '3)
 
-;; The compiler doens't currently recognize the expansion of `quote-syntax`
+;; The compiler doesn't currently recognize the expansion of `quote-syntax`
 #;
 (test-comp '(if (lambda () 10)
                 'ok
@@ -2161,7 +2161,7 @@
               (void 10))
            '(module m racket/base))
 
-;; The compiler doens't currently recognize the expansion of `quote-syntax`
+;; The compiler doesn't currently recognize the expansion of `quote-syntax`
 #;
 (test-comp '(module m racket/base
               (void (quote-syntax unused!)))
@@ -4727,7 +4727,7 @@
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Transform call-with-values to direct aplication:
+;; Transform call-with-values to direct application:
 (test-comp '(lambda (f) (f 7))
            '(lambda (f) (call-with-values (lambda () 7) (lambda (x) (f x)))))
 (test-comp '(lambda () (car 7))
@@ -5254,7 +5254,7 @@
                    list)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Originally: make sure compiler isn't too agressive for the
+;; Originally: make sure compiler isn't too aggressive for the
 ;; validator in terms of typed arguments:
 
 (let ([m '(module m racket/base

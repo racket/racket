@@ -4,7 +4,7 @@
 
 ;; Simplified version of Jon Zeppieri's intmap
 ;; implementation for Racket-on-Chez.
-;; This one always has fixnum keys, doens't have
+;; This one always has fixnum keys, doesn't have
 ;; to hash, doesn't have to deal with collisions,
 ;; and doesn't need a wrapper to distinguish
 ;; the type and record the comparison function.

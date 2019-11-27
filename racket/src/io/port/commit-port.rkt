@@ -40,7 +40,7 @@
         #t]
        [else
         ;; General case to support blocking and potentially multiple
-        ;; commiting threads:
+        ;; committing threads:
         (unless commit-manager
           (set! commit-manager (make-commit-manager)))
         (commit-manager-wait commit-manager progress-evt ext-evt finish)]))]

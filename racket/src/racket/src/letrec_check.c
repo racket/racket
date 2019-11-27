@@ -140,7 +140,7 @@ typedef struct Scheme_Deferred_Expr {
      only need to process it once */
   int done;
 
-  /* the expression that has been deferred -- usally a Scheme_Lambda,
+  /* the expression that has been deferred -- usually a Scheme_Lambda,
      but can be a Scheme_IR_Local for propagation */
   Scheme_Object *expr;
 

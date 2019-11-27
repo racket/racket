@@ -2091,7 +2091,7 @@
                                                                    ;; Wait until the other end has read:
                                                                    (write-bytes-avail #"noise" (current-output-port))
                                                                    (close-output-port (current-output-port))
-                                                                   ;; Drain the OS-level input pipe, suceeding if we
+                                                                   ;; Drain the OS-level input pipe, succeeding if we
                                                                    ;; find a "!".
                                                                    (let loop ()
                                                                      (define b (read-byte (current-input-port)))

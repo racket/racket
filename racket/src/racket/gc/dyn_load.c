@@ -959,7 +959,7 @@ void GC_register_dynamic_libraries()
       /* Get info about next shared library */
         status = shl_get(index, &shl_desc);
 
-      /* Check if this is the end of the list or if some error occured */
+      /* Check if this is the end of the list or if some error occurred */
         if (status != 0) {
 #	 ifdef GC_HPUX_THREADS
 	   /* I've seen errno values of 0.  The man page is not clear	*/

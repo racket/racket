@@ -1267,7 +1267,7 @@ Scheme_Object *scheme_linklet_run_finish(Scheme_Linklet* linklet, Scheme_Instanc
         /* Double-check that the definition-installing part of the
            continuation was not skipped. Otherwise, the compiler would
            not be able to assume that a variable reference that is
-           lexically later (incuding a reference to an imported
+           lexically later (including a reference to an imported
            variable) always references a defined variable. Putting the
            prompt around a definition's RHS might be a better
            approach, but that would change the language (so mabe next

@@ -76,7 +76,7 @@ ffi_call_N32:
 
 	bigger:	
 	ADDU	t4, v0, 2 * FFI_SIZEOF_ARG -1	# make sure it is aligned 
-	and	v0, t4, -2 * FFI_SIZEOF_ARG		# to a proper boundry.
+	and	v0, t4, -2 * FFI_SIZEOF_ARG		# to a proper boundary.
 
 sixteen:
 	SUBU	$sp, $sp, v0	# move the stack pointer to reflect the

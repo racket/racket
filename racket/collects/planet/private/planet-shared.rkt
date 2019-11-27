@@ -798,7 +798,7 @@ Various common pieces of code that both the client and server need to access
         (λ () (do-installation))
         (λ () (close-output-port p))))]
     [else
-     ;; we didn't get the lock (and didn't alreayd have it); poll for the SUCCESS FILE
+     ;; we didn't get the lock (and didn't already have it); poll for the SUCCESS FILE
      (planet-log "waiting for someone else to finish installation in ~s" dir)
      (let loop ()
        (cond

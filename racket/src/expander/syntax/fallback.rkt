@@ -14,7 +14,7 @@
 ;; scope set that doesn't include the additional scope for B. This
 ;; fallback makes it easier to work across namespaces (including
 ;; moving from the top level to a module body or vice versa), and it
-;; accomodates existing Racket programs.
+;; accommodates existing Racket programs.
 ;;
 ;; A syntax object contains a fallback search list only if
 ;; `push-scope` has been used. The fallback chain is in the

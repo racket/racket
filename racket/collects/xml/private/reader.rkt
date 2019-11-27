@@ -327,7 +327,7 @@
         (loop)))))
 
 ;; lex-pcdata : Input-port (-> Location) -> Pcdata
-;; deviation - disallow ]]> "for compatability" with SGML, sec 2.4 XML spec 
+;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec 
 (define (lex-pcdata in pos)
   (let ([start (pos)]
         [data (let loop ()
