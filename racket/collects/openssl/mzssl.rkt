@@ -172,7 +172,7 @@ TO DO:
          #:hostname (or/c string? #f)]
         (values input-port? output-port?))]
   [ssl-listen
-   (->* [(integer-in 1 (sub1 (expt 2 16)))]
+   (->* [listen-port-number?]
         [exact-nonnegative-integer?
          any/c
          (or/c string? #f)
@@ -1545,7 +1545,8 @@ TO DO:
       (if (eq? 'listener input?)
           (ssl-listener-l mzssl)
           (if input? (mzssl-i mzssl) (mzssl-o mzssl))))
-    (cond [(tcp-port? port) (tcp-addresses port port-numbers?)]
+    (cond [(or (tcp-port? port) (tcp-listener? port))
+           (tcp-addresses port port-numbers?)]
           [else (error 'ssl-addresses "not connected to TCP port")])))
 
 (define (ssl-abandon-port p)

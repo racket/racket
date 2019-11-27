@@ -30,11 +30,16 @@
      ssl-server-context 
      #t))
 
-  (define ssl-listener (ssl-listen 55000
+  (define ssl-listener (ssl-listen 0
                                    4
                                    #t
                                    "127.0.0.1"
                                    ssl-server-context))
+
+  (define port-number (let ()
+                        (define-values (addr port-number other-addr other-port-number)
+                          (ssl-addresses ssl-listener #t))
+                        port-number))
 
   (define listener-main 
     (thread 
@@ -91,7 +96,7 @@
     (ssl-set-verify! ssl-client-context #t))
 
   (let-values ([(in out) (ssl-connect "127.0.0.1"
-                                      55000
+                                      port-number
                                       ssl-client-context)])
     (check "Client: Made connection.~n" #t #t)
     (when later-mode

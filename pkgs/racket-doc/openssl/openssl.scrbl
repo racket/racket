@@ -265,7 +265,7 @@ current platform for client connections.
 @section{TCP-like Server Procedures}
 
 @defproc[(ssl-listen
-	  [port-no (integer-in 1 65535)]
+	  [port-no listen-port-number?]
 	  [queue-k exact-nonnegative-integer? 5]
 	  [reuse? any/c #f]
 	  [hostname-or-#f (or/c string? #f) #f]
