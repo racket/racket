@@ -122,7 +122,7 @@
  'expand-load
  #f
  (lambda ()
-   (namespace-set-variable-value! 'expand-load "mz-tests.rktl")))
+   (namespace-set-variable-value! 'expand-load "core-tests.rktl")))
 
 (let ([orig (current-eval)])
   (dynamic-wind
