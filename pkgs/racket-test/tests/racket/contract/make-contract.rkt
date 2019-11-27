@@ -210,7 +210,7 @@
                                          val
                                          "bad")))))
          #:name (λ (x) 'the-name)
-         ;; make a very aproximate first-order check
+         ;; make a very approximate first-order check
          #:first-order (λ (c) (λ (x) #t))
          #:stronger (λ (x y) #f)))
       
@@ -240,7 +240,7 @@
                                             "bad")])))))
          #:list-contract? (λ (c) #t)
          #:name (λ (x) 'the-name)
-         ;; make a very aproximate first-order check
+         ;; make a very approximate first-order check
          #:first-order (λ (c) (λ (x) #t))
          #:stronger (λ (x y) #f)))
       (list-contract? (odd-length-list-of-integers)))

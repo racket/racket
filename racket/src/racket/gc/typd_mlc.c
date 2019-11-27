@@ -28,7 +28,7 @@
  * must trace the complex_descriptor.
  *
  * Note that descriptors inside objects may appear cleared, if we encounter a
- * false refrence to an object on a free list.  In the GC_descr case, this
+ * false reference to an object on a free list.  In the GC_descr case, this
  * is OK, since a 0 descriptor corresponds to examining no fields.
  * In the complex_descriptor case, we explicitly check for that case.
  *

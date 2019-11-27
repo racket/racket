@@ -29,7 +29,7 @@
 ;; The point of going through `setup/main` is that the Racket module
 ;; gets compiled as needed, so that it doesn't have to be loaded from
 ;; source every time. At the same time `setup/main` detects when files
-;; need to be recompiled, either becuase the underlying Racket's
+;; need to be recompiled, either because the underlying Racket's
 ;; version changed or because a dependency changed.
 
 (provide go)

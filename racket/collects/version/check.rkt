@@ -87,7 +87,7 @@
 ;;   You have an old version, please upgrade to `version' you may consider also
 ;;   the alpha version
 ;; * `(error ,message [,additional-info])
-;;   An error occured, the third (optional) value can be shown as the system
+;;   An error occurred, the third (optional) value can be shown as the system
 ;;   error that happened or the value that caused an error.
 (provide check-version)
 (define (check-version)

@@ -411,7 +411,7 @@ AC_DEFINE(ATOMIC_UNCOLLECTABLE)
 
 dnl This is something of a hack.  When cross-compiling we turn off
 dnl some functionality.  We also enable the "small" configuration.
-dnl These is only correct when targetting an embedded system.  FIXME.
+dnl These is only correct when targeting an embedded system.  FIXME.
 if test -n "${with_cross_host}"; then
    AC_DEFINE(NO_SIGSET)
    AC_DEFINE(NO_CLOCK)

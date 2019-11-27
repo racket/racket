@@ -20,7 +20,7 @@ GC on EWS4800
      AR = /usr/ccs64/bin/ar
 
 3. ELF file format
-   *** Caution: The following infomation is empirical. ***
+   *** Caution: The following information is empirical. ***
 
  32bit:
    ELF file has an unique format. (See a.out(4) and end(3C).)

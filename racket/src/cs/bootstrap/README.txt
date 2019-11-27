@@ -16,4 +16,4 @@ Chez Scheme.
 While the similation of Chez Scheme should be robust to common Chez
 Scheme changes, it does rely on details of the Chez Scheme
 implementation and source, So, the simulation will have to be updated
-to accomodate some Chez Scheme changes.
+to accommodate some Chez Scheme changes.

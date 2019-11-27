@@ -601,7 +601,7 @@
        ;; rewrite-define returns:
        ;; * The unused parts of id-info
        ;; * The definition, possibly rewritten to replace certain identifiers
-       ;;   along with any auxillary definitions that should be introduced
+       ;;   along with any auxiliary definitions that should be introduced
        ;;   (contract and external id defs)
        (define (rewrite-define head ids expr)
          (let ([id-pairs (map syntax->list (syntax->list #'id-info))])

@@ -1823,7 +1823,7 @@
                                   (q)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; check that the compiler is not too agressive with `letrec' -> `let*'
+;; check that the compiler is not too aggressive with `letrec' -> `let*'
 
 (test "<undefined>\nready\n"
       get-output-string

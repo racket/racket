@@ -21,7 +21,7 @@
 ;; linklet-level symbol.
 
 ;; As a concession to top-level evaluation, reserve plain symbols for
-;; identifers that have only the module's scopes. That way, if a
+;; identifiers that have only the module's scopes. That way, if a
 ;; reference to an identifier is encountered before a definition, the
 ;; reference can still work in normal cases.
 

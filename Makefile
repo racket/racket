@@ -45,7 +45,7 @@ DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 PLT_SETUP_OPTIONS = 
 
 # Belongs in the "Configuration options" section, but here
-# to accomodate nmake:
+# to accommodate nmake:
 SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 
 CPUS = 

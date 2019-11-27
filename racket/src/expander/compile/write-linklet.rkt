@@ -44,7 +44,7 @@
   ;;   bundle count as 4-byte integer
   ;;   binary tree:
   ;;     bundle-name length as 4-byte integer
-  ;;     bundle name [encoding decribed below]
+  ;;     bundle name [encoding described below]
   ;;     bundle offset as 4-byte integer
   ;;     bundle size as 4-byte integer
   ;;     left-branch offset as 4-byte integer

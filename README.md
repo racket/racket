@@ -7,7 +7,7 @@ Quick Start
 -----------
 
 Pre-built versions of Racket for a variety of operating systems and
-architectures, as well as convienient source distributions are
+architectures, as well as convenient source distributions are
 available at
 
   [https://download.racket-lang.org](https://download.racket-lang.org)

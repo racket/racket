@@ -445,7 +445,7 @@
 (define compute-memory-sizes 0)
 
 (void (set-reachable-size-increments-callback!
-       ;; Called in an arbitary host thread, with interrupts off and all other threads suspended:
+       ;; Called in an arbitrary host thread, with interrupts off and all other threads suspended:
        (lambda (compute-size-increments)
          (unless (zero? compute-memory-sizes)
            (host:call-with-current-place-continuation

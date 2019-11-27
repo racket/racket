@@ -271,7 +271,7 @@
                                    any/c
                                    number?)))))
 
-;; in this test, the and/c shoudl generate a dynamic
+;; in this test, the and/c should generate a dynamic
 ;; failure, which should trigger the 'cons/c' failing
 ;; it shouldn't make a pair of a strange value and #t
 (check-not-exn

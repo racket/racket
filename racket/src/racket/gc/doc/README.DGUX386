@@ -88,7 +88,7 @@ Note (HB):
 +    # that compilation of execitables will put them in correct order
 +    # in any case and sometimes are wrong when listed as deplibs (or missing some deplibs)
 +    # However when GNU ld and --whole-archive needs to be used we have the problem
-+    # that if the -fPIC *_s.a archive is linked through deplibs list we ommiting crucial
++    # that if the -fPIC *_s.a archive is linked through deplibs list we omitting crucial
 +    # .lo/.o files from the created shared lib. This I think is not the case here.
 +    archive_cmds='$CC -shared -h $soname -o $lib $libobjs $linkopts'
 +    thread_safe_flag_spec='-pthread'

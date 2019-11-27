@@ -493,7 +493,7 @@
   (for/fold ([s s]) ([sc (in-list scs)])
     (flip-scope s sc)))
 
-;; Pushes a multi-scope to accomodate multiple top-level namespaces.
+;; Pushes a multi-scope to accommodate multiple top-level namespaces.
 ;; See "fallback.rkt".
 (define (push-scope s sms)
   (define-memo-lite (push smss/maybe-fallbacks)
@@ -519,7 +519,7 @@
                      scope-ops  ; scope -> (or/c 'add 'remove 'flip)
                      ;; mpi-shifts and inspectors are mostly
                      ;; implemented at the "binding.rkt" layer,
-                     ;; but we accomodate them here
+                     ;; but we accommodate them here
                      prev-mss   ; owner's mpi-shifts before adds
                      add-mpi-shifts ; #f or (mpi-shifts -> mpi-shifts)
                      inspector  ; #f or inspector

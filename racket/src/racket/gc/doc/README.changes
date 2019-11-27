@@ -1875,7 +1875,7 @@ Since 6.2alpha6:
  - Fixed Makefile.direct for DARWIN.  (Thanks to Manuel Serrano.)
  - There was a race between GC_pthread_detach and thread exit that could
    result in a thread structure being deallocated by GC_pthread_detach
-   eventhough it was still needed by the thread exit code.  (Thanks to
+   even though it was still needed by the thread exit code.  (Thanks to
    Dick Porter for the small test case that allowed this to be debugged.)
  - Fixed version parsing for non-alpha versions in acinclude.m4 and
    version checking in version.h.
@@ -2550,7 +2550,7 @@ Since first gc7.0alpha8 version:
  - __GNUC__ was misspelled as __GNUC in thread_local_alloc.h.
    (Thanks to Peter Wang.)
  - Integrated various MacOSX patches and tried to reconcile them.
-   Thanks to Allan Hsu, several contributers at Apple, and probably
+   Thanks to Allan Hsu, several contributors at Apple, and probably
    others.
  - Added some casts to powerpc.h in libatomic_ops to silence warnings.
 

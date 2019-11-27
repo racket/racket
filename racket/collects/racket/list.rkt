@@ -183,7 +183,7 @@
           (cons x (loop (cdr list)))
           '()))
       ;; could return `list' here, but make it behave like `take'
-      ;; exmaple: (takef '(a b c . d) symbol?) should be similar
+      ;; example: (takef '(a b c . d) symbol?) should be similar
       ;; to (take '(a b c . d) 3)
       '())))
 

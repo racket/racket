@@ -51,7 +51,7 @@ struct Resolve_Info
                            `instance_pos` in an
                            `Scheme_IR_Topelevel`). */
   int *toplevel_deltas; /* shifts for toplevels in the import range to
-                           accomodate removals */
+                           accommodate removals */
 
   Scheme_Hash_Table *toplevel_defns; /* for pruning unused definitions, if
                                         some definitions are unexported

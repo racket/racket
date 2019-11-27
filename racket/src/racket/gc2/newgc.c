@@ -5841,9 +5841,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
                                    /* new memory use; gen0_phantom_count can be non-zero due to
                                       phantom-bytes record in generation 1/2: */
                                    gc->memory_in_use + gc->gen0_phantom_count,
-                                   /* original memory use, including adminstrative structures: */
+                                   /* original memory use, including administrative structures: */
                                    old_mem_allocated,
-                                   /* new memory use with adminstrative structures: */
+                                   /* new memory use with administrative structures: */
                                    mmu_memory_allocated(gc->mmu)+gc->phantom_count+gc->gen0_phantom_count,
                                    gc->child_gc_total);
     unpark_for_inform_callback(gc);

@@ -418,7 +418,7 @@
 #   if defined(_MSC_VER) && defined(_M_IA64)
 #     define IA64
 #     define MSWIN32	/* Really win64, but we don't treat 64-bit 	*/
-			/* variants as a differnt platform.		*/
+			/* variants as a different platform.		*/
 #   endif
 # endif
 # if defined(__DJGPP__)
@@ -1188,7 +1188,7 @@
 #	  define PREFETCH(x) \
 	    __asm__ __volatile__ ("	prefetchnta	%0": : "m"(*(char *)(x)))
 	    /* Empirically prefetcht0 is much more effective at reducing	*/
-	    /* cache miss stalls for the targetted load instructions.  But it	*/
+	    /* cache miss stalls for the targeted load instructions.  But it	*/
 	    /* seems to interfere enough with other cache traffic that the net	*/
 	    /* result is worse than prefetchnta.				*/
 #         if 0 

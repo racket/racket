@@ -129,7 +129,7 @@ unsigned long GC_lock_holder = NO_THREAD;
 #     define REAL_FUNC(f) GC_real_##f
       /* We define both GC_f and plain f to be the wrapped function.	*/
       /* In that way plain calls work, as do calls from files that	*/
-      /* included gc.h, wich redefined f to GC_f.			*/
+      /* included gc.h, which redefined f to GC_f.			*/
       /* FIXME: Needs work for DARWIN and True64 (OSF1) */
       typedef int (* GC_pthread_create_t)(pthread_t *, const pthread_attr_t *,
 		      		          void * (*)(void *), void *);

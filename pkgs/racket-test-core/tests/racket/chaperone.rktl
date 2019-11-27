@@ -3441,7 +3441,7 @@
   (test #t impersonator? (impersonate-struct (b 1 2 3 4) set-a-y! void)))
 
 ;; ----------------------------------------
-;; Make sure `struct->vector` doesnt' have memory-management issues
+;; Make sure `struct->vector` doesn't have memory-management issues
 ;; with impersonated structs:
 
 (let ()

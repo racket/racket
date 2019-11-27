@@ -475,7 +475,7 @@ RKTIO_EXTERN_ERR(RKTIO_WRITE_ERROR)
 intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, RKTIO_NULLABLE rktio_addrinfo_t *addr,
                           const char *buffer, intptr_t len);
 /* Extends `rktio_write` to accept a destination `addr`, and binds `rfd` if it 
-   is not bound aready. The `addr` can be NULL if the socket is connected. */
+   is not bound already. The `addr` can be NULL if the socket is connected. */
 
 RKTIO_EXTERN_ERR(RKTIO_WRITE_ERROR)
 intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, RKTIO_NULLABLE rktio_addrinfo_t *addr,
@@ -541,7 +541,7 @@ RKTIO_EXTERN rktio_bool_t rktio_is_ok_envvar_name(rktio_t *rktio, rktio_const_st
 RKTIO_EXTERN rktio_bool_t rktio_are_envvar_names_case_insensitive(rktio_t *rktio);
 /* Checks whether environment variables are case-folded by the OS.
    That doesn't mean that clients need to case-fold names, but clients
-   may want to immitate the OS. */
+   may want to imitate the OS. */
 
 RKTIO_EXTERN char *rktio_getenv(rktio_t *rktio, rktio_const_string_t name);
 /* Gets an environment variable value, or reports
@@ -710,7 +710,7 @@ RKTIO_EXTERN void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t 
 RKTIO_EXTERN void rkio_reset_sleep_backoff(rktio_t *rktio);
 /* Call this function when using `rktio_poll_set_add_eventmask` and
    when matching events are not always consumed from the queue between
-   sleeps. To accomodate messages that are not consumed, the poll set
+   sleeps. To accommodate messages that are not consumed, the poll set
    will actually only sleep a short while at first, and then back off
    exponentially. Call this function when your program does useful
    work (instead of spinning on sleep) to reset the backoff

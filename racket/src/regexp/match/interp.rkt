@@ -5,7 +5,7 @@
 ;; Compilation produces a matcher function; see "match.rkt"
 (define (interp m      ; the compiled matcher function
                 s      ; input bytes or lazy-bytes
-                pos    ; starting seach position, can be > `start`, must be < `limit`
+                pos    ; starting search position, can be > `start`, must be < `limit`
                 start  ; input start in the sense of `^`; don't read before this
                 limit/end ; don't read past `limit`; `end` corresponds to `$` and can be < `limit`
                 state) ; vector where group position-pair matches are installed

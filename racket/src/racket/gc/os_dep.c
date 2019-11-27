@@ -1737,7 +1737,7 @@ ptr_t GC_SysVGetDataStart(size_t max_page_size, ptr_t etext_addr)
     		      & ~((word)max_page_size - 1));
     word page_offset = (text_end & ((word)max_page_size - 1));
     volatile char * result = (char *)(next_page + page_offset);
-    /* Note that this isnt equivalent to just adding		*/
+    /* Note that this isn't equivalent to just adding		*/
     /* max_page_size to &etext if &etext is at a page boundary	*/
     
     GC_setup_temporary_fault_handler();
@@ -2379,7 +2379,7 @@ PCR_ERes GC_push_thread_stack(PCR_Th_T *t, PCR_Any dummy)
 }
 
 /* Push the contents of an old object. We treat this as stack	*/
-/* data only becasue that makes it robust against mark stack	*/
+/* data only because that makes it robust against mark stack	*/
 /* overflow.							*/
 PCR_ERes GC_push_old_obj(void *p, size_t size, PCR_Any data)
 {
@@ -3836,7 +3836,7 @@ static void *GC_mprotect_thread(void *arg)
 }
 
 /* All this SIGBUS code shouldn't be necessary. All protection faults should
-   be going throught the mach exception handler. However, it seems a SIGBUS is
+   be going through the mach exception handler. However, it seems a SIGBUS is
    occasionally sent for some unknown reason. Even more odd, it seems to be
    meaningless and safe to ignore. */
 #ifdef BROKEN_EXCEPTION_HANDLING

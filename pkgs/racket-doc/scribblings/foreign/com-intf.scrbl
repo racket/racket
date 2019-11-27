@@ -59,8 +59,8 @@ information for a method along the lines of
 @racketmodname[ffi/unsafe/alloc].  If the @racket[maybe-alloc-spec] is
 @racket[#:release-with-function function-id], then
 @racket[function-id] is used to deallocate the result produced by the
-method, unless the result is explictly deallocated before it becomes
-unreachable; for exmaple, @racket[#:release-with-function Release] is
+method, unless the result is explicitly deallocated before it becomes
+unreachable; for example, @racket[#:release-with-function Release] is
 suitable for a method that returns a COM interface reference that must
 be eventually released.  The @racket[#:release-with-method method-id]
 form is similar, except that the deallocator is a method on the same

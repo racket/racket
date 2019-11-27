@@ -41,7 +41,7 @@
 ;;    can refer to mutable values)
 ;;
 ;;  - a vector of "fill" descriptions to complete the construction of
-;;    mutable values (whcih can refer to mutable and shared values);
+;;    mutable values (which can refer to mutable and shared values);
 ;;    and
 ;;
 ;;  - a final value construction (which can refer to shared and

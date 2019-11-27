@@ -444,7 +444,7 @@
 ;; Extends `do-thread-deschdule!` where `t` is always `(current-thread)`.
 ;; The `interrupt-callback` is called if the thread receives a break
 ;; signal, is killed, or is suspended; if the break signal is
-;; supressed or resumed, then `retry-callback` is called to try again
+;; suppressed or resumed, then `retry-callback` is called to try again
 ;; --- but `retry-callback` will only be used if `interrupt-callback`
 ;; was previously called, and neither is called if the thread is
 ;; "internal"-resumed normally instead of by a break signal of a

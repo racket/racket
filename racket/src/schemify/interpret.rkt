@@ -106,7 +106,7 @@
            (hash-set env arg (+ stack-depth i))))
        (define body-vars-index (+ num-args stack-depth))
        ;; Gather all the names that have `define`s, and build up the
-       ;; enviornment that has them consceptually pushed after the
+       ;; environment that has them consceptually pushed after the
        ;; import and export variables.
        (define-values (body-env num-body-vars)
          (for/fold ([env args-env] [num-body-vars 0]) ([e (in-wrap-list body)])
