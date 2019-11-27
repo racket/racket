@@ -79,6 +79,32 @@ static char *get_self_path(char *exec_file)
   }
 }
 # undef USE_GENERIC_GET_SELF_PATH
+
+static long find_rktboot_section(char *me)
+{
+  const struct mach_header *mh;
+  const struct load_command *lc;
+  int i;
+
+  mh = _dyld_get_image_header(0);
+
+  lc = (void *)((char *)mh + ((mh->magic == 0xfeedfacf) ? sizeof(struct mach_header_64) : sizeof(struct mach_header)));
+
+  for (i = 0; i < mh->ncmds; i++) {
+    if (lc->cmd == LC_SEGMENT) {
+      const struct segment_command *sc = (struct segment_command *)lc;
+      if (!strcmp(sc->segname, "__RKTBOOT"))
+        return sc->fileoff;
+    } else if (lc->cmd == LC_SEGMENT_64) {
+      const struct segment_command_64 *sc = (struct segment_command_64 *)lc;
+      if (!strcmp(sc->segname, "__RKTBOOT"))
+        return sc->fileoff;
+    }
+    lc = (void *)((char *)lc + lc->cmdsize);
+  }
+
+  return 0;
+}
 #endif
 
 #if defined(__linux__)
@@ -350,7 +376,7 @@ static int bytes_main(int argc, char **argv,
 		      int wm_is_gracket_or_x11_arg_count, char *gracket_guid_or_x11_args)
 {
   char *boot_exe, *exec_file = argv[0], *run_file = NULL;
-  int pos1, pos2, pos3;
+  int is_embedded = 1, pos1, pos2, pos3;
   long boot_offset;
   long segment_offset;
 #ifdef WIN32
@@ -398,6 +424,9 @@ static int bytes_main(int argc, char **argv,
 
 #ifdef ELF_FIND_BOOT_SECTION
   boot_offset = find_boot_section(boot_exe);
+#elif OS_X
+  boot_offset = find_rktboot_section(boot_exe);
+  if (!boot_offset) is_embedded = 0;
 #elif WIN32
   boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
 #else
@@ -411,7 +440,7 @@ static int bytes_main(int argc, char **argv,
   racket_boot(argc, argv, exec_file, run_file,
 	      boot_exe, segment_offset,
               extract_coldir(), extract_configdir(), extract_dlldir(),
-              pos1, pos2, pos3,
+              is_embedded, pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI,
 	      wm_is_gracket_or_x11_arg_count, gracket_guid_or_x11_args,
 	      embedded_dll_open, scheme_dll_find_object, embedded_dll_close);

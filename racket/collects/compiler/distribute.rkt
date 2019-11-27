@@ -109,12 +109,19 @@
 	;; Copy libs into place
         (install-libs lib-dir types
 		      #:extras-only? (not executables?)
-		      #:no-dlls? (and (eq? 'windows (cross-system-type))
-				      executables?
-				      ;; If all executables have "<system>" the the
-				      ;; DLL dir, then no base DLLS are needed
-				      (for/and ([f (in-list orig-binaries)])
-					(current-no-dlls? f))))
+		      #:no-dlls? (and executables?
+                                      (case (cross-system-type)
+                                        [(windows)
+                                         ;; If all executables have "<system>" the the
+                                         ;; DLL dir, then no base DLLS are needed
+                                         (for/and ([f (in-list orig-binaries)])
+                                           (current-no-dlls? f))]
+                                        [(macosx)
+                                         ;; If no executable refers to a "Racket"
+                                         ;; framework, then they must embed it
+                                         (for/and ([f (in-list orig-binaries)])
+                                           (not (get-current-framework-path (app-to-file f) "Racket")))]
+                                        [else #f])))
 	;; Copy collections into place
 	(unless (null? copy-collects) (make-directory* collects-dir))
 	(for-each (lambda (dir)
@@ -179,7 +186,7 @@
 					 (build-path lib-dir name)))])
 	     (map copy-dll (get-racket-dlls types #:extras-only? extras-only?))))]
       [(macosx)
-       (unless extras-only?
+       (unless (or extras-only? no-dlls?)
          (when (or (memq 'racketcgc types)
                    (memq 'gracketcgc types))
            (copy-framework "Racket" 'cgc lib-dir))
@@ -686,6 +693,7 @@
   
   (define (app-to-file b)
     (if (and (eq? 'macosx (cross-system-type))
+             (directory-exists? b)
 	     (regexp-match #rx#"[.][aA][pP][pP]$" 
 			   (path->bytes (if (string? b)
 					    (string->path b)

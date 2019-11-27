@@ -1537,7 +1537,8 @@
                               (raise x))])
         (define old-perms (ensure-writable dest-exe))
         (when (and (eq? 'macosx (cross-system-type))
-                   (not unix-starter?))
+                   (not unix-starter?)
+                   (get-current-framework-path (mac-dest->executable dest mred?) "Racket"))
           (let ([m (or (assq 'framework-root aux)
                        (and relative? '(framework-root . #f)))])
             (if m

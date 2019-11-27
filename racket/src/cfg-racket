@@ -747,6 +747,7 @@ libpltdir_rel
 libpltdir
 appsdir
 collectsdir
+MACLIBRKT_LINK_MODE
 target_os
 target_vendor
 target_cpu
@@ -825,6 +826,7 @@ enable_xonx
 enable_macprefix
 enable_libfw
 enable_userfw
+enable_embedfw
 enable_mac64
 enable_csdefault
 enable_cgcdefault
@@ -1487,6 +1489,7 @@ Optional Features:
   --enable-macprefix      allow --prefix with a Mac OS install
   --enable-libfw          install Mac OS frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
+  --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-csdefault      use CS as default build
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
@@ -2787,6 +2790,11 @@ if test "${enable_userfw+set}" = set; then :
   enableval=$enable_userfw;
 fi
 
+# Check whether --enable-embedfw was given.
+if test "${enable_embedfw+set}" = set; then :
+  enableval=$enable_embedfw;
+fi
+
 # Check whether --enable-mac64 was given.
 if test "${enable_mac64+set}" = set; then :
   enableval=$enable_mac64;
@@ -2983,6 +2991,15 @@ else
   ;;
   esac
 fi
+
+
+MACLIBRKT_LINK_MODE=fw
+
+if test "${enable_embedfw}" = "yes" ; then
+  MACLIBRKT_LINK_MODE=static
+fi
+
+
 
 
 if test "${enable_iconv}" = "" ; then

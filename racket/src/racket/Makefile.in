@@ -212,14 +212,20 @@ mzcom@CGC@@NOT_MINGW@:
 
 MZFW = Racket.framework/Versions/$(FWVERSION)/Racket
 
+MACLIBRKT_LIBS = $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO) -framework CoreFoundation
+
 $(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS) $(LIBRKTIO)
 	mkdir -p  Racket.framework/Versions/$(FWVERSION)
-	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO) @LIBS@
+	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -dynamiclib -all_load $(MACLIBRKT_LIBS) @LIBS@
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)/Racket Racket.framework/Racket
 
+# Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
+MACLIBRKT_LINK_fw = -F. -framework Racket
+MACLIBRKT_LINK_static = $(MACLIBRKT_LIBS)
+
 racket@CGC@@OSX@: $(MZFW) main.@LTO@
-	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket @LIBS@
+	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) @LIBS@
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "racket@CGC@"
 
 # mingw ----------------------------------------

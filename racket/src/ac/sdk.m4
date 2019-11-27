@@ -23,3 +23,12 @@ else
   ;;
   esac
 fi
+
+
+MACLIBRKT_LINK_MODE=fw
+
+if test "${enable_embedfw}" = "yes" ; then
+  MACLIBRKT_LINK_MODE=static
+fi
+
+AC_SUBST(MACLIBRKT_LINK_MODE)
