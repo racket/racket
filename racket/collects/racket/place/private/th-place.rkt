@@ -53,27 +53,29 @@
   (define result-box (box 0))
   (define plumber (make-plumber))
   (define done? #f)
-  (define th (thread
-              (lambda ()
-                (with-continuation-mark
-                    parameterization-key
-                    (get-original-parameterization)
-                  (parameterize ([current-namespace (make-base-namespace)]
-                                 [current-custodian cust]
-                                 [exit-handler (lambda (v)
-                                                 (plumber-flush-all plumber)
-                                                 (set-box! result-box (if (byte? v) v 0))
-                                                 (custodian-shutdown-all cust))]
-                                 [current-plumber plumber])
-                    (dynamic-wind
-                     void
-                     (lambda ()
-                       ((dynamic-require mod funcname) cch)
-                       (plumber-flush-all plumber)
-                       (set! done? #t))
-                     (lambda ()
-                       (unless done?
-                         (set-box! result-box 1)))))))))
+  (define th
+    (parameterize ([current-custodian cust])
+      (thread
+       (lambda ()
+         (with-continuation-mark
+          parameterization-key
+          (get-original-parameterization)
+          (parameterize ([current-namespace (make-base-namespace)]
+                         [current-custodian cust]
+                         [exit-handler (lambda (v)
+                                         (plumber-flush-all plumber)
+                                         (set-box! result-box (if (byte? v) v 0))
+                                         (custodian-shutdown-all cust))]
+                         [current-plumber plumber])
+            (dynamic-wind
+             void
+             (lambda ()
+               ((dynamic-require mod funcname) cch)
+               (plumber-flush-all plumber)
+               (set! done? #t))
+             (lambda ()
+               (unless done?
+                 (set-box! result-box 1))))))))))
   (parameterize ([current-custodian cust])
     ;; When main thread ends, all threads, etc., should end:
     (thread (lambda () (thread-wait th) (custodian-shutdown-all cust))))
