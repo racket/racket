@@ -206,8 +206,11 @@ jobs:
     # egrep -R "\(Section '" * | cut -d ':' -f 1 | sed ':a;N;$!ba;s/\n/ /g'
     #
     # Sections places and generators have been removed due to flakiness
-    # See https://github.com/racket/racket/issues/2930
+    #  - See https://github.com/racket/racket/issues/2930
     # Section(expand) removed because of missing mz-tests.rktl file
+    #  - See https://github.com/racket/racket/pull/2932
+    # Section sandbox is failing
+    #  - See https://github.com/racket/racket/issues/2933
     env:
       TEST_SECTIONS: async-channel.rktl
                      basic.rktl
@@ -267,7 +270,6 @@ jobs:
                      readtable.rktl
                      resource.rktl
                      rx.rktl
-                     sandbox.rktl
                      sequence.rktl
                      serialize.rktl
                      set.rktl
