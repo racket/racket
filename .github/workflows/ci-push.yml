@@ -211,6 +211,8 @@ jobs:
     #  - See https://github.com/racket/racket/pull/2932
     # Section sandbox is failing
     #  - See https://github.com/racket/racket/issues/2933
+    # Section wills is failing (maybe flaky)
+    #  - See https://github.com/racket/racket/issues/2935
     env:
       TEST_SECTIONS: async-channel.rktl
                      basic.rktl
@@ -295,7 +297,6 @@ jobs:
                      unsafe.rktl
                      vector.rktl
                      version.rktl
-                     will.rktl
 
     steps:
       - uses: actions/checkout@v1
