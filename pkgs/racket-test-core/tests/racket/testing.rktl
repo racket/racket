@@ -102,6 +102,8 @@ transcript.
       (set! accum-number-of-exn-tests (+ accum-number-of-exn-tests (list-ref l 2)))
       (set! accum-errs (append (list-ref l 3) accum-errs)))))
 
+(define wrong-result-retries (make-parameter 0))
+
 (define test
   (let ()
     (define (test* expect fun args kws kvs)
@@ -120,13 +122,27 @@ transcript.
                        (car args))])
           (printf "~s\n" res)
           (let ([ok? (equal? expect res)])
-            (unless ok?
-              (record-error (list res expect form))
-              (printf "  BUT EXPECTED ~s\n" expect))
-            ok?))))
+            (cond
+              [(and (not ok?)
+                    (positive? (wrong-result-retries)))
+               (printf "TRY AGAIN\n")
+               (parameterize ([wrong-result-retries (sub1 (wrong-result-retries))])
+                 (test* expect fun args kws kvs))]
+              [else
+               (unless ok?
+                 (record-error (list res expect form))
+                 (printf "  BUT EXPECTED ~s\n" expect))
+               ok?])))))
     (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs))
     (define (test    expect fun         . args) (test* expect fun args #f #f))
     (make-keyword-procedure test/kw test)))
+
+;; A flaky test is one that won't always pass, perhaps because it
+;; is sensitive to timing or GC. But it should pass if we
+;; try enough times. The test must never error.
+(define-syntax-rule (flaky-test arg ...)
+  (parameterize ([wrong-result-retries 10])
+    (test arg ...)))
 
 (define (nonneg-exact? x)
   (and (exact? x)

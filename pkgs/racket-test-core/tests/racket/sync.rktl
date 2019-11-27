@@ -140,15 +140,15 @@
 ;; ----------------------------------------
 ;; Alarms
 
-(test #f sync/timeout 0.1 (alarm-evt (+ (current-inexact-milliseconds) 200)))
-(test 'ok sync/timeout 0.1 
-      (wrap-evt
-       (alarm-evt (+ (current-inexact-milliseconds) 50))
-       (lambda (x) 'ok)))
-(test 'ok sync/timeout 100
-      (wrap-evt
-       (alarm-evt (+ (current-inexact-milliseconds) 50))
-       (lambda (x) 'ok)))
+(flaky-test #f sync/timeout 0.1 (alarm-evt (+ (current-inexact-milliseconds) 200)))
+(flaky-test 'ok sync/timeout 0.1
+            (wrap-evt
+             (alarm-evt (+ (current-inexact-milliseconds) 50))
+             (lambda (x) 'ok)))
+(flaky-test 'ok sync/timeout 100
+            (wrap-evt
+             (alarm-evt (+ (current-inexact-milliseconds) 50))
+             (lambda (x) 'ok)))
 
 ;; ----------------------------------------
 ;; Waitable sets
