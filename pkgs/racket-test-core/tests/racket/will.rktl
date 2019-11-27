@@ -122,8 +122,9 @@
               (mk-finalized n)
               (loop (sub1 n))))
           (gc)
-          ;; finalize at least half?
-          (test #t > (length removed) 50)
+          (unless (eq? 'cgc (system-type 'gc))
+            ;; finalize at least half
+            (test #t > (length removed) 50))
           (test #f ormap symbol? removed)
           (test 12 custodian-box-value b1)
           (loop (sub1 m))))
@@ -135,7 +136,8 @@
       (test b1 sync/timeout 0 b1)
       (test #f ormap values (map custodian-box-value saved))
       (gc)
-      (test #t <= 5 (apply + (map (lambda (v) (if (symbol? v) 1 0)) removed))))))
+      (unless (eq? 'cgc (system-type 'gc))
+        (test #t <= 5 (apply + (map (lambda (v) (if (symbol? v) 1 0)) removed)))))))
 
 (when (custodian-memory-accounting-available?)
   ;; Check custodian boxes for accounting
