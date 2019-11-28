@@ -314,7 +314,7 @@
              [no-prompt?
               (cons
                schemified
-               (loop (cdr l) mut-l null ids knowns))]
+               (loop (cdr l) mut-l null (reverse ids) knowns))]
              [else
               (define expr
                 `(call-with-module-prompt

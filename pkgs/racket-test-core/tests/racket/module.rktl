@@ -3152,7 +3152,11 @@ case of module-leve bindings; it doesn't cover local bindings.
   (namespace-require ''defines-a-spider-struct-type)
   (err/rt-test (eval e)
                exn:fail:contract:variable?
-               #rx"struct:spider"))
+               #rx"struct:spider")
+  (parameterize ([current-namespace (module->namespace ''defines-a-spider-struct-type)])
+    (err/rt-test (eval '(struct spider (legs)))
+                 exn:fail:contract:variable?
+                 #rx"struct:spider")))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
