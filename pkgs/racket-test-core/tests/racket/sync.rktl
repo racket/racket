@@ -175,6 +175,7 @@
     (test s2 sync/timeout SYNC-SLEEP-DELAY set)
     (test #f sync/timeout SYNC-SLEEP-DELAY set))
   (thread (lambda () (sleep) (semaphore-post s3)))
+  (sync (system-idle-evt))
   (test s3 sync/timeout SYNC-SLEEP-DELAY (choice-evt s1 s2 s3))
   (test #f sync/timeout SYNC-SLEEP-DELAY (choice-evt s1 s2 s3))
   (semaphore-post s3)
@@ -205,12 +206,14 @@
 	 [set (choice-evt s1 s2 c)])
     (test #f sync/timeout SYNC-SLEEP-DELAY set)
     (thread (lambda () (channel-put c 12)))
+    (sync (system-idle-evt))
     (test 12 sync/timeout SYNC-SLEEP-DELAY set)
     (test #f sync/timeout SYNC-SLEEP-DELAY set)
     (let* ([p (channel-put-evt c 85)]
 	   [set (choice-evt s1 s2 p)])
       (test #f sync/timeout SYNC-SLEEP-DELAY set)
       (thread (lambda () (channel-get c)))
+      (sync (system-idle-evt))
       (test p sync/timeout SYNC-SLEEP-DELAY set)
       (test #f sync/timeout SYNC-SLEEP-DELAY set))))
 
