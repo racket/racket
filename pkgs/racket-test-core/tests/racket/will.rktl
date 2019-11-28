@@ -562,7 +562,8 @@
   (collect-garbage)
   (test #f weak-box-value wb))
 
-(check-weak-box-before-will)
+(unless (eq? 'cgc (system-type 'gc))
+  (check-weak-box-before-will))
 
 ;; ----------------------------------------
 
