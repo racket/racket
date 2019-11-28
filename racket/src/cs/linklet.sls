@@ -88,6 +88,7 @@
                 find-system-path
                 build-path
                 format
+                error-print-source-location
                 ;; Used by cross-compiler:
                 get-original-error-port
                 subprocess
@@ -844,14 +845,17 @@
                            "importing instance" (unquoted-printing-string (format "~a" (instance-name target-inst)))))
 
   (define (identify-module var)
-    (let ([i (car (variable-inst-box var))])
-      (cond
-       [(eq? i #!bwp)
-        ""]
-       [(instance-name i)
-        => (lambda (name)
-             (#%format "\n  module: ~a" name))]
-       [else ""])))
+    (cond
+     [(error-print-source-location)
+      (let ([i (car (variable-inst-box var))])
+        (cond
+         [(eq? i #!bwp)
+          ""]
+         [(instance-name i)
+          => (lambda (name)
+               (#%format "\n  module: ~a" name))]
+         [else ""]))]
+     [else ""]))
 
   (define (raise-undefined var set?)
     (raise
