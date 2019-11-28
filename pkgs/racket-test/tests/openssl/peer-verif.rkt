@@ -15,6 +15,13 @@
 (define-runtime-path client-crt "client_crt.pem")
 (define-runtime-path cacert     "cacert.pem")
 
+;; TLS v1.3 does not allow renegotiation, so use v1.2 for testing if
+;; available, otherwise skip renegotiation
+(define can-tls12? (memq 'tls12 (supported-client-protocols)))
+(printf (if can-tls12?
+            "Using TLS v1.2\n"
+            "Skipping renegotiation tests\n"))
+
 (define (go valid? 
             #:later [later-mode #f]
             #:early [early-mode (and (not later-mode) 'try)]
@@ -83,13 +90,13 @@
            (close-input-port in)
            (close-output-port out))))))
 
-
-  (define ssl-client-context (ssl-make-client-context))
+  (define ssl-client-context (ssl-make-client-context (if can-tls12?
+                                                          'tls12
+                                                          'auto)))
 
   (ssl-load-private-key! ssl-client-context client-key)
 
-  ;;connection will still proceed if these methods aren't called
-  ;;change to #f to try it
+  ;; connection will still proceed if these functions aren't called
   (when valid?
     (ssl-load-certificate-chain! ssl-client-context client-crt)
     (ssl-load-verify-root-certificates! ssl-client-context cacert)
@@ -120,9 +127,11 @@
 (go #t)
 (go #t #:early 'req)
 (go #f)
-(go #t #:later 'try)
+(when can-tls12?
+  (go #t #:later 'try))
 (go #f #:later 'try)
-(go #t #:later 'req)
+(when can-tls12?
+  (go #t #:later 'req))
 
 (define (check-fail thunk)
   (define s
