@@ -753,6 +753,9 @@ case "$host_os" in
           FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
         fi
       fi
+      if test "${enable_embedfw}" = "yes" ; then
+        strip_needs_dash_s=yes
+      fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
