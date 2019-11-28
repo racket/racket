@@ -62,7 +62,9 @@
                                          verify-fail?
                                          (exn? x)
                                          ;; late checking may abandon the connection
-                                         (regexp-match? #rx"^tcp-(?:read|write):" (exn-message x))))
+                                         (regexp-match?
+                                          #rx"(^tcp-(?:read|write):|error (reading from|writing to) stream port)"
+                                          (exn-message x))))
                         (lambda (x) (void))])
          (let-values ([(in out) (ssl-accept ssl-listener)])
            (check "Server: Accepted connection.~n" #t #t)
