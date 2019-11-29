@@ -226,7 +226,9 @@ jobs:
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
           raco pkg install --auto racket-test
       - name: Run tests
-        run: raco test -l tests/racket/test
+        run: |
+          raco test -l tests/racket/test
+          racket -l tests/racket/contract/all
 
   test-3m:
     strategy:
@@ -259,7 +261,9 @@ jobs:
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
           raco pkg install --auto racket-test
       - name: Run tests
-        run: raco test -l tests/racket/test
+        run: |
+          raco test -l tests/racket/test
+          racket -l tests/racket/contract/all
 
   test-cs:
     strategy:
@@ -291,4 +295,6 @@ jobs:
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
           raco pkg install --auto racket-test
       - name: Run tests
-        run: raco test -l tests/racket/test
+        run: |
+          raco test -l tests/racket/test
+          racket -l tests/racket/contract/all
