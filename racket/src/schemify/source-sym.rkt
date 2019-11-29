@@ -8,7 +8,7 @@
   (for/fold ([src-syms #hasheq()]) ([body (in-list bodys)])
     (match body
       [`(define-values ,ids ,rhs)
-       (for/fold ([src-syms #hasheq()]) ([id (in-list ids)])
+       (for/fold ([src-syms src-syms]) ([id (in-list ids)])
          (define u-id (unwrap id))
          (define sym (or (wrap-property id 'source-name) u-id))
          (cond

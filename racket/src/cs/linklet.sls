@@ -857,6 +857,17 @@
          [else ""]))]
      [else ""]))
 
+  (define (indentify-internal-name var)
+    (cond
+     [(error-print-source-location)
+      (cond
+       [(eq? (variable-name var) (variable-source-name var))
+        ""]
+       [else
+        (string-append "\n  internal name: "
+                       (symbol->string  (variable-name var)))])]
+     [else ""]))
+
   (define (raise-undefined var set?)
     (raise
      (|#%app|
@@ -866,11 +877,13 @@
         (string-append "set!: assignment disallowed;\n"
                        " cannot set variable before its definition\n"
                        "  variable: " (symbol->string (variable-source-name var))
-                       (identify-module var))]
+                       (identify-module var)
+                       (indentify-internal-name var))]
        [else
         (string-append (symbol->string (variable-source-name var))
                        ": undefined;\n cannot reference an identifier before its definition"
-                       (identify-module var))])
+                       (identify-module var)
+                       (indentify-internal-name var))])
       (current-continuation-marks)
       (variable-name var))))
 

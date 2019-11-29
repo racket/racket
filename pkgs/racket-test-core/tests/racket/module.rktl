@@ -3169,6 +3169,32 @@ case of module-leve bindings; it doesn't cover local bindings.
                   exn:fail:contract:arity?
                   #rx"define-values: result arity mismatch")
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure source-name tracking works across multiple definitions
+
+(module tries-to-use-first-defined-function-too-early racket/base
+  (define-syntax-rule (go)
+    (begin
+      (f 1)
+      (define (f x) x)
+      (define (g y) y)))
+  (go))
+
+(err/rt-test/once (dynamic-require ''tries-to-use-first-defined-function-too-early #f)
+                  exn:fail:contract:variable?
+                  #rx"^f:")
+
+(module tries-to-use-second-defined-function-too-early racket/base
+  (define-syntax-rule (go)
+    (begin
+      (f 1)
+      (define (g y) y)
+      (define (f x) x)))
+  (go))
+
+(err/rt-test/once (dynamic-require ''tries-to-use-second-defined-function-too-early #f)
+                  exn:fail:contract:variable?
+                  #rx"^f:")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
