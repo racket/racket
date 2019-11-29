@@ -191,6 +191,10 @@ jobs:
         path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
 
 # Tests
+# Unfortunately Actions does not support atm yaml anchors
+# otherwise all the following jobs could be simplified
+# Note: the reason we cannot transform this into a matrix
+# build is because we cannot use variables in the needs keyword.
   test-cgc:
     strategy:
       fail-fast: false
@@ -214,6 +218,71 @@ jobs:
       - name: Extend PATH with Racket executable
         working-directory: ../
         run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
+      - name: Check for Racket
+        run: racket --version
+      - name: Install catalog and required packages
+        run: |
+          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
+          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
+          raco pkg install --auto racket-test
+      - name: Run tests
+        run: raco test -l tests/racket/test
+
+  test-3m:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+        cify: [cify, nocify]
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-racket3m
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/download-artifact@master
+        with:
+          name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
+          path: ../
+      - name: Untar
+        working-directory: ../
+        run: tar -xvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+      - name: Extend PATH with Racket executable
+        working-directory: ../
+        run: echo "::set-env name=PATH::$PWD/racket3m/bin:$PATH"
+      - name: Check for Racket
+        run: racket --version
+      - name: Install catalog and required packages
+        run: |
+          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
+          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
+          raco pkg install --auto racket-test
+      - name: Run tests
+        run: raco test -l tests/racket/test
+
+  test-cs:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-racketcs
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/download-artifact@master
+        with:
+          name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
+          path: ../
+      - name: Untar
+        working-directory: ../
+        run: tar -xvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
+      - name: Extend PATH with Racket executable
+        working-directory: ../
+        run: echo "::set-env name=PATH::$PWD/racketcs/bin:$PATH"
       - name: Check for Racket
         run: racket --version
       - name: Install catalog and required packages
