@@ -266,7 +266,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-18.04, macos-latest]
-        cify: [cify, nocify]
 
     runs-on: ${{ matrix.os }}
 
@@ -276,11 +275,11 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/download-artifact@master
         with:
-          name: racketcs-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
+          name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
           path: ../
       - name: Untar
         working-directory: ../
-        run: tar -xvjf racketcs-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+        run: tar -xvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         working-directory: ../
         run: echo "::set-env name=PATH::$PWD/racketcs/bin:$PATH"
