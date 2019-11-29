@@ -140,7 +140,8 @@
 ;; ----------------------------------------
 ;; Alarms
 
-(flaky-test #f sync/timeout 0.1 (alarm-evt (+ (current-inexact-milliseconds) 200)))
+(unless (eq? (system-type 'gc) 'cgc)
+  (flaky-test #f sync/timeout 0.1 (alarm-evt (+ (current-inexact-milliseconds) 200))))
 (flaky-test 'ok sync/timeout 0.1
             (wrap-evt
              (alarm-evt (+ (current-inexact-milliseconds) 50))
