@@ -1157,11 +1157,9 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Let Matthew perform some basic sanity checks for locale-sensitive
-;; comparisons:
-(define known-locale? (and (regexp-match "mflatt|matthewf" (path->string (find-system-path 'home-dir)))
-			   (or (regexp-match "linux" (path->string (system-library-subpath)))
-			       (eq? 'macosx (system-type)))))
+;; Enable unreliable to run some basic sanity checks for locale-sensitive
+;; comparisons that need a locale wirth various properties:
+(define known-locale? (run-unreliable-tests? 'locale))
 
 (printf "Known locale?: ~a\n" known-locale?)
 

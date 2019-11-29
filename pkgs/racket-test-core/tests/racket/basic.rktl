@@ -9,16 +9,6 @@
          (prefix-in k: '#%kernel))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure `flaky-test` works
-
-(let ([x 0])
-  (define (inc! v)
-    (set! x (+ x v))
-    x)
-  ;; Will pass on the thrid try:
-  (flaky-test 3 inc! 1))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test '() 'null null)
 (test '() 'null '())

@@ -137,13 +137,6 @@ transcript.
     (define (test    expect fun         . args) (test* expect fun args #f #f))
     (make-keyword-procedure test/kw test)))
 
-;; A flaky test is one that won't always pass, perhaps because it
-;; is sensitive to timing or GC. But it should pass if we
-;; try enough times. The test must never error.
-(define-syntax-rule (flaky-test arg ...)
-  (parameterize ([wrong-result-retries 10])
-    (test arg ...)))
-
 (define (nonneg-exact? x)
   (and (exact? x)
        (integer? x)
@@ -419,3 +412,12 @@ transcript.
      ;; No way to detect stack overflow, and it's less interesting anyway,
      ;; but make up a number for testing purposes
      1000]))
+
+;; Set the `PLT_RUN_UNRELIABLE_TESTS` environment to a comma-separated set of
+;; extra tests to enable.
+(define (run-unreliable-tests? mode)
+  (define s (getenv "PLT_RUN_UNRELIABLE_TESTS"))
+  (and s
+       (let ([l (map string->symbol (string-split s ","))])
+         (memq mode l))))
+
