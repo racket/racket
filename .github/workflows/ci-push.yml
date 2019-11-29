@@ -229,6 +229,20 @@ jobs:
         run: |
           raco test -l tests/racket/test
           racket -l tests/racket/contract/all
+          raco test -l tests/json/json
+          raco test -l tests/file/main
+          raco test -l tests/net/head
+          raco test -l tests/net/uri-codec
+          raco test -l tests/net/url
+          raco test -l tests/net/url-port
+          raco test -l tests/net/encoders
+          raco test -l tests/openssl/basic
+          raco test -l tests/openssl/https
+          raco test -l tests/match/main
+          raco test -l tests/zo-path
+          raco test -c tests/xml
+          raco test -l tests/db/all-tests
+          raco test -c tests/stxparse
 
   test-3m:
     strategy:
@@ -264,7 +278,21 @@ jobs:
         run: |
           raco test -l tests/racket/test
           racket -l tests/racket/contract/all
-
+          raco test -l tests/json/json
+          raco test -l tests/file/main
+          raco test -l tests/net/head
+          raco test -l tests/net/uri-codec
+          raco test -l tests/net/url
+          raco test -l tests/net/url-port
+          raco test -l tests/net/encoders
+          raco test -l tests/openssl/basic
+          raco test -l tests/openssl/https
+          raco test -l tests/match/main
+          raco test -l tests/zo-path
+          raco test -c tests/xml
+          raco test -l tests/db/all-tests
+          raco test -c tests/stxparse
+          
   test-cs:
     strategy:
       fail-fast: false
@@ -298,3 +326,17 @@ jobs:
         run: |
           raco test -l tests/racket/test
           racket -l tests/racket/contract/all
+          raco test -l tests/json/json
+          raco test -l tests/file/main
+          raco test -l tests/net/head
+          raco test -l tests/net/uri-codec
+          raco test -l tests/net/url
+          raco test -l tests/net/url-port
+          raco test -l tests/net/encoders
+          raco test -l tests/openssl/basic
+          raco test -l tests/openssl/https
+          raco test -l tests/match/main
+          raco test -l tests/zo-path
+          raco test -c tests/xml
+          raco test -l tests/db/all-tests
+          raco test -c tests/stxparse
