@@ -1107,7 +1107,7 @@
          (call-with-values proc
            (lambda vals
              (unless (= (length syms) (length vals))
-               (raise-binding-result-arity-error syms vals))
+               (raise-definition-result-arity-error syms vals))
              (let loop ([vars vars] [vals vals] [modes modes])
                (unless (null? vars)
                  (do-variable-set! (car vars) (car vals) (car modes) #t)

@@ -3159,5 +3159,17 @@ case of module-leve bindings; it doesn't cover local bindings.
                  #rx"struct:spider")))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure error message is right for wrong number of
+;; values
+
+(module returns-obviously-wrong-number-of-values-to-definition racket/base
+  (define-values (x y z) (values 1 2 3 4)))
+
+(err/rt-test/once (dynamic-require ''returns-obviously-wrong-number-of-values-to-definition #f)
+                  exn:fail:contract:arity?
+                  #rx"define-values: result arity mismatch")
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

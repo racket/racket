@@ -431,6 +431,16 @@
          "\n  at: local-binding form"
          args))
 
+(define (raise-definition-result-arity-error expected-args args)
+  (apply raise-result-arity-error 'define-values
+         (length expected-args)
+         (if (null? expected-args)
+             ""
+             (string-append "\n  at: definition of "
+                            (symbol->string (car expected-args))
+                            " ..."))
+         args))
+
 (define raise-unsupported-error
   (case-lambda
    [(id msg)
