@@ -685,7 +685,7 @@
   [pseudo-random-generator-vector? (known-procedure/no-prompt 2)]
   [pseudo-random-generator? (known-procedure/pure/folding 2)]
   [quotient (known-procedure/folding 4)]
-  [quotient/remainder (known-procedure/no-prompt 4)]
+  [quotient/remainder (known-procedure 4)] ; no `no-prompt` due to multiple return values
   [raise (known-procedure 6)]
   [raise-argument-error (known-procedure -8)]
   [raise-arguments-error (known-procedure -4)]

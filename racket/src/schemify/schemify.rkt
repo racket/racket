@@ -343,7 +343,8 @@
               (finish-wrapped-definition (list id) rhs)])]
           [`(define-values ,ids ,rhs)
            (cond
-             [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples)
+             [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples
+                       #:result-arity (length ids))
               (match rhs
                 [`(values ,rhss ...)
                  ;; Flatten `(define-values (id ...) (values rhs ...))` to
@@ -378,7 +379,8 @@
               (finish-definition ids (append set-vars accum-exprs) null)]
              [`,_
               (cond
-                [(simple? #:pure? #f schemified prim-knowns knowns imports mutated simples)
+                [(simple? #:pure? #f schemified prim-knowns knowns imports mutated simples
+                          #:result-arity #f)
                  (loop (cdr l) mut-l (cons schemified accum-exprs) accum-ids knowns)]
                 [else
                  ;; In case `schemified` triggers an error, sync exported variables
@@ -581,7 +583,7 @@
               (authentic-valued? key knowns prim-knowns imports mutated))
             (cond
               [(and authentic-key?
-                    (simple? s-body prim-knowns knowns imports mutated simples))
+                    (simple? s-body prim-knowns knowns imports mutated simples #:result-arity #f))
                `(begin ,(ensure-single-valued s-key knowns prim-knowns imports mutated)
                        ,(ensure-single-valued s-val knowns prim-knowns imports mutated)
                        ,s-body)]
