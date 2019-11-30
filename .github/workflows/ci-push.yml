@@ -241,8 +241,11 @@ jobs:
           raco test -l tests/match/main
           raco test -l tests/zo-path
           raco test -c tests/xml
-          raco test -l tests/db/all-tests
           raco test -c tests/stxparse
+      - name: Install db tests dependency
+        run: raco pkg install --auto db-test
+      - name: Run db tests
+        run: raco test -l tests/db/all-tests
 
   test-3m:
     strategy:
@@ -290,8 +293,11 @@ jobs:
           raco test -l tests/match/main
           raco test -l tests/zo-path
           raco test -c tests/xml
-          raco test -l tests/db/all-tests
           raco test -c tests/stxparse
+      - name: Install db tests dependency
+        run: raco pkg install --auto db-test
+      - name: Run db tests
+        run: raco test -l tests/db/all-tests
           
   test-cs:
     strategy:
@@ -338,5 +344,8 @@ jobs:
           raco test -l tests/match/main
           raco test -l tests/zo-path
           raco test -c tests/xml
-          raco test -l tests/db/all-tests
           raco test -c tests/stxparse
+      - name: Install db tests dependency
+        run: raco pkg install --auto db-test
+      - name: Run db tests
+        run: raco test -l tests/db/all-tests
