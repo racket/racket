@@ -187,6 +187,12 @@
                  #:tag pt)))
        12)
 
+(ctest (let ([pt (make-continuation-prompt-tag)])
+         (+ 1 (% (fcontrol 5 #:tag pt)
+                 (λ (v k) (k v))
+                 #:tag pt)))
+       6)
+
 ;; ------------------------------------------------------------
 ;; spawn
 ;;  example from Queinnec & Serpete, POPL'91

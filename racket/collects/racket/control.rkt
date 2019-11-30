@@ -46,7 +46,8 @@
      (abort-current-continuation
       prompt-tag
       f
-      k))))
+      k))
+   prompt-tag))
 
 (define-syntax %
   (syntax-rules ()
