@@ -206,7 +206,7 @@ jobs:
       run: |
         call msvcprep.bat x86_amd64
         call build.bat
-        call ..\..\racket.exe csbuild.rkt --recurse-submodules --depth=1
+        call ..\..\racket.exe csbuild.rkt
 
   # Tests
   # Unfortunately Actions does not support atm yaml anchors
