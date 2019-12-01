@@ -220,28 +220,42 @@ jobs:
         run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
       - name: Check for Racket
         run: racket --version
-      - name: Install catalog and required packages
+      - name: Install catalog
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-          raco pkg install --auto racket-test
-      - name: Run tests
-        run: |
-          raco test -l tests/racket/test
-          racket -l tests/racket/contract/all
-          raco test -l tests/json/json
-          raco test -l tests/file/main
-          raco test -l tests/net/head
-          raco test -l tests/net/uri-codec
-          raco test -l tests/net/url
-          raco test -l tests/net/url-port
-          raco test -l tests/net/encoders
-          raco test -l tests/openssl/basic
-          raco test -l tests/openssl/https
-          raco test -l tests/match/main
-          raco test -l tests/zo-path
-          raco test -c tests/xml
-          raco test -c tests/stxparse
+      - name: Install racket-test dependency
+        run: raco pkg install --auto racket-test
+      - name: Run tests/racket/test
+        run: raco test -l tests/racket/test
+      - name: Run tests/racket/contract/all
+        run: racket -l tests/racket/contract/all
+      - name: Run tests/json/json
+        run: raco test -l tests/json/json
+      - name: Run tests/file/main
+        run: raco test -l tests/file/main
+      - name: Run tests/net/head
+        run: raco test -l tests/net/head
+      - name: Run tests/net/uri-codec
+        run: raco test -l tests/net/uri-codec
+      - name: Run tests/net/url
+        run: raco test -l tests/net/url
+      - name: Run tests/net/url-port
+        run: raco test -l tests/net/url-port
+      - name: Run tests/net/encoders
+        run: raco test -l tests/net/encoders
+      - name: Run tests/openssl/basic
+        run: raco test -l tests/openssl/basic
+      - name: Run tests/openssl/https
+        run: raco test -l tests/openssl/https
+      - name: Run tests/match/main
+        run: raco test -l tests/match/main
+      - name: Run tests/zo-path
+        run: raco test -l tests/zo-path
+      - name: Run tests/xml
+        run: raco test -c tests/xml
+      - name: Run tests/stxparse
+        run: raco test -c tests/stxparse
       - name: Install db tests dependency
         run: raco pkg install --auto db-test
       - name: Run db tests
@@ -276,24 +290,38 @@ jobs:
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-          raco pkg install --auto racket-test
-      - name: Run tests
-        run: |
-          raco test -l tests/racket/test
-          racket -l tests/racket/contract/all
-          raco test -l tests/json/json
-          raco test -l tests/file/main
-          raco test -l tests/net/head
-          raco test -l tests/net/uri-codec
-          raco test -l tests/net/url
-          raco test -l tests/net/url-port
-          raco test -l tests/net/encoders
-          raco test -l tests/openssl/basic
-          raco test -l tests/openssl/https
-          raco test -l tests/match/main
-          raco test -l tests/zo-path
-          raco test -c tests/xml
-          raco test -c tests/stxparse
+      - name: Install racket-test dependency
+        run: raco pkg install --auto racket-test
+      - name: Run tests/racket/test
+        run: raco test -l tests/racket/test
+      - name: Run tests/racket/contract/all
+        run: racket -l tests/racket/contract/all
+      - name: Run tests/json/json
+        run: raco test -l tests/json/json
+      - name: Run tests/file/main
+        run: raco test -l tests/file/main
+      - name: Run tests/net/head
+        run: raco test -l tests/net/head
+      - name: Run tests/net/uri-codec
+        run: raco test -l tests/net/uri-codec
+      - name: Run tests/net/url
+        run: raco test -l tests/net/url
+      - name: Run tests/net/url-port
+        run: raco test -l tests/net/url-port
+      - name: Run tests/net/encoders
+        run: raco test -l tests/net/encoders
+      - name: Run tests/openssl/basic
+        run: raco test -l tests/openssl/basic
+      - name: Run tests/openssl/https
+        run: raco test -l tests/openssl/https
+      - name: Run tests/match/main
+        run: raco test -l tests/match/main
+      - name: Run tests/zo-path
+        run: raco test -l tests/zo-path
+      - name: Run tests/xml
+        run: raco test -c tests/xml
+      - name: Run tests/stxparse
+        run: raco test -c tests/stxparse
       - name: Install db tests dependency
         run: raco pkg install --auto db-test
       - name: Run db tests
@@ -327,24 +355,38 @@ jobs:
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-          raco pkg install --auto racket-test
-      - name: Run tests
-        run: |
-          raco test -l tests/racket/test
-          racket -l tests/racket/contract/all
-          raco test -l tests/json/json
-          raco test -l tests/file/main
-          raco test -l tests/net/head
-          raco test -l tests/net/uri-codec
-          raco test -l tests/net/url
-          raco test -l tests/net/url-port
-          raco test -l tests/net/encoders
-          raco test -l tests/openssl/basic
-          raco test -l tests/openssl/https
-          raco test -l tests/match/main
-          raco test -l tests/zo-path
-          raco test -c tests/xml
-          raco test -c tests/stxparse
+      - name: Install racket-test dependency
+        run: raco pkg install --auto racket-test
+      - name: Run tests/racket/test
+        run: raco test -l tests/racket/test
+      - name: Run tests/racket/contract/all
+        run: racket -l tests/racket/contract/all
+      - name: Run tests/json/json
+        run: raco test -l tests/json/json
+      - name: Run tests/file/main
+        run: raco test -l tests/file/main
+      - name: Run tests/net/head
+        run: raco test -l tests/net/head
+      - name: Run tests/net/uri-codec
+        run: raco test -l tests/net/uri-codec
+      - name: Run tests/net/url
+        run: raco test -l tests/net/url
+      - name: Run tests/net/url-port
+        run: raco test -l tests/net/url-port
+      - name: Run tests/net/encoders
+        run: raco test -l tests/net/encoders
+      - name: Run tests/openssl/basic
+        run: raco test -l tests/openssl/basic
+      - name: Run tests/openssl/https
+        run: raco test -l tests/openssl/https
+      - name: Run tests/match/main
+        run: raco test -l tests/match/main
+      - name: Run tests/zo-path
+        run: raco test -l tests/zo-path
+      - name: Run tests/xml
+        run: raco test -c tests/xml
+      - name: Run tests/stxparse
+        run: raco test -c tests/stxparse
       - name: Install db tests dependency
         run: raco pkg install --auto db-test
       - name: Run db tests
