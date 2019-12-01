@@ -670,7 +670,9 @@
                                           (cond
                                            [(null? kws) null]
                                            [else
-                                            (cons (cadar kws) (loop (cdr kws)))])))])
+                                            (cons (cadar kws) (loop (cdr kws)))])))]
+                    [local-name (or local-name
+                                    (syntax-local-infer-name stx))])
                (with-syntax ([(kw-arg ...) kw-args]
                              [kws-sorted sorted-kws]
                              [(opt-arg ...) opt-args]
@@ -698,10 +700,8 @@
                              [with-kw-max-arg (if (null? (syntax-e #'rest))
                                                   (+ 2 (length plain-ids) (length opts))
                                                   #f)]
-                             [core (car (generate-temporaries (if (identifier? local-name)
-                                                                  (list local-name)
-                                                                  '(core))))]
-                             [unpack (car (generate-temporaries '(unpack)))])
+                             [core (generate-proc-id 'core local-name)]
+                             [unpack (generate-proc-id 'unpack local-name)])
                  (let ([mk-core
                         (lambda (kw-core?)
                           ;; body of procedure, where all optional
@@ -804,8 +804,7 @@
                       (mk-unpack)
                       (with-syntax ([kws (map car sorted-kws)]
                                     [no-kws (let ([p (mk-no-kws #t)]
-                                                  [n (or local-name
-                                                         (syntax-local-infer-name stx))])
+                                                  [n local-name])
                                               (if n
                                                   #`(let ([#,n #,p]) #,n)
                                                   p))]
@@ -833,7 +832,6 @@
 
                                     [with-kws (mk-with-kws)]
                                     [(_ mk-id . _) (with-syntax ([n (or local-name
-                                                                        (syntax-local-infer-name stx)
                                                                         'unknown)]
                                                                  [call-fail (mk-kw-arity-stub)])
                                                      (syntax-local-lift-values-expression
@@ -874,6 +872,17 @@
      null
      null
      args))
+
+  (define-for-syntax (generate-proc-id default local-name)
+    (cond
+      [(not local-name)
+       ((make-syntax-introducer) (datum->syntax #f default))]
+      [(symbol? local-name)
+       (generate-proc-id local-name #f)]
+      [(identifier? local-name)
+       (generate-proc-id (syntax-e local-name) #f)]
+      [else
+       (generate-proc-id default #f)]))
 
   ;; ----------------------------------------
 
