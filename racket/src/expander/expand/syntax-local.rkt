@@ -225,12 +225,13 @@
                 (set-box! counter (add1 (unbox counter)))
                 (define name (string->unreadable-symbol (format "lifted/~a" (unbox counter))))
                 (add-scope (datum->syntax #f name) (new-scope 'macro))))
-  (log-expand ctx 'lift-expr ids s)
+  (define added-s (flip-introduction-scopes s ctx))
+  (log-expand ctx 'lift-expr ids s added-s)
   (map (lambda (id) (flip-introduction-scopes id ctx))
        ;; returns converted ids:
        (add-lifted! lifts
                     ids
-                    (flip-introduction-scopes s ctx)
+                    added-s
                     (expand-context-phase ctx))))
 
 (define/who (syntax-local-lift-expression s)
@@ -256,15 +257,17 @@
        (raise-arguments-error who
                               "not currently transforming within a module declaration or top level"
                               "form to lift" s))
-     (add-lifted-module! lifts (flip-introduction-scopes s ctx) phase)]
+     (define added-s (flip-introduction-scopes s ctx))
+     (add-lifted-module! lifts added-s phase)
+     (log-expand ctx 'lift-module s added-s)]
     [else
      (raise-arguments-error who "not a module form"
-                            "given form" s)])
-  (log-expand ctx 'lift-statement s))
+                            "given form" s)]))
 
 ;; ----------------------------------------
 
 (define (do-local-lift-to-module who s
+                                 #:log-tag [log-tag #f]
                                  #:no-target-msg no-target-msg
                                  #:intro? [intro? #t]
                                  #:more-checks [more-checks void]
@@ -287,6 +290,9 @@
   (define shift-s (for/fold ([s pre-s]) ([phase (in-range phase wrt-phase -1)]) ; shift from lift-context phase
                     (shift-wrap s (sub1 phase) lift-ctx)))
   (define post-s (post-wrap shift-s wrt-phase lift-ctx)) ; post-wrap at lift-context phase
+  (when log-tag
+    ;; Separate changes in scopes (s -> added-s) from wrapping (added-s -> post-s).
+    (log-expand ctx log-tag s added-s post-s))
   (add-lifted! lift-ctx post-s wrt-phase) ; record lift for the target phase
   (values ctx post-s))
 
@@ -336,6 +342,7 @@
   (define-values (ctx also-s)
     (do-local-lift-to-module who
                              s
+                             #:log-tag 'lift-end-decl
                              #:no-target-msg "not currently transforming an expression within a module declaration"
                              #:get-lift-ctx expand-context-to-module-lifts
                              #:get-wrt-phase (lambda (lift-ctx) 0) ; always relative to 0
@@ -348,7 +355,7 @@
                              #:shift-wrap
                              (lambda (s phase to-module-lift-ctx)
                                (wrap-form 'begin-for-syntax s phase))))
-  (log-expand ctx 'lift-statement s))
+  (void))
 
 (define (wrap-form sym s phase)
   (datum->syntax
