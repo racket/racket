@@ -974,11 +974,11 @@
           (define-match m (syntax-disarm s) #:unless (expand-context-to-parsed? rhs-ctx)
             '(define-values _ _))
           (define rebuild-s (keep-as-needed rhs-ctx s #:keep-for-parsed? #t))
-          (log-defn-enter body-ctx body)
+          (log-expand* body-ctx ['visit #f] ['enter-prim #f] ['prim-define-values #f])
           (define exp-rhs (performance-region
                            ['expand 'form-in-module/2]
                            (expand (semi-parsed-define-values-rhs body) rhs-ctx)))
-          (log-defn-exit body-ctx body exp-rhs)
+          (log-expand* body-ctx ['exit-prim/return #f])
           (define comp-form
             (parsed-define-values rebuild-s ids syms
                                   (if (expand-context-to-parsed? rhs-ctx)
@@ -1443,26 +1443,3 @@
 (define (lifted-defns-extract-syntax lifted-defns)
   (for/list ([lifted-defn (in-list lifted-defns)])
     (defn-extract-syntax lifted-defn)))
-
-(define (log-defn-enter ctx defn)
-  (log-expand...
-   ctx
-   (lambda (obs)
-     (define s-defn (defn-extract-syntax defn))
-     (define-match m s-defn '(define-values _ ...))
-     (...log-expand obs
-                    ['visit s-defn]
-                    ['resolve (m 'define-values)]
-                    ['enter-prim s-defn]
-                    ['prim-define-values #f]))))
-
-(define (log-defn-exit ctx defn exp-rhs)
-  (log-expand...
-   ctx
-   (lambda (obs)
-     (define s-defn
-       (datum->syntax #f `(define-values ,(semi-parsed-define-values-ids defn)
-                            ,exp-rhs)
-                      (semi-parsed-define-values-s defn)))
-     (...log-expand obs
-                    ['exit-prim/return s-defn]))))
