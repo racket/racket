@@ -741,12 +741,13 @@
       (define lifted-defns (get-and-clear-lifts! (expand-context-lifts partial-body-ctx)))
       (define lifted-reqs (get-and-clear-require-lifts! (expand-context-require-lifts partial-body-ctx)))
       (define lifted-mods (get-and-clear-module-lifts! (expand-context-module-lifts partial-body-ctx)))
+      (define added-lifted-mods (add-post-expansion-scope lifted-mods partial-body-ctx))
       (unless (and (null? lifted-defns) (null? lifted-reqs) (null? lifted-mods))
         (log-expand partial-body-ctx 'module-pass1-lifts
                     (lifted-defns-extract-syntax lifted-defns)
                     lifted-reqs
-                    lifted-mods))
-      (define exp-lifted-mods (loop #f (add-post-expansion-scope lifted-mods partial-body-ctx)))
+                    added-lifted-mods))
+      (define exp-lifted-mods (loop #f added-lifted-mods))
       (log-expand partial-body-ctx 'module-pass1-case exp-body)
       (append/tail-on-null
        ;; Save any requires lifted during partial expansion
