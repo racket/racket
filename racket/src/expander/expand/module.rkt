@@ -599,10 +599,12 @@
        [else
         ;; A single body form might be a macro that expands to
         ;; the primitive `#%module-begin` form:
+        (define named-body-s (add-enclosing-name-property (car bodys) module-name-sym))
+        (log-expand ctx 'track-syntax 'property named-body-s (car bodys))
         (define partly-expanded-body
           (performance-region
            ['expand 'module-begin]
-           (expand (add-enclosing-name-property (car bodys) module-name-sym)
+           (expand named-body-s
                    (make-mb-ctx))))
         (cond
          [(eq? '#%module-begin (core-form-sym (syntax-disarm partly-expanded-body) phase))
@@ -617,7 +619,9 @@
       ;; Multiple body forms definitely need a `#%module-begin` wrapper
       (add-module-begin bodys s scopes-s phase module-name-sym
                         (make-mb-ctx))]))
-  (add-enclosing-name-property mb module-name-sym))
+  (define named-mb (add-enclosing-name-property mb module-name-sym))
+  (log-expand ctx 'track-syntax 'property named-mb mb)
+  named-mb)
 
 ;; Add `#%module-begin`, because it's needed
 (define (add-module-begin bodys s scopes-s phase module-name-sym mb-ctx
@@ -629,9 +633,11 @@
     (raise-syntax-error #f "no #%module-begin binding in the module's language" s))
   (define mb (datum->syntax disarmed-scopes-s `(,mb-id ,@bodys) s s))
   (log-expand mb-ctx 'tag mb)
+  (define named-mb (add-enclosing-name-property mb module-name-sym))
+  (log-expand mb-ctx 'track-syntax 'property named-mb mb)
   (define partly-expanded-mb (performance-region
                               ['expand 'module-begin]
-                              (expand (add-enclosing-name-property mb module-name-sym)
+                              (expand named-mb
                                       mb-ctx)))
   (unless (eq? '#%module-begin (core-form-sym (syntax-disarm partly-expanded-mb) phase))
     (raise-syntax-error #f "expansion of #%module-begin is not a #%plain-module-begin form" s
