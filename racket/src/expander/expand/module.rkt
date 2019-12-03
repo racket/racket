@@ -726,8 +726,9 @@
         (cond
           [(null? bodys) null]
           [else
-           (log-expand partial-body-ctx 'module-end-lifts bodys)
-           (loop #t (add-post-expansion-scope bodys partial-body-ctx))])]
+           (define added-bodys (add-post-expansion-scope bodys partial-body-ctx))
+           (log-expand partial-body-ctx 'module-end-lifts added-bodys)
+           (loop #t added-bodys)])]
        [else null])]
      [else
       (define rest-bodys (cdr bodys))
