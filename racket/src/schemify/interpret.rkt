@@ -622,8 +622,10 @@
                       (apply values new-stack vals))
                   (loop (fx+ i 1) new-stack)))))]
         [#($value ,e)
-         (let ([v (interpret e stack)])
-           v)]
+         (let-values ([(new-stack v) (interpret e stack #f)])
+           (if tail?
+               v
+               (values new-stack v)))]
         [#(clear ,clears ,e)
          (let loop ([clears clears] [stack stack])
            (cond
