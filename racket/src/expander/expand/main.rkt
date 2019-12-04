@@ -534,8 +534,8 @@
 
 ;; ----------------------------------------
 
-;; Expand `s` as a compile-time expression relative to the current
-;; expansion context
+;; Expand `s` and capture lifted expressions, combining expanded term
+;; and lifts using `begin` or `let` wrapper
 (define (expand/capture-lifts s ctx
                               #:expand-lifts? [expand-lifts? #f]
                               #:begin-form? [begin-form? #f]
