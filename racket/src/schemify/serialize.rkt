@@ -161,7 +161,7 @@
           (large-quoted? q))
      ;; a `to-fasl` struct is recognized like
      ;; paths and `path-for-srcloc`:
-     (define id (add-lifted (to-fasl (box q) #f)))
+     (define id (add-lifted (to-fasl (box q) '#() #f)))
      `(force-unfasl ,id)]
     [else    
      (let make-construct ([q q])
@@ -189,7 +189,7 @@
                  ,(let ([src (srcloc-source q)])
                     (if (and (not for-cify?)
                              ;; Need to handle paths, need to reject (later) anything other
-                             ;; than a few type slike strings and byte strings
+                             ;; than a few types like strings and byte strings
                              (not (or (string? src) (bytes? src) (symbol? src) (not src))))
                         ;; Like paths, `path-for-srcloc` must be recognized later
                         (make-construct (path-for-srcloc src))
@@ -255,16 +255,21 @@
                    (number? q)
                    (char? q)
                    (boolean? q)
-                   (symbol? q)
+                   (and (symbol? q)
+                        (or (symbol-interned? q)
+                            (symbol-unreadable? q)))
                    (eof-object? q)
                    (void? q)
                    (eq? q unsafe-undefined))
                ;; Serializable in-place:
                `(quote ,q)]
+              [(symbol? q)
+               ;; Must be an uninterned symbol
+               `(force-unfasl ,(add-lifted (to-fasl (box q) '#() #f)))]
               [else
                ;; Lift out anything non-serializable, so we can deal with those
                ;; values like we deal with paths:
-               (define id (add-lifted (to-fasl (box q) #f)))
+               (define id (add-lifted (to-fasl (box q) '#() #f)))
                `(force-unfasl ,id)]))
           (cond
             [(and (quote? rhs)

@@ -120,20 +120,33 @@
 (define (s-exp->fasl v
                      [orig-o #f]
                      #:keep-mutable? [keep-mutable? #f]
-                     #:handle-fail [handle-fail #f])
+                     #:handle-fail [handle-fail #f]
+                     #:external-lift? [external-lift? #f])
   (when orig-o
     (unless (output-port? orig-o)
       (raise-argument-error 'fasl->s-exp "(or/c output-port? #f)" orig-o)))
   (when handle-fail
     (unless (and (procedure? handle-fail) (procedure-arity-includes? handle-fail 1))
       (raise-argument-error 'fasl->s-exp "(or/c (procedure-arity-includes/c 1) #f)" handle-fail)))
+  (when external-lift?
+    (unless (and (procedure? external-lift?) (procedure-arity-includes? external-lift? 1))
+      (raise-argument-error 'fasl->s-exp "(or/c (procedure-arity-includes/c 1) #f)" external-lift?)))
   (define o (or orig-o (open-output-bytes)))
   (define shared (make-hasheq))
+  (define external-lift (and external-lift? (make-hasheq)))
   (define shared-counter 0)
   ;; Find shared symbols and similar for compactness. We don't try to
   ;; save general graph structure, leaving that to `serialize`.
   (let loop ([v v])
     (cond
+      [(and external-lift
+            (hash-ref external-lift v #f))
+       (void)]
+      [(and external-lift?
+            (external-lift? v))
+       (hash-set! external-lift v #t)
+       (set! shared-counter (add1 shared-counter))
+       (hash-set! shared v (- shared-counter))]
       [(or (symbol? v)
            (keyword? v)
            (string? v)
@@ -380,7 +393,8 @@
 ;; mutable pair containing a byte string and position
 
 (define (fasl->s-exp orig-i
-                     #:datum-intern? [intern? #t])
+                     #:datum-intern? [intern? #t]
+                     #:external-lifts [external-lifts '#()])
   (define init-i (cond
                    [(bytes? orig-i) (mcons orig-i 0)]
                    [(input-port? orig-i) orig-i]
@@ -389,8 +403,15 @@
     (read-error "unrecognized prefix"))
   (define shared-count (read-fasl-integer init-i))
   (define shared (make-vector shared-count))
-  (define len (read-fasl-integer init-i))
 
+  (unless (and (vector? external-lifts)
+               ((vector-length external-lifts) . <= . shared-count))
+    (error 'fasl->s-exp "external-lift vector does not match expected size"))
+  (for ([v (in-vector external-lifts)]
+        [pos (in-naturals)])
+    (vector-set! shared pos (vector-ref external-lifts pos)))
+
+  (define len (read-fasl-integer init-i))
   (define i (if (mpair? init-i)
                 init-i
                 ;; Faster to work with a byte string:

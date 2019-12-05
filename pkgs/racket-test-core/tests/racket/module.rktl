@@ -3197,5 +3197,29 @@ case of module-leve bindings; it doesn't cover local bindings.
                   #rx"^f:")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check on gensyms that span phases in marshaled code
+
+(let ([e '(module has-a-gensym-that-spans-phases racket/base
+            (require (for-syntax racket/base))
+
+            (define-syntax (def stx)
+              (syntax-case stx ()
+                [(_ id s-id)
+                 (let ([sym (gensym)])
+                   #`(begin
+                       (provide id s-id)
+                       (define id '#,sym)
+                       (define-syntax (s-id stx)
+                         #'(quote #,sym))))]))
+            
+            (def the-gensym expand-to-the-gensym))])
+  (define o (open-output-bytes))
+  (write (compile e) o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read-syntax 'expr (open-input-bytes (get-output-bytes o))))))
+(require 'has-a-gensym-that-spans-phases)
+(test #t eq? the-gensym (expand-to-the-gensym))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

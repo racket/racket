@@ -30,7 +30,9 @@
     [`(let* ,bindings ,body)
      (define (path-binding? b)
        (define rhs (cadr b))
-       (or (path? rhs) (path-for-srcloc? rhs) (to-fasl? rhs)))
+       (or (path? rhs)
+           (path-for-srcloc? rhs)
+           (to-fasl? rhs)))
      (define any-path?
        (for/or ([b (in-list bindings)])
          (path-binding? b)))
@@ -60,7 +62,30 @@
   (lambda (orig-p)
     (cond
       [(to-fasl? orig-p)
-       (box (s-exp->fasl (force-unfasl orig-p) #:handle-fail cannot-fasl))]
+       (define v (force-unfasl orig-p))
+       (cond
+         [(symbol? v)
+          ;; Shortcut for just an uninterned symbol:
+          (box v)]
+         [else
+          (define lifts '())
+          (define bstr (s-exp->fasl v
+                                    #:handle-fail cannot-fasl
+                                    ;; We have to keep uninterned symbols exposed, so they're
+                                    ;; fasled with the encloding linklet directory
+                                    #:external-lift? (lambda (v)
+                                                       (and (symbol? v)
+                                                            (not (symbol-interned? v))
+                                                            (not (symbol-unreadable? v))
+                                                            (begin
+                                                              (set! lifts (cons v lifts))
+                                                              #t)))))
+          (if (null? lifts)
+              (box bstr)
+              (box (cons bstr (list->vector (reverse lifts)))))])]
+      [(symbol? orig-p)
+       ;; Must be an uninterned symbol:
+       orig-p]
       [else
        (define p (if (path-for-srcloc? orig-p)
                      (path-for-srcloc-path orig-p)
@@ -84,9 +109,16 @@
 
 (define (compiled-path->path e)
   (cond
-    [(box? e) (to-fasl (box (unbox e))
-                       (or (current-load-relative-directory)
-                           (current-directory)))]
+    [(box? e)
+     (define c (unbox e))
+     (to-fasl (box (if (pair? c) (car c) c))
+              (if (pair? c) (cdr c) '#())
+              (and (not (symbol? c))
+                   (or (current-load-relative-directory)
+                       (current-directory))))]
+    [(symbol? e)
+     ;; Must be an uninterned symbol:
+     e]
     [(bytes? e) (bytes->path e)]
     [(string? e) e] ; was `path-for-srcloc` on write
     [else (relative-path-elements->path e)]))
@@ -97,7 +129,9 @@
   (cond
     [(bytes? v)
      (define v2 (parameterize ([current-load-relative-directory (to-fasl-wrt tf)])
-                  (fasl->s-exp v #:datum-intern? #t)))
+                  (fasl->s-exp v
+                               #:datum-intern? #t
+                               #:external-lifts (to-fasl-lifts tf))))
      (box-cas! vb v v2)
      (set-to-fasl-wrt! tf #f)
      (unbox vb)]

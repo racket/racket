@@ -99,6 +99,7 @@
          generate-interrupt-trap
          $track-dynamic-closure-counts
          $suppress-primitive-inlining
+         uninterned-symbol? string->uninterned-symbol
          debug-level
          scheme-version-number
          scheme-fork-version-number

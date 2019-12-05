@@ -12,10 +12,12 @@
 @defproc[(s-exp->fasl [v any/c]
                       [out (or/c output-port? #f) #f]
                       [#:keep-mutable? keep-mutable? any/c #f]
-                      [#:handle-fail handle-fail (or/c #f (any/c . -> . any/c)) #f])
+                      [#:handle-fail handle-fail (or/c #f (any/c . -> . any/c)) #f]
+                      [#:external-lift? external-lift? (or/c #f (any/c . -> . any/c)) #f]
          (or/c (void) bytes?)]
 @defproc[(fasl->s-exp [in (or/c input-port? bytes?)]
-                      [#:datum-intern? datum-intern? any/c #t])
+                      [#:datum-intern? datum-intern? any/c #t]
+                      [#:external-lifts external-lifts vector? '#()])
          any/c]
 )]{
 
@@ -42,6 +44,15 @@ literal, and if @racket[handle-fail] is not @racket[#f], then
 returning a replacement value. If @racket[handle-fail] is @racket[#f],
 then the @exnraise[exn:fail:contract] when an invalid value is
 encountered.
+
+If @racket[external-lift?] is not @racket[#f], then it receives each
+value @racket[_v-sub] encountered in @racket[v] by
+@racket[s-exp->fasl]. If the result of @racket[external-lift?] on
+@racket[_v-sub] is true, then @racket[_v-sub] is not encoded in the
+result, and it instead treated as @deftech{externally lifted}. A
+deserializing @racket[fasl->s-exp] receives a @racket[external-lifts]
+vector that has one value for each externally lifted value, in the
+same order as passed to @racket[external-lift?] on serialization.
 
 Like @racket[(compile `(quote ,v))], @racket[s-exp->fasl] does not
 preserve graph structure, support cycles, or handle non-@tech{prefab}
@@ -80,7 +91,8 @@ fasl
                                      and added the @racket[#:keep-mutable?]
                                      and @racket[#:datum-intern?] arguments.}
          #:changed "7.3.0.7" @elem{Added support for @tech{correlated objects}.}
-         #:changed "7.5.0.3" @elem{Added the @racket[#:handle-fail] argument.}]}
+         #:changed "7.5.0.3" @elem{Added the @racket[#:handle-fail] argument.}
+         #:changed "7.5.0.9" @elem{Added the @racket[#:external-lift?] and @racket[#:external-lifts] arguments.}]}
 
 @; ----------------------------------------------------------------------
 

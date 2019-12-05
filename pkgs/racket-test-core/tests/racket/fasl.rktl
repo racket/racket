@@ -212,4 +212,16 @@
 (test (list (dynamic-require 'racket/unsafe/undefined 'unsafe-undefined))
       fasl->s-exp (s-exp->fasl (list (dynamic-require 'racket/unsafe/undefined 'unsafe-undefined))))
 
+;; Check external-lift support:
+(let ([lifts '()]
+      [data '(a #(b) #s(posn c d a a) #&c)])
+  (let ([bstr (s-exp->fasl data
+                           #:external-lift? (lambda (v)
+                                              (cond
+                                                [(memq v '(a b c d))
+                                                 (set! lifts (cons v lifts))
+                                                 #t]
+                                                [else #f])))])
+    (test data fasl->s-exp bstr #:external-lifts (list->vector (reverse lifts)))))
+
 (report-errs)

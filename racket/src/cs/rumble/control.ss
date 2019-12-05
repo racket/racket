@@ -1551,7 +1551,7 @@
 
 (define make-continuation-mark-key
   (case-lambda
-   [() (make-continuation-mark-key (gensym))]
+   [() (make-continuation-mark-key (#%gensym))]
    [(name) (create-continuation-mark-key name)]))
 
 (define (continuation-mark-key? v)

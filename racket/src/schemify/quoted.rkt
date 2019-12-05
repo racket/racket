@@ -13,7 +13,7 @@
       [for-cify?
        (not (or (and (exact-integer? q)
                      ;; always a fixnum:
-                     (<= (- (expt 2 29)) q (expt 2 29)))
+                     (<= (- (expt 2 29)) q (sub1 (expt 2 29))))
                 (boolean? q)
                 (null? q)
                 (void? q)))]
@@ -37,7 +37,10 @@
            (number? q)
            (char? q)
            (boolean? q)
-           (symbol? q)
+           (and (symbol? q)
+                ;; lift out gensym for sharing across phases
+                (or (symbol-interned? q)
+                    (symbol-unreadable? q)))
            (eof-object? q)
            (void? q)
            (eq? q unsafe-undefined))
