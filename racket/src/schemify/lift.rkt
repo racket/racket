@@ -1,6 +1,7 @@
 #lang racket/base
 (require "match.rkt"
-         "wrap.rkt")
+         "wrap.rkt"
+         "gensym.rkt")
 
 ;; Reduces closure allocation by lifting bindings that are only used
 ;; in calls that have the right number of arguments.
@@ -592,7 +593,7 @@
            (define new-rhs (convert-lifted-calls-in-expr rhs lifts frees empties))
            (cond
              [(indirected? (hash-ref lifts (unwrap id) #f))
-              `[,(gensym) (unsafe-set-box*! ,id ,new-rhs)]]
+              `[,(deterministic-gensym "seq") (unsafe-set-box*! ,id ,new-rhs)]]
              [else `[,id ,new-rhs]])))
        (define new-bindings
          (if (null? bindings)
@@ -751,14 +752,15 @@
   (define (lift-if-empty v lifts empties new-v)
     (cond
       [(hash-ref lifts v #f)
-       (define id (gensym 'procz))
+       (define id (deterministic-gensym "procz"))
        (set-box! empties (cons `[,id ,new-v] (unbox empties)))
        id]
       [else new-v]))
-   
+
   ;; ----------------------------------------
   ;; Go
   
   (if (lift-in? v)
-      (lift-in v)
+      (with-deterministic-gensym
+        (lift-in v))
       v))

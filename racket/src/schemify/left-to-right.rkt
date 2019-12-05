@@ -1,7 +1,8 @@
 #lang racket/base
 (require "wrap.rkt"
          "match.rkt"
-         "simple.rkt")
+         "simple.rkt"
+         "gensym.rkt")
 
 (provide left-to-right/let
          left-to-right/let-values
@@ -104,7 +105,7 @@
           `(let ([,pending-id ,pending-non-simple])
              ,(loop l accum #f #f))]
          [else
-          (define g (gensym "app_"))
+          (define g (deterministic-gensym "app_"))
           (loop (cdr l) (cons g accum) (car l) g)]))]))
 
 ;; ----------------------------------------

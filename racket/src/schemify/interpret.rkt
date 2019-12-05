@@ -6,7 +6,8 @@
          "path-for-srcloc.rkt"
          "to-fasl.rkt"
          "interp-match.rkt"
-         "interp-stack.rkt")
+         "interp-stack.rkt"
+         "gensym.rkt")
 
 ;; Interpreter for the output of "jitify". This little interpreter is
 ;; useful to avoid going through a more heavyweight `eval` or
@@ -267,7 +268,7 @@
        (compile-assignment id rhs env stack-depth stk-i)]
       [`(define-values ,ids ,rhs)
        (define gen-ids (for/list ([id (in-list ids)])
-                         (gensym (unwrap id))))
+                         (deterministic-gensym (unwrap id))))
        (compile-expr `(call-with-values (lambda () ,rhs)
                         (lambda ,gen-ids
                           ,@(if (null? ids)
@@ -424,9 +425,10 @@
         pos))
     (cond
       [(null? clears) e]
-      [else (vector 'clear clears e)]))
+      [else (vector 'clear (sort clears <) e)]))
 
-  (start linklet-e))
+  (with-deterministic-gensym
+    (start linklet-e)))
 
 ;; ----------------------------------------
 

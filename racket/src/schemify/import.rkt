@@ -1,4 +1,6 @@
 #lang racket/base
+(require "gensym.rkt")
+
 (provide (struct-out import)
          (struct-out import-group)
 
@@ -83,8 +85,8 @@
         (and (eq? ext-id (import-ext-id im))
              (import-int-id im)))
       ;; `ext-id` from the group is not currently imported; add it as an import
-      (let ([id (gensym ext-id)]
-            [int-id (gensym ext-id)])
+      (let ([id (deterministic-gensym ext-id)]
+            [int-id (deterministic-gensym ext-id)])
         (define im (import grp id int-id ext-id))
         (set-import-group-imports! grp (cons im (import-group-imports grp)))
         (hash-set! imports int-id im)

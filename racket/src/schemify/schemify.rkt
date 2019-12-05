@@ -23,7 +23,8 @@
          "ptr-ref-set.rkt"
          "literal.rkt"
          "authentic.rkt"
-         "single-valued.rkt")
+         "single-valued.rkt"
+         "gensym.rkt")
 
 (provide schemify-linklet
          schemify-body)
@@ -78,118 +79,120 @@
 (define (schemify-linklet lk serializable? datum-intern? for-jitify? allow-set!-undefined?
                           unsafe-mode? enforce-constant? allow-inline? no-prompt?
                           prim-knowns primitives get-import-knowns import-keys)
-  (define (im-int-id id) (unwrap (if (pair? id) (cadr id) id)))
-  (define (im-ext-id id) (unwrap (if (pair? id) (car id) id)))
-  (define (ex-int-id id) (unwrap (if (pair? id) (car id) id)))
-  (define (ex-ext-id id) (unwrap (if (pair? id) (cadr id) id)))
-  ;; Assume no wraps unless the level of an id or expression
-  (match lk
-    [`(linklet ,im-idss ,ex-ids . ,bodys)
-     ;; For imports, map symbols to gensymed `variable` argument names,
-     ;; keeping `import` records in groups:
-     (define grps
-       (for/list ([im-ids (in-list im-idss)]
-                  [index (in-naturals)])
-         ;; An import key from `import-keys` lets us get cross-module
-         ;; information on demand
-         (import-group index (and import-keys (vector-ref import-keys index))
-                       get-import-knowns #f #f
-                       '())))
-     ;; Record import information in both the `imports` table and within
-     ;; the import-group record
-     (define imports
-       (let ([imports (make-hasheq)])
-         (for ([im-ids (in-list im-idss)]
-               [grp (in-list grps)])
-           (set-import-group-imports!
-            grp
-            (for/list ([im-id (in-list im-ids)])
-              (define id (im-int-id im-id))
-              (define ext-id (im-ext-id im-id))
-              (define int-id (gensym (symbol->string id)))
-              (define im (import grp int-id id ext-id))
-              (hash-set! imports id im)
-              (hash-set! imports int-id im) ; useful for optimizer to look up known info late
-              im)))
-         imports))
-     ;; Inlining can add new import groups or add imports to an existing group
-     (define new-grps '())
-     (define add-import!
-       (make-add-import! imports
-                         grps
-                         get-import-knowns
-                         (lambda (new-grp) (set! new-grps (cons new-grp new-grps)))))
-     ;; For exports, too, map symbols to gensymed `variable` argument names
-     (define exports
-       (for/fold ([exports (hasheq)]) ([ex-id (in-list ex-ids)])
-         (define id (ex-int-id ex-id))
-         (hash-set exports id (export (gensym (symbol->string id)) (ex-ext-id ex-id)))))
-     ;; Lift any quoted constants that can't be serialized
-     (define-values (bodys/constants-lifted lifted-constants)
-       (if serializable?
-           (convert-for-serialize bodys #f datum-intern?)
-           (values bodys null)))
-     ;; Collect source names for defined identifiers, to the degree that the
-     ;; original source name differs from the current name
-     (define src-syms (get-definition-source-syms bodys))
-     ;; Schemify the body, collecting information about defined names:
-     (define-values (new-body defn-info mutated)
-       (schemify-body* bodys/constants-lifted prim-knowns primitives imports exports
-                       for-jitify? allow-set!-undefined? add-import! #f
-                       unsafe-mode? enforce-constant? allow-inline? no-prompt?))
-     (define all-grps (append grps (reverse new-grps)))
-     (values
-      ;; Build `lambda` with schemified body:
-      (make-let*
-       lifted-constants
-       `(lambda (instance-variable-reference
-                 ,@(for*/list ([grp (in-list all-grps)]
-                               [im (in-list (import-group-imports grp))])
-                     (import-id im))
-                 ,@(for/list ([ex-id (in-list ex-ids)])
-                     (export-id (hash-ref exports (ex-int-id ex-id)))))
-          ,@new-body))
-      ;; Imports (external names), possibly extended via inlining:
-      (for/list ([grp (in-list all-grps)])
-        (for/list ([im (in-list (import-group-imports grp))])
-          (import-ext-id im)))
-      ;; Exports (external names, but paired with source name if it's different):
-      (for/list ([ex-id (in-list ex-ids)])
-        (define sym (ex-ext-id ex-id))
-        (define int-sym (ex-int-id ex-id))
-        (define src-sym (hash-ref src-syms int-sym sym)) ; external name unless 'source-name
-        (if (eq? sym src-sym) sym (cons sym src-sym)))
-      ;; Import keys --- revised if we added any import groups
-      (if (null? new-grps)
-          import-keys
-          (for/vector #:length (length all-grps) ([grp (in-list all-grps)])
-            (import-group-key grp)))
-      ;; Import ABI: request values for constants, `variable`s otherwise
-      (for/list ([grp (in-list all-grps)])
-        (define im-ready? (import-group-lookup-ready? grp))
-        (for/list ([im (in-list (import-group-imports grp))])
-          (and im-ready?
-               (known-constant? (import-group-lookup grp (import-ext-id im))))))
-      ;; Convert internal to external identifiers for known-value info
-      (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
-        (define id (ex-int-id ex-id))
-        (define v (known-inline->export-known (hash-ref defn-info id #f)
-                                              prim-knowns imports exports
-                                              serializable?))
-        (cond
-         [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
-          (define ext-id (ex-ext-id ex-id))
-          (hash-set knowns ext-id (or v a-known-constant))]
-         [else knowns])))]))
+  (with-deterministic-gensym
+    (define (im-int-id id) (unwrap (if (pair? id) (cadr id) id)))
+    (define (im-ext-id id) (unwrap (if (pair? id) (car id) id)))
+    (define (ex-int-id id) (unwrap (if (pair? id) (car id) id)))
+    (define (ex-ext-id id) (unwrap (if (pair? id) (cadr id) id)))
+    ;; Assume no wraps unless the level of an id or expression
+    (match lk
+      [`(linklet ,im-idss ,ex-ids . ,bodys)
+       ;; For imports, map symbols to gensymed `variable` argument names,
+       ;; keeping `import` records in groups:
+       (define grps
+         (for/list ([im-ids (in-list im-idss)]
+                    [index (in-naturals)])
+           ;; An import key from `import-keys` lets us get cross-module
+           ;; information on demand
+           (import-group index (and import-keys (vector-ref import-keys index))
+                         get-import-knowns #f #f
+                         '())))
+       ;; Record import information in both the `imports` table and within
+       ;; the import-group record
+       (define imports
+         (let ([imports (make-hasheq)])
+           (for ([im-ids (in-list im-idss)]
+                 [grp (in-list grps)])
+             (set-import-group-imports!
+              grp
+              (for/list ([im-id (in-list im-ids)])
+                (define id (im-int-id im-id))
+                (define ext-id (im-ext-id im-id))
+                (define int-id (deterministic-gensym id))
+                (define im (import grp int-id id ext-id))
+                (hash-set! imports id im)
+                (hash-set! imports int-id im) ; useful for optimizer to look up known info late
+                im)))
+           imports))
+       ;; Inlining can add new import groups or add imports to an existing group
+       (define new-grps '())
+       (define add-import!
+         (make-add-import! imports
+                           grps
+                           get-import-knowns
+                           (lambda (new-grp) (set! new-grps (cons new-grp new-grps)))))
+       ;; For exports, too, map symbols to gensymed `variable` argument names
+       (define exports
+         (for/fold ([exports (hasheq)]) ([ex-id (in-list ex-ids)])
+           (define id (ex-int-id ex-id))
+           (hash-set exports id (export (deterministic-gensym id) (ex-ext-id ex-id)))))
+       ;; Lift any quoted constants that can't be serialized
+       (define-values (bodys/constants-lifted lifted-constants)
+         (if serializable?
+             (convert-for-serialize bodys #f datum-intern?)
+             (values bodys null)))
+       ;; Collect source names for defined identifiers, to the degree that the
+       ;; original source name differs from the current name
+       (define src-syms (get-definition-source-syms bodys))
+       ;; Schemify the body, collecting information about defined names:
+       (define-values (new-body defn-info mutated)
+         (schemify-body* bodys/constants-lifted prim-knowns primitives imports exports
+                         for-jitify? allow-set!-undefined? add-import! #f
+                         unsafe-mode? enforce-constant? allow-inline? no-prompt?))
+       (define all-grps (append grps (reverse new-grps)))
+       (values
+        ;; Build `lambda` with schemified body:
+        (make-let*
+         lifted-constants
+         `(lambda (instance-variable-reference
+                   ,@(for*/list ([grp (in-list all-grps)]
+                                 [im (in-list (import-group-imports grp))])
+                       (import-id im))
+                   ,@(for/list ([ex-id (in-list ex-ids)])
+                       (export-id (hash-ref exports (ex-int-id ex-id)))))
+            ,@new-body))
+        ;; Imports (external names), possibly extended via inlining:
+        (for/list ([grp (in-list all-grps)])
+          (for/list ([im (in-list (import-group-imports grp))])
+            (import-ext-id im)))
+        ;; Exports (external names, but paired with source name if it's different):
+        (for/list ([ex-id (in-list ex-ids)])
+          (define sym (ex-ext-id ex-id))
+          (define int-sym (ex-int-id ex-id))
+          (define src-sym (hash-ref src-syms int-sym sym)) ; external name unless 'source-name
+          (if (eq? sym src-sym) sym (cons sym src-sym)))
+        ;; Import keys --- revised if we added any import groups
+        (if (null? new-grps)
+            import-keys
+            (for/vector #:length (length all-grps) ([grp (in-list all-grps)])
+              (import-group-key grp)))
+        ;; Import ABI: request values for constants, `variable`s otherwise
+        (for/list ([grp (in-list all-grps)])
+          (define im-ready? (import-group-lookup-ready? grp))
+          (for/list ([im (in-list (import-group-imports grp))])
+            (and im-ready?
+                 (known-constant? (import-group-lookup grp (import-ext-id im))))))
+        ;; Convert internal to external identifiers for known-value info
+        (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
+          (define id (ex-int-id ex-id))
+          (define v (known-inline->export-known (hash-ref defn-info id #f)
+                                                prim-knowns imports exports
+                                                serializable?))
+          (cond
+            [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
+             (define ext-id (ex-ext-id ex-id))
+             (hash-set knowns ext-id (or v a-known-constant))]
+            [else knowns])))])))
 
 ;; ----------------------------------------
 
 (define (schemify-body l prim-knowns primitives imports exports for-cify? unsafe-mode? no-prompt?)
-  (define-values (new-body defn-info mutated)
-    (schemify-body* l prim-knowns primitives imports exports
-                    #f #f (lambda (im ext-id index) #f)
-                    for-cify? unsafe-mode? #t #t no-prompt?))
-  new-body)
+  (with-deterministic-gensym
+    (define-values (new-body defn-info mutated)
+      (schemify-body* l prim-knowns primitives imports exports
+                      #f #f (lambda (im ext-id index) #f)
+                      for-cify? unsafe-mode? #t #t no-prompt?))
+    new-body))
 
 (define (schemify-body* l prim-knowns primitives imports exports
                         for-jitify? allow-set!-undefined? add-import!
@@ -403,7 +406,7 @@
    (or (hash-ref exports int-id #f)
        (and extra-variables
             (or (hash-ref extra-variables int-id #f)
-                (let ([ex (export (gensym int-id) int-id)])
+                (let ([ex (export (deterministic-gensym int-id) int-id)])
                   (hash-set! extra-variables int-id ex)
                   ex))))))
 
@@ -414,7 +417,7 @@
   `(define ,id (variable-ref/no-check ,(export-id ex))))
 
 (define (make-expr-defn expr)
-  `(define ,(gensym) (begin ,expr (void))))
+  `(define ,(deterministic-gensym "effect") (begin ,expr (void))))
 
 (define (variable-constance id knowns mutated)
   (cond
@@ -562,12 +565,12 @@
                               (let ([rhs (schemify rhs 'fresh)])
                                 (cond
                                   [(null? ids)
-                                   `([,(gensym "lr")
+                                   `([,(deterministic-gensym "lr")
                                       ,(make-let-values null rhs '(void) for-cify?)])]
                                   [(and (pair? ids) (null? (cdr ids)))
                                    `([,(car ids) ,rhs])]
                                   [else
-                                   (define lr (gensym "lr"))
+                                   (define lr (deterministic-gensym "lr"))
                                    `([,lr ,(make-let-values ids rhs `(vector . ,ids) for-cify?)]
                                      ,@(for/list ([id (in-list ids)]
                                                   [pos (in-naturals)])
@@ -620,7 +623,7 @@
                (cond
                  [(and (too-early-mutated-state? state)
                        (not for-cify?))
-                  (define tmp (gensym 'set))
+                  (define tmp (deterministic-gensym "set"))
                   `(let ([,tmp ,new-rhs])
                      (check-not-unsafe-undefined/assign ,id ',(too-early-mutated-state-name state int-id))
                      (set! ,id ,tmp))]
@@ -733,7 +736,7 @@
               ;; use `e` directly if it's ok to duplicate
               (if (simple/can-copy? e prim-knowns knowns imports mutated)
                   e
-                  (gensym name)))
+                  (deterministic-gensym name)))
             (define (wrap-tmp tmp e body)
               (if (eq? tmp e)
                   body

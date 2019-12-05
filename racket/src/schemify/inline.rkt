@@ -4,7 +4,8 @@
          "known.rkt"
          "import.rkt"
          "export.rkt"
-         "wrap-path.rkt")
+         "wrap-path.rkt"
+         "gensym.rkt")
 
 (provide init-inline-fuel
          can-inline?
@@ -127,7 +128,7 @@
         [(wrap-null? args) base-env]
         [(wrap-pair? args)
          (define u (unwrap (wrap-car args)))
-         (define g (gensym u))
+         (define g (deterministic-gensym u))
          (define m (hash-ref mutated u #f))
          (when m
            (hash-set! mutated g m))
@@ -135,7 +136,7 @@
                (loop (wrap-cdr args)))]
         [else
          (define u (unwrap args))
-         (cons (cons u (gensym u)) base-env)])))
+         (cons (cons u (deterministic-gensym u)) base-env)])))
   (values (let loop ([args args] [env env])
             (cond
               [(wrap-null? args) '()]
