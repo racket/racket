@@ -595,7 +595,7 @@
                                                     code))))])))]))
        (define-values (paths impl-lam/paths)
          (if serializable?
-             (extract-paths-from-schemified-linklet impl-lam/jitified (not jitify-mode?))
+             (extract-paths-and-fasls-from-schemified-linklet impl-lam/jitified (not jitify-mode?))
              (values '() impl-lam/jitified)))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?

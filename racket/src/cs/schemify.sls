@@ -3,7 +3,7 @@
           lift-in-schemified-linklet
           jitify-schemified-linklet
           xify
-          extract-paths-from-schemified-linklet
+          extract-paths-and-fasls-from-schemified-linklet
           interpretable-jitified-linklet
           interpret-linklet
           linklet-bigger-than?

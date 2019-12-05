@@ -6,23 +6,24 @@
          "path-for-srcloc.rkt"
          "to-fasl.rkt")
 
-(provide extract-paths-from-schemified-linklet
+(provide extract-paths-and-fasls-from-schemified-linklet
          make-path->compiled-path
          compiled-path->path
          force-unfasl)
 
-;; Recognize lifted paths in a schemified linklet, and
-;; return the list of path values. If `convert?`, then
-;; change the schemified linklet to expect the paths
-;; as arguments.
+;; Recognize lifted paths and `to-fasl`s in a schemified linklet, and
+;; return the list of path and `to-fasl` values. If `convert?`, then
+;; change the schemified linklet to expect the paths as arguments.
 ;;
-;; In addition to paths, this extraction deals with values
-;; that have been packages as `to-fasl`, either because they
-;; are large values that are best handled in fasl form or
-;; because they are not serializable (and we want to delay
-;; complaining in case no serialization is needed).
+;; In addition to paths, this extraction deals with values that have
+;; been packages as `to-fasl`, either because they are large values
+;; that are best handled in fasl form, because they are not
+;; serializable (and we want to delay complaining in case no
+;; serialization is needed), or because they are uninterned symbols
+;; that need to be exposed to the Scheme-level `fasl` for a full
+;; linklet.
 
-(define (extract-paths-from-schemified-linklet linklet-e convert?)
+(define (extract-paths-and-fasls-from-schemified-linklet linklet-e convert?)
   (match linklet-e
     [`(lambda . ,_)
      ;; No constants, so no paths:
