@@ -94,7 +94,9 @@
                                      `(procedure-rename ,ctr-expr ,name-expr))]
                                 [`,_
                                  `(procedure-rename ,ctr-expr ,name-expr)])))
-           (define ,raw-s? (record-predicate ,struct:s))
+           (define ,raw-s? ,(name-procedure
+                             "" (struct-type-info-name sti) "" '|| "?"
+                             `(record-predicate ,struct:s)))
            ,@(if can-impersonate?
                  `((define ,s? ,(name-procedure
                                  "" (struct-type-info-name sti) "" '|| "?"
@@ -105,7 +107,10 @@
                (define raw-acc/mut (if can-impersonate? (gensym (unwrap acc/mut)) acc/mut))
                (match make-acc/mut
                  [`(make-struct-field-accessor ,(? (lambda (v) (wrap-eq? v -ref))) ,pos ',field-name)
-                  (define raw-def `(define ,raw-acc/mut (record-accessor ,struct:s ,pos)))
+                  (define raw-def `(define ,raw-acc/mut
+                                     ,(name-procedure
+                                       "" (struct-type-info-name sti) "-" field-name ""
+                                       `(record-accessor ,struct:s ,pos))))
                   (if can-impersonate?
                       `(begin
                          ,raw-def
@@ -118,7 +123,10 @@
                                                                        ',(struct-type-info-name sti) ',field-name)))))))
                       raw-def)]
                  [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ',field-name)
-                  (define raw-def `(define ,raw-acc/mut (record-mutator ,struct:s ,pos)))
+                  (define raw-def `(define ,raw-acc/mut
+                                     ,(name-procedure
+                                       "set-" (struct-type-info-name sti) "-" field-name "!"
+                                       `(record-mutator ,struct:s ,pos))))
                   (define abs-pos (+ pos (- (struct-type-info-field-count sti)
                                             (struct-type-info-immediate-field-count sti))))
                   (if can-impersonate?
