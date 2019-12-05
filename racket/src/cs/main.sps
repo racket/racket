@@ -558,8 +558,8 @@
                 (loop (cons (cadr args) (cons (car args) (cddr args))))])]
              [else
               (cond
-               [(and (eqv? (string-ref arg 0) #\-)
-                     (> (string-length arg) 1))
+               [(and (> (string-length arg) 1)
+                     (eqv? (string-ref arg 0) #\-))
                 (cond
                  [(and (> (string-length arg) 2)
                        (not (eqv? (string-ref arg 1) #\-)))
