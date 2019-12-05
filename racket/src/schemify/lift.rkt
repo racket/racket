@@ -621,25 +621,30 @@
   ;; Create bindings for lifted functions, adding new arguments
   ;; as the functions are lifted
   (define (extract-lifted-bindings lifts empties)
-    (define bindings
-      (for/list ([(f proc) (in-hash lifts)]
-                 #:when (liftable? proc))
-        (let* ([new-args (liftable-frees proc)]
-               [frees (for/hash ([arg (in-list new-args)])
-                        (values arg #t))]
-               [rhs (liftable-expr proc)])
-          `[,f ,(match rhs
-                  [`(lambda ,args . ,body)
-                   (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
-                     (reannotate rhs `(lambda ,(append new-args args) . ,body)))]
-                  [`(case-lambda [,argss . ,bodys] ...)
-                   (reannotate rhs `(case-lambda
-                                      ,@(for/list ([args (in-list argss)]
-                                                   [body (in-list bodys)])
-                                          (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
-                                            `[,(append new-args args) . ,body]))))])])))
-    ;; Improve determinsism:
-    (sort bindings symbol<? #:key car))
+    (define liftables
+      ;; Improve determinsism by sorting liftables:
+      (sort (for/list ([(f proc) (in-hash lifts)]
+                       #:when (liftable? proc))
+              (cons f proc))
+            symbol<?
+            #:key car))
+    (for/list ([f+proc (in-list liftables)])
+      (let* ([f (car f+proc)]
+             [proc (cdr f+proc)]
+             [new-args (liftable-frees proc)]
+             [frees (for/hash ([arg (in-list new-args)])
+                      (values arg #t))]
+             [rhs (liftable-expr proc)])
+        `[,f ,(match rhs
+                [`(lambda ,args . ,body)
+                 (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
+                   (reannotate rhs `(lambda ,(append new-args args) . ,body)))]
+                [`(case-lambda [,argss . ,bodys] ...)
+                 (reannotate rhs `(case-lambda
+                                    ,@(for/list ([args (in-list argss)]
+                                                 [body (in-list bodys)])
+                                        (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
+                                          `[,(append new-args args) . ,body]))))])])))
 
   ;; ----------------------------------------
   ;; Helpers
