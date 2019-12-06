@@ -56,13 +56,14 @@
         [`(self ,m ,orig-id) orig-id]
         [`(self ,m) (extract-id m id)]
         [`,_ id]))
+    (define (id<? a b) (symbol<? (unwrap a) (unwrap b)))
     (define captures (sort
                       (hash-keys
                        ;; `extract-id` for different `id`s can produce the
                        ;; same `id`, so hash and then convert to a list
                        (for/hash ([id (in-list ids)])
                          (values (extract-id (hash-ref env id) id) #t)))
-                      symbol<?))
+                      id<?))
     (define jitted-proc
       (or (match (and name
                       (hash-ref free-vars (unwrap name) #f)
