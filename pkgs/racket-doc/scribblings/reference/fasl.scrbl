@@ -13,7 +13,7 @@
                       [out (or/c output-port? #f) #f]
                       [#:keep-mutable? keep-mutable? any/c #f]
                       [#:handle-fail handle-fail (or/c #f (any/c . -> . any/c)) #f]
-                      [#:external-lift? external-lift? (or/c #f (any/c . -> . any/c)) #f]
+                      [#:external-lift? external-lift? (or/c #f (any/c . -> . any/c)) #f])
          (or/c (void) bytes?)]
 @defproc[(fasl->s-exp [in (or/c input-port? bytes?)]
                       [#:datum-intern? datum-intern? any/c #t]
