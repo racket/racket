@@ -229,7 +229,7 @@
         (known-procedure/can-inline/need-imports
          (known-procedure-arity-mask k)
          (if serializable? (wrap-truncate-paths expr) expr)
-         (hash->list needed))])]
+         (needed->list needed))])]
     [(known-field-accessor? k)
      (define needed (needed-imports (known-field-accessor-type-id k) prim-knowns imports exports '() '#hasheq()))
      (cond
@@ -238,7 +238,7 @@
                                            (known-accessor-type k)
                                            (known-field-accessor-type-id k)
                                            (known-field-accessor-pos k)
-                                           (hash->list needed))]
+                                           (needed->list needed))]
        [else
         (known-accessor (known-procedure-arity-mask k)
                         (known-accessor-type k))])]
@@ -250,7 +250,7 @@
                                           (known-mutator-type k)
                                           (known-field-mutator-type-id k)
                                           (known-field-mutator-pos k)
-                                          (hash->list needed))]
+                                          (needed->list needed))]
        [else
         (known-mutator (known-procedure-arity-mask k)
                        (known-mutator-type k))])]
@@ -343,6 +343,5 @@
     [else
      (cons (unwrap args) env)]))
 
-(define (hash->list needed)
-  (for/list ([(k v) (in-hash needed)])
-    (cons k v)))
+(define (needed->list needed)
+  (hash-map needed cons #t))
