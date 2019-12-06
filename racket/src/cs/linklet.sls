@@ -68,7 +68,9 @@
           (only (io)
                 path?
                 complete-path?
+                split-path
                 path->string
+                path-element->string
                 path->bytes
                 bytes->path
                 string->bytes/utf-8
@@ -96,7 +98,6 @@
                 write-bytes
                 flush-output
                 read-bytes
-                split-path
                 path->complete-path
                 file-exists?)
           (only (thread)
@@ -573,7 +574,7 @@
                                           [(jit)
                                            ;; Preserve annotated `lambda` source for on-demand compilation:
                                            (lambda (expr arity-mask name)
-                                             (let ([a (correlated->annotation (xify expr))])
+                                             (let ([a (correlated->annotation (xify expr) serializable?)])
                                                (make-wrapped-code (if serializable?
                                                                       (add-code-hash a)
                                                                       a)
@@ -589,7 +590,7 @@
                                                                    (lambda (s) (cross-compile cross-machine s))
                                                                    compile*-to-bytevector)
                                                                compile*)
-                                                           (show lambda-on? "lambda" (correlated->annotation expr)))])
+                                                           (show lambda-on? "lambda" (correlated->annotation expr serializable?)))])
                                                 (if serializable?
                                                     (make-wrapped-code code arity-mask (extract-inferred-name expr name))
                                                     code))))])))]))
@@ -604,7 +605,7 @@
                            [else (show "schemified" impl-lam/paths)])])
            (if jitify-mode?
                (interpretable-jitified-linklet impl-lam correlated->datum)
-               (correlated->annotation impl-lam))))
+               (correlated->annotation impl-lam serializable?))))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (when (and cp0-on? (not jitify-mode?))
