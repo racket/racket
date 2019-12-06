@@ -653,24 +653,33 @@
                        (if (exn? v)
                            (continuation-mark-set-traces (exn-continuation-marks v))
                            (list (continuation->trace (condition-continuation v)))))]
+                   [prev #f]
+                   [repeats 0]
                    [n n])
           (unless (or (null? l) (zero? n))
             (let* ([p (car l)]
                    [s (cdr p)])
               (cond
-               [(and s
-                     (srcloc-line s)
-                     (srcloc-column s))
-                (eprintf "\n   ~a:~a:~a" (srcloc-source s) (srcloc-line s) (srcloc-column s))
-                (when (car p)
-                  (eprintf ": ~a" (car p)))]
-               [(and s (srcloc-position s))
-                (eprintf "\n   ~a::~a" (srcloc-source s) (srcloc-position s))
-                (when (car p)
-                  (eprintf ": ~a" (car p)))]
-               [(car p)
-                (eprintf "\n   ~a" (car p))]))
-            (loop (cdr l) (sub1 n)))))))
+               [(equal? p prev)
+                (loop (cdr l) prev (add1 repeats) n)]
+               [(positive? repeats)
+                (eprintf "\n   [repeats ~a more time~a]" repeats (if (= repeats 1) "" "s"))
+                (loop l #f 0 (sub1 n))]
+               [else
+                (cond
+                 [(and s
+                       (srcloc-line s)
+                       (srcloc-column s))
+                  (eprintf "\n   ~a:~a:~a" (srcloc-source s) (srcloc-line s) (srcloc-column s))
+                  (when (car p)
+                    (eprintf ": ~a" (car p)))]
+                 [(and s (srcloc-position s))
+                  (eprintf "\n   ~a::~a" (srcloc-source s) (srcloc-position s))
+                  (when (car p)
+                    (eprintf ": ~a" (car p)))]
+                 [(car p)
+                  (eprintf "\n   ~a" (car p))])
+                (loop (cdr l) p 0 (sub1 n))])))))))
   (eprintf "\n"))
 
 (define eprintf
