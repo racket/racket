@@ -30,8 +30,8 @@ that escaping does not affect already-encoded characters in
 @racket[str].
 
 On all platforms, the @racket[external-browser] parameter can be set to a
-procedure to override the above behavior --- the procedure will be
-called with the @racket[url] string.}
+procedure to override the above behavior, and the procedure will be
+called with the URL @racket[str].}
 
 @defproc[(send-url/file [path path-string?] [separate-window? any/c #t]
                         [#:fragment fragment (or/c string? false/c) #f]
