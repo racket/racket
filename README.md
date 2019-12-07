@@ -1,6 +1,9 @@
-This is the source code for the core of Racket plus some related
-packages. The rest of the Racket distribution source code is in other
-repositories, mostly under [the Racket GitHub
+[Racket](https://racket-lang.org/) is a general-purpose programming
+language and an ecosystem for language-oriented programming.
+
+This respoitory holds the source code for the core of Racket plus some
+related packages. The rest of the Racket distribution source code is
+in other repositories, mostly under [the Racket GitHub
 organization](https://github.com/racket).
 
 Quick Start
