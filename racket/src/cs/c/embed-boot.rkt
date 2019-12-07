@@ -49,7 +49,7 @@
          ;; zero byte stops a gzip-read sequence
          #"\0"
          ;; #!eof encoding stops(!) a fasl-read sequence
-         #"\26\4\fl"))
+         #"\26\2\f6"))
    (define data
      (bytes-append bstr1 terminator
                    bstr2 terminator
