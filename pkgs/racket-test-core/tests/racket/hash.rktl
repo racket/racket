@@ -366,14 +366,15 @@
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #f hash-iterate-next ht i)
 
-    ;; collect key, everything should error
-    (collect-garbage)
-    (test #t boolean? (hash-iterate-first ht))
-    (err/rt-test (hash-iterate-key ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-value ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
-    (test #f hash-iterate-next ht i))
+    (unless (eq? 'cgc (system-type 'gc))
+      ;; collect key, everything should error
+      (collect-garbage)
+      (test #t boolean? (hash-iterate-first ht))
+      (err/rt-test (hash-iterate-key ht i) exn:fail:contract? err-msg)
+      (err/rt-test (hash-iterate-value ht i) exn:fail:contract? err-msg)
+      (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
+      (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
+      (test #f hash-iterate-next ht i)))
 
 ;; Check that unsafe mutable hash table operations do not segfault
 ;; after getting valid index from unsafe-mutable-hash-iterate-first and -next.
