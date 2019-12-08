@@ -27,7 +27,7 @@ associated with the structure type, and the corresponding arguments
 are omitted from the constructor procedure. All automatic fields in a
 structure type follow the non-automatic fields.
 
-A structure type can be created as a @pidefterm{structure subtype} of
+A structure type can be created as a @deftech{structure subtype} of
 an existing base structure type. An instance of a structure subtype
 can always be used as an instance of the base structure type, but the
 subtype gets its own predicate procedure, and it may have its own
