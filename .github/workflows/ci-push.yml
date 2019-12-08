@@ -69,6 +69,10 @@ jobs:
       matrix:
         os: [ubuntu-18.04, macos-latest]
         cify: [cify, nocify]
+        cc: [gcc, clang]
+        exclude:
+          - os: macos-latest
+            cc: gcc
             
     runs-on: ${{ matrix.os }}
     
@@ -99,6 +103,8 @@ jobs:
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket 3m
       working-directory: ./racket/src
+      env:
+        CC: ${{ matrix.cc }}
       run: >
         ./configure
         --prefix=$GITHUB_WORKSPACE/../racket3m 
@@ -133,7 +139,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-18.04, macos-latest]
-            
+        cc: [gcc, clang]
+        exclude:
+          - os: macos-latest
+            cc: gcc
+        
     runs-on: ${{ matrix.os }}
     needs: build-racketcgc
     
@@ -164,6 +174,8 @@ jobs:
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
     - name: Configuring Racket CS
       working-directory: ./racket/src
+      env:
+        CC: ${{ matrix.cc }}
       run: >
         ./configure 
         --prefix=$GITHUB_WORKSPACE/../racketcs
