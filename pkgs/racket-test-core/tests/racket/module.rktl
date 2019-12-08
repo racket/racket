@@ -3221,5 +3221,35 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test #t eq? the-gensym (expand-to-the-gensym))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure cross-moodule inlining doesn't copy an uninterned symbol
+;; across a module boundary
+
+(module exports-a-quoted-uninterned-symbol racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (provide-sym stx)
+    (let ([sym (datum->syntax #f (string->uninterned-symbol "sym"))])
+      #`(begin
+          (define sym '#,sym)
+          (define (get-sym) '#,sym)
+          (provide sym
+                   get-sym))))
+  (provide-sym))
+
+(let ([o (open-output-bytes)])
+  (write (compile `(module imports-a-quoted-uninterned-symbol racket/base
+                     (require 'exports-a-quoted-uninterned-symbol)
+                     (define (get-sym1) sym)
+                     (define (get-sym2) (get-sym))
+                     (provide get-sym1
+                              get-sym2)))
+         o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read (open-input-bytes (get-output-bytes o)))))
+  (test (dynamic-require ''exports-a-quoted-uninterned-symbol 'sym)
+        (dynamic-require ''imports-a-quoted-uninterned-symbol 'get-sym1))
+  (test (dynamic-require ''exports-a-quoted-uninterned-symbol 'sym)
+        (dynamic-require ''imports-a-quoted-uninterned-symbol 'get-sym2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

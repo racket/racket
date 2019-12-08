@@ -15,7 +15,9 @@
              (cond
                [(eq? a 'quote)
                 (let ([u (unwrap (cadr u))])
-                  (or (symbol? u)
+                  (or (and (symbol? u)
+                           (or (symbol-interned? u)
+                               (symbol-unreadable? u)))
                       (null? u)
                       (char? u)
                       (void? u)))]

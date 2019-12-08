@@ -40,10 +40,13 @@
        [(wrap-pair? v)
         (cond
           [(eq? (unwrap (wrap-car v)) 'quote)
-           ;; don't copy quoted values other than symbols
-           (if (symbol? (unwrap (wrap-car (wrap-cdr v))))
-               (sub1 size)
-               0)]
+           ;; don't copy quoted values other than interned or unreadable symbols
+           (let ([v (unwrap (wrap-car (wrap-cdr v)))])
+             (if (and (symbol? v)
+                      (or (symbol-interned? v)
+                          (symbol-unreadable? v)))
+                 (sub1 size)
+                 0))]
           [else
            (loop (wrap-cdr v) (loop (wrap-car v) size))])]
        [else (sub1 size)]))))
