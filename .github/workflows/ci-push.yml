@@ -68,14 +68,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-18.04, macos-latest]
-        cify: [cify, nocify]
         cc: [gcc, clang]
+        cify: [cify, nocify]
+        jit: [jit, nojit]
+        efp: [efp, noefp]
         exclude:
           - os: macos-latest
             cc: gcc
+          - jit: nojit
+            efp: efp
             
     runs-on: ${{ matrix.os }}
-    
     needs: build-racketcgc
     
     env:
@@ -94,6 +97,18 @@ jobs:
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
       run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    - name: Setup jit if enabled
+      if: matrix.jit == 'jit'
+      run: echo "::set-env name=JIT_OPTION::--enable-jit"
+    - name: Setup jit if disabled
+      if: matrix.jit == 'nojit'
+      run: echo "::set-env name=JIT_OPTION::--disable-jit"
+    - name: Setup efp if enabled
+      if: matrix.efp == 'efp'
+      run: echo "::set-env name=EFP_OPTIONS::--enable-extflonums --enable-places --enable-futures"
+    - name: Setup efp if disabled
+      if: matrix.efp == 'noefp'
+      run: echo "::set-env name=EFP_OPTIONS::--disable-extflonums --disable-places --disable-futures"
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
@@ -110,13 +125,12 @@ jobs:
         --prefix=$GITHUB_WORKSPACE/../racket3m 
         $RACKET_EXTRA_CONFIGURE_ARGS 
         --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
-        --enable-jit 
         --enable-foreign 
-        --enable-places 
-        --enable-futures 
         --enable-float 
         --disable-docs 
-        $CIFY_OPTION 
+        $CIFY_OPTION
+        $JIT_OPTION
+        $EFP_OPTIONS
         --enable-pthread
     - name: Building
       working-directory: ./racket/src
@@ -133,12 +147,12 @@ jobs:
     - name: Tarballing
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       working-directory: ../
-      run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
+      run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
     - uses: actions/upload-artifact@master
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
-        name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-        path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+        name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
+        path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
     strategy:
@@ -305,7 +319,12 @@ jobs:
       matrix:
         os: [ubuntu-18.04, macos-latest]
         cify: [cify, nocify]
-
+        jit: [jit, nojit]
+        efp: [efp, noefp]
+        exclude:
+          - jit: nojit
+            efp: efp
+            
     runs-on: ${{ matrix.os }}
 
     needs: build-racket3m
@@ -314,11 +333,11 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/download-artifact@master
         with:
-          name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
+          name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
           path: ../
       - name: Untar
         working-directory: ../
-        run: tar -xvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+        run: tar -xvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         working-directory: ../
         run: echo "::set-env name=PATH::$PWD/racket3m/bin:$PATH"
