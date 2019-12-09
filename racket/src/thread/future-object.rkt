@@ -17,7 +17,7 @@
                  [prev #:mutable]   ; queue previous
                  [next #:mutable]   ; queue next
                  [results #:mutable]
-                 [state #:mutable]  ; #f (could run), 'running, 'blocked, 'done, 'aborted, 'fsema, or future waiting on
+                 [state #:mutable]  ; #f (could run), 'running, 'blocked, 'done, 'aborted, 'fsema or box, or future waiting on
                  [dependents #:mutable]) ; futures that are blocked on this one
   #:authentic
   #:reflection-name 'future)
