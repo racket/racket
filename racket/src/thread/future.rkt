@@ -43,7 +43,8 @@
   (provide future*-lock
            set-future*-state!
            future-suspend
-           future-notify-dependent))
+           future-notify-dependent
+           wakeup-this-place))
 
 (define (init-future-place!)
   (init-future-logging-place!))
