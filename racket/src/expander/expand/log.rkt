@@ -62,10 +62,10 @@
         ;; basic tokens
         (visit         . 1)
         (resolve       . 1)
-        (enter-macro   . 1)
+        (enter-macro   . 2)
         (macro-pre-x   . 1)
         (macro-post-x  . 2)
-        (exit-macro    . 1)
+        (exit-macro    . 2)
         (enter-prim    . 1)
         (exit-prim     . 1)
         (return        . 1)

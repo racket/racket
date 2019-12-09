@@ -362,8 +362,8 @@
   (performance-region
    ['expand '_ 'macro]
 
-   (log-expand ctx 'enter-macro s)
    (define disarmed-s (syntax-disarm s))
+   (log-expand ctx 'enter-macro disarmed-s s)
    (define intro-scope (new-scope 'macro))
    (define intro-s (flip-scope disarmed-s intro-scope))
    ;; In a definition context, we need use-site scopes
@@ -389,7 +389,7 @@
    ;; Track expansion:
    (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (syntax-identifier? s) s (car (syntax-e s))))))
    (define rearmed-s (taint-dispatch tracked-s (lambda (t-s) (syntax-rearm t-s s)) (expand-context-phase ctx)))
-   (log-expand ctx 'exit-macro rearmed-s)
+   (log-expand ctx 'exit-macro rearmed-s post-s)
    (values rearmed-s
            (accumulate-def-ctx-scopes ctx def-ctx-scopes))))
 
