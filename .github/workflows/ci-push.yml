@@ -127,9 +127,11 @@ jobs:
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
     - name: Tarballing
+      if: matrix.cc == 'gcc'
       working-directory: ../
       run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
     - uses: actions/upload-artifact@master
+      if: matrix.cc == 'gcc'
       with:
         name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -195,9 +197,11 @@ jobs:
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
     - name: Tarballing
+      if: matrix.cc == 'gcc'
       working-directory: ../
       run: tar -cvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha}}.tar.bz2 racketcs
     - uses: actions/upload-artifact@master
+      if: matrix.cc == 'gcc'
       with:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
         path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
