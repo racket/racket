@@ -239,7 +239,7 @@
 
 (define (make-explicit ctx sym s disarmed-s)
   (define new-s (syntax-rearm (datum->syntax disarmed-s (cons sym disarmed-s) s s) s))
-  (log-expand ctx 'tag new-s)
+  (log-expand ctx 'tag2 new-s disarmed-s)
   new-s)
 
 ;; ----------------------------------------

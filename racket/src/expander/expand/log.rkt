@@ -97,6 +97,7 @@
         (opaque-expr   . 1)
         (variable      . 2)
         (tag           . 1)
+        (tag2          . 2)
         (tag/context   . 1)
         (rename-one    . 1)
         (rename-list   . 1)
