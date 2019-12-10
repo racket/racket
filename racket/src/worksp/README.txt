@@ -47,7 +47,7 @@ Build the Racket-on-Chez implementation using
 
    build-cs.bat
 
-which builds "..\..\RacketCGC.exe" to bootstrap the build.
+which builds "..\..\Racket3m.exe" to bootstrap the build.
 
 To instead build using an existing Racket installation, use
 
