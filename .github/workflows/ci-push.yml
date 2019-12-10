@@ -69,6 +69,10 @@ jobs:
       matrix:
         os: [ubuntu-18.04, macos-latest]
         cify: [cify, nocify]
+        cc: [gcc, clang]
+        exclude:
+          - os: macos-latest
+            cc: gcc
             
     runs-on: ${{ matrix.os }}
     
@@ -99,6 +103,8 @@ jobs:
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket 3m
       working-directory: ./racket/src
+      env:
+        CC: ${{ matrix.cc }}
       run: >
         ./configure
         --prefix=$GITHUB_WORKSPACE/../racket3m 
@@ -121,9 +127,11 @@ jobs:
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
     - name: Tarballing
+      if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       working-directory: ../
       run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
     - uses: actions/upload-artifact@master
+      if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
         name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -133,7 +141,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-18.04, macos-latest]
-            
+        cc: [gcc, clang]
+        exclude:
+          - os: macos-latest
+            cc: gcc
+        
     runs-on: ${{ matrix.os }}
     needs: build-racketcgc
     
@@ -164,6 +176,8 @@ jobs:
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
     - name: Configuring Racket CS
       working-directory: ./racket/src
+      env:
+        CC: ${{ matrix.cc }}
       run: >
         ./configure 
         --prefix=$GITHUB_WORKSPACE/../racketcs
@@ -183,9 +197,11 @@ jobs:
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
     - name: Tarballing
+      if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       working-directory: ../
       run: tar -cvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha}}.tar.bz2 racketcs
     - uses: actions/upload-artifact@master
+      if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
         path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
