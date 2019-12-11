@@ -310,7 +310,7 @@ void *rktio_dll_find_object(rktio_t *rktio, rktio_dll_t *dll, rktio_const_string
     /* Compensate for a bug in dlsym() that gets the address wrong by
        an offset (incorrect use of `link_bias'?): */
     if (!adjustment_set) {
-      adjustment = ((uintptr_t)scheme_start_atomic_no_break
+      adjustment = ((uintptr_t)rktio_dll_find_object
                     - (uintptr_t)dlsym(RTLD_DEFAULT, "rktio_dll_find_object"));
       adjustment_set = 1;
     }
