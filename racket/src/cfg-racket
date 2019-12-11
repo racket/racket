@@ -3419,6 +3419,7 @@ mzrt_needs_pthread=yes
 skip_iconv_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
+check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
   STARTUP_AS_BYTECODE=_bytecode
@@ -4866,6 +4867,7 @@ case "$host_os" in
       x86_64)
        enable_parallel_by_default=yes
        CGC_X86_64="1"
+       check_for_unwind=REG_RSP
        ;;
       ppc|powerpc)
        ;;
@@ -4875,6 +4877,7 @@ case "$host_os" in
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
+       check_for_unwind=REG_ESP
        ;;
       arm*)
        EXTRA_GMP_OBJ="gmp_arm_gcc.o"
@@ -5793,6 +5796,35 @@ $as_echo "$can_mprotect_exec" >&6; }
       echo "Senora GC is required due to mprotect() failure"
     fi
   fi
+fi
+
+if test "${check_for_unwind}" != "no" ; then
+   msg="for unwind support"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+     #include <inttypes.h>
+     #define __USE_GNU
+     #include <ucontext.h>
+     int main() {
+        return ${check_for_unwind};
+     }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  can_unwind=yes
+else
+  can_unwind=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test "$can_unwind" = "no" ; then
+
+$as_echo "#define MZ_NO_UNWIND_SUPPORT 1" >>confdefs.h
+
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $can_unwind" >&5
+$as_echo "$can_unwind" >&6; }
 fi
 
 if test "${check_page_size}" = "yes" ; then

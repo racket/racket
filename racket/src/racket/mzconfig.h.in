@@ -95,4 +95,7 @@ typedef unsigned long uintptr_t;
 /* Use Generations with the GC */
 #undef USE_GC_GENS
 
+/* For platforms like Linux, where context info may not be available: */
+#undef MZ_NO_UNWIND_SUPPORT
+
 #endif

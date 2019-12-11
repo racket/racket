@@ -305,6 +305,7 @@ mzrt_needs_pthread=yes
 skip_iconv_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
+check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
   STARTUP_AS_BYTECODE=_bytecode
@@ -607,6 +608,7 @@ case "$host_os" in
       x86_64)
        enable_parallel_by_default=yes
        CGC_X86_64="1"
+       check_for_unwind=REG_RSP
        ;;
       ppc|powerpc)
        ;;
@@ -616,6 +618,7 @@ case "$host_os" in
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
+       check_for_unwind=REG_ESP
        ;;
       arm*)
        EXTRA_GMP_OBJ="gmp_arm_gcc.o"
@@ -953,6 +956,22 @@ if test "${check_for_mprotect}" = "yes" ; then
       echo "Senora GC is required due to mprotect() failure"
     fi
   fi
+fi
+
+if test "${check_for_unwind}" != "no" ; then
+  [ msg="for unwind support" ]
+  AC_MSG_CHECKING($msg)
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+     #include <inttypes.h>
+     #define __USE_GNU
+     #include <ucontext.h>
+     int main() {
+        return ${check_for_unwind};
+     }])], can_unwind=yes, can_unwind=no)
+  if test "$can_unwind" = "no" ; then
+    AC_DEFINE(MZ_NO_UNWIND_SUPPORT,1,[Missing ucontext support])
+  fi
+  AC_MSG_RESULT($can_unwind)
 fi
 
 if test "${check_page_size}" = "yes" ; then

@@ -147,12 +147,16 @@
 #if defined(__i386__)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
-# define MZ_USE_DWARF_LIBUNWIND
+# ifndef MZ_NO_UNWIND_SUPPORT
+#  define MZ_USE_DWARF_LIBUNWIND
+# endif
 #endif
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
 # define MZ_JIT_USE_MPROTECT
-# define MZ_USE_DWARF_LIBUNWIND
+# ifndef MZ_NO_UNWIND_SUPPORT
+#  define MZ_USE_DWARF_LIBUNWIND
+# endif
 #endif
 #if defined(__powerpc__) && !defined(__powerpc64__)
 # define MZ_USE_JIT_PPC
