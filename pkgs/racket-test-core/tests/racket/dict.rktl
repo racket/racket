@@ -163,6 +163,16 @@
     ;; preserve from GC:
     (list s1 s2)))
 
+;; Check behavior on a list of pairs that isn't
+;; a dictionary due to duplicate keys:
+(test 1 dict-ref '((a . 1) (b . 2) (a . 3)) 'a)
+(test '((b . 2) (a . 3)) dict-remove '((a . 1) (b . 2) (a . 3)) 'a)
+(test '((a . 4) (b . 2) (a . 3)) dict-set '((a . 1) (b . 2) (a . 3)) 'a 4)
+(test 3 dict-count '((a . 1) (b . 2) (a . 3)))
+(test '((a 1) (b 2) (a 3)) dict-map '((a . 1) (b . 2) (a . 3)) list)
+(test '(a b a) dict-keys '((a . 1) (b . 2) (a . 3)))
+(test '(1 2 3) dict-values '((a . 1) (b . 2) (a . 3)))
+
 ;; ----------------------------------------
 
 (report-errs)

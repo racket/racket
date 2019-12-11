@@ -15,13 +15,19 @@ values. The following datatypes are all dictionaries:
 
  @item{@techlink{vectors} (using only exact integers as keys);}
 
- @item{@techlink{lists} of @techlink{pairs} (an @deftech{association
-       list} using @racket[equal?] to compare keys); and}
+ @item{@techlink{lists} of @techlink{pairs} as an @deftech{association
+       list} using @racket[equal?] to compare keys, which must be distinct; and}
 
  @item{@techlink{structures} whose types implement the @racket[gen:dict]
        @tech{generic interface}.}
 
 ]
+
+When list of pairs is used as @tech{association list} but does not
+have distinct keys (so it's not an association list), operations like
+@racket[dict-ref] and @racket[dict-remove] operate on the first
+instance of the key, while operations like @racket[dict-map] and
+@racket[dict-keys] produce an element for every instance of the key.
 
 @note-lib[racket/dict]
 
