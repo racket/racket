@@ -94,12 +94,16 @@
 (define/who (syntax-local-introduce s)
   (check who syntax? s)
   (define ctx (get-current-expand-context 'syntax-local-introduce))
-  (flip-introduction-and-use-scopes s ctx))
+  (define new-s (flip-introduction-and-use-scopes s ctx))
+  (log-expand ctx 'track-syntax 'syntax-local-introduce new-s s)
+  new-s)
 
 (define/who (syntax-local-identifier-as-binding id)
   (check who identifier? id)
   (define ctx (get-current-expand-context 'syntax-local-identifier-as-binding))
-  (remove-use-site-scopes id ctx))
+  (define new-id (remove-use-site-scopes id ctx))
+  (log-expand ctx 'track-syntax 'syntax-local-identifier-as-binding new-id id)
+  new-id)
 
 (define (syntax-local-phase-level)
   (define ctx (get-current-expand-context #:fail-ok? #t))
@@ -126,11 +130,15 @@
 (define (do-make-syntax-introducer sc)
   (lambda (s [mode 'flip])
     (check 'syntax-introducer syntax? s)
-    (case mode
-      [(add) (add-scope s sc)]
-      [(remove) (remove-scope s sc)]
-      [(flip) (flip-scope s sc)]
-      [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)])))
+    (define new-s
+      (case mode
+        [(add) (add-scope s sc)]
+        [(remove) (remove-scope s sc)]
+        [(flip) (flip-scope s sc)]
+        [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)]))
+    (define ctx (get-current-expand-context #:fail-ok? #t))
+    (when ctx (log-expand ctx 'track-syntax mode new-s s))
+    new-s))
 
 (define/who (make-syntax-delta-introducer ext-s base-s [phase (syntax-local-phase-level)])
   (check who syntax? ext-s)
@@ -147,12 +155,16 @@
   (define maybe-taint (if (syntax-clean? ext-s) values syntax-taint))
   (define shifts (syntax-mpi-shifts ext-s))
   (lambda (s [mode 'add])
-    (maybe-taint
-     (case mode
-       [(add) (syntax-add-shifts (add-scopes s delta-scs) shifts #:non-source? #t)]
-       [(remove) (remove-scopes s delta-scs)]
-       [(flip) (syntax-add-shifts (flip-scopes s delta-scs) shifts #:non-source? #t)]
-       [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)]))))
+    (define new-s
+      (maybe-taint
+       (case mode
+         [(add) (syntax-add-shifts (add-scopes s delta-scs) shifts #:non-source? #t)]
+         [(remove) (remove-scopes s delta-scs)]
+         [(flip) (syntax-add-shifts (flip-scopes s delta-scs) shifts #:non-source? #t)]
+         [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)])))
+    (define ctx (get-current-expand-context #:fail-ok? #t))
+    (when ctx (log-expand ctx 'track-syntax mode new-s s))
+    new-s))
 
 (define/who (syntax-local-make-delta-introducer id-stx)
   (check who identifier? id-stx)
