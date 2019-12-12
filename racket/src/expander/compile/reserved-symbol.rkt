@@ -1,7 +1,7 @@
 #lang racket/base
 (require "built-in-symbol.rkt")
 
-;; Identifers used in the compiler's output; we make distinct names
+;; Identifiers used in the compiler's output; we make distinct names
 ;; for them once to avoid shadowing of other collisions
 (provide phase-shift-id
          dest-phase-id

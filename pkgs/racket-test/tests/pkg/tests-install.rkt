@@ -115,7 +115,7 @@
     =stderr> #rx"unexpected checksum")
 
    (shelly-case
-    "remote/URL/http directory, non-existant file"
+    "remote/URL/http directory, non-existent file"
     $ "raco pkg install http://localhost:9997/pkg-test1.rar" =exit> 1)
    (shelly-case
     "remote/URL/http directory, no manifest fail"

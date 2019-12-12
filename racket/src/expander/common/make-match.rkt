@@ -27,7 +27,7 @@
 ;;   
 ;;   (<m-id>)
 ;;
-;; to check whether the match suceeded (which makes sense only if a
+;; to check whether the match succeeded (which makes sense only if a
 ;; guard or `#:try` is included) or
 ;;
 ;;    (<m-id> '<pattern-id>)

@@ -66,7 +66,7 @@ $LCFI3:
 	blt	bytes, v0, sixteen
 
 	ADDU	v0, bytes, 7	# make sure it is aligned 
-	and	v0, -8		# to an 8 byte boundry
+	and	v0, -8		# to an 8 byte boundary
 
 sixteen:
 	SUBU	$sp, v0		# move the stack pointer to reflect the

@@ -1298,7 +1298,7 @@ _arm_cc_vorsl(jit_state_t _jitp, int cc, int o, int r0, int r1, int i0)
 /* "oi" should be the result of encode_vfp_double */
 #define _VIMM(oi,r0)			arm_vodi(oi,r0)
 #define _VIMMQ(oi,r0)			arm_voqi(oi|ARM_V_Q,r0)
-/* index is multipled by four */
+/* index is multiplied by four */
 #define _CC_VLDRN_F32(cc,r0,r1,i0)	arm_cc_vldst(cc,ARM_VLDR,r0,r1,i0)
 #define _VLDRN_F32(r0,r1,i0)		_CC_VLDRN_F32(ARM_CC_AL,r0,r1,i0)
 #define _CC_VLDR_F32(cc,r0,r1,i0)	arm_cc_vldst(cc,ARM_VLDR|ARM_P,r0,r1,i0)

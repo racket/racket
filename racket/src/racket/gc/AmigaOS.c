@@ -301,7 +301,7 @@ void GC_amiga_free_all_mem(void){
 	printf("GC_gcollect was called %d times to avoid returning NULL or start allocating with the MEMF_ANY flag.\n",numcollects);
 	printf("%d of them was a success. (the others had to use allocation from the OS.)\n",nullretries);
 	printf("\n");
-	printf("Succeded forcing %d gc-allocations (%d bytes) of chip-mem to be fast-mem.\n",succ,succ2);
+	printf("Succeeded forcing %d gc-allocations (%d bytes) of chip-mem to be fast-mem.\n",succ,succ2);
 	printf("Failed forcing %d gc-allocations (%d bytes) of chip-mem to be fast-mem.\n",nsucc,nsucc2);
 	printf("\n");
 	printf(

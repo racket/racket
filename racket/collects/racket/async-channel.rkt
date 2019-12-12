@@ -51,7 +51,7 @@
             ;; This thread is the part that makes the channel asynchronous.
             ;; It waits for a combination of gets and puts as appropriate.
             ;; Note that we start it with `thread/suspend-kill', and we
-            ;; resume the manager thread with the current thread everytime
+            ;; resume the manager thread with the current thread every time
             ;; we want to talk to the manager thread, which effectively
             ;; means that the manager thread is not bound by a custodian
             ;; that is weaker than any of its user's custodians (and thus,

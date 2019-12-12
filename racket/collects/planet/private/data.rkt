@@ -7,7 +7,7 @@
 ; defines common data used by the PLaneT system
 ; ==========================================================================================
 
-; exn:i/o:protocol: exception indicating that a protocol error occured
+; exn:i/o:protocol: exception indicating that a protocol error occurred
 (define-struct (exn:i/o:protocol exn:fail:network) ())
 
 ; FULL-PKG-SPEC : struct pkg-spec

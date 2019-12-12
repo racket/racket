@@ -2647,7 +2647,7 @@ void scheme_check_future_work()
       else {
         /* If ft is touching another future, then the other
            future may resume ft while we grab the continuation. 
-           Withold ft->can_continue_sema for now, so that we can
+           Withhold ft->can_continue_sema for now, so that we can
            capture the continuation, and then double-check 
            afterward whether the continuation wants a lwc: */
         can_continue_sema = ft->can_continue_sema;

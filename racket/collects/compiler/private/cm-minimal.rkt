@@ -165,7 +165,7 @@
                                                                  ;; When taking a lock, we need to consistently
                                                                  ;; use the main destination (where we'll write)
                                                                  ;; and not find a ".zo" file that exists in an
-                                                                 ;; ealier root:
+                                                                 ;; earlier root:
                                                                  (list (car roots))
                                                                  roots)
                                                      ;; In cross-multi mode, we need to default to the

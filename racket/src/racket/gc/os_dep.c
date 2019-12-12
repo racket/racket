@@ -435,7 +435,7 @@ static ptr_t backing_store_base_from_proc(void)
     /* Some Linux distributions arrange to define __data_start.  Some	*/
     /* define data_start as a weak symbol.  The latter is technically	*/
     /* broken, since the user program may define data_start, in which	*/
-    /* case we lose.  Nonetheless, we try both, prefering __data_start.	*/
+    /* case we lose.  Nonetheless, we try both, preferring __data_start.	*/
     /* We assume gcc-compatible pragmas.	*/
 #   pragma weak __data_start
     extern int __data_start[];
