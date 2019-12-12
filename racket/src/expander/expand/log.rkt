@@ -44,6 +44,25 @@
             [(null? args) #f]
             [else (apply list* args)])))
 
+;; Expansion logging is interpreted by the macro stepper: see
+;;
+;;   (lib macro-debugger/model/deriv-{tokens,parser})
+;;
+;; In particular, deriv-tokens.rkt describes the payloads carried by each of the
+;; events listed below, and deriv-parser.rkt describes the grammar of events and
+;; how it corresponds to the procedures in the expander implementation.
+
+;; Here are a few non-obvious considerations for the logging design:
+;;
+;; - 'prim-X events should occur before error checking (including define-match)
+;; - payloads should contain no artificial syntax objects (that is, they should
+;;   only contain syntax objects from the input or that will be the basis for
+;;   results (possibly adjusted by scopes, etc))
+;; - arming and disarming should be reported separately from rewrites, so that
+;;   the macro stepper can track the identity of terms (it's complicated---some
+;;   adjustments can be collapsed, as long as the intermediate syntax objects
+;;   are not externally visible)
+
 (define key->arity
   ;; event-symbol => (U Nat 'any)
   #hash(;; basic empty tokens
