@@ -697,8 +697,18 @@
      [(linklet import-instances target-instance)
       (instantiate-linklet linklet import-instances target-instance #f)]
      [(linklet import-instances target-instance use-prompt?)
+      (unless (linklet? linklet)
+        (raise-argument-error 'instantiate-linklet "linklet?" linklet))
+      (let loop ([l import-instances])
+        (unless (null? l)
+          (if (and (pair? l)
+                   (instance? (car l)))
+              (loop (cdr l))
+              (raise-argument-error 'instantiate-linklet "(listof instance?)" import-instances))))
       (cond
        [target-instance
+        (unless (instance? target-instance)
+          (raise-argument-error 'instantiate-linklet "(or/c instance? #f)" target-instance))
         ;; Instantiate into the given instance and return the
         ;; result of the linklet body:
         (with-continuation-mark

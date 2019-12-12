@@ -11,6 +11,7 @@
 (load-relative "letrec.rktl")
 (load-relative "procs.rktl")
 (load-relative "stx.rktl")
+(load-relative "linklet.rktl")
 (load-relative "module.rktl")
 (load-relative "submodule.rktl")
 (load-relative "stxparam.rktl")

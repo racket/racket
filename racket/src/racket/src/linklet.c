@@ -593,7 +593,7 @@ static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv)
     scheme_wrong_contract("instantiate-linklet", "linklet?", 0, argc, argv);
 
   l = argv[1];
-  while (!SCHEME_NULLP(l)) {
+  while (SCHEME_PAIRP(l)) {
     if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_instance_type))
       break;
     l = SCHEME_CDR(l);
