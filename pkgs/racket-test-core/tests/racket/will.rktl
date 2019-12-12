@@ -372,7 +372,7 @@
   (provide go)
   
   (define (f x y)
-    (let ([z (make-vector 1024 x)]) ; problem if `z` is retained during non-tail `(y)`
+    (let ([z (make-vector 10240 x)]) ; problem if `z` is retained during non-tail `(y)`
       (let ([w (cons x x)])
         (if (pair? x)
             'ok ; SFS pass should clear `z` in or after this branch
@@ -382,11 +382,12 @@
   (set! f f)
   
   (define (go)
-    (let loop ([n 100000])
-      (f '(1 2) (lambda ()
-                  (if (zero? n)
-                      'done
-                      (unbox (loop (sub1 n)))))))))
+    (for ([i 100])
+      (let loop ([n 1000])
+        (f '(1 2) (lambda ()
+                    (if (zero? n)
+                        'done
+                        (unbox (loop (sub1 n))))))))))
 
 (unless (eq? 'cgc (system-type 'gc))
   (let ([init-memory-use (current-memory-use)])
@@ -399,7 +400,7 @@
                          (let loop ()
                            (sleep 0.1)
                            (define mu (current-memory-use))
-                           (printf "~s\n" mu)
+                           (printf "~s\n" (- mu init-memory-use))
                            (cond
                              [(mu . < . (+ init-memory-use (* 100 1024 1024)))
                               (loop)]
