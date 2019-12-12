@@ -545,7 +545,7 @@ static ULONG STDMETHODCALLTYPE classAddRef(IClassFactory *com_obj)
   // Since we never actually allocate/free an IClassFactory (ie, we
   // use just 1 static one), we don't need to maintain a separate
   // reference count for our IClassFactory. We'll just tell the caller
-  // that there's at least one of our IClassFactory objects in existance
+  // that there's at least one of our IClassFactory objects in existence
   return(1);
 }
 

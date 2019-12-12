@@ -576,7 +576,7 @@
               ;; for the executable and icon, but we don't want absolute
               ;; paths in an in-place build. So, the ".desktop" files
               ;; in an in-place build won't be usable directly, but they
-              ;; adn be patched up by `setup/unixstyle-install'.
+              ;; and be patched up by `setup/unixstyle-install'.
               (let ([p (simple-form-path (path->complete-path p))])
                 (if (or user?
                         (get-absolute-installation?))

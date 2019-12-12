@@ -10147,7 +10147,7 @@ static void optimize_uses_of_mutable_imply_early_alloc(Scheme_IR_Let_Value *at_i
   int i, j;
   Scheme_IR_Let_Value *irlv = at_irlv;
 
-  /* We we're reinterpreting a `letrec` as `let*`, and when it realy
+  /* We we're reinterpreting a `letrec` as `let*`, and when it really
      must be `let*` instead of `let`, and when a mutable variable is
      involved, then we need to tell the `resolve` pass that the
      mutable varaiable's value must be boxed immediately, instead of

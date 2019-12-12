@@ -330,7 +330,7 @@
 ;;;   (define top-wrap '((top)))
 ;;;   (define top-marked?
 ;;;     (lambda (w) (memq 'top (wrap-marks w))))
-;;; On ther other hand, we don't do this consistently; we define make-wrap,
+;;; On the other hand, we don't do this consistently; we define make-wrap,
 ;;; wrap-marks, and wrap-subst simply as
 ;;;   (define make-wrap cons)
 ;;;   (define wrap-marks car)

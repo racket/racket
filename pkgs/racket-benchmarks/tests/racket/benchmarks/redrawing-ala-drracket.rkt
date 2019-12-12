@@ -59,7 +59,7 @@ DrRacket redraws a full window's worth of text
 (queue-callback
  (λ ()
    (set! times '())
-   (set! s (make-semaphore)) ;; because earlier paints happend before we were ready
+   (set! s (make-semaphore)) ;; because earlier paints happened before we were ready
    (for ([i (in-range number-of-experiments)])
      (collect-garbage) (collect-garbage) (collect-garbage)
      (send ec refresh)

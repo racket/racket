@@ -1025,7 +1025,7 @@ struct _GC_arrays {
 # endif
 # ifdef MSWINCE
     word _heap_lengths[MAX_HEAP_SECTS];
-    		/* Commited lengths of memory regions obtained from kernel. */
+    		/* Committed lengths of memory regions obtained from kernel. */
 # endif
   struct roots _static_roots[MAX_ROOT_SETS];
 # if !defined(MSWIN32) && !defined(MSWINCE)

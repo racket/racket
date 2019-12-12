@@ -1749,7 +1749,7 @@
       (write-receipt-hash receipt-path ht2)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;       Foriegn Libraries and Man Pages         ;;
+  ;;       Foreign Libraries and Man Pages         ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-copy/move-step what

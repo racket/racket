@@ -152,7 +152,7 @@ Racket allocates the following kinds of memory objects:
 
     void *GC_malloc_weak_box(void *p, void **secondary, int soffset);
 
-   If the `secondary' argument is not NULL, it points to an auxilliary
+   If the `secondary' argument is not NULL, it points to an auxiliary
    address that should be zeroed (by the collector) whenever `val' is
    zeroed. To allow zeroing in the interior of an allocated pointer,
    the zero-out address is determined by `secondary + soffset'. The

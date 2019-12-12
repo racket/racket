@@ -84,7 +84,7 @@
          (equal? (subbytes bstr 0 4) #"\211PNG"))
     'png]
    [else
-    ;; Asume BMP
+    ;; Assume BMP
     'bmp]))
 
 (define (ico-png-width i)

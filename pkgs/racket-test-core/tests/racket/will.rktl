@@ -430,7 +430,7 @@
                 (thread
                  (lambda ()
                    ;; Ideally, this loop retains only `loop`
-                   ;; and `sema`. If it retains everything refereneced
+                   ;; and `sema`. If it retains everything referenced
                    ;; or defined in the module, though, at least make
                    ;; sure it doesn't retain the whole namespace
                    (let loop () (sync sema) (loop)))))))
