@@ -388,7 +388,8 @@
                       'done
                       (unbox (loop (sub1 n)))))))))
 
-(unless (eq? 'cgc (system-type 'gc))
+(unless (or (eq? 'cgc (system-type 'gc))
+            (not (eval-jit-enabled)))
   (let ([init-memory-use (current-memory-use)])
     (define done? #f)
     (define t (thread (lambda ()
