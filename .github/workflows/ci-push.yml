@@ -126,6 +126,10 @@ jobs:
     - name: Installing
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
+    # We build on Linux with clang and gcc and on MacOS with clang only.
+    # However, it makes little sense to test both builds on Linux so we tarball the 
+    # gcc build only. Therefore this condition ensure we only perform the tarball
+    # and artifact upload on MacOS or (on Linux) if we are building with gcc.
     - name: Tarballing
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       working-directory: ../
