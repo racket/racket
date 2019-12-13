@@ -4,7 +4,7 @@ LABEL description="Debian Stable Slim image with Racket build dependencies pre-i
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc clang uuid-dev git && \
+    apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc uuid-dev git clang && \
     apt-get clean
 
 CMD ["bash"]

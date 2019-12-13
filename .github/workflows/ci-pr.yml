@@ -4,17 +4,47 @@ on: [pull_request]
 
 jobs:
 
-  buildtest-unixstyle:
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, macos-latest]
+  buildtest-linux:
+    container:
+      image: racket/racket-ci:testdeps
+      options: --init
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Build
-      run: make CPUS="3" PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS=$(nproc) PKGS="racket-test db-test unstable-flonum-lib net-test"
+    - name: Test
+      run: |
+        export PATH=$PATH:`pwd`/racket/bin
+        raco test -l tests/racket/test
+        racket -l tests/racket/contract/all
+        raco test -l tests/json/json
+        raco test -l tests/file/main
+        raco test -l tests/net/head
+        raco test -l tests/net/uri-codec
+        raco test -l tests/net/url
+        raco test -l tests/net/url-port
+        raco test -l tests/net/encoders
+        raco test -l tests/openssl/basic
+        raco test -l tests/openssl/https
+        raco test -l tests/match/main
+        raco test -l tests/zo-path
+        raco test -c tests/xml
+        raco test -c tests/future
+        raco test -l tests/db/all-tests
+        raco test -c tests/stxparse
+        raco test -c tests/syntax
+
+  buildtest-macos:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: make CPUS=$(sysctl -n hw.physicalcpu) PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
       run: |
         export PATH=$PATH:`pwd`/racket/bin
@@ -46,7 +76,7 @@ jobs:
     #   Version: VisualStudio/16.3.6+29418.71
     #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Build
       working-directory: .\racket\src\worksp
       shell: cmd
