@@ -12,7 +12,9 @@
          (only-in "../expand/syntax-local.rkt" syntax-local-phase-level)
          "../namespace/core.rkt"
          "../namespace/inspector.rkt"
-         "../common/contract.rkt")
+         "../common/contract.rkt"
+         (only-in "../expand/context.rkt" get-current-expand-context)
+         "../expand/log.rkt")
 
 ;; Provides public versions of taint-related syntax functions
 
@@ -32,14 +34,18 @@
               (inspector? maybe-insp))
     (raise-argument-error who "(or/c inspector? #f)" maybe-insp))
   (define insp (inspector-for-taint maybe-insp))
-  (cond
-   [use-mode?
-    (taint-dispatch
-     s
-     (lambda (s) (raw:syntax-arm s insp))
-     (syntax-local-phase-level))]
-   [else
-    (raw:syntax-arm s insp)]))
+  (define armed-s
+    (cond
+      [use-mode?
+       (taint-dispatch
+        s
+        (lambda (s) (raw:syntax-arm s insp))
+        (syntax-local-phase-level))]
+      [else
+       (raw:syntax-arm s insp)]))
+  (define ctx (get-current-expand-context #:fail-ok? #t))
+  (when ctx (log-expand ctx 'track-syntax 'arm armed-s s))
+  armed-s)
 
 (define/who (syntax-disarm s maybe-insp)
   (check who syntax? s)
@@ -47,18 +53,25 @@
               (inspector? maybe-insp))
     (raise-argument-error who "(or/c inspector? #f)" maybe-insp))
   (define insp (inspector-for-taint maybe-insp))
-  (raw:syntax-disarm s insp))
-  
+  (define disarmed-s (raw:syntax-disarm s insp))
+  (define ctx (get-current-expand-context #:fail-ok? #t))
+  (when ctx (log-expand ctx 'track-syntax 'disarm disarmed-s s))
+  disarmed-s)
+
 (define/who (syntax-rearm s from-s [use-mode? #f])
   (check who syntax? s)
   (check who syntax? from-s)
-  (cond
-   [use-mode? (taint-dispatch
-               s
-               (lambda (s) (raw:syntax-rearm s from-s))
-               (syntax-local-phase-level))]
-   [else
-    (raw:syntax-rearm s from-s)]))
+  (define rearmed-s
+    (cond
+      [use-mode? (taint-dispatch
+                  s
+                  (lambda (s) (raw:syntax-rearm s from-s))
+                  (syntax-local-phase-level))]
+      [else
+       (raw:syntax-rearm s from-s)]))
+  (define ctx (get-current-expand-context #:fail-ok? #t))
+  (when ctx (log-expand ctx 'track-syntax 'rearm rearmed-s s))
+  rearmed-s)
 
 (define/who (syntax-taint s)
   (check who syntax? s)

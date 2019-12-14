@@ -163,27 +163,13 @@
                                                        (expand-single form ns observer to-parsed?
                                                                       #:serializable? serializable?)))]
    [else
-    (log-top-lift-begin-before ctx require-lifts lifts exp-s ns)
     (define new-s
       (wrap-lifts-as-begin (append require-lifts lifts)
-                           #:adjust-form (lambda (form)
-                                           (log-expand ctx 'next)
-                                           (expand-single form ns observer to-parsed?
-                                                          #:serializable? serializable?))
-                           #:adjust-body (lambda (form)
-                                           (cond
-                                             [to-parsed? form]
-                                             [else
-                                              (log-expand ctx 'next)
-                                              ;; This re-expansion should be unnecessary, but we do it
-                                              ;; for a kind of consistentcy with `expand/capture-lifts`
-                                              ;; and for expansion observers
-                                              (expand-single form ns observer to-parsed?
-                                                             #:serializable? serializable?)]))
                            exp-s
                            (namespace-phase ns)))
-    (log-top-begin-after ctx new-s)
-    new-s]))
+    (log-expand ctx 'lift-loop new-s)
+    (expand-single new-s ns observer to-parsed?
+                   #:serializable? serializable?)]))
 
 (define (expand-once s [ns (current-namespace)])
   (per-top-level s ns
@@ -262,7 +248,7 @@
      [else
       (case (core-form-sym disarmed-exp-s phase)
         [(begin)
-         (log-expand ctx 'prim-begin)
+         (log-expand ctx 'prim-begin disarmed-exp-s)
          (define-match m disarmed-exp-s '(begin e ...))
          ;; Map `loop` over the `e`s, but in the case of `eval`,
          ;; tail-call for last one:
@@ -289,7 +275,7 @@
             new-s]
            [else (begin-loop (m 'e))])]
         [(begin-for-syntax)
-         (log-expand tl-ctx 'prim-begin-for-syntax)
+         (log-expand tl-ctx 'prim-begin-for-syntax disarmed-exp-s)
          (define-match m disarmed-exp-s '(begin-for-syntax e ...))
          (define next-phase (add1 phase))
          (define next-ns (namespace->namespace-at-phase ns next-phase))
@@ -389,25 +375,12 @@
      (define new-s (wrap-lifts-as-begin (append require-lifts lifts)
                                         exp-s
                                         (namespace-phase ns)))
-     (...log-expand obs ['lift-loop new-s])
-     (log-top-begin-before ctx new-s))))
+     (define-match m new-s '(begin e ...))
+     (...log-expand obs ['enter-lift-loop new-s]))))
 
-(define (log-top-begin-before ctx new-s)
+(define (log-top-lift-begin-after ctx new-s)
   (log-expand...
    ctx
    (lambda (obs)
-     (define-match m new-s '(begin e ...))
-     (...log-expand obs
-                    ['visit new-s] ['resolve (m 'begin)]
-                    ['enter-prim new-s] ['prim-begin]
-                    ['enter-list (datum->syntax #f (m 'e) new-s)]))))
-
-(define (log-top-begin-after ctx new-s)
-  (log-expand...
-   ctx
-   (lambda (obs)
-     (define-match m new-s '(begin e ...))
      (log-expand* ctx
-                  ['exit-list (datum->syntax #f (m 'e) new-s)]
-                  ['exit-prim new-s]
-                  ['return new-s]))))
+                  ['end-lift-loop new-s]))))

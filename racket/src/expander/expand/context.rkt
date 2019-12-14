@@ -18,6 +18,7 @@
          copy-root-expand-context
          current-expand-context
          get-current-expand-context
+         without-expand-context
 
          current-expand-observe
          
@@ -144,6 +145,11 @@
       (if fail-ok?
           #f
           (raise-arguments-error who "not currently expanding"))))
+
+(define-syntax-rule (without-expand-context body ...)
+  (parameterize-like
+   #:with ([current-expand-context #f])
+   body ...))
 
 ;; ----------------------------------------
 
