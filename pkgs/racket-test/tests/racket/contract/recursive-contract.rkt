@@ -125,18 +125,22 @@
   (test/spec-passed/result
    'recursive-contract-not-too-slow
    '(let ()
-      (define c
-        (recursive-contract
-         (or/c null?
-               (cons/c (-> integer? integer? integer?) c)
-               (cons/c (-> integer? integer?) (cons/c (-> integer? integer?) c)))))
-
-      (define l (build-list 10000 (λ (x) (λ (x) x))))
-      (define-values (_ cpu real gc)
-        (time-apply (λ () (contract c l 'pos 'neg)) '()))
-      ;; should be substantially less than 5 seconds.
-      ;; with the old implementation it is more like 20 seconds
-      ;; on my laptop and about .3 seconds with the new one
-      (< (- cpu gc) 5000))
+      (define (time-it n)
+        (define c
+          (recursive-contract
+           (or/c null?
+                 (cons/c (-> integer? integer? integer?) c)
+                 (cons/c (-> integer? integer?) (cons/c (-> integer? integer?) c)))))
+        (collect-garbage)
+        (define l (build-list n (λ (x) (λ (x) x))))
+        (define-values (_ cpu real gc)
+          (time-apply (λ () (contract c l 'pos 'neg)) '()))
+        cpu)
+      ;; Doubling the list length should not increase the
+      ;; run time by more than a factor of three; try up
+      ;; to three times, just in case
+      (for/or ([i (in-range 3)])
+        (> (* 3 (time-it 4000))
+           (time-it 8000))))
    #t
    do-not-double-wrap))
