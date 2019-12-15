@@ -5,24 +5,35 @@
 
 @main-page['license]
 
-Racket software and documentation is distributed under the GNU Lesser
-General Public License (LGPL).  This means
+Racket is distributed under the MIT license and the Apache version 2.0
+license, at your option. However, the Racket runtime system includes
+components distributed under other licenses. In short:
 
 @itemize[
 
- @item{You can link Racket software into
-       proprietary applications, provided you follow the specific
-       rules stated in the LGPL.}
+ @item{The traditional Racket runtime system includes code distributed
+       under the GNU Lesser General Public License, version 3.}
 
- @item{You can modify Racket software. If you distribute a modified
-       version, you must distribute it under the terms of the LGPL,
-       which in particular means that you must release the source code
-       for the modified software.}
+ @item{The Racket on Chez Scheme runtime system embeds Chez Scheme, which
+       is distributed under the Apache version 2.0 license.}
 
 ]
 
-See @filepath{LICENSE-LGPL.txt} in your Racket installation's @filepath{share}
-directory for more information.
+Except for Windows executables that are created with the ``embed DLLs''
+option, the runtime system remains separate as a shared library or
+additional executable, which means that it is dynamically linked and
+can be replaced with a modified variant by users.
+
+See @filepath{LICENSE-LGPL.txt} in your Racket installation's
+@filepath{share} directory for the full text of the GNU Lesser General
+Public License.
+
+See @filepath{LICENSE-APACHE.txt} in your Racket installation's
+@filepath{share} directory for the full text of the Apache version 2.0
+license.
+
+See @filepath{LICENSE-MIT.txt} in your Racket installation's
+@filepath{share} directory for the full text of the MIT license.
 
 Racket software includes or extends the following copyrighted material:
 
