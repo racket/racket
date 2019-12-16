@@ -151,19 +151,25 @@
          (reduced-arity-procedure-name f))
     => (lambda (name) name)]
    [(record? f)
-    (let* ([v (struct-property-ref prop:procedure (record-rtd f) #f)])
-      (cond
-       [(fixnum? v)
-        (let ([v (unsafe-struct-ref f v)])
-          (cond
-           [(procedure? v) (object-name v)]
-           [else (struct-object-name f)]))]
-       [(eq? v 'unsafe)
-        (extract-procedure-name
-         (if (chaperone? f)
-             (unsafe-procedure-chaperone-replace-proc f)
-             (unsafe-procedure-impersonator-replace-proc f)))]
-       [else (struct-object-name f)]))]
+    (cond
+     [(position-based-accessor? f)
+      (position-based-accessor-name f)]
+     [(position-based-mutator? f)
+      (position-based-mutator-name f)]
+     [else
+      (let* ([v (struct-property-ref prop:procedure (record-rtd f) #f)])
+        (cond
+         [(fixnum? v)
+          (let ([v (unsafe-struct-ref f v)])
+            (cond
+             [(procedure? v) (object-name v)]
+             [else (struct-object-name f)]))]
+         [(eq? v 'unsafe)
+          (extract-procedure-name
+           (if (chaperone? f)
+               (unsafe-procedure-chaperone-replace-proc f)
+               (unsafe-procedure-impersonator-replace-proc f)))]
+         [else (struct-object-name f)]))])]
    [else #f]))
 
 (define/who procedure-arity-includes?

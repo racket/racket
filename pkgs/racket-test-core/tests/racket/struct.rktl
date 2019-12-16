@@ -1358,4 +1358,13 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-values (s cns pred ref set) (make-struct-type 'thing #f 1 1 #f))
+  (test 'make-thing object-name cns)
+  (test 'thing? object-name pred)
+  (test 'thing-ref object-name ref)
+  (test 'thing-set! object-name set))
+
+;; ----------------------------------------
+
 (report-errs)

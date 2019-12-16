@@ -375,6 +375,13 @@
 (define-record position-based-accessor (rtd offset field-count))
 (define-record position-based-mutator (rtd offset field-count))
 
+(define (position-based-accessor-name f)
+  (let ([rtd (position-based-accessor-rtd f)])
+    (string->symbol (string-append (symbol->string (record-type-name rtd)) "-ref"))))
+(define (position-based-mutator-name f)
+  (let ([rtd (position-based-mutator-rtd f)])
+    (string->symbol (string-append (symbol->string (record-type-name rtd)) "-set!"))))
+
 ;; Register other procedures in hash tables; avoid wrapping to
 ;; avoid making the procedures slower
 (define struct-constructors (make-ephemeron-eq-hashtable))
@@ -447,19 +454,19 @@
 (define make-struct-type
   (case-lambda 
     [(name parent-rtd init-count auto-count)
-     (make-struct-type name parent-rtd init-count auto-count #f '() (current-inspector) #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count #f '() (current-inspector) #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val)
-     (make-struct-type name parent-rtd init-count auto-count auto-val '() (current-inspector) #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val '() (current-inspector) #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props (current-inspector) #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props (current-inspector) #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props insp)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props insp #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props insp #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props insp proc-spec)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props insp proc-spec '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props insp proc-spec '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props insp proc-spec immutables)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props insp proc-spec immutables #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props insp proc-spec immutables #f #f)]
     [(name parent-rtd init-count auto-count auto-val props insp proc-spec immutables guard)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props insp proc-spec immutables guard name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props insp proc-spec immutables guard #f)]
     [(name parent-rtd init-count auto-count auto-val props insp proc-spec immutables guard constructor-name)
      (let* ([install-props!
              (check-make-struct-type-arguments 'make-struct-type name parent-rtd init-count auto-count
@@ -482,7 +489,9 @@
             [auto-field-adder (and (positive? auto*-count)
                                    (let ([pfa (get-field-info-auto-adder parent-fi)])
                                      (lambda (args)
-                                       (args-insert args init-count auto-count auto-val pfa))))])
+                                       (args-insert args init-count auto-count auto-val pfa))))]
+            [constructor-name (or constructor-name
+                                  (string->symbol (string-append "make-" (symbol->string name))))])
        (when (or parent-rtd* auto-field-adder)
          (let ([field-info (make-field-info init*-count auto*-count auto-field-adder)])
            (putprop (record-type-uid rtd) 'field-info field-info)))
@@ -498,9 +507,9 @@
                            (lambda args
                              (apply c (reverse (auto-field-adder (reverse args)))))
                            init*-count))
-                      (or constructor-name name)))
+                      constructor-name))
                    rtd
-                   (or constructor-name name))]
+                   constructor-name)]
              [pred (procedure-rename
                     (lambda (v)
                       (or (record? v rtd)
@@ -519,17 +528,17 @@
 (define struct-type-install-properties!
   (case-lambda
    [(rtd name init-count auto-count parent-rtd)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd '() (current-inspector) #f '() #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd '() (current-inspector) #f '() #f #f #f)]
    [(rtd name init-count auto-count parent-rtd props)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props (current-inspector) #f '() #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props (current-inspector) #f '() #f #f #f)]
    [(rtd name init-count auto-count parent-rtd props insp)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp #f '() #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp #f '() #f #f #f)]
    [(rtd name init-count auto-count parent-rtd props insp proc-spec)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec '() #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec '() #f #f #f)]
    [(rtd name init-count auto-count parent-rtd props insp proc-spec immutables)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec immutables #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec immutables #f #f #f)]
    [(rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard #f #f)]
    [(rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard constructor-name)
     (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard constructor-name #f)]
    [(rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard constructor-name install-props!)
