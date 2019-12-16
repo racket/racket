@@ -820,7 +820,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
   if (v) {
     if (SCHEME_VEC_ELS(v)[0]) {
       l = SCHEME_VEC_ELS(v)[0];
-      while (SCHEME_PAIRP(l)) {
+      while (SCHEME_RPAIRP(l)) {
         rktio_fd_close_transfer(unbox_fd(SCHEME_CAR(l)));
         l = SCHEME_CDR(l);
         SCHEME_USE_FUEL(1);
@@ -828,7 +828,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
     }
     if (SCHEME_VEC_ELS(v)[1]) {
       l = SCHEME_VEC_ELS(v)[1];
-      while (SCHEME_PAIRP(l)) {
+      while (SCHEME_RPAIRP(l)) {
         rktio_fd_close_transfer(unbox_fd(SCHEME_CAR(l)));
         l = SCHEME_CDR(l);
         SCHEME_USE_FUEL(1);
@@ -841,7 +841,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
 
 static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, rktio_fd_transfer_t *dupfdt) {
   Scheme_Object *tmp;
-  Scheme_Vector *v; 
+  Scheme_Vector *v;
   if (fd_accumulators) {
     if (!*fd_accumulators) {
       tmp = scheme_make_vector(2, scheme_null);
