@@ -73,6 +73,11 @@
       [(parsed-case-lambda? e)
        (for ([clause (in-list (parsed-case-lambda-clauses e))])
          (check-body-no-disallowed-expr (cadr clause)))]
+      ;; explicitly allow (variable-reference-from-unsafe? (#%variable-reference))
+      [(and (parsed-app? e)
+            (eq? 'variable-reference-from-unsafe? (cross-phase-primitive-name (parsed-app-rator e)))
+            (andmap parsed-#%variable-reference? (parsed-app-rands e)))
+       (void)]
       [(parsed-app? e)
        (check-no-disallowed-expr (parsed-app-rator e))
        (for ([e (in-list (parsed-app-rands e))])

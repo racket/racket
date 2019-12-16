@@ -1,4 +1,5 @@
 (module reverse '#%kernel
+  (#%declare #:cross-phase-persistent)
   (#%provide (rename reverse alt-reverse))
 
   (define-values (reverse)

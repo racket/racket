@@ -1216,7 +1216,8 @@ and only if no module-level binding is @racket[set!]ed.
             set! quote-syntax quote with-continuation-mark
             #%plain-app
             cons list make-struct-type make-struct-type-property
-            gensym string->uninterned-symbol)
+            gensym string->uninterned-symbol #%variable-reference
+	    variable-reference-from-unsafe?)
 [cross-module (module id module-path
                 (#%plain-module-begin
                   cross-form ...))]
@@ -1237,7 +1238,9 @@ and only if no module-level binding is @racket[set!]ed.
                              cross-expr ...+)
                 (#%plain-app gensym)
                 (#%plain-app gensym string)
-                (#%plain-app string->uninterned-symbol string)]
+                (#%plain-app string->uninterned-symbol string)
+		(#%plain-app variable-reference-from-unsafe?
+		             (#%variable-reference))]
 [cross-datum     number
                  boolean
                  identifier
@@ -1251,6 +1254,7 @@ module imports only from other cross-phase persistent modules, the only relevant
 expansion steps are the implicit introduction of
 @racket[#%plain-module-begin], implicit introduction of @racket[#%plain-app],
 and implicit introduction and/or expansion of @racket[#%datum].
+@history[#:changed "7.5.0.12" @elem{Allow @racket[(#%plain-app variable-reference-from-unsafe? (#%variable-reference))].}]
 
 @;----------------------------------------
 
