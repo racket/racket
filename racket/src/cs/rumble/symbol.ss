@@ -16,7 +16,9 @@
   (let loop ()
     (let ([c (#%unbox gensym-counter)])
       (if (#%box-cas! gensym-counter c (add1 c))
-          (string-append s (number->string c))
+          (let ([a (string-append s (number->string c))])
+            (#%$string-set-immutable! a)
+            a)
           (loop)))))
 
 (define/who (symbol-interned? s)
@@ -24,14 +26,14 @@
   (not (or (gensym? s)
            (uninterned-symbol? s))))
 
-(define unreadable-unique-name "gr8mwsuasnvzbl9jjo6e9b-")
+(define unreadable-unique-name "unreadable:")
 (define unreadable-unique-name-length (string-length unreadable-unique-name))
 
 (define/who (symbol-unreadable? s)
   (check who symbol? s)
   (and (gensym? s)
        (let ([u (gensym->unique-string s)]
-             [str (symbol->string s)])
+             [str (#%symbol->string s)])
          (let ([len (string-length str)])
            (and (fx= (string-length u)
                      (fx+ unreadable-unique-name-length len))
@@ -52,16 +54,18 @@
 
 (define/who (string->unreadable-symbol str)
   (check who string? str)
-  (#%gensym (string->immutable-string str)
-            (string-append unreadable-unique-name str)))
+  (#%gensym str
+            (let ([a (string-append unreadable-unique-name str)])
+              (#%$string-set-immutable! a)
+              a)))
 
 (define/who symbol<?
   (case-lambda
    [(a b)
     (check who symbol? a)
     (check who symbol? b)
-    (string<? (symbol->string a)
-              (symbol->string b))]
+    (string<? (#%symbol->string a)
+              (#%symbol->string b))]
    [(a . as)
     (check who symbol? a)
     (let loop ([a a] [as as] [r #t])

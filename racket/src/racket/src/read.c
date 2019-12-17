@@ -56,9 +56,6 @@ ROSYM static Scheme_Object *syntax_symbol;
 ROSYM static Scheme_Object *unsyntax_symbol;
 ROSYM static Scheme_Object *unsyntax_splicing_symbol;
 ROSYM static Scheme_Object *quasisyntax_symbol;
-ROSYM static Scheme_Object *hash_code_symbol;
-ROSYM static Scheme_Object *pre_symbol;
-ROSYM static Scheme_Object *post_symbol;
 
 /* local function prototypes */
 static Scheme_Object *read_case_sensitive(int, Scheme_Object *[]);
@@ -185,10 +182,6 @@ void scheme_init_read(Scheme_Startup_Env *env)
   REGISTER_SO(unsyntax_splicing_symbol);
   REGISTER_SO(quasisyntax_symbol);
 
-  REGISTER_SO(hash_code_symbol);
-  REGISTER_SO(pre_symbol);
-  REGISTER_SO(post_symbol);
-
   quote_symbol                  = scheme_intern_symbol("quote");
   quasiquote_symbol             = scheme_intern_symbol("quasiquote");
   unquote_symbol                = scheme_intern_symbol("unquote");
@@ -197,10 +190,6 @@ void scheme_init_read(Scheme_Startup_Env *env)
   unsyntax_symbol               = scheme_intern_symbol("unsyntax");
   unsyntax_splicing_symbol      = scheme_intern_symbol("unsyntax-splicing");
   quasisyntax_symbol            = scheme_intern_symbol("quasisyntax");
-
-  hash_code_symbol             = scheme_intern_symbol("hash-code");
-  pre_symbol                   = scheme_intern_symbol("pre");
-  post_symbol                  = scheme_intern_symbol("post");
 
   /* initialize cpt_branch */
   {
