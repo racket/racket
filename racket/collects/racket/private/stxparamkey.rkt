@@ -1,6 +1,6 @@
 
 (module stxparamkey '#%kernel
-  (#%require "small-scheme.rkt" "define.rkt" 
+  (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt" 
              "stxcase.rkt" "stxloc.rkt" "with-stx.rkt"
              (only '#%unsafe unsafe-root-continuation-prompt-tag)
              (for-template '#%kernel))

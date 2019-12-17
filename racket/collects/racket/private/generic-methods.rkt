@@ -1,6 +1,6 @@
 (module generic-methods '#%kernel
 
-  (#%require (for-syntax '#%kernel "small-scheme.rkt" "define.rkt"
+  (#%require (for-syntax '#%kernel "qq-and-or.rkt" "define-et-al.rkt" "cond.rkt" "define.rkt"
                          "stx.rkt" "stxcase-scheme.rkt")
              "define.rkt" "../stxparam.rkt")
 
@@ -20,7 +20,6 @@
                          make-method-delta))
 
   (begin-for-syntax
-
     (define-values (struct:generic-info
                     make-generic-info
                     generic-info?

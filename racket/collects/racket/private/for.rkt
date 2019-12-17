@@ -1,7 +1,6 @@
 (module for '#%kernel
 
-  (#%require "more-scheme.rkt"
-             "misc.rkt"
+  (#%require "misc.rkt"
              "define.rkt"
              "letstx-scheme.rkt"
              "member.rkt"
@@ -16,7 +15,7 @@
                          "qqstx.rkt"
                          "define.rkt"
                          "member.rkt"
-                         "small-scheme.rkt"
+                         "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
                          "stxcase-scheme.rkt"))
 
   (#%provide for/fold for*/fold

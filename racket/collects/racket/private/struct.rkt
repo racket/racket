@@ -3,7 +3,7 @@
   (#%require "define.rkt"
              "define-struct.rkt"
              (for-syntax '#%kernel "define.rkt"
-                         "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
+                         "stx.rkt" "stxcase-scheme.rkt" "qq-and-or.rkt" "cond.rkt"
                          "stxloc.rkt"))
 
   (#%provide struct)

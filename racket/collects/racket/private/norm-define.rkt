@@ -1,6 +1,6 @@
 
 (module norm-define '#%kernel
-  (#%require "small-scheme.rkt" "stxcase-scheme.rkt"
+  (#%require "define-et-al.rkt" "qq-and-or.rkt" "stxcase-scheme.rkt"
              "member.rkt" "stx.rkt" "qqstx.rkt")
 
   (#%provide normalize-definition normalize-definition/mk-rhs)

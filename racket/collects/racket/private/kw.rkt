@@ -1,6 +1,8 @@
 (module kw '#%kernel
   (#%require "define.rkt"
-             "small-scheme.rkt"
+             "qq-and-or.rkt"
+             "cond.rkt"
+             "define-et-al.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
                    unsafe-chaperone-procedure
@@ -10,7 +12,9 @@
                          '#%unsafe
                          "procedure-alias.rkt"
                          "stx.rkt"
-                         "small-scheme.rkt"
+                         "qq-and-or.rkt"
+                         "define-et-al.rkt"
+                         "cond.rkt"
                          "stxcase-scheme.rkt"
                          "member.rkt"
                          "name.rkt"
@@ -20,9 +24,10 @@
                          "kw-prop-key.rkt"
                          "immediate-default.rkt")
              (for-meta 2 '#%kernel
-                         "small-scheme.rkt"
-                         "stxcase-scheme.rkt"
-                         "qqstx.rkt"))
+                       "qq-and-or.rkt"
+                       "cond.rkt"
+                       "stxcase-scheme.rkt"
+                       "qqstx.rkt"))
 
   (#%provide new-lambda new-λ
              new-define

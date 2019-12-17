@@ -2,10 +2,10 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "small-scheme.rkt" '#%paramz '#%unsafe
+  (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
-             (for-syntax "stx.rkt" "small-scheme.rkt"
-                          "gen-temp.rkt" "member.rkt" "sc.rkt" '#%kernel))
+             (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+                          "gen-temp.rkt" "sc.rkt" '#%kernel))
 
   (-define interp-match
      (lambda (pat e literals immediate=?)

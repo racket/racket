@@ -2,8 +2,8 @@
 ;; #%qqstx : quasisyntax
 
 (module qqstx '#%kernel
-  (#%require "small-scheme.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
-             (for-syntax '#%kernel "small-scheme.rkt" "stxcase-scheme.rkt" "stx.rkt"))
+  (#%require "define-et-al.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
+             (for-syntax '#%kernel "qq-and-or.rkt" "cond.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
              quasisyntax/loc

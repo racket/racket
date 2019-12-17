@@ -3,9 +3,9 @@
 ;; more-scheme : case, do, etc. - remaining syntax
 
 (module more-scheme '#%kernel
-  (#%require "small-scheme.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
+  (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
              "member.rkt"
-             (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
+             (for-syntax '#%kernel "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
   ;; For `old-case`:
   (define-syntax case-test

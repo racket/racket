@@ -3,8 +3,9 @@
 ;;       [http://scheme2006.cs.uchicago.edu/07-clinger.pdf]
 
 (module case '#%kernel
-  (#%require '#%paramz '#%unsafe "small-scheme.rkt" "define.rkt" "fixnum.rkt"
-             (for-syntax '#%kernel "small-scheme.rkt" "stxcase-scheme.rkt"
+  (#%require '#%paramz '#%unsafe "qq-and-or.rkt" "cond.rkt" "define.rkt" "fixnum.rkt"
+             (for-syntax '#%kernel "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+                         "stxcase-scheme.rkt"
                          "qqstx.rkt" "define.rkt" "sort.rkt" "fixnum.rkt"))
   (#%provide case)
   
