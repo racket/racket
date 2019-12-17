@@ -143,6 +143,10 @@
     (let ([src (path->complete-path (format "test-pkgs/src-pkgs/pkg-~a.zip" name))]
           [bin (path->complete-path (format "test-pkgs/pkg-~a.zip" name))]
           [blt (path->complete-path (format "test-pkgs/built-pkgs/pkg-~a.zip" name))])
+      (define compiled-dir (let ([l (use-compiled-file-paths)])
+                             (if (null? l)
+                                 (string->path-element "compiled")
+                                 (car l))))
       (define sd (build-path tmp-dir name "src"))
       (define bd (build-path tmp-dir name "bin"))
       (define td (build-path tmp-dir name "blt"))
@@ -167,7 +171,7 @@
           (when (regexp-match? #rx#"[.](rkt|scrbl|ss)$" f)
             (let-values ([(base name dir?) (split-path f)])
               (unless (file-exists? (build-path (if (eq? base 'relative) 'same base)
-                                                "compiled" 
+                                                compiled-dir
                                                 (path-add-suffix name #".zo")))
                 (unless (regexp-match? #rx#"^(?:info.rkt|x/keep.scrbl)$" f)
                   (error 'build "compiled file missing for ~s" f)))))))
@@ -189,10 +193,14 @@
                      (and (path? base)
                           (let-values ([(base name dir?) (split-path base)])
                             (or (eq? base 'relative)
-                                (and (path? name)
-                                     (equal? (path->string name) "compiled")
-                                     (let-values ([(base name dir?) (split-path base)])
-                                       (eq? base 'relative))))))))))
+                                (let loop ([elems (explode-path compiled-dir)] [name name] [base base])
+                                  (and (path? name)
+                                       (cond
+                                         [(eq? base 'relative) #t]
+                                         [(null? elems) #f]
+                                         [(equal? (path->string name) (path->string compiled-dir))
+                                          (let-values ([(base name dir?) (split-path base)])
+                                            (loop (cdr elems) name base))]))))))))))
         (for ([f (in-directory)])
           (when (file-exists? f)
             (unless (file-exists? (build-path td f))

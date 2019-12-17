@@ -19,8 +19,9 @@
 
 ;; Use a consistent directory, so that individual tests can be
 ;; run after "tests-create.rkt":
-(define-runtime-path test-directory (build-path (find-system-path 'temp-dir)
-                                                "pkg-test-work"))
+(define test-directory (build-path (find-system-path 'temp-dir)
+                                   (string-append "pkg-test-work"
+                                                  (or racket-run-suffix ""))))
 
 (define (sync-test-directory)
   (printf "Syncing test directory\n")

@@ -69,6 +69,15 @@
   (check-directory-exists 'generate-stripped-directory "source " dir)
   (check-directory-exists 'generate-stripped-directory "destination " dest-dir)
 
+  (define compiled-dir
+    (case mode
+      [(binary binary-lib)
+       (define l (use-compiled-file-paths))
+       (if (pair? l)
+           (car l)
+           "compiled")]
+      [else #f]))
+
   (define drop-keep-ns (make-base-namespace))
   (define (add-drop+keeps dir base drops keeps)
     (define get-info (get-info/full dir #:namespace drop-keep-ns))
@@ -115,7 +124,7 @@
                   #t)))
     (values (add drops more-drops)
             (add keeps more-keeps)))
-  
+
   (define (drop-by-default? path get-p)
     (define bstr (path->bytes path))
     (define (immediate-doc/css-or-doc/js?)
@@ -139,7 +148,7 @@
                (and (regexp-match? #rx"[.](?:ss|rkt)$" bstr)
                     (not (equal? #"info.rkt" bstr))
                     (file-exists? (let-values ([(base name dir?) (split-path (get-p))])
-                                    (build-path base "compiled" (path-add-suffix name #".zo")))))
+                                    (build-path base compiled-dir (path-add-suffix name #".zo")))))
                (immediate-doc/css-or-doc/js?)
                (case mode
                  [(binary-lib)
