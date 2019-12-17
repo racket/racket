@@ -1,10 +1,10 @@
 (module promise '#%kernel
-(#%require "small-scheme.rkt"
+(#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
            "more-scheme.rkt"
            "define.rkt"
            (rename "define-struct.rkt" define-struct define-struct*)
            (for-syntax '#%kernel
-                       "small-scheme.rkt"
+                       "cond.rkt" "qq-and-or.rkt"
                        "define.rkt"
                        "struct.rkt"
                        "stxcase-scheme.rkt"
