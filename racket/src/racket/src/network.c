@@ -893,8 +893,12 @@ static int tcp_check_connect(Connect_Progress_Data *pd, Scheme_Schedule_Info *si
   if (rktio_poll_connect_ready(scheme_rktio, pd->connect))
     return 1;
 
-  if (pd->trying_s)
+  if (pd->trying_s) {
+    /* Even though we don't currently use the semaphore for blocking,
+       registering with the semaphore table seems to avoid a problem
+       with `rktio_poll_add_connect` not working, at least on Mac OS. */
     check_fd_sema(pd->trying_s, MZFD_CREATE_WRITE, sinfo, NULL);
+  }
 
   return 0;
 }
