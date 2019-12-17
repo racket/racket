@@ -3144,6 +3144,40 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test #t namespace? (module->namespace ''lang-is-imports-uses-local-expand)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Similar to previous, but with a `for-template` in the mix
+
+(module uses-local-expand-at-phase-1-instantiation-again racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base)))
+  (provide (for-syntax true))
+  (struct Π- (X))
+  (begin-for-syntax
+    (define TY/internal+ (local-expand #'Π- 'expression null))
+    (define true (lambda (x) #t))))
+
+(module imports-uses-local-expand-at-phase-1-instantiation-again racket/base
+  (require (for-syntax racket/base)
+           'uses-local-expand-at-phase-1-instantiation-again)
+  (provide #%module-begin)
+  (define-for-syntax predicate true))
+
+(module local-expand-test2-reflect racket/base
+  (require (for-template 'uses-local-expand-at-phase-1-instantiation-again))
+  (define x true))
+
+(module local-expand-test2 racket/base
+  (provide #%module-begin)
+  (require 'imports-uses-local-expand-at-phase-1-instantiation-again
+           (for-syntax 'local-expand-test2-reflect)))
+
+(module lang-is-local-expand-test2 'local-expand-test2)
+
+(let ()
+  ;; important that both of these are in the same top-level evaluation:
+  (test (void) namespace-require ''lang-is-local-expand-test2)
+  (test #t namespace? (module->namespace ''lang-is-local-expand-test2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check order of checking for redefinition of a constant
 
 (let ([e '(module defines-a-spider-struct-type racket/base

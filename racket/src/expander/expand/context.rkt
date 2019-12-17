@@ -71,13 +71,15 @@
           for-serializable? ; accumulate submodules as serializable?
           to-correlated-linklet? ; compile to machine-independent linklets?
           normalize-locals? ; forget original local-variable names
-          should-not-encounter-macros?)) ; #t when "expanding" to parse
+          should-not-encounter-macros? ; #t when "expanding" to parse
+          skip-visit-available?)) ; avoid instantiation cycles
 
 (define (make-expand-context ns
                              #:to-parsed? [to-parsed? #f]
                              #:for-serializable? [for-serializable? #f]
                              #:to-correlated-linklet? [to-correlated-linklet? #f]
-                             #:observer [observer #f])
+                             #:observer [observer #f]
+                             #:skip-visit-available? [skip-visit-available? #f])
   (define root-ctx (namespace-get-root-expand-ctx ns))
   (expand-context (root-expand-context-self-mpi root-ctx)
                   (root-expand-context-module-scopes root-ctx)
@@ -120,7 +122,8 @@
                   for-serializable?
                   to-correlated-linklet?
                   to-correlated-linklet? ; normalize-locals?
-                  #f))
+                  #f
+                  skip-visit-available?))
 
 (define (copy-root-expand-context ctx root-ctx)
   (struct*-copy expand-context ctx
