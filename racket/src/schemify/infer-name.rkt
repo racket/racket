@@ -12,8 +12,8 @@
      (cond
        [(and (fx> (string-length s) 0)
              (let ([ch (string-ref s 0)])
-               (or (char=? #\[)
-                   (char=? #\]))))
+               (or (char=? #\[ ch)
+                   (char=? #\] ch))))
         ;; Symbolic name starts with "[" or "]". To avoid confusing
         ;; it with a path or "no name" encoding, add an extra
         ;; "]" to be stripped away.
