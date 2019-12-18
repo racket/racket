@@ -6206,6 +6206,7 @@
           (cons (gensym) (loop (sub1 i))))))
 
   (define (time-it n)
+    (collect-garbage)
     (let ([start (current-process-milliseconds)])
       (let* ([args (gensym-n n)]
              [defns (gensym-n n)])
@@ -6215,9 +6216,10 @@
             ,@(map (lambda (arg defn) `(,arg ,defn)) args defns))))
       (- (current-process-milliseconds) start)))
 
-  (let loop ([tries 3])
+  (let loop ([tries 10])
     (let ([a (time-it 100)]
           [b (time-it 1000)])
+      (printf "~s ~s\n" a b)
       ;; n lg(n) is ok, n^2 is not
       (when (b . > . (* 50 a))
         (if (zero? tries)
