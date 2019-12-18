@@ -47,6 +47,10 @@
                (let ([len (string-length name)])
                  (and (fx> len 1)
                       (string->symbol (substring name 1 len))))]
+              [(and (fx> (string-length name) 0)
+                    (char=? #\] (string-ref name 0)))
+               ;; Strip escape character
+               (string->symbol (substring name 1 (string-length name)))]
               [else
                (string->symbol name)])))])]
    [(impersonator? v)

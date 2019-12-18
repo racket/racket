@@ -668,6 +668,27 @@
   (test 'done f 'done)
   (test 'yes values top-level-variable-to-mutate-form-specialized))
 
+
+;; ----------------------------------------
+;; check some strange procedure names
+
+(define-syntax (as-unnamed stx)
+  (syntax-case stx ()
+    [(_ e)
+     (syntax-property #'e 'inferred-name (void))]))
+
+(test #f object-name (eval '(let ([x (as-unnamed (lambda (x) x))])
+                              x)))
+
+(test '|[| object-name (let ([|[| (lambda (x) x)])
+                          |[|))
+(test '|]| object-name (let ([|]| (lambda (x) x)])
+                          |]|))
+
+(eval '(define (return-a-function-that-returns-y)
+         (lambda () y)))
+(test #f object-name (return-a-function-that-returns-y))
+
 ;; ----------------------------------------
 
 (report-errs)
