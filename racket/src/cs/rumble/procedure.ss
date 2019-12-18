@@ -257,15 +257,21 @@
 (define/who (procedure-extract-target f)
   (cond
    [(record? f)
-    (let* ([rtd (record-rtd f)]
-           [v (struct-property-ref prop:procedure rtd #f)])
-      (cond
-       [(fixnum? v)
-        (let ([v (unsafe-struct-ref f v)])
-          (and (#%procedure? v) v))]
-       [else
-        (check who procedure? f)
-        #f]))]
+    (cond
+     [(or (reduced-arity-procedure? f)
+          (named-procedure? f)
+          (method-procedure? f))
+      #f]
+     [else
+      (let* ([rtd (record-rtd f)]
+             [v (struct-property-ref prop:procedure rtd #f)])
+        (cond
+         [(fixnum? v)
+          (let ([v (unsafe-struct-ref f v)])
+            (and (procedure? v) v))]
+         [else
+          (check who procedure? f)
+          #f]))])]
    [else
     (check who procedure? f)
     #f]))
