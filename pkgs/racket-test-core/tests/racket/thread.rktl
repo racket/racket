@@ -22,7 +22,8 @@
 (define (test-set-balance as bs cs ds
 			  sa sb sc sd
 			  a% b% c% d%)
-  (when (equal? "" Section-prefix)
+  (when (and (run-unreliable-tests? 'timing)
+             (equal? "" Section-prefix))
     (let ([a (box 0)]
           [b (box 0)]
           [c (box 0)]
@@ -52,7 +53,7 @@
             [vc (unbox c)]
             [vd (unbox d)])
         (define (roughly= x y)
-          (<= (* (- x 1) 0.9) y (* (+ x 1) 1.1)))
+          (<= (- (* (- x 1) 0.9) 10) y (+ (* (+ x 1) 1.1) 10)))
 
         (test #t roughly= vb (* b% va))
         (test #t roughly= vc (* c% va))
