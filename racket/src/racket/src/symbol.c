@@ -51,10 +51,12 @@ static Scheme_Object *string_to_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_unreadable_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_to_string_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *symbol_to_immutable_string_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *keyword_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_keyword_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *keyword_to_string_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *keyword_to_immutable_string_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gensym(int argc, Scheme_Object *argv[]);
 
 
@@ -336,6 +338,10 @@ scheme_init_symbol (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("symbol->string", p, env);
 
+  p = scheme_make_folding_prim(symbol_to_immutable_string_prim, "symbol->immutable-string", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("symbol->immutable-string", p, env);
+
   REGISTER_SO(scheme_keyword_p_proc);
   p = scheme_make_folding_prim(keyword_p_prim, "keyword?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -354,6 +360,10 @@ scheme_init_symbol (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("keyword->string", p, env);
   
+  p = scheme_make_folding_prim(keyword_to_immutable_string_prim, "keyword->immutable-string", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("keyword->immutable-string", p, env);
+
   ADD_IMMED_PRIM("gensym",                     gensym,                           0, 1, env);
 }
 
@@ -850,6 +860,24 @@ symbol_to_string_prim (int argc, Scheme_Object *argv[])
   return scheme_symbol_to_string(sym);
 }
 
+static Scheme_Object *
+symbol_to_immutable_string_prim (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *sym, *str;
+
+  sym = argv[0];
+
+  if (!SCHEME_SYMBOLP(sym))
+    scheme_wrong_contract("symbol->immutable-string", "symbol?", 0, argc, argv);
+
+  /* Could cache, but currently we don't */
+
+  str = scheme_symbol_to_string(sym);
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(str);
+
+  return str;
+}
+
 
 static Scheme_Object *
 keyword_p_prim (int argc, Scheme_Object *argv[])
@@ -935,6 +963,25 @@ keyword_to_string_prim (int argc, Scheme_Object *argv[])
   return scheme_make_sized_offset_utf8_string((char *)(argv[0]),
 					      SCHEME_SYMSTR_OFFSET(argv[0]),
 					      SCHEME_SYM_LEN(argv[0]));
+}
+
+static Scheme_Object *
+keyword_to_immutable_string_prim (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *str;
+
+  if (!SCHEME_KEYWORDP(argv[0]))
+    scheme_wrong_contract("keyword->immutable-string", "keyword?", 0, argc, argv);
+
+  /* Could cache, but currently we don't */
+
+  str = scheme_make_sized_offset_utf8_string((char *)(argv[0]),
+                                             SCHEME_SYMSTR_OFFSET(argv[0]),
+                                             SCHEME_SYM_LEN(argv[0]));
+
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(str);
+
+  return str;
 }
 
 static Scheme_Object *gensym(int argc, Scheme_Object *argv[])

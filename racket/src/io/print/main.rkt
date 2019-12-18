@@ -227,7 +227,7 @@
        [else (print-bytes v o max-length)])]
     [(symbol? v)
      (cond
-       [(eq? mode DISPLAY-MODE) (write-string/max (symbol->string v) o max-length)]
+       [(eq? mode DISPLAY-MODE) (write-string/max (symbol->immutable-string v) o max-length)]
        [else (print-symbol v o max-length config)])]
     [(keyword? v)
      (let ([max-length (write-string/max "#:" o max-length)])
@@ -309,7 +309,7 @@
         (define l (vector->list (struct->vector v struct-dots)))
         (define alt-list-constructor
           ;; strip "struct:" from the first element of `l`:
-          (string-append "(" (substring (symbol->string (car l)) 7)))
+          (string-append "(" (substring (symbol->immutable-string (car l)) 7)))
         (print-list p who (cdr l) mode o max-length graph config #f alt-list-constructor)]
        [(prefab-struct-key v)
         => (lambda (key)
@@ -339,7 +339,7 @@
 
 (define (fail-unreadable who v)
   (raise (exn:fail
-          (string-append (symbol->string who)
+          (string-append (symbol->immutable-string who)
                          ": printing disabled for unreadable value"
                          "\n  value: "
                          (parameterize ([print-unreadable #t])

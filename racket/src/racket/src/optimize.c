@@ -3344,9 +3344,12 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
     } else if (IS_NAMED_PRIM(rator, "string-ref")) {
       return scheme_char_p_proc;
     } else if (IS_NAMED_PRIM(rator, "string-append")
+               || IS_NAMED_PRIM(rator, "string-append-immutable")
                || IS_NAMED_PRIM(rator, "string->immutable-string")
                || IS_NAMED_PRIM(rator, "symbol->string")
-               || IS_NAMED_PRIM(rator, "keyword->string")) {
+               || IS_NAMED_PRIM(rator, "symbol->immutable-string")
+               || IS_NAMED_PRIM(rator, "keyword->string")
+               || IS_NAMED_PRIM(rator, "keyword->immutable-string")) {
         return scheme_string_p_proc;
     } else if (IS_NAMED_PRIM(rator, "bytes-append")
                || IS_NAMED_PRIM(rator, "bytes->immutable-bytes")) {
@@ -4663,12 +4666,14 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         check_known(info, app_o, rator, rand, "length", scheme_list_p_proc, scheme_true, info->unsafe_mode);
 
         check_known(info, app_o, rator, rand, "string-append", scheme_string_p_proc, scheme_true, info->unsafe_mode);
+        check_known(info, app_o, rator, rand, "string-append-immutable", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "bytes-append", scheme_byte_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "string->immutable-string", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "bytes->immutable-bytes", scheme_byte_string_p_proc, scheme_true, info->unsafe_mode);
 
         check_known(info, app_o, rator, rand, "string->symbol", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "symbol->string", scheme_symbol_p_proc, scheme_true, info->unsafe_mode);
+        check_known(info, app_o, rator, rand, "symbol->string-immutable", scheme_symbol_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "string->keyword", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "keyword->string", scheme_keyword_p_proc, scheme_true, info->unsafe_mode);
 

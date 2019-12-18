@@ -20,6 +20,10 @@
   (check who keyword? kw)
   (symbol->string (keyword-symbol kw)))
 
+(define/who (keyword->immutable-string kw)
+  (check who keyword? kw)
+  (#%symbol->string (keyword-symbol kw)))
+
 (define/who keyword<?
   (case-lambda
    [(a)

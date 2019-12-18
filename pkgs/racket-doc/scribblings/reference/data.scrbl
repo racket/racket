@@ -52,17 +52,39 @@ table; see @secref["symbols"] for more information.
 
 @defproc[(keyword? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is a keyword, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a keyword, @racket[#f] otherwise.
+
+@mz-examples[(keyword? '#:apple)
+             (keyword? 'define)
+             (keyword? '#:define)]}
+
 
 @defproc[(keyword->string [keyword keyword?]) string?]{
 
 Returns a string for the @racket[display]ed form of @racket[keyword],
-not including the leading @litchar{#:}.}
+not including the leading @litchar{#:}.
+
+@mz-examples[(keyword->string '#:apple)]}
+
+
+@defproc[(keyword->immutable-string [sym keyword?]) (and/c string? immutable?)]{
+
+Like @racket[keyword->string], but the result is an immutable string,
+not necessarily freshly allocated.
+
+@mz-examples[(keyword->immutable-string '#:apple)
+             (immutable? (keyword->immutable-string '#:apple))]
+
+@history[#:added "7.5.0.14"]}
+
 
 @defproc[(string->keyword [str string?]) keyword?]{
 
 Returns a keyword whose @racket[display]ed form is the same as that of
-@racket[str], but with a leading @litchar{#:}.}
+@racket[str], but with a leading @litchar{#:}.
+
+@mz-examples[(string->keyword "apple")]}
+
 
 @defproc[(keyword<? [a-keyword keyword?] [b-keyword keyword?] ...) boolean?]{
 
@@ -70,6 +92,8 @@ Returns @racket[#t] if the arguments are sorted, where the comparison
 for each pair of keywords is the same as using
 @racket[keyword->string] with @racket[string->bytes/utf-8] and
 @racket[bytes<?].
+
+@mz-examples[(keyword<? '#:apple '#:banana)]
 
 @history/arity[]}
 

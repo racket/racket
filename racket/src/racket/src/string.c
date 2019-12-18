@@ -73,6 +73,7 @@ static Scheme_Object *string_locale_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *substring (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_append (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_append_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_copy (int argc, Scheme_Object *argv[]);
@@ -178,6 +179,7 @@ ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol, *cs_symbol;
 ROSYM static Scheme_Object *force_symbol, *infer_symbol;
 ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path, *platform_cs_path;
 READ_ONLY static Scheme_Object *zero_length_char_string;
+READ_ONLY static Scheme_Object *zero_length_char_immutable_string;
 READ_ONLY static Scheme_Object *zero_length_byte_string;
 
 SHARED_OK static char *embedding_banner;
@@ -256,8 +258,11 @@ scheme_init_string (Scheme_Startup_Env *env)
   infer_symbol = scheme_intern_symbol("infer");
 
   REGISTER_SO(zero_length_char_string);
+  REGISTER_SO(zero_length_char_immutable_string);
   REGISTER_SO(zero_length_byte_string);
   zero_length_char_string = scheme_alloc_char_string(0, 0);
+  zero_length_char_immutable_string = scheme_alloc_char_string(0, 0);
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(zero_length_char_immutable_string);
   zero_length_byte_string = scheme_alloc_byte_string(0, 0);
 
   REGISTER_SO(complete_symbol);
@@ -420,6 +425,10 @@ scheme_init_string (Scheme_Startup_Env *env)
   p = scheme_make_immed_prim(string_append, "string-append", 0, -1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("string-append", p, env);
+
+  p = scheme_make_immed_prim(string_append_immutable, "string-append-immutable", 0, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("string-append-immutable", p, env);
 
   scheme_addto_prim_instance("string->list",
 			     scheme_make_immed_prim(string_to_list,
@@ -1069,6 +1078,20 @@ Scheme_Object *scheme_string_eq_2(Scheme_Object *str1, Scheme_Object *str2)
   a[0] = str1;
   a[1] = str2;       
   return string_eq(2, a);
+}
+
+Scheme_Object *string_append_immutable(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *r;
+
+  r = do_string_append("string-append-immutable", argc, argv);
+
+  if (r == zero_length_char_string)
+    return zero_length_char_immutable_string;
+
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(r);
+
+  return r;
 }
 
 /**********************************************************************/

@@ -433,6 +433,10 @@
 (test "ab" symbol->string y)
 (test y string->symbol "ab")
 
+(test #f eq? (symbol->string 'apple) (symbol->string 'apple))
+(test "apple" symbol->immutable-string 'apple)
+(test #t immutable? (symbol->immutable-string 'apple))
+
 #ci(test #t eq? 'mISSISSIppi 'mississippi)
 #ci(test #f 'string->symbol (eq? 'bitBlt (string->symbol "bitBlt")))
 #cs(test #t 'string->symbol (eq? 'bitBlt (string->symbol "bitBlt")))
@@ -465,6 +469,11 @@
 (test #t keyword<? (string->keyword "\uA0") (string->keyword "\uFF"))
 (test #f keyword<? (string->keyword "\uFF") (string->keyword "\uA0"))
 (test #f keyword<? (string->keyword "\uA0") (string->keyword "\uA0"))
+
+(test #f eq? (keyword->string '#:apple) (keyword->string '#:apple))
+(test "apple" keyword->immutable-string '#:apple)
+(test #t immutable? (keyword->immutable-string '#:apple))
+
 
 (arity-test keyword? 1 1)
 (arity-test keyword<? 1 -1)
@@ -824,6 +833,15 @@
 (err/rt-test (string-append 1))
 (err/rt-test (string-append "hello" 1))
 (err/rt-test (string-append "hello" 1 "done"))
+(test "foobar" string-append-immutable "foo" "bar")
+(test "foo" string-append-immutable "foo")
+(test "" string-append-immutable)
+(test "" string-append-immutable "" "")
+(test #t immutable? (string-append-immutable "foo" "bar"))
+(test #t immutable? (string-append-immutable "foo"))
+(test #t immutable? (string-append-immutable "" ""))
+(test #t immutable? (string-append-immutable))
+(test #f immutable? (string-append (string->immutable-string "hello")))
 (test "" make-string 0)
 (define s (string-copy "hello"))
 (define s2 (string-copy s))

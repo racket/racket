@@ -52,6 +52,10 @@
   (check who symbol? s)
   (string-copy (#%symbol->string s)))
 
+(define/who (symbol->immutable-string s)
+  (check who symbol? s)
+  (#%symbol->string s))
+
 (define/who (string->unreadable-symbol str)
   (check who string? str)
   (#%gensym str

@@ -321,6 +321,7 @@
           string->uninterned-symbol
           string->unreadable-symbol
           symbol->string
+          symbol->immutable-string
 
           list?
           list-pair?
@@ -367,6 +368,7 @@
 
           keyword?
           keyword->string
+          keyword->immutable-string
           string->keyword
           keyword<?
 

@@ -41,35 +41,46 @@ used as an ephemeron key (see @secref["ephemerons"]).
 @defproc[(symbol? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is
  a symbol, @racket[#f] otherwise.
 
-@examples[(symbol? 'Apple) (symbol? 10)]}
+@mz-examples[(symbol? 'Apple) (symbol? 10)]}
 
 
 @defproc[(symbol-interned? [sym symbol?]) boolean?]{Returns @racket[#t] if @racket[sym] is
  @tech{interned}, @racket[#f] otherwise.
 
-@examples[(symbol-interned? 'Apple)
-          (symbol-interned? (gensym))
-          (symbol-interned? (string->unreadable-symbol "Apple"))]}
+@mz-examples[(symbol-interned? 'Apple)
+             (symbol-interned? (gensym))
+             (symbol-interned? (string->unreadable-symbol "Apple"))]}
 
 @defproc[(symbol-unreadable? [sym symbol?]) boolean?]{Returns @racket[#t] if @racket[sym] is
  an @tech{unreadable symbol}, @racket[#f] otherwise.
 
-@examples[(symbol-unreadable? 'Apple)
-          (symbol-unreadable? (gensym))
-          (symbol-unreadable? (string->unreadable-symbol "Apple"))]}
+@mz-examples[(symbol-unreadable? 'Apple)
+             (symbol-unreadable? (gensym))
+             (symbol-unreadable? (string->unreadable-symbol "Apple"))]}
 
 @defproc[(symbol->string [sym symbol?]) string?]{Returns a freshly
  allocated mutable string whose characters are the same as in
  @racket[sym].
 
-@examples[(symbol->string 'Apple)]}
+@mz-examples[(symbol->string 'Apple)]}
+
+
+@defproc[(symbol->immutable-string [sym symbol?]) (and/c string? immutable?)]{
+
+Like @racket[symbol->string], but the result is an immutable string,
+not necessarily freshly allocated.
+
+@mz-examples[(symbol->immutable-string 'Apple)
+             (immutable? (symbol->immutable-string 'Apple))]
+
+@history[#:added "7.5.0.14"]}
 
 
 @defproc[(string->symbol [str string?]) symbol?]{Returns an
  @tech{interned} symbol whose characters are the same as in
  @racket[str].
 
-@examples[(string->symbol "Apple") (string->symbol "1")]}
+@mz-examples[(string->symbol "Apple") (string->symbol "1")]}
 
 
 @defproc[(string->uninterned-symbol [str string?]) symbol?]{Like
@@ -77,10 +88,10 @@ used as an ephemeron key (see @secref["ephemerons"]).
  @tech{uninterned} symbol. Calling @racket[string->uninterned-symbol]
  twice with the same @racket[str] returns two distinct symbols.
 
-@examples[(string->uninterned-symbol "Apple")
-          (eq? 'a (string->uninterned-symbol "a"))
-          (eq? (string->uninterned-symbol "a")
-               (string->uninterned-symbol "a"))]}
+@mz-examples[(string->uninterned-symbol "Apple")
+             (eq? 'a (string->uninterned-symbol "a"))
+             (eq? (string->uninterned-symbol "a")
+                  (string->uninterned-symbol "a"))]}
 
 
 @defproc[(string->unreadable-symbol [str string?]) symbol?]{Like
@@ -89,17 +100,17 @@ used as an ephemeron key (see @secref["ephemerons"]).
  twice with equivalent @racket[str]s returns the same symbol, but
  @racket[read] never produces the symbol.
 
-@examples[(string->unreadable-symbol "Apple")
-          (eq? 'a (string->unreadable-symbol "a"))
-          (eq? (string->unreadable-symbol "a")
-               (string->unreadable-symbol "a"))]}
+@mz-examples[(string->unreadable-symbol "Apple")
+             (eq? 'a (string->unreadable-symbol "a"))
+             (eq? (string->unreadable-symbol "a")
+                  (string->unreadable-symbol "a"))]}
 
 
 @defproc[(gensym [base (or/c string? symbol?) "g"]) symbol?]{Returns a
  new @tech{uninterned} symbol with an automatically-generated name. The
  optional @racket[base] argument is a prefix symbol or string.}
 
-@examples[(gensym "apple")]
+@mz-examples[(gensym "apple")]
 
 
 @defproc[(symbol<? [a-sym symbol?] [b-sym symbol?] ...) boolean?]{
