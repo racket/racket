@@ -354,7 +354,7 @@ CORD CORD_substr_closure(CORD x, size_t i, size_t n, CORD_fn f)
 
 # define SUBSTR_LIMIT (10 * SHORT_LIMIT)
 	/* Substrings of function nodes and flat strings shorter than 	*/
-	/* this are flat strings.  Othewise we use a functional 	*/
+	/* this are flat strings.  Otherwise we use a functional 	*/
 	/* representation, which is significantly slower to access.	*/
 
 /* A version of CORD_substr that assumes i >= 0, n > 0, and i + n < length(x).*/

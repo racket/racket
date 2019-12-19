@@ -42,7 +42,7 @@ HAMT_NONGCING static int HAMT_ELEMENT_OF(Scheme_Object *key1, Scheme_Object *val
 
 HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int shift,
                                  int stype, void *eql_data)
-/* checks wheher `t1` is a subset of `t2`; `t1` and `t2` must be of the same kind */
+/* checks whether `t1` is a subset of `t2`; `t1` and `t2` must be of the same kind */
 {
   hash_tree_bitmap_t i;
   int pos1, pos2, index, popcount1, popcount2;

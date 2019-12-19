@@ -524,7 +524,7 @@
 ;; For `instantiate-linklet` to help report which linklet is being run:
 (define linklet-instantiate-key '#{linklet o9xm0uula3d2mbq9wueixh79r-1})
 
-;; Convert a contination to a list of function-name and
+;; Convert a continuation to a list of function-name and
 ;; source information. Cache the result half-way up the
 ;; traversal, so that it's amortized constant time.
 (define-thread-local cached-traces (make-ephemeron-eq-hashtable))

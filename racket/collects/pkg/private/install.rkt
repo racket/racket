@@ -1240,7 +1240,7 @@
                       null]
                      [else
                       ;; Flush cache of downloaded checksums, in case
-                      ;; there was a race between our checkig and updates on
+                      ;; there was a race between our checking and updates on
                       ;; the catalog server:
                       (clear-checksums-in-cache! update-cache)
                       (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?

@@ -1079,7 +1079,7 @@
 ;; ----------------------------------------
 
 ;; Pass 3 of `module` expansion, which parses `provide` forms and
-;; matches them up with defintiions and requires
+;; matches them up with definitions and requires
 (define (resolve-provides expression-expanded-bodys
                           #:requires-and-provides requires+provides
                           #:declared-submodule-names declared-submodule-names

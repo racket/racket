@@ -42,7 +42,7 @@
 #   into. Usually, the last one is the only one used. However, almost all
 #   targets have an additional "*-all" rule which makes the script to
 #   recurse into _all_ variants of the current HOST (!!) setting. The "-all"
-#   suffix can be overriden for the macro as well.
+#   suffix can be overridden for the macro as well.
 #
 #   a special rule is only given for things like "dist" that will copy the
 #   tarball from the builddir to the sourcedir (or $(PUB)) for reason of

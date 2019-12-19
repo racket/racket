@@ -1210,7 +1210,7 @@ WRAP_FUNC(pthread_create)(pthread_t *new_thread,
 }
 
 /* Spend a few cycles in a way that can't introduce contention with	*/
-/* othre threads.							*/
+/* other threads.							*/
 void GC_pause(void)
 {
     int i;

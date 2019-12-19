@@ -2,7 +2,7 @@
   
   (#%declare #:cross-phase-persistent)
 
-  ;; Exports just the structre info, which is needed in
+  ;; Exports just the structure info, which is needed in
   ;;  "class.rkt" (which is, in turn, ultimately required by
   ;;  "serialize.rkt")
 

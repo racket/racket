@@ -321,7 +321,7 @@
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Use keys that are a multile of a power of 2 to
+; Use keys that are a multiple of a power of 2 to
 ; get "almost" collisions that force the hash table
 ; to use a deeper tree.
 

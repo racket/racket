@@ -243,7 +243,7 @@
 ;; Iterate through all non-bulk symbol+scope+binding combinations.
 ;; This iterator allocates; its intended for use in situations
 ;; that don't need a tight loop, which should generally be the
-;; case for somethign that's inspecting all bindings.
+;; case for something that's inspecting all bindings.
 (define-sequence-syntax in-full-non-bulk-binding-table
   (lambda () #'do-not-use-in-full-non-bulk-binding-table-as-an-expression)
   (lambda (stx)

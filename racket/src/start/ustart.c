@@ -36,7 +36,7 @@
    and `end' are ignored if a ".rackcmdl" (starter) or ".rackprog"
    (embedding) section is found. The `start' value is set to match the
    section offset, and `decl_end', `prog_end', and `end' are correspondingly
-   adjusted. Using a seciton offset allows linking tools (such as
+   adjusted. Using a section offset allows linking tools (such as
    `strip') to move the data in the executable.
 */
 PRESERVE_IN_EXECUTABLE
