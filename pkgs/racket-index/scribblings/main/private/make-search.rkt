@@ -71,7 +71,7 @@
   ;;   span-classes table holding a class name.
   ;; In addition, a "file:/main-doc.../path..." url is saved as ">path..."
   ;; This function does the url compacting.
-  (define main-url ; (make sure that it teminates with a slash)
+  (define main-url ; (make sure that it terminates with a slash)
     (if user-dir?
       (regexp-replace #rx"/*$" (url->string (path->url (find-doc-dir))) "/")
       "../"))

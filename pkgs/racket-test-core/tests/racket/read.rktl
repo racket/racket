@@ -1046,7 +1046,7 @@
   (test #\y read-char-or-special p)
   (test 3 file-position p))
 
-;; Reading somethign like a symbol should stop at a special
+;; Reading something like a symbol should stop at a special
 ;; without calling the special-producing procedure:
 (let* ([pos 0]
        [p (make-input-port

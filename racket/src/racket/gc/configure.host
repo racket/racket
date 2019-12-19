@@ -31,7 +31,7 @@ else
 	if test :$GCC: != :"yes": ; then
             gc_cflags="${gc_flags} +ESdbgasm"
 	fi
-        # :TODO: actaully we should check using Autoconf if
+        # :TODO: actually we should check using Autoconf if
         #     the compiler supports this option.
         ;;
     esac

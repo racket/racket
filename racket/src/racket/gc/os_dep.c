@@ -1398,7 +1398,7 @@ void GC_register_data_segments(void)
     FILE * myexefile;
     struct exe_hdr hdrdos;	/* MSDOS header.	*/
     struct e32_exe hdr386;	/* Real header for my executable */
-    struct o32_obj seg;	/* Currrent segment */
+    struct o32_obj seg;	/* Current segment */
     int nsegs;
     
     

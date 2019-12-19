@@ -9,7 +9,7 @@
   (unless (and (list? ps) (andmap path? ps))
     (error 'embed-me35 "no good: ~s" ps)))
 
-;; These directories are not available in a created distibution, but
+;; These directories are not available in a created distribution, but
 ;; they shouldn't crash:
 (check-path-or-false (find-apps-dir))
 (check-path-or-false (find-pkgs-dir))

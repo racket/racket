@@ -73,7 +73,7 @@ FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 #  having the file-open syscall open an ".exe" file for reading when
 #  (1) the given filename has no suffix, and (2) there's not a suffixless
 #  file present. However, Cygwin doesn't do that when opening a file for
-#  output, even when the output mode is 'update. So we need to explcitly
+#  output, even when the output mode is 'update. So we need to explicitly
 #  add EXE_SUFFIX in a few places.
 
 ################################################################################

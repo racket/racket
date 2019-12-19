@@ -4,7 +4,7 @@
 RACKET = ../../bin/racket
 RACO = $(RACKET) -N raco -l- raco
 
-# Ignoring functions from `#%read` works beause they won't appear in
+# Ignoring functions from `#%read` works because they won't appear in
 # the simplified expansion. Make annotation references direct to
 # improve performance. Declaring "collect.rkt" pure works around a
 # limitation of the flattener.

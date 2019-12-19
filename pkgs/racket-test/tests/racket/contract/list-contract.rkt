@@ -9,7 +9,7 @@
   
   (test/spec-passed/result
    'list-contract-2
-   '(list-contract? (λ (a b c) a)) ;; somethign that's not coerceable to a contract
+   '(list-contract? (λ (a b c) a)) ;; something that's not coerceable to a contract
    #f)
   
   (test/spec-passed/result

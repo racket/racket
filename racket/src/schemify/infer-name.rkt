@@ -48,7 +48,7 @@
                         "::"
                         (number->string pos)))]
        [else ; includes `(void? inferred-name)`
-        ;; We can't provide a source name, but explicity
+        ;; We can't provide a source name, but explicitly
         ;; suppress any other inferred name:
         (wrap-property-set (reannotate orig-s new-s)
                            'inferred-name

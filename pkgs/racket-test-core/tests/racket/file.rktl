@@ -1718,7 +1718,7 @@
   (do-once #f "localhost")
   (do-once #t "localhost")
   (with-handlers ([exn:fail:network:errno? (lambda (e)
-                                             ;; Catch forms of non-suport for IPv6:
+                                             ;; Catch forms of non-support for IPv6:
                                              ;;       EAFNOSUPPORT "Address family not supported by protocol"
                                              ;;    or getaddrinfo failure "no address associated with name"
                                              ;; In case IPv6 is supported by the OS but not for the loopback

@@ -204,7 +204,7 @@
                                                (eqv? (car errno) 5) ; ERROR_ACCESS_DENIED
                                                ;; On Windows, if the target path refers to a file
                                                ;; that has been deleted but is still open
-                                               ;; somehere, then an access-denied error is reported
+                                               ;; somewhere, then an access-denied error is reported
                                                ;; instead of a file-exists error; there appears
                                                ;; to be no way to detect that it was really a
                                                ;; file-still-exists error. Try again for a while.
