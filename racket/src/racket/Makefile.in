@@ -29,17 +29,17 @@ CPP = @CPP@
 
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@ 
-CPPFLAGS =  @PREFLAGS@
+export CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
+export CPPFLAGS =  @PREFLAGS@
 
 AR = @AR@
-ARFLAGS = @ARFLAGS@
+export ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 
-ARLIBFLAGS = @LDFLAGS@ @LIBS@
+export ARLIBFLAGS = @LDFLAGS@ @LIBS@
 
 RACKET = racket
 
