@@ -2503,7 +2503,10 @@ static Scheme_Object *places_serialize(Scheme_Object *so, void **msg_memory, Sch
     new_so = do_places_deep_copy(so, mzPDC_COPY, 0, master_chain, invalid_object,
                                  delayed_err, delayed_errno, delayed_errkind);
     tmp = GC_finish_message_allocator();
-    (*msg_memory) = tmp;
+    if (!new_so)
+      GC_destroy_orphan_msg_memory(tmp);
+    else
+      (*msg_memory) = tmp;
 
     if (!new_so && !*delayed_err && SCHEME_CHAPERONEP(*invalid_object)) {
       /* try again after removing chaperones */
