@@ -4383,7 +4383,7 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
   }
 # endif /* MZ_USE_MZRT */
   cl_cif_args->data = callback_data;
-  if (ffi_prep_closure(cl, cif, do_callback, (void*)(cl_cif_args->data))
+  if (ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl)
       != FFI_OK)
     scheme_signal_error
       ("internal error: ffi_prep_closure did not return FFI_OK");
