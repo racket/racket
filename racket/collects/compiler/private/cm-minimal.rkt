@@ -432,7 +432,10 @@
                                                    #:assume-compiled-sha1 (and recompile-from-exists?
                                                                                (force assume-compiled-sha1))
                                                    #:use-existing-deps (and recompile-from-exists?
-                                                                            use-existing-deps)))
+                                                                            use-existing-deps)
+                                                   #:compile-dependency
+                                                   (lambda (path)
+                                                     (compile-root path->mode roots path up-to-date collection-cache read-src-syntax seen))))
                       (trace-printf "~acompiled ~a" (if recompile-from-exists? "re" "") actual-path)])))
                (lambda ()
                  (log-compile-event path (if (or (not lc) locked?)
@@ -548,7 +551,8 @@
                                    up-to-date collection-cache
                                    #:recompile-from recompile-from
                                    #:assume-compiled-sha1 assume-compiled-sha1
-                                   #:use-existing-deps use-existing-deps)
+                                   #:use-existing-deps use-existing-deps
+                                   #:compile-dependency compile-dependency)
   (when (and (not recompile-from)
              (managed-recompile-only))
     (error 'compile-zo 
@@ -563,7 +567,8 @@
        (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
                     #:recompile-from recompile-from
                     #:assume-compiled-sha1 assume-compiled-sha1
-                    #:use-existing-deps use-existing-deps))
+                    #:use-existing-deps use-existing-deps
+                    #:compile-dependency compile-dependency))
      (define mi-dep-path (path-replace-extension mi-zo-name #".dep"))
      (define mi-deps (call-with-input-file* mi-dep-path read))
      (define mi-sha1 (or (deps-assume-compiled-sha1 mi-deps)
@@ -574,21 +579,24 @@
          (compile-zo* path->mode (list running-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
                       #:recompile-from mi-zo-name
                       #:assume-compiled-sha1 mi-sha1
-                      #:use-existing-deps mi-deps)))
+                      #:use-existing-deps mi-deps
+                      #:compile-dependency compile-dependency)))
      (when (cross-system-type 'target-machine)
        ;; Recompile to cross-compile target form:
        (parameterize ([current-compile-target-machine (cross-system-type 'target-machine)])
          (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
                       #:recompile-from mi-zo-name
                       #:assume-compiled-sha1 mi-sha1
-                      #:use-existing-deps mi-deps)))
+                      #:use-existing-deps mi-deps
+                      #:compile-dependency compile-dependency)))
      running-zo]
     [else
      ;; Regular mode, just [re]compile:
      (compile-zo* path->mode roots path src-sha1 read-src-syntax orig-zo-name up-to-date collection-cache
                   #:recompile-from recompile-from
                   #:assume-compiled-sha1 assume-compiled-sha1
-                  #:use-existing-deps use-existing-deps)]))
+                  #:use-existing-deps use-existing-deps
+                  #:compile-dependency compile-dependency)]))
 
 ;; For communication within `compile-zo*`:
 (define-struct ext-reader-guard (proc top)
@@ -600,7 +608,8 @@
 (define (compile-zo* path->mode roots path src-sha1 read-src-syntax orig-zo-name up-to-date collection-cache
                      #:recompile-from recompile-from
                      #:assume-compiled-sha1 assume-compiled-sha1
-                     #:use-existing-deps use-existing-deps)
+                     #:use-existing-deps use-existing-deps
+                     #:compile-dependency compile-dependency)
   ;; The `path' argument has been converted to .rkt or .ss form,
   ;;  as appropriate.
   ;; External dependencies registered through reader guard and
@@ -682,13 +691,15 @@
            ;; We don't actually need to do anything, so
            ;; avoid updating the file.
            (check-recompile-module-dependencies use-existing-deps
-                                                collection-cache)
+                                                collection-cache
+                                                compile-dependency)
            #f]
           [recompile-from
            (recompile-module-code recompile-from
                                   path
                                   use-existing-deps
-                                  collection-cache)]
+                                  collection-cache
+                                  compile-dependency)]
           [else
            (get-module-code path (path->mode path) compile
                             #:choose (lambda (src zo so) 'src)
@@ -776,8 +787,8 @@
   zo-name)
 
 ;; Recompile an individual file
-(define (recompile-module-code recompile-from src-path deps collection-cache)
-  (check-recompile-module-dependencies deps collection-cache)
+(define (recompile-module-code recompile-from src-path deps collection-cache compile-dependency)
+  (check-recompile-module-dependencies deps collection-cache compile-dependency)
   ;; Recompile the module:
   (define-values (base name dir?) (split-path src-path))
   (parameterize ([current-load-relative-directory
@@ -924,11 +935,11 @@
 ;; Force potential recompilation of dependencies. Otherwise, we
 ;; end up relying on cross-module optimization demands, which might
 ;; not happen and are unlikely to cover everything.
-(define (check-recompile-module-dependencies deps collection-cache)
+(define (check-recompile-module-dependencies deps collection-cache compile-dependency)
   (for ([d (in-list (deps-imports deps))]
         #:unless (external-dep? d))
     (define path (collects-relative*->path (dep->encoded-path d) collection-cache))
-    (module-path-index-resolve (module-path-index-join path #f) #t)))
+    (compile-dependency path)))
 
 ;; Gets a multi-sha1 string that represents the compiled code
 ;; as well as its dependencies:
