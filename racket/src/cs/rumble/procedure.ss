@@ -523,6 +523,15 @@
                name)])
     p))
 
+;; A boxed `name` means a method
+(define (make-interp-procedure proc mask name)
+  (make-arity-wrapper-procedure
+   proc
+   mask
+   (if (box? name)
+       (vector (unbox name) proc 'method)
+       (vector name proc))))
+
 (define (extract-wrapper-procedure-name p)
   (let ([name (wrapper-procedure-data p)])
     (cond

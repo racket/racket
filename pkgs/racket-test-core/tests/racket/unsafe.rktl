@@ -928,12 +928,22 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that constant folding doesn't go wrong for `unsafe-fxlshift`:
 
-(test #t fixnum? (if (eqv? 64 (system-type 'word))
-                     (unsafe-fxlshift 1 62)
-                     (unsafe-fxlshift 1 30)))
-(test #t zero? (if (eqv? 64 (system-type 'word))
-                   (unsafe-fxlshift 1 63)
-                   (unsafe-fxlshift 1 31)))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 60)
+                          (unsafe-fxlshift 1 28))))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 61)
+                          (unsafe-fxlshift 1 29))))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 62)
+                          (unsafe-fxlshift 1 30))))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 63)
+                          (unsafe-fxlshift 1 31))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that allocation by inlined `unsafe-flrandom` is ok

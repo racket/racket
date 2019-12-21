@@ -4,6 +4,7 @@
           jitify-schemified-linklet
           xify
           extract-paths-and-fasls-from-schemified-linklet
+          interpreter-link!
           interpretable-jitified-linklet
           interpret-linklet
           linklet-bigger-than?

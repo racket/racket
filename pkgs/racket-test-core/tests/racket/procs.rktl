@@ -508,7 +508,7 @@
   (set! f #f))
 
 ;; ----------------------------------------
-;; Check mutation of direct-called keyword procedure
+;; Check name of keyword procedure
 
 (let ()
   (define (f1 #:x x) (list x))

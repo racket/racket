@@ -10,9 +10,11 @@
          stack-remove
          push-stack
 
-         (struct-out stack-info)
+         make-stack-info
+         stack-info-local-use-map
          stack->pos
          stack-info-branch
+         stack-info-branch-need-clears?
          stack-info-merge!
          stack-info-forget!
          stack-info-non-tail!)
@@ -72,7 +74,17 @@
                     closure-map     ; hash table to collect variables byond boundary to capture
                     [use-map #:mutable] ; table of uses; an entry here means the binding is used later
                     [local-use-map #:mutable] ; subset of `use-map` used to tracked needed merging for branches
-                    [non-tail-at-depth #:mutable])) ; stack depth at non-tail call (that needs space safety)
+                    [non-tail-call-later? #:mutable])) ; non-tail call afterward?
+
+(define (make-stack-info #:capture-depth [capture-depth #f]
+                         #:closure-map [closure-map #hasheq()]
+                         #:track-use? [track-use? #f])
+                         
+  (stack-info capture-depth
+              closure-map
+              (and track-use? #hasheq())
+              #f
+              #f))
 
 ;; Map a compile-time environment coordinate `i` to a run-time access
 ;; index. If this this access is the last one --- which is the first
@@ -113,8 +125,8 @@
           (set-stack-info-local-use-map! stk-i (hash-set local-use-map pos #t)))
         ;; We only need to remove from the environment if there's a
         ;; non-tail call later where the binding would be retained
-        ;; across the call
-        (if (i . < . (stack-info-non-tail-at-depth stk-i))
+        ;; across the call.
+        (if (stack-info-non-tail-call-later? stk-i)
             (box pos)
             pos)])]))
 
@@ -124,7 +136,10 @@
               (stack-info-closure-map stk-i)
               (stack-info-use-map stk-i)
               #hasheq()
-              (stack-info-non-tail-at-depth stk-i)))
+              (stack-info-non-tail-call-later? stk-i)))
+
+(define (stack-info-branch-need-clears? stk-i)
+  (stack-info-non-tail-call-later? stk-i))
 
 ;; Merge branches back together, returning the set of all bindings
 ;; that has last uses across all branches. The returned information
@@ -141,17 +156,14 @@
       (define local-use-map (stack-info-local-use-map stk-i))
       (when local-use-map
         (set-stack-info-local-use-map! stk-i (hash-set local-use-map pos #t)))
-      (set-stack-info-non-tail-at-depth! stk-i
-                                         (max (stack-info-non-tail-at-depth stk-i)
-                                              (stack-info-non-tail-at-depth branch-stk-i)))))
+      (set-stack-info-non-tail-call-later?! stk-i
+                                            (or (stack-info-non-tail-call-later? stk-i)
+                                                (stack-info-non-tail-call-later? branch-stk-i)))))
   all-clear)
 
 ;; Indicate that some bindings are "popped" from the stack, which
 ;; means that they no longer count as used, etc.
 (define (stack-info-forget! stk-i stack-depth start-pos len)
-  (set-stack-info-non-tail-at-depth! stk-i
-                                     (min (stack-info-non-tail-at-depth stk-i)
-                                          stack-depth))
   (when (stack-info-use-map stk-i)
     (for ([i (in-range len)])
       (define pos (+ start-pos i))
@@ -163,6 +175,4 @@
 
 ;; Record the current stack depth at a non-tail call.
 (define (stack-info-non-tail! stk-i stack-depth)
-  (set-stack-info-non-tail-at-depth! stk-i
-                                     (max (stack-info-non-tail-at-depth stk-i)
-                                          stack-depth)))
+  (set-stack-info-non-tail-call-later?! stk-i #t))

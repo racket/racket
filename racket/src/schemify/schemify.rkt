@@ -76,7 +76,7 @@
 ;; An import ABI is a list of list of booleans, parallel to the
 ;; linklet imports, where #t to means that a value is expected, and #f
 ;; means that a variable (which boxes a value) is expected.
-(define (schemify-linklet lk serializable? datum-intern? for-jitify? allow-set!-undefined?
+(define (schemify-linklet lk serializable? datum-intern? for-interp? allow-set!-undefined?
                           unsafe-mode? enforce-constant? allow-inline? no-prompt?
                           prim-knowns primitives get-import-knowns import-keys)
   (with-deterministic-gensym
@@ -137,7 +137,7 @@
        ;; Schemify the body, collecting information about defined names:
        (define-values (new-body defn-info mutated)
          (schemify-body* bodys/constants-lifted prim-knowns primitives imports exports
-                         for-jitify? allow-set!-undefined? add-import! #f
+                         for-interp? allow-set!-undefined? add-import! #f
                          unsafe-mode? enforce-constant? allow-inline? no-prompt?))
        (define all-grps (append grps (reverse new-grps)))
        (values
@@ -195,7 +195,7 @@
     new-body))
 
 (define (schemify-body* l prim-knowns primitives imports exports
-                        for-jitify? allow-set!-undefined? add-import!
+                        for-interp? allow-set!-undefined? add-import!
                         for-cify? unsafe-mode? enforce-constant? allow-inline? no-prompt?)
   ;; Keep simple checking efficient by caching results
   (define simples (make-hasheq))
@@ -231,7 +231,7 @@
                    #:when (hash-ref exports (unwrap id) #f))
           (make-set-variable id exports knowns mutated)))
       (define (make-expr-defns es)
-        (if (or for-jitify? for-cify?)
+        (if (or for-interp? for-cify?)
             (reverse es)
             (for/list ([e (in-list (reverse es))])
               (make-expr-defn e))))
@@ -253,7 +253,7 @@
                                      prim-knowns primitives knowns mutated imports exports simples
                                      allow-set!-undefined?
                                      add-import!
-                                     for-cify? for-jitify?
+                                     for-cify? for-interp?
                                      unsafe-mode? allow-inline? no-prompt?
                                      (if (and no-prompt? (null? (cdr l)))
                                          'tail
@@ -289,7 +289,7 @@
                 [(null? ids) (if next-k
                                  (next-k accum-exprs accum-ids next-knowns)
                                  (loop (cdr l) mut-l accum-exprs accum-ids next-knowns))]
-                [(or (or for-jitify? for-cify?)
+                [(or (or for-interp? for-cify?)
                      (via-variable-mutated-state? (hash-ref mutated (unwrap (car ids)) #f)))
                  (define id (unwrap (car ids)))
                  (cond
@@ -331,7 +331,7 @@
                 (for/list ([id (in-list ids)])
                   (make-define-variable id exports knowns mutated extra-variables)))
               (cons
-               (if for-jitify?
+               (if for-interp?
                    expr
                    (make-expr-defn expr))
                (append defns (loop (cdr l) mut-l null null knowns)))])))
@@ -436,7 +436,7 @@
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
 (define (schemify v prim-knowns primitives knowns mutated imports exports simples allow-set!-undefined? add-import!
-                  for-cify? for-jitify? unsafe-mode? allow-inline? no-prompt? wcm-state)
+                  for-cify? for-interp? unsafe-mode? allow-inline? no-prompt? wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [v v])
     (define (schemify v wcm-state)
@@ -460,7 +460,7 @@
                          ,make2
                          ,?2
                          ,make-acc/muts ...)))
-            #:guard (not (or for-jitify? for-cify?))
+            #:guard (not (or for-interp? for-cify?))
             (define new-seq
               (struct-convert v prim-knowns knowns imports mutated
                               (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v)) no-prompt?))
@@ -745,7 +745,7 @@
             (define (inline-field-access k s-rator im args)
               ;; For imported accessors or for JIT mode, inline the
               ;; selector with an `unsafe-struct?` test plus `unsafe-struct*-ref`.
-              (define type-id (and (or im for-jitify?)
+              (define type-id (and (or im for-interp?)
                                    (pair? args)
                                    (null? (cdr args))
                                    (inline-type-id k im add-import! mutated imports)))
@@ -759,7 +759,7 @@
                            sel)]
                 [else #f]))
             (define (inline-field-mutate k s-rator im args)
-              (define type-id (and (or im for-jitify?)
+              (define type-id (and (or im for-interp?)
                                    (pair? args)
                                    (pair? (cdr args))
                                    (null? (cddr args))
