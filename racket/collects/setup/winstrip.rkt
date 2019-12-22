@@ -58,7 +58,12 @@
                          (let-values ([(base name dir?) (split-path f)])
                            name))])
                  (or (regexp-match? #rx#"[.](?i:pdb|ilk|manifest)$" b)
-                     (regexp-match? #rx#"(?i:CGC[.](?:dll|exe))$" b)
+                     (and (not keep-cgc?)
+                          (regexp-match? #rx#"(?i:CGC[.](?:dll|exe))$" b))
+                     (and (not keep-3m?)
+                          (regexp-match? #rx#"(?i:3m[.]exe)$" b))
+                     (and (not keep-cs?)
+                          (regexp-match? #rx#"(?i:CS[.]exe)$" b))
                      (and (regexp-match? #rx#"(?i:[.](?:dll|exp|obj|lib|def))$" b)
                           (regexp-match? #rx#"(?i:racket|mzgc)" b)
                           (let ([dll-type
