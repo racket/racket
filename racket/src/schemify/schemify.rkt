@@ -19,6 +19,7 @@
          "infer-known.rkt"
          "inline.rkt"
          "letrec.rkt"
+         "unnest-let.rkt"
          "infer-name.rkt"
          "ptr-ref-set.rkt"
          "literal.rkt"
@@ -493,16 +494,18 @@
               (and (or (known-copy? k)
                        (known-literal? k))
                    (simple-mutated-state? (hash-ref mutated u-id #f))))
-            (left-to-right/let (for/list ([id (in-list ids)]
-                                          #:unless (merely-a-copy? id))
-                                 id)
-                               (for/list ([id (in-list ids)]
-                                          [rhs (in-list rhss)]
-                                          #:unless (merely-a-copy? id))
-                                 (schemify rhs 'fresh))
-                               (for/list ([body (in-list bodys)])
-                                 (schemify/knowns new-knowns inline-fuel wcm-state body))
-                               prim-knowns knowns imports mutated simples)]
+            (unnest-let
+             (left-to-right/let (for/list ([id (in-list ids)]
+                                           #:unless (merely-a-copy? id))
+                                  id)
+                                (for/list ([id (in-list ids)]
+                                           [rhs (in-list rhss)]
+                                           #:unless (merely-a-copy? id))
+                                  (schemify rhs 'fresh))
+                                (for/list ([body (in-list bodys)])
+                                  (schemify/knowns new-knowns inline-fuel wcm-state body))
+                                prim-knowns knowns imports mutated simples)
+             prim-knowns knowns imports mutated simples)]
            [`(let-values ([() (begin ,rhss ... (values))]) ,bodys ...)
             `(begin ,@(schemify-body rhss 'fresh) ,@(schemify-body bodys wcm-state))]
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
@@ -510,12 +513,14 @@
                      (struct-convert-local v prim-knowns knowns imports mutated simples
                                            (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
                                            #:unsafe-mode? unsafe-mode?))
-                (left-to-right/let-values idss
-                                          (for/list ([rhs (in-list rhss)])
-                                            (schemify rhs 'fresh))
-                                          (schemify-body bodys wcm-state)
-                                          mutated
-                                          for-cify?))]
+                (unnest-let
+                 (left-to-right/let-values idss
+                                           (for/list ([rhs (in-list rhss)])
+                                             (schemify rhs 'fresh))
+                                           (schemify-body bodys wcm-state)
+                                           mutated
+                                           for-cify?)
+                 prim-knowns knowns imports mutated simples))]
            [`(letrec-values () ,bodys ...)
             (schemify `(begin . ,bodys) wcm-state)]
            [`(letrec-values ([() (values)]) ,bodys ...)
@@ -534,13 +539,15 @@
                    (values rhs-knowns (hash-set knowns u-id (or k a-known-constant)))]
                   [k (values (hash-set rhs-knowns u-id k) (hash-set body-knowns u-id k))]
                   [else (values rhs-knowns body-knowns)])))
-            (letrec-conversion
-             ids mutated for-cify?
-             `(letrec* ,(for/list ([id (in-list ids)]
-                                   [rhs (in-list rhss)])
-                          `[,id ,(schemify/knowns rhs-knowns inline-fuel 'fresh rhs)])
-                ,@(for/list ([body (in-list bodys)])
-                    (schemify/knowns body-knowns inline-fuel wcm-state body))))]
+            (unnest-let
+             (letrec-conversion
+              ids mutated for-cify?
+              `(letrec* ,(for/list ([id (in-list ids)]
+                                    [rhs (in-list rhss)])
+                           `[,id ,(schemify/knowns rhs-knowns inline-fuel 'fresh rhs)])
+                 ,@(for/list ([body (in-list bodys)])
+                     (schemify/knowns body-knowns inline-fuel wcm-state body))))
+             prim-knowns knowns imports mutated simples)]
            [`(letrec-values ([,idss ,rhss] ...) ,bodys ...)
             (cond
               [(struct-convert-local v #:letrec? #t prim-knowns knowns imports mutated simples
