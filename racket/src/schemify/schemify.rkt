@@ -138,7 +138,7 @@
        (define-values (new-body defn-info mutated)
          (schemify-body* bodys/constants-lifted prim-knowns primitives imports exports
                          for-interp? allow-set!-undefined? add-import! #f
-                         unsafe-mode? enforce-constant? allow-inline? no-prompt?))
+                         unsafe-mode? enforce-constant? allow-inline? no-prompt? #t))
        (define all-grps (append grps (reverse new-grps)))
        (values
         ;; Build `lambda` with schemified body:
@@ -186,17 +186,17 @@
 
 ;; ----------------------------------------
 
-(define (schemify-body l prim-knowns primitives imports exports for-cify? unsafe-mode? no-prompt?)
+(define (schemify-body l prim-knowns primitives imports exports for-cify? unsafe-mode? no-prompt? explicit-unnamed?)
   (with-deterministic-gensym
     (define-values (new-body defn-info mutated)
       (schemify-body* l prim-knowns primitives imports exports
                       #f #f (lambda (im ext-id index) #f)
-                      for-cify? unsafe-mode? #t #t no-prompt?))
+                      for-cify? unsafe-mode? #t #t no-prompt? explicit-unnamed?))
     new-body))
 
 (define (schemify-body* l prim-knowns primitives imports exports
                         for-interp? allow-set!-undefined? add-import!
-                        for-cify? unsafe-mode? enforce-constant? allow-inline? no-prompt?)
+                        for-cify? unsafe-mode? enforce-constant? allow-inline? no-prompt? explicit-unnamed?)
   ;; Keep simple checking efficient by caching results
   (define simples (make-hasheq))
   ;; Various conversion steps need information about mutated variables,
@@ -254,7 +254,7 @@
                                      allow-set!-undefined?
                                      add-import!
                                      for-cify? for-interp?
-                                     unsafe-mode? allow-inline? no-prompt?
+                                     unsafe-mode? allow-inline? no-prompt? explicit-unnamed?
                                      (if (and no-prompt? (null? (cdr l)))
                                          'tail
                                          'fresh)))
@@ -436,7 +436,7 @@
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
 (define (schemify v prim-knowns primitives knowns mutated imports exports simples allow-set!-undefined? add-import!
-                  for-cify? for-interp? unsafe-mode? allow-inline? no-prompt? wcm-state)
+                  for-cify? for-interp? unsafe-mode? allow-inline? no-prompt? explicit-unnamed? wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [v v])
     (define (schemify v wcm-state)
@@ -447,13 +447,15 @@
            [`(lambda ,formals ,body ...)
             (infer-procedure-name
              v
-             `(lambda ,formals ,@(schemify-body body 'tail)))]
+             `(lambda ,formals ,@(schemify-body body 'tail))
+              explicit-unnamed?)]
            [`(case-lambda [,formalss ,bodys ...] ...)
             (infer-procedure-name
              v
              `(case-lambda ,@(for/list ([formals (in-list formalss)]
                                         [body (in-list bodys)])
-                               `[,formals ,@(schemify-body body 'tail)])))]
+                               `[,formals ,@(schemify-body body 'tail)]))
+             explicit-unnamed?)]
            [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
                (let-values (((,struct: ,make ,?1 ,-ref ,-set!) ,mk))
                  (values ,struct:2

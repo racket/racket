@@ -83,7 +83,9 @@
                   ;; unsafe mode:
                   #t
                   ;; no prompts:
-                  #t)))
+                  #t
+                  ;; no explicit unnamed:
+                  #f)))
 
 (printf "Lift...\n")
 (define lifted-body

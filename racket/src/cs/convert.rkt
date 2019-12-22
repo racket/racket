@@ -113,7 +113,9 @@
     (printf "Schemify...\n")
     (define body
       (time
-       (schemify-body bodys/constants-lifted prim-knowns primitives #hasheq() #hasheq() for-cify? unsafe-mode? #t)))
+       (schemify-body bodys/constants-lifted prim-knowns primitives #hasheq() #hasheq() for-cify? unsafe-mode?
+                      #t    ; no-prompt?
+                      #f))) ; explicit-unnamed?
     (printf "Lift...\n")
     ;; Lift functions to avoid closure creation:
     (define lifted-body

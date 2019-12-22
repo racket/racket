@@ -4,7 +4,7 @@
 
 (provide infer-procedure-name)
 
-(define (infer-procedure-name orig-s new-s)
+(define (infer-procedure-name orig-s new-s explicit-unnamed?)
   (define inferred-name (wrap-property orig-s 'inferred-name))
   (cond
     [(symbol? inferred-name)
@@ -47,13 +47,15 @@
          (string-append (source->string src)
                         "::"
                         (number->string pos)))]
-       [else ; includes `(void? inferred-name)`
+       [(or explicit-unnamed?
+            (void? inferred-name))
         ;; We can't provide a source name, but explicitly
         ;; suppress any other inferred name:
         (wrap-property-set (reannotate orig-s new-s)
                            'inferred-name
                            ;; Hack: "[" means "no name"
-                           '|[|)])]))
+                           '|[|)]
+       [else new-s])]))
 
 (define (source->string src)
   (define str (if (string? src) src (path->string src)))
