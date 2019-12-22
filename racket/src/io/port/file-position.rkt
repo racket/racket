@@ -30,6 +30,11 @@
             (lambda (p) (or (exact-nonnegative-integer? p) (eof-object? p)))
             #:contract "(or/c exact-nonnegative-integer? eof-object?)"
             pos)
+     (when (and (number? p) (pos . >= . (expt 2 63)))
+       (raise-arguments-error who
+                              "new position is too large"
+                              "port" p
+                              "position" pos))
      (let ([cp (cond
                  [(input-port? p) (->core-input-port p)]
                  [else (->core-output-port p)])])
