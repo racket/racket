@@ -506,9 +506,10 @@
            [`(let-values ([() (begin ,rhss ... (values))]) ,bodys ...)
             `(begin ,@(schemify-body rhss 'fresh) ,@(schemify-body bodys wcm-state))]
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
-            (or (struct-convert-local v prim-knowns knowns imports mutated simples
-                                      (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
-                                      #:unsafe-mode? unsafe-mode?)
+            (or (and (not (or for-interp? for-cify?))
+                     (struct-convert-local v prim-knowns knowns imports mutated simples
+                                           (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
+                                           #:unsafe-mode? unsafe-mode?))
                 (left-to-right/let-values idss
                                           (for/list ([rhs (in-list rhss)])
                                             (schemify rhs 'fresh))
