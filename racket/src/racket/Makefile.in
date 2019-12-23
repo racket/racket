@@ -29,7 +29,7 @@ CPP = @CPP@
 
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@ 
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS =  @PREFLAGS@
 
 AR = @AR@
@@ -153,7 +153,7 @@ foreign-stub:
 	cd $(FOREIGN_DIR); $(MAKE) stub
 
 rktio:
-	cd ../rktio; $(MAKE)
+	cd ../rktio; $(MAKE) CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)"
 
 mzlibrary:
 	cd src; $(MAKE) all 
