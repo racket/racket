@@ -14,7 +14,7 @@
 
 (define-thread-local lists (make-weak-eq-hashtable))
 
-(define CHECK-AFTER-LEN 32)
+(define CHECK-AFTER-LEN 64)
 (define CHECK-EVERY 4)
 
 (define (list? v)
