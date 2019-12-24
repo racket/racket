@@ -6198,7 +6198,7 @@
 ;; for
 ;;  (lambda (arg-id ...) (define def-id _rhs) ... (arg-id def-id) ...)
 
-(let ()
+(when (run-unreliable-tests? 'timing)
   (define (gensym-n n)
     (let loop ([i n])
       (if (zero? i)
