@@ -527,6 +527,44 @@
   (test-hash-ref-key/immut (hasheqv) eq? 'foo 'foo))
 
 ;; ----------------------------------------
-;;
+;; Run a GC concurrent to `hash-for-each` or `hash-map`
+;; to make sure a disappearing key doesn't break the
+;; iteration
+
+(define (check-concurrent-gc-of-keys hash-iterate)
+  (define gc-thread
+    (thread
+     (lambda ()
+       (let loop ([n 10])
+         (unless (zero? n)
+           (collect-garbage)
+           (sleep)
+           (loop (sub1 n)))))))
+
+  (let loop ()
+    (unless (thread-dead? gc-thread)
+      (let ([ls (for/list ([i 100])
+                  (gensym))])
+        (define ht (make-weak-hasheq))
+        (for ([e (in-list ls)])
+          (hash-set! ht e 0))
+        ;; `ls` is unreferenced here here on
+        (define counter 0)
+        (hash-iterate
+         ht
+         (lambda (k v)
+           (set! counter (add1 counter))
+           'ok))
+        '(printf "~s @ ~a\n" counter j))
+      (loop))))
+
+(check-concurrent-gc-of-keys hash-for-each)
+(check-concurrent-gc-of-keys hash-map)
+(check-concurrent-gc-of-keys (lambda (ht proc)
+                               (equal? ht (hash-copy ht))))
+(check-concurrent-gc-of-keys (lambda (ht proc)
+                               (equal-hash-code ht)))
+
+;; ----------------------------------------
 
 (report-errs)

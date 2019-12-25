@@ -158,9 +158,11 @@
     (unless (impersonate-hash-clear ht #t)
       ;; fall back to iterated remove
       (let loop ([i (hash-iterate-first ht)])
-          (when i
-            (hash-remove! ht (hash-iterate-key ht i))
-            (loop (hash-iterate-next ht i)))))]
+        (when i
+          (let ([k (hash-iterate-key ht i none2)])
+            (unless (eq? k none2)
+              (hash-remove! ht k)))
+          (loop (hash-iterate-next ht i)))))]
    [else (raise-argument-error 'hash-clear! "(and/c hash? (not/c immutable?))" ht)]))
 
 (define (mutable-hash-clear! ht)
@@ -400,8 +402,9 @@
       ;; mutable, impersonated, and weak-equal:
       (let loop ([i (hash-iterate-first ht)])
         (when i
-          (let-values ([(key val) (hash-iterate-key+value ht i)])
-            (|#%app| proc key val))
+          (let-values ([(key val) (hash-iterate-key+value ht i none2)])
+            (unless (eq? key none2)
+              (|#%app| proc key val)))
           (loop (hash-iterate-next ht i))))])]))
 
 (define/who hash-map
@@ -421,8 +424,9 @@
         (if (not i)
             '()
             (cons
-             (let-values ([(key val) (hash-iterate-key+value ht i)])
-               (|#%app| proc key val))
+             (let-values ([(key val) (hash-iterate-key+value ht i none2)])
+               (unless (eq? key none2)
+                 (|#%app| proc key val)))
              (loop (hash-iterate-next ht i)))))])]))
 
 ;; In sorted hash-table travesals, make some effort to sort the key.
@@ -551,12 +555,15 @@
            (cond
             [(not i) #t]
             [else
-             (let-values ([(key val) (hash-iterate-key+value ht1 i)])
-               (let ([val2 (hash-ref ht2 key none)])
-                 (cond
-                  [(eq? val2 none) #f]
-                  [else (and (eql? val val2)
-                             (loop (hash-iterate-next ht1 i)))])))])))]
+             (let-values ([(key val) (hash-iterate-key+value ht1 i none2)])
+               (if (eq? key none2)
+                   ;; Ill-timed GC => start over
+                   (hash=? ht1 ht2 eql?)
+                   (let ([val2 (hash-ref ht2 key none)])
+                     (cond
+                      [(eq? val2 none) #f]
+                      [else (and (eql? val val2)
+                                 (loop (hash-iterate-next ht1 i)))]))))])))]
    [else #f]))
 
 
@@ -572,14 +579,16 @@
        [else
         (let* ([eq-key? (hash-eq? ht)]
                [eqv-key? (and (not eq?) (hash-eqv? ht))])
-          (let-values ([(key val) (hash-iterate-key+value ht i)])
-            (let ([hc (hash-code-combine-unordered hc
-                                                   (cond
-                                                    [eq-key? (eq-hash-code key)]
-                                                    [eqv-key? (eqv-hash-code key)]
-                                                    [else (hash key)]))])
-              (loop (hash-code-combine-unordered hc (hash val))
-                    (hash-iterate-next ht i)))))]))]))
+          (let-values ([(key val) (hash-iterate-key+value ht i none2)])
+            (if (eq? key none2)
+                (loop hc (hash-iterate-next ht i))
+                (let ([hc (hash-code-combine-unordered hc
+                                                       (cond
+                                                        [eq-key? (eq-hash-code key)]
+                                                        [eqv-key? (eqv-hash-code key)]
+                                                        [else (hash key)]))])
+                  (loop (hash-code-combine-unordered hc (hash val))
+                        (hash-iterate-next ht i))))))]))]))
 
 
 ;; Start by getting just a few cells via `hashtable-cells`,
@@ -1354,8 +1363,9 @@
              [else (make-hash)])])])
     (let loop ([i (hash-iterate-first ht)])
       (cond
-       [i (let-values ([(key val) (hash-iterate-key+value ht i)])
-            (hash-set! new-ht key val)
+       [i (let-values ([(key val) (hash-iterate-key+value ht i none2)])
+            (unless (eq? key none2)
+              (hash-set! new-ht key val))
             (loop (hash-iterate-next ht i)))]
        [else new-ht]))))
 
