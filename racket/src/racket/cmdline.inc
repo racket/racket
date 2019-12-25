@@ -1436,7 +1436,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
          "Default options:\n"
          " If only configuration options are provided, -i is added\n"
          " If only configuration options are before the first argument, -u is added\n"
-         " If -t/-l/-p/-u apears before the first -i/-e/-f/-r, -n is added\n"
+         " If -t/-l/-p/-u appears before the first -i/-e/-f/-r, -n is added\n"
          " <init-lib> defaults to " INITIAL_NAMESPACE_MODULE "\n"
          "Switch syntax:\n"
 	 " Multiple single-letter switches can be collapsed, with arguments placed\n"
