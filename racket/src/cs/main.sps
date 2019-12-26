@@ -322,6 +322,7 @@
          [else
           (set! remaining-command-line-arguments (vector->immutable-vector
                                                   (list->vector args)))
+          (no-init! saw)
           (when (and (null? args) (not (saw? saw 'non-config)))
             (set! repl? #t)
             (when text-repl?
@@ -359,7 +360,7 @@
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads (cons (lambda () (load file-name))
                                   loads))
-                (flags-loop rest-args (see saw 'non-config)))]
+                (flags-loop rest-args (see saw 'non-config 'top)))]
              [("-r" "--script")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads (cons (lambda () (load file-name))
@@ -390,7 +391,7 @@
                                            vals)))
                              (loop))))
                        loads))
-                (flags-loop rest-args (see saw 'non-config)))]
+                (flags-loop rest-args (see saw 'non-config 'top)))]
              [("-k")
               (let*-values ([(n rest-args) (next-arg "starting and ending offsets" arg within-arg args)]
                             [(m rest-args) (next-arg "first ending offset" arg within-arg (cons "-k" rest-args))]
@@ -416,7 +417,7 @@
              [("-m" "--main")
               (set! loads (cons (lambda () (call-main))
                                 loads))
-              (flags-loop (cdr args) (see saw 'non-config))]
+              (flags-loop (cdr args) (see saw 'non-config 'top))]
              [("-i" "--repl") 
               (set! repl? #t)
               (set! version? #t)
