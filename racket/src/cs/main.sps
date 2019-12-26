@@ -322,11 +322,13 @@
          [else
           (set! remaining-command-line-arguments (vector->immutable-vector
                                                   (list->vector args)))
-          (no-init! saw)
-          (when (and (null? args) (not (saw? saw 'non-config)))
+          (cond
+           [(and (null? args) (not (saw? saw 'non-config)))
             (set! repl? #t)
             (when text-repl?
-              (set! version? #t)))]))
+              (set! version? #t))]
+           [else
+            (no-init! saw)])]))
       ;; Dispatch on first argument:
       (if (null? args)
           (finish args saw)
