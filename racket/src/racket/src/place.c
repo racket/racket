@@ -1247,6 +1247,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           rktio_fd_t *fd;
 
           name = ((Scheme_Serialized_Socket_FD *) so)->name;
+          name = shallow_types_copy(name, NULL, fd_accumulators, delayed_err, delayed_errno, delayed_errkind,
+                                    mode, can_raise_exn, master_chain, invalid_object);
           fd = rktio_fd_attach(scheme_rktio, fdt);
 
           /* scheme_socket_to_ports(fd, "tcp-accepted", 1, &in, &out); */
@@ -1281,6 +1283,9 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           fd = rktio_fd_attach(scheme_rktio, ffd->fdt);
           name = ffd->name;
           type = ffd->type;
+
+          name = shallow_types_copy(name, NULL, fd_accumulators, delayed_err, delayed_errno, delayed_errkind,
+                                    mode, can_raise_exn, master_chain, invalid_object);
 
           if (type == scheme_input_port_type) {
             new_so = scheme_make_rktio_fd_input_port(fd, name);
