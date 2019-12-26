@@ -430,7 +430,6 @@
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-v" "--version") 
               (set! version? #t)
-              (no-init! saw)
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
               (set! compiled-file-paths '())
