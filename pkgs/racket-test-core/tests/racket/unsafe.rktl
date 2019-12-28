@@ -594,6 +594,12 @@
               #:post (lambda (x) (list x (bytes-ref v 2)))
               #:literal-ok? #f))
 
+  (let ([bstr (make-bytes 10)])
+    (test (void) unsafe-bytes-copy! bstr 1 #"testing" 2 6)
+    (test #"\0stin\0\0\0\0\0" values bstr)
+    (test (void) unsafe-bytes-copy! bstr 0 #"testing")
+    (test #"testing\0\0\0" values bstr))
+
   (test-bin #\5 'unsafe-string-ref "157" 1)
   (test-un 3 'unsafe-string-length "157")
   (let ([v (string #\0 #\3 #\7)])

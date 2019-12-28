@@ -69,7 +69,7 @@
   [bytes-convert-end (known-procedure/no-prompt 30)]
   [bytes-converter? (known-procedure/pure/folding 2)]
   [bytes-copy (known-procedure/no-prompt 2)]
-  [bytes-copy! (known-procedure/no-prompt 56)]
+  [bytes-copy! (known-procedure/has-unsafe 56 'unsafe-bytes-copy!)]
   [bytes-fill! (known-procedure/no-prompt 4)]
   [bytes-length (known-procedure/has-unsafe 2 'unsafe-bytes-length)]
   [bytes-open-converter (known-procedure/no-prompt 4)]

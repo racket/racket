@@ -670,6 +670,7 @@
           unsafe-bytes-length
           unsafe-bytes-ref
           unsafe-bytes-set!
+          unsafe-bytes-copy!
 
           unsafe-undefined
           check-not-unsafe-undefined
