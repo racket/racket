@@ -3049,7 +3049,7 @@ static Scheme_Object *good_print_width(int c, Scheme_Object **argv)
   int ok;
 
   ok = (SCHEME_INTP(argv[0]) 
-	? (SCHEME_INT_VAL(argv[0]) > 3)
+	? (SCHEME_INT_VAL(argv[0]) >= 3)
 	: (SCHEME_BIGNUMP(argv[0])
 	   ? SCHEME_BIGPOS(argv[0])
 	   : 0));
