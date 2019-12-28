@@ -398,6 +398,8 @@
       (for-each (lambda (p) (proc (car p) (cdr p)))
                 (try-sort-keys (hash-map ht cons)))]
      [(intmap? ht) (intmap-for-each ht proc)]
+     [(mutable-hash? ht)
+      (mutable-hash-map ht proc #f)]
      [else
       ;; mutable, impersonated, and weak-equal:
       (let loop ([i (hash-iterate-first ht)])
@@ -418,6 +420,8 @@
       (map (lambda (p) (proc (car p) (cdr p)))
            (try-sort-keys (hash-map ht cons)))]
      [(intmap? ht) (intmap-map ht proc)]
+     [(mutable-hash? ht)
+      (mutable-hash-map ht proc #t)]
      [else
       ;; mutable, impersonated, and weak-equal:
       (let loop ([i (hash-iterate-first ht)])
@@ -428,6 +432,32 @@
                (unless (eq? key none2)
                  (|#%app| proc key val)))
              (loop (hash-iterate-next ht i)))))])]))
+
+(define (mutable-hash-map ht proc map?)
+  ;; Inline iteration over the internal vector to avoid the overhead
+  ;; of calling `hash-iterate-...` for each step
+  (let vec-loop ([old-n 0] [try? #t])
+    (let ([vec (prepare-iterate! ht old-n)])
+      (let loop ([i old-n])
+        (cond
+         [(= i (#%vector-length vec))
+          (if try?
+              (vec-loop i (> i  old-n))
+              (if map? '() (void)))]
+         [else
+          (let ([p (#%vector-ref vec i)])
+            (let ([key (car p)]
+                  [val (cdr p)])
+              (cond
+               [(or (eq? key #!bwp)
+                    (eq? val #!bwp))
+                (loop (fx+ i 1))]
+               [map?
+                (cons (|#%app| proc key val)
+                      (loop (fx+ i 1)))]
+               [else
+                (|#%app| proc key val)
+                (loop (fx+ i 1))])))])))))
 
 ;; In sorted hash-table travesals, make some effort to sort the key.
 ;; This attempt is useful for making hash-table traversals more
