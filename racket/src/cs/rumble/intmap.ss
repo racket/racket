@@ -84,7 +84,8 @@
               (loop (Br-right t)))]
 
          [(Lf? t)
-          (if (key=? et key (Lf-key t))
+          (if (and (fx= h (Lf-hash t))
+                   (key=? et key (Lf-key t)))
               (with-leaf t)
               default)]
 
