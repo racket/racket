@@ -322,6 +322,7 @@
          [else
           (set! remaining-command-line-arguments (vector->immutable-vector
                                                   (list->vector args)))
+          (/ 1 0)
           (cond
            [(and (null? args) (not (saw? saw 'non-config)))
             (set! repl? #t)
@@ -420,7 +421,7 @@
               (set! loads (cons (lambda () (call-main))
                                 loads))
               (flags-loop (cdr args) (see saw 'non-config 'top))]
-             [("-i" "--repl") 
+             [("-i" "--repl")
               (set! repl? #t)
               (set! version? #t)
               (flags-loop (cdr args) (see saw 'non-config 'top))]
@@ -431,7 +432,7 @@
               (set! yield? #f)
               (set! version? #t)
               (flags-loop (cdr args) (see saw 'non-config))]
-             [("-v" "--version") 
+             [("-v" "--version")
               (set! version? #t)
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
@@ -451,7 +452,7 @@
                 (cond
                  [(equal? collects-path "")
                   (set! init-collects-dir 'disable)]
-                 [else 
+                 [else
                   (check-path-arg "collects path" arg within-arg)
                   (set! init-collects-dir (path->complete-path (->path (find-original-bytes collects-path))))])
                 (loop rest-args))]
