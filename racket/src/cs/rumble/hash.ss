@@ -291,20 +291,20 @@
     (hash-weak? (impersonator-val ht))]
    [else (raise-argument-error 'hash-weak? "hash?" ht)]))
 
-(define hash-ref
+(define/who hash-ref
   (case-lambda
    [(ht k)
     (let ([v (hash-ref/none ht k)])
       (if (eq? v none)
           (raise-arguments-error
-           'hash-ref
+           who
            "no value found for key"
            "key" k)
           v))]
    [(ht k fail)
     (let ([v (hash-ref/none ht k)])
       (if (eq? v none)
-          (fail-hash-ref 'hash-ref fail)
+          (fail-hash-ref who fail)
           v))]))
 
 (define (hash-ref/none ht k)
@@ -332,20 +332,20 @@
    [else
     (raise-argument-error 'hash-ref "hash?" ht)]))
 
-(define hash-ref-key
+(define/who hash-ref-key
   (case-lambda
    [(ht k)
     (let ([v (hash-ref-key/none ht k)])
       (if (eq? v none)
           (raise-arguments-error
-           'hash-ref-key
+           who
            "hash does not contain key"
            "key" k)
           v))]
    [(ht k fail)
     (let ([v (hash-ref-key/none ht k)])
       (if (eq? v none)
-          (fail-hash-ref 'hash-ref-key fail)
+          (fail-hash-ref who fail)
           v))]))
 
 (define (hash-ref-key/none ht k)

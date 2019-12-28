@@ -61,42 +61,52 @@
         [(Co? t) (length (Co-pairs t))]
         [else 0]))
 
-(define (do-intmap-ref t key with-leaf with-pair default)
-  (let ([et (intmap-eqtype t)]
-        [root (intmap-root t)])
-    (if root
-        (do-$intmap-ref et root (hash-code et key) key with-leaf with-pair default)
-        default)))
+(define-syntax-rule (define-intmap-ref (intmap-ref formal ...)
+                      (_ arg ... with-leaf with-pair)
+                      $intmap-ref)
+  (begin
+    (define (intmap-ref formal ...)
+      (do-intmap-ref arg ...))
 
-(define (do-$intmap-ref et t h key with-leaf with-pair default)
-  (let loop ([t t])
-    (cond
-     [(Br? t)
-      (if (fx<= h (Br-prefix t))
-          (loop (Br-left t))
-          (loop (Br-right t)))]
+    (define (do-intmap-ref t key default)
+      (let ([root (intmap-root t)])
+        (if root
+            (let ([et (intmap-eqtype t)])
+              ($intmap-ref et root (hash-code et key) key default))
+            default)))
 
-     [(Lf? t)
-      (if (key=? et key (Lf-key t))
-          (with-leaf t)
-          default)]
+    (define ($intmap-ref et t h key default)
+      (let loop ([t t])
+        (cond
+         [(Br? t)
+          (if (fx<= h (Br-prefix t))
+              (loop (Br-left t))
+              (loop (Br-right t)))]
 
-     [(Co? t)
-      (if (fx= h (Co-hash t))
-          ($collision-ref et t key with-pair default)
-          default)]
+         [(Lf? t)
+          (if (key=? et key (Lf-key t))
+              (with-leaf t)
+              default)]
 
-     [else
-      default])))
+         [(Co? t)
+          (if (fx= h (Co-hash t))
+              ($collision-ref et t key with-pair default)
+              default)]
 
-(define (intmap-ref t key default)
-  (do-intmap-ref t key Lf-value cdr default))
+         [else
+          default])))))
 
-(define (intmap-ref-key t key default)
-  (do-intmap-ref t key Lf-key car default))
+(define-intmap-ref (intmap-ref t key default)
+  (do-intmap-ref t key default Lf-value cdr)
+  $intmap-ref)
 
-(define ($intmap-has-key? et t h key)
-  (do-$intmap-ref et t h key (lambda (_) #t) (lambda (_) #t) #f))
+(define-intmap-ref (intmap-ref-key t key default)
+  (do-intmap-ref t key default Lf-key car)
+  $intmap-ref-key)
+
+(define-intmap-ref (intmap-has-key? t key)
+  (do-intmap-ref t key #f (lambda (_) #t) (lambda (_) #t))
+  $intmap-has-key?)
 
 (define (intmap-set t key val)
   (let ([et (intmap-eqtype t)])
@@ -461,12 +471,12 @@
     [(Lf? a)
      (if (Lf? b)
          (key=? et (Lf-key a) (Lf-key b))
-         ($intmap-has-key? et b (Lf-hash a) (Lf-key a)))]
+         ($intmap-has-key? et b (Lf-hash a) (Lf-key a) #f))]
 
     [(Co? a)
      (let loop ([xs (Co-pairs a)])
        (cond [(null? xs) #t]
-             [($intmap-has-key? et b (Co-hash a) (caar xs)) (loop (cdr xs))]
+             [($intmap-has-key? et b (Co-hash a) (caar xs) #f) (loop (cdr xs))]
              [else #f]))]
 
     [else
