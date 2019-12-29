@@ -119,8 +119,7 @@
   (current-thread/in-atomic t)
   (set-place-current-thread! current-place t)
   (set! thread-swap-count (add1 thread-swap-count))
-  (run-callbacks-in-engine e callbacks t leftover-ticks
-                           swap-in-engine))
+  (run-callbacks-in-engine e callbacks t leftover-ticks))
 
 (define (swap-in-engine e t leftover-ticks)
   (let loop ([e e])
@@ -212,9 +211,9 @@
 
 ;; Run callbacks within the thread for `e`, and don't give up until
 ;; the callbacks are done
-(define (run-callbacks-in-engine e callbacks t leftover-ticks k)
+(define (run-callbacks-in-engine e callbacks t leftover-ticks)
   (cond
-    [(null? callbacks) (k e t leftover-ticks)]
+    [(null? callbacks) (swap-in-engine e t leftover-ticks)]
     [else
      (define done? #f)
      (let loop ([e e])
@@ -230,7 +229,7 @@
           (unless e
             (internal-error "thread ended while it should run callbacks atomically"))
           (if done?
-              (k e t leftover-ticks)
+              (swap-in-engine e t leftover-ticks)
               (loop e)))))]))
 
 ;; Run foreign "async-apply" callbacks, now that we're in some thread

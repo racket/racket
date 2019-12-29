@@ -108,7 +108,7 @@
                                        mark-chain    ; #f or a cached list of mark-chain-frame or elem+cache
                                        traces        ; #f or a cached list of traces
                                        cc-guard      ; for impersonated tag, initially #f
-                                       avail-cache)) ; cache for `continuation-pompt-available?`
+                                       avail-cache)) ; cache for `continuation-prompt-available?`
 
 ;; Messages to `resume-k[/no-wind]`:
 (define-record aborting (args))
