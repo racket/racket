@@ -184,19 +184,19 @@
      (poll-and-select-thread! 0 callbacks)]
     [(and (not (sandman-any-sleepers?))
           (not (any-idle-waiters?)))
-    ;; all threads done or blocked
-    (cond
-      [(thread-running? root-thread)
-       ;; we shouldn't exit, because the main thread is
-       ;; blocked, but it's not going to become unblocked;
-       ;; sleep forever or until a signal changes things
-       (process-sleep)
-       (poll-and-select-thread! 0)]
-      [else
-       (void)])]
-   [else
-    ;; try again, which should lead to `process-sleep`
-    (poll-and-select-thread! 0)]))
+     ;; all threads done or blocked
+     (cond
+       [(thread-running? root-thread)
+        ;; we shouldn't exit, because the main thread is
+        ;; blocked, but it's not going to become unblocked;
+        ;; sleep forever or until a signal changes things
+        (process-sleep)
+        (poll-and-select-thread! 0)]
+       [else
+        (void)])]
+    [else
+     ;; try again, which should lead to `process-sleep`
+     (poll-and-select-thread! 0)]))
 
 ;; Check for threads that have been suspended until a particular time,
 ;; etc., as registered with the sandman
@@ -242,7 +242,7 @@
 
 ;; ----------------------------------------
 
-;; Have we tried all threads without since most recently making
+;; Have we tried all threads since most recently making
 ;; progress on some thread?
 (define (all-threads-poll-done?)
   (= (hash-count poll-done-threads)

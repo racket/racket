@@ -72,57 +72,57 @@
     (set-thread-group-chain! tg (node-next n))
     (node-child n)]))
 
+;; In atomic mode:
 (define (thread-group-add! parent child)
-  (atomically
-   (let loop ([parent parent] [child child])
-     ;; Adding to the start of the group tends to reverse the schedule
-     ;; order, but it also avoids a problem where two threads that
-     ;; both loop and `sleep` (which deschedules and reschedules) take
-     ;; turns and starve everything else.
-     (define t (thread-group-chain-start parent))
-     (define was-empty? (not t))
-     (define n (child-node child))
-     (unless (and (eq? (node-prev n) 'none)
-                  (eq? (node-next n) 'none))
-       (internal-error "thread-group-add!: thread or group is added already"))
-     (set-node-next! n t)
-     (set-node-prev! n #f)
-     (if t
-         (set-node-prev! t n)
-         (set-thread-group-chain-end! parent n))
-     (set-thread-group-chain-start! parent n)
-     (unless (thread-group? child)
-       (set! num-threads-in-groups (add1 num-threads-in-groups)))
-     (when was-empty?
-       ;; added child to formerly empty parent => add the parent
-       (define parent-parent (thread-group-parent parent))
-       (when parent-parent
-         (loop parent-parent parent))))))
-
-(define (thread-group-remove! parent child)
-  (atomically
-   (let loop ([parent parent] [child child])
-     (define n (child-node child))
-     (when (or (eq? (node-prev n) 'none)
+  (assert-atomic-mode)
+  ;; Adding to the start of the group tends to reverse the schedule
+  ;; order, but it also avoids a problem where two threads that
+  ;; both loop and `sleep` (which deschedules and reschedules) take
+  ;; turns and starve everything else.
+  (define t (thread-group-chain-start parent))
+  (define was-empty? (not t))
+  (define n (child-node child))
+  (unless (and (eq? (node-prev n) 'none)
                (eq? (node-next n) 'none))
-       (internal-error "thread-group-remove!: thread or group is removed already"))
-     (if (node-next n)
-         (set-node-prev! (node-next n) (node-prev n))
-         (set-thread-group-chain-end! parent (node-prev n)))
-     (if (node-prev n)
-         (set-node-next! (node-prev n) (node-next n))
-         (set-thread-group-chain-start! parent (node-next n)))
-     (when (eq? n (thread-group-chain parent))
-       (set-thread-group-chain! parent (node-next n)))
-     (set-node-next! n 'none)
-     (set-node-prev! n 'none)
-     (unless (thread-group? child)
-       (set! num-threads-in-groups (sub1 num-threads-in-groups)))
-     (when (not (thread-group-chain-end parent))
-       ;; parent thread group is now empty, so remove it, too
-       (define parent-parent (thread-group-parent parent))
-       (when parent-parent
-         (loop parent-parent parent))))))
+    (internal-error "thread-group-add!: thread or group is added already"))
+  (set-node-next! n t)
+  (set-node-prev! n #f)
+  (if t
+      (set-node-prev! t n)
+      (set-thread-group-chain-end! parent n))
+  (set-thread-group-chain-start! parent n)
+  (unless (thread-group? child)
+    (set! num-threads-in-groups (add1 num-threads-in-groups)))
+  (when was-empty?
+    ;; added child to formerly empty parent => add the parent
+    (define parent-parent (thread-group-parent parent))
+    (when parent-parent
+      (thread-group-add! parent-parent parent))))
+
+;; In atomic mode:
+(define (thread-group-remove! parent child)
+  (assert-atomic-mode)
+  (define n (child-node child))
+  (when (or (eq? (node-prev n) 'none)
+            (eq? (node-next n) 'none))
+    (internal-error "thread-group-remove!: thread or group is removed already"))
+  (if (node-next n)
+      (set-node-prev! (node-next n) (node-prev n))
+      (set-thread-group-chain-end! parent (node-prev n)))
+  (if (node-prev n)
+      (set-node-next! (node-prev n) (node-next n))
+      (set-thread-group-chain-start! parent (node-next n)))
+  (when (eq? n (thread-group-chain parent))
+    (set-thread-group-chain! parent (node-next n)))
+  (set-node-next! n 'none)
+  (set-node-prev! n 'none)
+  (unless (thread-group? child)
+    (set! num-threads-in-groups (sub1 num-threads-in-groups)))
+  (when (not (thread-group-chain-end parent))
+    ;; parent thread group is now empty, so remove it, too
+    (define parent-parent (thread-group-parent parent))
+    (when parent-parent
+      (thread-group-remove! parent-parent parent))))
 
 (define (thread-group-all-threads parent accum)
   (cond
