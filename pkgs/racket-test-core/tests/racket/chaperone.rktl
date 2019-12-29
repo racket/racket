@@ -2683,6 +2683,26 @@
   (test #t values checked?))
 
 ;; ----------------------------------------
+;; Evt variants where `chaperone-evt` is allowed to defeat predicates
+
+(define (check-other-evt-chaperone x other?)
+  (test #t other? x)
+  (test #t evt? (chaperone-evt x (lambda (v) (values v (lambda (r) r)))))
+  (test #f other? (chaperone-evt x (lambda (v) (values v (lambda (r) r)))))
+  (test x sync (chaperone-evt x (lambda (v) (values v (lambda (r) r)))))
+  (test #t chaperone-of? (chaperone-evt x (lambda (v) (values v (lambda (r) r)))) x))
+
+(check-other-evt-chaperone (thread void) thread?)
+(check-other-evt-chaperone (make-semaphore 1) semaphore?)
+(check-other-evt-chaperone (open-input-bytes #"x") input-port?)
+(check-other-evt-chaperone (open-output-bytes) output-port?)
+(unless (eq? 'cgc (system-type 'gc))
+  (define we  (make-will-executor))
+  (will-register we (gensym) void)
+  (collect-garbage)
+  (check-other-evt-chaperone we will-executor?))
+
+;; ----------------------------------------
 ;; channel chaperones
 
 (let ([ch (make-channel)])

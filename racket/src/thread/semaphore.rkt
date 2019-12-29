@@ -3,6 +3,7 @@
          "check.rkt"
          "../common/queue.rkt"
          "internal-error.rkt"
+         "host.rkt"
          "atomic.rkt"
          "parameter.rkt"
          "waiter.rkt"
@@ -29,6 +30,8 @@
          unsafe-semaphore-wait)
 
 (struct semaphore queue ([count #:mutable]) ; -1 => non-empty queue
+  #:authentic
+  #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property
   prop:evt
   (poller (lambda (s poll-ctx)
@@ -65,9 +68,7 @@
   (unsafe-semaphore-post s))
 
 (define (unsafe-semaphore-post s)
-  (define c (if (impersonator? s)
-                -1
-                (semaphore-count s)))
+  (define c (semaphore-count s))
   (cond
     [(and (c . >= . 0)
           (unsafe-struct*-cas! s count-field-pos c (add1 c)))
@@ -125,9 +126,7 @@
   (unsafe-semaphore-wait s))
 
 (define (unsafe-semaphore-wait s)
-  (define c (if (impersonator? s)
-                -1
-                (semaphore-count s)))
+  (define c (semaphore-count s))
   (cond
     [(and (positive? c)
           (unsafe-struct*-cas! s count-field-pos c (sub1 c)))
@@ -153,7 +152,7 @@
            ;; This callback is used, in addition to the previous one, if
            ;; the thread receives a break signal but doesn't escape
            ;; (either because breaks are disabled or the handler
-           ;; continues), if if the interrupt was to suspend and the thread
+           ;; continues), or if the interrupt was to suspend and the thread
            ;; is resumed:
            (lambda () (semaphore-wait s)))])))]))
 

@@ -132,6 +132,8 @@
                      [future #:mutable]   ; current would-be future
                      
                      [condition-wakeup #:mutable])
+  #:authentic
+  #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:waiter
   (make-waiter-methods 
    #:suspend! (lambda (t i-cb r-cb) (thread-deschedule! t #f i-cb r-cb))

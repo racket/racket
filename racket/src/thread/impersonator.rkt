@@ -97,15 +97,13 @@
 
 (define (check-chaperone-of what new-r r)
   (unless (chaperone-of? new-r r)
-    (raise
-     (exn:fail:contract
-      (string-append
-       what " chaperone: non-chaperone result;\n"
-       " received a value that is not a chaperone of the original value\n"
-       "  value: " ((error-value->string-handler) r) "\n"
-       "  non-chaperone value: "
-       ((error-value->string-handler) new-r))
-      (current-continuation-marks)))))
+    (raise-arguments-error
+     (string->symbol (string-append what " chaperone"))
+     (string-append
+      "non-chaperone result;\n"
+      " received a value that is not a chaperone of the original value\n")
+     "value" r
+     "non-chaperone value" new-r)))
 
 (define (check-impersonator-properties who args)
   (let loop ([args args])

@@ -973,7 +973,14 @@ and it must return a chaperone of that value.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[chaperone-evt] must be even) add impersonator properties
-or override impersonator-property values of @racket[evt].}
+or override impersonator-property values of @racket[evt].
+
+The result is @racket[chaperone-of?] the argument @racket[evt].
+However, if @racket[evt] is a @tech{thread}, @tech{semaphore},
+@tech{input port}, @tech{output port}, or @tech{will executor}, the
+result is not recognized as such. For example, @racket[thread?]
+applied to the result of @racket[chaperone-evt] will always produce
+@racket[#f].}
 
 
 @defproc[(chaperone-channel [channel channel?]
