@@ -74,7 +74,9 @@
           (unsafe-struct*-cas! s count-field-pos c (add1 c)))
      (void)]
     [else
-     (atomically (semaphore-post/atomic s))]))
+     (atomically
+      (semaphore-post/atomic s)
+      (void))]))
 
 ;; In atomic mode:
 (define (semaphore-post/atomic s)
@@ -101,7 +103,8 @@
 
 (define (semaphore-post-all s)
   (atomically
-   (semaphore-post-all/atomic s)))
+   (semaphore-post-all/atomic s)
+   (void)))
 
 ;; In atomic mode:
 (define (semaphore-any-waiters? s)
@@ -148,13 +151,12 @@
            (lambda ()
              (queue-remove-node! s n)
              (when (queue-empty? s)
-               (set-semaphore-count! s 0))) ; allow CAS again
-           ;; This callback is used, in addition to the previous one, if
-           ;; the thread receives a break signal but doesn't escape
-           ;; (either because breaks are disabled or the handler
-           ;; continues), or if the interrupt was to suspend and the thread
-           ;; is resumed:
-           (lambda () (semaphore-wait s)))])))]))
+               (set-semaphore-count! s 0)) ; allow CAS again
+             ;; This callback is used if the thread receives a break
+             ;; signal but doesn't escape (either because breaks are
+             ;; disabled or the handler continues), or if the
+             ;; interrupt was to suspend and the thread is resumed:
+             (lambda () (unsafe-semaphore-wait s))))])))]))
 
 ;; In atomic mode
 (define (semaphore-wait/poll s self poll-ctx

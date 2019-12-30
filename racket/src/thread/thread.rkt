@@ -136,7 +136,7 @@
   #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:waiter
   (make-waiter-methods 
-   #:suspend! (lambda (t i-cb r-cb) (thread-deschedule! t #f i-cb r-cb))
+   #:suspend! (lambda (t i-cb) (thread-deschedule! t #f i-cb))
    #:resume! (lambda (t v) (thread-reschedule! t) v))
   #:property prop:evt (lambda (t) (wrap-evt (get-thread-dead-evt t)
                                             (lambda (v) t)))
@@ -306,7 +306,8 @@
        (do-thread-suspend t)))]
     [else
      (atomically
-      (do-kill-thread t))
+      (do-kill-thread t)
+      (void))
      (when (eq? t (current-thread/in-atomic))
        (when (eq? t root-thread)
          (force-exit 0))
@@ -451,14 +452,13 @@
 ;; was previously called, and neither is called if the thread is
 ;; "internal"-resumed normally instead of by a break signal of a
 ;; `thread-resume`.
-(define (thread-deschedule! t timeout-at interrupt-callback retry-callback)
-  (define needs-retry? #f)
+(define (thread-deschedule! t timeout-at interrupt-callback)
+  (define  retry-callback #f)
   (atomically
    (set-thread-interrupt-callback! t (lambda ()
                                        ;; If the interrupt callback gets invoked,
                                        ;; then remember that we need a retry
-                                       (set! needs-retry? #t)
-                                       (interrupt-callback)))
+                                       (set! retry-callback (interrupt-callback))))
    (define finish (do-thread-deschedule! t timeout-at))
    ;; It's ok if the thread gets interrupted
    ;; outside the atomic region, because we'd
@@ -466,7 +466,7 @@
    (lambda ()
      ;; In non-atomic mode:
      (finish)
-     (when needs-retry?
+     (when retry-callback
        (retry-callback)))))
 
 ;; in atomic mode
@@ -716,11 +716,11 @@
      (let loop ()
        ((thread-deschedule! (current-thread)
                             until-msecs
-                            void
                             (lambda ()
-                              ;; Woke up due to an ignored break?
-                              ;; Try again:
-                              (loop)))))]))
+                              (lambda ()
+                                ;; Woke up due to an ignored break?
+                                ;; Try again:
+                                (loop))))))]))
 
 ;; ----------------------------------------
 ;; Tracking thread progress
@@ -958,9 +958,9 @@
                              #f
                              ;; Interrupted for break => not waiting for mail
                              (lambda ()
-                               (set-thread-mailbox-wakeup! t void))
-                             ;; No retry action, because we always retry:
-                             void))
+                               (set-thread-mailbox-wakeup! t void)
+                               ;; No retry action, because we always retry:
+                               void)))
        ;; called out of atomic mode:
        (lambda ()
          (do-yield)
