@@ -140,7 +140,9 @@
 
 ;; ----------------------------------------
 
-(define-record-type (inspector new-inspector inspector?) (fields parent))
+(define-record-type (inspector new-inspector inspector?)
+  (fields parent)
+  (sealed #t))
 
 (define root-inspector (new-inspector #f))
 

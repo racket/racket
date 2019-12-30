@@ -4,7 +4,8 @@
 (define-record-type (thread-cell create-thread-cell thread-cell?)
   (fields default-value
           preserved?
-          (mutable mutated?)))
+          (mutable mutated?))
+  (sealed #t))
 
 (define make-thread-cell
   (case-lambda

@@ -2,7 +2,9 @@
 
 (define undefined '#{undefined bjjxts6iq4xqtw8kz4eb1jxbs-0})
 
-(define-record-type variable (fields (mutable val) name))
+(define-record-type variable
+  (fields (mutable val) name)
+  (sealed #t))
 
 (define (variable-set! var val)
   (variable-val-set! var val))

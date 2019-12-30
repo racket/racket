@@ -1,6 +1,7 @@
 
 (define-record-type keyword
   (fields symbol)
+  (sealed #t)
   (nongenerative #{keyword dhghafpy3v03qbye1a9lwf-0}))
 
 (define keywords (make-weak-eq-hashtable))

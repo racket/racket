@@ -368,7 +368,8 @@
 ;; ----------------------------------------
 
 (define-record-type (phantom-bytes create-phantom-bytes phantom-bytes?)
-  (fields pbv))
+  (fields pbv)
+  (sealed #t))
 
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
