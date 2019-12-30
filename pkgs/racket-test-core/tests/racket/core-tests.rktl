@@ -19,6 +19,7 @@
 (load-relative "unsafe.rktl")
 (load-relative "object.rktl")
 (load-relative "struct.rktl")
+(load-relative "struct-derived.rktl")
 (load-relative "thread.rktl")
 (load-relative "logger.rktl")
 (load-relative "sync.rktl")

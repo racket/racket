@@ -14,6 +14,7 @@
 
   (#%provide define-struct*
              define-struct/derived
+             struct/derived
              struct-field-index
              struct-copy
              (for-syntax
@@ -817,6 +818,53 @@
         #f
         "bad syntax"
         stx)]))
+        
+  (define-syntax (struct/derived stx)
+    (define (config-has-name? config)
+      (cond
+        [(syntax? config) (config-has-name? (syntax-e config))]
+        [(pair? config) (or (eq? (syntax-e (car config)) '#:constructor-name)
+                            (eq? (syntax-e (car config)) '#:extra-constructor-name)
+                            (config-has-name? (cdr config)))]
+        [else #f]))
+    (syntax-case stx ()
+      [(_ orig id super-id (fields ...) config ...)
+       (and (identifier? #'id)
+            (identifier? #'super-id))
+       (if (not (config-has-name? #'(config ...)))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               (id super-id)
+               (fields ...)
+               #:constructor-name id
+               config ...))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               (id super-id)
+               (fields ...) 
+               config ...)))]
+      [(_ orig id (fields ...) config ...)
+       (identifier? #'id)
+       (if (not (config-has-name? #'(config ...)))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               id
+               (fields ...) 
+               #:constructor-name id 
+               config ...))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               id
+               (fields ...) 
+               config ...)))]
+      [(_ orig id . rest)
+       (identifier? #'id)
+       (syntax/loc stx
+         (define-struct/derived orig id . rest))]
+      [(_ thing . _) (raise-syntax-error #f
+                                         "expected an identifier for the structure type name"
+                                         stx
+                                         #'thing)]))
 
   (define-syntax (struct-copy stx)
     (if (not (eq? (syntax-local-context) 'expression))

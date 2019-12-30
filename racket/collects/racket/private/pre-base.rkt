@@ -244,6 +244,7 @@
              procedure-reduce-keyword-arity-mask
              (rename define-struct* define-struct)
              define-struct/derived
+             struct/derived
              struct-field-index
              struct-copy
              double-flonum?

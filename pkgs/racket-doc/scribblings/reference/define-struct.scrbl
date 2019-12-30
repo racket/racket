@@ -351,15 +351,45 @@ preferred.
 (posn-y (make-posn 1 2))
 ]}
 
+@defform*[((struct/derived (id . rest-form) 
+           id (field ...) struct-option ...)
+           (struct/derived (id . rest-form)
+           id super-id (field ...) struct-option ...))]{
+
+The same as @racket[struct], but with an extra @racket[(id
+. rest-form)] sub-form that is treated as the overall form for
+syntax-error reporting and otherwise ignored.  The only constraint on
+the sub-form for error reporting is that it starts with @racket[id].
+The @racket[struct/derived] form is intended for use by macros
+that expand to @racket[struct].
+
+@examples[
+#:eval posn-eval
+(eval:no-prompt
+ (define-syntax (fruit-struct stx)
+   (syntax-case stx ()
+    [(ds name . rest) 
+     (with-syntax ([orig stx])
+       #'(struct/derived orig name (seeds color) . rest))])))
+
+(fruit-struct apple)
+(apple-seeds (apple 12 "red"))
+(fruit-struct apple #:mutable)
+(set-apple-seeds! (apple 12 "red") 8)
+(code:comment "this next line will cause an error due to a bad keyword")
+(eval:error (fruit-struct apple #:bad-option))
+]
+@history[#:added "7.5.0.16"]}
 
 @defform[(define-struct/derived (id . rest-form) 
            id-maybe-super (field ...) struct-option ...)]{
 
-The same as @racket[define-struct], but with an extra @racket[(id
-. rest-form)] sub-form that is treated as the overall form for
-syntax-error reporting and otherwise ignored.  The only constraint on
-the sub-form for error reporting is that it starts with @racket[id].
-The @racket[define-struct/derived] form is intended for use by macros
+Like @racket[struct/derived], except that the syntax for supplying a
+@racket[super-id] is different, and a @racket[_constructor-id] that
+has a @racketidfont{make-} prefix on @racket[id] is implicitly
+supplied via @racket[#:extra-constructor-name] if neither
+@racket[#:extra-constructor-name] nor @racket[#:constructor-name] is
+provided. The @racket[define-struct/derived] form is intended for use by macros
 that expand to @racket[define-struct].
 
 @examples[
@@ -377,7 +407,9 @@ that expand to @racket[define-struct].
 (set-posn-x! (make-posn 1 2) 0)
 (code:comment "this next line will cause an error due to a bad keyword")
 (eval:error (define-xy-struct posn #:bad-option))
-]}
+]
+@history[#:changed "7.5.0.16" @elem{Moved main description to @racket[struct/derived]
+                                    and replaced with differences.}]}
 
 @; ----------------------------------------
 
