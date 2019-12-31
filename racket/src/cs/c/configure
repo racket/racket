@@ -1410,7 +1410,7 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-shared         create shared libraries (ok, but not recommended)
+  --enable-shared         create shared libraries (not currently supported)
   --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
@@ -2757,6 +2757,14 @@ show_explicitly_set()
     echo "=== $2 set to $1"
   fi
 }
+
+if test "${enable_shared}" = "yes" ; then
+  echo "=== Canceling --enable-shared"
+  echo "    Building Racket CS as a shared library is not currently"
+  echo "    supported --- but Racket executables get the benefits of"
+  echo "    sharing, anyway, by going through a shared executable"
+  enable_shared=no
+fi
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
@@ -5266,6 +5274,64 @@ $as_echo "$have_lz4" >&6; }
   fi
 fi
 
+############## other inferred machine properties ################
+
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of void *" >&5
+$as_echo_n "checking size of void *... " >&6; }
+if ${ac_cv_sizeof_void_p+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (void *))" "ac_cv_sizeof_void_p"        "$ac_includes_default"; then :
+
+else
+  if test "$ac_cv_type_void_p" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute sizeof (void *)
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_sizeof_void_p=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_void_p" >&5
+$as_echo "$ac_cv_sizeof_void_p" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
+_ACEOF
+
+
+
+if test "${ac_cv_sizeof_void_p}" != "4" ; then
+  if test "${ac_cv_sizeof_void_p}" != "8" ; then
+    echo "Something has gone wrong getting the pointer size; see config.log"
+    exit 1
+  fi
+fi
+
+############## subconfigure ################
+
+# Before libtool setup
+
+CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${CPPFLAGS}"'"'
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -5280,8 +5346,8 @@ if test "${enable_shared}" = "yes" ; then
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   if test "${LIBTOOLPROG}" = "" ; then
-    (cd ../lt; sh ${abssrcdir}/../lt/configure --enable-shared --disable-static)
-    LIBTOOLPROG=`pwd`/../lt/libtool
+    (cd ../../lt; sh ${abssrcdir}/../../lt/configure --enable-shared --disable-static)
+    LIBTOOLPROG=`pwd`/../../lt/libtool
   fi
 
   if test "${need_gcc_static_libgcc}" = "yes" ; then
@@ -5327,49 +5393,6 @@ else
   fi
 fi
 
-############## other inferred machine properties ################
-
-# The cast to long int works around a bug in the HP C Compiler
-# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
-# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
-# This bug is HP SR number 8606223364.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of void *" >&5
-$as_echo_n "checking size of void *... " >&6; }
-if ${ac_cv_sizeof_void_p+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (void *))" "ac_cv_sizeof_void_p"        "$ac_includes_default"; then :
-
-else
-  if test "$ac_cv_type_void_p" = yes; then
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error 77 "cannot compute sizeof (void *)
-See \`config.log' for more details" "$LINENO" 5; }
-   else
-     ac_cv_sizeof_void_p=0
-   fi
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_void_p" >&5
-$as_echo "$ac_cv_sizeof_void_p" >&6; }
-
-
-
-cat >>confdefs.h <<_ACEOF
-#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
-_ACEOF
-
-
-
-if test "${ac_cv_sizeof_void_p}" != "4" ; then
-  if test "${ac_cv_sizeof_void_p}" != "8" ; then
-    echo "Something has gone wrong getting the pointer size; see config.log"
-    exit 1
-  fi
-fi
-
 ############## final output ################
 
 # Pass certain configure args on to rktio
@@ -5390,17 +5413,6 @@ do
     keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
   esac
 done
-
-CPPFLAGS="$CPPFLAGS $PREFLAGS"
-
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${CPPFLAGS}"'"'
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"

@@ -12,7 +12,7 @@ AC_CANONICAL_SYSTEM
 
 AC_DISABLE_OPTION_CHECKING
 
-AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (ok, but not recommended)])
+AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (not currently supported)])
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
@@ -59,6 +59,14 @@ show_explicitly_set()
     echo "=== $2 set to $1"
   fi
 }
+
+if test "${enable_shared}" = "yes" ; then
+  echo "=== Canceling --enable-shared"
+  echo "    Building Racket CS as a shared library is not currently"
+  echo "    supported --- but Racket executables get the benefits of"
+  echo "    sharing, anyway, by going through a shared executable"
+  enable_shared=no
+fi
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
@@ -596,6 +604,32 @@ if test "${enable_liblz4}" = "yes" ; then
   fi
 fi
 
+############## other inferred machine properties ################
+
+AC_CHECK_SIZEOF([void *])
+
+if test "${ac_cv_sizeof_void_p}" != "4" ; then
+  if test "${ac_cv_sizeof_void_p}" != "8" ; then
+    echo "Something has gone wrong getting the pointer size; see config.log"
+    exit 1
+  fi
+fi
+
+############## subconfigure ################
+
+# Before libtool setup
+
+CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${CPPFLAGS}"'"'
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -610,8 +644,8 @@ if test "${enable_shared}" = "yes" ; then
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   if test "${LIBTOOLPROG}" = "" ; then  
-    (cd ../lt; sh ${abssrcdir}/../lt/configure --enable-shared --disable-static)
-    LIBTOOLPROG=`pwd`/../lt/libtool
+    (cd ../../lt; sh ${abssrcdir}/../../lt/configure --enable-shared --disable-static)
+    LIBTOOLPROG=`pwd`/../../lt/libtool
   fi
 
   if test "${need_gcc_static_libgcc}" = "yes" ; then
@@ -657,17 +691,6 @@ else
   fi
 fi
 
-############## other inferred machine properties ################
-
-AC_CHECK_SIZEOF([void *])
-
-if test "${ac_cv_sizeof_void_p}" != "4" ; then
-  if test "${ac_cv_sizeof_void_p}" != "8" ; then
-    echo "Something has gone wrong getting the pointer size; see config.log"
-    exit 1
-  fi
-fi
-
 ############## final output ################
 
 # Pass certain configure args on to rktio
@@ -688,17 +711,6 @@ do
     keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
   esac
 done
-
-CPPFLAGS="$CPPFLAGS $PREFLAGS"
-
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${CPPFLAGS}"'"'
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
