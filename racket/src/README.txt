@@ -9,8 +9,8 @@ root directory.
  License and external links
 ========================================================================
 
-Racket is distributed under the GNU Lesser General Public License
-(LGPL). See "LICENSE.txt" for more information.
+Racket is distributed under the MIT license and the Apache version 2.0
+license, at your option. See "LICENSE.txt" for more information.
 
 Compiled executables, documentation, and up-to-date information:
    http://racket-lang.org/
