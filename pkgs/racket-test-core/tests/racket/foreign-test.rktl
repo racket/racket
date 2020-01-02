@@ -575,6 +575,11 @@
 		  free)])
     (free p)))
 
+(let ([return_null (get-ffi-obj 'return_null test-lib (_fun -> _bytes/nul-terminated))])
+  (test #f return_null))
+(let ([return_null (get-ffi-obj 'return_null test-lib (_fun -> (_bytes/nul-terminated o 20)))])
+  (test #f return_null))
+
 ;; Test equality and hashing of c pointers:
 (let ([seventeen1 (cast 17 _intptr _pointer)]
       [seventeen2 (cast 17 _intptr _pointer)]
