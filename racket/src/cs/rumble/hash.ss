@@ -572,12 +572,17 @@
     (intmap=? ht1 ht2 eql?)]
    [(and (hash? ht1)
          (hash? ht2)
+         ;; Same mutability?
+         (eq? (intmap? (strip-impersonator ht1))
+              (intmap? (strip-impersonator ht2)))
+         ;; Same key comparison?
          (or (and (hash-eq? ht1)
                   (hash-eq? ht2))
              (and (hash-eqv? ht1)
                   (hash-eqv? ht2))
              (and (hash-equal? ht1)
                   (hash-equal? ht2)))
+         ;; Same weakness?
          (eq? (hash-weak? ht1) (hash-weak? ht2)))
     (and (= (hash-count ht1) (hash-count ht2))
          ;; This generic comparison supports impersonators

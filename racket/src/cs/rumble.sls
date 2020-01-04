@@ -277,7 +277,7 @@
           unsafe-weak-hash-iterate-key+value unsafe-weak-hash-iterate-pair
           unsafe-hash-seal!    ; not exported to racket
 
-          hash? hash-eq? hash-equal? hash-eqv? hash-weak? immutable-hash?
+          hash? hash-eq? hash-equal? hash-eqv? hash-weak?
           hash-count
           hash-keys-subset?
           eq-hashtable->hash   ; not exported to racket

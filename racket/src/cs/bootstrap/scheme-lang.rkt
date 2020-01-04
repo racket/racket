@@ -83,6 +83,7 @@
          record?
          record-type-uid
          $object-ref
+         stencil-vector?
          (rename-out [s:vector-sort vector-sort]
                      [s:vector-sort! vector-sort!])
          vector-for-each
@@ -175,6 +176,9 @@
                      [logtest fxlogtest])
          fxsrl
          fxbit-field
+         fxpopcount
+         fxpopcount32
+         fxpopcount16
          bitwise-bit-count
          bitwise-arithmetic-shift-right
          bytevector-u16-native-ref
@@ -745,6 +749,22 @@
        (proc e))]
     [(proc . vecs)
      (list->vector (apply map proc (map vector->list vecs)))]))
+
+(define (stencil-vector? v) #f)
+
+(define (fxpopcount32 x)
+  (let* ([x (- x (bitwise-and (arithmetic-shift x -1) #x55555555))]
+         [x (+ (bitwise-and x #x33333333) (bitwise-and (arithmetic-shift x -2) #x33333333))]
+         [x (bitwise-and (+ x (arithmetic-shift x -4)) #x0f0f0f0f)]
+         [x (+ x (arithmetic-shift x -8) (arithmetic-shift x -16) (arithmetic-shift x -24))])
+    (bitwise-and x #x3f)))
+
+(define (fxpopcount x)
+  (fx+ (fxpopcount32 (bitwise-and x #xffffffff))
+       (fxpopcount32 (arithmetic-shift x -32))))
+
+(define (fxpopcount16 x)
+  (fxpopcount32 (bitwise-and x #xffff)))
 
 (define (logbit? m n)
   (bitwise-bit-set? n m))

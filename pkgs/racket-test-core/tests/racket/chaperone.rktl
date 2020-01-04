@@ -2019,7 +2019,7 @@
       (test #f hash-ref h2 'key2 #f)
       (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
       (hash-for-each h2 void)
-      (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+      (test '(for-each key val key2 val2 key2 key) list 'for-each get-k get-v set-k set-v remove-k access-k)
       (set! get-k #f)
       (set! get-v #f)
       (void (equal-hash-code h2))
@@ -2034,7 +2034,7 @@
       (test #t values (equal? h2 (let* ([h2 (make-hash)])
                                    (test (void) hash-set! h2 'key 'val)
                                    h2)))
-      (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+      (test '(equal? key val key2 val2 key2 key) list 'equal? get-k get-v set-k set-v remove-k access-k)
       (void)))
   (list
    make-hash make-hasheq make-hasheqv
@@ -2092,7 +2092,7 @@
              (test #f hash-ref h2 'key2 #f)
              (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
              (hash-for-each h2 void)
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+             (test '(mid key val key2 val2 key2 key) list 'mid get-k get-v set-k set-v remove-k access-k)
              (set! get-k #f)
              (set! get-v #f)
              (void (equal-hash-code h2))
@@ -2105,7 +2105,7 @@
              (set! get-k #f)
              (set! get-v #f)
              (test #t values (equal? h2 (hash-set h1 'key 'val)))
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+             (test '(equal?2 key val key2 val2 key2 key) list 'equal?2 get-k get-v set-k set-v remove-k access-k)
              (void))))))
    ;; Check that `hash-set` propagates in a way that allows
    ;; `chaperone-of?` to work recursively:
