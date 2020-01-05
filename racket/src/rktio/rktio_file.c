@@ -258,10 +258,12 @@ static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rk
             ? RKTIO_OPEN_REGFILE
             : RKTIO_OPEN_NOT_REGFILE);
 
+# ifdef RKTIO_USE_PENDING_OPEN
   if (existing_rfd) {
     rktio_update_system_fd(rktio, existing_rfd, fd, modes);
     return existing_rfd;
   } else
+# endif
     return rktio_system_fd(rktio, fd, modes);
 }
 #endif
