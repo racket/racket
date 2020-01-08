@@ -830,8 +830,10 @@
   (let ()
     (define ht #f)
 
-    (let ([lst (build-list 10 add1)])
-      (set! ht (make-weak-hash `((,lst . val)))))
+    ;; retain the list at first...
+    (define lst (build-list 10 add1))
+
+    (set! ht (make-weak-hash `((,lst . val))))
 
     (define i (unsafe-weak-hash-iterate-first ht))
 
@@ -845,6 +847,10 @@
               (lambda () (unsafe-weak-hash-iterate-key+value ht i)) cons)
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #t boolean? (unsafe-weak-hash-iterate-next ht i))
+
+    ;; drop `lst` on next GC
+    (test #t list? lst)
+    (set! lst #f)
 
     (unless (eq? 'cgc (system-type 'gc))
       ;; collect key, everything should error (but not segfault)
