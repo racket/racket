@@ -58,7 +58,7 @@ cs:
 	$(MAKE) racket-so
 	cd rktio; $(MAKE)
 	$(MAKE) racketcs
-	$(MAKE) check-racketcs
+	$(MAKE) check-racketcs@CROSS_MODE@
 	$(MAKE) gracketcs
 	$(MAKE) starter
 
@@ -488,6 +488,9 @@ CHECK_BOOT = -O 'info@compiler/cm' -l- setup --boot $(srcdir)/../../setup-go.rkt
 
 check-racketcs:
 	./racketcs $(CHECK_BOOT) $(srcdir)/../known.rkt $(srcdir)/..
+
+check-racketcscross:
+	$(NOOP)
 
 # ----------------------------------------
 # Reconfigure
