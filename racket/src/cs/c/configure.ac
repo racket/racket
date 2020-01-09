@@ -481,44 +481,7 @@ fi
 
 AC_LANG_C
 
-iconv_lib_flag=""
-if test "${skip_iconv_check}" = "no" ; then
- if test "${enable_iconv}" = "yes" ; then
-  AC_CHECK_HEADER(iconv.h, enable_iconv=yes, enable_iconv=no)
-  if test "${enable_iconv}" = "yes" ; then  
-    # Does it all work, now?
-    AC_TRY_RUN(
-[   #include <iconv.h>]
-[   #include <langinfo.h>]
-    int main() {
-[     iconv_open("UTF-8", "UTF-8");]
-      return 0;
-    }, enable_iconv=yes, enable_iconv=no, enable_iconv=yes)
-    if test "${enable_iconv}" = "no" ; then  
-      # Try adding -liconv ?
-      #  We did not use AC_CHECK_LIB because iconv is sometimes macro-renamed
-      ORIG_LIBS="$LIBS"
-      LIBS="$LIBS -liconv"
-      AC_TRY_RUN(
-[     #include <iconv.h>]
-[     #include <langinfo.h>]
-      int main() {
-[     iconv_open("UTF-8", "UTF-8");]
-      return 0;
-      }, enable_iconv=yes, enable_iconv=no, enable_iconv=yes)
-      if test "${enable_iconv}" = "no" ; then
-        LIBS="$ORIG_LIBS"
-      else
-        iconv_lib_flag=" -liconv"      
-      fi
-    fi
-  fi
- fi
- [ msg="iconv is usable" ]
- AC_MSG_CHECKING($msg)
- iconv_usage_result="$enable_iconv$iconv_lib_flag"
- AC_MSG_RESULT($iconv_usage_result)
-fi
+m4_include(../ac/iconv.m4)
 if test "${enable_iconv}" = "no" ; then
   AC_DEFINE(RKTIO_NO_ICONV,1,[Do not use iconv])
 fi
@@ -608,12 +571,7 @@ fi
 
 AC_CHECK_SIZEOF([void *])
 
-if test "${ac_cv_sizeof_void_p}" != "4" ; then
-  if test "${ac_cv_sizeof_void_p}" != "8" ; then
-    echo "Something has gone wrong getting the pointer size; see config.log"
-    exit 1
-  fi
-fi
+m4_include(../ac/valid_sizeof.m4)
 
 ############## subconfigure ################
 
