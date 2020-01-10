@@ -1,12 +1,15 @@
 #lang racket/base
 (require (for-syntax racket/base))
 
-(provide Q M L N I
+(provide K Q M L N I
          times
          unknown
          with-hash-variants
          make-large-equal-key/share1
          make-large-equal-key/share2)
+
+;; Iterations for nested things
+(define K 100)
 
 ;; Iterations for slow things:
 (define Q 100000)

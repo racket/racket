@@ -1,17 +1,19 @@
 #lang racket/base
-(require "config.rkt")
+(require "config.rkt"
+         racket/list)
 
 (define elems
   (parameterize ([current-pseudo-random-generator
                   (make-pseudo-random-generator)])
     (random-seed 12745)
-    (hash-keys
-     (for/fold ([ht #hasheqv()]) ([i 200])
-       (let loop ()
-         (define n (random 10000))
-         (if (hash-ref ht n #f)
-             (loop)
-             (hash-set ht n #t)))))))
+    (shuffle
+     (hash-keys
+      (for/fold ([ht #hasheqv()]) ([i 200])
+        (let loop ()
+          (define n (random 10000))
+          (if (hash-ref ht n #f)
+              (loop)
+              (hash-set ht n #t))))))))
       
 (define (gen n)
   (for/hasheq ([i (in-range n)]
@@ -30,6 +32,14 @@
 (define (check-false v)
   (when v
     (error "failed")))
+
+'eq:subset-shared-small
+(times
+ (let* ([sub-ht (gen 6)]
+        [ht (gen-more 3 sub-ht)])
+   (check-true
+    (for/and ([i (in-range M)])
+      (hash-keys-subset? sub-ht ht)))))
 
 'eq:subset-unshared-small
 (times
@@ -83,13 +93,15 @@
  (let* ([sub-ht (gen 100)]
         [ht (gen-more 10 sub-ht)])
    (check-true
-    (for/and ([i (in-range L)])
+    (for/and ([i (in-range M)])
       (hash-keys-subset? sub-ht ht)))))
 
-'eq:subset-shared-large+large
+;; This one amounts to a test of how fast the subset
+;; operation iterates internally:
+'eq:subset-unshared-large
 (times
  (let* ([sub-ht (gen 100)]
-        [ht (gen-more 100 sub-ht)])
+        [ht (gen 100)])
    (check-true
-    (for/and ([i (in-range L)])
+    (for/and ([i (in-range M)])
       (hash-keys-subset? sub-ht ht)))))

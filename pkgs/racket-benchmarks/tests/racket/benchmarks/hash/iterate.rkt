@@ -3,7 +3,7 @@
 
 'eq:keys
 (times
- (let ([ht (for/hasheq ([i (in-range 100)])
+ (let ([ht (for/hasheq ([i (in-range K)])
              (values i i))])
    (void
     (for ([i (in-range Q)])
@@ -12,7 +12,7 @@
 
 'eq:vals
 (times
- (let ([ht (for/hasheq ([i (in-range 100)])
+ (let ([ht (for/hasheq ([i (in-range K)])
              (values i i))])
    (for ([i (in-range Q)])
      (void
@@ -21,7 +21,7 @@
 
 'eq:keys-unsafe
 (times
- (let ([ht (for/hasheq ([i (in-range 100)])
+ (let ([ht (for/hasheq ([i (in-range K)])
              (values i i))])
    (void
     (for ([i (in-range Q)])
@@ -30,7 +30,7 @@
 
 'eq:vals-unsafe
 (times
- (let ([ht (for/hasheq ([i (in-range 100)])
+ (let ([ht (for/hasheq ([i (in-range K)])
              (values i i))])
    (for ([i (in-range Q)])
      (void
@@ -39,7 +39,7 @@
 
 'eq:for-each
 (times
- (let ([ht (for/hasheq ([i (in-range 100)])
+ (let ([ht (for/hasheq ([i (in-range K)])
              (values i i))])
    (for ([i (in-range Q)])
      (hash-for-each ht (lambda (k v) 'ok)))))

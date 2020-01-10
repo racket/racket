@@ -898,20 +898,18 @@
         (cons (car alist)
               (cnode-assoc-update (cdr alist) key new-p))]))
 
+    ;; `a` and `b` must both be cnodes
     (define (cnode=? a b eql?)
-      (or
-       (eq? a b)
        (and
-        (cnode? b)
         (cnode-keys-subset/equal? a b eql?)
         (fx= (length (cnode-content a))
-             (length (cnode-content b))))))
+             (length (cnode-content b)))))
 
+    ;; `a` and `b` must both be cnodes
     (define (cnode-keys-subset/equal? a b eql?)
       (or
        (eq? a b)
        (and
-        (cnode? b)
         (fx= (cnode-hash a) (cnode-hash b))
         (let ([ac (cnode-content a)]
               [bc (cnode-content b)])
@@ -1038,71 +1036,81 @@
                               (and (bnode? b)
                                    (bnode=? an bn eql? (bnode-down shift)))]
                              [else
+                              ;; `bn` must be a cnode, too
                               (cnode=? an bn eql?)]))
                         (loop (fx+ i 1))))]))))))))
 
+    ;; `a` and `b` must both be bnodes
     (define (bnode-keys-subset? a b shift)
-      (or
-       (eq? a b)
-       (cond
-        [(cnode? b)
-         ;; only possible if `a` has just one key, since if it
-         ;; has multiple keys, they have different hash code and
-         ;; can be a subset of the the keys of `c`
-         (and (fx= (hamt-count a) 1)
-              (let* ([k (bnode-only-key-ref a)]
-                     [hashcode (hamt-wrapped-key-hash-code a k)])
-                (cnode-has-key? b (hamt-unwrap-key k) hashcode)))]
-        [(fx> (hamt-count a) (hamt-count b))
-         #f]
-        [else
-         (let* ([a-mask (stencil-vector-mask a)]
-                [akm (fxand (fxsrl a-mask HAMT-KEY-OFFSET) HAMT-GROUP-MASK)]
-                [acm (fxand (fxsrl a-mask HAMT-CHILD-OFFSET) HAMT-GROUP-MASK)]
-                [abm (fxior acm akm)]
-                [b-mask (stencil-vector-mask b)]
-                [bcm (fxand (fxsrl b-mask HAMT-CHILD-OFFSET) HAMT-GROUP-MASK)]
-                [bkm (fxand (fxsrl b-mask HAMT-KEY-OFFSET) HAMT-GROUP-MASK)]
-                [bbm (fxior bcm bkm)])
-           (and
-            (fx= abm (fxand abm bbm))
-            (let loop ([abm abm] [bit 0] [aki (fxpopcount16 acm)] [bki (fxpopcount16 bcm)] [aci 0] [bci 0])
-              (cond
-               [(fxzero? abm) #t]
-               [(fxbit-set? akm bit)
-                (cond
-                 [(fxbit-set? bkm bit)
-                  (and
-                   (hamt-wrapped-key=? (bnode-key-index-ref a aki) (bnode-key-index-ref b bki))
-                   (loop (fxsrl abm 1) (fx1+ bit) (fx1+ aki) (fx1+ bki) aci bci))]
-                 [else
-                  (and
-                   (let ([akey (bnode-key-index-ref a aki)]
-                         [bchild (bnode-child-index-ref b bci)])
-                     (cond
-                      [(bnode? bchild)
-                       (bnode-has-key? bchild (hamt-unwrap-key akey) (hamt-wrapped-key-hash-code a akey) (bnode-down shift))]
-                      [else
-                       (cnode-has-key? bchild (hamt-unwrap-key akey) (hamt-wrapped-key-hash-code a akey))]))
-                   (loop (fxsrl abm 1) (fx1+ bit) (fx1+ aki) bki aci (fx1+ bci)))])]
-               [(fxbit-set? acm bit)
-                (cond
-                 [(fxbit-set? bkm bit) #f]
-                 [else
-                  (and (let ([ac (bnode-child-index-ref a aci)]
-                             [bc (bnode-child-index-ref b bci)])
-                         (cond
-                          [(bnode? ac)
-                           (bnode-keys-subset? ac bc (bnode-down shift))]
-                          [else
-                           (cnode-keys-subset/equal? ac bc #f)]))
-                       (loop (fxsrl abm 1) (fx1+ bit) aki bki (fx1+ aci) (fx1+ bci)))])]
-               [(fxbit-set? bkm bit)
-                (loop (fxsrl abm 1) (fx1+ bit) aki (fx1+ bki) aci bci)]
-               [(fxbit-set? bcm bit)
-                (loop (fxsrl abm 1) (fx1+ bit) aki bki aci (fx1+ bci))]
-               [else
-                (loop (fxsrl abm 1) (fx1+ bit) aki bki aci bci)]))))])))
+      (cond
+       [(eq? a b) #t]
+       [(fx> (hamt-count a) (hamt-count b)) #f]
+       [else
+        (let* ([a-mask (stencil-vector-mask a)]
+               [akm (fxand (fxsrl a-mask HAMT-KEY-OFFSET) HAMT-GROUP-MASK)]
+               [acm (fxand (fxsrl a-mask HAMT-CHILD-OFFSET) HAMT-GROUP-MASK)]
+               [abm (fxior acm akm)]
+               [b-mask (stencil-vector-mask b)]
+               [bcm (fxand (fxsrl b-mask HAMT-CHILD-OFFSET) HAMT-GROUP-MASK)]
+               [bkm (fxand (fxsrl b-mask HAMT-KEY-OFFSET) HAMT-GROUP-MASK)]
+               [bbm (fxior bcm bkm)])
+          (and
+           (fx= abm (fxand abm bbm))
+           ;; At this point, we know that bbm has a bit for every key/child in
+           ;; `b`, and we know that `a` has a key/child only where `b` does
+           (let loop ([bm bbm] [aki (fxpopcount16 acm)] [bki (fxpopcount16 bcm)] [aci 0] [bci 0])
+             (cond
+              [(fxzero? bm) #t]
+              [else
+               (let ([bm-bit (fxand bm (fxxor bm (fx- bm 1)))]) ; peel off lowest set bit of `bm`
+                 (cond
+                  [(fx= 0 (fxand bm-bit abm))
+                   ;; No key or child in `a`
+                   (cond
+                    [(fx= 0 (fxand bm-bit bcm))
+                     ;; Key in `b`
+                     (loop (fx- bm bm-bit) aki (fx1+ bki) aci bci)]
+                    [else
+                     ;; Child in `b`
+                     (loop (fx- bm bm-bit) aki bki aci (fx1+ bci))])]
+                  [(fx= 0 (fxand bm-bit acm))
+                   ;; Key in `a`
+                   (cond
+                    [(fx= 0 (fxand bm-bit bcm))
+                     ;; Key in `b`
+                     (and
+                      (hamt-wrapped-key=? (bnode-key-index-ref a aki) (bnode-key-index-ref b bki))
+                      (loop (fx- bm bm-bit) (fx1+ aki) (fx1+ bki) aci bci))]
+                    [else
+                     ;; Child in `b`
+                     (and
+                      (let ([akey (bnode-key-index-ref a aki)]
+                            [bchild (bnode-child-index-ref b bci)])
+                        (cond
+                         [(bnode? bchild)
+                          (bnode-has-key? bchild (hamt-unwrap-key akey) (hamt-wrapped-key-hash-code a akey) (bnode-down shift))]
+                         [else
+                          (cnode-has-key? bchild (hamt-unwrap-key akey) (hamt-wrapped-key-hash-code a akey))]))
+                      (loop (fx- bm bm-bit) (fx1+ aki) bki aci (fx1+ bci)))])]
+                  [else
+                   ;; Child in `a`
+                   (cond
+                    [(fx= 0 (fxand bm-bit bcm))
+                     ;; Key in `b`, and multiple keys in `a` child means `a` is not a subset
+                     #f]
+                    [else
+                     ;; Child in `b`
+                     (and (let ([ac (bnode-child-index-ref a aci)]
+                                [bc (bnode-child-index-ref b bci)])
+                            ;; Because a cnode is always at the end of the deepest
+                            ;; possible chain of bnodes, `ac` and `bc` must both be
+                            ;; the same kind of node
+                            (cond
+                             [(bnode? ac)
+                              (bnode-keys-subset? ac bc (bnode-down shift))]
+                             [else
+                              (cnode-keys-subset/equal? ac bc #f)]))
+                          (loop (fx- bm bm-bit) aki bki (fx1+ aci) (fx1+ bci)))])]))]))))]))
 
     (define (bnode-hash-code n hash hc)
       (let* ([mask (stencil-vector-mask n)]
