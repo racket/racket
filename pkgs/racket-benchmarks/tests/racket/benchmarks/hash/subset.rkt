@@ -33,31 +33,34 @@
   (when v
     (error "failed")))
 
-'eq:subset-shared-small
+'subset-lil-shared:eq
 (times
  (let* ([sub-ht (gen 6)]
         [ht (gen-more 3 sub-ht)])
-   (check-true
-    (for/and ([i (in-range M)])
-      (hash-keys-subset? sub-ht ht)))))
+   (for ([i (in-range H)])
+     (check-true
+      (for/and ([i (in-range M)])
+        (hash-keys-subset? sub-ht ht))))))
 
-'eq:subset-unshared-small
+'subset-lil-unshared:eq
 (times
  (let ([ht (gen 6)]
        [sub-ht (gen 3)])
-   (check-true
-    (for/and ([i (in-range M)])
-      (hash-keys-subset? sub-ht ht)))))
+   (for ([i (in-range H)])
+     (check-true
+      (for/and ([i (in-range M)])
+        (hash-keys-subset? sub-ht ht))))))
 
-'eq:not-subset-unshared-small
+'subset-lil-not:eq
 (times
  (let ([ht (gen 6)]
        [sub-ht (gen 3)])
-   (check-false
-    (for/or ([i (in-range L)])
-      (hash-keys-subset? ht sub-ht)))))
+   (for ([i (in-range H)])
+     (check-false
+      (for/or ([i (in-range L)])
+        (hash-keys-subset? ht sub-ht))))))
 
-'eq:subset-shared-medium+small
+'subset-med+lil-shared:eq
 (times
  (let* ([sub-ht (gen 10)]
         [ht (gen-more 1 sub-ht)])
@@ -65,7 +68,7 @@
     (for/and ([i (in-range L)])
       (hash-keys-subset? sub-ht ht)))))
 
-'eq:subset-shared-medium+medium
+'subset-med+med-shared:eq
 (times
  (let* ([sub-ht (gen 10)]
         [ht (gen-more 10 sub-ht)])
@@ -73,14 +76,15 @@
     (for/and ([i (in-range L)])
       (hash-keys-subset? sub-ht ht)))))
 
-'eq:subset-same-large
+'subset-big-same:eq
 (times
- (let* ([sub-ht (gen 100)])
-   (check-true
-    (for/and ([i (in-range L)])
-      (hash-keys-subset? sub-ht sub-ht)))))
+ (for ([i (in-range H)])
+   (let* ([sub-ht (gen 100)])
+     (check-true
+      (for/and ([i (in-range L)])
+        (hash-keys-subset? sub-ht sub-ht))))))
 
-'eq:subset-shared-large+small
+'subset-big+lil-shared:eq
 (times
  (let* ([sub-ht (gen 100)]
         [ht (gen-more 3 sub-ht)])
@@ -88,7 +92,7 @@
     (for/and ([i (in-range L)])
       (hash-keys-subset? sub-ht ht)))))
 
-'eq:subset-shared-large+medium
+'subset-big+med-shared:eq
 (times
  (let* ([sub-ht (gen 100)]
         [ht (gen-more 10 sub-ht)])
@@ -98,7 +102,7 @@
 
 ;; This one amounts to a test of how fast the subset
 ;; operation iterates internally:
-'eq:subset-unshared-large
+'subset-big-unshared:eq
 (times
  (let* ([sub-ht (gen 100)]
         [ht (gen 100)])

@@ -1,15 +1,21 @@
 #lang racket/base
 (require (for-syntax racket/base))
 
-(provide K Q M L N I
+(provide H K J Q M L N I
          times
          unknown
          with-hash-variants
          make-large-equal-key/share1
          make-large-equal-key/share2)
 
+;; Iterations for slow nested things
+(define H 10)
+
 ;; Iterations for nested things
-(define K 100)
+(define K (* H 10))
+
+;; Iterations for fast nested things
+(define J (* K 5))
 
 ;; Iterations for slow things:
 (define Q 100000)
@@ -55,7 +61,7 @@
               (syntax-case (car body) (quote)
                 [(quote sym)
                  (identifier? #'sym)
-                 (cons #`(quote #,(string->symbol (format "~a:~a" prefix (syntax-e #'sym))))
+                 (cons #`(quote #,(string->symbol (format "~a:~a" (syntax-e #'sym) prefix)))
                        (loop (cdr body)))]
                 [#:only
                  (if (eq? prefix (syntax-e (cadr body)))

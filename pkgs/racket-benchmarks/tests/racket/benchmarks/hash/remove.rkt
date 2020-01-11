@@ -3,7 +3,7 @@
 
 (with-hash-variants
 
-  'hash-removes
+  'removes
   (times
    (let ([ht (FOR/HASH ([i (in-range 100)])
                (values (MAKE-KEY i) (MAKE-VAL i)))])
