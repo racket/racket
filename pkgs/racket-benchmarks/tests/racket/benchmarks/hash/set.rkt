@@ -19,7 +19,7 @@
          (loop (hash-set ht KEY (MAKE-VAL 'true))
                (sub1 i)))))
 
-  'set-many
+  'set-many-in-order
   (times
    (for ([i (in-range Q)])
      (let loop ([ht EMPTY] [i K])
@@ -28,7 +28,7 @@
            (loop (hash-set ht (MAKE-KEY i) (MAKE-VAL 'true))
                  (sub1 i))))))
 
-  'set-many-in-order
+  'set-many
   (times
    (for ([i (in-range Q)])
      (let loop ([ht EMPTY] [l shuffled])

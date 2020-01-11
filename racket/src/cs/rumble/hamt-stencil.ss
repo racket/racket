@@ -174,8 +174,9 @@
              [val-i (fx- i child-count)]) ; same as key index
         (bnode-val-local-index-ref n child-count key-count val-i))]
      [else
-      ;; Complicated case: we have to figure out how many
-      ;; previous keys have values
+      ;; Complicated case that we expect to be rare: figure out how many
+      ;; previous keys have values, since we don't know how the key/value
+      ;; index maps to a key/value bit
       (let* ([child-count (hamt-mask->child-count mask)]
              [key-count (hamt-mask->key-count mask)]
              [key-i (fx- i child-count)])
@@ -561,7 +562,10 @@
 
 ;; ----------------------------------------
 ;; unsafe iteration; position is a stack
-;; represented by a list of (cons node index)
+;; of the form
+;;   - '()
+;;   - (cons indent (cons node stack))
+;;   - (cons (box assoc-list) stack)
 
 (define (unsafe-intmap-iterate-first h)
   (and (not (intmap-empty? h))
@@ -573,12 +577,12 @@
     (let ([mask (stencil-vector-mask n)])
       (let ([child-count (hamt-mask->child-count mask)]
             [key-count (hamt-mask->key-count mask)])
-        (let ([stack (cons (cons n (fx+ key-count child-count -1)) stack)])
+        (let ([stack (cons (fx+ key-count child-count -1) (cons n stack))])
           (if (fx= key-count 0)
               (unsafe-node-iterate-first (bnode-child-index-ref n (fx- child-count 1)) stack)
               stack))))]
    [(cnode? n)
-    (cons (box (cnode-content n))
+    (cons (#%box (cnode-content n))
           stack)]))
 
 (define (unsafe-intmap-iterate-next h pos)
@@ -590,32 +594,31 @@
     ;; Stack is empty, so we're done
     #f]
    [else
-    (let ([p (car pos)]
+    (let ([i (car pos)]
           [stack (cdr pos)])
       (cond
-       [(box? p)
-        ;; in a cnode
-        (let ([new-p (cdr (unbox p))])
-          (if (null? new-p)
-              ;; Exhausted this node, so return to parent node
-              (unsafe-node-iterate-next stack)
-              ;; still in cnode:
-              (cons (box new-p) stack)))]
-       [else
-        (let ([n (car p)]
-              [i (cdr p)])
+       [(fixnum? i)
+        (let ([n (car stack)])
           (cond
            [(fx= 0 i)
             ;; Exhausted this node, so return to parent node
-            (unsafe-node-iterate-next stack)]
+            (unsafe-node-iterate-next (cdr stack))]
            [else
             ;; Move to next (lower) index in the current node
             (let ([i (fx1- i)])
               (let ([child-count (hamt-mask->child-count (stencil-vector-mask n))]
-                    [stack (cons (cons n i) stack)])
+                    [stack (cons i stack)])
                 (if (fx< i child-count)
                     (unsafe-node-iterate-first (bnode-child-index-ref n i) stack)
-                    stack)))]))]))]))
+                    stack)))]))]
+       [else
+        ;; in a cnode
+        (let ([new-p (cdr (#%unbox i))])
+          (if (null? new-p)
+              ;; Exhausted this node, so return to parent node
+              (unsafe-node-iterate-next stack)
+              ;; still in cnode:
+              (cons (#%box new-p) stack)))]))]))
 
 (define (unsafe-intmap-iterate-key h pos)
   (eqtype-dispatch
@@ -924,84 +927,83 @@
 
     (define (bnode-entry-at-position n pos mode fail)
       (let* ([mask (stencil-vector-mask n)]
-             [child-count (hamt-mask->child-count mask)])
-        (let loop ([i 0] [pos pos])
-          (cond
-           [(fx= i child-count)
-            (let ([key-count (hamt-mask->key-count mask)])
-              (cond
-               [(fx< pos key-count)
-                (let ([get-key (lambda () (hamt-unwrap-key (bnode-key-index-ref n (fx+ pos child-count))))]
-                      [get-value (lambda () (bnode-val-index-ref n (fx+ pos child-count)))])
-                  (case mode
-                    [(key) (get-key)]
-                    [(val) (get-value)]
-                    [(both) (values (get-key) (get-value))]
-                    [else (cons (get-key) (get-value))]))]
-               [else fail]))]
-           [else
-            (let ([c (bnode-child-index-ref n i)])
-              (cond
-               [(bnode? c)
-                (let ([sz (hamt-count c)])
-                  (if (fx>= pos sz)
-                      (loop (fx+ i 1) (fx- pos sz))
-                      (bnode-entry-at-position c pos mode fail)))]
-               [else
-                (let* ([alist (cnode-content c)]
-                       [len (length alist)])
-                  (if (fx>= pos len)
-                      (loop (fx+ i 1) (fx- pos len))
-                      (let ([p (list-ref alist pos)])
-                        (case mode
-                          [(key) (car p)]
-                          [(val) (cdr p)]
-                          [(both) (values (car p) (cdr p))]
-                          [else p]))))]))]))))
+             [child-count (hamt-mask->child-count mask)]
+             [key-count (hamt-mask->key-count mask)])
+        (cond
+         [(fx< pos key-count)
+          (let ([get-key (lambda () (hamt-unwrap-key (bnode-key-index-ref n (fx+ pos child-count))))]
+                [get-value (lambda () (bnode-val-index-ref n (fx+ pos child-count)))])
+            (case mode
+              [(key) (get-key)]
+              [(val) (get-value)]
+              [(both) (values (get-key) (get-value))]
+              [else (cons (get-key) (get-value))]))]
+         [else
+          (let loop ([i 0] [pos (fx- pos key-count)])
+            (cond
+             [(fx= i child-count)
+              fail]
+             [else
+              (let ([c (bnode-child-index-ref n i)])
+                (cond
+                 [(bnode? c)
+                  (let ([sz (hamt-count c)])
+                    (if (fx>= pos sz)
+                        (loop (fx+ i 1) (fx- pos sz))
+                        (bnode-entry-at-position c pos mode fail)))]
+                 [else
+                  (let* ([alist (cnode-content c)]
+                         [len (length alist)])
+                    (if (fx>= pos len)
+                        (loop (fx+ i 1) (fx- pos len))
+                        (let ([p (list-ref alist pos)])
+                          (case mode
+                            [(key) (car p)]
+                            [(val) (cdr p)]
+                            [(both) (values (car p) (cdr p))]
+                            [else p]))))]))]))])))
 
     (define (bnode-unsafe-intmap-iterate-key pos)
-      (let ([p (car pos)])
+      (let ([i (car pos)])
         (cond
-         [(box? p)
-          ;; in a cnode
-          (caar (unbox p))]
+         [(fixnum? i)
+          (let ([h (cadr pos)])
+            (hamt-unwrap-key (bnode-key-index-ref h i)))]
          [else
-          (let ([h (car p)])
-            (hamt-unwrap-key (bnode-key-index-ref h (cdr p))))])))
+          ;; in a cnode
+          (caar (#%unbox i))])))
 
     (define (bnode-unsafe-intmap-iterate-value pos)
-      (let ([p (car pos)])
+      (let ([i (car pos)])
         (cond
-         [(box? p)
-          ;; in a cnode
-          (cdar (unbox p))]
+         [(fixnum? i)
+          (bnode-val-index-ref (cadr pos) i)]
          [else
-          (bnode-val-index-ref (car p) (cdr p))])))
+          ;; in a cnode
+          (cdar (#%unbox i))])))
 
     (define (bnode-unsafe-intmap-iterate-key+value pos)
-      (let ([p (car pos)])
+      (let ([i (car pos)])
         (cond
-         [(box? p)
-          ;; in a cnode
-          (let ([pr (car (unbox p))])
-            (values (car pr) (cdr pr)))]
-         [else
-          (let ([n (car p)]
-                [i (cdr p)])
+         [(fixnum? i)
+          (let ([n (cadr pos)])
             (values (hamt-unwrap-key (bnode-key-index-ref n i))
-                    (bnode-val-index-ref n i)))])))
+                    (bnode-val-index-ref n i)))]
+         [else
+          ;; in a cnode
+          (let ([pr (car (#%unbox i))])
+            (values (car pr) (cdr pr)))])))
 
     (define (bnode-unsafe-intmap-iterate-pair pos)
-      (let ([p (car pos)])
+      (let ([i (car pos)])
         (cond
-         [(box? p)
-          ;; in a cnode
-          (car (unbox p))]
-         [else
-          (let ([n (car p)]
-                [i (cdr p)])
+         [(fixnum? i)
+          (let ([n (cadr pos)])
             (cons (hamt-unwrap-key (bnode-key-index-ref n i))
-                  (bnode-val-index-ref n i)))])))
+                  (bnode-val-index-ref n i)))]
+         [else
+          ;; in a cnode
+          (car (#%unbox i))])))
 
     (define (bnode=? a b eql? shift)
       (or
