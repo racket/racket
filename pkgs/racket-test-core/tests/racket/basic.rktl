@@ -3106,6 +3106,33 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #f equal?/recur 1 2 (lambda (a b) 'yes))
+(test #t equal?/recur 1 1 (lambda (a b) 'yes))
+(test #t equal?/recur '(1 . 2) '(1 . 2) (lambda (a b) 'yes))
+(test #f equal?/recur '(1 . 2) '(1 . 2) (lambda (a b) (eq? a 1)))
+(test #t equal?/recur '(1 . 1) '(1 . 2) (lambda (a b) (or (eq? a b) (eq? a 1))))
+
+(test #t equal?/recur '#(1 2 3) '#(1 2 3) (lambda (a b) 'yes))
+(test #f equal?/recur '#(1 2 3) '#(1 2 3) (lambda (a b) (not (eqv? a 2))))
+
+(test #t equal?/recur '#&1 '#&1 (lambda (a b) 'yes))
+(test #f equal?/recur '#&1 '#&1 (lambda (a b) #f))
+
+(test #t equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) 'yes))
+(test #t equal?/recur '#hash((1 . x)) '#hash((1 . z)) (lambda (a b) (or (eq? a b) (eq? 'z b))))
+(test #f equal?/recur '#hash(("2" . x)) (hash (string-copy "2") 'x) (lambda (a b) (eq? a b)))
+(test #t equal?/recur '#hash(("2" . x)) (hash (string-copy "2") 'x) (lambda (a b) (or (eq? a b) (eq? "2" a))))
+(test #f equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) #f))
+(test #f equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) (eq? a 1)))
+(test #f equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) (eq? a 'x)))
+
+(let ()
+  (struct a (x) #:transparent)
+  (test #t equal?/recur (a 1) (a 2) (lambda (a b) 'yes))
+  (test #f equal?/recur (a 1) (a 1) (lambda (a b) (not (eq? a 1)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
 
 "last item in file"

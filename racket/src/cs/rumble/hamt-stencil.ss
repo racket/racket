@@ -921,7 +921,10 @@
              [else
               (let ([p (cnode-assoc bc (caar ac))])
                 (and p
-                     (or (not eql?) (eql? (cdar ac) (cdr p)))
+                     (or (not eql?)
+                         (and
+                          (eql? (caar ac) (car p)) ; needed for `equal?/recur`
+                          (eql? (cdar ac) (cdr p))))
                      (loop (cdr ac))))]))))))
 
     (define (bnode-entry-at-position n pos mode fail)
@@ -1027,6 +1030,7 @@
                          (let ([ak (bnode-key-index-ref a i)]
                                [bk (bnode-key-index-ref b i)])
                            (and (hamt-wrapped-key=? ak bk)
+                                (eql? (hamt-unwrap-key ak) (hamt-unwrap-key bk)) ; needed for `equal?/recur`
                                 (eql? (bnode-val-index-ref a i) (bnode-val-index-ref b i))
                                 (loop (fx+ j 1)))))])))]
                 [else

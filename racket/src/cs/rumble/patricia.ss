@@ -370,7 +370,9 @@
 ;; equality
 (define (intmap=? a b eql?)
   (and (eq? (intmap-eqtype a) (intmap-eqtype b))
-       ($intmap=? (intmap-eqtype a) (intmap-root a) (intmap-root b) eql?)))
+       ($intmap=? (intmap-eqtype a) (intmap-root a) (intmap-root b) eql?)
+       ;; in case `eql?` doesn't return a boolean
+       #t))
 
 (define ($intmap=? et a b eql?)
   (or
@@ -388,6 +390,7 @@
     [(Lf? a)
      (and (Lf? b)
           (key=? et (Lf-key a) (Lf-key b))
+          (eql? (Lf-key a) (Lf-key b)) ; for `equal?/recur`
           (eql? (Lf-value a) (Lf-value b)))]
 
     [(Co? a)
@@ -400,6 +403,7 @@
                          [else
                           (let ([pair ($collision-ref et b (caar xs) values #f)])
                             (and pair
+                                 (eql? (caar xs) (car pair)) ; for `equal?/recur`
                                  (eql? (cdar xs) (cdr pair))
                                  (loop (cdr xs))))])))))]
 
