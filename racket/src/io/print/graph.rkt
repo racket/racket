@@ -184,7 +184,10 @@
                  (set! unquoted? (or e-unquoted? unquoted?)))]
               [else (build-graph e mode)]))))
        (checking! v)
-       ((custom-write-accessor v) v checking-port mode)
+       ((custom-write-accessor v) v checking-port (if (and (eq? mode PRINT-MODE/UNQUOTED)
+                                                           (eq? print-quotable 'always))
+                                                      PRINT-MODE/QUOTED
+                                                      mode))
        (done! v unquoted?)]
       [(and (struct? v)
             (config-get config print-struct))
