@@ -906,7 +906,7 @@
               (let loop ([i 3] [captureds captureds] [full-mask 0])
                 (cond
                   [(fx= i n)
-                   ;; We shouldn't get here, because the wrapper shoudl enforce arity,
+                   ;; We shouldn't get here, because the wrapper should enforce arity,
                    ;; but just in case:
                    (apply raise-arity-mask-error '|#<procedure>| full-mask args)]
                   [else

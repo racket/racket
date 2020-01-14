@@ -47,7 +47,7 @@ Important options to configure:
                           [same as prefix]
   --enable-threads=TYPE   choose threading package
   --enable-parallel-mark  parallelize marking and free list construction
-  --enable-full-debug	include full support for pointer backtracing etc.
+  --enable-full-debug	include full support for pointer backtracking etc.
 
 Unless --prefix is set (or --exec-prefix or one of the more obscure options),
 make install will install libgc.a and libgc.so in /usr/local/bin, which

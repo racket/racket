@@ -3515,7 +3515,7 @@
 ; list in our case.
 
 ; Because type environments are regular lists, we can build them using
-; regular cons. The empty type environemnt is the empty list.  The
+; regular cons. The empty type environment is the empty list.  The
 ; following is a Kanren relation that searches the associative
 ; list. We are interested in the first match.
 

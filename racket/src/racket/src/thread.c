@@ -8935,7 +8935,7 @@ static void run_gc_callbacks(int pre)
       for (j = 0; j < SCHEME_VEC_SIZE(acts); j++) {
         act = SCHEME_VEC_ELS(acts)[j];
         protocol = SCHEME_VEC_ELS(act)[0];
-        /* The set of suported protocols is arbitrary, based on what we've needed
+        /* The set of supported protocols is arbitrary, based on what we've needed
            so far. */
         if (!strcmp(SCHEME_SYM_VAL(protocol), "int->void")) {
           gccb_Int_to_Void proc;

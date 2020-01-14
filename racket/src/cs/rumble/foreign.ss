@@ -146,7 +146,7 @@
 (define (addr->gcpointer-memory v)  ; call with GC disabled
   (#%$address->object v bytevector-content-offset))
 
-(define (addr->vector v)  ; call with GC disabled or when reuslt is locked
+(define (addr->vector v)  ; call with GC disabled or when result is locked
   (#%$address->object v vector-content-offset))
 
 ;; Converts a primitive cpointer (normally the result of
@@ -1353,7 +1353,7 @@
   (let ([duplicate-argument
          (lambda (what a1 a2)
            (raise-arguments-error 'malloc
-                                  (string-append "mulitple " what " arguments")
+                                  (string-append "multiple " what " arguments")
                                   "first" a1
                                   "second" a2))])
     (let loop ([args args] [count #f] [type #f] [copy-from #f] [mode #f] [fail-mode #f])

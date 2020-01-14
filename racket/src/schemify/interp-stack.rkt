@@ -71,7 +71,7 @@
 ;; Compile-time stack information
 
 (struct stack-info (capture-depth   ; boundary for the enclosing function in compile-time env
-                    closure-map     ; hash table to collect variables byond boundary to capture
+                    closure-map     ; hash table to collect variables beyond boundary to capture
                     [use-map #:mutable] ; table of uses; an entry here means the binding is used later
                     [local-use-map #:mutable] ; subset of `use-map` used to tracked needed merging for branches
                     [non-tail-call-later? #:mutable])) ; non-tail call afterward?
@@ -111,7 +111,7 @@
     [else
      ;; Record the use of this position. If it's the last use (i.e.,
      ;; first from the end), then box the position, which means "clear
-     ;; after retreiving" and implements space safety.
+     ;; after retrieving" and implements space safety.
      (define use-map (stack-info-use-map stk-i))
      (cond
        [(or (not use-map)

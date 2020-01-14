@@ -545,7 +545,7 @@
   (test 'not-ready values ok?))
 
 ;; If a `nack-guard-evt` function returns a `choice-evt`,
-;; then chosing any of those should avoid a NACK:
+;; then choosing any of those should avoid a NACK:
 (let ([n #f])
   (sync (nack-guard-evt (lambda (nack)
                           (set! n nack)
@@ -868,7 +868,7 @@
 
 ;; ----------------------------------------
 
-;; In the current implemenation, a depth of 10 for 
+;; In the current implementation, a depth of 10 for 
 ;;  waitable chains is a magic number; it causes the scheduler to
 ;;  swap a thread in to check whether it can run, instead of
 ;;  checking in the thread. (For a well-behaved chain, this 
@@ -1399,7 +1399,7 @@
 	     (procedure-rename (mk-capturing 'act) 'act-capturing))))))
 
 ;; ----------------------------------------
-;; Check wrap-evt result superceded by internally
+;; Check wrap-evt result superseded by internally
 ;;  installed constant (i.e., the input port):
 
 (let ([p (make-input-port

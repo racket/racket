@@ -3389,7 +3389,7 @@ GC_bool GC_page_was_ever_dirty(struct hblk *h)
  */
  
 /*
- * This implementaion assumes a Solaris 2.X like /proc pseudo-file-system
+ * This implementation assumes a Solaris 2.X like /proc pseudo-file-system
  * from which we can read page modified bits.  This facility is far from
  * optimal (e.g. we would like to get the info for only some of the
  * address space), but it avoids intercepting system calls.

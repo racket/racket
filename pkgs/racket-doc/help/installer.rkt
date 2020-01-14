@@ -3,7 +3,7 @@
          setup/dirs)
 
 ;; Builds different kinds of executables for different platforms.
-;; The `plt-help' executable is for backward compatibity.
+;; The `plt-help' executable is for backward compatibility.
 ;; The `Racket Documentation' executable is to help Windows and
 ;;  Mac users who are completely lost and need something to click.
 

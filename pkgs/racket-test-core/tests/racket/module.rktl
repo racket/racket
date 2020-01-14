@@ -1086,7 +1086,7 @@
         #:exists 'truncate
         (lambda () (write-bytes b-s)))
       ((dynamic-require (build-path temp-dir "check-gen.rkt") 'b) 10)))
-  ;; Triger JIT generation with constant function as `a':
+  ;; Trigger JIT generation with constant function as `a':
   (go a-s)
   ;; Check that we don't crash when trying to use a different `a':
   (err/rt-test (go am-s) exn:fail?)
@@ -1128,7 +1128,7 @@
 (require 'use-a-with-auto-field)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; check that `require' inside `beging-for-syntax' sets up the right phase dependency
+;; check that `require' inside `begin-for-syntax' sets up the right phase dependency
 
 (let ([o (open-output-bytes)])
   (parameterize ([current-output-port o]

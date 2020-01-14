@@ -1621,7 +1621,7 @@ static void *wrong_value(const char *who, const char *type, Scheme_Object *val)
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct or array) is returned, and the
- * basetype_p is set to the corrsponding number tag.  If basetype_p is NULL,
+ * basetype_p is set to the corresponding number tag.  If basetype_p is NULL,
  * then a struct or array value will be *copied* into dst. */
 static void* SCHEME2C(const char *who,
                       Scheme_Object *type, void *dst, intptr_t delta,
@@ -3160,7 +3160,7 @@ static void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *user
 
 #ifdef MZ_USE_MZRT
 
-/* When OS-level thread support is avaiable, support callbacks
+/* When OS-level thread support is available, support callbacks
    in foreign threads that are executed on the main Racket thread. */
 
 typedef struct Queued_Callback {

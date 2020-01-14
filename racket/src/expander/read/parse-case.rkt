@@ -2,7 +2,7 @@
 (require racket/fixnum
          (for-syntax racket/base))
 
-;; `parse-case` is used for numebr parsing in "number.rkt"
+;; `parse-case` is used for number parsing in "number.rkt"
 
 (provide parse-case
          parse-case*

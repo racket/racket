@@ -1586,7 +1586,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
       result = scheme_apply(f, 1, a);
 
       if (scheme_is_evt(result)) {
-	SCHEME_USE_FUEL(1); /* Needed beause an apply of a mzc-generated function
+	SCHEME_USE_FUEL(1); /* Needed because an apply of a mzc-generated function
 			       might not check for breaks. */
 	scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1, NULL);
 	return 0;

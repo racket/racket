@@ -6,7 +6,7 @@
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
 
-;; `assoc?` is not constant time, but it's likely to be called mutiple
+;; `assoc?` is not constant time, but it's likely to be called multiple
 ;; times on a given argument, so keep a weak hash of known associates:
 (define known-assocs (make-weak-hasheq))
 

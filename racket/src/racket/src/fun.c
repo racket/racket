@@ -2556,7 +2556,7 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       /* Native closure: */
       name = ((Scheme_Native_Closure *)p)->code->u2.name;
       if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_lambda_type)) {
-	/* Not yet jitted. Use `name' as the other alternaive of 
+	/* Not yet jitted. Use `name' as the other alternative of 
 	   the union: */
 	name = ((Scheme_Lambda *)name)->name;
       }
@@ -6257,7 +6257,7 @@ static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])
 }
 
 void scheme_takeover_stacks(Scheme_Thread *p)
-     /* When a contination captured in on e thread is invoked in another,
+     /* When a continuation captured in on e thread is invoked in another,
 	the two threads can start using the same runstack, and possibly
 	also the same cont-mark stack. This function swaps out the
 	current owner in favor of p */

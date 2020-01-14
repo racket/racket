@@ -1325,7 +1325,7 @@
                                     [n (length args)]
                                     [lift-args (lambda (k)
                                                  (if (not lifted?)
-                                                     ;; caller didn't lift expresions out
+                                                     ;; caller didn't lift expressions out
                                                      (let ([ids (generate-temporaries args)])
                                                        #`(let #,(map list ids args)
                                                            #,(k ids)))

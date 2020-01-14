@@ -28,7 +28,7 @@
                    char-ht
                    ;; The dispatch table maps character for `#` dispatch
                    dispatch-ht
-                   ;; The delimter table maps a character to 'delimit,
+                   ;; The delimiter table maps a character to 'delimit,
                    ;; 'no-delimit, or a character whose default to use;
                    ;; absence of a mapping is the default for that character
                    delimiter-ht)

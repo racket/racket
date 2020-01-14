@@ -387,7 +387,7 @@ GC2_EXTERN void *GC_fixup_self(void *p);
    only when objects are moved before fixup, but objects might
    be moved after fixup. */
 
-/* INTERNAL for the current implemenation (used by macros): */
+/* INTERNAL for the current implementation (used by macros): */
 GC2_EXTERN void GC_mark(void *p);
 GC2_EXTERN void GC_fixup(void *p);
 GC2_EXTERN void GC_mark2(void *p, struct NewGC *gc);

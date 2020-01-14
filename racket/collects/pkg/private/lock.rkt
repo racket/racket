@@ -18,7 +18,7 @@
 (define pkg-lock-scope (make-parameter #f))
 
 ;; Call `t' with lock held for the current scope. The intent is that
-;; `t' reads and writes package information in the curent scope. It
+;; `t' reads and writes package information in the current scope. It
 ;; may also *read* package information for wider package scopes
 ;; without a further lock --- which is questionable, but modification
 ;; of a shared scope while others are running can create trouble,

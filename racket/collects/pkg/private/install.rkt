@@ -527,7 +527,7 @@
                                                                (valid-version? inst-vers*))))
                                                 (begin
                                                   (log-pkg-error
-                                                   "bad verson specification for ~a: ~e"
+                                                   "bad version specification for ~a: ~e"
                                                    name
                                                    inst-vers*)
                                                   "0.0")

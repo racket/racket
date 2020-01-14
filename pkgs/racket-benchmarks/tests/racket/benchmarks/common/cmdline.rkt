@@ -70,7 +70,7 @@
            (unless (and (number? v)
                         (exact? v)
                         (positive? v))
-             (error 'auto "bad interation count: ~a" n))
+             (error 'auto "bad iteration count: ~a" n))
            (set! num-iterations v))])
        (args impl-or-benchmark impl-or-benchmark)))
 

@@ -1354,7 +1354,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
         && scheme_native_arity_check(proc, 0)
         && (((Scheme_Native_Closure *)proc)->code->start_code != scheme_on_demand_jit_code)
         && scheme_can_apply_native_in_future(proc)) {
-      /* try to alocate a future in the future thread */
+      /* try to allocate a future in the future thread */
       future_t *ft;
       ft = MALLOC_ONE_TAGGED(future_t);
       if (ft) {

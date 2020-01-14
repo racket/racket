@@ -29,7 +29,7 @@
          runstack-stage-clear!)
 
 (struct runstack (rs-state    ; shared state table
-                  depth       ; curent stack depth
+                  depth       ; current stack depth
                   max-depth   ; max reached stack depth
                   sync-depth  ; depth that MZ_RUNSTACK currently has, `#f` if unknown
                   vars        ; list of pushed vars, newest first

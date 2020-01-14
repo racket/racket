@@ -1180,7 +1180,7 @@ RKTIO_EXTERN void rktio_set_locale(rktio_t *rktio, rktio_const_string_t name);
 
 RKTIO_EXTERN_NOERR char *rktio_push_c_numeric_locale(rktio_t *rktio);
 RKTIO_EXTERN void rktio_pop_c_numeric_locale(rktio_t *rktio, char *prev);
-/* Use this pair of funtions to temporarily switch the locale to the C
+/* Use this pair of functions to temporarily switch the locale to the C
    locale for number parsing and printing. The result of the first
    function is deallocated when passed to second function. */
 

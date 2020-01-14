@@ -2517,7 +2517,7 @@ Since gc7.0alpha5
  - Do not try to do thread-local gcj allocation in incremental mode.  There
    are races in setting up the descriptor.
  - Add GC_INIT() to middle.c, fix some more GC_printfn calls.
- - Some assertions erroneously used I_HOLD_LOCK() negatively, eventhough
+ - Some assertions erroneously used I_HOLD_LOCK() negatively, even though
    it can now spuriously return TRUE.
  - Rename SUNOS5 macro and OS name to SOLARIS and SUNOS5DL to SOLARISDL.
  - On Linux and some Un*x variants, allocate memory by first trying sbrk,

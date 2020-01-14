@@ -25,7 +25,7 @@
    #:program "xform"
    #:argv (current-command-line-arguments)
    #:once-each
-   [("--setup") dir "ignored; for compatbility with makefile"
+   [("--setup") dir "ignored; for compatibility with makefile"
     (void)]
    [("--precompile") "generate precompiled header; or set XFORM_PRECOMP"
     (set! precompiling-header? #t)]

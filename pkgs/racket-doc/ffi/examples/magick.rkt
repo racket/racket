@@ -1101,7 +1101,7 @@
   _MagickWand -> _ResolutionType)
 
 ;; MagickGetImageVirtualPixelMethod returns the virtual pixel method for the
-;; sepcified image.
+;; specified image.
 (defmagick* MagickGetImageVirtualPixelMethod :
   _MagickWand -> _VirtualPixelMethod)
 

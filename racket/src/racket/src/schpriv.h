@@ -1389,7 +1389,7 @@ typedef struct Scheme_IR_Local
      are not yet initialized: */
   unsigned int optimize_unready : 1;
   /* After optimizing a `let[rec]` form, we might still go into
-     the body (e.g., for funciton inlining), but mark the variable
+     the body (e.g., for function inlining), but mark the variable
      as having a binding set up: */
   unsigned int optimize_outside_binding : 1;
   /* Records an anlaysis during the resolve pass: */
