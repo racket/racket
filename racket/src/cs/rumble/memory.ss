@@ -386,7 +386,7 @@
 
 ;; ----------------------------------------
 
-;; Weak table of (cons <pre> <post>) keys, currently suported
+;; Weak table of (cons <pre> <post>) keys, currently supported
 ;; only in the original host thread of the original place
 (define collect-callbacks (make-weak-eq-hashtable))
 

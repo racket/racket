@@ -98,7 +98,7 @@
               #'id
               (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
                             [set (quasisyntax/loc stx
-                                   ;; This continuation mark disables the chaperone on field assignement
+                                   ;; This continuation mark disables the chaperone on field assignment
                                    ;; (if any) installed via `prop:chaperone-unsafe-undefined`:
                                    (with-continuation-mark prop:chaperone-unsafe-undefined unsafe-undefined
                                      #,(quasisyntax/loc stx

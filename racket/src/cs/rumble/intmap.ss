@@ -17,7 +17,7 @@
 
 ;; (include "rumble/hamt-vector.ss")
 ;;
-;; This HAMT implementaiton uses plain vectors instead of stencil
+;; This HAMT implementation uses plain vectors instead of stencil
 ;; vectors. Its speed and memory use are both worse than the
 ;; stencil-vector HAMT implementation, but it was the original source
 ;; of the stencil-vector implementation.

@@ -38,7 +38,7 @@ icon.}
  (*)(void*, void*, void*)}.}
 
  @item{@racket['ptr_ptr->save] corresponds to @cpp{void* (*)(void*,
- void*, void*)}, but the result is recored as the current ``save''
+ void*, void*)}, but the result is recorded as the current ``save''
  value. The current ``save'' value starts as @cpp{NULL}.}
 
  @item{@racket['save!_ptr->void] corresponds to @cpp{void (*)(void*,

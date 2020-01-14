@@ -421,7 +421,7 @@ fi
 
 UNWINDLIBS=
 AC_ARG_ENABLE(full-debug,
-[  --enable-full-debug	include full support for pointer backtracing etc.],
+[  --enable-full-debug	include full support for pointer backtracking etc.],
 [ if test "$enable_full_debug" = "yes"; then
     AC_MSG_WARN("Should define GC_DEBUG and use debug alloc. in clients.")
     AC_DEFINE(KEEP_BACK_PTRS)

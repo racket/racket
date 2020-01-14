@@ -1691,7 +1691,7 @@ void scheme_close_socket_fd(intptr_t fd)
 /*                                 UDP                                    */
 /*========================================================================*/
 
-/* Based on a design and implemenation by Eduardo Cavazos. */
+/* Based on a design and implementation by Eduardo Cavazos. */
 
 typedef struct Scheme_UDP_Evt {
   Scheme_Object so; /* scheme_udp_evt_type */

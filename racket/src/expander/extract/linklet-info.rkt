@@ -10,4 +10,4 @@
                       re-exports       ; list of links: links whose variables are re-exported
                       variables        ; set of symbols: defined in the implementation, for detecting re-exports
                       in-variables     ; list of list of symbols: for each import, variables used from the import
-                      side-effects?))  ; whether the implementaiton has side effects other than variable definition
+                      side-effects?))  ; whether the implementation has side effects other than variable definition

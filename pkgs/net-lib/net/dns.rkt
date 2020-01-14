@@ -262,7 +262,7 @@
 ;; Run the given query function, trying until an answer is found
 (define (try-forwarding k nameserver)
   (let loop ([nameserver nameserver] [tried (list nameserver)])
-    ;; Normally the recusion is done for us, but it's technically optional
+    ;; Normally the recursion is done for us, but it's technically optional
     (let-values ([(v ars auth?) (k nameserver)])
       (or v
           (and (not auth?)

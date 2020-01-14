@@ -1534,7 +1534,7 @@ Optional Features:
   --enable-redirect-malloc
                           Redirect malloc and friends to GC routines
   --enable-large-config   Optimize for large (> 100 MB) heap or root set
-  --enable-gc-debug       include full support for pointer backtracing etc.
+  --enable-gc-debug       include full support for pointer backtracking etc.
   --enable-gc-assertions  collector-internal assertion checking
   --enable-munmap=N       return page to the os if empty for N collections
 
@@ -4706,8 +4706,8 @@ _ACEOF
 #define THREAD_LOCAL_ALLOC 1
 _ACEOF
 
-	{ echo "$as_me:$LINENO: WARNING: \"Explict GC_INIT() calls may be required.\"" >&5
-echo "$as_me: WARNING: \"Explict GC_INIT() calls may be required.\"" >&2;};
+	{ echo "$as_me:$LINENO: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&5
+echo "$as_me: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&2;};
 	;;
      *-*-linux*)
 	cat >>confdefs.h <<\_ACEOF
@@ -4750,8 +4750,8 @@ _ACEOF
 #define THREAD_LOCAL_ALLOC 1
 _ACEOF
 
-	{ echo "$as_me:$LINENO: WARNING: \"Explict GC_INIT() calls may be required.\"" >&5
-echo "$as_me: WARNING: \"Explict GC_INIT() calls may be required.\"" >&2;};
+	{ echo "$as_me:$LINENO: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&5
+echo "$as_me: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&2;};
 	THREADDLLIBS="-lpthread -lrt"
 	# HPUX needs REENTRANT for the _r calls.
 
@@ -4871,8 +4871,8 @@ _ACEOF
 #define THREAD_LOCAL_ALLOC 1
 _ACEOF
 
-	{ echo "$as_me:$LINENO: WARNING: \"Explict GC_INIT() calls may be required.\"" >&5
-echo "$as_me: WARNING: \"Explict GC_INIT() calls may be required.\"" >&2;};
+	{ echo "$as_me:$LINENO: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&5
+echo "$as_me: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&2;};
 	# Parallel-mark is currently unreliable on Darwin; ignore request
 	# if test "${enable_parallel_mark}" = yes; then
 	#   AC_DEFINE(PARALLEL_MARK)
@@ -4893,8 +4893,8 @@ _ACEOF
 #define THREAD_LOCAL_ALLOC 1
 _ACEOF
 
-	  { echo "$as_me:$LINENO: WARNING: \"Explict GC_INIT() calls may be required.\"" >&5
-echo "$as_me: WARNING: \"Explict GC_INIT() calls may be required.\"" >&2;};
+	  { echo "$as_me:$LINENO: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&5
+echo "$as_me: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&2;};
 	  # May want to enable it in other cases, too.
 	  # Measurements havent yet been done.
 	fi
@@ -4934,8 +4934,8 @@ _ACEOF
 #define THREAD_LOCAL_ALLOC 1
 _ACEOF
 
-    { echo "$as_me:$LINENO: WARNING: \"Explict GC_INIT() calls may be required.\"" >&5
-echo "$as_me: WARNING: \"Explict GC_INIT() calls may be required.\"" >&2;};
+    { echo "$as_me:$LINENO: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&5
+echo "$as_me: WARNING: \"Explicit GC_INIT() calls may be required.\"" >&2;};
     cat >>confdefs.h <<\_ACEOF
 #define GC_DGUX386_THREADS 1
 _ACEOF

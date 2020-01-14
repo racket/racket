@@ -3392,7 +3392,7 @@ static long_double protected_powl(long_double x, long_double y)
 #else
 XFORM_NONGCING static double sch_pow(double x, double y)
 {
-  /* Explciitly handle all cases described by C99 */
+  /* Explicitly handle all cases described by C99 */
   if (x == 1.0)
     return 1.0; /* even for NaN */
   else if (y == 0.0)

@@ -32,7 +32,7 @@
 (define (currently-in-engine?)
   (current-engine-complete-or-expire))
 
-;; An engine is repesented by a procedure that takes three arguments, where the
+;; An engine is represented by a procedure that takes three arguments, where the
 ;; procedure must be tail-called either within `call-with-engine-completion` or
 ;; in an engine call's `complete-or-expire` callback:
 ;;   * ticks: number of ticks to run before exire

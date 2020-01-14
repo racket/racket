@@ -16,7 +16,7 @@ of the object). The exception is that a pointer may reference the
 interior of an "Interior" object, but Racket allocates such objects
 infrequently, and only as relatively large objects.
 
-All alocated memory must be longword-aligned. For architectures where
+All allocated memory must be longword-aligned. For architectures where
 `double' values must be 8-byte aligned, the GC must provide 8-byte
 aligned memory in response to an allocation request for a memory size
 divisible by 8. Except for atomic memory, allocated objects must be

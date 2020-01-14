@@ -1159,7 +1159,7 @@ static int is_proc_spec_proc(Scheme_Object *p, int init_field_count)
 
 static int is_local_ref(Scheme_Object *e, int p, int r, Scheme_IR_Local **vars)
 /* Does `e` refer to...
-    In resolved mode: variables at offet `p` though `p+r`?
+    In resolved mode: variables at offset `p` though `p+r`?
     In optimizer IR mode: variables in `vars`? */
 {
   if (!vars && SAME_TYPE(SCHEME_TYPE(e), scheme_local_type)) {

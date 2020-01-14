@@ -89,14 +89,14 @@
       "libgobject"
       "libgthread"
       ["libintl" "libintl is released under the GNU Library General Public License (GNU LGPL)."]
-      ["libharfbuzz" "HarfBuzz is relased under a MIT license."]
+      ["libharfbuzz" "HarfBuzz is released under a MIT license."]
       ["libfribidi" "FriBidi is released under the GNU Library General Public License (GNU LGPL)."]
       ["libpango" "Pango is released under the GNU Library General Public License (GNU LGPL)."]
       "libpangocairo"
       "libpangoft2"
       "libpangowin32"
       "libexpat"
-      ["libuuid" "libuuid is relased under a Modified BSD license."]
+      ["libuuid" "libuuid is released under a Modified BSD license."]
       ["libfontconfig" ,(~a "FontConfig:\n"
                             " Copyright © 2000,2001,2002,2003,2004,2006,2007 Keith Packard\n"
                             " Copyright © 2005 Patrick Lam\n"
@@ -104,9 +104,9 @@
                             " Copyright © 2008,2009 Red Hat, Inc.\n"
                             " Copyright © 2008 Danilo Šegan\n"
                             " Copyright © 2012 Google, Inc.")]
-      ["libfreetype" "Pixman is relased under the FreeType project license."]
+      ["libfreetype" "Pixman is released under the FreeType project license."]
       ["libcairo" "Cairo is released under the GNU Library General Public License (GNU LGPL)."]
-      ["libpixman" "Pixman is relased under a MIT license."]
+      ["libpixman" "Pixman is released under a MIT license."]
       ["libpng" "Libpng is released under the libpng license."]
       ["libjpeg" "This software is based in part on the work of the Independent JPEG Group."]
       ["zlib1" "zlib is by Jean-loup Gailly and Mark Adler."]

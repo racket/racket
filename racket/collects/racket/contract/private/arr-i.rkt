@@ -340,7 +340,7 @@
 ;;              -> (values (listof (or/c pre/pos arg) (listof (or/c #f nat)))
 ;; sorts the arguments according to the dependency order.
 ;; returns them in the reverse of that order, ie expressions that need
-;; to be evaluted first come later in the list.
+;; to be evaluated first come later in the list.
 ;; the second result maps back from the sorted order
 ;;   (in the first result) to the original order (in `args`)
 (define-for-syntax (find-ordering args)
@@ -371,7 +371,7 @@ evaluted left-to-right.)
         (arg/res-var arg)
         (hash-ref pre/post-fake-vars arg)))
 
-  ;; track the indicies into `args` for the nodes in the graph
+  ;; track the indices into `args` for the nodes in the graph
   ;; and do the same thing but only for the subset that are actually args
   ;; (unfortuntately we rely on `eq?` here)
   (define numbers (make-hasheq))

@@ -612,7 +612,7 @@ void GC_delete_thread(thread_t id)
     }
 }
 
-/* Return the GC_thread correpsonding to a given thread_t.	*/
+/* Return the GC_thread corresponding to a given thread_t.	*/
 /* Returns 0 if it's not there.					*/
 /* Caller holds  allocation lock.				*/
 GC_thread GC_lookup_thread(thread_t id)

@@ -5681,7 +5681,7 @@
         (check pred t1 e1)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check unboxing with mutual recusion:
+;; Check unboxing with mutual recursion:
 
 (let ()
   ;; Literal lists thwart inlining:
@@ -6105,7 +6105,7 @@
     (void (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check for an optimizer regresssion
+;; Check for an optimizer regression
 
 (err/rt-test (+ (let-values (((x y) (let-values ((() 9)) 2))) x) (error))
              exn:fail?)
@@ -6509,7 +6509,7 @@
          m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Regresssion test for an optimizer bug
+;; Regression test for an optimizer bug
 
 (define (late-inline-with-single-use-that-turns-out-to-be-movable g)
   (let ([x (g)])

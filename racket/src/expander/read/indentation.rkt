@@ -12,7 +12,7 @@
    [suspicious-closer #:mutable] ; expected closer when suspicious line found
    [multiline? #:mutable] ; set to #f if the match attempt spans a line
    start-line ; opener's line
-   [last-line #:mutable] ; current line, already checked the identation
+   [last-line #:mutable] ; current line, already checked the indentation
    [suspicious-line #:mutable] ; non-#f => first suspicious line since opener
    [max-indent #:mutable] ; max indentation encountered since opener, not counting brackets by a more neseted opener
    [suspicious-quote #:mutable])) ; non-#f => first suspicious quote whose closer is on a different line

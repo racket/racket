@@ -1608,7 +1608,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       drive_end = clean_start;
     }
 
-    /* Check whether to clean up the name, removing mulitple // and
+    /* Check whether to clean up the name, removing multiple // and
        adding "/" after "c:" if necessary */
     if (!drive_end 
 	&& is_drive_letter(filename[0])

@@ -112,7 +112,7 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
               return 0;
           }
         } else {
-          /* A single element in t2 can't cover eveything in the collision */
+          /* A single element in t2 can't cover everything in the collision */
           return 0;
         }
       } else {
@@ -129,7 +129,7 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
           if (_mzHAMT_CODE(t1, pos1, popcount1) != _mzHAMT_CODE(t2, pos2, popcount2))
             return 0;
           if (HASHTR_COLLISIONP(k2)) {
-            /* look for an invidual value in t2: */
+            /* look for an individual value in t2: */
             if (!HAMT_ELEMENT_OF_COLLISION(k1, HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
                                            (Scheme_Hash_Tree *)k2,
                                            stype, eql_data))

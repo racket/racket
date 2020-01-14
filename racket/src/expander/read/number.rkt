@@ -5,7 +5,7 @@
          "parse-case.rkt"
          "parameter.rkt"
          ;; Used only to coerce strings to extflonums
-         ;; when extflonums are not fully suported:
+         ;; when extflonums are not fully supported:
          (prefix-in host: "../host/string-to-number.rkt"))
 
 (provide string->number

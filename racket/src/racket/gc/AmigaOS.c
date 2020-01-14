@@ -2,7 +2,7 @@
 
 /******************************************************************
 
-  AmigaOS-spesific routines for GC.
+  AmigaOS-specific routines for GC.
   This file is normally included from os_dep.c
 
 ******************************************************************/
@@ -230,7 +230,7 @@ void *(*GC_amiga_allocwrapper_do)(size_t size,void *(*AllocFunction)(size_t size
 
 
 /******************************************************************
-   Amiga-spesific routines to obtain memory, and force GC to give
+   Amiga-specific routines to obtain memory, and force GC to give
    back fast-mem whenever possible.
 	These hacks makes gc-programs go many times faster when
    the amiga is low on memory, and are therefore strictly necesarry.

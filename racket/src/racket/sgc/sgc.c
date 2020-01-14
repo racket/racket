@@ -152,7 +152,7 @@
 /* Keep source offsets for path traces */
 
 #define CHECK_SKIP_MARK_AT_FIRST 0
-/* Enables skipping certain marks during collection from the inital
+/* Enables skipping certain marks during collection from the initial
    root supplied as GC_initial_trace_root */
 
 #define ALLOW_SET_LOCKING 0
@@ -235,7 +235,7 @@
 /****************************************************************************/
 
 /* GC frequency: MEM_USE_FACTOR is max factor between current
-   allocated bytes and alocated bytes after last GC. */
+   allocated bytes and allocated bytes after last GC. */
 #ifdef SMALL_HASH_TABLES
 # define FIRST_GC_LIMIT 20000
 # define MEM_USE_FACTOR 1.40
@@ -901,7 +901,7 @@ static SectorPage **sector_pagetables;
      malloc_sector = returns new SECTOR_SEGMENT_SIZE-aligned memory;
                      relies on nothing else; the memeory blocks must
 		     be explicitly freed with free_sector; all GC
-		     allocation is perfomed via sectors
+		     allocation is performed via sectors
      
      malloc_managed = malloc "atomic" block used by GC implementation
                       itself; no GCing should occur during the malloc;
@@ -4482,7 +4482,7 @@ static intptr_t started, rightnow, old;
 # define PRINTTIME(x) /* empty */
 #endif
 
-/* Immitate Boehm's private GC call; used by Racket */
+/* Imitate Boehm's private GC call; used by Racket */
 void GC_push_all_stack(void *sp, void *ep)
 {
   uintptr_t s, e;

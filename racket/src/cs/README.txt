@@ -202,7 +202,7 @@ of Chez Scheme to compile Chez Scheme boot files.
 
  * Obtain a sufficiently new Racket implementation, possibly by
    following the directions in "../README.txt" to build the
-   traditional implemenation of Racket. No extra packages are needed
+   traditional implementation of Racket. No extra packages are needed
    beyond a minimal Racket build.
 
  * Set the current directory to a "ChezScheme" directory --- either a

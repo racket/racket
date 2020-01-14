@@ -75,7 +75,7 @@ same for @racket[0.0f0] and @racket[-0.0f0] (which are single-precision variants
 @racketvalfont{-nan.0} refers to the same constant as @racket[+nan.0],
 and @racketvalfont{-nan.f} is the same as @racketvalfont{+nan.f}.
 
-Calculations with infinites produce results consistent with IEEE
+Calculations with infinities produce results consistent with IEEE
 double- or single-precision floating point where IEEE specifies the result; in
 cases where IEEE provides no specification,
 the result corresponds to the limit approaching

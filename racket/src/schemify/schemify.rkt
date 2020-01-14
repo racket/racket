@@ -54,7 +54,7 @@
 ;;   - convert all `letrec` patterns that might involve `call/cc` to
 ;;     ensure that locations are allocated at the right time;
 ;;
-;;   - explicily handle all potential too-early variable uses, so that
+;;   - explicitly handle all potential too-early variable uses, so that
 ;;     the right name and enclosing module are reported;
 ;;
 ;;   - convert `make-struct-type` bindings to a pattern that Chez can

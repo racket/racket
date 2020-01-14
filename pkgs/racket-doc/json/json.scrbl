@@ -161,7 +161,7 @@ should represent a JSON ``@tt{null}''.  This library uses the Racket
 Racket symbols are used only as object keys, which are required to be
 strings in JSON.
 
-Several other options have been used by various libaries.  For example,
+Several other options have been used by various libraries.  For example,
 Dave Herman's PLaneT library (which has been the basis for this library)
 uses the @racket[#\nul] character, other libraries for Racket and other
 Lisps use @racket[(void)], @tt{NIL} (some use it also for JSON

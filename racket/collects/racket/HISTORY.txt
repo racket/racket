@@ -119,7 +119,7 @@ Filesystem and environment variables: ----------
    exn:missing-module?, and exn:missing-module-accessor
  Changed string->path-element and bytes->path-element to raise an
   exception for an empty [byte-]string argument
- Changed path-replace-suffix to raise an excpetion when a path element
+ Changed path-replace-suffix to raise an exception when a path element
   would be made empty
  Changed syntax-local-lift-context to distinguish top-level environments
 Datatypes: ----------
@@ -884,7 +884,7 @@ MzLib: Added define-member-name, member-name-key, and
 Added syntax-local-lift-moule-end-declaration
 Changed namespace-attach-module and namespace-unprotect-module
  to accept quoted module paths, instead of only symbolic names
-Fixed avoidable overflow and undeflow in magnitude and / for
+Fixed avoidable overflow and underflow in magnitude and / for
  inexact complex numbers
 Fixed bug in continuation sharing
 Improved 3m performance
@@ -1237,7 +1237,7 @@ Fixed a bug in the bytecode verifier that caused it to skip
  significant parts of typical bytecode
 Added a hook for (planet ...) module paths to the standard
  module name resolver
-MzLib's contract.ss: changed and/f to and/c, or/f is deprected
+MzLib's contract.ss: changed and/f to and/c, or/f is deprecated
  (use union), added object contracts, flat-contracts (without
  names) are a separate type; use flat-contract-predicate rather
  than flat-named-contract, added flat-rec-contract, improved
@@ -1601,7 +1601,7 @@ Removed user-break-poll-handler; spawn a thread that sleeps and
  calls break-thread, instead
 Removed dynamic-enable-break (no long needed since dynamic-wind
  post thunks can't be broken), but moved it to MzLib's thread.ss
-Removed execption-break-enabled (now always disabled)
+Removed exception-break-enabled (now always disabled)
 Added call-in-nested-thread
 Removed thread-weight
 Renamed the call-with-escaping-continution procedure to
@@ -1785,9 +1785,9 @@ Unit definitions and embedded definitions are not allowed
 Changed display for symbols containg special characters:
  the special characters are not escaped (or bar-quoted)
 Changed write to use the value of (read-accept-bar-quote)
- for printing symbols containing special charaters; if
+ for printing symbols containing special characters; if
  bar qute reading is off, it is turned off for printing, too
-Fixed unit/sig: correctly handles syntax where defintions in 
+Fixed unit/sig: correctly handles syntax where definitions in 
  the unit shadow syntactic forms
 Fixed round of exact rational n/d in the case when (odd? d)
  and (= (remainder n d) (quotient d 2))
@@ -2237,7 +2237,7 @@ More general stack overflow-checking (when needed)
 Computations can overflow the stack and continue
 Changed command line flags; added -r (or --script) flag
 Added multiple inheritance and `rename', `share', and `local' declarations
-Merged Patrick Barta's Windows DLL implementation for `load-extention'
+Merged Patrick Barta's Windows DLL implementation for `load-extension'
 Re-implemented `quasiquote', `and', and `or' as a macros
 Re-implemented let-forms to make small `let's efficient
 `let*' expands to `let'

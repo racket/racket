@@ -73,7 +73,7 @@
         (loop (add1 n))))
 
     (with-handlers ([exn? (lambda (exn)
-                            ;; On any execption, try to delete the target file
+                            ;; On any exception, try to delete the target file
                             (with-handlers ([exn:fail:filesystem?
                                              (lambda (exn) (log-error "~s" exn))])
                               (when (file-exists? target-file)

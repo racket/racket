@@ -87,7 +87,7 @@ GC_API void * GC_calloc_explicitly_typed(size_t nelements,
   				         GC_descr d);
   	/* Allocate an array of nelements elements, each of the	*/
   	/* given size, and with the given descriptor.		*/
-  	/* The elemnt size must be a multiple of the byte	*/
+  	/* The element size must be a multiple of the byte	*/
   	/* alignment required for pointers.  E.g. on a 32-bit	*/
   	/* machine with 16-bit aligned pointers, size_in_bytes	*/
   	/* must be a multiple of 2.				*/

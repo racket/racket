@@ -13,7 +13,7 @@
          prop:place-message)
 
 ;; A prop:place-message value is a procedure that takes self
-;; and returns either #f [=> not a place mesage after all] or
+;; and returns either #f [=> not a place message after all] or
 ;; (-> (-> v))
 (define-values (prop:place-message place-message? place-message-ref)
   (make-struct-type-property 'place-message))

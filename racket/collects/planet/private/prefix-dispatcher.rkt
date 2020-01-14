@@ -67,7 +67,7 @@
     [else (sorted-nelist-contains-prefix? (cdr nel))]))
 
 ;; prefix? : string string -> boolean
-;; determins if s1 is a prefix of s2
+;; determines if s1 is a prefix of s2
 (define (prefix? s1 s2)
   (and (<= (string-length s1) (string-length s2))
        (string=? s1 (substring s2 0 (string-length s1)))))

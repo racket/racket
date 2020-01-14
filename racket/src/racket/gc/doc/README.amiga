@@ -34,7 +34,7 @@ WHATS NEW:
    If you absolutely must call abort() instead of exit(), try calling
    the GC_amiga_free_all_mem function before abort().
 
-   New amiga-spesific compilation flags:
+   New amiga-specific compilation flags:
 
    GC_AMIGA_FASTALLOC - By NOT defining this option, GC will work like before,
                         it will not try to force fast-mem out of the OS, and
@@ -95,7 +95,7 @@ WHATS NEW:
    define f.ex GC_malloc as GC_amiga_malloc should allso work).
 
 
-   New amiga-spesific function:
+   New amiga-specific function:
 
      void GC_amiga_set_toany(void (*func)(void));
 
@@ -104,7 +104,7 @@ WHATS NEW:
    it will return chip-mem.
 
 
-2. A few small compiler-spesific additions to make it compile with SAS/C again.
+2. A few small compiler-specific additions to make it compile with SAS/C again.
 
 3. Updated and rewritten the smakefile, so that it works again and that
    the "unnecesarry" 'SCOPTIONS' files could be removed. Allso included
@@ -120,14 +120,14 @@ Programs can not be started from workbench, at least not for SAS/C. (Martin
 Tauchmanns note about that it now works with workbench is definitely wrong
 when concerning SAS/C). I guess it works if you use the old "#if 0'ed"-code,
 but I haven't tested it. I think the reason for MT to replace the
-"#if 0'ed"-code was only because it was a bit to SAS/C-spesific. But I
+"#if 0'ed"-code was only because it was a bit to SAS/C-specific. But I
 don't know. An iconx-script solves this problem anyway.
 
 
 BEWARE!
 
 -To run gctest, set the stack to around 200000 bytes first.
--SAS/C-spesific: cord will crash if you compile gc.lib with
+-SAS/C-specific: cord will crash if you compile gc.lib with
  either parm=reg or parm=both. (missing legal prototypes for
  function-pointers someplace is the reason I guess.).
 
@@ -283,7 +283,7 @@ If you allocate your own stack in client code, you will have to
 assign the pointer plus stack size to GC_stackbottom.
 
 The initial stack size of the target program can be compiled in by
-setting the __stack symbol (see SAS documentaion). It can be over-
+setting the __stack symbol (see SAS documentation). It can be over-
 ridden from the CLI by running the AmigaDOS "stack" program, or from
 the WorkBench by setting the stack size in the tool types window.
 

@@ -111,7 +111,7 @@
 	(set! range-top c))
       (begin
 	;; Drop surrogate from range.
-	;;  At the time of implemenation, the following
+	;;  At the time of implementation, the following
 	;;  was never executed, because #D7FF wasn't mapped:
 	(when (and (< range-bottom #xD800)
 		   (> range-top #xD800))

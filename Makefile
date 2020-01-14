@@ -794,7 +794,7 @@ binary-catalog-server:
 # On each supported platform (for an installer build):
 #
 # The `client' and `win32-client' targets are also used by
-# `distro-buid/drive-clients', which is in turn run by the
+# `distro-build/drive-clients', which is in turn run by the
 # `installers' target.
 #
 # For a non-Windows machine, if "build/log" exists, then
