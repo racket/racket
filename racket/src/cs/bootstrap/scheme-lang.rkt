@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     racket/match)
          (prefix-in r: racket/include)
          racket/fixnum
          racket/vector
@@ -42,7 +43,7 @@
          letrec*
          putprop getprop remprop
          $sputprop $sgetprop $sremprop
-         prim-mask
+         define-flags
          $primitive
          $tc $tc-field $thread-tc
          enumerate
@@ -591,15 +592,33 @@
                                                            (lambda lhs (values . flat-lhs)))])]))])
        #'(let-values ([lhs rhs] ...) body ...))]))
 
-(define-values (prim-flags->bits primvec get-priminfo)
+(define-values (primvec get-priminfo)
   (get-primdata $sputprop scheme-dir))
 
-(define-syntax prim-mask
-  (syntax-rules (or)
-    [(_ (or flag ...))
-     (prim-flags->bits '(flag ...))]
-    [(_ flag)
-     (prim-flags->bits '(flag))]))
+(begin-for-syntax
+  (define (make-flags->bits specs)
+    (define bits
+      (for/fold ([bits #hasheq()]) ([spec (in-list specs)])
+        (define (get-val v)
+          (if (number? v) v (hash-ref bits v)))
+        (match spec
+          [`(,name (or ,vals ...))
+           (hash-set bits name (apply bitwise-ior (map get-val vals)))]
+          [`(,name ,val)
+           (hash-set bits name (get-val val))])))
+    (lambda (flags)
+      (apply bitwise-ior (for/list ([flag (in-list flags)])
+                           (hash-ref bits flag))))))
+
+(define-syntax (define-flags stx)
+  (syntax-case stx ()
+    [(_ name spec ...)
+     #'(define-syntax name
+         (let ([flags->bits (make-flags->bits '(spec ...))])
+           (lambda (stx)
+             (syntax-case stx (or)
+               [(_ . flags)
+                (flags->bits 'flags)]))))]))
 
 (define-syntax $primitive
   (syntax-rules ()

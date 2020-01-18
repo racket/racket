@@ -174,6 +174,8 @@
        [`(eval-when ,_ (define ,m . ,rhs))
         (when (define-for-syntax? m)
           (orig-eval `(begin-for-syntax (define ,m . ,rhs))))]
+       [`(define-flags . ,_)
+        (orig-eval e)]
        [_ (void)])))
 
   (set-current-expand-set-callback!

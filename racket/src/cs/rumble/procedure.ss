@@ -77,11 +77,10 @@
   (let ([tmp f])
     (if (#%procedure? tmp)
         tmp
-        (slow-extract-procedure tmp n-args))))
+        (#3%$app/no-inline slow-extract-procedure tmp n-args))))
 
 (define (slow-extract-procedure f n-args)
-  (pariah ; => don't inline enclosing procedure
-   (do-extract-procedure f f n-args #f not-a-procedure)))
+  (do-extract-procedure f f n-args #f not-a-procedure))
 
 ;; Returns a host-Scheme procedure, but first checks arity so that
 ;; checking and reporting use the right top-level function, and

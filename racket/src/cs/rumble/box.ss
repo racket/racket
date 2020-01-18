@@ -17,7 +17,7 @@
 (define (unbox b)
   (if (#%box? b)
       (#3%unbox b)
-      (impersonate-unbox b)))
+      (#%$app/no-inline impersonate-unbox b)))
 
 (define (unsafe-unbox b)
   ;; must handle impersonators
@@ -26,7 +26,10 @@
 (define/who (unbox* b)
   (if (#%box? b)
       (#3%unbox b)
-      (bad-box*-op who #f b)))
+      (#%$app/no-inline bad-unbox* b)))
+
+(define (bad-unbox* b)
+  (bad-box*-op 'unbox* #f b))
 
 (define (bad-box*-op who set? b)
   (raise-argument-error who
@@ -38,7 +41,7 @@
 (define (set-box! b v)
   (if (#%mutable-box? b)
       (#3%set-box! b v)
-      (impersonate-set-box! b v)))
+      (#%$app/no-inline impersonate-set-box! b v)))
 
 (define (unsafe-set-box! b v)
   ;; must handle impersonators
@@ -47,7 +50,10 @@
 (define/who (set-box*! b v)
   (if (#%mutable-box? b)
       (#3%set-box! b v)
-      (bad-box*-op who #t b)))
+      (#%$app/no-inline bad-set-box*! b)))
+
+(define (bad-set-box*! b)
+  (bad-box*-op 'set-box*! #t b))
 
 ;; in schemified:
 (define (unbox/check-undefined b name)
@@ -83,53 +89,51 @@
     (make-box-impersonator val b props ref set)))
 
 (define (impersonate-unbox orig)
-  (pariah
-   (if (and (impersonator? orig)
-            (#%box? (impersonator-val orig)))
-       (let loop ([o orig])
-         (cond
-          [(#%box? o) (#%unbox o)]
-          [(box-chaperone? o)
-           (let* ([val (loop (impersonator-next o))]
-                  [new-val (|#%app| (box-chaperone-ref o) o val)])
-             (unless (chaperone-of? new-val val)
-               (raise-arguments-error 'unbox
-                                      "chaperone produced a result that is not a chaperone of the original result"
-                                      "chaperone result" new-val
-                                      "original result" val))
-             new-val)]
-          [(box-impersonator? o)
-           (let ([val  (loop (impersonator-next o))])
-             ((box-impersonator-ref o) o val))]
-          [else (loop (impersonator-next o))]))
-       ;; Let primitive report the error:
-       (#2%unbox orig))))
+  (if (and (impersonator? orig)
+           (#%box? (impersonator-val orig)))
+      (let loop ([o orig])
+        (cond
+         [(#%box? o) (#%unbox o)]
+         [(box-chaperone? o)
+          (let* ([val (loop (impersonator-next o))]
+                 [new-val (|#%app| (box-chaperone-ref o) o val)])
+            (unless (chaperone-of? new-val val)
+              (raise-arguments-error 'unbox
+                                     "chaperone produced a result that is not a chaperone of the original result"
+                                     "chaperone result" new-val
+                                     "original result" val))
+            new-val)]
+         [(box-impersonator? o)
+          (let ([val  (loop (impersonator-next o))])
+            ((box-impersonator-ref o) o val))]
+         [else (loop (impersonator-next o))]))
+      ;; Let primitive report the error:
+      (#2%unbox orig)))
 
 (define (impersonate-set-box! orig val)
-  (pariah
-   (cond
-    [(not (and (impersonator? orig)
-               (mutable-box? (impersonator-val orig))))
-     ;; Let primitive report the error:
-     (#2%set-box! orig val)]
-    [else
-     (let loop ([o orig] [val val])
-       (cond
-        [(#%box? o) (#2%set-box! o val)]
-        [else
-         (let ([next (impersonator-next o)])
-           (cond
-            [(box-chaperone? o)
-             (let ([new-val (|#%app| (box-chaperone-set o) next val)])
-               (unless (chaperone-of? new-val val)
-                 (raise-arguments-error 'set-box!
-                                        "chaperone produced a result that is not a chaperone of the original result"
-                                        "chaperone result" new-val
-                                        "original result" val))
-               (loop next new-val))]
-            [(box-impersonator? o)
-             (loop next ((box-impersonator-set o) next val))]
-            [else (loop next val)]))]))])))
+  (cond
+   [(not (and (impersonator? orig)
+              (mutable-box? (impersonator-val orig))))
+    ;; Let primitive report the error:
+    (#2%set-box! orig val)]
+   [else
+    (let loop ([o orig] [val val])
+      (cond
+       [(#%box? o) (#2%set-box! o val)]
+       [else
+        (let ([next (impersonator-next o)])
+          (cond
+           [(box-chaperone? o)
+            (let ([new-val (|#%app| (box-chaperone-set o) next val)])
+              (unless (chaperone-of? new-val val)
+                (raise-arguments-error 'set-box!
+                                       "chaperone produced a result that is not a chaperone of the original result"
+                                       "chaperone result" new-val
+                                       "original result" val))
+              (loop next new-val))]
+           [(box-impersonator? o)
+            (loop next ((box-impersonator-set o) next val))]
+           [else (loop next val)]))]))]))
 
 (define (set-box-impersonator-hash!)
   (record-type-hash-procedure (record-type-descriptor box-chaperone)

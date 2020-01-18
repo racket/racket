@@ -75,8 +75,7 @@
                                                            sigs
                                                            (map sig->interface sigs)))]))])
            (loop))))))
-  (values flags->bits
-          (lambda () (list->vector (hash-keys priminfos)))
+  (values (lambda () (list->vector (hash-keys priminfos)))
           (lambda (sym) (hash-ref priminfos sym #f))))
 
 (define (sig->interface sig)
