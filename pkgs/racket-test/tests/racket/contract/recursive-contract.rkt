@@ -135,7 +135,7 @@
         (define l (build-list n (λ (x) (λ (x) x))))
         (define-values (_ cpu real gc)
           (time-apply (λ () (contract c l 'pos 'neg)) '()))
-        (printf "cpu: ~a, real: ~a, gc: ~a~n" cpu)
+        (printf "cpu: ~a, real: ~a, gc: ~a~n" cpu real gc)
         cpu)
       ;; Doubling the list length should not increase the
       ;; run time by more than a factor of three; try up
@@ -143,7 +143,7 @@
       (for/or ([i (in-range 3)])
         (let ([timeit4000 (time-it 4000)]
               [timeit8000 (time-it 8000)])
-          (printf "run ~a: 4000:~a, 8000:~a~n" timeit4000 timeit8000)
+          (printf "run ~a: 4000:~a, 8000:~a~n" i timeit4000 timeit8000)
           (> (* 3 timeit4000) timeit8000))))
    #t
    do-not-double-wrap))
