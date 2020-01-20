@@ -690,5 +690,72 @@
 (test #f object-name (return-a-function-that-returns-y))
 
 ;; ----------------------------------------
+;; Check 'inferred-name property on `lambda` that supports keywords
+;; and optional arguments
+
+(let ([mk
+       (lambda (mod-name proc)
+         (define e
+           `(module ,mod-name racket/base
+              (require (for-syntax racket/base))
+              (provide check-all)
+
+              (define-for-syntax (add-name stx)
+                (syntax-property stx 'inferred-name 'new-name))
+
+              (define-for-syntax fun
+                #',proc)
+
+              (define-syntax (go1 stx)
+                (syntax-case stx ()
+                  [(_ id)
+                   #`(define id #,fun)]))
+              (define-syntax (go2 stx)
+                (syntax-case stx ()
+                  [(_ id)
+                   #`(define id #,(add-name fun))]))
+              (define-syntax (go3 stx)
+                (syntax-case stx ()
+                  [(_ id)
+                   #`(define id (#%expression #,(add-name fun)))]))
+              (define-syntax (go4 stx)
+                (syntax-case stx ()
+                  [(_ id)
+                   #`(define id (let () #,(add-name fun)))]))
+
+              (go1 f1)
+              (go2 f2)
+              (go3 f3)
+              (go4 f4)
+
+              (define (check-all check)
+                (go1 g1)
+                (go2 g2)
+                (go3 g3)
+                (go4 g4)
+
+                (check f1 'f1)
+                (check f2 'new-name)
+                (check f3 'new-name)
+                (check f4 'new-name)
+
+                (check g1 'g1)
+                (check g2 'new-name)
+                (check g3 'new-name)
+                (check g4 'new-name))))
+         (eval e)
+         ((dynamic-require `',mod-name 'check-all)
+          (lambda (proc name)
+            (test name mod-name (object-name proc)))))])
+  (mk 'checks-many-declared-inferred-names
+      '(lambda (x) x))
+  (mk 'checks-many-declared-inferred-names/opt
+      '(lambda (x [y 10]) x))
+  (mk 'checks-many-declared-inferred-names/keyword
+      '(lambda (x #:z z) x))
+  (mk 'checks-many-declared-inferred-names/opt-keyword
+      '(lambda (x #:z [z 11]) x)))
+
+;; ----------------------------------------
 
 (report-errs)

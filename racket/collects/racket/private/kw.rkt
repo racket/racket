@@ -676,8 +676,19 @@
                                            [(null? kws) null]
                                            [else
                                             (cons (cadar kws) (loop (cdr kws)))])))]
-                    [local-name (or local-name
-                                    (syntax-local-infer-name stx))])
+                    [local-name (let ([name (simplify-inferred-name (syntax-property stx 'inferred-name))])
+                                  (cond
+                                    [(or (symbol? name) (identifier? name)) name]
+                                    [else (or local-name
+                                              (let ([name (syntax-local-infer-name stx)])
+                                                (and (or (symbol? name) (identifier? name))
+                                                     name)))]))]
+                    [add-local-name (lambda (stx)
+                                      (if local-name
+                                          ;; Expecting always a `[case-]lambda form, so 'inferred-name
+                                          ;; should work and is less invasive than `let`:
+                                          (syntax-property stx 'inferred-name local-name)
+                                          stx))])
                (with-syntax ([(kw-arg ...) kw-args]
                              [kws-sorted sorted-kws]
                              [(opt-arg ...) opt-args]
@@ -761,14 +772,15 @@
                        [mk-no-kws
                         (lambda (kw-core?)
                           ;; entry point without keywords:
-                          (annotate-method
-                           (quasisyntax/loc/always stx
-                             (opt-cases #,(if kw-core?
-                                              #'(unpack null null)
-                                              #'(core))
-                                        ([opt-id opt-arg opt-not-supplied] ...) (plain-id ...) 
-                                        () ()
-                                        (rest-empty rest-id . rest) ()))))]
+                          (add-local-name
+                           (annotate-method
+                            (quasisyntax/loc/always stx
+                              (opt-cases #,(if kw-core?
+                                               #'(unpack null null)
+                                               #'(core))
+                                         ([opt-id opt-arg opt-not-supplied] ...) (plain-id ...)
+                                         () ()
+                                         (rest-empty rest-id . rest) ())))))]
                        [mk-with-kws
                         (lambda ()
                           ;; entry point with keywords:
@@ -808,11 +820,7 @@
                       (mk-core #t)
                       (mk-unpack)
                       (with-syntax ([kws (map car sorted-kws)]
-                                    [no-kws (let ([p (mk-no-kws #t)]
-                                                  [n local-name])
-                                              (if n
-                                                  #`(let ([#,n #,p]) #,n)
-                                                  p))]
+                                    [no-kws (mk-no-kws #t)]
                                     [with-kws (mk-with-kws)])
                         (quasisyntax/loc stx
                           (make-okp
@@ -1110,11 +1118,14 @@
                                          (compile-enforce-module-constants))
                                     (and (list? ctx)
                                          (andmap liberal-define-context? ctx))))))]
-             [opt (lambda (rhs core-wrap plain)
+             [opt (lambda (lam-id rhs core-wrap plain)
                     (parse-lambda rhs
                                   id
-                                  plain
-                                  (lambda (impl kwimpl wrap 
+                                  (lambda (new-rhs)
+                                    (plain (syntax-track-origin new-rhs
+                                                                rhs
+                                                                lam-id)))
+                                  (lambda (impl kwimpl wrap
                                                 core-id unpack-id
                                                 n-req opt-not-supplieds rest? req-kws all-kws)
                                     (with-syntax ([proc (car (generate-temporaries (list id)))])
@@ -1122,22 +1133,22 @@
                                        (quasisyntax/loc stx
                                          (begin
                                            #,(quasisyntax/loc stx
-                                               (define-syntax #,id 
-                                                 (make-keyword-syntax (lambda () 
+                                               (define-syntax #,id
+                                                 (make-keyword-syntax (lambda ()
                                                                         (values (quote-syntax #,core-id)
                                                                                 (quote-syntax proc)))
-                                                                      #,n-req '#,opt-not-supplieds #,rest? 
+                                                                      #,n-req '#,opt-not-supplieds #,rest?
                                                                       '#,req-kws '#,all-kws)))
-                                           #,(quasisyntax/loc stx 
+                                           #,(quasisyntax/loc stx
                                                (define #,core-id #,(core-wrap impl)))
-                                           #,(quasisyntax/loc stx 
+                                           #,(quasisyntax/loc stx
                                                (define #,unpack-id #,kwimpl))
-                                           #,(quasisyntax/loc stx 
-                                               (define proc #,wrap)))))))))])
+                                           #,(quasisyntax/loc stx
+                                               (define proc #,(syntax-track-origin wrap rhs lam-id))))))))))])
         (syntax-case rhs (begin quote)
           [(lam-id . _)
            (can-opt? #'lam-id)
-           (opt rhs values plain)]
+           (opt #'lam-id rhs values plain)]
           [(begin (quote sym) (lam-id . _))
            ;; looks like a compiler hint
            (and (can-opt? #'lam-id)
@@ -1145,7 +1156,8 @@
            (syntax-case rhs ()
              [(_ _ sub-rhs)
               (let ([wrap (lambda (stx) #`(begin (quote sym) #,stx))])
-                (opt #'sub-rhs 
+                (opt #'lam-id
+                     #'sub-rhs
                      wrap
                      (lambda (rhs) (plain (wrap rhs)))))])]
           [_ (plain rhs)]))))

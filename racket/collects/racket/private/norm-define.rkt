@@ -6,8 +6,7 @@
   (#%provide normalize-definition normalize-definition/mk-rhs)
 
   (define-values (normalize-definition/mk-rhs)
-    (lambda 
-        (stx lambda-stx check-context? allow-key+opt? err-no-body?)
+    (lambda (stx lambda-stx check-context? allow-key+opt? err-no-body?)
       (when (and check-context?
 		 (memq (syntax-local-context) '(expression)))
 	(raise-syntax-error 
