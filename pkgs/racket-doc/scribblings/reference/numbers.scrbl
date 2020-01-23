@@ -172,7 +172,8 @@ Return @racket[#t] if @racket[v] is a @techlink{fixnum}, @racket[#f]
 otherwise.
 
 Note: the result of this function is platform-dependent, so using it in
-syntax transformers can lead to platform-dependent bytecode files.}
+syntax transformers can lead to platform-dependent bytecode files.
+See also @racket[fixnum-for-every-system?].}
 
 
 @defproc[(flonum? [v any/c]) boolean?]{
