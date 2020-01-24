@@ -1238,4 +1238,14 @@
 
   (enable-arithmetic-left-associative #t)
   (expand-omit-library-invocations #t)
-  (enable-error-source-expression #f))
+  (enable-error-source-expression #f)
+
+  ;; Since the schemify layer inserts `|#%app|` any time the rator of
+  ;; an application might not be a procedure, we can avoid redundant
+  ;; checks for other applications by enabling unsafe mode. But do that
+  ;; only if we're compiling the primitive layer in unsafe mode.
+  (meta-cond
+   [(>= (optimize-level) 3)
+    (enable-unsafe-application #t)]
+   [else
+    (void)]))
