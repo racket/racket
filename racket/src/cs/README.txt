@@ -253,7 +253,7 @@ Structure
 
 The Racket-on-Chez implementation is in layers. The immediate layer
 over Chez Scheme is called "Rumble", and it implements delimited
-continuations, structures, chaperones and impersonators, engines (for                                          
+continuations, structures, chaperones and impersonators, engines (for
 threads), and similar base functionality. The Rumble layer is
 implemented in Chez Scheme.
 
@@ -380,8 +380,8 @@ the "bytecode" form.
 Set `PLT_LINKLET_SHOW_CP0` to see the Schemified form of a linklet
 after expansion and optimization by Chez Scheme's cp0.
 
-Set `PLT_LINKLET_SHOW_ASM` to see the assembly form of a linklet after
-compilation by Chez Scheme. Assembly format uses Chez Scheme's
+Set `PLT_LINKLET_SHOW_ASSEMBLY` to see the assembly form of a linklet
+after compilation by Chez Scheme. Assembly format uses Chez Scheme's
 abstraction of architecture-specific machine instructions (where the
 assembly is translated to actual machine code in a fairly
 straightforward way).
