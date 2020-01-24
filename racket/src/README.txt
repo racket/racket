@@ -285,6 +285,17 @@ First, install Xcode and command-line tools from Apple.
 After installing developer tools, follow the Unix instructions above,
 but note the following:
 
+ * If you are building from a source distribution (as opposed to a Git
+   repository checkout), then most likely "racket-lib" is already
+   included and installed as part of the the distribution, but without
+   dependencies of "racket-lib" that are specific to Mac OS. In that
+   case, use
+
+      raco pkg update --auto racket-lib
+
+   using `raco` as created by `make install` to download and install
+   the dependencies.
+
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`
    executable that goes into "racket/bin".

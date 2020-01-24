@@ -91,7 +91,16 @@ libraries, finish with
 
    ..\..\raco pkg install racket-lib
 
-See also "..\native-lib\README.txt".
+If you are building from a source distribution (as opposed to a Git
+repository checkout), then most likely "racket-lib" is already
+included and installed as part of the the distribution, but without
+Windows-specific dependencies of "racket-lib". In that case, instead
+of the above command, use
+
+   ..\..\raco pkg update --auto racket-lib
+
+Only if you are starting completely from scratch, see also
+"..\native-lib\README.txt".
 
 
 ========================================================================
