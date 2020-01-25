@@ -134,7 +134,7 @@
 (define (bnode-val-ref n bit)
   (let ([mask-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))]
         [mask (stencil-vector-mask n)])
-    (if (fx= 0 (fxand mask-bit mask))
+    (if (not (fxlogtest mask-bit mask))
         #t ; not stored => #t
         (stencil-vector-ref n (fxpopcount
                                (fxand mask (fx- mask-bit 1)))))))
@@ -145,7 +145,7 @@
 
 ;; assumes no children
 (define (bnode-only-val-ref n)
-  (if (fx= 0 (fxand (stencil-vector-mask n) HAMT-VAL-MASK))
+  (if (not (fxlogtest (stencil-vector-mask n) HAMT-VAL-MASK))
       #t ; not stored => #t
       (stencil-vector-ref n (fx+ 1 HAMT-STATIC-FIELD-COUNT))))
 
@@ -234,7 +234,7 @@
 (define (bnode-replace-val node bit val)
   (let ([val-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))])
      (cond
-      [(fx= 0 (fxand (stencil-vector-mask node) val-bit))
+      [(not (fxlogtest (stencil-vector-mask node) val-bit))
        ;; old value was #t
        (cond
         [(eq? val #t)
@@ -253,7 +253,7 @@
          [val-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))]
          [key+val-bits (fxior key-bit val-bit)])
     (cond
-     [(fx= 0 (fxand (stencil-vector-mask node) val-bit))
+     [(not (fxlogtest (stencil-vector-mask node) val-bit))
       ;; old value was #t
       (cond
        [(eq? val #t)
@@ -1070,19 +1070,19 @@
               [else
                (let ([bm-bit (fxand bm (fxxor bm (fx- bm 1)))]) ; peel off lowest set bit of `bm`
                  (cond
-                  [(fx= 0 (fxand bm-bit abm))
+                  [(not (fxlogtest bm-bit abm))
                    ;; No key or child in `a`
                    (cond
-                    [(fx= 0 (fxand bm-bit bcm))
+                    [(not (fxlogtest bm-bit bcm))
                      ;; Key in `b`
                      (loop (fx- bm bm-bit) aki (fx1+ bki) aci bci)]
                     [else
                      ;; Child in `b`
                      (loop (fx- bm bm-bit) aki bki aci (fx1+ bci))])]
-                  [(fx= 0 (fxand bm-bit acm))
+                  [(not (fxlogtest bm-bit acm))
                    ;; Key in `a`
                    (cond
-                    [(fx= 0 (fxand bm-bit bcm))
+                    [(not (fxlogtest bm-bit bcm))
                      ;; Key in `b`
                      (and
                       (hamt-wrapped-key=? (bnode-key-index-ref a aki) (bnode-key-index-ref b bki))
@@ -1101,7 +1101,7 @@
                   [else
                    ;; Child in `a`
                    (cond
-                    [(fx= 0 (fxand bm-bit bcm))
+                    [(not (fxlogtest bm-bit bcm))
                      ;; Key in `b`, and multiple keys in `a` child means `a` is not a subset
                      #f]
                     [else
