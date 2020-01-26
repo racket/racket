@@ -4281,6 +4281,8 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
 	  return scheme_make_integer(-1);
 	else
 	  return scheme_make_integer(0);
+      } else if (SAME_OBJ(v, scheme_exact_zero)) {
+        return scheme_make_integer(0);
       } else
 	scheme_raise_out_of_memory("arithmetic-shift", NULL);
     } else
