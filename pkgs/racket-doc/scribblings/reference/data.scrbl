@@ -11,6 +11,9 @@ manipulating instances of the datatype.
 @local-table-of-contents[#:style 'immediate-only]
 
 @; ------------------------------------------------------------
+@include-section["equality.scrbl"]
+
+@; ------------------------------------------------------------
 @include-section["booleans.scrbl"]
 
 @; ------------------------------------------------------------
