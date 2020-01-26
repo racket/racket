@@ -1,14 +1,13 @@
 #lang scribble/manual
-
-@(require scribble/example)
+@(require "mz.rkt")
 
 
 @title{Equality}
 
 
-Equality is the concept of whether two values are "the same". Racket supports a
-few different kinds of equality by default, though @racket[equal?] is preferred
-for most use cases.
+Equality is the concept of whether two values are ``the same.'' Racket supports
+a few different kinds of equality by default, though @racket[equal?] is
+preferred for most use cases.
 
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
 
@@ -20,8 +19,8 @@ for most use cases.
  tables, and inspectable structures. In the last six cases, equality
  is recursively defined; if both @racket[v1] and @racket[v2] contain
  reference cycles, they are equal when the infinite unfoldings of the
- values would be equal. See also @racket[gen:equal+hash] and @racket[
- prop:impersonator-of].
+ values would be equal. See also @racket[gen:equal+hash] and
+ @racket[prop:impersonator-of].
 
  @(examples
    (equal? 'yes 'yes)
@@ -41,14 +40,14 @@ for most use cases.
  Two values are @racket[eqv?] if and only if they are @racket[eq?],
  unless otherwise specified for a particular datatype.
 
- The @tech{number} and @tech{character} datatypes are the only ones for
- which @racket[eqv?] differs from @racket[eq?]. Two numbers are
- @racket[eqv?] when they have the same exactness, precision, and are
- both equal and non-zero, both @racket[+0.0], both @racket[+0.0f0], both
- @racket[-0.0], both @racket[-0.0f0], both @racket[+nan.0], or both
- @racket[+nan.f]---considering real and imaginary components separately
- in the case of @tech{complex numbers}. Two characters are
- @racket[eqv?] when their @racket[char->integer] results are equal.
+ The @tech{number} and @tech{character} datatypes are the only ones for which
+ @racket[eqv?] differs from @racket[eq?]. Two numbers are @racket[eqv?] when
+ they have the same exactness, precision, and are both equal and non-zero, both
+ @racketvalfont{+0.0}, both @racketvalfont{+0.0f0}, both @racketvalfont{-0.0},
+ both @racketvalfont{-0.0f0}, both @racketvalfont{+nan.0}, or both
+ @racketvalfont{+nan.f}---considering real and imaginary components separately
+ in the case of @tech{complex numbers}. Two characters are @racket[eqv?] when
+ their @racket[char->integer] results are equal.
 
  Generally, @racket[eqv?] is identical to @racket[equal?] except that the former
  cannot recursively compare the contents of compound data types (such as lists
@@ -129,16 +128,20 @@ The behavior of a datatype with respect to @racket[eq?] is generally
 specified with the datatype and its associated procedures.
 
 
-@section{Equality-Based Hashing}
+@section{Equality and Hashing}
 
 
 All comparable values have at least one @deftech{hash code} --- an arbitrary
 integer (more specifically a @tech{fixnum}) computed by applying a hash function
-to the value. Hash codes can be used to speed up comparison tests because @bold{
- equal values have equal hash codes}, though the reverse is not necessarily
-true. The different comparison procedures each come with different functions for
-extracting hash codes. Hash codes are also used internally by @tech{hash
- tables}, see @secref["hashtables"] for more information.
+to the value. Hash codes are used internally by the various equality functions
+as an optimistic shortcut, because @bold{equal values have equal hash codes}.
+Note that the reverse is not true: two unequal values can still have equal hash
+codes.
+
+In addition to their use by the equality functions, hash codes are useful for
+various indexing and comparison operations. Hash codes are especially useful in
+the implementation of @tech{hash tables}, see @secref["hashtables"] for more
+information.
 
 
 @defproc[(equal-hash-code [v any/c]) fixnum?]{
@@ -147,14 +150,14 @@ extracting hash codes. Hash codes are also used internally by @tech{hash
  with @racket[equal?] values, the returned number is the same. A hash code is
  computed even when @racket[v] contains a cycle through pairs, vectors, boxes,
  and/or inspectable structure fields. Additionally, user-defined data types can
- customize how this hash code is computed by implementing @racket[
- gen:equal+hash].
+ customize how this hash code is computed by implementing
+ @racket[gen:equal+hash].
 
  For any @racket[v] that could be produced by @racket[read], if @racket[v2] is
- produced by @racket[read] for the same input characters, the @racket[
- (equal-hash-code v)] is the same as @racket[(equal-hash-code v2)] --- even if
- @racket[v] and @racket[v2] do not exist at the same time (and therefore could
- not be compared by calling @racket[equal?]).
+ produced by @racket[read] for the same input characters, the
+ @racket[(equal-hash-code v)] is the same as @racket[(equal-hash-code v2)] ---
+ even if @racket[v] and @racket[v2] do not exist at the same time (and therefore
+ could not be compared by calling @racket[equal?]).
 
  @history[
  #:changed "6.4.0.12"
@@ -191,8 +194,8 @@ extracting hash codes. Hash codes are also used internally by @tech{hash
 
  @itemize[
 
- @item{@racket[
- _equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)] ---
+ @item{@racket[_equal-proc :
+               (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)] ---
    tests whether the first two arguments are equal, where both values are
    instances of the structure type to which the generic interface is associated
    (or a subtype of the structure type).
@@ -214,21 +217,21 @@ extracting hash codes. Hash codes are also used internally by @tech{hash
    also means that, by default, a structure sub-type inherits the
    equality predicate of its parent, if any.}
 
- @item{@racket[
- _hash-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)] ---
+ @item{@racket[_hash-proc :
+               (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)] ---
    computes a hash code for the given structure, like @racket[equal-hash-code].
    The first argument is an instance of the structure type (or one of its
    subtypes) to which the generic interface is associated.
 
    The second argument is an @racket[equal-hash-code]-like procedure to use for
-   recursive hash-code computation; use the given procedure instead of @racket[
- equal-hash-code] to ensure that data cycles are handled properly.}
+   recursive hash-code computation; use the given procedure instead of
+   @racket[equal-hash-code] to ensure that data cycles are handled properly.}
 
- @item{@racket[
- _hash2-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)] ---
+ @item{@racket[_hash2-proc :
+               (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)] ---
    computes a secondary hash code for the given structure. This procedure is
-   like @racket[_hash-proc], but analogous to @racket[
- equal-secondary-hash-code].}]
+   like @racket[_hash-proc], but analogous to
+   @racket[equal-secondary-hash-code].}]
 
  Take care to ensure that @racket[_hash-proc] and @racket[_hash2-proc]
  are consistent with @racket[_equal-proc]. Specifically,
@@ -260,7 +263,7 @@ extracting hash codes. Hash codes are also used internally by @tech{hash
               (farm-oranges farm2))
            (= (farm-sheep farm1)
               (farm-sheep farm2))))
-    
+
     (define (farm-hash-code farm recursive-equal-hash)
       (+ (* 10000 (farm-apples farm))
          (* 100 (farm-oranges farm))
@@ -276,7 +279,7 @@ extracting hash codes. Hash codes are also used internally by @tech{hash
       [(define equal-proc farm=?)
        (define hash-proc  farm-hash-code)
        (define hash2-proc farm-secondary-hash-code)])
-    
+
     (define eastern-farm (farm 5 2 20))
     (define western-farm (farm 18 6 14))
     (define northern-farm (farm 5 20 20))
@@ -297,11 +300,11 @@ extracting hash codes. Hash codes are also used internally by @tech{hash
  that correspond to the methods of @racket[gen:equal+hash]:
 
  @itemize[
- @item{@racket[
- _equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)]}
-  
- @item{@racket[
- _hash-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
- 
- @item{@racket[
- _hash2-proc : (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}]}
+ @item{@racket[_equal-proc :
+               (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)]}
+
+ @item{@racket[_hash-proc :
+               (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}
+
+ @item{@racket[_hash2-proc :
+               (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)]}]}
