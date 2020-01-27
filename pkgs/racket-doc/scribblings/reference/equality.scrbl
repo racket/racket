@@ -133,15 +133,11 @@ specified with the datatype and its associated procedures.
 
 All comparable values have at least one @deftech{hash code} --- an arbitrary
 integer (more specifically a @tech{fixnum}) computed by applying a hash function
-to the value. Hash codes are used internally by the various equality functions
-as an optimistic shortcut, because @bold{equal values have equal hash codes}.
-Note that the reverse is not true: two unequal values can still have equal hash
-codes.
-
-In addition to their use by the equality functions, hash codes are useful for
-various indexing and comparison operations. Hash codes are especially useful in
-the implementation of @tech{hash tables}, see @secref["hashtables"] for more
-information.
+to the value. The defining property of these hash codes is that @bold{equal
+ values have equal hash codes}. Note that the reverse is not true: two unequal
+values can still have equal hash codes. Hash codes are useful for various
+indexing and comparison operations, especially in the implementation of
+@tech{hash tables}. See @secref["hashtables"] for more information.
 
 
 @defproc[(equal-hash-code [v any/c]) fixnum?]{
