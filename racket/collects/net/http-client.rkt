@@ -169,12 +169,10 @@
   (unless (regexp-member #rx"^(?i:User-Agent:) +.+$" headers-bs)
     (fprintf to "User-Agent: Racket/~a (net/http-client)\r\n" 
              (version)))
-  (unless (or (not (memq 'gzip decodes))
+  (unless (or (empty? decodes)
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
-    (fprintf to "Accept-Encoding: gzip\r\n"))
-  (unless (or (not (memq 'deflate decodes))
-              (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
-    (fprintf to "Accept-Encoding: deflate\r\n"))
+    (fprintf to "Accept-Encoding: ~s\r\n"
+             (string-join (map symbol->string decodes) ",")))
 
   (define body (->bytes data))
   (cond [(procedure? body)
