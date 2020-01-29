@@ -32,6 +32,7 @@ static Scheme_Object *primitive_table(int argc, Scheme_Object **argv);
 static Scheme_Object *primitive_to_position(int argc, Scheme_Object **argv);
 static Scheme_Object *position_to_primitive(int argc, Scheme_Object **argv);
 static Scheme_Object *primitive_in_category_p(int argc, Scheme_Object **argv);
+static Scheme_Object *primitive_lookup(int argc, Scheme_Object **argv);
 
 static Scheme_Object *linklet_p(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv);
@@ -130,6 +131,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_IMMED_PRIM("primitive->compiled-position", primitive_to_position, 1, 1, env);
   ADD_IMMED_PRIM("compiled-position->primitive", position_to_primitive, 1, 1, env);
   ADD_IMMED_PRIM("primitive-in-category?", primitive_in_category_p, 2, 2, env);
+  ADD_IMMED_PRIM("primitive-lookup", primitive_lookup, 1, 1, env);
 
   ADD_FOLDING_PRIM("linklet?", linklet_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY2("compile-linklet", compile_linklet, 1, 5, 2, 2, env);
@@ -308,6 +310,18 @@ static Scheme_Object *primitive_in_category_p(int argc, Scheme_Object **argv)
     r = 0;
 
   return (r ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *primitive_lookup(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *v;
+
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("primitive-lookup", "symbol?", 0, argc, argv);
+
+  v = scheme_hash_get(scheme_startup_env->all_primitives_table, argv[0]);
+
+  return (v ? v : scheme_false);
 }
 
 static Scheme_Object *linklet_p(int argc, Scheme_Object **argv)

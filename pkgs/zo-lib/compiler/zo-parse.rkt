@@ -805,6 +805,7 @@
     [else
      (error 'zo-parse "bad file format specifier")]))
 
+;; returns a hash table representing linklet bundle content
 (define (zo-parse-top port vm [check-end? #t])
 
   ;; Skip module hash code
