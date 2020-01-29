@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract/base
+         racket/local
          racket/match
          racket/list
          racket/string
@@ -174,6 +175,7 @@
   (unless (or (not (memq 'deflate decodes))
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
     (fprintf to "Accept-Encoding: deflate\r\n"))
+
   (define body (->bytes data))
   (cond [(procedure? body)
          (fprintf to "Transfer-Encoding: chunked\r\n")]
@@ -363,42 +365,34 @@
       [else
        (values (http-conn-response-port/rest! hc) #t)]))
   (define decoded-response-port
-    (cond
-      [(head? method-bss) raw-response-port]
-      [(and (memq 'gzip decodes)
-            (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
-            (not (eof-object? (peek-byte raw-response-port))))
-       (define-values (in out) (make-pipe PIPE-SIZE))
-       (define gunzip-t
-         (thread
-          (λ ()
-            (gunzip-through-ports raw-response-port out))))
-       (thread
-        (λ ()
-          (thread-wait gunzip-t)
-          (when wait-for-close?
-            ;; Wait for an EOF from the raw port before we send an
-            ;; output on the decoding pipe:
-            (copy-port raw-response-port (open-output-nowhere)))
-          (close-output-port out)))
-       in]
-      [(and (memq 'deflate decodes)
-            (regexp-member #rx#"^(?i:Content-Encoding: +deflate)$" headers)
-            (not (eof-object? (peek-byte raw-response-port))))
-       (define-values (in out) (make-pipe PIPE-SIZE))
-       (define deflate-t
-         (thread
-          (λ ()
-            (inflate raw-response-port out))))
-       (thread
-        (λ ()
-          (thread-wait deflate-t)
-          (when wait-for-close?
-            (copy-port raw-response-port (open-output-nowhere)))
-          (close-output-port out)))
-       in]
-      [else 
-       raw-response-port]))
+    (local
+        [(define (decode-response raw-response-port decode-function)
+           (define-values (in out) (make-pipe PIPE-SIZE))
+           (define decode-t
+             (thread
+              (λ ()
+                (decode-function raw-response-port out))))
+           (thread
+            (λ ()
+              (thread-wait decode-t)
+              (when wait-for-close?
+                ;; Wait for an EOF from the raw port before we send an
+                ;; output on the decoding pipe:
+                (copy-port raw-response-port (open-output-nowhere)))
+              (close-output-port out)))
+           in)]
+      (cond
+        [(head? method-bss) raw-response-port]
+        [(and (memq 'gzip decodes)
+              (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
+              (not (eof-object? (peek-byte raw-response-port))))
+         (decode-response raw-response-port gunzip-through-ports)]
+        [(and (memq 'deflate decodes)
+              (regexp-member #rx#"^(?i:Content-Encoding: +deflate)$" headers)
+              (not (eof-object? (peek-byte raw-response-port))))
+         (decode-response raw-response-port inflate)]
+        [else
+         raw-response-port])))
   (values status headers decoded-response-port))
 
 (define (http-conn-sendrecv! hc url-bs
