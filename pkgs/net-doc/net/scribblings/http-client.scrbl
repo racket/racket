@@ -98,7 +98,7 @@ configured to @tech{auto-reconnect}.
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
-                          [#:content-decode decodes (listof symbol?) '(gzip)]
+                          [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                           [#:data data (or/c false/c bytes? string? data-procedure/c) #f])
          void?]{
 
@@ -120,15 +120,16 @@ are accepted is automatically added.
 
 If @racket[close?] is @racket[#t] and @racket[headers] does not
 contain a @litchar{Connection} header, then a @litchar{Connection:
-close} header will be added.
+close} header will be added (currently, @racket['gzip] and @racket['deflate] are supported).
 
 This function does not support requests that expect
 @litchar{100 (Continue)} responses.
 
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 @defproc[(http-conn-recv! [hc http-conn-liveable?]
-                          [#:content-decode decodes (listof symbol?) '(gzip)]
+                          [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
@@ -146,7 +147,9 @@ following the response parsing. If @racket[close?] is @racket[#f],
 then the connection is only closed if the server instructs the client
 to do so.
 
-@history[#:changed "6.1.1.6" @elem{Added the @racket[#:method] argument.}]}
+@history[#:changed "6.1.1.6" @elem{Added the @racket[#:method] argument.}
+         #:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
+}
 
 
 @defproc[(http-conn-sendrecv! [hc http-conn-liveable?] [uri (or/c bytes? string?)]
@@ -154,12 +157,13 @@ to do so.
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
                               [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
-                              [#:content-decode decodes (listof symbol?) '(gzip)]
+                              [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                               [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
 
 Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
 
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 @defproc[(http-sendrecv [host (or/c bytes? string?)] [uri (or/c bytes? string?)]
@@ -169,7 +173,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
                         [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
-                        [#:content-decode decodes (listof symbol?) '(gzip)])
+                        [#:content-decode decodes (listof symbol?) '(gzip deflate)])
          (values bytes? (listof bytes?) input-port?)]{
 
 Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in
@@ -180,6 +184,7 @@ The HTTP connection is not returned, so it is always closed after one
 response, which is why there is no @racket[#:closed?] argument like
 @racket[http-conn-recv!].
 
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 @defproc[(http-conn-CONNECT-tunnel [proxy-host (or/c bytes? string?)]

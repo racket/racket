@@ -596,14 +596,14 @@ and @racket[host], or @racket[#f] if no proxy is to be used.}
                             [#:method method (or/c bytes? string? symbol?) #"GET"]
                             [#:headers headers (listof (or/c bytes? string?)) empty]
                             [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
-                            [#:content-decode decodes (listof symbol?) '(gzip)])
+                            [#:content-decode decodes (listof symbol?) '(gzip deflate)])
          (values bytes? (listof bytes?) input-port?)]{
 
 Calls @racket[http-sendrecv] using @racket[u] to populate the host, URI, port, and SSL parameters.
 
 This function does not support proxies.
                                                       
-}
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]}
 
 @defproc[(tcp-or-tunnel-connect [scheme string?]
                                 [host string?]

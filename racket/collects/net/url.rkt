@@ -523,7 +523,7 @@
                            #:method [method-bss #"GET"]
                            #:headers [headers-bs empty]
                            #:data [data #f]
-                           #:content-decode [decodes '(gzip)])
+                           #:content-decode [decodes '(gzip deflate)])
   (unless (member (url-scheme u) '(#f "http" "https"))
     (error 'http-sendrecv/url "URL scheme ~e not supported" (url-scheme u)))
   (define ssl?
