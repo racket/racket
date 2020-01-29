@@ -155,7 +155,7 @@
                          #:method [method-bss #"GET"]
                          #:close? [close? #f]
                          #:headers [headers-bs empty]
-                         #:content-decode [decodes '(gzip)]
+                         #:content-decode [decodes '(gzip deflate)]
                          #:data [data #f])
   (http-conn-enliven! hc)
   (match-define (http-conn host port port-usual? to from _
@@ -333,7 +333,7 @@
 
 (define (http-conn-recv! hc
                          #:method [method-bss #"GET"]
-                         #:content-decode [decodes '(gzip)]
+                         #:content-decode [decodes '(gzip deflate)]
                          #:close? [iclose? #f])
   (http-conn-enliven! hc)
   (define status (http-conn-status! hc))
@@ -398,7 +398,7 @@
                              #:method [method-bss #"GET"]
                              #:headers [headers-bs empty]
                              #:data [data #f]
-                             #:content-decode [decodes '(gzip)]
+                             #:content-decode [decodes '(gzip deflate)]
                              #:close? [close? #f])
   (http-conn-send! hc url-bs
                    #:version version-bs
@@ -419,7 +419,7 @@
                        #:method [method-bss #"GET"]
                        #:headers [headers-bs empty]
                        #:data [data #f]
-                       #:content-decode [decodes '(gzip)])
+                       #:content-decode [decodes '(gzip deflate)])
   (define hc (http-conn-open host-bs #:ssl? ssl? #:port port))
   (begin0 (http-conn-sendrecv! hc url-bs
                                #:version version-bs
