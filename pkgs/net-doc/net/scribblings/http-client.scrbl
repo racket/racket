@@ -98,7 +98,7 @@ configured to @tech{auto-reconnect}.
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
-                          [#:content-decode decodes (listof symbol?) '(gzip)]
+                          [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                           [#:data data (or/c false/c bytes? string? data-procedure/c) #f])
          void?]{
 
@@ -120,7 +120,7 @@ are accepted is automatically added.
 
 If @racket[close?] is @racket[#t] and @racket[headers] does not
 contain a @litchar{Connection} header, then a @litchar{Connection:
-close} header will be added.
+close} header will be added (currently, @racket['gzip] and @racket['deflate] are supported).
 
 This function does not support requests that expect
 @litchar{100 (Continue)} responses.
@@ -128,7 +128,7 @@ This function does not support requests that expect
 }
 
 @defproc[(http-conn-recv! [hc http-conn-liveable?]
-                          [#:content-decode decodes (listof symbol?) '(gzip)]
+                          [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
@@ -154,7 +154,7 @@ to do so.
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
                               [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
-                              [#:content-decode decodes (listof symbol?) '(gzip)]
+                              [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                               [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
 
@@ -169,7 +169,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
                         [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
-                        [#:content-decode decodes (listof symbol?) '(gzip)])
+                        [#:content-decode decodes (listof symbol?) '(gzip deflate)])
          (values bytes? (listof bytes?) input-port?)]{
 
 Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in
