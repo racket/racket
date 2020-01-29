@@ -171,6 +171,9 @@
   (unless (or (not (memq 'gzip decodes))
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
     (fprintf to "Accept-Encoding: gzip\r\n"))
+  (unless (or (not (memq 'deflate decodes))
+              (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
+    (fprintf to "Accept-Encoding: deflate\r\n"))
   (define body (->bytes data))
   (cond [(procedure? body)
          (fprintf to "Transfer-Encoding: chunked\r\n")]
@@ -376,6 +379,21 @@
           (when wait-for-close?
             ;; Wait for an EOF from the raw port before we send an
             ;; output on the decoding pipe:
+            (copy-port raw-response-port (open-output-nowhere)))
+          (close-output-port out)))
+       in]
+      [(and (memq 'deflate decodes)
+            (regexp-member #rx#"^(?i:Content-Encoding: +deflate)$" headers)
+            (not (eof-object? (peek-byte raw-response-port))))
+       (define-values (in out) (make-pipe PIPE-SIZE))
+       (define deflate-t
+         (thread
+          (λ ()
+            (inflate raw-response-port out))))
+       (thread
+        (λ ()
+          (thread-wait deflate-t)
+          (when wait-for-close?
             (copy-port raw-response-port (open-output-nowhere)))
           (close-output-port out)))
        in]
