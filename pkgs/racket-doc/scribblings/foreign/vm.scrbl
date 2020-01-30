@@ -19,7 +19,8 @@ primitive.
 Virtual-machine primitives are the ones that can be referenced in a
 @tech[#:doc reference.scrbl]{linklet} body. The specific set of
 primitives depends on the virtual machine. Many ``primitives'' at the
-@racketmodname[racket/base] level are not primitives at the
+@racketmodname[racket/base] level or even the @racket['#%kernel] level
+are not primitives at the
 virtual-machine level. For example, if @racket['eval] is available as
 a primitive, it is not the @racket[eval] from
 @racketmodname[racket/base].
@@ -73,7 +74,7 @@ currently available virtual machines:
        that is defined in the Chez Scheme environment when it hosts
        Racket.
 
-       Note that you can access Chez Scheme primitives, includes ones
+       Note that you can access Chez Scheme primitives, including ones
        that are shadowed by Racket's primitives, through the Chez
        Scheme @racketidfont{$primitive} form. For example,
        @racket[(vm-eval '($primitive call-with-current-continuation))]
@@ -98,5 +99,5 @@ Evaluates @racket[s-expr] using the most primitive available evaluator:
 
 ]
 
-See @racket[vm-primitive] for some information about bow
+See @racket[vm-primitive] for some information about how
 virtual-machine primitives interact with Racket.}

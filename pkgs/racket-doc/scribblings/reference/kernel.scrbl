@@ -21,7 +21,7 @@ set of built-in functions can change frequently. Use
 @racketmodname[racket/kernel] with care, and beware that its use can
 create compatibility problems.
 
-The @racket[racket/kernel] module exports all of the bindings in the
+The @racketmodname[racket/kernel] module exports all of the bindings in the
 grammar of fully expanded programs (see @secref["fully-expanded"]),
 but it provides @racket[#%plain-lambda] as @racket[lambda] and @racket[λ],
 @racket[#%plain-app] as @racket[#%app], and
@@ -29,7 +29,7 @@ but it provides @racket[#%plain-lambda] as @racket[lambda] and @racket[λ],
 @racket[#%datum] (which expands to @racket[quote]),
 @racketmodname[racket/kernel] provides no other syntactic bindings.
 
-The @racket[racket/kernel] module also exports many of the function
+The @racketmodname[racket/kernel] module also exports many of the function
 bindings from @racketmodname[racket/base], and it exports a few other
 functions that are not exported by @racketmodname[racket/base] because
 @racketmodname[racket/base] exports improved variants. The exact set
