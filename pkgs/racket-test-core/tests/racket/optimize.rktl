@@ -6583,4 +6583,12 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module regression-test-to-make-sure-inlining-does-not-go-crazy racket/base
+  (define (f x)
+    (lambda (y)
+      (letrec ([recursion (f x)])
+        (+ x y)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

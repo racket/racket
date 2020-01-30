@@ -8096,6 +8096,8 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
                avoid the possibility of N^2 behavior. */
             if (!OPT_DISCOURAGE_EARLY_INLINE)
               rhs_info->letrec_not_twice++;
+            inline_fuel = rhs_info->inline_fuel;
+            rhs_info->inline_fuel >>= 1;
             use_psize = rhs_info->use_psize;
             rhs_info->use_psize = info->use_psize;
 
@@ -8111,6 +8113,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
             
             if (!OPT_DISCOURAGE_EARLY_INLINE)
               --rhs_info->letrec_not_twice;
+            rhs_info->inline_fuel = inline_fuel;
             rhs_info->use_psize = use_psize;
 
             irlv->value = value;
