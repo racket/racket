@@ -8,8 +8,10 @@
          racket/list
          racket/set
          racket/path
+         ffi/unsafe/vm
          (only-in '#%linklet compiled-position->primitive)
-         "private/deserialize.rkt")
+         "private/deserialize.rkt"
+         "private/chez.rkt")
 
 (provide decompile)
 
@@ -113,6 +115,7 @@
           [(faslable-correlated-linklet? l)
            (compile-linklet (strip-correlated (faslable-correlated-linklet-expr l))
                             (faslable-correlated-linklet-name l))]
+          [(linklet? l) l]
           [else
            (let ([o (open-output-bytes)])
              (zo-marshal-to (linkl-bundle (hasheq 'data l)) o)
@@ -240,7 +243,21 @@
     [(struct faslable-correlated-linklet (expr name))
      (match (strip-correlated expr)
        [`(linklet ,imports ,exports ,body-l ...)
-        body-l])]))
+        body-l])]
+    [(? linklet?)
+     (case (system-type 'vm)
+       [(chez-scheme)
+        (define-values (code args) ((vm-primitive 'linklet-fasled-code+arguments) l))
+        (cond
+          [code
+           (define uncompressed-code
+             (if (regexp-match? #rx#"^\0\0\0\0chez" code)
+                 code
+                 (vm-eval `(bytevector-uncompress ,code))))
+           (define proc ((vm-eval `(load-compiled-from-port (open-bytevector-input-port ,uncompressed-code)))))
+           (decompile-chez-procedure (if (null? args) proc (proc args)))]
+          [else
+           `(....)])])]))
 
 (define (decompile-data-linklet l)
   (match l

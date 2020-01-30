@@ -9,6 +9,7 @@
 
           linklet-import-variables
           linklet-export-variables
+          linklet-fasled-code+arguments ; for tools like `raco decompile`
           
           instance?
           make-instance
@@ -775,10 +776,26 @@
           i)])]))
               
   (define (linklet-import-variables linklet)
+    (unless (linklet? linklet)
+        (raise-argument-error 'linklet-import-variables "linklet?" linklet))
     (linklet-importss linklet))
 
   (define (linklet-export-variables linklet)
+    (unless (linklet? linklet)
+        (raise-argument-error 'linklet-export-variables "linklet?" linklet))
     (map (lambda (e) (if (pair? e) (car e) e)) (linklet-exports linklet)))
+
+  (define (linklet-fasled-code+arguments linklet)
+    (unless (linklet? linklet)
+      (raise-argument-error 'linklet-code "linklet?" linklet))
+    (case (linklet-preparation linklet)
+      [(faslable faslable-strict faslable-unsafe lazy)
+       (case (linklet-format linklet)
+         [(compile)
+          (values (linklet-code linklet) (linklet-paths linklet))]
+         [else
+          (values #f #f)])]
+      [else (values #f #f)]))
 
   ;; ----------------------------------------
 
