@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label racket/symbol))
 
 @title[#:tag "symbols"]{Symbols}
 
@@ -62,18 +63,10 @@ used as an ephemeron key (see @secref["ephemerons"]).
  allocated mutable string whose characters are the same as in
  @racket[sym].
 
+See also @racket[symbol->immutable-string] from
+@racketmodname[racket/symbol].
+
 @mz-examples[(symbol->string 'Apple)]}
-
-
-@defproc[(symbol->immutable-string [sym symbol?]) (and/c string? immutable?)]{
-
-Like @racket[symbol->string], but the result is an immutable string,
-not necessarily freshly allocated.
-
-@mz-examples[(symbol->immutable-string 'Apple)
-             (immutable? (symbol->immutable-string 'Apple))]
-
-@history[#:added "7.5.0.14"]}
 
 
 @defproc[(string->symbol [str string?]) symbol?]{Returns an
@@ -121,3 +114,26 @@ for each pair of symbols is the same as using
 @racket[bytes<?].
 
 @history/arity[]}
+
+@; ----------------------------------------
+@section{Additional Symbol Functions}
+
+@note-lib[racket/symbol]
+@(define symbol-eval (make-base-eval))
+@examples[#:hidden #:eval symbol-eval (require racket/symbol)]
+
+@history[#:added "7.6"]
+
+@defproc[(symbol->immutable-string [sym symbol?]) (and/c string? immutable?)]{
+
+Like @racket[symbol->string], but the result is an immutable string,
+not necessarily freshly allocated.
+
+@examples[#:eval symbol-eval
+          (symbol->immutable-string 'Apple)
+          (immutable? (symbol->immutable-string 'Apple))]
+
+@history[#:added "7.6"]}
+
+@; ----------------------------------------
+@close-eval[symbol-eval]

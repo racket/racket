@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/fixnum
+         racket/symbol
          "wrap.rkt")
 
 (provide infer-procedure-name)

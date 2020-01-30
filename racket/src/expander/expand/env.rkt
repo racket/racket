@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/memo.rkt"
+(require racket/symbol
+         "../common/memo.rkt"
          "../syntax/syntax.rkt"
          "../syntax/error.rkt"
          "../syntax/scope.rkt"

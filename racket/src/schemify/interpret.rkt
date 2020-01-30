@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/unsafe/undefined
          racket/fixnum
+         racket/symbol
          "match.rkt"
          "wrap.rkt"
          "path-for-srcloc.rkt"
