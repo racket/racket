@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/flonum
          racket/fixnum
+         racket/symbol
+         racket/keyword
          "../common/check.rkt"
          "../port/output-port.rkt"
          "../port/input-port.rkt"
@@ -232,9 +234,9 @@
     [(keyword? v)
      (let ([max-length (write-string/max "#:" o max-length)])
        (cond
-         [(eq? mode DISPLAY-MODE) (write-string/max (keyword->string v) o max-length)]
+         [(eq? mode DISPLAY-MODE) (write-string/max (keyword->immutable-string v) o max-length)]
          [else
-          (print-symbol (string->symbol (keyword->string v)) o max-length config
+          (print-symbol (string->symbol (keyword->immutable-string v)) o max-length config
                         #:for-keyword? #t)]))]
     [(char? v)
      (cond

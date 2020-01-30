@@ -6,6 +6,8 @@
 (require racket/flonum
          racket/function
          racket/list
+         racket/symbol
+         racket/keyword
          (prefix-in k: '#%kernel))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

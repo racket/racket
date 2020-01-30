@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../port/string-output.rkt"
+(require racket/symbol
+         "../port/string-output.rkt"
          "../string/number.rkt"
          "write-with-max.rkt"
          "parameter.rkt"
