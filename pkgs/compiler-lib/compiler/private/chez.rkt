@@ -3,7 +3,8 @@
          ffi/unsafe
          racket/promise)
 
-(provide decompile-chez-procedure)
+(provide decompile-chez-procedure
+         unwrap-chez-interpret-jitified)
 
 (define (decompile-chez-procedure p)
   (unless (procedure? p)
@@ -111,9 +112,9 @@
            (parameterize ([current-output-port o])
              (disassemble-bytes bstr #:relocations ((code-obj 'reloc+offset) 'value)))
            (define strs (regexp-split #rx"\n" (get-output-string o)))
-           (list (cons 'assembly-code strs)))]
+           (list (cons '#%assembly-code strs)))]
      [else
-      (list (list 'machine-code bstr))])))
+      (list (list '#%machine-code bstr))])))
 
 (define disassemble-bytes
   (delay
@@ -129,3 +130,24 @@
     [else
      ;; multiple bits set
      'args]))
+
+;; ----------------------------------------
+;; The schemify interpreter's "bytecode" is fairly readable as-is, so
+;; just unpack compiled procedures at the leaves
+
+(define (unwrap-chez-interpret-jitified bc)
+  (define linklet-interpret-jitified? (vm-primitive 'linklet-interpret-jitified?))
+  (define linklet-interpret-jitified-extract (vm-primitive 'linklet-interpret-jitified-extract))
+  (let loop ([bc bc])
+    (cond
+      [(linklet-interpret-jitified? bc)
+       (define proc (linklet-interpret-jitified-extract bc))
+       (define proc-obj ((vm-primitive 'inspect/object) proc))
+       (define code (proc-obj 'code))
+       `(begin . ,(decompile-code code (make-hasheq)))]
+      [(vector? bc)
+       (for/vector #:length (vector-length bc) ([bc (in-vector bc)])
+         (loop bc))]
+      [(pair? bc)
+       (cons (loop (car bc)) (loop (cdr bc)))]
+      [else bc])))

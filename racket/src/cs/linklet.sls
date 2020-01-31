@@ -9,7 +9,9 @@
 
           linklet-import-variables
           linklet-export-variables
-          linklet-fasled-code+arguments ; for tools like `raco decompile`
+          linklet-fasled-code+arguments      ; for tools like `raco decompile`
+          linklet-interpret-jitified?        ; for `raco decompile`
+          linklet-interpret-jitified-extract ; for `raco decompile`
           
           instance?
           make-instance
@@ -787,15 +789,19 @@
 
   (define (linklet-fasled-code+arguments linklet)
     (unless (linklet? linklet)
-      (raise-argument-error 'linklet-code "linklet?" linklet))
+      (raise-argument-error 'linklet-fasled-code+arguments "linklet?" linklet))
     (case (linklet-preparation linklet)
       [(faslable faslable-strict faslable-unsafe lazy)
-       (case (linklet-format linklet)
-         [(compile)
-          (values (linklet-code linklet) (linklet-paths linklet))]
-         [else
-          (values #f #f)])]
-      [else (values #f #f)]))
+       (values (linklet-format linklet) (linklet-code linklet) (linklet-paths linklet))]
+      [else (values #f #f #f)]))
+
+  (define (linklet-interpret-jitified? v)
+    (wrapped-code? v))
+
+  (define (linklet-interpret-jitified-extract v)
+    (unless (wrapped-code? v)
+      (raise-argument-error 'linklet-interpret-jitified-extract "linklet-interpret-jitified?" v))
+    (force-wrapped-code v))
 
   ;; ----------------------------------------
 
