@@ -172,8 +172,10 @@
 (define (unsafe-flimag-part c)
   (#3%imag-part c))
 
-(define unsafe-undefined (let ([p (make-record-type "undefined" '())])
-                           ((record-constructor p))))
+;; The black hole object is an immediate in Chez Scheme,
+;; so a use is compact and the optimize can recognize
+;; comparsions to itself:
+(define unsafe-undefined '#0=#0#)
 
 (define (check-not-unsafe-undefined v sym)
   (when (eq? v unsafe-undefined)
