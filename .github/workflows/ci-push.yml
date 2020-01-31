@@ -51,7 +51,7 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
+        make CFLAGS="-Werror -O2" -l $cpus -j $((cpus+1))
     - name: Installing
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
@@ -136,7 +136,7 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
+        make CFLAGS="-Werror -O2" -l $cpus -j $((cpus+1))
     - name: Installing
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
