@@ -255,6 +255,8 @@ static int common0(mz_jit_state *jitter, void *_data)
   (void)mz_finish_lwe(ts_scheme_unbound_global, ref);
   CHECK_LIMIT();
 
+  (void)ref; /* avoids set but not used error from gcc */
+
   return 1;
 }
 
