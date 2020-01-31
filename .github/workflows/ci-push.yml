@@ -37,6 +37,7 @@ jobs:
       run: >
         ./configure 
         --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --enable-werror
         $RACKET_EXTRA_CONFIGURE_ARGS 
         --enable-cgcdefault 
         --enable-jit 
@@ -51,7 +52,7 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CFLAGS="-Werror -O2" -l $cpus -j $((cpus+1))
+        make -l $cpus -j $((cpus+1))
     - name: Installing
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
@@ -122,7 +123,8 @@ jobs:
         CC: ${{ matrix.cc }}
       run: >
         ./configure
-        --prefix=$GITHUB_WORKSPACE/../racket3m 
+        --prefix=$GITHUB_WORKSPACE/../racket3m
+        --enable-werror
         $RACKET_EXTRA_CONFIGURE_ARGS 
         --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
         --enable-foreign 
@@ -136,10 +138,10 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CFLAGS="-Werror -O2" -l $cpus -j $((cpus+1))
+        make -l $cpus -j $((cpus+1))
     - name: Installing
       working-directory: ./racket/src
-      run: make -j  $((cpus+1)) install
+      run: make -j $((cpus+1)) install
     # We build on Linux with clang and gcc and on MacOS with clang only.
     # However, it makes little sense to test both builds on Linux so we tarball the 
     # gcc build only. Therefore this condition ensure we only perform the tarball

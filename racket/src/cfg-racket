@@ -844,6 +844,7 @@ enable_gcov
 enable_noopt
 enable_ubsan
 enable_jitframe
+enable_werror
 enable_crossany
 '
       ac_precious_vars='build_alias
@@ -1508,6 +1509,7 @@ Optional Features:
   --enable-noopt          drop -O C flags (useful for low-level debugging)
   --enable-ubsan          compile with -fsanitize=undefined
   --enable-jitframe       x86_64: use frame pointer for internal calls
+  --enable-werror         compile sources with warnings as errors
   --enable-crossany       Record own cross target as machine-independent
 
 Some influential environment variables:
@@ -2906,6 +2908,12 @@ fi
 # Check whether --enable-jitframe was given.
 if test "${enable_jitframe+set}" = set; then :
   enableval=$enable_jitframe;
+fi
+
+
+# Check whether --enable-werror was given.
+if test "${enable_werror+set}" = set; then :
+  enableval=$enable_werror;
 fi
 
 
@@ -7019,6 +7027,11 @@ else
   PLAIN_CC='$(CC)'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
+fi
+
+# Last but not least, if Werror was requested, add it now
+if test "${enable_werror}" = "yes"; then
+  CFLAGS="-Werror ${CFLAGS}"
 fi
 
 ############## final output ################
