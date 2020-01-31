@@ -584,6 +584,14 @@
           ;; Register guard
           (register-guards! rtd parent-rtd guard 'at-start))))]))
 
+;; Field count (init + auto) not including paren fields
+(define (record-type-field-count rtd)
+  (fx- (#%$record-type-field-count rtd)
+       (let ([parent-rtd (record-type-parent rtd)])
+         (if parent-rtd
+             (#%$record-type-field-count parent-rtd)
+             0))))
+
 ;; Used by a `schemify` transformation:
 (define (structure-type-lookup-prefab-uid name parent-rtd* init-count auto-count auto-val immutables)
   ;; Return a UID for a prefab structure type. We can assume that
@@ -665,7 +673,7 @@
     (hashtable-set! rtd-mutables rtd mutables)))
 
 (define (check-accessor-or-mutator-index who rtd pos)
-  (let* ([total-count (#%vector-length (record-type-field-names rtd))])
+  (let* ([total-count (record-type-field-count rtd)])
     (unless (< pos total-count)
       (if (zero? total-count)
           (raise-arguments-error who
@@ -928,7 +936,7 @@
 ;; corresponds to `(make-field-info N 0 #f)`.
 (define (struct-type-field-info rtd*)
   (or (getprop (record-type-uid rtd*) 'field-info #f)
-      (let ([n (#%vector-length (record-type-field-names rtd*))]
+      (let ([n (record-type-field-count rtd*)]
             [parent-rtd* (record-type-parent rtd*)])
         ;; If `parent-rtd` is not #f, then we'll get here
         ;; only if were still in the process of setting up
@@ -973,7 +981,7 @@
       (field-info-auto-adder fi)))
 
 (define (struct-type-total*-field-count rtd*)
-  (get-field-info-total*-count (struct-type-field-info rtd*)))
+  (#%$record-type-field-count rtd*))
 
 (define (struct-type-parent-total*-count rtd*)
   (let ([p-rtd* (record-type-parent rtd*)])
@@ -1136,54 +1144,57 @@
 (define struct->vector
   (case-lambda
    [(s dots)
-    (if (record? (strip-impersonator s))
-        (let ([rtd (record-rtd (strip-impersonator s))])
-          ;; Create that vector that has '... for opaque ranges and each field
-          ;; value otherwise
-          (let-values ([(vec-len rec-len)
-                        ;; First, get the vector and record sizes
-                        (let loop ([vec-len 1] [rec-len 0] [rtd rtd] [dots-already? #f])
-                          (cond
-                           [(not rtd) (values vec-len rec-len)]
-                           [else
-                            (let ([len (#%vector-length (record-type-field-names rtd))])
-                              (cond
-                               [(struct-type-immediate-transparent? rtd)
-                                ;; A transparent region
-                                (loop (+ vec-len len) (+ rec-len len) (record-type-parent rtd) #f)]
-                               [dots-already?
-                                ;; An opaque region that follows an opaque region
-                                (loop vec-len (+ rec-len len) (record-type-parent rtd) #t)]
-                               [else
-                                ;; The start of opaque regions
-                                (loop (add1 vec-len) (+ rec-len len) (record-type-parent rtd) #t)]))]))])
-            ;; Walk though the record's types again, this time filling in the vector
-            (let ([vec (#%make-vector vec-len dots)])
-              (vector-set! vec 0 (string->symbol (format "struct:~a" (record-type-name rtd))))
-              (let loop ([vec-pos vec-len] [rec-pos rec-len] [rtd rtd] [dots-already? #f])
-                (when rtd
-                  (let* ([len (#%vector-length (record-type-field-names rtd))]
-                         [rec-pos (- rec-pos len)])
-                    (cond
-                     [(struct-type-immediate-transparent? rtd)
-                      ;; Copy over a transparent region
-                      (let ([vec-pos (- vec-pos len)])
-                        (let floop ([n 0])
-                          (cond
-                           [(= n len) (loop vec-pos rec-pos (record-type-parent rtd) #f)]
-                           [else
-                            (vector-set! vec (+ vec-pos n) (unsafe-struct-ref s (+ rec-pos n)))
-                            (floop (add1 n))])))]
-                     [dots-already?
-                      ;; Skip another opaque region
-                      (loop vec-pos rec-pos (record-type-parent rtd) #t)]
-                     [else
-                      ;; The vector already has `dots`
-                      (loop (sub1 vec-pos) rec-pos (record-type-parent rtd) #t)]))))
-              vec)))
-        ;; Any value that is not implemented as a record is treated as
-        ;; a fully opaque struct
-        (vector (string->symbol (format "struct:~a" ((inspect/object s) 'type))) dots))]
+    (let ([s* (strip-impersonator s)])
+      (if (record? s*)
+          (let ([rtd (record-rtd s*)])
+            ;; Create that vector that has '... for opaque ranges and each field
+            ;; value otherwise
+            (let-values ([(vec-len rec-len)
+                          ;; First, get the vector and record sizes
+                          (let loop ([vec-len 1] [rec-len 0] [rtd rtd] [dots-already? #f])
+                            (cond
+                             [(not rtd) (values vec-len rec-len)]
+                             [else
+                              (let ([len (record-type-field-count rtd)])
+                                (cond
+                                 [(struct-type-immediate-transparent? rtd)
+                                  ;; A transparent region
+                                  (loop (fx+ vec-len len) (fx+ rec-len len) (record-type-parent rtd) #f)]
+                                 [dots-already?
+                                  ;; An opaque region that follows an opaque region
+                                  (loop vec-len (fx+ rec-len len) (record-type-parent rtd) #t)]
+                                 [else
+                                  ;; The start of opaque regions
+                                  (loop (fx+ 1 vec-len) (fx+ rec-len len) (record-type-parent rtd) #t)]))]))])
+              ;; Walk though the record's types again, this time filling in the vector
+              (let ([vec (#%make-vector vec-len dots)])
+                (#%vector-set! vec 0 (string->symbol (string-append-immutable
+                                                      "struct:"
+                                                      (#%symbol->string (record-type-name rtd)))))
+                (let loop ([vec-pos vec-len] [rec-pos rec-len] [rtd rtd] [dots-already? #f])
+                  (when rtd
+                    (let* ([len (record-type-field-count rtd)]
+                           [rec-pos (fx- rec-pos len)])
+                      (cond
+                       [(struct-type-immediate-transparent? rtd)
+                        ;; Copy over a transparent region
+                        (let ([vec-pos (fx- vec-pos len)])
+                          (let floop ([n 0])
+                            (cond
+                             [(fx= n len) (loop vec-pos rec-pos (record-type-parent rtd) #f)]
+                             [else
+                              (#%vector-set! vec (fx+ vec-pos n) (unsafe-struct-ref s (fx+ rec-pos n)))
+                              (floop (fx+ 1 n))])))]
+                       [dots-already?
+                        ;; Skip another opaque region
+                        (loop vec-pos rec-pos (record-type-parent rtd) #t)]
+                       [else
+                        ;; The vector already has `dots`
+                        (loop (sub1 vec-pos) rec-pos (record-type-parent rtd) #t)]))))
+                vec)))
+          ;; Any value that is not implemented as a record is treated as
+          ;; a fully opaque struct
+          (vector (string->symbol (format "struct:~a" ((inspect/object s*) 'type))) dots)))]
    [(s) (struct->vector s '...)]))
 
 ;; ----------------------------------------
