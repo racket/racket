@@ -1269,10 +1269,12 @@
 
   ;; Since the schemify layer inserts `|#%app|` any time the rator of
   ;; an application might not be a procedure, we can avoid redundant
-  ;; checks for other applications by enabling unsafe mode. But do that
+  ;; checks for other applications by enabling unsafe mode. Ditto for
+  ;; potential early reference to `letrec`-bound variables. But do that
   ;; only if we're compiling the primitive layer in unsafe mode.
   (meta-cond
    [(>= (optimize-level) 3)
-    (enable-unsafe-application #t)]
+    (enable-unsafe-application #t)
+    (enable-unsafe-variable-reference #t)]
    [else
     (void)]))
