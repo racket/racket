@@ -129,9 +129,7 @@
 
                      [cpu-time #:mutable] ; accumulates CPU time in milliseconds
 
-                     [future #:mutable]   ; current would-be future
-                     
-                     [condition-wakeup #:mutable])
+                     [future #:mutable])  ; current would-be future
   #:authentic
   #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:waiter
@@ -203,8 +201,6 @@
                     0 ; cpu-time
 
                     #f ; future
-
-                    void ; condition-wakeup
                     )) 
   ((atomically
     (define cref (and c (custodian-register-thread c t remove-thread-custodian)))
@@ -272,11 +268,14 @@
     (thread-unscheduled-for-work-tracking! t))
   (remove-from-sleeping-threads! t)
   (run-kill-callbacks! t)
+  (set-thread-suspend+resume-callbacks! t null)
   (when (thread-forward-break-to t)
     (do-break-thread (thread-forward-break-to t) 'break #f))
   (for ([cr (in-list (thread-custodian-references t))])
     (unsafe-custodian-unregister t cr))
-  (set-thread-custodian-references! t null))
+  (set-thread-custodian-references! t null)
+  (set-thread-mailbox! t #f)
+  (set-thread-mailbox-wakeup! t void))
 
 ;; ----------------------------------------
 ;; Thread termination
