@@ -450,9 +450,9 @@
          (unless (zero? compute-memory-sizes)
            (host:call-with-current-place-continuation
             (lambda (starting-k)
-              ;; A place may have future pthreads, and each ptherad may
+              ;; A place may have future pthreads, and each pthread may
               ;; be running a future that becomes to a particular custodian;
-              ;; build up a custodian-to-pthtread mapping in this table:
+              ;; build up a custodian-to-pthread mapping in this table:
               (define custodian-future-threads (make-hasheq))
               (future-scheduler-add-thread-custodian-mapping! (place-future-scheduler initial-place)
                                                               custodian-future-threads)

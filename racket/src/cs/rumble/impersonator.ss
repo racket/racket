@@ -596,7 +596,7 @@
                              (lambda (v info)
                                (check 'guard-for-prop:impersonator-of (procedure-arity-includes/c 1) v)
                                ;; Add a tag to track origin of the `prop:impersonator-of` value
-                               (cons (gensym "tag") v))))
+                               (cons (box 'impersonator-of) v))))
 
 (define (extract-impersonator-of who a)
   (and (impersonator-of-redirect? a)

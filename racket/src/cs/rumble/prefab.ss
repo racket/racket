@@ -305,8 +305,9 @@
 (define (encode-prefab-key+count-as-symbol prefab-key+count)
   ;; The symbol has to be uninterned, because we're going to attach
   ;; properties to it, and an interned symbol with properties is never
-  ;; reclaimed by the garbage collector
-  (#%gensym (#%format "~s" prefab-key+count)))
+  ;; reclaimed by the garbage collector. Beware that a gensym is
+  ;; retained, too, if its unique name is forced.
+  (#%string->uninterned-symbol (#%format "~s" prefab-key+count)))
 
 (define (immutables->mutables immutables init-count auto-count)
   (vector->immutable-vector

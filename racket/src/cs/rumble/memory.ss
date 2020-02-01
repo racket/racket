@@ -16,7 +16,9 @@
 
 (define garbage-collect-notify
   (lambda (gen pre-allocated pre-allocated+overhead pre-time re-cpu-time
-               post-allocated post-allocated+overhead post-time post-cpu-time)
+               post-allocated post-allocated+overhead
+               proper-post-time proper-post-cpu-time
+               post-time post-cpu-time)
     (void)))
 
 ;; #f or a procedure that accepts `compute-size-increments` to be
@@ -76,7 +78,9 @@
       (run-collect-callbacks car)
       (collect gen)
       (let ([post-allocated (bytes-allocated)]
-            [post-allocated+overhead (current-memory-bytes)])
+            [post-allocated+overhead (current-memory-bytes)]
+            [post-time (real-time)]
+            [post-cpu-time (cpu-time)])
         (when (= gen (collect-maximum-generation))
           ;; Trigger a major GC when twice as much memory is used. Twice
           ;; `post-allocated+overhead` seems to be too long a wait, because
@@ -85,15 +89,16 @@
           ;; immediate major GC too soon. Split the difference.
           (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR post-allocated))
           (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
+        (update-eq-hash-code-table-size!)
+        (poll-foreign-guardian)
+        (when (and reachable-size-increments-callback
+                   (fx= gen (collect-maximum-generation)))
+          (reachable-size-increments-callback compute-size-increments))
+        (run-collect-callbacks cdr)
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                                post-allocated  post-allocated+overhead (real-time) (cpu-time)))
-      (update-eq-hash-code-table-size!)
-      (poll-foreign-guardian)
-      (run-collect-callbacks cdr)
-      (when (and reachable-size-increments-callback
-                 (fx= gen (collect-maximum-generation)))
-        (reachable-size-increments-callback compute-size-increments))
+                                post-allocated  post-allocated+overhead post-time post-cpu-time
+                                (real-time) (cpu-time)))
       (when (and (= gen (collect-maximum-generation))
                  (currently-in-engine?))
         ;; This `set-timer` doesn't necessarily penalize the right thread,

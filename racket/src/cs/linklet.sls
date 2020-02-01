@@ -1273,6 +1273,12 @@
   (expand-omit-library-invocations #t)
   (enable-error-source-expression #f)
 
+  ;; Avoid gensyms for generated record-tyope UIDs. Otherwise,
+  ;; printing one of those gensyms --- perhaps when producing a trace
+  ;; via `dump-memory-stats` --- causes the gensym to be permanent
+  ;; (since it has properties).
+  (current-generate-id (lambda (sym) (gensym sym)))
+
   ;; Since the schemify layer inserts `|#%app|` any time the rator of
   ;; an application might not be a procedure, we can avoid redundant
   ;; checks for other applications by enabling unsafe mode. Ditto for

@@ -634,7 +634,8 @@
      (let ([root-logger (current-logger)])
        ;; This function can be called in any Chez Scheme thread
        (lambda (gen pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                    post-allocated post-allocated+overhead post-time post-cpu-time)
+                    post-allocated post-allocated+overhead proper-post-time proper-post-cpu-time
+                    post-time post-cpu-time)
          (let ([minor? (< gen (collect-maximum-generation))])
            (if minor?
                (set! minor-gcs (add1 minor-gcs))
@@ -644,14 +645,23 @@
              (when (or debug-GC?
                        (and (not minor?)
                             (log-level?* root-logger 'debug 'GC:major)))
-               (let ([delta (- pre-allocated post-allocated)])
+               (let ([delta (- pre-allocated post-allocated)]
+                     [account-str (let ([proper (if (= post-cpu-time pre-cpu-time)
+                                                    100
+                                                    (quotient (* 100 (- proper-post-cpu-time pre-cpu-time))
+                                                              (- post-cpu-time pre-cpu-time)))])
+                                    (if (fx>= proper 99)
+                                        ""
+                                        (string-append "[" (number->string (fx- 100 proper)) "%]")))])
                  (log-message* root-logger 'debug (if debug-GC? 'GC 'GC:major)
-                               (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams @ ~a"
+                               (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams~a @ ~a"
                                             (if minor? "min" "MAJ") gen
                                             (K "" pre-allocated) (K "+" (- pre-allocated+overhead pre-allocated))
                                             (K "" delta) (K "+" (- (- pre-allocated+overhead post-allocated+overhead)
                                                                    delta))
-                                            (- post-cpu-time pre-cpu-time) pre-cpu-time)
+                                            (- post-cpu-time pre-cpu-time)
+                                            account-str
+                                            pre-cpu-time)
                                (make-gc-info (if minor? 'minor 'major) pre-allocated pre-allocated+overhead 0
                                              post-allocated post-allocated+overhead
                                              pre-cpu-time post-cpu-time

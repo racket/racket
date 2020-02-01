@@ -1070,7 +1070,7 @@
                                                  "        (procedure-arity-includes/c 2)\n"
                                                  "        (procedure-arity-includes/c 2))")
                                       val)
-                               (cons (#%gensym) val))))
+                               (cons (box 'equal+hash) val))))
 
 (define-values (prop:authentic authentic? authentic-ref)
   (make-struct-type-property 'authentic (lambda (val info) #t)))
