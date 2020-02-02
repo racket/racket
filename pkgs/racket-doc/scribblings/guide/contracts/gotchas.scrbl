@@ -120,14 +120,7 @@ means that @racket[null?] might now return @racket[#t] instead, resulting in
 arbitrarily different behavior depending on how this boolean might flow around
 in the program.
 
-@defmodulelang[racket/exists]
-
-To work around the above problem, the 
-@racketmodname[racket/exists] library behaves just like @racketmodname[racket],
-but predicates signal errors when given @racket[#:∃] contracts.
-
-Moral: Do not use predicates on @racket[#:∃] contracts, but if you're not sure, use
-@racketmodname[racket/exists] to be safe.
+Moral: Do not use predicates on @racket[#:∃] contracts.
 
 @ctc-section{Defining Recursive Contracts}
 

@@ -25,7 +25,9 @@ code where the @racket[require] of @racketmodname[racket/fixnum] is
 replaced with
 
 @racketblock[(require (filtered-in
-                       (λ (name) (regexp-replace #rx"unsafe-" name ""))
+                       (λ (name)
+                         (and (regexp-match #rx"^unsafe-fx" name)
+                              (regexp-replace #rx"unsafe-" name "")))
                        racket/unsafe/ops))]
 
 to drop in unsafe versions of the library. Alternately, when

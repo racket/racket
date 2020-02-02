@@ -984,7 +984,7 @@ void GC_do_local_mark(mse *local_mark_stack, mse *local_top)
 	    /* Try to share the load, since the main stack is empty,	*/
 	    /* and helper threads are waiting for a refill.		*/
 	    /* The entries near the bottom of the stack are likely	*/
-	    /* to require more work.  Thus we return those, eventhough	*/
+	    /* to require more work.  Thus we return those, even though	*/
 	    /* it's harder.						*/
  	    mse * new_bottom = local_mark_stack
 				+ (local_top - local_mark_stack)/2;

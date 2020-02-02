@@ -141,7 +141,7 @@ letters, followed by either nothing or a period). On Windows and
 Mac OS, the result is determined by system calls.}
 
 
-@defproc[(system-library-subpath [mode (or/c 'cgc '3m #f)
+@defproc[(system-library-subpath [mode (or/c 'cgc '3m 'cs #f)
                                        (system-type 'gc)])
          path?]{
 
@@ -153,12 +153,14 @@ architecture starts @racket["win32\\i386"].
 
 The optional @racket[mode] argument specifies the relevant
 garbage-collection variant, which one of the possible results of
-@racket[(system-type 'gc)]: @racket['cgc] or @racket['3m]. It can also
+@racket[(system-type 'gc)]: @racket['cgc], @racket['3m], or @racket['cs]. It can also
 be @racket[#f], in which case the result is independent of the
 garbage-collection variant.
 
 Installation tools should use @racket[cross-system-library-subpath],
-instead, to support cross-installation.}
+instead, to support cross-installation.
+
+@history[#:changed "7.0" @elem{Added @racket['cs] mode.}]}
 
 
 @defproc[(version) (and/c string? immutable?)]{

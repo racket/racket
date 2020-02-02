@@ -158,13 +158,14 @@
   (when cref
     (atomically
      (define c (custodian-reference->custodian cref))
-     (unless (custodian-shut-down? c)
-       (hash-remove! (custodian-children c) obj))
-     (host:disable-interrupts)
-     (define gc-roots (custodian-gc-roots c))
-     (when gc-roots
-       (hash-remove! gc-roots obj))
-     (host:enable-interrupts))
+     (when c
+       (unless (custodian-shut-down? c)
+         (hash-remove! (custodian-children c) obj))
+       (host:disable-interrupts)
+       (define gc-roots (custodian-gc-roots c))
+       (when gc-roots
+         (hash-remove! gc-roots obj))
+       (host:enable-interrupts)))
     (void)))
 
 ;; Called by scheduler (so atomic) when `c` is unreachable
@@ -444,14 +445,14 @@
 (define compute-memory-sizes 0)
 
 (void (set-reachable-size-increments-callback!
-       ;; Called in an arbitary host thread, with interrupts off and all other threads suspended:
+       ;; Called in an arbitrary host thread, with interrupts off and all other threads suspended:
        (lambda (compute-size-increments)
          (unless (zero? compute-memory-sizes)
            (host:call-with-current-place-continuation
             (lambda (starting-k)
-              ;; A place may have future pthreads, and each ptherad may
+              ;; A place may have future pthreads, and each pthread may
               ;; be running a future that becomes to a particular custodian;
-              ;; build up a custodian-to-pthtread mapping in this table:
+              ;; build up a custodian-to-pthread mapping in this table:
               (define custodian-future-threads (make-hasheq))
               (future-scheduler-add-thread-custodian-mapping! (place-future-scheduler initial-place)
                                                               custodian-future-threads)

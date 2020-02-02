@@ -212,7 +212,7 @@ from are copied to the stack.  Typically this can be done portably,
 but on some platforms it may require assembly code, or just
 tweaking of conditional compilation tests.
 <P>
-For GC7, if your platform supports <TT>getcontext()</tt>, then definining
+For GC7, if your platform supports <TT>getcontext()</tt>, then defining
 the macro <TT>UNIX_LIKE</tt> for your OS in <TT>gcconfig.h</tt>
 (if it isn't defined there already) is likely to solve the problem.
 otherwise, if you are using gcc, <TT>_builtin_unwind_init()</tt>

@@ -1,6 +1,7 @@
 #lang racket/base
 (require "match.rkt"
-         "wrap.rkt")
+         "wrap.rkt"
+         "gensym.rkt")
 
 ;; Reduces closure allocation by lifting bindings that are only used
 ;; in calls that have the right number of arguments.
@@ -592,7 +593,7 @@
            (define new-rhs (convert-lifted-calls-in-expr rhs lifts frees empties))
            (cond
              [(indirected? (hash-ref lifts (unwrap id) #f))
-              `[,(gensym) (unsafe-set-box*! ,id ,new-rhs)]]
+              `[,(deterministic-gensym "seq") (unsafe-set-box*! ,id ,new-rhs)]]
              [else `[,id ,new-rhs]])))
        (define new-bindings
          (if (null? bindings)
@@ -620,9 +621,17 @@
   ;; Create bindings for lifted functions, adding new arguments
   ;; as the functions are lifted
   (define (extract-lifted-bindings lifts empties)
-    (for/list ([(f proc) (in-hash lifts)]
-               #:when (liftable? proc))
-      (let* ([new-args (liftable-frees proc)]
+    (define liftables
+      ;; Improve determinsism by sorting liftables:
+      (sort (for/list ([(f proc) (in-hash lifts)]
+                       #:when (liftable? proc))
+              (cons f proc))
+            symbol<?
+            #:key car))
+    (for/list ([f+proc (in-list liftables)])
+      (let* ([f (car f+proc)]
+             [proc (cdr f+proc)]
+             [new-args (liftable-frees proc)]
              [frees (for/hash ([arg (in-list new-args)])
                       (values arg #t))]
              [rhs (liftable-expr proc)])
@@ -636,7 +645,6 @@
                                                  [body (in-list bodys)])
                                         (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
                                           `[,(append new-args args) . ,body]))))])])))
-
 
   ;; ----------------------------------------
   ;; Helpers
@@ -749,14 +757,15 @@
   (define (lift-if-empty v lifts empties new-v)
     (cond
       [(hash-ref lifts v #f)
-       (define id (gensym 'procz))
+       (define id (deterministic-gensym "procz"))
        (set-box! empties (cons `[,id ,new-v] (unbox empties)))
        id]
       [else new-v]))
-   
+
   ;; ----------------------------------------
   ;; Go
   
   (if (lift-in? v)
-      (lift-in v)
+      (with-deterministic-gensym
+        (lift-in v))
       v))

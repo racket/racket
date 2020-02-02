@@ -28,7 +28,7 @@ and how to contribute to Racket development.
 >> [2.4 Separate Server and Clients](#24-separate-server-and-clients)  
 >> [2.5 Creating a Client from an Installer Web Site](#25-creating-a-client-from-an-installer-web-site)  
   
-> [3 Contibuting to Racket Development](#3-contibuting-to-racket-development)  
+> [3 Contributing to Racket Development](#3-contributing-to-racket-development)  
 >> [3.1 Main-Repository Contributions](#31-main-repository-contributions)  
 >> [3.2 Distribution-Package Contributions](#32-distribution-package-contributions)  
 >> [3.3 General Contribution Guidelines](#33-general-contribution-guidelines)  
@@ -66,7 +66,7 @@ documentation are pre-built.
 In contrast to the Git repository, release and snapshot source
 distributions will work in the
 
-  `configure –prefix=... && make && make install`
+  `configure --prefix=... && make && make install`
 
 way that you probably expect.
 
@@ -293,7 +293,7 @@ For cross compilation, add configuration options to
 `CONFIGURE_ARGS_qq="<options>"` as described in the `"README.txt"` of
 `"racket/src"`, but also add a `PLAIN_RACKET=...` argument for the
 top-level makefile to specify the same executable as in an
-`–enable-racket=...` for `configure`. In general, the `PLAIN_RACKET`
+`--enable-racket=...` for `configure`. In general, the `PLAIN_RACKET`
 setting should have the form `PLAIN_RACKET="<exec> -C"` to ensure that
 cross-compilation mode is used and that any foreign libraries needed for
 build time can be found, but many cross-compilation scenarios work
@@ -330,9 +330,9 @@ before the default package catalogs, specify the catalog’s URL as the
 With an in-place build, you can edit packages within `"pkgs"` directly
 or update those packages with `git pull` plus `raco setup`, since the
 packages are installed with the equivalent of `raco pkg install -i
-–static-link <path>`.
+--static-link <path>`.
 
-Instead of actually using `raco pkg install –static-link ...`, the
+Instead of actually using `raco pkg install --static-link ...`, the
 `pkgs-catalog` makefile target creates a catalog that points to the
 packages in `"pkgs"`, and the catalog indicates that the packages are to
 be installed as links. The `pkgs-catalog` target further configures the
@@ -346,7 +346,7 @@ but the content of `"racket/share/pkgs"` is not meant to be edited. To
 reinstall a package in a mode suitable for editing and manipulation with
 Git tools, use
 
-  `raco pkg update –clone extra-pkgs/<pkg-name>`
+  `raco pkg update --clone extra-pkgs/<pkg-name>`
 
 The `"extra-pkgs"` directory name is a convention that is supported by a
 `".gitignore"` entry in the repository root.
@@ -410,11 +410,11 @@ configuration file there and omit the `CONFIG` argument to `make`. A
 default configuration file is created there automatically. Supply
 `CONFIG_MODE=...` to pass a configuration mode on to your
 site-configuration module (accessible via the `current-mode` parameter).
-Supply `CLEAN_MODE=–clean` to make the default `#:clean?` configuration
-for a client to `#t` instead of `#f`, supply `RELEASE_MODE=–release` to
+Supply `CLEAN_MODE=--clean` to make the default `#:clean?` configuration
+for a client to `#t` instead of `#f`, supply `RELEASE_MODE=--release` to
 make the default `#:release?` configuration `#t`, supply
-`SOURCE_MODE=–source` to make the default `#:source?` configuration
-`#t`, and supply `VERSIONLESS_MODE=–version` to make the default
+`SOURCE_MODE=--source` to make the default `#:source?` configuration
+`#t`, and supply `VERSIONLESS_MODE=--version` to make the default
 `#:versionless?` configuration `#t`.
 
 A configuration file can specify the packages to include, host address
@@ -555,10 +555,10 @@ In more detail, the steps are as follows:
   The `SERVER_PKG_INSTALL_OPTIONS` variable determines extra flags that
   are passed to `raco pkg install` when installing on the server (to
   create package builds that are sent to clients). For example,
-  `SERVER_PKG_INSTALL_OPTIONS=–source` could be useful to ensure that
+  `SERVER_PKG_INSTALL_OPTIONS=--source` could be useful to ensure that
   the server always builds from sources.
 
-  The `PACK_BUILT_OPTIONS` variable can be set to `–mode <mode>` to set
+  The `PACK_BUILT_OPTIONS` variable can be set to `--mode <mode>` to set
   the package mode for built packages. The default `infer` mode infers
   uses the package’s `distribution-preference` `"info.rkt"` field, if
   any, infers `binary` if the package has any native libraries and no
@@ -691,7 +691,7 @@ passing suitable values for `DIST_CATALOGS_q`, `DOC_SEARCH`,
 suitable variables, such as `DIST_NAME` or `RELEASE_MODE`, the same as
 for `make client`.
 
-## 3. Contibuting to Racket Development
+## 3. Contributing to Racket Development
 
 The Racket developers are happy to receive bug reports and improvements
 to the implementation and documentation through GitHub issues and pull
@@ -768,7 +768,7 @@ almost certainly the package name.
 To start working on a package <_pkg-name_>, it’s usually best to go to
 the root directory of your Racket repository checkout and run
 
-  `raco pkg update –clone extra-pkgs/<pkg-name>`
+  `raco pkg update --clone extra-pkgs/<pkg-name>`
 
 That will create `"extra-pkgs/<pkg-name>"` as a clone of the package’s
 source Git repository, it will replace the current installation of the
@@ -783,17 +783,17 @@ Some information that might improve your experience:
   `raco setup` step, which makes sense if you want to make changes and
   then run `raco setup` yourself.
 
-* A package is sometimes a subdirectory within a Git respository, and it
+* A package is sometimes a subdirectory within a Git repository, and it
   would be better if the checkout in `"extra-pkgs"` matched the
-  respoitory name instead of the package name. If you know the
+  repository name instead of the package name. If you know the
   repository name, you can use
 
-    `raco pkg update –clone extra-pkgs/<repo-name> <pkg-name>`
+    `raco pkg update --clone extra-pkgs/<repo-name> <pkg-name>`
 
   to make the distinction.
 
 * This same approach will generally work if you’re starting from a
-  distribution installer instead of the checkout of the Raclet sources
+  distribution installer instead of the checkout of the Racket sources
   from the main Git repository. You’ll need write permission to the
   installation, though, so that `raco pkg update` can redirect the
   package. Also, there’s no particular reason to use `extra-pkgs` in
@@ -802,7 +802,7 @@ Some information that might improve your experience:
 * If you’re done and want to go back to the normal installation for
   <_pkg-name_>, use
 
-    `raco pkg update –catalog <pkg-name>`
+    `raco pkg update --catalog <pkg-name>`
 
 * See Developing Packages with Git for more information about how
   packages are meant to work as Git repositories.

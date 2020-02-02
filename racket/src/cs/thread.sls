@@ -175,7 +175,8 @@
         'mutex-acquire rumble:mutex-acquire
         'mutex-release rumble:mutex-release
         'threaded? rumble:threaded?
-        'continuation-current-primitive rumble:continuation-current-primitive)]
+        'continuation-current-primitive rumble:continuation-current-primitive
+        'prop:unsafe-authentic-override prop:unsafe-authentic-override)]
       [else #f]))
 
   ;; Tie knots:

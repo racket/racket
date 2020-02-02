@@ -321,7 +321,7 @@
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Use keys that are a multile of a power of 2 to
+; Use keys that are a multiple of a power of 2 to
 ; get "almost" collisions that force the hash table
 ; to use a deeper tree.
 
@@ -366,14 +366,15 @@
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #f hash-iterate-next ht i)
 
-    ;; collect key, everything should error
-    (collect-garbage)
-    (test #t boolean? (hash-iterate-first ht))
-    (err/rt-test (hash-iterate-key ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-value ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
-    (test #f hash-iterate-next ht i))
+    (unless (eq? 'cgc (system-type 'gc))
+      ;; collect key, everything should error
+      (collect-garbage)
+      (test #t boolean? (hash-iterate-first ht))
+      (err/rt-test (hash-iterate-key ht i) exn:fail:contract? err-msg)
+      (err/rt-test (hash-iterate-value ht i) exn:fail:contract? err-msg)
+      (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
+      (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
+      (test #f hash-iterate-next ht i)))
 
 ;; Check that unsafe mutable hash table operations do not segfault
 ;; after getting valid index from unsafe-mutable-hash-iterate-first and -next.
@@ -526,6 +527,44 @@
   (test-hash-ref-key/immut (hasheqv) eq? 'foo 'foo))
 
 ;; ----------------------------------------
-;;
+;; Run a GC concurrent to `hash-for-each` or `hash-map`
+;; to make sure a disappearing key doesn't break the
+;; iteration
+
+(define (check-concurrent-gc-of-keys hash-iterate)
+  (define gc-thread
+    (thread
+     (lambda ()
+       (let loop ([n 10])
+         (unless (zero? n)
+           (collect-garbage)
+           (sleep)
+           (loop (sub1 n)))))))
+
+  (let loop ()
+    (unless (thread-dead? gc-thread)
+      (let ([ls (for/list ([i 100])
+                  (gensym))])
+        (define ht (make-weak-hasheq))
+        (for ([e (in-list ls)])
+          (hash-set! ht e 0))
+        ;; `ls` is unreferenced here here on
+        (define counter 0)
+        (hash-iterate
+         ht
+         (lambda (k v)
+           (set! counter (add1 counter))
+           'ok))
+        '(printf "~s @ ~a\n" counter j))
+      (loop))))
+
+(check-concurrent-gc-of-keys hash-for-each)
+(check-concurrent-gc-of-keys hash-map)
+(check-concurrent-gc-of-keys (lambda (ht proc)
+                               (equal? ht (hash-copy ht))))
+(check-concurrent-gc-of-keys (lambda (ht proc)
+                               (equal-hash-code ht)))
+
+;; ----------------------------------------
 
 (report-errs)

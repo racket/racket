@@ -83,7 +83,7 @@
                     #:other-form-callback (lambda (s cctx)
                                             (set! purely-functional? #f)
                                             (compile-top-level-require s cctx))
-                    #:cross-linklet-inlining? (not single-expression?)))
+                    #:optimize-linklet? (not single-expression?)))
 
    (define (add-metadata ht)
      (let* ([ht (hash-set ht 'original-phase phase)]

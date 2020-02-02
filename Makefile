@@ -45,7 +45,7 @@ DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 PLT_SETUP_OPTIONS = 
 
 # Belongs in the "Configuration options" section, but here
-# to accomodate nmake:
+# to accommodate nmake:
 SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 
 CPUS = 
@@ -123,7 +123,7 @@ cpus-as-is:
 	$(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
 
 plain-as-is:
-	$(MAKE) base
+	$(MAKE) plain-base
 	$(MAKE) in-place-setup
 
 win32-as-is:
@@ -151,7 +151,7 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base $(UNIXSTYLE_CONFIG_qq) $(UNIX_BASE_ARGS)
+	$(MAKE) plain-base $(UNIXSTYLE_CONFIG_qq) $(UNIX_BASE_ARGS)
 	$(MAKE) set-src-catalog
 	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
@@ -228,7 +228,7 @@ win32-remove-setup-dlls:
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
 SRC_MAKEFILE_CONFIG = configure
-CONFIG_IN_PLACE_ARGS = --enable-origtree
+CONFIG_IN_PLACE_ARGS = --disable-useprefix --enable-origtree
 
 racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
 	mkdir -p racket/src/build
@@ -272,7 +272,7 @@ MAKE_BUILD_SCHEME = checkout
 # for Chez Scheme, and add `-b <branch>` to `GIT_CLONE_ARGS_qq`
 # to clone a particular branch from that repo
 CHEZ_SCHEME_REPO = https://github.com/racket/ChezScheme
-GIT_CLONE_ARGS_qq = -q --depth 1
+GIT_CLONE_ARGS_qq = -q --recurse-submodules --depth 1
 
 # Altenative source for Chez Scheme repo, normally set by
 # the distro-build client driver
@@ -551,9 +551,15 @@ TGZ_MODE =
 # (or archive) only in source form:
 PKG_SOURCE_MODE = 
 
-# Set a base64-encoded list of strings for an executable and argument
-# to run on an installer (on the client machine) before the installer
-# is uploaded, or empty for no post-process action:
+# Set to a base64-encoded list of strings for an executable and
+# arguments to run on an assembled directory (on the client machine)
+# before it is packaged into an installer, or empty for no pre-process
+# action:
+INSTALLER_PRE_PROCESS_BASE64 =
+
+# Set to a base64-encoded list of strings for an executable and
+# arguments to run on an installer (on the client machine) before the
+# installer is uploaded, or empty for no post-process action:
 INSTALLER_POST_PROCESS_BASE64 =
 
 # Human-readable name (spaces allowed), installation name base, and
@@ -702,7 +708,7 @@ server:
 
 plain-server:
 	rm -rf build/zo
-	$(MAKE) base
+	$(MAKE) plain-base
 	$(MAKE) server-from-base
 
 server-from-base:
@@ -788,7 +794,7 @@ binary-catalog-server:
 # On each supported platform (for an installer build):
 #
 # The `client' and `win32-client' targets are also used by
-# `distro-buid/drive-clients', which is in turn run by the
+# `distro-build/drive-clients', which is in turn run by the
 # `installers' target.
 #
 # For a non-Windows machine, if "build/log" exists, then
@@ -811,6 +817,7 @@ PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)" \
             OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" JOB_OPTIONS="$(JOB_OPTIONS)" \
             TGZ_MODE=$(TGZ_MODE) TEST_PKGS="$(TEST_PKGS)" \
+            INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" \
             INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)"
 
 COPY_ARGS = $(PROP_ARGS) \
@@ -877,7 +884,9 @@ bundle-cross-from-server:
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
-              $(MAC_PKG_MODE) $(TGZ_MODE) --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
+              $(MAC_PKG_MODE) $(TGZ_MODE) \
+              --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" \
+              --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 

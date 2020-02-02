@@ -38,11 +38,13 @@
   (define inst (compiled-module->declaration-instance c))
   (instance-variable-value inst 'requires))
 
-(define/who (module-compiled-exports c)
+(define/who (module-compiled-exports c [verbosity #f])
   (check who compiled-module-expression? c)
+  (check-provides-verbosity who verbosity)
   (define inst (compiled-module->declaration-instance c))
   (provides->api-provides (instance-variable-value inst 'provides)
-                          (instance-variable-value inst 'self-mpi)))
+                          (instance-variable-value inst 'self-mpi)
+                          verbosity))
 
 (define/who (module-compiled-indirect-exports c)
   (check who compiled-module-expression? c)

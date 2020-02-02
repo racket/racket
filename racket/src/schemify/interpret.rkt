@@ -1,12 +1,14 @@
 #lang racket/base
 (require racket/unsafe/undefined
          racket/fixnum
+         racket/symbol
          "match.rkt"
          "wrap.rkt"
          "path-for-srcloc.rkt"
          "to-fasl.rkt"
          "interp-match.rkt"
-         "interp-stack.rkt")
+         "interp-stack.rkt"
+         "gensym.rkt")
 
 ;; Interpreter for the output of "jitify". This little interpreter is
 ;; useful to avoid going through a more heavyweight `eval` or
@@ -24,14 +26,36 @@
 ;; explicit operations to remove mappings from the environment as
 ;; needed to implement space safety.
 
-(provide interpretable-jitified-linklet
+(provide interpreter-link!
+         interpretable-jitified-linklet
          interpret-linklet)
 
 (struct indirect (pos element))
 (struct boxed (pos))
 (struct boxed/check boxed ())
 
-(define (interpretable-jitified-linklet linklet-e strip-annotations)
+(define primitives '#hasheq())
+(define strip-annotations (lambda (e) e))
+(define variable-ref (lambda (var) (unbox var)))
+(define variable-ref/no-check (lambda (var) (unbox var)))
+(define variable-set! (lambda (var v) (set-box! var v)))
+(define variable-set!/define (lambda (var v) (set-box! var v)))
+(define make-interp-procedure* (lambda (proc mask name) proc))
+
+(define (interpreter-link! prims
+                           strip
+                           var-ref var-ref/no-check
+                           var-set! var-set!/def
+                           make-proc)
+  (set! primitives prims)
+  (set! strip-annotations strip)
+  (set! variable-ref var-ref)
+  (set! variable-ref/no-check var-ref/no-check)
+  (set! variable-set! var-set!)
+  (set! variable-set!/define var-set!/def)
+  (set! make-interp-procedure* make-proc))
+
+(define (interpretable-jitified-linklet linklet-e serializable?)
   ;; Return a compiled linklet in two parts: a vector expression for
   ;; constants to be run once, and a expression for the linklet body.
   
@@ -68,7 +92,7 @@
                num-body-vars
                compiled-body)]
       [`(let* ,bindings ,body)
-       (define bindings-stk-i (stack-info #f #hasheq() #f #f 0))
+       (define bindings-stk-i (make-stack-info))
        (let loop ([bindings bindings] [elem 0] [env '#hasheq()] [accum '()])
          (cond
            [(null? bindings)
@@ -92,12 +116,15 @@
                                ;; not a primitive
                                '#%path]
                               [else
-                               (compile-expr rhs env 1 bindings-stk-i #t)])
+                               (compile-expr rhs env 1 bindings-stk-i #t '#hasheq())])
                             accum))))]))]))
 
   (define (compile-linklet-body v env stack-depth)
     (match v
       [`(lambda ,args . ,body)
+       ;; Gather all `set!`ed variables, since they'll need to be boxed
+       ;; if they're not top-level `define`s
+       (define mutated (extract-list-mutated body '#hasheq()))
        ;; The `args` here are linklet import and export variables
        (define num-args (length args))
        (define args-env
@@ -106,7 +133,7 @@
            (hash-set env arg (+ stack-depth i))))
        (define body-vars-index (+ num-args stack-depth))
        ;; Gather all the names that have `define`s, and build up the
-       ;; enviornment that has them consceptually pushed after the
+       ;; environment that has them consceptually pushed after the
        ;; import and export variables.
        (define-values (body-env num-body-vars)
          (for/fold ([env args-env] [num-body-vars 0]) ([e (in-wrap-list body)])
@@ -124,17 +151,17 @@
                   (loop e env num-body-vars))]
                [`,_ (values env num-body-vars)]))))
        (define body-stack-depth (+ num-body-vars num-args stack-depth))
-       ;; This `stack-info` is mutated as expressiones are compiled,
+       ;; This `stack-info` is mutated as expressions are compiled,
        ;; because that's more convenient than threading it through as
        ;; both an argument and a result
-       (define stk-i (stack-info #f #hasheq() #f #f 0))
+       (define stk-i (make-stack-info #:track-use? #t))
        (define new-body
-         (compile-top-body body body-env body-stack-depth stk-i))
+         (compile-top-body body body-env body-stack-depth stk-i mutated))
        (values new-body
                num-body-vars)]))
 
   ;; Like `compile-body`, but flatten top-level `begin`s
-  (define (compile-top-body body env stack-depth stk-i)
+  (define (compile-top-body body env stack-depth stk-i mutated)
     (define bs (let loop ([body body])
                  (match body
                    [`() '()]
@@ -142,7 +169,7 @@
                     (loop (append subs rest))]
                    [`(,e . ,rest)
                     (define new-rest (loop rest))
-                    (cons (compile-expr e env stack-depth stk-i #t)
+                    (cons (compile-expr e env stack-depth stk-i #t mutated)
                           new-rest)])))
     (cond
       [(null? bs) '#(void)]
@@ -151,62 +178,66 @@
       [else
        (list->vector (cons 'begin bs))]))
 
-  (define (compile-body body env stack-depth stk-i tail?)
+  (define (compile-body body env stack-depth stk-i tail? mutated)
     (match body
-      [`(,e) (compile-expr e env stack-depth stk-i tail?)]
+      [`(,e) (compile-expr e env stack-depth stk-i tail? mutated)]
       [`,_
        (list->vector
-        (cons 'begin (compile-list body env stack-depth stk-i tail?)))]))
+        (cons 'begin (compile-list body env stack-depth stk-i tail? mutated)))]))
 
-  (define (compile-list body env stack-depth stk-i tail?)
+  (define (compile-list body env stack-depth stk-i tail? mutated)
     (let loop ([body body])
       (cond
         [(null? body) '()]
         [else
          (define rest-body (wrap-cdr body))
          (define new-rest (loop rest-body))
-         (cons (compile-expr (wrap-car body) env stack-depth stk-i (and tail? rest-body))
+         (cons (compile-expr (wrap-car body) env stack-depth stk-i (and tail? (null? rest-body)) mutated)
                new-rest)])))
 
-  (define (compile-expr e env stack-depth stk-i tail?)
+  (define (compile-expr e env stack-depth stk-i tail? mutated)
     (match e
       [`(lambda ,ids . ,body)
        (define-values (body-env count rest?)
-         (args->env ids env stack-depth))
+         (args->env ids env stack-depth mutated))
        (define cmap (make-hasheq))
        (define body-stack-depth (+ stack-depth count))
        ;; A fresh `stack-info` reflects how a flat closure shifts the
        ;; coordinates of the variables that it captures; captured
        ;; variables are added to `cmap` as they are discovered
-       (define body-stk-i (stack-info stack-depth cmap #hasheq() #f 0))
-       (define new-body (compile-body body body-env body-stack-depth body-stk-i #t))
+       (define body-stk-i (make-stack-info #:capture-depth stack-depth
+                                           #:closure-map cmap
+                                           #:track-use? #t))
+       (define new-body (compile-body body body-env body-stack-depth body-stk-i #t mutated))
        (define rev-cmap (for/hasheq ([(i pos) (in-hash cmap)]) (values (- -1 pos) i)))
        (vector 'lambda
                (count->mask count rest?)
-               (wrap-property e 'inferred-name)
+               (extract-procedure-wrap-data e)
                (for/vector #:length (hash-count cmap) ([i (in-range (hash-count cmap))])
                  (stack->pos (hash-ref rev-cmap i) stk-i))
-               new-body)]
+               (add-boxes/remove-unused new-body ids mutated body-env body-stk-i))]
       [`(case-lambda [,idss . ,bodys] ...)
        (define lams (for/list ([ids (in-list idss)]
                                [body (in-list bodys)])
-                      (compile-expr `(lambda ,ids . ,body) env stack-depth stk-i tail?)))
+                      (compile-expr `(lambda ,ids . ,body) env stack-depth stk-i tail? mutated)))
        (define mask (for/fold ([mask 0]) ([lam (in-list lams)])
                       (bitwise-ior mask (interp-match lam [#(lambda ,mask) mask]))))
-       (define name (wrap-property e 'inferred-name))
-       (list->vector (list* 'case-lambda mask name lams))]
+       (list->vector (list* 'case-lambda mask (extract-procedure-wrap-data e) lams))]
       [`(let ([,ids ,rhss] ...) . ,body)
        (define len (length ids))
        (define body-env
          (for/fold ([env env]) ([id (in-list ids)]
                                 [i (in-naturals)])
-           (hash-set env (unwrap id) (+ stack-depth i))))
+           (define u (unwrap id))
+           (define pos (+ stack-depth i))
+           (hash-set env u (if (hash-ref mutated u #f) (boxed pos) pos))))
        (define body-stack-depth (+ stack-depth len))
-       (define new-body (compile-body body body-env body-stack-depth stk-i tail?))
+       (define c-body (compile-body body body-env body-stack-depth stk-i tail? mutated))
+       (define new-body (add-boxes/remove-unused c-body ids mutated body-env stk-i))
        (define pos (stack->pos stack-depth stk-i #:nonuse? #t))
        (stack-info-forget! stk-i stack-depth pos len)
        (define new-rhss (list->vector
-                         (compile-list rhss env stack-depth stk-i #f)))
+                         (compile-list rhss env stack-depth stk-i #f mutated)))
        (or
         ;; Merge nested `let`s into a `let*` to reduce vector nesting
         (cond
@@ -220,34 +251,34 @@
             [#() #f])]
           [else #f])
         (vector 'let pos new-rhss new-body))]
-      [`(letrec . ,_) (compile-letrec e env stack-depth stk-i tail?)]
-      [`(letrec* . ,_) (compile-letrec e env stack-depth stk-i tail?)]
+      [`(letrec . ,_) (compile-letrec e env stack-depth stk-i tail? mutated)]
+      [`(letrec* . ,_) (compile-letrec e env stack-depth stk-i tail? mutated)]
       [`(begin . ,vs)
-       (compile-body vs env stack-depth stk-i tail?)]
+       (compile-body vs env stack-depth stk-i tail? mutated)]
       [`(begin0 ,e)
-       (compile-expr e env stack-depth stk-i tail?)]
+       (compile-expr e env stack-depth stk-i tail? mutated)]
       [`(begin0 ,e . ,vs)
-       (define new-body (compile-body vs env stack-depth stk-i #f))
+       (define new-body (compile-body vs env stack-depth stk-i #f mutated))
        (vector 'begin0
-               (compile-expr e env stack-depth stk-i #f)
+               (compile-expr e env stack-depth stk-i #f mutated)
                new-body)]
       [`($value ,e)
-       (vector '$value (compile-expr e env stack-depth stk-i #f))]
+       (vector '$value (compile-expr e env stack-depth stk-i #f mutated))]
       [`(if ,tst ,thn ,els)
        (define then-stk-i (stack-info-branch stk-i))
        (define else-stk-i (stack-info-branch stk-i))
-       (define new-then (compile-expr thn env stack-depth then-stk-i tail?))
-       (define new-else (compile-expr els env stack-depth else-stk-i tail?))
+       (define new-then (compile-expr thn env stack-depth then-stk-i tail? mutated))
+       (define new-else (compile-expr els env stack-depth else-stk-i tail? mutated))
        (define all-clear (stack-info-merge! stk-i (list then-stk-i else-stk-i)))
        (vector 'if
-               (compile-expr tst env stack-depth stk-i #f)
+               (compile-expr tst env stack-depth stk-i #f mutated)
                (add-clears new-then then-stk-i all-clear)
                (add-clears new-else else-stk-i all-clear))]
       [`(with-continuation-mark* ,mode ,key ,val ,body)
-       (define new-body (compile-expr body env stack-depth stk-i tail?))
-       (define new-val (compile-expr val env stack-depth stk-i #f))
+       (define new-body (compile-expr body env stack-depth stk-i tail? mutated))
+       (define new-val (compile-expr val env stack-depth stk-i #f mutated))
        (vector 'wcm
-               (compile-expr key env stack-depth stk-i #f)
+               (compile-expr key env stack-depth stk-i #f mutated)
                new-val
                new-body)]
       [`(quote ,v)
@@ -262,12 +293,12 @@
              (vector 'quote v)
              v))]
       [`(set! ,id ,rhs)
-       (compile-assignment id rhs env stack-depth stk-i)]
+       (compile-assignment id rhs env stack-depth stk-i mutated)]
       [`(define ,id ,rhs)
-       (compile-assignment id rhs env stack-depth stk-i)]
+       (compile-assignment id rhs env stack-depth stk-i mutated)]
       [`(define-values ,ids ,rhs)
        (define gen-ids (for/list ([id (in-list ids)])
-                         (gensym (unwrap id))))
+                         (deterministic-gensym (unwrap id))))
        (compile-expr `(call-with-values (lambda () ,rhs)
                         (lambda ,gen-ids
                           ,@(if (null? ids)
@@ -278,14 +309,16 @@
                      env
                      stack-depth
                      stk-i
-                     tail?)]
+                     tail?
+                     mutated)]
       [`(call-with-values ,proc1 (lambda ,ids . ,body))
        (compile-expr `(call-with-values ,proc1 (case-lambda
                                                  [,ids . ,body]))
                      env
                      stack-depth
                      stk-i
-                     tail?)]
+                     tail?
+                     mutated)]
       [`(call-with-values (lambda () . ,body) (case-lambda [,idss . ,bodys] ...))
        (define body-stk-is (for/list ([body (in-list bodys)])
                              (stack-info-branch stk-i)))
@@ -294,16 +327,17 @@
                     [body (in-list bodys)]
                     [body-stk-i (in-list body-stk-is)])
            (define-values (new-env count rest?)
-             (args->env ids env stack-depth))
+             (args->env ids env stack-depth mutated))
            (define new-stack-depth (+ stack-depth count))
-           (define new-body (compile-body body new-env new-stack-depth body-stk-i tail?))
+           (define c-body (compile-body body new-env new-stack-depth body-stk-i tail? mutated))
+           (define new-body (add-boxes/remove-unused c-body ids mutated new-env body-stk-i))
            (define pos (stack->pos stack-depth body-stk-i #:nonuse? #t))
            (stack-info-forget! body-stk-i stack-depth pos count)
            (vector (count->mask count rest?)
                    new-body)))
        (define all-clear (stack-info-merge! stk-i body-stk-is))
        (vector 'cwv
-               (compile-body body env stack-depth stk-i #f)
+               (compile-body body env stack-depth stk-i #f mutated)
                (stack->pos stack-depth stk-i #:nonuse? #t)
                (match e
                  [`(,_ ,_ ,receiver) (wrap-property receiver 'inferred-name)])
@@ -313,16 +347,16 @@
                  (vector (vector-ref initial-new-clause 0)
                          (add-clears body body-stk-i all-clear))))]
       [`(call-with-module-prompt (lambda () . ,body))
-       (vector 'cwmp0 (compile-body body env stack-depth stk-i tail?))]
+       (vector 'cwmp0 (compile-body body env stack-depth stk-i tail? mutated))]
       [`(call-with-module-prompt (lambda () . ,body) ',ids ',constances ,vars ...)
        (vector 'cwmp
-               (compile-body body env stack-depth stk-i tail?)
+               (compile-body body env stack-depth stk-i tail? mutated)
                ids
                constances
-               (compile-list vars env stack-depth stk-i #f))]
+               (compile-list vars env stack-depth stk-i #f mutated))]
       [`(variable-set! ,dest-id ,e)
        (define dest-var (hash-ref env (unwrap dest-id)))
-       (define new-expr (compile-expr e env stack-depth stk-i #f))
+       (define new-expr (compile-expr e env stack-depth stk-i #f mutated))
        (vector 'set-variable!
                (stack->pos dest-var stk-i)
                new-expr
@@ -330,7 +364,7 @@
                #f)]
       [`(variable-set!/define ,dest-id ,e ',constance)
        (define dest-var (hash-ref env (unwrap dest-id)))
-       (define new-expr (compile-expr e env stack-depth stk-i #f))
+       (define new-expr (compile-expr e env stack-depth stk-i #f mutated))
        (vector 'set-variable!
                (stack->pos dest-var stk-i)
                new-expr
@@ -342,16 +376,21 @@
       [`(variable-ref/no-check ,id)
        (define var (hash-ref env (unwrap id)))
        (vector 'ref-variable (stack->pos var stk-i))]
-      [`(#%app ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail?)]
-      [`(,rator ,_ ...)  (compile-apply e env stack-depth stk-i tail?)]
+      [`(#%app ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
+      [`(,rator ,_ ...)  (compile-apply e env stack-depth stk-i tail? mutated)]
       [`,id
        (define u (unwrap id))
        (define var (hash-ref env u #f))
        (cond
          [(not var)
-          (if (number? u)
-              (vector 'quote u)
-              u)]
+          (cond
+            [(number? u) (vector 'quote u)]
+            [(and (symbol? u) (not serializable?) (hash-ref primitives u #f))
+             => (lambda (v)
+                  (cond
+                    [(procedure? v) v]
+                    [else (vector 'quote v)]))]
+            [else u])]
          [(indirect? var)
           (define pos (stack->pos (indirect-pos var) stk-i))
           (define elem (indirect-element var))
@@ -364,7 +403,7 @@
          [else
           (stack->pos var stk-i)])]))
 
-  (define (compile-letrec e env stack-depth stk-i tail?)
+  (define (compile-letrec e env stack-depth stk-i tail? mutated)
     (match e
       [`(,_ ([,ids ,rhss] ...) . ,body)
        (define count (length ids))
@@ -375,21 +414,22 @@
        (define rhs-env (make-env boxed/check))
        (define body-env (make-env boxed))
        (define body-stack-depth (+ stack-depth count))
-       (define new-body (compile-body body body-env body-stack-depth stk-i tail?))
+       (define c-body (compile-body body body-env body-stack-depth stk-i tail? mutated))
        (define new-rhss (list->vector
-                         (compile-list rhss rhs-env body-stack-depth stk-i #F)))
+                         (compile-list rhss rhs-env body-stack-depth stk-i #f mutated)))
+       (define new-body (add-boxes/remove-unused c-body ids #hasheq() body-env stk-i))
        (define pos (stack->pos stack-depth stk-i #:nonuse? #t))
        (stack-info-forget! stk-i stack-depth pos count)
        (vector 'letrec pos new-rhss new-body)]))
 
-  (define (compile-apply es env stack-depth stk-i tail?)
-    (define new-es (compile-list es env stack-depth stk-i #f))
+  (define (compile-apply es env stack-depth stk-i tail? mutated)
     (unless tail?
       (stack-info-non-tail! stk-i stack-depth))
+    (define new-es (compile-list es env stack-depth stk-i #f mutated))
     (list->vector (cons 'app new-es)))
 
-  (define (compile-assignment id rhs env stack-depth stk-i)
-    (define compiled-rhs (compile-expr rhs env stack-depth stk-i #f))
+  (define (compile-assignment id rhs env stack-depth stk-i mutated)
+    (define compiled-rhs (compile-expr rhs env stack-depth stk-i #f mutated))
     (define u (unwrap id))
     (define var (hash-ref env u))
     (cond
@@ -402,41 +442,147 @@
        (if (boxed/check? var)
            (vector 'set!-boxed/checked s compiled-rhs u)
            (vector 'set!-boxed s compiled-rhs u))]
-      [else (error 'compile "unexpected set!")]))
+      [else (error 'compile "unexpected set! ~s -> ~v" u var)]))
 
-  (define (args->env ids env stack-depth)
+  (define (extract-expr-mutated e mutated)
+    (match e
+      [`(lambda ,ids . ,body)
+       (extract-list-mutated body mutated)]
+      [`(case-lambda [,idss . ,bodys] ...)
+       (for/fold ([mutated mutated]) ([body (in-list bodys)])
+         (extract-list-mutated body mutated))]
+      [`(let ([,ids ,rhss] ...) . ,body)
+       (extract-list-mutated body (extract-list-mutated rhss mutated))]
+      [`(letrec ([,ids ,rhss] ...) . ,body)
+       (extract-list-mutated body (extract-list-mutated rhss mutated))]
+      [`(letrec* ([,ids ,rhss] ...) . ,body)
+       (extract-list-mutated body (extract-list-mutated rhss mutated))]
+      [`(begin . ,vs)
+       (extract-list-mutated vs mutated)]
+      [`(begin0 ,vs)
+       (extract-list-mutated vs mutated)]
+      [`($value ,e)
+       (extract-expr-mutated e mutated)]
+      [`(if ,tst ,thn ,els)
+       (define tst-mutated (extract-expr-mutated tst mutated))
+       (define thn-mutated (extract-expr-mutated thn tst-mutated))
+       (extract-expr-mutated els thn-mutated)]
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
+       (define key-mutated (extract-expr-mutated key mutated))
+       (define val-mutated (extract-expr-mutated val key-mutated))
+       (extract-expr-mutated body val-mutated)]
+      [`(quote ,v)
+       mutated]
+      [`(set! ,id ,rhs)
+       (define new-mutated (hash-set mutated (unwrap id) #t))
+       (extract-expr-mutated rhs new-mutated)]
+      [`(define ,id ,rhs)
+       (extract-expr-mutated rhs mutated)]
+      [`(define-values ,ids ,rhs)
+       (extract-expr-mutated rhs mutated)]
+      [`(variable-set! ,dest-id ,e)
+       (extract-expr-mutated e mutated)]
+      [`(variable-set!/define ,dest-id ,e ',constance)
+       (extract-expr-mutated e mutated)]
+      [`(variable-ref ,id)
+       mutated]
+      [`(variable-ref/no-check ,id)
+       mutated]
+      [`(#%app ,es ...)
+       (extract-list-mutated es mutated)]
+      [`(,es ...)
+       (extract-list-mutated es mutated)]
+      [`,id
+       mutated]))
+
+  (define (extract-list-mutated body mutated)
+    (let loop ([body body] [mutated mutated])
+      (cond
+        [(null? body) mutated]
+        [else
+         (loop (wrap-cdr body)
+               (extract-expr-mutated (wrap-car body) mutated))])))
+
+  (define (args->env ids env stack-depth mutated)
     (let loop ([ids ids] [env env] [count 0])
       (cond
         [(wrap-null? ids) (values env count #f)]
         [(wrap-pair? ids) (loop (wrap-cdr ids)
-                                (hash-set env (unwrap (wrap-car ids)) (+ stack-depth count))
+                                (env-set env (unwrap (wrap-car ids)) (+ stack-depth count) mutated)
                                 (add1 count))]
         [else
-         (values (hash-set env (unwrap ids) (+ stack-depth count))
+         (values (env-set env (unwrap ids) (+ stack-depth count) mutated)
                  (add1 count)
                  #t)])))
 
-  (define (add-clears e stk-i all-clear)
-    (define local-use-map (stack-info-local-use-map stk-i))
-    (define clears
-      (for/list ([pos (in-hash-keys all-clear)]
-                 #:unless (hash-ref local-use-map pos #f))
-        pos))
-    (cond
-      [(null? clears) e]
-      [else (vector 'clear clears e)]))
+  (define (env-set env u pos mutated)
+    (hash-set env u (if (hash-ref mutated u #f)
+                        (boxed pos)
+                        pos)))
 
-  (start linklet-e))
+  (define (add-clears e stk-i all-clear)
+    (cond
+      [(stack-info-branch-need-clears? stk-i)
+       (define local-use-map (stack-info-local-use-map stk-i))
+       (define clears
+         (for/list ([pos (in-hash-keys all-clear)]
+                    #:unless (hash-ref local-use-map pos #f))
+           pos))
+       (cond
+         [(null? clears) e]
+         [else (vector 'clear (sort clears <) e)])]
+      [else e]))
+
+  (define (add-boxes/remove-unused e ids mutated env stk-i)
+    (cond
+      [(null? ids) e]
+      [(pair? ids)
+       (add-boxes/remove-unused (add-boxes/remove-unused e (car ids) mutated env stk-i)
+                                (cdr ids)
+                                mutated
+                                env
+                                stk-i)]
+      [else
+       (define u (unwrap ids))
+       (define var (hash-ref env u #f))
+       (define pos (stack->pos (if (boxed? var) (boxed-pos var) var) stk-i)) ; box result means unused
+       (cond
+         [(box? pos)
+          (vector 'clear (list (unbox pos)) e)]
+         [(not (hash-ref mutated u #f))
+          e]
+         [else
+          (vector 'enbox pos e)])]))
+
+  (define (extract-procedure-wrap-data e)
+    ;; Get name and method-arity information
+    (define encoded-name (wrap-property e 'inferred-name))
+    (define name
+      (cond
+        [(eq? encoded-name '|[|) #f]
+        [(symbol? encoded-name)
+         (define s (symbol->immutable-string encoded-name))
+         (cond
+           [(fx= 0 (string-length s)) encoded-name]
+           [else
+            (define ch (string-ref s 0))
+            (cond
+              [(or (char=? #\[ ch)
+                   (char=? #\] ch))
+               (string->symbol (substring s 1 (string-length s)))]
+              [else encoded-name])])]
+        [else encoded-name]))
+    (if (wrap-property e 'method-arity-error)
+        (box name)
+        name))
+
+  (with-deterministic-gensym
+    (start linklet-e)))
 
 ;; ----------------------------------------
 
-(define (interpret-linklet b            ; compiled form
-                           paths        ; unmarshaled paths
-                           primitives   ; hash of symbol -> value
-                           ;; the implementation of variables:
-                           variable-ref variable-ref/no-check variable-set! variable-set!/define
-                           ;; to create a procedure with a specific arity mask:
-                           make-arity-wrapper-procedure)
+(define (interpret-linklet b             ; compiled form
+                           paths)        ; unmarshaled paths
   (interp-match
    b
    [#(,consts ,num-body-vars ,b)
@@ -450,7 +596,7 @@
                               (vector-set! vec i (car paths))
                               (cdr paths)]
                              [else
-                              (vector-set! vec i (interpret-expr b stack primitives void void void void void))
+                              (vector-set! vec i (interpret-expr b stack))
                               paths]))
                          vec))])
       (lambda args
@@ -463,98 +609,120 @@
         (define post-args-pos (stack-count args-stack))
         (define stack (for/fold ([stack args-stack]) ([i (in-range num-body-vars)])
                         (stack-set stack (+ i post-args-pos) (box unsafe-undefined))))
-        (interpret-expr b stack primitives variable-ref variable-ref/no-check variable-set! variable-set!/define
-                        make-arity-wrapper-procedure)))]))
+        (interpret-expr b stack)))]))
 
-(define (interpret-expr b stack primitives variable-ref variable-ref/no-check variable-set! variable-set!/define
-                        make-arity-wrapper-procedure)
+(define (interpret-expr b stack)
 
-  ;; Returns `result ...` when `tail?` is #t, and
-  ;; returns `(values stack result ...)` when `tail?` is #f.
-  ;; An updated "stack" is returned because bindings are
-  ;; removed from the stack on their last uses (where there is
-  ;; a non-tail call after the last use)
-  (define (interpret b stack [tail? #f])
+  ;; An updated "stack" must be returned when bindings are removed
+  ;; from the stack on their last uses (where there is a non-tail call
+  ;; after the last use). But that stack is not needed by a caller if
+  ;; we're in tail position with respect to the start of interpreting.
+  ;; That case is when `return-mode` is #f. Meanwhile, if we're in a
+  ;; `with-continuation-mark`, we need a little trampoline to make a
+  ;; call to an unknown function (that might use marks) while also
+  ;; keeping track of the latest stack; that case is when
+  ;; `return-mode` is a hash table, and returning 'trampoline
+  ;; for the stack triggers the trampoline to ship marks to be
+  ;; around the call within `values` to return the actual stack.
+  (define (interpret b stack [return-mode 'values])
     (cond
-      [(integer? b) (stack-ref stack b tail?)]
-      [(box? b) (stack-ref stack b tail?)]
+      [(integer? b) (stack-ref stack b (not return-mode))]
+      [(box? b) (stack-ref stack b (not return-mode))]
       [(pair? b)
        (define-values (new-stack vec) (stack-ref stack (car b)))
        (define val (vector*-ref vec (cdr b)))
-       (if tail?
-           val
-           (values new-stack val))]
+       (if return-mode
+           (values new-stack val)
+           val)]
       [(symbol? b)
        (define val (hash-ref primitives b))
-       (if tail?
-           val
-           (values stack val))]
+       (if return-mode
+           (values stack val)
+           val)]
       [(vector? b)
        (interp-match
         b
         [#(app ,rator-b)
          (define len (vector*-length b))
          (define-values (rand-stack rator) (interpret rator-b stack))
-         (define-syntax-rule (add-value stack app)
-           (call-with-values
-            (lambda () app)
-            (case-lambda
-              [(v) (values stack v)]
-              [vs (apply values stack vs)])))
+         (define-syntax-rule (return-stack stack app)
+           (if (eq? return-mode 'values)
+               (call-with-values
+                (lambda () app)
+                (case-lambda
+                  [(v) (values stack v)]
+                  [vs (apply values stack vs)]))
+               (let ([marks return-mode])
+                 (values
+                  'trampoline
+                  (lambda ()
+                    (call-with-values
+                     (lambda ()
+                       (let loop ([i (hash-iterate-first marks)])
+                         (cond
+                           [(not i) app]
+                           [else
+                            (define-values (k v) (hash-iterate-key+value marks i))
+                            (with-continuation-mark
+                             k v
+                             (loop (hash-iterate-next marks i)))])))
+                     (case-lambda
+                       [(v) (values stack v)]
+                       [vs (apply values stack vs)])))))))
          (cond
            [(eq? len 2)
-            (if tail?
-                (rator)
-                (add-value stack (rator)))]
+            (if return-mode
+                (return-stack rand-stack (rator))
+                (rator))]
            [(eq? len 3)
             (define-values (stack rand) (interpret (vector*-ref b 2) rand-stack))
-            (if tail?
-                (rator rand)
-                (add-value stack (rator rand)))]
+            (if return-mode
+                (return-stack stack (rator rand))
+                (rator rand))]
            [(eq? len 4)
             (define-values (stack1 rand1) (interpret (vector*-ref b 2) rand-stack))
             (define-values (stack2 rand2) (interpret (vector*-ref b 3) stack1))
-            (if tail?
-                (rator rand1 rand2)
-                (add-value stack (rator rand1 rand2)))]
+            (if return-mode
+                (return-stack stack2 (rator rand1 rand2))
+                (rator rand1 rand2))]
            [else
             (define-values (stack rev-rands)
               (for/fold ([stack rand-stack] [rev-rands null]) ([b (in-vector b 2)])
                 (define-values (new-stack v) (interpret b stack))
                 (values new-stack (cons v rev-rands))))
             (define rands (reverse rev-rands))
-            (if tail?
-                (apply rator rands)
-                (add-value stack (apply rator rands)))])]
+            (if return-mode
+                (return-stack stack (apply rator rands))
+                (apply rator rands))])]
         [#(quote ,v)
-         (if tail?
-             v
-             (values stack v))]
+         (if return-mode
+             (values stack v)
+             v)]
         [#(unbox ,s)
          (define-values (new-stack bx) (stack-ref stack s))
          (define val (unbox* bx))
-         (if tail?
-             val
-             (values new-stack val))]
+         (if return-mode
+             (values new-stack val)
+             val)]
         [#(unbox/checked ,s ,name)
          (define-values (new-stack bx) (stack-ref stack s))
          (define v (unbox* bx))
          (define val (check-not-unsafe-undefined v name))
-         (if tail?
-             val
-             (values new-stack val))]
+         (if return-mode
+             (values new-stack val)
+             val)]
         [#(ref-variable ,s)
          (define-values (new-stack var) (stack-ref stack s))
          (define val (variable-ref/no-check var))
-         (if tail?
-             val
-             (values new-stack val))]
+         (if return-mode
+             (values new-stack val)
+             val)]
         [#(ref-variable/checked ,s)
          (define-values (new-stack var) (stack-ref stack s))
          (define val (variable-ref var))
-         (if tail?
-             val
-             (values new-stack val))]
+         (if return-mode
+             (values new-stack val)
+             val)]
         [#(let ,pos ,rhss ,b)
          (define len (vector*-length rhss))
          (define body-stack
@@ -564,7 +732,7 @@
                [else
                 (define-values (new-stack val) (interpret (vector*-ref rhss i) stack))
                 (stack-set (loop (fx+ i 1) new-stack) (fx+ i pos) val)])))
-         (interpret b body-stack tail?)]
+         (interpret b body-stack return-mode)]
         [#(let* ,poss ,rhsss ,b)
          (define body-stack
            (for/fold ([stack stack]) ([pos (in-list poss)]
@@ -575,19 +743,25 @@
                  [(fx= i len) stack]
                  [else
                   (define-values (new-stack val) (interpret (vector*-ref rhss i) stack))
-                  (stack-set (loop (fx+ i 1) new-stack) (fx+ i pos) val)]))))
-         (interpret b body-stack tail?)]
+                  (loop (fx+ i 1) (stack-set new-stack (fx+ i pos) val))]))))
+         (interpret b body-stack return-mode)]
         [#(letrec ,pos ,rhss ,b)
          (define len (vector*-length rhss))
          (define-values (body-stack boxes)
-           (for/fold ([stack stack] [boxes null]) ([i (in-range len)])
-             (define bx (box unsafe-undefined))
-             (values (stack-set stack (fx+ (fx- len i 1) pos) bx)
-                     (cons bx boxes))))
+           (let loop ([stack stack] [i 0])
+             (cond
+               [(= i len)
+                (values stack null)]
+               [else
+                (define bx (box unsafe-undefined))
+                (define-values (new-stack boxes)
+                  (loop (stack-set stack (fx+ (fx- len i 1) pos) bx)
+                        (add1 i)))
+                (values new-stack (cons bx boxes))])))
          (let loop ([i 0] [stack body-stack] [boxes boxes])
            (cond
              [(fx= i len)
-              (interpret b stack tail?)]
+              (interpret b stack return-mode)]
              [else
               (define-values (new-stack val) (interpret (vector*-ref rhss i) stack))
               (set-box! (car boxes) val)
@@ -597,7 +771,7 @@
          (let loop ([i 1] [stack stack])
            (cond
              [(fx= i last)
-              (interpret (vector*-ref b i) stack tail?)]
+              (interpret (vector*-ref b i) stack return-mode)]
              [else
               (call-with-values
                (lambda () (interpret (vector*-ref b i) stack))
@@ -617,32 +791,63 @@
                    [(new-stack val) new-stack]
                    [(new-stack . vals) new-stack])))
               (if (fx= i last)
-                  (if tail?
-                      (apply values vals)
-                      (apply values new-stack vals))
+                  (if return-mode
+                      (apply values new-stack vals)
+                      (apply values vals))
                   (loop (fx+ i 1) new-stack)))))]
         [#($value ,e)
-         (let ([v (interpret e stack)])
-           v)]
+         (let-values ([(new-stack v) (interpret e stack)])
+           (if return-mode
+               (values new-stack v)
+               v))]
         [#(clear ,clears ,e)
          (let loop ([clears clears] [stack stack])
            (cond
              [(null? clears)
-              (interpret e stack tail?)]
+              (interpret e stack return-mode)]
              [else
               (loop (cdr clears) (stack-remove stack (car clears)))]))]
+        [#(enbox ,pos ,e)
+         (define new-stack (stack-set stack pos (box (stack-ref stack pos #t))))
+         (interpret e new-stack return-mode)]
         [#(if ,tst ,thn ,els)
          (define-values (new-stack val) (interpret tst stack))
          (if val
-             (interpret thn new-stack tail?)
-             (interpret els new-stack tail?))]
+             (interpret thn new-stack return-mode)
+             (interpret els new-stack return-mode))]
         [#(wcm ,key ,val ,body)
          (define-values (k-stack k-val) (interpret key stack))
          (define-values (v-stack v-val) (interpret val k-stack))
-         (with-continuation-mark
-          k-val
-          v-val
-          (interpret body v-stack tail?))]
+         (cond
+           [(not return-mode)
+            ;; In tail position, so we can just use
+            ;; with-continuation-mark` directly:
+            (with-continuation-mark
+             k-val
+             v-val
+             (interpret body v-stack #f))]
+           [(eq? return-mode 'values)
+            ;; Not in tail position with respect to a `with-continuation-mark`.
+            ;; Build a trampoline so that we can get an updated stack, but a function
+            ;; can be called in tail position with respect to marks
+            ((call-with-values
+              (lambda ()
+                (with-continuation-mark
+                 k-val v-val
+                 (interpret body v-stack (hasheq k-val v-val))))
+              (case-lambda
+                [(stack v) (if (eq? stack 'trampoline)
+                               ;; trampoline return:
+                               v
+                               ;; normal return:
+                               (lambda () (values stack v)))]
+                [(stack . vs) (lambda () (apply values stack vs))])))]
+           [else
+            ;; In tail position with respect to a `with-continuation-mark`,
+            ;; so take advantage of its `return-mode` trampoline:
+            (with-continuation-mark
+             k-val v-val
+             (interpret body v-stack (hash-set return-mode k-val v-val)))])]
         [#(cwv ,b ,pos ,name ,clauses)
          (define-values (new-stack vs)
            (call-with-values
@@ -651,42 +856,38 @@
          (define len (length vs))
          (let loop ([clauses clauses] [full-mask 0])
            (cond
-             [(null? clauses)(apply raise-arity-mask-error (or name '|#<procedure>|) full-mask vs)]
+             [(null? clauses) (apply raise-arity-mask-error (or name '|#<procedure>|) full-mask vs)]
              [else
               (interp-match
                (car clauses)
                [#(,mask ,b)
                 (if (matching-argument-count? mask len)
-                    (interpret b (push-stack new-stack pos vs mask) tail?)
+                    (interpret b (push-stack new-stack pos vs mask) return-mode)
                     (loop (cdr clauses) (fxior mask full-mask)))])]))]
         [#(cwmp0 ,b)
-         (unless tail? (error 'interpret "expect call-with-module-prompt in tail position"))
+         (when return-mode (error 'interpret "expect call-with-module-prompt in tail position"))
          ((hash-ref primitives 'call-with-module-prompt)
-          (lambda () (interpret b stack #t)))]
+          (lambda () (interpret b stack #f)))]
         [#(cwmp ,b ,ids ,constances ,var-es)
-         (unless tail? (error 'interpret "expect call-with-module-prompt in tail position"))
+         (when return-mode (error 'interpret "expect call-with-module-prompt in tail position"))
          (apply (hash-ref primitives 'call-with-module-prompt)
-                (lambda () (interpret b stack #t))
+                (lambda () (interpret b stack #f))
                 ids
                 constances
                 (for/list ([e (in-list var-es)])
-                  (interpret e stack #t)))]
-        [#(lambda ,mask ,name ,close-vec ,_)
+                  (interpret e stack #f)))]
+        [#(lambda ,mask ,wrap-data ,close-vec ,_)
          (define-values (new-stack captured) (capture-closure close-vec stack))
          (define val
-           (make-arity-wrapper-procedure
+           (make-interp-procedure*
             (lambda args
-              (cond
-                [(matching-argument-count? mask (length args))
-                 (apply-function b captured args)]
-                [else
-                 (apply raise-arity-mask-error (or name '|#<procedure>|) mask args)]))
+              (apply-function b captured args))
             mask
-            name))
-         (if tail?
-             val
-             (values new-stack val))]
-        [#(case-lambda ,mask ,name)
+            wrap-data))
+         (if return-mode
+             (values new-stack val)
+             val)]
+        [#(case-lambda ,mask ,wrap-data)
          (define n (vector*-length b))
          (define-values (new-stack captureds)
            (let loop ([i 3] [stack stack])
@@ -697,16 +898,18 @@
                 (define-values (new-stack captured)
                   (interp-match
                    (vector*-ref b i)
-                   [#(lambda ,mask ,name ,close-vec) (capture-closure close-vec rest-stack)]))
+                   [#(lambda ,mask ,_ ,close-vec) (capture-closure close-vec rest-stack)]))
                 (values new-stack (cons captured rest-captureds))])))
          (define val
-           (make-arity-wrapper-procedure
+           (make-interp-procedure*
             (lambda args
               (define len (length args))
               (let loop ([i 3] [captureds captureds] [full-mask 0])
                 (cond
                   [(fx= i n)
-                   (apply raise-arity-mask-error (or name '|#<procedure>|) full-mask args)]
+                   ;; We shouldn't get here, because the wrapper should enforce arity,
+                   ;; but just in case:
+                   (apply raise-arity-mask-error '|#<procedure>| full-mask args)]
                   [else
                    (define one-b (vector*-ref b i))
                    (interp-match
@@ -716,44 +919,44 @@
                          (apply-function one-b (car captureds) args)
                          (loop (fx+ i 1) (cdr captureds) (fxior full-mask mask)))])])))
             mask
-            #f))
-         (if tail?
-             val
-             (values new-stack val))]
+            wrap-data))
+         (if return-mode
+             (values new-stack val)
+             val)]
         [#(set-variable! ,s ,b ,c ,defn?)
          (define-values (var-stack var) (stack-ref stack s))
          (define-values (val-stack val) (interpret b var-stack))
          (if defn?
              (variable-set!/define var val c)
              (variable-set! var val))
-         (if tail?
-             (void)
-             (values val-stack (void)))]
+         (if return-mode
+             (values val-stack (void))
+             (void))]
         [#(set!-indirect ,s ,e ,b)
          (define-values (vec-stack vec) (stack-ref stack s))
          (define-values (val-stack val) (interpret b vec-stack))
          (vector*-set! vec e val)
-         (if tail?
-             (void)
-             (values val-stack (void)))]
+         (if return-mode
+             (values val-stack (void))
+             (void))]
         [#(set!-boxed ,s ,b ,name)
          (define-values (bx-stack bx) (stack-ref stack s))
          (define-values (v-stack v) (interpret b bx-stack))
          (set-box*! bx v)
-         (if tail?
-             (void)
-             (values v-stack (void)))]
+         (if return-mode
+             (values v-stack (void))
+             (void))]
         [#(set!-boxed/checked ,s ,b ,name)
          (define-values (bx-stack bx) (stack-ref stack s))
          (define-values (v-stack v) (interpret b bx-stack))
          (check-not-unsafe-undefined/assign (unbox* bx) name)
          (set-box*! bx v)
-         (if tail?
-             (void)
-             (values v-stack (void)))])]
-      [else (if tail?
-                b
-                (values stack b))]))
+         (if return-mode
+             (values v-stack (void))
+             (void))])]
+      [else (if return-mode
+                (values stack b)
+                b)]))
 
   (define (capture-closure close-vec stack)
     (define len (vector*-length close-vec))
@@ -770,7 +973,7 @@
     (interp-match
      b
      [#(lambda ,mask ,name ,close-vec ,b)
-      (interpret b (push-stack captured 0 args mask) #t)]))
+      (interpret b (push-stack captured 0 args mask) #f)]))
 
   (cond
     [(vector? b)
@@ -782,14 +985,14 @@
          (define e (vector*-ref b i))
          (cond
            [(= i last)
-            (interpret e stack #t)]
+            (interpret e stack #f)]
            [else
-            (interpret e stack #t)
+            (interpret e stack #f)
             (loop (add1 i))]))]
       [#()
-       (interpret b stack #t)])]
+       (interpret b stack #f)])]
     [else
-     (interpret b stack #t)]))
+     (interpret b stack #f)]))
 
 ;; ----------------------------------------
 
@@ -809,8 +1012,17 @@
                            'vector vector
                            'add1 add1
                            'values values
-                           'continuation-mark-set-first continuation-mark-set-first))
+                           'continuation-mark-set-first continuation-mark-set-first
+                           'gensym gensym
+                           'apply apply
+                           'make-weak-box make-weak-box
+                           'void void))
   (struct var ([val #:mutable]) #:transparent)
+  (interpreter-link! primitives
+                     values
+                     var-val var-val
+                     (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
+                     (lambda (proc mask name) proc))
   (define b
     (interpretable-jitified-linklet '(let* ([s "string"])
                                        (lambda (x two-box)
@@ -848,9 +1060,7 @@
                                                   (f 'vec) (g 'also-vec 'more)
                                                   one two (variable-ref two-box)
                                                   (continuation-mark-set-first #f 'x 'no))))))
-                                    values))
+                                    #f))
   (pretty-print b)
-  (define l (interpret-linklet b null primitives var-val var-val
-                               (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
-                               (lambda (proc mask name) proc)))
+  (define l (interpret-linklet b null))
   (l 'the-x (var #f)))

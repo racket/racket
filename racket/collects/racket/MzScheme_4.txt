@@ -298,7 +298,7 @@ uses of mutable pairs are isolated and easy to convert to either
 mpairs or functional style. The new `scheme/mpair' library provides
 functions for processing mutable lists.
 
-For compatbility, the `cons' exported by the `r5rs' language module is
+For compatibility, the `cons' exported by the `r5rs' language module is
 an alias for `mcons', and the various list-consuming and -producing
 functions expetced by `r5rs' also use mutable pairs. Even the `lambda'
 form of `r5rs' converts rest arguments to mutable lists.

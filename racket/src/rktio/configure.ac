@@ -148,6 +148,14 @@ if test "${endianness}" = "big" ; then
   AC_DEFINE(RKTIO_BIG_ENDIAN,1,[Big endian])
 fi
 
+# Struct dirent
+AC_CHECK_MEMBER([struct dirent.d_namelen],
+                [AC_DEFINE(HAVE_DIRENT_NAMELEN, 1, [struct dirent has field namelen])],,
+		[#include <dirent.h>])
+AC_CHECK_MEMBER([struct dirent.d_namlen],
+                [AC_DEFINE(HAVE_DIRENT_NAMLEN, 1, [struct dirent has field namlen])],,
+		[#include <dirent.h>])
+
 AC_MSG_CHECKING([for getaddrinfo])
 AC_TRY_LINK([#include <sys/types.h>
 #include <sys/socket.h>
@@ -425,6 +433,9 @@ AC_SUBST(HIDE_NOT_STANDALONE)
 AC_SUBST(HIDE_STANDALONE)
 
 AC_SUBST(RKTIO_NO_ICONV)
+
+AC_SUBST(HAVE_DIRENT_NAMLEN)
+AC_SUBST(HAVE_DIRENT_NAMELEN)
 
 makefiles="Makefile"
 

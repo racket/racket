@@ -43,7 +43,8 @@
   (provide future*-lock
            set-future*-state!
            future-suspend
-           future-notify-dependent))
+           future-notify-dependent
+           wakeup-this-place))
 
 (define (init-future-place!)
   (init-future-logging-place!))
@@ -287,7 +288,7 @@
         (lock-release (future*-lock f))
         (touch s)
         (touch f)])]
-    [(box? s) ; => dependent on fsemaphore
+    [(or (box? s) (eq? s 'fsema)) ; => dependent on fsemaphore
      (cond
        [(current-future)
         ;; Lots to wait on, so give up on the current future for now

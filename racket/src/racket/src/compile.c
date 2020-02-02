@@ -1367,7 +1367,7 @@ int scheme_get_eval_type(Scheme_Object *obj)
 }    
 
 Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Optimize_Info *info)
-     /* Apply `f' to `args' and ignore failues --- used for constant
+     /* Apply `f' to `args' and ignore failures --- used for constant
         folding attempts */
 {
   Scheme_Object * volatile result;

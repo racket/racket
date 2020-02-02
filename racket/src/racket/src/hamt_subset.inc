@@ -42,7 +42,7 @@ HAMT_NONGCING static int HAMT_ELEMENT_OF(Scheme_Object *key1, Scheme_Object *val
 
 HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int shift,
                                  int stype, void *eql_data)
-/* checks wheher `t1` is a subset of `t2`; `t1` and `t2` must be of the same kind */
+/* checks whether `t1` is a subset of `t2`; `t1` and `t2` must be of the same kind */
 {
   hash_tree_bitmap_t i;
   int pos1, pos2, index, popcount1, popcount2;
@@ -112,7 +112,7 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
               return 0;
           }
         } else {
-          /* A single element in t2 can't cover eveything in the collision */
+          /* A single element in t2 can't cover everything in the collision */
           return 0;
         }
       } else {
@@ -129,7 +129,7 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
           if (_mzHAMT_CODE(t1, pos1, popcount1) != _mzHAMT_CODE(t2, pos2, popcount2))
             return 0;
           if (HASHTR_COLLISIONP(k2)) {
-            /* look for an invidual value in t2: */
+            /* look for an individual value in t2: */
             if (!HAMT_ELEMENT_OF_COLLISION(k1, HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
                                            (Scheme_Hash_Tree *)k2,
                                            stype, eql_data))

@@ -30,6 +30,9 @@
    [(and (format-condition? v)
          (string-prefix? "~?.  Some debugging context lost" (condition-message v)))
     exn:fail]
+   [(and (who-condition? v)
+         (eq? 'time-utc->date (condition-who v)))
+    exn:fail]
    [else
     exn:fail:contract]))
 
@@ -53,7 +56,8 @@
                 flonum->fixnum fl->fx
                 fxarithmetic-shift-right fxrshift
                 fxarithmetic-shift-left fxlshift
-                real->flonum ->fl)
+                real->flonum ->fl
+                time-utc->date seconds->date)
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 
@@ -107,6 +111,8 @@
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
       (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
                            irritants))]
+   [(eq? who 'time-utc->date)
+    (values "integer is out-of-range" null)]
    [else
     (format-error-values str irritants)]))
 

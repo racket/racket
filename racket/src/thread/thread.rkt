@@ -129,12 +129,12 @@
 
                      [cpu-time #:mutable] ; accumulates CPU time in milliseconds
 
-                     [future #:mutable]   ; current would-be future
-                     
-                     [condition-wakeup #:mutable])
+                     [future #:mutable])  ; current would-be future
+  #:authentic
+  #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:waiter
   (make-waiter-methods 
-   #:suspend! (lambda (t i-cb r-cb) (thread-deschedule! t #f i-cb r-cb))
+   #:suspend! (lambda (t i-cb) (thread-deschedule! t #f i-cb))
    #:resume! (lambda (t v) (thread-reschedule! t) v))
   #:property prop:evt (lambda (t) (wrap-evt (get-thread-dead-evt t)
                                             (lambda (v) t)))
@@ -201,8 +201,6 @@
                     0 ; cpu-time
 
                     #f ; future
-
-                    void ; condition-wakeup
                     )) 
   ((atomically
     (define cref (and c (custodian-register-thread c t remove-thread-custodian)))
@@ -270,11 +268,14 @@
     (thread-unscheduled-for-work-tracking! t))
   (remove-from-sleeping-threads! t)
   (run-kill-callbacks! t)
+  (set-thread-suspend+resume-callbacks! t null)
   (when (thread-forward-break-to t)
     (do-break-thread (thread-forward-break-to t) 'break #f))
   (for ([cr (in-list (thread-custodian-references t))])
     (unsafe-custodian-unregister t cr))
-  (set-thread-custodian-references! t null))
+  (set-thread-custodian-references! t null)
+  (set-thread-mailbox! t #f)
+  (set-thread-mailbox-wakeup! t void))
 
 ;; ----------------------------------------
 ;; Thread termination
@@ -304,7 +305,8 @@
        (do-thread-suspend t)))]
     [else
      (atomically
-      (do-kill-thread t))
+      (do-kill-thread t)
+      (void))
      (when (eq? t (current-thread/in-atomic))
        (when (eq? t root-thread)
          (force-exit 0))
@@ -444,19 +446,18 @@
 ;; Extends `do-thread-deschdule!` where `t` is always `(current-thread)`.
 ;; The `interrupt-callback` is called if the thread receives a break
 ;; signal, is killed, or is suspended; if the break signal is
-;; supressed or resumed, then `retry-callback` is called to try again
+;; suppressed or resumed, then `retry-callback` is called to try again
 ;; --- but `retry-callback` will only be used if `interrupt-callback`
 ;; was previously called, and neither is called if the thread is
 ;; "internal"-resumed normally instead of by a break signal of a
 ;; `thread-resume`.
-(define (thread-deschedule! t timeout-at interrupt-callback retry-callback)
-  (define needs-retry? #f)
+(define (thread-deschedule! t timeout-at interrupt-callback)
+  (define  retry-callback #f)
   (atomically
    (set-thread-interrupt-callback! t (lambda ()
                                        ;; If the interrupt callback gets invoked,
                                        ;; then remember that we need a retry
-                                       (set! needs-retry? #t)
-                                       (interrupt-callback)))
+                                       (set! retry-callback (interrupt-callback))))
    (define finish (do-thread-deschedule! t timeout-at))
    ;; It's ok if the thread gets interrupted
    ;; outside the atomic region, because we'd
@@ -464,7 +465,7 @@
    (lambda ()
      ;; In non-atomic mode:
      (finish)
-     (when needs-retry?
+     (when retry-callback
        (retry-callback)))))
 
 ;; in atomic mode
@@ -714,11 +715,11 @@
      (let loop ()
        ((thread-deschedule! (current-thread)
                             until-msecs
-                            void
                             (lambda ()
-                              ;; Woke up due to an ignored break?
-                              ;; Try again:
-                              (loop)))))]))
+                              (lambda ()
+                                ;; Woke up due to an ignored break?
+                                ;; Try again:
+                                (loop))))))]))
 
 ;; ----------------------------------------
 ;; Tracking thread progress
@@ -956,9 +957,9 @@
                              #f
                              ;; Interrupted for break => not waiting for mail
                              (lambda ()
-                               (set-thread-mailbox-wakeup! t void))
-                             ;; No retry action, because we always retry:
-                             void))
+                               (set-thread-mailbox-wakeup! t void)
+                               ;; No retry action, because we always retry:
+                               void)))
        ;; called out of atomic mode:
        (lambda ()
          (do-yield)

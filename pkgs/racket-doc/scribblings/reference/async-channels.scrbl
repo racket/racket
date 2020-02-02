@@ -68,7 +68,7 @@ is full until space is available.}
 Returns a @tech{synchronizable event} that is @tech{ready for
 synchronization} when @racket[(async-channel-put ach v)] would return
 a value (i.e., when the channel holds fewer values already than its
-limit); @resultItself{asychronous channel-put event}.}
+limit); @resultItself{asynchronous channel-put event}.}
 
 @examples[#:eval (async-eval) #:once
 (eval:no-prompt

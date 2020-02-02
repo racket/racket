@@ -270,8 +270,9 @@ etc.) can be used on bound-identifier sets.
 @defproc[(bound-id-subset? [s1 bound-id-set?] [s2 bound-id-set?]) boolean?]
 @defproc[(bound-id-proper-subset? [s1 bound-id-set?] [s2 bound-id-set?]) 
          boolean?]
-@defproc[(bound-id-set-map [s bound-id-set?]) list?]
-@defproc[(bound-id-set-for-each [s bound-id-set?]) void?]
+@defproc[(bound-id-set-map [s bound-id-set?] [f (-> identifier? any/c)]) list?]
+@defproc[(bound-id-set-for-each [s bound-id-set?] [f (-> identifier? any/c)])
+         void?]
 @defproc[(bound-id-set/c 
           [elem-ctc flat-contract?]
           [#:mutability mutability 

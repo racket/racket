@@ -13,7 +13,7 @@
 ; defined is the grammar's goal.  Each rule is a possibly empty list of
 ; non-terminals.  Thus a rule has the form: (nt1 nt2...).  A non-terminal
 ; can be any scheme value.  Note that all grammar symbols are treated as
-; non-terminals.  This is fine though because the lexer will be outputing
+; non-terminals.  This is fine though because the lexer will be outputting
 ; non-terminals.
 ;
 ; The lexer defines what a token is and the mapping between tokens and

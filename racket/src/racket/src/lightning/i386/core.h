@@ -417,7 +417,7 @@ struct jit_local_state {
 /* Stack isn't used for arguments: */
 # define jit_prepare_i(ni)	(_jitl.argssize = (ni), _jitl.argpushes = _jitl.argssize)
 #else
-# ifdef _CALL_DARWIN
+# if defined(_CALL_DARWIN) || defined(JIT_X86_ALIGN_STACK)
   /* Stack must stay 16-byte aligned: */
 #  define jit_prepare_i(ni)	(((ni & 0x3) \
                                   ? SUBLir(4 * ((((ni) + 3) & ~(0x3)) - (ni)), JIT_SP) \

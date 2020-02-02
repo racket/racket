@@ -255,6 +255,9 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/object-name.ss \
               rumble/arity.ss \
               rumble/intmap.ss \
+              rumble/patricia.ss \
+              rumble/hamt-stencil.ss \
+              rumble/hamt-vector.ss \
               rumble/hash.ss \
               rumble/datum.ss \
 	      rumble/lock.ss \

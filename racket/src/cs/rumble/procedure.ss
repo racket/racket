@@ -77,11 +77,10 @@
   (let ([tmp f])
     (if (#%procedure? tmp)
         tmp
-        (slow-extract-procedure tmp n-args))))
+        (#3%$app/no-inline slow-extract-procedure tmp n-args))))
 
 (define (slow-extract-procedure f n-args)
-  (pariah ; => don't inline enclosing procedure
-   (do-extract-procedure f f n-args #f not-a-procedure)))
+  (do-extract-procedure f f n-args #f not-a-procedure))
 
 ;; Returns a host-Scheme procedure, but first checks arity so that
 ;; checking and reporting use the right top-level function, and
@@ -95,6 +94,12 @@
             (success-k f)
             f)
         (wrong-arity-wrapper orig-f))]
+   [(continuation? f)
+    (let ([p (lambda args
+               (apply-continuation f args))])
+      (if success-k
+          (success-k p)
+          p))]
    [(record? f)
     (let* ([rtd (record-rtd f)]
            [v (struct-property-ref prop:procedure rtd none)])
@@ -145,25 +150,31 @@
          (reduced-arity-procedure-name f))
     => (lambda (name) name)]
    [(record? f)
-    (let* ([v (struct-property-ref prop:procedure (record-rtd f) #f)])
-      (cond
-       [(fixnum? v)
-        (let ([v (unsafe-struct-ref f v)])
-          (cond
-           [(procedure? v) (object-name v)]
-           [else (struct-object-name f)]))]
-       [(eq? v 'unsafe)
-        (extract-procedure-name
-         (if (chaperone? f)
-             (unsafe-procedure-chaperone-replace-proc f)
-             (unsafe-procedure-impersonator-replace-proc f)))]
-       [else (struct-object-name f)]))]
+    (cond
+     [(position-based-accessor? f)
+      (position-based-accessor-name f)]
+     [(position-based-mutator? f)
+      (position-based-mutator-name f)]
+     [else
+      (let* ([v (struct-property-ref prop:procedure (record-rtd f) #f)])
+        (cond
+         [(fixnum? v)
+          (let ([v (unsafe-struct-ref f v)])
+            (cond
+             [(procedure? v) (object-name v)]
+             [else (struct-object-name f)]))]
+         [(eq? v 'unsafe)
+          (extract-procedure-name
+           (if (chaperone? f)
+               (unsafe-procedure-chaperone-replace-proc f)
+               (unsafe-procedure-impersonator-replace-proc f)))]
+         [else (struct-object-name f)]))])]
    [else #f]))
 
 (define/who procedure-arity-includes?
   (case-lambda
    [(f n incomplete-ok?)
-    (let ([mask (get-procedure-arity-mask who f incomplete-ok?)])
+    (let ([mask (get-procedure-arity-mask who f incomplete-ok? #f)])
       (check who exact-nonnegative-integer? n)
       (bitwise-bit-set? mask n))]
    [(f n) (procedure-arity-includes? f n #f)]))
@@ -171,18 +182,24 @@
 (define (chez:procedure-arity-includes? proc n)
   (bitwise-bit-set? (#%procedure-arity-mask proc) n))
 
+;; assumes that `n` is an exact nonnegative integer
+(define (unsafe-procedure-and-arity-includes? p n)
+  (if (#%procedure? p)
+      (chez:procedure-arity-includes? p n)
+      (bitwise-bit-set? (get-procedure-arity-mask #f p #f 0) n)))
+
 (define (procedure-arity orig-f)
-  (mask->arity (get-procedure-arity-mask 'procedure-arity orig-f #t)))
+  (mask->arity (get-procedure-arity-mask 'procedure-arity orig-f #t #f)))
 
 (define/who (procedure-arity-mask orig-f)
-  (get-procedure-arity-mask who orig-f #t))
+  (get-procedure-arity-mask who orig-f #t #f))
 
-(define (get-procedure-arity-mask who orig-f incomplete-ok?)
+(define (get-procedure-arity-mask who orig-f incomplete-ok? fail-v)
   (cond
    [(#%procedure? orig-f)
     (#%procedure-arity-mask orig-f)]
    [else
-    (let proc-arity-mask ([f orig-f] [shift 0])
+    (let proc-arity-mask ([f orig-f] [shift 0] [fail-v fail-v])
       (cond
        [(#%procedure? f)
         (bitwise-arithmetic-shift-right (#%procedure-arity-mask f) shift)]
@@ -200,14 +217,14 @@
                 (let ([v (struct-property-ref prop:procedure rtd #f)])
                   (cond
                    [(fixnum? v)
-                    (proc-arity-mask (unsafe-struct-ref f v) shift)]
+                    (proc-arity-mask (unsafe-struct-ref f v) shift 0)]
                    [(eq? v 'unsafe)
-                    (proc-arity-mask (impersonator-next f) shift)]
+                    (proc-arity-mask (impersonator-next f) shift 0)]
                    [else
-                    (proc-arity-mask v (add1 shift))]))]))]))]
-       [(eq? f orig-f)
-        (raise-argument-error who "procedure?" orig-f)]
-       [else 0]))]))
+                    (proc-arity-mask v (add1 shift) 0)]))]))]))]
+       [else
+        (or fail-v
+            (raise-argument-error who "procedure?" orig-f))]))]))
 
 (define (procedure-incomplete-arity? f)
   (cond
@@ -239,15 +256,21 @@
 (define/who (procedure-extract-target f)
   (cond
    [(record? f)
-    (let* ([rtd (record-rtd f)]
-           [v (struct-property-ref prop:procedure rtd #f)])
-      (cond
-       [(fixnum? v)
-        (let ([v (unsafe-struct-ref f v)])
-          (and (#%procedure? v) v))]
-       [else
-        (check who procedure? f)
-        #f]))]
+    (cond
+     [(or (reduced-arity-procedure? f)
+          (named-procedure? f)
+          (method-procedure? f))
+      #f]
+     [else
+      (let* ([rtd (record-rtd f)]
+             [v (struct-property-ref prop:procedure rtd #f)])
+        (cond
+         [(fixnum? v)
+          (let ([v (unsafe-struct-ref f v)])
+            (and (procedure? v) v))]
+         [else
+          (check who procedure? f)
+          #f]))])]
    [else
     (check who procedure? f)
     #f]))
@@ -498,6 +521,15 @@
                mask
                name)])
     p))
+
+;; A boxed `name` means a method
+(define (make-interp-procedure proc mask name)
+  (make-arity-wrapper-procedure
+   proc
+   mask
+   (if (box? name)
+       (vector (unbox name) proc 'method)
+       (vector name proc))))
 
 (define (extract-wrapper-procedure-name p)
   (let ([name (wrapper-procedure-data p)])

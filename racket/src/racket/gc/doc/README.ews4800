@@ -20,7 +20,7 @@ GC on EWS4800
      AR = /usr/ccs64/bin/ar
 
 3. ELF file format
-   *** Caution: The following infomation is empirical. ***
+   *** Caution: The following information is empirical. ***
 
  32bit:
    ELF file has an unique format. (See a.out(4) and end(3C).)
@@ -76,6 +76,6 @@ Hironori SAKAMOTO <hsaka@mth.biglobe.ne.jp>
 
 When using the new "configure; make" build process, please
 run configure with the --disable-shared option.  "Make check" does not
-yet pass with dynamic libraries.  Ther reasons for that are not yet
+yet pass with dynamic libraries.  Their reasons for that are not yet
 understood.  (HB, paraphrasing message from Hironori SAKAMOTO.)
 

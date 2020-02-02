@@ -73,6 +73,23 @@
 		    x
 		    x)))))
 
+(wcm-test '(#(no 12) #(10 no))
+	  (lambda ()
+	    (with-continuation-mark 'key1 10
+	      (let ([x (with-continuation-mark 'key2 12
+                         (let loop ([iter (continuation-mark-set->iterator (current-continuation-marks) '(key1 key2) 'no)])
+                           (let-values ([(vec next) (iter)])
+                             (if (not vec)
+                                 (let*-values ([(false next-again) (next)]
+                                               [(false2 next-again-again) (next-again)])
+                                   (test #f values false)
+                                   (test #f values false2)
+                                   null)
+                                 (cons vec (loop next))))))])
+		(if (void? x)
+		    x
+		    x)))))
+
 (wcm-test '(11) (lambda ()
 		  (with-continuation-mark 'key 10 
 		    (with-continuation-mark 'key 11
@@ -101,7 +118,7 @@
 					 (with-continuation-mark 'key 10 (extract-current-continuation-marks 'key))
 					 (extract-current-continuation-marks 'key)))))
 
-(require (prefix-in unit: scheme/unit))
+(require (prefix-in unit: racket/unit))
 
 ;; ;; Hide keywords from scheme/unit.rkt:
 (define import #f)
@@ -995,6 +1012,14 @@
        (current-continuation-marks)
        (list mark))))
 
+  (define (do-test-iterate mark val)
+    (with-continuation-mark mark val
+      (let ([iter (continuation-mark-set->iterator (current-continuation-marks)
+                                                   (list mark))])
+        (let loop ([iter iter])
+          (let-values ([(v iter) (iter)])
+            (if v (cons v (loop iter)) null))))))
+
   (define (do-test/first mark val)
     (with-continuation-mark mark val
       (continuation-mark-set-first (current-continuation-marks) mark)))
@@ -1006,10 +1031,12 @@
 
   (wcm-test '(12) (lambda () (do-test imp-mark 5)))
   (wcm-test '(#(12)) (lambda () (do-test* imp-mark 5)))
+  (wcm-test '(#(12)) (lambda () (do-test-iterate imp-mark 5)))
   (wcm-test 12 (lambda () (do-test/first imp-mark 5)))
   (wcm-test 12 (lambda () (do-test/immediate imp-mark 5)))
   (wcm-test '(5) (lambda () (do-test cha-mark 5)))
   (wcm-test '(#(5)) (lambda () (do-test* cha-mark 5)))
+  (wcm-test '(#(5)) (lambda () (do-test-iterate cha-mark 5)))
   (wcm-test 5 (lambda () (do-test/first cha-mark 5)))
   (wcm-test 5 (lambda () (do-test/immediate cha-mark 5)))
   (err/rt-test (do-test cha-mark #t) exn:fail?)

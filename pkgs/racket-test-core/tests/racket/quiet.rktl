@@ -30,7 +30,7 @@
       (set! timeout-thread
             (thread
              (lambda ()
-               (sleep 1200)
+               (sleep 3600)
                (fprintf errp "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
                (exit 3)
                ;; in case the above didn't work for some reason

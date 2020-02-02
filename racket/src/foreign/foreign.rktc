@@ -1621,7 +1621,7 @@ static void *wrong_value(const char *who, const char *type, Scheme_Object *val)
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct or array) is returned, and the
- * basetype_p is set to the corrsponding number tag.  If basetype_p is NULL,
+ * basetype_p is set to the corresponding number tag.  If basetype_p is NULL,
  * then a struct or array value will be *copied* into dst. */
 static void* SCHEME2C(const char *who,
                       Scheme_Object *type, void *dst, intptr_t delta,
@@ -2883,7 +2883,7 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
   /* Use `data' to make sure it's kept alive (as far as the GC is concerned)
      until the foreign call returns: */
   if ((void*)data == (void*)scheme_true)
-    scheme_signal_error("dummy test suceeded!?");
+    scheme_signal_error("dummy test succeeded!?");
 
   if (save_errno != 0) save_errno_values(save_errno);
   ivals = NULL; /* no need now to hold on to this */
@@ -3160,7 +3160,7 @@ static void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *user
 
 #ifdef MZ_USE_MZRT
 
-/* When OS-level thread support is avaiable, support callbacks
+/* When OS-level thread support is available, support callbacks
    in foreign threads that are executed on the main Racket thread. */
 
 typedef struct Queued_Callback {
@@ -3536,7 +3536,7 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     }
   }
   cl_cif_args->data = callback_data;
-  if (ffi_prep_closure(cl, cif, do_callback, (void*)(cl_cif_args->data))
+  if (ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl)
       != FFI_OK)
     scheme_signal_error
       ("internal error: ffi_prep_closure did not return FFI_OK");

@@ -8,18 +8,20 @@
            (for/list ((n (in-naturals)))
              (place-channel-get in))))
 
-  (define i
+  (define fds
     (case mode
       [("tcp")
        (define PORT 12346)
        (define listener (tcp-listen PORT 100 #t))
        (define-values (i o) (tcp-connect "127.0.0.1" PORT))
-       i]
+       (list i o)]
       [else
-       (current-input-port)]))
+       (list (current-input-port)
+             (current-output-port))]))
+
   (for ((n (in-naturals)))
     (printf "sending port ~a\n" n)
-    (place-channel-put out i)))
+    (place-channel-put out fds)))
 
 (module+ test
   (require racket/system

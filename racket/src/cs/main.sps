@@ -322,10 +322,13 @@
          [else
           (set! remaining-command-line-arguments (vector->immutable-vector
                                                   (list->vector args)))
-          (when (and (null? args) (not (saw? saw 'non-config)))
+          (cond
+           [(and (null? args) (not (saw? saw 'non-config)))
             (set! repl? #t)
             (when text-repl?
-              (set! version? #t)))]))
+              (set! version? #t))]
+           [else
+            (no-init! saw)])]))
       ;; Dispatch on first argument:
       (if (null? args)
           (finish args saw)
@@ -359,7 +362,7 @@
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads (cons (lambda () (load file-name))
                                   loads))
-                (flags-loop rest-args (see saw 'non-config)))]
+                (flags-loop rest-args (see saw 'non-config 'top)))]
              [("-r" "--script")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads (cons (lambda () (load file-name))
@@ -371,21 +374,26 @@
                 (set! loads
                       (cons
                        (lambda ()
-                         (call-with-values (lambda ()
-                                             (call-with-continuation-prompt
-                                              (lambda ()
-                                                (eval `(|#%top-interaction| . ,(read (open-input-string expr)))))
-                                              (default-continuation-prompt-tag)
-                                              (lambda (proc)
-                                                ;; continue escape to set error status:
-                                                (abort-current-continuation (default-continuation-prompt-tag) proc))))
-                           (lambda vals
-                             (for-each (lambda (v)
-                                         (|#%app| (current-print) v)
-                                         (flush-output))
-                                       vals))))
+                         (define i (open-input-string expr))
+                         (let loop ()
+                           (define expr (read i))
+                           (unless (eof-object? expr)
+                             (call-with-values (lambda ()
+                                                 (call-with-continuation-prompt
+                                                  (lambda ()
+                                                    (eval `(|#%top-interaction| . ,expr)))
+                                                  (default-continuation-prompt-tag)
+                                                  (lambda (proc)
+                                                    ;; continue escape to set error status:
+                                                    (abort-current-continuation (default-continuation-prompt-tag) proc))))
+                               (lambda vals
+                                 (for-each (lambda (v)
+                                             (|#%app| (current-print) v)
+                                             (flush-output))
+                                           vals)))
+                             (loop))))
                        loads))
-                (flags-loop rest-args (see saw 'non-config)))]
+                (flags-loop rest-args (see saw 'non-config 'top)))]
              [("-k")
               (let*-values ([(n rest-args) (next-arg "starting and ending offsets" arg within-arg args)]
                             [(m rest-args) (next-arg "first ending offset" arg within-arg (cons "-k" rest-args))]
@@ -411,7 +419,7 @@
              [("-m" "--main")
               (set! loads (cons (lambda () (call-main))
                                 loads))
-              (flags-loop (cdr args) (see saw 'non-config))]
+              (flags-loop (cdr args) (see saw 'non-config 'top))]
              [("-i" "--repl") 
               (set! repl? #t)
               (set! version? #t)
@@ -425,7 +433,6 @@
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-v" "--version") 
               (set! version? #t)
-              (no-init! saw)
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
               (set! compiled-file-paths '())
@@ -558,8 +565,8 @@
                 (loop (cons (cadr args) (cons (car args) (cddr args))))])]
              [else
               (cond
-               [(and (eqv? (string-ref arg 0) #\-)
-                     (> (string-length arg) 1))
+               [(and (> (string-length arg) 1)
+                     (eqv? (string-ref arg 0) #\-))
                 (cond
                  [(and (> (string-length arg) 2)
                        (not (eqv? (string-ref arg 1) #\-)))
@@ -627,7 +634,8 @@
      (let ([root-logger (current-logger)])
        ;; This function can be called in any Chez Scheme thread
        (lambda (gen pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                    post-allocated post-allocated+overhead post-time post-cpu-time)
+                    post-allocated post-allocated+overhead proper-post-time proper-post-cpu-time
+                    post-time post-cpu-time)
          (let ([minor? (< gen (collect-maximum-generation))])
            (if minor?
                (set! minor-gcs (add1 minor-gcs))
@@ -637,14 +645,23 @@
              (when (or debug-GC?
                        (and (not minor?)
                             (log-level?* root-logger 'debug 'GC:major)))
-               (let ([delta (- pre-allocated post-allocated)])
+               (let ([delta (- pre-allocated post-allocated)]
+                     [account-str (let ([proper (if (= post-cpu-time pre-cpu-time)
+                                                    100
+                                                    (quotient (* 100 (- proper-post-cpu-time pre-cpu-time))
+                                                              (- post-cpu-time pre-cpu-time)))])
+                                    (if (fx>= proper 99)
+                                        ""
+                                        (string-append "[" (number->string (fx- 100 proper)) "%]")))])
                  (log-message* root-logger 'debug (if debug-GC? 'GC 'GC:major)
-                               (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams @ ~a"
+                               (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams~a @ ~a"
                                             (if minor? "min" "MAJ") gen
                                             (K "" pre-allocated) (K "+" (- pre-allocated+overhead pre-allocated))
                                             (K "" delta) (K "+" (- (- pre-allocated+overhead post-allocated+overhead)
                                                                    delta))
-                                            (- post-cpu-time pre-cpu-time) pre-cpu-time)
+                                            (- post-cpu-time pre-cpu-time)
+                                            account-str
+                                            pre-cpu-time)
                                (make-gc-info (if minor? 'minor 'major) pre-allocated pre-allocated+overhead 0
                                              post-allocated post-allocated+overhead
                                              pre-cpu-time post-cpu-time

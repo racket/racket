@@ -34,8 +34,10 @@
   (define m (namespace->module ns name))
   (and m (module-is-predefined? m)))
 
-(define (module-> extract who mod [load? #f])
+(define (module-> extract who mod [load? #f]
+                  #:extra-checks [extra-checks void])
   (check who module-reference? #:contract module-reference-str mod)
+  (extra-checks)
   (define m (namespace->module/complain who
                                         (current-namespace)
                                         (reference->resolved-module-path mod #:load? load?)))
@@ -47,10 +49,12 @@
 (define/who (module->imports mod)
   (module-> module-requires who mod))
 
-(define (module->exports mod)
+(define/who (module->exports mod [verbosity #f])
   (define-values (provides self)
-    (module-> (lambda (m) (values (module-provides m) (module-self m))) 'module->exports mod))
-  (provides->api-provides provides self))
+    (module-> (lambda (m) (values (module-provides m) (module-self m))) who mod
+              #:extra-checks (lambda ()
+                               (check-provides-verbosity who verbosity))))
+  (provides->api-provides provides self verbosity))
 
 (define (module->indirect-exports mod)
   (module-> (lambda (m)

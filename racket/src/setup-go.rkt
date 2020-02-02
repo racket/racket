@@ -29,7 +29,7 @@
 ;; The point of going through `setup/main` is that the Racket module
 ;; gets compiled as needed, so that it doesn't have to be loaded from
 ;; source every time. At the same time `setup/main` detects when files
-;; need to be recompiled, either becuase the underlying Racket's
+;; need to be recompiled, either because the underlying Racket's
 ;; version changed or because a dependency changed.
 
 (provide go)
@@ -73,7 +73,7 @@
         (loop (add1 n))))
 
     (with-handlers ([exn? (lambda (exn)
-                            ;; On any execption, try to delete the target file
+                            ;; On any exception, try to delete the target file
                             (with-handlers ([exn:fail:filesystem?
                                              (lambda (exn) (log-error "~s" exn))])
                               (when (file-exists? target-file)

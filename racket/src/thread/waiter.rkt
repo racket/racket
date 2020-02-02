@@ -24,15 +24,12 @@
 (define (waiter-resume! w s)
   ((waiter-methods-resume (waiter-ref w)) w s))
 
-;; `interrupt-cb` is run if the suspend is interrupted by
-;; either a break or kill; `abandon-cb` is called in
-;; addition if it's a kill or a bresk escape;
-;; `retry-cb` is run, instead, if the suspend
-;; should be retired, and it's a thunk that runs in
-;; atomic mode and returns a thunk to run in tail position
-;; out of atomic mode
-(define (waiter-suspend! w interrupt-cb retry-cb)
-  ((waiter-methods-suspend (waiter-ref w)) w interrupt-cb retry-cb))
+;; `interrupt-cb` is run in atomic mode if the suspend is interrupted
+;; by either a break or kill; the result is a `retry-cb`, which is run
+;; out of atomic mode is the suspend-triggering action should be
+;; retried
+(define (waiter-suspend! w interrupt-cb)
+  ((waiter-methods-suspend (waiter-ref w)) w interrupt-cb))
 
 ;; Used for semaphores and channels to run a "just selected" callback
 ;; when synchronized:

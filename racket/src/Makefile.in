@@ -44,6 +44,8 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(mandir)"
 
 COPYING = "$(srcdir)/LICENSE-libscheme.txt" \
+          "$(srcdir)/LICENSE-MIT.txt" \
+          "$(srcdir)/LICENSE-APACHE.txt" \
           "$(srcdir)/LICENSE-LGPL.txt" \
           "$(srcdir)/LICENSE-GPL.txt"
 

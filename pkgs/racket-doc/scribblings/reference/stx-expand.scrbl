@@ -93,29 +93,9 @@ to the syntax object:
 
 @itemize[
 
- @item{@indexed-racket['module-direct-requires] --- a list of
- @tech{module path index}es (or symbols) representing the modules
- explicitly imported into the module.}
-
- @item{@indexed-racket['module-direct-for-syntax-requires] --- a list
- of @tech{module path index}es (or symbols) representing the modules
- explicitly for-syntax imported into the module.}
-
- @item{@indexed-racket['module-direct-for-template-requires] --- a
- list of @tech{module path index}es (or symbols) representing the
- modules explicitly for-template imported into the module.}
-
- @item{@indexed-racket['module-direct-for-meta-requires] --- a list of
- lists: each list is an integer or @racket[#f] representing a
- @tech{phase level} followed by a list of @tech{module path index}es
- (or symbols) representing the modules explicitly imported into the
- module at the corresponding phase.
-
- @history[#:added "6.4.0.1"]}
-
  @item{@indexed-racket['module-variable-provides] --- a list of
  provided items, where each item is one of the following:
- 
+
   @itemize[
 
   @item{@racket[symbol] --- represents a locally defined variable that
@@ -177,13 +157,10 @@ to the syntax object:
  where @racket[#t] indicates that the bindings of the module's body
  (as recorded in the @tech{lexical information} of the value of the
  @racket['module-body-inside-context] property) can be directly
- reconstructed from the values of @racket['module-direct-requires],
- @racket['module-direct-for-syntax-requires],
- @racket['module-direct-for-template-requires], and
- @racket['module-direct-for-meta-requires].
+ reconstructed from modules directly imported into the module,
+ including imported for-syntax, for-meta, and for-template.
 
  @history[#:added "6.4.0.1"]}
-
 
 ]
 

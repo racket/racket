@@ -396,9 +396,10 @@ to a shift into the @tech{label phase level}) to module references for
 the module's explicit imports.}
 
 
-@defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?])
+@defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?]
+                                  [verbosity (or/c #f 'defined-names) #f])
          (values (listof (cons/c (or/c exact-integer? #f) list?))
-                 (listof (cons/c (or/c exact-integer? #f) list?)))]
+                 (listof (cons/c (or/c exact-integer? #f) list?)))]{
 
 Returns two association lists mapping @tech{phase level} values (where
 @racket[#f] corresponds to the @tech{label phase level}) to exports at
@@ -417,7 +418,9 @@ result contracts above, more precisely matches the contract
                        (list/c module-path-index?
                                (or/c exact-integer? #f)
                                symbol?
-                               (or/c exact-integer? #f))))))
+                               (or/c exact-integer? #f))))
+                (code:comment @#,elem{only if @racket[verbosity] is @racket['defined-names]:})
+                symbol?))
 ]
 
 For each element of the list, the leading symbol is the name of the
@@ -431,6 +434,11 @@ origin list provides information on the import that was re-exported.
 The origin list has more than one element if the binding was imported
 multiple times from (possibly) different sources.
 
+The last part, a symbol, is included only if @racket[verbosity] is
+@racket['defined-names]. In that case, the included symbol is the name
+of the definition within its defining module (which may be different
+than the name that is exported).
+
 For each origin, a @tech{module path index} by itself means that the
 binding was imported with a @tech{phase level} shift of @racket[0]
 (i.e., a plain @racket[require] without @racket[for-meta],
@@ -439,7 +447,26 @@ as the re-exported name. An origin represented with a list indicates
 explicitly the import, the import @tech{phase level} shift (where
 @racket[#f] corresponds to a @racket[for-label] import), the import
 name of the re-exported binding, and the @tech{phase level} of the
-import.}
+import.
+
+@examples[#:eval mod-eval
+          (module-compiled-exports
+           (compile
+            '(module banana racket/base
+               (require (only-in racket/math pi)
+                        (for-syntax racket/base))
+               (provide pi
+                        (rename-out [peel wrapper])
+                        bush
+                        cond
+                        (for-syntax compile-time))
+               (define peel pi)
+               (define bush (* 2 pi))
+               (begin-for-syntax
+                 (define compile-time (current-seconds)))))
+           'defined-names)]
+
+@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}]}
 
 
 
@@ -662,7 +689,9 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 
 
 @defproc[(module->exports
-          [mod (or/c module-path? resolved-module-path?)])
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)]
+          [verbosity (or/c #f 'defined-names) #f])
          (values (listof (cons/c (or/c exact-integer? #f) list?))
                  (listof (cons/c (or/c exact-integer? #f) list?)))]{
 
@@ -675,13 +704,17 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 @examples[#:eval mod-eval
           (module banana racket/base
             (require (only-in racket/math pi))
-            (provide peel)
+            (provide (rename-out [peel wrapper]))
             (define peel pi)
             (define bush (* 2 pi)))
-          (module->exports ''banana)]}
+          (module->exports ''banana)]
+
+@history[#:changed "7.5.0.6" @elem{Added the @racket[verbosity] argument.}]}
+
 
 @defproc[(module->indirect-exports
-          [mod (or/c module-path? resolved-module-path?)])
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)])
          (listof (cons/c exact-integer? (listof symbol?)))]{
 
  Like @racket[module-compiled-indirect-exports], but produces the
@@ -701,7 +734,8 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 @history[#:added "6.5.0.5"]}
 
 @defproc[(module-predefined?
-          [mod (or/c module-path? resolved-module-path?)])
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)])
          boolean?]{
 
 Reports whether @racket[mod] refers to a module that is predefined for

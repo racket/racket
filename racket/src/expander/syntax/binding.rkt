@@ -181,7 +181,7 @@
 
 ;; Use `resolve+shift` instead of `resolve` when the module of a
 ;; module binding is relevant or when `free-identifier=?` equivalences
-;; (as installed by a binding to a rename transfomer) are relevant;
+;; (as installed by a binding to a rename transformer) are relevant;
 ;; module path index shifts attached to `s` are taken into account in
 ;; the result
 (define (resolve+shift s phase

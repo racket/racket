@@ -670,10 +670,10 @@ STATIC_AR
 ARFLAGS
 AR
 LD
+STRIP
 EGREP
 GREP
 CPP
-STRIP
 platform_ar_found
 RANLIB
 OBJEXT
@@ -712,6 +712,7 @@ appsdir
 collectsdir
 MAKE_INSTALL_PKGSCOPE
 INSTALL_PKGSCOPE
+MACLIBRKT_LINK_MODE
 target_os
 target_vendor
 target_cpu
@@ -772,6 +773,7 @@ enable_iconv
 enable_compress
 enable_compressboot
 enable_origtree
+enable_useprefix
 enable_pkgscope
 enable_docs
 enable_usersetup
@@ -785,6 +787,7 @@ enable_xonx
 enable_macprefix
 enable_libfw
 enable_userfw
+enable_embedfw
 enable_mac64
 enable_noopt
 enable_ubsan
@@ -1407,13 +1410,14 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-shared         create shared libraries (ok, but not recommended)
+  --enable-shared         create shared libraries (not currently supported)
   --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-compress       compress compiled code (enabled by default)
   --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
+  --disable-useprefix     ignore any --prefix setting
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
@@ -1432,6 +1436,7 @@ Optional Features:
   --enable-macprefix      allow --prefix with a Mac OS install
   --enable-libfw          install Mac OS frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
+  --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
@@ -2530,6 +2535,11 @@ if test "${enable_origtree+set}" = set; then :
   enableval=$enable_origtree;
 fi
 
+# Check whether --enable-useprefix was given.
+if test "${enable_useprefix+set}" = set; then :
+  enableval=$enable_useprefix;
+fi
+
 # Check whether --enable-pkgscope was given.
 if test "${enable_pkgscope+set}" = set; then :
   enableval=$enable_pkgscope;
@@ -2625,6 +2635,11 @@ if test "${enable_userfw+set}" = set; then :
   enableval=$enable_userfw;
 fi
 
+# Check whether --enable-embedfw was given.
+if test "${enable_embedfw+set}" = set; then :
+  enableval=$enable_embedfw;
+fi
+
 # Check whether --enable-mac64 was given.
 if test "${enable_mac64+set}" = set; then :
   enableval=$enable_mac64;
@@ -2710,6 +2725,15 @@ else
 fi
 
 
+MACLIBRKT_LINK_MODE=fw
+
+if test "${enable_embedfw}" = "yes" ; then
+  MACLIBRKT_LINK_MODE=static
+fi
+
+
+
+
 show_explicitly_disabled()
 {
   if test "$1" = "no" ; then
@@ -2734,6 +2758,14 @@ show_explicitly_set()
   fi
 }
 
+if test "${enable_shared}" = "yes" ; then
+  echo "=== Canceling --enable-shared"
+  echo "    Building Racket CS as a shared library is not currently"
+  echo "    supported --- but Racket executables get the benefits of"
+  echo "    sharing, anyway, by going through a shared executable"
+  enable_shared=no
+fi
+
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
@@ -2757,6 +2789,7 @@ show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+show_explicitly_enabled "${enable_embedfw}" "embedded frameworks"
 
 if test "${enable_sdk}" != "" ; then
    if test "${enable_sdk5}" != "" ; then
@@ -2860,7 +2893,7 @@ PREFIX_PATH_RELATIVE=/../..
 
 
 unixstyle=no
-if test "${enable_origtree}" != "yes" ; then
+if test "${enable_useprefix}" = "yes" -a "${prefix}" != "NONE" ; then
   if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
@@ -2910,7 +2943,7 @@ fi
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
-  if test "${prefix}" = "NONE" ; then
+  if test "${enable_useprefix}" = "no" -o "${prefix}" = "NONE" ; then
     inplacebuild=yes
     prefix=`cd "${srcdir}/..${PREFIX_PATH_RELATIVE}" && pwd`
   else
@@ -4147,470 +4180,7 @@ case "$host_os" in
     LIBS="${LIBS} -lrt -luuid"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
-    ;;
-  osf1*)
-    ;;
-  hpux*)
-    ;;
-  *mingw*)
-    skip_iconv_check=yes
-    use_flag_pthread=no
-    MACH_OS=nt
-    MINGW=""
-    NOT_MINGW="mingw"
-    if `which ${host}-windres > /dev/null` ; then
-      WINDRES="${host}-windres"
-    fi
-    ;;
-  cygwin*)
-    ;;
-  darwin*)
-    PREFLAGS="$PREFLAGS -DOS_X"
-    MACH_OS=osx
-    LIBS="${LIBS} -lncurses -framework CoreFoundation"
-    LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
-    if test "${enable_xonx}" == "no" ; then
-      INCLUDEDEP="-include"
-      OSX=""
-      NOT_OSX="osx"
-    else
-      CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
-      CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
-      strip_needs_dash_s=yes
-    fi
-
-        if test "${enable_sdk}" != "" ; then
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
-      if test "${CC}" = "gcc" ; then
-        CC=gcc-4.0
-      fi
-      if test "${CPP}" = "gcc -E" ; then
-        CPP="gcc-4.0 -E"
-        need_cpp_in_extras=yes
-      fi
-      if test "${LD}" = "gcc" ; then
-        LD=gcc-4.0
-        need_ld_in_extras=yes
-      fi
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-      need_cc_in_extras=yes
-      if test "$ORIG_CC_FOR_BUILD" = "" ; then
-        CC_FOR_BUILD="$CC"
-      fi
-    fi
-
-    if test "${enable_sdk5}" != "" ; then
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-    fi
-
-    if test "${enable_sdk6}" != "" ; then
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-    fi
-
-    if test "${enable_sdk9}" != "" ; then
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-    fi
-
-    # Force 32-bit build unless mac64 is enabled:
-    if test "${enable_mac64}" != "yes" ; then
-      if test "$host_cpu" != "powerpc" ; then
-        if test "${ORIG_CC}" = "" ; then
-           PREFLAGS="${PREFLAGS} -m32"
-           CPPFLAGS="${CPPFLAGS} -m32"
-           LDFLAGS="${LDFLAGS} -m32"
-           # To make the libffi build work, we have to fold -m32 into CC
-           # instead of CFLAGS:
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
-           need_cc_in_extras=no
-        fi
-      fi
-    fi
-
-
-
-    if test "${enable_libfw}" = "yes" ; then
-      FRAMEWORK_INSTALL_DIR=/Library/Frameworks
-      FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
-    elif test "${enable_userfw}" = "yes" ; then
-      FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
-      FRAMEWORK_REL_INSTALL=no
-      FRAMEWORK_PREFIX=''
-    else
-      FRAMEWORK_INSTALL_DIR='${libpltdir}'
-      FRAMEWORK_REL_INSTALL=yes
-      if test "${libpltdir_rel}" = "" ; then
-        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-      else
-        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-      fi
-    fi
-
-    if test "${enable_mac64}" == "no"; then
-      MACH_HOST_CPU="x86"
-      extra_scheme_config_args="--32"
-    fi
-
-    # -pthread is not needed and triggers a warning
-    use_flag_pthread=no
-
-    # ncurses.h is always available
-    disable_curses_arg=""
-    ;;
-  nto-qnx*)
-    MACH_OS=qnx
-    use_flag_pthread=no
-    ;;
-  *)
-    ;;
-esac
-
-case "$host_cpu" in
-  arm*)
-    enable_pthread_by_default=no
-    ;;
-esac
-
-if test "${enable_pthread}" = "" ; then
-  if test "${enable_pthread_by_default}" = "yes" ; then
-    enable_pthread=yes
-  fi
-fi
-
-############## machine type ################
-
-thread_prefix=""
-if test "${enable_pthread}" = "yes" ; then
-  thread_prefix="t"
-fi
-
-case "$MACH_HOST_CPU" in
-  x86_64)
-    MACH="${thread_prefix}a6${MACH_OS}"
-    ;;
-  x86|i*86)
-    MACH="${thread_prefix}i3${MACH_OS}"
-    ;;
-  arm*)
-    MACH="${thread_prefix}arm32${MACH_OS}"
-    ;;
-  power*)
-    MACH="${thread_prefix}ppc32${MACH_OS}"
-    ;;
-esac
-
-if test "${enable_mach}" != "" ; then
-  MACH="${enable_mach}"
-fi
-
-if test "${enable_target}" != "" ; then
-  TARGET_MACH=${enable_target}
-  CROSS_MODE="cross"
-elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
-  BUILD_THREAD_PREFIX="${thread_prefix}"
-  case "$build_os" in
-    solaris2*)
-      BUILD_OS=s2
-      ;;
-    *freebsd*)
-      BUILD_OS=fb
-      ;;
-    openbsd*)
-      BUILD_OS=ob
-      ;;
-    netbsd*)
-      BUILD_OS=nb
-      ;;
-    linux*)
-      BUILD_OS=le
-      ;;
-    *mingw*)
-      BUILD_OS=nt
-      ;;
-    darwin*)
-      BUILD_OS=osx
-      ;;
-    nto-qnx*)
-      BUILD_OS=qnx
-      ;;
-    *)
-      echo "unknown build OS"
-      exit 1
-      ;;
-  esac
-  case "$build_cpu" in
-    x86_64)
-      BUILD_MACH="${BUILD_THREAD_PREFIX}a6${BUILD_OS}"
-      ;;
-    x86|i*86)
-      BUILD_MACH="${BUILD_THREAD_PREFIX}i3${BUILD_OS}"
-      ;;
-    arm*)
-      BUILD_MACH="${BUILD_THREAD_PREFIX}arm32${BUILD_OS}"
-      ;;
-    power*)
-      BUILD_MACH="${BUILD_THREAD_PREFIX}ppc32${BUILD_OS}"
-      ;;
-  esac
-  TARGET_MACH=${MACH}
-  MACH=${BUILD_MACH}
-  CROSS_MODE="cross"
-else
-  BUILD_MACH=${MACH}
-  TARGET_MACH=${MACH}
-  CROSS_MODE=""
-fi
-
-if test "${CROSS_MODE}" = "cross" ; then
-  T_CROSS_MODE="-cross"
-  TT_CROSS_MODE="--cross"
-  RUN_RACKET='$(RACKET)'
-else
-  T_CROSS_MODE=""
-  TT_CROSS_MODE=""
-fi
-
-# From this point on, `MACH` means the build machine, and
-# `TARGET_MACH` is the target that we're building for (which
-# is different in cross-build mode).
-
-############## Racket and Chez Scheme ################
-
-SCHEME_SRC=../../ChezScheme
-MAKE_BUILD_SCHEME=checkout
-
-if test "${enable_scheme}" != "" ; then
-  SCHEME_SRC="${enable_scheme}"
-  MAKE_BUILD_SCHEME=none
-else
-  # Check for a directory packaged with a source distribution
-  if test -d "${srcdir}/../../ChezScheme" ; then
-    MAKE_BUILD_SCHEME=copy
-  fi
-fi
-
-if test "${enable_racket}" != "" ; then
-  RACKET="${enable_racket}"
-  SETUP_BOOT_MODE=--chain
-fi
-
-if test "${enable_compress}" != "no" ; then
-  COMPRESS_COMP="--compress"
-fi
-
-if test "${enable_compressboot}" = "yes" ; then
-  BOOT_COMPRESS_COMP="--compress"
-fi
-
-DIFF_MACH=skip
-if test "${MACH}" != "${TARGET_MACH}" ; then
-  DIFF_MACH=
-fi
-
-############## Strip tool ################
-
-if test "${enable_strip}" = "" ; then
-  if test "${enable_strip_by_default}" = "yes" ; then
-    enable_strip=yes
-  fi
-fi
-
-try_archive_conftest()
-{
-   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
-}
-
-if test "${enable_strip}" = "yes" ; then
-  if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}strip", so it can be a program name with args.
-set dummy ${ac_tool_prefix}strip; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_STRIP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$STRIP"; then
-  ac_cv_prog_STRIP="$STRIP" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_STRIP="${ac_tool_prefix}strip"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-STRIP=$ac_cv_prog_STRIP
-if test -n "$STRIP"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $STRIP" >&5
-$as_echo "$STRIP" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_prog_STRIP"; then
-  ac_ct_STRIP=$STRIP
-  # Extract the first word of "strip", so it can be a program name with args.
-set dummy strip; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_ac_ct_STRIP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$ac_ct_STRIP"; then
-  ac_cv_prog_ac_ct_STRIP="$ac_ct_STRIP" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_STRIP="strip"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-ac_ct_STRIP=$ac_cv_prog_ac_ct_STRIP
-if test -n "$ac_ct_STRIP"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_STRIP" >&5
-$as_echo "$ac_ct_STRIP" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_ct_STRIP" = x; then
-    STRIP=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    STRIP=$ac_ct_STRIP
-  fi
-else
-  STRIP="$ac_cv_prog_STRIP"
-fi
-
-  # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="${STRIP}"
-  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
-    check_strip_dash_s=yes
-  fi
-  if test "${strip_needs_dash_s}" = "yes" ; then
-    check_strip_dash_s=yes
-  fi
-  if test "${check_strip_dash_s}" = "yes" ; then
-    # Can only support library stripping if something like "-S" is available:
-     msg="for strip -S"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
-$as_echo_n "checking $msg... " >&6; }
-    set_strip_lib=no
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int f() { return 0; }
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  try_archive_conftest
-else
-  set_strip_lib=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    if test conftest.a ; then
-      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
-        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
-        set_strip_lib=yes
-      fi
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
-$as_echo "$set_strip_lib" >&6; }
-    if test "${strip_needs_dash_s}" = "yes" ; then
-      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
-    fi
-  fi
-fi
-
-
-############## natipkg ################
-
-if test "${enable_natipkg}" = "yes" ; then
-  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
-fi
-
-############## ubsan ################
-
-if test "${enable_ubsan}" = "yes" ; then
-   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
-   CFLAGS="$CFLAGS $UBSAN"
-   CPPFLAGS="$CPPFLAGS $UBSAN"
-   PREFLAGS="$PREFLAGS $UBSAN"
-   LDFLAGS="$LDFLAGS $UBSAN"
-fi
-
-
-############## Makefile includes ################
-
-if test "$INCLUDEDEP" = "#" ; then
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" != "" ; then
-     INCLUDEDEP="-include"
-  fi
-fi
-
-if test "$INCLUDEDEP" != "#" ; then
-  RKTL_PRE="compiled/"
-  RKTL_POST=".rktl"
-fi
-
-############## C flags ################
-
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-iconv_lib_flag=""
-if test "${skip_iconv_check}" = "no" ; then
- if test "${enable_iconv}" = "yes" ; then
-  ac_ext=c
+    ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -5007,7 +4577,498 @@ fi
 done
 
 
-ac_fn_c_check_header_mongrel "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "$ac_includes_default"
+ac_fn_c_check_header_mongrel "$LINENO" "uuid/uuid.h" "ac_cv_header_uuid_uuid_h" "$ac_includes_default"
+if test "x$ac_cv_header_uuid_uuid_h" = xyes; then :
+  ok_uuid=yes
+else
+  ok_uuid=no
+fi
+
+
+    if test "${ok_uuid}" != "yes"; then
+      echo Could not find uuid/uuid.h, needed for Chez Scheme
+      exit 1
+    fi
+    ;;
+  osf1*)
+    ;;
+  hpux*)
+    ;;
+  *mingw*)
+    skip_iconv_check=yes
+    use_flag_pthread=no
+    MACH_OS=nt
+    MINGW=""
+    NOT_MINGW="mingw"
+    if `which ${host}-windres > /dev/null` ; then
+      WINDRES="${host}-windres"
+    fi
+    ;;
+  cygwin*)
+    ;;
+  darwin*)
+    PREFLAGS="$PREFLAGS -DOS_X"
+    MACH_OS=osx
+    LIBS="${LIBS} -lncurses -framework CoreFoundation"
+    LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
+    if test "${enable_xonx}" == "no" ; then
+      INCLUDEDEP="-include"
+      OSX=""
+      NOT_OSX="osx"
+    else
+      CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
+      CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
+      strip_needs_dash_s=yes
+    fi
+
+    PROPAGATE_SUB_CONFIGURE=no
+        if test "${enable_sdk}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
+      if test "${CC}" = "gcc" ; then
+        CC=gcc-4.0
+      fi
+      if test "${CPP}" = "gcc -E" ; then
+        CPP="gcc-4.0 -E"
+        need_cpp_in_extras=yes
+      fi
+      if test "${LD}" = "gcc" ; then
+        LD=gcc-4.0
+        need_ld_in_extras=yes
+      fi
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
+      need_cc_in_extras=yes
+      if test "$ORIG_CC_FOR_BUILD" = "" ; then
+        CC_FOR_BUILD="$CC"
+      fi
+    fi
+
+    if test "${enable_sdk5}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
+    fi
+
+    if test "${enable_sdk6}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
+    fi
+
+    if test "${enable_sdk9}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
+    fi
+
+    # Force 32-bit build unless mac64 is enabled:
+    if test "${enable_mac64}" != "yes" ; then
+      if test "$host_cpu" != "powerpc" ; then
+        if test "${ORIG_CC}" = "" ; then
+           PREFLAGS="${PREFLAGS} -m32"
+           CPPFLAGS="${CPPFLAGS} -m32"
+           LDFLAGS="${LDFLAGS} -m32"
+           # To make the libffi build work, we have to fold -m32 into CC
+           # instead of CFLAGS:
+           if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+             SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
+           fi
+           need_cc_in_extras=no
+           if test "$build_cpu" = "x86_64" ; then
+             # AG_PROC_CC has already decided that we weren't
+             # cross compiling, so change that decision
+             cross_compiling=yes
+             echo may be cross compiling after all
+           fi
+        fi
+      fi
+    fi
+
+
+    if test "${enable_libfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    elif test "${enable_userfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    else
+      FRAMEWORK_INSTALL_DIR='${libpltdir}'
+      FRAMEWORK_REL_INSTALL=yes
+      if test "${libpltdir_rel}" = "" ; then
+        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
+      else
+        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
+      fi
+    fi
+
+    if test "${enable_mac64}" == "no"; then
+      MACH_HOST_CPU="x86"
+      extra_scheme_config_args="--32"
+    fi
+
+    # -pthread is not needed and triggers a warning
+    use_flag_pthread=no
+
+    # ncurses.h is always available
+    disable_curses_arg=""
+    ;;
+  nto-qnx*)
+    MACH_OS=qnx
+    use_flag_pthread=no
+    ;;
+  *)
+    ;;
+esac
+
+case "$host_cpu" in
+  arm*)
+    enable_pthread_by_default=no
+    ;;
+esac
+
+if test "${enable_pthread}" = "" ; then
+  if test "${enable_pthread_by_default}" = "yes" ; then
+    enable_pthread=yes
+  fi
+fi
+
+############## machine type ################
+
+thread_prefix=""
+if test "${enable_pthread}" = "yes" ; then
+  thread_prefix="t"
+fi
+
+case "$MACH_HOST_CPU" in
+  x86_64)
+    MACH="${thread_prefix}a6${MACH_OS}"
+    ;;
+  x86|i*86)
+    MACH="${thread_prefix}i3${MACH_OS}"
+    ;;
+  arm*)
+    MACH="${thread_prefix}arm32${MACH_OS}"
+    ;;
+  power*)
+    MACH="${thread_prefix}ppc32${MACH_OS}"
+    ;;
+esac
+
+if test "${enable_mach}" != "" ; then
+  MACH="${enable_mach}"
+fi
+
+if test "${enable_target}" != "" ; then
+  TARGET_MACH=${enable_target}
+  CROSS_MODE="cross"
+elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
+  BUILD_THREAD_PREFIX="${thread_prefix}"
+  case "$build_os" in
+    solaris2*)
+      BUILD_OS=s2
+      ;;
+    *freebsd*)
+      BUILD_OS=fb
+      ;;
+    openbsd*)
+      BUILD_OS=ob
+      ;;
+    netbsd*)
+      BUILD_OS=nb
+      ;;
+    linux*)
+      BUILD_OS=le
+      ;;
+    *mingw*)
+      BUILD_OS=nt
+      ;;
+    darwin*)
+      BUILD_OS=osx
+      ;;
+    nto-qnx*)
+      BUILD_OS=qnx
+      ;;
+    *)
+      echo "unknown build OS"
+      exit 1
+      ;;
+  esac
+  case "$build_cpu" in
+    x86_64)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}a6${BUILD_OS}"
+      ;;
+    x86|i*86)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}i3${BUILD_OS}"
+      ;;
+    arm*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}arm32${BUILD_OS}"
+      ;;
+    power*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}ppc32${BUILD_OS}"
+      ;;
+  esac
+  TARGET_MACH=${MACH}
+  MACH=${BUILD_MACH}
+  CROSS_MODE="cross"
+else
+  BUILD_MACH=${MACH}
+  TARGET_MACH=${MACH}
+  CROSS_MODE=""
+fi
+
+if test "${CROSS_MODE}" = "cross" ; then
+  T_CROSS_MODE="-cross"
+  TT_CROSS_MODE="--cross"
+  RUN_RACKET='$(RACKET)'
+else
+  T_CROSS_MODE=""
+  TT_CROSS_MODE=""
+fi
+
+# From this point on, `MACH` means the build machine, and
+# `TARGET_MACH` is the target that we're building for (which
+# is different in cross-build mode).
+
+############## Racket and Chez Scheme ################
+
+SCHEME_SRC=../../ChezScheme
+MAKE_BUILD_SCHEME=checkout
+
+if test "${enable_scheme}" != "" ; then
+  SCHEME_SRC="${enable_scheme}"
+  MAKE_BUILD_SCHEME=none
+else
+  # Check for a directory packaged with a source distribution
+  if test -d "${srcdir}/../../ChezScheme" ; then
+    MAKE_BUILD_SCHEME=copy
+  fi
+fi
+
+if test "${enable_racket}" != "" ; then
+  RACKET="${enable_racket}"
+  SETUP_BOOT_MODE=--chain
+fi
+
+if test "${enable_compress}" != "no" ; then
+  COMPRESS_COMP="--compress"
+fi
+
+if test "${enable_compressboot}" = "yes" ; then
+  BOOT_COMPRESS_COMP="--compress"
+fi
+
+DIFF_MACH=skip
+if test "${MACH}" != "${TARGET_MACH}" ; then
+  DIFF_MACH=
+fi
+
+############## Strip tool ################
+
+if test "${enable_strip}" = "" ; then
+  if test "${enable_strip_by_default}" = "yes" ; then
+    enable_strip=yes
+  fi
+fi
+
+try_archive_conftest()
+{
+   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
+}
+
+if test "${enable_strip}" = "yes" ; then
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}strip", so it can be a program name with args.
+set dummy ${ac_tool_prefix}strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_STRIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$STRIP"; then
+  ac_cv_prog_STRIP="$STRIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_STRIP="${ac_tool_prefix}strip"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+STRIP=$ac_cv_prog_STRIP
+if test -n "$STRIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $STRIP" >&5
+$as_echo "$STRIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_STRIP"; then
+  ac_ct_STRIP=$STRIP
+  # Extract the first word of "strip", so it can be a program name with args.
+set dummy strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_STRIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_STRIP"; then
+  ac_cv_prog_ac_ct_STRIP="$ac_ct_STRIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_STRIP="strip"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_STRIP=$ac_cv_prog_ac_ct_STRIP
+if test -n "$ac_ct_STRIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_STRIP" >&5
+$as_echo "$ac_ct_STRIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_STRIP" = x; then
+    STRIP=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    STRIP=$ac_ct_STRIP
+  fi
+else
+  STRIP="$ac_cv_prog_STRIP"
+fi
+
+  # Used to add -S flag, but not all `strip' variants support it:
+  STRIP_DEBUG="${STRIP}"
+  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${strip_needs_dash_s}" = "yes" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${check_strip_dash_s}" = "yes" ; then
+    # Can only support library stripping if something like "-S" is available:
+     msg="for strip -S"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+    set_strip_lib=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int f() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  try_archive_conftest
+else
+  set_strip_lib=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test conftest.a ; then
+      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
+        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
+        set_strip_lib=yes
+      fi
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
+$as_echo "$set_strip_lib" >&6; }
+    if test "${strip_needs_dash_s}" = "yes" ; then
+      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
+    fi
+  fi
+fi
+
+
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+fi
+
+############## ubsan ################
+
+if test "${enable_ubsan}" = "yes" ; then
+   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
+   CFLAGS="$CFLAGS $UBSAN"
+   CPPFLAGS="$CPPFLAGS $UBSAN"
+   PREFLAGS="$PREFLAGS $UBSAN"
+   LDFLAGS="$LDFLAGS $UBSAN"
+fi
+
+
+############## Makefile includes ################
+
+if test "$INCLUDEDEP" = "#" ; then
+  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+  if test "$is_gmake" != "" ; then
+     INCLUDEDEP="-include"
+  fi
+fi
+
+if test "$INCLUDEDEP" != "#" ; then
+  RKTL_PRE="compiled/"
+  RKTL_POST=".rktl"
+fi
+
+############## C flags ################
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+iconv_lib_flag=""
+if test "${skip_iconv_check}" = "no" ; then
+ if test "${enable_iconv}" = "yes" ; then
+  ac_fn_c_check_header_mongrel "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "$ac_includes_default"
 if test "x$ac_cv_header_iconv_h" = xyes; then :
   enable_iconv=yes
 else
@@ -5017,53 +5078,53 @@ fi
 
   if test "${enable_iconv}" = "yes" ; then
     # Does it all work, now?
-    if test "$cross_compiling" = yes; then :
-  enable_iconv=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-   #include <iconv.h>
-   #include <langinfo.h>
-    int main() {
+#include <iconv.h>
+    #include <langinfo.h>
+int
+main ()
+{
      iconv_open("UTF-8", "UTF-8");
       return 0;
-    }
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   enable_iconv=yes
 else
   enable_iconv=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
     if test "${enable_iconv}" = "no" ; then
       # Try adding -liconv ?
       #  We did not use AC_CHECK_LIB because iconv is sometimes macro-renamed
       ORIG_LIBS="$LIBS"
       LIBS="$LIBS -liconv"
-      if test "$cross_compiling" = yes; then :
-  enable_iconv=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-     #include <iconv.h>
-     #include <langinfo.h>
-      int main() {
+#include <iconv.h>
+      #include <langinfo.h>
+int
+main ()
+{
      iconv_open("UTF-8", "UTF-8");
       return 0;
-      }
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   enable_iconv=yes
 else
   enable_iconv=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
       if test "${enable_iconv}" = "no" ; then
         LIBS="$ORIG_LIBS"
       else
@@ -5079,6 +5140,7 @@ $as_echo_n "checking $msg... " >&6; }
  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iconv_usage_result" >&5
 $as_echo "$iconv_usage_result" >&6; }
 fi
+
 if test "${enable_iconv}" = "no" ; then
 
 $as_echo "#define RKTIO_NO_ICONV 1" >>confdefs.h
@@ -5218,6 +5280,65 @@ $as_echo "$have_lz4" >&6; }
   fi
 fi
 
+############## other inferred machine properties ################
+
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of void *" >&5
+$as_echo_n "checking size of void *... " >&6; }
+if ${ac_cv_sizeof_void_p+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (void *))" "ac_cv_sizeof_void_p"        "$ac_includes_default"; then :
+
+else
+  if test "$ac_cv_type_void_p" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute sizeof (void *)
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_sizeof_void_p=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_void_p" >&5
+$as_echo "$ac_cv_sizeof_void_p" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
+_ACEOF
+
+
+
+if test "${ac_cv_sizeof_void_p}" != "4" ; then
+  if test "${ac_cv_sizeof_void_p}" != "8" ; then
+    echo "Something has gone wrong getting the pointer size; see config.log"
+    exit 1
+  fi
+fi
+
+
+############## subconfigure ################
+
+# Before libtool setup
+
+CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${CPPFLAGS}"'"'
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -5232,8 +5353,8 @@ if test "${enable_shared}" = "yes" ; then
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   if test "${LIBTOOLPROG}" = "" ; then
-    (cd ../lt; sh ${abssrcdir}/../lt/configure --enable-shared --disable-static)
-    LIBTOOLPROG=`pwd`/../lt/libtool
+    (cd ../../lt; sh ${abssrcdir}/../../lt/configure --enable-shared --disable-static)
+    LIBTOOLPROG=`pwd`/../../lt/libtool
   fi
 
   if test "${need_gcc_static_libgcc}" = "yes" ; then
@@ -5279,42 +5400,6 @@ else
   fi
 fi
 
-############## other inferred machine properties ################
-
-# The cast to long int works around a bug in the HP C Compiler
-# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
-# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
-# This bug is HP SR number 8606223364.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of void *" >&5
-$as_echo_n "checking size of void *... " >&6; }
-if ${ac_cv_sizeof_void_p+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (void *))" "ac_cv_sizeof_void_p"        "$ac_includes_default"; then :
-
-else
-  if test "$ac_cv_type_void_p" = yes; then
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error 77 "cannot compute sizeof (void *)
-See \`config.log' for more details" "$LINENO" 5; }
-   else
-     ac_cv_sizeof_void_p=0
-   fi
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_void_p" >&5
-$as_echo "$ac_cv_sizeof_void_p" >&6; }
-
-
-
-cat >>confdefs.h <<_ACEOF
-#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
-_ACEOF
-
-
-
 ############## final output ################
 
 # Pass certain configure args on to rktio
@@ -5335,16 +5420,6 @@ do
     keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
   esac
 done
-
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
-
-CPPFLAGS="$CPPFLAGS $PREFLAGS"
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"

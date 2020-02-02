@@ -178,9 +178,10 @@ Scheme_Object *scheme_complex_multiply(const Scheme_Object *a, const Scheme_Obje
 }
 
 static Scheme_Object *simple_complex_divide(Scheme_Object *a, Scheme_Object *b,
-                                            Scheme_Object *c, Scheme_Object *d)
+                                            Scheme_Object *c, Scheme_Object *d,
+                                            int swap)
 {
-  Scheme_Object *r, *i, *cm;
+  Scheme_Object *r, *i, *cm, *cb, *da, *ci;
 
   cm = scheme_bin_plus(scheme_bin_mult(c, c),
                        scheme_bin_mult(d, d));
@@ -188,9 +189,14 @@ static Scheme_Object *simple_complex_divide(Scheme_Object *a, Scheme_Object *b,
   r = scheme_bin_div(scheme_bin_plus(scheme_bin_mult(c, a),
                                      scheme_bin_mult(d, b)),
                      cm);
-  i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(c, b),
-                                      scheme_bin_mult(d, a)),
-                     cm);
+
+  cb = scheme_bin_mult(c, b);
+  da = scheme_bin_mult(d, a);
+  if (swap)
+    ci = scheme_bin_minus(da, cb);
+  else
+    ci = scheme_bin_minus(cb, da);
+  i = scheme_bin_div(ci, cm);
 
   return scheme_make_complex(r, i);
 }
@@ -221,30 +227,15 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
     return scheme_make_complex(r, i);
   }
 
+  if (b == zero) {
+    /* As in Chez Scheme: a / c+di => c(a/(cc+dd)) + (-d(a/cc+dd))i */
+    cm = scheme_bin_div(a, scheme_bin_plus(scheme_bin_mult(c, c), scheme_bin_mult(d, d)));
+    return scheme_make_complex(scheme_bin_mult(c, cm),
+                               scheme_bin_minus(zero, scheme_bin_mult(d, cm)));
+  }
+
   if (!SCHEME_FLOATP(a) && !SCHEME_FLOATP(b) && !SCHEME_FLOATP(c) && !SCHEME_FLOATP(d))
-    return simple_complex_divide(a, b, c, d);
-
-  if (scheme_is_zero(d)) {
-    /* This is like dividing by a real number, except that
-       the inexact 0 imaginary part can interact with +inf.0 and +nan.0 */
-    r = scheme_bin_plus(scheme_bin_div(a, c),
-			/* Either 0.0 or +nan.0: */
-			scheme_bin_mult(d, b));
-    i = scheme_bin_minus(scheme_bin_div(b, c),
-			 /* Either 0.0 or +nan.0: */
-			 scheme_bin_mult(d, a));
-    
-    return scheme_make_complex(r, i);
-  }
-  if (scheme_is_zero(c)) {
-    r = scheme_bin_plus(scheme_bin_div(b, d),
-			/* Either 0.0 or +nan.0: */
-			scheme_bin_mult(c, a));
-    i = scheme_bin_minus(scheme_bin_mult(c, b),  /* either 0.0 or +nan.0 */
-			 scheme_bin_div(a, d));
-
-    return scheme_make_complex(r, i);
-  }
+    return simple_complex_divide(a, b, c, d, 0);
 
   aa[0] = c;
   cm = scheme_abs(1, aa);
@@ -276,7 +267,7 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
       /* This calculuation does not work as well for complex numbers with
          large parts, such as `(/ 1e+300+1e+300i 4e+300+4e+300i)`, but it
          works better for small parts, as in `(/ 0.0+0.0i 1+1e-320i)`. */
-      return simple_complex_divide(a, b, c, d);
+      return simple_complex_divide(a, b, c, d, swap);
     }
   }
 

@@ -1159,7 +1159,7 @@ static int is_proc_spec_proc(Scheme_Object *p, int init_field_count)
 
 static int is_local_ref(Scheme_Object *e, int p, int r, Scheme_IR_Local **vars)
 /* Does `e` refer to...
-    In resolved mode: variables at offet `p` though `p+r`?
+    In resolved mode: variables at offset `p` though `p+r`?
     In optimizer IR mode: variables in `vars`? */
 {
   if (!vars && SAME_TYPE(SCHEME_TYPE(e), scheme_local_type)) {
@@ -3344,9 +3344,12 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
     } else if (IS_NAMED_PRIM(rator, "string-ref")) {
       return scheme_char_p_proc;
     } else if (IS_NAMED_PRIM(rator, "string-append")
+               || IS_NAMED_PRIM(rator, "string-append-immutable")
                || IS_NAMED_PRIM(rator, "string->immutable-string")
                || IS_NAMED_PRIM(rator, "symbol->string")
-               || IS_NAMED_PRIM(rator, "keyword->string")) {
+               || IS_NAMED_PRIM(rator, "symbol->immutable-string")
+               || IS_NAMED_PRIM(rator, "keyword->string")
+               || IS_NAMED_PRIM(rator, "keyword->immutable-string")) {
         return scheme_string_p_proc;
     } else if (IS_NAMED_PRIM(rator, "bytes-append")
                || IS_NAMED_PRIM(rator, "bytes->immutable-bytes")) {
@@ -4663,12 +4666,14 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         check_known(info, app_o, rator, rand, "length", scheme_list_p_proc, scheme_true, info->unsafe_mode);
 
         check_known(info, app_o, rator, rand, "string-append", scheme_string_p_proc, scheme_true, info->unsafe_mode);
+        check_known(info, app_o, rator, rand, "string-append-immutable", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "bytes-append", scheme_byte_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "string->immutable-string", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "bytes->immutable-bytes", scheme_byte_string_p_proc, scheme_true, info->unsafe_mode);
 
         check_known(info, app_o, rator, rand, "string->symbol", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "symbol->string", scheme_symbol_p_proc, scheme_true, info->unsafe_mode);
+        check_known(info, app_o, rator, rand, "symbol->string-immutable", scheme_symbol_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "string->keyword", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "keyword->string", scheme_keyword_p_proc, scheme_true, info->unsafe_mode);
 
@@ -8091,6 +8096,8 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
                avoid the possibility of N^2 behavior. */
             if (!OPT_DISCOURAGE_EARLY_INLINE)
               rhs_info->letrec_not_twice++;
+            inline_fuel = rhs_info->inline_fuel;
+            rhs_info->inline_fuel >>= 1;
             use_psize = rhs_info->use_psize;
             rhs_info->use_psize = info->use_psize;
 
@@ -8106,6 +8113,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
             
             if (!OPT_DISCOURAGE_EARLY_INLINE)
               --rhs_info->letrec_not_twice;
+            rhs_info->inline_fuel = inline_fuel;
             rhs_info->use_psize = use_psize;
 
             irlv->value = value;
@@ -10147,7 +10155,7 @@ static void optimize_uses_of_mutable_imply_early_alloc(Scheme_IR_Let_Value *at_i
   int i, j;
   Scheme_IR_Let_Value *irlv = at_irlv;
 
-  /* We we're reinterpreting a `letrec` as `let*`, and when it realy
+  /* We we're reinterpreting a `letrec` as `let*`, and when it really
      must be `let*` instead of `let`, and when a mutable variable is
      involved, then we need to tell the `resolve` pass that the
      mutable varaiable's value must be boxed immediately, instead of

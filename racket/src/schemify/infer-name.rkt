@@ -1,23 +1,40 @@
 #lang racket/base
-(require "wrap.rkt")
+(require racket/fixnum
+         racket/symbol
+         "wrap.rkt")
 
 (provide infer-procedure-name)
 
-(define (infer-procedure-name orig-s new-s)
+(define (infer-procedure-name orig-s new-s explicit-unnamed?)
   (define inferred-name (wrap-property orig-s 'inferred-name))
   (cond
     [(symbol? inferred-name)
-     ;; Let propagation of properties (at the call site of
-     ;; `infer-procedure-name`) take care of it
-     new-s]
+     (define s (symbol->immutable-string inferred-name))
+     (cond
+       [(and (fx> (string-length s) 0)
+             (let ([ch (string-ref s 0)])
+               (or (char=? #\[ ch)
+                   (char=? #\] ch))))
+        ;; Symbolic name starts with "[" or "]". To avoid confusing
+        ;; it with a path or "no name" encoding, add an extra
+        ;; "]" to be stripped away.
+        (wrap-property-set (reannotate orig-s new-s)
+                          'inferred-name
+                          (string->symbol (string-append-immutable "]" s)))]
+       [else
+        ;; Let propagation of properties (at the call site of
+        ;; `infer-procedure-name`) take care of it
+        new-s])]
     [else
      (define-values (src line col pos span) (wrap-source orig-s))
      (define (add-property str)
        (wrap-property-set (reannotate orig-s new-s)
                           'inferred-name
                           ;; Hack: starting with "[" means
-                          ;; "derived from path"
-                          (string->symbol (string-append "[" str))))
+                          ;; "derived from path". This distinction
+                          ;; is used when printing function names
+                          ;; in a stack trace.
+                          (string->symbol (string-append-immutable "[" str))))
      (cond
        [(and (or (path? src) (string? src)) line col)
         (add-property
@@ -31,8 +48,9 @@
          (string-append (source->string src)
                         "::"
                         (number->string pos)))]
-       [(void? inferred-name)
-        ;; We can't provide a source name, but explicity
+       [(or explicit-unnamed?
+            (void? inferred-name))
+        ;; We can't provide a source name, but explicitly
         ;; suppress any other inferred name:
         (wrap-property-set (reannotate orig-s new-s)
                            'inferred-name
@@ -50,4 +68,3 @@
     (when (char=? #\\ (string-ref short-str i))
       (string-set! short-str i #\/)))
   short-str)
-

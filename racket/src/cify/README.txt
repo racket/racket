@@ -14,7 +14,7 @@ Compilation by cify is UNSAFE. For example:
    is applied to an instance of the struct, and so on.
 
  * cify assumes that a variable is not referenced before its
-   defintion.
+   definition.
 
  * cify assumes that a function defined within the linklet is called
    within the linklet with the right number of arguments.

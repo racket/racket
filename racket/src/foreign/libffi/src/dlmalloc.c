@@ -1336,7 +1336,7 @@ static void* os2mmap(size_t size) {
 
 #define os2direct_mmap(n)     os2mmap(n)
 
-/* This function supports releasing coalesed segments */
+/* This function supports releasing coalesced segments */
 static int os2munmap(void* ptr, size_t size) {
   while (size) {
     ULONG ulSize = size;
@@ -1373,7 +1373,7 @@ static void* win32direct_mmap(size_t size) {
   return (ptr != 0)? ptr: MFAIL;
 }
 
-/* This function supports releasing coalesed segments */
+/* This function supports releasing coalesced segments */
 static int win32munmap(void* ptr, size_t size) {
   MEMORY_BASIC_INFORMATION minfo;
   char* cptr = ptr;

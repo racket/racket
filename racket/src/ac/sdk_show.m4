@@ -2,6 +2,7 @@ show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+show_explicitly_enabled "${enable_embedfw}" "embedded frameworks"
 
 if test "${enable_sdk}" != "" ; then
    if test "${enable_sdk5}" != "" ; then

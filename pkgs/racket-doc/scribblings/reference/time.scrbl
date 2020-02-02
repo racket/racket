@@ -239,3 +239,13 @@ calculations.}
 
 Converts a Julian number (Scaliger's off-by-one version) into a
 string.}
+
+
+@deftogether[(
+@defproc[(date->julian/scalinger [date date?]) exact-integer?]
+@defproc[(julian/scalinger->string [date-number exact-integer?])
+         string?]
+)]{
+
+The same as @racket[date->julian/scaliger] and
+@racket[julian/scaliger->string], but misspelled.}

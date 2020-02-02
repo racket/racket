@@ -2662,7 +2662,7 @@ last few projections.
                                   (unless (vector-ref meth-flags index)
                                     (vector-set! meth-flags index (not make-struct:prim)))
                                   
-                                  ;; clear out external contracts for methods that are overriden
+                                  ;; clear out external contracts for methods that are overridden
                                   (when wci-neg-extra-arg-vec
                                     (vector-set! wci-neg-extra-arg-vec index #f)
                                     (hash-remove! wci-neg-acceptors-ht method)))

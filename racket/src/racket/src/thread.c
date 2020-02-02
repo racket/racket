@@ -1456,8 +1456,8 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
   m->shut_down = 1;
 
   /* Need to kill children first, transitively, so find
-     last decendent. The family will be the global-list from
-     m to this last decendent, inclusive. */
+     last descendant. The family will be the global-list from
+     m to this last descendant, inclusive. */
   for (c = m; CUSTODIAN_FAM(c->children); ) {
     for (c = CUSTODIAN_FAM(c->children); CUSTODIAN_FAM(c->sibling); ) {
       c = CUSTODIAN_FAM(c->sibling);
@@ -4560,7 +4560,7 @@ void scheme_break_main_thread_at(void *p)
 }
 
 void scheme_break_main_thread()
-/* Calling this function from an arbitary
+/* Calling this function from an arbitrary
    thread is dangerous when therad locals are enabled. */
 {
   scheme_break_main_thread_at((void *)&delayed_break_ready);
@@ -4844,8 +4844,8 @@ void scheme_thread_block(float sleep_time)
   shrink_cust_box_array();
 
   /* Scheduling queries might involve callbacks through the FFI that put
-     the runtime system into `scheme_no_stack_overflow` mode. Immitate
-     the foriegn-call entry point with an extra check that we have enough
+     the runtime system into `scheme_no_stack_overflow` mode. Imitate
+     the foreign-call entry point with an extra check that we have enough
      stack to survive in foreign functions. */
   if (!scheme_no_stack_overflow && scheme_is_stack_too_shallow()) {
     p->sleep_end = sleep_time; /* an abuse of the `sleep_end` field to
@@ -8935,7 +8935,7 @@ static void run_gc_callbacks(int pre)
       for (j = 0; j < SCHEME_VEC_SIZE(acts); j++) {
         act = SCHEME_VEC_ELS(acts)[j];
         protocol = SCHEME_VEC_ELS(act)[0];
-        /* The set of suported protocols is arbitary, based on what we've needed
+        /* The set of supported protocols is arbitrary, based on what we've needed
            so far. */
         if (!strcmp(SCHEME_SYM_VAL(protocol), "int->void")) {
           gccb_Int_to_Void proc;

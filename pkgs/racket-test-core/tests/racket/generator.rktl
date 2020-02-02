@@ -162,7 +162,7 @@
 
 ;; Make sure that `for/list` doesn't tigger quadtradic-time behavior
 ;; from `in-producer`, based on test constructed by @kalbr
-(let ()
+(unless (eq? 'cgc (system-type 'gc))
   (define (make-real-generator N)
     (generator
      ()

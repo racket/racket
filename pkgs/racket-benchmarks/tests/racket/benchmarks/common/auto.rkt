@@ -26,10 +26,18 @@ exec racket -qu "$0" ${1+"$@"}
   (define (bytes->number b)
     (string->number (bytes->string/latin-1 b)))
 
-  (define ((run-mk script) bm)
+  (define (find-program name default)
+    (define s (hash-ref executables name default))
+    (define p (find-executable-path s))
+    (unless p
+      (error 'find-executable "not found: ~s" s))
+    p)
+
+  (define ((run-mk script name default) bm)
     (when (file-exists? (symbol->string bm))
       (delete-file (symbol->string bm)))
-    (parameterize ([current-command-line-arguments (vector (symbol->string bm))])
+    (parameterize ([current-command-line-arguments (vector (symbol->string bm)
+                                                           (path->string (find-program name default)))])
       (namespace-require 'scheme)
       (load script)))
 
@@ -262,10 +270,10 @@ exec racket -qu "$0" ${1+"$@"}
                       "(compile-file \"~a.sch\")\n(exit)\n"
                       bm))]
                    [current-output-port (open-output-nowhere)])
-      (system "scheme -q")))
+      (system* (find-program "chez" "scheme") "-q")))
 
   (define (run-chez bm)
-    (system (format "scheme --script ~a.so" bm)))
+    (system* (find-program "chez" "scheme") "--script" (format "~a.so" bm)))
 
   (define (run-petite bm)
     (parameterize ([current-input-port
@@ -273,7 +281,7 @@ exec racket -qu "$0" ${1+"$@"}
                      (format
                       "(load \"petite-prelude.sch\")\n(load \"~a.sch\")\n(exit)\n"
                       bm))])
-      (system "petite")))
+      (system* (find-program "petite" "petite"))))
 
   (define (extract-chez-times bm str)
     (let ([m (regexp-match #rx#"([0-9.]+)s elapsed cpu time(?:, including ([0-9.]+)s collecting)?[ \n]* ([0-9.]+)s elapsed real time" str)])
@@ -424,7 +432,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system* (find-exe) "-u" (compiled-path bm)))
+                  (system* (or (hash-ref executables "racket" #f) (find-exe)) "-u" (compiled-path bm)))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
@@ -526,7 +534,7 @@ exec racket -qu "$0" ${1+"$@"}
                           scheme-c scheme-i)))
      (make-impl 'chicken
                 void
-                (run-mk "mk-chicken.rktl")
+                (run-mk "mk-chicken.rktl" "chicken" "csc")
                 run-exe
                 extract-chicken-times
                 clean-up-bin
@@ -534,7 +542,7 @@ exec racket -qu "$0" ${1+"$@"}
                         racket-specific-progs))
      (make-impl 'bigloo
                 void
-                (run-mk "mk-bigloo.rktl")
+                (run-mk "mk-bigloo.rktl" "bigloo" "bigloo")
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
@@ -542,7 +550,7 @@ exec racket -qu "$0" ${1+"$@"}
                         racket-specific-progs))
      (make-impl 'gambit
                 void
-                (run-mk "mk-gambit.rktl")
+                (run-mk "mk-gambit.rktl" "gambit" "gsc")
                 run-gambit-exe
                 extract-gambit-times
                 clean-up-o1
@@ -664,7 +672,7 @@ exec racket -qu "$0" ${1+"$@"}
                            i))
                     impls)])
       (if (memq bm (impl-skips i))
-          (rprintf "[~a ~a ~s #f]\n" impl bm '(#f #f #f))
+          (rprintf "[~a ~a ~s #f]\n" (hash-ref names impl impl) bm '(#f #f #f))
           (begin
             ((impl-setup i) bm)
             (let ([start (current-inexact-milliseconds)])
@@ -678,7 +686,7 @@ exec racket -qu "$0" ${1+"$@"}
                                 ((impl-run i) bm))
                         (error 'auto "~a\nrun failed ~a" (get-output-bytes out) bm))
                       (rprintf "[~a ~a ~s ~a]\n"
-                               impl
+                               (hash-ref names impl impl)
                                bm
                                ((impl-extract-result i) bm (get-output-bytes out))
                                (inexact->exact (round (- end start)))))
@@ -690,7 +698,9 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define-values (actual-benchmarks-to-run 
                   actual-implementations-to-run 
-                  num-iterations)
+                  num-iterations
+                  executables
+                  names)
     (process-command-line benchmarks
                           extra-benchmarks
                           (map impl-name impls) obsolete-impls

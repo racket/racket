@@ -67,13 +67,12 @@
 
 ;; Main expander dispatch
 (define (expand s ctx
-                ;; Aplying a rename transformer substitutes
+                ;; Applying a rename transformer substitutes
                 ;; an id without changing `s`
                 #:alternate-id [alternate-id #f]
-                #:skip-log? [skip-log? #f]
                 ;; For expanding an implicit implemented by a rename transformer:
                 #:fail-non-transformer [fail-non-transformer #f])
-  (log-expand* ctx #:unless skip-log? [(if (expand-context-only-immediate? ctx) 'enter-check 'visit) s])
+  (log-expand ctx 'visit s)
   (cond
    [(syntax-identifier? s)
     (expand-identifier s ctx alternate-id)]
@@ -101,7 +100,7 @@
    (define binding (resolve+shift id (expand-context-phase ctx)
                                   #:ambiguous-value 'ambiguous
                                   #:immediate? #t))
-   (log-expand* ctx #:unless (expand-context-only-immediate? ctx) ['resolve id])
+   (log-expand ctx 'resolve id)
    (cond
     [(eq? binding 'ambiguous)
      (raise-ambiguous-error id ctx)]
@@ -125,7 +124,7 @@
    (define binding (resolve+shift id (expand-context-phase ctx)
                                   #:ambiguous-value 'ambiguous
                                   #:immediate? #t))
-   (log-expand* ctx #:unless (expand-context-only-immediate? ctx) ['resolve id])
+   (log-expand ctx 'resolve id)
    (cond
      [(eq? binding 'ambiguous)
       (when fail-non-transformer (fail-non-transformer))
@@ -157,17 +156,17 @@
 (define (expand-implicit sym s ctx trigger-id)
   (cond
     [(expand-context-only-immediate? ctx)
-     (log-expand* ctx ['exit-check s])
+     (log-expand ctx 'stop/return s)
      s]
     [else
      (define disarmed-s (syntax-disarm s))
      (define id (datum->syntax disarmed-s sym))
      (guard-stop
       id ctx s
-      (log-expand* ctx ['resolve id])
       (define b (resolve+shift id (expand-context-phase ctx)
                                #:ambiguous-value 'ambiguous
                                #:immediate? #t))
+      (log-expand ctx 'resolve id)
       (cond
         [(eq? b 'ambiguous)
          (raise-ambiguous-error id ctx)]
@@ -177,7 +176,7 @@
          (cond
            [(transformer? t)
             (define fail-non-transformer
-              ;; Make sure a rename transformer eventualy leads to syntax
+              ;; Make sure a rename transformer eventually leads to syntax
               (and (rename-transformer? t)
                    (lambda ()
                      (raise-syntax-implicit-error s sym trigger-id ctx))))
@@ -205,7 +204,9 @@
                (if (and (expand-context-to-parsed? ctx)
                         (free-id-set-empty? (expand-context-stops ctx)))
                    (parsed-id tl-id tl-b #f)
-                   tl-id)]
+                   (begin
+                     (log-expand* ctx ['variable tl-id] ['return tl-id])
+                     tl-id))]
               [else
                (raise-syntax-implicit-error s sym trigger-id ctx)])])]))]))
 
@@ -225,11 +226,12 @@
                         (and (not (parsed? exp-s)) exp-s)))
   (cond
     [(expand-context-only-immediate? ctx)
+     (log-expand ctx 'stop/return s)
      s]
     [(parsed? exp-s) exp-s]
     [else
      (define result-s (syntax-track-origin exp-s s))
-     (log-expand ctx 'opaque-expr result-s)
+     (log-expand ctx 'opaque-expr result-s) ;; FIXME: or exp-s?
      (if (and (expand-context-to-parsed? ctx)
               (free-id-set-empty? (expand-context-stops ctx)))
          (expand result-s ctx) ; fully expanded to compiled
@@ -237,7 +239,7 @@
 
 (define (make-explicit ctx sym s disarmed-s)
   (define new-s (syntax-rearm (datum->syntax disarmed-s (cons sym disarmed-s) s s) s))
-  (log-expand ctx 'tag new-s)
+  (log-expand ctx 'tag2 new-s disarmed-s)
   new-s)
 
 ;; ----------------------------------------
@@ -269,12 +271,12 @@
 (define (dispatch-core-form t s ctx)
   (cond
    [(expand-context-only-immediate? ctx)
-    (log-expand* ctx ['exit-check s])
+    (log-expand ctx 'stop/return s)
     s]
    [(expand-context-observer ctx)
     (log-expand ctx 'enter-prim s)
     (define result-s ((core-form-expander t) s ctx))
-    (log-expand* ctx ['exit-prim (extract-syntax result-s)] ['return (extract-syntax result-s)])
+    (log-expand ctx 'exit-prim/return (extract-syntax result-s))
     result-s]
    [else
     ;; As previous case, but as a tail call:
@@ -285,7 +287,7 @@
 (define (dispatch-implicit-#%top-core-form t s ctx)
   (log-expand ctx 'enter-prim s)
   (define result-s ((core-form-expander t) s ctx #t))
-  (log-expand* ctx ['exit-prim result-s] ['return result-s])
+  (log-expand ctx 'exit-prim/return result-s)
   result-s)
 
 ;; Call a macro expander, taking into account whether it works
@@ -294,9 +296,8 @@
                               #:fail-non-transformer fail-non-transformer)
   (cond
    [(not-in-this-expand-context? t ctx)
-    (log-expand ctx 'enter-macro s)
     (define adj-s (avoid-current-expand-context (substitute-alternate-id s id) t ctx))
-    (log-expand ctx 'exit-macro s)
+    (log-expand ctx 'tag/context adj-s)
     (expand adj-s ctx)]
    [(and (expand-context-should-not-encounter-macros? ctx)
          ;; It's ok to have a rename transformer whose target
@@ -306,33 +307,28 @@
     (raise-syntax-error #f
                         "encountered a macro binding in form that should be fully expanded"
                         s)]
+   [(rename-transformer? t)
+    (cond
+      [(expand-context-just-once? ctx) s]
+      [else
+       (define alt-id (apply-rename-transformer t id ctx))
+       (log-expand ctx 'rename-transformer alt-id)
+       (expand s ctx
+               #:alternate-id alt-id
+               #:fail-non-transformer fail-non-transformer)])]
    [else
-    (log-expand* ctx #:when (and (expand-context-only-immediate? ctx)
-                                 (not (rename-transformer? t)))
-                 ;; The old expander would emit 'resolve for a rename transformer
-                 ;; as long as it's not the first one encountered in immediate mode
-                 ['visit s] ['resolve id])
     ;; Apply transformer and expand again
     (define-values (exp-s re-ctx)
-      (if (rename-transformer? t)
-          (values s ctx)
-          (apply-transformer t insp-of-t s id ctx binding)))
-    (log-expand* ctx #:when (and (expand-context-only-immediate? ctx)
-                                 (not (rename-transformer? t)))
-                 ['return exp-s])
+      (apply-transformer t insp-of-t s id ctx binding))
     (cond
-     [(expand-context-just-once? ctx) exp-s]
-     [else (expand exp-s re-ctx
-                   #:alternate-id (and (rename-transformer? t) (apply-rename-transformer t id ctx))
-                   #:skip-log? (or (expand-context-only-immediate? ctx)
-                                   (rename-transformer? t))
-                   #:fail-non-transformer (and (rename-transformer? t) fail-non-transformer))])]))
+      [(expand-context-just-once? ctx) exp-s]
+      [else (expand exp-s re-ctx)])]))
 
 ;; Handle the expansion of a variable to itself
 (define (dispatch-variable t s id ctx binding primitive? protected?)
   (cond
    [(expand-context-only-immediate? ctx)
-    (log-expand* ctx ['exit-check s])
+    (log-expand ctx 'stop/return id)
     id]
    [else
     (log-expand ctx 'variable s id)
@@ -359,15 +355,15 @@
 
 ;; Given a macro transformer `t`, apply it --- adding appropriate
 ;; scopes to represent the expansion step; the `insp-of-t` inspector
-;; is the inspector of the module that defines `t`, which gives it
-;; priviledge for `syntax-arm` and similar
+;; is the inspector of the module that defines `t`, which gives its
+;; privilege for `syntax-arm` and similar
 (define (apply-transformer t insp-of-t s id ctx binding
                            #:origin-id [origin-id #f])
   (performance-region
    ['expand '_ 'macro]
 
-   (log-expand ctx 'enter-macro s)
    (define disarmed-s (syntax-disarm s))
+   (log-expand ctx 'enter-macro disarmed-s s)
    (define intro-scope (new-scope 'macro))
    (define intro-s (flip-scope disarmed-s intro-scope))
    ;; In a definition context, we need use-site scopes
@@ -393,7 +389,7 @@
    ;; Track expansion:
    (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (syntax-identifier? s) s (car (syntax-e s))))))
    (define rearmed-s (taint-dispatch tracked-s (lambda (t-s) (syntax-rearm t-s s)) (expand-context-phase ctx)))
-   (log-expand ctx 'exit-macro rearmed-s)
+   (log-expand ctx 'exit-macro rearmed-s post-s)
    (values rearmed-s
            (accumulate-def-ctx-scopes ctx def-ctx-scopes))))
 
@@ -510,8 +506,7 @@
           (free-id-set-member? (expand-context-stops ctx)
                                (expand-context-phase ctx)
                                id))
-     (log-expand* ctx #:unless (expand-context-only-immediate? ctx)
-                  ['resolve id] ['enter-prim s] ['prim-stop] ['exit-prim s] ['return s])
+     (log-expand* ctx ['resolve id] ['stop/return s])
      s]
     [else
      otherwise ...]))
@@ -539,8 +534,8 @@
 
 ;; ----------------------------------------
 
-;; Expand `s` as a compile-time expression relative to the current
-;; expansion context
+;; Expand `s` and capture lifted expressions, combining expanded term
+;; and lifts using `begin` or `let` wrapper
 (define (expand/capture-lifts s ctx
                               #:expand-lifts? [expand-lifts? #f]
                               #:begin-form? [begin-form? #f]

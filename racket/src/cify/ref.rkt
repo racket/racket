@@ -18,7 +18,7 @@
 
          wrap-ref)
 
-;; Wrap each refernce to a local variable with a `ref` record, which
+;; Wrap each reference to a local variable with a `ref` record, which
 ;; provides an identity for tracking last references to implement
 ;; space safety.
 

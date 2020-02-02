@@ -31,6 +31,8 @@ RACKET = @RACKET@
 
 CS_INSTALLED = @CS_INSTALLED@
 
+NOOP = :
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
@@ -56,6 +58,7 @@ cs:
 	$(MAKE) racket-so
 	cd rktio; $(MAKE)
 	$(MAKE) racketcs
+	$(MAKE) check-racketcs@CROSS_MODE@
 	$(MAKE) gracketcs
 	$(MAKE) starter
 
@@ -239,8 +242,13 @@ RKTFWDIR = Racket.framework/Versions/$(FWVERSION)_CS
 RKTFW = $(RKTFWDIR)/Racket
 GRAPPSKEL = GRacketCS.app/Contents/Info.plist
 
+# Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
+MACLIBRKT_LINK_fw = -F. -framework Racket $(LDFLAGS)
+MACLIBRKT_LINK_static = $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
+
 racketcs@OSX@: main.o $(RKTFW)
-	$(CC) $(CFLAGS) -o racketcs main.o -F. -framework Racket $(LDFLAGS)
+	$(CC) $(CFLAGS) -o racketcs main.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
+	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_DEST=racketcs
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
 
 GRACKET_BIN = GRacketCS.app/Contents/MacOS/GRacketCS
@@ -249,7 +257,8 @@ gracketcs@OSX@:
 	$(MAKE) $(GRACKET_BIN)
 
 $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
-	$(CC) $(CFLAGS) -o $(GRACKET_BIN) grmain.o -F. -framework Racket $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(GRACKET_BIN) grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
+	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_DEST=$(GRACKET_BIN)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
 
 $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schvers.h $(srcdir)/../../mac/icon/GRacket.icns
@@ -268,6 +277,12 @@ $(RKTFW): $(BOOT_OBJ_DEPS) $(BOOT_FILES)
 	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
 	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
 	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
+
+mac-embed-boot-fw:
+	$(NOOP)
+
+mac-embed-boot-static:
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ "" $(EMBED_DEST) $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 # ----------------------------------------
 # MinGW
@@ -465,6 +480,17 @@ macos-install-gracket:
 	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
 	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
+
+# ----------------------------------------
+# Check
+
+CHECK_BOOT = -O 'info@compiler/cm' -l- setup --boot $(srcdir)/../../setup-go.rkt $(builddir)/compiled/cs ignored $(builddir)/ignored.d
+
+check-racketcs:
+	./racketcs $(CHECK_BOOT) $(srcdir)/../known.rkt $(srcdir)/..
+
+check-racketcscross:
+	$(NOOP)
 
 # ----------------------------------------
 # Reconfigure

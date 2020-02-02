@@ -4,7 +4,8 @@
          "known.rkt"
          "import.rkt"
          "export.rkt"
-         "wrap-path.rkt")
+         "wrap-path.rkt"
+         "gensym.rkt")
 
 (provide init-inline-fuel
          can-inline?
@@ -39,10 +40,13 @@
        [(wrap-pair? v)
         (cond
           [(eq? (unwrap (wrap-car v)) 'quote)
-           ;; don't copy quoted values other than symbols
-           (if (symbol? (unwrap (wrap-car (wrap-cdr v))))
-               (sub1 size)
-               0)]
+           ;; don't copy quoted values other than interned or unreadable symbols
+           (let ([v (unwrap (wrap-car (wrap-cdr v)))])
+             (if (and (symbol? v)
+                      (or (symbol-interned? v)
+                          (symbol-unreadable? v)))
+                 (sub1 size)
+                 0))]
           [else
            (loop (wrap-cdr v) (loop (wrap-car v) size))])]
        [else (sub1 size)]))))
@@ -127,7 +131,7 @@
         [(wrap-null? args) base-env]
         [(wrap-pair? args)
          (define u (unwrap (wrap-car args)))
-         (define g (gensym u))
+         (define g (deterministic-gensym u))
          (define m (hash-ref mutated u #f))
          (when m
            (hash-set! mutated g m))
@@ -135,7 +139,7 @@
                (loop (wrap-cdr args)))]
         [else
          (define u (unwrap args))
-         (cons (cons u (gensym u)) base-env)])))
+         (cons (cons u (deterministic-gensym u)) base-env)])))
   (values (let loop ([args args] [env env])
             (cond
               [(wrap-null? args) '()]
@@ -228,7 +232,7 @@
         (known-procedure/can-inline/need-imports
          (known-procedure-arity-mask k)
          (if serializable? (wrap-truncate-paths expr) expr)
-         (hash->list needed))])]
+         (needed->list needed))])]
     [(known-field-accessor? k)
      (define needed (needed-imports (known-field-accessor-type-id k) prim-knowns imports exports '() '#hasheq()))
      (cond
@@ -237,7 +241,7 @@
                                            (known-accessor-type k)
                                            (known-field-accessor-type-id k)
                                            (known-field-accessor-pos k)
-                                           (hash->list needed))]
+                                           (needed->list needed))]
        [else
         (known-accessor (known-procedure-arity-mask k)
                         (known-accessor-type k))])]
@@ -249,7 +253,7 @@
                                           (known-mutator-type k)
                                           (known-field-mutator-type-id k)
                                           (known-field-mutator-pos k)
-                                          (hash->list needed))]
+                                          (needed->list needed))]
        [else
         (known-mutator (known-procedure-arity-mask k)
                        (known-mutator-type k))])]
@@ -342,6 +346,5 @@
     [else
      (cons (unwrap args) env)]))
 
-(define (hash->list needed)
-  (for/list ([(k v) (in-hash needed)])
-    (cons k v)))
+(define (needed->list needed)
+  (hash-map needed cons #t))

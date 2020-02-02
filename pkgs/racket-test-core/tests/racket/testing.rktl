@@ -102,6 +102,8 @@ transcript.
       (set! accum-number-of-exn-tests (+ accum-number-of-exn-tests (list-ref l 2)))
       (set! accum-errs (append (list-ref l 3) accum-errs)))))
 
+(define wrong-result-retries (make-parameter 0))
+
 (define test
   (let ()
     (define (test* expect fun args kws kvs)
@@ -120,10 +122,17 @@ transcript.
                        (car args))])
           (printf "~s\n" res)
           (let ([ok? (equal? expect res)])
-            (unless ok?
-              (record-error (list res expect form))
-              (printf "  BUT EXPECTED ~s\n" expect))
-            ok?))))
+            (cond
+              [(and (not ok?)
+                    (positive? (wrong-result-retries)))
+               (printf "TRY AGAIN\n")
+               (parameterize ([wrong-result-retries (sub1 (wrong-result-retries))])
+                 (test* expect fun args kws kvs))]
+              [else
+               (unless ok?
+                 (record-error (list res expect form))
+                 (printf "  BUT EXPECTED ~s\n" expect))
+               ok?])))))
     (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs))
     (define (test    expect fun         . args) (test* expect fun args #f #f))
     (make-keyword-procedure test/kw test)))
@@ -403,3 +412,12 @@ transcript.
      ;; No way to detect stack overflow, and it's less interesting anyway,
      ;; but make up a number for testing purposes
      1000]))
+
+;; Set the `PLT_RUN_UNRELIABLE_TESTS` environment to a comma-separated set of
+;; extra tests to enable.
+(define (run-unreliable-tests? mode)
+  (define s (getenv "PLT_RUN_UNRELIABLE_TESTS"))
+  (and s
+       (let ([l (map string->symbol (string-split s ","))])
+         (memq mode l))))
+

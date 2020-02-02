@@ -29,7 +29,7 @@ CPP = @CPP@
 
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@ 
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS =  @PREFLAGS@
 
 AR = @AR@
@@ -73,7 +73,7 @@ FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 #  having the file-open syscall open an ".exe" file for reading when
 #  (1) the given filename has no suffix, and (2) there's not a suffixless
 #  file present. However, Cygwin doesn't do that when opening a file for
-#  output, even when the output mode is 'update. So we need to explcitly
+#  output, even when the output mode is 'update. So we need to explicitly
 #  add EXE_SUFFIX in a few places.
 
 ################################################################################
@@ -153,7 +153,7 @@ foreign-stub:
 	cd $(FOREIGN_DIR); $(MAKE) stub
 
 rktio:
-	cd ../rktio; $(MAKE)
+	cd ../rktio; $(MAKE) CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)"
 
 mzlibrary:
 	cd src; $(MAKE) all 
@@ -212,14 +212,20 @@ mzcom@CGC@@NOT_MINGW@:
 
 MZFW = Racket.framework/Versions/$(FWVERSION)/Racket
 
+MACLIBRKT_LIBS = $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO) -framework CoreFoundation
+
 $(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS) $(LIBRKTIO)
 	mkdir -p  Racket.framework/Versions/$(FWVERSION)
-	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO) @LIBS@
+	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -dynamiclib -all_load $(MACLIBRKT_LIBS) @LIBS@
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)/Racket Racket.framework/Racket
 
+# Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
+MACLIBRKT_LINK_fw = -F. -framework Racket
+MACLIBRKT_LINK_static = $(MACLIBRKT_LIBS)
+
 racket@CGC@@OSX@: $(MZFW) main.@LTO@
-	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket @LIBS@
+	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) @LIBS@
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "racket@CGC@"
 
 # mingw ----------------------------------------

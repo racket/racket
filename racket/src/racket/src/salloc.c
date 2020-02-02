@@ -3020,6 +3020,8 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 # endif
 #endif
 
+  scheme_console_printf("JIT-generated code: %ld\n", scheme_code_page_total);
+
 #if MZ_PRECISE_GC_TRACE
   if (for_each_struct) {
     scheme_console_printf("Begin Struct\n");

@@ -8,7 +8,7 @@
 ;; for local variables, where the expander adds "_<num>" suffixes to
 ;; generate local-variable names, and the "<num>"s count up across all
 ;; symbols. Renumber with symbol-specific counting to reduce
-;; unneccessary changes to generated code. A relatively simple
+;; unnecessary changes to generated code. A relatively simple
 ;; strategy works because no primitive or exported name has a "_<num>"
 ;; suffix.
 

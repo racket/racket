@@ -72,13 +72,11 @@
   (test-string 'rfc2822 #t "Thu, 4 May 2006 03:02:01 -0600")
   (test-string 'julian #f "JD 2 453 860")
   (test-string 'julian #t "JD 2 453 860, 03:02:01")
-
-  ;; In the off chance that one of these changes and not the other,
-  ;; both are provided for tests.
-  (test 2453860 date->julian/scalinger d)
+  
   (test 2453860 date->julian/scaliger d)
-  (test "JD 2 453 860" julian/scalinger->string 2453860)
-  (test "JD 2 453 860" julian/scaliger->string 2453860))
+  (test 2453860 date->julian/scalinger d)
+  (test "JD 2 453 860" julian/scaliger->string 2453860)
+  (test "JD 2 453 860" julian/scalinger->string 2453860))
 
 ;; Bad dates
 (err/rt-test (find-seconds 0 0 0 0 0 1990) exn:fail?)
@@ -110,14 +108,9 @@
       ;;  one of the two possible values, though:
       (test-find 0 30 1 7 11 2010))))
 
-
-;; In the off chance that one of these changes and not the other,
-;; both are provided for tests.
 ;; bug fixes
 (test "JD 12" julian/scalinger->string 12)
-(test "JD 12" julian/scaliger->string 12)
 (test "JD 123" julian/scalinger->string 123)
-(test "JD 123" julian/scaliger->string 123)
 
 ;; make sure that date* has the correct parent info
 (test #t date*?

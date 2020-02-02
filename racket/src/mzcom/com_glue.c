@@ -438,7 +438,7 @@ static STDMETHODIMP GetConnectionPointContainer(IConnectionPoint *com_obj, IConn
 // app object from which we can request the app to give us its IMzObjEvents. All of
 // this convoluted stuff is a combination of poor pre-planning by Microsoft
 // programmers when they designed this stuff, as well as the colossal blunder of
-// designing COM to accomodate the limitations of early, primitive editions of
+// designing COM to accommodate the limitations of early, primitive editions of
 // Visual Basic.
 //
 // The second arg passed here is some app object whose QueryInterface function
@@ -545,7 +545,7 @@ static ULONG STDMETHODCALLTYPE classAddRef(IClassFactory *com_obj)
   // Since we never actually allocate/free an IClassFactory (ie, we
   // use just 1 static one), we don't need to maintain a separate
   // reference count for our IClassFactory. We'll just tell the caller
-  // that there's at least one of our IClassFactory objects in existance
+  // that there's at least one of our IClassFactory objects in existence
   return(1);
 }
 

@@ -15,7 +15,7 @@
               #'(let ([arg tmp] ...)
                   (if guard
                       op
-                      (orig-id arg ...)))]
+                      (#3%$app/no-inline orig-id arg ...)))]
              [(_ . args)
               #'(orig-id . args)]
              [_ #'orig-id])))]))

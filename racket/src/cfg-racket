@@ -747,6 +747,7 @@ libpltdir_rel
 libpltdir
 appsdir
 collectsdir
+MACLIBRKT_LINK_MODE
 target_os
 target_vendor
 target_cpu
@@ -810,6 +811,7 @@ enable_floatinstead
 enable_extflonum
 enable_racket
 enable_origtree
+enable_useprefix
 enable_pkgscope
 enable_docs
 enable_usersetup
@@ -824,6 +826,7 @@ enable_xonx
 enable_macprefix
 enable_libfw
 enable_userfw
+enable_embedfw
 enable_mac64
 enable_csdefault
 enable_cgcdefault
@@ -1466,6 +1469,7 @@ Optional Features:
   --enable-extflonum      support extflonums (enabled by default, if available)
   --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
   --enable-origtree       install with original directory structure
+  --disable-useprefix     ignore any --prefix setting
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
@@ -1485,6 +1489,7 @@ Optional Features:
   --enable-macprefix      allow --prefix with a Mac OS install
   --enable-libfw          install Mac OS frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
+  --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-csdefault      use CS as default build
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
@@ -2672,6 +2677,11 @@ if test "${enable_origtree+set}" = set; then :
   enableval=$enable_origtree;
 fi
 
+# Check whether --enable-useprefix was given.
+if test "${enable_useprefix+set}" = set; then :
+  enableval=$enable_useprefix;
+fi
+
 # Check whether --enable-pkgscope was given.
 if test "${enable_pkgscope+set}" = set; then :
   enableval=$enable_pkgscope;
@@ -2778,6 +2788,11 @@ fi
 # Check whether --enable-userfw was given.
 if test "${enable_userfw+set}" = set; then :
   enableval=$enable_userfw;
+fi
+
+# Check whether --enable-embedfw was given.
+if test "${enable_embedfw+set}" = set; then :
+  enableval=$enable_embedfw;
 fi
 
 # Check whether --enable-mac64 was given.
@@ -2978,6 +2993,15 @@ else
 fi
 
 
+MACLIBRKT_LINK_MODE=fw
+
+if test "${enable_embedfw}" = "yes" ; then
+  MACLIBRKT_LINK_MODE=static
+fi
+
+
+
+
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
@@ -2986,7 +3010,7 @@ fi
 
 
 unixstyle=no
-if test "${enable_origtree}" != "yes" ; then
+if test "${enable_useprefix}" = "yes" -a "${prefix}" != "NONE" ; then
   if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
@@ -3036,7 +3060,7 @@ fi
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
-  if test "${prefix}" = "NONE" ; then
+  if test "${enable_useprefix}" = "no" -o "${prefix}" = "NONE" ; then
     inplacebuild=yes
     prefix=`cd "${srcdir}/..${PREFIX_PATH_RELATIVE}" && pwd`
   else
@@ -3256,6 +3280,7 @@ show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+show_explicitly_enabled "${enable_embedfw}" "embedded frameworks"
 
 if test "${enable_sdk}" != "" ; then
    if test "${enable_sdk5}" != "" ; then
@@ -3394,6 +3419,7 @@ mzrt_needs_pthread=yes
 skip_iconv_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
+check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
   STARTUP_AS_BYTECODE=_bytecode
@@ -4607,21 +4633,32 @@ if test "$ARFLAGS" = '' ; then
 fi
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
+is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+
 # If using gcc, we want all warnings:
-if test "$CC" = "gcc" ; then
+is_gcc=`$CC -v 2>&1 | tail -n 1 | grep -E '^gcc version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ \([^\)]+\)[[:space:]]*$'`
+
+# We also need to test if $CC is gcc itself because on mac,
+# where clang impersonates gcc, although is_gcc is false, we want
+# to use it as if it was gcc.
+# See https://github.com/racket/racket/pull/2897#pullrequestreview-314906673
+if test "$is_gcc" != "" || test "`basename $CC`" = "gcc"; then
   COMPFLAGS="$COMPFLAGS -Wall"
 
   # Use -MMD when we have gcc and gnumake:
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
   if test "$is_gmake" = "" ; then
     WX_MMD_FLAG=""
   else
     WX_MMD_FLAG="-MMD"
-    INCLUDEDEP="-include"
   fi
 
   # Compile mzdyn.o with -fPIC
   DYN_CFLAGS="-fPIC"
+fi
+
+# When GNU Make is present, use version.mak
+if test "$is_gmake" != ""; then
+   INCLUDEDEP="-include"
 fi
 
 if test "$REZ" = '' ; then
@@ -4830,6 +4867,7 @@ case "$host_os" in
       x86_64)
        enable_parallel_by_default=yes
        CGC_X86_64="1"
+       check_for_unwind=REG_RSP
        ;;
       ppc|powerpc)
        ;;
@@ -4839,6 +4877,7 @@ case "$host_os" in
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
+       check_for_unwind=REG_ESP
        ;;
       arm*)
        EXTRA_GMP_OBJ="gmp_arm_gcc.o"
@@ -4932,9 +4971,11 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
         LD=gcc-4.0
         need_ld_in_extras=yes
       fi
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
       need_cc_in_extras=yes
       if test "$ORIG_CC_FOR_BUILD" = "" ; then
         CC_FOR_BUILD="$CC"
@@ -4944,25 +4985,31 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     if test "${enable_sdk5}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
     fi
 
     if test "${enable_sdk6}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
     fi
 
     if test "${enable_sdk9}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
     fi
 
     # Force 32-bit build unless mac64 is enabled:
@@ -4974,12 +5021,19 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
            LDFLAGS="${LDFLAGS} -m32"
            # To make the libffi build work, we have to fold -m32 into CC
            # instead of CFLAGS:
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
+           if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+             SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
+           fi
            need_cc_in_extras=no
+           if test "$build_cpu" = "x86_64" ; then
+             # AG_PROC_CC has already decided that we weren't
+             # cross compiling, so change that decision
+             cross_compiling=yes
+             echo may be cross compiling after all
+           fi
         fi
       fi
     fi
-
 
 
     case "$host_cpu" in
@@ -5039,6 +5093,9 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
         else
           FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
         fi
+      fi
+      if test "${enable_embedfw}" = "yes" ; then
+        strip_needs_dash_s=yes
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
@@ -5621,53 +5678,53 @@ fi
 
   if test "${enable_iconv}" = "yes" ; then
     # Does it all work, now?
-    if test "$cross_compiling" = yes; then :
-  enable_iconv=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-   #include <iconv.h>
-   #include <langinfo.h>
-    int main() {
+#include <iconv.h>
+    #include <langinfo.h>
+int
+main ()
+{
      iconv_open("UTF-8", "UTF-8");
       return 0;
-    }
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   enable_iconv=yes
 else
   enable_iconv=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
     if test "${enable_iconv}" = "no" ; then
       # Try adding -liconv ?
       #  We did not use AC_CHECK_LIB because iconv is sometimes macro-renamed
       ORIG_LIBS="$LIBS"
       LIBS="$LIBS -liconv"
-      if test "$cross_compiling" = yes; then :
-  enable_iconv=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-     #include <iconv.h>
-     #include <langinfo.h>
-      int main() {
+#include <iconv.h>
+      #include <langinfo.h>
+int
+main ()
+{
      iconv_open("UTF-8", "UTF-8");
       return 0;
-      }
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   enable_iconv=yes
 else
   enable_iconv=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
       if test "${enable_iconv}" = "no" ; then
         LIBS="$ORIG_LIBS"
       else
@@ -5683,6 +5740,7 @@ $as_echo_n "checking $msg... " >&6; }
  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iconv_usage_result" >&5
 $as_echo "$iconv_usage_result" >&6; }
 fi
+
 
 if test "${check_for_mprotect}" = "yes" ; then
    msg="for mmap and mprotect"
@@ -5744,6 +5802,35 @@ $as_echo "$can_mprotect_exec" >&6; }
       echo "Senora GC is required due to mprotect() failure"
     fi
   fi
+fi
+
+if test "${check_for_unwind}" != "no" ; then
+   msg="for unwind support"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+     #include <inttypes.h>
+     #define __USE_GNU
+     #include <ucontext.h>
+     int main() {
+        return ${check_for_unwind};
+     }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  can_unwind=yes
+else
+  can_unwind=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test "$can_unwind" = "no" ; then
+
+$as_echo "#define MZ_NO_UNWIND_SUPPORT 1" >>confdefs.h
+
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $can_unwind" >&5
+$as_echo "$can_unwind" >&6; }
 fi
 
 if test "${check_page_size}" = "yes" ; then
@@ -6097,6 +6184,14 @@ cat >>confdefs.h <<_ACEOF
 #define SIZEOF_BOOL $ac_cv_sizeof_bool
 _ACEOF
 
+
+
+if test "${ac_cv_sizeof_void_p}" != "4" ; then
+  if test "${ac_cv_sizeof_void_p}" != "8" ; then
+    echo "Something has gone wrong getting the pointer size; see config.log"
+    exit 1
+  fi
+fi
 
 
 
@@ -6874,7 +6969,20 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/racket/src/schvers.h | cut -d '"' -f 2`
+    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+
+    if test "${VERSION_W}" != "0" ; then
+      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+    else
+      if test "${VERSION_Z}" != "0" ; then
+        plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
+      else
+        plt_lib_version="${VERSION_X}.${VERSION_Y}"
+      fi
+    fi
   fi
 
   AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"

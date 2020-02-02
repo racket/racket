@@ -169,8 +169,12 @@
   
   (with-fake-root
       (shelly-case
-       "non-conflicts on .zo files that will be deletced by `raco setup`"
+       "non-conflicts on .zo files that will be deleted by `raco setup`"
 
+       (define compiled-dir (let ([l (use-compiled-file-paths)])
+                              (if (null? l)
+                                  "compiled"
+                                  (car l))))
        (define (copy+install-not-conflict)
          (define t1nc-dir (make-temporary-file "~a-t1nc" 'directory))
          (define src-dir "test-pkgs/pkg-test1-not-conflict/")
@@ -184,18 +188,18 @@
          (case mode
            [(src)
             (set-file (build-path t1nc-dir "data" "empty-set.rkt") "#lang racket/base 'empty")
-            (maybe-delete-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo"))
+            (maybe-delete-file (build-path t1nc-dir "data" compiled-dir "empty-set_rkt.zo"))
             (maybe-delete-file (build-path t1nc-dir "data" "info.rkt"))]
            [(both)
             (set-file (build-path t1nc-dir "data" "empty-set.rkt") "#lang racket/base 'empty")
-            (set-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo") "not real...")
+            (set-file (build-path t1nc-dir "data" compiled-dir "empty-set_rkt.zo") "not real...")
             (set-file (build-path t1nc-dir "data" "info.rkt") "#lang info\n(define assume-virtual-sources #t)")]
            [(zo-stays)
-            (set-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo") "not real...")
+            (set-file (build-path t1nc-dir "data" compiled-dir "empty-set_rkt.zo") "not real...")
             (maybe-delete-file (build-path t1nc-dir "data" "empty-set.rkt"))
             (set-file (build-path t1nc-dir "data" "info.rkt") "#lang info\n(define assume-virtual-sources #t)")]
            [(zo-goes)
-            (set-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo") "not real...")
+            (set-file (build-path t1nc-dir "data" compiled-dir "empty-set_rkt.zo") "not real...")
             (maybe-delete-file (build-path t1nc-dir "data" "empty-set.rkt"))
             (maybe-delete-file (build-path t1nc-dir "data" "info.rkt"))]))
        

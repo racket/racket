@@ -4,10 +4,17 @@
          "../common/module-path.rkt"
          "../syntax/module-binding.rkt")
 
-(provide provides->api-provides
+(provide check-provides-verbosity
+         provides->api-provides
          variables->api-nonprovides)
 
-(define (provides->api-provides provides self)
+(define (check-provides-verbosity who verbosity)
+  (unless (or (not verbosity)
+              (eq? verbosity 'defined-names))
+    (raise-argument-error who "(or/c #f 'defined-names)" verbosity)))
+
+(define (provides->api-provides provides self verbosity)
+  (define defined-names? (eq? verbosity 'defined-names))
   (define (extract ok?)
     (define result-l
       (for*/list ([(phase at-phase) (in-hash provides)]
@@ -15,22 +22,25 @@
                       (for/list ([(sym b/p) (in-hash at-phase)]
                                  #:when (ok? b/p))
                         (define b (provided-as-binding b/p))
-                        (list sym
-                              (cond
-                               [(eq? self (module-binding-module b))
-                                null]
-                               [else
-                                (for/list ([b (in-list (cons b (module-binding-extra-nominal-bindings b)))])
-                                  (cond
-                                   [(and (eqv? (module-binding-nominal-phase b)
-                                               phase)
-                                         (eq? (module-binding-nominal-sym b) sym))
-                                    (module-binding-nominal-module b)]
-                                   [else
-                                    (list (module-binding-nominal-module b)
-                                          (module-binding-phase b)
-                                          (module-binding-nominal-sym b)
-                                          (module-binding-nominal-phase b))]))]))))]
+                        (list* sym
+                               (cond
+                                 [(eq? self (module-binding-module b))
+                                  null]
+                                 [else
+                                  (for/list ([b (in-list (cons b (module-binding-extra-nominal-bindings b)))])
+                                    (cond
+                                      [(and (eqv? (module-binding-nominal-phase b)
+                                                  phase)
+                                            (eq? (module-binding-nominal-sym b) sym))
+                                       (module-binding-nominal-module b)]
+                                      [else
+                                       (list (module-binding-nominal-module b)
+                                             (module-binding-phase b)
+                                             (module-binding-nominal-sym b)
+                                             (module-binding-nominal-phase b))]))])
+                               (if defined-names?
+                                   (list (module-binding-sym b))
+                                   null))))]
                   #:unless (null? l))
         (cons phase (sort l symbol<? #:key car))))
     (sort result-l phase<? #:key car))

@@ -4,7 +4,7 @@
          "lift.rkt"
          "jitify.rkt"
          "xify.rkt"
-         "path.rkt"
+         "path-and-fasl.rkt"
          "interpret.rkt"
          "size.rkt"
          "fasl.rkt")
@@ -21,10 +21,11 @@
 
          xify
 
-         extract-paths-from-schemified-linklet
+         extract-paths-and-fasls-from-schemified-linklet
          make-path->compiled-path
          compiled-path->path
 
+         interpreter-link!
          interpretable-jitified-linklet
          interpret-linklet
 

@@ -279,7 +279,7 @@ annotate-output ${RACOEXE} test -l tests/openssl/basic
 annotate-output ${RACOEXE} test -l tests/openssl/https
 annotate-output ${RACOEXE} test -l tests/match/main
 annotate-output ${RACOEXE} test -l tests/zo-path
-annotate-output ${RACOEXE} test -l tests/xml/test
+annotate-output ${RACOEXE} test -c tests/xml
 annotate-output ${RACOEXE} test -l tests/db/all-tests
 annotate-output ${RACOEXE} test -c tests/stxparse
 

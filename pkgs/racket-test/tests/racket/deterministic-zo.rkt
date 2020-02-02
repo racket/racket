@@ -35,7 +35,7 @@
     (call-with-output-file* "/tmp/c1" #:exists 'truncate (lambda (o) (write-bytes c1 o)))
     (call-with-output-file* "/tmp/c2" #:exists 'truncate (lambda (o) (write-bytes c2 o)))    
     (error "failed"))
-  (define zo (get-compilation-bytecode-file (build-path dir f) #:modes '("compiled")))
+  (define zo (get-compilation-bytecode-file (build-path dir f) #:modes (use-compiled-file-paths)))
   (when (file-exists? zo)
     (define c3 (file->bytes zo))
     (unless (equal? c3 c1)
@@ -69,4 +69,4 @@
 
 (module+ test
   (module config info
-    (define timeout 300)))
+    (define timeout 600)))

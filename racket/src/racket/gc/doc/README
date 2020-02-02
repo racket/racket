@@ -133,7 +133,7 @@ There are a number of routines which modify the pointer recognition
 algorithm.  GC_register_displacement allows certain interior pointers
 to be recognized even if ALL_INTERIOR_POINTERS is nor defined.
 GC_malloc_ignore_off_page allows some pointers into the middle of large objects
-to be disregarded, greatly reducing the probablility of accidental
+to be disregarded, greatly reducing the probability of accidental
 retention of large objects.  For most purposes it seems best to compile
 with ALL_INTERIOR_POINTERS and to use GC_malloc_ignore_off_page if
 you get collector warnings from allocations of very large objects.
@@ -390,7 +390,7 @@ proposal without compiler changes.
 
   Very often it will also be necessary to use gc_allocator.h and the
 allocator declared there to construct STL data structures.  Otherwise
-subobjects of STL data structures wil be allcoated using a system
+subobjects of STL data structures wil be allocated using a system
 allocator, and objects they refer to may be prematurely collected.
 
 USE AS LEAK DETECTOR:
@@ -445,7 +445,7 @@ the debugger.
 or GC_free, and conversely.  It is however acceptable to allocate only
 some objects with GC_debug_malloc, and to use GC_malloc for other objects,
 provided the two pools are kept distinct.  In this case, there is a very
-low probablility that GC_malloc allocated objects may be misidentified as
+low probability that GC_malloc allocated objects may be misidentified as
 having been overwritten.  This should happen with probability at most
 one in 2**32.  This probability is zero if GC_debug_malloc is never called.
 

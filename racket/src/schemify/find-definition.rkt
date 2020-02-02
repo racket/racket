@@ -39,7 +39,7 @@
                        (make-struct-type-info rhs prim-knowns knowns imports mutated)))
      (cond
       [info
-       (define type (gensym (symbol->string (unwrap make-s))))
+       (define type (string->uninterned-symbol (symbol->string (unwrap make-s))))
        (let* ([knowns (hash-set knowns
                                 (unwrap make-s)
                                 (if (struct-type-info-pure-constructor? info)
@@ -78,7 +78,7 @@
      (define info (make-struct-type-info rhs prim-knowns knowns imports mutated))
      (cond
       [info
-       (define type (gensym (symbol->string (unwrap make-s))))
+       (define type (string->uninterned-symbol (symbol->string (unwrap make-s))))
        (values
         (let* ([knowns (hash-set knowns
                                  (unwrap make-s)
@@ -96,7 +96,7 @@
       [else (values knowns #f)])]
     [`(define-values (,prop:s ,s? ,s-ref)
        (make-struct-type-property ,_ . ,rest))
-     (define type (gensym (symbol->string (unwrap prop:s))))
+     (define type (string->uninterned-symbol (symbol->string (unwrap prop:s))))
      (values
       (let* ([knowns (hash-set knowns (unwrap s-ref) (known-accessor 2 type))]
              [knowns (hash-set knowns (unwrap s?) (known-predicate 2 type))])

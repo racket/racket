@@ -17,6 +17,8 @@
          will-execute)
 
 (struct will-executor (host-we sema)
+  #:authentic
+  #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:evt (lambda (we)
                         (wrap-evt (semaphore-peek-evt (will-executor-sema we))
                                   (lambda (v) we))))

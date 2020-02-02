@@ -215,7 +215,7 @@
 ;;; implementation for this code to run.
 ;;;
 ;;; (voide)
-;;; returns the implementation's cannonical "unspecified value".  The
+;;; returns the implementation's canonical "unspecified value".  The
 ;;; following usually works:
 ;;;
 ;;; (define voide (lambda () (if #f #f))).
@@ -298,7 +298,7 @@
 
 ;;; When porting to a new Scheme implementation, you should define the
 ;;; procedures listed above, load the expanded version of psyntax.ss
-;;; (psyntax.pp, which should be available whereever you found
+;;; (psyntax.pp, which should be available wherever you found
 ;;; psyntax.ss), and register sc-expand as the current expander (how
 ;;; you do this depends upon your implementation of Scheme).  You may
 ;;; change the hooks and constructors defined toward the beginning of
@@ -330,7 +330,7 @@
 ;;;   (define top-wrap '((top)))
 ;;;   (define top-marked?
 ;;;     (lambda (w) (memq 'top (wrap-marks w))))
-;;; On ther other hand, we don't do this consistently; we define make-wrap,
+;;; On the other hand, we don't do this consistently; we define make-wrap,
 ;;; wrap-marks, and wrap-subst simply as
 ;;;   (define make-wrap cons)
 ;;;   (define wrap-marks car)
@@ -1054,7 +1054,7 @@
 ;;; and pairs <<and preserve identity through `eval'>>
 
 ;;; indirect labels, which are implemented as pairs, are used to support
-;;; import aliasing for identifiers exported (explictly or implicitly) from
+;;; import aliasing for identifiers exported (explicitly or implicitly) from
 ;;; top-level modules.  chi-external creates an indirect label for each
 ;;; defined identifier, import causes the pair to be shared with aliases it
 ;;; establishes, and chi-top-module whacks the pair to hold the top-level

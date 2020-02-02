@@ -75,6 +75,17 @@
   (call-with-values (lambda () (equal-hash-loop x 0 0))
     (lambda (hc burn) (logand hc (most-positive-fixnum)))))
 
+;; A #t result implies that `equal-hash-code` and equality checking is
+;; pretty fast
+(define (fast-equal-hash-code? x)
+  (or (boolean? x)
+      (null? x)
+      (number? x)
+      (char? x)
+      (symbol? x)
+      (and (#%$record? x)
+           (not (#%$record-hash-procedure x)))))
+
 (define (equal-secondary-hash-code x)
   (cond
    [(boolean? x) 1]

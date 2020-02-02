@@ -5,9 +5,6 @@ src="../racket/configure.ac"
 tgt="../cfg-racket"
 if [ ! -e "$src" ]; then echo "abort: did not find $src"; exit 1; fi
 echo "Creating $tgt from $src"
-if [ -e "$tgt" ]; then
-  /bin/echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
-fi
 autoconf "$src" | racket "$0" > "$tgt"
 chmod +x "$tgt"
 src="../rktio/configure.ac"

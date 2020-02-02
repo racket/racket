@@ -123,7 +123,7 @@
 ;; Extract cache-db, holding file lock (in `lock-mode`) while calling
 ;; `success-handler` on the db. If the cache-db read fails, use an
 ;; empty db. If any failure happens other than reading the db,
-;; including duing `success-handler`, then call `failure-handler` with
+;; including during `success-handler`, then call `failure-handler` with
 ;; the exception after logging it. Note that breaks are disabled when
 ;; calling the failure handler, so it should return quickly.
 (define call-with-cache-db/catch-exn-until-success-finishes

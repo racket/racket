@@ -56,7 +56,7 @@
    codes are customized to the probabilities in the current block, and so
 <   can code it much better than the pre-determined fixed codes.
  
-   The Huffman codes themselves are decoded using a mutli-level table
+   The Huffman codes themselves are decoded using a multi-level table
    lookup, in order to maximize the speed of decoding plus the speed of
    building the decoding tables.  See the comments below that precede the
    lbits and dbits tuning parameters.

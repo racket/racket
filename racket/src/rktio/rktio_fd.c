@@ -1423,7 +1423,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 	if (towrite)
 	  ok = WriteConsoleW((HANDLE)rfd->fd, w_buffer, towrite, &winwrote, NULL);
 	else {
-	  /* can happend if can_leftover is > 0 */
+	  /* can happen if can_leftover is > 0 */
 	  ok = 1;
 	  winwrote = 0;
 	}

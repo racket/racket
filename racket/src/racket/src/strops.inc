@@ -317,7 +317,7 @@ X__(substring) (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-X__(string_append) (int argc, Scheme_Object *argv[])
+X__(do_string_append) (const char *who, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *naya, *s;
   Xchar *chars;
@@ -328,7 +328,7 @@ X__(string_append) (int argc, Scheme_Object *argv[])
   for (i = 0; i < argc; i++) {
     s = argv[i];
     if (!SCHEME_X_STRINGP(s))
-      scheme_wrong_contract(XSTRINGSTR "-append", IS_STR, i, argc, argv);
+      scheme_wrong_contract(who, IS_STR, i, argc, argv);
     len += SCHEME_X_STRTAG_VAL(s);
   }
 
@@ -346,6 +346,12 @@ X__(string_append) (int argc, Scheme_Object *argv[])
   }
   
   return naya;
+}
+
+static Scheme_Object *
+X__(string_append) (int argc, Scheme_Object *argv[])
+{
+  return X__(do_string_append)(XSTRINGSTR "-append", argc, argv);
 }
 
 Scheme_Object *

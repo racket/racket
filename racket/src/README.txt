@@ -9,8 +9,8 @@ root directory.
  License and external links
 ========================================================================
 
-Racket is distributed under the GNU Lesser General Public License
-(LGPL). See "LICENSE.txt" for more information.
+Racket is distributed under the MIT license and the Apache version 2.0
+license, at your option. See "LICENSE.txt" for more information.
 
 Compiled executables, documentation, and up-to-date information:
    http://racket-lang.org/
@@ -285,6 +285,17 @@ First, install Xcode and command-line tools from Apple.
 After installing developer tools, follow the Unix instructions above,
 but note the following:
 
+ * If you are building from a source distribution (as opposed to a Git
+   repository checkout), then most likely "racket-lib" is already
+   included and installed as part of the the distribution, but without
+   dependencies of "racket-lib" that are specific to Mac OS. In that
+   case, use
+
+      raco pkg update --auto racket-lib
+
+   using `raco` as created by `make install` to download and install
+   the dependencies.
+
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`
    executable that goes into "racket/bin".
@@ -372,7 +383,7 @@ Some less commonly needed `configure` flags for traditional Racket:
 
  * `--enable-bigendian`, if target platform is big-endian.
 
- * `--enable-cify` or `--disable-cify` if the JIT availablity on the
+ * `--enable-cify` or `--disable-cify` if the JIT availability on the
     target platform is different than the build platform; use
     `--enable-cify` if the JIT is not abailable on the target
     platform.

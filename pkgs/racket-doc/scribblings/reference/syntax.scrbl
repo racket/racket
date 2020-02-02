@@ -1838,13 +1838,14 @@ as follows:
        @racket[arg]s, the extra arguments are placed into a
        list that is associated to @racket[rest-id].}
 
+@margin-note{In other words, argument bindings with
+default-value expressions are evaluated analogous to @racket[let*].}
 The @racket[kw-formals] identifiers are bound in the
 @racket[body]s. When the procedure is applied, a new @tech{location}
 is created for each identifier, and the location is filled with the
 associated argument value. The @tech{locations} are created and filled
 in order, with @racket[_default-expr]s evaluated as needed to fill
-locations. @margin-note{In other words, argument bindings with
-default-value expressions are evaluated analogous to @racket[let*].}
+locations.
 
 If any identifier appears in the @racket[body]s that is not one of the
 identifiers in @racket[kw-formals], then it refers to the same

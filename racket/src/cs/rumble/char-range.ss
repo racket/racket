@@ -55,7 +55,7 @@
                                  (delta char-downcase b))
                            (eqv? (delta char-titlecase a)
                                  (delta char-titlecase b))
-                           ;; Check whether decomposition behavor is different
+                           ;; Check whether decomposition behavior is different
                            (eqv? (non-decomp? a)
                                  (non-decomp? b))
                            ;; Detect different combining classes

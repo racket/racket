@@ -32,7 +32,7 @@
 /* A client supplied mark procedure.  Returns new mark stack pointer.	*/
 /* Primary effect should be to push new entries on the mark stack.	*/
 /* Mark stack pointer values are passed and returned explicitly.	*/
-/* Global variables decribing mark stack are not necessarily valid.	*/
+/* Global variables describing mark stack are not necessarily valid.	*/
 /* (This usually saves a few cycles by keeping things in registers.)	*/
 /* Assumed to scan about GC_PROC_BYTES on average.  If it needs to do	*/
 /* much more work than that, it should do it in smaller pieces by	*/

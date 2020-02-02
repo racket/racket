@@ -23,7 +23,7 @@
 (serializable-struct d/auto b/auto ([v #:auto #:mutable]) #:inspector insp)
 
 (define (same? v1 v2)
-  ;; This is not quite the same as `equal?', becuase it knows
+  ;; This is not quite the same as `equal?', because it knows
   ;; about the structure types a, b, etc.
   (define ht (make-hasheq))
   (let loop ([v1 v1][v2 v2])

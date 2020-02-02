@@ -23,6 +23,9 @@
    "received" e2))
 
 (define (impersonate-ref acc rtd pos orig record-name field-name)
+  (#%$app/no-inline do-impersonate-ref acc rtd pos orig record-name field-name))
+
+(define (do-impersonate-ref acc rtd pos orig record-name field-name)
   (impersonate-struct-or-property-ref acc rtd (cons rtd pos) orig record-name field-name))
 
 (define (impersonate-struct-or-property-ref acc rtd key orig record-name field-name)
@@ -71,6 +74,9 @@
                           orig)]))
 
 (define (impersonate-set! set rtd pos abs-pos orig a record-name field-name)
+  (#%$app/no-inline do-impersonate-set! set rtd pos abs-pos orig a record-name field-name))
+
+(define (do-impersonate-set! set rtd pos abs-pos orig a record-name field-name)
   (cond
    [(and (impersonator? orig)
          (record? (impersonator-val orig) rtd))
@@ -590,7 +596,7 @@
                              (lambda (v info)
                                (check 'guard-for-prop:impersonator-of (procedure-arity-includes/c 1) v)
                                ;; Add a tag to track origin of the `prop:impersonator-of` value
-                               (cons (gensym "tag") v))))
+                               (cons (box 'impersonator-of) v))))
 
 (define (extract-impersonator-of who a)
   (and (impersonator-of-redirect? a)

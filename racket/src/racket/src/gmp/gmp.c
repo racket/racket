@@ -3111,7 +3111,7 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
   return rn;
 }
 
-/* mpn_bz_divrem_n and auxilliary routines. */
+/* mpn_bz_divrem_n and auxiliary routines. */
 
 /*
 [1] Fast Recursive Division, by Christoph Burnikel and Joachim Ziegler,

@@ -1,10 +1,12 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     racket/match)
          (prefix-in r: racket/include)
          racket/fixnum
          racket/vector
          racket/splicing
          racket/pretty
+         racket/dict
          "config.rkt"
          (for-syntax "config.rkt")
          (for-syntax "constant.rkt")
@@ -41,7 +43,7 @@
          letrec*
          putprop getprop remprop
          $sputprop $sgetprop $sremprop
-         prim-mask
+         define-flags
          $primitive
          $tc $tc-field $thread-tc
          enumerate
@@ -82,6 +84,7 @@
          record?
          record-type-uid
          $object-ref
+         stencil-vector?
          (rename-out [s:vector-sort vector-sort]
                      [s:vector-sort! vector-sort!])
          vector-for-each
@@ -98,6 +101,7 @@
          generate-interrupt-trap
          $track-dynamic-closure-counts
          $suppress-primitive-inlining
+         uninterned-symbol? string->uninterned-symbol
          debug-level
          scheme-version-number
          scheme-fork-version-number
@@ -150,6 +154,7 @@
                      [s:error $oops]
                      [error $undefined-violation]
                      [error errorf]
+                     [error warningf]
                      [make-bytes make-bytevector]
                      [bytes bytevector]
                      [bytes-length bytevector-length]
@@ -172,6 +177,9 @@
                      [logtest fxlogtest])
          fxsrl
          fxbit-field
+         fxpopcount
+         fxpopcount32
+         fxpopcount16
          bitwise-bit-count
          bitwise-arithmetic-shift-right
          bytevector-u16-native-ref
@@ -220,16 +228,16 @@
          $ht-minlen
          $ht-veclen
          (rename-out [hash? hashtable?]
-                     [hash-ref/pair hashtable-ref]
-                     [hash-ref/pair eq-hashtable-ref]
+                     [hash-ref/pair/dict hashtable-ref]
+                     [hash-ref/pair/dict eq-hashtable-ref]
                      [hash-ref-cell eq-hashtable-cell]
-                     [hash-set!/pair hashtable-set!]
+                     [hash-set!/pair/dict hashtable-set!]
                      [hash-remove! eq-hashtable-delete!]
                      [equal-hash-code string-hash]
-                     [hash-set!/pair symbol-hashtable-set!]
+                     [hash-set!/pair/dict symbol-hashtable-set!]
                      [hash-has-key? symbol-hashtable-contains?]
                      [hash-has-key? eq-hashtable-contains?]
-                     [hash-ref/pair symbol-hashtable-ref]
+                     [hash-ref/pair/dict symbol-hashtable-ref]
                      [hash-ref-cell symbol-hashtable-cell])
          bignum?
          ratnum?
@@ -584,15 +592,33 @@
                                                            (lambda lhs (values . flat-lhs)))])]))])
        #'(let-values ([lhs rhs] ...) body ...))]))
 
-(define-values (prim-flags->bits primvec get-priminfo)
+(define-values (primvec get-priminfo)
   (get-primdata $sputprop scheme-dir))
 
-(define-syntax prim-mask
-  (syntax-rules (or)
-    [(_ (or flag ...))
-     (prim-flags->bits '(flag ...))]
-    [(_ flag)
-     (prim-flags->bits '(flag))]))
+(begin-for-syntax
+  (define (make-flags->bits specs)
+    (define bits
+      (for/fold ([bits #hasheq()]) ([spec (in-list specs)])
+        (define (get-val v)
+          (if (number? v) v (hash-ref bits v)))
+        (match spec
+          [`(,name (or ,vals ...))
+           (hash-set bits name (apply bitwise-ior (map get-val vals)))]
+          [`(,name ,val)
+           (hash-set bits name (get-val val))])))
+    (lambda (flags)
+      (apply bitwise-ior (for/list ([flag (in-list flags)])
+                           (hash-ref bits flag))))))
+
+(define-syntax (define-flags stx)
+  (syntax-case stx ()
+    [(_ name spec ...)
+     #'(define-syntax name
+         (let ([flags->bits (make-flags->bits '(spec ...))])
+           (lambda (stx)
+             (syntax-case stx (or)
+               [(_ . flags)
+                (flags->bits 'flags)]))))]))
 
 (define-syntax $primitive
   (syntax-rules ()
@@ -743,6 +769,22 @@
     [(proc . vecs)
      (list->vector (apply map proc (map vector->list vecs)))]))
 
+(define (stencil-vector? v) #f)
+
+(define (fxpopcount32 x)
+  (let* ([x (- x (bitwise-and (arithmetic-shift x -1) #x55555555))]
+         [x (+ (bitwise-and x #x33333333) (bitwise-and (arithmetic-shift x -2) #x33333333))]
+         [x (bitwise-and (+ x (arithmetic-shift x -4)) #x0f0f0f0f)]
+         [x (+ x (arithmetic-shift x -8) (arithmetic-shift x -16) (arithmetic-shift x -24))])
+    (bitwise-and x #x3f)))
+
+(define (fxpopcount x)
+  (fx+ (fxpopcount32 (bitwise-and x #xffffffff))
+       (fxpopcount32 (arithmetic-shift x -32))))
+
+(define (fxpopcount16 x)
+  (fxpopcount32 (bitwise-and x #xffff)))
+
 (define (logbit? m n)
   (bitwise-bit-set? n m))
 (define (logbit1 i n)
@@ -881,14 +923,25 @@
           (eq? eql? =))
      (make-hash)]
     [else
-     (error 'make-hashtable
-            "??? ~s ~s" hash eql?)]))
+     (make-custom-hash eql? hash (lambda (a) 1))]))
 
 (define (make-weak-eq-hashtable)
   (make-weak-hasheq))
 
+(define (hash-ref/pair/dict ht key def-v)
+  (if (hash? ht)
+      (hash-ref/pair ht key def-v)
+      (dict-ref ht key def-v)))
+
+(define (hash-set!/pair/dict ht key v)
+  (if (hash? ht)
+      (hash-set!/pair ht key v)
+      (dict-set! ht key v)))
+
 (define (hashtable-keys ht)
-  (list->vector (hash-keys ht)))
+  (list->vector (if (hash? ht)
+                    (hash-keys ht)
+                    (dict-keys ht))))
 
 (define (hashtable-entries ht)
   (define ps (hash-values ht))

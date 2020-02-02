@@ -855,7 +855,7 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
   return 0;
 }
 
-/* Extract proc-info from the FDE starting at adress ADDR.
+/* Extract proc-info from the FDE starting at address ADDR.
    
    Pass BASE as zero for eh_frame behaviour, or a pointer to
    debug_frame base for debug_frame behaviour.  */

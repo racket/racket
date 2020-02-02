@@ -1958,7 +1958,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 #endif
 
     if (direct_self)
-      reorder_ok = 0; /* superceded by direct_self */
+      reorder_ok = 0; /* superseded by direct_self */
   }
 
   FOR_LOG(if (direct_native) { LOG_IT((" [direct]\n")); } )

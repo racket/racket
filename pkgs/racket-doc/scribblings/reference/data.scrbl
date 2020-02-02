@@ -11,6 +11,9 @@ manipulating instances of the datatype.
 @local-table-of-contents[#:style 'immediate-only]
 
 @; ------------------------------------------------------------
+@include-section["equality.scrbl"]
+
+@; ------------------------------------------------------------
 @include-section["booleans.scrbl"]
 
 @; ------------------------------------------------------------
@@ -32,46 +35,7 @@ manipulating instances of the datatype.
 @include-section["regexps.scrbl"]
 
 @; ------------------------------------------------------------
-@section[#:tag "keywords"]{Keywords}
-
-@guideintro["keywords"]{keywords}
-
-A @deftech{keyword} is like an @tech{interned} symbol, but its printed
-form starts with @litchar{#:}, and a keyword cannot be used as an
-identifier. Furthermore, a keyword by itself is not a valid
-expression, though a keyword can be @racket[quote]d to form an
-expression that produces the symbol.
-
-Two keywords are @racket[eq?] if and only if they print the same
-(i.e., keywords are always @tech{interned}).
-
-Like symbols, keywords are only weakly held by the internal keyword
-table; see @secref["symbols"] for more information.
-
-@see-read-print["keyword"]{keywords}
-
-@defproc[(keyword? [v any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[v] is a keyword, @racket[#f] otherwise.}
-
-@defproc[(keyword->string [keyword keyword?]) string?]{
-
-Returns a string for the @racket[display]ed form of @racket[keyword],
-not including the leading @litchar{#:}.}
-
-@defproc[(string->keyword [str string?]) keyword?]{
-
-Returns a keyword whose @racket[display]ed form is the same as that of
-@racket[str], but with a leading @litchar{#:}.}
-
-@defproc[(keyword<? [a-keyword keyword?] [b-keyword keyword?] ...) boolean?]{
-
-Returns @racket[#t] if the arguments are sorted, where the comparison
-for each pair of keywords is the same as using
-@racket[keyword->string] with @racket[string->bytes/utf-8] and
-@racket[bytes<?].
-
-@history/arity[]}
+@include-section["keywords.scrbl"]
 
 @; ----------------------------------------------------------------------
 @include-section["pairs.scrbl"]
@@ -120,7 +84,7 @@ Returns a new immutable box that contains @racket[v].}
 Returns the content of @racket[box].}
 
 
-For any @racket[v], @racket[(unbox (box v))] returns @racket[v].
+For any @racket[v], @racket[(unbox (box v))] and @racket[(unbox (box-immutable v))] returns @racket[v].
 
 
 @defproc[(set-box! [box (and/c box? (not/c immutable?))]

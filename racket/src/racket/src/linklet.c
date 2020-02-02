@@ -15,6 +15,7 @@ static Scheme_Object *unsafe_symbol;
 static Scheme_Object *static_symbol;
 static Scheme_Object *use_prompt_symbol;
 static Scheme_Object *uninterned_literal_symbol;
+static Scheme_Object *quick_symbol;
 static Scheme_Object *constant_symbol;
 static Scheme_Object *consistent_symbol;
 static Scheme_Object *noncm_symbol;
@@ -31,6 +32,7 @@ static Scheme_Object *primitive_table(int argc, Scheme_Object **argv);
 static Scheme_Object *primitive_to_position(int argc, Scheme_Object **argv);
 static Scheme_Object *position_to_primitive(int argc, Scheme_Object **argv);
 static Scheme_Object *primitive_in_category_p(int argc, Scheme_Object **argv);
+static Scheme_Object *primitive_lookup(int argc, Scheme_Object **argv);
 
 static Scheme_Object *linklet_p(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv);
@@ -102,11 +104,13 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   REGISTER_SO(static_symbol);
   REGISTER_SO(use_prompt_symbol);
   REGISTER_SO(uninterned_literal_symbol);
+  REGISTER_SO(quick_symbol);
   serializable_symbol = scheme_intern_symbol("serializable");
   unsafe_symbol = scheme_intern_symbol("unsafe");
   static_symbol = scheme_intern_symbol("static");
   use_prompt_symbol = scheme_intern_symbol("use-prompt");
   uninterned_literal_symbol = scheme_intern_symbol("uninterned-literal");
+  quick_symbol = scheme_intern_symbol("quick");
 
   REGISTER_SO(constant_symbol);
   REGISTER_SO(consistent_symbol);
@@ -127,6 +131,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_IMMED_PRIM("primitive->compiled-position", primitive_to_position, 1, 1, env);
   ADD_IMMED_PRIM("compiled-position->primitive", position_to_primitive, 1, 1, env);
   ADD_IMMED_PRIM("primitive-in-category?", primitive_in_category_p, 2, 2, env);
+  ADD_IMMED_PRIM("primitive-lookup", primitive_lookup, 1, 1, env);
 
   ADD_FOLDING_PRIM("linklet?", linklet_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY2("compile-linklet", compile_linklet, 1, 5, 2, 2, env);
@@ -307,6 +312,18 @@ static Scheme_Object *primitive_in_category_p(int argc, Scheme_Object **argv)
   return (r ? scheme_true : scheme_false);
 }
 
+static Scheme_Object *primitive_lookup(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *v;
+
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("primitive-lookup", "symbol?", 0, argc, argv);
+
+  v = scheme_hash_get(scheme_startup_env->all_primitives_table, argv[0]);
+
+  return (v ? v : scheme_false);
+}
+
 static Scheme_Object *linklet_p(int argc, Scheme_Object **argv)
 {
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type)
@@ -364,6 +381,7 @@ static void parse_compile_options(const char *who, int arg_pos,
   int static_mode = *_static_mode;
   int use_prompt_mode = 0;
   int uninterned_literal_mode = 0;
+  int quick_mode = 0;
   
   while (SCHEME_PAIRP(flags)) {
     flag = SCHEME_CAR(flags);
@@ -387,6 +405,10 @@ static void parse_compile_options(const char *who, int arg_pos,
       if (uninterned_literal_mode && !redundant)
         redundant = flag;
       uninterned_literal_mode = 1;
+    } else if (SAME_OBJ(flag, quick_symbol)) {
+      if (quick_mode && !redundant)
+        redundant = flag;
+      quick_mode = 1;
     } else
       break;
     flags = SCHEME_CDR(flags);
@@ -394,7 +416,7 @@ static void parse_compile_options(const char *who, int arg_pos,
 
   if (!SCHEME_NULLP(flags))
     scheme_wrong_contract("compile-linklet",
-                          "(listof/c 'serializable 'unsafe 'static 'use-prompt 'uninterned-literal)",
+                          "(listof/c 'serializable 'unsafe 'static 'use-prompt 'uninterned-literal 'quick)",
                           arg_pos, argc, argv);
 
   if (redundant)
@@ -593,7 +615,7 @@ static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv)
     scheme_wrong_contract("instantiate-linklet", "linklet?", 0, argc, argv);
 
   l = argv[1];
-  while (!SCHEME_NULLP(l)) {
+  while (SCHEME_PAIRP(l)) {
     if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_instance_type))
       break;
     l = SCHEME_CDR(l);
@@ -1267,7 +1289,7 @@ Scheme_Object *scheme_linklet_run_finish(Scheme_Linklet* linklet, Scheme_Instanc
         /* Double-check that the definition-installing part of the
            continuation was not skipped. Otherwise, the compiler would
            not be able to assume that a variable reference that is
-           lexically later (incuding a reference to an imported
+           lexically later (including a reference to an imported
            variable) always references a defined variable. Putting the
            prompt around a definition's RHS might be a better
            approach, but that would change the language (so mabe next

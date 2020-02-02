@@ -106,6 +106,7 @@ static Scheme_Object *cont_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cc_marks_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_markses (int argc, Scheme_Object *argv[]);
+static Scheme_Object *extract_cc_iterator (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_proc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_one_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[]);
@@ -414,6 +415,12 @@ scheme_init_fun (Scheme_Startup_Env *env)
 						      "continuation-mark-set->list*",
 						      2, 4),
 			     env);
+
+  scheme_addto_prim_instance("continuation-mark-set->iterator",
+                             scheme_make_prim_w_arity(extract_cc_iterator,
+                                                      "continuation-mark-set->iterator",
+                                                      2, 4),
+                             env);
 
   o = scheme_make_prim_w_arity(extract_one_cc_mark,
                                "continuation-mark-set-first",
@@ -2549,7 +2556,7 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       /* Native closure: */
       name = ((Scheme_Native_Closure *)p)->code->u2.name;
       if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_lambda_type)) {
-	/* Not yet jitted. Use `name' as the other alternaive of 
+	/* Not yet jitted. Use `name' as the other alternative of 
 	   the union: */
 	name = ((Scheme_Lambda *)name)->name;
       }
@@ -6250,7 +6257,7 @@ static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])
 }
 
 void scheme_takeover_stacks(Scheme_Thread *p)
-     /* When a contination captured in on e thread is invoked in another,
+     /* When a continuation captured in on e thread is invoked in another,
 	the two threads can start using the same runstack, and possibly
 	also the same cont-mark stack. This function swaps out the
 	current owner in favor of p */
@@ -7635,7 +7642,8 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
                                          Scheme_Meta_Continuation *mc,
                                          Scheme_Object *prompt_tag,
                                          char *who,
-					 int just_chain)
+					 int just_chain,
+                                         int use_boundary_prompt)
      /* cont => p is not used */
 {
   Scheme_Cont *cont = (Scheme_Cont *)_cont, *top_cont;
@@ -7649,7 +7657,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag))
     prompt_tag = NULL;
 
-  if (cont && SAME_OBJ(cont->prompt_tag, prompt_tag))
+  if (cont
+      && (use_boundary_prompt || !cont->composable)
+      && SAME_OBJ(cont->prompt_tag, prompt_tag))
     found_tag = 1;
   if (!prompt_tag)
     found_tag = 1;
@@ -7891,6 +7901,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
                        "%s: no corresponding prompt in the continuation\n"
                        "  tag: %V",
                        who, prompt_tag);
+    } else if (!use_boundary_prompt) {
+      /* Don't treat default tag as found */
+      return NULL;
     }
   }
 
@@ -7943,7 +7956,7 @@ Scheme_Object *scheme_current_continuation_marks(Scheme_Object *prompt_tag)
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
                             prompt_tag ? prompt_tag : scheme_default_prompt_tag,
                             "continuation-marks",
-                            0);
+                            0, 1);
 }
 
 Scheme_Object *scheme_all_current_continuation_marks()
@@ -7951,7 +7964,7 @@ Scheme_Object *scheme_all_current_continuation_marks()
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
                             NULL,
                             "continuation-marks",
-                            0);
+                            0, 1);
 }
 
 static Scheme_Object *
@@ -8020,7 +8033,7 @@ cont_marks(int argc, Scheme_Object *argv[])
       mc = scheme_get_meta_continuation(argv[0]);
 
       return continuation_marks(scheme_current_thread, NULL, argv[0], mc, prompt_tag, 
-                                "continuation-marks", 0);
+                                "continuation-marks", 0, 1);
     }
   } else if (SCHEME_THREADP(argv[0])) {
     Scheme_Thread *t = (Scheme_Thread *)argv[0];
@@ -8055,7 +8068,7 @@ cont_marks(int argc, Scheme_Object *argv[])
     }
   } else {
     return continuation_marks(NULL, argv[0], NULL, NULL, prompt_tag, 
-                              "continuation-marks", 0);
+                              "continuation-marks", 0, 1);
   }
 }
 
@@ -8137,59 +8150,23 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-extract_cc_markses(int argc, Scheme_Object *argv[])
+iterate_cc_markses(const char *who,
+                   Scheme_Object *prompt_tag, Scheme_Object *none,
+                   intptr_t len, Scheme_Object **keys,
+                   Scheme_Cont_Mark_Chain **_chain)
 {
-  Scheme_Cont_Mark_Chain *chain;
-  Scheme_Object *first = scheme_null, *last = NULL;
-  Scheme_Object *pr, **keys, *vals, *none, *prompt_tag;
-  int len, i;
-  intptr_t last_pos;
-
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
-    scheme_wrong_contract("continuation-mark-set->list*", "continuation-mark-set?", 0, argc, argv);
-    return NULL;
-  }
-  len = scheme_proper_list_length(argv[1]);
-  if (len < 0) {
-    scheme_wrong_contract("continuation-mark-set->list*", "list?", 1, argc, argv);
-    return NULL;
-  }
-  if (argc > 2)
-    none = argv[2];
-  else
-    none = scheme_false;
-  if (argc > 3) {
-    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[3]))) {
-      if (SCHEME_NP_CHAPERONEP(argv[3])
-          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[3])))
-        prompt_tag = SCHEME_CHAPERONE_VAL(argv[3]);
-      else {
-        scheme_wrong_contract("continuation-mark-set->list*", "continuation-prompt-tag?",
-                              3, argc, argv);
-        return NULL;
-      }
-    } else
-      prompt_tag = argv[3];
-  } else
-    prompt_tag = scheme_default_prompt_tag;
-
-  keys = MALLOC_N(Scheme_Object *, len);
-  for (pr = argv[1], i = 0; SCHEME_PAIRP(pr); pr = SCHEME_CDR(pr), i++) {
-    keys[i] = SCHEME_CAR(pr);
-    if ((keys[i] == scheme_parameterization_key)
-	|| (keys[i] == scheme_break_enabled_key)
-	|| (keys[i] == scheme_exn_handler_key)) {
-      scheme_signal_error("continuation-mark-set->list: secret key leaked!");
-      return NULL;
-    }
-  }
-
+  Scheme_Cont_Mark_Chain *chain = *_chain;
+  intptr_t last_pos = -1, i;
+  Scheme_Object *vals = NULL;
+  
   prompt_tag = SCHEME_PTR_VAL(prompt_tag);
 
-  chain = ((Scheme_Cont_Mark_Set *)argv[0])->chain;
-  last_pos = -1;
-
   while (chain) {
+    if (vals && (last_pos != chain->pos)) {
+      *_chain = chain;
+      return vals;
+    }
+    
     for (i = 0; i < len; i++) {
       int is_chaperoned = 0;
       Scheme_Object *orig_key, *val;
@@ -8206,19 +8183,12 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
       if (SAME_OBJ(chain->key, keys[i])) {
 	intptr_t pos;
 	pos = (intptr_t)chain->pos;
-	if (pos != last_pos) {
+	if (!vals) {
 	  vals = scheme_make_vector(len, none);
 	  last_pos = pos;
-	  pr = scheme_make_pair(vals, scheme_null);
-	  if (last)
-	    SCHEME_CDR(last) = pr;
-	  else
-	    first = pr;
-	  last = pr;
-	} else
-	  vals = SCHEME_CAR(last);
+        }
         if (is_chaperoned) {
-          val = scheme_chaperone_do_continuation_mark("continuation-mark-set->list*",
+          val = scheme_chaperone_do_continuation_mark(who,
                                                       1, orig_key, chain->val);
           SCHEME_VEC_ELS(vals)[i] = val;
         } else
@@ -8232,7 +8202,125 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
     chain = chain->next;
   }
 
-  return first;
+  *_chain = NULL;
+
+  return vals;
+}
+
+static Scheme_Object *iterate_step(void *data, int argc, Scheme_Object *argv[])
+{
+  Scheme_Cont_Mark_Chain *chain = ((void **)data)[0];
+  void **clos = ((void **)data)[1], **new_state;
+  Scheme_Object *vals, *a[2];
+  Scheme_Object *prompt_tag = ((Scheme_Object **)clos)[0];
+  Scheme_Object **keys = ((Scheme_Object ***)clos)[1];
+  intptr_t len = SCHEME_INT_VAL(((Scheme_Object **)clos)[2]);
+  Scheme_Object *none = ((Scheme_Object **)clos)[3];
+
+  if (!chain) {
+    a[0] = scheme_false;
+    new_state = data;
+  } else {
+    vals = iterate_cc_markses("mark-list*-iterator", prompt_tag, none, len, keys, &chain);
+    if (!vals)
+      a[0] = scheme_false;
+    else
+      a[0] = vals;
+    new_state = MALLOC_N(void*, 2);
+    new_state[0] = chain;
+    new_state[1] = clos;
+  }
+
+  a[1] = scheme_make_closed_prim_w_arity(iterate_step, new_state, "mark-list*-iterator", 0, 0);
+  return scheme_values(2, a);
+}
+
+static Scheme_Object *
+do_extract_cc_markses(const char *who, int argc, Scheme_Object *argv[], int iterator)
+{
+  Scheme_Cont_Mark_Chain *chain;
+  Scheme_Object *first = scheme_null, *last = NULL;
+  Scheme_Object *pr, **keys, *vals, *none, *prompt_tag;
+  intptr_t len, i;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
+    scheme_wrong_contract(who, "continuation-mark-set?", 0, argc, argv);
+    return NULL;
+  }
+  len = scheme_proper_list_length(argv[1]);
+  if (len < 0) {
+    scheme_wrong_contract(who, "list?", 1, argc, argv);
+    return NULL;
+  }
+  if (argc > 2)
+    none = argv[2];
+  else
+    none = scheme_false;
+  if (argc > 3) {
+    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[3]))) {
+      if (SCHEME_NP_CHAPERONEP(argv[3])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[3])))
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[3]);
+      else {
+        scheme_wrong_contract(who, "continuation-prompt-tag?",
+                              3, argc, argv);
+        return NULL;
+      }
+    } else
+      prompt_tag = argv[3];
+  } else
+    prompt_tag = scheme_default_prompt_tag;
+
+  keys = MALLOC_N(Scheme_Object *, len);
+  for (pr = argv[1], i = 0; SCHEME_PAIRP(pr); pr = SCHEME_CDR(pr), i++) {
+    keys[i] = SCHEME_CAR(pr);
+    if ((keys[i] == scheme_parameterization_key)
+	|| (keys[i] == scheme_break_enabled_key)) {
+      scheme_signal_error("%s: misuse of primitive key", who);
+      return NULL;
+    }
+  }
+
+  chain = ((Scheme_Cont_Mark_Set *)argv[0])->chain;
+
+  if (iterator) {
+    void **clos, **state;
+    clos = MALLOC_N(void*, 4);
+    clos[0] = prompt_tag;
+    clos[1] = keys;
+    clos[2] = scheme_make_integer(len);
+    clos[3] = none;
+    state = MALLOC_N(void*, 2);
+    state[0] = chain;
+    state[1] = clos;
+    return scheme_make_closed_prim_w_arity(iterate_step, state, "mark-list*-iterator", 0, 0);
+  } else {
+    while (chain) {
+      vals = iterate_cc_markses(who, prompt_tag, none, len, keys, &chain);
+      if (vals) {
+        pr = scheme_make_pair(vals, scheme_null);
+        if (last)
+          SCHEME_CDR(last) = pr;
+        else
+          first = pr;
+        last = pr;
+      }
+    }
+
+    return first;
+  }
+}
+
+static Scheme_Object *
+extract_cc_markses(int argc, Scheme_Object *argv[])
+{
+  return do_extract_cc_markses("continuation-mark-set->list*", argc, argv, 0);
+}
+
+static Scheme_Object *
+extract_cc_iterator(int argc, Scheme_Object *argv[])
+{
+  return do_extract_cc_markses("continuation-mark-set->iterator", argc, argv, 1);
 }
 
 Scheme_Object *
@@ -8799,11 +8887,11 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
         mc = scheme_get_meta_continuation(argv[1]);
         
         if (continuation_marks(scheme_current_thread, NULL, argv[1], mc, prompt_tag, 
-                               NULL, 0))
+                               NULL, 0, 0))
           return scheme_true;
       }
     } else if (SCHEME_CONTP(argv[1])) {
-      if (continuation_marks(NULL, argv[1], NULL, NULL, prompt_tag, NULL, 0))
+      if (continuation_marks(NULL, argv[1], NULL, NULL, prompt_tag, NULL, 0, 0))
         return scheme_true;
     } else {
       scheme_wrong_contract("continuation-prompt-available?", "continuation?",

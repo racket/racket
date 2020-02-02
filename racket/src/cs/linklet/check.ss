@@ -35,8 +35,10 @@
          (loop (cdr options) (or redundant use-prompt) serializable unsafe static 'use-prompt uninterned-literal)]
         [(uninterned-literal)
          (loop (cdr options) (or redundant uninterned-literal) serializable unsafe static use-prompt 'uninterned-literal)]
+        [(quick)
+         (loop (cdr options) redundant serializable unsafe static use-prompt uninterned-literal)]
         [else
          (loop #f redundant serializable unsafe static use-prompt uninterned-literal)])]
      [else
-      (raise-argument-error who "(listof/c 'serializable 'unsafe 'static 'use-prompt 'uninterned-literal)"
+      (raise-argument-error who "(listof/c 'serializable 'unsafe 'static 'quick 'use-prompt 'uninterned-literal)"
                             orig-options)])))

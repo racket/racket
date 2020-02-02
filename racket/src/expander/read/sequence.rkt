@@ -108,7 +108,7 @@
         (cond
          [(special-comment? v) (loop depth accum #f #f read-one)]
          [(depth . > . 1024)
-          ;; At some large depth, it's better to accumlate than recur
+          ;; At some large depth, it's better to accumulate than recur
           (loop depth (cons v accum) #f #f read-one)]
          [else 
           (cons v (loop (add1 depth) null #f #f read-one))])])))

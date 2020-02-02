@@ -360,7 +360,7 @@ scan:racket:cs:
     - linux
     - x86_64
   script:
-    - raco test -l tests/xml/test 2>&1 | tee test.log
+    - raco test -c tests/xml 2>&1 | tee test.log
   artifacts:
     when: always
     paths:
@@ -880,7 +880,7 @@ test:zo-path:cs:
     - raco pkg install --auto racket-test
 
 # Test: test:xml:test
-test:xml:test:cgc:
+test:xml:cgc:
   stage: stage3
   needs: ["build:racket:cgc"]
   extends: .test:xml:test
@@ -893,7 +893,7 @@ test:xml:test:cgc:
     - raco pkg config
     - raco pkg install --auto racket-test
 
-test:xml:test:3m:
+test:xml:3m:
   stage: stage4
   needs: ["build:racket:3m"]
   extends: .test:xml:test
@@ -906,7 +906,7 @@ test:xml:test:3m:
     - raco pkg config
     - raco pkg install --auto racket-test
 
-test:xml:test:cs:
+test:xml:cs:
   stage: stage5
   needs: ["build:racket:cs"]
   extends: .test:xml:test
@@ -1033,7 +1033,7 @@ test:ubsan:
     - raco test -l tests/openssl/https 2>&1 | tee logs/openssl-https-test.log
     - raco test -l tests/match/main 2>&1 | tee logs/match-main-test.log
     - raco test -l tests/zo-path 2>&1 | tee logs/zo-path-test.log
-    - raco test -l tests/xml/test 2>&1 | tee logs/xml-test.log
+    - raco test -c tests/xml 2>&1 | tee logs/xml-test.log
     - raco test -l tests/db/all-tests 2>&1 | tee logs/db-test.log
     - raco test -c tests/stxparse 2>&1 | tee logs/stxparse-test.log
   after_script:
@@ -1066,7 +1066,7 @@ test:ubsan:cs:
     - racocs test -l tests/openssl/https 2>&1 | tee cs-logs/openssl-https-test.log
     - racocs test -l tests/match/main 2>&1 | tee cs-logs/match-main-test.log
     - racocs test -l tests/zo-path 2>&1 | tee cs-logs/zo-path-test.log
-    - racocs test -l tests/xml/test 2>&1 | tee cs-logs/xml-test.log
+    - racocs test -c tests/xml 2>&1 | tee cs-logs/xml-test.log
     - racocs test -l tests/db/all-tests 2>&1 | tee cs-logs/db-test.log
     - racocs test -c tests/stxparse 2>&1 | tee cs-logs/stxparse-test.log
   after_script:

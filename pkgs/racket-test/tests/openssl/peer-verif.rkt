@@ -15,6 +15,13 @@
 (define-runtime-path client-crt "client_crt.pem")
 (define-runtime-path cacert     "cacert.pem")
 
+;; TLS v1.3 does not allow renegotiation, so use v1.2 for testing if
+;; available, otherwise skip renegotiation
+(define can-tls12? (memq 'tls12 (supported-client-protocols)))
+(printf (if can-tls12?
+            "Using TLS v1.2\n"
+            "Skipping renegotiation tests\n"))
+
 (define (go valid? 
             #:later [later-mode #f]
             #:early [early-mode (and (not later-mode) 'try)]
@@ -30,11 +37,16 @@
      ssl-server-context 
      #t))
 
-  (define ssl-listener (ssl-listen 55000
+  (define ssl-listener (ssl-listen 0
                                    4
                                    #t
                                    "127.0.0.1"
                                    ssl-server-context))
+
+  (define port-number (let ()
+                        (define-values (addr port-number other-addr other-port-number)
+                          (ssl-addresses ssl-listener #t))
+                        port-number))
 
   (define listener-main 
     (thread 
@@ -50,7 +62,9 @@
                                          verify-fail?
                                          (exn? x)
                                          ;; late checking may abandon the connection
-                                         (regexp-match? #rx"^tcp-(?:read|write):" (exn-message x))))
+                                         (regexp-match?
+                                          #rx"(^tcp-(?:read|write):|error (reading from|writing to) stream port)"
+                                          (exn-message x))))
                         (lambda (x) (void))])
          (let-values ([(in out) (ssl-accept ssl-listener)])
            (check "Server: Accepted connection.~n" #t #t)
@@ -78,20 +92,20 @@
            (close-input-port in)
            (close-output-port out))))))
 
-
-  (define ssl-client-context (ssl-make-client-context))
+  (define ssl-client-context (ssl-make-client-context (if can-tls12?
+                                                          'tls12
+                                                          'auto)))
 
   (ssl-load-private-key! ssl-client-context client-key)
 
-  ;;connection will still proceed if these methods aren't called
-  ;;change to #f to try it
+  ;; connection will still proceed if these functions aren't called
   (when valid?
     (ssl-load-certificate-chain! ssl-client-context client-crt)
     (ssl-load-verify-root-certificates! ssl-client-context cacert)
     (ssl-set-verify! ssl-client-context #t))
 
   (let-values ([(in out) (ssl-connect "127.0.0.1"
-                                      55000
+                                      port-number
                                       ssl-client-context)])
     (check "Client: Made connection.~n" #t #t)
     (when later-mode
@@ -115,9 +129,11 @@
 (go #t)
 (go #t #:early 'req)
 (go #f)
-(go #t #:later 'try)
+(when can-tls12?
+  (go #t #:later 'try))
 (go #f #:later 'try)
-(go #t #:later 'req)
+(when can-tls12?
+  (go #t #:later 'req))
 
 (define (check-fail thunk)
   (define s

@@ -356,7 +356,7 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
 
 /* Exponent threshold for obvious infinity. Must be at least
    max(MAX_FAST_FLOATREAD_LEN, MAX_FLOATREAD_PRECISION_DIGITS) more
-   than the larget possible FP exponent. */
+   than the largest possible FP exponent. */
 #define CHECK_INF_EXP_THRESHOLD(extfl) (extfl ? 32768 : 2048)
 
 /* Don't bother reading more than the following number of digits in a

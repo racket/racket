@@ -898,7 +898,7 @@ Casts @racket[ptr-or-proc] to a function pointer of type @racket[fun-type].}
 
 A literal used in @racket[_fun] forms. (It's unfortunate that this
 literal has the same name as @racket[->] from
-@racketmodname[racket/contract], but it's a different binding.}}
+@racketmodname[racket/contract], but it's a different binding.)}
 
 @; ----------------------------------------------------------------------
 

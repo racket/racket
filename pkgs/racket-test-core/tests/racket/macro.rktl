@@ -862,7 +862,7 @@
 (require 'm-check-varref-expand)
 
 ;; ----------------------------------------
-;; Check that a modul-level binding with 0 marks
+;; Check that a module-level binding with 0 marks
 ;;  but lexical context is found correctly with
 ;;  1 and 2 marks (test case by Carl):
 
@@ -2133,7 +2133,7 @@
       (require (for-template racket/base))
       (define (disarm s)
         (unless (syntax-tainted? (car (syntax-e (syntax-disarm s #f))))
-          (error "disarm suceeded!"))
+          (error "disarm succeeded!"))
         #''ok)
       (provide disarm)))
 
@@ -2338,7 +2338,7 @@
           (restore))))
 
 ;; ----------------------------------------
-;; Make sure somethign reasonable happens when a `for-syntax` `define`
+;; Make sure something reasonable happens when a `for-syntax` `define`
 ;; is seen via `local-expand` but is not preserved in the expansion
 
 (module module-compiles-but-does-not-visit racket/base

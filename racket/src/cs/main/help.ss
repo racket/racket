@@ -73,7 +73,7 @@
     "Default options:\n"
     " If only configuration options are provided, -i is added\n"
     " If only configuration options are before the first argument, -u is added\n"
-    " If -t/-l/-p/-u apears before the first -i/-e/-f/-r, -n is added\n"
+    " If -t/-l/-p/-u appears before the first -i/-e/-f/-r, -n is added\n"
     " <init-lib> defaults to " (if gracket? "racket/gui/init" "racket/init") "\n"
     "Switch syntax:\n"
     " Multiple single-letter switches can be collapsed, with arguments placed\n"

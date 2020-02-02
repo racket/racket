@@ -151,7 +151,7 @@ GC_API int GC_use_entire_heap;
 		/* entire heap before collecting.  This was the only 	*/
 		/* option for GC versions < 5.0.  This sometimes	*/
 		/* results in more large block fragmentation, since	*/
-		/* very larg blocks will tend to get broken up		*/
+		/* very large blocks will tend to get broken up		*/
 		/* during each GC cycle.  It is likely to result in a	*/
 		/* larger working set, but lower collection		*/
 		/* frequencies, and hence fewer instructions executed	*/

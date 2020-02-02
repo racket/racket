@@ -305,6 +305,7 @@ mzrt_needs_pthread=yes
 skip_iconv_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
+check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
   STARTUP_AS_BYTECODE=_bytecode
@@ -460,21 +461,34 @@ if test "$ARFLAGS" = '' ; then
 fi
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
+is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+
 # If using gcc, we want all warnings:
-if test "$CC" = "gcc" ; then 
+changequote(<<, >>)dnl
+is_gcc=`$CC -v 2>&1 | tail -n 1 | grep -E '^gcc version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ \([^\)]+\)[[:space:]]*$'`
+changequote([, ])dnl
+
+# We also need to test if $CC is gcc itself because on mac,
+# where clang impersonates gcc, although is_gcc is false, we want
+# to use it as if it was gcc.
+# See https://github.com/racket/racket/pull/2897#pullrequestreview-314906673
+if test "$is_gcc" != "" || test "`basename $CC`" = "gcc"; then
   COMPFLAGS="$COMPFLAGS -Wall"
 
   # Use -MMD when we have gcc and gnumake:
-  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
   if test "$is_gmake" = "" ; then
     WX_MMD_FLAG=""
   else
     WX_MMD_FLAG="-MMD"
-    INCLUDEDEP="-include"
   fi
 
   # Compile mzdyn.o with -fPIC
   DYN_CFLAGS="-fPIC"
+fi
+
+# When GNU Make is present, use version.mak
+if test "$is_gmake" != ""; then
+   INCLUDEDEP="-include"
 fi
 
 if test "$REZ" = '' ; then 
@@ -594,6 +608,7 @@ case "$host_os" in
       x86_64)
        enable_parallel_by_default=yes
        CGC_X86_64="1"
+       check_for_unwind=REG_RSP
        ;;
       ppc|powerpc)
        ;;
@@ -603,6 +618,7 @@ case "$host_os" in
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
+       check_for_unwind=REG_ESP
        ;;
       arm*)
        EXTRA_GMP_OBJ="gmp_arm_gcc.o"
@@ -740,6 +756,9 @@ case "$host_os" in
           FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
         fi
       fi
+      if test "${enable_embedfw}" = "yes" ; then
+        strip_needs_dash_s=yes
+      fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
@@ -864,44 +883,7 @@ AC_MSG_RESULT($using_gnu_cpp)
 
 # Although rktio takes care of iconv, we need to know whether
 # to link to it
-iconv_lib_flag=""
-if test "${skip_iconv_check}" = "no" ; then
- if test "${enable_iconv}" = "yes" ; then
-  AC_CHECK_HEADER(iconv.h, enable_iconv=yes, enable_iconv=no)
-  if test "${enable_iconv}" = "yes" ; then  
-    # Does it all work, now?
-    AC_TRY_RUN(
-[   #include <iconv.h>]
-[   #include <langinfo.h>]
-    int main() {
-[     iconv_open("UTF-8", "UTF-8");]
-      return 0;
-    }, enable_iconv=yes, enable_iconv=no, enable_iconv=yes)
-    if test "${enable_iconv}" = "no" ; then  
-      # Try adding -liconv ?
-      #  We did not use AC_CHECK_LIB because iconv is sometimes macro-renamed
-      ORIG_LIBS="$LIBS"
-      LIBS="$LIBS -liconv"
-      AC_TRY_RUN(
-[     #include <iconv.h>]
-[     #include <langinfo.h>]
-      int main() {
-[     iconv_open("UTF-8", "UTF-8");]
-      return 0;
-      }, enable_iconv=yes, enable_iconv=no, enable_iconv=yes)
-      if test "${enable_iconv}" = "no" ; then
-        LIBS="$ORIG_LIBS"
-      else
-        iconv_lib_flag=" -liconv"      
-      fi
-    fi
-  fi
- fi
- [ msg="iconv is usable" ]
- AC_MSG_CHECKING($msg)
- iconv_usage_result="$enable_iconv$iconv_lib_flag"
- AC_MSG_RESULT($iconv_usage_result)
-fi
+m4_include(../ac/iconv.m4)
 
 if test "${check_for_mprotect}" = "yes" ; then
   [ msg="for mmap and mprotect" ]
@@ -937,6 +919,22 @@ if test "${check_for_mprotect}" = "yes" ; then
       echo "Senora GC is required due to mprotect() failure"
     fi
   fi
+fi
+
+if test "${check_for_unwind}" != "no" ; then
+  [ msg="for unwind support" ]
+  AC_MSG_CHECKING($msg)
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+     #include <inttypes.h>
+     #define __USE_GNU
+     #include <ucontext.h>
+     int main() {
+        return ${check_for_unwind};
+     }])], can_unwind=yes, can_unwind=no)
+  if test "$can_unwind" = "no" ; then
+    AC_DEFINE(MZ_NO_UNWIND_SUPPORT,1,[Missing ucontext support])
+  fi
+  AC_MSG_RESULT($can_unwind)
 fi
 
 if test "${check_page_size}" = "yes" ; then
@@ -1009,6 +1007,8 @@ AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 AC_CHECK_SIZEOF([void *])
 AC_CHECK_SIZEOF(bool, unused, [#include <stdbool.h>])
+
+m4_include(../ac/valid_sizeof.m4)
 
 AC_TYPE_INTPTR_T
 AC_TYPE_UINTPTR_T
@@ -1383,7 +1383,20 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/racket/src/schvers.h | cut -d '"' -f 2`
+    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+
+    if test "${VERSION_W}" != "0" ; then
+      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+    else
+      if test "${VERSION_Z}" != "0" ; then
+        plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
+      else
+        plt_lib_version="${VERSION_X}.${VERSION_Y}"
+      fi
+    fi
   fi
 
   AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"

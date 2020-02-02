@@ -1,6 +1,6 @@
 (module sort '#%kernel
 
-(#%require "small-scheme.rkt" "define.rkt" (for-syntax "stxcase-scheme.rkt"))
+(#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt" (for-syntax "stxcase-scheme.rkt"))
 
 ;; note, these are the raw interfaces --- user-facing definitions
 ;; are exported from private/list.rkt and vector.rkt

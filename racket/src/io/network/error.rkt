@@ -3,7 +3,8 @@
          "../host/error.rkt")
 
 (provide raise-network-error
-         raise-network-arguments-error)
+         raise-network-arguments-error
+         raise-network-option-error)
 
 (define (raise-network-error who orig-err base-msg)
   (define err (remap-rktio-error orig-err))
@@ -37,3 +38,6 @@
                    "\n  socket: "
                    ((error-value->string-handler) u (error-print-width)))
     (current-continuation-marks))))
+
+(define (raise-network-option-error who mode v)
+  (raise-network-error who v (string-append mode "sockopt failed")))

@@ -6,8 +6,19 @@
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
 
+;; `assoc?` is not constant time, but it's likely to be called multiple
+;; times on a given argument, so keep a weak hash of known associates:
+(define known-assocs (make-weak-hasheq))
+
 (define (assoc? v)
-  (and (list? v) (andmap pair? v)))
+  (or (null? v)
+      (and (pair? v)
+           (or (hash-ref known-assocs v #f)
+               (and (list? v)
+                    (andmap pair? v)
+                    (begin
+                      (hash-set! known-assocs v #t)
+                      #t))))))
 
 (define (immutable-hash? v)
   (and (hash? v) (immutable? v)))
@@ -52,9 +63,19 @@
              (default)
              default))]))
 
+;; The `assoc-...` functions are available only through the dictionary
+;; interface, which reaches them through functions with a `dict?`
+;; contract, so no additional check is needed
+(define (assoc?/internal e)
+  #t)
+
+;; For dispatch, it's enough to check for null or a pair:
+(define (pair-or-null? v)
+  (or (null? v) (pair? v)))
+
 (define no-arg (gensym))
 (define (assoc-ref d key [default no-arg])
-  (unless (assoc? d)
+  (unless (assoc?/internal d)
     (raise-argument-error 'dict-ref "dict?" d))
   (cond
     [(assoc key d) => cdr]
@@ -77,7 +98,7 @@
       v))
 
 (define (assoc-set d key val)
-  (unless (assoc? d)
+  (unless (assoc?/internal d)
     (raise-argument-error 'dict-set "dict?" d))
   (let loop ([xd d])
     (cond
@@ -123,7 +144,7 @@
     (dict-set d key (xform (dict-ref d key default)))]))
 
 (define (assoc-remove d key)
-  (unless (assoc? d)
+  (unless (assoc?/internal d)
     (raise-argument-error 'dict-remove "dict?" d))
   (let loop ([xd d])
     (cond
@@ -157,14 +178,14 @@
 (define vector-iterate-value vector-ref)
 
 (define (assoc-count d)
-  (unless (assoc? d)
+  (unless (assoc?/internal d)
     (raise-argument-error 'dict-count "dict?" d))
   (length d))
 
 (struct assoc-iter (head pos))
 
 (define (assoc-iterate-first d)
-  (unless (assoc? d)
+  (unless (assoc?/internal d)
     (raise-argument-error 'dict-iterate-first "dict?" d))
   (if (null? d) #f (assoc-iter d d)))
 
@@ -176,7 +197,7 @@
        (if (null? pos)
            #f
            (assoc-iter d pos)))]
-    [(assoc? d)
+    [(assoc?/internal d)
      (raise-mismatch-error
       'dict-iterate-next
       "invalid iteration position for association list: "
@@ -187,7 +208,7 @@
   (cond
     [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
      (caar (assoc-iter-pos i))]
-    [(assoc? d)
+    [(assoc?/internal d)
      (raise-mismatch-error
       'dict-iterate-key
       "invalid iteration position for association list: "
@@ -198,7 +219,7 @@
   (cond
     [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
      (cdar (assoc-iter-pos i))]
-    [(assoc? d)
+    [(assoc?/internal d)
      (raise-mismatch-error
       'dict-iterate-value
       "invalid iteration position for association list: "
@@ -234,7 +255,7 @@
   (zero? (vector-length vec)))
 
 (define (assoc-has-key? d key)
-  (unless (assoc? d)
+  (unless (assoc?/internal d)
     (raise-argument-error 'dict-has-key? "dict?" d))
   (pair? (assoc key d)))
 
@@ -392,7 +413,7 @@
     (define dict-copy vector-copy)
     (define dict->list vector->assoc)
     (define dict-empty? vector-empty?)]
-   [assoc? list?
+   [assoc? pair-or-null?
     (define dict-ref assoc-ref)
     (define dict-set assoc-set)
     (define dict-remove assoc-remove)

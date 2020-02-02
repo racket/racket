@@ -2,7 +2,7 @@
 @(require "common.rkt"
           (for-label (only-in scribble/manual history)))
 
-@title[#:tag "contribute"]{Contibuting to Racket Development}
+@title[#:tag "contribute"]{Contributing to Racket Development}
 
 The Racket developers are happy to receive bug reports and
 improvements to the implementation and documentation through GitHub
@@ -86,7 +86,7 @@ the package name.
 To start working on a package @nonterm{pkg-name}, it's usually best to
 go to the root directory of your Racket repository checkout and run
 
-@commandline{raco pkg update --clone extra-pkgs/@nonterm{pkg-name}}
+@commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{pkg-name}}
 
 That will create @filepath{extra-pkgs/@nonterm{pkg-name}} as a clone
 of the package's source Git repository, it will replace the current
@@ -105,17 +105,17 @@ Some information that might improve your experience:
        if you want to make changes and then run @exec{raco setup}
        yourself.}
 
- @item{A package is sometimes a subdirectory within a Git respository,
+ @item{A package is sometimes a subdirectory within a Git repository,
        and it would be better if the checkout in @filepath{extra-pkgs}
-       matched the respoitory name instead of the package name. If you
+       matched the repository name instead of the package name. If you
        know the repository name, you can use
 
-       @commandline{raco pkg update --clone extra-pkgs/@nonterm{repo-name} @nonterm{pkg-name}}
+       @commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{repo-name} @nonterm{pkg-name}}
 
        to make the distinction.}
 
  @item{This same approach will generally work if you're starting from
-       a distribution installer instead of the checkout of the Raclet
+       a distribution installer instead of the checkout of the Racket
        sources from the main Git repository. You'll need write
        permission to the installation, though, so that @exec{raco pkg
        update} can redirect the package. Also, there's no particular
@@ -124,7 +124,7 @@ Some information that might improve your experience:
  @item{If you're done and want to go back to the normal installation
        for @nonterm{pkg-name}, use
 
-        @commandline{raco pkg update --catalog @nonterm{pkg-name}}}
+        @commandline{raco pkg update @DFlag{catalog} @nonterm{pkg-name}}}
 
  @item{See @secref["git-workflow" #:doc '(lib
        "pkg/scribblings/pkg.scrbl")] for more information about how

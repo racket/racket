@@ -3,7 +3,8 @@
          "wrap.rkt"
          "struct-type-info.rkt"
          "mutated-state.rkt"
-         "find-definition.rkt")
+         "find-definition.rkt"
+         "gensym.rkt")
 
 (provide struct-convert
          struct-convert-local)
@@ -53,7 +54,7 @@
                  (null? (struct-type-info-rest sti))
                  (not (set!ed-mutated-state? (hash-ref mutated (unwrap struct:s) #f)))))
         (define can-impersonate? (not (struct-type-info-authentic? sti)))
-        (define raw-s? (if can-impersonate? (gensym (unwrap s?)) s?))
+        (define raw-s? (if can-impersonate? (deterministic-gensym (unwrap s?)) s?))
         `(begin
            (define ,struct:s (make-record-type-descriptor ',(struct-type-info-name sti)
                                                           ,(schemify (struct-type-info-parent sti) knowns)
@@ -71,7 +72,7 @@
                                                               `(mutable ,(string->symbol (format "f~a" i))))))
            ,@(if (null? (struct-type-info-rest sti))
                  null
-                 `((define ,(gensym)
+                 `((define ,(deterministic-gensym "effect")
                      (struct-type-install-properties! ,struct:s
                                                       ',(struct-type-info-name sti)
                                                       ,(struct-type-info-immediate-field-count sti)
@@ -94,7 +95,9 @@
                                      `(procedure-rename ,ctr-expr ,name-expr))]
                                 [`,_
                                  `(procedure-rename ,ctr-expr ,name-expr)])))
-           (define ,raw-s? (record-predicate ,struct:s))
+           (define ,raw-s? ,(name-procedure
+                             "" (struct-type-info-name sti) "" '|| "?"
+                             `(record-predicate ,struct:s)))
            ,@(if can-impersonate?
                  `((define ,s? ,(name-procedure
                                  "" (struct-type-info-name sti) "" '|| "?"
@@ -102,10 +105,13 @@
                  null)
            ,@(for/list ([acc/mut (in-list acc/muts)]
                         [make-acc/mut (in-list make-acc/muts)])
-               (define raw-acc/mut (if can-impersonate? (gensym (unwrap acc/mut)) acc/mut))
+               (define raw-acc/mut (if can-impersonate? (deterministic-gensym (unwrap acc/mut)) acc/mut))
                (match make-acc/mut
                  [`(make-struct-field-accessor ,(? (lambda (v) (wrap-eq? v -ref))) ,pos ',field-name)
-                  (define raw-def `(define ,raw-acc/mut (record-accessor ,struct:s ,pos)))
+                  (define raw-def `(define ,raw-acc/mut
+                                     ,(name-procedure
+                                       "" (struct-type-info-name sti) "-" field-name ""
+                                       `(record-accessor ,struct:s ,pos))))
                   (if can-impersonate?
                       `(begin
                          ,raw-def
@@ -118,7 +124,10 @@
                                                                        ',(struct-type-info-name sti) ',field-name)))))))
                       raw-def)]
                  [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ',field-name)
-                  (define raw-def `(define ,raw-acc/mut (record-mutator ,struct:s ,pos)))
+                  (define raw-def `(define ,raw-acc/mut
+                                     ,(name-procedure
+                                       "set-" (struct-type-info-name sti) "-" field-name "!"
+                                       `(record-mutator ,struct:s ,pos))))
                   (define abs-pos (+ pos (- (struct-type-info-field-count sti)
                                             (struct-type-info-immediate-field-count sti))))
                   (if can-impersonate?
@@ -133,7 +142,7 @@
                                                                           ',(struct-type-info-name sti) ',field-name)))))))
                       raw-def)]
                  [`,_ (error "oops")]))
-           (define ,(gensym)
+           (define ,(deterministic-gensym "effect")
              (begin
                (register-struct-constructor! ,make-s)
                (register-struct-predicate! ,s?)

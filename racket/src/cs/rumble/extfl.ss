@@ -72,7 +72,7 @@
   (unsafe-extfl= a b)
   (unsafe-extfl> a b)
   (unsafe-extfl>= a b)
-  (unsafe-extflabs a b)
+  (unsafe-extflabs a)
   (unsafe-extflmax a b)
   (unsafe-extflmin a b)
   (unsafe-extflsqrt a)

@@ -38,7 +38,7 @@
  * - the logic deciding whether a function argument gets passed through
  *   registers, or on the stack, has changed several times in OpenBSD in
  *   edge cases (especially for structs larger than 32 bytes being passed
- *   by value). The code below attemps to match the logic used by the
+ *   by value). The code below attempts to match the logic used by the
  *   system compiler of OpenBSD 5.3, i.e. gcc 3.3.6 with many m88k backend
  *   fixes.
  */

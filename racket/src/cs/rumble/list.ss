@@ -5,34 +5,51 @@
 ;; where a second request will cache at the N/4-tail pair, etc.
 ;; Detect cycles using the same `slow` tortoise that is used for
 ;; caching.
+;;
+;; To reduce the overhead of checking the hash table, only
+;; start using it after the first `CHECK-AFTER-LEN` pairs.
+;; Then, check only every `CHECK-EVERY` pairs --- and record
+;; a sequence of `CHECK-EVERY` results so one will hit when
+;; checking every `CHECK-EVERY` pairs.
 
 (define-thread-local lists (make-weak-eq-hashtable))
 
+(define CHECK-AFTER-LEN 64)
+(define CHECK-EVERY 4)
+
 (define (list? v)
-  (let loop ([v v] [depth 0])
+  (let loop ([v v] [count 0])
     (cond
      [(null? v) #t]
      [(not (pair? v)) #f]
-     [(pair? v)
+     [else
       (cond
-       [(fx<= depth 32)
-        (loop (cdr v) (fx+ depth 1))]
+       [(fx<= count CHECK-AFTER-LEN)
+        (loop (cdr v) (fx+ count 1))]
        [else
-        (let loop ([fast (cdr v)] [slow v] [slow-step? #f])
-          (let ([return (lambda (result)
-                          (hashtable-set! lists slow result)
-                          result)])
-            (cond
-             [(null? fast) (return #t)]
-             [(not (pair? fast)) (return #f)]
-             [(eq? fast slow) (return #f)] ; cycle
-             [else
-              (let ([is-list? (hashtable-ref lists fast none)])
-                (cond
-                 [(eq? is-list? none)
-                  (loop (cdr fast) (if slow-step? (cdr slow) slow) (not slow-step?))]
-                 [else
-                  (return is-list?)]))])))])])))
+        (let ([lists lists])
+          (let loop ([fast (cdr v)] [slow v] [slow-step? #f] [countdown 0])
+            (let ([return (lambda (result)
+                            (eq-hashtable-set! lists slow result)
+                            (let loop ([slow slow] [count (fx- CHECK-EVERY 1)])
+                              (unless (or (eq? slow fast)
+                                          (fx= count 0))
+                                (eq-hashtable-set! lists slow result)
+                                (loop (cdr slow) (fx- count 1))))
+                            result)])
+              (cond
+               [(null? fast) (return #t)]
+               [(not (pair? fast)) (return #f)]
+               [(eq? fast slow) (return #f)] ; cycle
+               [(fx= 0 countdown)
+                (let ([is-list? (eq-hashtable-ref lists fast none)])
+                  (cond
+                   [(eq? is-list? none)
+                    (loop (cdr fast) (if slow-step? (cdr slow) slow) (not slow-step?) CHECK-EVERY)]
+                   [else
+                    (return is-list?)]))]
+               [else
+                (loop (cdr fast) (if slow-step? (cdr slow) slow) (not slow-step?) (fx- countdown 1))]))))])])))
 
 (define (append-n l n l2)
   (cond

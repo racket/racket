@@ -14,10 +14,13 @@
          queue-length
          queue-remove-end!)
 
-(struct queue (start end) #:mutable)
+(struct queue (start end)
+  #:mutable
+  #:authentic)
 (struct node (elem
               [prev #:mutable]
-              [next #:mutable]))
+              [next #:mutable])
+  #:authentic)
 
 (define (make-queue)
   (queue #f #f))

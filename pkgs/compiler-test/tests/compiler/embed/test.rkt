@@ -58,15 +58,19 @@
                                                  (begin
                                                    (sleep sleep-time)
                                                    (loop (* 2 sleep-time)))))])
-       (thunk))))
+      (thunk))))
+
+(define (printf/flush . args)
+  (apply printf args)
+  (flush-output))
 
 (define (prepare exe src)
-  (printf "Making ~a with ~a...\n" exe src)
+  (printf/flush "Making ~a with ~a...\n" exe src)
   (when (file-exists? exe)
 	(call-with-retries (lambda () (delete-file exe)))))
 
 (define (try-one-exe exe expect mred?)
-  (printf "Running ~a\n" exe)
+  (printf/flush "Running ~a\n" exe)
   (let ([plthome (getenv "PLTHOME")]
 	[collects (getenv "PLTCOLLECTS")]
         [out (open-output-string)])
@@ -106,7 +110,7 @@
   (try-one-exe exe expect mred?)
   (when dist?
     ;; Build a distribution directory, and try that, too:
-    (printf " ... from distribution ...\n")
+    (printf/flush " ... from distribution ...\n")
     (when (directory-exists? dist-dir)
       (call-with-retries
        (lambda ()
@@ -154,7 +158,7 @@
     (try-exe dest expect mred? #:dist? #f)
 
     ;; Try explicit prefix:
-    (printf ">>>explicit prefix\n")
+    (printf/flush ">>>explicit prefix\n")
     (let ([w/prefix
 	   (lambda (pfx)
 	     (prepare dest filename)
@@ -175,7 +179,7 @@
 
     (when literal?
       ;; Try full path, and use literal S-exp to start
-      (printf ">>>literal sexp\n")
+      (printf/flush ">>>literal sexp\n")
       (prepare dest filename)
       (let ([path (build-path (collection-path "tests" "compiler" "embed") filename)])
         (make-embedding-executable 
@@ -188,7 +192,7 @@
       (try-exe dest expect mred?)
       
       ;; Use `file' form:
-      (printf ">>>file\n")
+      (printf/flush ">>>file\n")
       (prepare dest filename)
       (let ([path (build-path (collection-path "tests" "compiler" "embed") filename)])
         (make-embedding-executable 
@@ -201,7 +205,7 @@
       (try-exe dest expect mred?)
 
       ;; Use relative path
-      (printf ">>>relative path\n")
+      (printf/flush ">>>relative path\n")
       (prepare dest filename)
       (parameterize ([current-directory (collection-path "tests" "compiler" "embed")])
         (make-embedding-executable 
@@ -214,7 +218,7 @@
       (try-exe dest expect mred?)
 
       ;; Try multiple modules
-      (printf ">>>multiple\n")
+      (printf/flush ">>>multiple\n")
       (prepare dest filename)
       (make-embedding-executable 
        dest mred? #f
@@ -229,7 +233,7 @@
       (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
 
       ;; Try a literal file
-      (printf ">>>literal\n")
+      (printf/flush ">>>literal\n")
       (prepare dest filename)
       (let ([tmp (make-temporary-file)])
         (with-output-to-file tmp 
@@ -272,7 +276,8 @@
     (one-mz-test "embed-me31.rkt" "This is 31.\n" #f)
     (one-mz-test "embed-me34.rkt" "This is 34 in a second place.\n" #f)
     (one-mz-test "embed-me35.rkt" "'ok-35\n" #f)
-    (one-mz-test "embed-me36.rkt" "'ok-36\n" #f))
+    (one-mz-test "embed-me36.rkt" "'ok-36\n" #f)
+    (one-mz-test "embed-me38.rkt" "\"found license\"\n" #f))
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
@@ -342,7 +347,7 @@
 (define raco (build-path (find-console-bin-dir) (add-suffixes "raco")))
 
 (define (system+ . args)
-  (printf "> ~a\n" (car (reverse args)))
+  (printf/flush "> ~a\n" (car (reverse args)))
   (unless (apply system* args)
     (error 'system+ "command failed ~s" args)))
 
@@ -434,7 +439,7 @@
     (try-exe (mk-dest mred?) "Hello from a place!\n" mred?)
 
     ;; raco exe --launcher
-    (printf ">>launcher\n")
+    (printf/flush ">>launcher\n")
     (system+ raco
              "exe"
              "--launcher"
@@ -445,7 +450,7 @@
 
     ;; the rest use mzc...
 
-    (printf ">>mzc\n")
+    (printf/flush ">>mzc\n")
     (system+ mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
@@ -454,7 +459,7 @@
 
     (define (check-collection-path prog lib in-main?)
       ;; Check that etc.rkt isn't found if it's not included:
-      (printf ">>not included\n")
+      (printf/flush ">>not included\n")
       (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
@@ -462,7 +467,7 @@
       (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
 
       ;; And it is found if it is included:
-      (printf ">>included\n")
+      (printf/flush ">>included\n")
       (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
@@ -471,7 +476,7 @@
       (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
       ;; Or, it's found if we set the collection path:
-      (printf ">>set coll path\n")
+      (printf/flush ">>set coll path\n")
       (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
@@ -483,7 +488,7 @@
 
       ;; Or, it's found if we set the collection path and the config path (where the latter
       ;; finds links for packages):
-      (printf ">>set coll path plus config\n")
+      (printf/flush ">>set coll path plus config\n")
       (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
@@ -496,7 +501,7 @@
       (try-one-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
       ;; Try --collects-dest mode
-      (printf ">>--collects-dest\n")
+      (printf/flush ">>--collects-dest\n")
       (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
@@ -607,7 +612,7 @@
   (define (flags s)
     (string-append "-" s))
 
-  (printf "Trying ~s ~s ~s ~s...\n" (if 12? "12" "11") mred? ss-file? ss-reader?)
+  (printf/flush "Trying ~s ~s ~s ~s...\n" (if 12? "12" "11") mred? ss-file? ss-reader?)
 
   (create-embedding-executable 
    dest
@@ -697,7 +702,7 @@
     (define mred? #f)
     (define dest (mk-dest mred?))
     
-    (printf "> ~a ~s from source\n" file submod)
+    (printf/flush "> ~a ~s from source\n" file submod)
     (create-embedding-executable
      dest
      #:modules `((#%mzc: ,(collection-file-path file "tests/compiler/embed") ,submod))
@@ -735,7 +740,7 @@
            (path->string (collection-path "tests" "compiler" "embed" "embed-planet-2")))
 
   (let ([go (lambda (path expected)
-              (printf "Trying planet ~s...\n" path)
+              (printf/flush "Trying planet ~s...\n" path)
               (let ([tmp (make-temporary-file)]
                     [dest (mk-dest #f)])
                 (with-output-to-file tmp
@@ -771,7 +776,7 @@
 
 (define (try-*sl)
   (define (try-one src)
-    (printf "Trying ~a...\n" src)
+    (printf/flush "Trying ~a...\n" src)
     (define exe (path->string (mk-dest #f)))
     (system+ raco
              "exe"

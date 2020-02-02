@@ -110,7 +110,9 @@
                                                                               (expand-context-keep-#%expression? ctx)))
                                                 #:track-to-be-defined? track-to-be-defined?))
 
-   (namespace-visit-available-modules! (expand-context-namespace ctx) phase)
+   (without-expand-context
+    (unless (expand-context-skip-visit-available? ctx)
+      (namespace-visit-available-modules! (expand-context-namespace ctx) phase)))
 
    (log-expand local-ctx 'enter-local s)
    (define input-s (add-intdef-scopes (flip-introduction-scopes s ctx) intdefs))
@@ -119,29 +121,30 @@
    (log-expand local-ctx 'local-pre input-s)
    (when stop-ids (log-expand local-ctx 'start))
    
-   (define output-s (cond
-                     [(and as-transformer? capture-lifts?)
-                      (expand-transformer input-s local-ctx
-                                          #:context context
-                                          #:expand-lifts? #f
-                                          #:begin-form? #t
-                                          #:lift-key lift-key
-                                          #:always-wrap? #t
-                                          #:keep-stops? #t)]
-                     [as-transformer?
-                      (expand-transformer input-s local-ctx
-                                          #:context context
-                                          #:expand-lifts? #f
-                                          #:begin-form? (eq? 'top-level context)
-                                          #:lift-key lift-key
-                                          #:keep-stops? #t)]
-                     [capture-lifts?
-                      (expand/capture-lifts input-s local-ctx
+   (define output-s (without-expand-context
+                     (cond
+                       [(and as-transformer? capture-lifts?)
+                        (expand-transformer input-s local-ctx
+                                            #:context context
+                                            #:expand-lifts? #f
                                             #:begin-form? #t
                                             #:lift-key lift-key
-                                            #:always-wrap? #t)]
-                     [else
-                      (expand input-s local-ctx)]))
+                                            #:always-wrap? #t
+                                            #:keep-stops? #t)]
+                       [as-transformer?
+                        (expand-transformer input-s local-ctx
+                                            #:context context
+                                            #:expand-lifts? #f
+                                            #:begin-form? (eq? 'top-level context)
+                                            #:lift-key lift-key
+                                            #:keep-stops? #t)]
+                       [capture-lifts?
+                        (expand/capture-lifts input-s local-ctx
+                                              #:begin-form? #t
+                                              #:lift-key lift-key
+                                              #:always-wrap? #t)]
+                       [else
+                        (expand input-s local-ctx)])))
 
    (log-expand local-ctx 'local-post output-s)
    

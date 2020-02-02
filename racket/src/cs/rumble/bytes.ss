@@ -51,21 +51,33 @@
 (define/who bytes-copy!
   (case-lambda
     [(dest d-start src)
-     (bytes-copy! dest d-start src 0 (bytes-length src))]
+     (bytes-copy! dest d-start src 0 (and (bytevector? src) (bytevector-length src)))]
     [(dest d-start src s-start)
-     (bytes-copy! dest d-start src s-start (bytes-length src))]
+     (bytes-copy! dest d-start src s-start (and (bytevector? src) (bytevector-length src)))]
     [(dest d-start src s-start s-end)
-     (check who mutable-bytevector? :contract "(and/c bytes? (not/c immutable?))" dest)
-     (check who exact-nonnegative-integer? d-start)
-     (check who bytes? src)
-     (check who exact-nonnegative-integer? s-start)
-     (check who exact-nonnegative-integer? s-end)
-     (let ([d-len (bytevector-length dest)])
-       (check-range who "byte string" dest d-start #f d-len)
-       (check-range who "byte string" src s-start s-end (bytevector-length src))
-       (let ([s-len (fx- s-end s-start)])
-         (check-space who "byte string" d-start d-len s-len)
-         (bytevector-copy! src s-start dest d-start s-len)))]))
+     ;; start with fast, inlined checks for valid calls, then use
+     ;; slower tests with consistent reporting if fast tests fail
+     (cond
+      [(and (mutable-bytevector? dest)
+            (bytevector? src)
+            (fixnum? d-start)
+            (fixnum? s-start)
+            (fixnum? s-end)
+            (fx<= 0 d-start (fx+ d-start (fx- s-end s-start)) (bytevector-length dest))
+            (fx<= 0 s-start s-end (bytevector-length src)))
+       (bytevector-copy! src s-start dest d-start (fx- s-end s-start))]
+      [else
+       (check who mutable-bytevector? :contract "(and/c bytes? (not/c immutable?))" dest)
+       (check who exact-nonnegative-integer? d-start)
+       (check who bytes? src)
+       (check who exact-nonnegative-integer? s-start)
+       (check who exact-nonnegative-integer? s-end)
+       (let ([d-len (bytevector-length dest)])
+         (check-range who "byte string" dest d-start #f d-len)
+         (check-range who "byte string" src s-start s-end (bytevector-length src))
+         (let ([s-len (fx- s-end s-start)])
+           (check-space who "byte string" d-start d-len s-len)
+           (bytevector-copy! src s-start dest d-start s-len)))])]))
 
 (define/who (bytes-fill! bstr b)
   (check who mutable-bytevector? :contract "(and/c bytes? (not/c immutable?))" bstr)

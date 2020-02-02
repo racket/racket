@@ -117,11 +117,15 @@
               (thread-group? group))
     (raise-argument-error 'delay/thread "(or/c thread-group? #f)" group))
   (define initialized-sema (make-semaphore))
+  (define orig-c (current-custodian))
   (define (run)
     (semaphore-wait initialized-sema) ; wait until p is properly defined
     (call-with-exception-handler
-     (λ(e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
-     (λ() (pset! p (call-with-values thunk list)))))
+     (λ (e)
+       (pset! p (make-reraise e))
+       (parameterize ([current-custodian orig-c])
+         (kill-thread (current-thread))))
+     (λ () (pset! p (call-with-values thunk list)))))
   (define p
     (make-promise/thread
      (make-running-thread
@@ -164,10 +168,14 @@
   (define use (cond [(use* . <= . 0) 0] [(use* . >= . 1) 1] [else use*]))
   (define work-time (* tick use))
   (define rest-time (- tick work-time))
+  (define orig-c (current-custodian))
   (define (work)
     (call-with-exception-handler
-     (λ(e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
-     (λ()  (pset! p (call-with-values thunk list)))))
+     (λ (e)
+       (pset! p (make-reraise e))
+       (parameterize ([current-custodian orig-c])
+         (kill-thread (current-thread))))
+     (λ () (pset! p (call-with-values thunk list)))))
   (define (run)
     ;; this thread is dedicated to controlling the worker thread, so it's
     ;; possible to dedicate messages to signaling a `force'.

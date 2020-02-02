@@ -1,6 +1,7 @@
 #lang racket/base
 (require "match.rkt"
-         "wrap.rkt")
+         "wrap.rkt"
+         "gensym.rkt")
 
 ;; Convert `lambda`s to make them fully closed, which is compatible
 ;; with JIT compilation of the `lambda` or separate ahead-of-time
@@ -33,7 +34,7 @@
 
 (struct convert-mode (sizes called? lift? no-more-conversions?))
 
-(define lifts-id (gensym 'jits))
+(define lifts-id (string->uninterned-symbol "_jits"))
 
 (define (jitify-schemified-linklet v
                                    need-extract?
@@ -50,16 +51,18 @@
     (define (extract-id m id)
       (match m
         [`(variable-ref ,var) var]
-        [`(unbox ,var) var]
-        [`(unbox/check-undefined ,var ,_) var]
+        [`(unsafe-unbox* ,var) var]
         [`(self ,m ,orig-id) orig-id]
         [`(self ,m) (extract-id m id)]
         [`,_ id]))
-    (define captures (hash-keys
-                      ;; `extract-id` for different `id`s can produce the
-                      ;; same `id`, so hash and then convert to a list
-                      (for/hash ([id (in-list ids)])
-                        (values (extract-id (hash-ref env id) id) #t))))
+    (define (id<? a b) (symbol<? (unwrap a) (unwrap b)))
+    (define captures (sort
+                      (hash-keys
+                       ;; `extract-id` for different `id`s can produce the
+                       ;; same `id`, so hash and then convert to a list
+                       (for/hash ([id (in-list ids)])
+                         (values (extract-id (hash-ref env id) id) #t)))
+                      id<?))
     (define jitted-proc
       (or (match (and name
                       (hash-ref free-vars (unwrap name) #f)
@@ -323,8 +326,7 @@
               [`#:direct (reannotate v `(set! ,var ,new-rhs))]
               [`(self ,m . ,_) (error 'set! "[internal error] self-referenceable ~s" id)]
               [`(variable-ref ,var-id) (reannotate v `(variable-set! ,var-id ,new-rhs))]
-              [`(unbox ,box-id) (reannotate v `(set-box! ,box-id ,new-rhs))]
-              [`(unbox/check-undefined ,box-id ,_) (reannotate v `(set-box!/check-undefined ,box-id ,new-rhs ',var))]))
+              [`(unsafe-unbox* ,box-id) (reannotate v `(set-box*! ,box-id ,new-rhs))]))
           (values new-v newer-free new-lifts)])]
       [`(call-with-values ,proc1 ,proc2)
        (define proc-convert-mode (convert-mode-called convert-mode))
@@ -420,7 +422,7 @@
       [`(,let-form ([,ids ,rhss] ...) . ,body)
        (define rec?
          (and (case (unwrap let-form)
-                [(letrec letrec*) #t]
+                [(letrec letrec*) #t] ; note that schemify has taken care of checking for undefined
                 [else #f])
               ;; Use simpler `let` code if we're not responsible for boxing:
               (convert-mode-box-mutables? convert-mode)))
@@ -428,8 +430,6 @@
        (define rhs-env (if rec?
                            (add-args/unbox env ids mutables
                                            (lambda (var) #t)
-                                           (not (for/and ([rhs (in-list rhss)])
-                                                  (lambda? rhs)))
                                            convert-mode)
                            env))
        (define-values (rev-new-rhss rhs-free rhs-lifts)
@@ -445,7 +445,6 @@
        (define local-env
          (add-args/unbox env ids mutables
                          (lambda (var) (and rec? (hash-ref rhs-free var #f)))
-                         #f
                          convert-mode))
        (define-values (new-body new-free new-lifts)
          (jitify-body body local-env mutables (union-free free rhs-free) rhs-lifts convert-mode name in-name))
@@ -468,13 +467,18 @@
                ;; Using nested `let`s to force left-to-right
                ,(for/fold ([body (body->expr new-body)]) ([id (in-list (reverse ids))]
                                                           [new-rhs (in-list rev-new-rhss)])
-                  `(let (,(cond
-                            [(hash-ref rhs-free (unwrap id) #f)
-                             `[,(gensym 'ignored) (set-box! ,id ,new-rhs)]]
-                            [(hash-ref mutables (unwrap id) #f)
-                             `[,id (box ,new-rhs)]]
-                            [else `[,id ,new-rhs]]))
-                     ,body)))]))
+                  (cond
+                    [(hash-ref rhs-free (unwrap id) #f)
+                     (let ([e `(set-box*! ,id ,new-rhs)])
+                       (match body
+                         [`(begin . ,es) `(begin ,e . ,es)]
+                         [`,_ `(begin ,e ,body)]))]
+                    [else
+                     `(let (,(cond
+                               [(hash-ref mutables (unwrap id) #f)
+                                `[,id (box ,new-rhs)]]
+                               [else `[,id ,new-rhs]]))
+                        ,body)])))]))
        (values (reannotate v new-v)
                (remove-args new-free ids)
                new-lifts)]))
@@ -522,7 +526,7 @@
       (define u (unwrap id))
       (define val (if (and (convert-mode-box-mutables? convert-mode)
                            (hash-ref mutables u #f))
-                      `(unbox ,id)
+                      `(unsafe-unbox* ,id)
                       '#:direct))
       (hash-set env u val))
     (match args
@@ -533,18 +537,17 @@
 
   ;; Further generalization of `add-args` to add undefined-checking
   ;; variant of unbox:
-  (define (add-args/unbox env args mutables var-rec? maybe-undefined? convert-mode)
+  (define (add-args/unbox env args mutables var-rec? convert-mode)
     (define (add-one id)
       (define var (unwrap id))
       (cond
-        [maybe-undefined? (hash-set env var `(unbox/check-undefined ,id ',id))]
         [(not (or (var-rec? var) (and (convert-mode-box-mutables? convert-mode)
                                       (hash-ref mutables var #f))))
          (hash-set env var '#:direct)]
-        [else (hash-set env var `(unbox ,id))]))
+        [else (hash-set env var `(unsafe-unbox* ,id))]))
     (match args
       [`(,id . ,args)
-       (add-args/unbox (add-one id) args mutables var-rec? maybe-undefined? convert-mode)]
+       (add-args/unbox (add-one id) args mutables var-rec? convert-mode)]
       [`() env]
       [`,id (add-one id)]))
 
@@ -575,7 +578,7 @@
   (define (activate-self env name)
     (cond
       [name
-       (define (genself) (gensym 'self))
+       (define (genself) (deterministic-gensym "self"))
        (define u (unwrap name))
        (define new-m
          (match (hash-ref env u #f)
@@ -583,10 +586,8 @@
             `(self ,(genself) ,name)]
            [`(self (variable-ref ,orig-id))
             `(self (variable-ref ,orig-id) ,orig-id)]
-           [`(self (unbox ,orig-id))
-            `(self (unbox ,(genself)) ,orig-id)]
-           [`(self (unbox/check-undefined ,orig-id ,sym))
-            `(self (unbox/check-undefined ,(genself) ,sym) ,orig-id)]
+           [`(self (unsafe-unbox* ,orig-id))
+            `(self (unsafe-unbox* ,(genself)) ,orig-id)]
            [`,_ #f]))
        (if new-m
            (hash-set env u new-m)
@@ -823,8 +824,9 @@
           (body-record-sizes! body sizes))]))
 
   ;; ----------------------------------------
-  
-  (top))
+
+  (with-deterministic-gensym
+    (top)))
 
 ;; ============================================================
 

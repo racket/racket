@@ -3392,7 +3392,7 @@ static long_double protected_powl(long_double x, long_double y)
 #else
 XFORM_NONGCING static double sch_pow(double x, double y)
 {
-  /* Explciitly handle all cases described by C99 */
+  /* Explicitly handle all cases described by C99 */
   if (x == 1.0)
     return 1.0; /* even for NaN */
   else if (y == 0.0)
@@ -4281,6 +4281,8 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
 	  return scheme_make_integer(-1);
 	else
 	  return scheme_make_integer(0);
+      } else if (SAME_OBJ(v, scheme_exact_zero)) {
+        return scheme_make_integer(0);
       } else
 	scheme_raise_out_of_memory("arithmetic-shift", NULL);
     } else

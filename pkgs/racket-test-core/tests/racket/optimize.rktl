@@ -914,7 +914,7 @@
 (test-comp '(lambda (w) (cons))
            '(lambda (w) (cons) (k:random)))
 
-; test for unary aplications
+; test for unary applications
 (test-comp -1
            '(- 1))
 (test-comp '(lambda (f) (begin (f) -1))
@@ -1205,7 +1205,7 @@
               x)
            '3)
 
-;; The compiler doens't currently recognize the expansion of `quote-syntax`
+;; The compiler doesn't currently recognize the expansion of `quote-syntax`
 #;
 (test-comp '(if (lambda () 10)
                 'ok
@@ -2161,7 +2161,7 @@
               (void 10))
            '(module m racket/base))
 
-;; The compiler doens't currently recognize the expansion of `quote-syntax`
+;; The compiler doesn't currently recognize the expansion of `quote-syntax`
 #;
 (test-comp '(module m racket/base
               (void (quote-syntax unused!)))
@@ -4727,7 +4727,7 @@
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Transform call-with-values to direct aplication:
+;; Transform call-with-values to direct application:
 (test-comp '(lambda (f) (f 7))
            '(lambda (f) (call-with-values (lambda () 7) (lambda (x) (f x)))))
 (test-comp '(lambda () (car 7))
@@ -5254,7 +5254,7 @@
                    list)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Originally: make sure compiler isn't too agressive for the
+;; Originally: make sure compiler isn't too aggressive for the
 ;; validator in terms of typed arguments:
 
 (let ([m '(module m racket/base
@@ -5681,7 +5681,7 @@
         (check pred t1 e1)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check unboxing with mutual recusion:
+;; Check unboxing with mutual recursion:
 
 (let ()
   ;; Literal lists thwart inlining:
@@ -6105,7 +6105,7 @@
     (void (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check for an optimizer regresssion
+;; Check for an optimizer regression
 
 (err/rt-test (+ (let-values (((x y) (let-values ((() 9)) 2))) x) (error))
              exn:fail?)
@@ -6198,7 +6198,7 @@
 ;; for
 ;;  (lambda (arg-id ...) (define def-id _rhs) ... (arg-id def-id) ...)
 
-(let ()
+(when (run-unreliable-tests? 'timing)
   (define (gensym-n n)
     (let loop ([i n])
       (if (zero? i)
@@ -6206,6 +6206,7 @@
           (cons (gensym) (loop (sub1 i))))))
 
   (define (time-it n)
+    (collect-garbage)
     (let ([start (current-process-milliseconds)])
       (let* ([args (gensym-n n)]
              [defns (gensym-n n)])
@@ -6215,9 +6216,10 @@
             ,@(map (lambda (arg defn) `(,arg ,defn)) args defns))))
       (- (current-process-milliseconds) start)))
 
-  (let loop ([tries 3])
+  (let loop ([tries 10])
     (let ([a (time-it 100)]
           [b (time-it 1000)])
+      (printf "~s ~s\n" a b)
       ;; n lg(n) is ok, n^2 is not
       (when (b . > . (* 50 a))
         (if (zero? tries)
@@ -6507,7 +6509,7 @@
          m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Regresssion test for an optimizer bug
+;; Regression test for an optimizer bug
 
 (define (late-inline-with-single-use-that-turns-out-to-be-movable g)
   (let ([x (g)])
@@ -6578,6 +6580,14 @@
     (define es->c (make-e->c es->c^))
 
     6))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module regression-test-to-make-sure-inlining-does-not-go-crazy racket/base
+  (define (f x)
+    (lambda (y)
+      (letrec ([recursion (f x)])
+        (+ x y)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

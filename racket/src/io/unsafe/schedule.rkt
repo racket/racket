@@ -26,7 +26,7 @@
                   (when vals
                     ;; The rule here is that we cancel any sleep so
                     ;; that the event will be polled again; we do not
-                    ;; select the event now. That rule accomodates
+                    ;; select the event now. That rule accommodates
                     ;; the old Racket scheduler.
                     (sandman-poll-ctx-merge-timeout poll-ctx (current-inexact-milliseconds)))
                   (values #f self)]

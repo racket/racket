@@ -46,8 +46,7 @@
             (exact? n)
             (not (negative? n))))
      #'(lambda (p)
-         (and (procedure? p)
-              (procedure-arity-includes? p n)))]))
+         (unsafe-procedure-and-arity-includes? p n))]))
 
 (define (check-space who what d-start d-len s-len)
   (unless (fx<= (fx+ d-start s-len) d-len)

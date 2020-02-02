@@ -23,11 +23,24 @@
   (set! alt-dests (cons (cons src dest) alt-dests))]
  #:args (src-file dest-file petite.boot scheme.boot racket.boot)
 
+ ;; If `src-file` is "", then `dest-file` is used as the src, too
+
  (define bstr1 (adjust-compress (file->bytes petite.boot)))
  (define bstr2 (adjust-compress (file->bytes scheme.boot)))
  (define bstr3 (adjust-compress (file->bytes racket.boot)))
 
+ (define use-src-file
+   (if (equal? src-file "")
+       (let ([src-file (path-add-suffix dest-file #"_tmp")])
+         (rename-file-or-directory dest-file src-file)
+         src-file)
+       src-file))
+ (define (clean-src)
+   (unless (eq? use-src-file src-file)
+     (delete-file use-src-file)))
+
  (with-handlers ([exn? (lambda (x)
+                         (clean-src)
                          (when (file-exists? dest-file)
                            (delete-file dest-file))
                          (raise x))])
@@ -36,7 +49,7 @@
          ;; zero byte stops a gzip-read sequence
          #"\0"
          ;; #!eof encoding stops(!) a fasl-read sequence
-         #"\26\4\fl"))
+         #"\26\2\f6"))
    (define data
      (bytes-append bstr1 terminator
                    bstr2 terminator
@@ -45,10 +58,12 @@
      (case (or target (path->string (system-library-subpath #f)))
        [("x86_64-darwin" "i386-darwin" "x86_64-macosx" "i386-macosx")
         ;; Mach-O
-        (copy-file src-file dest-file #t)
-        (add-plt-segment dest-file data #:name #"__RKTBOOT")]
+        (copy-file use-src-file dest-file #t)
+        (add-plt-segment dest-file data #:name #"__RKTBOOT")
+        ;; Find segment at run time:
+        0]
        [("ta6nt" "ti3nt" "win32\\x86_64" "win32\\i386")
-        (copy-file src-file dest-file #t)
+        (copy-file use-src-file dest-file #t)
         (define-values (pe rsrcs) (call-with-input-file*
                                    dest-file
                                    read-pe+resources))
@@ -64,7 +79,7 @@
        [else
         ;; ELF?
         (define-values (start-pos end-pos any1 any2)
-          (add-racket-section src-file dest-file #".rackboot"
+          (add-racket-section use-src-file dest-file #".rackboot"
                               (lambda (pos)
                                 (values data 'any1 'any2))))
         (define (ensure-executable dest-file)
@@ -85,7 +100,7 @@
               start-pos])]
           [else
            ;; Not ELF; just append to the end
-           (copy-file src-file dest-file #t)
+           (copy-file use-src-file dest-file #t)
            (ensure-executable dest-file)
            (define pos (file-size dest-file))
            (call-with-output-file*
@@ -117,6 +132,6 @@
     [else
      (for ([alt (in-list alt-dests)])
 	  (copy-file (car alt) (cdr alt) #t)
-	  (write-offsets (cdr alt)))])))
-     
- 
+	  (write-offsets (cdr alt)))])
+
+   (clean-src)))

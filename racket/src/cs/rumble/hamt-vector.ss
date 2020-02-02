@@ -1,15 +1,7 @@
-;; HAMT
+;; See also "intmap.ss"
 
-;; the absence of something
-(define NOTHING (gensym 'nothing))
-
-;; 16-bit popcount
 (define (popcount x)
-  (let* ([x (fx- x (fxand (fxsrl x 1) #x5555))]
-         [x (fx+ (fxand x #x3333) (fxand (fxsrl x 2) #x3333))]
-         [x (fxand (fx+ x (fxsrl x 4)) #x0f0f)]
-         [x (fx+ x (fxsrl x 8))])
-    (fxand x #x1f)))
+  (fxpopcount16 x))
 
 ;; record types
 (define-record-type hnode
@@ -19,42 +11,16 @@
           (mutable vals)]
   [nongenerative #{hnode pfwh8wvaevt3r6pcwsqn90ry8-0}])
 
-(meta-cond
- [(> (most-positive-fixnum) (expt 2 32))
+(define-record-type bnode
+  [parent hnode]
+  [fields (mutable keymap)
+          (mutable childmap)]
+  [nongenerative #{bnode pfwhzqkm2ycuuyedzz2nxjx2e-1}]
+  [sealed #t])
 
-  ;; 64-bit bnode (pack the bitmaps into a single fixnum)
-  (define-record-type (bnode make-raw-bnode bnode?)
-    [parent hnode]
-    [fields (mutable bitmap)]
-    [nongenerative #{bnode pfwhzqkm2ycuuyedzz2nxjx2e-0}]
-    [sealed #t])
-
-  (define (make-bnode eqtype count keys vals keymap childmap)
-    (let ([bitmap (fxior keymap (fxsll childmap 16))])
-      (make-raw-bnode eqtype count keys vals bitmap)))
-
-  (define (bnode-keymap n)
-    (fxand #xffff (bnode-bitmap n)))
-
-  (define (bnode-childmap n)
-    (fxsrl (bnode-bitmap n) 16))
-
-  (define (bnode-copy-bitmaps! dest src)
-    (bnode-bitmap-set! dest (bnode-bitmap src)))]
-
- [else
-
-  ;; 32-bit bnode (separate bitmaps)
-  (define-record-type bnode
-    [parent hnode]
-    [fields (mutable keymap)
-            (mutable childmap)]
-    [nongenerative #{bnode pfwhzqkm2ycuuyedzz2nxjx2e-1}]
-    [sealed #t])
-
-  (define (bnode-copy-bitmaps! dest src)
-    (bnode-set-keymap! dest (bnode-keymap src))
-    (bnode-set-childmap! dest (bnode-childmap src)))])
+(define (bnode-copy-bitmaps! dest src)
+  (bnode-keymap-set! dest (bnode-keymap src))
+  (bnode-childmap-set! dest (bnode-childmap src)))
 
 (define-record-type cnode
   [parent hnode]
@@ -74,83 +40,72 @@
 (define empty-hasheqv (make-empty-bnode 'eqv))
 (define empty-hash (make-empty-bnode 'equal))
 
-(define (make-hamt-shell eqtype)
+(define (make-intmap-shell eqtype)
   (make-empty-bnode eqtype))
 
-(define (hamt-shell-sync! dest src)
+(define (intmap-shell-sync! dest src)
   (hnode-count-set! dest (hnode-count src))
   (hnode-keys-set! dest (hnode-keys src))
   (hnode-vals-set! dest (hnode-vals src))
   (bnode-copy-bitmaps! dest src))
 
-;; hamt interface
-(define hamt? hnode?)
-(define immutable-hash? hnode?)
+;; intmap interface
+(define intmap? bnode?)
+(define immutable-hash? bnode?)
 
-(define (hamt-eq? h)
+(define (intmap-eq? h)
   (eq? (hnode-eqtype h) 'eq))
 
-(define (hamt-eqv? h)
+(define (intmap-eqv? h)
   (eq? (hnode-eqtype h) 'eqv))
 
-(define (hamt-equal? h)
+(define (intmap-equal? h)
   (eq? (hnode-eqtype h) 'equal))
 
-(define (hamt-has-key? h key)
+(define (intmap-has-key? h key)
   (node-has-key? h key (hash-code h key) 0))
 
 (define (node-has-key? n key keyhash shift)
   (cond [(bnode? n) (bnode-has-key? n key keyhash shift)]
         [else       (cnode-has-key? n key)]))
 
-(define (hamt-ref h key default)
+(define (intmap-ref h key default)
   (cond
-   [(hamt-empty? h)
+   [(intmap-empty? h)
     ;; Access on an empty HAMT is common, so don't even hash in that case
-    (if (procedure? default)
-        (default)
-        default)]
+    default]
    [else
-    (let ([res (bnode-ref h key (hash-code h key) 0)])
-      (if (eq? res NOTHING)
-          (if (procedure? default)
-              (default)
-              default)
-          res))]))
+    (bnode-ref h key (hash-code h key) 0 default)]))
 
-(define (hamt-set h key val)
+(define (intmap-ref-key h key default)
+  (cond
+   [(intmap-empty? h)
+    default]
+   [else
+    (bnode-ref-key h key (hash-code h key) 0 default)]))
+
+(define (intmap-set h key val)
   (bnode-set h key val (hash-code h key) 0))
 
-(define (hamt-remove h key)
+(define (intmap-remove h key)
   (bnode-remove h key (hash-code h key) 0))
 
-(define (hamt-count h)
+(define (intmap-count h)
   (hnode-count h))
 
-(define (hamt-empty? h)
-  (fxzero? (hamt-count h)))
+(define (intmap-empty? h)
+  (fxzero? (intmap-count h)))
 
-(define (hamt=? a b eql?)
+(define (intmap=? a b eql?)
   (and (eq? (hnode-eqtype a)
             (hnode-eqtype b))
        (node=? a b eql? 0)))
 
-(define (hamt-hash-code a hash)
+(define (intmap-hash-code a hash)
   (node-hash-code a hash 0))
 
-(define ignored/hamt
-  (begin
-    ;; Go through generic `hash` versions to support `a`
-    ;; and `b` as impersonated hash tables
-    (record-type-equal-procedure (record-type-descriptor bnode)
-                                 (lambda (a b eql?)
-                                   (hash=? a b eql?)))
-    (record-type-hash-procedure (record-type-descriptor bnode)
-                                (lambda (a hash)
-                                  (hash-hash-code a hash)))))
-
-(define (hamt-keys-subset? a b)
-  (or (hamt-empty? a)
+(define (intmap-keys-subset? a b)
+  (or (intmap-empty? a)
       (node-keys-subset? a b 0)))
 
 (define (hamt-foldk h f nil kont)
@@ -173,48 +128,48 @@
 (define (hamt-values h)
   (hamt-fold h '() (lambda (_ v xs) (cons v xs))))
 
-(define (hamt-for-each h proc)
+(define (intmap-for-each h proc)
   (hamt-fold h (void) (lambda (k v _) (proc k v) (void))))
 
-(define (hamt-map h proc)
+(define (intmap-map h proc)
   (hamt-fold h '() (lambda (k v xs) (cons (proc k v) xs))))
 
 ;; generatic iteration by counting
-(define (hamt-iterate-first h)
-  (and (not (hamt-empty? h))
+(define (intmap-iterate-first h)
+  (and (not (intmap-empty? h))
        0))
 
-(define (hamt-iterate-next h pos)
+(define (intmap-iterate-next h pos)
   (let ([pos (fx1+ pos)])
-    (and (not (fx= pos (hamt-count h)))
+    (and (not (fx= pos (intmap-count h)))
          pos)))
 
-(define (hamt-iterate-key h pos fail)
+(define (intmap-iterate-key h pos fail)
   (let ([p (node-entry-at-position h pos)])
     (if p
         (car p)
         fail)))
 
-(define (hamt-iterate-value h pos fail)
+(define (intmap-iterate-value h pos fail)
   (let ([p (node-entry-at-position h pos)])
     (if p
         (cdr p)
         fail)))
 
-(define (hamt-iterate-key+value h pos fail)
+(define (intmap-iterate-key+value h pos fail)
   (let ([p (node-entry-at-position h pos)])
     (if p
         (values (car p) (cdr p))
         fail)))
 
-(define (hamt-iterate-pair h pos fail)
+(define (intmap-iterate-pair h pos fail)
   (let ([p (node-entry-at-position h pos)])
     (or p fail)))
 
 ;; unsafe iteration; position is a stack
 ;; represented by a list of (cons node index)
-(define (unsafe-hamt-iterate-first h)
-  (and (not (hamt-empty? h))
+(define (unsafe-intmap-iterate-first h)
+  (and (not (intmap-empty? h))
        (unsafe-node-iterate-first h '())))
 
 (define (unsafe-node-iterate-first n stack)
@@ -230,7 +185,7 @@
     (let ([i (fx1- (#%vector-length (hnode-keys n)))])
       (cons (cons n i) stack))]))
 
-(define (unsafe-hamt-iterate-next h pos)
+(define (unsafe-intmap-iterate-next h pos)
   (unsafe-node-iterate-next pos))
 
 (define (unsafe-node-iterate-next pos)
@@ -260,22 +215,22 @@
              [(cnode? n)
               (cons (cons n i) stack)]))])))]))
 
-(define (unsafe-hamt-iterate-key h pos)
+(define (unsafe-intmap-iterate-key h pos)
   (let ([p (car pos)])
     (key-ref (car p) (cdr p))))
 
-(define (unsafe-hamt-iterate-value h pos)
+(define (unsafe-intmap-iterate-value h pos)
   (let ([p (car pos)])
     (val-ref (car p) (cdr p))))
 
-(define (unsafe-hamt-iterate-key+value h pos)
+(define (unsafe-intmap-iterate-key+value h pos)
   (let ([p (car pos)])
     (let ([n (car p)]
           [i (cdr p)])
       (values (key-ref n i)
               (val-ref n i)))))
 
-(define (unsafe-hamt-iterate-pair h pos)
+(define (unsafe-intmap-iterate-pair h pos)
   (let ([p (car pos)])
     (let ([n (car p)]
           [i (cdr p)])
@@ -324,9 +279,13 @@
     (or (not vals)
         (#%vector-ref vals i))))
 
-(define (node-ref n key keyhash shift)
-  (cond [(bnode? n) (bnode-ref n key keyhash shift)]
-        [else       (cnode-ref n key)]))
+(define (node-ref n key keyhash shift default)
+  (cond [(bnode? n) (bnode-ref n key keyhash shift default)]
+        [else       (cnode-ref n key default)]))
+
+(define (node-ref-key n key keyhash shift default)
+  (cond [(bnode? n) (bnode-ref-key n key keyhash shift default)]
+        [else       (cnode-ref-key n key default)]))
 
 (define (node-set n key val keyhash shift)
   (cond [(bnode? n) (bnode-set n key val keyhash shift)]
@@ -386,7 +345,7 @@
         [else       (cnode-foldk n f nil kont)]))
 
 ;; bnode operations
-(define (bnode-ref node key keyhash shift)
+(define (bnode-ref node key keyhash shift default)
   (let ([bit (bnode-bit-pos keyhash shift)])
     (cond
      [(bnode-maps-key? node bit)
@@ -394,18 +353,36 @@
              [k (key-ref node ki)])
         (if (key=? node key k)
             (val-ref node ki)
-            NOTHING))]
+            default))]
 
      [(bnode-maps-child? node bit)
       (let* ([ci (bnode-child-index node bit)]
              [c (child-ref node ci)])
-        (node-ref c key keyhash (down shift)))]
+        (node-ref c key keyhash (down shift) default))]
 
      [else
-      NOTHING])))
+      default])))
+
+(define (bnode-ref-key node key keyhash shift default)
+  (let ([bit (bnode-bit-pos keyhash shift)])
+    (cond
+     [(bnode-maps-key? node bit)
+      (let* ([ki (bnode-key-index node bit)]
+             [k (key-ref node ki)])
+        (if (key=? node key k)
+            k
+            default))]
+
+     [(bnode-maps-child? node bit)
+      (let* ([ci (bnode-child-index node bit)]
+             [c (child-ref node ci)])
+        (node-ref-key c key keyhash (down shift) default))]
+
+     [else
+      default])))
 
 (define (bnode-has-key? n key keyhash shift)
-  (not (eq? NOTHING (bnode-ref n key keyhash shift))))
+  (not (eq? none2 (bnode-ref-key n key keyhash shift none2))))
 
 (define (bnode-set node key val keyhash shift)
   (let ([bit (bnode-bit-pos keyhash shift)])
@@ -419,7 +396,8 @@
          [(key=? node key k)
           (if (eq? val v)
               node
-              (bnode-replace-val node ki val))]
+              ;; for consistency, we're required to keep the new key:
+              (bnode-replace-val node ki val key (not (eq? key k))))]
          [else
           (let* ([h (hash-code node k)]
                  [eqtype (hnode-eqtype node)]
@@ -448,10 +426,19 @@
          [(key=? node key k)
           (let ([km (bnode-keymap node)]
                 [cm (bnode-childmap node)])
-            (if (and (fx= (popcount km) 2)
+            (let ([n (popcount km)])
+              (cond
+               [(and (fx= n 2)
                      (fxzero? cm))
-                (bnode-singleton node ki bit keyhash shift)
-                (bnode-remove-key node ki bit)))]
+                (bnode-singleton node ki bit keyhash shift)]
+               [(and (fx= n 1)
+                     (fxzero? cm))
+                  (case (hnode-eqtype node)
+                    [(eq)  empty-hasheq]
+                    [(eqv) empty-hasheqv]
+                    [else  empty-hash])]
+               [else
+                (bnode-remove-key node ki bit)])))]
          [else
           node]))]
 
@@ -613,20 +600,25 @@
                 (fxxor (bnode-keymap node) bit)
                 (bnode-childmap node))))
 
-(define (bnode-replace-val node ki val)
+(define (bnode-replace-val node ki val key update-key?)
   (let* ([vals (hnode-vals node)]
          [new-vals
           (if vals
               (#%vector-copy vals)
               (pariah ; reify values
                (let ([pop (popcount (bnode-keymap node))])
-                 (#%make-vector pop #t))))])
+                 (#%make-vector pop #t))))]
+         [new-keys (if update-key?
+                       (#%vector-copy (hnode-keys node))
+                       (hnode-keys node))])
 
     (#%vector-set! new-vals ki val)
+    (when update-key?
+      (#%vector-set! new-keys ki key))
 
     (make-bnode (hnode-eqtype node)
                 (hnode-count node)
-                (hnode-keys node)
+                new-keys
                 new-vals
                 (bnode-keymap node)
                 (bnode-childmap node))))
@@ -808,11 +800,17 @@
             [(key=? node key (#%vector-ref keys i)) i]
             [else (loop (fx1+ i))]))))
 
-(define (cnode-ref node key)
+(define (cnode-ref node key default)
   (let ([i (cnode-index node key)])
     (if i
         (val-ref node i)
-        NOTHING)))
+        default)))
+
+(define (cnode-ref-key node key default)
+  (let ([i (cnode-index node key)])
+    (if i
+        (key-ref node i)
+        default)))
 
 (define (cnode-has-key? n key)
   (not (not (cnode-index n key))))
@@ -859,7 +857,7 @@
              [(fx= i alen) #t]
              [else
               (let* ([akey (key-ref a i)]
-                     [bval (cnode-ref b akey)])
+                     [bval (cnode-ref b akey none2)])
                 (and
                  (eql? (val-ref a i) bval)
                  (loop (fx1+ i))))]))))))

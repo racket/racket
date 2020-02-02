@@ -172,7 +172,7 @@ TO DO:
          #:hostname (or/c string? #f)]
         (values input-port? output-port?))]
   [ssl-listen
-   (->* [(integer-in 1 (sub1 (expt 2 16)))]
+   (->* [listen-port-number?]
         [exact-nonnegative-integer?
          any/c
          (or/c string? #f)
@@ -349,21 +349,19 @@ TO DO:
 (define-crypto X509_NAME_get_entry (_fun _X509_NAME* _int -> _X509_NAME_ENTRY*/null))
 (define-crypto X509_NAME_ENTRY_get_data (_fun _X509_NAME_ENTRY* -> _ASN1_STRING*))
 (define-crypto X509_get_ext_d2i (_fun _X509* _int _pointer _pointer -> _STACK*/null))
-(define sk_num
-  (or (get-ffi-obj 'sk_num libcrypto (_fun _STACK* -> _int)
-                   (lambda () #f))
-      (get-ffi-obj 'OPENSSL_sk_num libcrypto (_fun _STACK* -> _int)
-                   (make-not-available 'sk_num))))
-(define sk_GENERAL_NAME_value
-  (or (get-ffi-obj 'sk_value libcrypto (_fun _STACK* _int -> _GENERAL_NAME-pointer) 
-                   (lambda () #f))
-      (get-ffi-obj 'OPENSSL_sk_value libcrypto (_fun _STACK* _int -> _GENERAL_NAME-pointer) 
-                   (make-not-available "sk_GENERAL_NAME_value"))))
-(define sk_pop_free
-  (or (get-ffi-obj 'sk_pop_free libcrypto (_fun _STACK* _fpointer -> _void) 
-                   (lambda () #f))
-      (get-ffi-obj 'OPENSSL_sk_pop_free libcrypto (_fun _STACK* _fpointer -> _void)
-                   (make-not-available "sk_pop_free"))))
+(define-crypto sk_num (_fun _STACK* -> _int)
+  #:fail (lambda ()
+           (define-crypto OPENSSL_sk_num (_fun _STACK* -> _int))
+           OPENSSL_sk_num))
+(define-crypto sk_GENERAL_NAME_value (_fun _STACK* _int -> _GENERAL_NAME-pointer)
+  #:c-id sk_value
+  #:fail (lambda ()
+           (define-crypto OPENSSL_sk_value (_fun _STACK* _int -> _GENERAL_NAME-pointer))
+           OPENSSL_sk_value))
+(define-crypto sk_pop_free (_fun _STACK* _fpointer -> _void)
+  #:fail (lambda ()
+           (define-crypto OPENSSL_sk_pop_free (_fun _STACK* _fpointer -> _void))
+           OPENSSL_sk_pop_free))
 
 ;; (define-crypto X509_get_default_cert_area (_fun -> _string))
 (define-crypto X509_get_default_cert_dir  (_fun -> _string))
@@ -1547,7 +1545,8 @@ TO DO:
       (if (eq? 'listener input?)
           (ssl-listener-l mzssl)
           (if input? (mzssl-i mzssl) (mzssl-o mzssl))))
-    (cond [(tcp-port? port) (tcp-addresses port port-numbers?)]
+    (cond [(or (tcp-port? port) (tcp-listener? port))
+           (tcp-addresses port port-numbers?)]
           [else (error 'ssl-addresses "not connected to TCP port")])))
 
 (define (ssl-abandon-port p)

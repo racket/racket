@@ -53,7 +53,8 @@
        (and (not print-graph?)
             (not (eq? mode PRINT-MODE/UNQUOTED))
             (quick-no-graph? (mcdr v) (quick-no-graph? (mcar v) (sub1 fuel))))]
-      [(custom-write? v)
+      [(and (custom-write? v)
+            (not (struct-type? v)))
        #f]
       [(and (struct? v)
             (config-get config print-struct))
@@ -163,7 +164,8 @@
        (build-graph (mcar v) mode)
        (build-graph (mcdr v) mode)
        (done! v (eq? mode PRINT-MODE/UNQUOTED))]
-      [(custom-write? v)
+      [(and (custom-write? v)
+            (not (struct-type? v)))
        (define print-quotable (if (eq? mode PRINT-MODE/UNQUOTED)
                                   (custom-print-quotable-accessor v 'self)
                                   'self))
@@ -182,7 +184,10 @@
                  (set! unquoted? (or e-unquoted? unquoted?)))]
               [else (build-graph e mode)]))))
        (checking! v)
-       ((custom-write-accessor v) v checking-port mode)
+       ((custom-write-accessor v) v checking-port (if (and (eq? mode PRINT-MODE/UNQUOTED)
+                                                           (eq? print-quotable 'always))
+                                                      PRINT-MODE/QUOTED
+                                                      mode))
        (done! v unquoted?)]
       [(and (struct? v)
             (config-get config print-struct))

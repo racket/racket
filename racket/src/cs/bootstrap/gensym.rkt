@@ -11,7 +11,8 @@
          gensym?
          gensym->unique-string
          gensym->pretty-string
-         hash-curly)
+         hash-curly
+         uninterned-symbol?)
 
 (define print-gensym (make-parameter #t))
 
@@ -55,3 +56,9 @@
   (when (regexp-match? #rx"[|]" (symbol->string sym))
     (error "here"))
   sym)
+
+(define (uninterned-symbol? v)
+  (and (symbol? v)
+       (not (or (symbol-interned? v)
+                (symbol-unreadable? v)))))
+

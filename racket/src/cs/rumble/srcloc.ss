@@ -7,8 +7,12 @@
            (check who exact-nonnegative-integer? :or-false span)
            (values source line column position span)))
 
-(define-values (prop:exn:srclocs exn:srclocs? exn:srclocs-accessor)
+(define-values (prop:exn:srclocs exn:srclocs? exn:srclocs-accessor*)
   (make-struct-type-property 'exn:srclocs
                              (lambda (v info)
                                (check 'guard-for-prop:exn:srclocs (procedure-arity-includes/c 1) v)
                                v)))
+
+;; Constrain to a single argument, not itself exposed as an accessor:
+(define (exn:srclocs-accessor a)
+  (exn:srclocs-accessor* a))

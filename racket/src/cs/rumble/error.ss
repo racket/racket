@@ -10,9 +10,10 @@
          (do-raise v))]))
 
 (define (do-raise v)
-  (let ([hs (continuation-mark-set->list (current-continuation-marks/no-trace)
-                                         exception-handler-key
-                                         the-root-continuation-prompt-tag)]
+  (let ([get-next-h (continuation-mark-set->iterator (current-continuation-marks/no-trace)
+                                                     (list exception-handler-key)
+                                                     #f
+                                                     the-root-continuation-prompt-tag)]
         [init-v (condition->exn v)])
     (let ([call-with-nested-handler
            (lambda (thunk)
@@ -20,20 +21,20 @@
               (make-nested-exception-handler "exception handler" init-v)
               (lambda ()
                 (call-with-break-disabled thunk))))])
-      (let loop ([hs hs] [v init-v])
-        (cond
-         [(null? hs)
-          (call-with-nested-handler
-           (lambda () (|#%app| (|#%app| uncaught-exception-handler) v)))
-          ;; Use `nested-exception-handler` if the uncaught-exception
-          ;; handler doesn't escape:
-          ((make-nested-exception-handler #f v) #f)]
-         [else
-          (let ([h (car hs)]
-                [hs (cdr hs)])
-            (let ([new-v (call-with-nested-handler
-                          (lambda () (|#%app| h v)))])
-              (loop hs new-v)))])))))
+      (let loop ([get-next-h get-next-h] [v init-v])
+        (let-values ([(hv get-next-h) (get-next-h)])
+          (cond
+           [(not hv)
+            (call-with-nested-handler
+             (lambda () (|#%app| (|#%app| uncaught-exception-handler) v)))
+            ;; Use `nested-exception-handler` if the uncaught-exception
+            ;; handler doesn't escape:
+            ((make-nested-exception-handler #f v) #f)]
+           [else
+            (let ([h (vector-ref hv 0)])
+              (let ([new-v (call-with-nested-handler
+                            (lambda () (|#%app| h v)))])
+                (loop get-next-h new-v)))]))))))
 
 ;; ----------------------------------------
 
@@ -227,8 +228,12 @@
     [(who what pos arg . args)
      (do-raise-argument-error 'raise-argument-error "given" who what pos arg args)]))
 
-(define (raise-result-error who what arg)
-  (do-raise-argument-error 'raise-result-error "result" who what #f arg #f))
+(define raise-result-error
+  (case-lambda
+    [(who what arg)
+     (do-raise-argument-error 'raise-result-error "result" who what #f arg #f)]
+    [(who what pos arg . args)
+     (do-raise-argument-error 'raise-result-error "result" who what pos arg args)]))
 
 (define (do-raise-type-error e-who tag who what pos arg args)
   (unless (symbol? who)
@@ -268,7 +273,7 @@
     [(who what pos arg . args)
      (do-raise-type-error 'raise-argument-error "given" who what pos arg args)]))
 
-(define/who (raise-mismatch-error in-who what . more)
+(define/who (raise-mismatch-error in-who what v . more)
   (check who symbol? in-who)
   (check who string? what)
   (raise
@@ -279,7 +284,7 @@
      (symbol->string in-who)
      ": "
      what
-     (let loop ([more more])
+     (let loop ([more (cons v more)])
        (cond
         [(null? more) '()]
         [else
@@ -414,8 +419,8 @@
      (if who (string-append (symbol->string who) ": ") "")
      "result arity mismatch;\n"
      " expected number of values not received\n"
-     "  received: " (number->string (length args)) "\n" 
-     "  expected: " (number->string num-expected-args)
+     "  expected: " (number->string num-expected-args) "\n"
+     "  received: " (number->string (length args))
      (or where "")
      (arguments->context-string args))
     (current-continuation-marks))))
@@ -424,6 +429,16 @@
   (apply raise-result-arity-error #f
          (length expected-args)
          "\n  at: local-binding form"
+         args))
+
+(define (raise-definition-result-arity-error expected-args args)
+  (apply raise-result-arity-error 'define-values
+         (length expected-args)
+         (if (null? expected-args)
+             ""
+             (string-append "\n  at: definition of "
+                            (symbol->string (car expected-args))
+                            " ..."))
          args))
 
 (define raise-unsupported-error
@@ -509,7 +524,7 @@
 ;; For `instantiate-linklet` to help report which linklet is being run:
 (define linklet-instantiate-key '#{linklet o9xm0uula3d2mbq9wueixh79r-1})
 
-;; Convert a contination to a list of function-name and
+;; Convert a continuation to a list of function-name and
 ;; source information. Cache the result half-way up the
 ;; traversal, so that it's amortized constant time.
 (define-thread-local cached-traces (make-ephemeron-eq-hashtable))
@@ -603,20 +618,28 @@
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]
-                                                  [path (source-file-descriptor-path (source-object-sfd src))])
+                                                  [path (convert-source-file-descriptor-path
+                                                         (source-file-descriptor-path (source-object-sfd src)))])
                                              (if (source-object-line src)
                                                  (values path
                                                          (source-object-line src)
-                                                         (source-object-column src))
+                                                         (source-object-column src)
+                                                         (source-object-bfp src)
+                                                         (source-object-efp src))
                                                  (values path
-                                                         (source-object-bfp src)))))
+                                                         (source-object-bfp src)
+                                                         (source-object-efp src)))))
                          (case-lambda
                           [() #f]
-                          [(path line col) (|#%app| srcloc path line (sub1 col) #f #f)]
-                          [(path pos) (|#%app| srcloc path #f #f (add1 pos) #f)])))])
+                          [(path line col pos end) (|#%app| srcloc path line (sub1 col) (add1 pos) (- end pos))]
+                          [(path pos end) (|#%app| srcloc path #f #f (add1 pos) (- end pos))])))])
         (if (or name loc)
             (cons (cons name loc) (loop (cdr l) ls))
             (loop (cdr l) ls)))])))
+
+(define convert-source-file-descriptor-path (lambda (s) s))
+(define (set-convert-source-file-descriptor-path! proc)
+  (set! convert-source-file-descriptor-path proc))
 
 (define (default-error-display-handler msg v)
   (eprintf "~a" msg)
@@ -630,24 +653,33 @@
                        (if (exn? v)
                            (continuation-mark-set-traces (exn-continuation-marks v))
                            (list (continuation->trace (condition-continuation v)))))]
+                   [prev #f]
+                   [repeats 0]
                    [n n])
           (unless (or (null? l) (zero? n))
             (let* ([p (car l)]
                    [s (cdr p)])
               (cond
-               [(and s
-                     (srcloc-line s)
-                     (srcloc-column s))
-                (eprintf "\n   ~a:~a:~a" (srcloc-source s) (srcloc-line s) (srcloc-column s))
-                (when (car p)
-                  (eprintf ": ~a" (car p)))]
-               [(and s (srcloc-position s))
-                (eprintf "\n   ~a::~a" (srcloc-source s) (srcloc-position s))
-                (when (car p)
-                  (eprintf ": ~a" (car p)))]
-               [(car p)
-                (eprintf "\n   ~a" (car p))]))
-            (loop (cdr l) (sub1 n)))))))
+               [(equal? p prev)
+                (loop (cdr l) prev (add1 repeats) n)]
+               [(positive? repeats)
+                (eprintf "\n   [repeats ~a more time~a]" repeats (if (= repeats 1) "" "s"))
+                (loop l #f 0 (sub1 n))]
+               [else
+                (cond
+                 [(and s
+                       (srcloc-line s)
+                       (srcloc-column s))
+                  (eprintf "\n   ~a:~a:~a" (srcloc-source s) (srcloc-line s) (srcloc-column s))
+                  (when (car p)
+                    (eprintf ": ~a" (car p)))]
+                 [(and s (srcloc-position s))
+                  (eprintf "\n   ~a::~a" (srcloc-source s) (srcloc-position s))
+                  (when (car p)
+                    (eprintf ": ~a" (car p)))]
+                 [(car p)
+                  (eprintf "\n   ~a" (car p))])
+                (loop (cdr l) p 0 (sub1 n))])))))))
   (eprintf "\n"))
 
 (define eprintf

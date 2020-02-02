@@ -40,7 +40,7 @@
                          ([sc (in-set s-scs)]
                           [(scs b) (in-binding-table sym (scope-binding-table sc) s null)]
                           #:when (and scs b
-                                      ;; Skip overidden:
+                                      ;; Skip overridden:
                                       (not (set-member? covered-scope-sets scs))))
                 (values
                  (cons

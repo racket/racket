@@ -222,7 +222,9 @@
                               prop:incomplete-arity prop:method-arity-error
                               list-pair? interned-char? true-object?
                               random
-                              collection-path collection-file-path)
+                              collection-path collection-file-path
+                              symbol->immutable-string
+                              keyword->immutable-string)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like
@@ -244,6 +246,7 @@
              procedure-reduce-keyword-arity-mask
              (rename define-struct* define-struct)
              define-struct/derived
+             struct/derived
              struct-field-index
              struct-copy
              double-flonum?

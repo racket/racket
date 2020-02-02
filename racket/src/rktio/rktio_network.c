@@ -1103,7 +1103,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
 
   while (1) {
     if (addr) {
-      /* Use first address that dosn't result in a bad-address error: */
+      /* Use first address that doesn't result in a bad-address error: */
       for (; addr; addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next) {
         do {
           sent = sendto(s, buffer, len, 0,
@@ -1945,6 +1945,38 @@ int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on)
   
   status = setsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, (void *)&loop, loop_len);
   
+  if (status) {
+    get_socket_error();
+    return 0;
+  } else
+    return 1;
+}
+
+int rktio_udp_get_ttl(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  int ttl;
+  rktio_sockopt_len_t ttl_len = sizeof(ttl);
+  int status;
+
+  status = getsockopt(s, IPPROTO_IP, IP_TTL, (void *)&ttl, &ttl_len);
+
+  if (status) {
+    get_socket_error();
+    return RKTIO_PROP_ERROR;
+  } else
+    return ttl;
+}
+
+int rktio_udp_set_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
+{
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  int ttl = ttl_val;
+  rktio_sockopt_len_t ttl_len = sizeof(ttl);
+  int status;
+
+  status = setsockopt(s, IPPROTO_IP, IP_TTL, (void *)&ttl, ttl_len);
+
   if (status) {
     get_socket_error();
     return 0;

@@ -594,6 +594,12 @@
               #:post (lambda (x) (list x (bytes-ref v 2)))
               #:literal-ok? #f))
 
+  (let ([bstr (make-bytes 10)])
+    (test (void) unsafe-bytes-copy! bstr 1 #"testing" 2 6)
+    (test #"\0stin\0\0\0\0\0" values bstr)
+    (test (void) unsafe-bytes-copy! bstr 0 #"testing")
+    (test #"testing\0\0\0" values bstr))
+
   (test-bin #\5 'unsafe-string-ref "157" 1)
   (test-un 3 'unsafe-string-length "157")
   (let ([v (string #\0 #\3 #\7)])
@@ -824,8 +830,10 @@
   (let ()
     (define ht #f)
 
-    (let ([lst (build-list 10 add1)])
-      (set! ht (make-weak-hash `((,lst . val)))))
+    ;; retain the list at first...
+    (define lst (build-list 10 add1))
+
+    (set! ht (make-weak-hash `((,lst . val))))
 
     (define i (unsafe-weak-hash-iterate-first ht))
 
@@ -840,18 +848,23 @@
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #t boolean? (unsafe-weak-hash-iterate-next ht i))
 
-    ;; collect key, everything should error (but not segfault)
-    (collect-garbage)(collect-garbage)(collect-garbage)
-    (test #t boolean? (unsafe-weak-hash-iterate-first ht))
-    (err/rt-test (unsafe-weak-hash-iterate-key ht i) exn:fail:contract? err-msg)
-    (test 'gone unsafe-weak-hash-iterate-key ht i 'gone)
-    (err/rt-test (unsafe-weak-hash-iterate-value ht i) exn:fail:contract? err-msg)
-    (test 'gone unsafe-weak-hash-iterate-value ht i 'gone)
-    (err/rt-test (unsafe-weak-hash-iterate-pair ht i) exn:fail:contract? err-msg)
-    (test '(gone . gone) unsafe-weak-hash-iterate-pair ht i 'gone)
-    (err/rt-test (unsafe-weak-hash-iterate-key+value ht i) exn:fail:contract? err-msg)
-    (test-values '(gone gone) (lambda () (unsafe-weak-hash-iterate-key+value ht i 'gone)))
-    (test #f unsafe-weak-hash-iterate-next ht i))
+    ;; drop `lst` on next GC
+    (test #t list? lst)
+    (set! lst #f)
+
+    (unless (eq? 'cgc (system-type 'gc))
+      ;; collect key, everything should error (but not segfault)
+      (collect-garbage)(collect-garbage)(collect-garbage)
+      (test #t boolean? (unsafe-weak-hash-iterate-first ht))
+      (err/rt-test (unsafe-weak-hash-iterate-key ht i) exn:fail:contract? err-msg)
+      (test 'gone unsafe-weak-hash-iterate-key ht i 'gone)
+      (err/rt-test (unsafe-weak-hash-iterate-value ht i) exn:fail:contract? err-msg)
+      (test 'gone unsafe-weak-hash-iterate-value ht i 'gone)
+      (err/rt-test (unsafe-weak-hash-iterate-pair ht i) exn:fail:contract? err-msg)
+      (test '(gone . gone) unsafe-weak-hash-iterate-pair ht i 'gone)
+      (err/rt-test (unsafe-weak-hash-iterate-key+value ht i) exn:fail:contract? err-msg)
+      (test-values '(gone gone) (lambda () (unsafe-weak-hash-iterate-key+value ht i 'gone)))
+      (test #f unsafe-weak-hash-iterate-next ht i)))
 
 ;; Check that unsafe mutable hash table operations do not segfault
 ;; after getting valid index from unsafe-mutable-hash-iterate-first and -next.
@@ -927,12 +940,22 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that constant folding doesn't go wrong for `unsafe-fxlshift`:
 
-(test #t fixnum? (if (eqv? 64 (system-type 'word))
-                     (unsafe-fxlshift 1 62)
-                     (unsafe-fxlshift 1 30)))
-(test #t zero? (if (eqv? 64 (system-type 'word))
-                   (unsafe-fxlshift 1 63)
-                   (unsafe-fxlshift 1 31)))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 60)
+                          (unsafe-fxlshift 1 28))))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 61)
+                          (unsafe-fxlshift 1 29))))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 62)
+                          (unsafe-fxlshift 1 30))))
+(test #t procedure? (lambda ()
+                      (if (eqv? 64 (system-type 'word))
+                          (unsafe-fxlshift 1 63)
+                          (unsafe-fxlshift 1 31))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that allocation by inlined `unsafe-flrandom` is ok

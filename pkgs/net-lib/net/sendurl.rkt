@@ -7,38 +7,65 @@
          racket/contract racket/promise json)
 
 (provide send-url send-url/file send-url/contents
-         unix-browser-list browser-preference? external-browser
+         browser-list external-browser
+         ;; Obsolete definitions
+         unix-browser-list browser-preference?
          (contract-out
           [send-url/mac
            (->* (string?) (#:browser string?)
                 #:pre (equal? (system-type) 'macosx)
                 void?)]))
 
-(define separate-by-default?
-  ;; internal configuration, 'browser-default lets some browsers decide
-  (delay (get-preference 'new-browser-for-urls
-                         (lambda () 'browser-default)
-                         #:timeout-lock-there (lambda (path) 'browser-default))))
+;; Will we open a new browser window (where possible) by default?
+(define separate-by-default? #t)
 
 ;; all possible unix browsers, filtered later to just existing executables
 ;; order matters: the default will be the first of these that is found
-(define all-unix-browsers
-  '(;; default browser launchers
+(define all-browsers/unix
+  '(;; general purpose launchers
+    xdg-open
+    ;; default browser launchers
     sensible-browser x-www-browser
     ;; common browsers
-    firefox chromium-browser google-chrome galeon opera mozilla konqueror seamonkey epiphany
-    ;; known browsers
-    camino skipstone
-    ;; broken browsers (broken in that they won't work with plt-help)
-    ;; this is a configurable thing that is deprecated
-    htmlview
-    ;; dillo does not have javascript
-    dillo
+    firefox chromium-browser google-chrome opera seamonkey epiphany
     ))
+(define all-browsers/win '(cmd.exe)) ; proxy for a basic functioning Windows system
+(define all-browsers/mac '(open))
+
+;; by-need filtering of found executables
+(define existing-browsers->exes
+  (delay/sync
+    (filter values
+            (map (lambda (b)
+                   (let ([exe (find-executable-path (symbol->string b) #f)])
+                     (and exe (cons b exe))))
+                 (case (system-type)
+                   [(macosx)  all-browsers/mac]
+                   [(windows) all-browsers/win]
+                   [(unix)    all-browsers/unix]
+                   [else (error 'send-url
+                                "don't know how to open URL on platform: ~s" (system-type))])))))
+
+(define existing-browsers
+  (delay/sync (map car (force existing-browsers->exes))))
+(define-syntax browser-list
+  (syntax-id-rules (set!)
+    [(_ . xs) ((force existing-browsers) . xs)]
+    [(set! _ . xs) (error 'browser-list "cannot be mutated")]
+    [_ (force existing-browsers)]))
+
+
+;; Backwards compatibility
+
+(define unix-browser-list browser-list)
 
 ;; : any -> bool
 (define (custom-browser? x)
   (and (pair? x) (string? (car x)) (string? (cdr x))))
+
+;; : any -> bool
+(define (browser-preference? x)
+  (or (not x) (memq x browser-list) (custom-browser? x) (procedure? x)))
 
 (define external-browser
   (make-parameter
@@ -48,35 +75,12 @@
        x
        (error 'external-browser "~e is not a valid browser preference" x)))))
 
-;; by-need filtering of found unix executables
-(define existing-unix-browsers->exes
-  (delay/sync
-    (filter values
-            (map (lambda (b)
-                   (let ([exe (find-executable-path (symbol->string b) #f)])
-                     (and exe (cons b exe))))
-                 all-unix-browsers))))
-(define existing-unix-browsers
-  (delay/sync (map car (force existing-unix-browsers->exes))))
-(define-syntax unix-browser-list
-  (syntax-id-rules (set!)
-    [(_ . xs) ((force existing-unix-browsers) . xs)]
-    [(set! _ . xs) (error 'unix-browser-list "cannot be mutated")]
-    [_ (force existing-unix-browsers)]))
+(define (send-url/mac url #:browser [browser #f])
+  (let ([browser-command (car browser-list)])
+    (if browser
+        (browser-run browser-command "-a" browser url)
+        (browser-run browser-command url))))
 
-;; : any -> bool
-(define (browser-preference? x)
-  (or (not x) (memq x unix-browser-list) (custom-browser? x) (procedure? x)))
-
-;; like (system-type), but return the real OS for OSX with XonX
-;;  (could do the same for Cygwin, but it doesn't have shell-execute)
-(define systype
-  (delay/sync (let ([t (system-type)])
-                (cond [(not (eq? t 'unix)) t]
-                      [(regexp-match? #rx"-darwin($|/)"
-                                      (path->string (system-library-subpath)))
-                       'macosx]
-                      [else t]))))
 
 (define (%escape str)
   (apply string-append
@@ -93,24 +97,20 @@
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?]
                   #:escape? [escape? #t])
-  (define stype (force systype))
   (unless (string? url-str)
     (error 'send-url "expected a string, got ~e" url-str))
   (let ([url-str (if escape? (escape-url url-str) url-str)])
     (if (procedure? (external-browser))
       ((external-browser) url-str)
-      (case stype
-        [(macosx)  (send-url/mac url-str)]
-        [(windows) (send-url/win url-str)]
-        [(unix)    (send-url/unix url-str (force separate-window?))]
-        [else (error 'send-url
-                     "don't know how to open URL on platform: ~s" stype)])))
+      (if (regexp-match? #rx"[#?]" url-str)
+          (send-url/trampoline url-str separate-window?)
+          (send-url/simple url-str separate-window?))))
   (void))
 
 (define (send-url/file path [separate-window? separate-by-default?]
                        #:fragment [fragment #f] #:query [query #f])
   (let* ([path (path->string (path->complete-path path))]
-         [path (if (eq? 'windows (force systype))
+         [path (if (eq? 'windows (system-type))
                  ;; see http://msdn2.microsoft.com/en-us/library/ms775098.aspx
                  (let* ([path (regexp-replace* #rx"\\\\" path "/")]
                         [slashes (cdar (regexp-match-positions #rx"^/*" path))])
@@ -126,7 +126,7 @@
          [path (if query (string-append path "?" (escape-url query)) path)]
          [path (if fragment (string-append path "#" (escape-url fragment))
                    path)])
-    (send-url path (force separate-window?) #:escape? #f)))
+    (send-url path separate-window? #:escape? #f)))
 
 ;; See the documentation for the `delete-at' argument
 ;; separate-window? is never used
@@ -157,92 +157,29 @@
     (when delete-at (thread (lambda () (sleep delete-at) (delete-file temp))))
     (send-url/file temp)))
 
-(define osascript (delay/sync (find-executable-path "osascript" #f)))
-(define (send-url/mac url #:browser [_browser #f])
-  (define browser
-    (or _browser
-        (try-to-find-macosx-users-browser)))
-  (browser-run (force osascript) "-e"
-               (if browser
-                   (format "tell application \"~a\" to open location \"~a\" activate"
-                           browser url)
-                   (format "open location \"~a\"" url))))
-
-(define (try-to-find-macosx-users-browser)
-  (define default-browser (hash-ref known-uri->macosx-browser-app "com.apple.safari"))
-  (let/ec k
-    (define (fail fmt . more)
-      (log-warning (string-append
-                    "tried to find user's browser choice, but: "
-                    (apply format fmt more)))
-      (k default-browser))
-    (define plist-file
-      (build-path (find-system-path 'home-dir)
-                  "Library" "Preferences"
-                  "com.apple.LaunchServices"
-                  "com.apple.launchservices.secure.plist"))
-    (unless (file-exists? plist-file) (fail "didn't find plist file"))
-    (define plutil (find-executable-path "plutil" #f))
-    (unless plutil (fail "didn't find plutil"))
-    (define-values (in out) (make-pipe))
-    (thread
-     (λ ()
-       (define-values (_1 _2 _3 _4 proc)
-         (apply
-          values
-          (process*/ports
-           out
-           (open-input-string "")
-           (current-error-port)
-           plutil
-           "-convert" "json"
-           "-o" "-"
-           plist-file)))
-       (proc 'wait)
-       (close-output-port out)))
-    (define json
-      (with-handlers ([exn:fail? (λ (exn) (fail (exn-message exn)))])
-        (read-json in)))
-    (define handlers (hash-ref json 'LSHandlers (λ () (fail "didn't find LSHandlers key in json"))))
-    (unless ((listof hash?) handlers) (fail "confusing LSHandlers ~s" handlers))
-    (define uri
-      (for/or ([table (in-list (hash-ref json 'LSHandlers))]
-               #:when
-               (member (hash-ref table 'LSHandlerURLScheme #f) '("http" "https")))
-        (hash-ref table 'LSHandlerRoleAll #f)))
-    (cond
-      [uri (hash-ref known-uri->macosx-browser-app uri #f)]
-      [else
-       ;; no preference set
-       default-browser])))
-
-(define known-uri->macosx-browser-app
-  (hash "com.google.chrome" "Google Chrome"
-        "com.apple.safari" "Safari"
-        "org.mozilla.firefox" "Firefox"
-        "com.operasoftware.opera" "Opera"))
-
-(define (send-url/unix url separate-window?)
+(define (send-url/simple url [separate-window? separate-by-default?])
   ;; in cases where a browser was uninstalled, we might get a preference that
   ;; is no longer valid, this will turn it back to #f
   (define (try pref)
     (if (symbol? pref)
-      (if (memq pref unix-browser-list) pref #f)
+      (if (memq pref browser-list) pref #f)
       pref))
   (define browser
     (or (try (external-browser))
         (try (get-preference 'external-browser))
         ;; no preference -- chose the first one from the filtered list
-        (and (pair? unix-browser-list) (car unix-browser-list))))
+        (and (pair? browser-list) (car browser-list))))
   (define exe
-    (cond [(assq browser (force existing-unix-browsers->exes)) => cdr]
+    (cond [(assq browser (force existing-browsers->exes)) => cdr]
           [else #f]))
   (define (simple) (browser-run exe url))
   (define (w/arg a) (browser-run exe a url))
   (define (try-remote)
-    (or (system* exe "-remote" (format "openURL(~a~a)" url
-                                       (if separate-window? ",new-window" "")))
+    (or (browser-run exe "-remote" (format "openURL(~a~a)" url
+                                           (if separate-window? ",new-window" "")))
         (simple)))
+  (define (windows-start)
+    (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))
   (cond
     [(not browser)
      (error 'send-url "Couldn't find a browser to open URL: ~e" url)]
@@ -257,48 +194,28 @@
     ;; finally, deal with the actual browser process
     [else
      (case browser
-       [(sensible-browser x-www-browser firefox konqueror dillo htmlview google-chrome chromium-browser)
+       [(open xdg-open
+         sensible-browser x-www-browser firefox konqueror google-chrome chromium-browser)
         (simple)]
+       [(cmd.exe) (windows-start)]
        ;; don't really know how to run these
-       [(camino skipstone) (simple)]
-       [(galeon) (if (eq? 'browser-default separate-window?)
-                   (simple) (w/arg (if separate-window? "-w" "-x")))]
        [(epiphany) (if separate-window? (w/arg "--new-window") (simple))]
-       [(mozilla seamonkey) (try-remote)]
-       [(opera)
-        ;; opera starts a new browser automatically
-        (browser-run exe "-remote"
-                     (format "openURL(~a~a)"
-                             url (if separate-window? ",new-window" "")))]
+       [(seamonkey opera) (try-remote)]
        [else (error 'send-url "internal error")])]))
 
-;; Windows has a bug when using `shell-execute' or when running `iexplore.exe'
-;; directly -- it silently drops the fragment and query from URLs that have
-;; them.  This is described at
-;;   http://support.microsoft.com/default.aspx/kb/942172
-;; It seems that the IE7 problem happens either way (`shell-execute' or running
-;; directly) -- but it also happens with firefox when using `shell-execute'.
-;; One possible solution is to run `ftype http' to find the default browser
-;; command, and if it uses `iexplore.exe' then change it to `explorer.exe', and
-;; run the resulting command directly.  This is described at
-;;   http://www.tutorials-win.com/IE/Lauching-HTML/
-;; But this still fails on Vista, since the problem there is that launching a
-;; browser with a file:// URL makes it start a more priviliged process, and
-;; doing that drops the fragment again.  So the solution that the code below
-;; implements is to write and use (via `send-url/contents') a trampoline html
-;; that redirects to the actual file and fragment.
-
-(define (send-url/win url)
-  (if (not (regexp-match? #rx"[#?]" url))
-    (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL)
-    (send-url/contents
-     (string-append
-      "<html><head><meta http-equiv=\"refresh\" content=\"0;URL="url"\"></head>"
-      "<body>Please go <a href=\""url"\">here</a>.</body></html>")
-     ;; starting the browser may take a while, don't remove the file
-     ;; immediately (this means that when used via plt-help, these files are
-     ;; never removed by a timer)
-     #:delete-at 15)))
+;; Write and use (via `send-url/contents') a trampoline html that redirects
+;; to the actual file and fragment, for launchers that can't cope with query
+;; and fragment part of the URL.
+(define (send-url/trampoline url [separate-window? separate-by-default?])
+  (send-url/contents
+   (string-append
+    "<html><head><meta http-equiv=\"refresh\" content=\"0;URL="url"\"></head>"
+    "<body>Please go <a href=\""url"\">here</a>.</body></html>")
+   separate-window?
+   ;; starting the browser may take a while, don't remove the file
+   ;; immediately (this means that when used via plt-help, these files are
+   ;; never removed by a timer)
+   #:delete-at 15))
 
 ;; Process helper
 (define (browser-run #:shell [shell? #f] . args)

@@ -144,7 +144,7 @@ in several significant ways:
    work across module boundaries.
 
    The `struct' signature form for `unit/sig' introduces
-   expansion-time information into importing units that immitates that
+   expansion-time information into importing units that imitates that
    of a `define-struct' declaration. The information is currently
    limited, in that subtyping relations are not exposed and the actual
    structure type may have more fields than declared in the

@@ -122,7 +122,7 @@
             [parsed-ps (map parse ps)]
             [parsed-lp (rearm+parse #'lp)])
        ;; duplicates within *one* of the ps is fine, but duplicates
-       ;; *accross multiple* of the ps is an error, at least for now
+       ;; *across multiple* of the ps is an error, at least for now
        (check-list-no-order-duplicates (cons parsed-lp parsed-ps))
        (GSeq (cons (list parsed-lp)
                    (for/list ([p parsed-ps]) (list p)))
@@ -143,7 +143,7 @@
             ;; parsed versions of ps
             [parsed-ps (map rearm+parse ps)])
        ;; duplicates within *one* of the ps is fine, but duplicates
-       ;; *accross multiple* of the ps is an error, at least for now
+       ;; *across multiple* of the ps is an error, at least for now
        (check-list-no-order-duplicates parsed-ps)
        (GSeq (for/list ([p parsed-ps]) (list p))
              (map (lambda _ 1) ps)

@@ -1,7 +1,7 @@
-
-(require mzlib/process)
+(require racket/system)
 
 (define name (vector-ref (current-command-line-arguments) 0))
+(define exe (vector-ref (current-command-line-arguments) 1))
 
 (with-output-to-file (format "~a.scm" name)
   (lambda ()
@@ -11,7 +11,16 @@
     (newline))
   #:exists 'truncate/replace)
 
-(when (system (format "bigloo -static-bigloo -w -o ~a -call/cc -copt -O3 -copt -fomit-frame-pointer -O6 ~a.scm"
-                      name name))
+(when (system* exe
+               "-static-bigloo"
+               "-w"
+               "-o" name
+               "-call/cc"
+               "-copt"
+               "-O3"
+               "-copt"
+               "-fomit-frame-pointer"
+               "-O6"
+               (format "~a.scm" name))
   (delete-file (format "~a.scm" name))
   (delete-file (format "~a.o" name)))

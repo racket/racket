@@ -1,4 +1,5 @@
 (module fixnum '#%kernel
+  (#%declare #:cross-phase-persistent)
   (#%require '#%flfxnum)
   (#%provide fixnum-for-every-system?)
 

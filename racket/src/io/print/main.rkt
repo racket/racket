@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/flonum
          racket/fixnum
+         racket/symbol
+         racket/keyword
          "../common/check.rkt"
          "../port/output-port.rkt"
          "../port/input-port.rkt"
@@ -119,19 +121,19 @@
   (set! do-global-print
         (lambda (who v o [quote-depth-in PRINT-MODE/UNQUOTED] [max-length #f])
           (define global-print (param))
-          (define quote-depth (if (print-as-expression) quote-depth-in WRITE-MODE))
           (cond
             [(eq? global-print default-value)
+             (define quote-depth (if (print-as-expression) quote-depth-in WRITE-MODE))
              (do-print who v o quote-depth max-length)]
             [(not max-length)
-             (global-print v o quote-depth)]
+             (global-print v o quote-depth-in)]
             [else
              ;; There's currently no way to communicate `max-length`
              ;; to the `global-print` function, but we should only get
              ;; here when `o` is a string port for errors, so write to
              ;; a fresh string port and truncate as needed.
              (define o2 (open-output-bytes))
-             (global-print v o2 quote-depth)
+             (global-print v o2 quote-depth-in)
              (define bstr (get-output-bytes o2))
              (if ((bytes-length bstr) . <= . max-length)
                  (unsafe-write-bytes who bstr o)
@@ -200,6 +202,7 @@
               (hash? v)
               (prefab-struct-key v)
               (and (custom-write? v)
+                   (not (struct-type? v))
                    (not (printable-regexp? v))
                    (not (eq? 'self (custom-print-quotable-accessor v 'self))))))
      ;; Since this value is not marked for constructor mode,
@@ -226,14 +229,14 @@
        [else (print-bytes v o max-length)])]
     [(symbol? v)
      (cond
-       [(eq? mode DISPLAY-MODE) (write-string/max (symbol->string v) o max-length)]
+       [(eq? mode DISPLAY-MODE) (write-string/max (symbol->immutable-string v) o max-length)]
        [else (print-symbol v o max-length config)])]
     [(keyword? v)
      (let ([max-length (write-string/max "#:" o max-length)])
        (cond
-         [(eq? mode DISPLAY-MODE) (write-string/max (keyword->string v) o max-length)]
+         [(eq? mode DISPLAY-MODE) (write-string/max (keyword->immutable-string v) o max-length)]
          [else
-          (print-symbol (string->symbol (keyword->string v)) o max-length config
+          (print-symbol (string->symbol (keyword->immutable-string v)) o max-length config
                         #:for-keyword? #t)]))]
     [(char? v)
      (cond
@@ -292,7 +295,8 @@
      (fail-unreadable who v)]
     [(mpair? v)
      (print-mlist p who v mode o max-length graph config)]
-    [(custom-write? v)
+    [(and (not (struct-type? v))
+          (custom-write? v))
      (let ([o/m (make-output-port/max o max-length)])
        (set-port-handlers-to-recur!
         o/m
@@ -304,10 +308,10 @@
           (config-get config print-struct))
      (cond
        [(eq? mode PRINT-MODE/UNQUOTED)
-        (define l (vector->list (struct->vector v)))
+        (define l (vector->list (struct->vector v struct-dots)))
         (define alt-list-constructor
           ;; strip "struct:" from the first element of `l`:
-          (string-append "(" (substring (symbol->string (car l)) 7)))
+          (string-append "(" (substring (symbol->immutable-string (car l)) 7)))
         (print-list p who (cdr l) mode o max-length graph config #f alt-list-constructor)]
        [(prefab-struct-key v)
         => (lambda (key)
@@ -337,7 +341,7 @@
 
 (define (fail-unreadable who v)
   (raise (exn:fail
-          (string-append (symbol->string who)
+          (string-append (symbol->immutable-string who)
                          ": printing disabled for unreadable value"
                          "\n  value: "
                          (parameterize ([print-unreadable #t])
@@ -348,3 +352,5 @@
   (when (and (eq? mode WRITE-MODE)
              (not (config-get config print-unreadable)))
     (fail-unreadable who v)))
+
+(define struct-dots (unquoted-printing-string "..."))

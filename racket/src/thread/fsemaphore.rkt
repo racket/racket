@@ -53,12 +53,13 @@
           (set-fsemaphore-dependents! fs (hash-remove deps f))
           (future-notify-dependent f)]
          [else
+          (set-fsemaphore-c! fs 1)
           (when b
             ;; This is a kind of broadcast wakeup, and then the
             ;; awakened threads will compete for the fsemaphore:
             (set-fsemaphore-dep-box! fs #f)
-            (set-box! b #t))
-          (set-fsemaphore-c! fs 1)])]
+            (set-box! b #t)
+            (wakeup-this-place))])]
       [else
        (set-fsemaphore-c! fs (add1 c))])))
 

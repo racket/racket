@@ -411,7 +411,7 @@ void scheme_init_port_places(void)
      custodian). */
 
   if (!stdin_refcount) {
-    /* Referece counts are needed for stdio and places; start
+    /* Reference counts are needed for stdio and places; start
        at 1 in main place, but then cancel initial count */
     stdin_refcount = malloc_refcount(1, 0);
     stdout_refcount = malloc_refcount(1, 0);

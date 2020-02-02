@@ -146,7 +146,7 @@
 (define (addr->gcpointer-memory v)  ; call with GC disabled
   (#%$address->object v bytevector-content-offset))
 
-(define (addr->vector v)  ; call with GC disabled or when reuslt is locked
+(define (addr->vector v)  ; call with GC disabled or when result is locked
   (#%$address->object v vector-content-offset))
 
 ;; Converts a primitive cpointer (normally the result of
@@ -1276,11 +1276,11 @@
                              "destination" to)]
      [else
       (with-interrupts-disabled*
-       (let ([to (fx+ (cpointer*-address to) to-offset)])
+       (let ([to (+ (cpointer*-address to) to-offset)])
          (let loop ([to to] [len len])
            (unless (fx= len 0)
              (foreign-set! 'unsigned-8 to 0 byte)
-             (loop (fx+ to 1) (fx- len 1))))))])))
+             (loop (+ to 1) (fx- len 1))))))])))
 
 (define/who memset
   (case-lambda
@@ -1353,7 +1353,7 @@
   (let ([duplicate-argument
          (lambda (what a1 a2)
            (raise-arguments-error 'malloc
-                                  (string-append "mulitple " what " arguments")
+                                  (string-append "multiple " what " arguments")
                                   "first" a1
                                   "second" a2))])
     (let loop ([args args] [count #f] [type #f] [copy-from #f] [mode #f] [fail-mode #f])
@@ -1403,7 +1403,7 @@
    [(eq? mode 'atomic)
     (make-cpointer (make-bytevector size 0) #f)]
    [(eq? mode 'nonatomic)
-    (make-cpointer (#%make-vector (quotient size 8) 0) #f)]
+    (make-cpointer (#%make-vector (quotient size ptr-size-in-bytes) 0) #f)]
    [(eq? mode 'atomic-interior)
     ;; This is not quite the same as traditional Racket, because
     ;; a finalizer is associated with the cpointer (as opposed to

@@ -1354,7 +1354,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
         && scheme_native_arity_check(proc, 0)
         && (((Scheme_Native_Closure *)proc)->code->start_code != scheme_on_demand_jit_code)
         && scheme_can_apply_native_in_future(proc)) {
-      /* try to alocate a future in the future thread */
+      /* try to allocate a future in the future thread */
       future_t *ft;
       ft = MALLOC_ONE_TAGGED(future_t);
       if (ft) {
@@ -2647,7 +2647,7 @@ void scheme_check_future_work()
       else {
         /* If ft is touching another future, then the other
            future may resume ft while we grab the continuation. 
-           Withold ft->can_continue_sema for now, so that we can
+           Withhold ft->can_continue_sema for now, so that we can
            capture the continuation, and then double-check 
            afterward whether the continuation wants a lwc: */
         can_continue_sema = ft->can_continue_sema;

@@ -289,7 +289,7 @@
     (unless (eq? (read-char in) #\=)
       (lex-error in pos "expected = in attribute ~a" name))
     (skip-space in)
-    ;; more here - handle entites and disallow "<"
+    ;; more here - handle entities and disallow "<"
     (let* ([delimiter (read-char-or-special in)]
            [value (case delimiter
                     [(#\' #\")
@@ -302,10 +302,14 @@
                             [(eq? c delimiter) (read-char in) null]
                             [(eq? c #\&)
                              (let ([entity (expand-entity (lex-entity in pos))])
-                               (if (pcdata? entity)
-                                   (append (string->list (pcdata-string entity)) (read-more))
-                                   ;; more here - do something with user defined entites
-                                   (read-more)))]
+                               (append (cond
+                                         [(pcdata? entity)
+                                          (string->list (pcdata-string entity))]
+                                         [(number? (entity-text entity))
+                                          (list (integer->char (entity-text entity)))]
+                                         ;; more here - do something with user defined entities
+                                         [else '()])
+                                       (read-more)))]
                             [else (read-char in) (cons c (read-more))]))))]
                     [else (if (char? delimiter)
                               (lex-error in pos "attribute values must be in ''s or in \"\"s")
@@ -323,7 +327,7 @@
         (loop)))))
 
 ;; lex-pcdata : Input-port (-> Location) -> Pcdata
-;; deviation - disallow ]]> "for compatability" with SGML, sec 2.4 XML spec 
+;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec 
 (define (lex-pcdata in pos)
   (let ([start (pos)]
         [data (let loop ()

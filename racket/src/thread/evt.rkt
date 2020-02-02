@@ -83,13 +83,15 @@
 ;; If a poller does any work that can allow some thread to
 ;; become unblocked, then it must tell the scheduler via
 ;; `schedule-info-did-work!`.
-(struct poller (proc))
+(struct poller (proc)
+  #:authentic)
 
 ;; Provided to a `poller` function:
 (struct poll-ctx (poll?         ; whether events are being polled once (i.e., 0 timeout)
                   select-proc   ; callback to asynchronously select the event being polled
                   sched-info    ; instructions to the scheduler, such as timeouts
-                  [incomplete? #:mutable])) ; #t => getting back the same event does not imply a completed poll
+                  [incomplete? #:mutable]) ; #t => getting back the same event does not imply a completed poll
+  #:authentic)
 ;; If a `poller` callback keeps `select-proc` for asynchronous use,
 ;; then it should return a `control-state-evt` to ensure that
 ;; `select-proc` is not called if the event is abandoned.
@@ -191,7 +193,8 @@
       [else (values #f the-never-evt)])))
 
 ;; Possible result from `evt-poll`:
-(struct delayed-poll (resume))
+(struct delayed-poll (resume)
+  #:authentic)
 
 (struct poller-evt (poller)
   #:property prop:evt (struct-field-index poller))

@@ -521,11 +521,12 @@
               #:when (directory-exists? (build-path cp collection)))
           (cc! (list collection) #:path (build-path cp collection)))]
        [else ; must be a hash table that simulates a links file:
-        (for ([(coll-sym dir) (in-hash inst-links)])
+        (for* ([(coll-sym dir-list) (in-hash inst-links)]
+               [dir (in-list dir-list)])
           (cond
-           [coll-sym
-            ;; A single collection
-            (cc! (string-split "/" (symbol->string coll-sym)) #:path dir)]
+            [coll-sym
+             ;; A single collection
+             (cc! (map string->path (string-split (symbol->string coll-sym) "/")) #:path dir)]
            [(directory-exists? dir)
             ;; A directory that holds collections:
             (for ([collection (directory-list dir)]
@@ -1748,7 +1749,7 @@
       (write-receipt-hash receipt-path ht2)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;       Foriegn Libraries and Man Pages         ;;
+  ;;       Foreign Libraries and Man Pages         ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-copy/move-step what

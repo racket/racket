@@ -241,7 +241,7 @@
                                   [(called-var ...) called-vars]
                                   [new-name (datum->syntax
                                              name
-                                             (chez:gensym (chez:symbol->string (syntax->datum name))))]
+                                             (#%gensym (#%symbol->string (syntax->datum name))))]
                                   [body (let loop ([body body]
                                                    [binds binds])
                                           (cond

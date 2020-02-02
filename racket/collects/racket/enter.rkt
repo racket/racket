@@ -70,7 +70,7 @@
         ;; Try to switch to the module namespace,
         ;; even if there was an exception, because the
         ;; idea is to allow debugging from inside the
-        ;; module. If any excepiton happens in trying to
+        ;; module. If any exception happens in trying to
         ;; switch to the declared module, log that as
         ;; an internal exception.
         (with-handlers ([void (lambda (exn)

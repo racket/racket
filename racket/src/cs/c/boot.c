@@ -138,16 +138,14 @@ static void init_foreign()
 void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
 		 char *boot_exe, long segment_offset,
                  char *coldir, char *configdir, /* wchar_t * */void *dlldir,
-                 int pos1, int pos2, int pos3,
+                 int is_embedded, int pos1, int pos2, int pos3,
                  int cs_compiled_subdir, int is_gui,
 		 int wm_is_gracket_or_x11_arg_count,
                  char *gracket_guid_or_x11_args,
 		 void *dll_open, void *dll_find_object, void *dll_close)
 /* exe argument already stripped from argv */
 {
-#if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
   int fd;
-#endif
 #ifdef RACKET_AS_BOOT
   int skip_racket_boot = 0;
 #endif
@@ -173,36 +171,40 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
   }
 
 #ifdef RACKET_USE_FRAMEWORK
-  fw_path = get_framework_path();
-  Sregister_boot_file(path_append(fw_path, "petite.boot"));
-  Sregister_boot_file(path_append(fw_path, "scheme.boot"));
+  if (!is_embedded) {
+    fw_path = get_framework_path();
+    Sregister_boot_file(path_append(fw_path, "petite.boot"));
+    Sregister_boot_file(path_append(fw_path, "scheme.boot"));
 # ifdef RACKET_AS_BOOT
-  if (!skip_racket_boot)
-    Sregister_boot_file(path_append(fw_path, "racket.boot"));
-# endif
-#else
-  fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
-
-  {
-    int fd1, fd2;
-
-    fd1 = dup(fd);
-    lseek(fd1, pos1, SEEK_SET);    
-    Sregister_boot_file_fd("petite", fd1);
-    
-    fd2 = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
-    lseek(fd2, pos2, SEEK_SET);
-    Sregister_boot_file_fd("scheme", fd2);
-
-# ifdef RACKET_AS_BOOT
-    if (!skip_racket_boot) {
-      fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
-      lseek(fd, pos3, SEEK_SET);
-      Sregister_boot_file_fd("racket", fd);
-    }
+    if (!skip_racket_boot)
+      Sregister_boot_file(path_append(fw_path, "racket.boot"));
 # endif
   }
 #endif
+
+  if (is_embedded) {
+    fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
+
+    {
+      int fd1, fd2;
+
+      fd1 = dup(fd);
+      lseek(fd1, pos1, SEEK_SET);    
+      Sregister_boot_file_fd("petite", fd1);
+    
+      fd2 = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
+      lseek(fd2, pos2, SEEK_SET);
+      Sregister_boot_file_fd("scheme", fd2);
+
+# ifdef RACKET_AS_BOOT
+      if (!skip_racket_boot) {
+        fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
+        lseek(fd, pos3, SEEK_SET);
+        Sregister_boot_file_fd("racket", fd);
+      }
+# endif
+    }
+  }
 
   Sbuild_heap(NULL, init_foreign);
 
@@ -248,8 +250,10 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
 
 #ifndef RACKET_AS_BOOT
 # ifdef RACKET_USE_FRAMEWORK
-  fd = open(path_append(fw_path, "racket.so"), O_RDONLY);
-  pos3 = 0;
+  if (!is_embedded) {
+    fd = open(path_append(fw_path, "racket.so"), O_RDONLY);
+    pos3 = 0;
+  }
 # endif
   
   {

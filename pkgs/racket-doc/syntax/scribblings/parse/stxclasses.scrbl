@@ -142,7 +142,7 @@ It is an error to use both @racket[#:commit] and
 
 Declares the literals and conventions that apply to the syntax class's
 variant patterns and their immediate @racket[#:with] clauses. Patterns
-occuring within subexpressions of the syntax class (for example, on
+occurring within subexpressions of the syntax class (for example, on
 the right-hand side of a @racket[#:fail-when] clause) are not
 affected.
 

@@ -3,17 +3,14 @@
          racket/pretty
          racket/match
          racket/file
-         racket/fixnum
-         racket/flonum
-         racket/unsafe/ops
          racket/extflonum
-         racket/include
          "../schemify/schemify.rkt"
          "../schemify/serialize.rkt"
          "../schemify/known.rkt"
          "../schemify/lift.rkt"
          "../schemify/reinfer-name.rkt"
-         "../schemify/wrap.rkt")
+         "../schemify/wrap.rkt"
+         "known.rkt")
 
 (define skip-export? #f)
 (define for-cify? #f)
@@ -100,40 +97,9 @@
 (unless for-cify?
   (lift l))
 
-(define prim-knowns
-  (let ([knowns (hasheq)])
-    (define-syntax-rule (define-primitive-table id [prim known] ...)
-      (begin (set! knowns (hash-set knowns 'prim known)) ...))
-    (include "primitive/kernel.ss")
-    (include "primitive/unsafe.ss")
-    (include "primitive/flfxnum.ss")
-    (include "primitive/paramz.ss")
-    (include "primitive/extfl.ss")
-    (include "primitive/network.ss")
-    (include "primitive/futures.ss")
-    (include "primitive/place.ss")
-    (include "primitive/foreign.ss")
-    (include "primitive/linklet.ss")
-    (include "primitive/internal.ss")
-    knowns))
-
-(define primitives
-  (let ([ns (make-base-namespace)])
-    (namespace-attach-module (current-namespace) 'racket/fixnum ns)
-    (namespace-require 'racket/fixnum ns)
-    (namespace-attach-module (current-namespace) 'racket/flonum ns)
-    (namespace-require 'racket/flonum ns)
-    (namespace-attach-module (current-namespace) 'racket/unsafe/ops ns)
-    (namespace-require 'racket/unsafe/ops ns)
-    (define primitives (make-hasheq))
-    (for ([s (in-list (namespace-mapped-symbols ns))])
-      (define v (namespace-variable-value s
-                                          #t
-                                          (lambda () #f)
-                                          ns))
-      (when v
-        (hash-set! primitives s v)))
-    primitives))
+(define prim-knowns (get-prim-knowns))
+(define primitives (get-primitives))
+(check-known-values prim-knowns primitives)
 
 ;; Convert:
 (define schemified-body
@@ -147,7 +113,9 @@
     (printf "Schemify...\n")
     (define body
       (time
-       (schemify-body bodys/constants-lifted prim-knowns primitives #hasheq() #hasheq() for-cify? unsafe-mode? #t)))
+       (schemify-body bodys/constants-lifted prim-knowns primitives #hasheq() #hasheq() for-cify? unsafe-mode?
+                      #t    ; no-prompt?
+                      #f))) ; explicit-unnamed?
     (printf "Lift...\n")
     ;; Lift functions to avoid closure creation:
     (define lifted-body

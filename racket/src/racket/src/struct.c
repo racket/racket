@@ -96,8 +96,6 @@ static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Objec
 static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
-static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
-
 static Scheme_Object *make_struct_type(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_field_accessor(int argc, Scheme_Object *argv[]);
@@ -128,12 +126,13 @@ static Scheme_Object *struct_getter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_pred_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_constr_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_prop_getter_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *struct_prop_pred_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_prop_getter_p(int argc, Scheme_Object *argv[]);
 
-static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *func_name, 
+static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *func_name,
 				       Scheme_ProcT proc_type, int field_num);
 
-static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const char *post1, 
+static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const char *post1,
 				const char *fn, int fnl, const char *post2, int sym);
 
 static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always);
@@ -322,13 +321,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
                                                       scheme_struct_property_type);
     scheme_addto_prim_instance("prop:custom-write", write_property, env);
     scheme_addto_prim_instance("custom-write?", pred, env);
-
-    a[0] = access;
-    scheme_addto_prim_instance("custom-write-accessor", 
-                               scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
-                                                                "custom-write-accessor",
-                                                                1, 1),
-                               env);
+    scheme_addto_prim_instance("custom-write-accessor", access, env);
   }
 
   REGISTER_SO(print_attribute_property);
@@ -344,13 +337,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
                                                                 scheme_struct_property_type);
     scheme_addto_prim_instance("prop:custom-print-quotable", print_attribute_property, env);
     scheme_addto_prim_instance("custom-print-quotable?", pred, env);
-
-    a[0] = access;
-    scheme_addto_prim_instance("custom-print-quotable-accessor", 
-                               scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
-                                                                "custom-print-quotable-accessor",
-                                                                1, 1),
-                               env);
+    scheme_addto_prim_instance("custom-print-quotable-accessor", access, env);
   }
   
   REGISTER_SO(evt_property);
@@ -644,12 +631,17 @@ scheme_init_struct (Scheme_Startup_Env *env)
                                                     "struct-type-property-accessor-procedure?",
                                                     1, 1),
 			     env);
+  scheme_addto_prim_instance("struct-type-property-predicate-procedure?",
+			     scheme_make_immed_prim(struct_prop_pred_p,
+                                                    "struct-type-property-predicate-procedure?",
+                                                    1, 2),
+			     env);
   scheme_addto_prim_instance("impersonator-property-accessor-procedure?",
 			     scheme_make_immed_prim(chaperone_prop_getter_p,
                                                     "impersonator-property-accessor-procedure?",
                                                     1, 1),
 			     env);
-  
+
   /*** Inspectors ****/
 
   REGISTER_SO(scheme_make_inspector_proc);
@@ -1594,7 +1586,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
       result = scheme_apply(f, 1, a);
 
       if (scheme_is_evt(result)) {
-	SCHEME_USE_FUEL(1); /* Needed beause an apply of a mzc-generated function
+	SCHEME_USE_FUEL(1); /* Needed because an apply of a mzc-generated function
 			       might not check for breaks. */
 	scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1, NULL);
 	return 0;
@@ -1870,13 +1862,6 @@ Scheme_Object *scheme_is_writable_struct(Scheme_Object *s)
 Scheme_Object *scheme_print_attribute_ref(Scheme_Object *s)
 {
   return scheme_struct_type_property_ref(print_attribute_property, s);
-}
-
-static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self)
-{
-  Scheme_Object *acc = SCHEME_PRIM_CLOSURE_ELS(self)[0];
-
-  return _scheme_apply(acc, argc, argv);
 }
 
 /*========================================================================*/
@@ -3360,6 +3345,30 @@ struct_prop_getter_p(int argc, Scheme_Object *argv[])
   return ((STRUCT_mPROCP(v, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type))
 	  ? scheme_true : scheme_false);
+}
+static Scheme_Object *
+struct_prop_pred_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v = argv[0], *prop, *prop_t;
+
+  if (argc > 1) {
+    if (SCHEME_TRUEP(argv[1]) && !SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_struct_property_type))
+      scheme_wrong_contract("struct-type-property-predicate-procedure?", "(or/c struct-type-property? #f)", 1, argc, argv);
+  }
+
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+
+  if (!(STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
+        && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type)))
+    return scheme_false;
+
+  if ((argc > 1) && SCHEME_TRUEP(argv[1])) {
+    prop = SCHEME_PRIM_CLOSURE_ELS(v)[0];
+    prop_t = argv[1];
+    return (SAME_OBJ(prop, prop_t) ? scheme_true : scheme_false);
+  }
+
+  return scheme_true;
 }
 
 static Scheme_Object *

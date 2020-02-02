@@ -1,8 +1,10 @@
 #lang racket/base
 (require "place-local.rkt"
+         "host.rkt"
          "check.rkt"
          "internal-error.rkt"
-         "atomic.rkt")
+         "atomic.rkt"
+         "debug.rkt")
 
 (provide (struct-out node)
          
@@ -24,17 +26,35 @@
 
 ;; Threads and thread groups subtype `node`:
 (struct node ([prev #:mutable]
-              [next #:mutable]))
+              [next #:mutable])
+  #:authentic)
 (define (child-node child) child) ; a child instantiates a `node` subtype
 (define (node-child n) n)
 
 (struct thread-group node (parent
                            [chain-start #:mutable] ; all children
                            [chain #:mutable] ; children remaining to be scheduled round-robin
-                           [chain-end #:mutable]))
+                           [chain-end #:mutable])
+  #:authentic)
+
+(debug-select
+ #:on
+ [(define not-added-key 'none)
+  (define (assert-not-added n)
+    (unless (and (eq? (node-prev n) 'none)
+                 (eq? (node-next n) 'none))
+      (internal-error "thread-group-add!: thread or group is added already")))
+  (define (assert-added n)
+    (when (or (eq? (node-prev n) 'none)
+              (eq? (node-next n) 'none))
+      (internal-error "thread-group-remove!: thread or group is removed already")))]
+ #:off
+ [(define not-added-key #f)
+  (define (assert-not-added n) (void))
+  (define (assert-added n) (void))])
 
 (define (make-root-thread-group)
-  (thread-group 'none 'none #f #f #f #f))
+  (thread-group not-added-key not-added-key #f #f #f #f))
 
 (define-place-local root-thread-group (make-root-thread-group))
 
@@ -52,7 +72,7 @@
 
 (define/who (make-thread-group [parent (current-thread-group)])
   (check who thread-group? parent)
-  (define tg (thread-group 'none 'none parent #f #f #f))
+  (define tg (thread-group not-added-key not-added-key parent #f #f #f))
   tg)
 
 ;; Called atomically in scheduler:
@@ -72,57 +92,53 @@
     (set-thread-group-chain! tg (node-next n))
     (node-child n)]))
 
+;; In atomic mode:
 (define (thread-group-add! parent child)
-  (atomically
-   (let loop ([parent parent] [child child])
-     ;; Adding to the start of the group tends to reverse the schedule
-     ;; order, but it also avoids a problem where two threads that
-     ;; both loop and `sleep` (which deschedules and reschedules) take
-     ;; turns and starve everything else.
-     (define t (thread-group-chain-start parent))
-     (define was-empty? (not t))
-     (define n (child-node child))
-     (unless (and (eq? (node-prev n) 'none)
-                  (eq? (node-next n) 'none))
-       (internal-error "thread-group-add!: thread or group is added already"))
-     (set-node-next! n t)
-     (set-node-prev! n #f)
-     (if t
-         (set-node-prev! t n)
-         (set-thread-group-chain-end! parent n))
-     (set-thread-group-chain-start! parent n)
-     (unless (thread-group? child)
-       (set! num-threads-in-groups (add1 num-threads-in-groups)))
-     (when was-empty?
-       ;; added child to formerly empty parent => add the parent
-       (define parent-parent (thread-group-parent parent))
-       (when parent-parent
-         (loop parent-parent parent))))))
+  (assert-atomic-mode)
+  ;; Adding to the start of the group tends to reverse the schedule
+  ;; order, but it also avoids a problem where two threads that
+  ;; both loop and `sleep` (which deschedules and reschedules) take
+  ;; turns and starve everything else.
+  (define t (thread-group-chain-start parent))
+  (define was-empty? (not t))
+  (define n (child-node child))
+  (assert-not-added n)
+  (set-node-next! n t)
+  (set-node-prev! n #f)
+  (if t
+      (set-node-prev! t n)
+      (set-thread-group-chain-end! parent n))
+  (set-thread-group-chain-start! parent n)
+  (unless (thread-group? child)
+    (set! num-threads-in-groups (add1 num-threads-in-groups)))
+  (when was-empty?
+    ;; added child to formerly empty parent => add the parent
+    (define parent-parent (thread-group-parent parent))
+    (when parent-parent
+      (thread-group-add! parent-parent parent))))
 
+;; In atomic mode:
 (define (thread-group-remove! parent child)
-  (atomically
-   (let loop ([parent parent] [child child])
-     (define n (child-node child))
-     (when (or (eq? (node-prev n) 'none)
-               (eq? (node-next n) 'none))
-       (internal-error "thread-group-remove!: thread or group is removed already"))
-     (if (node-next n)
-         (set-node-prev! (node-next n) (node-prev n))
-         (set-thread-group-chain-end! parent (node-prev n)))
-     (if (node-prev n)
-         (set-node-next! (node-prev n) (node-next n))
-         (set-thread-group-chain-start! parent (node-next n)))
-     (when (eq? n (thread-group-chain parent))
-       (set-thread-group-chain! parent (node-next n)))
-     (set-node-next! n 'none)
-     (set-node-prev! n 'none)
-     (unless (thread-group? child)
-       (set! num-threads-in-groups (sub1 num-threads-in-groups)))
-     (when (not (thread-group-chain-end parent))
-       ;; parent thread group is now empty, so remove it, too
-       (define parent-parent (thread-group-parent parent))
-       (when parent-parent
-         (loop parent-parent parent))))))
+  (assert-atomic-mode)
+  (define n (child-node child))
+  (assert-added n)
+  (if (node-next n)
+      (set-node-prev! (node-next n) (node-prev n))
+      (set-thread-group-chain-end! parent (node-prev n)))
+  (if (node-prev n)
+      (set-node-next! (node-prev n) (node-next n))
+      (set-thread-group-chain-start! parent (node-next n)))
+  (when (eq? n (thread-group-chain parent))
+    (set-thread-group-chain! parent (node-next n)))
+  (set-node-next! n not-added-key)
+  (set-node-prev! n not-added-key)
+  (unless (thread-group? child)
+    (set! num-threads-in-groups (sub1 num-threads-in-groups)))
+  (when (not (thread-group-chain-end parent))
+    ;; parent thread group is now empty, so remove it, too
+    (define parent-parent (thread-group-parent parent))
+    (when parent-parent
+      (thread-group-remove! parent-parent parent))))
 
 (define (thread-group-all-threads parent accum)
   (cond
@@ -133,4 +149,3 @@
        [(not n) accum]
        [else (loop (node-next n)
                    (thread-group-all-threads (node-child n) accum))]))]))
-

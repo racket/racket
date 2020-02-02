@@ -47,7 +47,7 @@ Build the Racket-on-Chez implementation using
 
    build-cs.bat
 
-which builds "..\..\RacketCGC.exe" to bootstrap the build.
+which builds "..\..\Racket3m.exe" to bootstrap the build.
 
 To instead build using an existing Racket installation, use
 
@@ -58,7 +58,7 @@ The result is "..\..\Racket.exe", DLLs and "GRacket.exe" in
 
 Many intermediate files will be put in "../build", including a Chez
 Scheme checkout if it's not already present there; if a "ChezScheme"
-directory exists in the Racket suorce directory, it is copied to the
+directory exists in the Racket source directory, it is copied to the
 build directory, otherwise it is cloned from a Git repository (in
 which case `git` must be available).
 
@@ -69,11 +69,11 @@ Both Traditional Racket and Racket-on-Chez
 
 When using "csbuild.rkt" directly, omit the `--racketcs-suffix ""`
 arguments to create "..\..\RacketCS.exe" executable instead of
-"..\..\RacketCS.exe". A build with a "CS" suffix is also configured to
+"..\..\Racket.exe". A build with a "CS" suffix is also configured to
 read and bytecode in a subdirectory of "compiled" as described in
 "..\cs\README.txt".
 
-A "CS" and using a subdirectoryu of "compiled" means that a
+A "CS" suffix and using a subdirectory of "compiled" means that a
 Racket-on-Chez build as "RacketCS.exe" can coexist with a
 traditional build as "Racket.exe". So, the sequence
 
@@ -91,7 +91,16 @@ libraries, finish with
 
    ..\..\raco pkg install racket-lib
 
-See also "..\native-lib\README.txt".
+If you are building from a source distribution (as opposed to a Git
+repository checkout), then most likely "racket-lib" is already
+included and installed as part of the the distribution, but without
+Windows-specific dependencies of "racket-lib". In that case, instead
+of the above command, use
+
+   ..\..\raco pkg update --auto racket-lib
+
+Only if you are starting completely from scratch, see also
+"..\native-lib\README.txt".
 
 
 ========================================================================

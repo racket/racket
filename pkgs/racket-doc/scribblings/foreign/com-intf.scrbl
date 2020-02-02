@@ -59,8 +59,8 @@ information for a method along the lines of
 @racketmodname[ffi/unsafe/alloc].  If the @racket[maybe-alloc-spec] is
 @racket[#:release-with-function function-id], then
 @racket[function-id] is used to deallocate the result produced by the
-method, unless the result is explictly deallocated before it becomes
-unreachable; for exmaple, @racket[#:release-with-function Release] is
+method, unless the result is explicitly deallocated before it becomes
+unreachable; for example, @racket[#:release-with-function Release] is
 suitable for a method that returns a COM interface reference that must
 be eventually released.  The @racket[#:release-with-method method-id]
 form is similar, except that the deallocator is a method on the same
@@ -156,7 +156,7 @@ foreign call as follows:
        @racket[_fun]) determines the result.}
 
  @item{If the result is @cpp{RPC_E_CALL_REJECTED} or
-       @cpp{RPC_E_SERVERCALL_RETRYLATER}, the call is autmatically
+       @cpp{RPC_E_SERVERCALL_RETRYLATER}, the call is automatically
        retried up to @racket[(current-hfun-retry-count)] times with a
        delay of @racket[(current-hfun-retry-delay)] seconds between
        each attempt.}

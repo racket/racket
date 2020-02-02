@@ -219,5 +219,5 @@
   (check who identifier? id)
   (define s (raw:syntax-track-origin new-stx old-stx id))
   (define ctx (get-current-expand-context #:fail-ok? #t))
-  (when ctx (log-expand ctx 'track-origin new-stx s))
+  (when ctx (log-expand ctx 'track-syntax 'track-origin new-stx s))
   s)

@@ -119,7 +119,7 @@
                             p))]
          [empty-cache (lambda ()
                         ;; If you try things the hard way with Obj-C 2.0,
-                        ;;  you need to set up the cache. For ealier
+                        ;;  you need to set up the cache. For earlier
                         ;;  versions, you need to set the cache to #f.
                         #;
                         (let ([p (malloc 'raw 1 _objc_cache)])

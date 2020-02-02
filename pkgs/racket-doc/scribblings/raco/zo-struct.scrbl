@@ -109,7 +109,7 @@ structures that are produced by @racket[zo-parse] and consumed by
  original source names for the definition. The @racket[source-names]
  table is used only for debugging.
 
- When a linklet is instantiated, variables correponding to the
+ When a linklet is instantiated, variables corresponding to the
  flattening of the lists @racket[importss], @racket[exports],
  @racket[internals], and @racket[lifts] are placed in an array (in
  that order) for access via @racket[toplevel] references. The initial

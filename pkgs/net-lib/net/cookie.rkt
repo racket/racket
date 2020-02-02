@@ -65,7 +65,7 @@
  cookie:add-path
  cookie:secure
  cookie:version
- ;; To actually return a cookie (string formated as a cookie):
+ ;; To actually return a cookie (string formatted as a cookie):
  print-cookie
  ;; To parse the Cookies header:
  get-cookie

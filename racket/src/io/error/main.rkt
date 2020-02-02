@@ -52,15 +52,17 @@
 ;; Install the default error-value->string handler,
 ;; replacing the non-working primitive placeholder
 (define (install-error-value->string-handler!)
- (error-value->string-handler
-  (lambda (v len)
-    (unless (exact-nonnegative-integer? len)
-      (raise-argument-error 'default-error-value->string-handler
-                            "exact-nonnegative-integer?"
-                            len))
-    (define o (open-output-string))
-    (do-global-print 'default-error-value->string-handler v o 0 len)
-    (get-output-string o))))
+  (error-value->string-handler
+   (let ([default-error-value->string-handler
+           (lambda (v len)
+             (unless (exact-nonnegative-integer? len)
+               (raise-argument-error 'default-error-value->string-handler
+                                     "exact-nonnegative-integer?"
+                                     len))
+             (define o (open-output-string))
+             (do-global-print 'default-error-value->string-handler v o 0 len)
+             (get-output-string o))])
+     default-error-value->string-handler)))
 
 (void (install-error-value->string-handler!))
 

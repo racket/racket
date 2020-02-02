@@ -359,7 +359,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
 
   l = scheme_make_null();
   l = scheme_make_pair(scheme_intern_symbol("run"), l);
-  l = scheme_intern_symbol("quote"), l);
+  l = scheme_make_pair(scheme_intern_symbol("quote"), l);
 
   a[0] = l;
   a[1] = scheme_false;

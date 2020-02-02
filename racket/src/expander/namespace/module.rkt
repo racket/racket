@@ -80,7 +80,7 @@
                 get-all-variables) ; for `module->indirect-exports`
   #:authentic)
 
-;; [*] Beware that tabels in `provides` may map non-interned symbols
+;; [*] Beware that tables in `provides` may map non-interned symbols
 ;;     to provided bindings, in case something like a lifted
 ;;     identifier was provided. Since lifting generates a locally
 ;;     deterministic unreadable symbol that is intended to be specific
@@ -430,7 +430,7 @@
      
      (when (hash-ref seen mi #f)
        (error 'require "import cycle detected during module instantiation"))
-     
+
      ;; If we haven't shifted required mpis already, do that
      (unless (module-instance-shifted-requires mi)
        (set-module-instance-shifted-requires!
