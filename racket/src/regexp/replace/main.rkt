@@ -80,7 +80,8 @@
    [(procedure? insert)
     (define a (apply insert
                      (for/list ([pos (in-list poss)])
-                       (subchytes in (car pos) (cdr pos)))))
+                       (and pos
+                            (subchytes in (car pos) (cdr pos))))))
     (unless (chytes? in a)
       (raise-result-error who (if (bytes? in) "bytes?" "string?") a))
     a]
@@ -92,7 +93,10 @@
       (cond
        [(n . < . count)
         (define pos (list-ref poss n))
-        (subchytes in (car pos) (cdr pos))]
+
+        (if pos
+            (subchytes in (car pos) (cdr pos))
+            (subchytes in 0 0))]
        [else (subchytes in 0 0)]))
   
     (define (cons-chytes since pos l)
