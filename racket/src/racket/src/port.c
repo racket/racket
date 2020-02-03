@@ -1043,6 +1043,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
       ip->column = 0;
   } else {
     ip->charsSinceNewline += c;
+    ip->was_cr = 0;
   }
 
   /* Do the last line to get the column count right and to
