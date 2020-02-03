@@ -125,6 +125,8 @@ case "$host_os" in
     use_flag_pthread=no
     ;;
   haiku*)
+	use_flag_pthread=no
+	enable_pthread_by_default=yes
     LIBS="$LIBS -lnetwork"
     ;;
   *)

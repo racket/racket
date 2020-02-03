@@ -771,6 +771,8 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -Wl,--export-dynamic"
     ;;
   haiku*)
+	use_flag_pthread=no
+	enable_pthread_by_default=yes
     LIBS="$LIBS -lnetwork"
     ;;
   *)

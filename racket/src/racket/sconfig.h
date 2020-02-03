@@ -387,12 +387,12 @@
 # if defined(__i386__) || defined(__BEPC__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-haiku"
 #  define REGISTER_POOR_MACHINE
-//#  define MZ_USE_JIT_I386
+#  define MZ_USE_JIT_I386
 #  define MZ_TRY_EXTFLONUMS
 # elif defined(__amd64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-haiku"
 #  define REGISTER_POOR_MACHINE
-//#  define MZ_USE_JIT_X86_64
+#  define MZ_USE_JIT_X86_64
 #  define MZ_TRY_EXTFLONUMS
 # else
 #  error Unported platform.
