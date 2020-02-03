@@ -770,6 +770,9 @@ case "$host_os" in
     use_flag_pthread=no
     LIBS="$LIBS -lsocket -Wl,--export-dynamic"
     ;;
+  haiku*)
+    LIBS="$LIBS -lnetwork"
+    ;;
   *)
     ;;
 esac
