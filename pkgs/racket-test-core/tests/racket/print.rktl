@@ -20,7 +20,7 @@
                (test s to-pretty-string v)
                (test (format "~s" v) to-string/not-expression v))])
   (define-struct a (x y))
-  (define-struct b (x y) #:transparent)
+  (define-struct b (x y) #:transparent #:mutable)
   (define-struct c (x y) #:prefab)
   (define (custom-printer get-xy)
     (lambda (v port mode)
@@ -98,6 +98,9 @@
   (ptest "#<a>" (a 1 2))
   (ptest "(b 1 2)" (b 1 2))
   (ptest "'#s(c 1 2)" (c 1 2))
+
+  (let ([s (b 1 2)])
+    (ptest "(list (cons (b 1 2) 0) (cons (b 1 2) 0))" (list (cons s 0) (cons s 0))))
 
   (ptest "'<1 1 2>" (d 1 2))
   (ptest "'<1 1 #<a>>" (d 1 (a 1 2)))
@@ -436,7 +439,7 @@
        #'(let () body ...)]))
 
   (define-struct a (x y))
-  (define-struct b (x y) #:transparent)
+  (define-struct b (x y) #:transparent #:mutable)
   (define-struct c (x y) #:prefab)
 
   (struct s () #:transparent)
@@ -517,6 +520,18 @@
       (test-print/all (c 1 2)
                       "#s(c 1 2)" "#s(c 1 2)" "#s(c 1 2)" "'#s(c 1 2)" "#s(c 1 2)"))
 
+    (parameterize ([print-pair-curly-braces #f])
+      (let ([s (b 1 2)])
+        (test-print/all (list (cons s 0) (cons s 2))
+                        "((#0=#(struct:b 1 2) . 0) (#0# . 2))" "((#0=#(struct:b 1 2) . 0) (#0# . 2))" "((#0=#(struct:b 1 2) . 0) (#0# . 2))"
+                        "(list (cons #0=(b 1 2) 0) (cons #0# 2))" "((#0=#(struct:b 1 2) . 0) (#0# . 2))"))
+      (let ([s (b 1 2)])
+        (set-b-x! s s)
+        (test-print/all (list s)
+                        "(#0=#(struct:b #0# 2))" "(#0=#(struct:b #0# 2))" "(#0=#(struct:b #0# 2))"
+                        "(list #0=(b #0# 2))"
+                        "(#0=#(struct:b #0# 2))")))
+
     (parameterize ([print-vector-length #t])
       (test-print/all (b 1 1)
                       "#3(struct:b 1)" "#(struct:b 1 1)" "#3(struct:b 1)" "(b 1 1)" "#3(struct:b 1)")
@@ -524,6 +539,7 @@
                       "#3(struct:b 1 2)" "#(struct:b 1 2)" "#3(struct:b 1 2)" "(b 1 2)" "#3(struct:b 1 2)")
       (test-print/all (b 'b 'b)
                       "#3(struct:b b)" "#(struct:b b b)" "#3(struct:b b)" "(b 'b 'b)" "#3(struct:b b)")
+
       (test-print/all (b 'struct:b 'struct:b)
                       "#3(struct:b)" "#(struct:b struct:b struct:b)" "#3(struct:b)" "(b 'struct:b 'struct:b)" "#3(struct:b)")
       (test-print/all (c x x)

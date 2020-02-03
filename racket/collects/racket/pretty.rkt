@@ -246,7 +246,7 @@
                          (lambda (v [o (current-output-port)] #:newline? [n? #t])
                            (pp v o #:newline? n?))))
 
-(define-struct mark (str def) #:mutable)
+(define-struct mark (escapes? str def) #:mutable)
 (define-struct hide (val))
 
 (define (make-tentative-output-port pport width esc)
@@ -478,7 +478,7 @@
                            (hash-set! table obj 'in-progress))]
         [end-compound! (lambda (obj escapes?)
                          (when (eq? 'in-progress (hash-ref table obj #f))
-                           (hash-set! table obj 'done))
+                           (hash-set! table obj (if escapes? 'done-escapes 'done)))
                          escapes?)]
         [escapes! (lambda (obj mode)
                     (and (not (boolean? mode))
@@ -494,8 +494,10 @@
               ;; Note: counting all references as the same quoting mode
               (when (eq? g 'in-progress)
                 (set! found-cycle? #t))
-              (hash-set! table obj (make-mark #f (box #f)))
-              #f)]
+              (unless (mark? g)
+                (hash-set! table obj (make-mark (eq? g 'done-escapes) #f (box #f))))
+              (or (eq? g 'done-escapes)
+                  (and (mark? g) (mark-escapes? g))))]
         [else
          (cond
            [(vector? obj)
@@ -585,7 +587,7 @@
     (when (or found-cycle? print-graph?)
       ;; Remove unwanted table entries:
       (for ([k (in-list (hash-keys table))])
-        (when (eq? (hash-ref table k #f) 'done)
+        (unless (mark? (hash-ref table k #f))
           (hash-remove! table k)))))
 
   (define cycle-counter 0)

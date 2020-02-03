@@ -486,10 +486,12 @@ static Scheme_Object *check_cycle_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return check_cycles(o, p->ku.k.i1, ht, pp)
-    ? scheme_true : scheme_false;
+  return scheme_make_integer(check_cycles(o, p->ku.k.i1, ht, pp));
 }
 #endif
+
+#define CHECK_CHECK_HAS_UNQUOTE 0x1
+#define CHECK_CHECK_HAS_CYCLE   0x2
 
 static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht, PrintParams *pp)
 /* Results:  0x2 = cycle bit
@@ -508,7 +510,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       scheme_current_thread->ku.k.p2 = (void *)ht;
       scheme_current_thread->ku.k.p3 = (void *)pp;
       scheme_current_thread->ku.k.i1 = for_write;
-      return SCHEME_TRUEP(scheme_handle_stack_overflow(check_cycle_k));
+      return SCHEME_INT_VAL(scheme_handle_stack_overflow(check_cycle_k));
     }
   }
 #endif
@@ -533,24 +535,24 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
     val = scheme_hash_get(ht, obj);
     if (val)
       return SCHEME_INT_VAL(val);
-    scheme_hash_set(ht, obj, scheme_make_integer(0x2));
+    scheme_hash_set(ht, obj, scheme_make_integer(CHECK_CHECK_HAS_CYCLE));
   } else 
     return 0;
   
   if (SCHEME_PAIRP(obj)) {
     res = check_cycles(SCHEME_CAR(obj), for_write, ht, pp);
-    if ((for_write < 3) && res)
+    if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
       return res;
     res2 = check_cycles(SCHEME_CDR(obj), for_write, ht, pp);
     res |= res2;
   } else if (SCHEME_MUTABLE_PAIRP(obj)) {
     res = check_cycles(SCHEME_CAR(obj), for_write, ht, pp);
-    if ((for_write < 3) && res)
+    if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
       return res;
     res2 = check_cycles(SCHEME_CDR(obj), for_write, ht, pp);
     res |= res2; 
     if (for_write >= 3)
-      res |= 0x1; /* always escape for qq printing */
+      res |= CHECK_CHECK_HAS_UNQUOTE; /* always escape for qq printing */
   } else if (SCHEME_CHAPERONE_BOXP(obj)) {
     /* got here => printable */
     Scheme_Object *v;
@@ -575,12 +577,12 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         v = scheme_chaperone_vector_ref(obj, i);
       res2 = check_cycles(v, for_write, ht, pp);
       res |= res2;
-      if ((for_write < 3) && res)
+      if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
 	return res;
     }
   } else if (SCHEME_FLVECTORP(obj) 
              || SCHEME_FXVECTORP(obj)) {
-    res = 0x1; /* escape for qq printing */
+    res = CHECK_CHECK_HAS_UNQUOTE; /* escape for qq printing */
   } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
@@ -592,12 +594,12 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
           
           if (kind) {
             if (!strcmp(SCHEME_SYM_VAL(kind), "never"))
-              res |= 0x1;
+              res |= CHECK_CHECK_HAS_UNQUOTE;
             if (!strcmp(SCHEME_SYM_VAL(kind), "always")
                 || !strcmp(SCHEME_SYM_VAL(kind), "self"))
-              res -= (res & 0x1);
+              res -= (res & CHECK_CHECK_HAS_UNQUOTE);
           } else /* = "self" */
-            res -= (res & 0x1);
+            res -= (res & CHECK_CHECK_HAS_UNQUOTE);
         }
       } else
         res = 0;
@@ -611,7 +613,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       if ((for_write >= 3) && !SCHEME_PREFABP(obj))
-        res = 0x1;
+        res = CHECK_CHECK_HAS_UNQUOTE;
       else
         res = 0;
       while (i--) {
@@ -622,7 +624,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
             val = ((Scheme_Structure *)obj)->slots[i];
 	  res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
-          if ((for_write < 3) && res)
+          if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
             return res;
 	}
       }
@@ -652,11 +654,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         if (val) {
           res2 = check_cycles(key, for_write, ht, pp);
           res |= res2;
-          if ((for_write < 3) && res)
+          if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
             return res;
           res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
-          if ((for_write < 3) && res)
+          if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
             return res;
         }
       }
@@ -680,11 +682,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         val = scheme_chaperone_hash_traversal_get(obj, key, &key);
       res2 = check_cycles(key, for_write, ht, pp);
       res |= res2;
-      if ((for_write < 3) && res)
+      if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
         return res;
       res2 = check_cycles(val, for_write, ht, pp);
       res |= res2;
-      if ((for_write < 3) && res)
+      if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
         return res;
       i = scheme_hash_tree_next(t, i);
     }
@@ -1114,8 +1116,9 @@ print_to_string(Scheme_Object *obj,
 #endif
     if ((cycles == -1) || (cycles && (write >= 3))) {
       uq_ht = scheme_make_hash_table(SCHEME_hash_ptr);
-      cycles = check_cycles(obj, write, uq_ht, (PrintParams *)&params);
-    } else if (!cycles && params.print_graph)
+      cycles = check_cycles(obj, write, uq_ht, (PrintParams *)&params) & CHECK_CHECK_HAS_CYCLE;
+    }
+    if (!cycles && params.print_graph)
       cycles = 1;
   }
 

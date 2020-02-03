@@ -127,7 +127,7 @@
               (set! counter (add1 counter))
               (when (eq? g 'checking)
                 (set! cycle? #t)))
-            #f)]
+            (as-constructor? g))]
       [(pair? v)
        (checking! v)
        (define car-unquoted? (build-graph (car v) mode))
