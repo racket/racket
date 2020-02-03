@@ -1836,5 +1836,20 @@
 (test #f 'optimized (regexp-match #px"a*(?<=bc)" (make-bytes 100024 (char->integer #\a))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Ensure that regexp-replace can handle sub-matches that are #f
+;; (https://github.com/racket/racket/issues/3032)
+;;
+(test "" regexp-replace "(x)?" "" (lambda a ""))
+(test "" regexp-replace "(x)?" "" "\\1")
+
+(test "x" regexp-replace "x(y)?(z)?" "x" "&\\1\\2")
+(test "xyy" regexp-replace "x(y)?(z)?" "xy" "&\\1\\2")
+
+(test "xyy[z]" regexp-replace "x(y)?(z)?" "xy" (lambda (x y z)
+                                                 (string-append x
+                                                                (or y "[y]")
+                                                                (or z "[z]"))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
