@@ -335,5 +335,19 @@
   (test '#(error "hi" #f #f) sync m))
 
 ; --------------------
+;; Regression test to make sure cache clearing is not broken:
+
+(let ([logger (make-logger)])
+  (test #f log-level? logger 'debug 'test-a)
+  (test #f log-level? logger 'debug 'test-b)
+  (test #f log-level? logger 'debug 'test-c)
+  (define r2 (make-log-receiver logger 'debug 'test-b))
+  (test #f log-level? logger 'debug 'test-a)
+  (test #t log-level? logger 'debug 'test-b)
+  (test #f log-level? logger 'debug 'test-c)
+  ;; Retain receiver
+  (test #f sync/timeout 0 r2))
+
+; --------------------
 
 (report-errs)
