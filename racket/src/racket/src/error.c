@@ -1159,20 +1159,6 @@ void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
   scheme_log_message(logger, level, buffer, len, data);
 }
 
-int scheme_log_level_p(Scheme_Logger *logger, int level)
-{
-  if (!logger) {
-    Scheme_Config *config;
-    config = scheme_current_config();
-    logger = (Scheme_Logger *)scheme_get_param(config, MZCONFIG_LOGGER);
-  }
-
-  if (logger->local_timestamp < SCHEME_INT_VAL(logger->root_timestamp[0]))
-    update_want_level(logger, NULL);
-
-  return (logger->want_level >= level);
-}
-
 static char *error_write_to_string_w_max(Scheme_Object *v, int len, intptr_t *lenout)
 {
   Scheme_Object *o, *args[2];
@@ -3658,6 +3644,33 @@ static int get_want_level(Scheme_Logger *logger, Scheme_Object *name)
   }
 }
 
+int scheme_log_level_topic_p(Scheme_Logger *logger, int level, Scheme_Object *name)
+{
+  if (!logger) {
+    Scheme_Config *config;
+    config = scheme_current_config();
+    logger = (Scheme_Logger *)scheme_get_param(config, MZCONFIG_LOGGER);
+  }
+
+  if (!name) {
+    if (logger->local_timestamp < SCHEME_INT_VAL(logger->root_timestamp[0]))
+      update_want_level(logger, NULL);
+
+    return (logger->want_level >= level);
+  } else {
+    int want_level;
+
+    want_level = get_want_level(logger, name);
+
+    return (want_level >= level);
+  }
+}
+
+int scheme_log_level_p(Scheme_Logger *logger, int level)
+{
+  return scheme_log_level_topic_p(logger, level, NULL);
+}
+
 Scheme_Object *extract_all_levels(Scheme_Logger *logger)
 {
   Scheme_Hash_Table *names;
@@ -3792,7 +3805,7 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
     }
 
     if (extract_spec_level(logger->stderr_level, name) >= level) {
-      if (name) {
+      if (name && prefix_msg) {
         intptr_t slen;
         slen = SCHEME_SYM_LEN(name);
         fwrite(SCHEME_SYM_VAL(name), slen, 1, stderr);
@@ -3803,7 +3816,7 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
     }
 
     if (extract_spec_level(logger->stdout_level, name) >= level) {
-      if (name) {
+      if (name && prefix_msg) {
         intptr_t slen;
         slen = SCHEME_SYM_LEN(name);
         fwrite(SCHEME_SYM_VAL(name), slen, 1, stdout);

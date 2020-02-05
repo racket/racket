@@ -220,12 +220,14 @@ request incremental mode at all times, but calling
 @racket[(collect-garbage 'incremental)] in a program with a periodic
 task is generally a better mechanism for requesting incremental mode.
 
-In Racket 3m (the main variant of Racket), each garbage collection
-logs a message (see @secref["logging"]) at the @racket['debug] level with topic @racket['GC].
-The data portion of the message is an instance of a @indexed-racket[gc-info]
-@tech{prefab} structure type with 10 fields as follows, but future
-versions of Racket may use a @racket[gc-info] @tech{prefab} structure
-with additional fields:
+Each garbage collection logs a message (see @secref["logging"]) at the
+@racket['debug] level with topic @racket['GC]. In Racket 3m and CS
+variants of Racket, ``major'' collections are also logged at the
+@racket['debug] level with the topic @racket['GC:major]. In Racket 3m
+and CS variants of Racket, the data portion of the message is an
+instance of a @indexed-racket[gc-info] @tech{prefab} structure type
+with 10 fields as follows, but future versions of Racket may use a
+@racket[gc-info] @tech{prefab} structure with additional fields:
 
 @racketblock[
 (struct gc-info (mode pre-amount pre-admin-amount code-amount
@@ -315,7 +317,8 @@ collection mode, the text has the format
               @elem{Processor time since startup of garbage collection's start}))
 ]}
 
-@history[#:changed "6.3.0.7" @elem{Added @envvar{PLT_INCREMENTAL_GC}.}]
+@history[#:changed "6.3.0.7" @elem{Added @envvar{PLT_INCREMENTAL_GC}.}
+         #:changed "7.6.09" @elem{Added major-collection logging for the topic @racket['GC:major].}]
 
 
 @defproc[(collect-garbage [request (or/c 'major 'minor 'incremental) 'major]) void?]{

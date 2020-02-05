@@ -180,6 +180,7 @@ ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
 ROSYM static Scheme_Object *major_symbol, *minor_symbol, *incremental_symbol;
 ROSYM static Scheme_Object *cumulative_symbol;
+ROSYM static Scheme_Object *gc_symbol, *gc_major_symbol;
 ROSYM static Scheme_Object *racket_symbol;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
@@ -512,6 +513,11 @@ void scheme_init_thread(Scheme_Startup_Env *env)
 
   REGISTER_SO(cumulative_symbol);
   cumulative_symbol = scheme_intern_symbol("cumulative");
+
+  REGISTER_SO(gc_symbol);
+  REGISTER_SO(gc_major_symbol);
+  gc_symbol = scheme_intern_symbol("GC");
+  gc_major_symbol = scheme_intern_symbol("GC:major");
 
   REGISTER_SO(racket_symbol);
   racket_symbol = scheme_intern_symbol("racket");
@@ -9406,6 +9412,7 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
                       intptr_t post_child_places_used)
 {
   Scheme_Logger *logger;
+  int debug_gc = 0, debug_gc_major = 0;
 
   if (!master_gc) {
     if ((pre_used > max_gc_pre_used_bytes)
@@ -9421,7 +9428,12 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
     num_minor_garbage_collections++;
 
   logger = scheme_get_gc_logger();
-  if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
+  if (logger && scheme_log_level_topic_p(logger, SCHEME_LOG_DEBUG, gc_symbol))
+    debug_gc = 1;
+  if (logger && major_gc && scheme_log_level_topic_p(logger, SCHEME_LOG_DEBUG, gc_major_symbol))
+    debug_gc_major = 1;
+  
+  if (debug_gc || debug_gc_major) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
        based on the max value-print width, and we may not be at a
        point where parameters are available. */
@@ -9464,7 +9476,7 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
     delta = pre_used - post_used;
     admin_delta = (pre_admin - post_admin) - delta;
     sprintf(buf,
-            "" PLACE_ID_FORMAT "%s @ %sK(+%sK)[+%sK];"
+            "GC: " PLACE_ID_FORMAT "%s @ %sK(+%sK)[+%sK];"
             " free %sK(%s%sK) %" PRIdPTR "ms @ %" PRIdPTR,
 #ifdef MZ_USE_PLACES
             scheme_current_place_id,
@@ -9479,7 +9491,10 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
 
     END_XFORM_SKIP;
 
-    scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, vec);
+    if (debug_gc)
+      scheme_log_name_pfx_message(logger, SCHEME_LOG_DEBUG, gc_symbol, buf, buflen, vec, 0);
+    if (debug_gc_major)
+      scheme_log_name_pfx_message(logger, SCHEME_LOG_DEBUG, gc_major_symbol, buf, buflen, vec, 0);
   }
 
 #ifdef MZ_USE_PLACES
@@ -9491,10 +9506,17 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
 
 static void log_peak_memory_use()
 {
-  Scheme_Logger *logger;
   if (max_gc_pre_used_bytes > 0) {
+    Scheme_Logger *logger;
+    int debug_gc = 0, debug_gc_major = 0;
+    
     logger = scheme_get_gc_logger();
-    if (logger && scheme_log_level_p(logger, SCHEME_LOG_INFO)) {
+    if (logger && scheme_log_level_topic_p(logger, SCHEME_LOG_INFO, gc_symbol))
+      debug_gc = 1;
+    if (logger && scheme_log_level_topic_p(logger, SCHEME_LOG_INFO, gc_major_symbol))
+      debug_gc_major = 1;
+
+    if (debug_gc || debug_gc_major) {
       char buf[256], nums[128], *num, *numc, *numt, *num2;
       intptr_t buflen, allocated_bytes;
 #ifdef MZ_PRECISE_GC
@@ -9508,7 +9530,7 @@ static void log_peak_memory_use()
       numt = gc_num(nums, allocated_bytes);
       num2 = gc_unscaled_num(nums, scheme_total_gc_time);
       sprintf(buf,
-              "" PLACE_ID_FORMAT "atexit peak %sK[+%sK]; alloc %sK; major %d; minor %d; %sms",
+              "GC: " PLACE_ID_FORMAT "atexit peak %sK[+%sK]; alloc %sK; major %d; minor %d; %sms",
 #ifdef MZ_USE_PLACES
               scheme_current_place_id,
 #endif
@@ -9519,7 +9541,12 @@ static void log_peak_memory_use()
               num_minor_garbage_collections,
               num2);
       buflen = strlen(buf);
-      scheme_log_message(logger, SCHEME_LOG_INFO, buf, buflen, scheme_false);
+
+      if (debug_gc)
+        scheme_log_name_pfx_message(logger, SCHEME_LOG_INFO, gc_symbol, buf, buflen, scheme_false, 0);
+      if (debug_gc_major)
+        scheme_log_name_pfx_message(logger, SCHEME_LOG_INFO, gc_major_symbol, buf, buflen, scheme_false, 0);
+
       /* Setting to a negative value ensures that we log the peak only once: */
       max_gc_pre_used_bytes = -1;
     }

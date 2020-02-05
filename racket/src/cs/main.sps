@@ -641,10 +641,10 @@
                (set! minor-gcs (add1 minor-gcs))
                (set! major-gcs (add1 major-gcs)))
            (set! peak-mem (max peak-mem pre-allocated))
-           (let ([debug-GC? (log-level?* root-logger 'debug 'GC)])
-             (when (or debug-GC?
-                       (and (not minor?)
-                            (log-level?* root-logger 'debug 'GC:major)))
+           (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
+                 [debug-GC:major? (and (not minor?)
+                                       (log-level?* root-logger 'debug 'GC:major))])
+             (when (or debug-GC? debug-GC:major?)
                (let ([delta (- pre-allocated post-allocated)]
                      [account-str (let ([proper (if (= post-cpu-time pre-cpu-time)
                                                     100
@@ -653,22 +653,24 @@
                                     (if (fx>= proper 99)
                                         ""
                                         (string-append "[" (number->string (fx- 100 proper)) "%]")))])
-                 (log-message* root-logger 'debug (if debug-GC? 'GC 'GC:major)
-                               (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams~a @ ~a"
-                                            (if minor? "min" "MAJ") gen
-                                            (K "" pre-allocated) (K "+" (- pre-allocated+overhead pre-allocated))
-                                            (K "" delta) (K "+" (- (- pre-allocated+overhead post-allocated+overhead)
-                                                                   delta))
-                                            (- post-cpu-time pre-cpu-time)
-                                            account-str
-                                            pre-cpu-time)
-                               (make-gc-info (if minor? 'minor 'major) pre-allocated pre-allocated+overhead 0
-                                             post-allocated post-allocated+overhead
-                                             pre-cpu-time post-cpu-time
-                                             pre-time post-time)
-                               #f
-                               ;; in interrupt:
-                               #t)))))))))
+                 (let ([msg (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams~a @ ~a"
+                                         (if minor? "min" "MAJ") gen
+                                         (K "" pre-allocated) (K "+" (- pre-allocated+overhead pre-allocated))
+                                         (K "" delta) (K "+" (- (- pre-allocated+overhead post-allocated+overhead)
+                                                                delta))
+                                         (- post-cpu-time pre-cpu-time)
+                                         account-str
+                                         pre-cpu-time)]
+                       [data (make-gc-info (if minor? 'minor 'major) pre-allocated pre-allocated+overhead 0
+                                           post-allocated post-allocated+overhead
+                                           pre-cpu-time post-cpu-time
+                                           pre-time post-time)]
+                       [in-interrupt? #t])
+                   (when debug-GC?
+                     (log-message* root-logger 'debug 'GC msg data #f in-interrupt?))
+                   (when debug-GC:major?
+                     (log-message* root-logger 'debug 'GC:major msg data #f in-interrupt?)))))))))))
+
    (seq
     (exit-handler
      (let ([orig (exit-handler)]
