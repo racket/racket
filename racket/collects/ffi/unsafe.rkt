@@ -942,7 +942,7 @@
           (raise-arguments-error s->c (format "argument does not fit ~a" (or name "enum")) 
                                  "argument" x))))
     (lambda (x)
-      (cond [(assq x int->sym) => cdr]
+      (cond [(assv x int->sym) => cdr]
             [(eq? unknown _enum)
              (error c->s "expected a known ~a, got: ~s" basetype x)]
             [(procedure? unknown) (unknown x)]

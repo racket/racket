@@ -156,6 +156,14 @@
   (check s 'c 14)
   (check s 'd 16))
 
+(let ()
+  (define _test32_enum (_enum `(TEST32 = 1073741906) _sint32))
+  (define _test64_enum (_enum `(TEST64 = 4611686018427387904) _sint64))
+  (test 1073741906 cast 'TEST32 _test32_enum _sint32)
+  (test 'TEST32 cast 1073741906 _sint32 _test32_enum)
+  (test 4611686018427387904 cast  'TEST64 _test64_enum _sint64)
+  (test 'TEST64 cast 4611686018427387904 _sint64 _test64_enum))
+
 ;; Make sure `_box` at least compiles:
 (test #t ctype? (_fun (_box _int) -> _void))
 
