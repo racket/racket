@@ -318,7 +318,7 @@ collection mode, the text has the format
 ]}
 
 @history[#:changed "6.3.0.7" @elem{Added @envvar{PLT_INCREMENTAL_GC}.}
-         #:changed "7.6.09" @elem{Added major-collection logging for the topic @racket['GC:major].}]
+         #:changed "7.6.0.9" @elem{Added major-collection logging for the topic @racket['GC:major].}]
 
 
 @defproc[(collect-garbage [request (or/c 'major 'minor 'incremental) 'major]) void?]{
