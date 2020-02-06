@@ -861,11 +861,16 @@
      
      (make-reader-graph (read-compact cp))]
     [(equal? vm #"chez-scheme")
+     (define len (read-simple-number port))
+     (define bstr (read-bytes len port))
      (cond
        [(eq? 'chez-scheme (system-type 'vm))
-        ((vm-primitive 'read-linklet-bundle-hash) port)]
+        (hash-set ((vm-primitive 'read-linklet-bundle-hash)
+                   (open-input-bytes (bytes-append
+                                      (integer->integer-bytes len 4 #f #f)
+                                      bstr)))
+                  'opaque bstr)]
        [else
-        (define bstr (read-bytes (read-simple-number port) port))
         (hash 'opaque bstr)])]
     [else
      (error 'zo-parse "cannot parse for virtual machine: ~s" vm)]))
