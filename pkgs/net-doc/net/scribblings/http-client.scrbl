@@ -125,7 +125,7 @@ close} header will be added (currently, @racket['gzip] and @racket['deflate] are
 This function does not support requests that expect
 @litchar{100 (Continue)} responses.
 
-@history[#:version "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 @defproc[(http-conn-recv! [hc http-conn-liveable?]
@@ -147,8 +147,8 @@ following the response parsing. If @racket[close?] is @racket[#f],
 then the connection is only closed if the server instructs the client
 to do so.
 
-@history[#:changed "6.1.1.6" @elem{Added the @racket[#:method] argument.}]
-@history[#:version "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
+@history[#:changed "6.1.1.6" @elem{Added the @racket[#:method] argument.}
+         #:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 
@@ -163,7 +163,7 @@ to do so.
 
 Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
 
-@history[#:version "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 @defproc[(http-sendrecv [host (or/c bytes? string?)] [uri (or/c bytes? string?)]
@@ -184,7 +184,7 @@ The HTTP connection is not returned, so it is always closed after one
 response, which is why there is no @racket[#:closed?] argument like
 @racket[http-conn-recv!].
 
-@history[#:version "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]
 }
 
 @defproc[(http-conn-CONNECT-tunnel [proxy-host (or/c bytes? string?)]
