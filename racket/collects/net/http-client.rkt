@@ -170,7 +170,7 @@
              (version)))
   (unless (or (empty? decodes)
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
-    (fprintf to "Accept-Encoding: ~s\r\n"
+    (fprintf to "Accept-Encoding: ~a\r\n"
              (string-join (map symbol->string decodes) ",")))
 
   (define body (->bytes data))
