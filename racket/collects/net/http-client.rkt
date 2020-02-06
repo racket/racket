@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/contract/base
-         racket/local
          racket/match
          racket/list
          racket/string
@@ -363,22 +362,22 @@
       [else
        (values (http-conn-response-port/rest! hc) #t)]))
   (define decoded-response-port
-    (local
-        [(define (decode-response raw-response-port decode-function)
-           (define-values (in out) (make-pipe PIPE-SIZE))
-           (define decode-t
+    (let ([decode-response
+           (λ (raw-response-port decode-function)
+             (define-values (in out) (make-pipe PIPE-SIZE))
+             (define decode-t
+               (thread
+                (λ ()
+                  (decode-function raw-response-port out))))
              (thread
               (λ ()
-                (decode-function raw-response-port out))))
-           (thread
-            (λ ()
-              (thread-wait decode-t)
-              (when wait-for-close?
-                ;; Wait for an EOF from the raw port before we send an
-                ;; output on the decoding pipe:
-                (copy-port raw-response-port (open-output-nowhere)))
-              (close-output-port out)))
-           in)]
+                (thread-wait decode-t)
+                (when wait-for-close?
+                  ;; Wait for an EOF from the raw port before we send an
+                  ;; output on the decoding pipe:
+                  (copy-port raw-response-port (open-output-nowhere)))
+                (close-output-port out)))
+             in)])
       (cond
         [(head? method-bss) raw-response-port]
         [(and (memq 'gzip decodes)
