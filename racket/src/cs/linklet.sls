@@ -61,6 +61,7 @@
           variable-set!/check-undefined
           variable-ref
           variable-ref/no-check
+          set-consistent-variables!/define
           make-instance-variable-reference
           jitified-extract-closed
           jitified-extract
@@ -870,6 +871,12 @@
   (define (variable-ref/no-check var)
     (variable-val var))
 
+  (define (set-consistent-variables!/define vars vals)
+    (let loop ([i 0])
+      (unless (fx= i (#%vector-length vars))
+        (variable-set!/define (#%vector-ref vars i) (#%vector-ref vals i) 'consistent)
+        (loop (fx+ i 1)))))
+
   ;; Find variables or values needed from an instance for a linklet's
   ;; imports
   (define (extract-imported-variabless target-inst insts symss imports-abis accum)
@@ -1245,6 +1252,8 @@
      variable-set!/define
      variable-ref
      variable-ref/no-check
+     variable-set!/define
+     set-consistent-variables!/define
      make-instance-variable-reference
      unbox/check-undefined
      set-box!/check-undefined

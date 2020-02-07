@@ -228,9 +228,32 @@
     (let loop ([l l] [in-mut-l l] [accum-exprs null] [accum-ids null] [knowns knowns])
       (define mut-l (update-mutated-state! l in-mut-l mutated))
       (define (make-set-variables)
-        (for/list ([id (in-list accum-ids)]
-                   #:when (hash-ref exports (unwrap id) #f))
-          (make-set-variable id exports knowns mutated)))
+        ;; Resulting list of assinments will be reversed
+        (cond
+          [(or for-cify? for-interp?)
+           (for/list ([id (in-list accum-ids)]
+                      #:when (hash-ref exports (unwrap id) #f))
+             (make-set-variable id exports knowns mutated))]
+          [else
+           ;; Group 'consistent variables in one `set-consistent-variables!/define` call
+           (let loop ([accum-ids accum-ids] [consistent-ids null])
+             (cond
+               [(null? accum-ids)
+                (make-set-consistent-variables consistent-ids exports knowns mutated)]
+               [else
+                (define id (car accum-ids))
+                (define u-id (unwrap id))
+                (cond
+                  [(hash-ref exports u-id #f)
+                   (cond
+                     [(eq? 'consistent (variable-constance u-id knowns mutated))
+                      (loop (cdr accum-ids) (cons id consistent-ids))]
+                     [else
+                      (append (make-set-consistent-variables consistent-ids exports knowns mutated)
+                              (cons (make-set-variable id exports knowns mutated)
+                                    (loop (cdr accum-ids) '())))])]
+                  [else
+                   (loop (cdr accum-ids) consistent-ids)])]))]))
       (define (make-expr-defns es)
         (if (or for-interp? for-cify?)
             (reverse es)
@@ -401,6 +424,16 @@
   (define int-id (unwrap id))
   (define ex-id (id-to-variable int-id exports knowns mutated extra-variables))
   `(variable-set!/define ,ex-id ,id ',(variable-constance int-id knowns mutated)))
+
+;; returns a list equilanet to a sequence of `variable-set!/define` forms
+(define (make-set-consistent-variables ids exports knowns mutated)
+  (cond
+    [(null? ids) null]
+    [(null? (cdr ids)) (list (make-set-variable (car ids) exports knowns mutated))]
+    [else
+     (define ex-ids (for/list ([id (in-list ids)])
+                      (id-to-variable (unwrap id) exports knowns mutated #f)))
+     `((set-consistent-variables!/define (vector ,@ex-ids) (vector ,@ids)))]))
 
 (define (id-to-variable int-id exports knowns mutated extra-variables)
   (export-id
