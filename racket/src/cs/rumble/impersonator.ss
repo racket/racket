@@ -46,8 +46,8 @@
              (record? (impersonator-val orig) rtd)))
     (let loop ([v orig])
       (cond
-       [(and (struct-undefined-chaperone? v)
-             rtd)
+       [(and rtd
+             (struct-undefined-chaperone? v))
         ;; Must be the only wrapper left
         (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
           (let ([r (unsafe-struct*-ref (impersonator-val v) abs-pos)])
@@ -80,7 +80,7 @@
         (if rtd
             (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
               (unsafe-struct*-ref v abs-pos))
-            (|#%app| acc v))]))]
+            (acc v))]))]
    [else
     (raise-argument-error (string->symbol
                            (string-append (symbol->string (or record-name 'struct))
