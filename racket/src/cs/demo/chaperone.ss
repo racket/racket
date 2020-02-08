@@ -128,7 +128,7 @@
 (check (chaperone-of? fc f) #t)
 (check (chaperone-of? fi f) #f)
 (check (chaperone-of? fi fc) #f)
-(check (chaperone-of? fc fi) #t)
+(check (chaperone-of? fc fi) #f)
 
 (define fc2 (chaperone-procedure f
                                  (lambda (x y)
@@ -348,7 +348,7 @@
   (check (ops!) '(set equal-key))
   
   (check (hash-ref (hash-remove ht1c 1) 1 'none) 'none)
-  (check (ops!) '(remove equal-key get equal-key equal-key))
+  (check (ops!) '(remove equal-key get equal-key))
   (check (begin
            (hash-remove! ht2c 1)
            (hash-ref ht2c 1 'none))

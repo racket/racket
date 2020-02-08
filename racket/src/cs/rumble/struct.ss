@@ -82,7 +82,7 @@
                    (cond
                     [(and (impersonator? v)
                           (pred v))
-                     (impersonate-struct-or-property-ref acc #f acc v #f #f)]
+                     (impersonate-struct-or-property-ref acc #f #|key1:|# acc #|key2:|# #f v #f #f)]
                     [else
                      (let* ([rtd (if (record-type-descriptor? v)
                                      v
@@ -406,38 +406,38 @@
 (define (struct-constructor-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
-         (with-global-lock* (hashtable-ref struct-constructors v #f)))))
+         (with-global-lock* (eq-hashtable-ref struct-constructors v #f)))))
 
 (define (struct-predicate-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
-         (with-global-lock* (hashtable-ref struct-predicates v #f)))))
+         (with-global-lock* (eq-hashtable-ref struct-predicates v #f)))))
 
 (define (struct-accessor-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
          (or (position-based-accessor? v)
-             (with-global-lock* (hashtable-ref struct-field-accessors v #f))))
+             (with-global-lock* (eq-hashtable-ref struct-field-accessors v #f))))
        #t))
 
 (define (struct-mutator-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
          (or (position-based-mutator? v)
-             (with-global-lock* (hashtable-ref struct-field-mutators v #f))))
+             (with-global-lock* (eq-hashtable-ref struct-field-mutators v #f))))
        #t))
 
 (define (struct-accessor-procedure-rtd+pos v)
   (if (position-based-accessor? v)
       (cons (position-based-accessor-rtd v)
             (position-based-accessor-offset v))
-      (with-global-lock* (hashtable-ref struct-field-accessors v #f))))
+      (with-global-lock* (eq-hashtable-ref struct-field-accessors v #f))))
 
 (define (struct-mutator-procedure-rtd+pos v)
   (if (position-based-mutator? v)
       (cons (position-based-mutator-rtd v)
             (position-based-mutator-offset v))
-      (with-global-lock* (hashtable-ref struct-field-mutators v #f))))
+      (with-global-lock* (eq-hashtable-ref struct-field-mutators v #f))))
 
 ;; This indirection prevents the whole-program optimizer from inlining
 ;; the `with-glocal-lock*` expansion --- which, at the time of
