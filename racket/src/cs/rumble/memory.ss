@@ -90,6 +90,7 @@
           (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR post-allocated))
           (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
         (update-eq-hash-code-table-size!)
+        (update-struct-procs-table-sizes!)
         (poll-foreign-guardian)
         (when (and reachable-size-increments-callback
                    (fx= gen (collect-maximum-generation)))

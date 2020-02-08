@@ -12,13 +12,16 @@
 
 (define-record struct-type-prop (name guard supers))
 
-;; Record the properties that are implemented by each rtd:
+;; Record the properties that are implemented by each rtd; used
+;; without a lock
 (define rtd-props (make-ephemeron-eq-hashtable))
 
-;; Maps a property-accessor function to `(cons predicate-proc can-impersonate)`:
+;; Maps a property-accessor function to `(cons predicate-proc can-impersonate)`;
+;; used without a lock
 (define property-accessors (make-ephemeron-eq-hashtable))
 
-;; Maps a property-predicate function to `struct-property`:
+;; Maps a property-predicate function to `struct-property`; used without
+;; a lock
 (define property-predicates (make-ephemeron-eq-hashtable))
 
 (define (struct-type-property? v)
@@ -95,42 +98,39 @@
                                  pv))
                            (do-fail fail v)))])]
                   [(v) (acc v default-fail)])])
-         (with-global-lock*
-          (hashtable-set! property-accessors
-                          acc
-                          (cons pred can-impersonate?)))
-         (with-global-lock*
-          (hashtable-set! property-predicates
-                          pred
-                          st))
+         (add-to-table! property-accessors
+                        acc
+                        (cons pred can-impersonate?))
+         (add-to-table! property-predicates
+                        pred
+                        st)
          (values st
                  pred
                  acc)))]))
 
 (define (struct-type-property-accessor-procedure? v)
-  (and (procedure? v)
-       (let ([v (strip-impersonator v)])
-         (with-global-lock* (hashtable-ref property-accessors v #f)))
-       #t))
+  (let ([v (strip-impersonator v)])
+    (and (#%procedure? v)
+         (eq-hashtable-contains? property-accessors v))))
 
 (define/who struct-type-property-predicate-procedure?
   (case-lambda
    [(v) (struct-type-property-predicate-procedure? v #f)]
    [(v spt)
     (check who struct-type-property? :or-false spt)
-    (and (procedure? v)
-         (let* ([v (strip-impersonator v)]
-                [spt-c (with-global-lock* (hashtable-ref property-predicates v #f))])
-           (cond
-            [(not spt-c) #f]
-            [(not spt) #t]
-            [else (eq? spt spt-c)])))]))
+    (let ([v (strip-impersonator v)])
+      (and (#%procedure? v)
+           (let ([spt-c (eq-hashtable-ref property-predicates v #f)])
+             (cond
+              [(not spt-c) #f]
+              [(not spt) #t]
+              [else (eq? spt spt-c)]))))]))
 
 (define (struct-type-property-accessor-procedure-pred v)
-  (car (with-global-lock (hashtable-ref property-accessors v #f))))
+  (car (eq-hashtable-ref property-accessors v #f)))
 
 (define (struct-type-property-accessor-procedure-can-impersonate? v)
-  (cdr (with-global-lock* (hashtable-ref property-accessors v #f))))
+  (cdr (eq-hashtable-ref property-accessors v #f)))
 
 (define (struct-property-ref prop rtd default)
   (getprop (record-type-uid rtd) prop default))
@@ -370,7 +370,8 @@
 
 ;; Records which fields of an rtd are mutable, where an rtd that is
 ;; not in the table has no mutable fields, and the field list can be
-;; empty if a parent type is mutable:
+;; empty if a parent type is mutable; this table is used without
+;; a lock
 (define rtd-mutables (make-ephemeron-eq-hashtable))
 
 ;; Accessors and mutators that need a position are wrapped in these records:
@@ -385,69 +386,83 @@
     (string->symbol (string-append (symbol->string (record-type-name rtd)) "-set!"))))
 
 ;; Register other procedures in hash tables; avoid wrapping to
-;; avoid making the procedures slower
+;; avoid making the procedures slower. These tables are accessed
+;; without a lock, so son't use `hashtable-set!` on them.
 (define struct-constructors (make-ephemeron-eq-hashtable))
 (define struct-predicates (make-ephemeron-eq-hashtable))
 (define struct-field-accessors (make-ephemeron-eq-hashtable))
 (define struct-field-mutators (make-ephemeron-eq-hashtable))
+(define struct-proc-tables-need-resize? #f)
+
+(define (add-to-table! table key val)
+  (if (eq-hashtable-try-atomic-cell table key val)
+      (set! struct-proc-tables-need-resize? #t)
+      (add-to-table! table key val)))
+
+;; Called in the collect-request handler:
+(define (update-struct-procs-table-sizes!)
+  (when struct-proc-tables-need-resize?
+    (set! struct-proc-tables-need-resize? #f)
+    (let ([resize! (lambda (ht)
+                     ;; Since `add-to-table!` uses `eq-hashtable-try-atomic-cell`,
+                     ;; give the tabel a chance to resize
+                     (let ([p (cons #f #f)])
+                       (eq-hashtable-set! ht p #t)
+                       (eq-hashtable-delete! ht p)))])
+      (resize! struct-constructors)
+      (resize! struct-predicates)
+      (resize! struct-field-accessors)
+      (resize! struct-field-mutators)
+      (resize! property-accessors)
+      (resize! property-predicates)
+      (resize! rtd-mutables)
+      (resize! rtd-props))))
 
 (define (register-struct-constructor! p)
-  (add-to-table! struct-constructors p #t))
+  (#%$app/no-inline add-to-table! struct-constructors p #t))
 
 (define (register-struct-predicate! p)
-  (add-to-table! struct-predicates p #t))
+  (#%$app/no-inline add-to-table! struct-predicates p #t))
 
 (define (register-struct-field-accessor! p rtd pos)
-  (add-to-table! struct-field-accessors p (cons rtd pos)))
+  (#%$app/no-inline add-to-table! struct-field-accessors p (cons rtd pos)))
 
 (define (register-struct-field-mutator! p rtd pos)
-  (add-to-table! struct-field-mutators p (cons rtd pos)))
+  (#%$app/no-inline add-to-table! struct-field-mutators p (cons rtd pos)))
 
 (define (struct-constructor-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
-         (with-global-lock* (eq-hashtable-ref struct-constructors v #f)))))
+         (eq-hashtable-contains? struct-constructors v))))
 
 (define (struct-predicate-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
-         (with-global-lock* (eq-hashtable-ref struct-predicates v #f)))))
+         (eq-hashtable-contains? struct-predicates v))))
 
 (define (struct-accessor-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
          (or (position-based-accessor? v)
-             (with-global-lock* (eq-hashtable-ref struct-field-accessors v #f))))
-       #t))
+             (eq-hashtable-contains? struct-field-accessors v)))))
 
 (define (struct-mutator-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
          (or (position-based-mutator? v)
-             (with-global-lock* (eq-hashtable-ref struct-field-mutators v #f))))
-       #t))
+             (eq-hashtable-contains? struct-field-mutators v)))))
 
 (define (struct-accessor-procedure-rtd+pos v)
   (if (position-based-accessor? v)
       (cons (position-based-accessor-rtd v)
             (position-based-accessor-offset v))
-      (with-global-lock* (eq-hashtable-ref struct-field-accessors v #f))))
+      (eq-hashtable-ref struct-field-accessors v #f)))
 
 (define (struct-mutator-procedure-rtd+pos v)
   (if (position-based-mutator? v)
       (cons (position-based-mutator-rtd v)
             (position-based-mutator-offset v))
-      (with-global-lock* (eq-hashtable-ref struct-field-mutators v #f))))
-
-;; This indirection prevents the whole-program optimizer from inlining
-;; the `with-glocal-lock*` expansion --- which, at the time of
-;; writing, inflates the resulting code by 30%!
-(define add-to-table! #f)
-(define add-to-table!/done
-  (set! add-to-table!
-        (lambda (table key val)
-          (with-global-lock*
-           (hashtable-set! table key val)))))
+      (eq-hashtable-ref struct-field-mutators v #f)))
 
 ;; ----------------------------------------
 
@@ -552,7 +567,7 @@
         (let* ([parent-rtd* (strip-impersonator parent-rtd)]
                [parent-props
                 (if parent-rtd*
-                    (with-global-lock* (hashtable-ref rtd-props parent-rtd* '()))
+                    (eq-hashtable-ref rtd-props parent-rtd* '())
                     '())]
                [all-immutables (if (integer? proc-spec)
                                    (cons proc-spec immutables)
@@ -566,9 +581,8 @@
                          (if proc-spec
                              (cons prop:procedure props)
                              props))])
-            (with-global-lock* (hashtable-set! rtd-props rtd props)))
-          (with-global-lock*
-           (register-mutables! mutables rtd parent-rtd*))
+            (add-to-table! rtd-props rtd props))
+          (register-mutables! mutables rtd parent-rtd*)
           ;; Copy parent properties for this type:
           (for-each (lambda (prop)
                       (let loop ([prop prop])
@@ -665,12 +679,11 @@
            (inspector-set! rtd 'prefab)
            rtd])))])))
 
-;; call with lock held
 (define (register-mutables! mutables rtd parent-rtd)
   (unless (and (equal? '#() mutables)
                (or (not parent-rtd)
-                   (not (hashtable-contains? rtd-mutables parent-rtd))))
-    (hashtable-set! rtd-mutables rtd mutables)))
+                   (not (eq-hashtable-contains? rtd-mutables parent-rtd))))
+    (add-to-table! rtd-mutables rtd mutables)))
 
 (define (check-accessor-or-mutator-index who rtd pos)
   (let* ([total-count (record-type-field-count rtd)])
@@ -824,7 +837,7 @@
                             auto-count
                             (make-position-based-accessor rtd* parent-total*-count (+ init-count auto-count))
                             (make-position-based-mutator rtd* parent-total*-count (+ init-count auto-count))
-                            (mutables->immutables (with-global-lock* (hashtable-ref rtd-mutables rtd* '#())) init-count)
+                            (mutables->immutables (eq-hashtable-ref rtd-mutables rtd* '#()) init-count)
                             next-rtd*
                             skipped?))])
           (cond
@@ -992,7 +1005,7 @@
 ;; ----------------------------------------
 
 (define (struct-type-field-mutable? rtd pos)
-  (let ([mutables (with-global-lock* (hashtable-ref rtd-mutables rtd '#()))])
+  (let ([mutables (eq-hashtable-ref rtd-mutables rtd '#())])
     (let loop ([j (#%vector-length mutables)])
       (cond
        [(fx= j 0) #f]
@@ -1278,4 +1291,4 @@
              (define make-name name)))])))
 
 (define (register-struct-named! rtd)
-  (with-global-lock* (hashtable-set! rtd-props rtd '())))
+  (add-to-table! rtd-props rtd '()))
