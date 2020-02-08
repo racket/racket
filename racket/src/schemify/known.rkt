@@ -57,8 +57,7 @@
 (struct known-literal (value) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedure with arity mask; the procedure has to be a procedure from the host
-;; Scheme's perspective --- not an applicable struct or chaperoned procedure, which
-;; means that parameters don't count
+;; Scheme's perspective --- not an applicable struct or chaperoned procedure
 (struct known-procedure (arity-mask) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedure that does not need to run inside a module prompt, which implies that the
