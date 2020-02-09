@@ -162,8 +162,9 @@
 
 (define prev-stats-objects #f)
 
-(define (dump-memory-stats . args)
-  (let-values ([(backtrace-predicate use-prev? max-path-length) (parse-dump-memory-stats-arguments args)])
+(define/who (dump-memory-stats . args)
+  (let-values ([(backtrace-predicate flags max-path-length every-n)
+                (parse-dump-memory-stats-arguments who args)])
     (enable-object-counts #t)
     (enable-object-backreferences (and backtrace-predicate #t))
     (collect-garbage)
@@ -237,125 +238,170 @@
                                   s1 size-width
                                   " | " 3
                                   c2 count-width
-                                  s2 size-width))])
+                                  s2 size-width))]
+           [use-prev? (#%memq 'new flags)]
+           [skip-counts? (#%memq 'only flags)])
       (enable-object-counts #f)
       (enable-object-backreferences #f)
-      (chez:fprintf (current-error-port) "Begin Dump\n")
-      (chez:fprintf (current-error-port) "Current memory use: ~a\n" (bytes-allocated))
-      (unless (#%memq 'only args)
-        (chez:fprintf (current-error-port) "Begin RacketCS\n")
+      (#%fprintf (current-error-port) "Begin Dump\n")
+      (#%fprintf (current-error-port) "Current memory use: ~a\n" (bytes-allocated))
+      (when (#%memq 'help flags)
+        (let ([lines (lambda strs
+                       (for-each (lambda (str)
+                                   (#%fprintf (current-error-port) str)
+                                   (#%newline (current-error-port)))
+                                 strs))])
+          (lines "Begin Help"
+                 "  (dump-memory-stats <spec> <modifier> ...)"
+                 "    where <spec> shows paths to objects:"
+                 "      <spec> = <symbol>"
+                 "             | <predicate-procedure>"
+                 "             | (make-weak-box <val>)"
+                 "             | (list 'struct <symbol>)"
+                 "    and <modifier> controls that output:"
+                 "       <modifier> = 'new        ; only trace new since last dump"
+                 "                  | 'max-path <exact-nonnegative-integer>"
+                 "                  | 'every <exact-positive-integer> ; show a subset"
+                 "                  | 'only       ; skip table of object counts"
+                 "End Help")))
+      (unless skip-counts?
+        (#%fprintf (current-error-port) "Begin RacketCS\n")
         (for-each (lambda (e)
                     (chez:fprintf (current-error-port)
                                   (layout-line (chez:format "~a" (car e))
                                                ((get-count #f) e) ((get-bytes #f) e)
                                                ((get-count #t) e) ((get-bytes #t) e))))
                   (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
-        (chez:fprintf (current-error-port) (layout-line "total"
-                                                        (apply + (map (get-count #f) counts))
-                                                        (apply + (map (get-bytes #f) counts))
-                                                        (apply + (map (get-count #t) counts))
-                                                        (apply + (map (get-bytes #t) counts))))
-        (chez:fprintf (current-error-port) "End RacketCS\n"))
+        (#%fprintf (current-error-port) (layout-line "total"
+                                                     (apply + (map (get-count #f) counts))
+                                                     (apply + (map (get-bytes #f) counts))
+                                                     (apply + (map (get-count #t) counts))
+                                                     (apply + (map (get-bytes #t) counts))))
+        (#%fprintf (current-error-port) "End RacketCS\n"))
       (when backtrace-predicate
         (when (and use-prev? (not prev-stats-objects))
           (set! prev-stats-objects (make-weak-eq-hashtable)))
         (let ([backreference-ht (make-eq-hashtable)])
           (for-each (lambda (l)
                       (for-each (lambda (p)
-                                  (hashtable-set! backreference-ht (car p) (cdr p)))
+                                  (eq-hashtable-set! backreference-ht (car p) (cdr p)))
                                 l))
                     backreferences)
-          (chez:fprintf (current-error-port) "Begin Traces\n")
-          (let ([prev-trace (box '())])
+          (#%fprintf (current-error-port) "Begin Traces\n")
+          (let ([prev-trace (box '())]
+                [count-n 0])
             (for-each (lambda (l)
                         (for-each (lambda (p)
                                     (when (backtrace-predicate (car p))
-                                      (unless (and use-prev?
-                                                   (hashtable-ref prev-stats-objects (car p) #f))
+                                      (set! count-n (add1 count-n))
+                                      (unless (or (< count-n every-n)
+                                                  (and use-prev?
+                                                       (eq-hashtable-ref prev-stats-objects (car p) #f)))
+                                        (set! count-n 0)
                                         (when use-prev?
-                                          (hashtable-set! prev-stats-objects (car p) #t))
+                                          (eq-hashtable-set! prev-stats-objects (car p) #t))
                                         (unless (eqv? 0 max-path-length)
-                                          (chez:printf "*== ~a" (object->backreference-string (car p)))
+                                          (#%printf "*== ~a" (object->backreference-string (car p)))
                                           (let loop ([prev (car p)] [o (cdr p)] [accum '()] [len (sub1 (or max-path-length +inf.0))])
                                             (cond
                                              [(zero? len) (void)]
                                              [(not o) (set-box! prev-trace (reverse accum))]
-                                             [(chez:memq o (unbox prev-trace))
+                                             [(#%memq o (unbox prev-trace))
                                               => (lambda (l)
-                                                   (chez:printf " <- DITTO\n")
+                                                   (#%printf " <- DITTO\n")
                                                    (set-box! prev-trace (append (reverse accum) l)))]
                                              [else
-                                              (chez:printf " <- ~a" (object->backreference-string
-                                                                     (cond
-                                                                      [(and (pair? o)
-                                                                            (eq? prev (car o)))
-                                                                       (cons 'PREV (cdr o))]
-                                                                      [(and (pair? o)
-                                                                            (eq? prev (cdr o)))
-                                                                       (cons (car o) 'PREV)]
-                                                                      [else o])))
-                                              (loop o (hashtable-ref backreference-ht o #f) (cons o accum) (sub1 len))]))))))
+                                              (#%printf " <- ~a" (object->backreference-string
+                                                                  (cond
+                                                                   [(and (pair? o)
+                                                                         (eq? prev (car o)))
+                                                                    (cons 'PREV (cdr o))]
+                                                                   [(and (pair? o)
+                                                                         (eq? prev (cdr o)))
+                                                                    (cons (car o) 'PREV)]
+                                                                   [else o])))
+                                              (loop o (eq-hashtable-ref backreference-ht o #f) (cons o accum) (sub1 len))]))))))
                                   l))
                       backreferences))
-          (chez:fprintf (current-error-port) "End Traces\n")))
-      (chez:fprintf (current-error-port) "End Dump\n"))))
+          (#%fprintf (current-error-port) "End Traces\n")))
+      (#%fprintf (current-error-port) "End Dump\n"))))
 
-(define (parse-dump-memory-stats-arguments args)
-  (values
-   ;; backtrace predicate:
-   (cond
-    [(null? args) #f]
-    [(eq? (car args) 'struct) #f]
-    [(and (list? (car args))
-          (= 2 (length (car args)))
-          (eq? (caar args) 'struct)
-          (symbol? (cadar args)))
-     (let ([struct-name (cadar args)])
-       (lambda (o)
-         (and (#%$record? o)
-              (eq? (record-type-name (#%$record-type-descriptor o)) struct-name))))]
-    [(weak-box? (car args))
-     (let ([v (weak-box-value (car args))])
-       (lambda (o) (eq? o v)))]
-    [(eq? 'code (car args))
-     #%$code?]
-    [(eq? 'procedure (car args))
-     #%procedure?]
-    [(eq? 'ephemeron (car args))
-     ephemeron-pair?]
-    [(eq? 'bignum (car args))
-     bignum?]
-    [(eq? 'keyword (car args))
-     keyword?]
-    [(eq? 'string (car args))
-     string?]
-    [(eq? 'symbol (car args))
-     symbol?]
-    [(eq? '<ffi-lib> (car args))
-     ffi-lib?]
-    [(eq? '<will-executor> (car args))
-     will-executor?]
-    [(eq? 'metacontinuation-frame (car args))
-     metacontinuation-frame?]
-    [(symbol? (car args))
-     (let ([name (car args)])
-       (lambda (o)
-         (and (#%record? o)
-              (let ([rtd (#%record-rtd o)])
-                (eq? name (#%record-type-name rtd))))))]
-    [else #f])
-   ;; 'new mode for backtrace?
-   (and (pair? args)
-        (pair? (cdr args))
-        (eq? 'new (cadr args)))
-   ;; max path length
-   (and (pair? args)
-        (pair? (cdr args))
-        (or (and (exact-nonnegative-integer? (cadr args))
-                 (cadr args))
-            (and (pair? (cddr args))
-                 (exact-nonnegative-integer? (caddr args))
-                  (caddr args))))))
+(define (parse-dump-memory-stats-arguments who args)
+  (cond
+   [(null? args)
+    (values #f  ; predicate
+            '() ; flags
+            #f  ; max-path-length
+            1)] ; every-n
+   [else
+    (let ([predicate
+           (let ([arg (car args)])
+             (case arg
+               [(help) #f]
+               [(struct) #f]
+               [(code) #%$code?]
+               [(procedure) #%procedure?]
+               [(ephemeron) ephemeron-pair?]
+               [(bignum) bignum?]
+               [(vector) #%vector?]
+               [(box) #%box?]
+               [(stencil-vector) stencil-vector?]
+               [(keyword) keyword?]
+               [(string) string?]
+               [(symbol) symbol?]
+               [(weakpair) weak-pair?]
+               [(<ffi-lib>) ffi-lib?]
+               [(<will-executor>) will-executor?]
+               [(metacontinuation-frame) metacontinuation-frame?]
+               [else
+                (cond
+                 [(and (#%procedure? arg)
+                       (procedure-arity-includes? arg 1))
+                  arg]
+                 [(symbol? arg) (make-struct-name-predicate arg)]
+                 [(and (#%list? arg)
+                       (fx= 2 (length arg))
+                       (eq? (car arg) 'struct)
+                       (symbol? (cadr arg)))
+                  (make-struct-name-predicate (cadr arg))]
+                 [(weak-box? arg)
+                  (let ([v (weak-cons (weak-box-value arg) #f)])
+                    (lambda (o) (eq? o (car v))))]
+                 [else
+                  (raise-arguments-error who "unrecognized predicate;\n try 'help for more information"
+                                         "given" arg)])]))])
+      (let loop ([args (cdr args)] [flags (if (eq? 'help (car args)) '(help) '())] [max-path-length #f] [every-n 1])
+        (cond
+         [(null? args)
+          (values predicate flags max-path-length every-n)]
+         [(eq? (car args) 'new)
+          (loop (cdr args) (cons 'new flags) max-path-length every-n)]
+         [(eq? (car args) 'only)
+          (loop (cdr args) (cons 'only flags) max-path-length every-n)]
+         [(eq? (car args) 'help)
+          (loop (cdr args) (cons 'help flags) max-path-length every-n)]
+         [(eq? (car args) 'max-path)
+          (when (null? (cdr args))
+            (raise-arguments-error who "missing argument for 'max-path"))
+          (let ([max-path-length (cadr args)])
+            (unless (exact-nonnegative-integer? max-path-length)
+              (raise-arguments-error who "bad 'max-path value" "given" max-path-length))
+            (loop (cddr args) flags max-path-length every-n))]
+         [(eq? (car args) 'every)
+          (when (null? (cdr args))
+            (raise-arguments-error who "missing argument for 'every"))
+          (let ([every-n (cadr args)])
+            (unless (exact-positive-integer? every-n)
+              (raise-arguments-error who "bad 'every value" "given" every-n))
+            (loop (cddr args) flags max-path-length every-n))]
+         [else
+          (raise-arguments-error who "unreognized argument;\n try 'help for more information" "given" (car args))])))]))
+
+(define (make-struct-name-predicate name)
+  (lambda (o)
+    (and (#%record? o)
+         (let ([rtd (#%record-rtd o)])
+           (eq? name (#%record-type-name rtd))))))
 
 (define (object->backreference-string o)
   (parameterize ([print-level 3])
