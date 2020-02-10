@@ -81,6 +81,8 @@ AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for lo
 m4_include(../ac/ubsan_arg.m4)
 AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
 
+AC_ARG_ENABLE(werror,  [  --enable-werror         compile sources with warnings as errors])  
+
 m4_include(../ac/crossany_arg.m4)
 
 ###### Some flags imply other flags #######
@@ -1433,6 +1435,11 @@ else
   PLAIN_CC='$(CC)'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
+fi
+
+# Last but not least, if Werror was requested, add it now
+if test "${enable_werror}" = "yes"; then
+  CFLAGS="-Werror ${CFLAGS}"
 fi
 
 ############## final output ################
