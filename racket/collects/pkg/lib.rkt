@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract/base
+         (only-in racket/set set/c)
          net/url
          "path.rkt"
          "private/desc.rkt"
@@ -232,7 +233,7 @@
                           path?
                           (or/c #f string?)
                           boolean?
-                          (listof module-path?)))]
+                          (set/c module-path? #:cmp 'equal #:kind 'immutable)))]
   [pkg-config-catalogs
    (-> (listof string?))]
   [pkg-catalog-update-local

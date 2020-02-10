@@ -3,6 +3,7 @@
           (for-label (except-in racket/base
                                 remove)
                      racket/contract/base
+                     (only-in racket/set set/c)
                      pkg
                      pkg/lib
                      (only-in pkg/db current-pkg-catalog-file)
@@ -189,7 +190,7 @@ is a directory within @racket[path]).
                     [#:force-strip? force-strip? boolean? #f]
                     [#:use-cache? use-cache? boolean? #f]
                     [#:quiet? quiet? boolean? #t])
-         (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
+         (values string? path? (or/c #f string?) boolean? (set/c module-path?))]{
 
 Locates the implementation of the package specified by @racket[desc]
 and downloads and unpacks it to a temporary directory (as needed).
