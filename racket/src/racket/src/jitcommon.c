@@ -190,7 +190,7 @@ static Scheme_Object **ts_scheme_on_demand(Scheme_Object **rs) XFORM_SKIP_PROC
 static int common0(mz_jit_state *jitter, void *_data)
 {
   int in;
-  GC_CAN_IGNORE jit_insn *ref;
+  GC_CAN_IGNORE jit_insn *ref USED_ONLY_FOR_FUTURES;
 
   /* *** check_arity_code *** */
   /* Called as a function: */
@@ -254,8 +254,6 @@ static int common0(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R2);
   (void)mz_finish_lwe(ts_scheme_unbound_global, ref);
   CHECK_LIMIT();
-
-  (void)ref; /* avoids set but not used error from gcc */
 
   return 1;
 }
