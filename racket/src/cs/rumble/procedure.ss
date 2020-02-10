@@ -449,6 +449,7 @@
      (do-procedure-reduce-arity-mask proc mask name)]
     [(proc mask) (procedure-reduce-arity-mask proc mask #f)]))
 
+;; see also `procedure-rename*` in "struct.ss"
 (define (do-procedure-reduce-arity-mask proc mask name)
   (cond
    [(and (wrapper-procedure? proc)

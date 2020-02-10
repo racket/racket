@@ -41,14 +41,13 @@
                  (and (procedure? guard)
                       (procedure-arity-includes? guard 2)))
        (raise-argument-error who "(or/c (procedure-arity-includes/c 2) #f 'can-impersonate)" guard))
-     (unless (and (or (null? supers) ; avoid `list?` until it's defined
-                      (list? supers))
-                  (andmap (lambda (p)
-                            (and (pair? p)
-                                 (struct-type-property? (car p))
-                                 (procedure? (cdr p))
-                                 (procedure-arity-includes? (cdr p) 1)))
-                          supers))
+     (unless (and (#%list? supers)
+                  (#%andmap (lambda (p)
+                              (and (pair? p)
+                                   (struct-type-property? (car p))
+                                   (procedure? (cdr p))
+                                   (procedure-arity-includes? (cdr p) 1)))
+                            supers))
        (raise-argument-error who "(listof (cons/c struct-type-property? (procedure-arity-includes/c 1)))" supers))
      (let* ([can-impersonate? (and (or can-impersonate? (eq? guard 'can-impersonate)) #t)]
             [st (make-struct-type-prop name (and (not (eq? guard 'can-impersonate)) guard) supers)]
@@ -80,7 +79,7 @@
                         [(procedure? fail) (|#%app| fail)]
                         [else fail]))])
        (letrec ([acc
-                 (procedure-rename
+                 (procedure-rename*
                   (case-lambda
                    [(v fail)
                     (cond
@@ -99,8 +98,9 @@
                                   pv))
                             (do-fail fail v)))])]
                    [(v) (acc v default-fail)])
+                  6
                   accessor-name)])
-         (let ([pred (procedure-rename pred predicate-name)])
+         (let ([pred (procedure-rename* pred 2 predicate-name)])
            (add-to-table! property-accessors
                           acc
                           (cons pred can-impersonate?))
@@ -140,6 +140,13 @@
 
 (define (struct-property-set! prop rtd val)
   (putprop (record-type-uid rtd) prop val))
+
+;; Must be consistent with `procedure-rename` in "procedure.ss",
+;; but needed before that one is defined:
+(define (procedure-rename* proc mask name)
+  (make-arity-wrapper-procedure proc
+                                mask
+                                (vector name proc)))
 
 ;; ----------------------------------------
 
@@ -194,9 +201,9 @@
          :contract "(or/c procedure? exact-nonnegative-integer? #f)"
          proc-spec)
   (check who
-         :test (and (list props)
-                    (andmap (lambda (i) (and (pair? i) (struct-type-property? (car i))))
-                            props))
+         :test (and (#%list? props)
+                    (#%andmap (lambda (i) (and (pair? i) (struct-type-property? (car i))))
+                              props))
          :contract "(listof (cons/c struct-type-property? any/c))"
          props)
   (check who
@@ -206,8 +213,8 @@
          :contract "(or/c inspector? #f 'prefab)"
          insp)
   (check who
-         :test (and (list? immutables)
-                    (andmap exact-nonnegative-integer? immutables))
+         :test (and (#%list? immutables)
+                    (#%andmap exact-nonnegative-integer? immutables))
          :contract "(listof exact-nonnegative-integer?)"
          immutables)
   (check who :or-false procedure? guard)
