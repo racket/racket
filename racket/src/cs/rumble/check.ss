@@ -73,4 +73,4 @@
   (unless (and (integer? v)
                (exact? v)
                (<= lo v hi))
-    (raise-argument-error who v (format "(integer-in ~a ~a)" lo hi))))
+    (raise-argument-error who (format "(integer-in ~a ~a)" lo hi) v)))

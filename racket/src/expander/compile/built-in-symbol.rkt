@@ -77,6 +77,7 @@
                engine-block
                force-unfasl
                make-record-type-descriptor
+               make-record-type-descriptor*
                make-record-constructor-descriptor
                record-constructor
                record-accessor

@@ -2,7 +2,7 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 (define-values (need-maj need-min need-sub need-dev)
-  (values 9 5 3 19))
+  (values 9 5 3 20))
 
 (unless (guard (x [else #f]) (eval 'scheme-fork-version-number))
   (error 'compile-file
@@ -78,6 +78,13 @@
      [(get-opt args "--xpatch" 1)
       => (lambda (args)
            (set! xpatch-path (car args))
+           (loop (cdr args)))]
+     [(get-opt args "--show-cp0" 0)
+      => (lambda (args)
+           (run-cp0 (lambda (cp0 x)
+                      (let ([r (cp0 (cp0 x))])
+                        (pretty-print (#%$uncprep r))
+                        r)))
            (loop (cdr args)))]
      [(null? args)
       (error 'compile-file "missing source file")]

@@ -49,6 +49,7 @@
          enumerate
          $make-record-type
          $make-record-type-descriptor
+         $make-record-type-descriptor*
          $make-record-constructor-descriptor
          $record
          $record?
@@ -78,7 +79,9 @@
          record-type-opaque?
          record-type-parent
          record-type-field-names
+         record-type-field-indices
          csv7:record-type-field-names
+         csv7:record-type-field-indices
          csv7:record-type-field-decls
          (rename-out [record-rtd $record-type-descriptor])
          record?
@@ -648,6 +651,12 @@
 
 (define ($make-record-constructor-descriptor rtd prcd protocol who)
   (make-record-constructor-descriptor rtd prcd protocol))
+
+(define ($make-record-type-descriptor* base-rtd name parent uid sealed? opaque? num-fields mutability-mask who . extras)
+  (define fields (for ([i (in-range num-fields)])
+                   (list (if (bitwise-bit-set? mutability-mask i) 'mutable 'immutable)
+                         (string->symbol (format "f~a" i)))))
+  (apply $make-record-type-descriptor base-rtd name parent uid sealed? opaque? fields who extras))
 
 (define-syntax-rule (s:module (id ...) body ...)
   (begin

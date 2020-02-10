@@ -79,6 +79,7 @@
          define-record-type
          record-type-descriptor
          make-record-type-descriptor
+         make-record-type-descriptor*
          make-record-constructor-descriptor
          (rename-out [s:struct-type? record-type-descriptor?])
          record-constructor-descriptor
@@ -593,6 +594,12 @@
      (rcd->constructor rcd lookup-protocol)]))
 
 (define (make-record-type-descriptor name parent uid s? o? fields)
+  (do-$make-record-type base-rtd parent name fields s? o? null #:uid uid))
+
+(define (make-record-type-descriptor* name parent uid s? o? num-fields mutability-mask)
+  (define fields (for ([i (in-range num-fields)])
+                   (list (if (bitwise-bit-set? mutability-mask i) 'mutable 'immutable)
+                         (string->symbol (format "f~a" i)))))
   (do-$make-record-type base-rtd parent name fields s? o? null #:uid uid))
 
 (define (make-record-constructor-descriptor rtd parent-rcd protocol)

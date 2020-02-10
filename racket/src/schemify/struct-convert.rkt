@@ -56,20 +56,22 @@
         (define can-impersonate? (not (struct-type-info-authentic? sti)))
         (define raw-s? (if can-impersonate? (deterministic-gensym (unwrap s?)) s?))
         `(begin
-           (define ,struct:s (make-record-type-descriptor ',(struct-type-info-name sti)
-                                                          ,(schemify (struct-type-info-parent sti) knowns)
-                                                          ,(if (not (struct-type-info-prefab-immutables sti))
-                                                               #f
-                                                               `(structure-type-lookup-prefab-uid
-                                                                 ',(struct-type-info-name sti)
-                                                                 ,(schemify (struct-type-info-parent sti) knowns)
-                                                                 ,(struct-type-info-immediate-field-count sti)
-                                                                 0 #f
-                                                                 ',(struct-type-info-prefab-immutables sti)))
-                                                          #f
-                                                          #f
-                                                          ',(for/vector ([i (in-range (struct-type-info-immediate-field-count sti))])
-                                                              `(mutable ,(string->symbol (format "f~a" i))))))
+           (define ,struct:s (make-record-type-descriptor* ',(struct-type-info-name sti)
+                                                           ,(schemify (struct-type-info-parent sti) knowns)
+                                                           ,(if (not (struct-type-info-prefab-immutables sti))
+                                                                #f
+                                                                `(structure-type-lookup-prefab-uid
+                                                                  ',(struct-type-info-name sti)
+                                                                  ,(schemify (struct-type-info-parent sti) knowns)
+                                                                  ,(struct-type-info-immediate-field-count sti)
+                                                                  0 #f
+                                                                  ',(struct-type-info-prefab-immutables sti)))
+                                                           #f
+                                                           #f
+                                                           ,(struct-type-info-immediate-field-count sti)
+                                                           ;; Reporting all as mutable, for now:
+                                                           ,(let ([n (struct-type-info-immediate-field-count sti)])
+                                                              (sub1 (arithmetic-shift 1 n)))))
            ,@(if (null? (struct-type-info-rest sti))
                  null
                  `((define ,(deterministic-gensym "effect")
