@@ -509,7 +509,7 @@
                                                prefab-uid #f #f
                                                (+ init-count auto-count)
                                                ;; Reporting all as mutable, for now:
-                                               (sub1 (bitwise-arithmetic-shift-left 1 (+ init-count auto-count))))]
+                                               (sub1 (general-arithmetic-shift 1 (+ init-count auto-count))))]
             [parent-auto*-count (get-field-info-auto*-count parent-fi)]
             [parent-init*-count (get-field-info-init*-count parent-fi)]
             [parent-total*-count (get-field-info-total*-count parent-fi)]
