@@ -396,6 +396,9 @@
                 [`,_ (finish-definition ids)])]
              [else
               (finish-wrapped-definition ids rhs)])]
+          [`(quote ,_) ; useful to drop #<void>s for the interpreter
+           #:guard (or (pair? (cdr l)) (pair? accum-ids))
+           (loop (cdr l) mut-l accum-exprs accum-ids knowns)]
           [`,_
            (match form
              [`(define-values ,ids ,_)

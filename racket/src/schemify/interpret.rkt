@@ -302,7 +302,7 @@
        (compile-expr `(call-with-values (lambda () ,rhs)
                         (lambda ,gen-ids
                           ,@(if (null? ids)
-                                '((void))
+                                (list (void))
                                 (for/list ([id (in-list ids)]
                                            [gen-id (in-list gen-ids)])
                                   `(set! ,id ,gen-id)))))
@@ -548,7 +548,11 @@
        (define pos (stack->pos (if (boxed? var) (boxed-pos var) var) stk-i)) ; box result means unused
        (cond
          [(box? pos)
-          (vector 'clear (list (unbox pos)) e)]
+          (cond
+            [(and (vector? e) (eq? 'clear (vector-ref e 0)))
+             (vector 'clear (cons (unbox pos) (vector-ref e 1)) (vector-ref e 2))]
+            [else
+             (vector 'clear (list (unbox pos)) e)])]
          [(not (hash-ref mutated u #f))
           e]
          [else

@@ -147,6 +147,11 @@
                  (list-of-keywords? (cadr v))
                  (extflonum? (cadr v))))
         10]
+       [(and (pair? v)
+             (pair? (cdr v))
+             (eq? 'quote (car v))
+             (void? (cadr v)))
+        6]
        [(bytes? v) (* 3 (bytes-length v))]
        [(and (symbol? v) (regexp-match? #rx"#" (symbol->string v)))
         (+ 2 (string-length (symbol->string v)))]
@@ -175,6 +180,11 @@
                  (list-of-keywords? (cadr v))
                  (extflonum? (cadr v))))
         (write (hash-ref lifts (cadr v)) out)]
+       [(and (pair? v)
+             (pair? (cdr v))
+             (eq? 'quote (car v))
+             (void? (cadr v)))
+        (write '(void) out)]
        [(bytes? v)
         (display "#vu8")
         (write (bytes->list v) out)]

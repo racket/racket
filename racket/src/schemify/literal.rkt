@@ -43,7 +43,7 @@
   (cond
     [(or (string? x) (bytes? x) (boolean? x) (number? x))
      x]
-    [(void? x) '(void)]
+    [(void? x) `(quote ,(void))]
     [(eof-object? x) 'eof]
     [else
      `(quote ,x)]))
