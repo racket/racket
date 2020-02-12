@@ -377,7 +377,9 @@
                                  (cond
                                   [ppc? "darwin-ppc-cc"]
                                   [m32? "darwin-i386-cc"]
-                                  [else "darwin64-x86_64-cc"]))]
+                                  [else "darwin64-x86_64-cc"])
+                                 (car (regexp-match #rx"-mmacosx-version-min=[0-9.]*"
+                                                    (cadr (assoc "CPPFLAGS" all-env)))))]
                           [else
                            (list "./Configure"
                                  #f
