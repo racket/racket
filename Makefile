@@ -547,10 +547,12 @@ MAC_PKG_MODE =
 # Set to "--tgz" to create a ".tgz" archive instead of an installer:
 TGZ_MODE =
 
-# Set to additional options that are recognized like `--tgz` or
-# `--mac-pkg` by `distro-build/installer`, where double quotes are
-# allowed:
-INSTALLER_OPTIONS_q =
+# Comma-separated options for the `--packed-options` argument to
+# `distro-build/installer`, which generalizes simple switches like
+# `--mac-pkg` and `--tgz`; we don't just take a sequence of regular
+# command-line switches here, because it's difficult to thread those
+# through `make` variants like `nmake`:
+INSTALLER_OPTIONS =
 
 # Set to "--source --no-setup" to include packages in an installer
 # (or archive) only in source form:
@@ -821,7 +823,7 @@ PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)" \
             OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" JOB_OPTIONS="$(JOB_OPTIONS)" \
-            TGZ_MODE=$(TGZ_MODE) INSTALLER_OPTIONS_q='$(INSTALLER_OPTIONS_q)' TEST_PKGS="$(TEST_PKGS)" \
+            TGZ_MODE=$(TGZ_MODE) INSTALLER_OPTIONS="$(INSTALLER_OPTIONS)" TEST_PKGS="$(TEST_PKGS)" \
             INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" \
             INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)"
 
@@ -889,7 +891,7 @@ bundle-cross-from-server:
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
-              $(MAC_PKG_MODE) $(TGZ_MODE) $(INSTALLER_OPTIONS_q) \
+              $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)" \
               --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" \
               --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
