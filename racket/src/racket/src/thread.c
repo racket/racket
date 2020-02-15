@@ -147,6 +147,7 @@ ROSYM Scheme_Object *scheme_break_enabled_key;
 
 THREAD_LOCAL_DECL(static Scheme_Object *configuration_callback_cache[2]);
 
+static int gcs_on_exit;
 THREAD_LOCAL_DECL(intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(static intptr_t start_this_gc_time);
 THREAD_LOCAL_DECL(static intptr_t end_this_gc_time);
@@ -617,6 +618,9 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("phantom-bytes?", phantom_bytes_p, 1, 1, env);
   ADD_PRIM_W_ARITY("make-phantom-bytes", make_phantom_bytes, 1, 1, env);
   ADD_PRIM_W_ARITY("set-phantom-bytes!", set_phantom_bytes, 2, 2, env);
+
+  if (scheme_getenv("PLT_GCS_ON_EXIT"))
+    gcs_on_exit = 1;
 }
 
 void
@@ -1953,6 +1957,11 @@ void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
      a custodian shutdown, but an actual custodian shutdown
      will have terminated everything else anyway. For a
      polite exit, other threads can run. */
+
+  if (gcs_on_exit) {
+    scheme_collect_garbage();
+    scheme_collect_garbage();
+  }
 
   log_peak_memory_use();
 

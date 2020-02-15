@@ -676,17 +676,24 @@
      (let ([orig (exit-handler)]
            [root-logger (current-logger)])
        (lambda (v)
-         (when (log-level? root-logger 'info 'GC)
-           (log-message root-logger 'info 'GC
-                        (chez:format "0:atexit peak ~a; alloc ~a; major ~a; minor ~a; ~ams"
+         (when gcs-on-exit?
+           (collect-garbage)
+           (collect-garbage))
+         (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
+               [debug-GC:major? (log-level?* root-logger 'debug 'GC:major)])
+           (when (or debug-GC? debug-GC:major?)
+             (let ([msg (chez:format "GC: 0:atexit peak ~a; alloc ~a; major ~a; minor ~a; ~ams"
                                      (K "" peak-mem)
                                      (K "" (- (+ (bytes-deallocated) (bytes-allocated)) (initial-bytes-allocated)))
                                      major-gcs
                                      minor-gcs
                                      (let ([t (sstats-gc-cpu (statistics))])
                                        (+ (* (time-second t) 1000)
-                                          (quotient (time-nanosecond t) 1000000))))
-                        #f))
+                                          (quotient (time-nanosecond t) 1000000))))])
+               (when debug-GC?
+                 (log-message root-logger 'info 'GC msg #f #f))
+               (when debug-GC:major?
+                 (log-message root-logger 'info 'GC:major msg #f #f)))))
          (linklet-performance-report!)
          (|#%app| orig v)))))
 
@@ -710,6 +717,8 @@
            (if spec
                (parse-logging-spec "syslog" spec "in PLTSYSLOG environment variable" #f)
                '()))))
+
+   (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT")))
 
    (define (initialize-place!)
      (current-command-line-arguments remaining-command-line-arguments)
