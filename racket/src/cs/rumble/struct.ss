@@ -51,15 +51,6 @@
        (raise-argument-error who "(listof (cons/c struct-type-property? (procedure-arity-includes/c 1)))" supers))
      (let* ([can-impersonate? (and (or can-impersonate? (eq? guard 'can-impersonate)) #t)]
             [st (make-struct-type-prop name (and (not (eq? guard 'can-impersonate)) guard) supers)]
-            [pred (escapes-ok
-                    (lambda (v)
-                      (let* ([v (strip-impersonator v)]
-                             [rtd (if (record-type-descriptor? v)
-                                      v
-                                      (and (record? v)
-                                           (record-rtd v)))])
-                        (and rtd
-                             (not (eq? none (struct-property-ref st rtd none)))))))]
             [accessor-name (string->symbol (string-append
                                             (symbol->string name)
                                             "-ref"))]
@@ -67,49 +58,51 @@
                              (string-append
                               (symbol->string name)
                               "?"))]
-            [default-fail
-              (escapes-ok
-                (lambda (v)
-                  (raise-argument-error accessor-name
-                                        (symbol->string predicate-name)
-                                        v)))]
-            [do-fail (lambda (fail v)
-                       (cond
-                        [(eq? fail default-fail) (default-fail v)]
-                        [(procedure? fail) (|#%app| fail)]
-                        [else fail]))])
+            [pred (procedure-rename*
+                      (lambda (v)
+                        (let* ([v (strip-impersonator v)]
+                               [rtd (if (record-type-descriptor? v)
+                                        v
+                                        (and (record? v)
+                                             (record-rtd v)))])
+                          (and rtd
+                               (not (eq? none (struct-property-ref st rtd none))))))
+                      2
+                      predicate-name)])
        (letrec ([acc
                  (procedure-rename*
                   (case-lambda
                    [(v fail)
-                    (cond
-                     [(and (impersonator? v)
-                           (pred v))
-                      (impersonate-struct-or-property-ref acc #f #|key1:|# acc #|key2:|# #f v #f #f)]
-                     [else
-                      (let* ([rtd (if (record-type-descriptor? v)
-                                      v
-                                      (and (record? v)
-                                           (record-rtd v)))])
-                        (if rtd
-                            (let ([pv (struct-property-ref st rtd none)])
-                              (if (eq? pv none)
-                                  (do-fail fail v)
-                                  pv))
-                            (do-fail fail v)))])]
-                   [(v) (acc v default-fail)])
+                    (let ([val (let ([v (strip-impersonator v)])
+                                 (if (record-type-descriptor? v)
+                                     (struct-property-ref st v none)
+                                     (if (record? v)
+                                         (struct-property-ref st (record-rtd v) none)
+                                         none)))])
+                      (cond
+                       [(eq? val none)
+                        (cond
+                         [(eq? fail none)
+                          (raise-argument-error accessor-name
+                                                (symbol->string predicate-name)
+                                                v)]
+                         [(procedure? fail) (|#%app| fail)]
+                         [else fail])]
+                       [(impersonator? v)
+                        (impersonate-struct-or-property-ref val #f #|key1:|# acc #|key2:|# #f v #f #f)]
+                       [else val]))]
+                   [(v) (acc v none)])
                   6
                   accessor-name)])
-         (let ([pred (procedure-rename* pred 2 predicate-name)])
-           (add-to-table! property-accessors
-                          acc
-                          (cons pred can-impersonate?))
-           (add-to-table! property-predicates
-                          pred
-                          st)
-           (values st
-                   pred
-                   acc))))]))
+         (add-to-table! property-accessors
+                        acc
+                        (cons pred can-impersonate?))
+         (add-to-table! property-predicates
+                        pred
+                        st)
+         (values st
+                 pred
+                 acc)))]))
 
 (define (struct-type-property-accessor-procedure? v)
   (let ([v (strip-impersonator v)])
