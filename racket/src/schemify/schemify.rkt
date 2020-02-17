@@ -797,6 +797,21 @@
                   body
                   `(let ([,tmp ,e])
                      ,body)))
+            (define (inline-struct-predicate k s-rator im args)
+              ;; For imported predicates on authentic structure types, it's worth
+              ;; inlining the predicate to enable cptypes optimizations.
+              (define type-id (and im
+                                   (known-struct-predicate-authentic? k)
+                                   (pair? args)
+                                   (null? (cdr args))
+                                   (inline-type-id k im add-import! mutated imports)))
+              (cond
+                [type-id
+                 (define tmp (maybe-tmp (car args) 'v))
+                 (define ques `(unsafe-struct? ,tmp ,(schemify type-id 'fresh)))
+                 (wrap-tmp tmp (car args)
+                           ques)]
+                [else #f]))
             (define (inline-field-access k s-rator im args)
               ;; For imported accessors or for JIT mode, inline the
               ;; selector with an `unsafe-struct?` test plus `unsafe-struct*-ref`.
@@ -845,6 +860,10 @@
                                              (cdr e)
                                              #t for-cify?
                                              prim-knowns knowns imports mutated simples))]
+                    [(and (not for-cify?)
+                          (known-struct-predicate? k)
+                          (inline-struct-predicate k s-rator im args))
+                     => (lambda (e) e)]
                     [(and (not for-cify?)
                           (known-field-accessor? k)
                           (inline-field-access k s-rator im args))
