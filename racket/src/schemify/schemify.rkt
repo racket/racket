@@ -517,31 +517,40 @@
            [`(let-values () ,bodys ...)
             (schemify `(begin . ,bodys) wcm-state)]
            [`(let-values ([(,ids) ,rhss] ...) ,bodys ...)
-            (define new-knowns
-              (for/fold ([knowns knowns]) ([id (in-list ids)]
-                                           [rhs (in-list rhss)])
-                (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?))
-                (if k
-                    (hash-set knowns (unwrap id) k)
-                    knowns)))
-            (define (merely-a-copy? id)
-              (define u-id (unwrap id))
-              (define k (hash-ref new-knowns u-id #f))
-              (and (or (known-copy? k)
-                       (known-literal? k))
-                   (simple-mutated-state? (hash-ref mutated u-id #f))))
-            (unnest-let
-             (left-to-right/let (for/list ([id (in-list ids)]
-                                           #:unless (merely-a-copy? id))
-                                  id)
-                                (for/list ([id (in-list ids)]
-                                           [rhs (in-list rhss)]
-                                           #:unless (merely-a-copy? id))
-                                  (schemify rhs 'fresh))
-                                (for/list ([body (in-list bodys)])
-                                  (schemify/knowns new-knowns inline-fuel wcm-state body))
-                                prim-knowns knowns imports mutated simples)
-             prim-knowns knowns imports mutated simples)]
+            (cond
+              [(and (pair? ids) (null? (cdr ids))
+                    (pair? bodys) (null? (cdr bodys))
+                    (eq? (unwrap (car ids)) (unwrap (car bodys)))
+                    (lambda? (car rhss)))
+               ;; Simplify by discarding the binding; assume that any
+               ;; needed naming is already reflected in properties
+               (schemify (car rhss) wcm-state)]
+              [else
+               (define new-knowns
+                 (for/fold ([knowns knowns]) ([id (in-list ids)]
+                                              [rhs (in-list rhss)])
+                   (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?))
+                   (if k
+                       (hash-set knowns (unwrap id) k)
+                       knowns)))
+               (define (merely-a-copy? id)
+                 (define u-id (unwrap id))
+                 (define k (hash-ref new-knowns u-id #f))
+                 (and (or (known-copy? k)
+                          (known-literal? k))
+                      (simple-mutated-state? (hash-ref mutated u-id #f))))
+               (unnest-let
+                (left-to-right/let (for/list ([id (in-list ids)]
+                                              #:unless (merely-a-copy? id))
+                                     id)
+                                   (for/list ([id (in-list ids)]
+                                              [rhs (in-list rhss)]
+                                              #:unless (merely-a-copy? id))
+                                     (schemify rhs 'fresh))
+                                   (for/list ([body (in-list bodys)])
+                                     (schemify/knowns new-knowns inline-fuel wcm-state body))
+                                   prim-knowns knowns imports mutated simples)
+                prim-knowns knowns imports mutated simples)])]
            [`(let-values ([() (begin ,rhss ... (values))]) ,bodys ...)
             `(begin ,@(schemify-body rhss 'fresh) ,@(schemify-body bodys wcm-state))]
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
