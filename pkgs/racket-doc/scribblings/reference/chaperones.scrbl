@@ -370,7 +370,8 @@ act as a ``witness'' of @racket[v]'s representation and enable the
 addition of @racket[prop]s.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
-to @racket[impersonate-struct] must be odd) add impersonator properties
+to @racket[impersonate-struct] must be even if @racket[struct-type]
+is provided, odd otherwise) add impersonator properties
 or override impersonator-property values of @racket[v].
 
 Each @racket[orig-proc] must indicate a distinct operation. If no
@@ -550,8 +551,7 @@ The @racket[hash-iterate-value], @racket[hash-map], or
 produced by @racket[key-proc] does not yield a value through
 @racket[hash-ref], then the @exnraise[exn:fail:contract].
 
-Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
-to @racket[impersonate-hash] must be odd) add impersonator properties
+Pairs of @racket[prop] and @racket[prop-val] add impersonator properties
 or override impersonator-property values of @racket[hash].
 
 In the case of an immutable hash table, two impersonated hash tables count as
@@ -678,7 +678,7 @@ The @racket[set-proc] must accept a value passed to
 value, which is attached to the continuation frame.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
-to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
+to @racket[impersonate-continuation-mark-key] must be odd) add impersonator properties
 or override impersonator-property values of @racket[key].
 
 @examples[
