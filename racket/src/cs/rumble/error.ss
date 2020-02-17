@@ -548,9 +548,9 @@
                                   (string->symbol (format "body of ~a" n))))
                            (let* ([c (#%$continuation-return-code k)]
                                   [n (#%$code-name c)])
-                             (if (special-procedure-name-string? n)
+                             (if (path-or-empty-procedure-name-string? n)
                                  #f
-                                 n)))]
+                                 (procedure-name-string->visible-name-string n))))]
                  [desc
                   (let* ([ci (#%$code-info (#%$continuation-return-code k))]
                          [src (and

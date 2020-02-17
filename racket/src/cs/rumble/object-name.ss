@@ -40,19 +40,8 @@
      [else
       (let ([name (#%$code-name (#%$closure-code v))])
         (and name
-             (cond
-              [(special-procedure-name-string? name)
-               ;; "[" is "no name", and any other
-               ;; "["-prefixed name is derived from the path
-               (let ([len (string-length name)])
-                 (and (fx> len 1)
-                      (string->symbol (substring name 1 len))))]
-              [(and (fx> (string-length name) 0)
-                    (char=? #\] (string-ref name 0)))
-               ;; Strip escape character
-               (string->symbol (substring name 1 (string-length name)))]
-              [else
-               (string->symbol name)])))])]
+             (let ([n (procedure-name-string->visible-name-string name)])
+               (and n (string->symbol n)))))])]
    [(impersonator? v)
     (object-name (impersonator-val v))]
    [(procedure? v)
@@ -76,9 +65,45 @@
           (getprop (record-type-uid rtd) 'prefab-key+count #f)))
      (object-name (record-rtd v)))))
 
+;; Since a procedure name is the one way we have to attach static
+;; information to `lambda` forms, it can encode more than just a name:
+;;   * Starting with "[" means a path-derived name, where that
+;;     distinction is used instack trace.
+;;   * Starting with "]" means that some other starting character
+;;     ws escaped.
+;;  * After "[" or "]", "!" means a method, and "^" means not-a-method.
+(define (procedure-name-string->visible-name-string n)
+  (cond
+   [(not (string? n)) n]
+   [else
+    (let ([len (string-length n)])
+      (cond
+       [(fx= 0 len) n]
+       [else
+        (let ([strip-prefix
+               (lambda ()
+                 (cond
+                  [(fx= 1 len) ""]
+                  [(char=? #\; (string-ref n 0))
+                   (substring n 2 len)]
+                  [(char=? #\^ (string-ref n 0))
+                   (substring n 2 len)]
+                  [else
+                   (substring n 1 len)]))])
+          (cond
+           [(char=? #\[ (string-ref n 0))
+            (let ([n (strip-prefix)])
+              ;; Empty means no name
+              (if (eqv? "" n)
+                  #f
+                  n))]
+           [(char=? #\] (string-ref n 0))
+            (strip-prefix)]
+           [else n]))]))]))
+
 ;; name starting with a square bracket is meant to
 ;; encode a path or "no name"
-(define (special-procedure-name-string? n)
+(define (path-or-empty-procedure-name-string? n)
   (and (string? n)
        (fx> (string-length n) 0)
        (char=? #\[ (string-ref n 0))))
