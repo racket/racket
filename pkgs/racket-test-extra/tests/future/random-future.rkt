@@ -200,4 +200,4 @@ Errors/exceptions and other kinds of control?
 (module+ test
   (module config info
     (define random? #t)
-    (define timeout 300)))
+    (define timeout 900)))
