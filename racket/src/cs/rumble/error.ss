@@ -695,17 +695,23 @@
 (define (default-error-escape-handler)
   (abort-current-continuation (default-continuation-prompt-tag) void))
 
+(define (who->symbol who)
+  (cond
+   [(symbol? who) who]
+   [(string? who) (string->symbol who)]
+   [else 'unknown-who]))
+
 (define (exn->string v)
   (format "~a~a"
           (if (who-condition? v)
-              (format "~a: " (rewrite-who (condition-who v)))
+              (format "~a: " (rewrite-who (who->symbol (condition-who v))))
               "")
           (cond
            [(exn? v)
             (exn-message v)]
            [(format-condition? v)
             (let-values ([(fmt irritants)
-                          (rewrite-format (and (who-condition? v) (condition-who v))
+                          (rewrite-format (and (who-condition? v) (who->symbol (condition-who v)))
                                           (condition-message v)
                                           (condition-irritants v))])
               (apply format fmt irritants))]

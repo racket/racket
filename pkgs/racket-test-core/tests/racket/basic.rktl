@@ -434,6 +434,8 @@
 (test "cb" 'string-set! x)
 (test "ab" symbol->string y)
 (test y string->symbol "ab")
+(err/rt-test (string->symbol 10))
+(err/rt-test (string->symbol 'oops))
 
 (test #f eq? (symbol->string 'apple) (symbol->string 'apple))
 (test "apple" symbol->immutable-string 'apple)
