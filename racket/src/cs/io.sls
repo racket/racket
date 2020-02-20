@@ -440,6 +440,46 @@
 
   ;; ----------------------------------------
 
+  ;; For glib logging, we need a function pointer that works across
+  ;; places and logs to the main place's root logger. Although it's
+  ;; kind of a hack, it's much simpler to implement that here and
+  ;; export the function pointer as a primitive.
+  
+  (export glib-log-message)
+
+  (define G_LOG_LEVEL_ERROR    2)
+  (define G_LOG_LEVEL_CRITICAL 3)
+  (define G_LOG_LEVEL_WARNING  4)
+  (define G_LOG_LEVEL_MESSAGE  5)
+  (define G_LOG_LEVEL_INFO     6)
+  (define G_LOG_LEVEL_DEBUG    7)
+  
+  (define glib-log-message
+    (let ([glib-log-message
+           (lambda (domain glib-level message)
+             (let ([level (cond
+                           [(fxbit-set? glib-level G_LOG_LEVEL_ERROR) 'fatal]
+                           [(fxbit-set? glib-level G_LOG_LEVEL_CRITICAL) 'error]
+                           [(fxbit-set? glib-level G_LOG_LEVEL_WARNING) 'warning]
+                           [(fxbit-set? glib-level G_LOG_LEVEL_MESSAGE) 'warning]
+                           [(fxbit-set? glib-level G_LOG_LEVEL_INFO) 'info]
+                           [else 'debug])])
+               (let ([go (lambda ()
+                           (unsafe-start-atomic)
+                           (disable-interrupts)
+                           (log-message* (unsafe-root-logger) level #f (string-append domain ": " message) #f #f #f)
+                           (enable-interrupts)
+                           (unsafe-end-atomic))])
+                 (cond
+                  [(eqv? 0 (get-thread-id)) (go)]
+                  [else
+                   (post-as-asynchronous-callback go)]))))])
+      (let ([callable (foreign-callable __collect_safe glib-log-message (string int string) void)])
+        (lock-object callable)
+        (foreign-callable-entry-point callable))))
+  
+  ;; ----------------------------------------
+
   (export system-library-subpath)
   (define system-library-subpath
     (case-lambda

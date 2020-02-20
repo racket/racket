@@ -1,20 +1,49 @@
 #lang racket/base
 (require ffi/unsafe
+         ffi/unsafe/os-thread
+         ffi/unsafe/vm
          rackunit)
 
 ;; Check whether glib-logging support works right when use by
 ;; different threads
 
-(define pthread_create
-  (get-ffi-obj 'pthread_create #f (_fun (_ptr o _pointer) (_pointer = #f) _pointer _pointer -> _int)
-               (lambda () #f)))
-(define scheme_glib_log_message_test-pointer
-  (get-ffi-obj 'scheme_glib_log_message_test #f _fpointer
-               (lambda () #f)))
-(define scheme_glib_log_message_test
-  (get-ffi-obj 'scheme_glib_log_message_test #f (_fun _string -> _pointer)
-               (lambda () #f)))
-
+(define-values (pthread_create
+                scheme_glib_log_message_test-pointer
+                scheme_glib_log_message_test)
+  (case (system-type 'vm)
+    [(racket)
+     (values
+      (get-ffi-obj 'pthread_create #f (_fun (_ptr o _pointer) (_pointer = #f) _pointer _pointer -> _int)
+                   (lambda () #f))
+      (get-ffi-obj 'scheme_glib_log_message_test #f _fpointer
+                   (lambda () #f))
+      (get-ffi-obj 'scheme_glib_log_message_test #f (_fun _string -> _pointer)
+                   (lambda () #f)))]
+    [(chez-scheme)
+     (define scheme_glib_log_message_test
+       (let ([glib-log-message (cast (vm-primitive 'glib-log-message)
+                                     _intptr
+                                     (_fun _bytes/nul-terminated _int _bytes/nul-terminated -> _void))])
+         (lambda (msg)
+           (let loop ([bstr (if (string? msg) (string->bytes/utf-8 msg) (cast msg _pointer _bytes))])
+             (define m (regexp-match-positions #rx";" bstr))
+             (cond
+               [(not m)
+                (glib-log-message #"test" (arithmetic-shift 1 4) bstr)]
+               [else
+                (loop (subbytes bstr 0 (caar m)))
+                (loop (subbytes bstr (cdar m)))])))))
+     (values
+      ;; pthread_create
+      (lambda (proc arg)
+        (call-in-os-thread (lambda () (proc arg))))
+      ;; scheme_glib_log_message_test-pointer
+      scheme_glib_log_message_test
+      ;; scheme_glib_log_message_test
+      scheme_glib_log_message_test)]
+    [else
+     (values #f #f #f)]))
+    
 (when (and pthread_create
            scheme_glib_log_message_test-pointer)
   (define r (make-log-receiver (current-logger) 'warning))
