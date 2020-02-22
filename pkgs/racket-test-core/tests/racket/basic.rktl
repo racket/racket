@@ -394,6 +394,16 @@
 (test #t eq? (hasheq) (hash-remove (hasheq 3 4) 3))
 (test #t eq? (hasheqv) (hash-remove (hasheqv 3 4) 3))
 
+(err/rt-test (hash 1))
+(err/rt-test (hasheqv 1))
+(err/rt-test (hasheq 1))
+(err/rt-test (make-hash 1))
+(err/rt-test (make-hasheqv 1))
+(err/rt-test (make-hasheq 1))
+(err/rt-test (make-weak-hash 1))
+(err/rt-test (make-weak-hasheqv 1))
+(err/rt-test (make-weak-hasheq 1))
+
 (test #t symbol? 'foo)
 (test #t symbol? (car '(a b)))
 (test #f symbol? "bar")

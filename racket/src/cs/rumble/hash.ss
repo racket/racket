@@ -73,6 +73,11 @@
            (let loop ([kvs kvs] [h empty-hash])
              (cond
               [(null? kvs) h]
+              [(null? (cdr kvs))
+               (raise-arguments-error
+                'vararg-ctor
+                "key does not have a value (i.e., an odd number of arguments were provided)"
+                "key" (car kvs))]
               [else (loop (cddr kvs) (intmap-set h (car kvs) (cadr kvs)))]))]))
 
        (define list-ctor
