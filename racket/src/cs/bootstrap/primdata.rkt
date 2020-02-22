@@ -36,6 +36,19 @@
                                       (hash-ref bits flag))))]
               [_ (loop)]))))]
       [else #hasheq()]))
+  (define primref-variant
+    (call-with-input-file*
+     (build-path scheme-dir "s/primref.ss")
+     (lambda (i)
+       (define decl (parameterize ([current-readtable scheme-readtable])
+                      (read i)))
+       (match decl
+         [`(define-record-type primref
+             (nongenerative ,variant)
+             . ,_)
+          variant]
+         [_
+          (error "cannot parse content of s/primref.ss")]))))
   (define priminfos (make-hasheq))
   (when scheme-dir
     (call-with-input-file*
@@ -64,7 +77,14 @@
                                                                 (cadr id)))
                                         id))
                    (define flag-bits (flags->bits flags))
-                   (define pr (primref plain-id flag-bits (map sig->interface sigs) sigs))
+                   (define interface (map sig->interface sigs))
+                   (define pr (case primref-variant
+                                [(|{primref a0xltlrcpeygsahopkplcn-3}|)
+                                 (primref3 plain-id flag-bits interface sigs)]
+                                [(|{primref a0xltlrcpeygsahopkplcn-2}|)
+                                 (primref2 plain-id flag-bits interface)]
+                                [else (error "unrecognized primref variant in s/primref.ss"
+                                             primref-variant)]))
                    (register-symbols plain-id)
                    ($sputprop plain-id '*prim2* pr)
                    ($sputprop plain-id '*prim3* pr)

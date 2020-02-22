@@ -24,6 +24,24 @@
     [else
      (hash-graph #\2 in src line col pos)]))
 
+(define (hash-one c in src line col pos)
+  (define got-c (peek-char in))
+  (cond
+    [(eqv? #\# got-c)
+     ;; "read.ss" has a `#1#` reference before the
+     ;; `#1=...` definition; it's going to turn out
+     ;; to be `black-hole`
+     (define name (object-name in))
+     (cond
+       [(and (or (string? name) (path? name))
+             (regexp-match? #rx"read[.]ss$" name))
+        (read-char in)
+        black-hole]
+       [else
+        (hash-graph #\1 in src line col pos)])]
+    [else
+     (hash-graph #\1 in src line col pos)]))
+
 (define (hash-graph c in src line col pos)
   (cond
     [(and (eqv? (peek-char in) #\=)
@@ -130,7 +148,7 @@
   (make-readtable
    #f
    #\0 'dispatch-macro hash-graph
-   #\1 'dispatch-macro hash-graph
+   #\1 'dispatch-macro hash-one
    #\2 'dispatch-macro hash-two
    #\3 'dispatch-macro hash-three
    #\4 'dispatch-macro hash-graph

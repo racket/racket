@@ -98,6 +98,7 @@
          $set-top-level-value!
          $profile-source-data?
          $compile-profile
+         compile-profile
          $optimize-closures
          $profile-block-data?
          run-cp0
@@ -893,6 +894,7 @@
   #f)
 
 (define $compile-profile (make-parameter #f))
+(define compile-profile $compile-profile)
 (define $optimize-closures (make-parameter #t))
 (define $profile-block-data? (make-parameter #f))
 (define run-cp0 (make-parameter error))
