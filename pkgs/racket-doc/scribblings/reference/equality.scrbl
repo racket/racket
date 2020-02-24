@@ -11,16 +11,46 @@ preferred for most use cases.
 
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
 
- Two values are @racket[equal?] if and only if they are @racket[eqv?],
- unless otherwise specified for a particular datatype.
+ Determines whether @racket[v1] is ``equal to'' @racket[v2], in a manner that
+ depends on the datatype of @racket[v1] and @racket[v2].
 
- Datatypes with further specification of @racket[equal?] include
- strings, byte strings, pairs, mutable pairs, vectors, boxes, hash
- tables, and inspectable structures. In the last six cases, equality
- is recursively defined; if both @racket[v1] and @racket[v2] contain
- reference cycles, they are equal when the infinite unfoldings of the
- values would be equal. See also @racket[gen:equal+hash] and
- @racket[prop:impersonator-of].
+ Different datatypes have different implementations of @racket[equals?], but the
+ golden rule uniting them is that @deftech{equal means interchangeable} --- if
+ two values are @racket[equal?] then it should be possible to substitute one for
+ the other in a program without breaking the program. Such substitution happens
+ all the time in real world programs, as many Racket functions use the
+ @tech{contract} system to substitute their inputs and outputs with wrappers
+ that enforce invariants. This substitution is usually implemented using
+ @tech{chaperones} and @tech{impersonators}; see @racket[prop:impersonator-of]
+ for details on how this interacts with @racket[equal?].
+
+ In addition to the @tech{equal means interchangeable} rule, all datatypes are
+ expected to abide by the following principles when it comes to equality:
+
+ @itemlist[
+           
+ @item{Equality is @emph{reflexive}, meaning values are always equal to
+   themselves. For any value @racket[_x], @racket[(equal? _x _x)] returns true.}
+  
+ @item{Equality is @emph{symmetric}, meaning the order of the arguments to
+   @racket[equal?] does not matter. For any values @racket[_x] and @racket[_y],
+   @racket[(equal? _x _y)] returns the same answer as @racket[(equal? _y _x)].}
+
+ @item{Equality is @emph{transitive}, meaning that for any three values
+   @racket[_x], @racket[_y], and @racket[_z], if @racket[(equal? _x _y)] returns
+   true and @racket[(equal? _y _z)] returns true then @racket[(equal? _x _z)]
+   returns true.}]
+
+ Most Racket datatypes implement equality by recursively comparing their
+ contents: strings compare each of their characters, lists compare each of their
+ elements, and transparent structures compare each of their fields. This type of
+ behavior is called @deftech{structural equality}, because two values are equal
+ if they have the same structure. Two values containing cyclic data are
+ structurally equal when the infinite unfoldings of the cycles in both values
+ would be equal. When creating new @tech{structure types} with the
+ @racket[struct] form, this behavior is the default if the
+ @racket[#:transparent] option is specified. To implement other forms of
+ equality, see the @racket[gen:equal+hash] @tech{generic interface}.
 
  @(examples
    (equal? 'yes 'yes)
