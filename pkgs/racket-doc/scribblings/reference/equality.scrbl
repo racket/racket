@@ -14,7 +14,7 @@ preferred for most use cases.
  Determines whether @racket[v1] is ``equal to'' @racket[v2], in a manner that
  depends on the datatype of @racket[v1] and @racket[v2].
 
- Different datatypes have different implementations of @racket[equals?], but the
+ Different datatypes have different implementations of @racket[equal?], but the
  golden rule uniting them is that @deftech{equal means interchangeable} --- if
  two values are @racket[equal?] then it should be possible to substitute one for
  the other in a program without breaking the program. Such substitution happens
