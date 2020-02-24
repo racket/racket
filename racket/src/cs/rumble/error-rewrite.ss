@@ -51,6 +51,7 @@
         (rename bytevector-u8-ref bytes-ref
                 bytevector-u8-set! bytes-set!
                 bytevector-length bytes-length
+                bytevector-copy bytes-copy
                 bitwise-arithmetic-shift arithmetic-shift
                 fixnum->flonum fx->fl 
                 flonum->fixnum fl->fx

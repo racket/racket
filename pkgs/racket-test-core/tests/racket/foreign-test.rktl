@@ -8,6 +8,7 @@
          ffi/unsafe/alloc
          ffi/unsafe/define
          ffi/unsafe/define/conventions
+         ffi/unsafe/global
          ffi/vector
          racket/extflonum
          racket/place
@@ -1359,6 +1360,19 @@
                                        _FcMatrix-pointer
                                        _FcCharSet)]))
   (malloc _FcValue))
+
+;; ----------------------------------------
+
+(let* ([bstr (string->bytes/utf-8 (format "~a ~a" (current-inexact-milliseconds) (random)))]
+       [orig-bstr (bytes-copy bstr)])
+  (err/rt-test (register-process-global 7 8))
+  (err/rt-test (register-process-global "7" 8))
+  (test #f register-process-global bstr #f)
+  (test #f register-process-global bstr #"data\0")
+  (test #"data" cast (register-process-global bstr #f) _pointer _bytes)
+  (bytes-set! bstr 0 65)
+  (test #f register-process-global bstr #f)
+  (test #"data" cast (register-process-global orig-bstr #"data\0") _pointer _bytes))
 
 ;; ----------------------------------------
 

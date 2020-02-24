@@ -2024,7 +2024,8 @@
 
 (define process-global-table (make-hashtable equal-hash-code equal?))
 
-(define (unsafe-register-process-global key val)
+(define/who (unsafe-register-process-global key val)
+  (check who bytes? key)
   (with-global-lock
    (cond
     [(not val)
@@ -2033,7 +2034,7 @@
      (let ([old-val (hashtable-ref process-global-table key #f)])
        (cond
         [(not old-val)
-         (hashtable-set! process-global-table key val)
+         (hashtable-set! process-global-table (bytes-copy key) val)
          #f]
         [else old-val]))])))
 
