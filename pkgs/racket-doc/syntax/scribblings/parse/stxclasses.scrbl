@@ -4,9 +4,11 @@
           scribble/decode
           scribble/eval
           "parse-common.rkt"
+          (for-label syntax/datum)
           (for-syntax racket/base))
 
 @(define the-eval (make-sp-eval))
+@(the-eval '(require syntax/datum))
 
 @(define-syntax sub-kw-form
    (lambda (stx)
@@ -191,6 +193,28 @@ together with all attributes bound by @racket[#:with] clauses,
 including nested attributes produced by syntax classes associated with
 the pattern variables.
 }
+
+
+@defidform[this-syntax]{
+
+When used as an expression within a syntax-class definition or
+@racket[syntax-parse] expression, evaluates to the syntax object or
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{syntax
+pair} being matched.
+
+@examples[#:eval the-eval
+(define-syntax-class one (pattern _ #:attr s this-syntax))
+(syntax-parse #'(1 2 3) [(1 o:one _) (attribute o.s)])
+(syntax-parse #'(1 2 3) [(1 . o:one) (attribute o.s)])
+(define-splicing-syntax-class two (pattern (~seq _ _) #:attr s this-syntax))
+(syntax-parse #'(1 2 3) [(t:two 3) (attribute t.s)])
+(syntax-parse #'(1 2 3) [(1 t:two) (attribute t.s)])
+]
+
+Raises an error when used as an expression outside of a syntax-class
+definition or @racket[syntax-parse] expression.
+}
+
 
 @defthing[prop:syntax-class (struct-type-property/c (or/c identifier?
                                                           (-> any/c identifier?)))]{
@@ -484,28 +508,34 @@ variable}. The name of a nested attribute is computed by concatenating
 the pattern variable name with the syntax class's exported attribute's
 name, separated by a dot (see the example below).
 
-Attributes can be used in two ways: with the @racket[attribute] form,
-and inside syntax templates via @racket[syntax], @racket[quasisyntax],
-etc. Attribute names cannot be used directly as expressions; that is,
-attributes are not variables.
+Attributes can be used in three ways: with the @racket[attribute]
+form; inside syntax templates via @racket[syntax],
+@racket[quasisyntax], etc; and inside @racket[datum]
+templates. Attribute names cannot be used directly as expressions;
+that is, attributes are not variables.
 
 A @deftech{syntax-valued attribute} is an attribute whose value is a
-syntax object, a syntax list of the appropriate @tech{ellipsis depth},
-or a tree containing @tech[#:doc '(lib
+syntax object or list of the appropriate @tech{ellipsis depth}. That
+is, an attribute with ellipsis depth 0 is syntax-valued if its value
+is @racket[syntax?]; an attribute with ellipis depth 1 is
+syntax-valued if its value is @racket[(listof syntax?)]; an attribute
+with ellipsis depth 2 is syntax-valued if its value is @racket[(listof
+(listof syntax?))]; and so on. The value is considered syntax-valued
+if it contains @tech[#:doc '(lib
 "scribblings/reference/reference.scrbl")]{promises} that when
-completely forced produces a suitable syntax object or syntax
+completely forced produces a suitable syntax object or
 list. Syntax-valued attributes can be used within @racket[syntax],
 @racket[quasisyntax], etc as part of a syntax template. If an
 attribute is used inside a syntax template but it is not
 syntax-valued, an error is signaled.
 
-The value of an attribute is not required to be syntax.
-Non-syntax-valued attributes can be used to return a parsed
-representation of a subterm or the results of an analysis on the
-subterm. A non-syntax-valued attribute should be bound using the
-@racket[#:attr] directive or a @racket[~bind] pattern; @racket[#:with]
-and @racket[~parse] will convert the right-hand side to a (possibly
-3D) syntax object.
+There are uses for non-syntax-valued attributes. A non-syntax-valued
+attribute can be used to return a parsed representation of a subterm
+or the results of an analysis on the subterm. A non-syntax-valued
+attribute must be bound using the @racket[#:attr] directive or a
+@racket[~bind] pattern; @racket[#:with] and @racket[~parse] will
+convert the right-hand side to a (possibly @tech[#:key "3d
+syntax"]{3D}) syntax object.
 
 @examples[#:eval the-eval
 (define-syntax-class table
@@ -525,10 +555,10 @@ and @racket[~parse] will convert the right-hand side to a (possibly
 The @racket[table] syntax class provides four attributes:
 @racket[key], @racket[value], @racket[hashtable], and
 @racket[sorted-kv]. The @racket[hashtable] attribute has
-@tech{ellipsis depth} 0 and the rest have depth 1; all but
-@racket[hashtable] are syntax-valued. The @racket[sorted-kv]
-attribute's value is a promise; it will be automatically forced if
-used in a syntax template.
+@tech{ellipsis depth} 0 and the rest have depth 1; @racket[key],
+@racket[value], and @racket[sorted-kv] are syntax-valued, but
+@racket[hashtable] is not. The @racket[sorted-kv] attribute's value is
+a promise; it will be automatically forced if used in a template.
 
 Syntax-valued attributes can be used in syntax templates:
 
@@ -548,8 +578,8 @@ But non-syntax-valued attributes cannot:
    #'t.hashtable])
 ]
 
-Use the @racket[attribute] form to get the value of an attribute
-(syntax-valued or not).
+The @racket[attribute] form gets the value of an attribute, whether it
+is syntax-valued or not.
 
 @interaction[#:eval the-eval
 (syntax-parse #'((a 1) (b 2) (c 3))
@@ -589,10 +619,10 @@ binds the following nested attributes: @racket[y.a] at depth 2,
 depth 1.
 
 An attribute's ellipsis nesting depth is @emph{not} a guarantee that
-it is syntax-valued. In particular, @racket[~or*] and
-@racket[~optional] patterns may result in attributes with fewer than
-expected levels of list nesting, and @racket[#:attr] and
-@racket[~bind] can be used to bind attributes to arbitrary values.
+it is syntax-valued or has any list structure. In particular,
+@racket[~or*] and @racket[~optional] patterns may result in attributes
+with fewer than expected levels of list nesting, and @racket[#:attr]
+and @racket[~bind] can be used to bind attributes to arbitrary values.
 
 @examples[#:eval the-eval
 (syntax-parse #'(a b 3)
@@ -603,27 +633,77 @@ expected levels of list nesting, and @racket[#:attr] and
 @defform[(attribute attr-id)]{
 
 Returns the value associated with the @tech{attribute} named
-@racket[attr-id]. If @racket[attr-id] is not bound as an attribute, an
-error is raised.
+@racket[attr-id]. If @racket[attr-id] is not bound as an attribute, a
+syntax error is raised.
 }
 
-@defidform[this-syntax]{
 
-When used as an expression within a syntax-class definition or
-@racket[syntax-parse] expression, evaluates to the syntax object or
-@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{syntax
-pair} being matched.
+@subsection[#:tag "attributes-and-datum"]{Attributes and @racket[datum]}
 
-@examples[#:eval the-eval
-(define-syntax-class one (pattern _ #:attr s this-syntax))
-(syntax-parse #'(1 2 3) [(1 o:one _) (attribute o.s)])
-(syntax-parse #'(1 2 3) [(1 . o:one) (attribute o.s)])
-(define-splicing-syntax-class two (pattern (~seq _ _) #:attr s this-syntax))
-(syntax-parse #'(1 2 3) [(t:two 3) (attribute t.s)])
-(syntax-parse #'(1 2 3) [(1 t:two) (attribute t.s)])
-]}
+The @racket[datum] form is another way, in addition to @racket[syntax]
+and @racket[attribute], of using syntax pattern variables and
+attributes. Unlike @racket[syntax], @racket[datum] does not require
+attributes to be syntax-valued. Wherever the @racket[syntax] form
+would create syntax objects based on its template (as opposed to
+reusing syntax objects bound by pattern variables), the @racket[datum]
+form creates plain S-expressions.
 
-Raises an error when used as an expression outside of a syntax-class
-definition or @racket[syntax-parse] expression.
+Continuing the @racket[table] example from above, we can use
+@racket[datum] with the @racket[key] attribute as follows:
+
+@interaction[#:eval the-eval
+(syntax-parse #'((a 1) (b 2) (c 3))
+  [t:table (datum (t.key ...))])
+]
+
+A @racket[datum] template may contain multiple pattern variables
+combined within some S-expression structure:
+
+@interaction[#:eval the-eval
+(syntax-parse #'((a 1) (b 2) (c 3))
+  [t:table (datum ([t.key t.value] ...))])
+]
+
+A @racket[datum] template can use the @racket[~@] and @racket[~?]
+template forms:
+
+@interaction[#:eval the-eval
+(syntax-parse #'((a 1) (b 2) (c 3))
+  [t:table (datum ((~@ t.key t.value) ...))])
+(syntax-parse #'((a 56) (b 71) (c 13))
+  [t:table (datum ((~@ . t.sorted-kv) ...))])
+(syntax-parse #'( ((a 1) (b 2) (c 3)) ((d 4) (e 5)) )
+  [(t1:table (~or* t2:table #:nothing))
+   (datum (t1.key ... (~? (~@ t2.key ...))))])
+(syntax-parse #'( ((a 1) (b 2) (c 3)) #:nothing )
+  [(t1:table (~or* t2:table #:nothing))
+   (datum (t1.key ... (~? (~@ t2.key ...))))])
+]
+
+However, unlike for @racket[syntax], a value of @racket[#f] only
+signals a template failure to @racket[~?] if a list is needed for
+ellipsis iteration, as in the previous example; it does not cause a
+failure when it occurs as a leaf. Contrast the following:
+
+@interaction[#:eval the-eval
+(syntax-parse #'( ((a 1) (b 2) (c 3)) #:nothing )
+  [(t1:table (~or* t2:table #:nothing))
+   #'(~? t2 skipped)])
+(syntax-parse #'( ((a 1) (b 2) (c 3)) #:nothing )
+  [(t1:table (~or* t2:table #:nothing))
+   (datum (~? t2 skipped))])
+]
+
+The @racket[datum] form is also useful for accessing non-syntax-valued
+attributes. Compared to @racket[attribute], @racket[datum] has the
+following advantage: The use of ellipses in @racket[datum] templates
+provides a visual reminder of the list structure of their results. For
+example, if the pattern is @racket[(t:table ...)], then both
+@racket[(attribute t.hashtable)] and @racket[(datum (t.hashtable
+...))] produce a @racket[(listof hash?)], but the ellipses make it
+more apparent.
+
+@history[#:changed "7.8.0.9" @elem{Added support for syntax pattern
+variables and attributes to @racket[datum].}]
 
 @(close-eval the-eval)
