@@ -752,20 +752,19 @@
                           new (cons base new)))
             (loop (cdr paths) (append (reverse new) r))))))))
 
-(define (check-path-exists who f)
+(define (check-path who f)
   (unless (path-string? f)
-    (raise-argument-error who "path-string?" f))
-  (unless (file-exists? f)
-    (raise-argument-error who "file-exists?" f)))
+    (raise-argument-error who "path-string?" f)))
 
 (define (check-file-mode who file-mode)
   (unless (memq file-mode '(binary text))
     (raise-argument-error who "(or/c 'binary 'text)" file-mode)))
 
 (define (file->x who f file-mode read-x x-append)
-  (check-path-exists who f)
+  (check-path who f)
   (check-file-mode who file-mode)
-  (let ([sz (file-size f)])
+  (let ([sz (with-handlers ([exn:fail:filesystem? (lambda (_) 0)])
+                             (file-size f))])
     (call-with-input-file* f #:mode file-mode
       (lambda (in)
         ;; There's a good chance that `file-size' gets all the data:
@@ -783,12 +782,12 @@
   (file->x 'file->bytes f mode read-bytes bytes-append))
 
 (define (file->value f #:mode [file-mode 'binary])
-  (check-path-exists 'file->value f)
+  (check-path 'file->value f)
   (check-file-mode 'file->value file-mode)
   (call-with-input-file* f #:mode file-mode read))
 
 (define (file->list f [r read] #:mode [file-mode 'binary])
-  (check-path-exists 'file->list f)
+  (check-path 'file->list f)
   (check-file-mode 'file->list file-mode)
   (unless (and (procedure? r) (procedure-arity-includes? r 1))
     (raise-argument-error 'file->list "(procedure-arity-includes/c 1)" r))
@@ -796,7 +795,7 @@
     (lambda (p) (for/list ([v (in-port r p)]) v))))
 
 (define (file->x-lines who f line-mode file-mode read-line)
-  (check-path-exists who f)
+  (check-path who f)
   (check-mode who line-mode)
   (check-file-mode who file-mode)
   (call-with-input-file* f #:mode file-mode
