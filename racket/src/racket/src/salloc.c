@@ -2318,6 +2318,15 @@ static void increment_found_counter(void *p)
 }
 #endif
 
+#if MZ_PRECISE_GC
+static mzlonglong code_counter = 0;
+static void increment_code_counter(void *p)
+{
+  if (((Scheme_Load_Delay *)p)->cached)
+    code_counter += ((Scheme_Load_Delay *)p)->size;
+}
+#endif
+
 #if MZ_PRECISE_GC_TRACE
 static void count_struct_instance(void *p, int sz) {
   Scheme_Structure *s = (Scheme_Structure *)p;
@@ -2850,6 +2859,11 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 #else
 
 # ifdef MZ_PRECISE_GC
+  /* Might get rreplaced by other flags: */
+  trace_for_tag = scheme_rt_delay_load_info;
+  for_each_found = increment_code_counter;
+  code_counter = 0;
+
   if (c && SCHEME_SYMBOLP(p[0])) {
     if (!strcmp("count", SCHEME_SYM_VAL(p[0]))
         && (c == 2)
@@ -3020,7 +3034,15 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 # endif
 #endif
 
-  scheme_console_printf("JIT-generated code: %ld\n", scheme_code_page_total);
+  if (!skip_summary)
+    scheme_console_printf("JIT-generated code: %ld\n", scheme_code_page_total);
+
+#ifdef MZ_PRECISE_GC
+  if (!skip_summary || (for_each_found == increment_code_counter)) {
+    scheme_console_printf("Marshaled code: %ld\n", code_counter);
+  }
+#endif
+
 
 #if MZ_PRECISE_GC_TRACE
   if (for_each_struct) {

@@ -372,6 +372,26 @@ readability, consider refactoring your program to introduce auxiliary
 functions so that you can shorten these long blocks of code. If nothing
 else helps, consider using (potentially) empty comment lines.
 
+In addition, every pair of expressions on a line should have at least one
+space between the two, even if they’re separated by parentheses.
+
+@compare[
+ @racketmod[#:file
+ @tt{good}
+ racket
+
+ (define (f x g)
+   [(< x 3) (g (g 3))])
+]
+ @filebox[@tt{bad}
+ @codeblock{#lang racket
+
+ (define(f x g)
+   [(< x 3)(g(g 3))])
+ }]
+]
+
+
 @; -----------------------------------------------------------------------------
 @section{End of File}
 

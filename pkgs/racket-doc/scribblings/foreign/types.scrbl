@@ -1735,7 +1735,7 @@ a-union-val
 ]}
 
 
-@defproc[(union-ptr [u array?]) cpointer?]{
+@defproc[(union-ptr [u union?]) cpointer?]{
 
 Extracts the pointer for a union's storage.
 

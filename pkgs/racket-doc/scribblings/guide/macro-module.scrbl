@@ -68,9 +68,9 @@ n
 ]
 
 The @racket[dynamic-require] function, like @racket[require], triggers
-instantion of a module if it is not already instantiated, so
+instantiation of a module if it is not already instantiated, so
 @racket[dynamic-require] with @racket[#f] as a second argument is
-useful to just trigger the instantion effects of a module:
+useful to just trigger the instantiation effects of a module:
 
 @examples[
 #:label #f
@@ -230,14 +230,14 @@ Here's an example to make that scenario concrete:
 
 In this example, when @racket[use-q-at-compile-time] is expanded and
 compiled, @racket[number-q] is instantiated once. In this case, that
-instantion is needed to expand the @racket[(qm)] macro, but the module
+instantiation is needed to expand the @racket[(qm)] macro, but the module
 system would proactively create a compile-time instantiation of
 @racket[number-q] even if the @racket[qm] macro turned out not to be
 used.
 
 Then, as @racket[use-qm] is expanded and compiled, a second
 compile-time instantiation of @racket[number-q] is created. That
-compile-time instantion is needed to expand the @racket[(qm)] form
+compile-time instantiation is needed to expand the @racket[(qm)] form
 within @racket[use-qm].
 
 Instantiating @racket[use-qm] correctly reports the number that was
@@ -279,8 +279,8 @@ This rule does not explain the compile-time instantiations of
 
 ]
 
-Note that when visiting one module causes a compile-time instantion of
-another module, the transitiveness of @tech{instantiated} through
+Note that when visiting one module causes a compile-time instantiation of
+another module, the transitiveness of @tech{instantiation} through
 regular @racket[require]s can trigger more compile-time instantiations.
 Instantiation itself won't trigger further visits, however, because
 any instantiated module has already been expanded and compiled.
@@ -420,7 +420,7 @@ following module includes a phase-1 expression after the phase-2
 If we @racket[require] the module @racket[use-at-phase-1] at the top
 level, then @racket[show-phase] is made @tech{available} at phase 1.
 Evaluating another expression causes @racket[use-at-phase-1] to be
-@tech{visit}ed, which in turn instantitates @racket[show-phase]:
+@tech{visit}ed, which in turn instantiates @racket[show-phase]:
 
 @examples[
 #:label #f

@@ -30,11 +30,17 @@
      (define (add-property str)
        (wrap-property-set (reannotate orig-s new-s)
                           'inferred-name
-                          ;; Hack: starting with "[" means
-                          ;; "derived from path". This distinction
-                          ;; is used when printing function names
-                          ;; in a stack trace.
-                          (string->symbol (string-append-immutable "[" str))))
+                          ;; Starting with "[" means "derived from
+                          ;; path". This distinction is used when
+                          ;; printing function names in a stack trace.
+                          ;; Furthermore, "!" or "^" after "[" indicates
+                          ;; methodness or not, so add an explicit "^"
+                          ;; if necessary.
+                          (let ([prefix (if (or (char=? (string-ref str 0) #\!)
+                                                (char=? (string-ref str 0) #\^))
+                                            "[^"
+                                            "[")])
+                            (string->symbol (string-append-immutable prefix str)))))
      (cond
        [(and (or (path? src) (string? src)) line col)
         (add-property
@@ -54,7 +60,7 @@
         ;; suppress any other inferred name:
         (wrap-property-set (reannotate orig-s new-s)
                            'inferred-name
-                           ;; Hack: "[" means "no name"
+                           ;; "[" means "no name"
                            '|[|)]
        [else new-s])]))
 

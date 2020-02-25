@@ -39,7 +39,9 @@
 (define (do-impersonate-ref acc rtd pos orig record-name field-name)
   (impersonate-struct-or-property-ref acc rtd rtd pos orig record-name field-name))
 
-(define (impersonate-struct-or-property-ref acc rtd key1 key2/pos orig record-name field-name)
+;; `val/acc` is an accessor if `rtd`, a value otherwise;
+;; `key2/pos` is a pos if `rtd`
+(define (impersonate-struct-or-property-ref val/acc rtd key1 key2/pos orig record-name field-name)
   (cond
    [(and (impersonator? orig)
          (or (not rtd)
@@ -52,7 +54,7 @@
         (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
           (let ([r (unsafe-struct*-ref (impersonator-val v) abs-pos)])
             (when (eq? r unsafe-undefined)
-              (raise-unsafe-undefined 'struct-ref "undefined" "use" acc (impersonator-val v) abs-pos))
+              (raise-unsafe-undefined 'struct-ref "undefined" "use" val/acc (impersonator-val v) abs-pos))
             r))]
        [(or (struct-impersonator? v)
             (struct-chaperone? v))
@@ -77,10 +79,11 @@
        [(impersonator? v)
         (loop (impersonator-next v))]
        [else
-        (if rtd
-            (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
-              (unsafe-struct*-ref v abs-pos))
-            (acc v))]))]
+        (cond
+         [rtd
+          (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
+            (unsafe-struct*-ref v abs-pos))]
+         [else val/acc])]))]
    [else
     (raise-argument-error (string->symbol
                            (string-append (symbol->string (or record-name 'struct))

@@ -3,6 +3,7 @@
           (for-label (except-in racket/base
                                 remove)
                      racket/contract/base
+                     (only-in racket/set set/c)
                      pkg
                      pkg/lib
                      (only-in pkg/db current-pkg-catalog-file)
@@ -186,10 +187,10 @@ is a directory within @racket[path]).
                     [#:in-place? in-place? boolean? #f]
                     [#:namespace namespace namespace? (make-base-namespace)]
                     [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
-                    [#:force-strip? force-string? boolean? #f]
+                    [#:force-strip? force-strip? boolean? #f]
                     [#:use-cache? use-cache? boolean? #f]
                     [#:quiet? quiet? boolean? #t])
-         (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
+         (values string? path? (or/c #f string?) boolean? (set/c module-path?))]{
 
 Locates the implementation of the package specified by @racket[desc]
 and downloads and unpacks it to a temporary directory (as needed).
@@ -262,7 +263,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:use-trash? use-trash? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
-                           [#:force-strip? force-string? boolean? #f]
+                           [#:force-strip? force-strip? boolean? #f]
                            [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                            [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
                            [#:link-dirs? link-dirs? boolean? #f]
@@ -319,7 +320,7 @@ The package lock must be held; see @racket[with-pkg-lock].
                           [#:use-trash? use-trash? boolean? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
-                          [#:force-strip? force-string? boolean? #f]
+                          [#:force-strip? force-strip? boolean? #f]
                           [#:lookup-for-clone? lookup-for-clone? boolean? #f]
                           [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                           [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
@@ -438,7 +439,7 @@ The package lock must be held to allow reads; see
                            [#:quiet? quiet? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
-                           [#:force-strip? force-string? boolean? #f]
+                           [#:force-strip? force-strip? boolean? #f]
                            [#:dry-run? dry-run? boolean? #f])
          (or/c 'skip
                #f

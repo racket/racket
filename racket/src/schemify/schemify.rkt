@@ -517,31 +517,40 @@
            [`(let-values () ,bodys ...)
             (schemify `(begin . ,bodys) wcm-state)]
            [`(let-values ([(,ids) ,rhss] ...) ,bodys ...)
-            (define new-knowns
-              (for/fold ([knowns knowns]) ([id (in-list ids)]
-                                           [rhs (in-list rhss)])
-                (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?))
-                (if k
-                    (hash-set knowns (unwrap id) k)
-                    knowns)))
-            (define (merely-a-copy? id)
-              (define u-id (unwrap id))
-              (define k (hash-ref new-knowns u-id #f))
-              (and (or (known-copy? k)
-                       (known-literal? k))
-                   (simple-mutated-state? (hash-ref mutated u-id #f))))
-            (unnest-let
-             (left-to-right/let (for/list ([id (in-list ids)]
-                                           #:unless (merely-a-copy? id))
-                                  id)
-                                (for/list ([id (in-list ids)]
-                                           [rhs (in-list rhss)]
-                                           #:unless (merely-a-copy? id))
-                                  (schemify rhs 'fresh))
-                                (for/list ([body (in-list bodys)])
-                                  (schemify/knowns new-knowns inline-fuel wcm-state body))
-                                prim-knowns knowns imports mutated simples)
-             prim-knowns knowns imports mutated simples)]
+            (cond
+              [(and (pair? ids) (null? (cdr ids))
+                    (pair? bodys) (null? (cdr bodys))
+                    (eq? (unwrap (car ids)) (unwrap (car bodys)))
+                    (lambda? (car rhss)))
+               ;; Simplify by discarding the binding; assume that any
+               ;; needed naming is already reflected in properties
+               (schemify (car rhss) wcm-state)]
+              [else
+               (define new-knowns
+                 (for/fold ([knowns knowns]) ([id (in-list ids)]
+                                              [rhs (in-list rhss)])
+                   (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?))
+                   (if k
+                       (hash-set knowns (unwrap id) k)
+                       knowns)))
+               (define (merely-a-copy? id)
+                 (define u-id (unwrap id))
+                 (define k (hash-ref new-knowns u-id #f))
+                 (and (or (known-copy? k)
+                          (known-literal? k))
+                      (simple-mutated-state? (hash-ref mutated u-id #f))))
+               (unnest-let
+                (left-to-right/let (for/list ([id (in-list ids)]
+                                              #:unless (merely-a-copy? id))
+                                     id)
+                                   (for/list ([id (in-list ids)]
+                                              [rhs (in-list rhss)]
+                                              #:unless (merely-a-copy? id))
+                                     (schemify rhs 'fresh))
+                                   (for/list ([body (in-list bodys)])
+                                     (schemify/knowns new-knowns inline-fuel wcm-state body))
+                                   prim-knowns knowns imports mutated simples)
+                prim-knowns knowns imports mutated simples)])]
            [`(let-values ([() (begin ,rhss ... (values))]) ,bodys ...)
             `(begin ,@(schemify-body rhss 'fresh) ,@(schemify-body bodys wcm-state))]
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
@@ -788,6 +797,21 @@
                   body
                   `(let ([,tmp ,e])
                      ,body)))
+            (define (inline-struct-predicate k s-rator im args)
+              ;; For imported predicates on authentic structure types, it's worth
+              ;; inlining the predicate to enable cptypes optimizations.
+              (define type-id (and im
+                                   (known-struct-predicate-authentic? k)
+                                   (pair? args)
+                                   (null? (cdr args))
+                                   (inline-type-id k im add-import! mutated imports)))
+              (cond
+                [type-id
+                 (define tmp (maybe-tmp (car args) 'v))
+                 (define ques `(unsafe-struct? ,tmp ,(schemify type-id 'fresh)))
+                 (wrap-tmp tmp (car args)
+                           ques)]
+                [else #f]))
             (define (inline-field-access k s-rator im args)
               ;; For imported accessors or for JIT mode, inline the
               ;; selector with an `unsafe-struct?` test plus `unsafe-struct*-ref`.
@@ -836,6 +860,10 @@
                                              (cdr e)
                                              #t for-cify?
                                              prim-knowns knowns imports mutated simples))]
+                    [(and (not for-cify?)
+                          (known-struct-predicate? k)
+                          (inline-struct-predicate k s-rator im args))
+                     => (lambda (e) e)]
                     [(and (not for-cify?)
                           (known-field-accessor? k)
                           (inline-field-access k s-rator im args))

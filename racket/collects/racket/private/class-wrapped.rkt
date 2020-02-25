@@ -20,6 +20,7 @@
 
 (struct wrapped-object (object neg-extra-arg-vec pos-field-projs neg-field-projs neg-party)
   #:transparent
+  #:authentic
   #:property prop:custom-write
   (λ (stct port mode)
     (do-custom-write (wrapped-object-object stct) port mode)))

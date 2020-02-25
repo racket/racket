@@ -84,7 +84,8 @@
   (check who byte? b)
   (bytevector-fill! bstr b))
 
-(define bytes-copy #2%bytevector-copy)
+(define (bytes-copy bstr)
+  (#2%bytevector-copy bstr))
 
 (define-syntax-rule (define-bytes-compare name do-name)
   (define/who name

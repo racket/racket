@@ -47,7 +47,7 @@
                                     a-known-constant))]
               [knowns (hash-set knowns
                                 (unwrap s?)
-                                (known-predicate 2 type))]
+                                (known-struct-predicate 2 type struct:s (struct-type-info-authentic? info)))]
               [knowns
                (let* ([immediate-count (struct-type-info-immediate-field-count info)]
                       [parent-count (- (struct-type-info-field-count info)
@@ -87,7 +87,7 @@
                                      a-known-constant))]
                [knowns (hash-set knowns
                                  (unwrap s?)
-                                 (known-predicate 2 type))])
+                                 (known-struct-predicate 2 type struct:s (struct-type-info-authentic? info)))])
           ;; For now, we don't try to track the position-consuming accessor or mutator
           (hash-set knowns (unwrap struct:s) (known-struct-type type
                                                                 (struct-type-info-field-count info)
