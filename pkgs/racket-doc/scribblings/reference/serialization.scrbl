@@ -504,7 +504,7 @@ is bound for each @racket[other-vers]. The @racket[vers] and each
 
 Each @racket[make-proc-expr] should produce a procedure, and the
 procedure should accept as many argument as fields in the
-corresponding version of the structure type, and it produce an
+corresponding version of the structure type, and it produces an
 instance of @racket[id]. Each @racket[cycle-make-proc-expr] should
 produce a procedure of no arguments; this procedure should return two
 values: an instance @racket[x] of @racket[id] (typically with
