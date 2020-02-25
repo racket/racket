@@ -320,7 +320,7 @@
 
     (define new-url
       (ormap (λ (h)
-               (match (regexp-match #rx#"^Location: (.*)$" h)
+               (match (regexp-match #rx#"^(?i:Location): (.*)$" h)
                  [#f #f]
                  [(list _ m1b)
                   (define m1 (bytes->string/utf-8 m1b))
