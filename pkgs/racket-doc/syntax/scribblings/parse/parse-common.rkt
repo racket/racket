@@ -47,6 +47,7 @@
                                  (thunk))))])
          (make-evaluator 'racket/base
                          #:requires (let ([mods '(racket/promise
+                                                  racket/pretty
                                                   syntax/parse
                                                   syntax/parse/debug
                                                   syntax/parse/experimental/splicing
@@ -58,7 +59,10 @@
                                                   syntax/transformer)])
                                       `((for-syntax racket/base ,@mods)
                                         ,@mods)))))))
-  (when short? (the-eval '(error-print-source-location #f)))
+  (call-in-sandbox-context the-eval
+    (lambda ()
+      (current-print (dynamic-require 'racket/pretty 'pretty-print-handler))
+      (when short? (error-print-source-location #f))))
   the-eval)
 
 ;; ----
