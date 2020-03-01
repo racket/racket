@@ -85,7 +85,7 @@ the identifier refers to the binding whose set is a superset of all
 others; if no such binding exists, the reference is ambiguous (and triggers a syntax
 error if it is parsed as an expression). A binding @deftech{shadows}
 any @tech{binding} (i.e., it is @deftech{shadowing} any @tech{binding}) 
-that the same symbol but a subset of scopes.
+with the same symbol but a subset of scopes.
 
 For example, in
 
