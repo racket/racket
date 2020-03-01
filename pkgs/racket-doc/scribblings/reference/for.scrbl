@@ -346,7 +346,7 @@ An @racket[accum-id] and a binding from a @racket[for-clause] can be
 the same identifier. In that case, the @racket[accum-id] binding
 shadows the one in a @racket[for-clause] within the
 @racket[body-or-break] and @racket[body] forms (even though,
-syntactically, a @racket[for-clause] is closer to to the body).
+syntactically, a @racket[for-clause] is closer to the body).
 
 @examples[
 (for/fold ([sum 0]
