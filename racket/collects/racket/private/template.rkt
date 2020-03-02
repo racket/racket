@@ -387,6 +387,7 @@
                         iter))]))))
       (let ([v (syntax-local-value id (lambda () #f))])
         (cond [(syntax-pattern-variable? v)
+               ;; syntax variables allowed in both syntax and datum templates
                (define pvar-depth (syntax-mapping-depth v))
                (define attr
                  (let ([attr (syntax-local-value (syntax-mapping-valvar v) (lambda () #f))])
@@ -394,10 +395,15 @@
                (define var (if attr (attribute-mapping-var attr) (syntax-mapping-valvar v)))
                (define check (and attr (attribute-mapping-check attr)))
                (make-pvar var check pvar-depth)]
-              [(and (not stx?) (s-exp-pattern-variable? v))
-               (define pvar-depth (s-exp-mapping-depth v))
-               (define var (s-exp-mapping-valvar v))
-               (make-pvar var #f pvar-depth)]
+              [(s-exp-pattern-variable? v)
+               (cond [stx?
+                      ;; datum variable in syntax template is error
+                      (wrong-syntax id "datum variable not allowed in syntax template")]
+                     [else
+                      ;; datum variable in datum template
+                      (define pvar-depth (s-exp-mapping-depth v))
+                      (define var (s-exp-mapping-valvar v))
+                      (make-pvar var #f pvar-depth)])]
               [else
                ;; id is a constant; check that for all x s.t. id = x.y, x is not an attribute
                (for-each
