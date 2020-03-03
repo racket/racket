@@ -544,8 +544,8 @@ sub-commands.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
  
- @item{@DFlag{catalog} @nonterm{catalog} --- Uses @nonterm{catalog} instead of of the currently configured 
-       @tech{package catalogs}.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Uses @nonterm{catalog}s instead of of the currently configured
+       @tech{package catalogs}. This flag can be provided multiple times.}
 
   @item{@DFlag{skip-installed} --- Ignores any @nonterm{pkg-source}
         whose name corresponds to an already-installed package, except for promoting @seclink["concept:auto"]{auto-installed}

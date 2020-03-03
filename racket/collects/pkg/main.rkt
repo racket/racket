@@ -181,8 +181,9 @@
              install-copy-flags/post-clone ...
              #:once-any
              scope-flags ...
-             #:once-each
+             #:multi
              catalog-flags ...
+             #:once-each
              [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
              [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
              install-force-flags ...
@@ -223,8 +224,9 @@
                         (values pkg-source a-type)))
                   (define setup-collects
                     (with-pkg-lock
-                        (parameterize ([current-pkg-catalogs (and catalog
-                                                                  (list (catalog->url catalog)))])
+                      (parameterize ([current-pkg-catalogs
+                                      (and (cons? (catalog-list))
+                                           (reverse (map catalog->url (catalog-list))))])
                           (pkg-install #:from-command-line? #t
                                        #:dep-behavior (or (and auto 'search-auto)
                                                           deps
@@ -316,8 +318,9 @@
                   (define lookup? (or lookup unclone))
                   (define setup-collects
                     (with-pkg-lock
-                        (parameterize ([current-pkg-catalogs (and catalog
-                                                                  (list (catalog->url catalog)))])
+                      (parameterize ([current-pkg-catalogs
+                                      (and (cons? (catalog-list))
+                                           (reverse (map catalog->url (catalog-list))))])
                           (pkg-update (for/list ([pkg-source (in-list pkg-source)])
                                         (cond
                                          [lookup?
@@ -471,8 +474,9 @@
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
-                   (parameterize ([current-pkg-catalogs (and catalog
-                                                             (list (catalog->url catalog)))])
+                    (parameterize ([current-pkg-catalogs
+                                    (and (cons? (catalog-list))
+                                         (reverse (map catalog->url (catalog-list))))])
                      (pkg-migrate from-version
                                   #:from-command-line? #t
                                   #:dep-behavior deps
@@ -558,8 +562,9 @@
              #:args pkg-name
              (when (and all (pair? pkg-name))
                ((pkg-error 'catalog-show) "both `--all' and package names provided"))
-             (parameterize ([current-pkg-catalogs (and catalog
-                                                       (list (catalog->url catalog)))]
+             (parameterize ([current-pkg-catalogs
+                             (and (cons? (catalog-list))
+                                  (reverse (map catalog->url (catalog-list))))]
                             [current-pkg-error (pkg-error 'catalog-show)]
                             [current-pkg-lookup-version (or version
                                                             (current-pkg-lookup-version))])
@@ -664,6 +669,7 @@
                 (pkg-empty-trash #:list? list
                                  #:quiet? #f)))]))]))
 
+  (define catalog-list (make-parameter null))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -684,7 +690,8 @@
    #:trash-flags
    ([#:bool no-trash () ("Delete uninstalled/updated, instead of moving to a trash folder")])
    #:catalog-flags
-   ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
+   ([(#:str catalog #f) catalog () "Use <catalog>s instead of configured catalogs"
+                        (catalog-list (cons catalog (catalog-list)))])
    #:install-type-flags
    ([(#:sym type [file dir file-url dir-url git github name] #f) type ("-t")
      ("Specify type of <pkg-source>, instead of inferred;"
