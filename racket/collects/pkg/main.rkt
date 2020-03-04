@@ -118,6 +118,13 @@
    [(regexp-match? #rx"^[a-zA-Z]*://" s) (string->url s)]
    [else (path->url (path->complete-path s))]))
 
+(define-syntax-rule (with-catalogs body ...)
+  (let ([catalogs (catalog-list)])
+    (parameterize ([current-pkg-catalogs
+                    (and (cons? catalogs)
+                         (map catalog->url (reverse catalogs)))])
+      body ...)))
+
 (define (clone-to-package-name clone cmd)
   ;; Use directory name as sole package name, if possible
   (define-values (base name dir?) (split-path clone))
@@ -224,9 +231,7 @@
                         (values pkg-source a-type)))
                   (define setup-collects
                     (with-pkg-lock
-                      (parameterize ([current-pkg-catalogs
-                                      (and (cons? (catalog-list))
-                                           (reverse (map catalog->url (catalog-list))))])
+                      (with-catalogs
                           (pkg-install #:from-command-line? #t
                                        #:dep-behavior (or (and auto 'search-auto)
                                                           deps
@@ -319,9 +324,7 @@
                   (define lookup? (or lookup unclone))
                   (define setup-collects
                     (with-pkg-lock
-                      (parameterize ([current-pkg-catalogs
-                                      (and (cons? (catalog-list))
-                                           (reverse (map catalog->url (catalog-list))))])
+                      (with-catalogs
                           (pkg-update (for/list ([pkg-source (in-list pkg-source)])
                                         (cond
                                          [lookup?
@@ -476,9 +479,7 @@
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
-                    (parameterize ([current-pkg-catalogs
-                                    (and (cons? (catalog-list))
-                                         (reverse (map catalog->url (catalog-list))))])
+                    (with-catalogs
                      (pkg-migrate from-version
                                   #:from-command-line? #t
                                   #:dep-behavior deps
@@ -565,16 +566,14 @@
              #:args pkg-name
              (when (and all (pair? pkg-name))
                ((pkg-error 'catalog-show) "both `--all' and package names provided"))
-             (parameterize ([current-pkg-catalogs
-                             (and (cons? (catalog-list))
-                                  (reverse (map catalog->url (catalog-list))))]
-                            [current-pkg-error (pkg-error 'catalog-show)]
-                            [current-pkg-lookup-version (or version
-                                                            (current-pkg-lookup-version))])
-               (pkg-catalog-show pkg-name
-                                 #:all? all
-                                 #:only-names? only-names
-                                 #:modules? modules))]
+             (with-catalogs
+               (parameterize ([current-pkg-error (pkg-error 'catalog-show)]
+                              [current-pkg-lookup-version (or version
+                                                              (current-pkg-lookup-version))])
+                 (pkg-catalog-show pkg-name
+                                   #:all? all
+                                   #:only-names? only-names
+                                   #:modules? modules)))]
             ;; ----------------------------------------
             [catalog-copy
              "Copy/merge package name catalogs"
