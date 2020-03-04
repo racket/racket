@@ -544,8 +544,8 @@ sub-commands.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
  
- @item{@DFlag{catalog} @nonterm{catalog} --- Uses @nonterm{catalog} instead of of the currently configured 
-       @tech{package catalogs}.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Uses @nonterm{catalog}s instead of of the currently configured
+       @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
 
   @item{@DFlag{skip-installed} --- Ignores any @nonterm{pkg-source}
         whose name corresponds to an already-installed package, except for promoting @seclink["concept:auto"]{auto-installed}
@@ -642,7 +642,8 @@ sub-commands.
          #:changed "6.1.1.8" @elem{Added the @DFlag{pull} flag.}
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
-         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}]}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
+         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -774,7 +775,8 @@ the given @nonterm{pkg-source}s.
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "6.90.0.27" @elem{Added the @DFlag{unclone} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
-         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}]}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
+         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency
@@ -904,7 +906,8 @@ package is created.
 
 @history[#:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
-         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}]}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
+         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]}
 
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling
@@ -1024,12 +1027,13 @@ for @nonterm{key}.
                               @DFlag{all}, but when a @nonterm{package-name} is provided,
                               catalogs are consulted to ensure that he package is available.}
  @item{@DFlag{modules} --- Shows the modules that are implemented by a package.}
- @item{@DFlag{catalog} @nonterm{catalog} --- Queries @nonterm{catalog} instead of the currently configured 
-       @tech{package catalogs}.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Queries @nonterm{catalog}s instead of the currently configured
+       @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
  @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Queries catalogs 
        for a result specific to @nonterm{version},
        instead of the installation's Racket version.}
  ]
+@history[#:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]
 }
 
 @subcommand{@command/toc{catalog-copy} @nonterm{option} ... @nonterm{src-catalog} ... @nonterm{dest-catalog}
