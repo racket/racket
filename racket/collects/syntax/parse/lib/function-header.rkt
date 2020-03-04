@@ -6,7 +6,7 @@
 (provide function-header formal formals)
 
 (define-syntax-class function-header
-  #:attributes (name params)
+  #:attributes (name params args)
   (pattern ((~or header:function-header name*:id) . args:formals)
            #:attr params #'((~@ . (~? header.params ())) . args.params)
            #:attr name   #'(~? header.name name*)))
