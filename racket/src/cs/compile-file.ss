@@ -56,7 +56,7 @@
            (loop args))]
      [(get-opt args "--srcloc" 0)
       => (lambda (args)
-           (generate-procedure-source-information #f)
+           (generate-procedure-source-information #t)
            (loop args))]
      [(get-opt args "--unsafe" 0)
       => (lambda (args)

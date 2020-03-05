@@ -3597,6 +3597,22 @@
   (test #f hash-ref-key ht1 "absent" #f)
   (err/rt-test (hash-ref-key ht2 "absent") exn:fail:contract?))
 
+
+;; ----------------------------------------
+;; regression test to make sure a hash-code function
+;; is inherited for a chaperoned struct
+
+(let ()
+  (struct a ()
+    #:property prop:equal+hash (list
+                                (lambda (a b eql?) #t)
+                                (lambda (a hc) 1)
+                                (lambda (a hc) 1)))
+
+  (struct b a (x))
+
+  (test #t integer? (equal-hash-code (chaperone-struct (b 0) b-x (lambda (b v) v)))))
+
 ;; ----------------------------------------
 
 (report-errs)
