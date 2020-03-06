@@ -1243,7 +1243,7 @@ because @racket[filter-map] avoids
 building the intermediate list.
 
 @mz-examples[#:eval list-eval
-  (filter-map (lambda (x) (and (positive? x) x)) '(1 2 3 -2 8))]}
+  (filter-map (lambda (x) (and (negative? x) (abs x))) '(1 2 -3 -4 8))]}
 
 
 @defproc[(count [proc procedure?] [lst list?] ...+)
