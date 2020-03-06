@@ -253,17 +253,20 @@
           "petite"
           "scheme")
 
-(system*! (find-exe)
-          "-O" "info@compiler/cm"
-          "-l-" "setup" boot-mode "../setup-go.rkt" "..//build/compiled"
-          "ignored" "../build/ignored.d"
-          "../cs/c/embed-boot.rkt"
-	  "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
-	  "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
-          "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
-          "../build/petite-v.boot"
-          "../build/scheme-v.boot"
-          "../build/racket-v.boot")
+(define (bootstrap-racket! . args)
+  (apply system*! (find-exe)
+         "-O" "info@compiler/cm"
+         "-l-" "setup" boot-mode "../setup-go.rkt" "../build/compiled"
+         "ignored" "../build/ignored.d"
+         args))
+
+(bootstrap-racket! "../cs/c/embed-boot.rkt"
+                   "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
+                   "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
+                   "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+                   "../build/petite-v.boot"
+                   "../build/scheme-v.boot"
+                   "../build/racket-v.boot")
 
 (system*! "mt"
 	  "-manifest" "racket/racket.manifest"
@@ -325,3 +328,15 @@
           (format "../../lib/system~a.rktd" cs-suffix)
           machine
           "machine")
+
+(bootstrap-racket! "../cs/c/add-terminator.rkt"
+                   "../build/petite-v.boot"
+                   "../../lib/petite.boot")
+
+(bootstrap-racket! "../cs/c/add-terminator.rkt"
+                   "../build/scheme-v.boot"
+                   "../../lib/scheme.boot")
+
+(bootstrap-racket! "../cs/c/add-terminator.rkt"
+                   "../build/racket-v.boot"
+                   "../../lib/racket.boot")

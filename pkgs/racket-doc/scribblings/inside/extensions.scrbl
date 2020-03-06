@@ -11,6 +11,7 @@ and using the @seclink["top" #:doc '(lib
 usually a better option than writing an extension to Racket, but
 Racket also supports C-implemented extensions that plug more directly
 into the run-time system.
+(Racket CS does not have a similar extension interface.)
 
 The process of creating an extension for Racket 3m or Racket CGC (see
 @secref["CGC versus 3m"]) is essentially the same, but the process for

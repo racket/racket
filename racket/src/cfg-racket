@@ -2734,6 +2734,7 @@ if test "${enable_libs+set}" = set; then :
 fi
 
 
+
 # Check whether --enable-libffi was given.
 if test "${enable_libffi+set}" = set; then :
   enableval=$enable_libffi;
@@ -3284,6 +3285,14 @@ show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
+INSTALL_LIBS_ENABLE=no-install
+
+if test "${enable_libs}" != "no" ; then
+  # Intended to be canceled for some platforms:
+  INSTALL_LIBS_ENABLE=install
+fi
+
+
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
@@ -3418,8 +3427,6 @@ MAIN_VARIANT=3m
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
-
-INSTALL_LIBS_ENABLE=no-install
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -4802,11 +4809,6 @@ if test "${enable_foreign}" = "yes" ; then
 fi
 if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
-fi
-
-if test "${enable_libs}" != "no" ; then
-  # Canceled for some platforms below:
-  INSTALL_LIBS_ENABLE=install
 fi
 
 ############## platform tests ################

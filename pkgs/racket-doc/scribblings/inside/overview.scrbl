@@ -20,7 +20,7 @@ all should be renamed to start @cpp{racket_}.
 
 @; ----------------------------------------------------------------------
 
-@section{Building Racket from Source}
+@section{Building Racket BC from Source}
 
 The normal Racket distribution includes @filepath{.rkt} sources for
 collection-based libraries. After modifying library files, run
@@ -93,7 +93,7 @@ to call the library.
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "places"]{Racket and Places}
+@section[#:tag "places"]{Racket BC and Places}
 
 Each Racket @|tech-place| corresponds to a separate OS-implemented
 thread. Each place has its own memory manager. Pointers to GC-managed
@@ -118,15 +118,13 @@ for the original place.
 
 @; ----------------------------------------------------------------------
 
-@section{Racket and Threads}
+@section{Racket BC and Threads}
 
 Racket implements threads for Racket programs without aid from the
 operating system, so that Racket threads are cooperative from the
-perspective of C code. On Unix, stand-alone Racket uses a single
-OS-implemented thread. On Windows and Mac OS, stand-alone
-Racket uses a few private OS-implemented threads for background
-tasks, but these OS-implemented threads are never exposed by the
-Racket API.
+perspective of C code. Stand-alone Racket may uses a few private
+OS-implemented threads for background tasks, but these OS-implemented
+threads are never exposed by the Racket API.
 
 Racket can co-exist with additional OS-implemented threads, but the
 additional OS threads must not call any @cpp{scheme_} function.  Only
@@ -146,7 +144,7 @@ and embedding C code.
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "im:unicode"]{Racket, Unicode, Characters, and Strings}
+@section[#:tag "im:unicode"]{Racket BC, Unicode, Characters, and Strings}
 
 A character in Racket is a Unicode code point. In C, a character
 value has type @cppi{mzchar}, which is an alias for @cpp{unsigned} ---
@@ -163,7 +161,7 @@ See also @secref["im:strings"] and @secref["im:encodings"].
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "im:intsize"]{Integers}
+@section[#:tag "im:intsize"]{Racket BC Integers}
 
 Racket expects to be compiled in a mode where @cppi{short} is a
 16-bit integer, @cppi{int} is a 32-bit integer, and @cppi{intptr_t} has

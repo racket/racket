@@ -25,6 +25,7 @@ AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    Use Chez Scheme machine typ
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  Cross-build for Chez Scheme machine type <mach>])
 m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
+m4_include(../ac/instlib_arg.m4)
 m4_include(../ac/strip_arg.m4)
 m4_include(../ac/ubsan_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
@@ -86,6 +87,7 @@ if test "${enable_csonly}" = "yes" ; then
 fi
 show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
 
+m4_include(../ac/instlib.m4)
 m4_include(../ac/sdk_show.m4)
 m4_include(../ac/strip_show.m4)
 
@@ -151,8 +153,10 @@ INSTALL_SETUP_RACKET_FLAGS=
 
 Z_LIB_DEP='$(OWN_Z_LIB)'
 Z_LIB='$(OWN_Z_LIB)'
+Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
 LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
 LZ4_LIB='$(OWN_LZ4_LIB)'
+LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
 
 enable_pthread_by_default=yes
 
@@ -248,6 +252,10 @@ case "$host_os" in
     NOT_MINGW="mingw"
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
+    fi
+    # ".a" is typically not useful, since we always build a DLL:
+    if test "${enable_libs}" = "" ; then
+      INSTALL_LIBS_ENABLE=no-install
     fi
     ;;
   cygwin*)
@@ -542,6 +550,7 @@ if test "${enable_libz}" = "yes" ; then
   else
     Z_LIB_DEP=""
     Z_LIB="-lz"
+    Z_LIB_UNPACK="$(NOOP)"
     extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
@@ -563,6 +572,7 @@ if test "${enable_liblz4}" = "yes" ; then
   else
     LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
+    LZ4_LIB_UNPACK="$(NOOP)"
     extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
@@ -685,6 +695,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(STATIC_AR)
 AC_SUBST(WINDRES)
 AC_SUBST(ICP)
+AC_SUBST(ICP_LIB)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(RKTLINKER)
@@ -707,8 +718,10 @@ AC_SUBST(MINGW)
 AC_SUBST(NOT_MINGW)
 AC_SUBST(Z_LIB_DEP)
 AC_SUBST(Z_LIB)
+AC_SUBST(Z_LIB_UNPACK)
 AC_SUBST(LZ4_LIB_DEP)
 AC_SUBST(LZ4_LIB)
+AC_SUBST(LZ4_LIB_UNPACK)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)
@@ -727,6 +740,7 @@ AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 AC_SUBST(RUN_RACKET)
 AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
+AC_SUBST(INSTALL_LIBS_ENABLE)
 
 makefiles="Makefile"
 
