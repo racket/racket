@@ -413,7 +413,8 @@ update-ChezScheme-as-extra:
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme/lz4 && git pull origin master -q
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
-                                     SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"
+                                     SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" \
+                                     DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)"
 WIN32_CS_COPY_ARGS_EXCEPT_SUT = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
 WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" WIN32_CS_SETUP_TARGET=$(WIN32_CS_SETUP_TARGET) $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
 WIN32_CS_COPY_ARGS_BOOT = $(WIN32_CS_COPY_ARGS) SETUP_BOOT_MODE="$(SETUP_BOOT_MODE)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
@@ -432,7 +433,7 @@ win32-racket-then-cs:
 	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) $(WIN32_CS_COPY_ARGS_BOOT)
 
 CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" --pull \
-                    --racketcs-suffix "$(RACKETCS_SUFFIX)" \
+                    --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) \
                     --boot-mode "$(SETUP_BOOT_MODE)" \
                     --extra-repos-base "$(EXTRA_REPOS_BASE)" \
                     -- $(GIT_CLONE_ARGS_qq)
@@ -556,7 +557,11 @@ INSTALLER_OPTIONS =
 
 # Set to "--source --no-setup" to include packages in an installer
 # (or archive) only in source form:
-PKG_SOURCE_MODE = 
+PKG_SOURCE_MODE =
+
+# Set to "--disable-lib" to avoid including ".a" and ".boot" files
+# for use in embedding Racket in other applications
+DISABLE_STATIC_LIBS =
 
 # Set to a base64-encoded list of strings for an executable and
 # arguments to run on an assembled directory (on the client machine)
@@ -817,6 +822,7 @@ PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
 	    EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
+            DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)" \
             UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
@@ -839,7 +845,7 @@ BUNDLE_FROM_SERVER_TARGET = bundle-from-server
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS)
+	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS) MORE_CONFIGURE_ARGS="$(DISABLE_STATIC_LIBS)"
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
 	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) $(COPY_ARGS)
 	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
