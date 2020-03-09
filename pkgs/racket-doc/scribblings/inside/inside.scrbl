@@ -27,6 +27,7 @@ and extending Racket directly with C-implemented libraries.
 
 @include-section["cs.scrbl"]
 @include-section["bc.scrbl"]
+@include-section["appendix.scrbl"]
 
 @; ------------------------------------------------------------------------
 

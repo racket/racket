@@ -10,7 +10,7 @@ To embed Racket CS in a program, follow these steps:
 
 @itemize[
 
- @item{Locate or build the Racket CS library. 
+ @item{Locate or @seclink["src-build"]{build} the Racket CS library.
 
   On Unix, the library is @as-index{@filepath{libracketcs.a}}.
   Building from source and installing places the libraries into the
@@ -76,7 +76,10 @@ To embed Racket CS in a program, follow these steps:
   can be combined into a single file---or even embedded into the
   executable---as long as the @cpp{boot1_offset}, @cpp{boot2_offset},
   and @cpp{boot3_offset} fields of @cpp{racket_boot_arguments_t} are
-  set to identify the starting offset of each boot image in the file.}
+  set to identify the starting offset of each boot image in the file.
+
+  See @secref["segment-ideas"] for advice on embedding files like
+  @filepath{petite.boot} in an executable.}
 
  @item{Configure the main thread's namespace by adding module
   declarations. The initial namespace contains declarations only for a
@@ -87,7 +90,7 @@ To embed Racket CS in a program, follow these steps:
   its dependencies), use
   @seclink["c-mods" #:doc raco-doc]{@exec{raco ctool --c-mods @nonterm{dest}}},
   which generates a C file @nonterm{dest}
-  that contains modules in bytecode form as encapsulated in a static
+  that contains modules in compiled form as encapsulated in a static
   array. The generated C file defines a @cppi{declare_modules}
   function that takes no arguments and installs the modules into
   the environment, and it adjusts the module name resolver to access the
@@ -98,7 +101,7 @@ To embed Racket CS in a program, follow these steps:
 
   Alternatively, set fields like @cpp{collects_dir}, @cpp{config_dir},
   and/or @cpp{argv} in the @cpp{racket_boot_arguments_t} passed to
-  @cppi{scheme_boot} to locate collections/packages and initialize the
+  @cppi{racket_boot} to locate collections/packages and initialize the
   namespace the same way as when running the @exec{racket} executable.
 
   On Windows, @exec{raco ctool --c-mods @nonterm{dest} --runtime
@@ -106,7 +109,11 @@ To embed Racket CS in a program, follow these steps:
   that are referenced by the Racket library to support
   @racket[bytes-open-converter]. Set @cpp{dll_dir} in
   @cpp{racket_boot_arguments_t} to register @nonterm{dest-dir} so that
-  those DLLs can be found at run time.}
+  those DLLs can be found at run time.
+
+  Instead of using @DFlag{c-mods} with @exec{raco ctool}, you can use
+  @DFlag{mods}, embed the file content (see @secref["segment-ideas"])
+  and load the content with @cppi{racket_embedded_load_file_region}.}
 
  @item{Access Racket through @cppi{racket_dynamic_require},
   @cppi{racket_eval}, and/or other functions described in this manual.
@@ -115,7 +122,7 @@ To embed Racket CS in a program, follow these steps:
   that should be considered part of the default configuration, then
   call the @racketidfont{seal} function provided by the primitive
   @racketidfont{#%boot} module afterward. The snapshot of parameter
-  values taken by @cpp{scheme_seal_parameters} is used for certain
+  values taken by @racketidfont{seal} is used for certain
   privileged operations, such as installing a @|PLaneT| package.}
 
  @item{Compile the program and link it with the Racket libraries.}

@@ -20,9 +20,10 @@ To embed Racket CGC in a program, follow these steps:
 
 @itemize[
 
- @item{Locate or build the Racket CGC libraries. Since the
+ @item{Locate or @seclink["src-build"]{build}
+  the Racket CGC libraries. Since the
   standard distribution provides 3m libraries, only, you will most
-  likely have to build from source.
+  likely have to @seclink["src-build"]{build from source}.
 
   On Unix, the libraries are @as-index{@filepath{libracket.a}}
   and @as-index{@filepath{libmzgc.a}} (or
