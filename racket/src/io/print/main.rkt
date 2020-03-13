@@ -158,12 +158,20 @@
 (define (sub3 n) (and n (- n 3)))
 
 (define (dots max-length o)
-  (when (eq? max-length 'full)
-    (write-string "..." o)))
+  (cond
+    [(eq? max-length 'full)
+     (write-string "..." o)]
+    [(pair? max-length)
+     ;; pending bytes fit after all
+     (write-bytes (cdr max-length) o)]
+    [else (void)]))
 
 ;; ----------------------------------------
 
-;; Returns the max length that is still available
+;; Returns the max length that is still available, where 'full
+;; means that more than three items would otherwise have been
+;; written, and a pair indicates that some bytes/characters are
+;; pending until the rest of the writes are determined
 (define (p who v mode o max-length graph config)
   (cond
     [(and graph (hash-ref graph v #f))
