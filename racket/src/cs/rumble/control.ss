@@ -589,7 +589,7 @@
        (end-uninterrupted 'cc)
        (if (#%procedure? args)
            (#%call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
-                                 (lambda () (args)))
+                                   (lambda () (args)))
            (#%apply (full-continuation-k c) args))]
       [(not (composable-continuation-wind? c))
        (apply-immediate-continuation/no-wind c args)]
@@ -631,16 +631,16 @@
       (end-uninterrupted 'cc)
       (if (#%procedure? args)
           (#%call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
-                                (lambda () (args)))
+                                  (lambda () (args)))
           (#%apply (full-continuation-k c) args))]
      [else
       (let-values ([(common-mc   ; shared part of the current metacontinuation
                      rmc-append) ; non-shared part of the destination metacontinuation
                     ;; We check every time, just in case control operations
                     ;; change the current continuation out from under us.
-                    (find-common-metacontinuation  c-mc
-                                                   mc
-                                                   (strip-impersonator tag))])
+                    (find-common-metacontinuation c-mc
+                                                  mc
+                                                  (strip-impersonator tag))])
         (let loop ()
           (cond
            [(eq? common-mc (current-metacontinuation))
