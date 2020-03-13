@@ -270,6 +270,8 @@ scheme_init_type ()
 
   set_name(scheme_unquoted_printing_string_type, "<unquoted-printing-string>");
 
+  set_name(scheme_thunk_for_continue_type, "<thunk-for-continue>");
+
 #ifdef MZ_PRECISE_GC
   set_name(scheme_rt_runstack, "<runstack>");
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
@@ -648,6 +650,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_will_be_lambda_type, iptr_obj);
 
   GC_REG_TRAV(scheme_thread_cell_values_type, small_object);
+
+  GC_REG_TRAV(scheme_thunk_for_continue_type, small_object);
 
   GC_REG_TRAV(scheme_global_ref_type, twoptr_obj);
 

@@ -27,6 +27,7 @@
                            date? make-date
                            dynamic-wind
                            call-with-current-continuation
+                           call-in-continuation
                            make-engine engine-block engine-return
                            current-eval load
                            sleep thread? buffer-mode?

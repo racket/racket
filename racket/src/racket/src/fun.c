@@ -83,6 +83,7 @@ static Scheme_Object *ormap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *internal_call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *finish_call_cc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *call_in_continuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *propagate_abort (int argc, Scheme_Object *argv[]);
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_continuation_barrier (int argc, Scheme_Object *argv[]);
@@ -291,6 +292,13 @@ scheme_init_fun (Scheme_Startup_Env *env)
 
   scheme_addto_prim_instance("call-with-current-continuation", o, env);
 
+  scheme_addto_prim_instance("call-with-composable-continuation",
+			     scheme_make_prim_w_arity2(call_with_control,
+                                                       "call-with-composable-continuation",
+                                                       1, 2,
+                                                       0, -1),
+			     env);
+
   scheme_addto_prim_instance("continuation?",
                              scheme_make_folding_prim(continuation_p,
 						      "continuation?",
@@ -313,11 +321,11 @@ scheme_init_fun (Scheme_Startup_Env *env)
 			     call_with_prompt_proc, 
 			     env);
 
-  scheme_addto_prim_instance("call-with-composable-continuation",
-			     scheme_make_prim_w_arity2(call_with_control,
-                                                       "call-with-composable-continuation",
-                                                       1, 2,
-                                                       0, -1), 
+  scheme_addto_prim_instance("call-in-continuation",
+			     scheme_make_prim_w_arity2(call_in_continuation,
+						       "call-in-continuation",
+						       2, 2,
+						       0, -1),
 			     env);
 
   REGISTER_SO(abort_continuation_proc);
@@ -4314,6 +4322,8 @@ do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
       scheme_check_break_now();
       if (n != 1)
         v = scheme_values(n, (Scheme_Object **)v);
+      else if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_thunk_for_continue_type))
+        v = _scheme_apply_multi(SCHEME_PTR_VAL(v), 0, NULL);
     } else {
       scheme_longjmp(*cont->saveerr, 1);
     }
@@ -6221,8 +6231,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
         get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, cc_guard);
       }
     }
-    
-    return result;
+
+    if ((result != SCHEME_MULTIPLE_VALUES)
+        && SAME_TYPE(SCHEME_TYPE(result), scheme_thunk_for_continue_type))
+      return _scheme_tail_apply(SCHEME_PTR_VAL(result), 0, NULL);
+    else
+      return result;
   } else if (composable || cont->escape_cont) {
     Scheme_Object *argv2[1];
 
@@ -6247,6 +6261,35 @@ static Scheme_Object *
 finish_call_cc (int argc, Scheme_Object *argv[])
 {
   return do_call_ec(1, argv, argv[1]);
+}
+
+static Scheme_Object *call_in_continuation (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *k = argv[0], *p, *a[1];
+
+  if (!SCHEME_CONTP(k) && !SCHEME_ECONTP(k))
+    scheme_wrong_contract("call-in-continuation", "continuation?", 0, argc, argv);
+
+  scheme_check_proc_arity("call-in-continuation", 0, 1, argc, argv);
+
+  /* Instead of allocating, we chould thread a flag through to say
+     that the value in `argv` should be applied instead of returned.
+     But we're not likely to notice the cost of this allocation,
+     anyway. */
+  p = scheme_alloc_small_object();
+  p->type = scheme_thunk_for_continue_type;
+  SCHEME_PTR_VAL(p) = argv[1];
+
+  a[0] = p;
+
+  if (SCHEME_CONTP(k)) {
+    /* We can use escape mode only if coontinuation marks didn't change. */
+    int can_escape = 0;
+    return scheme_jump_to_continuation(k, 1, a, MZ_RUNSTACK, can_escape);
+  } else {
+    scheme_escape_to_continuation(k, 1, a, NULL);
+    return NULL;
+  }
 }
 
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])

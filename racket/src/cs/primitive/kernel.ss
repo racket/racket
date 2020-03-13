@@ -96,6 +96,7 @@
   [cadddr (known-procedure/no-prompt 2)]
   [caddr (known-procedure/no-prompt 2)]
   [cadr (known-procedure/no-prompt 2)]
+  [call-in-continuation (known-procedure 4)]
   [call-in-nested-thread (known-procedure 6)]
   [call-with-composable-continuation (known-procedure 6)]
   [call-with-continuation-barrier (known-procedure 2)]

@@ -51,7 +51,7 @@
 ;; metacontinuation frames between the abort and prompt are removed
 ;; one-by-one, running any winders in each frame. Finally, the
 ;; `resume-k` continuation of the target prompt's metacontinuation is
-;; called; the `resume-k` is called using `call-in-continuation` to
+;; called; the `resume-k` is called using `#%call-in-continuation` to
 ;; run a thunk in the restored continuation to apply the prompt's
 ;; handler.
 ;;
@@ -199,27 +199,30 @@
 
 (define (maybe-future-barricade tag)
   (when (current-future)
-    (let ([fp (strip-impersonator (current-future-prompt))]
-          [tag (strip-impersonator tag)])
-      (cond
-       [(eq? fp tag)
-        ;; shortcut: boundary is the future prompt
-        (void)]
-       [(eq? tag the-root-continuation-prompt-tag)
-        (block-future)]
-       [else
-        (let loop ([mc (current-metacontinuation)])
-          (cond
-           [(null? mc)
-            ;; Won't happen normally, since every thread starts with a explicit prompt
-            (block-future)]
-           [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car mc))))
-            (void)]
-           [(eq? (metacontinuation-frame-tag (car mc)) fp)
-            ;; tag must be above future prompt
-            (block-future)]
-           [else
-            (loop (cdr mc))]))]))))
+    (#%$app/no-inline future-barricade tag)))
+
+(define (future-barricade tag)
+  (let ([fp (strip-impersonator (current-future-prompt))]
+        [tag (strip-impersonator tag)])
+    (cond
+     [(eq? fp tag)
+      ;; shortcut: boundary is the future prompt
+      (void)]
+     [(eq? tag the-root-continuation-prompt-tag)
+      (block-future)]
+     [else
+      (let loop ([mc (current-metacontinuation)])
+        (cond
+         [(null? mc)
+          ;; Won't happen normally, since every thread starts with a explicit prompt
+          (block-future)]
+         [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car mc))))
+          (void)]
+         [(eq? (metacontinuation-frame-tag (car mc)) fp)
+          ;; tag must be above future prompt
+          (block-future)]
+         [else
+          (loop (cdr mc))]))])))
 
 (define/who call-with-continuation-prompt
   (case-lambda
@@ -268,8 +271,8 @@
   (assert-not-in-system-wind)
   (call/cc
    (lambda (resume-k)
-     (let ([marks (current-mark-stack)]) ; grab marks before `call-in-continuation`
-       (call-in-continuation
+     (let ([marks (current-mark-stack)]) ; grab marks before `#%call-in-continuation`
+       (#%call-in-continuation
         #%$null-continuation
         '()
         (lambda ()
@@ -302,7 +305,7 @@
              [else
               (start-uninterrupted 'resume-mc)
               (let ([mf (pop-metacontinuation-frame)])
-                (call-in-continuation
+                (#%call-in-continuation
                  (metacontinuation-frame-resume-k mf)
                  (metacontinuation-frame-marks mf)
                  (lambda ()
@@ -324,7 +327,7 @@
   (call/cc
    (lambda (resume-k)
      (let ([marks (current-mark-stack)])
-       (call-in-continuation
+       (#%call-in-continuation
         #%$null-continuation
         '()
         (lambda ()
@@ -343,7 +346,7 @@
             (current-metacontinuation (cons mf (current-metacontinuation)))
             (let ([r (proc (current-metacontinuation))])
               (let ([mf (pop-metacontinuation-frame)])
-                (call-in-continuation
+                (#%call-in-continuation
                  (metacontinuation-frame-resume-k mf)
                  (metacontinuation-frame-marks mf)
                  (lambda () r)))))))))))
@@ -411,6 +414,8 @@
         [tag (strip-impersonator tag)])
     (do-abort-current-continuation who tag args #f)))
 
+;; `args` can be a thunk if `do-abort-current-continuation` is
+;; called via `apply-continuation`
 (define (do-abort-current-continuation who tag args wind?)
   (assert-in-uninterrupted)
   (cond
@@ -425,13 +430,15 @@
         ;; Remove the prompt and resume its continuation
         ;; as we call the handler:
         (let ([mf (pop-metacontinuation-frame)])
-          (call-in-continuation
+          (#%call-in-continuation
            (metacontinuation-frame-resume-k mf)
            (metacontinuation-frame-marks mf)
            (lambda ()
              (end-uninterrupted/call-hook 'handle)
-             (apply (metacontinuation-frame-handler mf)
-                    args))))]
+             (if (#%procedure? args)
+                 (args) ; assuming that handler is `values`
+                 (apply (metacontinuation-frame-handler mf)
+                        args)))))]
        [else
         ;; Aborting to an enclosing prompt, so keep going:
         (pop-metacontinuation-frame)
@@ -538,6 +545,17 @@
      tag
      values)))
 
+(define/who (call-in-continuation c proc)
+  (check who continuation? c)
+  (cond
+   [(and (#%procedure? proc)
+         (chez:procedure-arity-includes? proc 0))
+    (apply-continuation c proc)]
+   [else
+    (check who (procedure-arity-includes/c 0) proc)
+    (apply-continuation c (lambda () (proc)))]))
+
+;; `args` is either a list or a procedure for which `#%procedure?` is true
 (define (apply-continuation c args)
   (cond
    [(composable-continuation? c)
@@ -569,7 +587,10 @@
                        (eq? (car marks) 'empty)))))
        ;; Shortcut for no winds and no change to break status:
        (end-uninterrupted 'cc)
-       (#%apply (full-continuation-k c) args)]
+       (if (#%procedure? args)
+           (#%call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
+                                 (lambda () (args)))
+           (#%apply (full-continuation-k c) args))]
       [(not (composable-continuation-wind? c))
        (apply-immediate-continuation/no-wind c args)]
       [else
@@ -608,7 +629,10 @@
       ;; changes or changes to marks (so no break-enabled changes),
       ;; and no tag impersonators to deal with
       (end-uninterrupted 'cc)
-      (#%apply (full-continuation-k c) args)]
+      (if (#%procedure? args)
+          (#%call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
+                                (lambda () (args)))
+          (#%apply (full-continuation-k c) args))]
      [else
       (let-values ([(common-mc   ; shared part of the current metacontinuation
                      rmc-append) ; non-shared part of the destination metacontinuation
@@ -659,7 +683,7 @@
          (activate-and-wrap-cc-guard-for-impersonator!
           (full-continuation-tag c)))
        (end-uninterrupted 'cc)
-       (apply-with-break-transition (full-continuation-k c) args))
+       (apply-with-break-transition (full-continuation-k c) mark-stack args))
      ;; If a winder changed the meta-continuation, try again for a
      ;; non-composable continuation:
      (and (non-composable-continuation? c)
@@ -674,7 +698,7 @@
   (current-winders (full-continuation-winders c))
   (current-mark-splice (full-continuation-mark-splice c))
   (end-uninterrupted 'cc)
-  (apply-with-break-transition (full-continuation-k c) args))
+  (apply-with-break-transition (full-continuation-k c) (full-continuation-mark-stack c) args))
 
 ;; Used as a "handler" for a prompt without a tag, which is used for
 ;; composable continuations
@@ -1885,7 +1909,7 @@
         [winders (cdr winders)])
     (current-winders winders)
     (let ([thunk (winder-thunk winder)])
-      (call-in-continuation
+      (#%call-in-continuation
        (winder-k winder)
        (winder-marks winder)
        (lambda ()
@@ -1963,15 +1987,15 @@
 (define (set-break-enabled-transition-hook! proc)
   (set! break-enabled-transition-hook proc))
 
-(define (apply-with-break-transition k args)
-  ;; Install attachments of `k` before calling
-  ;; `break-enabled-transition-hook`. Technically, the hook is called
-  ;; with the wrong Scheme continuation, which might keep the
-  ;; continuation live longer than it should. But the hook can't see
-  ;; the difference, and its only options are to return or escape.
-  (current-mark-stack (continuation-next-attachments k))
-  (break-enabled-transition-hook)
-  (#%apply k args))
+(define (apply-with-break-transition k all-marks args)
+  (#%call-in-continuation
+   k
+   all-marks
+   (lambda ()
+     (break-enabled-transition-hook)
+     (if (#%procedure? args)
+         (args)
+         (#%apply values args)))))
 
 ;; ----------------------------------------
 ;; Metacontinuation swapping for engines

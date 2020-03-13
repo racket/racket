@@ -11,6 +11,7 @@
           call-with-current-continuation
           call-with-composable-continuation
           call-with-escape-continuation
+          call-in-continuation
           continuation?
 
           make-continuation-prompt-tag
