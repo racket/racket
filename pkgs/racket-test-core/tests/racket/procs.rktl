@@ -758,4 +758,21 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (struct a ()
+    #:property prop:procedure (lambda (a x)
+                                (list a x)))
+
+  (define the-a (a))
+
+  (struct b ()
+    #:property prop:procedure the-a)
+
+  (define the-b (b))
+
+  (test (list the-a the-b) the-b)
+  (test 0 procedure-arity the-b))
+
+;; ----------------------------------------
+
 (report-errs)

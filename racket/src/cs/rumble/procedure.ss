@@ -132,15 +132,15 @@
              orig-f
              (and n-args (fx+ n-args 1))
              (lambda (v)
-               (cond
-                [(not v) (case-lambda)]
-                [else
-                 (case-lambda
-                  [() (v f)]
-                  [(a) (v f a)]
-                  [(a b) (v f a b)]
-                  [(a b c) (v f a b c)]
-                  [args (chez:apply v f args)])]))
+               (let ([proc (case-lambda
+                            [() (v f)]
+                            [(a) (v f a)]
+                            [(a b) (v f a b)]
+                            [(a b c) (v f a b c)]
+                            [args (chez:apply v f args)])])
+                 (if success-k
+                     (success-k proc)
+                     proc)))
              wrong-arity-wrapper)]))]))]
    [else (fail-k orig-f)]))
 
