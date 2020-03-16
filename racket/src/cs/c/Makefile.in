@@ -402,7 +402,7 @@ starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c
 
 
 repack-install-libs:
-	make libracketcs.a SCHEME_SRC="$(ABS_SCHEME_SRC)"
+	$(MAKE) libracketcs.a SCHEME_SRC="$(ABS_SCHEME_SRC)"
 
 libracketcs.a: $(SCHEME_LIB_DEPS) rktio/librktio.a boot.o
 	mkdir -p repack
