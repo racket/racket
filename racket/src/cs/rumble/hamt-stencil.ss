@@ -34,7 +34,7 @@
 (define (intmap? x) (stencil-vector? x))
 
 ;; log of node size:
-(define BNODE-BITS (if (fx> (stencil-vector-mask-width) 24)
+(define BNODE-BITS (if (fx> (stencil-vector-mask-width) 26)
                        4
                        3))
 (define BNODE-MASK (fx1- (fxsll 1 BNODE-BITS)))
