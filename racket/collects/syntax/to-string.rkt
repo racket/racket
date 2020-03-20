@@ -54,8 +54,8 @@
                     (eq? (syntax-span (car (syntax-e c))) 1))
                (advance c init-line!)
                (printf "'")
+               (set! col (+ col 1))
                (let ([i (cadr (syntax->list c))])
-                 (set! col (or (syntax-column i) col))
                  ((loop init-line!) i))]
               [(pair? (syntax-e c))
                (advance c init-line!)
