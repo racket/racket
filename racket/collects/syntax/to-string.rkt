@@ -50,7 +50,8 @@
                                    (printf "; ")))
                            l))]
               [(and (pair? (syntax-e c))
-                    (eq? (syntax-e (car (syntax-e c))) 'quote))
+                    (eq? (syntax-e (car (syntax-e c))) 'quote)
+                    (eq? (syntax-span (car (syntax-e c))) 1))
                (advance c init-line!)
                (printf "'")
                (let ([i (cadr (syntax->list c))])
