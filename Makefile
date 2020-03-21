@@ -495,6 +495,14 @@ also-cs:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 # ------------------------------------------------------------
+# Clean (which just gives advice)
+
+clean:
+	@echo "No makefile support for cleaning. Instead, try"
+	@echo "  git clean -d -x -f ."
+	@exit 1
+
+# ------------------------------------------------------------
 # Configuration options for building installers
 
 # On variable definitions: Spaces are allowed where noted and
