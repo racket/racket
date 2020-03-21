@@ -1398,6 +1398,50 @@ See also @racket[max].
   (argmax car '((3 pears) (1 banana) (2 apples)))
   (argmax car '((3 pears) (3 oranges)))]}
 
+
+@defproc[(best+key+index [lst (and/c pair? list?)]
+                         [better? (-> any/c any/c any/c)]
+                         [#:key key (-> any/c any/c) values])
+         (values any/c any/c exact-nonnegative-integer?)]{
+Returns the element @racket[x] of @racket[lst], the value @racket[k]=@racket[(key x)]
+and the position of @racket[x] in @racket[lst] such that @racket[k] is the best
+value in @racket[lst] according to @racket[better?]—where @racket[(better? a b)]
+means that @racket[a] is better than @racket[b].
+That is, there is no element following @racket[x] in @racket[lst] such that
+@racket[(better? (key y) (key x))] is true.
+
+@mz-examples[#:eval list-eval
+  (best+key+index '(15 30 10 20 10) <)
+  (best+key+index '(15 30 10 20 10) <=)
+  (best+key+index '(15 30 10 20 10) < #:key -)
+  (best+key+index '(15 30 10 20 10) >=)]}
+
+
+@defproc*[([(best [lst (and/c pair? list?)]
+                  [better? (-> any/c any/c any/c)]
+                  [#:key key (-> any/c any/c) values])
+            any/c]
+            [(best-key [lst (and/c pair? list?)]
+                      [better? (-> any/c any/c any/c)]
+                      [#:key key (-> any/c any/c) values])
+             any/c]
+            [(best-index [lst (and/c pair? list?)]
+                        [better? (-> any/c any/c any/c)]
+                        [#:key key (-> any/c any/c) values])
+             exact-nonnegative-integer?])]{
+Like @racket[best+key+index] but return only one value, respectively the
+element @racket[x] of the list @racket[lst], its value @racket[(key x)]
+and its index.
+Note that @racket[(best lst < #:key key)] is equivalent to @racket[(argmin lst key)],
+but @racket[(best lst <= #:key key)] returns instead the @emph{last} smallest element of @racket[lst].
+
+@mz-examples[#:eval list-eval
+  (best       '((3 "pears") (1 "banana") (2 "apples")) string<? #:key second)
+  (best-key   '((3 "pears") (1 "banana") (2 "apples")) string<? #:key second)
+  (best       '((3 "pears") (1 "banana") (2 "apples")) > #:key first)
+  (best-index '((3 "pears") (1 "banana") (2 "apples")) > #:key first)]}
+
+
 @defproc[(group-by [key (-> any/c any/c)]
                    [lst list?]
                    [same? (any/c any/c . -> . any/c) equal?])
