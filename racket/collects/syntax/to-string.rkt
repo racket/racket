@@ -20,6 +20,17 @@
           (when c
             (display (make-string (max 0 (- c col)) #\space))
             (set! col c))))
+      (define quotes-table
+        #hasheq((quote . "'")
+                (quasiquote . "`")
+                (unquote . ",")
+                (unquote-splicing . ",@")
+                (syntax . "#'")
+                (quasisyntax . "#`")
+                (unsyntax . "#,")
+                (unsyntax-splicing . "#,@")))
+      (define (get-quote c)
+        (hash-ref quotes-table (syntax-e (car (syntax-e c)))))
       (parameterize ([current-output-port s]
                      [read-case-sensitive #t])
         (define (loop init-line!)
@@ -50,11 +61,12 @@
                                    (printf "; ")))
                            l))]
               [(and (pair? (syntax-e c))
-                    (eq? (syntax-e (car (syntax-e c))) 'quote)
-                    (eq? (syntax-span (car (syntax-e c))) 1))
+                    (hash-has-key? quotes-table (syntax-e (car (syntax-e c))))
+                    (eq? (syntax-span (car (syntax-e c)))
+                         (string-length (get-quote c))))
                (advance c init-line!)
-               (printf "'")
-               (set! col (+ col 1))
+               (printf (get-quote c))
+               (set! col (+ col (string-length (get-quote c))))
                (let ([i (cadr (syntax->list c))])
                  ((loop init-line!) i))]
               [(pair? (syntax-e c))
