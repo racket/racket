@@ -1414,7 +1414,8 @@ That is, there is no element following @racket[x] in @racket[lst] such that
   (best+key+index '(15 30 10 20 10) <)
   (best+key+index '(15 30 10 20 10) <=)
   (best+key+index '(15 30 10 20 10) < #:key -)
-  (best+key+index '(15 30 10 20 10) >=)]}
+  (best+key+index '(15 30 10 20 10) >=)]
+@history[#:added "7.6.0.17"]}
 
 
 @defproc*[([(best [lst (and/c pair? list?)]
@@ -1439,7 +1440,8 @@ but @racket[(best lst <= #:key key)] returns instead the @emph{last} smallest el
   (best       '((3 "pears") (1 "banana") (2 "apples")) string<? #:key second)
   (best-key   '((3 "pears") (1 "banana") (2 "apples")) string<? #:key second)
   (best       '((3 "pears") (1 "banana") (2 "apples")) > #:key first)
-  (best-index '((3 "pears") (1 "banana") (2 "apples")) > #:key first)]}
+  (best-index '((3 "pears") (1 "banana") (2 "apples")) > #:key first)]
+@history[#:added "7.6.0.17"]}
 
 
 @defproc[(group-by [key (-> any/c any/c)]
