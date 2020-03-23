@@ -9732,7 +9732,7 @@ static Scheme_Object *jump_to_alt_continuation()
 /*                                  time                                  */
 /*========================================================================*/
 
-intptr_t scheme_get_milliseconds(void)
+uintptr_t scheme_get_milliseconds(void)
 /* this function can be called from any OS thread */
 {
   return rktio_get_milliseconds();
@@ -9856,10 +9856,11 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
 {
-  intptr_t start, end;
+  uintptr_t start, end;
   intptr_t cpustart, cpuend;
   intptr_t gcstart, gcend;
-  intptr_t dur, cpudur, gcdur;
+  uintptr_t dur;
+  intptr_t cpudur, gcdur;
   int i, num_rands;
   Scheme_Object *v, *p[4], **rand_vec, *rands, *r;
 
