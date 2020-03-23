@@ -61,20 +61,28 @@
     (if (> (add1 this-counter) (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix (sub1 (collect-maximum-generation)))))
         (set! gc-counter 1)
         (set! gc-counter (add1 this-counter)))
-    (let ([gen (cond
-                [(and (not g)
-                      (or (>= pre-allocated trigger-major-gc-allocated)
-                          (>= pre-allocated+overhead trigger-major-gc-allocated+overhead)
-                          (>= non-full-gc-counter 10000)))
-                 ;; Force a major collection if memory use has doubled
-                 (collect-maximum-generation)]
-                [else
-                 ;; Find the minor generation implied by the counter
-                 (let loop ([c this-counter] [gen 0])
-                   (cond
-                    [(zero? (bitwise-and c collect-generation-radix-mask))
-                     (loop (bitwise-arithmetic-shift-right c log-collect-generation-radix) (add1 gen))]
-                    [else gen]))])])
+    (let* ([req-gen (cond
+                      [(and (not g)
+                            (or (>= pre-allocated trigger-major-gc-allocated)
+                                (>= pre-allocated+overhead trigger-major-gc-allocated+overhead)
+                                (>= non-full-gc-counter 10000)))
+                       ;; Force a major collection if memory use has doubled
+                       (collect-maximum-generation)]
+                      [else
+                       ;; Find the minor generation implied by the counter
+                       (let loop ([c this-counter] [gen 0])
+                         (cond
+                           [(zero? (bitwise-and c collect-generation-radix-mask))
+                            (loop (bitwise-arithmetic-shift-right c log-collect-generation-radix) (add1 gen))]
+                           [else gen]))])]
+           [gen (cond
+                  [(and (= req-gen (collect-maximum-generation))
+                        (not (in-original-host-thread?))
+                        (fxpositive? (hashtable-size collect-callbacks)))
+                   ;; Defer a major collection to the main thread
+                   (async-callback-queue-major-gc!)
+                   0]
+                  [else req-gen])])
       (run-collect-callbacks car)
       (collect gen)
       (let ([post-allocated (bytes-allocated)]
@@ -100,7 +108,7 @@
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                 post-allocated  post-allocated+overhead post-time post-cpu-time
                                 (real-time) (cpu-time)))
-      (when (and (= gen (collect-maximum-generation))
+      (when (and (= req-gen (collect-maximum-generation))
                  (currently-in-engine?))
         ;; This `set-timer` doesn't necessarily penalize the right thread,
         ;; but it's likely to penalize a thread that is allocating quickly:
