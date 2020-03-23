@@ -1150,7 +1150,7 @@ MZ_EXTERN Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env 
 MZ_EXTERN void scheme_register_extension_global(void *ptr, intptr_t size);
 
 MZ_EXTERN intptr_t scheme_get_seconds(void);
-XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_milliseconds(void);
+XFORM_NONGCING MZ_EXTERN uintptr_t scheme_get_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN double scheme_get_inexact_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_children_milliseconds(void);

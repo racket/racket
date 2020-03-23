@@ -81,7 +81,7 @@ rktio_int64_t get_hectonanoseconds_as_longlong()
 }
 #endif
 
-intptr_t rktio_get_milliseconds(void)
+uintptr_t rktio_get_milliseconds(void)
 /* this function can be called from any OS thread */
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -89,7 +89,7 @@ intptr_t rktio_get_milliseconds(void)
 #else
   struct timeval now;
   gettimeofday(&now, NULL);
-  return now.tv_sec * 1000 + now.tv_usec / 1000;
+  return ((uintptr_t) now.tv_sec) * 1000 + ((uintptr_t) now.tv_usec) / 1000;
 #endif
 }
 

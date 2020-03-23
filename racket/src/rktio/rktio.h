@@ -1013,7 +1013,7 @@ typedef struct rktio_date_t {
   char *zone_name; /* can be NULL; otherwise, free it */
 } rktio_date_t;
 
-RKTIO_EXTERN_NOERR intptr_t rktio_get_milliseconds(void);
+RKTIO_EXTERN_NOERR uintptr_t rktio_get_milliseconds(void);
 RKTIO_EXTERN_NOERR double rktio_get_inexact_milliseconds(void);
 
 RKTIO_EXTERN_NOERR intptr_t rktio_get_process_milliseconds(rktio_t *rktio);

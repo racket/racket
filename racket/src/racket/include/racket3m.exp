@@ -102,6 +102,7 @@ scheme_raise_exn
 scheme_warning
 scheme_raise
 scheme_log_level_p
+scheme_log_level_topic_p
 scheme_log
 scheme_log_w_data
 scheme_log_message
