@@ -265,7 +265,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 {
   Scheme_Object *tkey, *ekey, **keys;
   intptr_t hx, h2x;
-  hash_v_t h, h2, useme = 0;
+  hash_v_t h, h2 = 0, useme = 0;
   uintptr_t mask;
 
  rehash_key:
