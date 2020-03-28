@@ -443,6 +443,7 @@
 ;; If non-zero, the custodian memory sizes are gathered after a GC.
 ;; The value decays 
 (define compute-memory-sizes 0)
+(define computed-memory-sizes? #f)
 
 (void (set-reachable-size-increments-callback!
        ;; Called in an arbitrary host thread, with interrupts off and all other threads suspended:
@@ -498,14 +499,21 @@
                        (define more-local-roots
                          (cond
                            [(eq? root (place-current-thread pl))
-                            (define k-root
-                              (if (eq? pl current-place) ; assuming host thread is place main thread
-                                  starting-k
-                                  (place-host-thread pl)))
-                            (cons k-root new-local-roots)]
+                            (define more-local-roots (cons (place-host-thread pl)
+                                                           new-local-roots))
+                            (if (eq? pl current-place) ; assuming host thread is place main thread
+                                (cons starting-k more-local-roots)
+                                more-local-roots)]
                            [else new-local-roots]))
                        (loop (cdr roots) more-local-roots accum-roots accum-custs)]))))
-              (define sizes (compute-size-increments roots))
+              (define sizes (compute-size-increments roots
+                                                     ;; 'static is more accurrate, because it will
+                                                     ;; hit parameters more reliably; but there's
+                                                     ;; currently a significant cost, and the
+                                                     ;; approximation of using the oldest non-static
+                                                     ;; generation works well enough for many
+                                                     ;; purposes
+                                                     #;'static))
               (for ([size (in-list sizes)]
                     [c (in-list custs)])
                 (set-custodian-memory-use! c (+ size (custodian-memory-use c))))
@@ -546,7 +554,8 @@
                   (or any-limits? (pair? new-limits))))
               ;; If no limits are installed, decay demand for memory counts:
               (unless any-limits?
-                (set! compute-memory-sizes (sub1 compute-memory-sizes)))))))))
+                (set! compute-memory-sizes (sub1 compute-memory-sizes)))
+              (set! computed-memory-sizes? #t)))))))
 
 (void (set-custodian-memory-use-proc!
        ;; Get memory use for a custodian; the second argument is
@@ -566,12 +575,14 @@
                       ;; should be about 1/2 the cost of a full GC, so a
                       ;; value of 2 hedges future demands versus
                       ;; no future demands:
+                      (set! computed-memory-sizes? #f)
                       (set! compute-memory-sizes 2)
                       (host:mutex-release memory-limit-lock)
                       #t]
                      [else
+                      (define done? computed-memory-sizes?)
                       (host:mutex-release memory-limit-lock)
-                      #f]))
+                      (not done?)]))
               (collect-garbage))
             (custodian-memory-use c)]))))
 
