@@ -55,8 +55,6 @@ rktio_connect_stop
 rktio_poll_connect_ready
 rktio_connect_trying
 rktio_socket_shutdown
-rktio_udp_get_ttl
-rktio_udp_set_ttl
 rktio_udp_open
 rktio_udp_disconnect
 rktio_udp_bind
@@ -66,6 +64,8 @@ rktio_udp_sendto_in
 rktio_udp_recvfrom
 rktio_udp_recvfrom_in
 rktio_udp_set_receive_buffer_size
+rktio_udp_set_ttl
+rktio_udp_get_ttl
 rktio_udp_get_multicast_loopback
 rktio_udp_set_multicast_loopback
 rktio_udp_get_multicast_ttl

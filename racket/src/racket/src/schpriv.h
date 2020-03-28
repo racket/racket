@@ -209,7 +209,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 THREAD_LOCAL_DECL(extern struct rktio_t *scheme_rktio);
 THREAD_LOCAL_DECL(extern int scheme_current_place_id);
-THREAD_LOCAL_DECL(extern intptr_t scheme_total_gc_time);
+THREAD_LOCAL_DECL(extern uintptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(extern int scheme_continuation_application_count);
 THREAD_LOCAL_DECL(extern struct Scheme_Prefix *scheme_prefix_finalize);

@@ -9857,10 +9857,9 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
 {
   uintptr_t start, end;
-  intptr_t cpustart, cpuend;
-  intptr_t gcstart, gcend;
-  uintptr_t dur;
-  intptr_t cpudur, gcdur;
+  uintptr_t cpustart, cpuend;
+  uintptr_t gcstart, gcend;
+  uintptr_t dur, cpudur, gcdur;
   int i, num_rands;
   Scheme_Object *v, *p[4], **rand_vec, *rands, *r;
 

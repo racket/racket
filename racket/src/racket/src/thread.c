@@ -148,9 +148,9 @@ ROSYM Scheme_Object *scheme_break_enabled_key;
 THREAD_LOCAL_DECL(static Scheme_Object *configuration_callback_cache[2]);
 
 static int gcs_on_exit;
-THREAD_LOCAL_DECL(intptr_t scheme_total_gc_time);
-THREAD_LOCAL_DECL(static intptr_t start_this_gc_time);
-THREAD_LOCAL_DECL(static intptr_t end_this_gc_time);
+THREAD_LOCAL_DECL(uintptr_t scheme_total_gc_time);
+THREAD_LOCAL_DECL(static uintptr_t start_this_gc_time);
+THREAD_LOCAL_DECL(static uintptr_t end_this_gc_time);
 THREAD_LOCAL_DECL(static double start_this_gc_real_time);
 THREAD_LOCAL_DECL(static double end_this_gc_real_time);
 static void get_ready_for_GC(void);
