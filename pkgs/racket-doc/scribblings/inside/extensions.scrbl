@@ -210,7 +210,7 @@ To create an extension that behaves as a module, return a symbol from
 @cpp{scheme_reload} declare a module using @cpp{scheme_primitive_module}.
 
 For example, the following extension implements a module named
-@racket[hello] that exports a binding @racket[greeting]:
+@racket[hi] that exports a binding @racket[greeting]:
 
 @verbatim[#:indent 2]{
   #include "escheme.h"
