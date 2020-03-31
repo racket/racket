@@ -1,0 +1,42 @@
+name: Scan Build LLVM SA
+
+on: [push]
+
+env:
+  REPORTDIR: "racket-report"
+
+jobs:
+  scanbuild-racketcgc:
+
+    runs-on: ubuntu-latest
+    container: pmatos/scan-build:latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y gcc make libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - name: Configure
+      run: >
+        ./configure
+        CFLAGS="-O0 -g"
+        --disable-strip
+        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --enable-werror
+        --enable-cify
+        --enable-cgcdefault 
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        --enable-pthread
+        --disable-docs 
+    - name: Scan Build
+      run: scan-build -o $REPORTDIR -analyzer-config 'crosscheck-with-z3=true' make -j2
+    - uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: scanbuild-cgc-${{ github.sha }}
+        path: $REPORTDIR
