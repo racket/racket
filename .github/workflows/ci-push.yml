@@ -471,6 +471,7 @@ jobs:
         apt-get update
         apt-get install -y gcc make libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
     - name: Configure
+      working-directory: ./racket/src
       run: >
         ./configure
         CFLAGS="-O0 -g"
@@ -487,6 +488,7 @@ jobs:
         --enable-pthread
         --disable-docs 
     - name: Scan Build
+      working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -o $REPORTDIR -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
@@ -519,6 +521,7 @@ jobs:
       working-directory: ../
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configure
+      working-directory: ./racket/src
       run: >
         ./configure
         CFLAGS="-O0 -g"
@@ -536,6 +539,7 @@ jobs:
         --enable-pthread
         --disable-docs 
     - name: Scan Build
+      working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -o $REPORTDIR -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
