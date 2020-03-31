@@ -452,3 +452,95 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+
+#
+# Jobs to scan-build racket
+# 
+  scanbuild-racketcgc:
+
+    runs-on: ubuntu-latest
+    container: pmatos/scan-build:latest
+
+    env:
+      REPORTDIR: "racketcgc-report"
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y gcc make libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - name: Configure
+      run: >
+        ./configure
+        CFLAGS="-O0 -g"
+        --disable-strip
+        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --enable-werror
+        --enable-cify
+        --enable-cgcdefault 
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        --enable-pthread
+        --disable-docs 
+    - name: Scan Build
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        scan-build -o $REPORTDIR -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: scanbuild-cgc-${{ github.sha }}
+        path: $REPORTDIR
+
+  scanbuild-racket3m:
+
+    runs-on: ubuntu-latest
+    container: pmatos/scan-build:latest
+    needs: build-racketcgc
+
+    env:
+      REPORTDIR: "racketcgc-report"
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y gcc make libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - uses: actions/download-artifact@master
+      with:
+        name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
+        path: ../
+    - name: Untar
+      working-directory: ../
+      run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
+    - name: Configure
+      run: >
+        ./configure
+        CFLAGS="-O0 -g"
+        --disable-strip
+        --prefix=$GITHUB_WORKSPACE/../racket3m
+        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket
+        --enable-werror
+        --enable-cify
+        --enable-cgcdefault 
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        --enable-pthread
+        --disable-docs 
+    - name: Scan Build
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        scan-build -o $REPORTDIR -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: scanbuild-3m-${{ github.sha }}
+        path: $REPORTDIR
