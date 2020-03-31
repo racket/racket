@@ -43,7 +43,7 @@ jobs:
         name: scanbuild-cgc-${{ github.sha }}
         path: $REPORTDIR
 
-  scanbuild-racketcgc:
+  scanbuild-racket3m:
 
     runs-on: ubuntu-latest
     container: pmatos/scan-build:latest
