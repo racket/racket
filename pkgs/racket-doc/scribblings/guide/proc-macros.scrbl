@@ -452,7 +452,7 @@ racket
 
 Since modules are separately compiled and cannot have circular
 dependencies, the @filepath["utils.rkt"] module's run-time body can be
-compiled before the compiling the module that implements
+compiled before compiling the module that implements
 @racket[swap].  Thus, the run-time definitions in
 @filepath["utils.rkt"] can be used to implement @racket[swap], as long
 as they are explicitly shifted into compile time by @racket[(require
