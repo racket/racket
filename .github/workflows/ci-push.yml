@@ -509,7 +509,7 @@ jobs:
         apt-get install -y gcc make libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
     - uses: actions/download-artifact@master
       with:
-        name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
+        name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
         path: ../
     - name: Untar
       working-directory: ../
