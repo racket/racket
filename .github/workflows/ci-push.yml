@@ -524,7 +524,6 @@ jobs:
         --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket
         --enable-werror
         --enable-cify
-        --enable-cgcdefault 
         --enable-jit 
         --enable-foreign 
         --enable-places 
