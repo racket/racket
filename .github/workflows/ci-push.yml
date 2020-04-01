@@ -513,7 +513,7 @@ jobs:
         path: ../
     - name: Untar
       working-directory: ../
-      run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
+      run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
     - name: Configure
       working-directory: ./racket/src
       run: >
