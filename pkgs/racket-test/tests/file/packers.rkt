@@ -17,6 +17,7 @@
      (if (regexp-match? (car p) permissions) (bitwise-ior n (cadr p)) n))))
 
 (define (diff src dest check-attributes?)
+  (printf "src: ~s dest: ~s\n" src dest)
   (define (compare-attributes p1 p2)
     (or (not check-attributes?)
         (and (or (and (eq? check-attributes? 'file)
@@ -72,6 +73,7 @@
                    #:file-name [f2 "f2"]
                    #:links? [links? #f]
                    #:filter-path? [filter-path? #f])
+  (printf "running zip-tests: ~s ~s ~s\n" zip unzip timestamps?)
   (make-directory* ex1)
   (make-file (build-path ex1 "f1"))
   (make-file (build-path ex1 f2))
