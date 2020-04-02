@@ -562,8 +562,8 @@ jobs:
         fetch-depth: 100
     - name: Install pkg dependencies
       run: |
-        sudo apt update
-        sudo apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
+        apt update
+        apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
