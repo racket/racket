@@ -490,7 +490,7 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -o racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+        scan-build -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
     - name: Tarballing
       run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
     - uses: actions/upload-artifact@master
@@ -541,7 +541,7 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -o racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+        scan-build -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
     - name: Tarballing
       run: tar -cvjf racket3m-report-${{ github.sha }}.tar.bz2 racket3m-report
     - uses: actions/upload-artifact@master
@@ -593,7 +593,7 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -o racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
+        scan-build -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
     - name: Tarballing
       run: tar -cvjf racketcs-report-${{ github.sha }}.tar.bz2 racketcs-report
     - uses: actions/upload-artifact@master
