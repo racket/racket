@@ -558,7 +558,7 @@ jobs:
         fetch-depth: 100
     - uses: actions/download-artifact@master
       with:
-        name: racketcgc-18.04-cify-x64_git${{ github.sha }}
+        name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
         path: ../
     - name: Untar
       working-directory: ../
