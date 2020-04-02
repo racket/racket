@@ -491,11 +491,13 @@ jobs:
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -o racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - name: Tarballing
+      run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
     - uses: actions/upload-artifact@master
       if: always()
       with:
         name: scanbuild-cgc-${{ github.sha }}
-        path: racket/src/racketcgc-report
+        path: racketcgc-report-${{ github.sha }}.tar.bz2
 
   scanbuild-racket3m:
 
@@ -540,11 +542,13 @@ jobs:
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -o racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - name: Tarballing
+      run: tar -cvjf racket3m-report-${{ github.sha }}.tar.bz2 racket3m-report
     - uses: actions/upload-artifact@master
       if: always()
       with:
         name: scanbuild-3m-${{ github.sha }}
-        path: racket/src/racket3m-report
+        path: racket3m-report-${{ github.sha }}.tar.bz2
 
   scanbuild-racketcs:
         
@@ -556,6 +560,10 @@ jobs:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 100
+    - name: Install pkg dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
@@ -563,10 +571,6 @@ jobs:
     - name: Untar
       working-directory: ../
       run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha}}.tar.bz2
-    - name: Install pkg dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
     - name: Checking out ChezScheme
       working-directory: ./racket/src
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
@@ -590,8 +594,10 @@ jobs:
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -o racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
+    - name: Tarballing
+      run: tar -cvjf racketcs-report-${{ github.sha }}.tar.bz2 racketcs-report
     - uses: actions/upload-artifact@master
       if: always()
       with:
         name: scanbuild-cs-${{ github.sha }}
-        path: racket/src/racketcs-report
+        path: racketcs-report-${{ github.sha }}.tar.bz2
