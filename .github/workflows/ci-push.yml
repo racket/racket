@@ -452,3 +452,152 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+
+#
+# Jobs to scan-build racket
+# 
+  scanbuild-racketcgc:
+
+    runs-on: ubuntu-latest
+    container: pmatos/scan-build:latest
+    
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 100
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - name: Configure
+      working-directory: ./racket/src
+      run: >
+        ./configure
+        CFLAGS="-O0 -g"
+        --disable-strip
+        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --enable-werror
+        --enable-cify
+        --enable-cgcdefault 
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        --enable-pthread
+        --disable-docs 
+    - name: Scan Build
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        scan-build -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - name: Tarballing
+      run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
+    - uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: scanbuild-cgc-${{ github.sha }}
+        path: racketcgc-report-${{ github.sha }}.tar.bz2
+
+  scanbuild-racket3m:
+
+    runs-on: ubuntu-latest
+    container: pmatos/scan-build:latest
+    needs: build-racketcgc
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 100
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - uses: actions/download-artifact@master
+      with:
+        name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
+        path: ../
+    - name: Untar
+      working-directory: ../
+      run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
+    - name: Configure
+      working-directory: ./racket/src
+      run: >
+        ./configure
+        CFLAGS="-O0 -g"
+        --disable-strip
+        --prefix=$GITHUB_WORKSPACE/../racket3m
+        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket
+        --enable-werror
+        --enable-cify
+        --enable-jit 
+        --enable-foreign 
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        --enable-pthread
+        --disable-docs 
+    - name: Scan Build
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        scan-build -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - name: Tarballing
+      run: tar -cvjf racket3m-report-${{ github.sha }}.tar.bz2 racket3m-report
+    - uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: scanbuild-3m-${{ github.sha }}
+        path: racket3m-report-${{ github.sha }}.tar.bz2
+
+  scanbuild-racketcs:
+        
+    runs-on: ubuntu-18.04
+    container: pmatos/scan-build:latest
+    needs: build-racketcgc
+    
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 100
+    - name: Install pkg dependencies
+      run: |
+        apt update
+        apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
+    - uses: actions/download-artifact@master
+      with:
+        name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
+        path: ../
+    - name: Untar
+      working-directory: ../
+      run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha}}.tar.bz2
+    - name: Checking out ChezScheme
+      working-directory: ./racket/src
+      run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
+    - name: Configuring Racket CS
+      working-directory: ./racket/src
+      env:
+        CC: ${{ matrix.cc }}
+      run: >
+        ./configure
+        CFLAGS="-O0 -g"
+        --prefix=$GITHUB_WORKSPACE/../racketcs
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-compress 
+        --disable-docs 
+        --enable-pthread 
+        --enable-csdefault 
+        --enable-csonly
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        scan-build -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
+    - name: Tarballing
+      run: tar -cvjf racketcs-report-${{ github.sha }}.tar.bz2 racketcs-report
+    - uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: scanbuild-cs-${{ github.sha }}
+        path: racketcs-report-${{ github.sha }}.tar.bz2
