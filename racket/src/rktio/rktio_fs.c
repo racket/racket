@@ -1949,8 +1949,10 @@ char *rktio_system_path(rktio_t *rktio, int which)
 #else      
       return append_paths(home, "racket-prefs.rktd", 1, 0);
 #endif
-    } else
+    } else {
+      free(home);
       return strdup("/");
+    }
   }
 #endif
 
