@@ -357,6 +357,7 @@ int main(int argc, char **argv)
   char *exe_path, *lib_path, *dll_path;
   int start, decl_end, prog_end, end, count, fd, v, en, x11;
   int argpos, inpos, collcount = 1, fix_argv;
+  int bufsize = 127;
 
   if (config[7] == '[') {
     write_str(2, argv[0]);
@@ -415,7 +416,7 @@ int main(int argc, char **argv)
 
   /* resolve soft links */
   while (1) {
-    int len, bufsize = 127;
+    int len;
     char *buf;
     buf = (char *)malloc(bufsize + 1);
     len = readlink(me, buf, bufsize);
