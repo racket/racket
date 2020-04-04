@@ -1410,12 +1410,16 @@ means that @racket[a] is better than @racket[b].
 That is, there is no element following @racket[x] in @racket[lst] such that
 @racket[(better? (key y) (key x))] is true.
 
+Note that this means that if @racket[better?] is @racket[<] for example, then the @emph{first}
+smallest element is returned, but if @racket[better?] is @racket[<=], then the @emph{last} smallest
+element is returned instead.
+
 @mz-examples[#:eval list-eval
   (best+key+index '(15 30 10 20 10) <)
   (best+key+index '(15 30 10 20 10) <=)
   (best+key+index '(15 30 10 20 10) < #:key -)
   (best+key+index '(15 30 10 20 10) >=)]
-@history[#:added "7.6.0.17"]}
+@history[#:added "7.6.0.18"]}
 
 
 @defproc*[([(best [lst (and/c pair? list?)]
@@ -1433,15 +1437,15 @@ That is, there is no element following @racket[x] in @racket[lst] such that
 Like @racket[best+key+index] but return only one value, respectively the
 element @racket[x] of the list @racket[lst], its value @racket[(key x)]
 and its index.
-Note that @racket[(best lst < #:key key)] is equivalent to @racket[(argmin lst key)],
-but @racket[(best lst <= #:key key)] returns instead the @emph{last} smallest element of @racket[lst].
 
 @mz-examples[#:eval list-eval
   (best       '((3 "pears") (1 "banana") (2 "apples")) string<? #:key second)
   (best-key   '((3 "pears") (1 "banana") (2 "apples")) string<? #:key second)
   (best       '((3 "pears") (1 "banana") (2 "apples")) > #:key first)
-  (best-index '((3 "pears") (1 "banana") (2 "apples")) > #:key first)]
-@history[#:added "7.6.0.17"]}
+  (best-index '((3 "pears") (1 "banana") (2 "apples")) > #:key first)
+  (best '((a . 5) (b . 10) (a . 10)) > #:key cdr)
+  (best '((a . 5) (b . 10) (a . 10)) >= #:key cdr)]
+@history[#:added "7.6.0.18"]}
 
 
 @defproc[(group-by [key (-> any/c any/c)]
