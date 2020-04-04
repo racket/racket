@@ -21,7 +21,7 @@
                post-time post-cpu-time)
     (void)))
 
-;; #f or a procedure that accepts `compute-size-increments` to be
+;; #f or a procedure that accepts a CPSed `compute-size-increments` to be
 ;; called in any Chez Scheme thread (with all other threads paused)
 ;; after each major GC; this procedure must not do anything that might
 ;; use "control.ss":
@@ -84,12 +84,32 @@
                    0]
                   [else req-gen])])
       (run-collect-callbacks car)
-      (collect gen)
-      (let ([post-allocated (bytes-allocated)]
-            [post-allocated+overhead (current-memory-bytes)]
-            [post-time (real-time)]
-            [post-cpu-time (cpu-time)])
-        (when (= gen (collect-maximum-generation))
+      (let ([maybe-finish-accounting
+             (cond
+               [(and reachable-size-increments-callback
+                     (fx= gen (collect-maximum-generation)))
+                ;; Collect with a fused `collect-size-increments`
+                (reachable-size-increments-callback
+                 (lambda (roots domains k)
+                   (cond
+                     [(null? roots)
+                      ;; Plain old collection, after all:
+                      (collect gen)
+                      #f]
+                     [else
+                      (let ([domains (weaken-accounting-domains domains)])
+                        ;; Accounting collection:
+                        (let ([counts (collect gen gen (weaken-accounting-roots roots))])
+                          (lambda () (k counts domains))))])))]
+               [else
+                ;; Plain old collection:
+                (collect gen)
+                #f])])
+        (let ([post-allocated (bytes-allocated)]
+              [post-allocated+overhead (current-memory-bytes)]
+              [post-time (real-time)]
+              [post-cpu-time (cpu-time)])
+          (when (= gen (collect-maximum-generation))
           ;; Trigger a major GC when twice as much memory is used. Twice
           ;; `post-allocated+overhead` seems to be too long a wait, because
           ;; that value may include underused pages that have locked objects.
@@ -100,13 +120,12 @@
         (update-eq-hash-code-table-size!)
         (update-struct-procs-table-sizes!)
         (poll-foreign-guardian)
-        (when (and reachable-size-increments-callback
-                   (fx= gen (collect-maximum-generation)))
-          (reachable-size-increments-callback compute-size-increments))
+        (when maybe-finish-accounting
+          (maybe-finish-accounting))
         (run-collect-callbacks cdr)
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                                post-allocated  post-allocated+overhead post-time post-cpu-time
+                                post-allocated post-allocated+overhead post-time post-cpu-time
                                 (real-time) (cpu-time)))
       (when (and (= req-gen (collect-maximum-generation))
                  (currently-in-engine?))
@@ -118,7 +137,7 @@
         (set! non-full-gc-counter 0)]
        [else
         (set! non-full-gc-counter (add1 non-full-gc-counter))])
-      (void))))
+      (void)))))
 
 (define collect-garbage
   (case-lambda
@@ -167,6 +186,36 @@
                           what len)
                 (current-continuation-marks))))
       (immediate-allocation-check n))))
+
+;; ----------------------------------------
+
+;; Any value wrapped as `strongly-reachable-for-accounting` will
+;; be `cons`ed instead of `weak-cons`ed for accounting purposes
+(define-record-type strongly-reachable-for-accounting (fields content))
+
+(define (weaken-accounting-roots roots)
+  (let loop ([roots roots])
+    (cond
+      [(null? roots) '()]
+      [else
+       (let ([root (car roots)]
+             [rest (loop (cdr roots))])
+         (cond
+           [(thread? root) (cons root rest)]
+           [(strongly-reachable-for-accounting? root)
+            (cons (strongly-reachable-for-accounting-content root) rest)]
+           [else
+            (weak-cons root rest)]))])))
+
+;; We want the elements of `domains` to be available for
+;; finalization, so refer to all of them weakly
+(define (weaken-accounting-domains domains)
+  (let loop ([domains domains])
+    (if (null? domains)
+        '()
+        (weak-cons (car domains) (loop (cdr domains))))))
+
+;; ----------------------------------------
 
 (define prev-stats-objects #f)
 

@@ -293,6 +293,7 @@
          (rename-out [s:open-output-file open-output-file])
          $open-bytevector-list-output-port
          open-bytevector-output-port
+         native-transcoder
          port-file-compressed!
          file-buffer-size
          $source-file-descriptor
@@ -1166,10 +1167,13 @@
             (define bv (get-output-bytes p))
             (values (list bv) (bytes-length bv)))))
 
-(define (open-bytevector-output-port)
+(define (open-bytevector-output-port [transcoder #f])
   (define p (open-output-bytes))
   (values p
           (lambda () (get-output-bytes p))))
+
+(define (native-transcoder)
+  #f)
 
 (define (port-file-compressed! p)
   (void))

@@ -161,6 +161,9 @@ sync-bootfiles:
 	mkdir -p $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-ocd.inc
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-oce.inc
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/vfasl.inc
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
 
@@ -169,6 +172,12 @@ $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h: $(SCHEME_SRC)/boot/$(MACH)/equates
 	cp $(SCHEME_SRC)/boot/$(MACH)/equates.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
 $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h: $(SCHEME_SRC)/boot/$(MACH)/scheme.h
 	cp $(SCHEME_SRC)/boot/$(MACH)/scheme.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-ocd.inc: $(SCHEME_SRC)/boot/$(MACH)/gc-ocd.inc
+	cp $(SCHEME_SRC)/boot/$(MACH)/gc-ocd.inc $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-ocd.inc
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-oce.inc: $(SCHEME_SRC)/boot/$(MACH)/gc-oce.inc
+	cp $(SCHEME_SRC)/boot/$(MACH)/gc-oce.inc $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-oce.inc
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/vfasl.inc: $(SCHEME_SRC)/boot/$(MACH)/vfasl.inc
+	cp $(SCHEME_SRC)/boot/$(MACH)/vfasl.inc $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/vfasl.inc
 $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot: $(SCHEME_SRC)/boot/$(MACH)/petite.boot
 	cp $(SCHEME_SRC)/boot/$(MACH)/petite.boot $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
 $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot: $(SCHEME_SRC)/boot/$(MACH)/scheme.boot
