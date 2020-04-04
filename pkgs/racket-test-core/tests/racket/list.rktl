@@ -196,7 +196,7 @@
 
 (let ()
   (define l '(3 3 1 2 3 6 7 2 1 6 7 2))
-  l
+
   (define (check-best l better? x v i #:key [key values])
     (test
      (list x v i)

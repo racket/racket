@@ -771,7 +771,7 @@
 
 (define (mk-best+index name xs better? key)
   (unless (and (procedure? better?) (procedure-arity-includes? better? 2))
-    (raise-argument-error 'sort "(any/c any/c . -> . any/c)" better?))
+    (raise-argument-error name "(any/c any/c . -> . any/c)" better?))
   (unless (and (procedure? key)
                (procedure-arity-includes? key 1))
     (raise-argument-error name "(any/c . -> . any/c)" 0 key xs))
