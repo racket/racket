@@ -471,7 +471,7 @@
                                             ;; Charge anything directly reachable from place registers
                                             ;; to the root custodian; that will include scheduled threads,
                                             ;; so they will be known reachable for accounting
-                                            (list (place-host-roots pl))
+                                            (list pl)
                                             ;; Not the root
                                             null)))
                     (let loop ([roots roots]
