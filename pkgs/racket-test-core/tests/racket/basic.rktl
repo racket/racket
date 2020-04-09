@@ -154,6 +154,31 @@
 (test #f list? (cons 'a 4))
 (arity-test list? 1 1)
 
+;; Try to check that `list?` is amortized constant-time
+(when (run-unreliable-tests? 'timing)
+  (define expected #f)
+  (define (check-time thunk)
+    (define start (current-process-milliseconds))
+    (thunk)
+    (define duration (- (current-process-milliseconds) start))
+    (cond
+      [(not expected) (set! expected duration)]
+      [else
+       (test #t < duration (+ (* 2 expected) 10))]))
+  (define (try range)
+    (for ([n range])
+      (define l (for/list ([i (in-range n)]) i))
+      (define nl (append l 'no))
+
+      (check-time (lambda ()
+                    (test #t 'list
+                          (for/and ([i 10000]) (list? l)))))
+      (check-time (lambda ()
+                    (test #f 'non-list
+                          (for/or ([i 10000]) (list? nl)))))))
+  (try (in-range  1000  1010))
+  (try (in-range 10000 10010)))
+
 (test #t pair? '(a . b))
 (test #t pair? '(a . 1))
 (test #t pair? '(a b c))

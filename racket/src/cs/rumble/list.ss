@@ -8,14 +8,14 @@
 ;;
 ;; To reduce the overhead of checking the hash table, only
 ;; start using it after the first `CHECK-AFTER-LEN` pairs.
-;; Then, check only every `CHECK-EVERY` pairs --- and record
-;; a sequence of `CHECK-EVERY` results so one will hit when
-;; checking every `CHECK-EVERY` pairs.
+;; Then, check only after `CHECK-SKIP-N` pairs --- and record
+;; a sequence of `CHECK-SKIP-N`+1 results so one will hit when
+;; checking every `CHECK-SKIP-N` pairs.
 
 (define-thread-local lists (make-weak-eq-hashtable))
 
 (define CHECK-AFTER-LEN 64)
-(define CHECK-EVERY 4)
+(define CHECK-SKIP-N 4)
 
 (define (list? v)
   (let loop ([v v] [count 0])
@@ -31,11 +31,12 @@
           (let loop ([fast (cdr v)] [slow v] [slow-step? #f] [countdown 0])
             (let ([return (lambda (result)
                             (eq-hashtable-set! lists slow result)
-                            (let loop ([slow slow] [count (fx- CHECK-EVERY 1)])
-                              (unless (or (eq? slow fast)
-                                          (fx= count 0))
-                                (eq-hashtable-set! lists slow result)
-                                (loop (cdr slow) (fx- count 1))))
+                            (unless (eq? slow fast)
+                              (let loop ([slow (cdr slow)] [count CHECK-SKIP-N])
+                                (unless (or (eq? slow fast)
+                                            (fx= count 0))
+                                  (eq-hashtable-set! lists slow result)
+                                  (loop (cdr slow) (fx- count 1)))))
                             result)])
               (cond
                [(null? fast) (return #t)]
@@ -45,7 +46,7 @@
                 (let ([is-list? (eq-hashtable-ref lists fast none)])
                   (cond
                    [(eq? is-list? none)
-                    (loop (cdr fast) (if slow-step? (cdr slow) slow) (not slow-step?) CHECK-EVERY)]
+                    (loop (cdr fast) (if slow-step? (cdr slow) slow) (not slow-step?) CHECK-SKIP-N)]
                    [else
                     (return is-list?)]))]
                [else
