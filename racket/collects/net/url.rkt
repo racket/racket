@@ -302,6 +302,7 @@
   (hc:http-conn-close! hc))
 
 (define (get-pure-port/headers url [strings '()]
+                               #:method [method #"GET"]
                                #:redirections [redirections 0]
                                #:status? [status? #f]
                                #:connection [conn #f])
@@ -316,7 +317,7 @@
                                     make-ports)
                                   (and conn #t)))
     (define-values (status headers response-port)
-      (hc:http-conn-recv! hc #:method #"GET" #:close? (not conn) #:content-decode '()))
+      (hc:http-conn-recv! hc #:method method #:close? (not conn) #:content-decode '()))
 
     (define new-url
       (ormap (λ (h)
@@ -495,6 +496,7 @@
  (purify-port (input-port? . -> . string?))
  (get-pure-port/headers (->* (url?)
                              ((listof string?)
+                              #:method (or/c #"GET" #"HEAD" #"DELETE" #"OPTIONS")
                               #:redirections exact-nonnegative-integer?
                               #:status? boolean?
                               #:connection (or/c #f hc:http-conn?))
