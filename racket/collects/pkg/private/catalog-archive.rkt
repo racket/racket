@@ -11,7 +11,8 @@
          "stage.rkt"
          "desc.rkt"
          "create.rkt"
-         "path.rkt")
+         "path.rkt"
+         "dep.rkt")
 
 (provide pkg-catalog-archive)
 
@@ -19,6 +20,7 @@
                              src-catalogs
                              #:include [include-names #f]
                              #:include-deps? [include-deps? #f]
+                             #:include-deps-sys+subpath [include-deps-sys+subpath #f]
                              #:exclude [exclude-names '()]
                              #:from-config? [from-config? #f]
                              #:state-catalog [state-catalog #f]
@@ -45,7 +47,7 @@
     (filter-pkgs
      (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
        (db:get-pkgs))
-     include-names include-deps?
+     include-names include-deps? include-deps-sys+subpath
      (cons "racket" exclude-names)
      temp-catalog-file))
   ;; Reset state catalog to new packages:
@@ -155,7 +157,7 @@
 
 ;; ----------------------------------------
 
-(define (filter-pkgs pkgs include-names include-deps? exclude-names catalog)
+(define (filter-pkgs pkgs include-names include-deps? include-deps-sys+subpath exclude-names catalog)
   (cond
     [(not include-names)
      (if (null? exclude-names)
@@ -181,12 +183,20 @@
                  (loop (hash-set include-table name #t)
                        (append
                         (if include-deps?
-                            (let ([pkg (hash-ref pkg-map name)])
-                              (map car
-                                   (parameterize ([db:current-pkg-catalog-file catalog])
-                                     (db:get-pkg-dependencies name
-                                                              (db:pkg-catalog pkg)
-                                                              (db:pkg-checksum pkg)))))
+                            (let ([pkg (hash-ref pkg-map name #f)])
+                              (cond
+                                [(not pkg)
+                                 ;; Skip a missing dependency
+                                 null]
+                                [else
+                                 (for/list ([dep (in-list
+                                                  (parameterize ([db:current-pkg-catalog-file catalog])
+                                                    (db:get-pkg-dependencies name
+                                                                             (db:pkg-catalog pkg)
+                                                                             (db:pkg-checksum pkg))))]
+                                            #:when (or (not include-deps-sys+subpath)
+                                                       (dependency-for-platform? dep include-deps-sys+subpath)))
+                                   (car dep))]))
                             null)
                         (cdr todo-names)))]))])))
      (for/list ([pkg (in-list pkgs)]

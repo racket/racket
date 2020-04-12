@@ -199,6 +199,7 @@
                         #:quiet? boolean?
                         #:include (or/c #f (listof string?))
                         #:include-deps? boolean?
+                        #:include-deps-sys+subpath (or/c #f (cons/c symbol? path-for-some-system?))
                         #:exclude (or/c #f (listof string?))
                         #:fast-file-copy? boolean?
                         #:package-exn-handler (string? exn:fail? . -> . any))

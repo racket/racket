@@ -53,6 +53,9 @@
     [pattern (#:str name:id default:expr)
              #:attr (arg-val 1) (list #'name)
              #:attr fun #'identity]
+    [pattern (#:strs name:id ... default:expr)
+             #:attr (arg-val 1) (syntax->list #'(name ...))
+             #:attr fun #'list]
     [pattern (#:num name:id default:expr)
              #:attr (arg-val 1) (list #'name)
              #:attr fun #'(string->num 'name)])

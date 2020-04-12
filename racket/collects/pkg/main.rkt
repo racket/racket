@@ -616,6 +616,7 @@
               (include-list (cons pkg (or (include-list) '())))]
              #:once-each
              [#:bool include-deps () "Include dependencies of specified packages"]
+             [(#:strs sys subpath #f) include-deps-platform () "Include one platform's dependencies"]
              #:multi
              [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
               (exclude-list (cons pkg (exclude-list)))]
@@ -633,6 +634,9 @@
                                       #:relative-sources? relative
                                       #:include (include-list)
                                       #:include-deps? include-deps
+                                      #:include-deps-sys+subpath (and include-deps-platform
+                                                                      (cons (string->symbol (car include-deps-platform))
+                                                                            (string->path (cadr include-deps-platform))))
                                       #:exclude (exclude-list)
                                       #:fast-file-copy? fast-file-copy
                                       #:package-exn-handler (case pkg-fail

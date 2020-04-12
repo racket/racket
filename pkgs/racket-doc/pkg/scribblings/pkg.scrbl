@@ -1108,6 +1108,10 @@ for @nonterm{key}.
        excluded via @DFlag{exclude}.}
  @item{@DFlag{include-deps} --- Modifies the @DFlag{includes} @nonterm{pkg} flag to imply all
        dependencies of @nonterm{pkg}.}
+ @item{@DFlag{include-deps-platform} @nonterm{sys} @nonterm{subpath} --- Modifies @DFlag{include-deps}
+       to imply only dependencies that match the platform @nonterm{sys}, which should be
+       a possible result of @racket[(system-type)], and @nonterm{subpath}, which should be
+       a possible result of @racket[(system-library-subpath #f)]}
  @item{@DFlag{exclude} @nonterm{pkg} --- Can be specified multiple times. Removes @nonterm{pkg}
        from the set of packages in the archive and generated catalog. If @DFlag{include} is
        used for the same @nonterm{pkg}, then @DFlag{exclude} takes
@@ -1121,8 +1125,8 @@ for @nonterm{key}.
  ]
 
  @history[#:added "6.0.17"
-          #:changed "7.7.0.1" @elem{Added @DFlag{include}, @DFlag{include-deps}, @DFlag{exclude},
-                                    and @DFlag{fast-file-copy}.}]
+          #:changed "7.7.0.1" @elem{Added @DFlag{include}, @DFlag{include-deps}, @DFlag{include-deps-platform},
+                                    @DFlag{exclude}, and @DFlag{fast-file-copy}.}]
 }
 
 @subcommand{@command/toc{archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{pkg} ...
