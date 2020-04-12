@@ -121,29 +121,31 @@
              (when clean? (delete-directory/files staged-dir))
              (values staged-checksum)]))
         ;; Record packed result:
+        (define new-checksum (file->string pkg-checksum-file))
+        (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
+          (db:call-with-pkgs-transaction
+           (lambda ()
+             (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
+             (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
+             (db:set-pkg! name (db:pkg-catalog pkg)
+                          (db:pkg-author pkg)
+                          (path->string (path->complete-path pkg-file))
+                          new-checksum
+                          (db:pkg-desc pkg))
+             (db:set-pkg-modules! name (db:pkg-catalog pkg)
+                                  new-checksum
+                                  modules)
+             (db:set-pkg-dependencies! name (db:pkg-catalog pkg)
+                                       new-checksum
+                                       dependencies))))
+        ;; Record packed result in state catalog:
         (when state-catalog
           (parameterize ([db:current-pkg-catalog-file state-catalog])
             (db:set-pkg! name "local"
                          (db:pkg-author pkg)
                          (db:pkg-source pkg)
                          staged-checksum
-                         (db:pkg-desc pkg)))))
-      ;; Record packed result:
-      (define new-checksum (file->string pkg-checksum-file))
-      (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
-        (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
-        (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
-        (db:set-pkg! name (db:pkg-catalog pkg)
-                     (db:pkg-author pkg)
-                     (path->string (path->complete-path pkg-file))
-                     new-checksum
-                     (db:pkg-desc pkg))
-        (db:set-pkg-modules! name (db:pkg-catalog pkg)
-                             new-checksum
-                             modules)
-        (db:set-pkg-dependencies! name (db:pkg-catalog pkg)
-                                  new-checksum
-                                  dependencies))))
+                         (db:pkg-desc pkg)))))))
   (define dest-catalog (build-path dest-dir "catalog"))
   (unless quiet?
     (printf/flush "Creating catalog ~a\n" dest-catalog))
