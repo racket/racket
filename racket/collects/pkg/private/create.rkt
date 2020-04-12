@@ -100,6 +100,7 @@
               (apply zip pkg/complete content
                      #:path-prefix (and (add-directory-layer? content)
                                         pkg-name)
+                     #:system-type 'unix ; for consistency across platforms
                      #:get-timestamp file-or-directory-timestamp
                      #:utc-timestamps? #t
                      #:round-timestamps-down? #t)))]

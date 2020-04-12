@@ -602,6 +602,7 @@
             ;; ----------------------------------------
             [catalog-archive
              "Copy catalog plus packages"
+             (define include-list (make-parameter #f))
              #:once-each
              [#:bool from-config () "Include currently configured catalogs last"]
              [(#:str state-database #f) state () "Read/write <state-database> as state of <dest-dir>"]
@@ -610,6 +611,16 @@
              [(#:sym mode [fail skip continue] 'fail) pkg-fail ()
               ("Select handling of package-download failure;"
                "<mode>s: fail (the default), skip, continue (but with exit status of 5)")]
+             #:multi
+             [(#:str pkg #f) include () "Include <pkg> in new catalog"
+              (include-list (cons pkg (or (include-list) '())))]
+             #:once-each
+             [#:bool include-deps () "Include dependencies of specified packages"]
+             #:multi
+             [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
+              (exclude-list (cons pkg (exclude-list)))]
+             #:once-each
+             [#:bool fast-file-copy () "Copy a local file package as-is"]
              #:args (dest-dir . src-catalog)
              (parameterize ([current-pkg-error (pkg-error 'catalog-archive)]
                             [current-pkg-lookup-version (or version
@@ -620,6 +631,10 @@
                                       #:from-config? from-config
                                       #:state-catalog state
                                       #:relative-sources? relative
+                                      #:include (include-list)
+                                      #:include-deps? include-deps
+                                      #:exclude (exclude-list)
+                                      #:fast-file-copy? fast-file-copy
                                       #:package-exn-handler (case pkg-fail
                                                               [(fail) (lambda (name exn) (raise exn))]
                                                               [(skip continue)

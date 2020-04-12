@@ -197,6 +197,10 @@
                         #:state-catalog (or/c path-string? #f)
                         #:relative-sources? boolean?
                         #:quiet? boolean?
+                        #:include (or/c #f (listof string?))
+                        #:include-deps? boolean?
+                        #:exclude (or/c #f (listof string?))
+                        #:fast-file-copy? boolean?
                         #:package-exn-handler (string? exn:fail? . -> . any))
         void?)]
   [pkg-archive-pkgs

@@ -1100,9 +1100,29 @@ for @nonterm{key}.
          @item{@exec{continue} --- like @exec{skip}, but @exec{raco pkg catalog-archive}
                exits with a status code of @exec{5} if any package was skipped.}
        ]}
+
+ @item{@DFlag{include} @nonterm{pkg} --- Can be specified multiple times. If @DFlag{include} is
+       specified at least once, then the archive and generated catalog includes only
+       the @nonterm{pkg}s specified with @DFlag{include}, plus the dependencies
+       of each @nonterm{pkg} if @DFlag{include-deps} is specified, modulo packages
+       excluded via @DFlag{exclude}.}
+ @item{@DFlag{include-deps} --- Modifies the @DFlag{includes} @nonterm{pkg} flag to imply all
+       dependencies of @nonterm{pkg}.}
+ @item{@DFlag{exclude} @nonterm{pkg} --- Can be specified multiple times. Removes @nonterm{pkg}
+       from the set of packages in the archive and generated catalog. If @DFlag{include} is
+       used for the same @nonterm{pkg}, then @DFlag{exclude} takes
+       precedence. If @DFlag{include} is used with
+       @DFlag{include-deps} for @nonterm{pkg} or a package that depends on @nonterm{pkg},
+       then @DFlag{exclude} stops the consideration of @nonterm{pkg}'s
+       dependencies (but does not necessarily exclude the dependencies, because they
+       may be dependencies of an included package).}
+ @item{@DFlag{fast-file-copy} --- Directly copies package files from the @nonterm{src-catalog}s
+       when available on the local filesystem, instead of extracting and repacking.}
  ]
 
- @history[#:added "6.0.17"]
+ @history[#:added "6.0.17"
+          #:changed "7.7.0.1" @elem{Added @DFlag{include}, @DFlag{include-deps}, @DFlag{exclude},
+                                    and @DFlag{fast-file-copy}.}]
 }
 
 @subcommand{@command/toc{archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{pkg} ...
