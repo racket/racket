@@ -94,9 +94,8 @@
                      (finish-proc result)))))
   ;; Must be called within an engine, used for memory accounting:
   (define (current-place-roots)
-    (make-strongly-reachable-for-accounting
-     (list (place-registers)
-           (current-engine-thread-cell-values))))]
+    (list (place-registers)
+          (current-engine-thread-cell-values)))]
  [else
   (define (place-enabled?) #f)
   (define (fork-place thunk finish-proc) #f)

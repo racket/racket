@@ -189,10 +189,6 @@
 
 ;; ----------------------------------------
 
-;; Any value wrapped as `strongly-reachable-for-accounting` will
-;; be `cons`ed instead of `weak-cons`ed for accounting purposes
-(define-record-type strongly-reachable-for-accounting (fields content))
-
 (define (weaken-accounting-roots roots)
   (let loop ([roots roots])
     (cond
@@ -202,8 +198,6 @@
              [rest (loop (cdr roots))])
          (cond
            [(thread? root) (cons root rest)]
-           [(strongly-reachable-for-accounting? root)
-            (cons (strongly-reachable-for-accounting-content root) rest)]
            [else
             (weak-cons root rest)]))])))
 
