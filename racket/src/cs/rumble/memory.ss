@@ -115,7 +115,7 @@
           ;; that value may include underused pages that have locked objects.
           ;; Using just `post-allocated` is too small, because it may force an
           ;; immediate major GC too soon. Split the difference.
-          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR post-allocated))
+          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
           (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
         (update-eq-hash-code-table-size!)
         (update-struct-procs-table-sizes!)

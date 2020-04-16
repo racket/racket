@@ -570,6 +570,7 @@
                        (set-custodian-memory-limits! c new-limits)
                        (when (and (pair? old-limits)
                                   (or (null? new-limits)
+                                      (not (custodian-gc-roots c))
                                       (zero? (hash-count (custodian-gc-roots c)))))
                          (hash-remove! custodians-with-limits c))
                        (or any-limits? (pair? new-limits))))
