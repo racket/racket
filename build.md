@@ -86,7 +86,7 @@ have several options:
   for more instructions.
 
 * **Unix-style install** — This mode installs to a given destination
-  directory (on platforms other Windows), leaving no reference to the
+  directory (on platforms other than Windows), leaving no reference to the
   source directory. This is the most natural mode for installing once
   from the source repository. See [Quick Instructions: Unix-Style
   Install](#14-quick-instructions-unix-style-install) for more
