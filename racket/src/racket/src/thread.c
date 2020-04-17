@@ -6450,7 +6450,9 @@ static void *splice_ptr_array(void **a, int al, void **b, int bl, int i)
 {
   void **r;
   int j;
-  
+
+  MZ_ASSERT (a != NULL || b != NULL);
+
   r = MALLOC_N(void*, al + bl - 1);
 
   if (a)
