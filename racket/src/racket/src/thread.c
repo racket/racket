@@ -26,6 +26,8 @@
 # include <malloc.h>
 #endif
 
+#include <assert.h>
+
 #ifndef SIGNMZTHREAD
 # define SIGMZTHREAD SIGUSR2
 #endif
@@ -6450,7 +6452,9 @@ static void *splice_ptr_array(void **a, int al, void **b, int bl, int i)
 {
   void **r;
   int j;
-  
+
+  assert (a != NULL || b != NULL);
+
   r = MALLOC_N(void*, al + bl - 1);
 
   if (a)
