@@ -819,7 +819,7 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 
   if (cumulative) {
 #ifdef MZ_PRECISE_GC
-    retval = GC_get_memory_ever_allocated();
+    retval = GC_get_memory_ever_used();
 #else
     retval = GC_get_total_bytes();
 #endif
@@ -9261,7 +9261,12 @@ static void get_ready_for_GC()
   start_this_gc_time = scheme_get_process_milliseconds();
 
 #ifndef MZ_PRECISE_GC
-  max_gc_pre_used_bytes = GC_get_memory_use();
+  {
+    intptr_t bytes;
+    bytes = GC_get_memory_use();
+    if (max_gc_pre_used_bytes < bytes)
+      max_gc_pre_used_bytes = bytes;
+  }
 #endif
 
 #ifdef MZ_USE_FUTURES
@@ -9380,7 +9385,6 @@ static void done_with_GC()
 #endif
 }
 
-#ifdef MZ_PRECISE_GC
 static char *gc_unscaled_num(char *nums, intptr_t v)
 /* format a number with commas */
 {
@@ -9412,6 +9416,14 @@ static char *gc_num(char *nums, intptr_t v)
 {
   return gc_unscaled_num(nums, v/1024);  /* bytes => kbytes */
 }
+
+#ifdef MZ_USE_PLACES
+# define PLACE_ID_FORMAT "%d:"
+#else
+# define PLACE_ID_FORMAT ""
+#endif
+
+#ifdef MZ_PRECISE_GC
 
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
@@ -9451,12 +9463,6 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
     char buf[256], nums[128];
     intptr_t buflen, delta, admin_delta;
     Scheme_Object *vec, *v;
-
-#ifdef MZ_USE_PLACES
-# define PLACE_ID_FORMAT "%d:"
-#else
-# define PLACE_ID_FORMAT ""
-#endif
 
     vec = scheme_false;
     if (!master_gc && gc_info_prefab) {
@@ -9514,6 +9520,7 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
   }
 #endif
 }
+#endif
 
 static void log_peak_memory_use()
 {
@@ -9528,24 +9535,31 @@ static void log_peak_memory_use()
       debug_gc_major = 1;
 
     if (debug_gc || debug_gc_major) {
-      char buf[256], nums[128], *num, *numc, *numt, *num2;
-      intptr_t buflen, allocated_bytes;
+      char buf[256], nums[128], *num, *numc, *numt, *num2, *numa;
+      intptr_t buflen, allocated_bytes, max_bytes;
 #ifdef MZ_PRECISE_GC
-      allocated_bytes = GC_get_memory_ever_allocated();
+      allocated_bytes = GC_get_memory_ever_used();
 #else
       allocated_bytes = GC_get_total_bytes();
 #endif
+#ifdef MZ_PRECISE_GC
+      max_bytes = GC_get_memory_max_allocated();
+#else
+      max_bytes = GC_get_memory_peak_use();
+#endif
       memset(nums, 0, sizeof(nums));
-      num = gc_num(nums, max_gc_pre_used_bytes);     
+      num = gc_num(nums, max_gc_pre_used_bytes);
+      numa = gc_num(nums, max_bytes - max_gc_pre_used_bytes);
       numc = gc_num(nums, max_code_page_total);
       numt = gc_num(nums, allocated_bytes);
       num2 = gc_unscaled_num(nums, scheme_total_gc_time);
       sprintf(buf,
-              "GC: " PLACE_ID_FORMAT "atexit peak %sK[+%sK]; alloc %sK; major %d; minor %d; %sms",
+              "GC: " PLACE_ID_FORMAT "atexit peak %sK(+%sK)[+%sK]; alloc %sK; major %d; minor %d; %sms",
 #ifdef MZ_USE_PLACES
               scheme_current_place_id,
 #endif
               num,
+              numa,
               numc,
               numt,
               num_major_garbage_collections,
@@ -9563,10 +9577,6 @@ static void log_peak_memory_use()
     }
   }
 }
-
-#else
- static void log_peak_memory_use() {}
-#endif
 
 /*========================================================================*/
 /*                                 stats                                  */
