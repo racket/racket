@@ -1,71 +1,65 @@
+	.align 3
 	.globl scheme_gmpn_invert_limb
-scheme_gmpn_invert_limb:	
-	stmfd	sp!, {r4, lr}
-	mov	r3, r0, lsr #23
-	sub	r3, r3, #256
-	add	r2, pc, #invtab-.-8
-	mov	r3, r3, lsl #1
-	ldrh	r1, [r2, r3]
-	mov	r2, r1, lsl #6
-	mul	ip, r2, r2
-	umull	lr, r4, ip, r0
-	mov	r2, r4, lsl #1
-	rsb	r2, r2, r1, lsl #23
-	umull	ip, r3, r2, r2
-	umull	lr, r4, r3, r0
-	umull	r3, r1, ip, r0
-	adds	lr, lr, r1
-	addcs	r4, r4, #1
-	mov	r3, lr, lsr #30
-	orr	r4, r3, r4, lsl #2
-	mov	lr, lr, lsl #2
-	cmn	lr, #1
-	rsc	r2, r4, r2, lsl #2
-	umull	ip, r1, r0, r2
-	add	r1, r1, r0
-	cmn	r1, #1
-	beq	$l1
-	adds	ip, ip, r0
-	adc	r1, r1, #0
-	add	r2, r2, #1
-$l1:
-	adds	r3, ip, r0
-	adcs	r1, r1, #0
-	moveq	r0, r2
-	addne	r0, r2, #1
-	ldmfd	sp!, {r4, pc}
+	.type  scheme_gmpn_invert_limb,#function
+scheme_gmpn_invert_limb:
+        ldr     r2, .Lptr0
+.Lbas0  add     r2, r2, r15     
+        mov     r3, r0, lsr #23
+        mov     r3, r3, asl #1
+        ldrh    r3, [r3, r2]
+        mov     r1, r3, asl #17
+        mul     r12, r3, r3
+        umull   r3, r2, r12, r0
+        sub     r1, r1, r2, asl #1
+        umull   r3, r2, r1, r1
+        umull   r12, r3, r0, r3
+        umull   r2, r12, r0, r2
+        adds    r2, r2, r3
+        adc     r12, r12, #0
+        rsb     r1, r12, r1
+        mvn     r2, r2, lsr #30
+        add     r2, r2, r1, asl #2
+        umull   r12, r3, r0, r2
+        adds    r1, r12, r0
+        adc     r3, r3, r0
+        rsb     r0, r3, r2
+        bx      r14
 
-invtab:
-	.short	1023,1020,1016,1012,1008,1004,1000,996
-	.short	992,989,985,981,978,974,970,967
-	.short	963,960,956,953,949,946,942,939
-	.short	936,932,929,926,923,919,916,913
-	.short	910,907,903,900,897,894,891,888
-	.short	885,882,879,876,873,870,868,865
-	.short	862,859,856,853,851,848,845,842
-	.short	840,837,834,832,829,826,824,821
-	.short	819,816,814,811,809,806,804,801
-	.short	799,796,794,791,789,787,784,782
-	.short	780,777,775,773,771,768,766,764
-	.short	762,759,757,755,753,751,748,746
-	.short	744,742,740,738,736,734,732,730
-	.short	728,726,724,722,720,718,716,714
-	.short	712,710,708,706,704,702,700,699
-	.short	697,695,693,691,689,688,686,684
-	.short	682,680,679,677,675,673,672,670
-	.short	668,667,665,663,661,660,658,657
-	.short	655,653,652,650,648,647,645,644
-	.short	642,640,639,637,636,634,633,631
-	.short	630,628,627,625,624,622,621,619
-	.short	618,616,615,613,612,611,609,608
-	.short	606,605,604,602,601,599,598,597
-	.short	595,594,593,591,590,589,587,586
-	.short	585,583,582,581,579,578,577,576
-	.short	574,573,572,571,569,568,567,566
-	.short	564,563,562,561,560,558,557,556
-	.short	555,554,553,551,550,549,548,547
-	.short	546,544,543,542,541,540,539,538
-	.short	537,536,534,533,532,531,530,529
-	.short	528,527,526,525,524,523,522,521
-	.short	520,519,518,517,516,515,514,513
-
+.Lptr0:	.word	approx_tab-512-.Lbas0-8
+	.size	__gmpn_invert_limb,.-__gmpn_invert_limb
+	
+        .section        .rodata
+        .align  1
+approx_tab:
+        .short    0xffc0,0xfec0,0xfdc0,0xfcc0,0xfbc0,0xfac0,0xfa00,0xf900
+        .short    0xf800,0xf700,0xf640,0xf540,0xf440,0xf380,0xf280,0xf180
+        .short    0xf0c0,0xefc0,0xef00,0xee00,0xed40,0xec40,0xeb80,0xeac0
+        .short    0xe9c0,0xe900,0xe840,0xe740,0xe680,0xe5c0,0xe500,0xe400
+        .short    0xe340,0xe280,0xe1c0,0xe100,0xe040,0xdf80,0xdec0,0xde00
+        .short    0xdd40,0xdc80,0xdbc0,0xdb00,0xda40,0xd980,0xd8c0,0xd800
+        .short    0xd740,0xd680,0xd600,0xd540,0xd480,0xd3c0,0xd340,0xd280
+        .short    0xd1c0,0xd140,0xd080,0xcfc0,0xcf40,0xce80,0xcdc0,0xcd40
+        .short    0xcc80,0xcc00,0xcb40,0xcac0,0xca00,0xc980,0xc8c0,0xc840
+        .short    0xc780,0xc700,0xc640,0xc5c0,0xc540,0xc480,0xc400,0xc380
+        .short    0xc2c0,0xc240,0xc1c0,0xc100,0xc080,0xc000,0xbf80,0xbec0
+        .short    0xbe40,0xbdc0,0xbd40,0xbc80,0xbc00,0xbb80,0xbb00,0xba80
+        .short    0xba00,0xb980,0xb900,0xb840,0xb7c0,0xb740,0xb6c0,0xb640
+        .short    0xb5c0,0xb540,0xb4c0,0xb440,0xb3c0,0xb340,0xb2c0,0xb240
+        .short    0xb1c0,0xb140,0xb0c0,0xb080,0xb000,0xaf80,0xaf00,0xae80
+        .short    0xae00,0xad80,0xad40,0xacc0,0xac40,0xabc0,0xab40,0xaac0
+        .short    0xaa80,0xaa00,0xa980,0xa900,0xa8c0,0xa840,0xa7c0,0xa740
+        .short    0xa700,0xa680,0xa600,0xa5c0,0xa540,0xa4c0,0xa480,0xa400
+        .short    0xa380,0xa340,0xa2c0,0xa240,0xa200,0xa180,0xa140,0xa0c0
+        .short    0xa080,0xa000,0x9f80,0x9f40,0x9ec0,0x9e80,0x9e00,0x9dc0
+        .short    0x9d40,0x9d00,0x9c80,0x9c40,0x9bc0,0x9b80,0x9b00,0x9ac0
+        .short    0x9a40,0x9a00,0x9980,0x9940,0x98c0,0x9880,0x9840,0x97c0
+        .short    0x9780,0x9700,0x96c0,0x9680,0x9600,0x95c0,0x9580,0x9500
+        .short    0x94c0,0x9440,0x9400,0x93c0,0x9340,0x9300,0x92c0,0x9240
+        .short    0x9200,0x91c0,0x9180,0x9100,0x90c0,0x9080,0x9000,0x8fc0
+        .short    0x8f80,0x8f40,0x8ec0,0x8e80,0x8e40,0x8e00,0x8d80,0x8d40
+        .short    0x8d00,0x8cc0,0x8c80,0x8c00,0x8bc0,0x8b80,0x8b40,0x8b00
+        .short    0x8a80,0x8a40,0x8a00,0x89c0,0x8980,0x8940,0x88c0,0x8880
+        .short    0x8840,0x8800,0x87c0,0x8780,0x8740,0x8700,0x8680,0x8640
+        .short    0x8600,0x85c0,0x8580,0x8540,0x8500,0x84c0,0x8480,0x8440
+        .short    0x8400,0x8380,0x8340,0x8300,0x82c0,0x8280,0x8240,0x8200
+        .short    0x81c0,0x8180,0x8140,0x8100,0x80c0,0x8080,0x8040,0x8000
