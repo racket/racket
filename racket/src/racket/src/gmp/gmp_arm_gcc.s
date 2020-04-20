@@ -1,9 +1,15 @@
+#if defined(__thumb__)
+#define RETURN(x) bx x
+#else
+#define RETURN(x) mov pc, x
+#endif
+
 	.align 3
 	.globl scheme_gmpn_invert_limb
 	.type  scheme_gmpn_invert_limb,#function
 scheme_gmpn_invert_limb:
         ldr     r2, .Lptr0
-.Lbas0  add     r2, r2, r15     
+.Lbas0: add     r2, r2, r15     
         mov     r3, r0, lsr #23
         mov     r3, r3, asl #1
         ldrh    r3, [r3, r2]
@@ -23,7 +29,7 @@ scheme_gmpn_invert_limb:
         adds    r1, r12, r0
         adc     r3, r3, r0
         rsb     r0, r3, r2
-        bx      r14
+        RETURN(r14)
 
 .Lptr0:	.word	approx_tab-512-.Lbas0-8
 	.size	__gmpn_invert_limb,.-__gmpn_invert_limb
