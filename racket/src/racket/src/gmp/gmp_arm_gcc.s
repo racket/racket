@@ -32,7 +32,7 @@ scheme_gmpn_invert_limb:
         RETURN(r14)
 
 .Lptr0:	.word	approx_tab-512-.Lbas0-8
-	.size	__gmpn_invert_limb,.-__gmpn_invert_limb
+	.size	scheme_gmpn_invert_limb,.-scheme_gmpn_invert_limb
 	
         .section        .rodata
         .align  1
