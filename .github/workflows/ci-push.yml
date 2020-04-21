@@ -18,6 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
+      PREFIX_DIR: "$HOME/work/racket"
     
     steps:
     - uses: actions/checkout@v1
@@ -36,7 +37,7 @@ jobs:
       working-directory: ./racket/src
       run: >
         ./configure 
-        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --prefix=$PREFIX_DIR/racketcgc
         --enable-werror
         $RACKET_EXTRA_CONFIGURE_ARGS 
         --enable-cgcdefault 
@@ -84,6 +85,7 @@ jobs:
     
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
+      PREFIX_DIR: "$HOME/work/racket"
     
     steps:
     - uses: actions/checkout@v1
@@ -123,10 +125,10 @@ jobs:
         CC: ${{ matrix.cc }}
       run: >
         ./configure
-        --prefix=$GITHUB_WORKSPACE/../racket3m
+        --prefix=$PREFIX_DIR/racket3m
         --enable-werror
         $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-racket=$PREFIX_DIR/racketcgc/bin/racket 
         --enable-foreign 
         --enable-float 
         --disable-docs 
@@ -171,6 +173,7 @@ jobs:
     
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
+      PREFIX_DIR: "$HOME/work/racket"
       
     steps:
     - uses: actions/checkout@v1
@@ -200,9 +203,9 @@ jobs:
         CC: ${{ matrix.cc }}
       run: >
         ./configure 
-        --prefix=$GITHUB_WORKSPACE/../racketcs
+        --prefix=$PREFIX_DIR/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-racket=$PREFIX_DIR/racketcgc/bin/racket 
         --enable-compress 
         --disable-docs 
         --enable-pthread 
@@ -259,6 +262,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     needs: build-racketcgc
+
+    env:
+      PREFIX_DIR: "$HOME/work/racket"
 
     steps:
       - uses: actions/checkout@v1
@@ -333,6 +339,9 @@ jobs:
 
     needs: build-racket3m
 
+    env:
+      PREFIX_DIR: "$HOME/work/racket"
+
     steps:
       - uses: actions/checkout@v1
       - uses: actions/download-artifact@master
@@ -397,6 +406,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     needs: build-racketcs
+
+    env:
+      PREFIX_DIR: "$HOME/work/racket"
 
     steps:
       - uses: actions/checkout@v1
@@ -475,7 +487,7 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         --disable-strip
-        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --prefix=$PREFIX_DIR/racketcgc
         --enable-werror
         --enable-cify
         --enable-cgcdefault 
@@ -505,6 +517,9 @@ jobs:
     container: pmatos/scan-build:latest
     needs: build-racketcgc
 
+    env:
+      PREFIX_DIR: "$HOME/work/racket"
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -526,8 +541,8 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         --disable-strip
-        --prefix=$GITHUB_WORKSPACE/../racket3m
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket
+        --prefix=$PREFIX_DIR/racket3m
+        --enable-racket=$PREFIX_DIR/racketcgc/bin/racket
         --enable-werror
         --enable-cify
         --enable-jit 
@@ -556,6 +571,9 @@ jobs:
     container: pmatos/scan-build:latest
     needs: build-racketcgc
     
+    env:
+      PREFIX_DIR: "$HOME/work/racket"
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -581,9 +599,9 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        --prefix=$GITHUB_WORKSPACE/../racketcs
+        --prefix=$PREFIX_DIR/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-racket=$PREFIX_DIR/racketcgc/bin/racket 
         --enable-compress 
         --disable-docs 
         --enable-pthread 
