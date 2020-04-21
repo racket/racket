@@ -475,7 +475,6 @@
                   [else
                    (post-as-asynchronous-callback go)]))))])
       (let ([callable (foreign-callable __collect_safe glib-log-message (string int string) void)])
-        (lock-object callable)
         (foreign-callable-entry-point callable))))
   
   ;; ----------------------------------------
