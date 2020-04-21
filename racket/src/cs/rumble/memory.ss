@@ -318,10 +318,10 @@
       (unless skip-counts?
         (#%fprintf (current-error-port) "Begin RacketCS\n")
         (for-each (lambda (e)
-                    (chez:fprintf (current-error-port)
-                                  (layout-line (chez:format "~a" (car e))
+                    (chez:display (layout-line (chez:format "~a" (car e))
                                                ((get-count #f) e) ((get-bytes #f) e)
-                                               ((get-count #t) e) ((get-bytes #t) e))))
+                                               ((get-count #t) e) ((get-bytes #t) e))
+				  (current-error-port)))
                   (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
         (#%fprintf (current-error-port) (layout-line "total"
                                                      (apply + (map (get-count #f) counts))
