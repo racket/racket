@@ -302,7 +302,7 @@ vector.@LTO@: $(srcdir)/vector.c
 gmp_alpha_gcc.@LTO@: $(srcdir)/gmp/gmp_alpha_gcc.s
 	$(AS) -o gmp_alpha_gcc.@LTO@ $(srcdir)/gmp/gmp_alpha_gcc.s
 gmp_arm_gcc.@LTO@: $(srcdir)/gmp/gmp_arm_gcc.s
-	$(AS) -o gmp_arm_gcc.@LTO@ $(srcdir)/gmp/gmp_arm_gcc.s
+	$(CC) -o gmp_arm_gcc.@LTO@ -c $(srcdir)/gmp/gmp_arm_gcc.S
 
 SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 
