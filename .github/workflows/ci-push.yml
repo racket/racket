@@ -59,11 +59,10 @@ jobs:
     - name: Tarballing
       working-directory: ${{ runner.temp }}
       run: tar -cvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@master
-      working-directory: ${{ runner.temp }}
+    - uses: actions/upload-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-        path: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}/racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
     strategy:
@@ -111,7 +110,7 @@ jobs:
     - name: Setup efp if disabled
       if: matrix.efp == 'noefp'
       run: echo "::set-env name=EFP_OPTIONS::--disable-extflonums --disable-places --disable-futures"
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -151,12 +150,11 @@ jobs:
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       working-directory: ${{ runner.temp }}
       run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@master
-      working-directory: ${{ runner.temp }}
+    - uses: actions/upload-artifact@v1
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
         name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
-        path: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}/racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
     strategy:
@@ -181,7 +179,7 @@ jobs:
     - name: Setup OS specific configure args
       if:  runner.os == 'macOS'
       run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -222,12 +220,11 @@ jobs:
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       working-directory: ${{ runner.temp }}
       run: tar -cvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha}}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
-      working-directory: ${{ runner.temp }}
       with:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
-        path: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}/racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
 
   build-win:
     runs-on: windows-latest
@@ -265,7 +262,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v1
         with:
           name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
           path: ${{ runner.temp }}
@@ -338,7 +335,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v1
         with:
           name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
           path: ${{ runner.temp }}
@@ -403,7 +400,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v1
         with:
           name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
           path: ${{ runner.temp }}
@@ -496,7 +493,7 @@ jobs:
         scan-build -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
     - name: Tarballing
       run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       if: always()
       with:
         name: scanbuild-cgc-${{ github.sha }}
@@ -516,7 +513,7 @@ jobs:
       run: |
         apt-get update
         apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v1
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -547,7 +544,7 @@ jobs:
         scan-build -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
     - name: Tarballing
       run: tar -cvjf racket3m-report-${{ github.sha }}.tar.bz2 racket3m-report
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       if: always()
       with:
         name: scanbuild-3m-${{ github.sha }}
@@ -567,7 +564,7 @@ jobs:
       run: |
         apt update
         apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v1
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -599,7 +596,7 @@ jobs:
         scan-build -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
     - name: Tarballing
       run: tar -cvjf racketcs-report-${{ github.sha }}.tar.bz2 racketcs-report
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       if: always()
       with:
         name: scanbuild-cs-${{ github.sha }}
