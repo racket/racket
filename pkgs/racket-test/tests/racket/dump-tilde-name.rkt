@@ -6,6 +6,10 @@
 ;; The contracted procedure is here because the rumble implementation has a
 ;; ~ in the name.
 
+(module test info
+  ;; Because `dump-memory-stats` writes to stderr:
+  (define ignore-stderr #rx".*"))
+
 (define foo
   (contract (-> #:x any/c any/c)
             (λ (#:x x) 0)
