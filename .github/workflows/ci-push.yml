@@ -36,7 +36,7 @@ jobs:
       working-directory: ./racket/src
       run: >
         ./configure 
-        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --prefix=${{ runner.temp }}/racketcgc
         --enable-werror
         $RACKET_EXTRA_CONFIGURE_ARGS 
         --enable-cgcdefault 
@@ -57,12 +57,13 @@ jobs:
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
     - name: Tarballing
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -cvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
     - uses: actions/upload-artifact@master
+      working-directory: ${{ runner.temp }}
       with:
         name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-        path: ../racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+        path: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
     strategy:
@@ -113,9 +114,9 @@ jobs:
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
-        path: ../
+        path: ${{ runner.temp }}
     - name: Untar
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket 3m
       working-directory: ./racket/src
@@ -123,10 +124,10 @@ jobs:
         CC: ${{ matrix.cc }}
       run: >
         ./configure
-        --prefix=$GITHUB_WORKSPACE/../racket3m
+        --prefix=${{ runner.temp }}/racket3m
         --enable-werror
         $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket 
         --enable-foreign 
         --enable-float 
         --disable-docs 
@@ -148,13 +149,14 @@ jobs:
     # and artifact upload on MacOS or (on Linux) if we are building with gcc.
     - name: Tarballing
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
     - uses: actions/upload-artifact@master
+      working-directory: ${{ runner.temp }}
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
         name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
-        path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
+        path: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
     strategy:
@@ -182,9 +184,9 @@ jobs:
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
-        path: ../
+        path: ${{ runner.temp }}
     - name: Untar
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha}}.tar.bz2
     - name: Install pkg dependencies
       if: runner.os == 'Linux'
@@ -200,9 +202,9 @@ jobs:
         CC: ${{ matrix.cc }}
       run: >
         ./configure 
-        --prefix=$GITHUB_WORKSPACE/../racketcs
+        --prefix=${{ runner.temp }}/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket 
         --enable-compress 
         --disable-docs 
         --enable-pthread 
@@ -218,13 +220,14 @@ jobs:
       run: make -j  $((cpus+1)) install
     - name: Tarballing
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -cvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha}}.tar.bz2 racketcs
     - uses: actions/upload-artifact@master
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
+      working-directory: ${{ runner.temp }}
       with:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
-        path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
+        path: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
 
   build-win:
     runs-on: windows-latest
@@ -265,12 +268,12 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-          path: ../
+          path: ${{ runner.temp }}
       - name: Untar
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: tar -xvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
       - name: Check for Racket
         run: racket --version
@@ -338,12 +341,12 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
-          path: ../
+          path: ${{ runner.temp }}
       - name: Untar
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: tar -xvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: echo "::set-env name=PATH::$PWD/racket3m/bin:$PATH"
       - name: Check for Racket
         run: racket --version
@@ -403,12 +406,12 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
-          path: ../
+          path: ${{ runner.temp }}
       - name: Untar
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: tar -xvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: echo "::set-env name=PATH::$PWD/racketcs/bin:$PATH"
       - name: Check for Racket
         run: racket --version
@@ -475,7 +478,7 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         --disable-strip
-        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        --prefix=${{ runner.temp }}/racketcgc
         --enable-werror
         --enable-cify
         --enable-cgcdefault 
@@ -516,9 +519,9 @@ jobs:
     - uses: actions/download-artifact@master
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: ../
+        path: ${{ runner.temp }}
     - name: Untar
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
     - name: Configure
       working-directory: ./racket/src
@@ -526,8 +529,8 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         --disable-strip
-        --prefix=$GITHUB_WORKSPACE/../racket3m
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket
+        --prefix=${{ runner.temp }}/racket3m
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket
         --enable-werror
         --enable-cify
         --enable-jit 
@@ -581,9 +584,9 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        --prefix=$GITHUB_WORKSPACE/../racketcs
+        --prefix=${{ runner.temp }}/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket 
         --enable-compress 
         --disable-docs 
         --enable-pthread 
