@@ -237,9 +237,14 @@ m4_include(../ac/sdk_show.m4)
 
 if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
-     echo "=== Creating and using local Racket executable"
+    echo "=== Creating and using local Racket executable"
   else
-     echo "=== Using Racket executable ${enable_racket}"
+    if test ! -f "${enable_racket}"; then
+      echo "cannot find racket executable in ${enable_racket}"
+      exit 1
+    else
+      echo "=== Using Racket executable ${enable_racket}"
+    fi	
   fi 
 fi
 
