@@ -357,7 +357,8 @@
                                             (cond
                                              [(zero? len) (void)]
                                              [(not o) (set-box! prev-trace (reverse accum))]
-                                             [(#%memq o (unbox prev-trace))
+                                             [(and (not (null? o))
+                                                   (#%memq o (unbox prev-trace)))
                                               => (lambda (l)
                                                    (#%printf " <- DITTO\n")
                                                    (set-box! prev-trace (append (reverse accum) l)))]

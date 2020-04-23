@@ -722,7 +722,7 @@
                (parse-logging-spec "syslog" spec "in PLTSYSLOG environment variable" #f)
                '()))))
 
-   (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT")))
+   (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT") #t))
 
    (define (initialize-place!)
      (current-command-line-arguments remaining-command-line-arguments)
@@ -830,6 +830,9 @@
         (lambda args
           (dump-memory-stats)
           (apply orig args)))))
+
+   (when (getenv "PLT_MAX_COMPACT_GC")
+     (in-place-minimum-generation 254))
 
    (when version?
      (display (banner)))
