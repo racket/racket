@@ -113,7 +113,7 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}/racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}
     - name: Untar
       working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
@@ -182,7 +182,7 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}/racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha}}.tar.bz2
+        path: ${{ runner.temp }}
     - name: Untar
       working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha}}.tar.bz2
@@ -265,7 +265,7 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-          path: ${{ runner.temp }}/racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+          path: ${{ runner.temp }}
       - name: Untar
         working-directory: ${{ runner.temp }}
         run: tar -xvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -338,7 +338,7 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
-          path: ${{ runner.temp }}/racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
+          path: ${{ runner.temp }}
       - name: Untar
         working-directory: ${{ runner.temp }}
         run: tar -xvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
@@ -403,7 +403,7 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
-          path: ${{ runner.temp }}/racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
+          path: ${{ runner.temp }}
       - name: Untar
         working-directory: ${{ runner.temp }}
         run: tar -xvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
@@ -516,7 +516,7 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}/racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}
     - name: Untar
       working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
@@ -571,7 +571,7 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}/racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}
     - name: Untar
       working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha}}.tar.bz2
