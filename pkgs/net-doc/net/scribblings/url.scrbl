@@ -8,7 +8,12 @@
                      (only-in net/url-connect current-https-protocol)
                      openssl))
 
-@title[#:tag "url"]{URLs and HTTP}
+@title[#:tag "url"]{URLs and HTTP: Legacy HTTP Client}
+
+@deprecated[@racketmodname[net/http-client]]{
+  The @racketmodname[net/http-client] module supports a modern HTTP protocol
+  and provides functionalities such as the support of the @tt{PATCH} request method.
+}
 
 @defmodule[net/url]{The @racketmodname[net/url] library provides
 utilities to parse and manipulate URIs, as specified in RFC 2396
