@@ -71,7 +71,7 @@
   [rem         (->d ([d dictionary?]
                      [k (and/c symbol? (lambda (k) (has? d k)))])
                     ()
-                    [result (and/c dictionary? not-has?)]
+                    [result (and/c dictionary? (lambda (d) ((not-has? d) k)))]
                     #:post-cond
                     (= (count d) (+ (count result) 1)))]))
 ;; end of interface
