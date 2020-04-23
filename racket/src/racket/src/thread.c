@@ -106,10 +106,12 @@ THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 THREAD_LOCAL_DECL(static intptr_t process_time_skips);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
-#ifdef MZ_PRECISE_GC
 THREAD_LOCAL_DECL(static int num_major_garbage_collections);
 THREAD_LOCAL_DECL(static int num_minor_garbage_collections);
 THREAD_LOCAL_DECL(static intptr_t max_code_page_total);
+
+#ifndef MZ_PRECISE_GC
+static intptr_t gc_pre_used_bytes;
 #endif
 
 #ifdef RUNSTACK_IS_GLOBAL
@@ -430,6 +432,8 @@ static int post_system_idle();
 static Scheme_Object *current_stats(int argc, Scheme_Object *args[]);
 
 static void log_peak_memory_use();
+static char *gc_unscaled_num(char *nums, intptr_t v);
+static char *gc_num(char *nums, intptr_t v);
 
 SHARED_OK static Scheme_Object **config_map;
 
@@ -9262,10 +9266,9 @@ static void get_ready_for_GC()
 
 #ifndef MZ_PRECISE_GC
   {
-    intptr_t bytes;
-    bytes = GC_get_memory_use();
-    if (max_gc_pre_used_bytes < bytes)
-      max_gc_pre_used_bytes = bytes;
+    gc_pre_used_bytes = GC_get_memory_use();
+    if (max_gc_pre_used_bytes < gc_pre_used_bytes)
+      max_gc_pre_used_bytes = gc_pre_used_bytes;
   }
 #endif
 
@@ -9370,51 +9373,39 @@ static void done_with_GC()
 #ifndef MZ_PRECISE_GC
   {
     Scheme_Logger *logger = scheme_get_gc_logger();
-    if (logger) {
-      char buf[64];
+    int debug_gc = 0, debug_gc_major = 0;
+
+    if (logger && scheme_log_level_topic_p(logger, SCHEME_LOG_DEBUG, gc_symbol))
+      debug_gc = 1;
+    if (logger && scheme_log_level_topic_p(logger, SCHEME_LOG_DEBUG, gc_major_symbol))
+      debug_gc_major = 1;
+
+    if (debug_gc || debug_gc_major) {
+      char buf[128], nums[128];
       intptr_t buflen;
+      intptr_t post_use = GC_get_memory_use();
+
+      memset(nums, 0, sizeof(nums));
 
       sprintf(buf,
-              "in %" PRIdPTR " msec",
-              end_this_gc_time - start_this_gc_time);
+              "GC: MAJ @ %sK; free %sK %" PRIdPTR "ms @ %" PRIdPTR,
+              gc_num(nums, gc_pre_used_bytes), gc_num(nums, gc_pre_used_bytes - post_use),
+              end_this_gc_time - start_this_gc_time,
+              start_this_gc_time);
       buflen = strlen(buf);
 
-      scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, NULL);
+      if (debug_gc)
+        scheme_log_name_pfx_message(logger, SCHEME_LOG_DEBUG, gc_symbol, buf, buflen, NULL, 0);
+      if (debug_gc_major)
+        scheme_log_name_pfx_message(logger, SCHEME_LOG_DEBUG, gc_major_symbol, buf, buflen, NULL, 0);
+      
+
     }
+    num_major_garbage_collections++;
+    if (scheme_code_page_total > max_code_page_total)
+      max_code_page_total = scheme_code_page_total;
   }
 #endif
-}
-
-static char *gc_unscaled_num(char *nums, intptr_t v)
-/* format a number with commas */
-{
-  int i, j, len, clen, c, d;
-  for (i = 0; nums[i] || nums[i+1]; i++) {
-  }
-  i++;
-
-  sprintf(nums+i, "%" PRIdPTR, v);
-  for (len = 0; nums[i+len]; len++) { }
-  clen = len + ((len + ((nums[i] == '-') ? -2 : -1)) / 3);
-  
-  c = 0;
-  d = (clen - len);
-  for (j = i + clen - 1; j > i; j--) {
-    if (c == 3) {
-      nums[j] = ',';
-      d--;
-      c = 0;
-    } else {
-      nums[j] = nums[j - d];
-      c++;
-    }
-  }
-
-  return nums + i;
-}
-static char *gc_num(char *nums, intptr_t v)
-{
-  return gc_unscaled_num(nums, v/1024);  /* bytes => kbytes */
 }
 
 #ifdef MZ_USE_PLACES
@@ -9576,6 +9567,39 @@ static void log_peak_memory_use()
       max_gc_pre_used_bytes = -1;
     }
   }
+}
+
+static char *gc_unscaled_num(char *nums, intptr_t v)
+/* format a number with commas */
+{
+  int i, j, len, clen, c, d;
+  for (i = 0; nums[i] || nums[i+1]; i++) {
+  }
+  i++;
+
+  sprintf(nums+i, "%" PRIdPTR, v);
+  for (len = 0; nums[i+len]; len++) { }
+  clen = len + ((len + ((nums[i] == '-') ? -2 : -1)) / 3);
+  
+  c = 0;
+  d = (clen - len);
+  for (j = i + clen - 1; j > i; j--) {
+    if (c == 3) {
+      nums[j] = ',';
+      d--;
+      c = 0;
+    } else {
+      nums[j] = nums[j - d];
+      c++;
+    }
+  }
+
+  return nums + i;
+}
+
+static char *gc_num(char *nums, intptr_t v)
+{
+  return gc_unscaled_num(nums, v/1024);  /* bytes => kbytes */
 }
 
 /*========================================================================*/
