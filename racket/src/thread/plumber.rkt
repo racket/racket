@@ -26,17 +26,17 @@
                     v)
                   'current-plumber))
 
-(struct plumber-flush-handle (plumber))
+(struct plumber-flush-handle (plumber proc))
 
 (define/who (plumber-add-flush! p proc [weak? #f])
   (check who plumber? p)
   (check who (procedure-arity-includes/c 1) proc)
-  (define h (plumber-flush-handle p))
+  (define h (plumber-flush-handle p proc))
   (hash-set! (if weak?
                  (plumber-weak-callbacks p)
                  (plumber-callbacks p))
              h
-             proc)
+             #t)
   h)
 
 (define/who (plumber-flush-all p)
@@ -45,13 +45,13 @@
 
 (define (plumber-flush-all/wrap p app)
   ;; Spec requires getting all callbacks before running any
-  (define procs+hs
+  (define hs
     (for*/list ([cbs (in-list (list (plumber-callbacks p)
                                     (plumber-weak-callbacks p)))]
-                [(h proc) (in-hash cbs)])
-      (cons proc h)))
-  (for ([proc+h (in-list procs+hs)])
-    (app (car proc+h) (cdr proc+h))))
+                [h (in-hash-keys cbs)])
+      h))
+  (for ([h (in-list hs)])
+    (app (plumber-flush-handle-proc h) h)))
 
 (define/who (plumber-flush-handle-remove! h)
   (check who plumber-flush-handle? h)

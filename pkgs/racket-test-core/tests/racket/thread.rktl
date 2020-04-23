@@ -1325,6 +1325,19 @@
       (plumber-flush-all c)
       (test 6 values done))))
 
+;; Make sure plumbers don't suffer a key-in-value leak:
+(unless (eq? 'cgc (system-type 'gc))
+  (define p (make-plumber))
+  (define fh
+    (plumber-add-flush! (current-plumber)
+                        (lambda (fh) p)
+                        ;; weak:
+                        #t))
+  (plumber-add-flush! p (lambda (fh2) fh))
+  (define wb (make-weak-box p))
+  (collect-garbage)
+  (test #f weak-box-value wb))
+
 ;; ----------------------------------------
 
 ;; Check that a terminated thread cleans up ownership
