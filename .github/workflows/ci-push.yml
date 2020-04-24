@@ -516,22 +516,10 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: /home/runner/work/_temp/
+        path: ${{ runner.temp }}
     - name: Untar
-      working-directory: /home/runner/work/_temp
+      working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
-    - name: List files in root
-      run: find /
-    - name: List files in /home/runner
-      run: find /home/runner -type f
-    - name: List files in /home/runner/work
-      run: find /home/runner/work -type f
-    - name: List files in /home/runner/work/_temp
-      run: find /home/runner/work/_temp -type f
-    - name: List files in runner.temp
-      run: find ${{ runner.temp }} -type f
-    - name: Find racket in temp
-      run: find ${{ runner.temp }} -type f -name racket
     - name: Configure
       working-directory: ./racket/src
       run: >
@@ -579,7 +567,7 @@ jobs:
     - uses: actions/download-artifact@v1
       with:
         name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}/
+        path: ${{ runner.temp }}
     - name: Untar
       working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha}}.tar.bz2
