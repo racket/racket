@@ -505,6 +505,9 @@ jobs:
     container: pmatos/scan-build:latest
     needs: build-racketcgc
 
+    env:
+      RUNNER_TEMP: "/__w/_temp"
+    
     steps:
     - uses: actions/checkout@v1
       with:
@@ -526,8 +529,8 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         --disable-strip
-        --prefix=${{ runner.temp }}/racket3m
-        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket
+        --prefix=${RUNNER_TEMP}/racket3m
+        --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket
         --enable-werror
         --enable-cify
         --enable-jit 
@@ -555,7 +558,10 @@ jobs:
     runs-on: ubuntu-18.04
     container: pmatos/scan-build:latest
     needs: build-racketcgc
-    
+
+    env:
+      RUNNER_TEMP: "/__w/_temp"
+      
     steps:
     - uses: actions/checkout@v1
       with:
@@ -581,9 +587,9 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        --prefix=${{ runner.temp }}/racketcs
+        --prefix=${RUNNER_TEMP}/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket 
+        --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket 
         --enable-compress 
         --disable-docs 
         --enable-pthread 
