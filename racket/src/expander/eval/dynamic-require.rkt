@@ -48,6 +48,7 @@
     (namespace-module-instantiate! ns mpi phase #:run-phase phase)]
    [(void? sym)
     ;; Just visit
+    (namespace-visit-available-modules! ns phase)
     (namespace-module-visit! ns mpi phase #:visit-phase phase)]
    [else
     ;; Extract a particular value via phase 0....
