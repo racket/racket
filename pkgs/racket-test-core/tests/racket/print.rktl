@@ -312,6 +312,20 @@
   (test "ab" format "~.a" "ab")
   (test 3 error-print-width))
 
+(parameterize ([error-print-width 3])
+  (struct show-a ()
+    #:property prop:custom-write
+    (lambda (self port mode)
+      (fprintf port "a")))
+  (struct show-nothing ()
+    #:property prop:custom-write
+    (lambda (self port mode)
+      (void)))
+  (test "a" format "~e" (show-a))
+  (test "..." format "~e" (list (show-a)))
+  (test "" format "~e" (show-nothing))
+  (test "'()" format "~e" (list (show-nothing))))
+
 ;; ----------------------------------------
 ;; make sure +inf.0 is ok for `print-syntax-width':
 (parameterize ([print-syntax-width +inf.0])
