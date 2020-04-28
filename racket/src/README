@@ -11,11 +11,10 @@ Windows, Mac OS, or any Unix/X platform (including Linux).
 Per-platform instructions are below.
 
 Please report bugs via one of the following:
-  - DrRacket's "submit bug report" menu            (preferred)
-  - https://github.com/racket/racket/issues
-  - the mailing list (users@racket-lang.org)       (last resort)
+  - https://github.com/racket/racket/issues/new
+  - the mailing list (users@racket-lang.org)
 
--PLT
+- The Racket team
  racket@racket-lang.org
 
 ========================================================================
