@@ -1,5 +1,7 @@
 
 (define collect-request (box #f))
+(define request-incremental? #f)
+(define disable-incremental? #f)
 
 (define (set-collect-handler!)
   (collect-request-handler (lambda ()
@@ -101,10 +103,17 @@
                         ;; Accounting collection:
                         (let ([counts (collect gen gen (weaken-accounting-roots roots))])
                           (lambda () (k counts domains))))])))]
+               [(and request-incremental?
+                     (fx= gen (sub1 (collect-maximum-generation))))
+                ;; "Incremental" mode by not promoting to the maximum generation
+                (collect gen gen)
+                #f]
                [else
                 ;; Plain old collection:
                 (collect gen)
                 #f])])
+        (when (fx= gen (collect-maximum-generation))
+          (set! request-incremental? #f))
         (let ([post-allocated (bytes-allocated)]
               [post-allocated+overhead (current-memory-bytes)]
               [post-time (real-time)]
@@ -145,7 +154,8 @@
    [(request)
     (cond
      [(eq? request 'incremental)
-      (void)]
+      (unless disable-incremental?
+        (set! request-incremental? #t))]
      [else
       (let ([req (case request
                    [(minor) 0]
@@ -186,6 +196,9 @@
                           what len)
                 (current-continuation-marks))))
       (immediate-allocation-check n))))
+
+(define (set-incremental-collection-enabled! on?)
+  (set! disable-incremental? (not on?)))
 
 ;; ----------------------------------------
 

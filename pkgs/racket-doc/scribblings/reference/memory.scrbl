@@ -347,18 +347,19 @@ garbage-collection mode, depending on @racket[request]:
        triggered by @racket[(collect-garbage 'minor)] do not cause
        major collections any sooner than they would occur otherwise.}
 
- @item{@racket['incremental] --- Requests that each minor
-       collection performs incremental work toward a major collection
-       (but does not request an immediate minor collection).
-       This incremental-mode request expires at the next major
-       collection.
+ @item{@racket['incremental] --- Does not request an immediate
+       collection, but requests extra effort going forward to avoid
+       major collections, even if it requires more work per minor
+       collection to incrementally perform the work of a major
+       collection. This incremental-mode request expires at the next
+       major collection.
 
        The intent of incremental mode is to significantly reduce pause
-       times due to major collections, but incremental mode typically
-       implies longer minor-collection times and higher memory use.
-       Currently, incremental mode is only really supported when
-       @racket[(system-type 'gc)] returns @racket['3m]; it has no
-       effect in other Racket variants.
+       times due to major collections, but incremental mode may imply
+       longer minor-collection times and higher memory use. Currently,
+       incremental mode is only meaningful when @racket[(system-type
+       'gc)] returns @racket['3m] or @racket['cs]; it has no effect in
+       other Racket variants.
 
        If the @envvar{PLT_INCREMENTAL_GC} environment variable's value
        starts with @litchar{0}, @litchar{n}, or @litchar{N} on
@@ -367,7 +368,9 @@ garbage-collection mode, depending on @racket[request]:
 ]
 
 @history[#:changed "6.3" @elem{Added the @racket[request] argument.}
-         #:changed "6.3.0.2" @elem{Added @racket['incremental] mode.}]}
+         #:changed "6.3.0.2" @elem{Added @racket['incremental] mode.}
+         #:changed "7.7.0.4" @elem{Added @racket['incremental] effect
+                                   for Racket CS.}]}
 
 
 @defproc[(current-memory-use [mode (or/c #f 'cumulative custodian?) #f])

@@ -834,6 +834,12 @@
    (when (getenv "PLT_MAX_COMPACT_GC")
      (in-place-minimum-generation 254))
 
+   (let ([s (getenv "PLT_INCREMENTAL_GC")])
+     (when (and s
+                (>= (string-length s) 1)
+                (#%memv (string-ref s 0) '(#\0 #\n #\N)))
+       (set-incremental-collection-enabled! #f)))
+
    (when version?
      (display (banner)))
    (call/cc ; Chez Scheme's `call/cc`, used here to escape from the Racket-thread engine loop
