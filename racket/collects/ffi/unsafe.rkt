@@ -1091,28 +1091,57 @@
 (provide _list)
 (define-fun-syntax _list
   (syntax-rules (i o io)
-    [(_ i  t  ) (type: _pointer
-                 pre:  (x => (list->cblock x t)))]
-    [(_ o  t n) (type: _pointer
-                 pre:  (malloc n t)
-                 post: (x => (cblock->list x t n)))]
-    [(_ io t n) (type: _pointer
-                 pre:  (x => (list->cblock x t))
-                 post: (x => (cblock->list x t n)))]))
+    [(_ i  t  )      (type: _pointer
+                      pre:  (x => (list->cblock x t)))]
+    [(_ i  t mode)   (type: _pointer
+                      pre:  (x => (list->cblock x t #:malloc-mode (check-malloc-mode _list mode))))]
+    [(_ o  t n)      (type: _pointer
+                      pre:  (malloc n t)
+                      post: (x => (cblock->list x t n)))]
+    [(_ o  t n mode) (type: _pointer
+                      pre:  (malloc n t (check-malloc-mode _list mode))
+                      post: (x => (cblock->list x t n)))]
+    [(_ io t n)      (type: _pointer
+                      pre:  (x => (list->cblock x t))
+                      post: (x => (cblock->list x t n)))]
+    [(_ io t n mode) (type: _pointer
+                      pre:  (x => (list->cblock x t #:malloc-mode (check-malloc-mode _list mode)))
+                      post: (x => (cblock->list x t n)))]))
 
 ;; (_vector <mode> <type> [<len>])
 ;; Same as _list, except that it uses Scheme vectors.
 (provide _vector)
 (define-fun-syntax _vector
   (syntax-rules (i o io)
-    [(_ i  t  ) (type: _pointer
-                 pre:  (x => (vector->cblock x t)))]
-    [(_ o  t n) (type: _pointer
-                 pre:  (malloc n t)
-                 post: (x => (cblock->vector x t n)))]
-    [(_ io t n) (type: _pointer
-                 pre:  (x => (vector->cblock x t))
-                 post: (x => (cblock->vector x t n)))]))
+    [(_ i  t  )      (type: _pointer
+                      pre:  (x => (vector->cblock x t)))]
+    [(_ i  t mode)   (type: _pointer
+                      pre:  (x => (vector->cblock x t #:malloc-mode (check-malloc-mode _vector mode))))]
+    [(_ o  t n)      (type: _pointer
+                      pre:  (malloc n t)
+                      post: (x => (cblock->vector x t n)))]
+    [(_ o  t n mode) (type: _pointer
+                      pre:  (malloc n t (check-malloc-mode _vector mode))
+                      post: (x => (cblock->vector x t n)))]
+    [(_ io t n)      (type: _pointer
+                      pre:  (x => (vector->cblock x t))
+                      post: (x => (cblock->vector x t n)))]
+    [(_ io t n mode) (type: _pointer
+                      pre:  (x => (vector->cblock x t #:malloc-mode (check-malloc-mode _vector mode)))
+                      post: (x => (cblock->vector x t n)))]))
+
+(define-syntax (check-malloc-mode stx)
+  (syntax-case stx ()
+    [(_ _ mode)
+     (memq (syntax-e #'mode)
+           '(raw atomic nonatomic tagged
+                 atomic-interior interior
+                 stubborn uncollectable eternal))
+     #'(quote mode)]
+    [(_ who mode)
+     (raise-syntax-error (syntax-e #'who)
+                         "invalid malloc mode"
+                         #'mode)]))
 
 ;; Reflect the difference between 'racket and 'chez-scheme
 ;; VMs for `_bytes` in `_bytes*`:
@@ -2026,14 +2055,17 @@
       (values x type))))
 
 ;; Converting Scheme lists to/from C vectors (going back requires a length)
-(define* (list->cblock l type [need-len #f])
+(define* (list->cblock l type [need-len #f]
+                       #:malloc-mode [mode #f])
   (define len (length l))
   (when need-len
     (unless (= len need-len)
       (error 'list->cblock "list does not have the expected length: ~e" l)))
   (if (null? l)
     #f ; null => NULL
-    (let ([cblock (malloc len type)])
+    (let ([cblock (if mode
+                      (malloc len type mode)
+                      (malloc len type))])
       (let loop ([l l] [i 0])
         (unless (null? l)
           (ptr-set! cblock type i (car l))
@@ -2051,14 +2083,17 @@
                      "expecting a non-void pointer, got ~s" cblock)]))
 
 ;; Converting Scheme vectors to/from C vectors
-(define* (vector->cblock v type [need-len #f])
+(define* (vector->cblock v type [need-len #f]
+                         #:malloc-mode [mode #f])
   (let ([len (vector-length v)])
     (when need-len
       (unless (= need-len len)
         (error 'vector->cblock "vector does not have the expected length: ~e" v)))
     (if (zero? len)
       #f ; #() => NULL
-      (let ([cblock (malloc len type)])
+      (let ([cblock (if mode
+                        (malloc len type mode)
+                        (malloc len type))])
         (let loop ([i 0])
           (when (< i len)
             (ptr-set! cblock type i (vector-ref v i))
