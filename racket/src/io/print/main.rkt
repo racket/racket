@@ -3,6 +3,7 @@
          racket/fixnum
          racket/symbol
          racket/keyword
+         racket/unsafe/undefined
          "../common/check.rkt"
          "../port/output-port.rkt"
          "../port/input-port.rkt"
@@ -343,6 +344,8 @@
      (print-named "output-port" v mode o max-length)]
     [(unquoted-printing-string? v)
      (write-string/max (unquoted-printing-string-value v) o max-length)]
+    [(eq? v unsafe-undefined)
+     (write-string/max "#<unsafe-undefined>" o max-length)]
     [else
      ;; As a last resort, fall back to the host `format`:
      (write-string/max (format "~s" v) o max-length)]))
