@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  
+
 # Build jobs
 # These jobs build each Racket component separately and tests on the component start as soon as each
 # component finishes building.
@@ -14,11 +14,11 @@ jobs:
       matrix:
         os: [ubuntu-18.04, macos-latest]
         cify: [cify, nocify]
-          
+
     runs-on: ${{ matrix.os }}
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-    
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -35,19 +35,19 @@ jobs:
     - name: Configuring Racket CGC
       working-directory: ./racket/src
       run: >
-        ./configure 
+        ./configure
         --prefix=${{ runner.temp }}/racketcgc
         --enable-werror
-        $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-cgcdefault 
-        --enable-jit 
-        --enable-foreign 
-        --enable-places 
-        --enable-futures 
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-cgcdefault
+        --enable-jit
+        --enable-foreign
+        --enable-places
+        --enable-futures
         --enable-float
         $CIFY_OPTION
         --enable-pthread
-        --disable-docs 
+        --disable-docs
     - name: Building
       working-directory: ./racket/src
       run: |
@@ -78,13 +78,13 @@ jobs:
             cc: gcc
           - jit: nojit
             efp: efp
-            
+
     runs-on: ${{ matrix.os }}
     needs: build-racketcgc
-    
+
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-    
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -125,11 +125,11 @@ jobs:
         ./configure
         --prefix=${{ runner.temp }}/racket3m
         --enable-werror
-        $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket 
-        --enable-foreign 
-        --enable-float 
-        --disable-docs 
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket
+        --enable-foreign
+        --enable-float
+        --disable-docs
         $CIFY_OPTION
         $JIT_OPTION
         $EFP_OPTIONS
@@ -143,7 +143,7 @@ jobs:
       working-directory: ./racket/src
       run: make -j $((cpus+1)) install
     # We build on Linux with clang and gcc and on MacOS with clang only.
-    # However, it makes little sense to test both builds on Linux so we tarball the 
+    # However, it makes little sense to test both builds on Linux so we tarball the
     # gcc build only. Therefore this condition ensure we only perform the tarball
     # and artifact upload on MacOS or (on Linux) if we are building with gcc.
     - name: Tarballing
@@ -165,13 +165,13 @@ jobs:
         exclude:
           - os: macos-latest
             cc: gcc
-        
+
     runs-on: ${{ matrix.os }}
     needs: build-racketcgc
-    
+
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-      
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -199,14 +199,14 @@ jobs:
       env:
         CC: ${{ matrix.cc }}
       run: >
-        ./configure 
+        ./configure
         --prefix=${{ runner.temp }}/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket 
-        --enable-compress 
-        --disable-docs 
-        --enable-pthread 
-        --enable-csdefault 
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket
+        --enable-compress
+        --disable-docs
+        --enable-pthread
+        --enable-csdefault
         --enable-csonly
     - name: Building
       working-directory: ./racket/src
@@ -328,7 +328,7 @@ jobs:
         exclude:
           - jit: nojit
             efp: efp
-            
+
     runs-on: ${{ matrix.os }}
 
     needs: build-racket3m
@@ -387,7 +387,7 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
-          
+
   test-cs:
     strategy:
       fail-fast: false
@@ -455,12 +455,12 @@ jobs:
 
 #
 # Jobs to scan-build racket
-# 
+#
   scanbuild-racketcgc:
 
     runs-on: ubuntu-latest
     container: pmatos/scan-build:latest
-    
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -478,14 +478,14 @@ jobs:
         --prefix=${{ runner.temp }}/racketcgc
         --enable-werror
         --enable-cify
-        --enable-cgcdefault 
-        --enable-jit 
-        --enable-foreign 
-        --enable-places 
-        --enable-futures 
+        --enable-cgcdefault
+        --enable-jit
+        --enable-foreign
+        --enable-places
+        --enable-futures
         --enable-float
         --enable-pthread
-        --disable-docs 
+        --disable-docs
     - name: Scan Build
       working-directory: ./racket/src
       run: |
@@ -507,7 +507,7 @@ jobs:
 
     env:
       RUNNER_TEMP: "/__w/_temp"
-    
+
     steps:
     - name: Workaround temp issues
       run: |
@@ -539,13 +539,13 @@ jobs:
         --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket
         --enable-werror
         --enable-cify
-        --enable-jit 
-        --enable-foreign 
-        --enable-places 
-        --enable-futures 
+        --enable-jit
+        --enable-foreign
+        --enable-places
+        --enable-futures
         --enable-float
         --enable-pthread
-        --disable-docs 
+        --disable-docs
     - name: Scan Build
       working-directory: ./racket/src
       run: |
@@ -560,14 +560,14 @@ jobs:
         path: racket3m-report-${{ github.sha }}.tar.bz2
 
   scanbuild-racketcs:
-        
+
     runs-on: ubuntu-18.04
     container: pmatos/scan-build:latest
     needs: build-racketcgc
 
     env:
       RUNNER_TEMP: "/__w/_temp"
-      
+
     steps:
     - name: Workaround temp issues
       run: |
@@ -601,11 +601,11 @@ jobs:
         CFLAGS="-O0 -g"
         --prefix=${RUNNER_TEMP}/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket 
-        --enable-compress 
-        --disable-docs 
-        --enable-pthread 
-        --enable-csdefault 
+        --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket
+        --enable-compress
+        --disable-docs
+        --enable-pthread
+        --enable-csdefault
         --enable-csonly
     - name: Building
       working-directory: ./racket/src
