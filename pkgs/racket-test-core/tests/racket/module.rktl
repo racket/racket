@@ -3315,5 +3315,18 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test 'done eval '(m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a too-early function use is not inlined away
+
+(module uses-a-function-too-early racket/base
+  (define f
+    (let ([v (g)])
+      (lambda ()
+        v)))
+  (define (g)
+    0))
+
+(err/rt-test/once (dynamic-require ''uses-a-function-too-early #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
