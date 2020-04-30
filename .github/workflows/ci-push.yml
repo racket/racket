@@ -620,7 +620,7 @@ jobs:
         name: scanbuild-cs-${{ github.sha }}
         path: racketcs-report-${{ github.sha }}.tar.bz2
 
-  create-installer3m:
+  create-installer:
     runs-on: ubuntu-18.04
 
     steps:
