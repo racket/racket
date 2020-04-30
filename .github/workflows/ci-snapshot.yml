@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: |
-        git checkout -b github_actions_build_branch___ # have to be on a branch
+        git checkout ${{ github.ref }} # have to be on a branch
 
     - name: Install pkg dependencies
       run: |
