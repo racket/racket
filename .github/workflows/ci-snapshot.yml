@@ -10,9 +10,7 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v1
-    - run: |
-        git checkout ${{ github.ref }} # have to be on a branch
+    - uses: actions/checkout@v2
 
     - name: Install pkg dependencies
       run: |
