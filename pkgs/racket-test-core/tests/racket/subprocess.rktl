@@ -415,6 +415,20 @@
 (parameterize ([current-subprocess-custodian-mode #f])
   (test #f current-subprocess-custodian-mode))
 
+;; Check that a subprocess is removed from its custodian as
+;; soon as it's known to be done:
+(let* ([c (make-custodian)]
+       [c2 (make-custodian c)])
+  (define-values (sp i o e)
+    (parameterize ([current-custodian c2]
+                   [current-subprocess-custodian-mode 'kill])
+      (subprocess #f #f #f self "-e" "(read-byte)")))
+  (test #t pair? (member sp (custodian-managed-list c2 c)))
+  (close-output-port o)
+  (subprocess-wait sp)
+  (test #f pair? (member sp (custodian-managed-list c2 c)))
+  (custodian-shutdown-all c))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; process groups
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
