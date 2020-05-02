@@ -1744,14 +1744,18 @@ void *GC_malloc_pair(void *car, void *cdr)
 
   if (TAKE_SLOW_PATH() || OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
-    CHECK_PARK_UNUSED(gc);
-    gc->park[0] = car;
-    gc->park[1] = cdr;
+    if (!GC_gen0_alloc_only) {
+      CHECK_PARK_UNUSED(gc);
+      gc->park[0] = car;
+      gc->park[1] = cdr;
+    }
     pair = allocate(sizeof(Scheme_Simple_Object), PAGE_PAIR);
-    car = gc->park[0];
-    cdr = gc->park[1];
-    gc->park[0] = NULL;
-    gc->park[1] = NULL;
+    if (!GC_gen0_alloc_only) {
+      car = gc->park[0];
+      cdr = gc->park[1];
+      gc->park[0] = NULL;
+      gc->park[1] = NULL;
+    }
 
     /* Future-local allocation can fail: */
     if (!pair) return NULL;
