@@ -844,6 +844,7 @@ enable_gcov
 enable_noopt
 enable_ubsan
 enable_jitframe
+enable_werror
 enable_crossany
 '
       ac_precious_vars='build_alias
@@ -1508,6 +1509,7 @@ Optional Features:
   --enable-noopt          drop -O C flags (useful for low-level debugging)
   --enable-ubsan          compile with -fsanitize=undefined
   --enable-jitframe       x86_64: use frame pointer for internal calls
+  --enable-werror         compile sources with warnings as errors
   --enable-crossany       Record own cross target as machine-independent
 
 Some influential environment variables:
@@ -2732,6 +2734,7 @@ if test "${enable_libs+set}" = set; then :
 fi
 
 
+
 # Check whether --enable-libffi was given.
 if test "${enable_libffi+set}" = set; then :
   enableval=$enable_libffi;
@@ -2909,6 +2912,12 @@ if test "${enable_jitframe+set}" = set; then :
 fi
 
 
+# Check whether --enable-werror was given.
+if test "${enable_werror+set}" = set; then :
+  enableval=$enable_werror;
+fi
+
+
 # Check whether --enable-crossany was given.
 if test "${enable_crossany+set}" = set; then :
   enableval=$enable_crossany;
@@ -3010,7 +3019,7 @@ fi
 
 
 unixstyle=no
-if test "${enable_useprefix}" = "yes" -a "${prefix}" != "NONE" ; then
+if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
@@ -3276,6 +3285,14 @@ show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
+INSTALL_LIBS_ENABLE=no-install
+
+if test "${enable_libs}" != "no" ; then
+  # Intended to be canceled for some platforms:
+  INSTALL_LIBS_ENABLE=install
+fi
+
+
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
@@ -3320,9 +3337,14 @@ fi
 
 if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
-     echo "=== Creating and using local Racket executable"
+    echo "=== Creating and using local Racket executable"
   else
-     echo "=== Using Racket executable ${enable_racket}"
+    if test ! -f "${enable_racket}"; then
+      echo "cannot find racket executable in ${enable_racket}"
+      exit 1
+    else
+      echo "=== Using Racket executable ${enable_racket}"
+    fi
   fi
 fi
 
@@ -3410,8 +3432,6 @@ MAIN_VARIANT=3m
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
-
-INSTALL_LIBS_ENABLE=no-install
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -4796,11 +4816,6 @@ if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
 fi
 
-if test "${enable_libs}" != "no" ; then
-  # Canceled for some platforms below:
-  INSTALL_LIBS_ENABLE=install
-fi
-
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -5025,10 +5040,15 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
              SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
            fi
            need_cc_in_extras=no
+           if test "$build_cpu" = "x86_64" ; then
+             # AG_PROC_CC has already decided that we weren't
+             # cross compiling, so change that decision
+             cross_compiling=yes
+             echo may be cross compiling after all
+           fi
         fi
       fi
     fi
-
 
 
     case "$host_cpu" in
@@ -5673,53 +5693,53 @@ fi
 
   if test "${enable_iconv}" = "yes" ; then
     # Does it all work, now?
-    if test "$cross_compiling" = yes; then :
-  enable_iconv=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-   #include <iconv.h>
-   #include <langinfo.h>
-    int main() {
+#include <iconv.h>
+    #include <langinfo.h>
+int
+main ()
+{
      iconv_open("UTF-8", "UTF-8");
       return 0;
-    }
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   enable_iconv=yes
 else
   enable_iconv=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
     if test "${enable_iconv}" = "no" ; then
       # Try adding -liconv ?
       #  We did not use AC_CHECK_LIB because iconv is sometimes macro-renamed
       ORIG_LIBS="$LIBS"
       LIBS="$LIBS -liconv"
-      if test "$cross_compiling" = yes; then :
-  enable_iconv=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-     #include <iconv.h>
-     #include <langinfo.h>
-      int main() {
+#include <iconv.h>
+      #include <langinfo.h>
+int
+main ()
+{
      iconv_open("UTF-8", "UTF-8");
       return 0;
-      }
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   enable_iconv=yes
 else
   enable_iconv=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
       if test "${enable_iconv}" = "no" ; then
         LIBS="$ORIG_LIBS"
       else
@@ -5735,6 +5755,7 @@ $as_echo_n "checking $msg... " >&6; }
  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iconv_usage_result" >&5
 $as_echo "$iconv_usage_result" >&6; }
 fi
+
 
 if test "${check_for_mprotect}" = "yes" ; then
    msg="for mmap and mprotect"
@@ -6178,6 +6199,14 @@ cat >>confdefs.h <<_ACEOF
 #define SIZEOF_BOOL $ac_cv_sizeof_bool
 _ACEOF
 
+
+
+if test "${ac_cv_sizeof_void_p}" != "4" ; then
+  if test "${ac_cv_sizeof_void_p}" != "8" ; then
+    echo "Something has gone wrong getting the pointer size; see config.log"
+    exit 1
+  fi
+fi
 
 
 
@@ -7005,6 +7034,11 @@ else
   PLAIN_CC='$(CC)'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
+fi
+
+# Last but not least, if Werror was requested, add it now
+if test "${enable_werror}" = "yes"; then
+  CFLAGS="-Werror ${CFLAGS}"
 fi
 
 ############## final output ################

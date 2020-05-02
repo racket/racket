@@ -42,7 +42,7 @@
             ;; Note: in some cases this returns the input path as is, which
             ;; could be a byte string -- it should be possible to return
             ;; `path1', but that messes up the xform compilation somehow, by
-            ;; having #<path...> vaules written into dep files.
+            ;; having #<path...> values written into dep files.
             [(null? path) path0]
             [(equal? (normal-case-path (car path)) (normal-case-path (car root)))
 	     (loop (cdr path) (cdr root))]

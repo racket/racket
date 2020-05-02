@@ -1,15 +1,57 @@
-BOOT_EXTERN void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
-			     char *boot_exe, long segment_offset,
-			     char *coldir, char *configdir, /* wchar_t * */void *dlldir,
-			     int is_embedded, int pos1, int pos2, int pos3,
-			     int cs_compiled_subdir, int is_gui,
-			     int wm_is_gracket_or_x11_arg_count, char *gracket_guid_or_x11_args,
-			     void *ddll_open, void *dll_find_object, void *dll_close);
+#ifndef RACKETCS_BOOT_H
+#define RACKETCS_BOOT_H
 
-typedef void (*racket_boot_t)(int argc, char **argv, char *exec_file, char *run_file,
-			      char* boot_exe, long segment_offset,
-			      char *coldir, char *configdir, /* wchar_t * */void *dlldir,
-			      int is_embedded, int pos1, int pos2, int pos3,
-			      int cs_compiled_subdir, int is_gui,
-                              int wm_is_gracket_or_x11_arg_count, char *gracket_guid_or_x11_args,
-			      void *ddll_open, void *dll_find_object, void *dll_close);
+/* This structure type can change, but NULL/0 will be supported as a
+   default for any new field that is added. */
+typedef struct racket_boot_arguments_t {
+  /* Boot files --- potentially the same path with different offsets.
+     If a boot image is embedded in a larger file, it must be
+     terminated with "\0 if the boot image is compressed or "\177" if
+     the boot image is uncompressed. */
+  const char *boot1_path; /* REQUIRED; path to "petite.boot" */
+  long boot1_offset;
+  const char *boot2_path; /* REQUIRED; path to "scheme.boot" */
+  long boot2_offset;
+  const char *boot3_path; /* REQUIRED; path to "racket.boot" */
+  long boot3_offset;
+
+  /* Command-line arguments are handled in the same way as the
+     `racket` exectuable. The `argv` array should *not* include the
+     executable name like `argv` passed to `main`. */
+  int argc;
+  char **argv; /* NULL => "-n", which does nothing after booting */
+
+  /* Racket path configuration, mostly setting the results of
+     `(find-system-path ...)`: */
+  const char *exec_file;  /* REQUIRED; usually the original argv[0] */
+  const char *run_file;   /* can be NULL to mean the same as `exec_file` */
+  const char *collects_dir;   /* can be NULL or "" to disable collection path */
+  const char *config_dir; /* use NULL or "etc" if you don't care */
+  /* wchar_t * */void *dll_dir; /* can be NULL for default */
+
+  /* How to initialize `use-compiled-file-paths`: */
+  int cs_compiled_subdir; /* true => subdirectory of "compiled" */
+    
+  /* Embedded-code offset, which is added to any `-k` argument. */
+  long segment_offset; /* use 0 if no `-k` embedding */
+  
+  /* For embedded DLLs on Windows, if non-NULL: */
+  void *dll_open;
+  void *dll_find_object;
+  void *dll_close;
+  
+  /* Whether to run as command-line Racket or in embedded mode: */
+  int exit_after; /* 1 => exit after handling the command-line */
+
+  /* For GUI applications; use 0 and "" as defaults: */
+  int is_gui;
+  int wm_is_gracket_or_x11_arg_count;
+  char *gracket_guid_or_x11_args;
+} racket_boot_arguments_t;
+
+BOOT_EXTERN void racket_boot(racket_boot_arguments_t *boot_args);
+
+/* Same as `racket_boot` prototype; but in type form: */
+typedef void (*racket_boot_t)(racket_boot_arguments_t *boot_args);
+
+#endif

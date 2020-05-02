@@ -280,23 +280,12 @@ specification is required at minimum:
      @item{@indexed-racket['atomic-interior] --- Like
        @racket['atomic], but the allocated object will not be moved by
        the garbage collector as long as the allocated object is
-       sufficiently retained as described below.
+       retained.
 
-       For the @3m[] and @CGC[] Racket variants, ``sufficiently retained''
-       means that the garbage collector does not collect the allocated
-       object because some pointer (that is visible to the collector)
-       refers to the object. Furthermore, that reference can point to
-       the interior of the object, insteda of its starting address.
+       For the @3m[] and @CGC[] Racket variants, a reference can point
+       to the interior of the object, instead of its starting address.
        This allocation mode corresponds to
-       @cpp{scheme_malloc_atomic_allow_interior} in the C API.
-
-       For the @CS[] Racket variant, ``sufficiently retained'' means that the
-       specific C pointer object returned by @racket[malloc] remains
-       accessible. Note that casting the pointer via @racket[cast], for example,
-       generates a new pointer object which would not by itself
-       prevent the result of @racket[malloc] from moving, even though
-       a reference to the same memory could prevent the object from
-       being reclaimed.}
+       @cpp{scheme_malloc_atomic_allow_interior} in the C API.}
 
      @item{@indexed-racket['nonatomic-interior] --- Like
        @racket['nonatomic], but the allocated object will not be moved

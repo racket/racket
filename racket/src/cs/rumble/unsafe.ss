@@ -89,6 +89,15 @@
 (define unsafe-bytes-ref (unsafe-primitive bytevector-u8-ref))
 (define unsafe-bytes-set! (unsafe-primitive bytevector-u8-set!))
 
+(define unsafe-bytes-copy!
+  (case-lambda
+    [(dest d-start src)
+     (unsafe-bytes-copy! dest d-start src 0 (bytevector-length src))]
+    [(dest d-start src s-start)
+     (unsafe-bytes-copy! dest d-start src s-start (bytevector-length src))]
+    [(dest d-start src s-start s-end)
+     (bytevector-copy! src s-start dest d-start (fx- s-end s-start))]))
+
 (define unsafe-string-length (unsafe-primitive string-length))
 (define unsafe-string-ref (unsafe-primitive string-ref))
 (define unsafe-string-set! (unsafe-primitive string-set!))
@@ -163,8 +172,10 @@
 (define (unsafe-flimag-part c)
   (#3%imag-part c))
 
-(define unsafe-undefined (let ([p (make-record-type "undefined" '())])
-                           ((record-constructor p))))
+;; The black hole object is an immediate in Chez Scheme,
+;; so a use is compact and the optimize can recognize
+;; comparsions to itself:
+(define unsafe-undefined '#0=#0#)
 
 (define (check-not-unsafe-undefined v sym)
   (when (eq? v unsafe-undefined)

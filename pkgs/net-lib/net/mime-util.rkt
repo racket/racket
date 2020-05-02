@@ -104,7 +104,7 @@
   (lambda (msg . args)
     (log-warning (apply format (cons msg args)))))
 
-;; Copies its input `in' to its ouput port if given, it uses
+;; Copies its input `in' to its output port if given, it uses
 ;; current-output-port if out is not provided.
 (define (cat in [out (current-output-port)])
   (let loop ([ln (read-line in)])

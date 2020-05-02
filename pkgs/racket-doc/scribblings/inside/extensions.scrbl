@@ -11,6 +11,7 @@ and using the @seclink["top" #:doc '(lib
 usually a better option than writing an extension to Racket, but
 Racket also supports C-implemented extensions that plug more directly
 into the run-time system.
+(Racket CS does not have a similar extension interface.)
 
 The process of creating an extension for Racket 3m or Racket CGC (see
 @secref["CGC versus 3m"]) is essentially the same, but the process for
@@ -209,7 +210,7 @@ To create an extension that behaves as a module, return a symbol from
 @cpp{scheme_reload} declare a module using @cpp{scheme_primitive_module}.
 
 For example, the following extension implements a module named
-@racket[hello] that exports a binding @racket[greeting]:
+@racket[hi] that exports a binding @racket[greeting]:
 
 @verbatim[#:indent 2]{
   #include "escheme.h"

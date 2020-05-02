@@ -19,5 +19,8 @@
 (struct rec-cons-desc (rtd parent-rcd protocol) #:prefab #:mutable
   #:reflection-name '|{rcd qh0yzh5qyrxmz2l-a}|)
 
-(struct primref (name flags arity signatures) #:prefab #:mutable
+(struct primref2 (name flags arity) #:prefab #:mutable
+  #:reflection-name '|{primref a0xltlrcpeygsahopkplcn-2}|)
+
+(struct primref3 (name flags arity signatures) #:prefab #:mutable
   #:reflection-name '|{primref a0xltlrcpeygsahopkplcn-3}|)

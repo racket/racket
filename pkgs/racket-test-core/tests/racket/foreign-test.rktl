@@ -8,6 +8,7 @@
          ffi/unsafe/alloc
          ffi/unsafe/define
          ffi/unsafe/define/conventions
+         ffi/unsafe/global
          ffi/vector
          racket/extflonum
          racket/place
@@ -156,6 +157,14 @@
   (check s 'c 14)
   (check s 'd 16))
 
+(let ()
+  (define _test32_enum (_enum `(TEST32 = 1073741906) _sint32))
+  (define _test64_enum (_enum `(TEST64 = 4611686018427387904) _sint64))
+  (test 1073741906 cast 'TEST32 _test32_enum _sint32)
+  (test 'TEST32 cast 1073741906 _sint32 _test32_enum)
+  (test 4611686018427387904 cast  'TEST64 _test64_enum _sint64)
+  (test 'TEST64 cast 4611686018427387904 _sint64 _test64_enum))
+
 ;; Make sure `_box` at least compiles:
 (test #t ctype? (_fun (_box _int) -> _void))
 
@@ -278,12 +287,8 @@
         ((ffi 'hoho (_fun _int (_fun _int -> (_fun _int -> _int)) -> _int))
          3 (lambda (x) (lambda (y) (+ y (* x x))))))
   ;; ---
-  ;; FIXME: this test is broken, because the array allocated by `(_list io _int len)`
-  ;; has no reason to stay in place; a GC during the callback may move it.
-  ;; The solution is probably to extend `_list` so that an allocation mode like
-  ;; 'atomic-interior can be supplied.
   (let ([qsort (get-ffi-obj 'qsort #f
-                            (_fun (l    : (_list io _int len))
+                            (_fun (l    : (_list io _int len atomic-interior))
                                   (len  : _int = (length l))
                                   (size : _int = (ctype-sizeof _int))
                                   (compare : (_fun _pointer _pointer -> _int))
@@ -574,6 +579,11 @@
 		  (get-ffi-obj 'free (ffi-lib "msvcrt.dll") (_fun _pointer -> _void))
 		  free)])
     (free p)))
+
+(let ([return_null (get-ffi-obj 'return_null test-lib (_fun -> _bytes/nul-terminated))])
+  (test #f return_null))
+(let ([return_null (get-ffi-obj 'return_null test-lib (_fun -> (_bytes/nul-terminated o 20)))])
+  (test #f return_null))
 
 ;; Test equality and hashing of c pointers:
 (let ([seventeen1 (cast 17 _intptr _pointer)]
@@ -1346,6 +1356,19 @@
                                        _FcMatrix-pointer
                                        _FcCharSet)]))
   (malloc _FcValue))
+
+;; ----------------------------------------
+
+(let* ([bstr (string->bytes/utf-8 (format "~a ~a" (current-inexact-milliseconds) (random)))]
+       [orig-bstr (bytes-copy bstr)])
+  (err/rt-test (register-process-global 7 8))
+  (err/rt-test (register-process-global "7" 8))
+  (test #f register-process-global bstr #f)
+  (test #f register-process-global bstr #"data\0")
+  (test #"data" cast (register-process-global bstr #f) _pointer _bytes)
+  (bytes-set! bstr 0 65)
+  (test #f register-process-global bstr #f)
+  (test #"data" cast (register-process-global orig-bstr #"data\0") _pointer _bytes))
 
 ;; ----------------------------------------
 

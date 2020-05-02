@@ -204,6 +204,7 @@ MZ_EXTERN void scheme_warning(char *msg, ...);
 MZ_EXTERN void scheme_raise(Scheme_Object *exn);
 
 MZ_EXTERN int scheme_log_level_p(Scheme_Logger *logger, int level);
+MZ_EXTERN int scheme_log_level_topic_p(Scheme_Logger *logger, int level, Scheme_Object *name);
 MZ_EXTERN void scheme_log(Scheme_Logger *logger, int level, int flags,
                           const char *msg, ...);
 MZ_EXTERN void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
@@ -1149,7 +1150,7 @@ MZ_EXTERN Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env 
 MZ_EXTERN void scheme_register_extension_global(void *ptr, intptr_t size);
 
 MZ_EXTERN intptr_t scheme_get_seconds(void);
-XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_milliseconds(void);
+XFORM_NONGCING MZ_EXTERN uintptr_t scheme_get_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN double scheme_get_inexact_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_children_milliseconds(void);

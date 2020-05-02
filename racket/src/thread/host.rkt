@@ -98,4 +98,6 @@
         [call-as-asynchronous-callback host:call-as-asynchronous-callback]
         [post-as-asynchronous-callback host:post-as-asynchronous-callback]
 
-        continuation-current-primitive)
+        continuation-current-primitive
+
+        [prop:unsafe-authentic-override host:prop:unsafe-authentic-override])

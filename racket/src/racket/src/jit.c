@@ -2612,7 +2612,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         (void)jit_jmpi(refloop);
         CHECK_LIMIT();
         mz_patch_branch(ref3);
-        /* clear array pointer and re-laod argc: */
+        /* clear array pointer and re-load argc: */
         (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
         (void)jit_movi_p(JIT_R1, NULL);
         jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);

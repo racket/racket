@@ -2,7 +2,7 @@
 @(require "common.rkt" (for-label file/resource))
 
 @(define-syntax-rule (compat file section indexed-racket what)
-   @elem{For backward compatibilty, the
+   @elem{For backward compatibility, the
  result is @racket[#f] for platforms other than Windows. The registry
  is @|what| when
  @racket[file] is @racket[#f] and when @racket[section] is 

@@ -655,7 +655,7 @@ returns the @racket[not] of @racket[proc]'s result.
 (map (negate =) '(1 2 3) '(1 1 1))
 ]}
 
-@defproc[((conjoin [f (-> A ... boolean?)] ...) [x A] ...) boolean?]{
+@defproc[((conjoin [f procedure?] ...) [x any/c] ...) any]{
 
 Combines calls to each function with @racket[and].  Equivalent to
 @racket[(and (f x ...) ...)]
@@ -668,11 +668,12 @@ Combines calls to each function with @racket[and].  Equivalent to
 (f 1.0)
 (f 1/2)
 (f 0.5)
+((conjoin (λ (x) (values 1 2))) 0)
 ]
 
 }
 
-@defproc[((disjoin [f (-> A ... boolean?)] ...) [x A] ...) boolean?]{
+@defproc[((disjoin [f procedure?] ...) [x any/c] ...) any]{
 
 Combines calls to each function with @racket[or].  Equivalent to
 @racket[(or (f x ...) ...)]
@@ -685,6 +686,7 @@ Combines calls to each function with @racket[or].  Equivalent to
 (f 1.0)
 (f 1/2)
 (f 0.5)
+((disjoin (λ (x) (values 1 2))) 0)
 ]
 
 }

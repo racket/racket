@@ -820,7 +820,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
   if (v) {
     if (SCHEME_VEC_ELS(v)[0]) {
       l = SCHEME_VEC_ELS(v)[0];
-      while (SCHEME_PAIRP(l)) {
+      while (SCHEME_RPAIRP(l)) {
         rktio_fd_close_transfer(unbox_fd(SCHEME_CAR(l)));
         l = SCHEME_CDR(l);
         SCHEME_USE_FUEL(1);
@@ -828,7 +828,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
     }
     if (SCHEME_VEC_ELS(v)[1]) {
       l = SCHEME_VEC_ELS(v)[1];
-      while (SCHEME_PAIRP(l)) {
+      while (SCHEME_RPAIRP(l)) {
         rktio_fd_close_transfer(unbox_fd(SCHEME_CAR(l)));
         l = SCHEME_CDR(l);
         SCHEME_USE_FUEL(1);
@@ -841,7 +841,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
 
 static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, rktio_fd_transfer_t *dupfdt) {
   Scheme_Object *tmp;
-  Scheme_Vector *v; 
+  Scheme_Vector *v;
   if (fd_accumulators) {
     if (!*fd_accumulators) {
       tmp = scheme_make_vector(2, scheme_null);
@@ -1247,6 +1247,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           rktio_fd_t *fd;
 
           name = ((Scheme_Serialized_Socket_FD *) so)->name;
+          name = shallow_types_copy(name, NULL, fd_accumulators, delayed_err, delayed_errno, delayed_errkind,
+                                    mode, can_raise_exn, master_chain, invalid_object);
           fd = rktio_fd_attach(scheme_rktio, fdt);
 
           /* scheme_socket_to_ports(fd, "tcp-accepted", 1, &in, &out); */
@@ -1281,6 +1283,9 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           fd = rktio_fd_attach(scheme_rktio, ffd->fdt);
           name = ffd->name;
           type = ffd->type;
+
+          name = shallow_types_copy(name, NULL, fd_accumulators, delayed_err, delayed_errno, delayed_errkind,
+                                    mode, can_raise_exn, master_chain, invalid_object);
 
           if (type == scheme_input_port_type) {
             new_so = scheme_make_rktio_fd_input_port(fd, name);
@@ -2503,7 +2508,10 @@ static Scheme_Object *places_serialize(Scheme_Object *so, void **msg_memory, Sch
     new_so = do_places_deep_copy(so, mzPDC_COPY, 0, master_chain, invalid_object,
                                  delayed_err, delayed_errno, delayed_errkind);
     tmp = GC_finish_message_allocator();
-    (*msg_memory) = tmp;
+    if (!new_so)
+      GC_destroy_orphan_msg_memory(tmp);
+    else
+      (*msg_memory) = tmp;
 
     if (!new_so && !*delayed_err && SCHEME_CHAPERONEP(*invalid_object)) {
       /* try again after removing chaperones */

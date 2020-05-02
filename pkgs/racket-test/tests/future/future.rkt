@@ -77,7 +77,7 @@ We should also test deep continuations.
       (case (system-type 'vm)
         [(chez-scheme)
          (check-equal? 1 (length (get-blocks log)))
-         ;; `printf` is ok up to the point that it tries to get the currrent output port:
+         ;; `printf` is ok up to the point that it tries to get the current output port:
          (check-equal? 1 (length (get-blocks-on 'continuation-mark-set-first log)))]
         [else
          (check-equal? 3 (length (get-blocks log)))

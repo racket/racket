@@ -1,6 +1,9 @@
 #lang racket/base
 (require racket/flonum
          racket/fixnum
+         racket/symbol
+         racket/keyword
+         racket/unsafe/undefined
          "../common/check.rkt"
          "../port/output-port.rkt"
          "../port/input-port.rkt"
@@ -156,12 +159,20 @@
 (define (sub3 n) (and n (- n 3)))
 
 (define (dots max-length o)
-  (when (eq? max-length 'full)
-    (write-string "..." o)))
+  (cond
+    [(eq? max-length 'full)
+     (write-string "..." o)]
+    [(pair? max-length)
+     ;; pending bytes fit after all
+     (write-bytes (cdr max-length) o)]
+    [else (void)]))
 
 ;; ----------------------------------------
 
-;; Returns the max length that is still available
+;; Returns the max length that is still available, where 'full
+;; means that more than three items would otherwise have been
+;; written, and a pair indicates that some bytes/characters are
+;; pending until the rest of the writes are determined
 (define (p who v mode o max-length graph config)
   (cond
     [(and graph (hash-ref graph v #f))
@@ -227,14 +238,14 @@
        [else (print-bytes v o max-length)])]
     [(symbol? v)
      (cond
-       [(eq? mode DISPLAY-MODE) (write-string/max (symbol->string v) o max-length)]
+       [(eq? mode DISPLAY-MODE) (write-string/max (symbol->immutable-string v) o max-length)]
        [else (print-symbol v o max-length config)])]
     [(keyword? v)
      (let ([max-length (write-string/max "#:" o max-length)])
        (cond
-         [(eq? mode DISPLAY-MODE) (write-string/max (keyword->string v) o max-length)]
+         [(eq? mode DISPLAY-MODE) (write-string/max (keyword->immutable-string v) o max-length)]
          [else
-          (print-symbol (string->symbol (keyword->string v)) o max-length config
+          (print-symbol (string->symbol (keyword->immutable-string v)) o max-length config
                         #:for-keyword? #t)]))]
     [(char? v)
      (cond
@@ -309,7 +320,7 @@
         (define l (vector->list (struct->vector v struct-dots)))
         (define alt-list-constructor
           ;; strip "struct:" from the first element of `l`:
-          (string-append "(" (substring (symbol->string (car l)) 7)))
+          (string-append "(" (substring (symbol->immutable-string (car l)) 7)))
         (print-list p who (cdr l) mode o max-length graph config #f alt-list-constructor)]
        [(prefab-struct-key v)
         => (lambda (key)
@@ -333,13 +344,15 @@
      (print-named "output-port" v mode o max-length)]
     [(unquoted-printing-string? v)
      (write-string/max (unquoted-printing-string-value v) o max-length)]
+    [(eq? v unsafe-undefined)
+     (write-string/max "#<unsafe-undefined>" o max-length)]
     [else
      ;; As a last resort, fall back to the host `format`:
      (write-string/max (format "~s" v) o max-length)]))
 
 (define (fail-unreadable who v)
   (raise (exn:fail
-          (string-append (symbol->string who)
+          (string-append (symbol->immutable-string who)
                          ": printing disabled for unreadable value"
                          "\n  value: "
                          (parameterize ([print-unreadable #t])

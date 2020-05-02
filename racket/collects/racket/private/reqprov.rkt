@@ -1,9 +1,9 @@
 (module reqprov '#%kernel
   (#%require "define.rkt"
              (for-syntax '#%kernel
-                         "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
+                         "stx.rkt" "stxcase-scheme.rkt" "define-et-al.rkt"
+                         "qq-and-or.rkt" "cond.rkt"
                          "stxloc.rkt" "qqstx.rkt" "more-scheme.rkt"
-                         "member.rkt"
                          "../require-transform.rkt"
                          "../provide-transform.rkt"
                          "struct-info.rkt"))

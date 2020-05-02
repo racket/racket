@@ -289,7 +289,7 @@
     (unless (eq? (read-char in) #\=)
       (lex-error in pos "expected = in attribute ~a" name))
     (skip-space in)
-    ;; more here - handle entites and disallow "<"
+    ;; more here - handle entities and disallow "<"
     (let* ([delimiter (read-char-or-special in)]
            [value (case delimiter
                     [(#\' #\")
@@ -307,7 +307,7 @@
                                           (string->list (pcdata-string entity))]
                                          [(number? (entity-text entity))
                                           (list (integer->char (entity-text entity)))]
-                                         ;; more here - do something with user defined entites
+                                         ;; more here - do something with user defined entities
                                          [else '()])
                                        (read-more)))]
                             [else (read-char in) (cons c (read-more))]))))]

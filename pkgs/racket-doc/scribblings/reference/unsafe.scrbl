@@ -310,12 +310,21 @@ always returns a fixnum).}
 @defproc[(unsafe-bytes-length [bstr bytes?]) fixnum?]
 @defproc[(unsafe-bytes-ref [bstr bytes?] [k fixnum?]) byte?]
 @defproc[(unsafe-bytes-set! [bstr (and/c bytes? (not/c immutable?))] [k fixnum?] [b byte?]) void?]
+@defproc[(unsafe-bytes-copy! [dest (and/c bytes? (not/c immutable?))]
+                             [dest-start fixnum?]
+                             [src bytes?]
+                             [src-start fixnum? 0]
+                             [src-end fixnum? (bytes-length src)])
+         void?]
 )]{
 
-Unsafe versions of @racket[bytes-length], @racket[bytes-ref], and
-@racket[bytes-set!]. A bytes's size can never be larger than a
+Unsafe versions of @racket[bytes-length], @racket[bytes-ref],
+@racket[bytes-set!], and @racket[bytes-copy!].
+A bytes's size can never be larger than a
 @tech{fixnum} (so even @racket[bytes-length] always returns a
-fixnum).}
+fixnum).
+
+@history[#:changed "7.5.0.15" @elem{Added @racket[unsafe-bytes-copy!].}]}
 
 
 @deftogether[(

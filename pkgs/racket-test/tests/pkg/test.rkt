@@ -67,7 +67,7 @@
 
 (module+ test
   (module config info
-    (define timeout 2400))
+    (define timeout 3000))
   (go))
 
 (module+ main

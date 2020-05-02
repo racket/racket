@@ -111,7 +111,8 @@
                                                 #:track-to-be-defined? track-to-be-defined?))
 
    (without-expand-context
-    (namespace-visit-available-modules! (expand-context-namespace ctx) phase))
+    (unless (expand-context-skip-visit-available? ctx)
+      (namespace-visit-available-modules! (expand-context-namespace ctx) phase)))
 
    (log-expand local-ctx 'enter-local s)
    (define input-s (add-intdef-scopes (flip-introduction-scopes s ctx) intdefs))

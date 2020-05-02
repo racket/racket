@@ -10,11 +10,13 @@
 #include "rktio.h"
 
 #ifdef WIN32
-# define BOOT_EXTERN __declspec(dllexport)
+# define RACKET_API_EXTERN __declspec(dllexport)
 #else
-# define BOOT_EXTERN extern
+# define RACKET_API_EXTERN extern
 #endif
+#define BOOT_EXTERN RACKET_API_EXTERN
 #include "boot.h"
+#include "api.h"
 
 #define RACKET_AS_BOOT
 
@@ -24,45 +26,6 @@
 
 #ifndef BOOT_O_BINARY
 # define BOOT_O_BINARY 0
-#endif
-
-#if defined(OS_X) && !defined(RACKET_XONX)
-
-# include <mach-o/dyld.h>
-# define RACKET_USE_FRAMEWORK
-
-const char *get_framework_path() {
-  int i, c, len;
-  const char *s;
-  
-  c = _dyld_image_count();
-  for (i = 0; i < c; i++) {
-    s = _dyld_get_image_name(i);
-    len = strlen(s);
-    if ((len > 7) && !strcmp("/Racket", s + len - 7)) {
-      char *s2;
-      s2 = strdup(s);
-      strcpy(s2 + len - 6, "boot");
-      return s2;
-    }
-  }
-
-  return "???";
-}
-
-char *path_append(const char *p1, char *p2) {
-  int l1, l2;
-  char *s;
-  l1 = strlen(p1);
-  l2 = strlen(p2);
-  s = malloc(l1 + l2 + 2);
-  memcpy(s, p1, l1);
-  s[l1] = '/';
-  memcpy(s + l1 + 1, p2, l2);
-  s[l1+l2+1] = 0;
-  return s;
-}
-
 #endif
 
 static ptr Sbytevector(char *s)
@@ -135,75 +98,42 @@ static void init_foreign()
   Sforeign_symbol("racket_errno", (void *)racket_errno);
 }
 
-void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
-		 char *boot_exe, long segment_offset,
-                 char *coldir, char *configdir, /* wchar_t * */void *dlldir,
-                 int is_embedded, int pos1, int pos2, int pos3,
-                 int cs_compiled_subdir, int is_gui,
-		 int wm_is_gracket_or_x11_arg_count,
-                 char *gracket_guid_or_x11_args,
-		 void *dll_open, void *dll_find_object, void *dll_close)
-/* exe argument already stripped from argv */
+void racket_boot(racket_boot_arguments_t *ba)
 {
-  int fd;
-#ifdef RACKET_AS_BOOT
-  int skip_racket_boot = 0;
-#endif
-#ifdef RACKET_USE_FRAMEWORK
-  const char *fw_path;
-#endif
   int cross_server = 0;
 
 #ifdef WIN32
-  if (dlldir)
-    rktio_set_dll_path((wchar_t *)dlldir);
-  if (dll_open)
-    rktio_set_dll_procs(dll_open, dll_find_object, dll_close);
+  if (ba->dll_dir)
+    rktio_set_dll_path((wchar_t *)ba->dll_dir);
+  if (ba->dll_open)
+    rktio_set_dll_procs(ba->dll_open, ba->dll_find_object, ba->dll_close);
 #endif
 
   Sscheme_init(NULL);
 
-  if ((argc == 4) && !strcmp(argv[0], "--cross-server")) {
+  if ((ba->argc == 4) && !strcmp(ba->argv[0], "--cross-server"))
     cross_server = 1;
-#ifdef RACKET_AS_BOOT
-    skip_racket_boot = 1;
-#endif
-  }
 
-#ifdef RACKET_USE_FRAMEWORK
-  if (!is_embedded) {
-    fw_path = get_framework_path();
-    Sregister_boot_file(path_append(fw_path, "petite.boot"));
-    Sregister_boot_file(path_append(fw_path, "scheme.boot"));
-# ifdef RACKET_AS_BOOT
-    if (!skip_racket_boot)
-      Sregister_boot_file(path_append(fw_path, "racket.boot"));
-# endif
-  }
-#endif
+  {
+    int fd1, fd2;
 
-  if (is_embedded) {
-    fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
-
-    {
-      int fd1, fd2;
-
-      fd1 = dup(fd);
-      lseek(fd1, pos1, SEEK_SET);    
-      Sregister_boot_file_fd("petite", fd1);
+    fd1 = open(ba->boot1_path, O_RDONLY | BOOT_O_BINARY);
+    lseek(fd1, ba->boot1_offset, SEEK_SET);    
+    Sregister_boot_file_fd("petite", fd1);
     
-      fd2 = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
-      lseek(fd2, pos2, SEEK_SET);
-      Sregister_boot_file_fd("scheme", fd2);
+    fd2 = open(ba->boot2_path, O_RDONLY | BOOT_O_BINARY);
+    lseek(fd2, ba->boot2_offset, SEEK_SET);
+    Sregister_boot_file_fd("scheme", fd2);
 
 # ifdef RACKET_AS_BOOT
-      if (!skip_racket_boot) {
-        fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
-        lseek(fd, pos3, SEEK_SET);
-        Sregister_boot_file_fd("racket", fd);
-      }
-# endif
+    if (!cross_server) {
+      int fd3;
+      
+      fd3 = open(ba->boot3_path, O_RDONLY | BOOT_O_BINARY);
+      lseek(fd3, ba->boot3_offset, SEEK_SET);
+      Sregister_boot_file_fd("racket", fd3);
     }
+# endif
   }
 
   Sbuild_heap(NULL, init_foreign);
@@ -211,7 +141,7 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
   if (cross_server) {
     /* Don't run Racket as usual. Instead, load the patch
        file and run `serve-cross-compile` */
-    run_cross_server(argv);
+    run_cross_server(ba->argv);
     racket_exit(0);
   }
 
@@ -220,20 +150,25 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
     int i;
     char segment_offset_s[32], wm_is_gracket_s[32];
 
-    for (i = argc; i--; ) {
-      l = Scons(Sbytevector(argv[i]), l);
+    if (ba->argv) {
+      for (i = ba->argc; i--; ) {
+        l = Scons(Sbytevector(ba->argv[i]), l);
+      }
+    } else {
+      l = Scons(Sbytevector("-n"), l);
     }
-    l = Scons(Sbytevector(gracket_guid_or_x11_args), l);
-    sprintf(wm_is_gracket_s, "%d", wm_is_gracket_or_x11_arg_count);
+    l = Scons(Sbytevector(ba->gracket_guid_or_x11_args ? ba->gracket_guid_or_x11_args : ""), l);
+    sprintf(wm_is_gracket_s, "%d", ba->wm_is_gracket_or_x11_arg_count);
     l = Scons(Sbytevector(wm_is_gracket_s), l);
-    l = Scons(Sbytevector(is_gui ? "true" : "false"), l);
-    l = Scons(Sbytevector(cs_compiled_subdir ? "true" : "false"), l);
-    sprintf(segment_offset_s, "%ld", segment_offset);
+    l = Scons(Sbytevector(ba->is_gui ? "true" : "false"), l);
+    l = Scons(Sbytevector(ba->cs_compiled_subdir ? "true" : "false"), l);
+    sprintf(segment_offset_s, "%ld", ba->segment_offset);
     l = Scons(Sbytevector(segment_offset_s), l);
-    l = Scons(Sbytevector(configdir), l);
-    l = Scons(parse_coldirs(coldir), l);
-    l = Scons(Sbytevector(run_file), l);
-    l = Scons(Sbytevector(exec_file), l);
+    l = Scons(Sbytevector(ba->config_dir ? (char *)ba->config_dir : "etc"), l);
+    l = Scons(parse_coldirs(ba->collects_dir ? (char *)ba->collects_dir : ""), l);
+    l = Scons(Sbytevector(ba->run_file ? (char *)ba->run_file : (char *)ba->exec_file ), l);
+    l = Scons(Sbytevector((char *)ba->exec_file), l);
+    l = Scons(Sbytevector(ba->exit_after ? "false" : "true"), l);
 
 #ifdef RACKET_AS_BOOT
     {
@@ -249,19 +184,14 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
   }
 
 #ifndef RACKET_AS_BOOT
-# ifdef RACKET_USE_FRAMEWORK
-  if (!is_embedded) {
-    fd = open(path_append(fw_path, "racket.so"), O_RDONLY);
-    pos3 = 0;
-  }
-# endif
-  
   {
     ptr c, p;
+    int f3;
 
-    if (pos3) lseek(fd, pos3, SEEK_SET);
+    fd3 = open(ba->boot3_path, O_RDONLY | BOOT_O_BINARY);
+    if (boot3_offset) lseek(fd3, ba->boot3_offset, SEEK_SET);
     c = Stop_level_value(Sstring_to_symbol("open-fd-input-port"));
-    p = Scall1(c, Sfixnum(fd));
+    p = Scall1(c, Sfixnum(fd3));
     Slock_object(p);
     c = Stop_level_value(Sstring_to_symbol("port-file-compressed!"));
     Scall1(c, p);
@@ -270,4 +200,84 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
     Scall1(c, p);
   }
 #endif
+}
+
+/* **************************************** */
+
+enum {
+  EMBEDDED_ENTRY_APPLY,
+  EMBEDDED_ENTRY_PRIMITIVE_LOOKUP,
+  EMBEDDED_ENTRY_EVAL,
+  EMBEDDED_ENTRY_DYNAMIC_REQUIRE,
+  EMBEDDED_ENTRY_NAMESPACE_REQUIRE,
+  EMBEDDED_ENTRY_EMBEDDED_LOAD
+};
+
+static ptr get_embedded_entry(int index)
+{
+  ptr vec;
+  
+  vec = Stop_level_value(Sstring_to_symbol("embedded-racket-entry-info"));
+  return Svector_ref(vec, index);
+}
+
+ptr racket_apply(ptr proc, ptr arg_list)
+{
+  ptr app = get_embedded_entry(EMBEDDED_ENTRY_APPLY);
+
+  return Scall2(app, proc, arg_list);
+}
+
+ptr racket_primitive(const char *name)
+{
+  ptr prim_lookup = get_embedded_entry(EMBEDDED_ENTRY_PRIMITIVE_LOOKUP);
+
+  return Scall1(prim_lookup, Sstring_to_symbol(name));
+}
+
+ptr racket_eval(ptr s_expr)
+{
+  ptr eval = get_embedded_entry(EMBEDDED_ENTRY_EVAL);
+
+  return racket_apply(eval, Scons(s_expr, Snil));
+}
+
+ptr racket_dynamic_require(ptr module_path, ptr sym_or_false)
+{
+  ptr dy_req = get_embedded_entry(EMBEDDED_ENTRY_DYNAMIC_REQUIRE);
+
+  return racket_apply(dy_req, Scons(module_path, Scons(sym_or_false, Snil)));
+}
+
+void racket_namespace_require(ptr module_path)
+{
+  ptr ns_req = get_embedded_entry(EMBEDDED_ENTRY_NAMESPACE_REQUIRE);
+
+  (void)racket_apply(ns_req, Scons(module_path, Snil));
+}
+
+static void embedded_load(ptr path, ptr start, ptr end, ptr bstr, int as_predefined)
+{
+  ptr load = get_embedded_entry(EMBEDDED_ENTRY_EMBEDDED_LOAD);
+  ptr pre = (as_predefined ? Strue : Sfalse);
+
+  (void)racket_apply(load, Scons(path, Scons(start, Scons(end, Scons(bstr, Scons(pre, Snil))))));
+}
+
+void racket_embedded_load_bytes(const char *code, uptr len, int as_predefined)
+{
+  ptr bstr = Smake_bytevector(len, 0);
+  memcpy(Sbytevector_data(bstr), code, len);
+
+  embedded_load(Sfalse, Sfalse, Sfalse, bstr, as_predefined);
+}
+
+void racket_embedded_load_file(const char *path, int as_predefined)
+{
+  embedded_load(Sbytevector((char *)path), Sfixnum(0), Sfalse, Sfalse, as_predefined);
+}
+
+void racket_embedded_load_file_region(const char *path, uptr start, uptr end, int as_predefined)
+{
+  embedded_load(Sbytevector((char *)path), Sfixnum(start), Sfixnum(end), Sfalse, as_predefined);
 }

@@ -22,19 +22,43 @@
    "original" e
    "received" e2))
 
-(define (impersonate-ref acc rtd pos orig record-name field-name)
-  (impersonate-struct-or-property-ref acc rtd (cons rtd pos) orig record-name field-name))
+(define (hash-ref2 ht key1 key2 default)
+  (let ([ht/val (intmap-ref ht key1 #f)])
+    (if (and key2 ht/val)
+        (intmap-ref ht/val key2 #f)
+        ht/val)))
 
-(define (impersonate-struct-or-property-ref acc rtd key orig record-name field-name)
+(define (hash-set2 ht key1 key2 val)
+  (intmap-set ht key1 (if key2
+                          (intmap-set (intmap-ref ht key1 empty-hasheq) key2 val)
+                          val)))
+
+(define (impersonate-ref acc rtd pos orig record-name field-name)
+  (#%$app/no-inline do-impersonate-ref acc rtd pos orig record-name field-name))
+
+(define (do-impersonate-ref acc rtd pos orig record-name field-name)
+  (impersonate-struct-or-property-ref acc rtd rtd pos orig record-name field-name))
+
+;; `val/acc` is an accessor if `rtd`, a value otherwise;
+;; `key2/pos` is a pos if `rtd`
+(define (impersonate-struct-or-property-ref val/acc rtd key1 key2/pos orig record-name field-name)
   (cond
    [(and (impersonator? orig)
          (or (not rtd)
              (record? (impersonator-val orig) rtd)))
     (let loop ([v orig])
       (cond
+       [(and rtd
+             (struct-undefined-chaperone? v))
+        ;; Must be the only wrapper left
+        (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
+          (let ([r (unsafe-struct*-ref (impersonator-val v) abs-pos)])
+            (when (eq? r unsafe-undefined)
+              (raise-unsafe-undefined 'struct-ref "undefined" "use" val/acc (impersonator-val v) abs-pos))
+            r))]
        [(or (struct-impersonator? v)
             (struct-chaperone? v))
-        (let ([wrapper (hash-ref (struct-impersonator/chaperone-procs v) key #f)])
+        (let ([wrapper (hash-ref2 (struct-impersonator/chaperone-procs v) key1 key2/pos #f)])
           (cond
            [wrapper
             (let* ([r (cond
@@ -52,16 +76,14 @@
               new-r)]
            [else
             (loop (impersonator-next v))]))]
-       [(and (struct-undefined-chaperone? v)
-             rtd)
-        (let ([r (loop (impersonator-next v))])
-          (when (eq? r unsafe-undefined)
-            (let ([abs-pos (fx+ (cdr key) (struct-type-parent-total*-count (car key)))])
-              (raise-unsafe-undefined 'struct-ref "undefined" "use" acc (impersonator-val v) abs-pos)))
-          r)]
        [(impersonator? v)
         (loop (impersonator-next v))]
-       [else (|#%app| acc v)]))]
+       [else
+        (cond
+         [rtd
+          (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
+            (unsafe-struct*-ref v abs-pos))]
+         [else val/acc])]))]
    [else
     (raise-argument-error (string->symbol
                            (string-append (symbol->string (or record-name 'struct))
@@ -71,15 +93,29 @@
                           orig)]))
 
 (define (impersonate-set! set rtd pos abs-pos orig a record-name field-name)
+  (#%$app/no-inline do-impersonate-set! set rtd pos abs-pos orig a record-name field-name))
+
+(define (struct-mutator-pos->key2 pos) (fx- -1 pos))
+
+(define (do-impersonate-set! set rtd pos abs-pos orig a record-name field-name)
   (cond
    [(and (impersonator? orig)
          (record? (impersonator-val orig) rtd))
-    (let ([key (vector rtd pos)])
+    (let ([key1 rtd]
+          [key2 (struct-mutator-pos->key2 pos)])
       (let loop ([v orig] [a a])
         (cond
+         [(struct-undefined-chaperone? v)
+          ;; Must be the only wrapper left
+          (let ([v (impersonator-val v)])
+            (when (eq? (unsafe-struct*-ref v abs-pos) unsafe-undefined)
+              (unless (eq? (continuation-mark-set-first #f prop:chaperone-unsafe-undefined)
+                           unsafe-undefined)
+                (raise-unsafe-undefined 'struct-set! "assignment disallowed" "assign" set v abs-pos)))
+            (unsafe-struct*-set! v abs-pos a))]
          [(or (struct-impersonator? v)
               (struct-chaperone? v))
-          (let ([wrapper (hash-ref (struct-impersonator/chaperone-procs v) key #f)])
+          (let ([wrapper (hash-ref2 (struct-impersonator/chaperone-procs v) key1 key2 #f)])
             (cond
              [wrapper
               (let ([new-a (cond
@@ -96,15 +132,11 @@
                   (loop (impersonator-next v) new-a)]))]
              [else
               (loop (impersonator-next v) a)]))]
-         [(struct-undefined-chaperone? v)
-          (when (eq? (unsafe-struct*-ref (impersonator-val v) abs-pos) unsafe-undefined)
-            (unless (eq? (continuation-mark-set-first #f prop:chaperone-unsafe-undefined)
-                         unsafe-undefined)
-              (raise-unsafe-undefined 'struct-set! "assignment disallowed" "assign" set (impersonator-val v) abs-pos)))
-          (loop (impersonator-next v) a)]
          [(impersonator? v)
           (loop (impersonator-next v) a)]
-         [else (set v a)])))]
+         [else
+          ;; Equivalent to `(set v a)`:
+          (unsafe-struct*-set! v abs-pos a)])))]
    [else
     (raise-argument-error (string->symbol
                            (string-append "set"
@@ -341,59 +373,57 @@
                                "value" v))
       (let loop ([first? (not st)]
                  [args orig-args]
-                 [props empty-hash]
-                 [saw-props empty-hash]
+                 [props empty-hasheq]
+                 [saw-props empty-hasheq]
                  [witnessed? (and st #t)]
                  [iprops orig-iprops])
         (let ([get-proc
-               (lambda (what args arity proc->key key-applies?)
-                 (let* ([orig-proc (car args)]
-                        [key-proc (strip-impersonator orig-proc)]
-                        [key (proc->key key-proc)])
-                   (when (hash-ref saw-props key #f)
-                     (raise-arguments-error who
-                                            "given operation accesses the same value as a previous operation argument"
-                                            "operation kind" what
-                                            "operation procedure" orig-proc))
-                   (when key-applies?
-                     (unless (key-applies? key val)
+               (lambda (what args arity orig-proc key1 key2 key-applies? now-witnessed?)
+                 (unless key-applies?
+                   (raise-arguments-error who
+                                          "operation does not apply to given value"
+                                          "operation kind" (make-unquoted-printing-string what)
+                                          "operation procedure" orig-proc
+                                          "value" v))
+                 (when (hash-ref2 saw-props key1 key2 #f)
+                   (raise-arguments-error who
+                                          "given operation accesses the same value as a previous operation argument"
+                                          "operation kind" (make-unquoted-printing-string what)
+                                          "operation procedure" orig-proc))
+                 (when (null? (cdr args))
+                   (raise-arguments-error who
+                                          "missing redirection procedure after operation"
+                                          "operation kind" (make-unquoted-printing-string what)
+                                          "operation procedure" orig-proc))
+                 (let ([proc (cadr args)])
+                   (when proc
+                     (unless (unsafe-procedure-and-arity-includes? proc arity)
                        (raise-arguments-error who
-                                              "operation does not apply to given value"
-                                              "operation kind" what
-                                              "operation procedure" orig-proc
-                                              "value" v)))
-                   (when (null? (cdr args))
+                                              "operation's redirection procedure does not match the expected arity"
+                                              "given" proc
+                                              "expected" (make-unquoted-printing-string
+                                                          (string-append
+                                                           "(or/c #f (procedure-arity-includes/c " (number->string arity) "))"))
+                                              "operation kind" (make-unquoted-printing-string what)
+                                              "operation procedure" orig-proc)))
+                   (when (and as-chaperone?
+                              (and (impersonator? orig-proc)
+                                   (not (chaperone? orig-proc))))
                      (raise-arguments-error who
-                                            "missing redirection procedure after operation"
-                                            "operation kind" what
-                                            "operation procedure" orig-proc))
-                   (let ([proc (cadr args)])
-                     (when proc
-                       (unless (procedure-arity-includes? proc arity)
-                         (raise-arguments-error who
-                                                "operation's redirection procedure does not match the expected arity"
-                                                "given" proc
-                                                "expected" (string-append
-                                                            "(or/c #f (procedure-arity-includes/c " (number->string arity) "))")
-                                                "operation kind" what
-                                                "operation procedure" orig-proc)))
-                     (when (and as-chaperone?
-                                (and (impersonator? orig-proc)
-                                     (not (chaperone? orig-proc))))
-                       (raise-arguments-error who
-                                              "impersonated operation cannot be used to create a chaperone"
-                                              "operation" orig-proc))
+                                            "impersonated operation cannot be used to create a chaperone"
+                                            "operation" orig-proc))
+                   (let ([new-args (cddr args)])
                      (loop #f
-                           (cddr args)
+                           new-args
                            (if proc
-                               (hash-set props key
-                                         (if (impersonator? orig-proc)
-                                             (cons orig-proc ; save original accessor, in case it's impersonated
-                                                   proc)      ; the interposition proc
-                                             proc))
+                               (hash-set2 props key1 key2
+                                          (if (impersonator? orig-proc)
+                                              (cons orig-proc ; save original accessor, in case it's impersonated
+                                                    proc)     ; the interposition proc
+                                              proc))
                                props)
-                           (hash-set saw-props key #t)
-                           (or witnessed? key-applies?)
+                           (if (null? new-args) saw-props (hash-set2 saw-props key1 key2 #t))
+                           (or witnessed? now-witnessed?)
                            iprops))))])
           (cond
            [(null? args)
@@ -416,7 +446,7 @@
                                                     " instance of an authentic structure type")
                                      "given value" v))
             (cond
-             [(zero? (hash-count props))
+             [(eq? props empty-hasheq)
               ;; No structure operations chaperoned, so either unchanged or
               ;; a properties-only impersonator
               (cond
@@ -457,39 +487,46 @@
                   witnessed?
                   (add-impersonator-properties who args iprops))]
            [(struct-accessor-procedure? (car args))
-            (get-proc "accessor" args 2
-                      struct-accessor-procedure-rtd+pos
-                      (lambda (rtd+pos v)
-                        (and (record? v (car rtd+pos))
-                             (begin
-                               (unless (or as-chaperone?
-                                           (struct-type-field-mutable? (car rtd+pos) (cdr rtd+pos)))
-                                 (raise-arguments-error who
-                                                        "cannot replace operation for an immutable field"
-                                                        "operation kind" "property accessor"
-                                                        "operation procedure" (car args)))
-                               #t))))]
+            (let* ([orig-proc (car args)]
+                   [key-proc (strip-impersonator orig-proc)]
+                   [rtd+pos (struct-accessor-procedure-rtd+pos key-proc)])
+              (unless (or as-chaperone?
+                          (struct-type-field-mutable? (car rtd+pos) (cdr rtd+pos)))
+                (raise-arguments-error who
+                                       "cannot replace operation for an immutable field"
+                                       "operation kind" (make-unquoted-printing-string "property accessor")
+                                       "operation procedure" (car args)))
+              (get-proc "accessor" args 2
+                        orig-proc (car rtd+pos) (cdr rtd+pos)
+                        (record? val (car rtd+pos))
+                        #t))]
            [(struct-mutator-procedure? (car args))
-            (get-proc "mutator" args 2
-                      (lambda (proc)
-                        (let ([rtd+pos (struct-mutator-procedure-rtd+pos proc)])
-                          (vector (car rtd+pos) (cdr rtd+pos))))
-                      (lambda (rtd++pos v)
-                        (record? v (vector-ref rtd++pos 0))))]
+            (let* ([orig-proc (car args)]
+                   [key-proc (strip-impersonator orig-proc)]
+                   [rtd+pos (struct-mutator-procedure-rtd+pos key-proc)])
+              (get-proc "mutator" args 2
+                        orig-proc (car rtd+pos) (struct-mutator-pos->key2 (cdr rtd+pos))
+                        (record? val (car rtd+pos))
+                        #t))]
            [(struct-type-property-accessor-procedure? (car args))
-            (get-proc "property accessor" args 2
-                      (lambda (proc) proc)
-                      (lambda (proc v)
-                        (unless (or as-chaperone?
-                                    (struct-type-property-accessor-procedure-can-impersonate? proc))
-                          (raise-arguments-error who
-                                                 "operation cannot be impersonated"
-                                                 "operation kind" "property accessor"
-                                                 "operation procedure" (car args)))
-                        ((struct-type-property-accessor-procedure-pred proc) v)))]
+            (let* ([orig-proc (car args)]
+                   [key-proc (strip-impersonator orig-proc)])
+              (unless (or as-chaperone?
+                          (struct-type-property-accessor-procedure-can-impersonate? key-proc))
+                (raise-arguments-error who
+                                       "operation cannot be impersonated"
+                                       "operation kind" (make-unquoted-printing-string "property accessor")
+                                       "operation procedure" orig-proc))
+              (get-proc "property accessor" args 2
+                        orig-proc key-proc #f
+                        ((struct-type-property-accessor-procedure-pred key-proc) val)
+                        #t))]
            [(and as-chaperone?
                  (equal? struct-info (car args)))
-            (get-proc "struct-info procedure" args 2 (lambda (proc) proc) #f)]
+            (get-proc "struct-info procedure" args 2
+                      struct-info struct-info #f
+                      #t
+                      #f)]
            [else
             (raise-argument-error who
                                   (string-append
@@ -590,7 +627,7 @@
                              (lambda (v info)
                                (check 'guard-for-prop:impersonator-of (procedure-arity-includes/c 1) v)
                                ;; Add a tag to track origin of the `prop:impersonator-of` value
-                               (cons (gensym "tag") v))))
+                               (cons (box 'impersonator-of) v))))
 
 (define (extract-impersonator-of who a)
   (and (impersonator-of-redirect? a)
@@ -638,9 +675,8 @@
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
          (escapes-ok
-           (lambda (c hash-code)
-             ((record-type-hash-procedure
-               (record-rtd (impersonator-val c)))
+          (lambda (c hash-code)
+             ((record-hash-procedure (impersonator-val c))
               c
               hash-code)))])
     (let ([add (lambda (rtd)

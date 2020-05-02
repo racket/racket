@@ -2019,7 +2019,7 @@
       (test #f hash-ref h2 'key2 #f)
       (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
       (hash-for-each h2 void)
-      (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+      (test '(for-each key val key2 val2 key2 key) list 'for-each get-k get-v set-k set-v remove-k access-k)
       (set! get-k #f)
       (set! get-v #f)
       (void (equal-hash-code h2))
@@ -2034,7 +2034,7 @@
       (test #t values (equal? h2 (let* ([h2 (make-hash)])
                                    (test (void) hash-set! h2 'key 'val)
                                    h2)))
-      (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+      (test '(equal? key val key2 val2 key2 key) list 'equal? get-k get-v set-k set-v remove-k access-k)
       (void)))
   (list
    make-hash make-hasheq make-hasheqv
@@ -2092,7 +2092,7 @@
              (test #f hash-ref h2 'key2 #f)
              (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
              (hash-for-each h2 void)
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+             (test '(mid key val key2 val2 key2 key) list 'mid get-k get-v set-k set-v remove-k access-k)
              (set! get-k #f)
              (set! get-v #f)
              (void (equal-hash-code h2))
@@ -2105,7 +2105,7 @@
              (set! get-k #f)
              (set! get-v #f)
              (test #t values (equal? h2 (hash-set h1 'key 'val)))
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+             (test '(equal?2 key val key2 val2 key2 key) list 'equal?2 get-k get-v set-k set-v remove-k access-k)
              (void))))))
    ;; Check that `hash-set` propagates in a way that allows
    ;; `chaperone-of?` to work recursively:
@@ -2681,6 +2681,26 @@
                             (set! checked? #t)
                             v)))
   (test #t values checked?))
+
+;; ----------------------------------------
+;; Evt variants where `chaperone-evt` is allowed to defeat predicates
+
+(define (check-other-evt-chaperone x other?)
+  (test #t other? x)
+  (test #t evt? (chaperone-evt x (lambda (v) (values v (lambda (r) r)))))
+  (test #f other? (chaperone-evt x (lambda (v) (values v (lambda (r) r)))))
+  (test x sync (chaperone-evt x (lambda (v) (values v (lambda (r) r)))))
+  (test #t chaperone-of? (chaperone-evt x (lambda (v) (values v (lambda (r) r)))) x))
+
+(check-other-evt-chaperone (thread void) thread?)
+(check-other-evt-chaperone (make-semaphore 1) semaphore?)
+(check-other-evt-chaperone (open-input-bytes #"x") input-port?)
+(check-other-evt-chaperone (open-output-bytes) output-port?)
+(unless (eq? 'cgc (system-type 'gc))
+  (define we  (make-will-executor))
+  (will-register we (gensym) void)
+  (collect-garbage)
+  (check-other-evt-chaperone we will-executor?))
 
 ;; ----------------------------------------
 ;; channel chaperones
@@ -3576,6 +3596,22 @@
   (test #f hash-ref-key ht2 "absent" #f)
   (test #f hash-ref-key ht1 "absent" #f)
   (err/rt-test (hash-ref-key ht2 "absent") exn:fail:contract?))
+
+
+;; ----------------------------------------
+;; regression test to make sure a hash-code function
+;; is inherited for a chaperoned struct
+
+(let ()
+  (struct a ()
+    #:property prop:equal+hash (list
+                                (lambda (a b eql?) #t)
+                                (lambda (a hc) 1)
+                                (lambda (a hc) 1)))
+
+  (struct b a (x))
+
+  (test #t integer? (equal-hash-code (chaperone-struct (b 0) b-x (lambda (b v) v)))))
 
 ;; ----------------------------------------
 

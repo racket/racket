@@ -1,13 +1,15 @@
 #lang racket/base
-(require setup/cross-system)
+(require setup/cross-system
+         racket/promise)
 
 (provide add-plt-segment
          get/set-dylib-path)
 
 (define exe-id
-  (if (equal? (path->bytes (cross-system-library-subpath #f)) #"x86_64-macosx")
-      #xFeedFacf
-      #xFeedFace))
+  (delay
+    (if (equal? (path->bytes (cross-system-library-subpath #f)) #"x86_64-macosx")
+        #xFeedFacf
+        #xFeedFace)))
 
 (define (read-ulong p)
   (integer-bytes->integer (read-bytes 4 p) #f))
@@ -63,7 +65,7 @@
         void
         (lambda ()
           (file-stream-buffer-mode out 'none)
-          (check-same exe-id (read-ulong p))
+          (check-same (force exe-id) (read-ulong p))
           (read-ulong p)
           (read-ulong p)
           (check-same #x2 (read-ulong p))
@@ -93,7 +95,7 @@
                  [linkedit-limit-offset 0])
             ;; (printf "~a cmds, length 0x~x\n" cnt cmdssz)
             (read-ulong p) ; flags
-            (when (equal? exe-id #xFeedFacf)
+            (when (equal? (force exe-id) #xFeedFacf)
               (read-ulong p)) ; extra reserved word for 64-bit header
             (let loop ([cnt total-cnt])
               (unless (zero? cnt)
@@ -136,7 +138,7 @@
                                      [reloff (read-ulong p)]
                                      [nreloc (read-ulong p)]
                                      [flags (read-ulong p)])
-                                 (when ((+ offset vmsz) . > . (+ cmdssz (if (equal? exe-id #xFeedFacf) 32 28)))
+                                 (when ((+ offset vmsz) . > . (+ cmdssz (if (equal? (force exe-id) #xFeedFacf) 32 28)))
                                    (when (and (positive? offset)
                                               (offset . < . min-used))
                                      ;; (printf "   new min!\n")
@@ -250,7 +252,7 @@
                   (loop (sub1 cnt)))))
             ;; (printf "Start offset: 0x~x\n" min-used)
             (let ([end-cmd (+ cmdssz 
-                              (if (equal? exe-id #xFeedFacf) 32 28)
+                              (if (equal? (force exe-id) #xFeedFacf) 32 28)
                               (- code-signature-lc-sz))]
                   [new-cmd-sz (if link-edit-64? 72 56)]
                   [outlen (round-up-page (bytes-length segdata))]
@@ -400,14 +402,14 @@
     (dynamic-wind
         void
         (lambda ()
-          (check-same exe-id (read-ulong p))
+          (check-same (force exe-id) (read-ulong p))
           (read-ulong p)
           (read-ulong p)
           (read-ulong p) ; 2 is executable, etc.
           (let* ([cnt (read-ulong p)]
                  [cmdssz (read-ulong p)])
             (read-ulong p)
-            (when (equal? exe-id #xFeedFacf)
+            (when (equal? (force exe-id) #xFeedFacf)
               (read-ulong p))
             (let loop ([cnt cnt] [base 0] [delta 0] [result null])
               (if (zero? cnt)

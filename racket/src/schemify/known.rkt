@@ -30,8 +30,10 @@
          known-predicate known-predicate? known-predicate-type
          known-accessor known-accessor? known-accessor-type
          known-mutator known-mutator? known-mutator-type
+         known-struct-predicate known-struct-predicate? known-struct-predicate-type-id known-struct-predicate-authentic?
          known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-pos
          known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-pos
+         known-struct-predicate/need-imports known-struct-predicate/need-imports? known-struct-predicate/need-imports-needed
          known-field-accessor/need-imports known-field-accessor/need-imports? known-field-accessor/need-imports-needed
          known-field-mutator/need-imports known-field-mutator/need-imports? known-field-mutator/need-imports-needed
          known-struct-type-property/immediate-guard known-struct-type-property/immediate-guard?
@@ -57,8 +59,7 @@
 (struct known-literal (value) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedure with arity mask; the procedure has to be a procedure from the host
-;; Scheme's perspective --- not an applicable struct or chaperoned procedure, which
-;; means that parameters don't count
+;; Scheme's perspective --- not an applicable struct or chaperoned procedure
 (struct known-procedure (arity-mask) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedure that does not need to run inside a module prompt, which implies that the
@@ -101,8 +102,10 @@
 (struct known-predicate (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
 (struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
 (struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+(struct known-struct-predicate (type-id authentic?) #:prefab #:omit-define-syntaxes #:super struct:known-predicate)
 (struct known-field-accessor (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
 (struct known-field-mutator (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
+(struct known-struct-predicate/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-predicate)
 (struct known-field-accessor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-accessor)
 (struct known-field-mutator/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-mutator)
 

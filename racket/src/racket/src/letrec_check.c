@@ -40,7 +40,7 @@
  *
  * - When `lambda` is in such a position, record the `lambda`
  *   expression as "deferred" for the variable --- but only if the
- *   varible was not previously accessed in an unsafe position. (Grep
+ *   variable was not previously accessed in an unsafe position. (Grep
  *   "EXPL-4" for implementation.) Each deferred expression will be
  *   forced at most once.
  *
@@ -713,7 +713,7 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
     frame_type = FRAME_TYPE_LET; 
 
   /* push the new bindings on to the frame, where `frame_type`
-     determines how the variables are initialzed and counted when
+     determines how the variables are initialized and counted when
      resolving local-variable offsets */
   frame = init_letrec_check_frame(frame_type, LET_RHS_EXPR,
                                   count, old_frame, NULL,

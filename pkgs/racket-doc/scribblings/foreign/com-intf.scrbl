@@ -156,7 +156,7 @@ foreign call as follows:
        @racket[_fun]) determines the result.}
 
  @item{If the result is @cpp{RPC_E_CALL_REJECTED} or
-       @cpp{RPC_E_SERVERCALL_RETRYLATER}, the call is autmatically
+       @cpp{RPC_E_SERVERCALL_RETRYLATER}, the call is automatically
        retried up to @racket[(current-hfun-retry-count)] times with a
        delay of @racket[(current-hfun-retry-delay)] seconds between
        each attempt.}

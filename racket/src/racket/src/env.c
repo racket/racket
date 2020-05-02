@@ -398,7 +398,7 @@ static void init_foreign(Scheme_Startup_Env *env)
 }
 
 /*========================================================================*/
-/*                     place-specific intialization                       */
+/*                     place-specific initialization                       */
 /*========================================================================*/
 
 static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thread)

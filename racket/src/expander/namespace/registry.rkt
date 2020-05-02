@@ -16,9 +16,9 @@
     (define v (unbox lock-box))
     (cond
      [(or (not v)
-          (sync/timeout 0 (car v) (cdr v)))
+          (sync/timeout 0 (car v) (or (weak-box-value (cdr v)) never-evt)))
       (define sema (make-semaphore))
-      (define lock (cons (semaphore-peek-evt sema) (current-thread)))
+      (define lock (cons (semaphore-peek-evt sema) (make-weak-box (current-thread))))
       ((dynamic-wind
         void
         (lambda ()
@@ -31,10 +31,10 @@
             (lambda () (loop))]))
         (lambda ()
           (semaphore-post sema))))]
-     [(eq? (current-thread) (cdr v))
+     [(eq? (current-thread) (weak-box-value (cdr v)))
       ;; This thread already holds the lock
       (proc)]
      [else
       ; Wait and try again:
-      (sync (car v) (cdr v))
+      (sync (car v) (or (weak-box-value (cdr v)) never-evt))
       (loop)])))

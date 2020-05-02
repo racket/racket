@@ -29,7 +29,7 @@ CPP = @CPP@
 
 # Although CFLAGS is defined via configure, the intent is that
 # CFLAGS and CPPFLAGS can be adjusted at `make' time.
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@ 
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS =  @PREFLAGS@
 
 AR = @AR@
@@ -73,7 +73,7 @@ FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 #  having the file-open syscall open an ".exe" file for reading when
 #  (1) the given filename has no suffix, and (2) there's not a suffixless
 #  file present. However, Cygwin doesn't do that when opening a file for
-#  output, even when the output mode is 'update. So we need to explcitly
+#  output, even when the output mode is 'update. So we need to explicitly
 #  add EXE_SUFFIX in a few places.
 
 ################################################################################
@@ -153,7 +153,7 @@ foreign-stub:
 	cd $(FOREIGN_DIR); $(MAKE) stub
 
 rktio:
-	cd ../rktio; $(MAKE)
+	cd ../rktio; $(MAKE) CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)"
 
 mzlibrary:
 	cd src; $(MAKE) all 

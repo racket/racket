@@ -45,7 +45,7 @@
   (with-handlers ([exn:fail:contract:blame? void])
     (printf "*** 1: ~s\n" (argmax car '())))
   ;; changed: 
-  ;; the functin violates -> real but the single element isn't checked
+  ;; the function violates -> real but the single element isn't checked
   (printf "2: ~s\n" (argmax car '((apples 3))))
   (printf "3: ~s\n" (argmax car '((3 apples) (3 oranges))))
   ;; --- copies from version 2 --- 

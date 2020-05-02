@@ -353,7 +353,7 @@ static rktio_poll_set_t *alloc_fdset_arrays(rktio_t *rktio)
 #endif
 
   /* Allocate an array with 1 extra intptr_t in each set to hold a
-     "max" fd counter, and 1 extra intger used to record "no
+     "max" fd counter, and 1 extra integer used to record "no
      sleeping" */
 
   p = malloc(3 * (dynamic_fd_size + sizeof(intptr_t) + sizeof(int)));

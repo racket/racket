@@ -6,6 +6,8 @@
 (require racket/flonum
          racket/function
          racket/list
+         racket/symbol
+         racket/keyword
          (prefix-in k: '#%kernel))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,6 +153,31 @@
 (test #f list? y)
 (test #f list? (cons 'a 4))
 (arity-test list? 1 1)
+
+;; Try to check that `list?` is amortized constant-time
+(when (run-unreliable-tests? 'timing)
+  (define expected #f)
+  (define (check-time thunk)
+    (define start (current-process-milliseconds))
+    (thunk)
+    (define duration (- (current-process-milliseconds) start))
+    (cond
+      [(not expected) (set! expected duration)]
+      [else
+       (test #t < duration (+ (* 2 expected) 10))]))
+  (define (try range)
+    (for ([n range])
+      (define l (for/list ([i (in-range n)]) i))
+      (define nl (append l 'no))
+
+      (check-time (lambda ()
+                    (test #t 'list
+                          (for/and ([i 10000]) (list? l)))))
+      (check-time (lambda ()
+                    (test #f 'non-list
+                          (for/or ([i 10000]) (list? nl)))))))
+  (try (in-range  1000  1010))
+  (try (in-range 10000 10010)))
 
 (test #t pair? '(a . b))
 (test #t pair? '(a . 1))
@@ -392,6 +419,16 @@
 (test #t eq? (hasheq) (hash-remove (hasheq 3 4) 3))
 (test #t eq? (hasheqv) (hash-remove (hasheqv 3 4) 3))
 
+(err/rt-test (hash 1))
+(err/rt-test (hasheqv 1))
+(err/rt-test (hasheq 1))
+(err/rt-test (make-hash 1))
+(err/rt-test (make-hasheqv 1))
+(err/rt-test (make-hasheq 1))
+(err/rt-test (make-weak-hash 1))
+(err/rt-test (make-weak-hasheqv 1))
+(err/rt-test (make-weak-hasheq 1))
+
 (test #t symbol? 'foo)
 (test #t symbol? (car '(a b)))
 (test #f symbol? "bar")
@@ -432,6 +469,12 @@
 (test "cb" 'string-set! x)
 (test "ab" symbol->string y)
 (test y string->symbol "ab")
+(err/rt-test (string->symbol 10))
+(err/rt-test (string->symbol 'oops))
+
+(test #f eq? (symbol->string 'apple) (symbol->string 'apple))
+(test "apple" symbol->immutable-string 'apple)
+(test #t immutable? (symbol->immutable-string 'apple))
 
 #ci(test #t eq? 'mISSISSIppi 'mississippi)
 #ci(test #f 'string->symbol (eq? 'bitBlt (string->symbol "bitBlt")))
@@ -465,6 +508,11 @@
 (test #t keyword<? (string->keyword "\uA0") (string->keyword "\uFF"))
 (test #f keyword<? (string->keyword "\uFF") (string->keyword "\uA0"))
 (test #f keyword<? (string->keyword "\uA0") (string->keyword "\uA0"))
+
+(test #f eq? (keyword->string '#:apple) (keyword->string '#:apple))
+(test "apple" keyword->immutable-string '#:apple)
+(test #t immutable? (keyword->immutable-string '#:apple))
+
 
 (arity-test keyword? 1 1)
 (arity-test keyword<? 1 -1)
@@ -824,6 +872,15 @@
 (err/rt-test (string-append 1))
 (err/rt-test (string-append "hello" 1))
 (err/rt-test (string-append "hello" 1 "done"))
+(test "foobar" string-append-immutable "foo" "bar")
+(test "foo" string-append-immutable "foo")
+(test "" string-append-immutable)
+(test "" string-append-immutable "" "")
+(test #t immutable? (string-append-immutable "foo" "bar"))
+(test #t immutable? (string-append-immutable "foo"))
+(test #t immutable? (string-append-immutable "" ""))
+(test #t immutable? (string-append-immutable))
+(test #f immutable? (string-append (string->immutable-string "hello")))
 (test "" make-string 0)
 (define s (string-copy "hello"))
 (define s2 (string-copy s))
@@ -1150,13 +1207,26 @@
 (test (bytes 97 0 98) bytes-copy (bytes 97 0 98))
 (bytes-fill! s (char->integer #\x))
 (test #"xxxxx" 'bytes-fill! s)
+(let ([bstr (make-bytes 10)])
+  (test (void) bytes-copy! bstr 1 #"testing" 2 6)
+  (test #"\0stin\0\0\0\0\0" values bstr)
+  (test (void) bytes-copy! bstr 0 #"testing")
+  (test #"testing\0\0\0" values bstr))
 (arity-test bytes-copy 1 1)
 (arity-test bytes-fill! 2 2)
 (err/rt-test (bytes-copy 'blah))
 (err/rt-test (bytes-fill! 'sym 1))
 (err/rt-test (bytes-fill! #"static" 1))
 (err/rt-test (bytes-fill! (bytes-copy #"oops") #\5))
-
+(err/rt-test (bytes-copy! (bytes-copy #"oops") #\5))
+(err/rt-test (bytes-copy! (bytes-copy #"oops") 0 -1))
+(err/rt-test (bytes-copy! (bytes-copy #"oops") 0 #"src" #f))
+(err/rt-test (bytes-copy! (bytes-copy #"oops") 0 #"src" -1))
+(err/rt-test (bytes-copy! (bytes-copy #"oops") 0 #"src" 1 #f))
+(err/rt-test (bytes-copy! (bytes-copy #"oops") 0 #"src" 1 0))
+(err/rt-test (bytes-copy! (bytes-copy #"oops") 0 #"src" 1 17))
+(err/rt-test (bytes-copy! (bytes-copy #"o") 0 #"src"))
+(err/rt-test (bytes-copy! (bytes-copy #"o") 0 #"src" 1))
 (test #t bytes=? #"a" #"a" #"a")
 (test #t bytes=? #"a" #"a")
 (test #t bytes=? #"a")
@@ -3072,6 +3142,33 @@
 (test 'again object-name (procedure-rename (procedure-rename + 'plus) 'again))
 (test 'again object-name (procedure-rename (procedure-reduce-arity + 3) 'again))
 (test 3 procedure-arity (procedure-rename (procedure-reduce-arity + 3) 'again))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test #f equal?/recur 1 2 (lambda (a b) 'yes))
+(test #t equal?/recur 1 1 (lambda (a b) 'yes))
+(test #t equal?/recur '(1 . 2) '(1 . 2) (lambda (a b) 'yes))
+(test #f equal?/recur '(1 . 2) '(1 . 2) (lambda (a b) (eq? a 1)))
+(test #t equal?/recur '(1 . 1) '(1 . 2) (lambda (a b) (or (eq? a b) (eq? a 1))))
+
+(test #t equal?/recur '#(1 2 3) '#(1 2 3) (lambda (a b) 'yes))
+(test #f equal?/recur '#(1 2 3) '#(1 2 3) (lambda (a b) (not (eqv? a 2))))
+
+(test #t equal?/recur '#&1 '#&1 (lambda (a b) 'yes))
+(test #f equal?/recur '#&1 '#&1 (lambda (a b) #f))
+
+(test #t equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) 'yes))
+(test #t equal?/recur '#hash((1 . x)) '#hash((1 . z)) (lambda (a b) (or (eq? a b) (eq? 'z b))))
+(test #f equal?/recur '#hash(("2" . x)) (hash (string-copy "2") 'x) (lambda (a b) (eq? a b)))
+(test #t equal?/recur '#hash(("2" . x)) (hash (string-copy "2") 'x) (lambda (a b) (or (eq? a b) (eq? "2" a))))
+(test #f equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) #f))
+(test #f equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) (eq? a 1)))
+(test #f equal?/recur '#hash((1 . x)) '#hash((1 . x)) (lambda (a b) (eq? a 'x)))
+
+(let ()
+  (struct a (x) #:transparent)
+  (test #t equal?/recur (a 1) (a 2) (lambda (a b) 'yes))
+  (test #f equal?/recur (a 1) (a 1) (lambda (a b) (not (eq? a 1)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -89,14 +89,14 @@
       "libgobject"
       "libgthread"
       ["libintl" "libintl is released under the GNU Library General Public License (GNU LGPL)."]
-      ["libharfbuzz" "HarfBuzz is relased under a MIT license."]
+      ["libharfbuzz" "HarfBuzz is released under a MIT license."]
       ["libfribidi" "FriBidi is released under the GNU Library General Public License (GNU LGPL)."]
       ["libpango" "Pango is released under the GNU Library General Public License (GNU LGPL)."]
       "libpangocairo"
       "libpangoft2"
       "libpangowin32"
       "libexpat"
-      ["libuuid" "libuuid is relased under a Modified BSD license."]
+      ["libuuid" "libuuid is released under a Modified BSD license."]
       ["libfontconfig" ,(~a "FontConfig:\n"
                             " Copyright © 2000,2001,2002,2003,2004,2006,2007 Keith Packard\n"
                             " Copyright © 2005 Patrick Lam\n"
@@ -104,9 +104,9 @@
                             " Copyright © 2008,2009 Red Hat, Inc.\n"
                             " Copyright © 2008 Danilo Šegan\n"
                             " Copyright © 2012 Google, Inc.")]
-      ["libfreetype" "Pixman is relased under the FreeType project license."]
+      ["libfreetype" "Pixman is released under the FreeType project license."]
       ["libcairo" "Cairo is released under the GNU Library General Public License (GNU LGPL)."]
-      ["libpixman" "Pixman is relased under a MIT license."]
+      ["libpixman" "Pixman is released under a MIT license."]
       ["libpng" "Libpng is released under the libpng license."]
       ["libjpeg" "This software is based in part on the work of the Independent JPEG Group."]
       ["zlib1" "zlib is by Jean-loup Gailly and Mark Adler."]
@@ -175,7 +175,7 @@
      ""
      #t
      #f
-     "1.2" ; version
+     "1.3" ; version
      (["libgtk-x11-2.0.0" "GTK+ is released under the GNU Library General Public License (GNU LGPL)."]
       ["libatk" "ATK is released under the GNU Library General Public License (GNU LGPL)."]
       "libgdk-x11-2.0.0"
@@ -297,14 +297,10 @@
    (lambda (o)
      (displayln pkg-name o)
      (newline o)
-     (displayln "This package is distributed under the GNU Lesser General Public" o)
-     (displayln "License (LGPL).  This means that you can link this package into" o)
-     (displayln "proprietary applications, provided you follow the rules stated in the" o)
-     (displayln "LGPL.  You can also modify this package; if you distribute a modified" o)
-     (displayln "version, you must distribute it under the terms of the LGPL, which in" o)
-     (displayln "particular means that you must release the source code for the" o)
-     (displayln "modified software.  See http://www.gnu.org/copyleft/lesser.html" o)
-     (displayln "for more information." o)
+     (displayln "This package is distributed under the Apache 2.0 and MIT licenses. The" o)
+     (displayln "user can choose the license under which they will be using the" o)
+     (displayln "software. There may be other licenses within the distribution with" o)
+     (displayln "which the user must also comply." o)
      (for ([l (in-list lics)])
        (newline o)
        (displayln l o))

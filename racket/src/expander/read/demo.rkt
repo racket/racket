@@ -97,7 +97,7 @@
                 to finish the text
                 HERE
                 not included}
-           "This is text and\nHERE we go\nto finish the text\n")
+           "This is text and\nHERE we go\nto finish the text")
 (parameterize ([read-curly-brace-with-tag #t])
   (test-read (s->p "{fAl Se}")
              '(#%braces fAl Se)))
@@ -137,25 +137,29 @@
 (parameterize ([read-accept-reader #t])
   (main:read (s->p "#readerok") #:dynamic-require (lambda (lib sym)
                                                     (lambda (in src line col pos)
-                                                      'OK))))
+                                                      'OK))
+             #:call-with-root-namespace (lambda (proc) (proc))))
 (parameterize ([read-accept-reader #t])
   (main:read (s->p "#lang ok ?")
              #:dynamic-require (lambda (lib sym)
                                  (lambda (in src line col pos)
                                    'LANG-OK))
-             #:module-declared? (lambda (mp) #f)))
+             #:module-declared? (lambda (mp) #f)
+             #:call-with-root-namespace (lambda (proc) (proc))))
 (parameterize ([read-accept-reader #t])
   (main:read (s->p "#!ok ?")
              #:dynamic-require (lambda (lib sym)
                                  (lambda (in)
                                    '|#!-OK|))
-             #:module-declared? (lambda (mp) #t)))
+             #:module-declared? (lambda (mp) #t)
+             #:call-with-root-namespace (lambda (proc) (proc))))
 
 (main:read-language (s->p "#lang racket/base") (lambda () (error "fail"))
                     #:dynamic-require (lambda (lib sym fail-k)
                                         (lambda (in src line col pos)
                                           (lambda (x y) 'LANG-INFO)))
-                    #:module-declared? (lambda (mp) #f))
+                    #:module-declared? (lambda (mp) #f)
+                    #:call-with-root-namespace (lambda (proc) (proc)))
 
 (parameterize ([current-readtable (make-readtable #f
                                                   #\# #\a #f)])

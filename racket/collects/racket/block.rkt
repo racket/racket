@@ -2,7 +2,9 @@
   (#%require "private/define.rkt"
              (for-syntax '#%kernel
                          "private/stx.rkt"
-                         "private/small-scheme.rkt"
+                         "private/qq-and-or.rkt"
+                         "private/define-et-al.rkt"
+                         "private/cond.rkt"
                          "private/stxcase-scheme.rkt"
                          "private/qqstx.rkt"
                          syntax/intdef))

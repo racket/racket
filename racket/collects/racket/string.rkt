@@ -181,7 +181,7 @@
 ;; string-contains? uses a variant of the Knuth-Morris-Pratt string search
 ;; algorithm. It start with a direct search without the KMP table, until
 ;; it finds a partial match that long enough (currently 4 characters).
-;; The table is also skiped when there are only a few characters left
+;; The table is also skipped when there are only a few characters left
 ;; to test (currently 4 characters).
 ;; The first time a partial match is found, it buils a small partial table
 ;; and if it is necesay it builds the complete table.

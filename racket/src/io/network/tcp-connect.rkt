@@ -6,6 +6,7 @@
          "../host/error.rkt"
          "../security/main.rkt"
          "../format/main.rkt"
+         "../sandman/ltps.rkt"
          "tcp-port.rkt"
          "port-number.rkt"
          "address.rkt"
@@ -14,6 +15,10 @@
 
 (provide tcp-connect
          tcp-connect/enable-break)
+
+(struct connect-progress (conn trying-fd)
+  #:mutable
+  #:authentic)
 
 (define/who (tcp-connect hostname port-no [local-hostname #f] [local-port-no #f])
   (do-tcp-connect who hostname port-no local-hostname local-port-no))
@@ -66,15 +71,17 @@
                (raise-connect-error local-addr "local host not found" local-hostname local-port-no)]
               [else
                (call-with-resource
-                (box (rktio_start_connect rktio remote-addr local-addr))
+                (connect-progress (rktio_start_connect rktio remote-addr local-addr)
+                                  #f)
                 ;; in atomic mode
-                (lambda (conn-box)
-                  (define conn (unbox conn-box))
+                (lambda (conn-prog)
+                  (remove-trying-fd! conn-prog)
+                  (define conn (connect-progress-conn conn-prog))
                   (when conn
                     (rktio_connect_stop rktio conn)))
                 ;; in atomic mode
-                (lambda (conn-box)
-                  (define conn (unbox conn-box))
+                (lambda (conn-prog)
+                  (define conn (connect-progress-conn conn-prog))
                   (cond
                     [(rktio-error? conn)
                      (raise-connect-error conn)]
@@ -83,6 +90,7 @@
                        (cond
                          [(eqv? (rktio_poll_connect_ready rktio conn)
                                 RKTIO_POLL_NOT_READY)
+                          (init-trying-fd! conn-prog)
                           (end-atomic)
                           ((if enable-break? sync/enable-break sync)
                            (rktio-evt (lambda ()
@@ -93,6 +101,7 @@
                           (start-atomic)
                           (loop)]
                          [else
+                          (remove-trying-fd! conn-prog)
                           (check-current-custodian who)
                           (define fd (rktio_connect_finish rktio conn))
                           (cond
@@ -102,8 +111,25 @@
                                 (loop)]
                                [else
                                 ;; other errors imply that `conn` is destroyed
-                                (set-box! conn-box #f)
+                                (set-connect-progress-conn! conn-prog #f)
                                 (raise-connect-error fd)])]
                             [else
                              (define name (string->immutable-string hostname))
                              (open-input-output-tcp fd name)])]))])))])))])))))
+
+;; in atomic mode
+(define (init-trying-fd! conn-prog)
+  (unless (connect-progress-trying-fd conn-prog)
+    ;; Even though we don't use the semaphore for the registered file
+    ;; descriptor, registering it seems to avoid a problem where
+    ;; `rktio_poll_add_connect` doesn't work, at least on Mac OS.
+    (define fd (rktio_connect_trying rktio (connect-progress-conn conn-prog)))
+    (set-connect-progress-trying-fd! conn-prog fd)
+    (void (fd-semaphore-update! fd 'write))))
+
+;; in atomic mode
+(define (remove-trying-fd! conn-prog)
+  (define fd (connect-progress-trying-fd conn-prog))
+  (when fd
+    (fd-semaphore-update! fd 'remove)
+    (set-connect-progress-trying-fd! conn-prog #f)))

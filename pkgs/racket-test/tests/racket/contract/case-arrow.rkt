@@ -182,6 +182,19 @@
                  [(x) 1])
                'pos 'neg)
      1))
+
+  (test/spec-passed/result
+   'contract->case->16
+   '((contract
+      (case-> (-> #f any)
+              (-> #t #f any/c))
+      (case-lambda
+        [(x) x]
+        [(y z) z])
+      'pos
+      'neg)
+     #f)
+   #f)
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                                                        ;;

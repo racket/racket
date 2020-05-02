@@ -135,6 +135,8 @@
 (define (compiled-position->primitive pos) #f)
 (define (primitive-in-category? name cat-sym) #f)
 
+(define (primitive-lookup sym) #f)
+
 ;; ----------------------------------------
 
 (struct variable-reference (instance primitive-varref))

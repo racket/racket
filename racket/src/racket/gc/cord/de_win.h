@@ -80,7 +80,7 @@ void set_position(int x, int y);
 
 void do_command(int);
 			/* Execute an editor command.			*/
-			/* Agument is a command character or one	*/
+			/* Argument is a command character or one	*/
 			/* of the IDM_ commands.			*/
 
 void generic_init(void);

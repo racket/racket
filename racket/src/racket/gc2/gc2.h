@@ -145,13 +145,18 @@ GC2_EXTERN void GC_dump(void);
 
 GC2_EXTERN intptr_t GC_get_memory_use(void *c);
 /*
-   Returns the number of currently-allocated bytes (speficilly for
+   Returns the number of currently-allocated bytes (specifically for
    custodian c, as much as the GC's accounting makes possible). */
 
-GC2_EXTERN intptr_t GC_get_memory_ever_allocated();
+GC2_EXTERN intptr_t GC_get_memory_ever_used();
 /*
-   Returns the number of total number of allocated bytes, including
+   Returns the total number of allocated bytes, including
    bytes that have since been reclaimed. */
+
+GC2_EXTERN intptr_t GC_get_memory_max_allocated();
+/*
+   Returns the maximum number of bytes allocated at once, including
+   GC overhead but not including phantom bytes. */
 
 GC2_EXTERN int GC_accouting_enabled();
 /* 
@@ -387,7 +392,7 @@ GC2_EXTERN void *GC_fixup_self(void *p);
    only when objects are moved before fixup, but objects might
    be moved after fixup. */
 
-/* INTERNAL for the current implemenation (used by macros): */
+/* INTERNAL for the current implementation (used by macros): */
 GC2_EXTERN void GC_mark(void *p);
 GC2_EXTERN void GC_fixup(void *p);
 GC2_EXTERN void GC_mark2(void *p, struct NewGC *gc);

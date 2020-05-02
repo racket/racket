@@ -340,7 +340,7 @@
           (define new-url
             (url "https" #f "github.com" #f #t
                  (map (λ (x) (path/param x empty))
-                      (list user repo "tarball" checksum))
+                      (list user repo "legacy.tar.gz" checksum))
                  empty
                  #f))
           (define tmp.tgz

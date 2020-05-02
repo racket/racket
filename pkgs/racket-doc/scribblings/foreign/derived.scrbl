@@ -24,3 +24,4 @@
 @include-section["com.scrbl"]
 @include-section["file.scrbl"]
 @include-section["winapi.scrbl"]
+@include-section["vm.scrbl"]

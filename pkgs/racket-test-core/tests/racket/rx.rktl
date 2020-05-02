@@ -1836,5 +1836,39 @@
 (test #f 'optimized (regexp-match #px"a*(?<=bc)" (make-bytes 100024 (char->integer #\a))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Ensure that regexp-replace can handle sub-matches that are #f
+;; (https://github.com/racket/racket/issues/3032)
+;;
+(test "" regexp-replace "(x)?" "" (lambda a ""))
+(test "" regexp-replace "(x)?" "" "\\1")
+
+(test "x" regexp-replace "x(y)?(z)?" "x" "&\\1\\2")
+(test "xyy" regexp-replace "x(y)?(z)?" "xy" "&\\1\\2")
+
+(test "xyy[z]" regexp-replace "x(y)?(z)?" "xy" (lambda (x y z)
+                                                 (string-append x
+                                                                (or y "[y]")
+                                                                (or z "[z]"))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Don't get stuck waiting for an unneeded byte
+
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "1\n" o)
+  (define rx (regexp "^(?:(.*?)(?:\r\n|\n))"))
+  (test '(#"1\n" #"1") regexp-match rx i))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "abc" o)
+  (define rx (regexp "^(ab)*"))
+  (test '(#"ab" #"ab") regexp-match rx i))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "123" o)
+  (define rx (pregexp "^(12)\\1|123"))
+  (test '(#"123" #f) regexp-match rx i))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

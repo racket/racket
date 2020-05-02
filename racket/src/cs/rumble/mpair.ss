@@ -1,4 +1,7 @@
-(define-record mpair (car cdr))
+(define-record-type mpair
+  (fields (mutable car mpair-car set-mpair-car!)
+          (mutable cdr mpair-cdr set-mpair-cdr!))
+  (sealed #t))
 
 (define (mcons a b)
   (make-mpair a b))

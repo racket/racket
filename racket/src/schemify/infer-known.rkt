@@ -99,19 +99,20 @@
   (match v
     [`(lambda . ,_) #t]
     [`(case-lambda . ,_) #t]
-    [`(let-values ([(,id) ,rhs]) ,body) (let-lambda? id rhs body)]
-    [`(letrec-values ([(,id) ,rhs]) ,body) (let-lambda? id rhs body)]
-    [`(let ([,id ,rhs]) ,body) (let-lambda? id rhs body)]
-    [`(letrec* ([,id ,rhs]) ,body) (let-lambda? id rhs body)]
+    [`(let-values ([(,id) ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
+    [`(letrec-values ([(,id) ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
+    [`(let ([,id ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
+    [`(letrec* ([,id ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
     [`(let-values ,_ ,body) (and (not simple?) (lambda? body))]
     [`(letrec-values ,_ ,body) (and (not simple?) (lambda? body))]
-    [`(begin ,body) (lambda? body)]
-    [`(values ,body) (lambda? body)]
+    [`(begin ,body) (lambda? body #:simple? simple?)]
+    [`(values ,body) (lambda? body #:simple? simple?)]
     [`,_ #f]))
 
-(define (let-lambda? id rhs body)
-  (or (and (wrap-eq? id body) (lambda? rhs))
-      (lambda? body)))
+(define (let-lambda? id rhs body #:simple? simple?)
+  (or (and (wrap-eq? id body) (lambda? rhs #:simple? simple?))
+      (and (not simple?)
+           (lambda? body #:simple? simple?))))
 
 ;; Extract procedure from a form on which `lambda?` produces true
 (define (extract-lambda v)

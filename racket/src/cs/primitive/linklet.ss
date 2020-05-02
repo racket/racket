@@ -18,6 +18,7 @@
   [make-instance (known-procedure -2)]
   [primitive->compiled-position (known-procedure 2)]
   [primitive-table (known-procedure 6)]
+  [primitive-lookup (known-procedure 2)]
   [linklet-virtual-machine-bytes (known-procedure 1)]
   [read-linklet-bundle-hash (known-procedure 2)]
   [write-linklet-bundle-hash (known-procedure 2)]

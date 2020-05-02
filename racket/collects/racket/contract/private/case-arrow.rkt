@@ -191,8 +191,8 @@
                        "expected no keywords, got keyword ~a" (car kwds))))
 
 ;; dom-ctcs : (listof (listof contract))
-;; rst-ctcs : (listof contract)
-;; rng-ctcs : (listof (listof contract))
+;; rst-ctcs : (listof (or/c #f contract))
+;; rng-ctcs : (listof (or/c #f (listof contract)))
 ;; specs : (listof (list boolean exact-positive-integer)) 
 ;;     indicates the required arities of the input functions
 ;; mctc? : was created with case->m or object-contract
@@ -334,7 +334,7 @@
              #:when x)
     (append acc x)))
 
-;; Takes a list of (listof projection), and returns one of the
+;; Takes a list of (or/c #f (listof projection)), and returns one of the
 ;; lists if all the lists contain the same projections. If the list is
 ;; null, it returns #f.
 (define (same-range-contracts rng-ctcss)
@@ -342,11 +342,11 @@
     [(null? rng-ctcss) #f]
     [else
      (define fst (car rng-ctcss))
-     (and (for/and ([ps (in-list (cdr rng-ctcss))])
+     (and fst
+          (for/and ([ps (in-list (cdr rng-ctcss))])
             (and ps
                  (= (length fst) (length ps))
                  (for/and ([c (in-list ps)]
                            [fst-c (in-list fst)])
-                   (and (contract-struct-stronger? c fst-c)
-                        (contract-struct-stronger? fst-c c)))))
+                   (contract-struct-equivalent? c fst-c))))
           fst)]))

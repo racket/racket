@@ -302,9 +302,9 @@ typedef struct Thread_Local_Variables {
   int current_lifetime_;
   int scheme_main_was_once_suspended_;
   int buffer_init_size_;
-  intptr_t scheme_total_gc_time_;
-  intptr_t start_this_gc_time_;
-  intptr_t end_this_gc_time_;
+  uintptr_t scheme_total_gc_time_;
+  uintptr_t start_this_gc_time_;
+  uintptr_t end_this_gc_time_;
   double start_this_gc_real_time_;
   double end_this_gc_real_time_;
   struct Scheme_Struct_Type *gc_info_prefab_;

@@ -81,7 +81,7 @@
 
   (define-syntax (test stx)
     (syntax-case stx ()
-      [(_ method body raw ereq estatus eheaders econtent)
+      [(_ method body raw ereq estatus eheaders econtent extra ...)
        (quasisyntax/loc stx
          (begin
            #,(syntax/loc stx
@@ -93,7 +93,8 @@
                                            #:port the-port
                                            #:method method
                                            #:headers empty
-                                           #:data body))
+                                           #:data body
+                                           extra ...))
                        raw ereq estatus eheaders econtent))
            #,(syntax/loc stx
                (test-e the-port
@@ -109,7 +110,8 @@
                                                #:method method
                                                #:headers empty
                                                #:close? #t
-                                               #:data body)
+                                               #:data body
+                                               extra ...)
                            (begin0
                             (hc:http-conn-recv! c
                                                 #:method method
@@ -133,7 +135,8 @@
                                              #:method method
                                              #:headers empty
                                              #:close? #t
-                                             #:data body)
+                                             #:data body
+                                             extra ...)
                          (begin0
                           (hc:http-conn-recv! c
                                               #:method method
@@ -150,132 +153,154 @@
                                       (list (u:path/param "" empty)) empty #f)
                           #:method method
                           #:headers empty
-                          #:data body))
+                          #:data body
+                          extra ...))
                        raw ereq estatus eheaders econtent))))]))
 
   (tests
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
     #"This is the data in the first chunk and this is the second one"]
 
-   ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one"
+   ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
     #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
+    #"This is the data in the first chunk and this is the second one"
+    #:content-decode '(gzip)]
+
+   ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
+    #"This is the data in the first chunk and this is the second one"
+    #:content-decode '(deflate)]
+
+   ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
+    #"This is the data in the first chunk and this is the second one"
+    #:content-decode '()]
+
+   ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.0 200 OK\nContent-Type: text/plain\n\nThis is the data in the first chunk and this is the second one"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 62\r\n\r\nThis is the data in the first chunk and this is the second one"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain" #"Content-Length: 62")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\ncontent-length: 62\r\n\r\nThis is the data in the first chunk and this is the second one"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain" #"content-length: 62")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
     #"This is the data in the first chand this is the second oneXXXXXXX"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
     #"This is the data in the first chand this is the second oneXXXXXXX"]
 
    ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one\r\n"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.0 200 OK"
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked")
     #"This is the data in the first chand this is the second oneXXXXXXX"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
     #"This is the data in the first chand this is the second oneXXXXXXX"]
 
    ["GET" #f "HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:9002/whatever\r\n\r\nstuff"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 301 Moved Permanently"
     '(#"Location: http://localhost:9002/whatever")
     #"stuff"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
     #"This is the data in the first chand this is the second oneXXXXXXX"]
 
    ["GET" #f "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\nbb \r\n<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>\r\n0\r\n\r\n"
-    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
     #"<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>"]
 
    ["PUT" #f "HTTP/1.1 200 OK\r\n\r\n"
-    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
     #""]
 
    ["PUT" #"frob" "HTTP/1.1 200 OK\r\n\r\n"
-    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfrob"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfrob"
     #"HTTP/1.1 200 OK"
     '()
     #""]
 
    ["PUT" "frob" "HTTP/1.1 200 OK\r\n\r\n"
-    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfrob"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfrob"
     #"HTTP/1.1 200 OK"
     '()
     #""]
@@ -283,7 +308,7 @@
    ["PUT"
     (λ (w) (w "fr") (w "ob"))
     "HTTP/1.1 200 OK\r\n\r\n"
-    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n2\r\nfr\r\n2\r\nob\r\n0\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n2\r\nfr\r\n2\r\nob\r\n0\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
     #""]
@@ -291,13 +316,13 @@
    ["PUT"
     (λ (w) (void))
     "HTTP/1.1 200 OK\r\n\r\n"
-    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n0\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n0\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
     #""]
 
    ["HEAD" #f "HTTP/1.1 200 OK\r\n\r\n"
-    #"HEAD / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    #"HEAD / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip,deflate\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
     #""])

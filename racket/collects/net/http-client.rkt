@@ -154,7 +154,7 @@
                          #:method [method-bss #"GET"]
                          #:close? [close? #f]
                          #:headers [headers-bs empty]
-                         #:content-decode [decodes '(gzip)]
+                         #:content-decode [decodes '(gzip deflate)]
                          #:data [data #f])
   (http-conn-enliven! hc)
   (match-define (http-conn host port port-usual? to from _
@@ -168,9 +168,11 @@
   (unless (regexp-member #rx"^(?i:User-Agent:) +.+$" headers-bs)
     (fprintf to "User-Agent: Racket/~a (net/http-client)\r\n" 
              (version)))
-  (unless (or (not (memq 'gzip decodes))
+  (unless (or (empty? decodes)
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
-    (fprintf to "Accept-Encoding: gzip\r\n"))
+    (fprintf to "Accept-Encoding: ~a\r\n"
+             (string-join (map symbol->string decodes) ",")))
+
   (define body (->bytes data))
   (cond [(procedure? body)
          (fprintf to "Transfer-Encoding: chunked\r\n")]
@@ -330,7 +332,7 @@
 
 (define (http-conn-recv! hc
                          #:method [method-bss #"GET"]
-                         #:content-decode [decodes '(gzip)]
+                         #:content-decode [decodes '(gzip deflate)]
                          #:close? [iclose? #f])
   (http-conn-enliven! hc)
   (define status (http-conn-status! hc))
@@ -360,27 +362,34 @@
       [else
        (values (http-conn-response-port/rest! hc) #t)]))
   (define decoded-response-port
-    (cond
-      [(head? method-bss) raw-response-port]
-      [(and (memq 'gzip decodes)
-            (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
-            (not (eof-object? (peek-byte raw-response-port))))
-       (define-values (in out) (make-pipe PIPE-SIZE))
-       (define gunzip-t
-         (thread
-          (λ ()
-            (gunzip-through-ports raw-response-port out))))
-       (thread
-        (λ ()
-          (thread-wait gunzip-t)
-          (when wait-for-close?
-            ;; Wait for an EOF from the raw port before we send an
-            ;; output on the decoding pipe:
-            (copy-port raw-response-port (open-output-nowhere)))
-          (close-output-port out)))
-       in]
-      [else 
-       raw-response-port]))
+    (let ([decode-response
+           (λ (raw-response-port decode-function)
+             (define-values (in out) (make-pipe PIPE-SIZE))
+             (define decode-t
+               (thread
+                (λ ()
+                  (decode-function raw-response-port out))))
+             (thread
+              (λ ()
+                (thread-wait decode-t)
+                (when wait-for-close?
+                  ;; Wait for an EOF from the raw port before we send an
+                  ;; output on the decoding pipe:
+                  (copy-port raw-response-port (open-output-nowhere)))
+                (close-output-port out)))
+             in)])
+      (cond
+        [(head? method-bss) raw-response-port]
+        [(and (memq 'gzip decodes)
+              (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
+              (not (eof-object? (peek-byte raw-response-port))))
+         (decode-response raw-response-port gunzip-through-ports)]
+        [(and (memq 'deflate decodes)
+              (regexp-member #rx#"^(?i:Content-Encoding: +deflate)$" headers)
+              (not (eof-object? (peek-byte raw-response-port))))
+         (decode-response raw-response-port inflate)]
+        [else
+         raw-response-port])))
   (values status headers decoded-response-port))
 
 (define (http-conn-sendrecv! hc url-bs
@@ -388,7 +397,7 @@
                              #:method [method-bss #"GET"]
                              #:headers [headers-bs empty]
                              #:data [data #f]
-                             #:content-decode [decodes '(gzip)]
+                             #:content-decode [decodes '(gzip deflate)]
                              #:close? [close? #f])
   (http-conn-send! hc url-bs
                    #:version version-bs
@@ -409,7 +418,7 @@
                        #:method [method-bss #"GET"]
                        #:headers [headers-bs empty]
                        #:data [data #f]
-                       #:content-decode [decodes '(gzip)])
+                       #:content-decode [decodes '(gzip deflate)])
   (define hc (http-conn-open host-bs #:ssl? ssl? #:port port))
   (begin0 (http-conn-sendrecv! hc url-bs
                                #:version version-bs

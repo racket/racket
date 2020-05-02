@@ -6,7 +6,8 @@
          compiler/zo-structs
          racket/dict
          racket/set
-         racket/fasl)
+         racket/fasl
+         ffi/unsafe/vm)
 
 (provide zo-parse)
 (provide (all-from-out compiler/zo-structs))
@@ -805,6 +806,7 @@
     [else
      (error 'zo-parse "bad file format specifier")]))
 
+;; returns a hash table representing linklet bundle content
 (define (zo-parse-top port vm [check-end? #t])
 
   ;; Skip module hash code
@@ -859,9 +861,17 @@
      
      (make-reader-graph (read-compact cp))]
     [(equal? vm #"chez-scheme")
-     (hash
-      'opaque
-      (read-bytes (read-simple-number port) port))]
+     (define len (read-simple-number port))
+     (define bstr (read-bytes len port))
+     (cond
+       [(eq? 'chez-scheme (system-type 'vm))
+        (hash-set ((vm-primitive 'read-linklet-bundle-hash)
+                   (open-input-bytes (bytes-append
+                                      (integer->integer-bytes len 4 #f #f)
+                                      bstr)))
+                  'opaque bstr)]
+       [else
+        (hash 'opaque bstr)])]
     [else
      (error 'zo-parse "cannot parse for virtual machine: ~s" vm)]))
 

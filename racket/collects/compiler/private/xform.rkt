@@ -1484,7 +1484,7 @@
         ;; top-level converts the top-level tok list e into
         ;; a new top-level tok list, often collecting info
         ;; (such as function prototypes and typedefs).
-        ;; It expects that the tok list e reprsents one "thing",
+        ;; It expects that the tok list e represents one "thing",
         ;; which often means that it's terminated with a semicolon.
         (define (top-level e where can-drop-vars?)
           (cond
@@ -2881,7 +2881,7 @@
 
                                     local-vars)
                              (append extra-vars local-vars))])
-                ;; Convert calls and body (recusively)
+                ;; Convert calls and body (recursively)
                 (let-values ([(orig-maxlive) (live-var-info-maxlive live-vars)]
                              [(orig-maxpush) (live-var-info-maxpush live-vars)]
                              [(orig-tag) (live-var-info-tag live-vars)]
@@ -3527,7 +3527,7 @@
                                    (tok-n (car func))))
                       ;; Lift out function calls as arguments. (Can re-order code.
                       ;; Racket source code must live with this change to C's semantics.)
-                      ;; Calls are replaced by varaibles, and setup code generated that
+                      ;; Calls are replaced by variables, and setup code generated that
                       ;; assigns to the variables.
                       (let*-values ([(live-vars)
                                      ;; Check for special form (XXX -> ivar) = call, which will
@@ -4054,7 +4054,7 @@
                         (eq? semi (tok-n (list-ref e (sub1 (length e)))))
                         ;; Doesn't start with a star, decrement, increment, or global call
                         (not (memq (tok-n (car e)) '(* -- ++ |::|)))
-                        ;; Not an assignemnt
+                        ;; Not an assignment
                         (not (memq (tok-n (cadr e)) '(= += -=)))
                         ;; Not a return, case, new, or delete
                         (not (memq (tok-n (car e)) '(return case new delete delete_wxobject)))

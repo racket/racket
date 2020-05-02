@@ -49,7 +49,7 @@ The following are used only in the traditional Racket executable:
 
 * GMP. Code from GMP can be found in racket/src. The
   version of GMP used is distributed under the GNU Lesser General
-  Public License version 2.1.
+  Public License version 3.
 
 * The Boehm Collector. Code for this package can be found in
   racket/gc. See the file racket/gc/README.QUICK

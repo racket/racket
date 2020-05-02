@@ -13,6 +13,7 @@
               primitive->compiled-position
               compiled-position->primitive
               primitive-in-category?
+              primitive-lookup
               
               linklet?
               compile-linklet             ; result is serializable

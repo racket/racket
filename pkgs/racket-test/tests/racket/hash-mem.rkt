@@ -44,3 +44,7 @@
 
 (test-mutable)
 (test-immutable)
+
+(module+ test
+  (module config info
+    (define timeout 200)))

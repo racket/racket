@@ -1,7 +1,5 @@
-(module module+ '#%kernel
-  (#%require "more-scheme.rkt"
-             "modbeg.rkt"
-             (for-syntax '#%kernel
+(module submodule '#%kernel
+  (#%require (for-syntax '#%kernel
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"
                          "letstx-scheme.rkt"

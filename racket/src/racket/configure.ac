@@ -50,7 +50,7 @@ m4_include(../ac/natipkg_arg.m4)
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
-AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries (enabled by default for Unix)])
+m4_include(../ac/instlib_arg.m4)
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
@@ -80,6 +80,8 @@ m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
 m4_include(../ac/ubsan_arg.m4)
 AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
+
+AC_ARG_ENABLE(werror,  [  --enable-werror         compile sources with warnings as errors])  
 
 m4_include(../ac/crossany_arg.m4)
 
@@ -229,16 +231,20 @@ show_explicitly_enabled "${enable_jitframe}" "jitframe"
 show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
 m4_include(../ac/strip_show.m4)
 
-show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
-show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
+m4_include(../ac/instlib.m4)
 
 m4_include(../ac/sdk_show.m4)
 
 if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
-     echo "=== Creating and using local Racket executable"
+    echo "=== Creating and using local Racket executable"
   else
-     echo "=== Using Racket executable ${enable_racket}"
+    if test ! -f "${enable_racket}"; then
+      echo "cannot find racket executable in ${enable_racket}"
+      exit 1
+    else
+      echo "=== Using Racket executable ${enable_racket}"
+    fi	
   fi 
 fi
 
@@ -296,8 +302,6 @@ MAIN_VARIANT=3m
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
-
-INSTALL_LIBS_ENABLE=no-install
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -535,11 +539,6 @@ if test "${enable_foreign}" = "yes" ; then
 fi
 if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
-fi
-
-if test "${enable_libs}" != "no" ; then
-  # Canceled for some platforms below:
-  INSTALL_LIBS_ENABLE=install
 fi
 
 ############## platform tests ################
@@ -883,44 +882,7 @@ AC_MSG_RESULT($using_gnu_cpp)
 
 # Although rktio takes care of iconv, we need to know whether
 # to link to it
-iconv_lib_flag=""
-if test "${skip_iconv_check}" = "no" ; then
- if test "${enable_iconv}" = "yes" ; then
-  AC_CHECK_HEADER(iconv.h, enable_iconv=yes, enable_iconv=no)
-  if test "${enable_iconv}" = "yes" ; then  
-    # Does it all work, now?
-    AC_TRY_RUN(
-[   #include <iconv.h>]
-[   #include <langinfo.h>]
-    int main() {
-[     iconv_open("UTF-8", "UTF-8");]
-      return 0;
-    }, enable_iconv=yes, enable_iconv=no, enable_iconv=yes)
-    if test "${enable_iconv}" = "no" ; then  
-      # Try adding -liconv ?
-      #  We did not use AC_CHECK_LIB because iconv is sometimes macro-renamed
-      ORIG_LIBS="$LIBS"
-      LIBS="$LIBS -liconv"
-      AC_TRY_RUN(
-[     #include <iconv.h>]
-[     #include <langinfo.h>]
-      int main() {
-[     iconv_open("UTF-8", "UTF-8");]
-      return 0;
-      }, enable_iconv=yes, enable_iconv=no, enable_iconv=yes)
-      if test "${enable_iconv}" = "no" ; then
-        LIBS="$ORIG_LIBS"
-      else
-        iconv_lib_flag=" -liconv"      
-      fi
-    fi
-  fi
- fi
- [ msg="iconv is usable" ]
- AC_MSG_CHECKING($msg)
- iconv_usage_result="$enable_iconv$iconv_lib_flag"
- AC_MSG_RESULT($iconv_usage_result)
-fi
+m4_include(../ac/iconv.m4)
 
 if test "${check_for_mprotect}" = "yes" ; then
   [ msg="for mmap and mprotect" ]
@@ -1044,6 +1006,8 @@ AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 AC_CHECK_SIZEOF([void *])
 AC_CHECK_SIZEOF(bool, unused, [#include <stdbool.h>])
+
+m4_include(../ac/valid_sizeof.m4)
 
 AC_TYPE_INTPTR_T
 AC_TYPE_UINTPTR_T
@@ -1468,6 +1432,11 @@ else
   PLAIN_CC='$(CC)'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
+fi
+
+# Last but not least, if Werror was requested, add it now
+if test "${enable_werror}" = "yes"; then
+  CFLAGS="-Werror ${CFLAGS}"
 fi
 
 ############## final output ################

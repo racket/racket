@@ -321,7 +321,7 @@
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Use keys that are a multile of a power of 2 to
+; Use keys that are a multiple of a power of 2 to
 ; get "almost" collisions that force the hash table
 ; to use a deeper tree.
 
@@ -527,6 +527,56 @@
   (test-hash-ref-key/immut (hasheqv) eq? 'foo 'foo))
 
 ;; ----------------------------------------
-;;
+;; Run a GC concurrent to `hash-for-each` or `hash-map`
+;; to make sure a disappearing key doesn't break the
+;; iteration
+
+(define (check-concurrent-gc-of-keys hash-iterate)
+  (define gc-thread
+    (thread
+     (lambda ()
+       (let loop ([n 10])
+         (unless (zero? n)
+           (collect-garbage)
+           (sleep)
+           (loop (sub1 n)))))))
+
+  (let loop ()
+    (unless (thread-dead? gc-thread)
+      (let ([ls (for/list ([i 100])
+                  (gensym))])
+        (define ht (make-weak-hasheq))
+        (for ([e (in-list ls)])
+          (hash-set! ht e 0))
+        ;; `ls` is unreferenced here here on
+        (define counter 0)
+        (hash-iterate
+         ht
+         (lambda (k v)
+           (set! counter (add1 counter))
+           'ok))
+        '(printf "~s @ ~a\n" counter j))
+      (loop))))
+
+(check-concurrent-gc-of-keys hash-for-each)
+(check-concurrent-gc-of-keys hash-map)
+(check-concurrent-gc-of-keys (lambda (ht proc)
+                               (equal? ht (hash-copy ht))))
+(check-concurrent-gc-of-keys (lambda (ht proc)
+                               (equal-hash-code ht)))
+
+;; ----------------------------------------
+;; Make sure a new `equal?`-based key is used when the "new" value is
+;; `eq?` to the old one:
+
+(let ()
+  (define ht (hash))
+  (define f (string-copy "apple"))
+  (define g (string-copy "apple"))
+  (define ht2 (hash-set (hash-set ht f 1) g 1))
+  (test 1 hash-count ht2)
+  (test #t eq? (car (hash-keys ht2)) g))
+
+;; ----------------------------------------
 
 (report-errs)

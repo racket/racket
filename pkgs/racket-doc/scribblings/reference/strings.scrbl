@@ -155,6 +155,17 @@ contains the concatenated characters of the given @racket[str]s. If no
 @mz-examples[(string-append "Apple" "Banana")]}
 
 
+@defproc[(string-append-immutable [str string?] ...) (and/c string? immutable?)]{
+
+The same as @racket[string-append], but the result is an immutable
+string.
+
+@mz-examples[(string-append-immutable "Apple" "Banana")
+             (immutable? (string-append-immutable "A" "B"))]
+
+@history[#:added "7.5.0.14"]}
+
+
 @defproc[(string->list [str string?]) (listof char?)]{ Returns a new
  list of characters corresponding to the content of @racket[str]. That is,
  the length of the list is @racket[(string-length str)], and the

@@ -37,6 +37,11 @@
       (string->symbol (regexp-replace #rx"[.]rkt$" (cadr mod) ""))
       mod))
 
+(define (path-add-checksum-suffix path)
+  (if (string? path)
+      (string-append path ".CHECKSUM")
+      (bytes->path (bytes-append (path->bytes path) #".CHECKSUM"))))
+
 (define (lift-directory-content pkg-dir path)
   (define orig-sub (let ([s (car path)])
                      (if (string? s)

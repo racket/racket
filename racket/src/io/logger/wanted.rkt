@@ -48,7 +48,7 @@
 (define (update-logger-wanted-level! logger topic)
   (unless ((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
     (define cache (logger-topic-level-cache logger))
-    (for/or ([i (in-range 0 (vector-length cache) 2)])
+    (for ([i (in-range 0 (vector-length cache) 2)])
       (vector-set! cache i #f))
     (set-logger-local-level-timestamp! logger (unbox (logger-root-level-timestamp-box logger))))
   ;; As we traverse the parent chain, keep track of the "ceiling"

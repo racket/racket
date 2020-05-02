@@ -66,7 +66,12 @@
              SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
            fi
            need_cc_in_extras=no
+           if test "$build_cpu" = "x86_64" ; then
+             # AG_PROC_CC has already decided that we weren't
+             # cross compiling, so change that decision
+             cross_compiling=yes
+             echo may be cross compiling after all
+           fi
         fi
       fi
     fi
-

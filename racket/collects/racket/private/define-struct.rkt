@@ -2,17 +2,19 @@
 ;;  (planet "struct.ss" ("ryanc" "macros.plt" 1 0)))
 
 (module define-struct '#%kernel
-  (#%require "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
+  (#%require "define-et-al.rkt" "qq-and-or.rkt" "define.rkt" "../stxparam.rkt"
              "generic-methods.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "procedure-alias.rkt"
                          "member.rkt"
-                         "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
+                         "stx.rkt" "stxcase-scheme.rkt" "qq-and-or.rkt" "cond.rkt"
+                         "define-et-al.rkt"
                          "stxloc.rkt" "qqstx.rkt"
                          "struct-info.rkt"))
 
   (#%provide define-struct*
              define-struct/derived
+             struct/derived
              struct-field-index
              struct-copy
              (for-syntax
@@ -98,6 +100,19 @@
   (define-syntax-parameter struct-field-index
     (lambda (stx)
       (raise-syntax-error #f "allowed only within a structure type definition" stx)))
+
+  (define-for-syntax (make-struct-field-index fields)
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ id)
+         (identifier? #'id)
+         (let loop ([pos 0] [fields (syntax->list fields)])
+           (cond
+             [(null? fields)
+              (raise-syntax-error #f "no such field" stx #'name)]
+             [(free-identifier=? #'id (car fields))
+              (datum->syntax #'here pos stx)]
+             [else (loop (add1 pos) (cdr fields))]))])))
 
   (define (check-struct-type name what)
     (when what
@@ -615,14 +630,7 @@
                               (define-values (#,struct: #,make- #,? #,@sels #,@sets)
                                 (let-values ([(struct: make- ? -ref -set!)
                                               (syntax-parameterize ([struct-field-index
-                                                                     (lambda (stx)
-                                                                       (syntax-case stx #,(map field-id fields)
-                                                                         #,@(let loop ([fields fields][pos 0])
-                                                                              (cond
-                                                                               [(null? fields) null]
-                                                                               [else (cons #`[(_ #,(field-id (car fields))) #'#,pos]
-                                                                                           (loop (cdr fields) (add1 pos)))]))
-                                                                         [(_ name) (raise-syntax-error #f "no such field" stx #'name)]))])
+                                                                     (make-struct-field-index (quote-syntax #,(map field-id fields)))])
                                                 (make-struct-type #,reflect-name-expr
                                                                   #,super-struct:
                                                                   #,(- (length fields) auto-count)
@@ -816,6 +824,53 @@
         #f
         "bad syntax"
         stx)]))
+        
+  (define-syntax (struct/derived stx)
+    (define (config-has-name? config)
+      (cond
+        [(syntax? config) (config-has-name? (syntax-e config))]
+        [(pair? config) (or (eq? (syntax-e (car config)) '#:constructor-name)
+                            (eq? (syntax-e (car config)) '#:extra-constructor-name)
+                            (config-has-name? (cdr config)))]
+        [else #f]))
+    (syntax-case stx ()
+      [(_ orig id super-id (fields ...) config ...)
+       (and (identifier? #'id)
+            (identifier? #'super-id))
+       (if (not (config-has-name? #'(config ...)))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               (id super-id)
+               (fields ...)
+               #:constructor-name id
+               config ...))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               (id super-id)
+               (fields ...) 
+               config ...)))]
+      [(_ orig id (fields ...) config ...)
+       (identifier? #'id)
+       (if (not (config-has-name? #'(config ...)))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               id
+               (fields ...) 
+               #:constructor-name id 
+               config ...))
+           (syntax/loc stx 
+             (define-struct/derived orig 
+               id
+               (fields ...) 
+               config ...)))]
+      [(_ orig id . rest)
+       (identifier? #'id)
+       (syntax/loc stx
+         (define-struct/derived orig id . rest))]
+      [(_ thing . _) (raise-syntax-error #f
+                                         "expected an identifier for the structure type name"
+                                         stx
+                                         #'thing)]))
 
   (define-syntax (struct-copy stx)
     (if (not (eq? (syntax-local-context) 'expression))

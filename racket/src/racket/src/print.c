@@ -127,7 +127,12 @@ static char *print_to_string(Scheme_Object *obj, intptr_t * volatile len, int wr
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
                                 Scheme_Marshal_Tables *mt,
 				PrintParams *pp, int notdisplay);
-static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, PrintParams *pp);
+
+static int writable_struct_subs(Scheme_Object *s, int for_write, PrintParams *pp,
+                                int mode, Scheme_Hash_Table *ht, int *counter);
+
+#define SUBS_CHECK_CYCLES 1
+#define SUBS_SETUP_GRAPH  2
 
 static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
 
@@ -481,10 +486,12 @@ static Scheme_Object *check_cycle_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return check_cycles(o, p->ku.k.i1, ht, pp)
-    ? scheme_true : scheme_false;
+  return scheme_make_integer(check_cycles(o, p->ku.k.i1, ht, pp));
 }
 #endif
+
+#define CHECK_CHECK_HAS_UNQUOTE 0x1
+#define CHECK_CHECK_HAS_CYCLE   0x2
 
 static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht, PrintParams *pp)
 /* Results:  0x2 = cycle bit
@@ -503,7 +510,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       scheme_current_thread->ku.k.p2 = (void *)ht;
       scheme_current_thread->ku.k.p3 = (void *)pp;
       scheme_current_thread->ku.k.i1 = for_write;
-      return SCHEME_TRUEP(scheme_handle_stack_overflow(check_cycle_k));
+      return SCHEME_INT_VAL(scheme_handle_stack_overflow(check_cycle_k));
     }
   }
 #endif
@@ -528,24 +535,24 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
     val = scheme_hash_get(ht, obj);
     if (val)
       return SCHEME_INT_VAL(val);
-    scheme_hash_set(ht, obj, scheme_make_integer(0x2));
+    scheme_hash_set(ht, obj, scheme_make_integer(CHECK_CHECK_HAS_CYCLE));
   } else 
     return 0;
   
   if (SCHEME_PAIRP(obj)) {
     res = check_cycles(SCHEME_CAR(obj), for_write, ht, pp);
-    if ((for_write < 3) && res)
+    if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
       return res;
     res2 = check_cycles(SCHEME_CDR(obj), for_write, ht, pp);
     res |= res2;
   } else if (SCHEME_MUTABLE_PAIRP(obj)) {
     res = check_cycles(SCHEME_CAR(obj), for_write, ht, pp);
-    if ((for_write < 3) && res)
+    if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
       return res;
     res2 = check_cycles(SCHEME_CDR(obj), for_write, ht, pp);
     res |= res2; 
     if (for_write >= 3)
-      res |= 0x1; /* always escape for qq printing */
+      res |= CHECK_CHECK_HAS_UNQUOTE; /* always escape for qq printing */
   } else if (SCHEME_CHAPERONE_BOXP(obj)) {
     /* got here => printable */
     Scheme_Object *v;
@@ -570,16 +577,16 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         v = scheme_chaperone_vector_ref(obj, i);
       res2 = check_cycles(v, for_write, ht, pp);
       res |= res2;
-      if ((for_write < 3) && res)
+      if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
 	return res;
     }
   } else if (SCHEME_FLVECTORP(obj) 
              || SCHEME_FXVECTORP(obj)) {
-    res = 0x1; /* escape for qq printing */
+    res = CHECK_CHECK_HAS_UNQUOTE; /* escape for qq printing */
   } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
-        res = check_cycles(writable_struct_subs(obj, for_write, pp), for_write, ht, pp);
+        res = writable_struct_subs(obj, for_write, pp, SUBS_CHECK_CYCLES, ht, NULL);
 
         if (for_write >= 3) {
           Scheme_Object *kind;
@@ -587,12 +594,12 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
           
           if (kind) {
             if (!strcmp(SCHEME_SYM_VAL(kind), "never"))
-              res |= 0x1;
+              res |= CHECK_CHECK_HAS_UNQUOTE;
             if (!strcmp(SCHEME_SYM_VAL(kind), "always")
                 || !strcmp(SCHEME_SYM_VAL(kind), "self"))
-              res -= (res & 0x1);
+              res -= (res & CHECK_CHECK_HAS_UNQUOTE);
           } else /* = "self" */
-            res -= (res & 0x1);
+            res -= (res & CHECK_CHECK_HAS_UNQUOTE);
         }
       } else
         res = 0;
@@ -606,7 +613,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       if ((for_write >= 3) && !SCHEME_PREFABP(obj))
-        res = 0x1;
+        res = CHECK_CHECK_HAS_UNQUOTE;
       else
         res = 0;
       while (i--) {
@@ -617,7 +624,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
             val = ((Scheme_Structure *)obj)->slots[i];
 	  res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
-          if ((for_write < 3) && res)
+          if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
             return res;
 	}
       }
@@ -647,11 +654,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         if (val) {
           res2 = check_cycles(key, for_write, ht, pp);
           res |= res2;
-          if ((for_write < 3) && res)
+          if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
             return res;
           res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
-          if ((for_write < 3) && res)
+          if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
             return res;
         }
       }
@@ -675,11 +682,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         val = scheme_chaperone_hash_traversal_get(obj, key, &key);
       res2 = check_cycles(key, for_write, ht, pp);
       res |= res2;
-      if ((for_write < 3) && res)
+      if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
         return res;
       res2 = check_cycles(val, for_write, ht, pp);
       res |= res2;
-      if ((for_write < 3) && res)
+      if ((for_write < 3) && (res & CHECK_CHECK_HAS_CYCLE))
         return res;
       i = scheme_hash_tree_next(t, i);
     }
@@ -884,10 +891,8 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
     }
   } else if (pp && SCHEME_CHAPERONE_STRUCTP(obj)) { /* got here => printable */
     if (scheme_is_writable_struct(obj)) {
-      if (pp->print_unreadable) {
-	obj = writable_struct_subs(obj, for_write, pp);
-	setup_graph_table(obj, for_write, ht, counter, pp);
-      }
+      if (pp->print_unreadable)
+	(void)writable_struct_subs(obj, for_write, pp, SUBS_SETUP_GRAPH, ht, counter);
     } else {
       int i;
 
@@ -1111,8 +1116,9 @@ print_to_string(Scheme_Object *obj,
 #endif
     if ((cycles == -1) || (cycles && (write >= 3))) {
       uq_ht = scheme_make_hash_table(SCHEME_hash_ptr);
-      cycles = check_cycles(obj, write, uq_ht, (PrintParams *)&params);
-    } else if (!cycles && params.print_graph)
+      cycles = check_cycles(obj, write, uq_ht, (PrintParams *)&params) & CHECK_CHECK_HAS_CYCLE;
+    }
+    if (!cycles && params.print_graph)
       cycles = 1;
   }
 
@@ -1128,7 +1134,7 @@ print_to_string(Scheme_Object *obj,
 
   params.uq_ht = uq_ht;
 
-  if ((maxl <= PRINT_MAXLEN_MIN) 
+  if ((maxl < PRINT_MAXLEN_MIN)
       || !scheme_setjmp(escape))
     print(obj, write, 0, ht, NULL, (PrintParams *)&params);
 
@@ -1223,7 +1229,7 @@ static void print_this_string(PrintParams *pp, const char *str, int offset, int 
 
   SCHEME_USE_FUEL(len);
   
-  if (pp->print_maxlen > PRINT_MAXLEN_MIN) {
+  if (pp->print_maxlen >= PRINT_MAXLEN_MIN) {
     if (pp->print_position > pp->print_maxlen) {
       intptr_t l = pp->print_maxlen;
 
@@ -3811,22 +3817,49 @@ void scheme_set_type_printer(Scheme_Type stype, Scheme_Type_Printer printer)
 /*                           custom writing                               */
 /*========================================================================*/
 
-static Scheme_Object *accum_write(void *_b, int argc, Scheme_Object **argv)
+static Scheme_Object *callback_write(void *_p, int argc, Scheme_Object **argv)
 {
-  if (SCHEME_BOX_VAL(_b)) {
-    Scheme_Object *v;
-    v = scheme_make_pair(argv[0], SCHEME_BOX_VAL(_b));
-    SCHEME_BOX_VAL(_b) = v;
+  Scheme_Object *p = (Scheme_Object *)_p;
+
+  if (SCHEME_PAIRP(p)) { /* will always be a pair, so this is just in case */
+    Scheme_Object *v = SCHEME_CAR(p);
+    if (SCHEME_VECTORP(v)) { /* will always be a vector, so this is just in case */
+      int cb_mode = SCHEME_INT_VAL(SCHEME_VEC_ELS(v)[0]);
+      Scheme_Hash_Table *ht = (Scheme_Hash_Table *)(SCHEME_VEC_ELS(v)[1]);
+      int *counter = (int *)SCHEME_CAR(SCHEME_VEC_ELS(v)[2]);
+      PrintParams *pp = (PrintParams *)SCHEME_CDR(SCHEME_VEC_ELS(v)[2]);
+      int mode = SCHEME_INT_VAL(SCHEME_CDR(p));
+
+      if (argc > 2)
+        mode += SCHEME_INT_VAL(argv[2]);
+      
+      if (cb_mode == SUBS_CHECK_CYCLES) {
+        int res;
+        res = check_cycles(argv[0], mode, ht, pp);
+        SCHEME_VEC_ELS(v)[3] = scheme_make_integer(res | SCHEME_INT_VAL(SCHEME_VEC_ELS(v)[3]));
+      } else {
+        setup_graph_table(argv[0], mode, ht, counter, pp);
+      }
+    }
   }
 
   return scheme_void;
 }
 
-static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, PrintParams *pp)
+/* the `mode` argument determines a callback; result is useful for `SUBS_CHECK_CYCLES` mode */
+static int writable_struct_subs(Scheme_Object *s, int for_write, PrintParams *pp,
+                                int mode, Scheme_Hash_Table *ht, int *counter)
 {
-  Scheme_Object *v, *o, *a[3], *b;
-  Scheme_Object *d_accum_proc, *w_accum_proc, *p_accum_proc;
+  Scheme_Object *v, *o, *a[3], *cb, *pr;
+  Scheme_Object *d_callback_proc, *w_callback_proc, *p_callback_proc;
   Scheme_Output_Port *op;
+  
+  if (for_write >= 3) {
+    Scheme_Object *kind;
+    kind = scheme_print_attribute_ref(s);
+    if (kind && !strcmp(SCHEME_SYM_VAL(kind), "always"))
+      for_write = 4; /* sub parts are always in quoted mode */
+  }
 
   v = scheme_is_writable_struct(s);
 
@@ -3834,37 +3867,44 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 				   && ((Scheme_Output_Port *)pp->print_port)->write_special_fun);
 
   op = (Scheme_Output_Port *)o;
-  
-  b = scheme_box(scheme_null);
-  d_accum_proc = scheme_make_closed_prim_w_arity(accum_write,
-					       b,
-					       "custom-display-recur-handler",
-					       2, 2);
-  w_accum_proc = scheme_make_closed_prim_w_arity(accum_write,
-                                                 b,
-                                                 "custom-write-recur-handler",
-                                                 2, 2);
-  p_accum_proc = scheme_make_closed_prim_w_arity(accum_write,
-                                                 b,
-                                                 "custom-print-recur-handler",
-                                                 2, 3);
 
-  op->display_handler = d_accum_proc;
-  op->write_handler = w_accum_proc;
-  op->print_handler = p_accum_proc;
+  cb = scheme_make_vector(4, NULL);
+  SCHEME_VEC_ELS(cb)[0] = scheme_make_integer(mode);
+  SCHEME_VEC_ELS(cb)[1] = (Scheme_Object *)ht;
+  pr = scheme_make_raw_pair((Scheme_Object *)counter, (Scheme_Object *)pp); /* raw pair can wrap a raw pointers */
+  SCHEME_VEC_ELS(cb)[2] = pr;
+  SCHEME_VEC_ELS(cb)[3] = scheme_make_integer(0); /* for SUBS_CHECK_CYCLES mode */
+  
+  d_callback_proc = scheme_make_closed_prim_w_arity(callback_write,
+                                                    scheme_make_pair(cb, scheme_make_integer(0)),
+                                                    "custom-display-recur-handler",
+                                                    2, 2);
+  w_callback_proc = scheme_make_closed_prim_w_arity(callback_write,
+                                                    scheme_make_pair(cb, scheme_make_integer(1)),
+                                                    "custom-write-recur-handler",
+                                                    2, 2);
+  p_callback_proc = scheme_make_closed_prim_w_arity(callback_write,
+                                                    scheme_make_pair(cb, scheme_make_integer(3)),
+                                                    "custom-print-recur-handler",
+                                                    2, 3);
+
+  op->display_handler = d_callback_proc;
+  op->write_handler = w_callback_proc;
+  op->print_handler = p_callback_proc;
 
   a[0] = s;
   a[1] = o;
-  a[2] = (for_write ? scheme_true : scheme_false);
+  a[2] = (for_write
+          ? ((for_write >= 3)
+             ? scheme_make_integer(for_write-3)
+             : scheme_true)
+          : scheme_false);
 
   scheme_apply_multi(v, 3, a);
-
+  
   scheme_close_output_port(o);
-
-  v = SCHEME_BOX_VAL(b);
-  SCHEME_BOX_VAL(b) = NULL;
-
-  return v;
+  
+  return SCHEME_INT_VAL(SCHEME_VEC_ELS(cb)[3]);
 }
 
 static void flush_from_byte_port(Scheme_Object *orig_port, PrintParams *pp)

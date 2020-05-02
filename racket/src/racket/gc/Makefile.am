@@ -23,7 +23,7 @@
 # use the internal version.  This is done since libatomic_ops doesn't
 # use libtool, since it has no real use for it.  But that seems to make
 # it hard to use either the resulting object files or libraries.
-# Thus there seems too be no real reason to recusively build in the
+# Thus there seems too be no real reason to recursively build in the
 # libatomic_ops directory.
 # if USE_INTERNAL_LIBATOMICS_OPS
 # SUBDIRS = @maybe_libatomic_ops@

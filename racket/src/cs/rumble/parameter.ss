@@ -2,7 +2,9 @@
 ;; Continuation-mark key:
 (define parameterization-key '#{parameterization n1kcvqw4c9hh8t3fi3659ci94-1})
 
-(define-record parameterization (ht))
+(define-record-type parameterization
+  (fields ht)
+  (sealed #t))
 
 (define empty-parameterization (make-parameterization empty-hasheq))
 

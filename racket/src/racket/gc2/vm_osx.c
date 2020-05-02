@@ -236,7 +236,7 @@ static unsigned long determine_max_heap_size()
 
 /* The catch_exception_raise() functions are treated specially by the
    linker, and Mach looks them up at run time. We provide
-   GC_... variants due to linker confusion when the implementaiton of
+   GC_... variants due to linker confusion when the implementation of
    these are in a framework instead of the main binary, so that the
    main binary needs to define them and jump to the implemenations
    here. (This linker problem seems to occur when we use

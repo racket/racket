@@ -5,34 +5,14 @@
 ;; where a second request will cache at the N/4-tail pair, etc.
 ;; Detect cycles using the same `slow` tortoise that is used for
 ;; caching.
+;;
+;; To reduce the overhead of checking the hash table, only
+;; start using it after the first `CHECK-AFTER-LEN` pairs.
+;; Then, check only after `CHECK-SKIP-N` pairs --- and record
+;; a sequence of `CHECK-SKIP-N`+1 results so one will hit when
+;; checking every `CHECK-SKIP-N` pairs.
 
-(define-thread-local lists (make-weak-eq-hashtable))
-
-(define (list? v)
-  (let loop ([v v] [depth 0])
-    (cond
-     [(null? v) #t]
-     [(not (pair? v)) #f]
-     [(pair? v)
-      (cond
-       [(fx<= depth 32)
-        (loop (cdr v) (fx+ depth 1))]
-       [else
-        (let loop ([fast (cdr v)] [slow v] [slow-step? #f])
-          (let ([return (lambda (result)
-                          (hashtable-set! lists slow result)
-                          result)])
-            (cond
-             [(null? fast) (return #t)]
-             [(not (pair? fast)) (return #f)]
-             [(eq? fast slow) (return #f)] ; cycle
-             [else
-              (let ([is-list? (hashtable-ref lists fast none)])
-                (cond
-                 [(eq? is-list? none)
-                  (loop (cdr fast) (if slow-step? (cdr slow) slow) (not slow-step?))]
-                 [else
-                  (return is-list?)]))])))])])))
+(define (list? v) (list-assuming-immutable? v))
 
 (define (append-n l n l2)
   (cond

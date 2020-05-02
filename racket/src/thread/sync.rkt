@@ -88,7 +88,9 @@
 
   (when (or (and (real? timeout) (zero? timeout))
             (procedure? timeout))
-    (atomically (call-pre-poll-external-callbacks)))
+    (atomically
+     (call-pre-poll-external-callbacks)
+     (void)))
 
   ;; General polling loop
   (define (go #:thunk-result? [thunk-result? #t])
@@ -99,7 +101,8 @@
          (lambda () (syncing-abandon! s)))
         (thread-push-suspend+resume-callbacks!
          (lambda () (syncing-interrupt! s))
-         (lambda () (syncing-queue-retry! s)))))
+         (lambda () (syncing-queue-retry! s)))
+        (void)))
      (lambda ()
        (when enable-break? (check-for-break))
        (cond
@@ -167,7 +170,8 @@
         (when local-break-cell
           (thread-remove-ignored-break-cell! (current-thread/in-atomic) local-break-cell))
         ;; On escape, post nacks, etc.:
-        (syncing-abandon! s)))))
+        (syncing-abandon! s)
+        (void)))))
 
   ;; Result thunk (if needed) is called in tail position:
   (cond
@@ -429,7 +433,8 @@
                ;; still syncing before installing the replacement event:
                (atomically
                 (unless (syncing-selected s)
-                  (set-syncer-evt! sr new-evt)))
+                  (set-syncer-evt! sr new-evt))
+                (void))
                (loop sr (add1 retries) polled-all-so-far? #f))])]
          [(choice-evt? new-evt)
           (when (or (pair? (syncer-interrupts sr))
@@ -699,14 +704,14 @@
                               ;; Interrupt due to break/kill/suspend
                               (set-syncing-wakeup! s void)
                               (unless (syncing-selected s)
-                                (syncing-interrupt! s)))
-                            ;; In non-atomic mode and tail position:
-                            (lambda ()
-                              ;; Continue from suspend or ignored break...
-                              ((atomically
-                                (unless (syncing-selected s)
-                                  (syncing-retry! s))
-                                (retry)))))])))))
+                                (syncing-interrupt! s))
+                              ;; In non-atomic mode and tail position:
+                              (lambda ()
+                                ;; Continue from suspend or ignored break...
+                                ((atomically
+                                  (unless (syncing-selected s)
+                                    (syncing-retry! s))
+                                  (retry))))))])))))
 
 ;; ----------------------------------------
 

@@ -105,7 +105,7 @@
             (or (free-identifier=? #'decl #'declare-field-use)
                 (free-identifier=? #'decl #'declare-field-assignment)))
        ;; A field is used or assigned. If tracking has started, make sure the
-       ;; field is definitely initalized:
+       ;; field is definitely initialized:
        (or (and ready
                 (ormap (lambda (id)
                          (not (module-identifier-mapping-get ready id (lambda () #f))))

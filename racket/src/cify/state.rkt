@@ -26,7 +26,7 @@
 ;;  * '#:runstack to information recorded and used
 ;;     by "runstack.rkt"
 ;;
-;;  * '#:implicit to a table of implicity referenced
+;;  * '#:implicit to a table of implicitly referenced
 ;;    variables; an implicit reference happens when
 ;;    a variable is passed in-place in a tail call
 ;;

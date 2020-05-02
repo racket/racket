@@ -14,7 +14,7 @@ In my opinion, it's still well worth it, for the same reason that we indent
 ordinary "if" statements.
 
 2) Whenever possible, tests are performed on the macros defined in gcconfig.h
-instead of directly testing patform-specific predefined macros.  This makes it
+instead of directly testing platform-specific predefined macros.  This makes it
 relatively easy to adapt to new compilers with a different set of predefined
 macros.  Currently these macros generally identify platforms instead of
 features.  In many cases, this is a mistake.

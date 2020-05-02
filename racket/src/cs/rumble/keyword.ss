@@ -1,6 +1,7 @@
 
 (define-record-type keyword
   (fields symbol)
+  (sealed #t)
   (nongenerative #{keyword dhghafpy3v03qbye1a9lwf-0}))
 
 (define keywords (make-weak-eq-hashtable))
@@ -19,6 +20,10 @@
 (define/who (keyword->string kw)
   (check who keyword? kw)
   (symbol->string (keyword-symbol kw)))
+
+(define/who (keyword->immutable-string kw)
+  (check who keyword? kw)
+  (#%symbol->string (keyword-symbol kw)))
 
 (define/who keyword<?
   (case-lambda

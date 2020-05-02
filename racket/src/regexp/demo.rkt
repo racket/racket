@@ -77,6 +77,23 @@
 (test (regexp-replace* "-" "zero-or-more?" "_")
       "zero_or_more?")
 
+;; Don't get stuck waiting for an unneeded byte:
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "1\n" o)
+  (define rx (rx:regexp "^(?:(.*?)(?:\r\n|\n))"))
+  (test (rx:regexp-match rx i) '(#"1\n" #"1")))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "abc" o)
+  (define rx (rx:regexp "^(ab)*"))
+  (test (rx:regexp-match rx i) '(#"ab" #"ab")))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "123" o)
+  (define rx (rx:pregexp "^(12)\\1|123"))
+  (test (rx:regexp-match rx i) '(#"123" #f)))
+
 ;; ----------------------------------------
 
 (define (check rx in N [M (max 1 (quotient N 10))])

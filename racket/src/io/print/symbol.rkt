@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../port/string-output.rkt"
+(require racket/symbol
+         "../port/string-output.rkt"
          "../string/number.rkt"
          "write-with-max.rkt"
          "parameter.rkt"
@@ -20,7 +21,7 @@
                                                                      (config-get config read-case-sensitive)
                                                                      #t)]
                               #:for-keyword? [for-keyword? #f])
-  (define str (symbol->string sym))
+  (define str (symbol->immutable-string sym))
   (define (is-simple? ch i)
     (not (or (char=? ch #\()
              (char=? ch #\[)

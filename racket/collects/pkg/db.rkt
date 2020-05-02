@@ -172,7 +172,7 @@
                                       #:mode 'create
                                       #:busy-retry-limit +inf.0))))
       (lambda () (proc (or catalog-db
-                      (make-catalog-db db #f (make-hash)))))
+                           (make-catalog-db db #f (make-hash)))))
       (lambda () 
         (unless catalog-db
           (disconnect db)))))

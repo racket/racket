@@ -1043,6 +1043,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
       ip->column = 0;
   } else {
     ip->charsSinceNewline += c;
+    ip->was_cr = 0;
   }
 
   /* Do the last line to get the column count right and to
@@ -5965,10 +5966,16 @@ static void child_mref_done(Scheme_Subprocess *sp)
 static int subp_done(Scheme_Object *so)
 {
   Scheme_Subprocess *sp = (Scheme_Subprocess*)so;
+  int done;
 
   if (!sp->proc) return 1;
 
-  return rktio_poll_process_done(scheme_rktio, sp->proc);
+  done = rktio_poll_process_done(scheme_rktio, sp->proc);
+
+  if (done)
+    child_mref_done(sp);
+
+  return done;
 }
 
 static void subp_needs_wakeup(Scheme_Object *so, void *fds)

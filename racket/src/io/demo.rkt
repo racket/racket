@@ -129,6 +129,26 @@
 (fprintf (current-output-port) "*~v*" '!!!)
 (newline)
 
+(parameterize ([error-print-width 5])
+  (test "abc" (format "~.a" "abc"))
+  (test "abcde" (format "~.a" "abcde"))
+  (test "ab..." (format "~.a" "abcdef"))
+  (test "abc" (format "~.a" #"abc"))
+  (test "abcde" (format "~.a" #"abcde"))
+  (test "ab..." (format "~.a" #"abcdef"))
+  (test "ab..." (format "~.a" 'abcdef))
+  (test "\"ab\"" (format "~.s" "ab"))
+  (test "\"abc\"" (format "~.s" "abc"))
+  (test "\"a..." (format "~.s" "abcde"))
+  (test "#\"a\"" (format "~.s" #"a"))
+  (test "#\"ab\"" (format "~.s" #"ab"))
+  (test "#\"..." (format "~.s" #"abc"))
+  (test "#\"..." (format "~.s" #"abcdef"))
+  (test "|a b|" (format "~.s" '|a b|))
+  (test "|a..." (format "~.s" '|a bx|))
+  (test "(1 2)" (format "~.a" '(1 2)))
+  (test "(1..." (format "~.a" '(10 2))))
+
 (test "no: hi 10"
       (with-handlers ([exn:fail? exn-message])
         (error 'no "hi ~s" 10)))
@@ -416,7 +436,6 @@
   (test (void) (file-position out 10))
   (test #"hola!!\0\0\0\0" (get-output-bytes out)))
 
-(log-error "start")
 (let ()
   (define-values (i o) (make-pipe))
   (port-count-lines! i)
@@ -444,7 +463,6 @@
   (write-bytes #"!" o)
   (test '(3 1 8) (next-location o))
 
-(log-error "here")
   (test #"x\r" (read-bytes 2 i))
   (test '(3 0 7) (next-location i))
   (test #"\n!" (read-bytes 2 i))

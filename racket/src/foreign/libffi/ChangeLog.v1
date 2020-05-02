@@ -304,7 +304,7 @@ Tue Oct  8 11:40:36 1996  Anthony Green  <green@rtl.cygnus.com>
 
 Mon Oct  7 10:58:12 1996  Anthony Green  <green@hoser.cygnus.com>
 
-	* ffi.h.in: The SGI assember is very picky about parens. Redefined
+	* ffi.h.in: The SGI assembler is very picky about parens. Redefined
  	some macros to avoid problems.
 
 	* ffi.h.in: Added FFI_DEFAULT_ABI definitions. Also added

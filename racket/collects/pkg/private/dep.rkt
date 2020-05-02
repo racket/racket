@@ -34,3 +34,7 @@
   (define p (dependency-lookup '#:platform dep))
   (or (not p) (matching-platform? p #:cross? #t)))
 
+(define (dependency-for-platform? dep sys+subpath)
+  (define p (dependency-lookup '#:platform dep))
+  (or (not p) (matching-platform? p #:system-type (car sys+subpath)
+                                  #:system-library-subpath (cdr sys+subpath))))

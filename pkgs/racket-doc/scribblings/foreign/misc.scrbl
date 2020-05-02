@@ -5,7 +5,8 @@
 
 @defproc[(list->cblock [lst list?]
                        [type ctype?]
-                       [expect-length (or/c exact-nonnegative-integer? #f) #f])
+                       [expect-length (or/c exact-nonnegative-integer? #f) #f]
+                       [#:malloc-mode malloc-mode (or/c #f symbol?) #f])
          cpointer?]{
 
 Allocates a memory block of an appropriate size---using
@@ -16,16 +17,24 @@ according to the given @racket[type].
 
 If @racket[expect-length] is not @racket[#f] and not the same as
 @racket[(length lst)], then an exception is raised instead of
-allocating memory.}
+allocating memory.
+
+If @racket[malloc-mode] is not @racket[#f], it is provided as an
+additional argument to @racket[malloc].
+
+@history[#:changed "7.7.0.2" @elem{Added the @racket[#:malloc-mode] argument.}]}
 
 
 @defproc[(vector->cblock [vec vector?]
                          [type ctype?]
-                         [expect-length (or/c exact-nonnegative-integer? #f) #f])
+                         [expect-length (or/c exact-nonnegative-integer? #f) #f]
+                         [#:malloc-mode malloc-mode (or/c #f symbol?) #f])
          cpointer?]{
 
 Like @racket[list->cblock], but using values from a vector instead of
-a list.}
+a list.
+
+@history[#:changed "7.7.0.2" @elem{Added the @racket[#:malloc-mode] argument.}]}
 
 
 @defproc[(vector->cpointer [vec vector?]) cpointer?]{

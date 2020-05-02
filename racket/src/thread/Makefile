@@ -25,6 +25,7 @@ GLOBALS = --no-global \
           ++global-ok pre-poll-callbacks \
           ++global-ok queued-shutdowns \
           ++global-ok compute-memory-sizes \
+          ++global-ok "computed-memory-sizes?" \
           ++global-ok custodians-with-limits \
           ++global-ok make-place-ports+fds \
           ++global-ok pthread-count \

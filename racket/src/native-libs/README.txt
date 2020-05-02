@@ -77,12 +77,12 @@ may be wrong, in which case you'll need to fix it by hand.
 For Mac OS (i386 and x86_64 on Intel, ppc on PowerPC):
 
 The script assumes that "/Developer/SDKs/MacOSX10.5.sdk" (for 32-bit
-builds) and "/Developer/SDKs/MacOSX10.6.sdk" (for 64-bit builds) are
+builds) and "/Developer/SDKs/MacOSX10.9.sdk" (for 64-bit builds) are
 available.
 
 You can get the 10.5 SDK out of the ".dmg" for Xcode 3.2.6; mount it
 (don't run it), open -R "MacOSX10.5.pkg", and right click to run.
-Probably you can get the 10.6 SDK in a similar way.
+Probably you can get the 10.9 SDK in a similar way.
 
 If you wanted to build for 10.4, and if you're using gcc instead of
 Clang, then note that you'll need gcc-4.0 --- but the Pango version

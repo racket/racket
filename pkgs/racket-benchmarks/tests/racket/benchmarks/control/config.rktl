@@ -10,7 +10,7 @@
 ;; Number of iteraitons used for a loop, typically
 (define N (* L 10))
 
-;; Number of times to run each benchamrk:
+;; Number of times to run each benchmark:
 (define I 3)
 
 (define-syntax times

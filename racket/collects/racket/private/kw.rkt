@@ -1,6 +1,8 @@
 (module kw '#%kernel
   (#%require "define.rkt"
-             "small-scheme.rkt"
+             "qq-and-or.rkt"
+             "cond.rkt"
+             "define-et-al.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
                    unsafe-chaperone-procedure
@@ -10,7 +12,9 @@
                          '#%unsafe
                          "procedure-alias.rkt"
                          "stx.rkt"
-                         "small-scheme.rkt"
+                         "qq-and-or.rkt"
+                         "define-et-al.rkt"
+                         "cond.rkt"
                          "stxcase-scheme.rkt"
                          "member.rkt"
                          "name.rkt"
@@ -20,9 +24,10 @@
                          "kw-prop-key.rkt"
                          "immediate-default.rkt")
              (for-meta 2 '#%kernel
-                         "small-scheme.rkt"
-                         "stxcase-scheme.rkt"
-                         "qqstx.rkt"))
+                       "qq-and-or.rkt"
+                       "cond.rkt"
+                       "stxcase-scheme.rkt"
+                       "qqstx.rkt"))
 
   (#%provide new-lambda new-λ
              new-define
@@ -671,8 +676,19 @@
                                            [(null? kws) null]
                                            [else
                                             (cons (cadar kws) (loop (cdr kws)))])))]
-                    [local-name (or local-name
-                                    (syntax-local-infer-name stx))])
+                    [local-name (let ([name (simplify-inferred-name (syntax-property stx 'inferred-name))])
+                                  (cond
+                                    [(or (symbol? name) (identifier? name)) name]
+                                    [else (or local-name
+                                              (let ([name (syntax-local-infer-name stx)])
+                                                (and (or (symbol? name) (identifier? name))
+                                                     name)))]))]
+                    [add-local-name (lambda (stx)
+                                      (if local-name
+                                          ;; Expecting always a `[case-]lambda form, so 'inferred-name
+                                          ;; should work and is less invasive than `let`:
+                                          (syntax-property stx 'inferred-name local-name)
+                                          stx))])
                (with-syntax ([(kw-arg ...) kw-args]
                              [kws-sorted sorted-kws]
                              [(opt-arg ...) opt-args]
@@ -756,14 +772,15 @@
                        [mk-no-kws
                         (lambda (kw-core?)
                           ;; entry point without keywords:
-                          (annotate-method
-                           (quasisyntax/loc/always stx
-                             (opt-cases #,(if kw-core?
-                                              #'(unpack null null)
-                                              #'(core))
-                                        ([opt-id opt-arg opt-not-supplied] ...) (plain-id ...) 
-                                        () ()
-                                        (rest-empty rest-id . rest) ()))))]
+                          (add-local-name
+                           (annotate-method
+                            (quasisyntax/loc/always stx
+                              (opt-cases #,(if kw-core?
+                                               #'(unpack null null)
+                                               #'(core))
+                                         ([opt-id opt-arg opt-not-supplied] ...) (plain-id ...)
+                                         () ()
+                                         (rest-empty rest-id . rest) ())))))]
                        [mk-with-kws
                         (lambda ()
                           ;; entry point with keywords:
@@ -803,11 +820,7 @@
                       (mk-core #t)
                       (mk-unpack)
                       (with-syntax ([kws (map car sorted-kws)]
-                                    [no-kws (let ([p (mk-no-kws #t)]
-                                                  [n local-name])
-                                              (if n
-                                                  #`(let ([#,n #,p]) #,n)
-                                                  p))]
+                                    [no-kws (mk-no-kws #t)]
                                     [with-kws (mk-with-kws)])
                         (quasisyntax/loc stx
                           (make-okp
@@ -893,31 +906,35 @@
   ;; to the actual value (if present); if the keyword isn't
   ;; available, then the corresponding `req' is applied, which
   ;; should signal an error if the keyword is required.
-  (define-syntax let-kws
-    (syntax-rules ()
+  (define-syntax (let-kws stx)
+    (syntax-case stx ()
       [(_ kws kw-args () . body)
-       (begin . body)]
+       #'(begin . body)]
       [(_ kws kw-args ([kw arg arg? #f not-supplied-val]) . body)
        ;; last optional argument doesn't need to check as much or take as many cdrs
-       (let ([arg? (pair? kws)])
-         (let ([arg (if arg? (car kw-args) not-supplied-val)])
-           . body))]
+       #'(let ([arg? (pair? kws)])
+           (let ([arg (if arg? (car kw-args) not-supplied-val)])
+             . body))]
       [(_ kws kw-args ([kw arg arg? #f not-supplied-val] . rest) . body)
-       (let ([arg? (and (pair? kws)
-                        (eq? 'kw (car kws)))])
-         (let ([arg (if arg? (car kw-args) not-supplied-val)]
-               [kws (if arg? (cdr kws) kws)]
-               [kw-args (if arg? (cdr kw-args) kw-args)])
-           (let-kws kws kw-args rest . body)))]
+       (with-syntax ([next-kws (gensym 'kws)]
+                     [next-kw-args (gensym 'kw-args)])
+         #'(let ([arg? (and (pair? kws)
+                            (eq? 'kw (car kws)))])
+             (let ([arg (if arg? (car kw-args) not-supplied-val)]
+                   [next-kws (if arg? (cdr kws) kws)]
+                   [next-kw-args (if arg? (cdr kw-args) kw-args)])
+               (let-kws next-kws next-kw-args rest . body))))]
       [(_ kws kw-args ([kw arg arg? #t _]) . body)
        ;; last required argument doesn't need to take cdrs
-       (let ([arg (car kw-args)])
-         . body)]
+       #'(let ([arg (car kw-args)])
+           . body)]
       [(_ kws kw-args ([kw arg arg? #t _] . rest) . body)
-       (let ([arg (car kw-args)]
-             [kws (cdr kws)]
-             [kw-args (cdr kw-args)])
-         (let-kws kws kw-args rest . body))]))
+       (with-syntax ([next-kws (gensym 'kws)]
+                     [next-kw-args (gensym 'kw-args)])
+         #'(let ([arg (car kw-args)]
+                 [next-kws (cdr kws)]
+                 [next-kw-args (cdr kw-args)])
+             (let-kws next-kws next-kw-args rest . body)))]))
 
   ;; Used for `req' when the keyword argument is optional:
   (define-syntax missing-ok
@@ -1055,13 +1072,15 @@
     (syntax-case stx (quote)
       [(_ l1-expr '()) #'(null? l1-expr)]
       [(_ '() l2-expr) #'#t]
-      [(_ l1-expr '(kw . kws)) #'(let ([l1 l1-expr])
-                                   (let ([l1 (if (null? l1)
-                                                 l1
-                                                 (if (eq? (car l1) 'kw)
-                                                     (cdr l1)
-                                                     l1))])
-                                     (subset?/static l1 'kws)))]
+      [(_ l1-expr '(kw . kws))
+       (with-syntax ([l1 (gensym 'l1)])
+         #'(let ([l1 l1-expr])
+             (let ([l1 (if (null? l1)
+                           l1
+                           (if (eq? (car l1) 'kw)
+                               (cdr l1)
+                               l1))])
+               (subset?/static l1 'kws))))]
       [(_ l1-expr l2-expr) #'(subset? l1-expr l2-expr)]))
 
   (define-syntax (subsets?/static stx)
@@ -1082,10 +1101,11 @@
     (syntax-case stx (quote)
       [(_ '() l2-expr) #'(null? l2-expr)]
       [(_ '(kw . kw-rest) l2-expr)
-       #'(let ([l2 l2-expr])
-           (and (pair? l2)
-                (eq? (car l2) 'kw)
-                (equal?/static 'kw-rest (cdr l2))))]))
+       (with-syntax ([l2 (gensym 'l2)])
+         #'(let ([l2 l2-expr])
+             (and (pair? l2)
+                  (eq? (car l2) 'kw)
+                  (equal?/static 'kw-rest (cdr l2)))))]))
   
   ;; ----------------------------------------
   ;; `define' with keyword arguments
@@ -1105,11 +1125,14 @@
                                          (compile-enforce-module-constants))
                                     (and (list? ctx)
                                          (andmap liberal-define-context? ctx))))))]
-             [opt (lambda (rhs core-wrap plain)
+             [opt (lambda (lam-id rhs core-wrap plain)
                     (parse-lambda rhs
                                   id
-                                  plain
-                                  (lambda (impl kwimpl wrap 
+                                  (lambda (new-rhs)
+                                    (plain (syntax-track-origin new-rhs
+                                                                rhs
+                                                                lam-id)))
+                                  (lambda (impl kwimpl wrap
                                                 core-id unpack-id
                                                 n-req opt-not-supplieds rest? req-kws all-kws)
                                     (with-syntax ([proc (car (generate-temporaries (list id)))])
@@ -1117,22 +1140,22 @@
                                        (quasisyntax/loc stx
                                          (begin
                                            #,(quasisyntax/loc stx
-                                               (define-syntax #,id 
-                                                 (make-keyword-syntax (lambda () 
+                                               (define-syntax #,id
+                                                 (make-keyword-syntax (lambda ()
                                                                         (values (quote-syntax #,core-id)
                                                                                 (quote-syntax proc)))
-                                                                      #,n-req '#,opt-not-supplieds #,rest? 
+                                                                      #,n-req '#,opt-not-supplieds #,rest?
                                                                       '#,req-kws '#,all-kws)))
-                                           #,(quasisyntax/loc stx 
+                                           #,(quasisyntax/loc stx
                                                (define #,core-id #,(core-wrap impl)))
-                                           #,(quasisyntax/loc stx 
+                                           #,(quasisyntax/loc stx
                                                (define #,unpack-id #,kwimpl))
-                                           #,(quasisyntax/loc stx 
-                                               (define proc #,wrap)))))))))])
+                                           #,(quasisyntax/loc stx
+                                               (define proc #,(syntax-track-origin wrap rhs lam-id))))))))))])
         (syntax-case rhs (begin quote)
           [(lam-id . _)
            (can-opt? #'lam-id)
-           (opt rhs values plain)]
+           (opt #'lam-id rhs values plain)]
           [(begin (quote sym) (lam-id . _))
            ;; looks like a compiler hint
            (and (can-opt? #'lam-id)
@@ -1140,7 +1163,8 @@
            (syntax-case rhs ()
              [(_ _ sub-rhs)
               (let ([wrap (lambda (stx) #`(begin (quote sym) #,stx))])
-                (opt #'sub-rhs 
+                (opt #'lam-id
+                     #'sub-rhs
                      wrap
                      (lambda (rhs) (plain (wrap rhs)))))])]
           [_ (plain rhs)]))))
@@ -1320,7 +1344,7 @@
                                     [n (length args)]
                                     [lift-args (lambda (k)
                                                  (if (not lifted?)
-                                                     ;; caller didn't lift expresions out
+                                                     ;; caller didn't lift expressions out
                                                      (let ([ids (generate-temporaries args)])
                                                        #`(let #,(map list ids args)
                                                            #,(k ids)))

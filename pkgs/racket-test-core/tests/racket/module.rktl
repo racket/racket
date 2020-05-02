@@ -1086,7 +1086,7 @@
         #:exists 'truncate
         (lambda () (write-bytes b-s)))
       ((dynamic-require (build-path temp-dir "check-gen.rkt") 'b) 10)))
-  ;; Triger JIT generation with constant function as `a':
+  ;; Trigger JIT generation with constant function as `a':
   (go a-s)
   ;; Check that we don't crash when trying to use a different `a':
   (err/rt-test (go am-s) exn:fail?)
@@ -1128,7 +1128,7 @@
 (require 'use-a-with-auto-field)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; check that `require' inside `beging-for-syntax' sets up the right phase dependency
+;; check that `require' inside `begin-for-syntax' sets up the right phase dependency
 
 (let ([o (open-output-bytes)])
   (parameterize ([current-output-port o]
@@ -3144,6 +3144,40 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test #t namespace? (module->namespace ''lang-is-imports-uses-local-expand)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Similar to previous, but with a `for-template` in the mix
+
+(module uses-local-expand-at-phase-1-instantiation-again racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base)))
+  (provide (for-syntax true))
+  (struct Π- (X))
+  (begin-for-syntax
+    (define TY/internal+ (local-expand #'Π- 'expression null))
+    (define true (lambda (x) #t))))
+
+(module imports-uses-local-expand-at-phase-1-instantiation-again racket/base
+  (require (for-syntax racket/base)
+           'uses-local-expand-at-phase-1-instantiation-again)
+  (provide #%module-begin)
+  (define-for-syntax predicate true))
+
+(module local-expand-test2-reflect racket/base
+  (require (for-template 'uses-local-expand-at-phase-1-instantiation-again))
+  (define x true))
+
+(module local-expand-test2 racket/base
+  (provide #%module-begin)
+  (require 'imports-uses-local-expand-at-phase-1-instantiation-again
+           (for-syntax 'local-expand-test2-reflect)))
+
+(module lang-is-local-expand-test2 'local-expand-test2)
+
+(let ()
+  ;; important that both of these are in the same top-level evaluation:
+  (test (void) namespace-require ''lang-is-local-expand-test2)
+  (test #t namespace? (module->namespace ''lang-is-local-expand-test2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check order of checking for redefinition of a constant
 
 (let ([e '(module defines-a-spider-struct-type racket/base
@@ -3249,6 +3283,49 @@ case of module-leve bindings; it doesn't cover local bindings.
         (dynamic-require ''imports-a-quoted-uninterned-symbol 'get-sym1))
   (test (dynamic-require ''exports-a-quoted-uninterned-symbol 'sym)
         (dynamic-require ''imports-a-quoted-uninterned-symbol 'get-sym2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `(dynamic-require .... (void))` visits
+;; available modules as it should
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module defines-a-for-syntax racket/base
+           (require (for-syntax racket/base))
+           (provide (for-syntax a))
+           (define-for-syntax a (make-parameter 'not-done))))
+  (eval '(module uses-a-module-1 racket/base
+           (require 'defines-a-for-syntax
+                    (for-syntax racket/base))
+           (begin-for-syntax (a 'done))))
+  (eval '(module uses-a-module-2 racket/base
+           (require 'defines-a-for-syntax
+                    (for-syntax racket/base))
+           (provide m)
+           (define-syntax m
+             (let ([val (a)])
+               (lambda (stx)
+                 #`'#,val)))))
+                   
+  ;; makes `uses-a-module-1` available:
+  (eval '(require 'uses-a-module-1))
+  ;; needs available module visited for `val` to be 'done:
+  (dynamic-require ''uses-a-module-2 (void))
+  ;; check `val` via `m`:
+  (namespace-require ''uses-a-module-2)
+  (test 'done eval '(m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a too-early function use is not inlined away
+
+(module uses-a-function-too-early racket/base
+  (define f
+    (let ([v (g)])
+      (lambda ()
+        v)))
+  (define (g)
+    0))
+
+(err/rt-test/once (dynamic-require ''uses-a-function-too-early #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

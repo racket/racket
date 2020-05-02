@@ -10,6 +10,7 @@
 (provide logger?
          logger-name
          current-logger
+         unsafe-root-logger
          make-logger
          log-level?
          log-level?*   ; ok to call in host-Scheme interrupt handler
@@ -33,6 +34,8 @@
   (create-logger #:topic #f #:parent #f #:propagate-filters 'none))
 
 (define-place-local root-logger (make-root-logger))
+
+(define (unsafe-root-logger) root-logger)
 
 (define current-logger
   (make-parameter root-logger

@@ -8,7 +8,7 @@
 ;; the rest are used by the thread, io, etc., layers for directly
 ;; accessed variables.
 
-(define NUM-PLACE-REGISTERS 128) ; 3 thorugh 126 available for subsystems
+(define NUM-PLACE-REGISTERS 128) ; 3 through 126 available for subsystems
 
 (define LOCAL_TABLE-INDEX 0)
 (define ASYNC-CALLBACK-REGISTER-INDEX 1)

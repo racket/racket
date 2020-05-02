@@ -25,7 +25,7 @@
 ;; In libsndfile the sndfile object is represented as a pointer. When
 ;; translating scheme->c the struct will just return the pointer. When
 ;; translating from c->scheme, ie. creating the object in scheme it will be
-;; wrapped by an object finalizer that uses the libsndfile fuction sf_close that
+;; wrapped by an object finalizer that uses the libsndfile function sf_close that
 ;; returns a 0 upon successful termination or an error.
 (define-struct sndfile (ptr [info #:mutable]))
 (define _sndfile

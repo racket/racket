@@ -81,7 +81,7 @@ symbolic name is generated in an unspecified but deterministic
 way where the name starts with @as-index{@litchar{#%embedded:}},
 except that the main module is prefixed with @litchar{#%mzc:}. The
 relative lack of specification for module names can be be a problem
-form language constructs that are sensitive to a module names, such as
+for language constructs that are sensitive to module names, such as
 serialization. To take more control over a module's symbolic name, use
 the @DPFlag{named-lib} or @DPFlag{named-file} argument to specify a
 prefix that is appended before the module's base name to generate a
@@ -173,15 +173,15 @@ The @exec{raco exe} command accepts the following command-line flags:
 
  @item{@DFlag{3m} --- generate an executable based on the @gtech{3m}
    variant of Racket, which is the default unless running a @exec{raco
-   exe} that is based on the @gtech{CGC} variant.}
+   exe} that is based on the @gtech{CGC} or @gtech{CS} variant.}
 
  @item{@DFlag{cgc} --- generate an executable based on the @gtech{CGC}
    variant of Racket, which is the default only when running a
    @exec{raco exe} that is based on the @gtech{CGC} variant.}
 
- @item{@DFlag{cs} --- generate an executable based on the @gtech{cs}
-   variant of Racket, which is the default unless running a @exec{raco
-   exe} that is based on the @gtech{CS} variant.}
+ @item{@DFlag{cs} --- generate an executable based on the @gtech{CS}
+   variant of Racket, which is the default only when running a
+   @exec{raco exe} that is based on the @gtech{CS} variant.}
 
  @item{@DPFlag{aux} @nonterm{file} --- attach information to the
    executable based on @nonterm{file}'s suffix; see

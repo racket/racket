@@ -683,6 +683,21 @@
       (test 0 syntax-column stx)
       (test 1026 syntax-position stx))))
 
+;; Test provided by @wcs4217
+(let ([p (open-input-bytes #"\rx\ny")])
+  (port-count-lines! p)
+  (test-values '(1 0 1) (lambda () (port-next-location p)))
+  (test #\return read-char p)
+  (test-values '(2 0 2) (lambda () (port-next-location p)))
+  (test #\x read-char p)
+  (test-values '(2 1 3) (lambda () (port-next-location p)))
+  (test #\newline read-char p)
+  (test-values '(3 0 4) (lambda () (port-next-location p)))
+  (test #\y read-char p)
+  (test-values '(3 1 5) (lambda () (port-next-location p)))
+  (test eof read-char p)
+  (test-values '(3 1 5) (lambda () (port-next-location p))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Check that if the initial commit thread is killed, then
 ;;  another commit thread is broken, that the second doesn't

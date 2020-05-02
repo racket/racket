@@ -36,14 +36,35 @@
                        (#3%fxsra x max-fx-shift)
                        (#3%fxsra x (#3%fx- n)))
                    (if (#3%fx> n max-fx-shift)
-                       (#3%bitwise-arithmetic-shift x n)
+                       (general-arithmetic-shift x n)
                        (let ([m (#3%fxsll x n)])
                          (if (#3%fx= (#3%fxsra m n) x)
                              m
                              (#3%bitwise-arithmetic-shift x n))))))
-             (#2%bitwise-arithmetic-shift x n)))]
-    [(_ expr ...) #'(#2%bitwise-arithmetic-shift expr ...)]
-    [_ #'#2%bitwise-arithmetic-shift]))
+             (general-arithmetic-shift x n)))]
+    [(_ expr ...) #'(general-arithmetic-shift expr ...)]
+    [_ #'general-arithmetic-shift]))
+
+(define general-arithmetic-shift
+  (|#%name|
+   arithmetic-shift
+   (lambda (x n)
+     (cond
+      [(not (exact-integer? x))
+       (#2%bitwise-arithmetic-shift x n)]
+      [(fixnum? n)
+       (unless (or (eqv? x 0) (fx< n 1000))
+         (guard-large-allocation 'arithmetic-shift 'number n 1))
+       (#2%bitwise-arithmetic-shift x n)]
+      [(and (not (eqv? x 0))
+            (bignum? n)
+            (positive? n))
+       (raise (|#%app|
+               exn:fail:out-of-memory
+               "arithmetic-shift: out of memory"
+               (current-continuation-marks)))]
+      [else
+       (#2%bitwise-arithmetic-shift x n)]))))
 
 (define-syntax-rule (define-bitwise op fxop)
   (...

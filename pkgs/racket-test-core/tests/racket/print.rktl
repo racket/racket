@@ -20,7 +20,7 @@
                (test s to-pretty-string v)
                (test (format "~s" v) to-string/not-expression v))])
   (define-struct a (x y))
-  (define-struct b (x y) #:transparent)
+  (define-struct b (x y) #:transparent #:mutable)
   (define-struct c (x y) #:prefab)
   (define (custom-printer get-xy)
     (lambda (v port mode)
@@ -98,6 +98,9 @@
   (ptest "#<a>" (a 1 2))
   (ptest "(b 1 2)" (b 1 2))
   (ptest "'#s(c 1 2)" (c 1 2))
+
+  (let ([s (b 1 2)])
+    (ptest "(list (cons (b 1 2) 0) (cons (b 1 2) 0))" (list (cons s 0) (cons s 0))))
 
   (ptest "'<1 1 2>" (d 1 2))
   (ptest "'<1 1 #<a>>" (d 1 (a 1 2)))
@@ -302,6 +305,28 @@
         (loop super)))))
 
 ;; ----------------------------------------
+;; make sure the minimum value (3) is ok for `error-print-width':
+(parameterize ([error-print-width 3])
+  (test "..." format "~.a" "abcd")
+  (test "abc" format "~.a" "abc")
+  (test "ab" format "~.a" "ab")
+  (test 3 error-print-width))
+
+(parameterize ([error-print-width 3])
+  (struct show-a ()
+    #:property prop:custom-write
+    (lambda (self port mode)
+      (fprintf port "a")))
+  (struct show-nothing ()
+    #:property prop:custom-write
+    (lambda (self port mode)
+      (void)))
+  (test "a" format "~e" (show-a))
+  (test "..." format "~e" (list (show-a)))
+  (test "" format "~e" (show-nothing))
+  (test "'()" format "~e" (list (show-nothing))))
+
+;; ----------------------------------------
 ;; make sure +inf.0 is ok for `print-syntax-width':
 (parameterize ([print-syntax-width +inf.0])
   (test +inf.0 print-syntax-width))
@@ -436,7 +461,7 @@
        #'(let () body ...)]))
 
   (define-struct a (x y))
-  (define-struct b (x y) #:transparent)
+  (define-struct b (x y) #:transparent #:mutable)
   (define-struct c (x y) #:prefab)
 
   (struct s () #:transparent)
@@ -517,6 +542,18 @@
       (test-print/all (c 1 2)
                       "#s(c 1 2)" "#s(c 1 2)" "#s(c 1 2)" "'#s(c 1 2)" "#s(c 1 2)"))
 
+    (parameterize ([print-pair-curly-braces #f])
+      (let ([s (b 1 2)])
+        (test-print/all (list (cons s 0) (cons s 2))
+                        "((#0=#(struct:b 1 2) . 0) (#0# . 2))" "((#0=#(struct:b 1 2) . 0) (#0# . 2))" "((#0=#(struct:b 1 2) . 0) (#0# . 2))"
+                        "(list (cons #0=(b 1 2) 0) (cons #0# 2))" "((#0=#(struct:b 1 2) . 0) (#0# . 2))"))
+      (let ([s (b 1 2)])
+        (set-b-x! s s)
+        (test-print/all (list s)
+                        "(#0=#(struct:b #0# 2))" "(#0=#(struct:b #0# 2))" "(#0=#(struct:b #0# 2))"
+                        "(list #0=(b #0# 2))"
+                        "(#0=#(struct:b #0# 2))")))
+
     (parameterize ([print-vector-length #t])
       (test-print/all (b 1 1)
                       "#3(struct:b 1)" "#(struct:b 1 1)" "#3(struct:b 1)" "(b 1 1)" "#3(struct:b 1)")
@@ -524,6 +561,7 @@
                       "#3(struct:b 1 2)" "#(struct:b 1 2)" "#3(struct:b 1 2)" "(b 1 2)" "#3(struct:b 1 2)")
       (test-print/all (b 'b 'b)
                       "#3(struct:b b)" "#(struct:b b b)" "#3(struct:b b)" "(b 'b 'b)" "#3(struct:b b)")
+
       (test-print/all (b 'struct:b 'struct:b)
                       "#3(struct:b)" "#(struct:b struct:b struct:b)" "#3(struct:b)" "(b 'struct:b 'struct:b)" "#3(struct:b)")
       (test-print/all (c x x)
@@ -594,5 +632,156 @@
     (void))))
 
 ;; ----------------------------------------
+;; More `prop:custom-write` and `prop:custom-print-quotable` checking.
+;; Make sure the `prop:custom-write` callback gets an approrpriate
+;; printing mode, even when looking for quoting modes and cycles, and
+;; check behavior when the callback synthesizes a new lists. The
+;; `ptest` tests above already do a lot of that, but this test covers
+;; some additional corners.
+;; Based on an example by Ryan Kramer.
+
+(let ()
+  (struct my-struct (item) #:transparent)
+
+  (define modes '())
+
+  (define (check-saw-mode . alts)
+    (define ms (reverse modes))
+    (set! modes '())
+    (test #t ms (and (member ms alts) #t)))
+
+  (define-syntax-rule (expect e output)
+    (let ([o (open-output-bytes)])
+      (parameterize ([current-output-port o])
+        e)
+      (test output get-output-string o)))
+
+  (define (go port mode val)
+    (set! modes (cons mode modes))
+    (case mode
+      [(#f #t 1)
+       (display "#<mine: " port)
+       (if mode
+           (write val port) 
+           (display val port))
+       (display ">" port)]
+      [else
+       (display "(mine " port)
+       (print val port mode)
+       (display ")" port)]))
+
+  (struct mine (content)
+    #:property
+    prop:custom-write
+    (lambda (v port mode)
+      (go port mode (mine-content v))))
+
+  (struct mine/copy (content)
+    #:property
+    prop:custom-write
+    (lambda (v port mode)
+      (go port mode (apply list (mine/copy-content v)))))
+
+  (struct mine/always (content)
+    #:property
+    prop:custom-print-quotable 'always
+    #:property
+    prop:custom-write
+    (lambda (v port mode)
+      (go port mode (mine/always-content v))))
+
+  (struct mine/maybe (content)
+    #:property
+    prop:custom-print-quotable 'maybe
+    #:property
+    prop:custom-write
+    (lambda (v port mode)
+      (go port mode (mine/maybe-content v))))
+
+  (struct mine/copy/always (content)
+    #:property
+    prop:custom-print-quotable 'always
+    #:property
+    prop:custom-write
+    (lambda (v port mode)
+      (go port mode (apply list (mine/copy/always-content v)))))
+
+  (define (show println writeln displayln)
+    (define b (box 'CONTENT))
+    (define x (list b (my-struct '(1 a))))
+
+    (printf "List\n")
+    (expect (println x) "(list '#&CONTENT (my-struct '(1 a)))\n")
+    (expect (writeln x) "(#&CONTENT #(struct:my-struct (1 a)))\n")
+    (expect (displayln x) "(#&CONTENT #(struct:my-struct (1 a)))\n")
+
+    (printf "Wrapped list\n")
+    (define y (mine x))
+    (expect (println y) "(mine (list '#&CONTENT (my-struct '(1 a))))\n")
+    (check-saw-mode '(0 0))
+    (expect (writeln y) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#t #t))
+    (expect (displayln y) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#f #f))
+
+    (printf "Wrapped list 'always\n")
+    (define z (mine/always x))
+    (expect (println z) "'#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(1 1))
+    (expect (writeln z) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#t #t))
+    (expect (displayln z) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#f #f))
+
+    (printf "Wrapped list copied on print\n")
+    (define y/c (mine/copy x))
+    (expect (println y/c) "(mine '(#&CONTENT #(struct:my-struct (1 a))))\n")
+    (check-saw-mode '(0 0))
+    (expect (writeln y/c) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#t #t))
+    (expect (displayln y/c) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#f #f))
+
+    (printf "Wrapped list copied on print 'always\n")
+    (define z/c (mine/copy/always x))
+    (expect (println z/c) "'#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(1 1))
+    (expect (writeln z/c) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#t #t))
+    (expect (displayln z/c) "#<mine: (#&CONTENT #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#f #f))
+    
+    (printf "Wrapped cycle list\n")
+    (set-box! b x)
+    ;; The printer may need two passes to sort out cycles
+    (expect (println y) "(mine #0=(list '#&#0# (my-struct '(1 a))))\n")
+    (check-saw-mode '(0 0) '(0 0 0))
+    (expect (writeln y) "#<mine: #0=(#&#0# #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#t #t) '(#t #t #t))
+    (expect (displayln y) "#<mine: #0=(#&#0# #(struct:my-struct (1 a)))>\n")
+    (check-saw-mode '(#f #f) '(#f #f #f))
+
+    (printf "Wrapped quotable list\n")
+    (define yq (mine '(#&CONTENT)))
+    (expect (println yq) "(mine '(#&CONTENT))\n")
+    (check-saw-mode '(0 0))
+    (expect (writeln yq) "#<mine: (#&CONTENT)>\n")
+    (check-saw-mode '(#t #t))
+    (expect (displayln yq) "#<mine: (#&CONTENT)>\n")
+    (check-saw-mode '(#f #f))
+
+    (printf "Wrapped quotable list 'maybe\n")
+    (define yqm (mine/maybe '(#&CONTENT)))
+    (expect (println yqm) "'#<mine: (#&CONTENT)>\n")
+    (check-saw-mode '(0 1)) ; guess unquoted, discovered to be quoted
+    (expect (writeln yqm) "#<mine: (#&CONTENT)>\n")
+    (check-saw-mode '(#t #t))
+    (expect (displayln yqm) "#<mine: (#&CONTENT)>\n")
+    (check-saw-mode '(#f #f))
+
+    (void))
+
+  (show println writeln displayln)
+  (show pretty-print pretty-write pretty-display))
 
 (report-errs)

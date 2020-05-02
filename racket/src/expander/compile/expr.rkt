@@ -143,7 +143,7 @@
      [else v]))
   ;; Get either a declared 'inferred-name or one accumulated by the compiler
   (define name (or (let ([v (simplify-name (syntax-property orig-s 'inferred-name))])
-                     (and (or (symbol? v) (syntax? v) (void? v))
+                     (and (or (symbol? v) (and (syntax? v) (symbol? (syntax-e v))) (void? v))
                           v))
                    inferred-name))
   (define named-s (if name

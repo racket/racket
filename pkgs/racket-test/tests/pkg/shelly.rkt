@@ -3,6 +3,7 @@
          racket/port
          racket/system
          racket/match
+         compiler/find-exe
          (for-syntax racket/base
                      syntax/parse))
 
@@ -56,8 +57,8 @@
              #:attr
              code
              (quasisyntax/loc
-                 #'command-line
-               (let ([cmd command-line])
+               #'command-line
+               (let ([cmd (rename-racket command-line)])
                  (check-case
                   cmd
                   (define output-port (open-output-string))
@@ -143,5 +144,33 @@
            (λ ()
              (shelly-begin after ...))))]))
 ;; }}
+
+(define racket-run-suffix
+  (let ()
+    (define racket (find-exe))
+    (cond
+      [racket
+       (define-values (base name dir?) (split-path racket))
+       (define m (regexp-match #rx"^(?i:racket)(.*)$" (path-element->string name)))
+       (define suffix (and m (cadr m)))
+       (and (not (equal? suffix ""))
+            suffix)]
+      [else #f])))
+      
+;; Add a suffix ro "racket" or "raco", if there's one on the current executable
+(define rename-racket
+  (cond
+    [racket-run-suffix
+     ;; Adjust comands by adding a suffix:
+     (lambda (cmd)
+       (cond
+         [(regexp-match-positions #rx"^(racket|raco) " cmd)
+          => (lambda (m)
+               (string-append (substring cmd 0 (cdadr m))
+                              racket-run-suffix
+                              (substring cmd (cdadr m))))]
+         [else cmd]))]
+    [else
+     (lambda (cmd) cmd)]))
 
 (provide (all-defined-out))

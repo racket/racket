@@ -16,7 +16,8 @@
 (define-thread-local late-will-executors-with-pending (make-eq-hashtable))
 
 (define-record-type (will-executor create-will-executor will-executor?)
-  (fields guardian will-stacks (mutable ready) notify keep?))
+  (fields guardian will-stacks (mutable ready) notify keep?)
+  (sealed #t))
 
 (define (make-will-executor notify)
   (create-will-executor the-will-guardian the-will-stacks '() notify #f))

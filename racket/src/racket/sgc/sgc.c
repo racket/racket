@@ -152,7 +152,7 @@
 /* Keep source offsets for path traces */
 
 #define CHECK_SKIP_MARK_AT_FIRST 0
-/* Enables skipping certain marks during collection from the inital
+/* Enables skipping certain marks during collection from the initial
    root supplied as GC_initial_trace_root */
 
 #define ALLOW_SET_LOCKING 0
@@ -235,7 +235,7 @@
 /****************************************************************************/
 
 /* GC frequency: MEM_USE_FACTOR is max factor between current
-   allocated bytes and alocated bytes after last GC. */
+   allocated bytes and allocated bytes after last GC. */
 #ifdef SMALL_HASH_TABLES
 # define FIRST_GC_LIMIT 20000
 # define MEM_USE_FACTOR 1.40
@@ -775,7 +775,7 @@ static intptr_t mem_use, mem_limit = FIRST_GC_LIMIT;
 int GC_free_space_divisor = 4;
 #endif
 
-static intptr_t mem_real_use, mem_uncollectable_use, mem_cumulative_use;
+static intptr_t mem_real_use, mem_uncollectable_use, mem_cumulative_use, mem_peak_use;
 
 static intptr_t sector_mem_use, sector_admin_mem_use, sector_free_mem_use;
 static intptr_t manage_mem_use, manage_real_mem_use;
@@ -901,7 +901,7 @@ static SectorPage **sector_pagetables;
      malloc_sector = returns new SECTOR_SEGMENT_SIZE-aligned memory;
                      relies on nothing else; the memeory blocks must
 		     be explicitly freed with free_sector; all GC
-		     allocation is perfomed via sectors
+		     allocation is performed via sectors
      
      malloc_managed = malloc "atomic" block used by GC implementation
                       itself; no GCing should occur during the malloc;
@@ -1649,6 +1649,7 @@ void GC_add_roots(void *start, void *end)
     naya = (uintptr_t *)malloc_managed(sizeof(uintptr_t) * (roots_size + 1));
 
     mem_real_use += (sizeof(uintptr_t) * roots_size);
+    if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 
     if (roots) {
       memcpy((void *)naya, (void *)roots,
@@ -2225,6 +2226,11 @@ size_t GC_get_memory_use()
   return (size_t)mem_real_use;
 }
 
+size_t GC_get_memory_peak_use()
+{
+  return (size_t)mem_peak_use;
+}
+
 size_t GC_get_total_bytes()
 {
   return (size_t)mem_cumulative_use;
@@ -2496,6 +2502,7 @@ static void *do_malloc(SET_NO_BACKINFO
       mem_use += size;
     mem_real_use += (size + sizeof(MemoryChunk));
     mem_cumulative_use += (size + sizeof(MemoryChunk));
+    if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
     num_chunks++;
 
     if (!low_plausible || (c->start < low_plausible))
@@ -2635,6 +2642,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
   mem_real_use += SECTOR_SEGMENT_SIZE;
   mem_cumulative_use += SECTOR_SEGMENT_SIZE;
+  if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 
  block_top:
 
@@ -2869,6 +2877,7 @@ static void register_disappearing_link(void **p, void *a, int late)
   GC_dl_entries++;
 
   mem_real_use += sizeof(DisappearingLink);
+  if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 }
 
 void GC_register_indirect_disappearing_link(void **p, void *a)
@@ -2944,6 +2953,7 @@ static void register_finalizer(void *p, void (*f)(void *p, void *data),
 	fn = (Finalizer *)malloc_managed(sizeof(Finalizer));
 	mem_real_use += sizeof(Finalizer);
 	mem_cumulative_use += sizeof(Finalizer);
+        if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 	GC_fo_entries++;
       }
 
@@ -4482,7 +4492,7 @@ static intptr_t started, rightnow, old;
 # define PRINTTIME(x) /* empty */
 #endif
 
-/* Immitate Boehm's private GC call; used by Racket */
+/* Imitate Boehm's private GC call; used by Racket */
 void GC_push_all_stack(void *sp, void *ep)
 {
   uintptr_t s, e;

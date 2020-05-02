@@ -20,6 +20,7 @@
   [set-box!/check-undefined (known-constant)]
 
   [make-record-type-descriptor (known-constant)]
+  [make-record-type-descriptor* (known-constant)]
   [make-record-constructor-descriptor (known-constant)]
   [record-constructor (known-constant)]
   [record-predicate (known-constant)]

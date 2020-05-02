@@ -19,7 +19,7 @@
 /*    STANDALONE_WITH_EMBEDDED_EXTENSION builds an executable with
       built-in extensions. The extension is initialized by calling
       scheme_initialize(env), where `env' is the initial environment.
-      By default, command-line parsing, the REPL, and initilization
+      By default, command-line parsing, the REPL, and initialization
       file loading are turned off. */
 
 #ifdef STANDALONE_WITH_EMBEDDED_EXTENSION

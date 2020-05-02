@@ -25,6 +25,7 @@
          make-path->compiled-path
          compiled-path->path
 
+         interpreter-link!
          interpretable-jitified-linklet
          interpret-linklet
 

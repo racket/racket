@@ -184,6 +184,9 @@
 
 (define place-done-prompt (make-continuation-prompt-tag 'place-done))
 
+(define-values (prop:unsafe-authentic-override unsafe-authentic-override? unsafe-authentic-override-ref)
+  (make-struct-type-property 'unsafe-authentic-override))
+
 ;; Beware that this implementation of `fork-place` doesn't support
 ;; rktio-based blocking in different places. So, be careful of the
 ;; preliminary tests that you might try with the "io" layer and
@@ -285,7 +288,8 @@
                   'mutex-release (lambda (s) (semaphore-post s))
                   'call-as-asynchronous-callback (lambda (thunk) (thunk))
                   'post-as-asynchronous-callback (lambda (thunk) (thunk))
-                  'continuation-current-primitive (lambda (k) #f)))
+                  'continuation-current-primitive (lambda (k) #f)
+                  'prop:unsafe-authentic-override prop:unsafe-authentic-override))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

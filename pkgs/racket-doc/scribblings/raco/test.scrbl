@@ -210,7 +210,7 @@ identifiers:
  @item{@racket[lock-name] --- a string that names a lock file that is
        used to serialize tests (i.e., tests that have the same lock
        name do not run concurrently). The lock file's location is
-       determined by the @envvar{PLTLOCKDIR} environment varible or
+       determined by the @envvar{PLTLOCKDIR} environment variable or
        defaults to @racket[(find-system-path 'temp-dir)]. The maximum
        time to wait on the lock file is determined by the
        @envvar{PLTLOCKTIME} environment variable or defaults to 4

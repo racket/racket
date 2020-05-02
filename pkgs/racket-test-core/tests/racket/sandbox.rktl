@@ -528,8 +528,10 @@
    --top--
    (parameterize ([sandbox-output 'bytes]
                   [sandbox-error-output current-output-port]
-                  [sandbox-memory-limit 2]
-                  [sandbox-eval-limits '(2.5 1)])
+                  [sandbox-memory-limit 4]
+                  [sandbox-eval-limits (case (system-type 'vm)
+                                         [(chez-scheme) '(2.5 4)]
+                                         [else '(2.5 1)])])
      (make-base-evaluator!))
    ;; GCing is needed to allow these to happen (note: the memory limit is very
    ;; tight here, this test usually fails if the sandbox library is not

@@ -31,12 +31,10 @@
 
 ;; Initializes the thread system:
 (define (call-in-main-thread thunk)
-  (make-initial-thread (lambda ()
-                         (set-place-host-roots! initial-place (host:current-place-roots))
-                         (thunk)))
-  (call-with-engine-completion
-   (lambda (done)
-     (poll-and-select-thread! 0))))
+  (call-in-new-main-thread
+   (lambda ()
+     (set-place-host-roots! initial-place (host:current-place-roots))
+     (thunk))))
 
 ;; Initializes the thread system in a new place:
 (define (call-in-another-main-thread c thunk)
@@ -46,7 +44,14 @@
   (init-future-place!)
   (init-schedule-counters!)
   (init-sync-place!)
-  (call-in-main-thread thunk))
+  (call-in-new-main-thread thunk))
+
+;; Finish initializing the thread system within a place:
+(define (call-in-new-main-thread thunk)
+  (make-initial-thread thunk)
+  (call-with-engine-completion
+   (lambda (done)
+     (poll-and-select-thread! 0))))
 
 ;; ----------------------------------------
 
@@ -119,8 +124,7 @@
   (current-thread/in-atomic t)
   (set-place-current-thread! current-place t)
   (set! thread-swap-count (add1 thread-swap-count))
-  (run-callbacks-in-engine e callbacks t leftover-ticks
-                           swap-in-engine))
+  (run-callbacks-in-engine e callbacks t leftover-ticks))
 
 (define (swap-in-engine e t leftover-ticks)
   (let loop ([e e])
@@ -184,19 +188,19 @@
      (poll-and-select-thread! 0 callbacks)]
     [(and (not (sandman-any-sleepers?))
           (not (any-idle-waiters?)))
-    ;; all threads done or blocked
-    (cond
-      [(thread-running? root-thread)
-       ;; we shouldn't exit, because the main thread is
-       ;; blocked, but it's not going to become unblocked;
-       ;; sleep forever or until a signal changes things
-       (process-sleep)
-       (poll-and-select-thread! 0)]
-      [else
-       (void)])]
-   [else
-    ;; try again, which should lead to `process-sleep`
-    (poll-and-select-thread! 0)]))
+     ;; all threads done or blocked
+     (cond
+       [(thread-running? root-thread)
+        ;; we shouldn't exit, because the main thread is
+        ;; blocked, but it's not going to become unblocked;
+        ;; sleep forever or until a signal changes things
+        (process-sleep)
+        (poll-and-select-thread! 0)]
+       [else
+        (void)])]
+    [else
+     ;; try again, which should lead to `process-sleep`
+     (poll-and-select-thread! 0)]))
 
 ;; Check for threads that have been suspended until a particular time,
 ;; etc., as registered with the sandman
@@ -212,9 +216,9 @@
 
 ;; Run callbacks within the thread for `e`, and don't give up until
 ;; the callbacks are done
-(define (run-callbacks-in-engine e callbacks t leftover-ticks k)
+(define (run-callbacks-in-engine e callbacks t leftover-ticks)
   (cond
-    [(null? callbacks) (k e t leftover-ticks)]
+    [(null? callbacks) (swap-in-engine e t leftover-ticks)]
     [else
      (define done? #f)
      (let loop ([e e])
@@ -230,7 +234,7 @@
           (unless e
             (internal-error "thread ended while it should run callbacks atomically"))
           (if done?
-              (k e t leftover-ticks)
+              (swap-in-engine e t leftover-ticks)
               (loop e)))))]))
 
 ;; Run foreign "async-apply" callbacks, now that we're in some thread
@@ -242,7 +246,7 @@
 
 ;; ----------------------------------------
 
-;; Have we tried all threads without since most recently making
+;; Have we tried all threads since most recently making
 ;; progress on some thread?
 (define (all-threads-poll-done?)
   (= (hash-count poll-done-threads)

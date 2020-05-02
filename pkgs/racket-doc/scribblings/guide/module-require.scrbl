@@ -5,8 +5,8 @@
 
 The @racket[require] form imports from another module. A
 @racket[require] form can appear within a module, in which case it
-introduces bindings from the specified module into importing module. A
-@racket[require] form can also appear at the top level, in which case
+introduces bindings from the specified module into the importing module.
+A @racket[require] form can also appear at the top level, in which case
 it both imports bindings and @deftech{instantiates} the specified
 module; that is, it evaluates the body definitions and expressions of
 the specified module, if they have not been evaluated already.

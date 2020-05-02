@@ -188,7 +188,7 @@
                                 #:serializable? #t
                                 #:module-prompt? #t
                                 #:module-use*s module-use*s
-                                #:cross-linklet-inlining? #t
+                                #:optimize-linklet? #t
                                 #:load-modules? #t
                                 #:namespace ns))
       (values phase (cons linklet new-module-use*s))))

@@ -272,7 +272,7 @@ MAKE_BUILD_SCHEME = checkout
 # for Chez Scheme, and add `-b <branch>` to `GIT_CLONE_ARGS_qq`
 # to clone a particular branch from that repo
 CHEZ_SCHEME_REPO = https://github.com/racket/ChezScheme
-GIT_CLONE_ARGS_qq = -q --depth 1
+GIT_CLONE_ARGS_qq = -q --recurse-submodules --depth 1
 
 # Altenative source for Chez Scheme repo, normally set by
 # the distro-build client driver
@@ -413,7 +413,8 @@ update-ChezScheme-as-extra:
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme/lz4 && git pull origin master -q
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
-                                     SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"
+                                     SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" \
+                                     DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)"
 WIN32_CS_COPY_ARGS_EXCEPT_SUT = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
 WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" WIN32_CS_SETUP_TARGET=$(WIN32_CS_SETUP_TARGET) $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
 WIN32_CS_COPY_ARGS_BOOT = $(WIN32_CS_COPY_ARGS) SETUP_BOOT_MODE="$(SETUP_BOOT_MODE)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
@@ -432,7 +433,7 @@ win32-racket-then-cs:
 	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) $(WIN32_CS_COPY_ARGS_BOOT)
 
 CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" --pull \
-                    --racketcs-suffix "$(RACKETCS_SUFFIX)" \
+                    --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) \
                     --boot-mode "$(SETUP_BOOT_MODE)" \
                     --extra-repos-base "$(EXTRA_REPOS_BASE)" \
                     -- $(GIT_CLONE_ARGS_qq)
@@ -494,6 +495,14 @@ also-cs:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 # ------------------------------------------------------------
+# Clean (which just gives advice)
+
+clean:
+	@echo "No makefile support for cleaning. Instead, try"
+	@echo "  git clean -d -x -f ."
+	@exit 1
+
+# ------------------------------------------------------------
 # Configuration options for building installers
 
 # On variable definitions: Spaces are allowed where noted and
@@ -547,13 +556,30 @@ MAC_PKG_MODE =
 # Set to "--tgz" to create a ".tgz" archive instead of an installer:
 TGZ_MODE =
 
+# Comma-separated options for the `--packed-options` argument to
+# `distro-build/installer`, which generalizes simple switches like
+# `--mac-pkg` and `--tgz`; we don't just take a sequence of regular
+# command-line switches here, because it's difficult to thread those
+# through `make` variants like `nmake`:
+INSTALLER_OPTIONS =
+
 # Set to "--source --no-setup" to include packages in an installer
 # (or archive) only in source form:
-PKG_SOURCE_MODE = 
+PKG_SOURCE_MODE =
 
-# Set a base64-encoded list of strings for an executable and argument
-# to run on an installer (on the client machine) before the installer
-# is uploaded, or empty for no post-process action:
+# Set to "--disable-lib" to avoid including ".a" and ".boot" files
+# for use in embedding Racket in other applications
+DISABLE_STATIC_LIBS =
+
+# Set to a base64-encoded list of strings for an executable and
+# arguments to run on an assembled directory (on the client machine)
+# before it is packaged into an installer, or empty for no pre-process
+# action:
+INSTALLER_PRE_PROCESS_BASE64 =
+
+# Set to a base64-encoded list of strings for an executable and
+# arguments to run on an installer (on the client machine) before the
+# installer is uploaded, or empty for no post-process action:
 INSTALLER_POST_PROCESS_BASE64 =
 
 # Human-readable name (spaces allowed), installation name base, and
@@ -788,7 +814,7 @@ binary-catalog-server:
 # On each supported platform (for an installer build):
 #
 # The `client' and `win32-client' targets are also used by
-# `distro-buid/drive-clients', which is in turn run by the
+# `distro-build/drive-clients', which is in turn run by the
 # `installers' target.
 #
 # For a non-Windows machine, if "build/log" exists, then
@@ -804,13 +830,15 @@ PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
 	    EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
+            DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)" \
             UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)" \
             OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" JOB_OPTIONS="$(JOB_OPTIONS)" \
-            TGZ_MODE=$(TGZ_MODE) TEST_PKGS="$(TEST_PKGS)" \
+            TGZ_MODE=$(TGZ_MODE) INSTALLER_OPTIONS="$(INSTALLER_OPTIONS)" TEST_PKGS="$(TEST_PKGS)" \
+            INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" \
             INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)"
 
 COPY_ARGS = $(PROP_ARGS) \
@@ -825,7 +853,7 @@ BUNDLE_FROM_SERVER_TARGET = bundle-from-server
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS)
+	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS) MORE_CONFIGURE_ARGS="$(DISABLE_STATIC_LIBS)"
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
 	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) $(COPY_ARGS)
 	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
@@ -863,7 +891,7 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
 	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(IN_BUNDLE_RACO) setup $(JOB_OPTIONS) $(RECOMPILE_OPTIONS)
+	$(IN_BUNDLE_RACO) setup --no-user $(JOB_OPTIONS) $(RECOMPILE_OPTIONS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
@@ -877,7 +905,9 @@ bundle-cross-from-server:
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
-              $(MAC_PKG_MODE) $(TGZ_MODE) --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
+              $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)" \
+              --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" \
+              --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 
@@ -899,7 +929,7 @@ win32-bundle:
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
 	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(WIN32_IN_BUNDLE_RACO) setup -l racket/base
+	$(WIN32_IN_BUNDLE_RACO) setup --no-user -l racket/base
 	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 

@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     racket/match)
          (prefix-in r: racket/include)
          racket/fixnum
          racket/vector
@@ -42,12 +43,13 @@
          letrec*
          putprop getprop remprop
          $sputprop $sgetprop $sremprop
-         prim-mask
+         define-flags
          $primitive
          $tc $tc-field $thread-tc
          enumerate
          $make-record-type
          $make-record-type-descriptor
+         $make-record-type-descriptor*
          $make-record-constructor-descriptor
          $record
          $record?
@@ -77,12 +79,15 @@
          record-type-opaque?
          record-type-parent
          record-type-field-names
+         record-type-field-indices
          csv7:record-type-field-names
+         csv7:record-type-field-indices
          csv7:record-type-field-decls
          (rename-out [record-rtd $record-type-descriptor])
          record?
          record-type-uid
          $object-ref
+         stencil-vector?
          (rename-out [s:vector-sort vector-sort]
                      [s:vector-sort! vector-sort!])
          vector-for-each
@@ -93,6 +98,7 @@
          $set-top-level-value!
          $profile-source-data?
          $compile-profile
+         compile-profile
          $optimize-closures
          $profile-block-data?
          run-cp0
@@ -175,6 +181,9 @@
                      [logtest fxlogtest])
          fxsrl
          fxbit-field
+         fxpopcount
+         fxpopcount32
+         fxpopcount16
          bitwise-bit-count
          bitwise-arithmetic-shift-right
          bytevector-u16-native-ref
@@ -284,6 +293,7 @@
          (rename-out [s:open-output-file open-output-file])
          $open-bytevector-list-output-port
          open-bytevector-output-port
+         native-transcoder
          port-file-compressed!
          file-buffer-size
          $source-file-descriptor
@@ -587,15 +597,33 @@
                                                            (lambda lhs (values . flat-lhs)))])]))])
        #'(let-values ([lhs rhs] ...) body ...))]))
 
-(define-values (prim-flags->bits primvec get-priminfo)
+(define-values (primvec get-priminfo)
   (get-primdata $sputprop scheme-dir))
 
-(define-syntax prim-mask
-  (syntax-rules (or)
-    [(_ (or flag ...))
-     (prim-flags->bits '(flag ...))]
-    [(_ flag)
-     (prim-flags->bits '(flag))]))
+(begin-for-syntax
+  (define (make-flags->bits specs)
+    (define bits
+      (for/fold ([bits #hasheq()]) ([spec (in-list specs)])
+        (define (get-val v)
+          (if (number? v) v (hash-ref bits v)))
+        (match spec
+          [`(,name (or ,vals ...))
+           (hash-set bits name (apply bitwise-ior (map get-val vals)))]
+          [`(,name ,val)
+           (hash-set bits name (get-val val))])))
+    (lambda (flags)
+      (apply bitwise-ior (for/list ([flag (in-list flags)])
+                           (hash-ref bits flag))))))
+
+(define-syntax (define-flags stx)
+  (syntax-case stx ()
+    [(_ name spec ...)
+     #'(define-syntax name
+         (let ([flags->bits (make-flags->bits '(spec ...))])
+           (lambda (stx)
+             (syntax-case stx (or)
+               [(_ . flags)
+                (flags->bits 'flags)]))))]))
 
 (define-syntax $primitive
   (syntax-rules ()
@@ -625,6 +653,12 @@
 
 (define ($make-record-constructor-descriptor rtd prcd protocol who)
   (make-record-constructor-descriptor rtd prcd protocol))
+
+(define ($make-record-type-descriptor* base-rtd name parent uid sealed? opaque? num-fields mutability-mask who . extras)
+  (define fields (for ([i (in-range num-fields)])
+                   (list (if (bitwise-bit-set? mutability-mask i) 'mutable 'immutable)
+                         (string->symbol (format "f~a" i)))))
+  (apply $make-record-type-descriptor base-rtd name parent uid sealed? opaque? fields who extras))
 
 (define-syntax-rule (s:module (id ...) body ...)
   (begin
@@ -746,6 +780,22 @@
     [(proc . vecs)
      (list->vector (apply map proc (map vector->list vecs)))]))
 
+(define (stencil-vector? v) #f)
+
+(define (fxpopcount32 x)
+  (let* ([x (- x (bitwise-and (arithmetic-shift x -1) #x55555555))]
+         [x (+ (bitwise-and x #x33333333) (bitwise-and (arithmetic-shift x -2) #x33333333))]
+         [x (bitwise-and (+ x (arithmetic-shift x -4)) #x0f0f0f0f)]
+         [x (+ x (arithmetic-shift x -8) (arithmetic-shift x -16) (arithmetic-shift x -24))])
+    (bitwise-and x #x3f)))
+
+(define (fxpopcount x)
+  (fx+ (fxpopcount32 (bitwise-and x #xffffffff))
+       (fxpopcount32 (arithmetic-shift x -32))))
+
+(define (fxpopcount16 x)
+  (fxpopcount32 (bitwise-and x #xffff)))
+
 (define (logbit? m n)
   (bitwise-bit-set? n m))
 (define (logbit1 i n)
@@ -845,6 +895,7 @@
   #f)
 
 (define $compile-profile (make-parameter #f))
+(define compile-profile $compile-profile)
 (define $optimize-closures (make-parameter #t))
 (define $profile-block-data? (make-parameter #f))
 (define run-cp0 (make-parameter error))
@@ -1116,10 +1167,13 @@
             (define bv (get-output-bytes p))
             (values (list bv) (bytes-length bv)))))
 
-(define (open-bytevector-output-port)
+(define (open-bytevector-output-port [transcoder #f])
   (define p (open-output-bytes))
   (values p
           (lambda () (get-output-bytes p))))
+
+(define (native-transcoder)
+  #f)
 
 (define (port-file-compressed! p)
   (void))

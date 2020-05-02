@@ -12,6 +12,8 @@ typedef unsigned char byte;
 #define X
 #endif
 
+X void* return_null() { return NULL; }
+
 X int  add1_int_int   (int  x) { return x + 1; }
 X int  add1_byte_int  (byte x) { return x + 1; }
 X byte add1_int_byte  (int  x) { return x + 1; }

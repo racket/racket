@@ -221,7 +221,13 @@
                                      (define ns-1 (namespace->namespace-at-phase ns (phase+ phase-shift (sub1 phase-level))))
                                      (parameterize ([current-namespace ns])
                                        (parameterize-like
-                                        #:with ([current-expand-context (delay (make-expand-context ns-1))]
+                                        #:with ([current-expand-context (delay (make-expand-context
+                                                                                ns-1
+                                                                                ;; Turn off on-demand instantiation, because
+                                                                                ;; we're already trying to instantiate modules,
+                                                                                ;; and anything that should be relevant by being
+                                                                                ;; imported here should be instantiated already:
+                                                                                #:skip-visit-available? #t))]
                                                 [current-module-code-inspector insp])
                                         (instantiate-body)))]))))))
 

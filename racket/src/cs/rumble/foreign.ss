@@ -146,7 +146,7 @@
 (define (addr->gcpointer-memory v)  ; call with GC disabled
   (#%$address->object v bytevector-content-offset))
 
-(define (addr->vector v)  ; call with GC disabled or when reuslt is locked
+(define (addr->vector v)  ; call with GC disabled or when result is locked
   (#%$address->object v vector-content-offset))
 
 ;; Converts a primitive cpointer (normally the result of
@@ -1353,7 +1353,7 @@
   (let ([duplicate-argument
          (lambda (what a1 a2)
            (raise-arguments-error 'malloc
-                                  (string-append "mulitple " what " arguments")
+                                  (string-append "multiple " what " arguments")
                                   "first" a1
                                   "second" a2))])
     (let loop ([args args] [count #f] [type #f] [copy-from #f] [mode #f] [fail-mode #f])
@@ -1409,11 +1409,8 @@
     ;; a finalizer is associated with the cpointer (as opposed to
     ;; the address that is wrapped by the cpointer). Also, interior
     ;; pointers are not allowed as GCable pointers.
-    (let* ([bstr (make-bytevector size 0)]
-           [p (make-cpointer bstr #f)])
-      (lock-object bstr)
-      (unsafe-add-global-finalizer p (lambda () (unlock-object bstr)))
-      p)]
+    (let* ([bstr (make-immobile-bytevector size)])
+      (make-cpointer bstr #f))]
    [else
     (raise-unsupported-error 'malloc
                              (format "'~a mode is not supported" mode))]))
@@ -1427,13 +1424,18 @@
   (parent cpointer)
   (fields))
 
+(define immobile-cells (make-eq-hashtable))
+
 (define (malloc-immobile-cell v)
-  (let ([vec (vector v)])
-    (lock-object vec)
+  (let ([vec (make-immobile-vector 1)])
+    (#%vector-set! vec 0 v)
+    (with-global-lock
+     (eq-hashtable-set! immobile-cells vec #t))
     (make-cpointer/cell vec #f)))
 
 (define (free-immobile-cell b)
-  (unlock-object (cpointer-memory b)))
+  (with-global-lock
+   (eq-hashtable-delete! immobile-cells (cpointer-memory b))))
 
 (define (immobile-cell-ref b)
   (#%vector-ref (cpointer-memory b) 0))
@@ -1542,7 +1544,7 @@
   ;; so uses of the FFI can rely on passing an argument to a foreign
   ;; function as retaining the argument until the function returns.
   (let ([result e])
-    (#%$keep-live v) ...
+    (keep-live v) ...
     result))
 
 (define call-locks (make-eq-hashtable))
@@ -1945,11 +1947,7 @@
     (let ([make-code (ffi-call/callable #f in-types out-type abi #f #f #f #f (and atomic? #t) async-apply)])
       (lambda (proc)
         (check 'make-ffi-callback procedure? proc)
-        (let* ([code (make-code proc)]
-               [cb (create-callback code)])
-          (lock-object code)
-          (unsafe-add-global-finalizer cb (lambda () (unlock-object code)))
-          cb)))]))
+        (create-callback (make-code proc))))]))
 
 ;; ----------------------------------------
 
@@ -2024,7 +2022,8 @@
 
 (define process-global-table (make-hashtable equal-hash-code equal?))
 
-(define (unsafe-register-process-global key val)
+(define/who (unsafe-register-process-global key val)
+  (check who bytes? key)
   (with-global-lock
    (cond
     [(not val)
@@ -2033,7 +2032,7 @@
      (let ([old-val (hashtable-ref process-global-table key #f)])
        (cond
         [(not old-val)
-         (hashtable-set! process-global-table key val)
+         (hashtable-set! process-global-table (bytes-copy key) val)
          #f]
         [else old-val]))])))
 

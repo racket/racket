@@ -199,6 +199,46 @@ for @racket[call/cc] to improve performance.}
 The @racket[call/ec] binding is an alias for @racket[call-with-escape-continuation].
 }
 
+@defproc[(call-in-continuation [k continuation?]
+                               [proc (-> any)])
+         any]{
+
+Similar to applying the continuation @racket[k], but instead of
+delivering values to the continuation, @racket[proc] is called with
+@racket[k] as the continuation of the call (so the result of
+@racket[proc] is returned to the continuation). If @racket[k]
+is a composable continuation, the continuation of the call to
+@racket[proc] is the current continuation extended with @racket[k].
+
+@mz-examples[
+(+ 1
+   (call/cc (lambda (k)
+              (call-in-continuation k (lambda () 4)))))
+(+ 1
+   (call/cc (lambda (k)
+              (let ([n 0])
+                (dynamic-wind
+                 void
+                 (lambda ()
+                   (code:comment @#,elem{@racket[n] accessed after post thunk})
+                   (call-in-continuation k (lambda () n)))
+                 (lambda ()
+                   (set! n 4)))))))
+(+ 1
+   (with-continuation-mark
+    'n 4
+     (call/cc (lambda (k)
+                (with-continuation-mark
+                 'n 0
+                 (call-in-continuation
+                  k
+                  (lambda ()
+                    (code:comment @#,elem{@racket['n] mark accessed in continuation})
+                    (continuation-mark-set-first #f 'n))))))))
+]
+
+@history[#:added "7.6.0.17"]}
+
 @defform[(let/cc k body ...+)]{
 Equivalent to @racket[(call/cc (lambda (k) body ...))].
 }

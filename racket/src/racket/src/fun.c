@@ -83,6 +83,7 @@ static Scheme_Object *ormap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *internal_call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *finish_call_cc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *call_in_continuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *propagate_abort (int argc, Scheme_Object *argv[]);
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_continuation_barrier (int argc, Scheme_Object *argv[]);
@@ -291,6 +292,13 @@ scheme_init_fun (Scheme_Startup_Env *env)
 
   scheme_addto_prim_instance("call-with-current-continuation", o, env);
 
+  scheme_addto_prim_instance("call-with-composable-continuation",
+			     scheme_make_prim_w_arity2(call_with_control,
+                                                       "call-with-composable-continuation",
+                                                       1, 2,
+                                                       0, -1),
+			     env);
+
   scheme_addto_prim_instance("continuation?",
                              scheme_make_folding_prim(continuation_p,
 						      "continuation?",
@@ -313,11 +321,11 @@ scheme_init_fun (Scheme_Startup_Env *env)
 			     call_with_prompt_proc, 
 			     env);
 
-  scheme_addto_prim_instance("call-with-composable-continuation",
-			     scheme_make_prim_w_arity2(call_with_control,
-                                                       "call-with-composable-continuation",
-                                                       1, 2,
-                                                       0, -1), 
+  scheme_addto_prim_instance("call-in-continuation",
+			     scheme_make_prim_w_arity2(call_in_continuation,
+						       "call-in-continuation",
+						       2, 2,
+						       0, -1),
 			     env);
 
   REGISTER_SO(abort_continuation_proc);
@@ -2556,7 +2564,7 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       /* Native closure: */
       name = ((Scheme_Native_Closure *)p)->code->u2.name;
       if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_lambda_type)) {
-	/* Not yet jitted. Use `name' as the other alternaive of 
+	/* Not yet jitted. Use `name' as the other alternative of 
 	   the union: */
 	name = ((Scheme_Lambda *)name)->name;
       }
@@ -4314,6 +4322,8 @@ do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
       scheme_check_break_now();
       if (n != 1)
         v = scheme_values(n, (Scheme_Object **)v);
+      else if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_thunk_for_continue_type))
+        v = _scheme_apply_multi(SCHEME_PTR_VAL(v), 0, NULL);
     } else {
       scheme_longjmp(*cont->saveerr, 1);
     }
@@ -6221,8 +6231,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
         get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, cc_guard);
       }
     }
-    
-    return result;
+
+    if ((result != SCHEME_MULTIPLE_VALUES)
+        && SAME_TYPE(SCHEME_TYPE(result), scheme_thunk_for_continue_type))
+      return _scheme_tail_apply(SCHEME_PTR_VAL(result), 0, NULL);
+    else
+      return result;
   } else if (composable || cont->escape_cont) {
     Scheme_Object *argv2[1];
 
@@ -6249,6 +6263,35 @@ finish_call_cc (int argc, Scheme_Object *argv[])
   return do_call_ec(1, argv, argv[1]);
 }
 
+static Scheme_Object *call_in_continuation (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *k = argv[0], *p, *a[1];
+
+  if (!SCHEME_CONTP(k) && !SCHEME_ECONTP(k))
+    scheme_wrong_contract("call-in-continuation", "continuation?", 0, argc, argv);
+
+  scheme_check_proc_arity("call-in-continuation", 0, 1, argc, argv);
+
+  /* Instead of allocating, we chould thread a flag through to say
+     that the value in `argv` should be applied instead of returned.
+     But we're not likely to notice the cost of this allocation,
+     anyway. */
+  p = scheme_alloc_small_object();
+  p->type = scheme_thunk_for_continue_type;
+  SCHEME_PTR_VAL(p) = argv[1];
+
+  a[0] = p;
+
+  if (SCHEME_CONTP(k)) {
+    /* We can use escape mode only if coontinuation marks didn't change. */
+    int can_escape = 0;
+    return scheme_jump_to_continuation(k, 1, a, MZ_RUNSTACK, can_escape);
+  } else {
+    scheme_escape_to_continuation(k, 1, a, NULL);
+    return NULL;
+  }
+}
+
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])
 {
   return ((SCHEME_CONTP(argv[0]) || SCHEME_ECONTP(argv[0]))
@@ -6257,7 +6300,7 @@ static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])
 }
 
 void scheme_takeover_stacks(Scheme_Thread *p)
-     /* When a contination captured in on e thread is invoked in another,
+     /* When a continuation captured in on e thread is invoked in another,
 	the two threads can start using the same runstack, and possibly
 	also the same cont-mark stack. This function swaps out the
 	current owner in favor of p */
@@ -9689,7 +9732,7 @@ static Scheme_Object *jump_to_alt_continuation()
 /*                                  time                                  */
 /*========================================================================*/
 
-intptr_t scheme_get_milliseconds(void)
+uintptr_t scheme_get_milliseconds(void)
 /* this function can be called from any OS thread */
 {
   return rktio_get_milliseconds();
@@ -9813,10 +9856,10 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
 {
-  intptr_t start, end;
-  intptr_t cpustart, cpuend;
-  intptr_t gcstart, gcend;
-  intptr_t dur, cpudur, gcdur;
+  uintptr_t start, end;
+  uintptr_t cpustart, cpuend;
+  uintptr_t gcstart, gcend;
+  uintptr_t dur, cpudur, gcdur;
   int i, num_rands;
   Scheme_Object *v, *p[4], **rand_vec, *rands, *r;
 

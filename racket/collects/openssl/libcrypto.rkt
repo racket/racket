@@ -53,7 +53,7 @@
         ;; Known versions for *BSD variants
         "111")])
     ;; Don't use the versionless dylib on macOS, as it aborts on 10.15
-    (case (cross-system-type)
+    (case (system-type)
       [(macosx) versions]
       [else
        (case (path->string (system-library-subpath #f))

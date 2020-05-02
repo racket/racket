@@ -234,7 +234,7 @@
        (list "CPPFLAGS" (~a "-m32" sdk-flags))
        (list "LDFLAGS" (~a "-m32" sdk-flags)))]
      [else
-      (define sdk-flags (sdk 6))
+      (define sdk-flags (sdk 9))
       (list
        (list "CPPFLAGS" (~a "-m64" sdk-flags))
        (list "LDFLAGS" (~a "-m64" sdk-flags)))])]
@@ -377,7 +377,9 @@
                                  (cond
                                   [ppc? "darwin-ppc-cc"]
                                   [m32? "darwin-i386-cc"]
-                                  [else "darwin64-x86_64-cc"]))]
+                                  [else "darwin64-x86_64-cc"])
+                                 (car (regexp-match #rx"-mmacosx-version-min=[0-9.]*"
+                                                    (cadr (assoc "CPPFLAGS" all-env)))))]
                           [else
                            (list "./Configure"
                                  #f
@@ -460,7 +462,10 @@
     [("glib") (config #:depends (append '("libffi" "gettext")
                                         (if win? '("libiconv") '()))
                       #:configure (append '("--with-pcre=internal")
-                                          (if linux? '("--enable-libmount=no") '()))
+                                          (if linux? '("--enable-libmount=no") '())
+                                          (if mac?
+                                              '("CFLAGS=-include Kernel/uuid/uuid.h")
+                                              '()))
                       #:env (append path-flags
                                     ;; Disable Valgrind support, which particularly
                                     ;; goes wrong for 64-bit Windows builds.

@@ -29,6 +29,8 @@
                [wakeup-handle #:mutable]
                [dequeue-semas #:mutable] ; semaphores reflecting place-channel waits to recheck
                [future-scheduler #:mutable]) ; #f or a scheduler of futures
+  #:authentic
+  #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:evt (struct-field-index pch)
   #:property prop:place-message (lambda (self) (lambda () (lambda () (place-pch self)))))
 
