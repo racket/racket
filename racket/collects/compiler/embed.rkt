@@ -1563,7 +1563,6 @@
                                            dest
                                            mred?))))))
 	(define embed-dlls? (and (eq? 'windows (cross-system-type))
-                                 (eq? 'racket (cross-system-type 'vm))
 				 (let ([m (assq 'embed-dlls? aux)])
 				   (and m (cdr m)))))
 	(define embedded-dlls-box (and embed-dlls? (box null)))
