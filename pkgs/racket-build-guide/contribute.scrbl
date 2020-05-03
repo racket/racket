@@ -157,10 +157,14 @@ make that process faster by keeping a few guidelines in mind:
 
  @item{Include new or updated documentation as appropriate.
 
-       Note that the Racket reference is in
-       @filepath{pkgs/racket-doc/scribblings/reference}, and
-       documentation for other libraries are also sometimes in a
-       separate @filepath{-doc} package.
+       To locate a documentation (Scribble) source file,
+       visit the current documentation in a browser, and click at the page heading.
+       A box will appear with a URL to a documentation source.
+       Note that while it is likely that the documentation source will not be the file
+       that you want to edit exactly, it should give you a rough idea for where it is.
+       Particularly, the Racket reference is in
+       @filepath{pkgs/racket-doc/scribblings/reference}, and the Racket guide is in
+       @filepath{pkgs/racket-doc/scribblings/guide}.
 
        When adding to a library or extending an existing binding's
        behavior, be sure to include a @racket[history] note in the
