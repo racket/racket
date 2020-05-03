@@ -853,7 +853,7 @@ BUNDLE_FROM_SERVER_TARGET = bundle-from-server
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS) MORE_CONFIGURE_ARGS="$(DISABLE_STATIC_LIBS)"
+	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS) MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(DISABLE_STATIC_LIBS)"
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
 	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) $(COPY_ARGS)
 	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
