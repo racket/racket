@@ -1192,10 +1192,12 @@ stream, but plain lists can be used as streams, and functions such as
   @racket[body] will not be evaluated until the resulting stream is forced. This
   allows @racket[for/stream] and @racket[for*/stream] to iterate over infinite
   sequences, unlike their finite counterparts.
-  
+
   Please note that these forms don't support returning multiple values on each
-  iteration, but third party packages exist that provide this functionality.
-  
+  iteration, but third-party packages exist that provide this functionality
+  (see @hyperlink[https://pkgs.racket-lang.org/package/stream-values]{stream-values}
+  for example).
+
   @examples[#:eval sequence-evaluator
     (for/stream ([i '(1 2 3)]) (* i i))
     (stream->list (for/stream ([i '(1 2 3)]) (* i i)))
