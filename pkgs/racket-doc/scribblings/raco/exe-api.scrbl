@@ -103,7 +103,7 @@ parameter is true.
 Copies the Racket (if @racket[gracket?] and @racket[mred?] are
 @racket[#f]) or GRacket (otherwise) binary, embedding code into the
 copied executable to be loaded on startup.  On Unix, the binary is
-actually a wrapper executable that execs the original; see also the
+actually a wrapper executable that @tt{exec}s the original; see also the
 @racket['original-exe?] tag for @racket[aux].
 
 The embedding executable is written to @racket[dest], which is
@@ -288,7 +288,7 @@ currently supported keys are as follows:
 
   @item{@racket['original-exe?] (Unix) : A boolean; @racket[#t] means
         that the embedding uses the original Racket or GRacket
-        executable, instead of a wrapper binary that execs the
+        executable, instead of a wrapper binary that @tt{exec}s the
         original; the default is @racket[#f].}
 
   @item{@racket['relative?] (Unix, Windows, Mac OS) : A boolean;
