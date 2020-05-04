@@ -32,7 +32,7 @@ jobs:
         DISTRO_BUILD_SITE_DEST: "${{ runner.temp }}/site-dest/"
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make snapshot-site PLAIN_RACKET=/usr/bin/racket CONFIG=".github/workflows/site-small.rkt" -j $((cpus+1))
+        make snapshot-site PLAIN_RACKET=/usr/bin/racket CONFIG=".github/workflows/site-small.rkt" CPUS=$((cpus+1))
 
     - name: S3 Sync
       env:
