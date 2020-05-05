@@ -84,8 +84,7 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         --disable-strip
-        --prefix=${RUNNER_TEMP}/racket3m
-        --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket
+        --enable-racket=/usr/bin/racket
         --enable-werror
         --enable-cify
         --enable-jit
@@ -146,9 +145,7 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        --prefix=${RUNNER_TEMP}/racketcs
-        $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=${RUNNER_TEMP}/racketcgc/bin/racket
+        --enable-racket=/usr/bin/racket
         --enable-compress
         --disable-docs
         --enable-pthread
