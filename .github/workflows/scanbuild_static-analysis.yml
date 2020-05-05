@@ -13,13 +13,13 @@ jobs:
     container: pmatos/scan-build:latest
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 100
     - name: Install dependencies
       run: |
         apt-get update
-        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
     - name: Configure
       working-directory: ./racket/src
       run: >
@@ -56,13 +56,13 @@ jobs:
     container: pmatos/scan-build:latest
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 100
     - name: Install dependencies
       run: |
         apt-get update
         apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
     - name: Speed build and install racketcgc
       working-directory: ./racket/src
       run: |
@@ -107,13 +107,13 @@ jobs:
     container: pmatos/scan-build:latest
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 100
     - name: Install pkg dependencies
       run: |
         apt update
         apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev git
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
     - name: Speed build and install racketcgc
       working-directory: ./racket/src
       run: |
