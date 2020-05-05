@@ -407,15 +407,22 @@ TO DO:
      ;; Log error only if *no* cert source exists (eg, on Debian/Ubuntu, default
      ;; cert file does not exist).
      (unless (or (ormap file-exists? cert-files) (ormap directory-exists? cert-dirs))
-       (log-openssl-error
-        "x509-root-sources: cert sources do not exist: ~s, ~s; ~a"
-        cert-file0 cert-dirs0
-        (format "override using ~a, ~a"
-                (X509_get_default_cert_file_env)
-                (X509_get_default_cert_dir_env))))
+       (set! complain-on-cert
+             (lambda ()
+               (log-openssl-error
+                "x509-root-sources: cert sources do not exist: ~s, ~s; ~a"
+                cert-file0 cert-dirs0
+                (format "override using ~a, ~a"
+                        (X509_get_default_cert_file_env)
+                        (X509_get_default_cert_dir_env))))))
      (log-openssl-debug "using cert sources: ~s, ~s" cert-files cert-dirs)
      (append cert-files (map (lambda (p) (list 'directory p)) cert-dirs))]
     [else null]))
+
+(define complain-on-cert void)
+(define (maybe-complain-on-cert)
+  (complain-on-cert)
+  (set! complain-on-cert void))
 
 (define ssl-default-verify-sources
   (make-parameter
@@ -845,6 +852,7 @@ TO DO:
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
+  (maybe-complain-on-cert)
   (for ([src (in-list (ssl-default-verify-sources))])
     (ssl-load-verify-source! ctx src #:try? #t)))
 
@@ -990,6 +998,7 @@ TO DO:
 (define context-cache #f)
 
 (define (ssl-secure-client-context)
+  (maybe-complain-on-cert)
   (let ([locs (ssl-default-verify-sources)])
     (define (reset)
       (let* ([now (current-seconds)]
