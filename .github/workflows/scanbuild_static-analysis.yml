@@ -62,7 +62,7 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update
-        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git
     - name: Speed build and install racketcgc
       working-directory: ./racket/src
       run: |
@@ -113,7 +113,7 @@ jobs:
     - name: Install pkg dependencies
       run: |
         apt update
-        apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev nodejs
+        apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev git
     - name: Speed build and install racketcgc
       working-directory: ./racket/src
       run: |
