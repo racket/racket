@@ -76,7 +76,7 @@ jobs:
       with:
           architecture: 'x64'
           distribution: 'minimal'
-          variant: 'cs'
+          variant: 'CS'
           version: 'current'
     - uses: actions/download-artifact@v1
       with:
@@ -141,7 +141,7 @@ jobs:
       with:
           architecture: 'x64'
           distribution: 'minimal'
-          variant: 'cs'
+          variant: 'CS'
           version: 'current'
     - uses: actions/download-artifact@v1
       with:
