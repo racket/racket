@@ -70,6 +70,8 @@ jobs:
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         make -j$((cpus+1))
         make -j$((cpus+1)) install
+    - name: Clean repo
+      run: git clean -xdf
     - name: Configure
       working-directory: ./racket/src
       run: >
@@ -119,6 +121,8 @@ jobs:
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         make -j$((cpus+1))
         make -j$((cpus+1)) install
+    - name: Clean repo
+      run: git clean -xdf
     - name: Checking out ChezScheme
       working-directory: ./racket/src
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
