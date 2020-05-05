@@ -55,16 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     container: pmatos/scan-build:latest
 
-    env:
-      RUNNER_TEMP: "/__w/_temp"
-
     steps:
-    - name: Workaround temp issues
-      run: |
-        mkdir -p ${{ runner.temp }}
-        cd ${{ runner.temp }}/..
-        rmdir ${{ runner.temp }}
-        ln -s ${RUNNER_TEMP} ${{ runner.temp }}
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -112,16 +103,7 @@ jobs:
     runs-on: ubuntu-18.04
     container: pmatos/scan-build:latest
 
-    env:
-      RUNNER_TEMP: "/__w/_temp"
-
     steps:
-    - name: Workaround temp issues
-      run: |
-        mkdir -p ${{ runner.temp }}
-        cd ${{ runner.temp }}/..
-        rmdir ${{ runner.temp }}
-        ln -s ${RUNNER_TEMP} ${{ runner.temp }}
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
