@@ -62,13 +62,14 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update
-        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ nodejs
-    - uses: Bogdanp/setup-racket@v0.7
-      with:
-          architecture: 'x64'
-          distribution: 'minimal'
-          variant: 'CS'
-          version: 'current'
+        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - name: Speed build and install racketcgc
+      working-directory: ./racket/src
+      run: |
+        ./configure --enable-cgcdefault --prefix=/usr
+	export cpus=$(grep -c ^processor /proc/cpuinfo)
+	make -j$((cpus+1))
+	make -j$((cpus+1)) install
     - name: Configure
       working-directory: ./racket/src
       run: >
@@ -111,12 +112,13 @@ jobs:
       run: |
         apt update
         apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev nodejs
-    - uses: Bogdanp/setup-racket@v0.7
-      with:
-          architecture: 'x64'
-          distribution: 'minimal'
-          variant: 'CS'
-          version: 'current'
+    - name: Speed build and install racketcgc
+      working-directory: ./racket/src
+      run: |
+        ./configure --enable-cgcdefault --prefix=/usr
+	export cpus=$(grep -c ^processor /proc/cpuinfo)
+	make -j$((cpus+1))
+	make -j$((cpus+1)) install
     - name: Checking out ChezScheme
       working-directory: ./racket/src
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
