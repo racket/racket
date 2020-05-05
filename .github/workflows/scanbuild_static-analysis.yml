@@ -67,9 +67,9 @@ jobs:
       working-directory: ./racket/src
       run: |
         ./configure --enable-cgcdefault --prefix=/usr
-	export cpus=$(grep -c ^processor /proc/cpuinfo)
-	make -j$((cpus+1))
-	make -j$((cpus+1)) install
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make -j$((cpus+1))
+        make -j$((cpus+1)) install
     - name: Configure
       working-directory: ./racket/src
       run: >
@@ -116,9 +116,9 @@ jobs:
       working-directory: ./racket/src
       run: |
         ./configure --enable-cgcdefault --prefix=/usr
-	export cpus=$(grep -c ^processor /proc/cpuinfo)
-	make -j$((cpus+1))
-	make -j$((cpus+1)) install
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make -j$((cpus+1))
+        make -j$((cpus+1)) install
     - name: Checking out ChezScheme
       working-directory: ./racket/src
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
