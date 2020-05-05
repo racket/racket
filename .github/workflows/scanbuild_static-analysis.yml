@@ -78,13 +78,6 @@ jobs:
           distribution: 'minimal'
           variant: 'CS'
           version: 'current'
-    - uses: actions/download-artifact@v1
-      with:
-        name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}
-    - name: Untar
-      working-directory: ${{ runner.temp }}
-      run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}.tar.bz2
     - name: Configure
       working-directory: ./racket/src
       run: >
@@ -143,13 +136,6 @@ jobs:
           distribution: 'minimal'
           variant: 'CS'
           version: 'current'
-    - uses: actions/download-artifact@v1
-      with:
-        name: racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha }}
-        path: ${{ runner.temp }}
-    - name: Untar
-      working-directory: ${{ runner.temp }}
-      run: tar -xvjf racketcgc-ubuntu-18.04-cify-x64_git${{ github.sha}}.tar.bz2
     - name: Checking out ChezScheme
       working-directory: ./racket/src
       run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
