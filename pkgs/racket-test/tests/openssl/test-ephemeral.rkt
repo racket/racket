@@ -47,7 +47,7 @@
  [(memq 'tls12 (supported-server-protocols))
   ;; Test DHE ciphers (note: cipher spec is "EDH", contrary to openssl ciphers docs)
   (test-ephemeral (lambda (server-ctx)
-                    (ssl-server-context-enable-dhe! server-ctx ssl-dh4096-param-path))
+                    (ssl-server-context-enable-dhe! server-ctx ssl-dh4096-param-bytes))
                   "AES+EDH")
 
   ;; Test ECDHE ciphers

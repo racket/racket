@@ -36,9 +36,10 @@ TO DO:
          racket/tcp
          racket/string
          racket/lazy-require
-         racket/runtime-path
+         racket/include
          "libcrypto.rkt"
-         "libssl.rkt")
+         "libssl.rkt"
+         (for-syntax racket/base))
 (lazy-require
  ["private/win32.rkt" (load-win32-store)]
  ["private/macosx.rkt" (load-macosx-keychain)])
@@ -84,7 +85,7 @@ TO DO:
         (list/c 'macosx-keychain path-string?)))
 
 (provide
- ssl-dh4096-param-path
+ ssl-dh4096-param-bytes
  (contract-out
   [ssl-available? boolean?]
   [ssl-load-fail-reason (or/c #f string?)]
@@ -103,7 +104,7 @@ TO DO:
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
-   (->* (ssl-server-context?) (path-string?) void?)]
+   (->* (ssl-server-context?) ((or/c path-string? bytes?)) void?)]
   [ssl-server-context-enable-ecdhe!
    (->* (ssl-server-context?) (curve/c) void?)]
   [ssl-client-context?
@@ -473,7 +474,15 @@ TO DO:
 (define SSL_TLSEXT_ERR_OK 0)
 (define SSL_TLSEXT_ERR_NOACK 3)
 
-(define-runtime-path ssl-dh4096-param-path "dh4096.pem")
+(define ssl-dh4096-param-bytes
+  (include/reader "dh4096.pem" (lambda (src port)
+                                 (let loop ([accum '()])
+                                   (define bstr (read-bytes 4096 port))
+                                   (if (eof-object? bstr)
+                                       (if (null? accum)
+                                           eof
+                                           (datum->syntax #'here (apply bytes-append (reverse accum))))
+                                       (loop (cons bstr accum)))))))
 
 ;; Make this bigger than 4096 to accommodate at least
 ;; 4096 of unencrypted data
@@ -744,8 +753,10 @@ TO DO:
   (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS SSL_OP_SINGLE_ECDH_USE #f)
   (void))
 
-(define (ssl-server-context-enable-dhe! context [path ssl-dh4096-param-path])
-  (define params (call-with-input-file path port->bytes))
+(define (ssl-server-context-enable-dhe! context [ssl-dh4096-param ssl-dh4096-param-bytes])
+  (define params (if (bytes? ssl-dh4096-param)
+                     ssl-dh4096-param
+                     (call-with-input-file* ssl-dh4096-param port->bytes)))
   (define params-bio (BIO_new_mem_buf params (bytes-length params)))
   (check-valid params-bio 'ssl-server-context-enable-dhe! "loading Diffie-Hellman parameters")
   (with-failure

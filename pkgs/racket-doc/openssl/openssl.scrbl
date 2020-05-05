@@ -652,7 +652,7 @@ collection for testing purposes where the peer identifies itself using
 @deftogether[[
 @defproc[(ssl-server-context-enable-dhe!
            [context ssl-server-context?]
-           [dh-param-path path-string? ssl-dh4096-param-path])
+           [dh-param (or/c path-string? bytes?) ssl-dh4096-param-bytes])
          void?]
 @defproc[(ssl-server-context-enable-ecdhe!
            [context ssl-server-context?]
@@ -665,8 +665,9 @@ Enables cipher suites that provide
 forward secrecy} via ephemeral Diffie-Hellman (DHE) or ephemeral
 elliptic-curve Diffie-Hellman (ECDHE) key exchange, respectively.
 
-For DHE, the @racket[dh-param-path] must be a path to a PEM file
-containing DH parameters.
+For DHE, the @racket[dh-param] must be a path to a @filepath{.pem}
+file containing DH parameters or the content of such a file as a byte
+string.
 
 For ECDHE, the @racket[curve-name] must be one of the following
 symbols naming a standard elliptic curve:
@@ -677,12 +678,16 @@ symbols naming a standard elliptic curve:
          secp160k1 secp160r1 secp160r2 secp192k1 secp224k1 secp224r1 secp256k1
          secp384r1 secp521r1 prime192v prime256v))
   ", ").
-}
 
-@defthing[ssl-dh4096-param-path path?]{
+@history[#:changed "7.7.0.4" @elem{Allow a byte string as the @racket[dh-param]
+                                   argument to @racket[ssl-server-context-enable-dhe!].}]}
 
-Path for 4096-bit Diffie-Hellman parameters.
-}
+@defthing[ssl-dh4096-param-bytes bytes?]{
+
+Byte string describing 4096-bit Diffie-Hellman parameters in @filepath{.pem} format.
+
+@history[#:changed "7.7.0.4" @elem{Added as a replacement for
+                                   @racketidfont{ssl-dh4096-param-path}.}]}
 
 @defproc[(ssl-set-server-name-identification-callback!
            [context ssl-server-context?]
