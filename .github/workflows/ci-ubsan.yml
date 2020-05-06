@@ -96,7 +96,7 @@ jobs:
     - name: Create logs directory
       run: mkdir logs
     - name: Clone ChezScheme
-      run: git clone --recurse-submodules -j 16 --depth=1 https://github.com/racket/ChezScheme racket/src/build/ChezScheme
+      run: git clone --recurse-submodules --depth=1 https://github.com/racket/ChezScheme racket/src/build/ChezScheme
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
