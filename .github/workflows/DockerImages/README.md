@@ -1,15 +1,18 @@
-# Docker images for Gitlab CI
+# Docker images for CI
 
 In order to speed up building and testing of Racket, we have prepared some Docker images.
-Currently pushed to DockerHub under the pmatos/racket-ci repo. This is then used in the CI
+Currently pushed to DockerHub under the racket/racket-ci repo. This is then used in the CI
 configuration with:
 ```
-	image: "pmatos/racket-ci:testdeps" # for testing jobs
+	image: "racket/racket-ci:testdeps" # for testing jobs
 ```
 	
 or:
 ```
-	image: "pmatos/racket-ci:builddeps" # for build jobs
+	image: "racket/racket-ci:builddeps" # for build jobs
 ```
-	
-The Makefile does the build/push automatically but you need to be logged in - use `docker login`.
+
+The images are automatically build and uploaded on all commits by Docker Hub.
+
+To update manually, use the Makefile in this directory, but you need to be logged in - use `docker login`.
+
