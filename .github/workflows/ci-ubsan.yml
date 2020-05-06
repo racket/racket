@@ -16,11 +16,11 @@ jobs:
       with:
         fetch-depth: 100
     - name: Create logs directory
-      run: mkdir logs
+      run: mkdir $PWD/logs
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
+        make PREFIX=/usr CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
     - name: Run tests/racket/test
       continue-on-error: true
       run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
@@ -94,13 +94,13 @@ jobs:
     - name: Clean repo
       run: git clean -xdf
     - name: Create logs directory
-      run: mkdir logs
+      run: mkdir $PWD/logs
     - name: Clone ChezScheme
       run: git clone --recurse-submodules --depth=1 https://github.com/racket/ChezScheme racket/src/build/ChezScheme
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket cs-only 2>&1 | tee logs/build.log
+        make PREFIX=/usr CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket cs-only 2>&1 | tee logs/build.log
     - name: Run tests/racket/test
       continue-on-error: true
       run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
