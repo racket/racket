@@ -15,50 +15,57 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
-    - name: Speed build and install racketcgc
-      working-directory: ./racket/src
-      run: |
-        ./configure --enable-cgcdefault --prefix=/usr
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make -j$((cpus+1))
-        make -j$((cpus+1)) install
-    - name: Clean repo
-      run: git clean -xdf
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket in-place 2>&1 | tee logs/build.log
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
     - name: Run tests/racket/test
+      continue-on-error: true
       run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
     - name: Run tests/racket/contract/all
+      continue-on-error: true
       run: racket -l tests/racket/contract/all | tee logs/contract-all.log
     - name: Run tests/json/json
+      continue-on-error: true
       run: raco test -l tests/json/json | tee logs/json-json.log
     - name: Run tests/file/main
+      continue-on-error: true
       run: raco test -l tests/file/main | tee logs/file-main.log
     - name: Run tests/net/head
+      continue-on-error: true
       run: raco test -l tests/net/head | tee logs/net-head.log
     - name: Run tests/net/uri-codec
+      continue-on-error: true
       run: raco test -l tests/net/uri-codec | tee logs/uri-codec.log
     - name: Run tests/net/url
+      continue-on-error: true
       run: raco test -l tests/net/url | tee logs/net-url.log
     - name: Run tests/net/url-port
+      continue-on-error: true
       run: raco test -l tests/net/url-port | tee logs/url-port.log
     - name: Run tests/net/encoders
+      continue-on-error: true
       run: raco test -l tests/net/encoders | tee logs/net-encoders.log
     - name: Run tests/openssl/basic
+      continue-on-error: true
       run: raco test -l tests/openssl/basic | tee logs/openssl-basic.log
     - name: Run tests/openssl/https
+      continue-on-error: true
       run: raco test -l tests/openssl/https | tee logs/openssl-https.log
     - name: Run tests/match/main
+      continue-on-error: true
       run: raco test -l tests/match/main | tee logs/match-main.log
     - name: Run tests/zo-path
+      continue-on-error: true
       run: raco test -l tests/zo-path | tee logs/zo-path.log
     - name: Run tests/xml
+      continue-on-error: true
       run: raco test -c tests/xml | tee logs/xml.log
     - name: Run tests/stxparse
+      continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
     - name: Run db tests
+      continue-on-error: true
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
       run: grep 'runtime error' logs/*.log > runtime-errors.log
@@ -89,36 +96,52 @@ jobs:
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket in-place cs-only 2>&1 | tee logs/build.log
     - name: Run tests/racket/test
+      continue-on-error: true
       run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
     - name: Run tests/racket/contract/all
+      continue-on-error: true
       run: racket -l tests/racket/contract/all | tee logs/contract-all.log
     - name: Run tests/json/json
+      continue-on-error: true
       run: raco test -l tests/json/json | tee logs/json-json.log
     - name: Run tests/file/main
+      continue-on-error: true
       run: raco test -l tests/file/main | tee logs/file-main.log
     - name: Run tests/net/head
+      continue-on-error: true
       run: raco test -l tests/net/head | tee logs/net-head.log
     - name: Run tests/net/uri-codec
+      continue-on-error: true
       run: raco test -l tests/net/uri-codec | tee logs/uri-codec.log
     - name: Run tests/net/url
+      continue-on-error: true
       run: raco test -l tests/net/url | tee logs/net-url.log
     - name: Run tests/net/url-port
+      continue-on-error: true
       run: raco test -l tests/net/url-port | tee logs/url-port.log
     - name: Run tests/net/encoders
+      continue-on-error: true
       run: raco test -l tests/net/encoders | tee logs/net-encoders.log
     - name: Run tests/openssl/basic
+      continue-on-error: true
       run: raco test -l tests/openssl/basic | tee logs/openssl-basic.log
     - name: Run tests/openssl/https
+      continue-on-error: true
       run: raco test -l tests/openssl/https | tee logs/openssl-https.log
     - name: Run tests/match/main
+      continue-on-error: true
       run: raco test -l tests/match/main | tee logs/match-main.log
     - name: Run tests/zo-path
+      continue-on-error: true
       run: raco test -l tests/zo-path | tee logs/zo-path.log
     - name: Run tests/xml
+      continue-on-error: true
       run: raco test -c tests/xml | tee logs/xml.log
     - name: Run tests/stxparse
+      continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
     - name: Run db tests
+      continue-on-error: true
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
       run: grep 'runtime error' logs/*.log > runtime-errors.log
