@@ -22,6 +22,9 @@ jobs:
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
         export PATH=$PWD/racket/bin:$PATH
+        which racket
+        racket --version
+        echo $PATH
     - name: Racket version
       run: |
         which racket
@@ -105,6 +108,9 @@ jobs:
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket cs 2>&1 | tee logs/build.log
         export PATH=$PWD/racket/bin:$PATH
+        which racket
+        racket --version
+        echo $PATH
     - name: Racket version
       run: |
         which racket
