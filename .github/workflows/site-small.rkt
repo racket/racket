@@ -29,10 +29,12 @@
  #:fail-on-client-failures #f
  (machine #:name "Racket BC (Ubuntu 18.04, x86_64)"
           #:versionless? #true
+          #:log-file "racket_bc_ubuntu18.04.txt"
           #:j 2)
  (machine #:name "Racket CS (Ubuntu 18.04, x86_64)"
           ;; can't use the pre-built Racket with Racket CS
           #:versionless? #true
+          #:log-file "racket_cs_ubuntu18.04.txt"
           #:dir "cs_build"
           #:j 2
           #:repo (or (getenv "HERE") ".")
