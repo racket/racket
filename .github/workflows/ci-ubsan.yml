@@ -20,7 +20,12 @@ jobs:
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make PREFIX=/usr CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
+        export PATH=$PWD/racket/bin:$PATH
+    - name: Racket version
+      run: |
+        which racket
+        racket --version
     - name: Run tests/racket/test
       continue-on-error: true
       run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
@@ -70,7 +75,7 @@ jobs:
       continue-on-error: true
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
-      run: grep 'runtime error' logs/*.log > runtime-errors.log
+      run: grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log
     - uses: actions/upload-artifact@v2
       with:
         name: runtime-errors_git${{ github.sha }}
@@ -95,12 +100,15 @@ jobs:
       run: git clean -xdf
     - name: Create logs directory
       run: mkdir $PWD/logs
-    - name: Clone ChezScheme
-      run: git clone --recurse-submodules --depth=1 https://github.com/racket/ChezScheme racket/src/build/ChezScheme
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make PREFIX=/usr CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket cs-only 2>&1 | tee logs/build.log
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKET=/usr/bin/racket cs 2>&1 | tee logs/build.log
+        export PATH=$PWD/racket/bin:$PATH
+    - name: Racket version
+      run: |
+        which racket
+        racket --version
     - name: Run tests/racket/test
       continue-on-error: true
       run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
@@ -150,7 +158,7 @@ jobs:
       continue-on-error: true
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
-      run: grep 'runtime error' logs/*.log > runtime-errors.log
+      run: grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log
     - uses: actions/upload-artifact@v2
       with:
         name: runtime-errors-cs_git${{ github.sha }}
