@@ -25,7 +25,9 @@ jobs:
       # run: echo "::add-path::${{ github.workspace }}/racket/bin"
       # but due to a github bug, the variable ${{ github.workspace }} value inside a container is broken
       # so we hard code the real value
-      run: echo "::add-path::/__w/racket/racket/racket/bin/"
+      run: |
+        echo "::add-path::/__w/racket/racket/racket/bin"
+        find /__w/racket/racket/racket/bin -type f
     - name: Racket version
       run: |
         which racket
@@ -113,7 +115,9 @@ jobs:
       # run: echo "::add-path::${{ github.workspace }}/racket/bin"
       # but due to a github bug, the variable ${{ github.workspace }} value inside a container is broken
       # so we hard code the real value
-      run: echo "::add-path::/__w/racket/racket/racket/bin/"
+      run: |
+        echo "::add-path::/__w/racket/racket/racket/bin"
+        find /__w/racket/racket/racket/bin -type f
     - name: Racket version
       run: |
         which racket
