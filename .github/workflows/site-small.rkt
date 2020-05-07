@@ -28,7 +28,6 @@
  #:site-title (format "Snapshot: ~a" (current-stamp))
  #:fail-on-client-failures #f
  (machine #:name "Racket BC (Ubuntu 18.04, x86_64)"
-          #:racket (prebuilt-racket)
           #:versionless? #true
           #:j 2)
  (machine #:name "Racket CS (Ubuntu 18.04, x86_64)"
