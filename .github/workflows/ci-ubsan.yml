@@ -6,7 +6,6 @@ jobs:
 
 # Build jobs
 # These jobs build Racket using the sanitizers and gather the results into a final log
-
   racket3m-ubsan:
     runs-on: ubuntu-18.04
     container: racket/racket-ci:testdeps
@@ -25,6 +24,8 @@ jobs:
         which racket
         racket --version
         echo $PATH
+    - name: Add new racket to PATH
+      run: echo "::add-path::${{ github.workspace }}/racket/bin"
     - name: Racket version
       run: |
         which racket
@@ -111,6 +112,8 @@ jobs:
         which racket
         racket --version
         echo $PATH
+    - name: Add new racket to PATH
+      run: echo "::add-path::${{ github.workspace }}/racket/bin"
     - name: Racket version
       run: |
         which racket
