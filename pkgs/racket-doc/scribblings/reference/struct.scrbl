@@ -426,8 +426,9 @@ Returns @racket[#t] if @racket[v] is a predicate procedure produced by
               ((fld-id [field-id expr]
                        [field-id #:parent parent-id expr]))]{
 
-Creates a new instance of the structure type @racket[id] with the same
-field values as the structure produced by @racket[struct-expr], except
+Creates a new instance of the structure type @racket[id] (which is defined via a
+@seclink["define-struct"]{structure type defining form} such as @racket[struct])
+with the same field values as the structure produced by @racket[struct-expr], except
 that the value of each supplied @racket[field-id] is instead
 determined by the corresponding @racket[expr]. If @racket[#:parent]
 is specified, the @racket[parent-id] must be bound to a parent
@@ -438,12 +439,11 @@ encapsulates information about a structure type (i.e., like the
 initial identifier bound by @racket[struct]), and the binding
 must supply a constructor, a predicate, and all field accessors.
 
-Each @racket[field-id] is combined with @racket[id] 
-(or @racket[parent-id], if present) to form
-@racket[id]@racketidfont{-}@racket[field-id] (using the lexical
-context of @racket[field-id]), which must be one of the accessor
-bindings in @racket[id]. The accessor bindings determined by different
-@racket[field-id]s must be distinct. The order of the
+Each @racket[field-id] must correspond to a @racket[field-id] in
+the @seclink["define-struct"]{structure type defining forms} of @racket[id]
+(or @racket[parent-id], if present). The accessor bindings determined by different
+@racket[field-id]s under the same @racket[id] (or @racket[parent-id], if present)
+must be distinct. The order of the
 @racket[field-id]s need not match the order of the corresponding
 fields in the structure type.
 
@@ -829,6 +829,9 @@ specified through a transformer binding to such a value.}
 
 Encapsulates a thunk that returns structure-type information in list
 form. Note that accessors are listed in reverse order, as mentioned in @secref{structinfo}.}
+Note that the field names are not well-defined for struct-type informations
+that are created with this method, so it is likely not going to work well
+with forms like @racket[struct-copy] and @racket[struct*].
       
 @(struct-eval '(require (for-syntax racket/base)))
 @(struct-eval '(require racket/match))

@@ -674,7 +674,10 @@
 
 (define (ctype-malloc-mode c)
   (let ([t (ctype-our-rep c)])
-    (if (or (eq? t 'gcpointer) (eq? t 'scheme))
+    (if (or (eq? t 'gcpointer)
+            (eq? t 'scheme)
+            (eq? t 'string/ucs-4)
+            (eq? t 'string/utf-16))
         'nonatomic
         'atomic)))
 

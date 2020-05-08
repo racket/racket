@@ -745,6 +745,9 @@
   ;; Check a corner of UTF-16 conversion:
   (test "\U171D3" cast (cast "\U171D3" _string/utf-16 _gcpointer) _gcpointer _string/utf-16))
 
+;; strings can be cast
+(test "heλλo" cast (cast "he\u3bb\u3bbo" _string/utf-16 _gcpointer) _gcpointer _string/utf-16)
+
 ;; check async:
 (when test-async?
   (define (check async like)

@@ -427,15 +427,18 @@ fi
 ############## Racket and Chez Scheme ################
 
 SCHEME_SRC=../../ChezScheme
+SCHEME_SRC_NOW="$SCHEME_SRC"
 MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
   SCHEME_SRC="${enable_scheme}"
+  SCHEME_SRC_NOW="$SCHEME_SRC"
   MAKE_BUILD_SCHEME=none
 else
   # Check for a directory packaged with a source distribution
   if test -d "${srcdir}/../../ChezScheme" ; then
     MAKE_BUILD_SCHEME=copy
+    SCHEME_SRC_NOW="${srcdir}/../../ChezScheme"
   fi
 fi
 
@@ -520,14 +523,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_SRC/zlib" ; then
+  if test ! -d "$SCHEME_SRC_NOW/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_SRC/lz4" ; then
+  if test ! -d "$SCHEME_SRC_NOW/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -550,7 +553,7 @@ if test "${enable_libz}" = "yes" ; then
   else
     Z_LIB_DEP=""
     Z_LIB="-lz"
-    Z_LIB_UNPACK="$(NOOP)"
+    Z_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
@@ -572,7 +575,7 @@ if test "${enable_liblz4}" = "yes" ; then
   else
     LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
-    LZ4_LIB_UNPACK="$(NOOP)"
+    LZ4_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi

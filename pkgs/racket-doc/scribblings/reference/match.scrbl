@@ -170,7 +170,8 @@ In more detail, patterns match as follows:
          [_ 'else])
        ]}
 
- @item{@racket[(#,(racketidfont "list-rest") _lvp ... _pat)] ---
+ @item{@racket[(#,(racketidfont "list-rest") _lvp ... _pat)]
+       or @racket[(#,(racketidfont "list*") _lvp ... _pat)] ---
        similar to a @racketidfont{list} pattern, but the final
        @racket[_pat] matches the ``rest'' of the list after the last
        @racket[_lvp]. In fact, the matched value can be a non-list

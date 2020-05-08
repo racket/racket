@@ -1,0 +1,181 @@
+name: Test with Sanitizers
+
+on: [push, pull_request]
+
+jobs:
+
+# Build jobs
+# These jobs build Racket using the sanitizers and gather the results into a final log
+  racket3m-ubsan:
+    runs-on: ubuntu-18.04
+    container: racket/racket-ci:testdeps
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - name: Create logs directory
+      run: mkdir $PWD/logs
+    - name: Build
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
+    - name: Add new racket to PATH
+      # This should be:
+      # run: echo "::add-path::${{ github.workspace }}/racket/bin"
+      # but due to a github bug, the variable ${{ github.workspace }} value inside a container is broken
+      # so we hard code the real value
+      run: |
+        echo "::add-path::/__w/racket/racket/racket/bin"
+        find /__w/racket/racket/racket/bin -type f
+    - name: Racket version
+      run: |
+        which racket
+        racket --version
+    - name: Run tests/racket/test
+      continue-on-error: true
+      run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
+    - name: Run tests/racket/contract/all
+      continue-on-error: true
+      run: racket -l tests/racket/contract/all | tee logs/contract-all.log
+    - name: Run tests/json/json
+      continue-on-error: true
+      run: raco test -l tests/json/json | tee logs/json-json.log
+    - name: Run tests/file/main
+      continue-on-error: true
+      run: raco test -l tests/file/main | tee logs/file-main.log
+    - name: Run tests/net/head
+      continue-on-error: true
+      run: raco test -l tests/net/head | tee logs/net-head.log
+    - name: Run tests/net/uri-codec
+      continue-on-error: true
+      run: raco test -l tests/net/uri-codec | tee logs/uri-codec.log
+    - name: Run tests/net/url
+      continue-on-error: true
+      run: raco test -l tests/net/url | tee logs/net-url.log
+    - name: Run tests/net/url-port
+      continue-on-error: true
+      run: raco test -l tests/net/url-port | tee logs/url-port.log
+    - name: Run tests/net/encoders
+      continue-on-error: true
+      run: raco test -l tests/net/encoders | tee logs/net-encoders.log
+    - name: Run tests/openssl/basic
+      continue-on-error: true
+      run: raco test -l tests/openssl/basic | tee logs/openssl-basic.log
+    - name: Run tests/openssl/https
+      continue-on-error: true
+      run: raco test -l tests/openssl/https | tee logs/openssl-https.log
+    - name: Run tests/match/main
+      continue-on-error: true
+      run: raco test -l tests/match/main | tee logs/match-main.log
+    - name: Run tests/zo-path
+      continue-on-error: true
+      run: raco test -l tests/zo-path | tee logs/zo-path.log
+    - name: Run tests/xml
+      continue-on-error: true
+      run: raco test -c tests/xml | tee logs/xml.log
+    - name: Run tests/stxparse
+      continue-on-error: true
+      run: raco test -c tests/stxparse | tee logs/stxparse.log
+    - name: Run db tests
+      continue-on-error: true
+      run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
+    - name: Gather runtime errors
+      run: grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log
+    - uses: actions/upload-artifact@v2
+      with:
+        name: runtime-errors_git${{ github.sha }}
+        path: runtime-errors_git${{ github.sha }}.log
+
+  racketcs-ubsan:
+    runs-on: ubuntu-18.04
+    container: racket/racket-ci:testdeps
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - name: Speed build and install racketcgc
+      working-directory: ./racket/src
+      run: |
+        ./configure --enable-cgcdefault --prefix=/usr
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make -j$((cpus+1))
+        make -j$((cpus+1)) install
+    - name: Clean repo
+      run: git clean -xdf
+    - name: Create logs directory
+      run: mkdir $PWD/logs
+    - name: Build
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKETCS_SUFFIX="" RACKET=/usr/bin/racket cs 2>&1 | tee logs/build.log
+    - name: Add new racket to PATH
+      # This should be:
+      # run: echo "::add-path::${{ github.workspace }}/racket/bin"
+      # but due to a github bug, the variable ${{ github.workspace }} value inside a container is broken
+      # so we hard code the real value
+      run: |
+        echo "::add-path::/__w/racket/racket/racket/bin"
+        find /__w/racket/racket/racket/bin -type f
+    - name: Racket version
+      run: |
+        which racket
+        racket --version
+    - name: Run tests/racket/test
+      continue-on-error: true
+      run: raco test -l tests/racket/test 2>&1 | tee logs/racket-test.log
+    - name: Run tests/racket/contract/all
+      continue-on-error: true
+      run: racket -l tests/racket/contract/all | tee logs/contract-all.log
+    - name: Run tests/json/json
+      continue-on-error: true
+      run: raco test -l tests/json/json | tee logs/json-json.log
+    - name: Run tests/file/main
+      continue-on-error: true
+      run: raco test -l tests/file/main | tee logs/file-main.log
+    - name: Run tests/net/head
+      continue-on-error: true
+      run: raco test -l tests/net/head | tee logs/net-head.log
+    - name: Run tests/net/uri-codec
+      continue-on-error: true
+      run: raco test -l tests/net/uri-codec | tee logs/uri-codec.log
+    - name: Run tests/net/url
+      continue-on-error: true
+      run: raco test -l tests/net/url | tee logs/net-url.log
+    - name: Run tests/net/url-port
+      continue-on-error: true
+      run: raco test -l tests/net/url-port | tee logs/url-port.log
+    - name: Run tests/net/encoders
+      continue-on-error: true
+      run: raco test -l tests/net/encoders | tee logs/net-encoders.log
+    - name: Run tests/openssl/basic
+      continue-on-error: true
+      run: raco test -l tests/openssl/basic | tee logs/openssl-basic.log
+    - name: Run tests/openssl/https
+      continue-on-error: true
+      run: raco test -l tests/openssl/https | tee logs/openssl-https.log
+    - name: Run tests/match/main
+      continue-on-error: true
+      run: raco test -l tests/match/main | tee logs/match-main.log
+    - name: Run tests/zo-path
+      continue-on-error: true
+      run: raco test -l tests/zo-path | tee logs/zo-path.log
+    - name: Run tests/xml
+      continue-on-error: true
+      run: raco test -c tests/xml | tee logs/xml.log
+    - name: Run tests/stxparse
+      continue-on-error: true
+      run: raco test -c tests/stxparse | tee logs/stxparse.log
+    - name: Run db tests
+      continue-on-error: true
+      run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
+    - name: Gather runtime errors
+      run: |
+        grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
+        test ! -s runtime-errors_git${{ github.sha }}.log
+    - uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: runtime-errors-cs_git${{ github.sha }}
+        path: runtime-errors_git${{ github.sha }}.log

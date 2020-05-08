@@ -9199,7 +9199,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       
     /* zero unused part of last mark stack segment */
     segpos = ((intptr_t)p->cont_mark_stack >> SCHEME_LOG_MARK_SEGMENT_SIZE);
-    
+
     if (segpos < p->cont_mark_seg_count) {
       Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[segpos];
       int stackpos = ((intptr_t)p->cont_mark_stack & SCHEME_MARK_SEGMENT_MASK);

@@ -8,31 +8,39 @@ on:
 jobs:
   create-installer:
     runs-on: ubuntu-18.04
+    if: github.repository == 'racket/racket'
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Cleanup # this is only needed in `act` testing
+      run: |
+        rm -rf ~/.racket/
+        
+    - uses: Bogdanp/setup-racket@v0.8
+      with:
+          architecture: 'x64'
+          # FIXME: use the binary s3-sync pkg
+          distribution: 'full'
+          variant: 'regular'
+          version: '7.7'
+          packages: 's3-sync'
 
     - name: Install pkg dependencies
       run: |
         sudo apt update
-        sudo apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
-    - uses: Bogdanp/setup-racket@v0.7
-      with:
-          architecture: 'x64'
-          distribution: 'full'
-          variant: 'regular'
-          version: 'current'
+        sudo apt install -y libffi-dev unzip libfindbin-libs-perl uuid-dev
 
-    - name: Install s3-sync
-      run: |
-        sudo raco pkg install -i --auto s3-sync
 
     - name: Building
       env:
         DISTRO_BUILD_SITE_DEST: "${{ runner.temp }}/site-dest/"
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make snapshot-site PLAIN_RACKET=/usr/bin/racket CONFIG=".github/workflows/site-small.rkt" -j $((cpus+1))
+        export HERE=`pwd`
+        make snapshot-site CONFIG=".github/workflows/site-small.rkt" -j $((cpus+1))
 
     - name: S3 Sync
       env:

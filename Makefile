@@ -525,6 +525,7 @@ DOC_SEARCH =
 # server):
 SERVER = localhost
 SERVER_PORT = 9440
+SERVER_URL_SCHEME = http
 
 # Paths on the server to reach catalog content and "collects.tgz",
 # if not the root:
@@ -618,7 +619,7 @@ OSSLSIGNCODE_ARGS_BASE64 =
 
 # URL for a README file to include in an installer (empty for none,
 # spaces allowed):
-README = http://$(SVR_PRT)/README.txt
+README = $(SERVER_URL_SCHEME)://$(SVR_PRT)/README.txt
 
 # URL destination to upload an installer file after it is created
 # (empty for no upload, spaces allowed); the file name is added to the
@@ -656,7 +657,7 @@ DISTRO_BUILD_PKGS = distro-build-lib
 
 SVR_PRT = $(SERVER):$(SERVER_PORT)
 
-SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
+SVR_CAT = $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 
 # To configure package installations on the server:
 SERVER_PKG_INSTALL_OPTIONS =
@@ -853,7 +854,7 @@ BUNDLE_FROM_SERVER_TARGET = bundle-from-server
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS) MORE_CONFIGURE_ARGS="$(DISABLE_STATIC_LIBS)"
+	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS) MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(DISABLE_STATIC_LIBS)"
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
 	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) $(COPY_ARGS)
 	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
@@ -890,7 +891,7 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
-	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
 	$(IN_BUNDLE_RACO) setup --no-user $(JOB_OPTIONS) $(RECOMPILE_OPTIONS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
@@ -928,7 +929,7 @@ win32-bundle:
 
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
-	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
 	$(WIN32_IN_BUNDLE_RACO) setup --no-user -l racket/base
 	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
@@ -962,8 +963,8 @@ win32-test-client:
 SITE_PATH =
 
 FROM_SITE_ARGS = SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/ \
-                 DIST_CATALOGS_q='http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' \
-                 DOC_SEARCH="http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
+                 DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' \
+                 DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
                  $(PROP_ARGS)
 
 client-from-site:

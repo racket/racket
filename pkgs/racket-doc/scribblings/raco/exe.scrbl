@@ -20,7 +20,7 @@ bytecode files are compiled by using @seclink["make"]{@exec{raco make}}.}
 Compiled code produced by @exec{raco make} relies on Racket
 executables to provide run-time support to the compiled code. However,
 @exec{raco exe} can package code together with its run-time support to
-form an executable, and @exec{raco distribute} can package the
+form an executable, and @seclink["exe-dist"]{@exec{raco distribute}} can package the
 executable into a distribution that works on other machines. Running
 an executable produced by @exec{raco exe} will not improve performance
 over @exec{raco make}.
@@ -92,12 +92,21 @@ The @exec{raco exe} command works only with module-based programs. The
 interface to the embedding mechanism.
 
 A stand-alone executable is ``stand-alone'' in the sense that you can
-run it without starting @exec{racket}, @exec{gracket}, or
-DrRacket. However, the executable may depend on Racket shared libraries
-and possibly other run-time files declared via
-@racket[define-runtime-path]. The executable can be packaged with
-support libraries to create a distribution using @exec{raco
-distribute}, as described in @secref["exe-dist"].
+run it without starting @exec{racket}, @exec{gracket}, or DrRacket.
+However, the executable may depend on Racket shared libraries and
+possibly other run-time files declared via
+@racket[define-runtime-path]. Using @DFlag{embed-dlls} on Windows or
+@DFlag{orig-exe} on Unix may produce an executable that is more
+stand-alone than otherwise. Options used when building Racket itself
+affect the degree to which executables are
+stand-alone.@margin-note*{Then standard distribution uses options that
+make executables as stand-alone as possible. For a Unix build,
+configuring with @DFlag{enable-shared} makes executables less
+stand-alone. For a Mac OS build, configuring without
+@DFlag{enable-embedfw} makes non-GUI executables less stand-alone.} In
+any case, the executable can be packaged with support libraries to
+create a self-contained distribution using @exec{raco distribute}, as
+described in @secref["exe-dist"].
 
 The @exec{raco exe} command accepts the following command-line flags:
 
@@ -164,12 +173,17 @@ The @exec{raco exe} command accepts the following command-line flags:
    for the generated executable to be the content of
    @nonterm{.icns-path}.}
 
- @item{@DFlag{orig-exe} --- generate an executable that refers to
-   the original @exec{racket} or @exec{gracket} executable,
-   instead of making a copy. This flag is rarely useful, because the
-   part of the executable that is copied is normally small, and
-   @exec{raco distribute} does not work with executables that are
-   created with @DFlag{orig-exe}.}
+ @item{@DFlag{orig-exe} --- on Unix, generate an executable based on
+   the original @exec{racket} or @exec{gracket} executable, instead of
+   a wrapper executable that redirects to the original. If the
+   original executable is statically linked to the Racket runtime
+   library, then the resulting executable is similarly stand-alone.
+   Beware that if the original executable links to Racket as a shared
+   library, however, then @exec{raco distribute} cannot work with
+   executables that are created with @DFlag{orig-exe} (because the
+   wrapper executable normally takes care of finding the shared
+   libraries when the executable is distributed to a different
+   machine).}
 
  @item{@DFlag{3m} --- generate an executable based on the @gtech{3m}
    variant of Racket, which is the default unless running a @exec{raco
