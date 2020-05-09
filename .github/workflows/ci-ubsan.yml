@@ -74,6 +74,9 @@ jobs:
     - name: Run tests/xml
       continue-on-error: true
       run: raco test -c tests/xml | tee logs/xml.log
+    - name: Run tests/future
+      continue-on-error: true
+      run: raco test -c tests/future
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
@@ -164,6 +167,9 @@ jobs:
     - name: Run tests/xml
       continue-on-error: true
       run: raco test -c tests/xml | tee logs/xml.log
+    - name: Run tests/future
+      continue-on-error: true
+      run: raco test -c tests/future
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
