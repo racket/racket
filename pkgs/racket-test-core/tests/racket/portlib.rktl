@@ -1030,7 +1030,7 @@
   (test (void) flush-output port-ab)
   (test "hello, world" get-output-string port-a)
   (test "hello, world" get-output-string port-b)
-  (test (void) close port-ab))
+  (test (void) close-output-port port-ab))
 
 ;; --------------------------------------------------
 
