@@ -30,15 +30,13 @@ your code.
  (define (conversion f)
    (* 5/9 (- f 32)))
 ]
- @racketmod[#:file
- @tt{really bad}
- racket
-
+ @filebox[@tt{really bad} ;; gotta use codeblock to keep the newlines
+ @codeblock{#lang racket
  (define (conversion f)
    (* 5/9 (- f 32)
      )
    )
- ]
+ }]
 ]
 
 You are allowed to place all closing parenthesis on a line by itself at the
@@ -57,9 +55,8 @@ end of long sequences, be those definitions or pieces of data.
      step
      ))
  ]
- @racketmod[#:file
- @tt{also acceptable}
- racket
+ @filebox[@tt{also acceptable} ;; use codeblock to keep the newlines
+ @codeblock{#lang racket
  (define turn%
    (class object%
      (init-field state)
@@ -72,7 +69,7 @@ end of long sequences, be those definitions or pieces of data.
      (define/public (is-placable? place)
        (send state legal? place))
      ))
- ]
+ }]
 ]
  Doing so is most useful when you expect to add, delete, or swap items in
  such sequences.
