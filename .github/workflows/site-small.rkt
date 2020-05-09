@@ -17,7 +17,7 @@
 (define server-base-url (~a "https://snapshots.racket-lang.org/" (dest-dir-name) "/"))
 
 (define distro-content
-  '("compiler-lib" "racket-lib"))
+  '("main-distribution"))
 
 (define (prebuilt-racket)
   (or (and (getenv "PLTHOME") (~a (getenv "PLTHOME") "/racket/" "bin/" "racket"))
