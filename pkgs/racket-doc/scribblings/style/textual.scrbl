@@ -30,15 +30,13 @@ your code.
  (define (conversion f)
    (* 5/9 (- f 32)))
 ]
- @racketmod[#:file
- @tt{really bad}
- racket
-
+ @filebox[@tt{really bad} ;; gotta use codeblock to keep the newlines
+ @codeblock{#lang racket
  (define (conversion f)
    (* 5/9 (- f 32)
      )
    )
- ]
+ }]
 ]
 
 You are allowed to place all closing parenthesis on a line by itself at the
