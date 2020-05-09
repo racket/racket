@@ -24,7 +24,7 @@
          call-with-input-string
          call-with-input-bytes
 
-         combine-output-ports
+         combine-output
 
          ;; `mzlib/port` exports
          open-output-nowhere
@@ -166,41 +166,75 @@
 (define (call-with-input-bytes str proc)
   (with-input-from-x 'call-with-input-bytes 1 #t str proc))
 
-(define (combine-output-ports port-a port-b)
-  (define-values (b-pin b-pout) (make-pipe 4096))
-  (define (flush-b write-fun-b)
-    (let ([b-buffer-content (read-bytes (pipe-content-length b-pin) b-pin)])
-      (write-fun-b b-buffer-content port-b)))
-  (define (do-write-ab write-fun-a write-fun-b s start end [buffer #t])
-    (if (zero? (pipe-content-length b-pin))
-        (let ([written-to-a
-               (subbytes s
-                         start
-                         (+ start (write-fun-a (subbytes s start end) port-a)))])
-          (if buffer
-              (if (equal? (write-fun-b written-to-a port-b) (bytes-length written-to-a))
-                  (bytes-length written-to-a)
-                  b-pout)
-              (write-fun-b written-to-a port-b)))
-        (let
-            ([flushed (flush-b write-fun-b)])
-          (if (zero? (pipe-content-length b-pin))
-              (+ flushed (do-write-ab write-fun-a write-fun-b s start end))
-              flushed))))
+(define (combine-output a-out b-out)
+  (struct buffer (bstr out start end) #:authentic #:mutable)
+  (define pending #f)
+
+  (define (write-pending/blocking!)
+    (when pending
+      (write-bytes
+       (buffer-bstr pending)
+       (buffer-out pending)
+       (buffer-start pending)
+       (buffer-end pending))
+      (set! pending #f)))
+
+  (define (write-pending/non-blocking!)
+    (when pending
+      (define n
+        (write-bytes-avail*
+         (buffer-bstr pending)
+         (buffer-out pending)
+         (buffer-start pending)
+         (buffer-end pending)))
+      (when n
+        (cond
+          [(= n (- (buffer-end pending) (buffer-start pending)))
+           (set! pending #f)]
+          [(> n 0)
+           (set-buffer-start! pending (+ (buffer-start pending) n))]))))
+
+  (define (write-out bstr start end non-blocking? breakable?)
+    (cond
+      [non-blocking?
+       (write-pending/non-blocking!)
+       (and
+        (not pending)
+        (write-out* write-bytes-avail* bstr start end))]
+      [else
+       (write-pending/blocking!)
+       (cond
+         [(= start end)
+          (flush-output a-out)
+          (flush-output b-out)
+          0]
+         [breakable?
+          (write-out* write-bytes-avail/enable-break bstr start end)]
+         [else
+          (write-bytes bstr a-out start end)
+          (write-bytes bstr b-out start end)])]))
+
+  (define (write-out* write-initial bstr start end)
+    (define m (write-initial bstr a-out start end))
+    (cond
+      [(or (not m) (= m 0))
+       #f]
+      [else
+       (define n
+         (or (write-bytes-avail* bstr b-out start (+ start m))
+             0))
+       (when (< n m)
+         (set! pending (buffer bstr b-out (+ start n) (+ start m))))
+       m]))
+
+  (define (close)
+    (write-pending/blocking!))
 
   (make-output-port
-   'combined-output
-   (replace-evt port-a (lambda (v) port-b))
-   (lambda (s start end no-buffer&block? breakable?)
-     (cond
-       [(equal? start end)
-        (begin
-          (flush-b write-bytes)
-          0)]
-       [no-buffer&block? (do-write-ab write-bytes-avail* write-bytes-avail* s start end #f)]
-       [breakable? (do-write-ab write-bytes-avail/enable-break write-bytes s start end)]
-       [else (do-write-ab write-bytes write-bytes s start end)]))
-   void))
+   'tee-port
+   (replace-evt a-out (λ (_) b-out))
+   write-out
+   close))
 
 ;; ----------------------------------------
 ;; the code below used to be in `mzlib/port`

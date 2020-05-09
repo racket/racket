@@ -297,16 +297,21 @@ The optional @racket[in-name] and @racket[out-name] arguments
 determine the names of the result ports.}
 
 
-@defproc[(combine-output-ports [what output-port?]
-                               [with output-port?] ...)
+@defproc[(combine-output [a-out output-port?]
+                         [b-out output-port?])
          output-port?]{
 
-Accepts a variable number of output ports and returns a new output port
-combining the original ports. When written to, the new port delegates
-the write operation to all the original ports. The combined port supports
-@racket[write-special] only when all the inner ports support it as well,
-and the combined port is ready when all inner ports are ready. Closing
-the combined output port does not close the original ports.}
+Accepts two output ports and returns a new output port
+combining the original ports. When written to, the combined port
+first writes as many bytes as possible to @racket[a-out], and then
+tries to write the same number of bytes to @racket[b-out]. If that
+doesn't succeed, what is left over is buffered and no further writes
+can go through until the ports are evened out. The port is ready (for
+the purposes of synchronization) when each port reports being ready.
+However, the first port may stop being ready while waiting on
+the second port to sync, so it cannot be guaranteed that both
+ports are ready at once. Closing the combined port is done
+after writing all remaining bytes to @racket[b-out].}
 
 
 @defproc[(merge-input [a-in input-port?]

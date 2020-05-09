@@ -996,19 +996,41 @@
   (test 0 file-position o2))
 
 ;; --------------------------------------------------
-;; test combine-output-ports
+;; test combine-output
 (let ([port-a (open-output-string)]
       [port-b (open-output-string)])
   (define two-byte-port (make-output-port
                           `two-byte-port
                           port-b
-                          (lambda (s start end no-buffer&block? breakable?)
-                            (write-bytes-avail (subbytes s start (+ start 2)) port-b))
+                          (lambda (s start end non-blocking? breakable?)
+                            (cond
+                              [non-blocking?
+                               (write-bytes-avail* (subbytes
+                                                    s
+                                                    start
+                                                    (if (< start (- end 1)) (+ start 2) end))
+                                                    port-b)]
+                              [breakable?
+                               (write-bytes-avail/enable-break
+                                (subbytes
+                                 s
+                                 start
+                                 (if (< start (- end 1)) (+ start 2) end))
+                                 port-b)]
+                              [else
+                               (write-bytes s port-b)]))
                           void))
-  (define port-ab (combine-output-ports port-a two-byte-port))
+  (define port-ab (combine-output port-a two-byte-port))
   (test 12  write-bytes #"hello, world" port-ab)
   (test "hello, world" get-output-string port-a)
-  (test "hello, world" get-output-string port-b))
+  (test "he" get-output-string port-b)
+  (test 0 write-bytes-avail* #" test" port-ab)
+  (test "hello, world" get-output-string port-a)
+  (test "hell" get-output-string port-b)
+  (test (void) flush-output port-ab)
+  (test "hello, world" get-output-string port-a)
+  (test "hello, world" get-output-string port-b)
+  (test (void) close port-ab))
 
 ;; --------------------------------------------------
 
