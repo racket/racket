@@ -142,8 +142,6 @@ static void configure_environment(Scheme_Object *mod)
   Scheme_Object *mli, *dyreq, *a[3], *gi, *v, *vs;
   Scheme_Object *submod, *cr, *mdp, *mpij;
 
-  cr = scheme_intern_symbol("configure-runtime");
-
   /* Modern style: look for `runtime-configure' submodule to initialize
      the configuration: */
 
@@ -1154,7 +1152,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
     } else {
       /* No switches => -u mode */
       script_mode = 1;
-      no_more_switches = 1;
       sprog = argv[0];
       evals_and_loads[num_enl] = argv[0];
       eval_kind[num_enl++] = mzcmd_REQUIRE_FILE;

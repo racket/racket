@@ -2948,8 +2948,8 @@ void scheme_wrong_contract_from_ft(const char *who, const char *expected_type, i
   future->source_of_request = who;
   future_do_runtimecall(fts, NULL, 0, 1, 0);
   
-  /* Fetch the future again, in case moved by a GC */ 
-  future = fts->thread->current_ft;
+  /* If more: fetch the future again, in case moved by a GC */ 
+  /* future = fts->thread->current_ft; */
 }
 
 Scheme_Object **scheme_rtcall_on_demand(Scheme_Object **argv)

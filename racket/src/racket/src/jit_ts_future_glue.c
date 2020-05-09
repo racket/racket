@@ -304,7 +304,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -331,7 +331,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -357,7 +357,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -382,7 +382,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -484,7 +484,7 @@
   send_special_result(future, g272);
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -538,7 +538,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -643,7 +643,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -696,7 +696,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -748,7 +748,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
@@ -774,7 +774,7 @@
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
-  future = fts->thread->current_ft;
+  
   
   
   
