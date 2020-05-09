@@ -427,6 +427,10 @@ static void macosx_init_exception_handler(int isMASTERGC)
 {
   kern_return_t retval;
 
+  /* Note: the `designate_modified` function relies on the fact that
+     all exceptions (at least within a place) go through the same
+     handler thread, so it can skip the lock on modified pages. */
+
   if (!isMASTERGC) {
     GC_attach_current_thread_exceptions_to_handler();
     return;

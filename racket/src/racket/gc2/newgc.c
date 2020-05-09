@@ -780,6 +780,9 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
 #ifdef MZ_USE_PLACES
   mzrt_mutex_create(&newgc->child_total_lock);
 #endif
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+  mzrt_mutex_create(&newgc->modified_pages_lock);
+#endif
 }
 
 /* NOTE This method sets the constructed GC as the new Thread Specific GC. */
@@ -1089,11 +1092,17 @@ static int designate_modified_gc(NewGC *gc, void *p)
   }
 
   if (page) {
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+    mzrt_mutex_lock(gc->modified_pages_lock);
+#endif
     page->mprotected = 0;
     mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
     if (!page->back_pointers)
       set_has_back_pointers(gc, page);
     gc->modified_unprotects++;
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+    mzrt_mutex_unlock(gc->modified_pages_lock);
+#endif
     errno = saved_errno;
     return 1;
   } else {
