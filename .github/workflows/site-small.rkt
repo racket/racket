@@ -47,7 +47,7 @@
            #:repo source-dir
            #:pull? #f
            #:variant 'cs
-           #:dist-suffix "cs"
+           #:dist-suffix (if (null? pkgs) "min-cs" "cs")
            #:versionless? #t
            #:pkgs pkgs
            #:log-file (convert-log-name name)
@@ -56,6 +56,7 @@
 (define (bc-machine #:name name #:pkgs [pkgs distro-content])
   (machine #:versionless? #t
            #:pkgs pkgs
+           #:dist-suffix (if (null? pkgs) "min" "")
            #:log-file (convert-log-name name)
            #:name name))
 
