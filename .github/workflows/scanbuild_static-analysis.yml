@@ -25,7 +25,7 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        CPPFLAGS="-DMZ_NORETURN -DMZ_PRECISE_RETURN_SPEC -DMZ_UNREACHABLE"
+        CPPFLAGS="-DMZ_PRECISE_RETURN_SPEC"
         --disable-strip
         --prefix=${{ runner.temp }}/racketcgc
         --enable-werror
@@ -78,7 +78,7 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        CPPFLAGS="-DMZ_NORETURN -DMZ_PRECISE_RETURN_SPEC -DMZ_UNREACHABLE"
+        CPPFLAGS="-DMZ_PRECISE_RETURN_SPEC"
         --disable-strip
         --enable-racket=/usr/bin/racket
         --enable-werror
@@ -135,7 +135,7 @@ jobs:
       run: >
         ./configure
         CFLAGS="-O0 -g"
-        CPPFLAGS="-DMZ_NORETURN -DMZ_PRECISE_RETURN_SPEC -DMZ_UNREACHABLE"
+        CPPFLAGS="-DMZ_PRECISE_RETURN_SPEC"
         --enable-racket=/usr/bin/racket
         --enable-compress
         --disable-docs
