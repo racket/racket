@@ -254,7 +254,7 @@ later mappings overwrite earlier mappings.
 
 @defproc[(hash-ref [hash hash?]
                    [key any/c]
-                   [failure-result (failure-result/c any/c)
+                   [failure-result failure-result/c
                                    (lambda ()
                                      (raise (make-exn:fail:contract ....)))])
          any]{
@@ -276,7 +276,7 @@ result:
 
 @defproc[(hash-ref-key [hash hash?]
                        [key any/c]
-                       [failure-result (failure-result/c any/c)
+                       [failure-result failure-result/c
                                        (lambda ()
                                          (raise (make-exn:fail:contract ....)))])
          any]{
@@ -345,7 +345,7 @@ will be determined as described in the documentation to
 
 @history[#:added "7.4.0.3"]}
 
-@defproc[(hash-ref! [hash hash?] [key any/c] [to-set (failure-result/c any/c)])
+@defproc[(hash-ref! [hash hash?] [key any/c] [to-set failure-result/c])
          any]{
 
 Returns the value for @racket[key] in @racket[hash].  If no value is
@@ -368,7 +368,7 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
-                       [failure-result (failure-result/c any/c)
+                       [failure-result failure-result/c
                                        (lambda ()
                                          (raise (make-exn:fail:contract ....)))])
          void?]{
@@ -385,7 +385,7 @@ concurrent updates.
 @defproc[(hash-update [hash (and/c hash? immutable?)]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
-                      [failure-result (failure-result/c any/c)
+                      [failure-result failure-result/c
                                       (lambda ()
                                         (raise (make-exn:fail:contract ....)))])
           (and/c hash? immutable?)]{
