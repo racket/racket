@@ -2725,7 +2725,6 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   Scheme_Object *mode = NULL, *a, *base = NULL;
   Scheme_Malloc_Proc mf;
   for (i=0; i<argc; i++) {
-    a = argv[i];
     a = unwrap_cpointer_property(argv[i]);
     if (SCHEME_INTP(a)) {
       if (num != -1)
