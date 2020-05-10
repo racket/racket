@@ -46,6 +46,8 @@
   (machine #:dir "cs-build"
            #:repo source-dir
            #:pull? #f
+           #:j 2
+           #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
            #:variant 'cs
            #:dist-suffix (if (null? pkgs) "min-cs" "cs")
            #:versionless? #t
@@ -56,6 +58,7 @@
 (define (bc-machine #:name name #:pkgs [pkgs distro-content])
   (machine #:versionless? #t
            #:pkgs pkgs
+           #:j 2
            #:dist-suffix (if (null? pkgs) "min" "")
            #:log-file (convert-log-name name)
            #:name name))
