@@ -2461,6 +2461,11 @@ static int capture_future_continuation(Scheme_Future_State *fs, future_t *ft, vo
   Scheme_Object **arg_S;
   void **stack;
 
+#ifndef MZ_PRECISE_GC
+  if (scheme_use_rtcall)
+    return 0;
+#endif
+
   storage[2] = ft;
 
   if (for_overflow) {

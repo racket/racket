@@ -9011,10 +9011,6 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
   Scheme_Lightweight_Continuation *lw;
   void *stack;
 
-#ifndef MZ_PRECISE_GC
-  return NULL;
-#endif
-
   storage[1] = p;
 
   lw = MALLOC_ONE_RT(Scheme_Lightweight_Continuation);
