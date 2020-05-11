@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/private/place-local
          racket/fixnum
+         (only-in racket/unsafe/ops unsafe-struct*-cas!)
          "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
          "../common/set.rkt"
@@ -13,10 +14,15 @@
 
 (provide
  (struct-out syntax) ; includes `syntax?`
+ syntax-content
  syntax-tamper
  empty-syntax
  identifier?
  syntax-identifier?
+
+ (struct-out modified-content)
+ re-modify-content
+ syntax-content*-cas!
  
  syntax->datum
  datum->syntax
@@ -36,10 +42,14 @@
 
  syntax-place-init!)
 
-(struct syntax ([content #:mutable] ; datum and nested syntax objects; mutated for lazy propagation
+;; Used for content wrapped with scope propagations and/or a tamper,
+;; so a `content*` is either a `modified-content` or plain content
+(struct modified-content (content scope-propagations+tamper)
+  #:authentic)
+
+(struct syntax ([content* #:mutable] ; datum and nested syntax objects; mutated for lazy propagation
                 scopes  ; scopes that apply at all phases
                 shifted-multi-scopes ; scopes with a distinct identity at each phase; maybe a fallback search
-                [scope-propagations+tamper #:mutable] ; lazy propagation info and/or tamper state
                 mpi-shifts ; chain of module-path-index substitutions
                 srcloc  ; source location
                 props   ; properties
@@ -58,11 +68,14 @@
     (write-string ">" port))
   #:property prop:serialize
   (lambda (s ser-push! state)
-    (define prop (syntax-scope-propagations+tamper s))
+    (define content* (syntax-content* s))
     (define content
-      (if (propagation? prop)
-          ((propagation-ref prop) s)
-          (syntax-content s)))
+      (if (modified-content? content*)
+          (let ([prop (modified-content-scope-propagations+tamper content*)])
+            (if (propagation? prop)
+                ((propagation-ref prop) s)
+                (modified-content-content content*)))
+          content*))
     (define properties
       (intern-properties
        (syntax-props s)
@@ -135,10 +148,14 @@
            (set-syntax-state-all-sharing?! stx-state #f)))]))
   #:property prop:reach-scopes
   (lambda (s reach)
-    (define prop (syntax-scope-propagations+tamper s))
-    (reach (if (propagation? prop)
+    (define content* (syntax-content* s))
+    (reach
+     (if (modified-content? content*)
+         (let ([prop (modified-content-scope-propagations+tamper content*)])
+           (if (propagation? prop)
                ((propagation-ref prop) s)
-               (syntax-content s)))
+               (modified-content-content content*)))
+         content*))
     (reach (syntax-scopes s))
     (reach (syntax-shifted-multi-scopes s))
     (for ([(k v) (in-immutable-hash (syntax-props s))]
@@ -158,11 +175,30 @@
 (define-values (prop:propagation-set-tamper propagation-set-tamper? propagation-set-tamper-ref)
   (make-struct-type-property 'propagation-set-tamper))
 
+(define (syntax-content s)
+  (define content* (syntax-content* s))
+  (if (modified-content? content*)
+      (modified-content-content content*)
+      content*))
+  
 (define (syntax-tamper s)
-  (define v (syntax-scope-propagations+tamper s))
-  (if (tamper? v)
-      v
-      ((propagation-tamper-ref v) v)))
+  (define content* (syntax-content* s))
+  (cond
+    [(modified-content? content*)
+     (define v (modified-content-scope-propagations+tamper content*))
+     (if (tamper? v)
+         v
+         ((propagation-tamper-ref v) v))]
+    [else #f]))
+
+(define (syntax-content*-cas! stx old new)
+  (unsafe-struct*-cas! stx 0 old new))
+
+(define (re-modify-content s d)
+  (define content* (syntax-content* s))
+  (if (modified-content? content*)
+      (modified-content d (modified-content-scope-propagations+tamper content*))
+      d))
 
 ;; ----------------------------------------
 
@@ -175,7 +211,6 @@
   (syntax #f
           empty-scopes
           empty-shifted-multi-scopes
-          #f   ; scope-propogations+tamper (clean)
           empty-mpi-shifts
           #f   ; srcloc
           empty-props
@@ -198,16 +233,17 @@
    [else
     (define insp (if (syntax? s) 'not-needed (current-module-code-inspector)))
     (define (wrap content)
-      (syntax content
+      (syntax (if (and stx-c
+                       (syntax-tamper stx-c))
+                  (modified-content content
+                                    (tamper-tainted-for-content content))
+                  content)
               (if stx-c
                   (syntax-scopes stx-c)
                   empty-scopes)
               (if stx-c
                   (syntax-shifted-multi-scopes stx-c)
                   empty-shifted-multi-scopes)
-              (and stx-c
-                   (syntax-tamper stx-c)
-                   (tamper-tainted-for-content content))
               (if stx-c
                   (syntax-mpi-shifts stx-c)
                   empty-mpi-shifts)
@@ -308,10 +344,12 @@
 ;; Called by the deserializer
 
 (define (deserialize-syntax content context-triple srcloc props tamper inspector)
-  (syntax content
+  (syntax (let ([t (deserialize-tamper tamper)])
+            (if t
+                (modified-content content t)
+                content))
           (vector*-ref context-triple 0)
           (vector*-ref context-triple 1)
-          (deserialize-tamper tamper)
           (vector*-ref context-triple 2)
           srcloc
           (if props

@@ -73,19 +73,20 @@
                 ;; For expanding an implicit implemented by a rename transformer:
                 #:fail-non-transformer [fail-non-transformer #f])
   (log-expand ctx 'visit s)
+  (define content (syntax-content s))
   (cond
-   [(syntax-identifier? s)
+   [(symbol? content)
     (expand-identifier s ctx alternate-id)]
-   [(and (pair? (syntax-content s))
-         (syntax-identifier? (car (syntax-content s))))
+   [(and (pair? content)
+         (syntax-identifier? (car content)))
     (expand-id-application-form s ctx alternate-id
                                 #:fail-non-transformer fail-non-transformer)]
-   [(or (pair? (syntax-content s))
-        (null? (syntax-content s)))
+   [(or (pair? content)
+        (null? content))
     ;; An "application" form that doesn't start with an identifier, so
     ;; use implicit `#%app`
     (expand-implicit '#%app s ctx #f)]
-   [(already-expanded? (syntax-content s))
+   [(already-expanded? content)
     (expand-already-expanded s ctx)]
    [else
     ;; Anything other than an identifier or parens triggers the
