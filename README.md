@@ -36,7 +36,7 @@ reporting an [issue](https://github.com/racket/racket/issues),
 joining the [development mailing list](https://lists.racket-lang.org),
 or visiting the IRC or Slack channels.
 
-By making a contribution, you are agreeing that your contribution is
+By making a contribution, you agree to follow the [Friendly Environment Policy](https://racket-lang.org/friendly.html) and that your contribution is
 licensed under the Apache 2.0 and MIT licenses. Those
 licenses are available in this repository in the files
 [LICENSE-APACHE.txt](racket/src/LICENSE-APACHE.txt) and
@@ -46,9 +46,3 @@ License
 -------
 
 Racket is free software; see [LICENSE](LICENSE) for more details.
-
-Friendly Environment Policy
----------------------------
-
-Please see https://racket-lang.org/friendly.html
-
