@@ -8,5 +8,3 @@ By making contributions, you agree to license your contributions under the Apach
 licenses are available in this repository in the files
 [LICENSE-APACHE.txt](racket/src/LICENSE-APACHE.txt) and
 [LICENSE-MIT.txt](racket/src/LICENSE-MIT.txt).
-
-In addition, contributors are expected to follow the [Friendly Environment Policy](https://racket-lang.org/friendly.html).
