@@ -1066,6 +1066,9 @@ static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *ins
     case scheme_ir_let_value_type:
       ((Scheme_IR_Let_Value *)inside)->body = alt;
       break;
+    case scheme_with_cont_mark_type:
+      ((Scheme_With_Continuation_Mark *)inside)->body = alt;
+      break;
     default:
       scheme_signal_error("internal error: strange inside replacement");
     }
@@ -1074,7 +1077,7 @@ static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *ins
   return alt;
 }
 
-static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside)
+static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside, int for_immediate_body)
 /* Looks through various forms, like `begin` to extract a result expression;
    replace_tail_inside() needs to be consistent with this function */
 {
@@ -1095,6 +1098,11 @@ static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside)
         *_t2 = seq->array[seq->count-1];
       } else
         break;
+    } else if (SAME_TYPE(SCHEME_TYPE(*_t2), scheme_with_cont_mark_type)
+               && for_immediate_body) {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)*_t2;
+      *_inside = *_t2;
+      *_t2 = wcm->body;
     } else
       break;
   }
@@ -1103,7 +1111,7 @@ static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside)
 Scheme_Object *scheme_optimize_extract_tail_inside(Scheme_Object *t2)
 {
   Scheme_Object *inside;
-  extract_tail_inside(&t2, &inside);
+  extract_tail_inside(&t2, &inside, 0);
   return t2;
 }
 
@@ -2691,7 +2699,7 @@ Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
 
   /* Move inside `let' bindings to get the inner procedure */
   if (!for_inline)
-    extract_tail_inside(&le, &prev);
+    extract_tail_inside(&le, &prev, 0);
 
   le = extract_specialized_proc(le, le);
 
@@ -2879,7 +2887,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
      to (let (....) (proc arg ...)) */
   if (already_opt)
-    extract_tail_inside(&le, &prev);
+    extract_tail_inside(&le, &prev, 0);
 
   le = extract_specialized_proc(le, le);
   
@@ -3149,7 +3157,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
 {
   Scheme_Object *orig_rator = rator, *inside = NULL;
     
-  extract_tail_inside(&rator, &inside);
+  extract_tail_inside(&rator, &inside, 0);
 
   if (!inside)
     return NULL;
@@ -4434,7 +4442,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   /* We can go inside a `begin' and a `let', which is useful in case
      the argument was a function call that has been inlined. */
-  extract_tail_inside(&rand, &inside);
+  extract_tail_inside(&rand, &inside, 0);
 
   if (SCHEME_TYPE(rand) > _scheme_ir_values_types_) {
     Scheme_Object *le;
@@ -6034,7 +6042,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     Scheme_Object *inside = NULL, *t2 = t;
 
     while (1) {
-      extract_tail_inside(&t2, &inside);
+      extract_tail_inside(&t2, &inside, 0);
 
       /* Try optimize: (if (not x) y z) => (if x z y) */
       if (SAME_TYPE(SCHEME_TYPE(t2), scheme_application2_type)) {
@@ -6759,7 +6767,7 @@ static Scheme_Object *begin0_optimize(Scheme_Object *obj, Optimize_Info *info, i
 
   expr = s->array[0];
   orig_first = s->array[0];
-  extract_tail_inside(&expr, &inside);
+  extract_tail_inside(&expr, &inside, 0);
 
   /* Try optimize (begin0 <movable> ...) => (begin ... <movable>) */
   if (movable_expression(expr, info, 0, kclock != info->kclock,
@@ -7938,6 +7946,10 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     if ((pre_body->count == 1) && !pre_body->vars[0]->mutated) {
       int indirect = 0, indirect_binding = 0;
 
+      /* extract_tail_inside with `for_immediate_body` as true needs
+         to be consistent with this peek inside, in case a single-use
+         variable extracted as the binding for a single-use
+         variable */
       while (indirect < 10) {
         if (SAME_TYPE(SCHEME_TYPE(value), scheme_sequence_type)) {
           Scheme_Sequence *seq = (Scheme_Sequence *)value;
@@ -8325,7 +8337,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
       if (!used && (pre_body->count == 1)) {
         /* The whole binding is not omittable, but maybe the tail is omittable: */
         Scheme_Object *v2 = pre_body->value, *inside;
-        extract_tail_inside(&v2, &inside);
+        extract_tail_inside(&v2, &inside, 1);
         if (scheme_omittable_expr(v2, pre_body->count, -1, 0, info, info)) {
           replace_tail_inside(scheme_false, inside, pre_body->value);
         }
