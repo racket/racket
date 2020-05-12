@@ -612,7 +612,7 @@ case "$host_os" in
       ppc|powerpc)
        ;;
       alpha)
-       EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+       EXTRA_GMP_OBJ="gmp_alpha_gcc"
        EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       i386|i486|i586|i686)
@@ -620,7 +620,7 @@ case "$host_os" in
        check_for_unwind=REG_ESP
        ;;
       arm*)
-       EXTRA_GMP_OBJ="gmp_arm_gcc.o"
+       EXTRA_GMP_OBJ="gmp_arm_gcc"
        EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
        ;;
       *)
@@ -632,7 +632,7 @@ case "$host_os" in
     if test "$CC" = "cc" ; then 
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then 
-      EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
+      EXTRA_GMP_OBJ="gmp_alpha_gcc"
       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
     fi
     ;;
