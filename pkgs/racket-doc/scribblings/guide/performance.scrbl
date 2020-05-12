@@ -87,13 +87,16 @@ Racket is available in three implementation variants: @deftech{3m},
 
 ]
 
+The @tech{3m} and @tech{CGC} variants are collectively known as the
+@deftech{BC} (``before CS'') variant.
+
 In general, Racket programs should run the same in all variants.
 Furthermore, the performance characteristics of Racket program should
 be similar in the @tech{3m} and @tech{CS} variants. The cases where a
 program may depends on the variant will typically involve interactions
 with foreign libraries; in particular, the Racket C API described in
-@other-doc[inside-doc] is available only for the virtual machine of
-the @tech{3m} and @tech{CGC} variants.
+@other-doc[inside-doc] is different for the @tech{3m} and @tech{CGC}
+variants versus the @tech{CS} variant.
 
 @; ----------------------------------------------------------------------
 

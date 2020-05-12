@@ -1174,7 +1174,7 @@ traversal.
 @defproc[(check-duplicates [lst list?]
                            [same? (any/c any/c . -> . any/c) equal?]
                            [#:key extract-key (-> any/c any/c) (lambda (x) x)]
-                           [#:default failure-result (failure-result/c any/c) (lambda () #f)])
+                           [#:default failure-result failure-result/c (lambda () #f)])
          any]{
 
 Returns the first duplicate item in @racket[lst]. More precisely, it
@@ -1243,7 +1243,7 @@ because @racket[filter-map] avoids
 building the intermediate list.
 
 @mz-examples[#:eval list-eval
-  (filter-map (lambda (x) (and (positive? x) x)) '(1 2 3 -2 8))]}
+  (filter-map (lambda (x) (and (negative? x) (abs x))) '(1 2 -3 -4 8))]}
 
 
 @defproc[(count [proc procedure?] [lst list?] ...+)

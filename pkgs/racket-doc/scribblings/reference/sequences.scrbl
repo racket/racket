@@ -1193,6 +1193,8 @@ stream, but plain lists can be used as streams, and functions such as
   allows @racket[for/stream] and @racket[for*/stream] to iterate over infinite
   sequences, unlike their finite counterparts.
 
+  Please note that these forms do not support returning @tech{multiple values}.
+
   @examples[#:eval sequence-evaluator
     (for/stream ([i '(1 2 3)]) (* i i))
     (stream->list (for/stream ([i '(1 2 3)]) (* i i)))

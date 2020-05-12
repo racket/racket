@@ -906,31 +906,35 @@
   ;; to the actual value (if present); if the keyword isn't
   ;; available, then the corresponding `req' is applied, which
   ;; should signal an error if the keyword is required.
-  (define-syntax let-kws
-    (syntax-rules ()
+  (define-syntax (let-kws stx)
+    (syntax-case stx ()
       [(_ kws kw-args () . body)
-       (begin . body)]
+       #'(begin . body)]
       [(_ kws kw-args ([kw arg arg? #f not-supplied-val]) . body)
        ;; last optional argument doesn't need to check as much or take as many cdrs
-       (let ([arg? (pair? kws)])
-         (let ([arg (if arg? (car kw-args) not-supplied-val)])
-           . body))]
+       #'(let ([arg? (pair? kws)])
+           (let ([arg (if arg? (car kw-args) not-supplied-val)])
+             . body))]
       [(_ kws kw-args ([kw arg arg? #f not-supplied-val] . rest) . body)
-       (let ([arg? (and (pair? kws)
-                        (eq? 'kw (car kws)))])
-         (let ([arg (if arg? (car kw-args) not-supplied-val)]
-               [kws (if arg? (cdr kws) kws)]
-               [kw-args (if arg? (cdr kw-args) kw-args)])
-           (let-kws kws kw-args rest . body)))]
+       (with-syntax ([next-kws (gensym 'kws)]
+                     [next-kw-args (gensym 'kw-args)])
+         #'(let ([arg? (and (pair? kws)
+                            (eq? 'kw (car kws)))])
+             (let ([arg (if arg? (car kw-args) not-supplied-val)]
+                   [next-kws (if arg? (cdr kws) kws)]
+                   [next-kw-args (if arg? (cdr kw-args) kw-args)])
+               (let-kws next-kws next-kw-args rest . body))))]
       [(_ kws kw-args ([kw arg arg? #t _]) . body)
        ;; last required argument doesn't need to take cdrs
-       (let ([arg (car kw-args)])
-         . body)]
+       #'(let ([arg (car kw-args)])
+           . body)]
       [(_ kws kw-args ([kw arg arg? #t _] . rest) . body)
-       (let ([arg (car kw-args)]
-             [kws (cdr kws)]
-             [kw-args (cdr kw-args)])
-         (let-kws kws kw-args rest . body))]))
+       (with-syntax ([next-kws (gensym 'kws)]
+                     [next-kw-args (gensym 'kw-args)])
+         #'(let ([arg (car kw-args)]
+                 [next-kws (cdr kws)]
+                 [next-kw-args (cdr kw-args)])
+             (let-kws next-kws next-kw-args rest . body)))]))
 
   ;; Used for `req' when the keyword argument is optional:
   (define-syntax missing-ok
@@ -1068,13 +1072,15 @@
     (syntax-case stx (quote)
       [(_ l1-expr '()) #'(null? l1-expr)]
       [(_ '() l2-expr) #'#t]
-      [(_ l1-expr '(kw . kws)) #'(let ([l1 l1-expr])
-                                   (let ([l1 (if (null? l1)
-                                                 l1
-                                                 (if (eq? (car l1) 'kw)
-                                                     (cdr l1)
-                                                     l1))])
-                                     (subset?/static l1 'kws)))]
+      [(_ l1-expr '(kw . kws))
+       (with-syntax ([l1 (gensym 'l1)])
+         #'(let ([l1 l1-expr])
+             (let ([l1 (if (null? l1)
+                           l1
+                           (if (eq? (car l1) 'kw)
+                               (cdr l1)
+                               l1))])
+               (subset?/static l1 'kws))))]
       [(_ l1-expr l2-expr) #'(subset? l1-expr l2-expr)]))
 
   (define-syntax (subsets?/static stx)
@@ -1095,10 +1101,11 @@
     (syntax-case stx (quote)
       [(_ '() l2-expr) #'(null? l2-expr)]
       [(_ '(kw . kw-rest) l2-expr)
-       #'(let ([l2 l2-expr])
-           (and (pair? l2)
-                (eq? (car l2) 'kw)
-                (equal?/static 'kw-rest (cdr l2))))]))
+       (with-syntax ([l2 (gensym 'l2)])
+         #'(let ([l2 l2-expr])
+             (and (pair? l2)
+                  (eq? (car l2) 'kw)
+                  (equal?/static 'kw-rest (cdr l2)))))]))
   
   ;; ----------------------------------------
   ;; `define' with keyword arguments

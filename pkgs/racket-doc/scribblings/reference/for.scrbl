@@ -346,7 +346,7 @@ An @racket[accum-id] and a binding from a @racket[for-clause] can be
 the same identifier. In that case, the @racket[accum-id] binding
 shadows the one in a @racket[for-clause] within the
 @racket[body-or-break] and @racket[body] forms (even though,
-syntactically, a @racket[for-clause] is closer to to the body).
+syntactically, a @racket[for-clause] is closer to the body).
 
 @examples[
 (for/fold ([sum 0]
@@ -673,7 +673,7 @@ When @racket[id] is used in any other expression position, the result
 of @racket[expr-transform-expr] is used. If it is a procedure of zero
 arguments, then the result must be an identifier @racket[_other-id],
 and any use of @racket[id] is converted to a use of
-@racket[_other-id]. Otherwise,@racket[expr-transform-expr] must
+@racket[_other-id]. Otherwise, @racket[expr-transform-expr] must
 produce a procedure (of one argument) that is used as a macro
 transformer.
 
@@ -705,8 +705,8 @@ instead of @racket[syntax-protect].
             ([i n])
             (not (zero? i))
             ([(j d) (quotient/remainder i 10)])
-            #true
-            #true
+            #t
+            #t
             [j])]]
       [_ #f])))
 

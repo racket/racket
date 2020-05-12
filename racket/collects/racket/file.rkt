@@ -763,7 +763,8 @@
 (define (file->x who f file-mode read-x x-append)
   (check-path who f)
   (check-file-mode who file-mode)
-  (let ([sz (file-size f)])
+  (let ([sz (with-handlers ([exn:fail:filesystem? (lambda (_) 0)])
+                             (file-size f))])
     (call-with-input-file* f #:mode file-mode
       (lambda (in)
         ;; There's a good chance that `file-size' gets all the data:

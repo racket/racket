@@ -240,17 +240,17 @@ racket
 (define-syntax (def-go stx)
   (syntax-case stx ()
     [(_ go)
-     (protect-syntax
+     (syntax-protect
       #'(define-syntax (go stx)
           (syntax-case stx ()
             [(_ x)
-             (protect-syntax #'(unchecked-go 8 x))])))]))
+             (syntax-protect #'(unchecked-go 8 x))])))]))
 ]
 
 When @racket[def-go] is used inside another module to define
 @racket[go], and when the @racket[go]-defining module is at a
 different protection level than the @racket[def-go]-defining module, the
-generated macro's use of @racket[protect-syntax] is not right.  The
+generated macro's use of @racket[syntax-protect] is not right.  The
 use of @racket[unchecked-go] should be protected at the level of the
 @racket[def-go]-defining module, not the @racket[go]-defining module.
 
@@ -271,7 +271,7 @@ racket
 (define-syntax (def-go stx)
   (syntax-case stx ()
     [(_ go)
-     (protect-syntax
+     (syntax-protect
       #'(define-syntax (go stx)
           (syntax-case stx ()
            [(_ x)

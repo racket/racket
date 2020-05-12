@@ -34,14 +34,18 @@
   prop:evt
   (poller (lambda (sp ctx)
             (define v (rktio_poll_process_done rktio (subprocess-process sp)))
-            (if (eqv? v 0)
-                (begin
-                  (sandman-poll-ctx-add-poll-set-adder!
-                   ctx
-                   (lambda (ps)
-                     (rktio_poll_add_process rktio (subprocess-process sp) ps)))
-                  (values #f sp))
-                (values (list sp) #f)))))
+            (cond
+              [(eqv? v 0)
+               (sandman-poll-ctx-add-poll-set-adder!
+                ctx
+                (lambda (ps)
+                  (rktio_poll_add_process rktio (subprocess-process sp) ps)))
+               (values #f sp)]
+              [else
+               ;; Unregister from the custodian as soon as the process is known
+               ;; to be stopped:
+               (no-custodian! sp)
+               (values (list sp) #f)]))))
 
 (define do-subprocess
   (let ()
@@ -199,6 +203,7 @@
      (end-atomic)
      'running]
     [else
+     (no-custodian! sp)
      (define v (rktio_status_result r))
      (rktio_free r)
      (end-atomic)
@@ -231,6 +236,12 @@
 
 ;; ----------------------------------------
 
+;; in atomic mode
+(define (no-custodian! sp)
+  (when (subprocess-cust-ref sp)
+    (unsafe-custodian-unregister sp (subprocess-cust-ref sp))
+    (set-subprocess-cust-ref! sp #f)))
+
 (define subprocess-will-executor (make-will-executor))
 
 (define (register-subprocess-finalizer sp)
@@ -240,9 +251,7 @@
                    (when (subprocess-process sp)
                      (rktio_process_forget rktio (subprocess-process sp))
                      (set-subprocess-process! sp #f))
-                   (when (subprocess-cust-ref sp)
-                     (unsafe-custodian-unregister sp (subprocess-cust-ref sp))
-                     (set-subprocess-cust-ref! sp #f))
+                   (no-custodian! sp)
                    #t)))
 
 (define (poll-subprocess-finalizations)

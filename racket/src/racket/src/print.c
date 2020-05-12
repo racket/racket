@@ -1134,7 +1134,7 @@ print_to_string(Scheme_Object *obj,
 
   params.uq_ht = uq_ht;
 
-  if ((maxl <= PRINT_MAXLEN_MIN) 
+  if ((maxl < PRINT_MAXLEN_MIN)
       || !scheme_setjmp(escape))
     print(obj, write, 0, ht, NULL, (PrintParams *)&params);
 
@@ -1229,7 +1229,7 @@ static void print_this_string(PrintParams *pp, const char *str, int offset, int 
 
   SCHEME_USE_FUEL(len);
   
-  if (pp->print_maxlen > PRINT_MAXLEN_MIN) {
+  if (pp->print_maxlen >= PRINT_MAXLEN_MIN) {
     if (pp->print_position > pp->print_maxlen) {
       intptr_t l = pp->print_maxlen;
 

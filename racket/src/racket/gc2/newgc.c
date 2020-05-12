@@ -780,6 +780,9 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
 #ifdef MZ_USE_PLACES
   mzrt_mutex_create(&newgc->child_total_lock);
 #endif
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+  mzrt_mutex_create(&newgc->modified_pages_lock);
+#endif
 }
 
 /* NOTE This method sets the constructed GC as the new Thread Specific GC. */
@@ -980,13 +983,22 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
                           (Fixup2_Proc)fixup, constant_Size, atomic);
 }
 
-static uintptr_t get_place_child_memory_use()
+#define PLACE_CHILD_MEMORY_USE         1
+#define PLACE_CHILD_MEMORY_CUMULATIVE  2
+#define PLACE_CHILD_MEMORY_MAX         3
+
+static uintptr_t get_place_child_memory(int which)
 {
 #ifdef MZ_USE_PLACES
   NewGC *gc = GC_get_GC();
   uintptr_t amt;
   mzrt_mutex_lock(gc->child_total_lock);
-  amt = gc->child_gc_total;
+  if (which == PLACE_CHILD_MEMORY_USE)
+    amt = gc->child_gc_total;
+  else if (which == PLACE_CHILD_MEMORY_CUMULATIVE)
+    amt = gc->child_gc_cumulative;
+  else
+    amt = gc->child_gc_max;
   mzrt_mutex_unlock(gc->child_total_lock);
   return amt;
 #else
@@ -1006,20 +1018,36 @@ intptr_t GC_get_memory_use(void *o)
   amt = add_no_overflow(gen0_size_in_use(gc), gc->memory_in_use);
   amt = add_no_overflow(amt, gc->gen0_phantom_count);
 #ifdef MZ_USE_PLACES
-  amt = add_no_overflow(amt, get_place_child_memory_use());
+  amt = add_no_overflow(amt, get_place_child_memory(PLACE_CHILD_MEMORY_USE));
 #endif
   
   return (intptr_t)amt;
 }
 
-intptr_t GC_get_memory_ever_allocated()
+intptr_t GC_get_memory_ever_used()
 {
   NewGC *gc = GC_get_GC();
   uintptr_t amt;
   
   amt = add_no_overflow(gen0_size_in_use(gc), gc->total_memory_allocated);
+#ifdef MZ_USE_PLACES
+  amt = add_no_overflow(amt, get_place_child_memory(PLACE_CHILD_MEMORY_CUMULATIVE));
+#endif
   
   return (intptr_t)amt;
+}
+
+intptr_t GC_get_memory_max_allocated()
+{
+  NewGC *gc = GC_get_GC();
+  uintptr_t amt;
+
+  amt = mmu_memory_max_allocated(gc->mmu);
+#ifdef MZ_USE_PLACES
+  amt = add_no_overflow(amt, get_place_child_memory(PLACE_CHILD_MEMORY_MAX));
+#endif
+
+  return amt;
 }
 
 /*****************************************************************************/
@@ -1064,11 +1092,17 @@ static int designate_modified_gc(NewGC *gc, void *p)
   }
 
   if (page) {
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+    mzrt_mutex_lock(gc->modified_pages_lock);
+#endif
     page->mprotected = 0;
     mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
     if (!page->back_pointers)
       set_has_back_pointers(gc, page);
     gc->modified_unprotects++;
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+    mzrt_mutex_unlock(gc->modified_pages_lock);
+#endif
     errno = saved_errno;
     return 1;
   } else {
@@ -1719,14 +1753,18 @@ void *GC_malloc_pair(void *car, void *cdr)
 
   if (TAKE_SLOW_PATH() || OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
-    CHECK_PARK_UNUSED(gc);
-    gc->park[0] = car;
-    gc->park[1] = cdr;
+    if (!GC_gen0_alloc_only) {
+      CHECK_PARK_UNUSED(gc);
+      gc->park[0] = car;
+      gc->park[1] = cdr;
+    }
     pair = allocate(sizeof(Scheme_Simple_Object), PAGE_PAIR);
-    car = gc->park[0];
-    cdr = gc->park[1];
-    gc->park[0] = NULL;
-    gc->park[1] = NULL;
+    if (!GC_gen0_alloc_only) {
+      car = gc->park[0];
+      cdr = gc->park[1];
+      gc->park[0] = NULL;
+      gc->park[1] = NULL;
+    }
 
     /* Future-local allocation can fail: */
     if (!pair) return NULL;
@@ -6352,7 +6390,7 @@ void GC_dump_with_traces(int flags,
 
     GCWARN((GCOUTF,"\n"));
     GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
-    GCWARN((GCOUTF," part current use from child places: %" PRIdPTR "\n", get_place_child_memory_use()));
+    GCWARN((GCOUTF," part current use from child places: %" PRIdPTR "\n", get_place_child_memory(PLACE_CHILD_MEMORY_USE)));
     GCWARN((GCOUTF,"Peak memory use before a collection: %" PRIdPTR "\n", gc->peak_pre_memory_use));
     GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
     GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",

@@ -1851,5 +1851,24 @@
                                                                 (or z "[z]"))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Don't get stuck waiting for an unneeded byte
+
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "1\n" o)
+  (define rx (regexp "^(?:(.*?)(?:\r\n|\n))"))
+  (test '(#"1\n" #"1") regexp-match rx i))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "abc" o)
+  (define rx (regexp "^(ab)*"))
+  (test '(#"ab" #"ab") regexp-match rx i))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-string "123" o)
+  (define rx (pregexp "^(12)\\1|123"))
+  (test '(#"123" #f) regexp-match rx i))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

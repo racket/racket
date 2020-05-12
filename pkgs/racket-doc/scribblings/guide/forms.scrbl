@@ -38,9 +38,8 @@ convention implicitly defines the meaning of many meta-variables:
 
  @item{A meta-identifier that ends with @racket[_body] stands for any
        sub-form; it will be parsed as either a local definition or an
-       expression. A @racket[_body] can parse as a definition only if
-       it is not preceded by any expression, and the last
-       @racket[_body] must be an expression; see also @secref["intdefs"].}
+       expression. The last @racket[_body] must be an expression;
+       see also @secref["intdefs"].}
 
 ]
 

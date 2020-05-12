@@ -265,7 +265,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 {
   Scheme_Object *tkey, *ekey, **keys;
   intptr_t hx, h2x;
-  hash_v_t h, h2, useme = 0;
+  hash_v_t h, h2 = 0, useme = 0;
   uintptr_t mask;
 
  rehash_key:
@@ -3467,8 +3467,9 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
              return empty_hash_tree[2];
         } else
           return tree;
-      } else if (SAME_OBJ(val, mzHAMT_VAL(in_tree, pos))) {
-        /* Shortcut: setting to the current value */
+      } else if (SAME_OBJ(val, mzHAMT_VAL(in_tree, pos))
+                 && SAME_OBJ(key, in_tree->els[pos])) {
+        /* Shortcut: setting to the current key and value */
         return tree;
       } else
         return hamt_set(tree, h, 0, key, val, 0);

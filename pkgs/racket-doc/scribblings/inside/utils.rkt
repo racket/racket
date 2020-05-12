@@ -9,7 +9,7 @@
 
 (provide Racket
          mzc cpp cppi cppdef (rename-out [*var var])
-         function subfunction
+         function subfunction together
          FormatD
          tech-place
          reference-doc raco-doc
@@ -120,6 +120,19 @@
                                           (list (tt ","))))))))
                     (loop (cdr types) (cdr args)))))))))
       (rest-thunk)))))
+
+(define-syntax-rule (together (func ...) expl ...)
+  (together*
+   (list func ...)
+   (lambda () (list expl ...))))
+
+(define (together* funcs body-thunk)
+  (make-splice
+   (cons
+    (make-table
+     'boxed
+     (map table-blockss (map car (map splice-run funcs))))
+    (body-thunk))))
 
 (define (boxed t)
   (make-table

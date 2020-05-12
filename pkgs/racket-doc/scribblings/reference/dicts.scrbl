@@ -199,7 +199,7 @@ only supported for dictionary types that directly implement them.
 
 @defproc[(dict-ref [dict dict?]
                    [key any/c]
-                   [failure-result (failure-result/c any/c)
+                   [failure-result failure-result/c
                                    (lambda () (raise (make-exn:fail ....)))])
          any]{
 
@@ -491,7 +491,7 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 @defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
-                       [failure-result (failure-result/c any/c)
+                       [failure-result failure-result/c
                                        (lambda () (raise (make-exn:fail ....)))]) void?]{
 
 Composes @racket[dict-ref] and @racket[dict-set!] to update an
@@ -517,7 +517,7 @@ v
 @defproc[(dict-update [dict dict?]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
-                      [failure-result (failure-result/c any/c)
+                      [failure-result failure-result/c
                                       (lambda () (raise (make-exn:fail ....)))])
           (and/c dict? immutable?)]{
 

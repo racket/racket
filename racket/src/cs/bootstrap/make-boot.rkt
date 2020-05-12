@@ -341,6 +341,16 @@
   (eval `(mkequates.h ,(path->string (build-path out-subdir "equates.h"))))
   (plumber-flush-all (current-plumber))
 
+  (let ([mkgc.ss (build-path scheme-dir "s/mkgc.ss")])
+    (when (file-exists? mkgc.ss)
+      (status "Load mkgc")
+      (load-ss (build-path scheme-dir "s/mkgc.ss"))
+      (status "Generate GC")
+      (eval `(mkgc-ocd.inc ,(path->string (build-path out-subdir "gc-ocd.inc"))))
+      (eval `(mkgc-oce.inc ,(path->string (build-path out-subdir "gc-oce.inc"))))
+      (eval `(mkvfasl.inc ,(path->string (build-path out-subdir "vfasl.inc"))))
+      (plumber-flush-all (current-plumber))))
+
   (when (getenv "MAKE_BOOT_FOR_CROSS")
     ;; Working bootfiles are not needed for a cross build (only the
     ;; ".h" files are needed), so just make dummy files in that case

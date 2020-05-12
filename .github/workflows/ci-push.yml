@@ -3,7 +3,7 @@ name: CI
 on: [push]
 
 jobs:
-  
+
 # Build jobs
 # These jobs build each Racket component separately and tests on the component start as soon as each
 # component finishes building.
@@ -14,11 +14,11 @@ jobs:
       matrix:
         os: [ubuntu-18.04, macos-latest]
         cify: [cify, nocify]
-          
+
     runs-on: ${{ matrix.os }}
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-    
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -35,19 +35,19 @@ jobs:
     - name: Configuring Racket CGC
       working-directory: ./racket/src
       run: >
-        ./configure 
-        --prefix=$GITHUB_WORKSPACE/../racketcgc
+        ./configure
+        --prefix=${{ runner.temp }}/racketcgc
         --enable-werror
-        $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-cgcdefault 
-        --enable-jit 
-        --enable-foreign 
-        --enable-places 
-        --enable-futures 
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-cgcdefault
+        --enable-jit
+        --enable-foreign
+        --enable-places
+        --enable-futures
         --enable-float
         $CIFY_OPTION
         --enable-pthread
-        --disable-docs 
+        --disable-docs
     - name: Building
       working-directory: ./racket/src
       run: |
@@ -57,12 +57,12 @@ jobs:
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
     - name: Tarballing
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -cvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-        path: ../racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}/racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
     strategy:
@@ -78,13 +78,13 @@ jobs:
             cc: gcc
           - jit: nojit
             efp: efp
-            
+
     runs-on: ${{ matrix.os }}
     needs: build-racketcgc
-    
+
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-    
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -110,12 +110,12 @@ jobs:
     - name: Setup efp if disabled
       if: matrix.efp == 'noefp'
       run: echo "::set-env name=EFP_OPTIONS::--disable-extflonums --disable-places --disable-futures"
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
-        path: ../
+        path: ${{ runner.temp }}
     - name: Untar
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket 3m
       working-directory: ./racket/src
@@ -123,13 +123,13 @@ jobs:
         CC: ${{ matrix.cc }}
       run: >
         ./configure
-        --prefix=$GITHUB_WORKSPACE/../racket3m
+        --prefix=${{ runner.temp }}/racket3m
         --enable-werror
-        $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
-        --enable-foreign 
-        --enable-float 
-        --disable-docs 
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket
+        --enable-foreign
+        --enable-float
+        --disable-docs
         $CIFY_OPTION
         $JIT_OPTION
         $EFP_OPTIONS
@@ -143,18 +143,18 @@ jobs:
       working-directory: ./racket/src
       run: make -j $((cpus+1)) install
     # We build on Linux with clang and gcc and on MacOS with clang only.
-    # However, it makes little sense to test both builds on Linux so we tarball the 
+    # However, it makes little sense to test both builds on Linux so we tarball the
     # gcc build only. Therefore this condition ensure we only perform the tarball
     # and artifact upload on MacOS or (on Linux) if we are building with gcc.
     - name: Tarballing
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -cvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
         name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
-        path: ../racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}/racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
     strategy:
@@ -165,13 +165,13 @@ jobs:
         exclude:
           - os: macos-latest
             cc: gcc
-        
+
     runs-on: ${{ matrix.os }}
     needs: build-racketcgc
-    
+
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-      
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -179,12 +179,12 @@ jobs:
     - name: Setup OS specific configure args
       if:  runner.os == 'macOS'
       run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::--enable-macprefix $RACKET_EXTRA_CONFIGURE_ARGS"
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v1
       with:
         name: racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha }}
-        path: ../
+        path: ${{ runner.temp }}
     - name: Untar
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -xvjf racketcgc-${{ matrix.os }}-nocify-x64_git${{ github.sha}}.tar.bz2
     - name: Install pkg dependencies
       if: runner.os == 'Linux'
@@ -199,14 +199,14 @@ jobs:
       env:
         CC: ${{ matrix.cc }}
       run: >
-        ./configure 
-        --prefix=$GITHUB_WORKSPACE/../racketcs
+        ./configure
+        --prefix=${{ runner.temp }}/racketcs
         $RACKET_EXTRA_CONFIGURE_ARGS
-        --enable-racket=$GITHUB_WORKSPACE/../racketcgc/bin/racket 
-        --enable-compress 
-        --disable-docs 
-        --enable-pthread 
-        --enable-csdefault 
+        --enable-racket=${{ runner.temp }}/racketcgc/bin/racket
+        --enable-compress
+        --disable-docs
+        --enable-pthread
+        --enable-csdefault
         --enable-csonly
     - name: Building
       working-directory: ./racket/src
@@ -218,13 +218,13 @@ jobs:
       run: make -j  $((cpus+1)) install
     - name: Tarballing
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
-      working-directory: ../
+      working-directory: ${{ runner.temp }}
       run: tar -cvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha}}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v1
       if: matrix.cc == 'gcc' || matrix.os == 'macos-latest'
       with:
         name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
-        path: ../racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
+        path: ${{ runner.temp }}/racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
 
   build-win:
     runs-on: windows-latest
@@ -262,15 +262,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v1
         with:
           name: racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}
-          path: ../
+          path: ${{ runner.temp }}
       - name: Untar
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: tar -xvjf racketcgc-${{ matrix.os }}-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
       - name: Check for Racket
         run: racket --version
@@ -314,6 +314,8 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
 
   test-3m:
     strategy:
@@ -326,22 +328,22 @@ jobs:
         exclude:
           - jit: nojit
             efp: efp
-            
+
     runs-on: ${{ matrix.os }}
 
     needs: build-racket3m
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v1
         with:
           name: racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
-          path: ../
+          path: ${{ runner.temp }}
       - name: Untar
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: tar -xvjf racket3m-${{ matrix.os }}-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: echo "::set-env name=PATH::$PWD/racket3m/bin:$PATH"
       - name: Check for Racket
         run: racket --version
@@ -385,7 +387,7 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
-          
+
   test-cs:
     strategy:
       fail-fast: false
@@ -398,15 +400,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v1
         with:
           name: racketcs-${{ matrix.os }}-x64_git${{ github.sha }}
-          path: ../
+          path: ${{ runner.temp }}
       - name: Untar
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: tar -xvjf racketcs-${{ matrix.os }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        working-directory: ../
+        working-directory: ${{ runner.temp }}
         run: echo "::set-env name=PATH::$PWD/racketcs/bin:$PATH"
       - name: Check for Racket
         run: racket --version

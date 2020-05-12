@@ -3285,5 +3285,48 @@ case of module-leve bindings; it doesn't cover local bindings.
         (dynamic-require ''imports-a-quoted-uninterned-symbol 'get-sym2)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `(dynamic-require .... (void))` visits
+;; available modules as it should
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module defines-a-for-syntax racket/base
+           (require (for-syntax racket/base))
+           (provide (for-syntax a))
+           (define-for-syntax a (make-parameter 'not-done))))
+  (eval '(module uses-a-module-1 racket/base
+           (require 'defines-a-for-syntax
+                    (for-syntax racket/base))
+           (begin-for-syntax (a 'done))))
+  (eval '(module uses-a-module-2 racket/base
+           (require 'defines-a-for-syntax
+                    (for-syntax racket/base))
+           (provide m)
+           (define-syntax m
+             (let ([val (a)])
+               (lambda (stx)
+                 #`'#,val)))))
+                   
+  ;; makes `uses-a-module-1` available:
+  (eval '(require 'uses-a-module-1))
+  ;; needs available module visited for `val` to be 'done:
+  (dynamic-require ''uses-a-module-2 (void))
+  ;; check `val` via `m`:
+  (namespace-require ''uses-a-module-2)
+  (test 'done eval '(m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a too-early function use is not inlined away
+
+(module uses-a-function-too-early racket/base
+  (define f
+    (let ([v (g)])
+      (lambda ()
+        v)))
+  (define (g)
+    0))
+
+(err/rt-test/once (dynamic-require ''uses-a-function-too-early #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

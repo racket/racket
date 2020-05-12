@@ -41,14 +41,21 @@
   ((current-load/use-compiled) p #f))
 
 ;; used for the -k command-line argument:
-(define (embedded-load start end str as-predefined?)
-  (let* ([s (if str
-                str
-                (let* ([sp (find-system-path 'exec-file)] 
-                       [exe (find-executable-path sp #f)]
-                       [start (or (string->number start) 0)]
-                       [end (or (string->number end) 0)])
-                  (with-input-from-file exe 
+(define (embedded-load start end bstr as-predefined? [in-path #f])
+  (let* ([s (if bstr
+                bstr
+                (let* ([path (cond
+                               [(bytes? in-path) (bytes->path in-path)]
+                               [(string? in-path) in-path]
+                               [else
+                                (find-executable-path (find-system-path 'exec-file) #f)])]
+                       [start (if (string? start)
+                                  (or (string->number start) 0)
+                                  start)]
+                       [end (if (string? end)
+                                (or (string->number end) 0)
+                                (or end (file-size path)))])
+                  (with-input-from-file path
                     (lambda ()
                       (file-position (current-input-port) start)
                       (read-bytes (max 0 (- end start)))))))]

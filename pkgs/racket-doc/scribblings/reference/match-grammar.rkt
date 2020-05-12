@@ -11,6 +11,7 @@ pat     ::= id                                @match anything, bind identifier
          |  (QUOTE datum)                     @match equal% value
          |  (LIST lvp ...)                    @match sequence of lvps
          |  (LIST-REST lvp ... pat)           @match lvps consed onto a pat
+         |  (LIST* lvp ... pat)               @match lvps consed onto a pat
          |  (LIST-NO-ORDER pat ...)           @match pats in any order
          |  (LIST-NO-ORDER pat ... lvp)       @match pats in any order
          |  (VECTOR lvp ...)                  @match vector of pats

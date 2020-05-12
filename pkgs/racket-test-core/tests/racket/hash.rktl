@@ -566,5 +566,17 @@
                                (equal-hash-code ht)))
 
 ;; ----------------------------------------
+;; Make sure a new `equal?`-based key is used when the "new" value is
+;; `eq?` to the old one:
+
+(let ()
+  (define ht (hash))
+  (define f (string-copy "apple"))
+  (define g (string-copy "apple"))
+  (define ht2 (hash-set (hash-set ht f 1) g 1))
+  (test 1 hash-count ht2)
+  (test #t eq? (car (hash-keys ht2)) g))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -11,6 +11,7 @@
           call-with-current-continuation
           call-with-composable-continuation
           call-with-escape-continuation
+          call-in-continuation
           continuation?
 
           make-continuation-prompt-tag
@@ -481,6 +482,7 @@
           set-reachable-size-increments-callback! ; not exported to Racket
           set-custodian-memory-use-proc!          ; not exported to Racket
           set-immediate-allocation-check-proc!    ; not exported to Racket
+          set-incremental-collection-enabled!     ; not exported to Racket
           unsafe-add-collect-callbacks
           unsafe-remove-collect-callbacks
 

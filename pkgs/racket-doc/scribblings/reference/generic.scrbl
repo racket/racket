@@ -144,10 +144,7 @@ Raised for @techlink{generic methods} that do not support the given
 
 }
 
-@defform[(define/generic local-id method-id)
-         #:contracts
-         ([local-id identifier?]
-          [method-id identifier?])]{
+@defform[(define/generic local-id method-id)]{
 
 When used inside the method definitions associated with the
 @racket[#:methods] keyword, binds @racket[local-id] to the generic for

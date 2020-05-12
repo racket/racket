@@ -113,7 +113,7 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   GCTYPE *gc = GC_get_GC();
   GC_Weak_Array *w;
 
-  /* Allcation might trigger GC, so we use park: */
+  /* Allocation might trigger GC, so we use park: */
   CHECK_PARK_UNUSED(gc);
   gc->park[0] = replace_val;
 
@@ -303,20 +303,24 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late)
   GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *w;
 
-  /* Allcation might trigger GC, so we use park: */
-  CHECK_PARK_UNUSED(gc);
-  gc->park[0] = p;
-  gc->park[1] = secondary;
+  if (!GC_gen0_alloc_only) {
+    /* Allcation might trigger GC, so we use park: */
+    CHECK_PARK_UNUSED(gc);
+    gc->park[0] = p;
+    gc->park[1] = secondary;
+  }
 
   w = (GC_Weak_Box *)GC_malloc_one_tagged(sizeof(GC_Weak_Box));
 
   /* Future-local allocation may fail: */
   if (!w) return NULL;
 
-  p = gc->park[0];
-  secondary = (void **)gc->park[1];
-  gc->park[0] = NULL;
-  gc->park[1] = NULL;
+  if (!GC_gen0_alloc_only) {
+    p = gc->park[0];
+    secondary = (void **)gc->park[1];
+    gc->park[0] = NULL;
+    gc->park[1] = NULL;
+  }
   
   w->type = gc->weak_box_tag;
   w->val = p;

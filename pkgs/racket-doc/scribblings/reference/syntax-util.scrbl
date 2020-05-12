@@ -90,7 +90,7 @@ are automatically converted to symbols.
          #:contracts ([stx-expr syntax?])]{
 
 Definition form of @racket[with-syntax]. That is, it matches the
-syntax object result of @racket[expr] against @racket[pattern] and
+syntax object result of @racket[stx-expr] against @racket[pattern] and
 creates pattern variable definitions for the pattern variables of
 @racket[pattern].
 

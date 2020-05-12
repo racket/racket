@@ -10,15 +10,18 @@
 
 The @DFlag{c-mods} mode for @exec{raco ctool} takes a set of Racket
 modules and generates a C source file that can be used as part of
-program that embeds the Racket run-time system. See @secref[#:doc
+program that embeds the Racket runtime system. See @secref[#:doc
 inside-doc "embedding"] in @other-manual[inside-doc] for an
-explanation of embedding programs.
+explanation of embedding programs. The @DFlag{mods} mode is similar, but
+it generates the raw bytes for the compiled module without encoding
+the bytes in C declarations.
 
-The generated source file embeds the specified modules, and it defines
-a @tt{declare_modules} function that puts the module declarations into
-a namespace. Thus, using the output of @exec{raco ctool --c-mods}, a
-program can embed Racket with a set of modules so that it does not
-need a @filepath{collects} directory to load modules at run time.
+The generated source or compiled file embeds the specified modules.
+Generated C source defines a @tt{declare_modules} function that puts
+the module declarations into a namespace. Thus, using the output of
+@exec{raco ctool --c-mods}, a program can embed Racket with a set of
+modules so that it does not need a @filepath{collects} directory to
+load modules at run time.
 
 If the embedded modules refer to runtime files, the files can be
 gathered by supplying the @DFlag{runtime} argument to @exec{raco ctool

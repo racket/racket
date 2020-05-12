@@ -148,7 +148,7 @@ flags:
    cache is cleared. Unless @DFlag{no-docs} or @Flag{D} is also
    specified, the documentation-index database is reset.}
 
- @item{@DFlag{fast-clean} or @Flag{c} --- like @DFlag{clean}, but
+ @item{@DFlag{fast-clean} --- like @DFlag{clean}, but
    without forcing a bootstrap of @exec{raco setup} from source (which
    means that @DFlag{fast-clean} cannot clean corruption that affects
    @exec{raco setup} itself).}

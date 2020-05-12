@@ -20,7 +20,7 @@
                    [place #:mutable]      ; place containing the custodian
                    [memory-use #:mutable] ; set after a major GC
                    [gc-roots #:mutable]   ; weak references to charge to custodian; access without interrupts
-                   [memory-limits #:mutable]   ; list of (cons limit cust)
+                   [memory-limits #:mutable]   ; list of (cons limit #f-or-cust) where #f means "self"
                    [immediate-limit #:mutable] ; limit on immediate allocation
                    [sync-futures? #:mutable]   ; whether a sync with future threads is needed on shutdown
                    [post-shutdown #:mutable])  ; callbacks to run in atomic mode after shutdown

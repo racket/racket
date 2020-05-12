@@ -3,6 +3,7 @@
          racket/fixnum
          racket/symbol
          racket/keyword
+         racket/unsafe/undefined
          "../common/check.rkt"
          "../port/output-port.rkt"
          "../port/input-port.rkt"
@@ -158,12 +159,20 @@
 (define (sub3 n) (and n (- n 3)))
 
 (define (dots max-length o)
-  (when (eq? max-length 'full)
-    (write-string "..." o)))
+  (cond
+    [(eq? max-length 'full)
+     (write-string "..." o)]
+    [(pair? max-length)
+     ;; pending bytes fit after all
+     (write-bytes (cdr max-length) o)]
+    [else (void)]))
 
 ;; ----------------------------------------
 
-;; Returns the max length that is still available
+;; Returns the max length that is still available, where 'full
+;; means that more than three items would otherwise have been
+;; written, and a pair indicates that some bytes/characters are
+;; pending until the rest of the writes are determined
 (define (p who v mode o max-length graph config)
   (cond
     [(and graph (hash-ref graph v #f))
@@ -335,6 +344,8 @@
      (print-named "output-port" v mode o max-length)]
     [(unquoted-printing-string? v)
      (write-string/max (unquoted-printing-string-value v) o max-length)]
+    [(eq? v unsafe-undefined)
+     (write-string/max "#<unsafe-undefined>" o max-length)]
     [else
      ;; As a last resort, fall back to the host `format`:
      (write-string/max (format "~s" v) o max-length)]))

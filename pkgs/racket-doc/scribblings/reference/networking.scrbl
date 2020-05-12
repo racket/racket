@@ -367,7 +367,7 @@ If @racket[udp-socket] is closed, the @exnraise[exn:fail:network].}
                       [bstr bytes?]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
-         void]{
+         void?]{
 
 Sends @racket[(subbytes bytes start-pos end-pos)] as a datagram from
 the unconnected @racket[udp-socket] to the socket at the remote
@@ -388,7 +388,7 @@ If @racket[udp-socket] is closed or connected, the
                    [bstr bytes?]
                    [start-pos exact-nonnegative-integer? 0]
                    [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
-         void]{
+         void?]{
 
 Like @racket[udp-send-to], except that @racket[udp-socket] must be
 connected, and the datagram goes to the connection target.  If
@@ -422,7 +422,7 @@ never blocks and returns @racket[#f] or @racket[#t].}
                       [bstr bytes?]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
-         void]{
+         void?]{
 
 Like @racket[udp-send-to], but breaking is enabled (see
 @secref["breakhandler"]) while trying to send the datagram. If
@@ -435,7 +435,7 @@ is raised, but not both.}
                    [bstr bytes?]
                    [start-pos exact-nonnegative-integer? 0]
                    [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
-         void]{
+         void?]{
 
 Like @racket[udp-send], except that breaks are enabled like
 @racket[udp-send-to/enable-break].}
@@ -496,7 +496,7 @@ exception is raised, but not both.}
 
 @defproc[(udp-set-receive-buffer-size! [udp-socket udp?]
                                        [size exact-positive-integer?])
-                                       void]{
+                                       void?]{
 
 Set the receive buffer size (@tt{SO_RCVBUF}) for @racket[udp-socket].
 Using a larger buffer can minimize packet loss that can occur due to

@@ -1013,14 +1013,21 @@ typedef struct rktio_date_t {
   char *zone_name; /* can be NULL; otherwise, free it */
 } rktio_date_t;
 
-RKTIO_EXTERN_NOERR intptr_t rktio_get_milliseconds(void);
-RKTIO_EXTERN_NOERR double rktio_get_inexact_milliseconds(void);
+RKTIO_EXTERN_NOERR uintptr_t rktio_get_milliseconds(void);
+/* Overflow may cause the result to wrap around to 0, at least on a
+   32-bit platform. */
 
-RKTIO_EXTERN_NOERR intptr_t rktio_get_process_milliseconds(rktio_t *rktio);
-RKTIO_EXTERN_NOERR intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio);
+RKTIO_EXTERN_NOERR double rktio_get_inexact_milliseconds(void);
+/* No overflow, but won't strictly increase if the system clock is reset. */
+
+RKTIO_EXTERN_NOERR uintptr_t rktio_get_process_milliseconds(rktio_t *rktio);
+RKTIO_EXTERN_NOERR uintptr_t rktio_get_process_children_milliseconds(rktio_t *rktio);
+/* Overflow may cause the result to wrap around to 0, at least on a
+   32-bit platform. */
 
 RKTIO_EXTERN_NOERR rktio_timestamp_t rktio_get_seconds(rktio_t *rktio);
 RKTIO_EXTERN rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, int nanoseconds, int get_gmt);
+/* A timestamp can be negative to represent a date before 1970. */
 
 /*************************************************/
 /* Windows ShellExecute                          */

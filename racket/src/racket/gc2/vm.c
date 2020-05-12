@@ -52,7 +52,8 @@ typedef struct MMU {
   Page_Range *page_range;
 #endif
   intptr_t memory_allocated; /* allocated from OS */
-  intptr_t memory_used; /* subset of alloctaed from OS that's being used */
+  intptr_t memory_max_allocated; /* max ever allocated from OS */
+  intptr_t memory_used; /* subset of allocated from OS that's being used */
   size_t os_pagesize;
   NewGC *gc;
 } MMU;
@@ -68,6 +69,7 @@ static void   os_protect_pages(void *p, size_t len, int writable);
 /* provides */
 static inline size_t mmu_get_os_page_size(MMU *mmu) { return mmu->os_pagesize; }
 static size_t mmu_memory_allocated(MMU *mmu);
+static size_t mmu_memory_max_allocated(MMU *mmu);
 
 static inline size_t align_up(const size_t len, const size_t boundary) {
   const size_t modulo = (len & (boundary - 1));
@@ -146,7 +148,13 @@ static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, i
   mmu_assert_os_page_aligned(mmu, len);
   mmu->memory_used += len;
 #ifdef USE_BLOCK_CACHE
-  return block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
+  {
+    void *p;
+    p = block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
+    if (mmu->memory_max_allocated < mmu->memory_allocated)
+      mmu->memory_max_allocated = mmu->memory_allocated;
+    return p;
+  }
 #else
   *src_block = NULL;
 # if defined(USE_ALLOC_CACHE)
@@ -157,6 +165,8 @@ static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, i
   }
 # else
   mmu->memory_allocated += len;
+  if (mmu->memory_max_allocated < mmu->memory_allocated)
+    mmu->memory_max_allocated = mmu->memory_allocated;
 #  ifdef OS_ALLOCATOR_NEEDS_ALIGNMENT
   return os_alloc_aligned_pages(len, alignment, dirty);
 #  else
@@ -256,6 +266,10 @@ static void mmu_flush_write_unprotect_ranges(MMU *mmu) {
 
 static size_t mmu_memory_allocated(MMU *mmu) {
   return mmu->memory_allocated;
+}
+
+static size_t mmu_memory_max_allocated(MMU *mmu) {
+  return mmu->memory_max_allocated;
 }
 
 static size_t mmu_memory_allocated_and_used(MMU *mmu) {

@@ -3049,7 +3049,7 @@ static Scheme_Object *good_print_width(int c, Scheme_Object **argv)
   int ok;
 
   ok = (SCHEME_INTP(argv[0]) 
-	? (SCHEME_INT_VAL(argv[0]) > 3)
+	? (SCHEME_INT_VAL(argv[0]) >= 3)
 	: (SCHEME_BIGNUMP(argv[0])
 	   ? SCHEME_BIGPOS(argv[0])
 	   : 0));
@@ -4085,7 +4085,7 @@ log_message(int argc, Scheme_Object *argv[])
   bytes = scheme_char_string_to_byte_string(bytes);
   pos++;
 
-  if (argc >= (pos+1))
+  if (argc > (pos+1))
     pfx = SCHEME_TRUEP(argv[pos+1]);
   else
     pfx = 1;

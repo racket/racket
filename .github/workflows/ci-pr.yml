@@ -34,6 +34,7 @@ jobs:
         raco test -c tests/xml
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
+        raco test -c tests/syntax
 
   buildtest-win:
     runs-on: windows-latest

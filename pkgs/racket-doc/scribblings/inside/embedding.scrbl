@@ -6,7 +6,7 @@
 
 @title[#:tag "embedding"]{Embedding into a Program}
 
-@section-index["embedding Racket"]
+@section-index["embedding Racket BC"]
 
 The Racket run-time system can be embedded into a larger program.  The
 embedding process for Racket CGC or Racket 3m (see @secref[cgc-v-3m])
@@ -20,9 +20,10 @@ To embed Racket CGC in a program, follow these steps:
 
 @itemize[
 
- @item{Locate or build the Racket CGC libraries. Since the
+ @item{Locate or @seclink["src-build"]{build}
+  the Racket CGC libraries. Since the
   standard distribution provides 3m libraries, only, you will most
-  likely have to build from source.
+  likely have to @seclink["src-build"]{build from source}.
 
   On Unix, the libraries are @as-index{@filepath{libracket.a}}
   and @as-index{@filepath{libmzgc.a}} (or
@@ -66,7 +67,7 @@ To embed Racket CGC in a program, follow these steps:
   an executable-relative path using the Mach-O @tt["@executable_path"]
   prefix).}
 
- @item{For each C/C++ file that uses Racket library functions,
+ @item{For each C file that uses Racket library functions,
   @cpp{#include} the file @as-index{@filepath{scheme.h}}.
 
   The C preprocessor symbol @cppi{SCHEME_DIRECT_EMBEDDED} is defined
@@ -122,7 +123,7 @@ To embed Racket CGC in a program, follow these steps:
   that contains modules in bytecode form as encapsulated in a static
   array. The generated C file defines a @cppi{declare_modules}
   function that takes a @cpp{Scheme_Env*}, installs the modules into
-  the environment, and adjusts the module name resolver to access the
+  the environment, and it adjusts the module name resolver to access the
   embedded declarations. If embedded modules refer to runtime files
   that need to be carried along, supply @DFlag{runtime} to
   @exec{raco ctool --c-mods} to collect the runtime files into a

@@ -17,7 +17,7 @@
 (load-relative "stxparam.rktl")
 (load-relative "number.rktl")
 (load-relative "unsafe.rktl")
-(load-relative "object.rktl")
+(load-in-sandbox "object.rktl") ; sandbox usefully avoids heap growth here
 (load-relative "struct.rktl")
 (load-relative "struct-derived.rktl")
 (load-relative "thread.rktl")

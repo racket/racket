@@ -132,15 +132,15 @@
              orig-f
              (and n-args (fx+ n-args 1))
              (lambda (v)
-               (cond
-                [(not v) (case-lambda)]
-                [else
-                 (case-lambda
-                  [() (v f)]
-                  [(a) (v f a)]
-                  [(a b) (v f a b)]
-                  [(a b c) (v f a b c)]
-                  [args (chez:apply v f args)])]))
+               (let ([proc (case-lambda
+                            [() (v f)]
+                            [(a) (v f a)]
+                            [(a b) (v f a b)]
+                            [(a b c) (v f a b c)]
+                            [args (chez:apply v f args)])])
+                 (if success-k
+                     (success-k proc)
+                     proc)))
              wrong-arity-wrapper)]))]))]
    [else (fail-k orig-f)]))
 
@@ -948,50 +948,77 @@
   (struct-property-set! prop:procedure
                         (record-type-descriptor position-based-accessor)
                         (lambda (pba s p)
-                          (cond
-                           [(and (record? s (position-based-accessor-rtd pba))
-                                 (fixnum? p)
-                                 (fx>= p 0)
-                                 (fx< p (position-based-accessor-field-count pba)))
-                            (unsafe-struct*-ref s (+ p (position-based-accessor-offset pba)))]
-                           [(and (impersonator? s)
-                                 (record? (impersonator-val s) (position-based-accessor-rtd pba))
-                                 (fixnum? p)
-                                 (fx>= p 0)
-                                 (fx< p (position-based-accessor-field-count pba)))
-                            (impersonate-ref (lambda (s)
-                                               (unsafe-struct*-ref s (+ p (position-based-accessor-offset pba))))
-                                             (position-based-accessor-rtd pba)
-                                             p
-                                             s
-                                             #f #f)]
-                           [else (error 'struct-ref "bad access")])))
+                          (let ([rtd (position-based-accessor-rtd pba)])
+                            (cond
+                              [(and (record? s rtd)
+                                    (fixnum? p)
+                                    (fx>= p 0)
+                                    (fx< p (position-based-accessor-field-count pba)))
+                               (unsafe-struct*-ref s (+ p (position-based-accessor-offset pba)))]
+                              [(and (impersonator? s)
+                                    (record? (impersonator-val s) rtd)
+                                    (fixnum? p)
+                                    (fx>= p 0)
+                                    (fx< p (position-based-accessor-field-count pba)))
+                               (impersonate-ref (lambda (s)
+                                                  (unsafe-struct*-ref s (+ p (position-based-accessor-offset pba))))
+                                                rtd
+                                                p
+                                                s
+                                                #f #f)]
+                              [else
+                               (let ([who (position-based-accessor-name pba)])
+                                 (unless (or (record? s rtd)
+                                             (and (impersonator? s)
+                                                  (record? (impersonator-val s) rtd)))
+                                   (raise-argument-error who
+                                                         (string-append (symbol->string (record-type-name rtd)) "?")
+                                                         s))
+                                 (check who exact-nonnegative-integer? p)
+                                 (check-accessor-or-mutator-index who rtd p)
+                                 ;; just in case:
+                                 (error who "bad access"))]))))
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor position-based-mutator)
                         (lambda (pbm s p v)
-                          (cond
-                           [(and (record? s (position-based-mutator-rtd pbm))
-                                 (fixnum? p)
-                                 (fx>= p 0)
-                                 (< p (position-based-mutator-field-count pbm)))
-                            (unsafe-struct-set! s (+ p (position-based-mutator-offset pbm)) v)]
-                           [(and (impersonator? s)
-                                 (record? (impersonator-val s) (position-based-mutator-rtd pbm))
-                                 (fixnum? p)
-                                 (fx>= p 0)
-                                 (< p (position-based-mutator-field-count pbm)))
-                            (let ([abs-pos (+ p (position-based-mutator-offset pbm))])
-                              (impersonate-set! (lambda (s v)
-                                                  (unsafe-struct-set! s abs-pos v))
-                                                (position-based-mutator-rtd pbm)
-                                                p
-                                                abs-pos
-                                                s
-                                                v
-                                                #f #f))]
-                           [else
-                            (error 'struct-set! "bad assignment")])))
+                          (let ([rtd (position-based-mutator-rtd pbm)])
+                            (cond
+                              [(and (record? s (position-based-mutator-rtd pbm))
+                                    (fixnum? p)
+                                    (fx>= p 0)
+                                    (< p (position-based-mutator-field-count pbm))
+                                    (struct-type-field-mutable? rtd p))
+                               (unsafe-struct-set! s (+ p (position-based-mutator-offset pbm)) v)]
+                              [(and (impersonator? s)
+                                    (record? (impersonator-val s) (position-based-mutator-rtd pbm))
+                                    (fixnum? p)
+                                    (fx>= p 0)
+                                    (< p (position-based-mutator-field-count pbm))
+                                    (struct-type-field-mutable? rtd p))
+                               (let ([abs-pos (+ p (position-based-mutator-offset pbm))])
+                                 (impersonate-set! (lambda (s v)
+                                                     (unsafe-struct-set! s abs-pos v))
+                                                   (position-based-mutator-rtd pbm)
+                                                   p
+                                                   abs-pos
+                                                   s
+                                                   v
+                                                   #f #f))]
+                              [else
+                               (let ([who (position-based-mutator-name pbm)])
+                                 (unless (or (record? s rtd)
+                                             (and (impersonator? s)
+                                                  (record? (impersonator-val s) rtd)))
+                                   (raise-argument-error who
+                                                         (string-append (symbol->string (record-type-name rtd)) "?")
+                                                         s))
+                                 (check who exact-nonnegative-integer? p)
+                                 (check-accessor-or-mutator-index who rtd p)
+                                 (unless (struct-type-field-mutable? rtd p)
+                                   (cannot-modify-by-pos-error who s p))
+                                 ;; just in case:
+                                 (error who "bad assignment"))]))))
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor named-procedure)

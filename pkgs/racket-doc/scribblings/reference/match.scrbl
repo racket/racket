@@ -170,7 +170,8 @@ In more detail, patterns match as follows:
          [_ 'else])
        ]}
 
- @item{@racket[(#,(racketidfont "list-rest") _lvp ... _pat)] ---
+ @item{@racket[(#,(racketidfont "list-rest") _lvp ... _pat)]
+       or @racket[(#,(racketidfont "list*") _lvp ... _pat)] ---
        similar to a @racketidfont{list} pattern, but the final
        @racket[_pat] matches the ``rest'' of the list after the last
        @racket[_lvp]. In fact, the matched value can be a non-list
@@ -693,6 +694,30 @@ expander and @racket[len] always returns @racket[0].
   (len nil)
   (len (cons 1 nil))
   (len (cons 1 (cons 2 nil)))]
+
+Match expanders accept any syntax pair whose first element is an
+@racket[identifier?] bound to the expander. The following example
+shows a match expander which can be called with an improper syntax
+list of the form @racket[(expander a b . rest)].
+@examples[#:label #f
+  #:eval match-eval
+  (eval:no-prompt
+   (define-match-expander my-vector
+     (λ (stx)
+       (syntax-case stx ()
+         [(_ pat ...)
+          #'(vector pat ...)]
+         [(_ pat ... . rest-pat)
+          #'(app vector->list (list-rest pat ... rest-pat))]))))
+  (match #(1 2 3 4 5)
+   [(my-vector a b . rest)
+     (list->vector (append rest (list a b)))])]
+
+@history[
+ #:changed "7.7.0.2"
+ @elem{Match expanders now allowed any syntax pair whose first element is an 
+  @racket[identifier?] bound to the expander. The example above did not work
+  with previous versions.}]
 }
 
 @defthing[prop:match-expander struct-type-property?]{

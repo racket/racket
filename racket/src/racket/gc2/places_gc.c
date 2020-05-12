@@ -357,10 +357,18 @@ void GC_destruct_child_gc() {
   if (gc->parent_gc) {
     /* update parent's view of memory use */
     intptr_t delta = -gc->previously_reported_total;
+    intptr_t cumulative_b = gc->total_memory_allocated + gc->child_gc_cumulative;
+    intptr_t cumulative_delta = cumulative_b - gc->previously_reported_cumulative;
+    intptr_t max_b = mmu_memory_max_allocated(gc->mmu) + gc->child_gc_max;
+    intptr_t max_delta = max_b - gc->previously_reported_max;
     mzrt_mutex_lock(gc->parent_gc->child_total_lock);
     gc->parent_gc->child_gc_total += delta;
+    gc->parent_gc->child_gc_cumulative += cumulative_delta;
+    gc->parent_gc->child_gc_max += max_delta;
     mzrt_mutex_unlock(gc->parent_gc->child_total_lock);
     gc->previously_reported_total = 0;
+    gc->previously_reported_cumulative = cumulative_b;
+    gc->previously_reported_max = max_b;
   }
 
   free_child_gc();
@@ -508,12 +516,29 @@ intptr_t GC_propagate_hierarchy_memory_use()
 #ifdef MZ_USE_PLACES
   if (gc->parent_gc) {
     /* report memory use to parent */
-    intptr_t total = gc->memory_in_use + gc->child_gc_total;
-    intptr_t delta = total - gc->previously_reported_total;
-    mzrt_mutex_lock(gc->parent_gc->child_total_lock);
-    gc->parent_gc->child_gc_total += delta;
-    mzrt_mutex_unlock(gc->parent_gc->child_total_lock);
-    gc->previously_reported_total = total;
+    intptr_t total, cumulative_b, max_b;
+
+    mzrt_mutex_lock(gc->child_total_lock);
+    total = gc->memory_in_use + gc->child_gc_total;
+    cumulative_b = gc->total_memory_allocated + gc->child_gc_cumulative;
+    max_b = mmu_memory_max_allocated(gc->mmu) + gc->child_gc_max;
+    mzrt_mutex_unlock(gc->child_total_lock);
+    
+    {
+      intptr_t delta = total - gc->previously_reported_total;
+      intptr_t cumulative_delta = cumulative_b - gc->previously_reported_cumulative;
+      intptr_t max_delta = max_b - gc->previously_reported_max;
+      
+      mzrt_mutex_lock(gc->parent_gc->child_total_lock);
+      gc->parent_gc->child_gc_total += delta;
+      gc->parent_gc->child_gc_cumulative += cumulative_delta;
+      gc->parent_gc->child_gc_max += max_delta;
+      mzrt_mutex_unlock(gc->parent_gc->child_total_lock);
+      
+      gc->previously_reported_total = total;
+      gc->previously_reported_cumulative = cumulative_b;
+      gc->previously_reported_max = max_b;
+    }
   }
 #endif
 

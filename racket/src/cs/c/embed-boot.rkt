@@ -48,8 +48,8 @@
      (if (compress-enabled?)
          ;; zero byte stops a gzip-read sequence
          #"\0"
-         ;; #!eof encoding stops(!) a fasl-read sequence
-         #"\44\26\2\f6"))
+         ;; A 127 byte teriminates a fasl-read sequence
+         #"\177"))
    (define data
      (bytes-append bstr1 terminator
                    bstr2 terminator

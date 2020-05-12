@@ -143,6 +143,7 @@ void (*scheme_raise_exn)(int exnid, ...);
 void (*scheme_warning)(char *msg, ...);
 void (*scheme_raise)(Scheme_Object *exn);
 int (*scheme_log_level_p)(Scheme_Logger *logger, int level);
+int (*scheme_log_level_topic_p)(Scheme_Logger *logger, int level, Scheme_Object *name);
 void (*scheme_log)(Scheme_Logger *logger, int level, int flags,
                           const char *msg, ...);
 void (*scheme_log_w_data)(Scheme_Logger *logger, int level, int flags,
@@ -938,7 +939,7 @@ Scheme_Object *(*scheme_load)(const char *file);
 Scheme_Object *(*scheme_load_extension)(const char *filename, Scheme_Env *env);
 void (*scheme_register_extension_global)(void *ptr, intptr_t size);
 intptr_t (*scheme_get_seconds)(void);
-intptr_t (*scheme_get_milliseconds)(void);
+uintptr_t (*scheme_get_milliseconds)(void);
 double (*scheme_get_inexact_milliseconds)(void);
 intptr_t (*scheme_get_process_milliseconds)(void);
 intptr_t (*scheme_get_process_children_milliseconds)(void);

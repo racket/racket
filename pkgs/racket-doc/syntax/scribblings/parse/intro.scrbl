@@ -336,7 +336,7 @@ because the check is associated with the entire
 have the same progress, and yet only the first one is reported. The
 difference between the two is that the first error is from a
 @emph{post-traversal} check, whereas the second is from a normal
-(i.e., pre-traversal) check. A post-traveral check is considered to
+(i.e., pre-traversal) check. A post-traversal check is considered to
 have made more progress than a pre-traversal check of the same term;
 indeed, it also has greater progress than any failure @emph{within}
 the term.

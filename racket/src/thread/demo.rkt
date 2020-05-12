@@ -108,16 +108,6 @@
      (check (void) (sync/timeout 0 v)))
 
    ;; evt chaperone
-   (define e1 (make-semaphore 1))
-   (check #t (chaperone-of? (chaperone-evt e1 void) e1))
-   (check #f (chaperone-of? e1 (chaperone-evt e1 void)))
-   (let ([hit #f])
-     (check e1 (sync (chaperone-evt e1 (lambda (e)
-                                         (set! hit e)
-                                         (values e values)))))
-     (check e1 hit))
-   (check #t (semaphore? (chaperone-evt e1 void)))
-
    (check #t (chaperone-of? (chaperone-evt ch void) ch))
    (check #t (channel? (chaperone-evt ch void)))
    (check #t (channel? (chaperone-channel ch void void)))

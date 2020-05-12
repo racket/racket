@@ -13,6 +13,7 @@
 (define scheme-dir-provided? #f)
 (define abs-scheme-dir (build-path here 'up "build" "ChezScheme"))
 (define pull? #f)
+(define static-libs? #t)
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
@@ -38,6 +39,8 @@
  [("--extra-repos-base") url "Clone repos from <url>ChezScheme/.git, etc."
                          (unless (equal? url "")
                            (set! extra-repos-base url))]
+ [("--disable-libs") "Disable installaton of non-embedded boot files"
+                     (set! static-libs? #f)]
  #:args
  clone-arg
  (set! git-clone-args clone-arg))
@@ -253,17 +256,20 @@
           "petite"
           "scheme")
 
-(system*! (find-exe)
-          "-O" "info@compiler/cm"
-          "-l-" "setup" boot-mode "../setup-go.rkt" "..//build/compiled"
-          "ignored" "../build/ignored.d"
-          "../cs/c/embed-boot.rkt"
-	  "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
-	  "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
-          "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
-          "../build/petite-v.boot"
-          "../build/scheme-v.boot"
-          "../build/racket-v.boot")
+(define (bootstrap-racket! . args)
+  (apply system*! (find-exe)
+         "-O" "info@compiler/cm"
+         "-l-" "setup" boot-mode "../setup-go.rkt" "../build/compiled"
+         "ignored" "../build/ignored.d"
+         args))
+
+(bootstrap-racket! "../cs/c/embed-boot.rkt"
+                   "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
+                   "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
+                   "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+                   "../build/petite-v.boot"
+                   "../build/scheme-v.boot"
+                   "../build/racket-v.boot")
 
 (system*! "mt"
 	  "-manifest" "racket/racket.manifest"
@@ -325,3 +331,16 @@
           (format "../../lib/system~a.rktd" cs-suffix)
           machine
           "machine")
+
+(when static-libs?
+  (bootstrap-racket! "../cs/c/add-terminator.rkt"
+                     "../build/petite-v.boot"
+                     "../../lib/petite.boot")
+
+  (bootstrap-racket! "../cs/c/add-terminator.rkt"
+                     "../build/scheme-v.boot"
+                     "../../lib/scheme.boot")
+
+  (bootstrap-racket! "../cs/c/add-terminator.rkt"
+                     "../build/racket-v.boot"
+                     "../../lib/racket.boot"))

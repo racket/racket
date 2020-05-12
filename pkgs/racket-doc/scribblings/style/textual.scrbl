@@ -30,7 +30,7 @@ your code.
  (define (conversion f)
    (* 5/9 (- f 32)))
 ]
- @filebox[@tt{really bad}
+ @filebox[@tt{really bad} ;; gotta use codeblock to keep the newlines
  @codeblock{#lang racket
  (define (conversion f)
    (* 5/9 (- f 32)
@@ -43,8 +43,9 @@ You are allowed to place all closing parenthesis on a line by itself at the
 end of long sequences, be those definitions or pieces of data.
 
 @compare[
- @filebox[@tt{acceptable}
- @codeblock{#lang racket
+ @racketmod[#:file
+ @tt{acceptable}
+ racket
  (define modes
    '(edit
      help
@@ -53,8 +54,8 @@ end of long sequences, be those definitions or pieces of data.
      trace
      step
      ))
- }]
- @filebox[@tt{also acceptable}
+ ]
+ @filebox[@tt{also acceptable} ;; use codeblock to keep the newlines
  @codeblock{#lang racket
  (define turn%
    (class object%
@@ -383,12 +384,13 @@ space between the two, even if they’re separated by parentheses.
  (define (f x g)
    [(< x 3) (g (g 3))])
 ]
- @filebox[@tt{bad}
- @codeblock{#lang racket
+ @racketmod[#:file
+ @tt{bad}
+ racket
 
  (define(f x g)
    [(< x 3)(g(g 3))])
- }]
+ ]
 ]
 
 

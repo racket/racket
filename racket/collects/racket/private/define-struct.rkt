@@ -101,6 +101,19 @@
     (lambda (stx)
       (raise-syntax-error #f "allowed only within a structure type definition" stx)))
 
+  (define-for-syntax (make-struct-field-index fields)
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ id)
+         (identifier? #'id)
+         (let loop ([pos 0] [fields (syntax->list fields)])
+           (cond
+             [(null? fields)
+              (raise-syntax-error #f "no such field" stx #'name)]
+             [(free-identifier=? #'id (car fields))
+              (datum->syntax #'here pos stx)]
+             [else (loop (add1 pos) (cdr fields))]))])))
+
   (define (check-struct-type name what)
     (when what
       (unless (struct-type? what)
@@ -617,14 +630,7 @@
                               (define-values (#,struct: #,make- #,? #,@sels #,@sets)
                                 (let-values ([(struct: make- ? -ref -set!)
                                               (syntax-parameterize ([struct-field-index
-                                                                     (lambda (stx)
-                                                                       (syntax-case stx #,(map field-id fields)
-                                                                         #,@(let loop ([fields fields][pos 0])
-                                                                              (cond
-                                                                               [(null? fields) null]
-                                                                               [else (cons #`[(_ #,(field-id (car fields))) #'#,pos]
-                                                                                           (loop (cdr fields) (add1 pos)))]))
-                                                                         [(_ name) (raise-syntax-error #f "no such field" stx #'name)]))])
+                                                                     (make-struct-field-index (quote-syntax #,(map field-id fields)))])
                                                 (make-struct-type #,reflect-name-expr
                                                                   #,super-struct:
                                                                   #,(- (length fields) auto-count)
@@ -866,154 +872,172 @@
                                          stx
                                          #'thing)]))
 
+  ;; findf :: (a -> boolean?) -> (listof a) -> (or/c a #f)
+  (define-for-syntax (findf f xs)
+    (cond
+      [(null? xs) #f]
+      [else (define e (car xs))
+            (if (f e) e (findf f (cdr xs)))]))
+
+  ;; take :: (listof a) -> number? -> (listof a)
+  (define-for-syntax (take xs n)
+    (cond
+      [(= n 0) '()]
+      [(null? xs) xs]
+      [else (cons (car xs) (take (cdr xs) (sub1 n)))]))
+
+  ;; modified from racket/collects/racket/contract/private/provide.rkt
+  (define-for-syntax (predicate->struct-name orig-stx stx)
+    (cond
+      [(regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx))) => cadr]
+      [else
+       (raise-syntax-error
+        #f
+        "unable to cope with a struct type whose predicate doesn't end with `?'"
+        orig-stx)]))
+
+  (define-for-syntax (find-accessor the-struct-info fld stx)
+    (define accessors (list-ref the-struct-info 3))
+    (define parent (list-ref the-struct-info 5))
+    (define num-fields (length accessors))
+    (define num-super-fields
+      (if (identifier? parent) (length (cadddr (id->struct-info parent stx))) 0))
+    (define num-own-fields (- num-fields num-super-fields))
+    (define own-accessors (take accessors num-own-fields))
+    (define struct-name (predicate->struct-name stx (list-ref the-struct-info 2)))
+    (define accessor-name (string->symbol (format "~a-~a" struct-name (syntax-e fld))))
+    (or (findf (λ (a) (eq? accessor-name (syntax-e a))) own-accessors)
+        (raise-syntax-error
+         #f "accessor name not associated with the given structure type"
+         stx fld)))
+
+  (define-for-syntax (id->struct-info id stx)
+    (define the-struct-info (syntax-local-value id (lambda () #f)))
+    (unless (struct-info? the-struct-info)
+      (raise-syntax-error #f "identifier is not bound to a structure type" stx id))
+    (extract-struct-info the-struct-info))
+
+  (define-for-syntax (struct-copy-core stx)
+    (with-syntax ([(form-name info struct-expr field+val ...) stx])
+      (define ans (syntax->list #'(field+val ...)))
+      ;; Check syntax:
+      (unless (identifier? #'info)
+        (raise-syntax-error #f "not an identifier for structure type" stx #'info))
+
+      (for-each (lambda (an)
+                  (syntax-case an ()
+                    [(field val)
+                     (unless (identifier? #'field)
+                       (raise-syntax-error #f
+                                           "not an identifier for field name"
+                                           stx
+                                           #'field))]
+                    [(field #:parent p val)
+                     (unless (identifier? #'field)
+                       (raise-syntax-error #f
+                                           "not an identifier for field name"
+                                           stx
+                                           #'field))
+                     (unless (identifier? #'p)
+                       (raise-syntax-error #f
+                                           "not an identifier for parent struct name"
+                                           stx
+                                           #'field))]
+                    [_
+                     (raise-syntax-error #f
+                                         (string-append
+                                          "bad syntax;\n"
+                                          " expected a field update of the form (<field-id> <expr>)\n"
+                                          " or (<field-id> #:parent <parent-id> <expr>)")
+                                         stx
+                                         an)]))
+                ans)
+
+      (define the-struct-info (id->struct-info #'info stx))
+      (define construct (cadr the-struct-info))
+      (define pred (caddr the-struct-info))
+      (define accessors (cadddr the-struct-info))
+      (define parent (list-ref the-struct-info 5))
+
+      (define (ensure-really-parent id)
+        (let loop ([parent parent])
+          (cond
+            [(eq? parent #t)
+             (raise-syntax-error #f "identifier not bound to a parent struct" stx id)]
+            [(not parent)
+             (raise-syntax-error #f "parent struct information not known" stx id)]
+            [(free-identifier=? id parent) (void)]
+            [else
+             (let ([v (syntax-local-value parent (lambda () #f))])
+               (unless (struct-info? v)
+                 (raise-syntax-error #f "unknown parent struct" stx id)) ;; probably won't happen(?)
+               (let ([v (extract-struct-info v)])
+                 (loop (list-ref v 5))))])))
+
+      (define new-fields
+        (map (lambda (an)
+               (syntax-case an ()
+                 [(field expr)
+                  (list (find-accessor the-struct-info #'field stx)
+                        #'expr
+                        (car (generate-temporaries (list #'field))))]
+                 [(field #:parent id expr)
+                  (begin
+                    (ensure-really-parent #'id)
+                    (list (find-accessor (id->struct-info #'id stx) #'field stx)
+                          #'expr
+                          (car (generate-temporaries (list #'field)))))]))
+             ans))
+
+      ;; new-binding-for : syntax[field-name] -> (union syntax[expression] #f)
+      (define (new-binding-for f)
+        (ormap (lambda (new-field)
+                 (and (free-identifier=? (car new-field) f)
+                      (caddr new-field)))
+               new-fields))
+
+      (unless construct
+        (raise-syntax-error #f
+                            "constructor not statically known for structure type"
+                            stx
+                            #'info))
+      (unless pred
+        (raise-syntax-error #f
+                            "predicate not statically known for structure type"
+                            stx
+                            #'info))
+
+      (define dests (map car new-fields))
+
+      ;; Check for duplicates using dests, not as, because mod=? as might not be id=?
+      (let ([dupe (check-duplicate-identifier dests)])
+        (when dupe
+          (raise-syntax-error #f
+                              "duplicate field assignment"
+                              stx
+                              ;; Map back to an original field:
+                              (ormap (lambda (nf)
+                                       (and nf
+                                            (free-identifier=? dupe (car nf))
+                                            (car nf)))
+                                     (reverse new-fields)))))
+
+      ;; the actual result
+      #`(let ([the-struct struct-expr])
+          (if (#,pred the-struct)
+              (let #,(map (lambda (new-field)
+                            #`[#,(caddr new-field) #,(cadr new-field)])
+                          new-fields)
+                (#,construct
+                 #,@(map
+                     (lambda (field) (or (new-binding-for field)
+                                         #`(#,field the-struct)))
+                     (reverse accessors))))
+              (raise-argument-error 'form-name
+                                    #,(format "~a?" (syntax-e #'info))
+                                    the-struct)))))
+
   (define-syntax (struct-copy stx)
     (if (not (eq? (syntax-local-context) 'expression))
         (quasisyntax/loc stx (#%expression #,stx))
-        (syntax-case stx ()
-          [(form-name info struct-expr field+val ...)
-           (let ([ans (syntax->list  #'(field+val ...))])
-             ;; Check syntax:
-             (unless (identifier? #'info)
-               (raise-syntax-error #f "not an identifier for structure type" stx #'info))
-             (for-each (lambda (an)
-                         (syntax-case an ()
-                           [(field val)
-                            (unless (identifier? #'field)
-                              (raise-syntax-error #f 
-                                                  "not an identifier for field name" 
-                                                  stx
-                                                  #'field))]
-                           [(field #:parent p val)
-                            (unless (identifier? #'field)
-                              (raise-syntax-error #f 
-                                                  "not an identifier for field name" 
-                                                  stx
-                                                  #'field))
-                            (unless (identifier? #'p)
-                              (raise-syntax-error #f 
-                                                  "not an identifier for parent struct name" 
-                                                  stx
-                                                  #'field))]
-                           [_
-                            (raise-syntax-error #f
-                                                (string-append
-                                                 "bad syntax;\n"
-                                                 " expected a field update of the form (<field-id> <expr>)\n"
-                                                 " or (<field-id> #:parent <parent-id> <expr>)")
-                                                stx
-                                                an)]))
-                       ans)
-             (let-values ([(construct pred accessors parent)
-                           (let ([v (syntax-local-value #'info (lambda () #f))])
-                             (unless (struct-info? v)
-                               (raise-syntax-error #f "identifier is not bound to a structure type" stx #'info))
-                             (let ([v (extract-struct-info v)])
-                               (values (cadr v)
-                                       (caddr v)
-                                       (cadddr v)
-                                       (list-ref v 5))))])
-               
-               (let* ([ensure-really-parent
-                       (λ (id)
-                         (let loop ([parent parent])
-                           (cond
-                             [(eq? parent #t)
-                              (raise-syntax-error #f "identifier not bound to a parent struct" stx id)]
-                             [(not parent)
-                              (raise-syntax-error #f "parent struct information not known" stx id)]
-                             [(free-identifier=? id parent) (void)]
-                             [else
-                              (let ([v (syntax-local-value parent (lambda () #f))])
-                                (unless (struct-info? v)
-                                  (raise-syntax-error #f "unknown parent struct" stx id)) ;; probably won't happen(?)
-                                (let ([v (extract-struct-info v)])
-                                  (loop (list-ref v 5))))])))]
-                      [new-fields
-                       (map (lambda (an)
-                              (syntax-case an ()
-                                [(field expr)
-                                 (list (datum->syntax #'field
-                                                      (string->symbol
-                                                       (format "~a-~a"
-                                                               (syntax-e #'info)
-                                                               (syntax-e #'field)))
-                                                      #'field)
-                                       #'expr
-                                       (car (generate-temporaries (list #'field))))]
-                                [(field #:parent id expr)
-                                 (begin
-                                   (ensure-really-parent #'id)
-                                   (list (datum->syntax #'field
-                                                        (string->symbol
-                                                         (format "~a-~a"
-                                                                 (syntax-e #'id)
-                                                                 (syntax-e #'field)))
-                                                        #'field)
-                                         #'expr
-                                         (car (generate-temporaries (list #'field)))))]))
-                            ans)]
-                      
-                      ;; new-binding-for : syntax[field-name] -> (union syntax[expression] #f)
-                      [new-binding-for 
-                       (lambda (f)
-                         (ormap (lambda (new-field)
-                                  (and (free-identifier=? (car new-field) f)
-                                       (caddr new-field)))
-                                new-fields))])
-                 
-                 (unless construct
-                   (raise-syntax-error #f
-                                       "constructor not statically known for structure type"
-                                       stx
-                                       #'info))
-                 (unless pred
-                   (raise-syntax-error #f
-                                       "predicate not statically known for structure type"
-                                       stx
-                                       #'info))
-                 (unless (andmap values accessors)
-                   (raise-syntax-error #f
-                                       "not all accessors are statically known for structure type"
-                                       stx
-                                       #'info))
-                 
-                 
-                 (let ([dests
-                        (map (lambda (new-field)
-                               (or (ormap (lambda (f2) 
-                                            (and f2
-                                                 (free-identifier=? (car new-field) f2)
-                                                 f2))
-                                          accessors)
-                                   (raise-syntax-error #f 
-                                                       "accessor name not associated with the given structure type" 
-                                                       stx
-                                                       (car new-field))))
-                             new-fields)])
-                   ;; Check for duplicates using dests, not as, because mod=? as might not be id=?
-                   (let ((dupe (check-duplicate-identifier dests)))
-                     (when dupe 
-                       (raise-syntax-error #f 
-                                           "duplicate field assignment" 
-                                           stx 
-                                           ;; Map back to an original field:
-                                           (ormap (lambda (nf)
-                                                    (and nf
-                                                         (free-identifier=? dupe (car nf))
-                                                         (car nf)))
-                                                  (reverse new-fields)))))
-                   
-                   ;; the actual result
-                   #`(let ((the-struct struct-expr))
-                       (if (#,pred the-struct)
-                           (let #,(map (lambda (new-field)
-                                         #`[#,(caddr new-field) #,(cadr new-field)])
-                                       new-fields)
-                             (#,construct
-                              #,@(map 
-                                  (lambda (field) (or (new-binding-for field) 
-                                                      #`(#,field the-struct)))
-                                  (reverse accessors))))
-                           (raise-argument-error 'form-name 
-                                                 #,(format "~a?" (syntax-e #'info))
-                                                 the-struct)))))))]))))
+        (struct-copy-core stx))))

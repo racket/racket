@@ -46,7 +46,8 @@
                linklet-performance-report!
                current-compile-target-machine
                compile-target-machine?
-               add-cross-compiler!))
+               add-cross-compiler!
+               primitive-lookup))
 
  (linklet-performance-init!)
  (unless omit-debugging?
@@ -78,18 +79,20 @@
    (define (getenv-bytes str)
      (environment-variables-ref (current-environment-variables) (string->utf8 str)))
 
-   (define builtin-argc 9)
+   (define builtin-argc 10)
    (seq
     (unless (>= (length the-command-line-arguments) builtin-argc)
       (error 'racket (string-append
-		      "expected `exec-file`, `run-file`, `collects`, and `etc` paths"
+		      "expected `embedded-interactive-mode?`,"
+                      " `exec-file`, `run-file`, `collects`, and `etc` paths"
 		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
 		      " `wm-is-gracket-or-x11-arg-count`, and `gracket-guid-or-x11-args`"
 		      " to start")))
-    (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 0)))
-    (set-run-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1))))
+    (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1)))
+    (set-run-file! (->path (list-ref the-command-line-arguments/maybe-bytes 2))))
+   (define embedded-interactive-mode? (string=? "true" (list-ref the-command-line-arguments 0)))
    (define-values (init-collects-dir collects-pre-extra)
-     (let ([s (list-ref the-command-line-arguments/maybe-bytes 2)])
+     (let ([s (list-ref the-command-line-arguments/maybe-bytes 3)])
        (cond
         [(or (equal? s "")
              (equal? s '#vu8()))
@@ -99,12 +102,12 @@
                 (values (->path (car s))
                         (map ->path (cdr s))))])))
    (define init-config-dir (->path (or (getenv-bytes "PLTCONFIGDIR")
-                                       (list-ref the-command-line-arguments/maybe-bytes 3))))
-   (define segment-offset (#%string->number (list-ref the-command-line-arguments 4)))
-   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 5)))
-   (define gracket? (string=? "true" (list-ref the-command-line-arguments 6)))
-   (define wm-is-gracket-or-x11-arg-count (string->number (list-ref the-command-line-arguments 7)))
-   (define gracket-guid-or-x11-args (list-ref the-command-line-arguments 8))
+                                       (list-ref the-command-line-arguments/maybe-bytes 4))))
+   (define segment-offset (#%string->number (list-ref the-command-line-arguments 5)))
+   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 6)))
+   (define gracket? (string=? "true" (list-ref the-command-line-arguments 7)))
+   (define wm-is-gracket-or-x11-arg-count (string->number (list-ref the-command-line-arguments 8)))
+   (define gracket-guid-or-x11-args (list-ref the-command-line-arguments 9))
 
    (seq
     (when (foreign-entry? "racket_exit")
@@ -146,7 +149,7 @@
                                       #f
                                       (machine-type)))
    (define compiled-roots-path-list-string (getenv "PLTCOMPILEDROOTS"))
-   (define embedded-load-in-places #f)
+   (define embedded-load-in-places '())
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -410,7 +413,7 @@
                   (set! loads
                         (cons
                          (lambda ()
-                           (set! embedded-load-in-places (list n m))
+                           (set! embedded-load-in-places (cons (list #f n m #f) embedded-load-in-places))
                            (embedded-load n m #f #t)
                            (embedded-load m p #f #f))
                          loads)))
@@ -682,8 +685,9 @@
          (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
                [debug-GC:major? (log-level?* root-logger 'debug 'GC:major)])
            (when (or debug-GC? debug-GC:major?)
-             (let ([msg (chez:format "GC: 0:atexit peak ~a; alloc ~a; major ~a; minor ~a; ~ams"
+             (let ([msg (chez:format "GC: 0:atexit peak ~a(~a); alloc ~a; major ~a; minor ~a; ~ams"
                                      (K "" peak-mem)
+                                     (K "+" (- (maximum-memory-bytes) peak-mem))
                                      (K "" (- (+ (bytes-deallocated) (bytes-allocated)) (initial-bytes-allocated)))
                                      major-gcs
                                      minor-gcs
@@ -718,7 +722,7 @@
                (parse-logging-spec "syslog" spec "in PLTSYSLOG environment variable" #f)
                '()))))
 
-   (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT")))
+   (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT") #t))
 
    (define (initialize-place!)
      (current-command-line-arguments remaining-command-line-arguments)
@@ -760,6 +764,44 @@
                                   (version))])
           (path-list-string->path-list s (list (build-path 'same)))))))
 
+   ;; Called when Racket is embedded in a larger application:
+   (define (register-embedded-entry-info! escape)
+     (let ([resume-k #f]) ;; to get back to Racket thread; expects a thunk
+       ((call/cc ;; Scheme-level `call/cc` to escape Racket's thread-engine loop
+         (lambda (init-resume-k)
+           (set! resume-k init-resume-k)
+           (set-top-level-value!
+            'embedded-racket-entry-info
+            ;; A vector of specific functions:
+            (vector
+             ;; Resume the main Racket thread to apply `proc` to `args`,
+             ;; and return a list of result values; no exception handling
+             ;; or other such protections
+             (lambda (proc args)
+               (call/cc ;; Scheme-level `call/cc` to escape engine loop
+                (lambda (entry-point-k)
+                  (resume-k
+                   (lambda ()
+                     (let-values ([vals (apply proc args)])
+                       ((call/cc
+                         (lambda (latest-resume-k)
+                           (set! resume-k init-resume-k)
+                           (entry-point-k vals))))))))))
+             ;; Functions that are useful to apply and that
+             ;; provide access to everything else:
+             primitive-lookup
+             eval
+             dynamic-require
+             namespace-require
+             ;; bstr as #f => use path, start, and end
+             ;; path as #f => find executable
+             ;; end as #f => use file size
+             (lambda (path start end bstr as-predefined?)
+               (embedded-load start end bstr as-predefined? path)
+               (when as-predefined?
+                 (set! embedded-load-in-places (cons (list path start end bstr) embedded-load-in-places))))))
+           (escape))))))
+       
    (set-make-place-ports+fds! make-place-ports+fds)
 
    (set-start-place!
@@ -768,9 +810,11 @@
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
-      (when embedded-load-in-places
-        (let-values ([(n m) (apply values embedded-load-in-places)])
-          (embedded-load n m #f #t)))
+      (let loop ([l (reverse embedded-load-in-places)])
+        (unless (null? l)
+          (let-values ([(path n m bstr) (apply values (car l))])
+            (embedded-load n m bstr #t path))
+          (loop (cdr l))))
       (lambda ()
         (let ([f (dynamic-require mod sym)])
           (f pch)))))
@@ -787,47 +831,64 @@
           (dump-memory-stats)
           (apply orig args)))))
 
+   (when (getenv "PLT_MAX_COMPACT_GC")
+     (in-place-minimum-generation 254))
+
+   (let ([s (getenv "PLT_INCREMENTAL_GC")])
+     (when (and s
+                (>= (string-length s) 1)
+                (#%memv (string-ref s 0) '(#\0 #\n #\N)))
+       (set-incremental-collection-enabled! #f)))
+
    (when version?
      (display (banner)))
-   (call-in-main-thread
-    (lambda ()
-      (initialize-place!)
-
-      (when init-library
-        (namespace-require+ init-library))
-
-      (call-with-continuation-prompt
+   (call/cc ; Chez Scheme's `call/cc`, used here to escape from the Racket-thread engine loop
+    (lambda (entry-point-k)
+      (call-in-main-thread
        (lambda ()
-         (for-each (lambda (ld) (ld))
-                   (reverse loads)))
-       (default-continuation-prompt-tag)
-       ;; If any load escapes, then set the exit value and
-       ;; stop running loads (but maybe continue with the REPL)
-       (lambda (proc)
-         (set! exit-value 1)
-         ;; Let the actual default handler report an arity mismatch, etc.
+         (initialize-place!)
+
+         (when init-library
+           (namespace-require+ init-library))
+         
          (call-with-continuation-prompt
-          (lambda () (abort-current-continuation (default-continuation-prompt-tag) proc)))))
+          (lambda ()
+            (for-each (lambda (ld) (ld))
+                      (reverse loads)))
+          (default-continuation-prompt-tag)
+          ;; If any load escapes, then set the exit value and
+          ;; stop running loads (but maybe continue with the REPL)
+          (lambda (proc)
+            (set! exit-value 1)
+            ;; Let the actual default handler report an arity mismatch, etc.
+            (call-with-continuation-prompt
+             (lambda () (abort-current-continuation (default-continuation-prompt-tag) proc)))))
+         
+         (when repl?
+           (set! exit-value 0)
+           (when repl-init?
+             (let ([m (get-repl-init-filename)])
+               (when m
+                 (call-with-continuation-prompt
+                  (lambda () (dynamic-require m 0))
+                  (default-continuation-prompt-tag)
+                  (lambda args (set! exit-value 1))))))
+           (|#%app| (if text-repl?
+                        (dynamic-require 'racket/base 'read-eval-print-loop)
+                        (dynamic-require 'racket/gui/init 'graphical-read-eval-print-loop)))
+           (when text-repl?
+             (newline)))
 
-      (when repl?
-        (set! exit-value 0)
-        (when repl-init?
-          (let ([m (get-repl-init-filename)])
-            (when m
-              (call-with-continuation-prompt
-               (lambda () (dynamic-require m 0))
-               (default-continuation-prompt-tag)
-               (lambda args (set! exit-value 1))))))
-        (|#%app| (if text-repl?
-                     (dynamic-require 'racket/base 'read-eval-print-loop)
-                     (dynamic-require 'racket/gui/init 'graphical-read-eval-print-loop)))
-        (when text-repl?
-          (newline)))
+         (when yield?
+           (|#%app| (executable-yield-handler) exit-value))
 
-      (when yield?
-        (|#%app| (executable-yield-handler) exit-value))
-
-      (exit exit-value))))
+         (cond
+          [embedded-interactive-mode?
+           (register-embedded-entry-info!
+            (lambda ()
+              (entry-point-k exit-value)))]
+          [else
+           (exit exit-value)]))))))
 
  (define the-command-line-arguments
    (or (and (top-level-bound? 'bytes-command-line-arguments)

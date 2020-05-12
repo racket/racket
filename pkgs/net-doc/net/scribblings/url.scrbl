@@ -417,17 +417,19 @@ empty string, or it will be a string matching the following regexp:
 @defproc[(get-pure-port/headers
           [url url?]
           [headers (listof string?) '()]
+          [#:method method (or/c #"GET" #"HEAD" #"DELETE" #"OPTIONS") #"GET"]
           [#:redirections redirections exact-nonnegative-integer? 0]
           [#:status? status? boolean? #f]
           [#:connection connection (or/c #f http-connection?)])
          (values input-port? string?)]{
-  This function is an alternative to calling @racket[get-impure-port] and
-  @racket[purify-port] when needing to follow redirections. It also
+  This function is an alternative to calling @racket[get-impure-port]
+  (or @racket[head-impure-port], @racket[delete-impure-port], or @racket[options-impure-port])
+  and @racket[purify-port] when needing to follow redirections. It also
   supports HTTP/1.1 connections, which are used when the @racket[connection]
   argument is not @racket[#f].
   
-  The @racket[get-pure-port/headers] function performs a GET request
-  on @racket[url], follows up to @racket[redirections] redirections
+  The @racket[get-pure-port/headers] function performs a request specified by
+  @racket[method] (GET by default) on @racket[url], follows up to @racket[redirections] redirections,
   and returns a port containing the data as well as the headers for
   the final connection. If @racket[status?] is true, then the status
   line is included in the result string.
@@ -438,7 +440,8 @@ empty string, or it will be a string matching the following regexp:
   If @racket[connection] is provided, read all data from the result port
   before making a new request with the same @racket[connection]. (Reusing
   a @racket[connection] without reading all data may or may not work.)
-}
+
+@history[#:changed "7.7.0.1" @elem{Added the @racket[#:method] argument.}]}
 
 @deftogether[(
 @defproc[(http-connection? [v any/c]) boolean?]

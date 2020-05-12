@@ -35,7 +35,8 @@
                           #:merge? [merge? #f]
                           #:force? [force? #f]
                           #:override? [override? #f]
-                          #:relative-sources? [relative-sources? #f])
+                          #:relative-sources? [relative-sources? #f]
+                          #:include-only [include-names #f])
   (define src-paths
     (for/list ([src (in-list (append srcs
                                      (if from-config?
@@ -82,6 +83,11 @@
                      "  path: ~a")
                  dest-path)))
 
+  (define include-table
+    (and include-names
+         (for/hash ([name (in-list include-names)])
+           (values name #t))))
+
   (define absolute-details
     (let ([src-paths (if (and merge?
                               (or (file-exists? dest-path)
@@ -98,10 +104,17 @@
                                                 src-path))])
         (get-all-pkg-details-from-catalogs))))
   (define details
-    (if relative-sources?
-        (for/hash ([(k ht) (in-hash absolute-details)])
-          (values k (source->relative-source dest-dir ht)))
-        absolute-details))
+    (cond
+      [relative-sources?
+       (for/hash ([(k ht) (in-hash absolute-details)]
+                  #:when (hash-ref include-table k #f))
+         (values k (source->relative-source dest-dir ht)))]
+      [include-table
+       (for/hash ([(k ht) (in-hash absolute-details)]
+                  #:when (hash-ref include-table k #f))
+         (values k ht))]
+      [else
+       absolute-details]))
 
   (when (and force? (not merge?))
     (cond

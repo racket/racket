@@ -1077,10 +1077,18 @@ Example:
       -> (values res (unbox boxed)))
 ]}
 
-@defform/subs[(_list mode type maybe-len)
+@defform/subs[#:literals (atomic raw atomic nonatomic tagged
+                          atomic-interior interior
+                          stubborn uncollectable eternal)
+              (_list mode type maybe-len maybe-mode)
               ([mode i o io]
                [maybe-len code:blank
-                          len-expr])]{
+                          len-expr]
+               [maybe-mode code:blank
+                           atomic
+                           raw atomic nonatomic tagged
+                           atomic-interior interior
+                           stubborn uncollectable eternal])]{
 
 A @tech{custom function type} that is similar to @racket[_ptr], except
 that it is used for converting lists to/from C vectors.  The optional
@@ -1089,6 +1097,8 @@ the post code, and in the pre code of an output mode to allocate the
 block.  (If the length is 0, then NULL is passed in and an empty list is
 returned.)  In either case, it can refer to a previous binding for the
 length of the list which the C function will most likely require.
+The @racket[maybe-mode], if provided, is quoted and passed to @racket[malloc]
+as needed to allocate the C representation.
 
 For example, the following type corresponds to a function that takes
 a vector argument of type @tt{*float} (from a Racket list input)
@@ -1112,9 +1122,11 @@ return two values, the vector and the boolean.
       [vec : (_list o _float len)]
       -> [res : _bool]
       -> (values vec res))
-]}
+]
 
-@defform[(_vector mode type maybe-len)]{
+@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]}
+
+@defform[(_vector mode type maybe-len maybe-mode)]{
 
 A @tech{custom function type} like @racket[_list], except that it uses
 Racket vectors instead of lists.
@@ -1131,7 +1143,9 @@ Examples:
       -> (values vec res))
 ]
 
-See @racket[_list] for more explanation about the examples.}
+See @racket[_list] for more explanation about the examples.
+
+@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]}
 
 
 @defform*[#:id _bytes

@@ -1117,6 +1117,30 @@
   
   (syntax-test #'(struct-copy t (t 1 2 3) [a #:parent p 11])))
 
+(module test-struct-rename racket/base
+  (provide (rename-out [point point2d]))
+  (struct point (x y) #:transparent))
+
+(let ()
+  (local-require 'test-struct-rename)
+  (test (point2d 3 2) 'struct-copy1 (struct-copy point2d (point2d 1 2) [x 3])))
+
+(module test-struct-parent racket/base
+  (provide a)
+  (struct a (b-c) #:transparent))
+
+(let ()
+  (local-require 'test-struct-parent)
+  (struct a-b a (c) #:transparent)
+
+  (test (a-b 10 2) 'struct-copy1 (struct-copy a-b (a-b 1 2) [b-c #:parent a 10]))
+  (test (a-b 1 10) 'struct-copy2 (struct-copy a-b (a-b 1 2) [c 10])))
+
+(let ()
+  (local-require 'test-struct-parent)
+  (struct a-b a (d) #:transparent)
+  (syntax-test #'(struct-copy a-b (a-b 1 2) [c 10])))
+
 (test #t prefab-key? 'apple)
 (test #f prefab-key? '#(apple))
 (test #t prefab-key? '(apple 4))
@@ -1309,7 +1333,55 @@
   (test 8 procedure-arity a))
 
 ;; ----------------------------------------
-;; Make sure that non-typical `make-sytruct-type` patterns are
+;; Make sure all checking and good error messages are in place for
+;; position-based accessors and mutators:
+
+(let ()
+  (define-values (struct:s make-s s? s-ref s-set!)
+    (make-struct-type 's #f 3 0 #f null (current-inspector) #f '(0 1 2)))
+
+  (define s (make-s 1 2 3))
+
+  (test 1 s-ref s 0)
+  (test 2 s-ref s 1)
+  (test 3 s-ref s 2)
+
+  (err/rt-test (s-ref 's 0) exn:fail:contract? #rx"^s-ref:.*  expected: s[?]")
+  (err/rt-test (s-ref s -1) exn:fail:contract? #rx"^s-ref:.*  expected: exact-nonnegative-integer[?]")
+  (err/rt-test (s-ref s 'no) exn:fail:contract? #rx"^s-ref:.*  expected: exact-nonnegative-integer[?]")
+  (err/rt-test (s-ref s 3) exn:fail:contract? #rx"s-ref: index too large")
+  (err/rt-test (s-ref s (expt 2 100)) exn:fail:contract? #rx"s-ref: index too large")
+
+  (err/rt-test (s-set! 's 0 'v) exn:fail:contract? #rx"^s-set!:.*  expected: s[?]")
+  (err/rt-test (s-set! s -1 'v) exn:fail:contract? #rx"^s-set!:.*  expected: exact-nonnegative-integer[?]")
+  (err/rt-test (s-set! s 'no 'v) exn:fail:contract? #rx"^s-set!:.*  expected: exact-nonnegative-integer[?]")
+  (err/rt-test (s-set! s 3 'v) exn:fail:contract? #rx"s-set!: index too large")
+  (err/rt-test (s-set! s (expt 2 100) 'v) exn:fail:contract? #rx"s-set!: index too large")
+  (err/rt-test (s-set! s 0 'v) exn:fail:contract? #rx"s-set!: cannot modify value of immutable field")
+  (err/rt-test (s-set! s 1 'v) exn:fail:contract? #rx"s-set!: cannot modify value of immutable field")
+  (err/rt-test (s-set! s 2 'v) exn:fail:contract? #rx"s-set!: cannot modify value of immutable field"))
+
+(let ()
+  (define-values (struct:s make-s s? s-ref s-set!)
+    (make-struct-type 's #f 3 0 #f null (current-inspector) #f '()))
+
+  (define s (make-s 1 2 3))
+
+  (test (void) s-set! s 0 10)
+  (test (void) s-set! s 1 20)
+  (test (void) s-set! s 2 30)
+  (test 10 s-ref s 0)
+  (test 20 s-ref s 1)
+  (test 30 s-ref s 2)
+
+  (err/rt-test (s-set! 's 0 'v) exn:fail:contract? #rx"^s-set!:.*  expected: s[?]")
+  (err/rt-test (s-set! s -1 'v) exn:fail:contract? #rx"^s-set!:.*  expected: exact-nonnegative-integer[?]")
+  (err/rt-test (s-set! s 'no 'v) exn:fail:contract? #rx"^s-set!:.*  expected: exact-nonnegative-integer[?]")
+  (err/rt-test (s-set! s 3 'v) exn:fail:contract? #rx"s-set!: index too large")
+  (err/rt-test (s-set! s (expt 2 100) 'v) exn:fail:contract? #rx"s-set!: index too large"))
+
+;; ----------------------------------------
+;; Make sure that non-typical `make-struct-type` patterns are
 ;; not transformed incorrectly by the compiler
 
 (test '(1 2) 'not-acc/ref

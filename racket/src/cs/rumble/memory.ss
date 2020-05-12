@@ -1,5 +1,7 @@
 
 (define collect-request (box #f))
+(define request-incremental? #f)
+(define disable-incremental? #f)
 
 (define (set-collect-handler!)
   (collect-request-handler (lambda ()
@@ -21,7 +23,7 @@
                post-time post-cpu-time)
     (void)))
 
-;; #f or a procedure that accepts `compute-size-increments` to be
+;; #f or a procedure that accepts a CPSed `compute-size-increments` to be
 ;; called in any Chez Scheme thread (with all other threads paused)
 ;; after each major GC; this procedure must not do anything that might
 ;; use "control.ss":
@@ -61,46 +63,80 @@
     (if (> (add1 this-counter) (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix (sub1 (collect-maximum-generation)))))
         (set! gc-counter 1)
         (set! gc-counter (add1 this-counter)))
-    (let ([gen (cond
-                [(and (not g)
-                      (or (>= pre-allocated trigger-major-gc-allocated)
-                          (>= pre-allocated+overhead trigger-major-gc-allocated+overhead)
-                          (>= non-full-gc-counter 10000)))
-                 ;; Force a major collection if memory use has doubled
-                 (collect-maximum-generation)]
-                [else
-                 ;; Find the minor generation implied by the counter
-                 (let loop ([c this-counter] [gen 0])
-                   (cond
-                    [(zero? (bitwise-and c collect-generation-radix-mask))
-                     (loop (bitwise-arithmetic-shift-right c log-collect-generation-radix) (add1 gen))]
-                    [else gen]))])])
+    (let* ([req-gen (cond
+                      [(and (not g)
+                            (or (>= pre-allocated trigger-major-gc-allocated)
+                                (>= pre-allocated+overhead trigger-major-gc-allocated+overhead)
+                                (>= non-full-gc-counter 10000)))
+                       ;; Force a major collection if memory use has doubled
+                       (collect-maximum-generation)]
+                      [else
+                       ;; Find the minor generation implied by the counter
+                       (let loop ([c this-counter] [gen 0])
+                         (cond
+                           [(zero? (bitwise-and c collect-generation-radix-mask))
+                            (loop (bitwise-arithmetic-shift-right c log-collect-generation-radix) (add1 gen))]
+                           [else gen]))])]
+           [gen (cond
+                  [(and (= req-gen (collect-maximum-generation))
+                        (not (in-original-host-thread?))
+                        (fxpositive? (hashtable-size collect-callbacks)))
+                   ;; Defer a major collection to the main thread
+                   (async-callback-queue-major-gc!)
+                   0]
+                  [else req-gen])])
       (run-collect-callbacks car)
-      (collect gen)
-      (let ([post-allocated (bytes-allocated)]
-            [post-allocated+overhead (current-memory-bytes)]
-            [post-time (real-time)]
-            [post-cpu-time (cpu-time)])
-        (when (= gen (collect-maximum-generation))
+      (let ([maybe-finish-accounting
+             (cond
+               [(and reachable-size-increments-callback
+                     (fx= gen (collect-maximum-generation)))
+                ;; Collect with a fused `collect-size-increments`
+                (reachable-size-increments-callback
+                 (lambda (roots domains k)
+                   (cond
+                     [(null? roots)
+                      ;; Plain old collection, after all:
+                      (collect gen)
+                      #f]
+                     [else
+                      (let ([domains (weaken-accounting-domains domains)])
+                        ;; Accounting collection:
+                        (let ([counts (collect gen gen (weaken-accounting-roots roots))])
+                          (lambda () (k counts domains))))])))]
+               [(and request-incremental?
+                     (fx= gen (sub1 (collect-maximum-generation))))
+                ;; "Incremental" mode by not promoting to the maximum generation
+                (collect gen gen)
+                #f]
+               [else
+                ;; Plain old collection:
+                (collect gen)
+                #f])])
+        (when (fx= gen (collect-maximum-generation))
+          (set! request-incremental? #f))
+        (let ([post-allocated (bytes-allocated)]
+              [post-allocated+overhead (current-memory-bytes)]
+              [post-time (real-time)]
+              [post-cpu-time (cpu-time)])
+          (when (= gen (collect-maximum-generation))
           ;; Trigger a major GC when twice as much memory is used. Twice
           ;; `post-allocated+overhead` seems to be too long a wait, because
           ;; that value may include underused pages that have locked objects.
           ;; Using just `post-allocated` is too small, because it may force an
           ;; immediate major GC too soon. Split the difference.
-          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR post-allocated))
+          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
           (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
         (update-eq-hash-code-table-size!)
         (update-struct-procs-table-sizes!)
         (poll-foreign-guardian)
-        (when (and reachable-size-increments-callback
-                   (fx= gen (collect-maximum-generation)))
-          (reachable-size-increments-callback compute-size-increments))
+        (when maybe-finish-accounting
+          (maybe-finish-accounting))
         (run-collect-callbacks cdr)
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                                post-allocated  post-allocated+overhead post-time post-cpu-time
+                                post-allocated post-allocated+overhead post-time post-cpu-time
                                 (real-time) (cpu-time)))
-      (when (and (= gen (collect-maximum-generation))
+      (when (and (= req-gen (collect-maximum-generation))
                  (currently-in-engine?))
         ;; This `set-timer` doesn't necessarily penalize the right thread,
         ;; but it's likely to penalize a thread that is allocating quickly:
@@ -110,7 +146,7 @@
         (set! non-full-gc-counter 0)]
        [else
         (set! non-full-gc-counter (add1 non-full-gc-counter))])
-      (void))))
+      (void)))))
 
 (define collect-garbage
   (case-lambda
@@ -118,7 +154,8 @@
    [(request)
     (cond
      [(eq? request 'incremental)
-      (void)]
+      (unless disable-incremental?
+        (set! request-incremental? #t))]
      [else
       (let ([req (case request
                    [(minor) 0]
@@ -159,6 +196,33 @@
                           what len)
                 (current-continuation-marks))))
       (immediate-allocation-check n))))
+
+(define (set-incremental-collection-enabled! on?)
+  (set! disable-incremental? (not on?)))
+
+;; ----------------------------------------
+
+(define (weaken-accounting-roots roots)
+  (let loop ([roots roots])
+    (cond
+      [(null? roots) '()]
+      [else
+       (let ([root (car roots)]
+             [rest (loop (cdr roots))])
+         (cond
+           [(thread? root) (cons root rest)]
+           [else
+            (weak-cons root rest)]))])))
+
+;; We want the elements of `domains` to be available for
+;; finalization, so refer to all of them weakly
+(define (weaken-accounting-domains domains)
+  (let loop ([domains domains])
+    (if (null? domains)
+        '()
+        (weak-cons (car domains) (loop (cdr domains))))))
+
+;; ----------------------------------------
 
 (define prev-stats-objects #f)
 
@@ -267,10 +331,10 @@
       (unless skip-counts?
         (#%fprintf (current-error-port) "Begin RacketCS\n")
         (for-each (lambda (e)
-                    (chez:fprintf (current-error-port)
-                                  (layout-line (chez:format "~a" (car e))
+                    (chez:display (layout-line (chez:format "~a" (car e))
                                                ((get-count #f) e) ((get-bytes #f) e)
-                                               ((get-count #t) e) ((get-bytes #t) e))))
+                                               ((get-count #t) e) ((get-bytes #t) e))
+				  (current-error-port)))
                   (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
         (#%fprintf (current-error-port) (layout-line "total"
                                                      (apply + (map (get-count #f) counts))
@@ -306,7 +370,8 @@
                                             (cond
                                              [(zero? len) (void)]
                                              [(not o) (set-box! prev-trace (reverse accum))]
-                                             [(#%memq o (unbox prev-trace))
+                                             [(and (not (null? o))
+                                                   (#%memq o (unbox prev-trace)))
                                               => (lambda (l)
                                                    (#%printf " <- DITTO\n")
                                                    (set-box! prev-trace (append (reverse accum) l)))]

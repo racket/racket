@@ -26,6 +26,9 @@ WINDRES = @WINDRES@
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 
+ICP=@ICP@
+ICP_LIB=@ICP_LIB@
+
 DEFAULT_RACKET = ../../racket/racket3m
 RACKET = @RACKET@
 
@@ -61,6 +64,7 @@ cs:
 	$(MAKE) check-racketcs@CROSS_MODE@
 	$(MAKE) gracketcs
 	$(MAKE) starter
+	$(MAKE) repack-@INSTALL_LIBS_ENABLE@-libs
 
 SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
 SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled
@@ -157,6 +161,9 @@ sync-bootfiles:
 	mkdir -p $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-ocd.inc
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-oce.inc
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/vfasl.inc
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
 	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
 
@@ -165,6 +172,12 @@ $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h: $(SCHEME_SRC)/boot/$(MACH)/equates
 	cp $(SCHEME_SRC)/boot/$(MACH)/equates.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
 $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h: $(SCHEME_SRC)/boot/$(MACH)/scheme.h
 	cp $(SCHEME_SRC)/boot/$(MACH)/scheme.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-ocd.inc: $(SCHEME_SRC)/boot/$(MACH)/gc-ocd.inc
+	cp $(SCHEME_SRC)/boot/$(MACH)/gc-ocd.inc $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-ocd.inc
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-oce.inc: $(SCHEME_SRC)/boot/$(MACH)/gc-oce.inc
+	cp $(SCHEME_SRC)/boot/$(MACH)/gc-oce.inc $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/gc-oce.inc
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/vfasl.inc: $(SCHEME_SRC)/boot/$(MACH)/vfasl.inc
+	cp $(SCHEME_SRC)/boot/$(MACH)/vfasl.inc $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/vfasl.inc
 $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot: $(SCHEME_SRC)/boot/$(MACH)/petite.boot
 	cp $(SCHEME_SRC)/boot/$(MACH)/petite.boot $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
 $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot: $(SCHEME_SRC)/boot/$(MACH)/scheme.boot
@@ -344,6 +357,7 @@ install@MINGW@:
 
 plain-install@MINGW@:
 	$(MAKE) plain-install-upcased CS_INSTALLED=`echo $(CS_INSTALLED) | awk '{print toupper($0)}'`
+	$(MAKE) unix-install-boot-files
 
 plain-install-upcased:
 	$(ICP) libracketcsxxxxxxx.dll $(libdir)/libracketcsxxxxxxx.dll
@@ -395,10 +409,24 @@ boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
 starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c
 	$(CC) $(CFLAGS) -o starter $(srcdir)/../../start/ustart.c
 
+
+repack-install-libs:
+	$(MAKE) libracketcs.a SCHEME_SRC="$(ABS_SCHEME_SRC)"
+
+libracketcs.a: $(SCHEME_LIB_DEPS) rktio/librktio.a boot.o
+	mkdir -p repack
+	rm -f repack/*
+	cd repack && @Z_LIB_UNPACK@
+	cd repack && @LZ4_LIB_UNPACK@
+	cd repack && $(AR) x ../rktio/librktio.a
+	cd repack && $(AR) x $(SCHEME_TARGET_INC)/libkernel.a
+	$(AR) $(ARFLAGS) libracketcs.a repack/*.o boot.o
+
+repack-no-install-libs:
+	$(NOOP)
+
 # ----------------------------------------
 # Install
-
-ICP=@ICP@
 
 install@NOT_MINGW@:
 	$(MAKE) plain-install
@@ -438,9 +466,20 @@ common-install:
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) system-install
+	$(ICP) $(srcdir)/api.h $(includepltdir)/racketcs.h
+	$(ICP) $(srcdir)/boot.h $(includepltdir)/racketcsboot.h
+	$(ICP) $(SCHEME_INC)/scheme.h $(includepltdir)/chezscheme.h
+	$(MAKE) common-@INSTALL_LIBS_ENABLE@-libs
 
 system-install:
 	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd $(TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@
+
+common-install-libs:
+	$(ICP_LIB) libracketcs.a "$(DESTDIR)$(libdir)/libracketcs.a"
+	$(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracketcs.a"
+
+common-no-install-libs:
+	$(NOOP)
 
 unix-install:
 	$(MAKE) common-install
@@ -448,6 +487,18 @@ unix-install:
 	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs
+
+unix-install-libs:
+	$(MAKE) unix-install-boot-files
+
+unix-install-boot-files:
+	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt petite-v.boot "$(DESTDIR)$(libpltdir)/petite.boot"
+	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt scheme-v.boot "$(DESTDIR)$(libpltdir)/scheme.boot"
+	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt racket-v.boot "$(DESTDIR)$(libpltdir)/racket.boot"
+
+unix-no-install-libs:
+	$(NOOP)
 
 RKTFWDEST = @FRAMEWORK_INSTALL_DIR@/Racket.framework
 FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
@@ -469,6 +520,7 @@ macos-install:
 	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
+	$(MAKE) macos-@INSTALL_LIBS_ENABLE@-libs
 
 macos-install-gracket:
 	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(bindir)/racket$(CS_INSTALLED)"
@@ -480,6 +532,14 @@ macos-install-gracket:
 	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
 	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
+
+macos-install-libs:
+	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt $(RKTFWDIR)/boot/petite.boot "$(DESTDIR)$(libpltdir)/petite.boot"
+	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt $(RKTFWDIR)/boot/scheme.boot "$(DESTDIR)$(libpltdir)/scheme.boot"
+	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt $(RKTFWDIR)/boot/racket.boot "$(DESTDIR)$(libpltdir)/racket.boot"
+
+macos-no-install-libs:
+	$(NOOP)
 
 # ----------------------------------------
 # Check

@@ -516,8 +516,10 @@ static rktio_addrinfo_lookup_t *start_lookup(rktio_t *rktio, rktio_addrinfo_look
   
   if (!rktio->ghbn_started) {
     rktio->ghbn_run = 1;
-    if (!ghbn_init(rktio))
+    if (!ghbn_init(rktio)) {
+      free_lookup(lookup);
       return NULL;
+    }
     rktio->ghbn_started = 1;
   }
 

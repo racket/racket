@@ -85,4 +85,17 @@
                                 'neg))
          #t)
    #t)
+
+  (test/spec-passed/result
+    'unconstrained/domain->/chaperone
+    '(chaperone-contract? (unconstrained-domain-> number?))
+    #t)
+
+  (test/spec-passed/result
+    'unconstrained/domain->/impersonator
+    '(let ((ctc (unconstrained-domain->
+                  (recursive-contract number? #:impersonator))))
+       (and (impersonator-contract? ctc)
+            (not (chaperone-contract? ctc))))
+    #t)
   )

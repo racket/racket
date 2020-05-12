@@ -81,15 +81,15 @@ rktio_int64_t get_hectonanoseconds_as_longlong()
 }
 #endif
 
-intptr_t rktio_get_milliseconds(void)
+uintptr_t rktio_get_milliseconds(void)
 /* this function can be called from any OS thread */
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  return (intptr_t)(get_hectonanoseconds_as_longlong() / (rktio_int64_t)10000);
+  return (uintptr_t)(get_hectonanoseconds_as_longlong() / (rktio_int64_t)10000);
 #else
   struct timeval now;
   gettimeofday(&now, NULL);
-  return now.tv_sec * 1000 + now.tv_usec / 1000;
+  return ((uintptr_t) now.tv_sec) * 1000 + ((uintptr_t) now.tv_usec) / 1000;
 #endif
 }
 
@@ -107,22 +107,22 @@ double rktio_get_inexact_milliseconds(void)
 #endif
 }
 
-intptr_t rktio_get_process_milliseconds(rktio_t *rktio)
+uintptr_t rktio_get_process_milliseconds(rktio_t *rktio)
 {
 #ifdef USER_TIME_IS_CLOCK
   return scheme_get_milliseconds();
 #else
 # ifdef USE_GETRUSAGE
   struct rusage use;
-  intptr_t s, u;
+  uintptr_t s, u;
 
   do {
     if (!getrusage(RUSAGE_SELF, &use))
       break;
   } while (errno == EINTR);
 
-  s = use.ru_utime.tv_sec + use.ru_stime.tv_sec;
-  u = use.ru_utime.tv_usec + use.ru_stime.tv_usec;
+  s = (uintptr_t)use.ru_utime.tv_sec + (uintptr_t)use.ru_stime.tv_sec;
+  u = (uintptr_t)use.ru_utime.tv_usec + (uintptr_t)use.ru_stime.tv_usec;
 
   return s * 1000 + u / 1000;
 # else
@@ -138,29 +138,30 @@ intptr_t rktio_get_process_milliseconds(rktio_t *rktio)
       return 0; /* anything better to do? */
   }
 #  else
-  return clock()  * 1000 / CLOCKS_PER_SEC;
-
+  /* Hoping that `clock_t` cannot overflow or is unsigned to avoid
+     undefined behavior on overflow... */
+  return clock() * 1000 / CLOCKS_PER_SEC;
 #  endif
 # endif
 #endif
 }
 
-intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio)
+uintptr_t rktio_get_process_children_milliseconds(rktio_t *rktio)
 {
 #ifdef USER_TIME_IS_CLOCK
   return 0;
 #else
 # ifdef USE_GETRUSAGE
   struct rusage use;
-  intptr_t s, u;
+  uintptr_t s, u;
   
   do {
     if (!getrusage(RUSAGE_CHILDREN, &use))
       break;
   } while (errno == EINTR);
 
-  s = use.ru_utime.tv_sec + use.ru_stime.tv_sec;
-  u = use.ru_utime.tv_usec + use.ru_stime.tv_usec;
+  s = (uintptr_t)use.ru_utime.tv_sec + (uintptr_t)use.ru_stime.tv_sec;
+  u = (uintptr_t)use.ru_utime.tv_usec + (uintptr_t)use.ru_stime.tv_usec;
 
   return (s * 1000 + u / 1000);
 # else
@@ -169,6 +170,8 @@ intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio)
 #  else
   clock_t t;
   times(&t);
+  /* Hoping that `clock_t` cannot overflow or is unsigned to avoid
+     undefined behavior on overflow... */
   return (t.tms_cutime + t.tms_cstime) * 1000 / CLK_TCK;
 #  endif
 # endif

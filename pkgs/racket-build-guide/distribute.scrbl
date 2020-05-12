@@ -383,7 +383,8 @@ If you (or someone else) previously created an installer site with
 repository creates an installer for the current platform drawing
 packages from the site.
 
-At a minimum, provide @exec{SERVER}, @exec{SERVER_PORT} (usually 80),
+At a minimum, provide @exec{SERVER}, @exec{SERVER_PORT} (usually 80 or 443),
+@exec{SERVER_URL_SCHEME} (if @litchar{https} instead of @litchar{http})
 and @exec{SITE_PATH} (if not empty, include a trailing @litchar{/})
 makefile variables to access a site at
 

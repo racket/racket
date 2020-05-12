@@ -445,7 +445,9 @@
   ;; kind of a hack, it's much simpler to implement that here and
   ;; export the function pointer as a primitive.
   
-  (export glib-log-message)
+  (export glib-log-message
+          ;; Make sure the callable is retained:
+          glib-log-message-callable)
 
   (define G_LOG_LEVEL_ERROR    2)
   (define G_LOG_LEVEL_CRITICAL 3)
@@ -454,7 +456,7 @@
   (define G_LOG_LEVEL_INFO     6)
   (define G_LOG_LEVEL_DEBUG    7)
   
-  (define glib-log-message
+  (define-values (glib-log-message glib-log-message-callable)
     (let ([glib-log-message
            (lambda (domain glib-level message)
              (let ([level (cond
@@ -475,8 +477,9 @@
                   [else
                    (post-as-asynchronous-callback go)]))))])
       (let ([callable (foreign-callable __collect_safe glib-log-message (string int string) void)])
-        (lock-object callable)
-        (foreign-callable-entry-point callable))))
+        (values
+         (foreign-callable-entry-point callable)
+         callable))))
   
   ;; ----------------------------------------
 

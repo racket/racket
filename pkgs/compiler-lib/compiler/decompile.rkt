@@ -257,7 +257,7 @@
            (case fmt
              [(compile)
               (define proc ((vm-eval `(load-compiled-from-port (open-bytevector-input-port ,uncompressed-code)))))
-              (decompile-chez-procedure (if (null? args) proc (proc args)))]
+              (decompile-chez-procedure (if (null? args) proc (apply proc args)))]
              [(interpret)
               (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,uncompressed-code))))
               (list `(#%interpret ,(unwrap-chez-interpret-jitified bytecode)))]

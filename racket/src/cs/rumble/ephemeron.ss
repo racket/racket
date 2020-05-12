@@ -15,7 +15,7 @@
       (if (eq? v #!bwp)
           gced-v
           v))]
-   [(e gced-v keep-live)
+   [(e gced-v keep-live-v)
     (let ([v (ephemeron-value e gced-v)])
-      (#%$keep-live keep-live)
+      (keep-live keep-live-v)
       v)]))

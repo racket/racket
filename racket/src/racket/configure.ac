@@ -50,7 +50,7 @@ m4_include(../ac/natipkg_arg.m4)
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
-AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries (enabled by default for Unix)])
+m4_include(../ac/instlib_arg.m4)
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
@@ -231,16 +231,20 @@ show_explicitly_enabled "${enable_jitframe}" "jitframe"
 show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
 m4_include(../ac/strip_show.m4)
 
-show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
-show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
+m4_include(../ac/instlib.m4)
 
 m4_include(../ac/sdk_show.m4)
 
 if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
-     echo "=== Creating and using local Racket executable"
+    echo "=== Creating and using local Racket executable"
   else
-     echo "=== Using Racket executable ${enable_racket}"
+    if test ! -f "${enable_racket}"; then
+      echo "cannot find racket executable in ${enable_racket}"
+      exit 1
+    else
+      echo "=== Using Racket executable ${enable_racket}"
+    fi	
   fi 
 fi
 
@@ -298,8 +302,6 @@ MAIN_VARIANT=3m
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
-
-INSTALL_LIBS_ENABLE=no-install
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -537,11 +539,6 @@ if test "${enable_foreign}" = "yes" ; then
 fi
 if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
-fi
-
-if test "${enable_libs}" != "no" ; then
-  # Canceled for some platforms below:
-  INSTALL_LIBS_ENABLE=install
 fi
 
 ############## platform tests ################

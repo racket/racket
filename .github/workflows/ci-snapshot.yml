@@ -1,0 +1,51 @@
+name: Snapshot Generation
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  create-installer:
+    runs-on: ubuntu-18.04
+    if: github.repository == 'racket/racket'
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Cleanup # this is only needed in `act` testing
+      run: |
+        rm -rf ~/.racket/
+        
+    - uses: Bogdanp/setup-racket@v0.8
+      with:
+          architecture: 'x64'
+          # FIXME: use the binary s3-sync pkg
+          distribution: 'full'
+          variant: 'regular'
+          version: '7.7'
+          packages: 's3-sync'
+
+    - name: Install pkg dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y libffi-dev unzip libfindbin-libs-perl uuid-dev
+
+
+    - name: Building
+      env:
+        DISTRO_BUILD_SITE_DEST: "${{ runner.temp }}/site-dest/"
+      run: |
+        export cpus=$(grep -c ^processor /proc/cpuinfo)
+        export HERE=`pwd`
+        make snapshot-site CONFIG=".github/workflows/site-small.rkt" -j $((cpus+1))
+
+    - name: S3 Sync
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWSAccessKeyID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSSecretKey }}
+      run: |
+        ls -l ${{ runner.temp }}/site-dest/ci-snapshots/
+        raco s3-sync --acl public-read --web --redirect-links ${{ runner.temp }}/site-dest/ci-snapshots/ s3://snapshot.racket-lang.org/ci-snapshots/

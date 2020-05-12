@@ -124,13 +124,13 @@
                      #:external-lift? [external-lift? #f])
   (when orig-o
     (unless (output-port? orig-o)
-      (raise-argument-error 'fasl->s-exp "(or/c output-port? #f)" orig-o)))
+      (raise-argument-error 's-exp->fasl "(or/c output-port? #f)" orig-o)))
   (when handle-fail
     (unless (and (procedure? handle-fail) (procedure-arity-includes? handle-fail 1))
-      (raise-argument-error 'fasl->s-exp "(or/c (procedure-arity-includes/c 1) #f)" handle-fail)))
+      (raise-argument-error 's-exp->fasl "(or/c (procedure-arity-includes/c 1) #f)" handle-fail)))
   (when external-lift?
     (unless (and (procedure? external-lift?) (procedure-arity-includes? external-lift? 1))
-      (raise-argument-error 'fasl->s-exp "(or/c (procedure-arity-includes/c 1) #f)" external-lift?)))
+      (raise-argument-error 's-exp->fasl "(or/c (procedure-arity-includes/c 1) #f)" external-lift?)))
   (define o (or orig-o (open-output-bytes)))
   (define shared (make-hasheq))
   (define external-lift (and external-lift? (make-hasheq)))

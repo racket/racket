@@ -57,7 +57,7 @@
                (let ([b (path-element->bytes
                          (let-values ([(base name dir?) (split-path f)])
                            name))])
-                 (or (regexp-match? #rx#"[.](?i:pdb|ilk|manifest)$" b)
+                 (or (regexp-match? #rx#"[.](?i:pdb|ilk|manifest|ipdb|iobj)$" b)
                      (and (not keep-cgc?)
                           (regexp-match? #rx#"(?i:CGC[.](?:dll|exe))$" b))
                      (and (not keep-3m?)

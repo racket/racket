@@ -56,6 +56,15 @@
 (err/rt-chk-test (display-lines-to-file '(y) "x" #:exists 'other))
 (err/rt-chk-test (display-lines-to-file '(y) "x" #:mode 'other))
 
+(define check-not-exists-msg
+  ;; for ops that expect 'open-input-file' to detect a missing file
+  (check-msg 'open-input-file))
+(err/rt-test (file->string tmp-name) check-not-exists-msg)
+(err/rt-test (file->bytes tmp-name) check-not-exists-msg)
+(err/rt-test (file->value tmp-name) check-not-exists-msg)
+(err/rt-test (file->lines tmp-name) check-not-exists-msg)
+(err/rt-test (file->bytes-lines tmp-name) check-not-exists-msg)
+
 ;; ----------------------------------------
 
 (parameterize ([current-directory (current-load-relative-directory)])

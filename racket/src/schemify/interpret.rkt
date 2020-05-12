@@ -236,21 +236,37 @@
        (define new-body (add-boxes/remove-unused c-body ids mutated body-env stk-i))
        (define pos (stack->pos stack-depth stk-i #:nonuse? #t))
        (stack-info-forget! stk-i stack-depth pos len)
-       (define new-rhss (list->vector
-                         (compile-list rhss env stack-depth stk-i #f mutated)))
+       (define new-rhss (compile-list rhss env stack-depth stk-i #f mutated))
        (or
         ;; Merge nested `let`s into a `let*` to reduce vector nesting
         (cond
+          [(null? new-rhss) new-body]
           [(vector? new-body)
            (interp-match
             new-body
             [#(let ,pos2 ,rhss2 ,b)
-             (vector 'let* (list pos pos2) (list new-rhss rhss2) b)]
+             (vector 'let* (list pos pos2) (list (list->vector new-rhss) rhss2) b)]
             [#(let* ,poss ,rhsss ,b)
-             (vector 'let* (cons pos poss) (cons new-rhss rhsss) b)]
+             (vector 'let* (cons pos poss) (cons (list->vector new-rhss) rhsss) b)]
+            [#(clear ,poss ,e)
+             ;; Check check the `let`-bounding bindings are immediately cleared,
+             ;; in which case they're unused
+             (let loop ([pos pos] [poss poss] [rhss new-rhss])
+               (cond
+                 [(null? rhss)
+                  ;; bindings are unused
+                  (let ([e (if (null? poss)
+                               e
+                               (vector 'clear poss e))])
+                    ;; Use `beginl` instead of `begin` to encourage further collapsing
+                    (vector 'beginl (append new-rhss (begins->list e))))]
+                 [(null? poss) #f]
+                 [(eqv? pos (car poss))
+                  (loop (add1 pos) (cdr poss) (cdr rhss))]
+                 [else #f]))]
             [#() #f])]
           [else #f])
-        (vector 'let pos new-rhss new-body))]
+        (vector 'let pos (list->vector new-rhss) new-body))]
       [`(letrec . ,_) (compile-letrec e env stack-depth stk-i tail? mutated)]
       [`(letrec* . ,_) (compile-letrec e env stack-depth stk-i tail? mutated)]
       [`(begin . ,vs)
@@ -580,6 +596,28 @@
         (box name)
         name))
 
+  (define (begins->list e)
+    ;; Convert an expression to a list of expressions, trying to
+    ;; flatten `begin`s.
+    (cond
+      [(vector? e)
+       (interp-match
+        e
+        [#(beginl ,es) es]
+        [#(begin)
+         (define len (sub1 (vector*-length e)))
+         (cond
+           [(len . < . 4)
+            (let loop ([i 1])
+              (cond
+                [(= i len)
+                 (begins->list (vector*-ref e i))]
+                [else (cons (vector*-ref e i)
+                            (loop (add1 i)))]))]
+           [else (list e)])]
+        [#() (list e)])]
+      [else (list e)]))
+
   (with-deterministic-gensym
     (start linklet-e)))
 
@@ -782,6 +820,17 @@
                (case-lambda
                  [(new-stack val) (loop (fx+ i 1) new-stack)]
                  [(new-stack . vals) (loop (fx+ i 1) new-stack)]))]))]
+        [#(beginl ,bs)
+         (let loop ([bs bs] [stack stack])
+           (cond
+             [(null? (cdr bs))
+              (interpret (car bs) stack return-mode)]
+             [else
+              (call-with-values
+               (lambda () (interpret (car bs) stack))
+               (case-lambda
+                 [(new-stack val) (loop (cdr bs) new-stack)]
+                 [(new-stack . vals) (loop (cdr bs) new-stack)]))]))]
         [#(begin0 ,b0)
          (define last (fx- (vector*-length b) 1))
          (call-with-values
@@ -1036,7 +1085,10 @@
                                                        (let ([z y])
                                                          (vector x z))))
                                            (define g (case-lambda
-                                                       [() no]
+                                                       [() (let ([unused (g)])
+                                                             (let ([also-unused (g)])
+                                                               (begin
+                                                                 (list (g no)))))]
                                                        [ys
                                                         (vector x ys)])))
                                          (define h (lambda (t x y a b)

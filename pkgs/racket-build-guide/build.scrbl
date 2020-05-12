@@ -53,7 +53,7 @@ several options:
    @secref["quick-in-place"] for more instructions.}
 
  @item{@bold{Unix-style install} --- This mode installs to a given
-   destination directory (on platforms other Windows), leaving no
+   destination directory (on platforms other than Windows), leaving no
    reference to the source directory. This is the most natural mode
    for installing once from the source repository. See
    @secref["quick-unix-style"] for more instructions.}

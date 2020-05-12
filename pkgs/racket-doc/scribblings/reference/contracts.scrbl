@@ -91,26 +91,27 @@ Contracts in Racket are subdivided into three different categories:
                  in this library can be used directly as predicates, but ordinary
                  Racket values that double as flat contracts (e.g., numbers or symbols)
                  cannot.
-                 
+
                  The function @racket[flat-contract?] recognizes a flat contract.}
-          @item{@deftech{Chaperone @tech{contracts}} are not always immediately
-                 checkable, but are guaranteed to not change any properties
-                 of any values that they check. That is, they may wrap
-                 a value in such a way that it signals contract violations
-                 later, as the value is used (e.g., a function contract
-                 checks the inputs and outputs to the function only when
-                 the function is called and returned), but any properties
-                 that the value had before being wrapped by the contract
-                 are preserved by the contract wrapper. 
-                 
+          @item{@deftech{Chaperone @tech{contracts}} may wrap a value in such
+                 a way that it signals contract violations later, as the value
+                 is used, but are guaranteed to not otherwise change behavior.
+                 For example, a function contract wraps a function value and
+                 later checks inputs and outputs; any properties that the
+                 function value had before being wrapped by the contract are
+                 preserved by the contract wrapper.
+
                  All @tech{flat contracts} may be used where @tech{chaperone contracts} are expected
-                 (but not vice-versa).}
-         @item{@deftech{Impersonator @tech{contracts}} do not provide any 
-                guarantees about values they check. Impersonator contracts
+                 (but not vice-versa). The function @racket[chaperone-contract?]
+                 recognizes a chaperone contract.}
+         @item{@deftech{Impersonator @tech{contracts}} may wrap values and do
+                not provide any guarantees. Impersonator contracts
                 may hide properties of values, or even make them completely
                 opaque (e.g, @racket[new-∀/c]).
-                
-                All @tech{contracts} may be used where impersonator contracts are expected.}]
+
+                All @tech{contracts} may be used where impersonator contracts are expected.
+                The function @racket[impersonator-contract?] recognizes an
+                impersonator contract.}]
 
 For more about this hierarchy, see the section ``@secref["chaperones"]''
 as well as a research paper @cite{Strickland12} on chaperones, impersonators,
@@ -3417,13 +3418,20 @@ Produces the name used to describe the contract in error messages.
 
 
 @defproc[(contract-projection [c contract?]) (-> blame? (-> any/c any/c))]{
-  Produces the projection defining a contract's behavior. See also
-  @racket[contract-late-neg-projection].
+  Produces a projection defining a contract's behavior.
+  This projection is a curried function of two arguments: the first application
+  accepts a blame object, and the second accepts a value to protect with the
+  contract.
+
+  If possible, use @racket[contract-late-neg-projection] instead.
 }
 
 @defproc[(contract-val-first-projection [c contract?]) (-> blame? (-> any/c (-> any/c any/c)))]{
-  Produces the projection defining a contract's behavior.
-  See also @racket[contract-late-neg-projection].
+  Produces a projection defining a contract's behavior.
+  This projection is similar to the result of @racket[contract-late-neg-projection]
+  except with an extra layer of currying.
+
+  If possible, use @racket[contract-late-neg-projection] instead.
 }
 
 @defproc[(make-none/c [sexp-name any/c]) contract?]{

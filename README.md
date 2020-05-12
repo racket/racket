@@ -46,3 +46,9 @@ License
 -------
 
 Racket is free software; see [LICENSE](LICENSE) for more details.
+
+Friendly Environment Policy
+---------------------------
+
+Please see https://racket-lang.org/friendly.html
+

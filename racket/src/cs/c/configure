@@ -622,6 +622,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 RUN_RACKET
@@ -640,8 +641,10 @@ ELF_COMP
 BOOT_COMPRESS_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
+LZ4_LIB_UNPACK
 LZ4_LIB
 LZ4_LIB_DEP
+Z_LIB_UNPACK
 Z_LIB
 Z_LIB_DEP
 NOT_MINGW
@@ -664,6 +667,7 @@ POST_LINKER
 RKTLINKER
 STRIP_LIB_DEBUG
 STRIP_DEBUG
+ICP_LIB
 ICP
 WINDRES
 STATIC_AR
@@ -789,6 +793,7 @@ enable_libfw
 enable_userfw
 enable_embedfw
 enable_mac64
+enable_libs
 enable_noopt
 enable_ubsan
 enable_csdefault
@@ -1438,6 +1443,7 @@ Optional Features:
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
+  --enable-libs           install static libraries (enabled by default for Unix)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
   --enable-csdefault      use CS as default build
@@ -2648,6 +2654,12 @@ else
 fi
 
 
+# Check whether --enable-libs was given.
+if test "${enable_libs+set}" = set; then :
+  enableval=$enable_libs;
+fi
+
+
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
   enableval=$enable_noopt;
@@ -2785,6 +2797,16 @@ if test "${enable_csonly}" = "yes" ; then
 fi
 show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
 
+show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
+show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
+
+INSTALL_LIBS_ENABLE=no-install
+
+if test "${enable_libs}" != "no" ; then
+  # Intended to be canceled for some platforms:
+  INSTALL_LIBS_ENABLE=install
+fi
+
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
@@ -2893,7 +2915,7 @@ PREFIX_PATH_RELATIVE=/../..
 
 
 unixstyle=no
-if test "${enable_useprefix}" = "yes" -a "${prefix}" != "NONE" ; then
+if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${prefix}" != "NONE" ; then
     unixstyle=yes
   fi
@@ -3096,8 +3118,10 @@ INSTALL_SETUP_RACKET_FLAGS=
 
 Z_LIB_DEP='$(OWN_Z_LIB)'
 Z_LIB='$(OWN_Z_LIB)'
+Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
 LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
 LZ4_LIB='$(OWN_LZ4_LIB)'
+LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
 
 enable_pthread_by_default=yes
 
@@ -4603,6 +4627,10 @@ fi
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
     fi
+    # ".a" is typically not useful, since we always build a DLL:
+    if test "${enable_libs}" = "" ; then
+      INSTALL_LIBS_ENABLE=no-install
+    fi
     ;;
   cygwin*)
     ;;
@@ -4850,15 +4878,18 @@ fi
 ############## Racket and Chez Scheme ################
 
 SCHEME_SRC=../../ChezScheme
+SCHEME_SRC_NOW="$SCHEME_SRC"
 MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
   SCHEME_SRC="${enable_scheme}"
+  SCHEME_SRC_NOW="$SCHEME_SRC"
   MAKE_BUILD_SCHEME=none
 else
   # Check for a directory packaged with a source distribution
   if test -d "${srcdir}/../../ChezScheme" ; then
     MAKE_BUILD_SCHEME=copy
+    SCHEME_SRC_NOW="${srcdir}/../../ChezScheme"
   fi
 fi
 
@@ -5193,14 +5224,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_SRC/zlib" ; then
+  if test ! -d "$SCHEME_SRC_NOW/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_SRC/lz4" ; then
+  if test ! -d "$SCHEME_SRC_NOW/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -5239,6 +5270,7 @@ $as_echo "$have_zlib" >&6; }
   else
     Z_LIB_DEP=""
     Z_LIB="-lz"
+    Z_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} ZLIB=-lz"
   fi
 fi
@@ -5276,6 +5308,7 @@ $as_echo "$have_lz4" >&6; }
   else
     LZ4_LIB_DEP=""
     LZ4_LIB="-llz4"
+    LZ4_LIB_UNPACK='$(NOOP)'
     extra_scheme_config_args="${extra_scheme_config_args} LZ4=-llz4"
   fi
 fi
@@ -5423,6 +5456,10 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+
+
+
+
 
 
 

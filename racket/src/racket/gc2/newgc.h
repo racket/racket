@@ -53,6 +53,10 @@ enum {
   AGE_GEN_INC  = 4  /* used for naming a finalizer set */
 };
 
+#if defined(MZ_USE_FUTURES) && !defined(OS_X)
+# define USE_MUTEX_FOR_MODIFIED_PAGES
+#endif
+
 typedef struct mpage {
   struct mpage *next;
   struct mpage *prev;
@@ -386,12 +390,21 @@ typedef struct NewGC {
 
 #ifdef MZ_USE_PLACES
   struct NewGC *parent_gc; /* parent for the purpose of reporting memory use */
+  /* keeping track of previously reported lets us adjust parent that has multiple child places */
   intptr_t previously_reported_total; /* how much we previously reported to the parent */
+  intptr_t previously_reported_cumulative; /* how much we previously reported to the parent */
+  intptr_t previously_reported_max; /* how much we previously reported to the parent */
   mzrt_mutex *child_total_lock; /* lock on `child_gc_total' */
 #endif
   uintptr_t child_gc_total;
+  uintptr_t child_gc_cumulative;
+  uintptr_t child_gc_max;
 
-  uintptr_t place_memory_limit; /* set to propagate a custodian limit from a parent place */  
+  uintptr_t place_memory_limit; /* set to propagate a custodian limit from a parent place */
+
+#ifdef USE_MUTEX_FOR_MODIFIED_PAGES
+  mzrt_mutex *modified_pages_lock;
+#endif
 
 #if MZ_GC_BACKTRACE
   void *bt_source;

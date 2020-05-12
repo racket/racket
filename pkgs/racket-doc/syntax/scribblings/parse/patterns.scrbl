@@ -25,7 +25,7 @@ table. There are four main kinds of syntax pattern:
 @item{@tech{@Apatterns}, abbreviated @svar[A-pattern]}
 ]
 A fifth kind, @tech{@Lpatterns} (abbreviated
-@svar[L-pattern]), is a just a syntactically restricted subset of
+@svar[L-pattern]), is just a syntactically restricted subset of
 @tech{@Spatterns}.
 
 When a special form in this manual refers to @svar[syntax-pattern]

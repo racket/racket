@@ -21,7 +21,7 @@
 
 (define (random-ref seq [prng (current-pseudo-random-generator)])
   (define samples
-    (random-sample/out-replacement seq 1 prng))
+    (random-sample/replacement seq 1 prng))
   (unless samples
     (raise-argument-error 'random-ref "non-empty sequence" seq))
   (vector-ref samples 0))
@@ -36,7 +36,7 @@
    [(zero? n) '()]
    [(not replacement?)
     (define samples
-      (random-sample/replacement seq n prng))
+      (random-sample/out-replacement seq n prng))
     ;; did we get enough?
     (unless (for/and ([s (in-vector samples)])
               (not (eq? s not-there)))
@@ -46,14 +46,14 @@
     (vector->list samples)]
    [else
     (define samples
-      (random-sample/out-replacement seq n prng))
+      (random-sample/replacement seq n prng))
     (unless samples
       (raise-argument-error 'random-sample
                             "non-empty sequence for n>0"
                             0 seq n prng))
     (vector->list samples)]))
 
-(define (random-sample/replacement seq n prng)
+(define (random-sample/out-replacement seq n prng)
   ;; Based on: http://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
   (define samples (make-vector n not-there))
   (for ([elt seq]
@@ -64,7 +64,7 @@
            (vector-set! samples (random n prng) elt)]))
   samples)
 
-(define (random-sample/out-replacement seq n prng)
+(define (random-sample/replacement seq n prng)
   ;; similar to above, except each sample is independent
   (define samples #f)
   (for ([elt seq]

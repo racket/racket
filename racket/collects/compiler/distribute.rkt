@@ -121,7 +121,8 @@
                                          ;; framework, then they must embed it
                                          (for/and ([f (in-list orig-binaries)])
                                            (not (get-current-framework-path (app-to-file f) "Racket")))]
-                                        [else #f])))
+                                        [else
+                                         (not (ormap needs-original-executable? binaries))])))
 	;; Copy collections into place
 	(unless (null? copy-collects) (make-directory* collects-dir))
 	(for-each (lambda (dir)
@@ -197,7 +198,9 @@
                    (memq 'gracketcs types))
            (copy-framework "Racket" 'cs lib-dir)))]
       [(unix)
-       (unless extras-only?
+       (unless (or extras-only?
+                   (and no-dlls?
+                        (not (shared-libraries?))))
          (let ([lib-plt-dir (build-path lib-dir "plt")])
            (let ([copy-bin
                   (lambda (name variant gr?)
@@ -315,12 +318,13 @@
 		     binaries types))]
       [(unix)
        (for-each (lambda (b type)
-		   (patch-stub-exe-paths b
-					 (build-path 
-					  "../lib/plt"
-					  (format "~a-~a" type (version)))
-					 (and (shared-libraries?)
-					      "../lib")))
+                   (when (needs-original-executable? b)
+                     (patch-stub-exe-paths b
+                                           (build-path
+                                            "../lib/plt"
+                                            (format "~a-~a" type (version)))
+                                           (and (shared-libraries?)
+                                                "../lib"))))
 		 binaries
 		 types)]))
 
@@ -626,33 +630,41 @@
 
   (define (get-binary-type b)
     ;; Since this is called first, we also check that the executable
-    ;; is a stub binary for Unix.
+    ;; is a stub binary for Unix or doesn't depend on shared libraries.
     (with-input-from-file (app-to-file b)
       (lambda ()
 	(let ([m (regexp-match #rx#"bINARy tYPe:(e?)(.)(.)(.)" (current-input-port))])
 	  (if m
-	      (begin
-		(when (eq? 'unix (cross-system-type))
-		  (unless (equal? (cadr m) #"e")
-		    (error 'assemble-distribution
-			   "file is an original PLT executable, not a stub binary: ~e"
-			   b)))
-		(let ([variant (case (list-ref m 4)
+              (begin
+                (when (eq? 'unix (cross-system-type))
+                  (unless (or (equal? (cadr m) #"e")
+                              (not (shared-libraries?)))
+                    (error 'assemble-distribution
+                           "file is an original PLT executable that relies on a shared library: ~e"
+                           b)))
+                (let ([variant (case (list-ref m 4)
                                  [(#"3") '3m]
                                  [(#"s") 'cs]
                                  [else 'cgc])])
-		  (if (equal? (caddr m) #"r")
-		      (case variant
+                  (if (equal? (caddr m) #"r")
+                      (case variant
                         [(3m) 'gracket3m]
                         [(cs) 'gracketcs]
                         [else 'gracketcgc])
-		      (case variant
+                      (case variant
                         [(3m) 'racket3m]
                         [(cs) 'racketcs]
                         [else 'racketcgc]))))
 	      (error 'assemble-distribution
 		     "file is not a PLT executable: ~e"
 		     b))))))
+
+  (define (needs-original-executable? b)
+    (and (eq? 'unix (cross-system-type))
+         (with-input-from-file (app-to-file b)
+           (lambda ()
+             (let ([m (regexp-match #rx#"bINARy tYPe:(e?)" (current-input-port))])
+               (equal? (cadr m) #"e"))))))
 
   (define (write-one-int n out)
     (write-bytes (integer->integer-bytes n 4 #t #f) out))

@@ -496,6 +496,13 @@ for extracting existing catalog information.
                               [#:from-config? from-config? boolean? #f]
                               [#:state-catalog state-catalog (or/c #f path-string?) #f]
                               [#:relative-sources? relative-sources? boolean? #f]
+                              [#:include includes (or/c #f (listof string?)) #f]
+                              [#:include-deps? include-deps? boolean? #f]
+                              [#:include-deps-sys+subtype include-deps-sys+subtype (or/c #f (cons/c symbol?
+                                                                                                    path-for-some-system?))
+                                                           #f]
+                              [#:exclude excludes (listof string?) '()]
+                              [#:fast-file-copy? fast-file-copy? boolean? #f]
                               [#:quiet? quiet? boolean? #f]
                               [#:package-exn-handler package-exn-handler (string? exn:fail? . -> . any) (lambda (_pkg-name _exn) (raise _exn))])
          void?]{
@@ -513,7 +520,10 @@ The @racket[current-pkg-lookup-version] parameter determines the version
 for extracting existing catalog information.
 
 @history[#:added "6.0.1.7"
-         #:changed "6.0.1.13" @elem{Added the @racket[#:package-exn-handler] argument.}]}
+         #:changed "6.0.1.13" @elem{Added the @racket[#:package-exn-handler] argument.}
+         #:changed "7.7.0.1" @elem{Added the @racket[#:include], @racket[#:include-deps?],
+                                   @racket[#:include-deps-platform],
+                                   @racket[#:exclude], and @racket[#:fast-file-copy?] arguments.}]}
 
 @defproc[(pkg-archive-pkgs [dest-dir path-string?]
                            [pkgs (listof path-string?)]

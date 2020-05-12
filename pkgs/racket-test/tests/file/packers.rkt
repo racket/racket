@@ -31,10 +31,11 @@
                    #f))
              (equal? (file-or-directory-permissions p1)
                      (file-or-directory-permissions p2)))))
-  ;; sometimes seconds are off by 2
+  ;; sometimes seconds are off by 4
   (define (fuzzy-= a b)
     (or (= a b)
-        (= 2 (abs (- a b)))))
+        (= 2 (abs (- a b)))
+        (= 4 (abs (- a b)))))
   (define (round-date s)
     (if (eq? check-attributes? 'file)
         ;; granularity of ".zip" file dates is 2 seconds(!)
@@ -140,7 +141,8 @@
                 #:path-filter (lambda (p)
                                 (define-values (base name dir?) (split-path p))
                                 (not (regexp-match? #rx"skip" name)))))
-             untar #t #:filter-path? #t))
+             untar #t #:filter-path? #t)
+  )
 
 (delete-directory/files work-dir)
 

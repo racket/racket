@@ -675,9 +675,8 @@
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
          (escapes-ok
-           (lambda (c hash-code)
-             ((record-type-hash-procedure
-               (record-rtd (impersonator-val c)))
+          (lambda (c hash-code)
+             ((record-hash-procedure (impersonator-val c))
               c
               hash-code)))])
     (let ([add (lambda (rtd)

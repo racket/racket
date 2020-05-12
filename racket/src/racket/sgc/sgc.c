@@ -775,7 +775,7 @@ static intptr_t mem_use, mem_limit = FIRST_GC_LIMIT;
 int GC_free_space_divisor = 4;
 #endif
 
-static intptr_t mem_real_use, mem_uncollectable_use, mem_cumulative_use;
+static intptr_t mem_real_use, mem_uncollectable_use, mem_cumulative_use, mem_peak_use;
 
 static intptr_t sector_mem_use, sector_admin_mem_use, sector_free_mem_use;
 static intptr_t manage_mem_use, manage_real_mem_use;
@@ -1010,7 +1010,7 @@ static AllocCacheBlock *alloc_cache;
 
 static void *platform_plain_sector(int count, int executable)
 {
-  intptr_t sd;
+  intptr_t sd = 0;
 
   if (executable)
     return mmap_sector(count, 1);
@@ -1649,6 +1649,7 @@ void GC_add_roots(void *start, void *end)
     naya = (uintptr_t *)malloc_managed(sizeof(uintptr_t) * (roots_size + 1));
 
     mem_real_use += (sizeof(uintptr_t) * roots_size);
+    if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 
     if (roots) {
       memcpy((void *)naya, (void *)roots,
@@ -2225,6 +2226,11 @@ size_t GC_get_memory_use()
   return (size_t)mem_real_use;
 }
 
+size_t GC_get_memory_peak_use()
+{
+  return (size_t)mem_peak_use;
+}
+
 size_t GC_get_total_bytes()
 {
   return (size_t)mem_cumulative_use;
@@ -2496,6 +2502,7 @@ static void *do_malloc(SET_NO_BACKINFO
       mem_use += size;
     mem_real_use += (size + sizeof(MemoryChunk));
     mem_cumulative_use += (size + sizeof(MemoryChunk));
+    if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
     num_chunks++;
 
     if (!low_plausible || (c->start < low_plausible))
@@ -2635,6 +2642,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
   mem_real_use += SECTOR_SEGMENT_SIZE;
   mem_cumulative_use += SECTOR_SEGMENT_SIZE;
+  if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 
  block_top:
 
@@ -2869,6 +2877,7 @@ static void register_disappearing_link(void **p, void *a, int late)
   GC_dl_entries++;
 
   mem_real_use += sizeof(DisappearingLink);
+  if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 }
 
 void GC_register_indirect_disappearing_link(void **p, void *a)
@@ -2944,6 +2953,7 @@ static void register_finalizer(void *p, void (*f)(void *p, void *data),
 	fn = (Finalizer *)malloc_managed(sizeof(Finalizer));
 	mem_real_use += sizeof(Finalizer);
 	mem_cumulative_use += sizeof(Finalizer);
+        if (mem_peak_use < mem_real_use) mem_peak_use = mem_real_use;
 	GC_fo_entries++;
       }
 

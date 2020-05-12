@@ -86,9 +86,9 @@ have several options:
   for more instructions.
 
 * **Unix-style install** — This mode installs to a given destination
-  directory (on platforms other Windows), leaving no reference to the
-  source directory. This is the most natural mode for installing once
-  from the source repository. See [Quick Instructions: Unix-Style
+  directory (on platforms other than Windows), leaving no reference to
+  the source directory. This is the most natural mode for installing
+  once from the source repository. See [Quick Instructions: Unix-Style
   Install](#14-quick-instructions-unix-style-install) for more
   instructions.
 
@@ -679,9 +679,10 @@ If you (or someone else) previously created an installer site with `make
 site`, then `make client-from-site` in a clean repository creates an
 installer for the current platform drawing packages from the site.
 
-At a minimum, provide `SERVER`, `SERVER_PORT` (usually 80), and
-`SITE_PATH` (if not empty, include a trailing `/`) makefile variables to
-access a site at
+At a minimum, provide `SERVER`, `SERVER_PORT` (usually 80 or 443),
+`SERVER_URL_SCHEME` (if `https` instead of `http`) and `SITE_PATH` (if
+not empty, include a trailing `/`) makefile variables to access a site
+at
 
 `http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)`
 
@@ -828,9 +829,14 @@ that process faster by keeping a few guidelines in mind:
 
 * Include new or updated documentation as appropriate.
 
-  Note that the Racket reference is in
-  `"pkgs/racket-doc/scribblings/reference"`, and documentation for other
-  libraries are also sometimes in a separate `"-doc"` package.
+  To locate a documentation (Scribble) source file, visit the current
+  documentation in a browser, and click at the page heading. A box will
+  appear with a URL to a documentation source. Note that while it is
+  likely that the documentation source will not be the file that you
+  want to edit exactly, it should give you a rough idea for where it is.
+  Particularly, the Racket reference is in
+  `"pkgs/racket-doc/scribblings/reference"`, and the Racket guide is in
+  `"pkgs/racket-doc/scribblings/guide"`.
 
   When adding to a library or extending an existing binding’s behavior,
   be sure to include a `history` note in the documentation to record the

@@ -351,7 +351,7 @@ the way they are implemented and used: A @tech{character} in the
 Latin-1 range is always reachable, because @racket[equal?] Latin-1
 characters are always @racket[eq?], and all of the Latin-1 characters
 are referenced by an internal module. Similarly, @racket[null],
-@racket[#t], @racket[#f], @racket[eof], and @|void-const| and are
+@racket[#t], @racket[#f], @racket[eof], and @|void-const| are
 always reachable. Values produced by @racket[quote] remain reachable
 when the @racket[quote] expression itself is reachable.
 

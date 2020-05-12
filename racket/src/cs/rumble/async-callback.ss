@@ -1,5 +1,5 @@
 
-(define-record async-callback-queue (lock condition in wakeup))
+(define-record async-callback-queue (lock condition in gc? wakeup))
 
 (define (current-async-callback-queue)
   (place-async-callback-queue))
@@ -8,6 +8,7 @@
   (place-async-callback-queue (make-async-callback-queue (make-mutex)     ; ordered *before* `interrupts-disable`-as-lock
                                                          (make-condition)
                                                          '()
+                                                         #f
                                                          ;; Reset by `reset-async-callback-poll-wakeup!`:
                                                          void)))
 
@@ -46,6 +47,12 @@
     (when interrupts-disabled? (enable-interrupts))
     result))
 
+;; Called with all threads all stopped:
+(define (async-callback-queue-major-gc!)
+  (let ([q orig-place-async-callback-queue])
+    (set-async-callback-queue-gc?! q #t)
+    ((async-callback-queue-wakeup q))))
+
 (define make-async-callback-poll-wakeup (lambda () void))
 (define (set-make-async-callback-poll-wakeup! make-wakeup)
   (set! make-async-callback-poll-wakeup make-wakeup)
@@ -58,12 +65,19 @@
 (define (poll-async-callbacks)
   (let ([q (current-async-callback-queue)])
     (mutex-acquire (async-callback-queue-lock q))
-    (let ([in (async-callback-queue-in q)])
-      (cond
-       [(null? in)
-        (mutex-release (async-callback-queue-lock q))
-        '()]
-       [else
-        (set-async-callback-queue-in! q '())
-        (mutex-release (async-callback-queue-lock q))
-        (reverse in)]))))
+    (let ([in (async-callback-queue-in q)]
+          [gc? (async-callback-queue-gc? q)])
+      (append
+       (cond
+         [gc?
+          (set-async-callback-queue-gc?! q #f)
+          (list collect-garbage)]
+         [else '()])
+       (cond
+         [(null? in)
+          (mutex-release (async-callback-queue-lock q))
+          '()]
+         [else
+          (set-async-callback-queue-in! q '())
+          (mutex-release (async-callback-queue-lock q))
+          (reverse in)])))))
