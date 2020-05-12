@@ -13,7 +13,8 @@ CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
 RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
 ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include  $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
-EXTRA_GMP_OBJ_FILE = $(addsuffix .@LTO@, @EXTRA_GMP_OBJ@)
+LTO=@LTO@
+EXTRA_GMP_OBJ = @EXTRA_GMP_OBJ@.$(LTO)
 
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
@@ -73,7 +74,7 @@ OBJS =  salloc.@LTO@ \
         unwind.@LTO@ \
         validate.@LTO@ \
 	vector.@LTO@ \
-        $(EXTRA_GMP_OBJ_FILE)
+        $(EXTRA_GMP_OBJ)
 
 SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/bignum.c \
