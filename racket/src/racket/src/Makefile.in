@@ -14,7 +14,10 @@ CPPFLAGS = @PREFLAGS@
 RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
 ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include  $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
 LTO=@LTO@
-EXTRA_GMP_OBJ = @EXTRA_GMP_OBJ@.$(LTO)
+
+ifneq ($(EXTRA_GMP_OBJ),)
+  EXTRA_GMP_OBJ = @EXTRA_GMP_OBJ@.$(LTO)
+endif
 
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
