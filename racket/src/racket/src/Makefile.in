@@ -13,6 +13,7 @@ CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
 RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
 ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include  $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
+LTO=@LTO@ # Need for replacement of EXTRA_GMP_OBJ which carries the variable
 
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
