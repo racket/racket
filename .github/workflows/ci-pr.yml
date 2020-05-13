@@ -32,6 +32,7 @@ jobs:
         raco test -l tests/match/main
         raco test -l tests/zo-path
         raco test -c tests/xml
+        raco test -c tests/future
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
         raco test -c tests/syntax
@@ -71,5 +72,6 @@ jobs:
         call racket\raco.exe test -l tests/match/main
         call racket\raco.exe test -l tests/zo-path
         call racket\raco.exe test -c tests/xml
+        call racket\raco.exe test -c tests/future
         call racket\raco.exe test -l tests/db/all-tests
         racket\raco.exe test -c tests/stxparse
