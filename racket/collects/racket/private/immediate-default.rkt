@@ -12,8 +12,8 @@
   ;;    <immediate-default> = <immediate-literal>    [*]
   ;;                        | '<immediate-literal>
   ;;                        | '<id> | '()
-  ;;                        | (void) | null | eof
-  ;;    <immediate-literal> = #t | #f | <number> | <char>
+  ;;                        | (void) | void | null | eof
+  ;;    <immediate-literal> = #t | #f | <number> | <char> | #hash{eq,eqv,}()
   ;;                        | <small-string> | <small-byte-string>
   ;;
   ;; where the plain <immediate-literal> [*] possibility matches only
@@ -26,6 +26,7 @@
              (or (boolean? v)
                  (number? v)
                  (char? v)
+                 (and (hash? v) (= 0 (hash-count v)))
                  (and (string? v)
                       ((string-length v) . < . 8))
                  (and (bytes? v)
@@ -40,6 +41,7 @@
                                  (null? v)
                                  (immediate-literal? v)))]
             [(void) #t]
+            [void #t]
             [null #t]
             [eof #t]
             [_ #f])))))
