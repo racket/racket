@@ -463,13 +463,13 @@ racket
 (define (f) (set! x (cons 'f x)))
 (provide
  (contract-out
-  [f (->i () [_ (begin (set! x (cons 'ctc x)) any/c)])]
+  [f (->i () [_ () (begin (set! x (cons 'ctc x)) any/c)])]
   [get-x (-> (listof symbol?))]))
 ]
 If you were to require this module, call @racket[f], then
 the result of @racket[get-x] would be @racket['(f ctc)]. In
 contrast, if the contract for @racket[f] were
-@racketblock[(->i () [res (begin (set! x (cons 'ctc x)) any/c)])]
+@racketblock[(->i () [res () (begin (set! x (cons 'ctc x)) any/c)])]
 (only changing the underscore to @racket[res]), then
 the result of @racket[get-x] would be @racket['(ctc f)].
 
