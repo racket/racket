@@ -101,7 +101,7 @@
                            (or link-target-from-extended-attributes
                                (bytes->path (nul-terminated link-target-bytes)))))
   (when (and link-target (not permissive?))
-    (check-unpack-path 'untar link-target))
+    (check-unpack-path 'untar link-target #:kind "link"))
   (read-bytes* 12 in) ; padding
   (define create?
     (filter base-filename filename type size link-target mod-time mode))

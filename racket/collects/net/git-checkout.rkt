@@ -730,7 +730,7 @@
           [(#"120000")
            (define target (bytes->path (object->bytes tmp (this-object-location))))
            (when strict-links?
-             (check-unpack-path 'git-checkout target))
+             (check-unpack-path 'git-checkout target #:kind "link"))
            (make-file-or-directory-link target (build-path dest-dir fn))]
           [(#"160000")
            ;; submodule; just make a directory placeholder
