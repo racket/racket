@@ -113,10 +113,11 @@
        v))))
 
 ;; dispatcher for composable promises, generic promises, and other values
-(define (force promise)
-  (if (promise? promise)
-    ((promise-forcer promise) promise) ; dispatch to specific forcer
-    promise)) ; different from srfi-45: identity for non-promises
+(define (force v)
+  (let ([forcer (promise-forcer v #f)])
+    (if forcer
+        (forcer v) ; dispatch to specific forcer
+        v))) ; different from srfi-45: identity for non-promises
 
 ;; ----------------------------------------------------------------------------
 ;; Struct definitions
