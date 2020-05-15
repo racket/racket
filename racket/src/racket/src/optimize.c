@@ -9771,11 +9771,42 @@ static void increment_use_count(Scheme_IR_Local *var, int as_rator)
     var->optimize.known_val = NULL;
 }
 
+static Scheme_Object *optimize_clone_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
+  Optimize_Info *info = (Optimize_Info *)p->ku.k.p2;
+  Scheme_Hash_Tree *var_map = (Scheme_Hash_Tree *)p->ku.k.p3;
+  int single_use = p->ku.k.i1;
+  int as_rator = p->ku.k.i2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+
+  return optimize_clone(single_use, expr, info, var_map, as_rator);
+}
+
 Scheme_Object *optimize_clone(int single_use, Scheme_Object *expr, Optimize_Info *info, Scheme_Hash_Tree *var_map, int as_rator)
 /* If single_use is 1, then the old copy will be dropped --- so it's ok to "duplicate"
    any constant, and local-variable use counts should not be incremented. */
 {
   int t;
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.k.i1 = single_use;
+    p->ku.k.p1 = (void *)expr;
+    p->ku.k.p2 = (void *)info;
+    p->ku.k.p3 = (void *)var_map;
+    p->ku.k.i2 = as_rator;
+
+    return scheme_handle_stack_overflow(optimize_clone_k);
+  }
+#endif
 
   t = SCHEME_TYPE(expr);
 
