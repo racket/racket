@@ -24,6 +24,8 @@
                                                        "(or/c exact-nonnegative-integer? (procedure-arity-includes/c 1))"
                                                        v)]))))
 
+(define-thread-local procedure-names (make-weak-eq-hashtable))
+
 (define (object-name v)
   (cond
    [(object-name? v)
@@ -38,10 +40,16 @@
      [(wrapper-procedure? v)
       (extract-wrapper-procedure-name v)]
      [else
-      (let ([name (#%$code-name (#%$closure-code v))])
-        (and name
-             (let ([n (procedure-name-string->visible-name-string name)])
-               (and n (string->symbol n)))))])]
+      (let ([names procedure-names]
+            [code (#%$closure-code v)])
+        (or (eq-hashtable-ref names code #f)
+            (let ([name (#%$code-name code)])
+              (and name
+                   (let ([n (procedure-name-string->visible-name-string name)])
+                     (and n
+                          (let ([sym (string->symbol n)])
+                            (eq-hashtable-set! names code sym)
+                            sym)))))))])]
    [(impersonator? v)
     (object-name (impersonator-val v))]
    [(procedure? v)
