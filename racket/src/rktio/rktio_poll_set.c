@@ -1228,6 +1228,23 @@ void rkio_reset_sleep_backoff(rktio_t *rktio)
   rktio->made_progress = 1;
 }
 
+static void prepare_windows_sleep(DWORD msec)
+{
+  /* The default scheduling granilaity is usually 16ms, which
+     means that a request to sleep 16ms could easily end up being 31ms,
+     and a request to sleep 2ms is likely at least 16ms. We can
+     request a finer granularity of scheduling, but do that only
+     temporarily, because it may slow down the rest of the system. */
+  if (msec < 32)
+    timeBeginPeriod((msec >> 2) | 1);
+}
+
+static void finish_windows_sleep(DWORD msec)
+{
+  if (msec < 32)
+    timeEndPeriod((msec >> 1) | 1);
+}
+
 #endif
 
 /******************** Main sleep function  *****************/
@@ -1304,7 +1321,14 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 # endif
 #else
 # ifdef RKTIO_SYSTEM_WINDOWS
-    Sleep((DWORD)(nsecs * 1000));
+    {
+      DWORD msecs = nsecs * 1000;
+      if (msecs > 0) {
+	prepare_windows_sleep(msecs);
+	Sleep(msecs);
+	finish_windows_sleep(msecs);
+      }
+    }
 # else
 #  ifndef NO_SLEEP
 #   ifndef NO_USLEEP
@@ -1455,7 +1479,9 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	    msec = INFINITE;
 	}
 
+	prepare_windows_sleep(msec);
 	result = MsgWaitForMultipleObjects(count, array, FALSE, msec, fds->wait_event_mask);
+	finish_windows_sleep(msec);
       }
       clean_up_wait(rktio, result, array, rps, rcount);
       rktio_collapse_win_fd(fds); /* cleans up */

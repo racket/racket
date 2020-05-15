@@ -288,7 +288,7 @@
 (define dll "../../../lib/libracket3mxxxxxxx.dll")
 (define exe (format "../../../Racket~a.exe" suffix))
 
-(define libs "kernel32.lib user32.lib ws2_32.lib shell32.lib advapi32.lib")
+(define libs "kernel32.lib user32.lib ws2_32.lib shell32.lib advapi32.lib winmm.lib")
 
 (define (link-dll objs delayloads sys-libs dll link-options exe?)
   (let ([ms (if (file-exists? dll)
