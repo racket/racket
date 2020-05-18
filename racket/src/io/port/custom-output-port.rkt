@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require (only-in racket/unsafe/ops unsafe-bytes->immutable-bytes!)
+         "../common/check.rkt"
          "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
@@ -116,30 +117,40 @@
          [else
           (send core-output-port output-pipe write-out bstr start end non-block/buffer? enable-break? copy?)])]
       [else
+       (define-values (imm-bstr imm-start imm-end)
+         ;; If `copy?` is false, we're allowed to do anything with the string,
+         ;; so it's ok to destroy it and get an immutable string. If `copy?`
+         ;; is true, then we allocate a fresh string, anyway:
+         (let ([immutable! unsafe-bytes->immutable-bytes!])
+           (if (and copy? (not (immutable? bstr)))
+               (values (immutable! (subbytes bstr start end)) 0 (- end start))
+               (values (immutable! bstr) start end))))
        (define r
          ;; Always tell user port to re-enable breaks if it blocks, since
          ;; we always disable breaks:
          (let ([enable-break? (and (not non-block/buffer?) (break-enabled))])
            (parameterize-break #f
              (non-atomically
-              (if copy?
-                  (user-write-out (subbytes bstr start end) 0 (- end start) non-block/buffer? enable-break?)
-                  (user-write-out bstr start end non-block/buffer? enable-break?))))))
-       (check-write-result '|user port write| r start end non-block/buffer?)
+              (user-write-out imm-bstr imm-start imm-end non-block/buffer? enable-break?)))))
+       (check-write-result '|user port write| r imm-start imm-end non-block/buffer?)
        (cond
          [(pipe-output-port? r)
-          (write-out self bstr start end non-block/buffer? enable-break? copy?)]
+          (write-out self imm-bstr imm-start imm-end non-block/buffer? enable-break? copy?)]
          [(evt? r)
-          (wrap-check-write-evt-result '|user port write| r start end non-block/buffer?)]
+          (wrap-check-write-evt-result '|user port write| r imm-start imm-end non-block/buffer?)]
          [else r])]))
 
   (define (get-write-evt self bstr start end)
+    (define-values (imm-bstr imm-start imm-end)
+      (if (immutable? bstr)
+          (values bstr start end)
+          (values (unsafe-bytes->immutable-bytes! (subbytes bstr start end)) 0 (- end start))))
     (end-atomic)
-    (define r (user-get-write-evt bstr start end))
+    (define r (user-get-write-evt imm-bstr imm-start imm-end))
     (unless (evt? r)
       (raise-result-error '|user port get-write-evt| "evt?" r))
     (start-atomic)
-    (wrap-check-write-evt-result '|user port write-evt| r start end #t))
+    (wrap-check-write-evt-result '|user port write-evt| r imm-start imm-end #t))
 
   (define (write-out-special self v non-block/buffer? enable-break?)
     (let ([enable-break? (and (not non-block/buffer?) (break-enabled))])
