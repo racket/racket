@@ -984,4 +984,25 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([bstr (make-bytes 5 65)]
+      [str (make-string 5 #\x)]
+      [vec (make-vector 5 'x)])
+  (let ([bstr (unsafe-bytes->immutable-bytes! bstr)]
+        [str (unsafe-string->immutable-string! str)]
+        [vec (unsafe-vector*->immutable-vector! vec)])
+    (test #t immutable? bstr)
+    (test #t immutable? str)
+    (test #t immutable? vec)
+    (test #t equal? #"AAAAA" bstr)
+    (test #t equal? "xxxxx" str)
+    (test #t equal? '#(x x x x x) vec)
+    (test #t immutable? (unsafe-bytes->immutable-bytes! (make-bytes 0)))
+    (test #f immutable? (make-bytes 0))
+    (test #t immutable? (unsafe-string->immutable-string! (make-string 0)))
+    (test #f immutable? (make-string 0))
+    (test #t immutable? (unsafe-vector*->immutable-vector! (make-vector 0)))
+    (test #f immutable? (make-vector 0))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

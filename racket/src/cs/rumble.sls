@@ -698,6 +698,10 @@
           unsafe-f80vector-set!
           unsafe-f80vector-ref
 
+          unsafe-bytes->immutable-bytes!
+          unsafe-string->immutable-string!
+          unsafe-vector*->immutable-vector!
+
           ;; --- not exported to Racket: ---
           make-pthread-parameter
           fork-pthread

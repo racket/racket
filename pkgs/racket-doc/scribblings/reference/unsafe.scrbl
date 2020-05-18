@@ -292,6 +292,16 @@ A vector's size can never be larger than a @tech{fixnum}, so even
 
 @history[#:changed "6.11.0.2" @elem{Added @racket[unsafe-vector*-cas!].}]}
 
+
+@defproc[(unsafe-vector*->immutable-vector! [v (and/c vector? (not/c impersonator?))]) (and/c vector? immutable?)]{
+
+Similar to @racket[vector->immutable-vector], but potentially destroys
+@racket[v] and reuses it space, so @racket[v] must not be used after
+calling @racket[unsafe-vector*->immutable-vector!].
+
+@history[#:added "7.7.0.6"]}
+
+
 @deftogether[(
 @defproc[(unsafe-string-length [str string?]) fixnum?]
 @defproc[(unsafe-string-ref [str string?] [k fixnum?])
@@ -304,6 +314,14 @@ Unsafe versions of @racket[string-length], @racket[string-ref], and
 only when the result will be a Latin-1 character. A string's size can
 never be larger than a @tech{fixnum} (so even @racket[string-length]
 always returns a fixnum).}
+
+@defproc[(unsafe-string->immutable-string! [str string?]) (and/c string? immutable?)]{
+
+Similar to @racket[string->immutable-string], but potentially destroys
+@racket[str] and reuses it space, so @racket[str] must not be used
+after calling @racket[unsafe-string->immutable-string!].
+
+@history[#:added "7.7.0.6"]}
 
 
 @deftogether[(
@@ -325,6 +343,15 @@ A bytes's size can never be larger than a
 fixnum).
 
 @history[#:changed "7.5.0.15" @elem{Added @racket[unsafe-bytes-copy!].}]}
+
+
+@defproc[(unsafe-bytes->immutable-bytes! [bstr bytes?]) (and/c bytes? immutable?)]{
+
+Similar to @racket[bytes->immutable-bytes], but potentially destroys
+@racket[bstr] and reuses it space, so @racket[bstr] must not be used
+after calling @racket[unsafe-bytes->immutable-bytes!].
+
+@history[#:added "7.7.0.6"]}
 
 
 @deftogether[(
