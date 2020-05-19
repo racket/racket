@@ -1054,13 +1054,19 @@
 (define-fun-syntax _?
   (syntax-id-rules () [(_ . xs) ((type: #f) . xs)] [_ (type: #f)]))
 
+(begin-for-syntax
+  (define-syntax-rule (syntax-rules/symbol-literals (lit ...) [pat tmpl] ...)
+    (lambda (stx)
+      (syntax-case* stx (lit ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+        [pat (syntax-protect (syntax/loc stx tmpl))] ...))))
+
 ;; (_ptr <mode> <type>)
 ;; This is for pointers, where mode indicates input or output pointers (or
 ;; both).  If the mode is `o' (output), then the wrapper will not get an
 ;; argument for it, instead it generates the matching argument.
 (provide _ptr)
 (define-fun-syntax _ptr
-  (syntax-rules (i o io)
+  (syntax-rules/symbol-literals (i o io)
     [(_ i  t) (type: _pointer
                pre:  (x => (let ([p (malloc t)]) (ptr-set! p t x) p)))]
     [(_ o  t) (type: _pointer
@@ -1090,7 +1096,7 @@
 ;; the C function will most likely require.
 (provide _list)
 (define-fun-syntax _list
-  (syntax-rules (i o io)
+  (syntax-rules/symbol-literals (i o io)
     [(_ i  t  )      (type: _pointer
                       pre:  (x => (list->cblock x t)))]
     [(_ i  t mode)   (type: _pointer
@@ -1112,7 +1118,7 @@
 ;; Same as _list, except that it uses Scheme vectors.
 (provide _vector)
 (define-fun-syntax _vector
-  (syntax-rules (i o io)
+  (syntax-rules/symbol-literals (i o io)
     [(_ i  t  )      (type: _pointer
                       pre:  (x => (vector->cblock x t)))]
     [(_ i  t mode)   (type: _pointer

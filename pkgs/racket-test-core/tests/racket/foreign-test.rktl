@@ -1146,6 +1146,22 @@
 (test 17 serializable-example-1-a (deserialize (serialize (make-serializable-example-1 17))))
 
 ;; ----------------------------------------
+;; Check that `i`, `o`, and `io` are matched as symbols, not by binding:
+
+(let ([i 'no]
+      [o 'no]
+      [io 'no])
+  (test #t ctype? (_ptr i _int))
+  (test #t ctype? (_ptr o _int))
+  (test #t ctype? (_ptr io _int))
+  (test #t ctype? (_list i _int))
+  (test #t ctype? (_list o _int 10))
+  (test #t ctype? (_list io _int 10))
+  (test #t ctype? (_vector i _int))
+  (test #t ctype? (_vector o _int 10))
+  (test #t ctype? (_vector io _int 10)))
+
+;; ----------------------------------------
 
 (define-cpointer-type _foo)
 (test 'foo? object-name foo?)

@@ -1016,7 +1016,7 @@ Examples:
 
 Creates a C pointer type, where @racket[mode] indicates input or
 output pointers (or both).  The @racket[mode] can be one of the
-following:
+following (matched as a symbol independent of binding):
 
 @itemize[
 
@@ -1058,7 +1058,11 @@ following type:
 
 creates a function that calls the foreign function with a fresh
 integer pointer, and use the value that is placed there as a second
-return value.}
+return value.
+
+@history[#:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
+                                   and @racket[io] match as symbols
+                                   instead of free identifiers.}]}
 
 
 @defform[(_box type)]{
@@ -1124,7 +1128,10 @@ return two values, the vector and the boolean.
       -> (values vec res))
 ]
 
-@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]}
+@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]
+         #:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
+                                   and @racket[io] match as symbols
+                                   instead of free identifiers.}]}
 
 @defform[(_vector mode type maybe-len maybe-mode)]{
 
@@ -1145,7 +1152,10 @@ Examples:
 
 See @racket[_list] for more explanation about the examples.
 
-@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]}
+@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}
+         #:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
+                                   and @racket[io] match as symbols
+                                   instead of free identifiers.}]}
 
 
 @defform*[#:id _bytes
