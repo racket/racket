@@ -1,7 +1,7 @@
 (module ellipses '#%kernel
   (#%require (for-syntax '#%kernel))
 
-  (#%provide ... _ ~? ~@)
+  (#%provide ... _ ~? ~@ ~indexed)
 
   (define-syntaxes (...)
     (lambda (stx)
@@ -10,6 +10,8 @@
   (define-syntaxes (~?)
     (lambda (stx) (raise-syntax-error #f "not allowed as an expression" stx)))
   (define-syntaxes (~@)
+    (lambda (stx) (raise-syntax-error #f "not allowed as an expression" stx)))
+  (define-syntaxes (~indexed)
     (lambda (stx) (raise-syntax-error #f "not allowed as an expression" stx)))
 
   (define-syntaxes (_)

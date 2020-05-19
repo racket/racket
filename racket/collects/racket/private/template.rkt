@@ -10,7 +10,7 @@
 (#%provide syntax
            syntax/loc
            datum
-           ~? ~@
+           ~? ~@ ~indexed
            ~@! signal-absent-pvar
            (protect
             (for-syntax attribute-mapping
@@ -182,6 +182,7 @@
   (define (dots-guide hguide frame head at-stx)
     (let ([cons? (ht-guide? hguide)]
           [hguide (if (ht-guide? hguide) (ht-guide-t hguide) hguide)]
+          [index-var (dotsframe-index-var frame)]
           [env (dotsframe-env frame)])
       (cond [(and (guide-is? hguide 't-var) (= (length env) 1)
                   (eq? (cadr hguide) (caar env)))
@@ -190,23 +191,24 @@
                    [else `(apply append (t-var ,(cdar env)))])]
             [else
              `(t-dots ,cons? ,hguide ,(map car env) ,(map cdr env)
-                      (quote ,head) (quote-syntax ,at-stx))])))
+                      (quote ,head) (quote-syntax ,at-stx) ,index-var)])))
 
   ;; A Depth is (Listof MapFrame)
 
-  ;; A DotsFrame is (vector (Listof (cons Id Syntax)) (Hash Id => Id) Id Bool)
+  ;; A DotsFrame is (vector (Listof (cons Id Syntax)) (Hash Id => Id) Id Bool Id/#f)
   ;; Each ellipsis in a template has a corresponding DotsFrame of the form
-  ;; (vector env ht ellipsis-id any-vars?), where
+  ;; (vector env ht ellipsis-id any-vars? index-var), where
   ;; -- env is (list (cons iter-id src-list-expr) ...), where src-list-expr
   ;;    is a src-list-id either by itself or wrapped in a check
   ;; -- ht maps a src-list-id to the corresponding iter-id
   ;; -- ellipsis-id is the identifier for the ellipsis (for error reporting)
   ;; -- any-vars? is a flag that indicates whether any pattern variables occur
   ;;    in this frame's subtemplate (for error reporting)
+  ;; -- index-var is an identifier to hold the map index; else #f
   ;; When a pattern variable of depth D is found, it is added to the D current
   ;; innermost (ie, topmost) dotsframes (see `lookup`).
   (define (new-dotsframe ellipsis-stx)
-    (vector null (make-hasheq) ellipsis-stx #f))
+    (vector null (make-hasheq) ellipsis-stx #f #f))
   (define (dotsframe-env frame) (vector-ref frame 0))
   (define (dotsframe-ref frame src-id)
     (hash-ref (vector-ref frame 1) src-id #f))
@@ -222,6 +224,9 @@
   (define (dotsframe-ellipsis-id frame) (vector-ref frame 2))
   (define (dotsframe-has-mapvars? frame) (pair? (vector-ref frame 0)))
   (define (dotsframe-has-any-vars? frame) (vector-ref frame 3))
+  (define (dotsframe-index-var frame) (vector-ref frame 4))
+  (define (dotsframe-index-var! frame)
+    (or (vector-ref frame 4) (let ([var (gentemp)]) (vector-set! frame 4 var) var)))
 
   (define (frames-seen-pvar! frames)
     (when (pair? frames)
@@ -270,6 +275,43 @@
                   (define guide1 (parse-t t1 depth esc?))
                   (define guide2 (parse-t t2 depth esc?))
                   `(t-orelse ,guide1 ,guide2))]
+            [(or (parse-form t (quote-syntax ~indexed) 1)
+                 (parse-form t (quote-syntax ~indexed) 2))
+             => (lambda (ts)
+                  (disappeared! (car ts))
+                  (define prefix-id (cadr ts))
+                  (unless (identifier? prefix-id)
+                    (wrong-syntax prefix-id "expected identifier"))
+                  (define second-arg (if (= (length ts) 3) (caddr ts) #f))
+                  (define effective-depth
+                    (cond [(identifier? second-arg)
+                           ;; (~indexed x y) uses depth of y
+                           (define var-guide (lookup second-arg depth))
+                           (unless var-guide (wrong-syntax second-arg "expected syntax pattern variable"))
+                           (disappeared! second-arg)
+                           (define effective-depth
+                             (lookup* second-arg (lambda (var check pvar-depth) pvar-depth)))
+                           effective-depth]
+                          [(and (syntax? second-arg) (exact-positive-integer? (syntax-e second-arg)))
+                           ;; (~indexed x n) uses depth=n
+                           (syntax-e second-arg)]
+                          [(eq? second-arg #f)
+                           ;; (~indexed x) uses full depth
+                           (length depth)]
+                          [else (wrong-syntax t "illegal use")]))
+                  (unless (> effective-depth 0)
+                    (wrong-syntax t "expected non-zero depth for indexed identifier"))
+                  (define vars
+                    (let loop ([frames depth] [n effective-depth])
+                      (cond [(zero? n) null]
+                            [(null? frames)
+                             (wrong-syntax second-arg
+                                           (if (null? depth)
+                                               "missing ellipsis with pattern variable in template"
+                                               "too few ellipses for pattern variable in template"))]
+                            [else (cons (dotsframe-index-var! (car frames))
+                                        (loop (cdr frames) (sub1 n)))])))
+                  `(t-indexed (quote-syntax ,prefix-id) ,@vars))]
             [(lookup-metafun (stx-car t))
              => (lambda (mf)
                   (unless stx? (wrong-syntax (stx-car t) "metafunctions are not supported"))
@@ -313,7 +355,8 @@
              (cond [(and (not esc?)
                          (or (free-identifier=? t (quote-syntax ...))
                              (free-identifier=? t (quote-syntax ~?))
-                             (free-identifier=? t (quote-syntax ~@))))
+                             (free-identifier=? t (quote-syntax ~@))
+                             (free-identifier=? t (quote-syntax ~indexed))))
                     (wrong-syntax t "illegal use")]
                    [(lookup-metafun t)
                     (wrong-syntax t "illegal use of syntax metafunction")]
@@ -385,6 +428,10 @@
                       (let ([iter (gentemp)])
                         (dotsframe-add! (car depth) iter src (make-src-ref src id))
                         iter))]))))
+      (lookup* id make-pvar))
+
+    ;; lookup* : Identifier (Identifier Identifier/#f Nat -> X) -> (U X #f)
+    (define (lookup* id k)
       (let ([v (syntax-local-value id (lambda () #f))])
         (cond [(and stx? (syntax-pattern-variable? v))
                (define pvar-depth (syntax-mapping-depth v))
@@ -393,11 +440,11 @@
                    (and (attribute-mapping? attr) attr)))
                (define var (if attr (attribute-mapping-var attr) (syntax-mapping-valvar v)))
                (define check (and attr (attribute-mapping-check attr)))
-               (make-pvar var check pvar-depth)]
+               (k var check pvar-depth)]
               [(and (not stx?) (s-exp-pattern-variable? v))
                (define pvar-depth (s-exp-mapping-depth v))
                (define var (s-exp-mapping-valvar v))
-               (make-pvar var #f pvar-depth)]
+               (k var #f pvar-depth)]
               [else
                ;; id is a constant; check that for all x s.t. id = x.y, x is not an attribute
                (for-each
@@ -598,13 +645,41 @@
   (define src-exprs (syntax->list (list-ref s 4)))
   (define in-stx (list-ref s 5))
   (define at-stx (list-ref s 6))
+  (define index-var (list-ref s 7))
+  (define index-vars (if (identifier? index-var) (list index-var) null))
+  (define map-ref (if (identifier? index-var) 'map/index 'map))
   (define code
     `(let ,(map list iter-vars src-exprs)
        ,(if (> (length iter-vars) 1) `(check-same-length ,in-stx ,at-stx . ,iter-vars) '(void))
        ,(if cons?
-            `(map (lambda ,iter-vars ,head) . ,iter-vars)
-            `(apply append (map (lambda ,iter-vars ,head) . ,iter-vars)))))
+            `(,map-ref (lambda (,@index-vars ,@iter-vars) ,head) . ,iter-vars)
+            `(apply append (,map-ref (lambda (,@index-vars ,@iter-vars) ,head) . ,iter-vars)))))
   (datum->syntax here-stx code stx))
+
+(define (t-indexed prefix-id . suffixes)
+  (define content
+    (apply string-append
+           (symbol->string (syntax-e prefix-id))
+           (map (lambda (suffix) (format "_~s" suffix)) suffixes)))
+  (datum->syntax prefix-id (string->symbol content) prefix-id))
+
+(define map/index
+  (case-lambda
+    [(f xs)
+     (let loop ([xs xs] [acc null] [i 0])
+       (if (pair? xs)
+           (loop (cdr xs) (cons (f i (car xs)) acc) (add1 i))
+           (reverse acc)))]
+    [(f xs ys)
+     (let loop ([xs xs] [ys ys] [acc null] [i 0])
+       (if (and (pair? xs) (pair? ys))
+           (loop (cdr xs) (cdr ys) (cons (f i (car xs) (car ys)) acc) (add1 i))
+           (reverse acc)))]
+    [(f . xss)
+     (let loop ([xss xss] [acc null] [i 0])
+       (if (andmap pair? xss)
+           (loop (map cdr xss) (cons (apply f i (map car xss)) acc) (add1 i))
+           (reverse acc)))]))
 
 (define-syntaxes (t-orelse h-orelse)
   (let ()
