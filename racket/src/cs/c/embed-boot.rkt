@@ -134,4 +134,6 @@
 	  (copy-file (car alt) (cdr alt) #t)
 	  (write-offsets (cdr alt)))])
 
+   (file-or-directory-permissions dest-file (file-or-directory-permissions use-src-file 'bits))
+
    (clean-src)))
