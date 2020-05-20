@@ -135,6 +135,8 @@
          fixnum-width
          set-car!
          set-cdr!
+         bytevector-copy!
+         call-with-bytevector-output-port
          make-compile-time-value
          optimize-level)
 
@@ -771,6 +773,14 @@
             (define (set-car! p v) (unsafe-set-mcar! p v))
             (define (set-cdr! p v) (unsafe-set-mcdr! p v)))])]))
 (define-mutable-pair-hacks set-car! set-cdr!)
+
+(define (bytevector-copy! src src-start dst dst-start n)
+  (bytes-copy! dst dst-start src src-start (+ src-start n)))
+
+(define (call-with-bytevector-output-port proc)
+  (define o (open-output-bytes))
+  (proc o)
+  (get-output-bytes o))
 
 (define (fixnum-width) (or fixnum-bits 63))
 
