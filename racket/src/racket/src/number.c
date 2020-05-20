@@ -2798,6 +2798,13 @@ static Scheme_Object *complex_exp(Scheme_Object *c)
   Scheme_Object *cos_a, *sin_a;
 
   r = exp_prim(1, &r);
+
+  /* If i is 0.0, avoid computing the cos/sin, since that can end up
+     producing NaN. */
+  if (SCHEME_FLOATP(i) && (SCHEME_FLOAT_VAL(i) == 0.0)) {
+    return scheme_make_complex(r, i);
+  }
+
   cos_a = cos_prim(1, &i);
   sin_a = sin_prim(1, &i);
 
