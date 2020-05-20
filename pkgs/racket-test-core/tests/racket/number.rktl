@@ -179,6 +179,8 @@
 (test "+nan.0" number->string +nan.0)
 (test "+nan.0" number->string +nan.0)
 
+(test "1589935744527.254" number->string 1589935744527.254)
+
 #reader "maybe-single.rkt"
 (begin
   (test (if has-single-flonum? "+inf.f" "+inf.0") number->string +inf.f)
