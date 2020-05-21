@@ -12,10 +12,10 @@
 provides utilities for encoding and decoding strings using the URI
 encoding rules given in RFC 2396 @cite["RFC2396"], and to encode and
 decode name/value pairs using the
-@tt{application/x-www-form-urlencoded} mimetype given the in HTML 4.0
+@tt{application/x-www-form-urlencoded} mimetype given in the HTML 4.0
 specification.  There are minor differences between the two encodings.}
 
-The URI encoding uses allows a few characters to be represented as-is:
+The URI encoding allows a few characters to be represented as-is:
 @litchar{a} through @litchar{z}, @litchar{A} through @litchar{Z},
 @litchar{0}-@litchar{9}, @litchar{-}, @litchar{_}, @litchar{.},
 @litchar{!}, @litchar{~}, @litchar{*}, @litchar{'}, @litchar{(} and
@@ -120,7 +120,7 @@ Decode a string encoded using the
 @tt{application/x-www-form-urlencoded} encoding rules.}
 
 
-@defproc[(alist->form-urlencoded [alist (listof (cons/c symbol? string?))])
+@defproc[(alist->form-urlencoded [alist (listof (cons/c symbol? (or/c false/c string?)))])
          string?]{
 
 Encode an association list using the
@@ -131,7 +131,7 @@ separator used in the result.}
 
 
 @defproc[(form-urlencoded->alist [str string])
-         (listof (cons/c symbol? string?))]{
+         (listof (cons/c symbol? (or/c false/c string?)))]{
 
 Decode a string encoded using the
 @tt{application/x-www-form-urlencoded} encoding rules into an
