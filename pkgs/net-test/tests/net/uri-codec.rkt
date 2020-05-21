@@ -18,6 +18,12 @@
             "\u645\u627\u646\u6cc\u2f\u62d\u642\u648\u642\u2d\u628\u634\u631\u2d"
             "\u645\u6cc\u62f\u6cc\u627\u2f\u31\u32\u35\u34\u36\u2d")
 
+        (alist->form-urlencoded '([a . #f])) => "a"
+        (form-urlencoded->alist "a") => '([a . #f])
+
+        (alist->form-urlencoded '([a . ""])) => "a="
+        (form-urlencoded->alist "a=") => '([a . ""])
+
         (alist->form-urlencoded '([a . "hel+lo \u7238"]))
         => "a=hel%2Blo+%E7%88%B8"
         (form-urlencoded->alist
