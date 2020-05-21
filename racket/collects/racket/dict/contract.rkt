@@ -4,6 +4,7 @@
 
 (require racket/contract
          racket/dict
+         racket/generic
          racket/match
          racket/list
          (for-syntax racket/base
@@ -236,39 +237,267 @@
               (rng-proj v neg-party))
             val]))))))
 
-(define ho-projection
+;; ho-projection : Boolean -> [Base-Dict/c -> [Blame -> [Dict Any -> Dict]]]
+;; chaperone-mode? #true means can use chaperones, #false means use impersonators
+(define (ho-projection chaperone-mode?)
   (λ (ctc)
     (define immutable (base-dict/c-immutable ctc))
     (define dom-ctc (base-dict/c-dom ctc))
-    (define rng-ctc (base-dict/c-rng ctc))
-    (define iter-ctc (base-dict/c-iter ctc))
     (define flat? (flat-dict/c? ctc))
+    (define dom-proc (get/build-late-neg-projection dom-ctc))
+    (define rng-proc (get/build-late-neg-projection (base-dict/c-rng ctc)))
+    (define iter-proc (get/build-late-neg-projection (base-dict/c-iter ctc)))
     (λ (blame)
-      (λ (val neg-party)
-        (cond
-          [(check-dict/c dom-ctc immutable flat? val blame neg-party)
-           val]
-          [else
-           (handle-the-dict val
-                            neg-party
-                            dom-ctc
-                            rng-ctc
-                            iter-ctc
-                            blame)])))))
+      (define-values (dom-filled? maybe-pos-dom-proj maybe-neg-dom-proj)
+        (contract-pos/neg-doubling (dom-proc (blame-add-key-context blame #f))
+                                   (dom-proc (blame-add-key-context blame #t))))
+      (define-values (rng-filled? maybe-pos-rng-proj maybe-neg-rng-proj)
+        (contract-pos/neg-doubling (rng-proc (blame-add-value-context blame #f))
+                                   (rng-proc (blame-add-value-context blame #t))))
+      (define-values (iter-filled? maybe-pos-iter-proj maybe-neg-iter-proj)
+        (contract-pos/neg-doubling (iter-proc (blame-add-iter-context blame #f))
+                                   (iter-proc (blame-add-iter-context blame #t))))
+      (cond
+        [(and dom-filled? rng-filled? iter-filled?)
+         (λ (val neg-party)
+           (cond
+             [(check-dict/c dom-ctc immutable flat? val blame neg-party)
+              val]
+             [else
+              (handle-the-dict val neg-party
+                               maybe-pos-dom-proj maybe-neg-dom-proj
+                               maybe-pos-rng-proj maybe-neg-rng-proj
+                               maybe-pos-iter-proj maybe-neg-iter-proj
+                               chaperone-mode? ctc blame)]))]
+        [else
+         (define tc (make-thread-cell #f))
+         (λ (val neg-party)
+           (define-values (pos-dom-proj
+                           neg-dom-proj
+                           pos-rng-proj
+                           neg-rng-proj
+                           pos-iter-proj
+                           neg-iter-proj)
+             (cond
+               [(thread-cell-ref tc)
+                =>
+                (λ (v) (values (vector-ref v 1)
+                               (vector-ref v 2)
+                               (vector-ref v 3)
+                               (vector-ref v 4)
+                               (vector-ref v 5)
+                               (vector-ref v 6)))]
+               [else
+                (define pos-dom-proj (maybe-pos-dom-proj))
+                (define neg-dom-proj (maybe-neg-dom-proj))
+                (define pos-rng-proj (maybe-pos-rng-proj))
+                (define neg-rng-proj (maybe-neg-rng-proj))
+                (define pos-iter-proj (maybe-pos-iter-proj))
+                (define neg-iter-proj (maybe-neg-iter-proj))
+                (thread-cell-set!
+                 tc
+                 (vector-immutable pos-dom-proj
+                                   neg-dom-proj
+                                   pos-rng-proj
+                                   neg-rng-proj
+                                   pos-iter-proj
+                                   neg-iter-proj))
+                (values pos-dom-proj
+                        neg-dom-proj
+                        pos-rng-proj
+                        neg-rng-proj
+                        pos-iter-proj
+                        neg-iter-proj)]))
+           (cond
+             [(check-dict/c dom-ctc immutable flat? val blame neg-party)
+              val]
+             [else
+              (handle-the-dict val neg-party
+                               pos-dom-proj neg-dom-proj
+                               pos-rng-proj neg-rng-proj
+                               pos-iter-proj neg-iter-proj
+                               chaperone-mode? ctc blame)]))]))))
 
 (define (blame-add-key-context blame swap?)
   (blame-add-context blame "the keys of" #:swap? swap?))
 (define (blame-add-value-context blame swap?)
   (blame-add-context blame "the values of" #:swap? swap?))
+(define (blame-add-iter-context blame swap?)
+  (blame-add-context blame "the iteration-indexes of" #:swap? swap?))
 
-(define (handle-the-dict val
-                         neg-party
-                         dom-ctc
-                         rng-ctc
-                         iter-ctc
-                         blame)
-  (define blame+neg-party (blame-replace-negative blame neg-party))
-  (wrap/add-layer (layer blame+neg-party dom-ctc rng-ctc iter-ctc) val))
+;; A proj struct contains the rest of the arguments to
+;; handle-the-dict or handle-the-struct-dict after `val`
+;; chaperone-mode? #true means can use chaperones, #false means use impersonators
+(struct proj
+  [neg-party
+   pos-dom-proj neg-dom-proj
+   pos-rng-proj neg-rng-proj
+   pos-iter-proj neg-iter-proj
+   chaperone-mode? ctc blame])
+
+(define (handle-the-dict/proj val prj)
+  (match-define
+    (proj neg-party
+          pos-dom-proj neg-dom-proj
+          pos-rng-proj neg-rng-proj
+          pos-iter-proj neg-iter-proj
+          chaperone-mode? ctc blame)
+    prj)
+  (handle-the-dict val neg-party
+                   pos-dom-proj neg-dom-proj
+                   pos-rng-proj neg-rng-proj
+                   pos-iter-proj neg-iter-proj
+                   chaperone-mode? ctc blame))
+
+;; chaperone-mode? #true means can use chaperones, #false means use impersonators
+(define (handle-the-dict val neg-party
+                         pos-dom-proj neg-dom-proj
+                         pos-rng-proj neg-rng-proj
+                         pos-iter-proj neg-iter-proj
+                         chaperone-mode? ctc blame)
+  (cond
+    [(hash? val)
+     (handle-the-hash val neg-party
+                      pos-dom-proj neg-dom-proj
+                      pos-rng-proj neg-rng-proj
+                      chaperone-mode? ctc blame)]
+    [(vector? val)
+     (handle-the-vector val neg-party
+                        pos-dom-proj neg-dom-proj
+                        pos-rng-proj neg-rng-proj
+                        chaperone-mode? ctc blame)]
+    [(and (list? val) (andmap pair? val))
+     (handle-the-assoc val neg-party
+                       pos-dom-proj
+                       pos-rng-proj)]
+    [else
+     (handle-the-struct-dict val neg-party
+                             pos-dom-proj neg-dom-proj
+                             pos-rng-proj neg-rng-proj
+                             pos-iter-proj neg-iter-proj
+                             chaperone-mode? ctc blame)]))
+
+(define (handle-the-hash val neg-party
+                         pos-dom-proj neg-dom-proj
+                         pos-rng-proj neg-rng-proj
+                         chaperone-mode? ctc blame)
+  (define blame+neg-party (cons blame neg-party))
+  (define chaperone-or-impersonate-hash
+    (if chaperone-mode? chaperone-hash impersonate-hash))
+  (if (immutable? val) 
+      (for/fold ([h val]) ([(k v) (in-hash val)])
+        (hash-set h
+                  (pos-dom-proj k neg-party)
+                  (pos-rng-proj v neg-party)))
+      (chaperone-or-impersonate-hash
+       val
+       ; ref-proc
+       (λ (h k)
+         (values (with-contract-continuation-mark
+                   blame+neg-party
+                   (neg-dom-proj k neg-party))
+                 (λ (h k v)
+                   (with-contract-continuation-mark
+                     blame+neg-party
+                     (pos-rng-proj v neg-party)))))
+       ; set-proc
+       (λ (h k v)
+         (with-contract-continuation-mark
+           blame+neg-party
+           (values (neg-dom-proj k neg-party)
+                   (neg-rng-proj v neg-party))))
+       ; remove-proc
+       (λ (h k)
+         (with-contract-continuation-mark
+           blame+neg-party
+           (neg-dom-proj k neg-party)))
+       ; key-proc
+       (λ (h k)
+         (with-contract-continuation-mark
+           blame+neg-party
+           (pos-dom-proj k neg-party)))
+       impersonator-prop:contracted ctc
+       impersonator-prop:blame blame)))
+
+(define (handle-the-vector val neg-party
+                           pos-dom-proj neg-dom-proj
+                           pos-rng-proj neg-rng-proj
+                           chaperone-mode? ctc blame)
+  (define blame+neg-party (cons blame neg-party))
+  (define chaperone-or-impersonate-vector
+    (if chaperone-mode? chaperone-vector impersonate-vector))
+  (if (immutable? val)
+      (vector->immutable-vector
+       (for/vector #:length (vector-length val)
+         ([(v k) (in-indexed (in-vector val))])
+         (pos-dom-proj k neg-party)
+         (pos-rng-proj v neg-party)))
+      (chaperone-or-impersonate-vector
+       val
+       ; ref-proc
+       (λ (h k v)
+         (with-contract-continuation-mark blame+neg-party
+           (neg-dom-proj k neg-party))
+         (with-contract-continuation-mark blame+neg-party
+           (pos-rng-proj v neg-party)))
+       ; set-proc
+       (λ (h k v)
+         (with-contract-continuation-mark blame+neg-party
+           (neg-dom-proj k neg-party))
+         (with-contract-continuation-mark blame+neg-party
+           (neg-rng-proj v neg-party)))
+       impersonator-prop:contracted ctc
+       impersonator-prop:blame blame)))
+
+(define (handle-the-assoc val neg-party
+                          pos-dom-proj
+                          pos-rng-proj)
+  (for/list ([p (in-list val)])
+    (cons (pos-dom-proj (car p) neg-party)
+          (pos-rng-proj (cdr p) neg-party))))
+
+(define (handle-the-struct-dict val neg-party
+                                pos-dom-proj neg-dom-proj
+                                pos-rng-proj neg-rng-proj
+                                pos-iter-proj neg-iter-proj
+                                chaperone-mode? ctc blame)
+  (define prj
+    (proj neg-party
+          pos-dom-proj neg-dom-proj
+          pos-rng-proj neg-rng-proj
+          pos-iter-proj neg-iter-proj
+          chaperone-mode? ctc blame))
+  (redirect-generics chaperone-mode? gen:dict val
+    ; Primitive
+    [dict-ref (redirect-ref prj)]
+    [dict-set! (redirect-set! prj)]
+    [dict-set (redirect-set prj)]
+    [dict-remove! (redirect-remove! prj)]
+    [dict-remove (redirect-remove prj)]
+    [dict-count (redirect-count prj)]
+    [dict-iterate-first (redirect-iterate-first prj)]
+    [dict-iterate-next (redirect-iterate-next prj)]
+    [dict-iterate-key (redirect-iterate-key prj)]
+    [dict-iterate-value (redirect-iterate-value prj)]
+    ; Derived
+    #|
+    [dict-has-key? (redirect- prj)]
+    [dict-set*! (redirect- prj)]
+    [dict-set* (redirect- prj)]
+    [dict-ref! (redirect- prj)]
+    [dict-update! (redirect- prj)]
+    [dict-update (redirect- prj)]
+    [dict-map (redirect- prj)]
+    [dict-for-each (redirect- prj)]
+    [dict-empty? (redirect- prj)]
+    [dict-count (redirect- prj)]
+    [dict-copy (redirect- prj)]
+    [dict-clear (redirect- prj)]
+    [dict-clear! (redirect- prj)]
+    [dict-keys (redirect- prj)]
+    [dict-values (redirect- prj)]
+    [dict->list (redirect- prj)]
+    |#))
 
 (struct impersonator-dict/c base-dict/c ()
   #:omit-define-syntaxes
@@ -279,21 +508,13 @@
    #:first-order dict/c-first-order
    #:stronger dict/c-stronger
    #:equivalent dict/c-equivalent
-   #:late-neg-projection ho-projection))
+   #:late-neg-projection (ho-projection #f)))
 
 ;; ---------------------------------------------------------
 
-;; A Dict/Contract is a (dict/contract [Listof Layer] Dict)
-;; meant as a parent struct for the actual wrappers for dicts
-;; immutable, mutable, and ?mutable
-;; A Layer is a (layer Blame ChaperoneCtc Ctc Ctc)
-;; inputs go through layers in the list order
-;; outputs go through layers in reverse order
-(struct dict/contract [layers dict])
-(struct layer [blame key/c value/c iter/c])
-
-;; Definig all the methods based on the roles of the inputs and outputs.
-;; Self is the Dict/Contract instance
+;; Definig redirect functions for all the methods based on
+;; the roles of the inputs and outputs.
+;; Self is the Dict whose methods are being redirected
 ;; Key must be checked with key/c
 ;; Value must be checked with value/c
 ;; Iter must be checked with iter/c
@@ -327,7 +548,7 @@
        #'(define-syntax id (role (quote-syntax in) (quote-syntax out) #f))])))
 
 (define-dict-op-role Self #:self)
-(define-dict-op-role Dict #:in dict-in #:out dict-out)
+(define-dict-op-role Dict #:out dict-out)
 (define-dict-op-role Key #:in key-in #:out key-out)
 (define-dict-op-role Value #:in value-in #:out value-out)
 (define-dict-op-role Iter #:in iter-in)
@@ -336,166 +557,97 @@
 (define-dict-op-role Void #:out void-out)
 (define-dict-op-role Nat #:out nat-out)
 
-(define-syntax-rule (define-dict-ops clause ...)
-  (begin (define-dict-op . clause) ...))
+(define-syntax-rule (define-dict-redirect-ops clause ...)
+  (begin (define-dict-redirect-op . clause) ...))
 
-(define-syntax define-dict-op
+(define-syntax define-dict-redirect-op
   (λ (stx)
     (syntax-case stx []
-      [(_ id op #:: in ... #:-> out)
+      [(_ id #:: [in ...] #:-> out)
+       #'(define-dict-redirect-op id #:: [in ...] [] #:-> out)]
+      [(_ id #:: [mand-in ...] [opt-in ...] #:-> out)
        (with-disappeared-uses
-         (define-values [mand opt]
-           (splitf-at (syntax->list #'(in ...)) identifier?))
-         (define mand-roles (map lookup-role/record mand))
-         (define opt-roles (map (compose lookup-role/record stx-car) opt))
+         (define mand-roles (stx-map lookup-role/record #'(mand-in ...)))
+         (define opt-roles (stx-map lookup-role/record #'(opt-in ...)))
          (define out-role (lookup-role/record #'out))
-         (define mand-tmps (generate-temporaries mand))
-         (define opt-tmps (generate-temporaries opt))
-         (define self-tmp (list-ref mand-tmps (index-of mand-roles 'self)))
-         (define layers-tmp (generate-temporary 'layers))
          ;; escape-index : (U #f Nat)
          ;; The first case index where an escape is needed, if at all
          (define escape-index
            (cond [(or (ormap role-escape? mand-roles) (role-escape? out-role)) 0]
                  [(index-where opt-roles role-escape?) => add1]
                  [else #f]))
-         (define escape-tmp (and escape-index (generate-temporary 'escape)))
+         (define/with-syntax prj (generate-temporary 'proj))
+         (define/with-syntax op (generate-temporary 'op))
+         (define mand-tmps (generate-temporaries #'(mand-in ...)))
+         (define opt-tmps (generate-temporaries #'(opt-in ...)))
+         (define/with-syntax escape (and escape-index (generate-temporary 'escape)))
          (define (in-expr role expr)
-           (cond [(eq? role 'self) #`(dict/contract-dict #,expr)]
+           (cond [(eq? role 'self) expr]
                  [(role-escape? role)
-                  #`(#,(role-wrap-in role) #,layers-tmp #,escape-tmp #,expr)]
-                 [else #`(#,(role-wrap-in role) #,layers-tmp #,expr)]))
+                  #`(#,(role-wrap-in role) prj escape #,expr)]
+                 [else #`(#,(role-wrap-in role) prj #,expr)]))
          (define (out-expr expr)
            (cond [(role-escape? out-role)
-                  #`(#,(role-wrap-out out-role) #,layers-tmp #,escape-tmp #,expr)]
-                 [else #`(#,(role-wrap-out out-role) #,layers-tmp #,expr)]))
+                  #`(#,(role-wrap-out out-role) prj escape #,expr)]
+                 [else #`(#,(role-wrap-out out-role) prj #,expr)]))
          (define mand-exprs (map in-expr mand-roles mand-tmps))
          (define opt-exprs (map in-expr opt-roles opt-tmps))
          (define lam-cases
            (for/list ([i (in-range (add1 (length opt-roles)))])
              #`[(#,@mand-tmps #,@(take opt-tmps i))
-                (let ([#,layers-tmp (dict/contract-layers #,self-tmp)])
-                  #,(if (and escape-index (<= escape-index i))
-                        #`(let/ec #,escape-tmp
-                            #,(out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))
-                        (out-expr #`(op #,@mand-exprs #,@(take opt-exprs i)))))]))
-         #`(define id (case-lambda #,@lam-cases)))])))
+                #,(if (and escape-index (<= escape-index i))
+                      #`(let/ec escape
+                          #,(out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))
+                      (out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))]))
+         #`(define ((id prj) op)
+             (and op (case-lambda #,@lam-cases))))])))
 
-(define-dict-ops
-  [dref dict-ref #:: Self Key [Default] #:-> Value]
-  [dset! dict-set! #:: Self Key Value #:-> Void]
-  [dset dict-set #:: Self Key Value #:-> Dict]
-  [dremove! dict-remove! #:: Self Key #:-> Void]
-  [dremove dict-remove #:: Self Key #:-> Dict]
-  [dcount dict-count #:: Self #:-> Nat]
-  [diterate-first dict-iterate-first #:: Self #:-> MaybeIter]
-  [diterate-next dict-iterate-next #:: Self Iter #:-> MaybeIter]
-  [diterate-key dict-iterate-key #:: Self Iter #:-> Key]
-  [diterate-value dict-iterate-value #:: Self Iter #:-> Value])
-
-;; a wrapper for immutable dicts
-(struct immutable-dict/contract dict/contract []
-  #:property prop:dict
-  (vector-immutable dref #f dset #f dremove dcount
-                    diterate-first diterate-next diterate-key diterate-value)
-  #:methods gen:equal+hash
-  [;; immutable can use equal
-   (define (equal-proc self other rec)
-     (rec (dict/contract-dict self) (dict/contract-dict other)))
-   (define (hash-proc self rec)
-     (rec (dict/contract-dict self)))
-   (define (hash2-proc self rec)
-     (rec (dict/contract-dict self)))])
-
-;; a wrapper for mutable dicts
-(struct mutable-dict/contract dict/contract []
-  #:property prop:dict
-  (vector-immutable dref dset! #f dremove! #f dcount
-                    diterate-first diterate-next diterate-key diterate-value)
-  #:methods gen:equal+hash
-  [;; mutable uses eq
-   (define (equal-proc self other rec)
-     (eq? (dict/contract-dict self) (dict/contract-dict other)))
-   (define (hash-proc self rec)
-     (eq-hash-code (dict/contract-dict self)))
-   (define (hash2-proc self rec)
-     (eq-hash-code (dict/contract-dict self)))])
-
-;; a wrapper for dicts of unknown mutability
-(struct ?mutable-dict/contract dict/contract []
-  #:property prop:dict
-  (vector-immutable dref dset! dset dremove! dremove dcount
-                    diterate-first diterate-next diterate-key diterate-value)
-  #:methods gen:equal+hash
-  [;; potentially mutable uses eq
-   (define (equal-proc self other rec)
-     (eq? (dict/contract-dict self) (dict/contract-dict other)))
-   (define (hash-proc self rec)
-     (eq-hash-code (dict/contract-dict self)))
-   (define (hash2-proc self rec)
-     (eq-hash-code (dict/contract-dict self)))])
-
-;; wrap/add-layer : Layer Dict -> Dict/Contract
-(define (wrap/add-layer l1 d1)
-  (match d1
-    [(immutable-dict/contract ls2 d2) (immutable-dict/contract (cons l1 ls2) d2)]
-    [(mutable-dict/contract ls2 d2)   (mutable-dict/contract (cons l1 ls2) d2)]
-    [(?mutable-dict/contract ls2 d2)  (?mutable-dict/contract (cons l1 ls2) d2)]
-    [_                                (wrap/all-layers (list l1) d1)]))
-
-;; wrap/all-layers : [Listof Layer] Dict -> Dict/Contract
-(define (wrap/all-layers ls d)
-  (cond [(immutable-dict? d) (immutable-dict/contract ls d)]
-        [(mutable-dict? d)   (mutable-dict/contract ls d)]
-        [else                (?mutable-dict/contract ls d)]))
+(define-dict-redirect-ops
+  [redirect-ref #:: [Self Key] [Default] #:-> Value]
+  [redirect-set! #:: [Self Key Value] #:-> Void]
+  [redirect-set #:: [Self Key Value] #:-> Dict]
+  [redirect-remove! #:: [Self Key] #:-> Void]
+  [redirect-remove #:: [Self Key] #:-> Dict]
+  [redirect-count #:: [Self] #:-> Nat]
+  [redirect-iterate-first #:: [Self] #:-> MaybeIter]
+  [redirect-iterate-next #:: [Self Iter] #:-> MaybeIter]
+  [redirect-iterate-key #:: [Self Iter] #:-> Key]
+  [redirect-iterate-value #:: [Self Iter] #:-> Value])
 
 ;; ---------------------------------------------------------
 
-(define (dict-out ls d) (wrap/all-layers ls d))
+(define (dict-out prj d) (handle-the-dict/proj d prj))
 
-;; inputs go through layers in the list order, so first layer
-(define (default-in ls escape default)
-  (cond [(empty? ls) default]
-        [else
-         (define d
-           (project-in (layer-blame (first ls)) failure-result/c default))
-         (cond [(procedure? d) (λ () (escape (d)))]
-               [else (λ () (escape d))])]))
-;; outputs go through layers reverse order, so last layer
-(define (void-out ls v)
-  (cond [(empty? ls) v]
-        [else (project-out (layer-blame (last ls)) void? v)]))
-(define (nat-out ls n)
-  (cond [(empty? ls) n]
-        [else (project-out (layer-blame (last ls)) natural-number/c n)]))
+(define (key-in prj k)  ((proj-neg-dom-proj prj) k (proj-neg-party prj)))
+(define (key-out prj k) ((proj-pos-dom-proj prj) k (proj-neg-party prj)))
 
-(define (key-in ls k) (layers-in ls layer-key/c k))
-(define (key-out ls k) (layers-out ls layer-key/c k))
+(define (value-in prj k)  ((proj-neg-rng-proj prj) k (proj-neg-party prj)))
+(define (value-out prj k) ((proj-pos-rng-proj prj) k (proj-neg-party prj)))
 
-(define (value-in ls v) (layers-in ls layer-value/c v))
-(define (value-out ls v) (layers-out ls layer-value/c v))
+(define (iter-in prj i) ((proj-neg-iter-proj prj) i (proj-neg-party prj)))
+(define (maybe-iter-out prj i)
+  (and i ((proj-pos-iter-proj prj) i (proj-neg-party prj))))
 
-(define (iter-in ls i) (layers-in ls layer-iter/c i))
-(define (maybe-iter-out ls i) (and i (layers-out ls layer-iter/c i)))
+(define (default-in prj escape default)
+  (define d (project-in prj failure-result/c default))
+  (cond [(procedure? d) (λ () (escape (d)))]
+        [else (λ () (escape d))]))
 
-;; layers-in : [Listof Layer] [Layer -> Contract] Any -> Any
-;; inputs go through layers in the list order
-(define (layers-in ls l->c v)
-  (for/fold ([v v]) ([l (in-list ls)])
-    (project-in (layer-blame l) (l->c l) v)))
+(define (void-out prj v) (project-out prj void? v))
+(define (nat-out prj n) (project-out prj natural-number/c n))
 
-;; layers-out : [Listof Layer] [Layer -> Contract] Any -> Any
-;; outputs go through layers reverse order
-(define (layers-out ls l->c v)
-  (for/fold ([v v]) ([l (in-list (reverse ls))])
-    (project-out (layer-blame l) (l->c l) v)))
+;; project-in : Proj Contract Any -> Any
+(define (project-in prj ctc v)
+  (((contract-late-neg-projection ctc)
+    (blame-swap (proj-blame prj)))
+   v
+   (proj-neg-party prj)))
 
-;; project-in : Blame Contract Any -> Any
-(define (project-in blame ctc v)
-  (((contract-projection ctc) (blame-swap blame)) v))
-
-;; project-out : Blame Contract Any -> Any
-(define (project-out blame ctc v)
-  (((contract-projection ctc) blame) v))
+;; project-out : Proj Contract Any -> Any
+(define (project-out prj ctc v)
+  (((contract-late-neg-projection ctc)
+    (proj-blame prj))
+   v
+   (proj-neg-party prj)))
 
 ;; ---------------------------------------------------------

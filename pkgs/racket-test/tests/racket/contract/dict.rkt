@@ -224,8 +224,26 @@
               'x)
    1)
 
+  (test/pos-blame
+   'dict/c13a
+   ; eq-based hashes can't deal with chaperoned keys
+   '(contract (dict/c (hash/c number? number?) number?)
+              (make-hasheq)
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'hash/c13b
+   ; eqv-based hashes can't deal with chaperoned keys
+   '(contract (dict/c (hash/c number? number?) number?)
+              (make-hasheqv)
+              'pos
+              'neg))
+
   (test/neg-blame
    'dict/c13c
+   ; other dicts can deal with chaperoned keys including chaperoned hashes,
+   ; so this blames 'neg and not 'pos
    '(let ([h (contract (dict/c (hash/c number? number?) number?)
                        (make-mdict)
                        'pos
@@ -236,22 +254,45 @@
         (dict-ref k v))))
 
   (test/neg-blame ; unlike the hash case, this should fail and blame 'neg
-   'dict/c14
+   'dict/c14-on-struct-dict
    '(let ()
       (define h (idict 1 #f))
+      (dict-set (contract (dict/c integer? boolean?) h 'pos 'neg)
+                1 "x")))
+
+  (test/spec-passed ; but if the dict is an immutable hash it should pass
+   'dict/c14-on-immutable-hash
+   '(let ()
+      (define h (hash 1 #f))
+      (dict-set (contract (dict/c integer? boolean?) h 'pos 'neg)
+                1 "x")))
+
+  (test/spec-passed ; and if the dict is an assoc it should pass
+   'dict/c14-on-assoc
+   '(let ()
+      (define h '((1 . #f)))
       (dict-set (contract (dict/c integer? boolean?) h 'pos 'neg)
                 1 "x")))
 
   (test/spec-passed/result
    'dict/c15
    '(let ()
-      (define h (contract (dict/c any/c any/c) (idict 1 #f) 'pos 'neg))
+      (define h (idict 1 #f))
+      ;; TODO: change to chaperone-of? if/when chaperones get to work
       (impersonator-of? (contract (dict/c integer? boolean?) h 'pos 'neg)
                         h))
    #t)
 
   (test/neg-blame ; unlike the hash case, this should fail and blame 'neg
-   'dict/c16
+   'dict/c16-on-struct-dict
+   '(let ()
+      (define h (idict 1 #f))
+      (define c-h (contract (dict/c any/c any/c) h 'pos 'neg))
+      (dict-set (contract (dict/c integer? boolean?) c-h 'pos 'neg)
+                1 "x")))
+
+  (test/spec-passed ; but if the dict is an immutable hash it should pass
+   'dict/c16-on-immutable-hash
    '(let ()
       (define h (hash 1 #f))
       (define c-h
