@@ -373,9 +373,9 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
     }
 #else
     if (get_gmt)
-      success = gmtime_r(&now, &localTime);
+      success = (gmtime_r(&now, &localTime) != NULL);
     else
-      success = localtime_r(&now, &localTime);
+      success = (localtime_r(&now, &localTime) != NULL);
 #endif
 
     if (success) {
