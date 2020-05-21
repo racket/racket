@@ -2,6 +2,7 @@
 (require rackunit
          racket/file
          pkg/strip
+         setup/getinfo
          "util.rkt")
 
 (this-test-is-run-by-the-main-test)
@@ -12,7 +13,9 @@
    (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
    (define pkg-path (build-path "test-pkgs" "pkg-strip"))
    (define pkg-dest-path (build-path tmp-dir "pkg-strip"))
+   (define pkg-dest-path-for-built (build-path tmp-dir "pkg-strip-built"))
    (make-directory pkg-dest-path)
+   (make-directory pkg-dest-path-for-built)
 
    (define rx:does-not-exist #rx"directory does not exist")
 
@@ -48,5 +51,16 @@
 
    ;; Paths to existing src and dest directories should succeed.
    (check-not-exn (lambda () (generate-stripped-directory 'source pkg-path pkg-dest-path)))
+
+   ;; check that stripping from built to source correctly changes pkg type
+   (check-equal?
+    (begin
+      (generate-stripped-directory 'source pkg-path pkg-dest-path-for-built)
+      (generate-stripped-directory 'built pkg-dest-path-for-built pkg-dest-path-for-built)
+      (generate-stripped-directory 'source pkg-dest-path-for-built pkg-dest-path-for-built)            
+      ((get-info/full pkg-dest-path-for-built)
+       'package-content-state
+       (lambda () 'no-package-content-state)))
+    'no-package-content-state)
 
    ))
