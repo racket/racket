@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual scribble/struct scribble/eval racket/system
           "guide-utils.rkt"
-          (for-label racket/tcp racket/serialize racket/port))
+          (for-label racket/tcp racket/serialize racket/port
+                     racket/string))
 
 @(define io-eval (make-base-eval))
 
@@ -402,12 +403,73 @@ instead of the original byte stream.
 @; ----------------------------------------------------------------------
 @section[#:tag "io-patterns"]{I/O Patterns}
 
+@(require (prefix-in ex: scribble/example))
+
 @(begin
   (define port-eval (make-base-eval))
-  (interaction-eval #:eval port-eval (require racket/port)))
+  (interaction-eval #:eval port-eval (require racket/port racket/string)))
 
-If you want to process individual lines of a file, then you can use
-@racket[for] with @racket[in-lines]:
+For these examples, say you have two files in the same directory as
+your program.
+
+@filepath{oneline.txt} contains
+
+@verbatim[#:indent 1]{
+I am one line, but there is an empty line after this one.
+
+}
+
+and
+
+@filepath{manylines.txt} contains
+
+@verbatim[#:indent 1]{
+I am
+a message
+split over a few lines.
+
+}
+
+If you have a file that is quite small, you can get
+away with reading in the file as a string:
+
+@ex:examples[
+ #:eval port-eval
+ #:hidden
+ (define old-dir (current-directory))
+ (current-directory (find-system-path 'temp-dir))
+ (call-with-output-file
+     "oneline.txt"
+   #:exists 'truncate
+   (lambda (out)
+     (display "I am one line, but there is an empty line after this one.\n" out)))
+ (call-with-output-file
+     "manylines.txt"
+   #:exists 'truncate
+   (lambda (out)
+     (display "I am\na message\nsplit over a few lines.\n" out)))]
+
+@ex:examples[
+ #:eval port-eval
+ (define file-contents
+   (port->string (open-input-file "oneline.txt") #:close? #t))
+ (string-suffix? file-contents "after this one.")
+ (string-suffix? file-contents "after this one.\n")
+ (string-suffix? (string-trim file-contents) "after this one.")]
+
+We use @racket[port->string] from @racketmodname[racket/port] to do the
+reading to a string: the @racket[#:close? #t] keyword argument ensures
+that our file is closed after the read.
+
+We use @racket[string-trim] from @racketmodname[racket/string] to remove
+any extraneous whitespace at the very beginning and very end of our file.
+(Lots of formatters out there insist that text files end with a single
+blank line).
+
+See also: @racket[read-line] if your file has one line of text.
+
+If instead you want to process individual lines of a file, then you can
+use @racket[for] with @racket[in-lines]:
 
 @interaction[
 (define (upcase-all in)
@@ -420,9 +482,32 @@ If you want to process individual lines of a file, then you can use
               "Can you hear me, now?")))
 ]
 
-If you want to determine whether ``hello'' appears in a file, then you
-could search separate lines, but it's even easier to simply apply a
-regular expression (see @secref["regexp"]) to the stream:
+You could also combine computations over each line. So if you want to
+know how many lines contain ``m'', you could do:
+
+@examples[
+ #:eval port-eval
+ (with-input-from-file "manylines.txt"
+   (lambda ()
+     (for/sum ([l (in-lines)]
+                #:when (string-contains? l "m"))
+       1)))]
+
+@ex:examples[
+ #:eval port-eval
+ #:hidden
+ (when (file-exists? "oneline.txt") (delete-file "oneline.txt"))
+ (when (file-exists? "manylines.txt") (delete-file "manylines.txt"))
+ (current-directory old-dir)]
+
+Here, @racket[with-input-from-file] from @racketmodname[racket/port] sets
+the default input port to be the file @filepath{manylines.txt} inside
+the thunk. It also closes the file after the computation has been
+completed (and in a few other cases).
+
+However, if you want to determine whether ``hello'' appears in a file,
+then you could search separate lines, but it's even easier to simply
+apply a regular expression (see @secref["regexp"]) to the stream:
 
 @interaction[
 (define (has-hello? in)
