@@ -449,7 +449,7 @@ handling and the limited buffer capacity of subprocess pipes.}
 
  @item{an input port piped from the subprocess's standard output,}
 
- @item{an output port piped to the subprocess standard input,} 
+ @item{an output port piped to the subprocess's standard input,} 
 
  @item{the system process id of the subprocess,}
 
