@@ -126,12 +126,12 @@ positions are initialized with the given @racket[b]s.
  Changes the bytes of @racket[dest] starting at position
  @racket[dest-start] to match the bytes in @racket[src] from
  @racket[src-start] (inclusive) to @racket[src-end] (exclusive). The
- bytes strings @racket[dest] and @racket[src] can be the same byte
+ byte strings @racket[dest] and @racket[src] can be the same byte
  string, and in that case the destination region can overlap with the
  source region; the destination bytes after the copy match the source
  bytes from before the copy. If any of @racket[dest-start],
  @racket[src-start], or @racket[src-end] are out of range (taking into
- account the sizes of the bytes strings and the source and destination
+ account the sizes of the byte strings and the source and destination
  regions), the @exnraise[exn:fail:contract].
 
 @mz-examples[(define s (bytes 65 112 112 108 101))
