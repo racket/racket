@@ -181,28 +181,26 @@
       [else #f]))
   
   (define (fixup new-p path src-base level)
-    (case mode
-      [(binary binary-lib built)
-       (define bstr (path->bytes path))
-       (cond
-        [(regexp-match? #rx"[.]html$" bstr)
-         (fixup-html new-p)]
-        [else
-         (case mode
-           [(binary binary-lib)
+    (define bstr (path->bytes path))
+    (cond
+      [(and (not (eq? mode 'source)) (regexp-match? #rx"[.]html$" bstr))
+       (fixup-html new-p)]
+      [else
+       (case mode
+         [(binary binary-lib)
+          (cond
+            [(equal? #"info.rkt" bstr)
+             (fixup-info new-p src-base level mode)]
+            [(regexp-match? #rx"[.]zo$" bstr)
+             (fixup-zo new-p)])]
+         [(built source)
+          (when (or (eq? level 'package)
+                    (eq? level 'package+collection))
             (cond
-             [(equal? #"info.rkt" bstr)
-              (fixup-info new-p src-base level mode)]
-             [(regexp-match? #rx"[.]zo$" bstr)
-              (fixup-zo new-p)])]
-           [(built)
-            (when (or (eq? level 'package)
-                      (eq? level 'package+collection))
-              (cond
-               [(equal? #"info.rkt" bstr)
-                (fixup-info new-p src-base level mode)]
-               [else (void)]))]
-           [else (void)])])]))
+              [(equal? #"info.rkt" bstr)
+               (fixup-info new-p src-base level mode)]
+              [else (void)]))]
+         [else (void)])]))
   
   (define (explore base   ; containing directory relative to `dir`, 'base at start
                    paths  ; paths in `base'
@@ -269,9 +267,7 @@
        [else 'package]))) 
   
   (explore 'same (directory-list dir) drops keeps #f level)
-  (case mode
-    [(binary binary-lib built) (unmove-files dir dest-dir drop-keep-ns)]
-    [else (void)])
+  (unmove-files dir dest-dir drop-keep-ns)
   (case mode
     [(built binary binary-lib)
      (create-info-as-needed mode dest-dir level)]
@@ -373,7 +369,9 @@
               [(binary binary-lib)
                `((define assume-virtual-sources #t))]
               [else '()])
-          (define package-content-state '(,mode ,(version)))
+          ,@(case mode
+              [(source) '()]
+              [else `((define package-content-state '(,mode ,(version))))])
           . ,(filter values
                      (map (fixup-info-definition get-info mode) defns)))))
     (define new-content
@@ -403,7 +401,7 @@
     [`(define package-content-state . ,v) #f]
     [_
      (case mode
-       [(built) defn]
+       [(built source) defn]
        [else
         (match defn
           [`(define build-deps . ,v) #f]
