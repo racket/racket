@@ -348,6 +348,25 @@
   ;; Retain receiver
   (test #f sync/timeout 0 r2))
 
+
+; --------------------
+;; Regression test for `log-message` mis-parsing arguments,
+;; based on Cameron Moy's example
+
+(let ()
+  (define-logger hello)
+  (define (f)
+    (log-hello-info "foo")
+    (define result (findf (λ (x) #f) null)) ; provokes a false in the right place...
+    (log-hello-info "bar")
+    result)
+  (set! f f)
+
+  (define recv (make-log-receiver hello-logger 'info))
+  (f)
+  (test "hello: foo" vector-ref (sync recv) 1)
+  (test "hello: bar" vector-ref (sync recv) 1))
+
 ; --------------------
 
 (report-errs)

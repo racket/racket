@@ -393,6 +393,13 @@
       result)]
    [else
     (cond
+     [(and (eq? radix 10)
+           (number? n))
+      ;; `number->string` goes through `format` to get to an implementation
+      ;; like this, so take a shortcut:
+      (let ([op (#%open-output-string)])
+        (#%display n op)
+        (#%get-output-string op))]
      [(eq? radix 16)
       ;; Host generates uppercase letters, Racket generates lowercase
       (string-downcase (#2%number->string n radix))]

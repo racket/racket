@@ -12,6 +12,7 @@
          racket/unsafe/undefined
          "class-undef.rkt"
          (for-syntax racket/stxparam
+                     racket/private/immediate-default
                      syntax/kerncase
                      syntax/stx
                      syntax/name
@@ -528,7 +529,7 @@
                                              [(pair? vars)
                                               (syntax-case (car vars) ()
                                                 [(id expr)
-                                                 (identifier? #'id)
+                                                 (and (identifier? #'id) (not (immediate-default? #'expr)))
                                                  ;; optional argument; need to wrap arg expression
                                                  (cons
                                                   (with-syntax ([expr (syntax/loc #'expr

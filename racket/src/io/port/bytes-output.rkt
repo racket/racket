@@ -21,25 +21,28 @@
          unsafe-write-bytes)
 
 (module+ internal
-  (provide do-write-bytes))
+  (provide do-write-byte
+           do-write-bytes))
 
 (define/who (write-byte b [out (current-output-port)])
   (check who byte? b)
-  (check who output-port? out)
-  (let ([out (->core-output-port out)])
-    (start-atomic)
-    (define buffer (core-port-buffer out))
-    (define pos (direct-pos buffer))
-    (cond
-      [(pos . fx< . (direct-end buffer))
-       (bytes-set! (direct-bstr buffer) pos b)
-       (set-direct-pos! buffer (fx+ pos 1))
-       (when (core-port-count out)
-         (port-count-byte! out b))
-       (end-atomic)]
-      [else
-       (end-atomic)
-       (write-some-bytes 'write-byte out (bytes b) 0 1 #:buffer-ok? #t #:copy-bstr? #f)]))
+  (do-write-byte b (->core-output-port out who)))
+
+;; `out` must be a core output port
+(define (do-write-byte b out)
+  (start-atomic)
+  (define buffer (core-port-buffer out))
+  (define pos (direct-pos buffer))
+  (cond
+    [(pos . fx< . (direct-end buffer))
+     (bytes-set! (direct-bstr buffer) pos b)
+     (set-direct-pos! buffer (fx+ pos 1))
+     (when (core-port-count out)
+       (port-count-byte! out b))
+     (end-atomic)]
+    [else
+     (end-atomic)
+     (write-some-bytes 'write-byte out (bytes b) 0 1 #:buffer-ok? #t #:copy-bstr? #f)])
   (void))
 
 (define (do-write-bytes who out bstr start end)

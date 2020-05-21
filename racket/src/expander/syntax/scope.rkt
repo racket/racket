@@ -379,84 +379,133 @@
 ;; Adding, removing, or flipping a scope is propagated
 ;; lazily to subforms
 (define-inline (apply-scope s sc op prop-op)
+  (define content* (syntax-content* s))
+  (define content (if (modified-content? content*)
+                      (modified-content-content content*)
+                      content*))
   (if (shifted-multi-scope? sc)
       (struct-copy syntax s
                    [shifted-multi-scopes (fallback-update-first (syntax-shifted-multi-scopes s)
                                                                 (lambda (smss)
                                                                   (op (fallback-first smss) sc)))]
-                   [scope-propagations+tamper (if (datum-has-elements? (syntax-content s))
-                                                  (prop-op (syntax-scope-propagations+tamper s)
-                                                           sc
-                                                           (syntax-scopes s)
-                                                           (syntax-shifted-multi-scopes s)
-                                                            (syntax-mpi-shifts s))
-                                                  (syntax-scope-propagations+tamper s))])
+                   [content* (if (datum-has-elements? content)
+                                 (let ([prop (prop-op (and (modified-content? content*)
+                                                           (modified-content-scope-propagations+tamper content*))
+                                                      sc
+                                                      (syntax-scopes s)
+                                                      (syntax-shifted-multi-scopes s)
+                                                      (syntax-mpi-shifts s))])
+                                   (if prop
+                                       (modified-content content prop)
+                                       content))
+                                 content*)])
       (struct-copy syntax s
                    [scopes (op (syntax-scopes s) sc)]
-                   [scope-propagations+tamper (if (datum-has-elements? (syntax-content s))
-                                                  (prop-op (syntax-scope-propagations+tamper s)
-                                                           sc
-                                                           (syntax-scopes s)
-                                                           (syntax-shifted-multi-scopes s)
-                                                           (syntax-mpi-shifts s))
-                                                  (syntax-scope-propagations+tamper s))])))
+                   [content* (if (datum-has-elements? content)
+                                 (let ([prop (prop-op (and (modified-content? content*)
+                                                           (modified-content-scope-propagations+tamper content*))
+                                                      sc
+                                                      (syntax-scopes s)
+                                                      (syntax-shifted-multi-scopes s)
+                                                      (syntax-mpi-shifts s))])
+                                   (if prop
+                                       (modified-content content prop)
+                                       content))
+                                 content*)])))
 
-(define (syntax-e/no-taint s)
-  (define prop (syntax-scope-propagations+tamper s))
-  (if (or (propagation? prop)
-          (tamper-needs-propagate? prop))
-      (let ([new-content
-             (non-syntax-map (syntax-content s)
+(define (syntax-propagated-content* s)
+  (define content* (syntax-content* s))
+  (cond
+    [(not (modified-content? content*))
+     content*]
+    [else
+     (define prop (modified-content-scope-propagations+tamper content*))
+     (cond
+       [(or (propagation? prop)
+            (tamper-needs-propagate? prop))
+        (define content (modified-content-content content*))
+        (define new-content
+          (cond
+            [(propagation? prop)
+             (non-syntax-map content
                              (lambda (tail? x) x)
                              (lambda (sub-s)
-                               (if (propagation? prop)
-                                   (struct-copy syntax sub-s
-                                                [scopes (propagation-apply
+                               (define sub-content* (syntax-content* sub-s))
+                               (define sub-content (if (modified-content? sub-content*)
+                                                       (modified-content-content sub-content*)
+                                                       sub-content*))
+                               (define scope-propagations+tamper
+                                 (propagation-merge
+                                  sub-content
+                                  prop
+                                  (and (modified-content? sub-content*)
+                                       (modified-content-scope-propagations+tamper sub-content*))
+                                  (syntax-scopes sub-s)
+                                  (syntax-shifted-multi-scopes sub-s)
+                                  (syntax-mpi-shifts sub-s)))
+                               (struct-copy syntax sub-s
+                                            [scopes (propagation-apply
+                                                     prop
+                                                     (syntax-scopes sub-s)
+                                                     s)]
+                                            [shifted-multi-scopes (propagation-apply-shifted
+                                                                   prop
+                                                                   (syntax-shifted-multi-scopes sub-s)
+                                                                   s)]
+                                            [mpi-shifts (propagation-apply-mpi-shifts
                                                          prop
-                                                         (syntax-scopes sub-s)
+                                                         (syntax-mpi-shifts sub-s)
                                                          s)]
-                                                [shifted-multi-scopes (propagation-apply-shifted
-                                                                       prop
-                                                                       (syntax-shifted-multi-scopes sub-s)
-                                                                       s)]
-                                                [mpi-shifts (propagation-apply-mpi-shifts
-                                                             prop
-                                                             (syntax-mpi-shifts sub-s)
-                                                             s)]
-                                                [inspector (propagation-apply-inspector
-                                                            prop
-                                                            (syntax-inspector sub-s))]
-                                                [scope-propagations+tamper (propagation-merge
-                                                                            (syntax-content sub-s)
-                                                                            prop
-                                                                            (syntax-scope-propagations+tamper sub-s)
-                                                                            (syntax-scopes sub-s)
-                                                                            (syntax-shifted-multi-scopes sub-s)
-                                                                            (syntax-mpi-shifts sub-s))])
-                                   (struct-copy/t syntax sub-s
-                                                  [tamper (tamper-tainted-for-content
-                                                           (syntax-content sub-s))]))))])
-        (set-syntax-content! s new-content)
-        (set-syntax-scope-propagations+tamper! s (tamper-propagated (if (propagation? prop)
-                                                                        (propagation-tamper prop)
-                                                                        prop)))
-        new-content)
-      (syntax-content s)))
+                                            [inspector (propagation-apply-inspector
+                                                        prop
+                                                        (syntax-inspector sub-s))]
+                                            [content* (if scope-propagations+tamper
+                                                          (modified-content sub-content scope-propagations+tamper)
+                                                          sub-content)])))]
+            [else
+             (non-syntax-map content
+                             (lambda (tail? x) x)
+                             (lambda (sub-s)
+                               (struct-copy/t syntax sub-s
+                                              [tamper (tamper-tainted-for-content
+                                                       (syntax-content sub-s))])))]))
+        (define new-tamper (tamper-propagated (if (propagation? prop)
+                                                  (propagation-tamper prop)
+                                                  prop)))
+        (define new-content* (if new-tamper
+                                 (modified-content new-content new-tamper)
+                                 new-content))
+        (if (syntax-content*-cas! s content* new-content*)
+            new-content*
+            ;; some other thread beat us to it?
+            (syntax-propagated-content* s))]
+       [else content*])]))
+
+(define (syntax-e/no-taint s)
+  (define content* (syntax-propagated-content* s))
+  (if (modified-content? content*)
+      (modified-content-content content*)
+      content*))
 
 (define (syntax-e s)
-  (define e (syntax-content s))
+  (define e (syntax-content* s))
   (cond
     ;; Shortcut for most common case:
     [(symbol? e) e]
     ;; General case:
     [else
-     (define content (syntax-e/no-taint s))
-     ;; Since we just called `syntax-e/no-taint`, we know that
-     ;; `(syntax-scope-propagations+tamper s)` is not a propagation
+     (define content* (syntax-propagated-content* s))
      (cond
-       [(not (tamper-armed? (syntax-scope-propagations+tamper s))) content]
-       [(datum-has-elements? content) (taint-content content)]
-       [else content])]))
+       [(modified-content? content*)
+        (define content (modified-content-content content*))
+        (define prop (modified-content-scope-propagations+tamper content*))
+        ;; Since we just called `syntax-propagate-content*`, we know that
+        ;; `prop` is not a propagation
+        (cond
+          [(not (tamper-armed? prop)) content]
+          [(datum-has-elements? content) (taint-content content)]
+          [else content])]
+       [else content*])]))
 
 ;; When a representative-scope is manipulated, we want to
 ;; manipulate the multi scope, instead (at a particular
@@ -507,7 +556,7 @@
               (lambda (tail? x) x)
               (lambda (s d)
                 (struct-copy syntax s
-                             [content d]
+                             [content* (re-modify-content s d)]
                              [shifted-multi-scopes
                               (push (syntax-shifted-multi-scopes s))]))
               syntax-e/no-taint))
@@ -558,8 +607,8 @@
                (= 1 (hash-count ops))
                (not (propagation-inspector prop))
                (not (propagation-add-mpi-shifts prop)))
-          ;; Nothing left to propagate
-          #f]
+          ;; Nothing left to propagate, except maybe taint
+          (propagation-tamper prop)]
          [else
           (struct-copy propagation prop
                        [scope-ops
@@ -754,7 +803,7 @@
                     (lambda (tail? d) d)
                     (lambda (s d)
                       (struct-copy syntax s
-                                   [content d]
+                                   [content* (re-modify-content s d)]
                                    [shifted-multi-scopes
                                     (shift-all (syntax-shifted-multi-scopes s))]))
                     syntax-e/no-taint))))
@@ -797,7 +846,7 @@
                     (lambda (tail? d) d)
                     (lambda (s d)
                       (struct-copy syntax s
-                                   [content d]
+                                   [content* (re-modify-content s d)]
                                    [scopes (swap-scs (syntax-scopes s))]
                                    [shifted-multi-scopes
                                     (swap-smss (syntax-shifted-multi-scopes s))]))

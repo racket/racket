@@ -4085,7 +4085,7 @@ log_message(int argc, Scheme_Object *argv[])
   bytes = scheme_char_string_to_byte_string(bytes);
   pos++;
 
-  if (argc >= (pos+1))
+  if (argc > (pos+1))
     pfx = SCHEME_TRUEP(argv[pos+1]);
   else
     pfx = 1;

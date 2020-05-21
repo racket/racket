@@ -38,7 +38,8 @@
     (error "didn't get out-of-memory or shutdown as expected"))
   (printf "ok at ~a\n" size))
 
-(try #x10000)
-(try #x100000)
-(try #x1000000)
-(try #x10000000)
+(unless (eq? (system-type 'gc) 'cgc)
+  (try #x10000)
+  (try #x100000)
+  (try #x1000000)
+  (try #x10000000))

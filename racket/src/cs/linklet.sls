@@ -549,6 +549,11 @@
       (define quick-mode? (or default-compile-quick?
                               (and (not serializable?)
                                    (#%memq 'quick options))))
+      (define sfd-cache (if serializable?
+                            ;; For determinism: a fresh, non-weak cache per linklet
+                            (make-hash)
+                            ;; For speed and more flexible sharing: a weak, place-local cache
+                            (get-nonserializable-sfd-cache)))
       (performance-region
        'schemify
        (define jitify-mode?
@@ -604,7 +609,7 @@
                                           [(jit)
                                            ;; Preserve annotated `lambda` source for on-demand compilation:
                                            (lambda (expr arity-mask name)
-                                             (let ([a (correlated->annotation (xify expr) serializable?)])
+                                             (let ([a (correlated->annotation (xify expr) serializable? sfd-cache)])
                                                (make-wrapped-code (if serializable?
                                                                       (add-code-hash a)
                                                                       a)
@@ -620,7 +625,7 @@
                                                                    (lambda (s) (cross-compile cross-machine s))
                                                                    compile*-to-bytevector)
                                                                compile*)
-                                                           (show lambda-on? "lambda" (correlated->annotation expr serializable?)))])
+                                                           (show lambda-on? "lambda" (correlated->annotation expr serializable? sfd-cache)))])
                                                 (if serializable?
                                                     (make-wrapped-code code arity-mask (extract-inferred-name expr name))
                                                     code))))])))]))
@@ -635,7 +640,7 @@
                            [else (show "schemified" impl-lam/paths)])])
            (if (eq? format 'interpret)
                (interpretable-jitified-linklet impl-lam serializable?)
-               (correlated->annotation impl-lam serializable?))))
+               (correlated->annotation impl-lam serializable? sfd-cache))))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (when (and cp0-on? (eq? format 'compile))

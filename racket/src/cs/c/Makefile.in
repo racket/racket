@@ -466,9 +466,9 @@ common-install:
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) system-install
-	$(ICP) $(srcdir)/api.h $(includepltdir)/racketcs.h
-	$(ICP) $(srcdir)/boot.h $(includepltdir)/racketcsboot.h
-	$(ICP) $(SCHEME_INC)/scheme.h $(includepltdir)/chezscheme.h
+	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"
+	$(ICP) $(srcdir)/boot.h "$(DESTDIR)$(includepltdir)/racketcsboot.h"
+	$(ICP) $(SCHEME_INC)/scheme.h "$(DESTDIR)$(includepltdir)/chezscheme.h"
 	$(MAKE) common-@INSTALL_LIBS_ENABLE@-libs
 
 system-install:

@@ -158,18 +158,25 @@
     (define shift (if non-source?
                       (non-source-shift from-mpi to-mpi)
                       (cons from-mpi to-mpi)))
+    (define content* (syntax-content* s))
+    (define content (if (modified-content? content*)
+                        (modified-content-content content*)
+                        content*))
     (struct-copy syntax s
                  [mpi-shifts (shift-cons shift (syntax-mpi-shifts s))]
                  [inspector (or (syntax-inspector s)
                                 inspector)]
-                 [scope-propagations+tamper (if (datum-has-elements? (syntax-content s))
-                                                (propagation-mpi-shift (syntax-scope-propagations+tamper s)
-                                                                       (lambda (s) (shift-cons shift s))
-                                                                       inspector
-                                                                       (syntax-scopes s)
-                                                                       (syntax-shifted-multi-scopes s)
-                                                                       (syntax-mpi-shifts s))
-                                                (syntax-scope-propagations+tamper s))])]))
+                 [content* (if (datum-has-elements? content)
+                               (modified-content
+                                content
+                                (propagation-mpi-shift (and (modified-content? content*)
+                                                            (modified-content-scope-propagations+tamper content*))
+                                                       (lambda (s) (shift-cons shift s))
+                                                       inspector
+                                                       (syntax-scopes s)
+                                                       (syntax-shifted-multi-scopes s)
+                                                       (syntax-mpi-shifts s)))
+                               content*)])]))
 
 (define (shift-cons shift shifts)
   (cond
@@ -303,17 +310,24 @@
 
 (define (syntax-set-inspector s insp)
   ;; This inspector merging is also implemented via propagations in "scope.rkt"
+  (define content* (syntax-content* s))
+  (define content (if (modified-content? content*)
+                      (modified-content-content content*)
+                      content*))
   (struct-copy syntax s
                [inspector (or (syntax-inspector s)
                               insp)]
-               [scope-propagations+tamper (if (datum-has-elements? (syntax-content s))
-                                              (propagation-mpi-shift (syntax-scope-propagations+tamper s)
-                                                                     #f
-                                                                     insp
-                                                                     (syntax-scopes s)
-                                                                     (syntax-shifted-multi-scopes s)
-                                                                     (syntax-mpi-shifts s))
-                                              (syntax-scope-propagations+tamper s))]))
+               [content* (if (datum-has-elements? content)
+                             (modified-content
+                              content
+                              (propagation-mpi-shift (and (modified-content? content*)
+                                                          (modified-content-scope-propagations+tamper content*))
+                                                     #f
+                                                     insp
+                                                     (syntax-scopes s)
+                                                     (syntax-shifted-multi-scopes s)
+                                                     (syntax-mpi-shifts s)))
+                             content*)]))
 
 ;; ----------------------------------------
 

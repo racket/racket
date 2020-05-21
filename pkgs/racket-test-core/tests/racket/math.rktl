@@ -329,6 +329,7 @@
 (test 0 tanh 0)
 (test #t double=? tanh+1 (tanh 1))
 (test 1.0 tanh 20)
+(test #t flonum? (tanh (inexact->exact 1/100000000000)))
 
 #reader "maybe-single.rkt"
 (begin

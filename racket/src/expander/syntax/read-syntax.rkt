@@ -94,7 +94,7 @@
 
 (define (read-to-syntax s-exp srcloc rep)
   (struct-copy syntax empty-syntax
-               [content (datum-intern-literal s-exp)]
+               [content* (datum-intern-literal s-exp)]
                [srcloc srcloc]
                [props (case rep
                         [(#\[) original-square-props]

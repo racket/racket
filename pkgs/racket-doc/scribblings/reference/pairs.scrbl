@@ -1174,7 +1174,7 @@ traversal.
 @defproc[(check-duplicates [lst list?]
                            [same? (any/c any/c . -> . any/c) equal?]
                            [#:key extract-key (-> any/c any/c) (lambda (x) x)]
-                           [#:default failure-result (failure-result/c any/c) (lambda () #f)])
+                           [#:default failure-result failure-result/c (lambda () #f)])
          any]{
 
 Returns the first duplicate item in @racket[lst]. More precisely, it

@@ -6606,5 +6606,19 @@
                   #rx"this error is reached")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test related to single-use variables
+;; and `with-continuation-mark`
+
+(test #t
+      procedure?
+      (let ((q #f)
+            (n (λ (x) #t)))
+        (let ([h (with-continuation-mark
+                  (set! q 1)
+                  #f
+                  n)])
+          (lambda (x) (h x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -267,6 +267,7 @@
          enable-cross-library-optimization
          enable-arithmetic-left-associative
          enable-type-recovery
+         fasl-compressed
          current-expand
          current-generate-id
          internal-defines-as-letrec*
@@ -1079,6 +1080,7 @@
 (define enable-cross-library-optimization (make-parameter #t))
 (define enable-arithmetic-left-associative (make-parameter #f))
 (define enable-type-recovery (make-parameter #t))
+(define fasl-compressed (make-parameter #f))
 
 (define current-generate-id (make-parameter gensym))
 

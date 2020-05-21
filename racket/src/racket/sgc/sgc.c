@@ -1010,7 +1010,7 @@ static AllocCacheBlock *alloc_cache;
 
 static void *platform_plain_sector(int count, int executable)
 {
-  intptr_t sd;
+  intptr_t sd = 0;
 
   if (executable)
     return mmap_sector(count, 1);

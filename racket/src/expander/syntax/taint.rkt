@@ -17,14 +17,22 @@
 (define-syntax struct-copy/t
   (syntax-rules (syntax tamper)
     [(struct-copy/t syntax s [tamper v])
-     (let ([stx s])
+     (let* ([stx s]
+            [t v]
+            [content* (syntax-content* stx)]
+            [content (if (modified-content? content*)
+                         (modified-content-content content*)
+                         content*)]
+            [p (and (modified-content? content*)
+                    (modified-content-scope-propagations+tamper content*))])
        (struct-copy syntax stx
-                    [scope-propagations+tamper
-                     (let ([t v]
-                           [p (syntax-scope-propagations+tamper stx)])
-                       (if (tamper? p)
-                           t
-                           ((propagation-set-tamper-ref p) p t)))]))]))
+                    [content*
+                     (let ([new-p (if (tamper? p)
+                                      t
+                                      ((propagation-set-tamper-ref p) p t))])
+                       (if new-p
+                           (modified-content content new-p)
+                           content))]))]))
 
 (define (taint-content d)
   (non-syntax-map d

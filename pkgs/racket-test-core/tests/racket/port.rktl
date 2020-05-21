@@ -560,6 +560,35 @@
 (test 3 sync (write-bytes-avail-evt #"Bye" cap-port))
 (test "HELLOBYE" get-output-string orig-port)
 
+;; Make sure output ports get immutable byte strings
+(let ()
+  (define i? #f)
+  (define p (make-output-port
+             'test
+             always-evt
+             (lambda (bstr start end buffer? enable-break?)
+               (set! i? (immutable? bstr))
+               (- end start))
+             void
+             (lambda (v buffer? enable-break?)
+               1)
+             (lambda (bstr start end)
+               (set! i? (immutable? bstr))
+               (wrap-evt always-evt (lambda (v) (- end start))))
+             (lambda (v)
+               (wrap-evt always-evt (lambda (v) 1)))))
+  (test 5 write-bytes (bytes-copy #"hello") p)
+  (test #t values i?)
+  (set! i? #f)
+  (test 5 write-bytes #"hello" p)
+  (test #t values i?)
+  (set! i? #f)
+  (test #t evt? (write-bytes-avail-evt #"hello" p))
+  (test #t values i?)
+  (set! i? #f)
+  (test #t evt? (write-bytes-avail-evt (bytes-copy #"hello") p))
+  (test #t values i?))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Peeking in a limited pipe extends the limit:
 

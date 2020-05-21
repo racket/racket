@@ -333,7 +333,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
   SYSTEMTIME localTime;
 #else
 # define CHECK_TIME_T time_t
-  struct tm *localTime;
+  struct tm localTime;
 #endif
   CHECK_TIME_T now;
   char *tzn;
@@ -373,10 +373,9 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
     }
 #else
     if (get_gmt)
-      localTime = gmtime(&now);
+      success = (gmtime_r(&now, &localTime) != NULL);
     else
-      localTime = localtime(&now);
-    success = !!localTime;
+      success = (localtime_r(&now, &localTime) != NULL);
 #endif
 
     if (success) {
@@ -414,21 +413,21 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
       }
 # define TZN_STRDUP(s) s
 #else
-      hour = localTime->tm_hour;
-      min = localTime->tm_min;
-      sec = localTime->tm_sec;
+      hour = localTime.tm_hour;
+      min = localTime.tm_min;
+      sec = localTime.tm_sec;
 
-      month = localTime->tm_mon + 1;
-      day = localTime->tm_mday;
-      year = (uintptr_t)localTime->tm_year + 1900;
+      month = localTime.tm_mon + 1;
+      day = localTime.tm_mday;
+      year = (uintptr_t)localTime.tm_year + 1900;
 
-      wday = localTime->tm_wday;
-      yday = localTime->tm_yday;
+      wday = localTime.tm_wday;
+      yday = localTime.tm_yday;
 
       if (get_gmt)
         dst = 0;
       else
-        dst = localTime->tm_isdst;
+        dst = localTime.tm_isdst;
 
       tzoffset = 0;
       if (!get_gmt) {
@@ -453,12 +452,12 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
           tzoffset = -timezone;
 # endif
 # ifdef USE_TM_GMTOFF_FIELD
-        tzoffset = localTime->tm_gmtoff;
+        tzoffset = localTime.tm_gmtoff;
 # endif
 # ifdef USE_TZNAME_VAR
-        tzn = MSC_IZE(tzname)[localTime->tm_isdst];
+        tzn = MSC_IZE(tzname)[localTime.tm_isdst];
 # elif defined(USE_TM_ZONE_FIELD)
-        tzn = localTime->tm_zone;
+        tzn = localTime.tm_zone;
 # else
         tzn = NULL;
 # endif

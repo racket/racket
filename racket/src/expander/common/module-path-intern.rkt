@@ -6,18 +6,25 @@
          intern-module-path-index!)
 
 (struct mpi-intern-table (normal ; name[not #f] -[`equal?`-based]-> base -[`eq?`-based]-> module path index
-                          fast)) ; superset, but `eq?`-keyed for fast already-interned checks
+                          fast   ; superset, but `eq?`-keyed for fast already-interned checks
+                          self)) ; name -[`equal?`-based]-> module path index
 
 (define (make-module-path-index-intern-table)
-  (mpi-intern-table (make-hash) (make-hasheq)))
+  (mpi-intern-table (make-hash) (make-hasheq) (make-hash)))
 
 (define (intern-module-path-index! t mpi)
   (or (hash-ref (mpi-intern-table-fast t) mpi #f)
       (let-values ([(name base) (module-path-index-split mpi)])
         (cond
          [(not name)
-          (hash-set! (mpi-intern-table-fast t) mpi mpi)
-          mpi]
+          ;; "self" MPIs are equivalent when they have the same resolution
+          (define r (or (module-path-index-resolved mpi)
+                        'self))
+          (or (hash-ref (mpi-intern-table-self t) r #f)
+              (begin
+                (hash-set! (mpi-intern-table-self t) r mpi)
+                (hash-set! (mpi-intern-table-fast t) mpi mpi)
+                mpi))]
          [else
           (define interned-base (and base
                                      (intern-module-path-index! t base)))

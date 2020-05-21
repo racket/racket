@@ -969,12 +969,12 @@
          [(and simple-p
                (fixnum? offset)
                (or (not abs?) (fx= 0 (fxand offset (fx- (fxsll 1 type-bits) 1)))))
-          (if (bytevector? simple-p)
-              (bytes-ref simple-p (if abs? offset (fxsll offset type-bits)))
-              (let ([offset (let ([offset (if abs? offset (fxsll offset type-bits))])
-                              (if (cpointer+offset? p)
-                                  (+ offset (cpointer+offset-offset p))
-                                  offset))])
+          (let ([offset (let ([offset (if abs? offset (fxsll offset type-bits))])
+                          (if (cpointer+offset? p)
+                              (+ offset (cpointer+offset-offset p))
+                              offset))])
+            (if (bytevector? simple-p)
+                (bytes-ref simple-p offset)
                 (foreign-ref 'foreign-type simple-p offset)))]
          [else
           (if abs?
@@ -993,12 +993,12 @@
                (fixnum? offset)
                (or (not abs?) (fx= 0 (fxand offset (fx- (fxsll 1 type-bits) 1))))
                (ok-v? v))
-          (if (bytevector? simple-p)
-              (bytes-set simple-p (if abs? offset (fxsll offset type-bits)) v)
-              (let ([offset (let ([offset (if abs? offset (fxsll offset type-bits))])
-                              (if (cpointer+offset? p)
-                                  (+ offset (cpointer+offset-offset p))
-                                  offset))])
+          (let ([offset (let ([offset (if abs? offset (fxsll offset type-bits))])
+                          (if (cpointer+offset? p)
+                              (+ offset (cpointer+offset-offset p))
+                              offset))])
+            (if (bytevector? simple-p)
+                (bytes-set simple-p offset v)
                 (foreign-set! 'foreign-type simple-p offset v)))]
          [else
           (if abs?

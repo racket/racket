@@ -926,7 +926,7 @@ static Scheme_Object *do_bitop(const Scheme_Object *a, const Scheme_Object *b, i
   intptr_t a_size, b_size, a_pos, b_pos, res_alloc, i;
   short res_pos;
   bigdig* a_digs, *b_digs, *res_digs, quick_digs[1];
-  int carry_out_a, carry_out_b, carry_out_res, carry_in_a, carry_in_b, carry_in_res;
+  int carry_out_a, carry_out_b, carry_out_res, carry_in_b, carry_in_res;
   Scheme_Object* o;
   SAFE_SPACE(asd) SAFE_SPACE(bsd)
 
@@ -972,7 +972,7 @@ static Scheme_Object *do_bitop(const Scheme_Object *a, const Scheme_Object *b, i
     res_digs = allocate_bigdig_array(res_alloc);
 
   carry_out_a = carry_out_b = carry_out_res = 1;
-  carry_in_a = carry_in_b = carry_in_res = 0;
+  carry_in_b = carry_in_res = 0;
 
   for (i = 0; i < res_alloc; ++i)
   {
@@ -981,8 +981,8 @@ static Scheme_Object *do_bitop(const Scheme_Object *a, const Scheme_Object *b, i
     a_val = a_digs[i];
     if (!a_pos)
     {
-      /* We have to do te operation on the 2's complement of a */
-      carry_in_a = carry_out_a;
+      /* We have to do the operation on the 2's complement of a */
+      int carry_in_a = carry_out_a;
       carry_out_a = (carry_in_a == 1 && a_val == 0) ? 1 : 0;
       a_val = ~a_val + carry_in_a;
     }

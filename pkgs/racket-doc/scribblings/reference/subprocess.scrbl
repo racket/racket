@@ -45,7 +45,7 @@ the @envvar{PATH} environment variable. On
 Unix and Mac OS, command-line arguments are passed as byte strings,
 and string @racket[arg]s are converted using the current locale's
 encoding (see @secref["encodings"]). On Windows, command-line
-arguments are passed as strings, and bytes strings are converted using
+arguments are passed as strings, and byte strings are converted using
 UTF-8.
 
 On Windows, the first @racket[arg] can be replaced with
@@ -99,7 +99,7 @@ The @racket[subprocess] procedure returns four values:
  @item{an input port piped from the process's standard output, or
  @racket[#f] if @racket[stdout-output-port] was a port;}
 
- @item{an output port piped to the process standard input, or
+ @item{an output port piped to the process's standard input, or
  @racket[#f] if @racket[stdin-input-port] was a port;}
 
  @item{an input port piped from the process's standard error, or
@@ -449,7 +449,7 @@ handling and the limited buffer capacity of subprocess pipes.}
 
  @item{an input port piped from the subprocess's standard output,}
 
- @item{an output port piped to the subprocess standard input,} 
+ @item{an output port piped to the subprocess's standard input,} 
 
  @item{the system process id of the subprocess,}
 

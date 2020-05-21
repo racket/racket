@@ -3399,7 +3399,7 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
                                              int argc, Scheme_Object *argv[], int is_unsafe)
 {
   Scheme_Chaperone *px, *px2;
-  Scheme_Object *val = argv[0], *orig, *naya, *r, *app_mark;
+  Scheme_Object *val = argv[0], *orig, *r, *app_mark;
   Scheme_Object *props;
 
   if (SCHEME_CHAPERONEP(val))
@@ -3416,9 +3416,8 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   }
 
   orig = get_or_check_arity(val, -1, NULL, 1);
-  if (SCHEME_FALSEP(argv[1]))
-    naya = scheme_false;
-  else {
+  if (!SCHEME_FALSEP(argv[1])) {
+    Scheme_Object *naya;
     naya = get_or_check_arity(argv[1], -1, NULL, 1);
 
     if (!is_subarity(orig, naya, pass_self ? 1 : 0))
@@ -8763,13 +8762,9 @@ static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
     bottom = 0;
   } else {
     startpos = (intptr_t)MZ_CONT_MARK_STACK;
-    if (!p->cont_mark_stack_segments)
-      findpos = 0;
     bottom = p->cont_mark_stack_bottom;
   }
   
-  findpos = startpos;
-
   /* binary search: */
   while (bottom < startpos) {
     findpos = ((bottom + startpos) / 2) - down_delta;
@@ -9015,10 +9010,6 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
   Scheme_Cont_Mark *seg;
   Scheme_Lightweight_Continuation *lw;
   void *stack;
-
-#ifndef MZ_PRECISE_GC
-  return NULL;
-#endif
 
   storage[1] = p;
 

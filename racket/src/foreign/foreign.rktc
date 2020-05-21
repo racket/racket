@@ -1960,7 +1960,6 @@ static Scheme_Malloc_Proc ctype_allocator(Scheme_Object *type)
   Scheme_Object *mode = NULL, *a, *base = NULL;
   Scheme_Malloc_Proc mf;
   for (i=0; i<argc; i++) {
-    a = argv[i];
     a = unwrap_cpointer_property(argv[i]);
     if (SCHEME_INTP(a)) {
       if (num != -1)
