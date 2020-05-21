@@ -99,7 +99,7 @@ The @racket[subprocess] procedure returns four values:
  @item{an input port piped from the process's standard output, or
  @racket[#f] if @racket[stdout-output-port] was a port;}
 
- @item{an output port piped to the process standard input, or
+ @item{an output port piped to the process's standard input, or
  @racket[#f] if @racket[stdin-input-port] was a port;}
 
  @item{an input port piped from the process's standard error, or
