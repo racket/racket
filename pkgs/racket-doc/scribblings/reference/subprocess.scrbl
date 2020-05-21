@@ -45,7 +45,7 @@ the @envvar{PATH} environment variable. On
 Unix and Mac OS, command-line arguments are passed as byte strings,
 and string @racket[arg]s are converted using the current locale's
 encoding (see @secref["encodings"]). On Windows, command-line
-arguments are passed as strings, and bytes strings are converted using
+arguments are passed as strings, and byte strings are converted using
 UTF-8.
 
 On Windows, the first @racket[arg] can be replaced with
