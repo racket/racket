@@ -71,7 +71,7 @@
           for-serializable? ; accumulate submodules as serializable?
           to-correlated-linklet? ; compile to machine-independent linklets?
           normalize-locals? ; forget original local-variable names
-          should-not-encounter-macros? ; #t when "expanding" to parse
+          parsing-expanded? ; #t when "expanding" to parse
           skip-visit-available?)) ; avoid instantiation cycles
 
 (define (make-expand-context ns
@@ -218,7 +218,7 @@
   (struct*-copy expand-context ctx
                 [to-parsed? #t]
                 [observer #f]
-                [should-not-encounter-macros? #t]))
+                [parsing-expanded? #t]))
 
 ;; ----------------------------------------
 

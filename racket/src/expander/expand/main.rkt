@@ -300,7 +300,7 @@
     (define adj-s (avoid-current-expand-context (substitute-alternate-id s id) t ctx))
     (log-expand ctx 'tag/context adj-s)
     (expand adj-s ctx)]
-   [(and (expand-context-should-not-encounter-macros? ctx)
+   [(and (expand-context-parsing-expanded? ctx)
          ;; It's ok to have a rename transformer whose target
          ;; is a primitive form, so if it's a rename transformer,
          ;; delay the check for another step
@@ -334,7 +334,7 @@
    [else
     (log-expand ctx 'variable s id)
     ;; A reference to a variable expands to itself
-    (register-variable-referenced-if-local! binding)
+    (register-variable-referenced-if-local! binding ctx)
     ;; If the variable is locally bound, replace the use's scopes with the binding's scopes
     (define result-s (substitute-variable id t #:no-stops? (free-id-set-empty-or-just-module*? (expand-context-stops ctx))))
     (cond
@@ -526,11 +526,12 @@
                                        s)
                        s)]))
 
-(define (register-variable-referenced-if-local! binding)
+(define (register-variable-referenced-if-local! binding ctx)
   ;; If the binding's frame has a reference record, then register
   ;; the use for the purposes of `letrec` splitting
   (when (and (local-binding? binding)
-             (reference-record? (binding-frame-id binding)))
+             (reference-record? (binding-frame-id binding))
+             (not (expand-context-parsing-expanded? ctx)))
     (reference-record-used! (binding-frame-id binding) (local-binding-key binding))))
 
 ;; ----------------------------------------
