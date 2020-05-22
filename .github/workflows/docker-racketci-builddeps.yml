@@ -1,0 +1,28 @@
+name: Build BuildDeps RacketCI Image
+
+on:
+  push:
+    paths:
+      - '.github/workflows/DockerImages/Dockerfile.builddeps'
+      - '.github/workflows/docker-racketci-builddeps.yml'
+
+jobs:
+  build-image:
+    runs-on: ubuntu-18.04
+
+    env:
+      IMAGE_NAME: racket-ci
+      VERSION: builddeps
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        working-directory: ./.github/workflows/DockerImages
+        run: docker build --tag image --file Dockerfile.builddeps .
+      - name: Log into registry
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u pmatos --password-stdin
+      - name: Push image
+        run: |
+          IMAGE_ID=racket/$IMAGE_NAME
+          docker tag image $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
