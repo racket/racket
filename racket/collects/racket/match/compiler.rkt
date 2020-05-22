@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-template racket/base "runtime.rkt" racket/stxparam racket/unsafe/ops)
+(require (for-template racket/base "runtime.rkt" "stx-runtime.rkt" racket/stxparam racket/unsafe/ops)
          syntax/boundmap
          syntax/stx
          "patterns.rkt"
