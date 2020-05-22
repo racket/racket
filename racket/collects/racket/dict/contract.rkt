@@ -592,15 +592,34 @@
                  [else #`(#,(role-wrap-out out-role) prj #,expr)]))
          (define mand-exprs (map in-expr mand-roles mand-tmps))
          (define opt-exprs (map in-expr opt-roles opt-tmps))
-         (define lam-cases
-           (for/list ([i (in-range (add1 (length opt-roles)))])
-             #`[(#,@mand-tmps #,@(take opt-tmps i))
-                #,(if (and escape-index (<= escape-index i))
-                      #`(let/ec escape
-                          #,(out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))
-                      (out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))]))
-         #`(define ((id prj) op)
-             (and op (case-lambda #,@lam-cases))))])))
+         (cond
+           [escape-index
+            (define lam-cases
+              (for/list ([i (in-range (add1 (length opt-roles)))])
+                #`[(#,@mand-tmps #,@(take opt-tmps i))
+                   #,(if (and escape-index (<= escape-index i))
+                         #`(let/ec escape
+                             #,(out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))
+                         (out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))]))
+            #`(define ((id prj) op)
+                (and op (case-lambda #,@lam-cases)))]
+           [else
+            (define lam-cases
+              (for/list ([i (in-range (add1 (length opt-roles)))])
+                #`[(#,@mand-tmps #,@(take opt-tmps i))
+                   ; escape-index is #false
+                   (values
+                    (λ (ans)
+                      #,(out-expr #'ans))
+                    #,@mand-exprs
+                    #,@(take opt-exprs i))]))
+            #`(define ((id prj) op)
+                (and op
+                     ((if (proj-chaperone-mode? prj)
+                          chaperone-procedure
+                          impersonate-procedure)
+                      op
+                      (case-lambda #,@lam-cases))))]))])))
 
 (define-dict-redirect-ops
   [redirect-ref #:: [Self Key] [Default] #:-> Value]
