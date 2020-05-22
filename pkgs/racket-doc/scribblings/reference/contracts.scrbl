@@ -778,8 +778,8 @@ inspect the entire tree.
                (or/c #f
                      (struct/dc bt
                                 [val (between/c lo hi)]
-                                [left (val) #:lazy (bst lo val)]
-                                [right (val) #:lazy (bst val hi)])))]
+                                [left (val) #:lazy (bst/c lo val)]
+                                [right (val) #:lazy (bst/c val hi)])))]
 
 @history[#:changed "6.0.1.6" @elem{Added @racket[#:inv].}]
 }
