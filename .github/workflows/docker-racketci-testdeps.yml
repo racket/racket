@@ -2,6 +2,8 @@ name: Build TestDeps RacketCI Image
 
 on:
   push:
+    branches:
+      - master
     paths:
       - '.github/workflows/DockerImages/Dockerfile.testdeps'
       - '.github/workflows/docker-racketci-testdeps.yml'

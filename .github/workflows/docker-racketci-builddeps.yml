@@ -2,6 +2,8 @@ name: Build BuildDeps RacketCI Image
 
 on:
   push:
+    branches:
+      - master
     paths:
       - '.github/workflows/DockerImages/Dockerfile.builddeps'
       - '.github/workflows/docker-racketci-builddeps.yml'
