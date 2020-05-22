@@ -20,7 +20,7 @@ jobs:
         working-directory: ./.github/workflows/DockerImages
         run: docker build --tag image --file Dockerfile.testdeps .
       - name: Log into registry
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u racketci --password-stdin
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u pmatos --password-stdin
       - name: Push image
         run: |
           IMAGE_ID=racket/$IMAGE_NAME
