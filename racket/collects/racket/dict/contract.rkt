@@ -480,24 +480,21 @@
     [dict-iterate-key (redirect-iterate-key prj)]
     [dict-iterate-value (redirect-iterate-value prj)]
     ; Derived
-    #|
-    [dict-has-key? (redirect- prj)]
-    [dict-set*! (redirect- prj)]
-    [dict-set* (redirect- prj)]
-    [dict-ref! (redirect- prj)]
-    [dict-update! (redirect- prj)]
-    [dict-update (redirect- prj)]
-    [dict-map (redirect- prj)]
-    [dict-for-each (redirect- prj)]
-    [dict-empty? (redirect- prj)]
-    [dict-count (redirect- prj)]
-    [dict-copy (redirect- prj)]
-    [dict-clear (redirect- prj)]
-    [dict-clear! (redirect- prj)]
-    [dict-keys (redirect- prj)]
-    [dict-values (redirect- prj)]
-    [dict->list (redirect- prj)]
-    |#))
+    [dict-has-key? (redirect-has-key? prj)]
+    [dict-set*! (redirect-set*! prj)]
+    [dict-set* (redirect-set* prj)]
+    [dict-ref! (redirect-ref! prj)]
+    [dict-update! (redirect-update! prj)]
+    [dict-update (redirect-update prj)]
+    [dict-map (redirect-map prj)]
+    [dict-for-each (redirect-for-each prj)]
+    [dict-empty? (redirect-empty? prj)]
+    [dict-copy (redirect-copy prj)]
+    [dict-clear (redirect-clear prj)]
+    [dict-clear! (redirect-clear! prj)]
+    [dict-keys (redirect-keys prj)]
+    [dict-values (redirect-values prj)]
+    [dict->list (redirect->list prj)]))
 
 (struct impersonator-dict/c base-dict/c ()
   #:omit-define-syntaxes
@@ -553,9 +550,18 @@
 (define-dict-op-role Value #:in value-in #:out value-out)
 (define-dict-op-role Iter #:in iter-in)
 (define-dict-op-role MaybeIter #:out maybe-iter-out)
+(define-dict-op-role Keys #:out keys-out)
+(define-dict-op-role Values #:out values-out)
+(define-dict-op-role AssocKeysValues #:out assoc-keys-values-out)
+(define-dict-op-role AlternatingKeysValues #:in alternating-keys-values-in)
 (define-dict-op-role Default #:in default-in #:escape)
+(define-dict-op-role DefaultValue #:in default-value-in) ; output as Value
+(define-dict-op-role ValueUpdater #:in value-updater-in)
+(define-dict-op-role KeyValueConsumer #:in key-value-consumer-in)
 (define-dict-op-role Void #:out void-out)
 (define-dict-op-role Nat #:out nat-out)
+(define-dict-op-role Bool #:out bool-out)
+(define-dict-op-role List #:out list-out)
 
 (define-syntax-rule (define-dict-redirect-ops clause ...)
   (begin (define-dict-redirect-op . clause) ...))
@@ -564,22 +570,35 @@
   (λ (stx)
     (syntax-case stx []
       [(_ id #:: [in ...] #:-> out)
-       #'(define-dict-redirect-op id #:: [in ...] [] #:-> out)]
+       #'(define-dict-redirect-op id #:: [in ...] [] #:rest #f #:-> out)]
+      [(_ id #:: [in ...] #:rest rest-in #:-> out)
+       #'(define-dict-redirect-op id #:: [in ...] [] #:rest rest-in #:-> out)]
       [(_ id #:: [mand-in ...] [opt-in ...] #:-> out)
+       #'(define-dict-redirect-op id #:: [mand-in ...] [opt-in ...] #:rest #f
+           #:-> out)]
+      [(_ id #:: [mand-in ...] [opt-in ...] #:rest maybe-rest-in #:-> out)
        (with-disappeared-uses
          (define mand-roles (stx-map lookup-role/record #'(mand-in ...)))
          (define opt-roles (stx-map lookup-role/record #'(opt-in ...)))
          (define out-role (lookup-role/record #'out))
+         (define ?rest-role
+           (and (syntax-e #'maybe-rest-in)
+                (lookup-role/record #'maybe-rest-in)))
+         ;; rest-index : (U #f Nat)
+         ;; The case index where the rest argument is used, if at all
+         (define rest-index (and ?rest-role (length opt-roles)))
          ;; escape-index : (U #f Nat)
          ;; The first case index where an escape is needed, if at all
          (define escape-index
            (cond [(or (ormap role-escape? mand-roles) (role-escape? out-role)) 0]
                  [(index-where opt-roles role-escape?) => add1]
+                 [(and ?rest-role (role-escape? ?rest-role)) rest-index]
                  [else #f]))
          (define/with-syntax prj (generate-temporary 'proj))
          (define/with-syntax op (generate-temporary 'op))
          (define mand-tmps (generate-temporaries #'(mand-in ...)))
          (define opt-tmps (generate-temporaries #'(opt-in ...)))
+         (define/with-syntax rst-tmp (and rest-index (generate-temporary 'rst)))
          (define/with-syntax escape (and escape-index (generate-temporary 'escape)))
          (define (in-expr role expr)
            (cond [(eq? role 'self) expr]
@@ -590,29 +609,56 @@
            (cond [(role-escape? out-role)
                   #`(#,(role-wrap-out out-role) prj escape #,expr)]
                  [else #`(#,(role-wrap-out out-role) prj #,expr)]))
+         (define (with-escape i expr)
+           (cond [(and escape-index (<= escape-index i))
+                  #`(let/ec escape #,expr)]
+                 [else expr]))
          (define mand-exprs (map in-expr mand-roles mand-tmps))
          (define opt-exprs (map in-expr opt-roles opt-tmps))
+         (define rest-expr (and ?rest-role (in-expr ?rest-role #'rst-tmp)))
          (cond
            [escape-index
             (define lam-cases
               (for/list ([i (in-range (add1 (length opt-roles)))])
-                #`[(#,@mand-tmps #,@(take opt-tmps i))
-                   #,(if (and escape-index (<= escape-index i))
-                         #`(let/ec escape
-                             #,(out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))
-                         (out-expr #`(op #,@mand-exprs #,@(take opt-exprs i))))]))
+                (cond
+                  [(and rest-index (<= rest-index i))
+                   #`[(#,@mand-tmps #,@(take opt-tmps i) . rst-tmp)
+                      #,(with-escape
+                         i
+                         (out-expr
+                          #`(apply op
+                                   #,@mand-exprs
+                                   #,@(take opt-exprs i)
+                                   #,rest-expr)))]]
+                  [else
+                   #`[(#,@mand-tmps #,@(take opt-tmps i))
+                      #,(with-escape
+                         i
+                         (out-expr
+                          #`(op #,@mand-exprs #,@(take opt-exprs i))))]])))
             #`(define ((id prj) op)
                 (and op (case-lambda #,@lam-cases)))]
            [else
             (define lam-cases
               (for/list ([i (in-range (add1 (length opt-roles)))])
-                #`[(#,@mand-tmps #,@(take opt-tmps i))
-                   ; escape-index is #false
-                   (values
-                    (λ (ans)
-                      #,(out-expr #'ans))
-                    #,@mand-exprs
-                    #,@(take opt-exprs i))]))
+                (cond
+                  [(and rest-index (<= rest-index i))
+                   #`[(#,@mand-tmps #,@(take opt-tmps i) . rst-tmp)
+                      ; escape-index is #false
+                      (apply values
+                             (λ (ans)
+                               #,(out-expr #'ans))
+                             #,@mand-exprs
+                             #,@(take opt-exprs i)
+                             #,rest-expr)]]
+                  [else
+                   #`[(#,@mand-tmps #,@(take opt-tmps i))
+                      ; escape-index is #false
+                      (values
+                       (λ (ans)
+                         #,(out-expr #'ans))
+                       #,@mand-exprs
+                       #,@(take opt-exprs i))]])))
             #`(define ((id prj) op)
                 (and op
                      ((if (proj-chaperone-mode? prj)
@@ -631,7 +677,22 @@
   [redirect-iterate-first #:: [Self] #:-> MaybeIter]
   [redirect-iterate-next #:: [Self Iter] #:-> MaybeIter]
   [redirect-iterate-key #:: [Self Iter] #:-> Key]
-  [redirect-iterate-value #:: [Self Iter] #:-> Value])
+  [redirect-iterate-value #:: [Self Iter] #:-> Value]
+  [redirect-has-key? #:: [Self Key] #:-> Bool]
+  [redirect-set*! #:: [Self] #:rest AlternatingKeysValues #:-> Void]
+  [redirect-set* #:: [Self] #:rest AlternatingKeysValues #:-> Dict]
+  [redirect-ref! #:: [Self Key DefaultValue] #:-> Value]
+  [redirect-update! #:: [Self Key ValueUpdater] [DefaultValue] #:-> Void]
+  [redirect-update #:: [Self Key ValueUpdater] [DefaultValue] #:-> Dict]
+  [redirect-map #:: [Self KeyValueConsumer] #:-> List]
+  [redirect-for-each #:: [Self KeyValueConsumer] #:-> Void]
+  [redirect-empty? #:: [Self] #:-> Bool]
+  [redirect-copy #:: [Self] #:-> Dict]
+  [redirect-clear #:: [Self] #:-> Dict]
+  [redirect-clear! #:: [Self] #:-> Void]
+  [redirect-keys #:: [Self] #:-> Keys]
+  [redirect-values #:: [Self] #:-> Values]
+  [redirect->list #:: [Self] #:-> AssocKeysValues])
 
 ;; ---------------------------------------------------------
 
@@ -647,13 +708,93 @@
 (define (maybe-iter-out prj i)
   (and i ((proj-pos-iter-proj prj) i (proj-neg-party prj))))
 
+(define (keys-out prj ks)
+  (define pos-dom-proj (proj-pos-dom-proj prj))
+  (define neg-party (proj-neg-party prj))
+  (for/list ([k (in-list ks)])
+    (pos-dom-proj k neg-party)))
+
+(define (values-out prj vs)
+  (define pos-rng-proj (proj-pos-rng-proj prj))
+  (define neg-party (proj-neg-party prj))
+  (for/list ([v (in-list vs)])
+    (pos-rng-proj v neg-party)))
+
+(define (assoc-keys-values-out prj kvs)
+  (define pos-dom-proj (proj-pos-dom-proj prj))
+  (define pos-rng-proj (proj-pos-rng-proj prj))
+  (define neg-party (proj-neg-party prj))
+  (for/list ([kv (in-list kvs)])
+    (cons (pos-dom-proj (car kv) neg-party)
+          (pos-rng-proj (cdr kv) neg-party))))
+
+(define (alternating-keys-values-in prj kvs)
+  (define neg-dom-proj (proj-neg-dom-proj prj))
+  (define neg-rng-proj (proj-neg-rng-proj prj))
+  (define neg-party (proj-neg-party prj))
+  (let loop ([lst kvs])
+    (match lst
+      ['() '()]
+      [(list-rest k v rst)
+       (list* (neg-dom-proj k neg-party)
+              (neg-rng-proj v neg-party)
+              (loop rst))]
+      [_
+       (raise-blame-error
+        (blame-add-context (proj-blame prj)
+                           "the keys and values of"
+                           #:swap? #t)
+        #:missing-party neg-party
+        kvs
+        '(expected:
+          "even-length alternating keys and values"
+          given:
+          "~e")
+        kvs)])))
+
 (define (default-in prj escape default)
   (define d (project-in prj failure-result/c default))
   (cond [(procedure? d) (λ () (escape (d)))]
         [else (λ () (escape d))]))
 
+ ; wrap output with value-in
+(define (default-value-in prj default-value)
+  (define d (project-in prj failure-result/c default-value))
+  (cond [(procedure? d)
+         ((if (proj-chaperone-mode? prj)
+              chaperone-procedure
+              impersonate-procedure)
+          d
+          (λ ()
+            (λ (ans)
+              (value-in prj ans))))]
+        [else (value-in prj d)]))
+
+(define (value-updater-in prj updater)
+  ((if (proj-chaperone-mode? prj)
+       chaperone-procedure
+       impersonate-procedure)
+   updater
+   (λ (v)
+     (values
+      (λ (ans)
+        (value-in prj ans))
+      (value-out prj v)))))
+
+(define (key-value-consumer-in prj consumer)
+  ((if (proj-chaperone-mode? prj)
+       chaperone-procedure
+       impersonate-procedure)
+   consumer
+   (λ (k v)
+     (values
+      (key-out prj k)
+      (value-out prj v)))))
+
 (define (void-out prj v) (project-out prj void? v))
 (define (nat-out prj n) (project-out prj natural-number/c n))
+(define (bool-out prj b) (project-out prj boolean? b))
+(define (list-out prj l) (project-out prj list? l))
 
 ;; project-in : Proj Contract Any -> Any
 (define (project-in prj ctc v)
