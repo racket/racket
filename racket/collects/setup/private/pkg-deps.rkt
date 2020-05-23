@@ -368,9 +368,11 @@
                      (or (and m (bytes->string/utf-8 (cadr m)))
                          ;; In case the original file name had no suffix:
                          "unknown")))
-      (define in-mod `(lib ,(string-join 
-                             (append (map path-element->string coll-path) (list base))
-                             "/")))
+      (define in-mod (if (module-path? base)
+                         `(lib ,(string-join
+                                 (append (map path-element->string coll-path) (list base))
+                                 "/"))
+                         (build-path dir base)))
       (define zo-path (build-path dir zo-f))
       (let/ec esc
         (define mod-code (with-handlers ([exn:fail? (lambda (exn)
