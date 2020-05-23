@@ -389,4 +389,21 @@
       (define c-d (contract (dict/c symbol? boolean?) d 'pos 'neg))
       (dict-ref c-d 'b (λ () 1)))
    1)
+
+  ; the contract should not trigger dict-ref to be called more than once
+  (test/spec-passed/result
+   'dict/ref-failure-result-5-called-once
+   '(let ()
+      ; MUTABLE!
+      (define count 0)
+      (struct dict/count-ref []
+        #:methods gen:dict
+        [(define (dict-ref self k [d (λ () (error "key not found" k))])
+           (set! count (add1 count))
+           0)])
+      (define d (dict/count-ref))
+      (define c-d (contract (dict/c any/c number?) d 'pos 'neg))
+      (dict-ref c-d 'a 1)
+      count)
+   1)
   )
