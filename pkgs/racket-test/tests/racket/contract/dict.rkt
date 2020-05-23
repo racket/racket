@@ -357,4 +357,36 @@
                              (λ (hash k v) (values k v))
                              (λ (hash k) k)
                              (λ (hash k) k))])
-      (contract (dict/c any/c any/c) v 'pos 'neg))))
+      (contract (dict/c any/c any/c) v 'pos 'neg)))
+
+  ; the failure-result argument to dict-ref should escape the value-out wrapper,
+  ; not when it's unused but happens-to-be-the-same
+  (test/pos-blame
+   'dict/ref-failure-result-1-unused-value
+   '(let ()
+      (define d (idict 'a 1))
+      (define c-d (contract (dict/c symbol? boolean?) d 'pos 'neg))
+      (dict-ref c-d 'a 1)))
+  (test/pos-blame
+   'dict/ref-failure-result-2-unused-procedure
+   '(let ()
+      (define d (idict 'a 1))
+      (define c-d (contract (dict/c symbol? boolean?) d 'pos 'neg))
+      (dict-ref c-d 'a (λ () 1))))
+
+  ; but should only escape when the failure-result is actually used
+  (test/spec-passed/result
+   'dict/ref-failure-result-3-used-value
+   '(let ()
+      (define d (idict 'a 1))
+      (define c-d (contract (dict/c symbol? boolean?) d 'pos 'neg))
+      (dict-ref c-d 'b 1))
+   1)
+  (test/spec-passed/result
+   'dict/ref-failure-result-4-used-procedure
+   '(let ()
+      (define d (idict 'a 1))
+      (define c-d (contract (dict/c symbol? boolean?) d 'pos 'neg))
+      (dict-ref c-d 'b (λ () 1)))
+   1)
+  )
