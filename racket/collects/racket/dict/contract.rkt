@@ -660,12 +660,22 @@
                        #,@mand-exprs
                        #,@(take opt-exprs i))]])))
             #`(define ((id prj) op)
-                (and op
-                     ((if (proj-chaperone-mode? prj)
-                          chaperone-procedure
-                          impersonate-procedure)
+                (and
+                 op
+                 ((if (proj-chaperone-mode? prj)
+                      chaperone-procedure
+                      impersonate-procedure)
+                  op
+                  (case-lambda
+                    #,@lam-cases
+                    [args
+                     (wrong-number-of-arguments-in
+                      prj
                       op
-                      (case-lambda #,@lam-cases))))]))])))
+                      '#,(length mand-roles)
+                      '#,(length opt-roles)
+                      '#,(and ?rest-role #t)
+                      (length args))]))))]))])))
 
 (define-dict-redirect-ops
   [redirect-ref #:: [Self Key] [Default] #:-> Value]
@@ -765,9 +775,9 @@
               chaperone-procedure
               impersonate-procedure)
           d
-          (λ ()
-            (λ (ans)
-              (value-in prj ans))))]
+          (case-lambda
+            [() (λ (ans) (value-in prj ans))]
+            [args (wrong-number-of-arguments-out prj d 0 0 #f (length args))]))]
         [else (value-in prj d)]))
 
 (define (value-updater-in prj updater)
@@ -775,21 +785,25 @@
        chaperone-procedure
        impersonate-procedure)
    updater
-   (λ (v)
-     (values
-      (λ (ans)
-        (value-in prj ans))
-      (value-out prj v)))))
+   (case-lambda
+     [(v)
+      (values
+       (λ (ans)
+         (value-in prj ans))
+       (value-out prj v))]
+     [args (wrong-number-of-arguments-out prj updater 1 0 #f (length args))])))
 
 (define (key-value-consumer-in prj consumer)
   ((if (proj-chaperone-mode? prj)
        chaperone-procedure
        impersonate-procedure)
    consumer
-   (λ (k v)
-     (values
-      (key-out prj k)
-      (value-out prj v)))))
+   (case-lambda
+     [(k v)
+      (values
+       (key-out prj k)
+       (value-out prj v))]
+     [args (wrong-number-of-arguments-out prj consumer 2 0 #f (length args))])))
 
 (define (void-out prj v) (project-out prj void? v))
 (define (nat-out prj n) (project-out prj natural-number/c n))
@@ -809,5 +823,37 @@
     (proj-blame prj))
    v
    (proj-neg-party prj)))
+
+;; wrong-number-of-arguments-in : Proj Any Nat Nat Bool Nat -> Nothing
+(define (wrong-number-of-arguments-in prj v mand-n opt-n rest? given-n)
+  (define arity-plural (if (and (= 1 mand-n) (zero? opt-n)) "" "s"))
+  (define given-plural (if (= 1 given-n) "" "s"))
+  (define arity-str
+    (cond [rest? (format "at least ~v argument~a" mand-n arity-plural)]
+          [(zero? opt-n) (format "~v argument~a" mand-n arity-plural)]
+          [(= 1 opt-n) (format "~v or ~v arguments" mand-n (+ mand-n opt-n))]
+          [else (format "between ~v and ~v arguments" mand-n (+ mand-n opt-n))]))
+  (define given-str (format "~v argument~a" given-n given-plural))
+  (raise-blame-error
+   (blame-swap (proj-blame prj))
+   #:missing-party (proj-neg-party prj)
+   v
+   `(expected: ,arity-str given: ,given-str)))
+
+;; wrong-number-of-arguments-out : Proj Any Nat Nat Bool Nat -> Nothing
+(define (wrong-number-of-arguments-out prj v mand-n opt-n rest? given-n)
+  (define arity-plural (if (and (= 1 mand-n) (zero? opt-n)) "" "s"))
+  (define given-plural (if (= 1 given-n) "" "s"))
+  (define arity-str
+    (cond [rest? (format "at least ~v argument~a" mand-n arity-plural)]
+          [(zero? opt-n) (format "~v argument~a" mand-n arity-plural)]
+          [(= 1 opt-n) (format "~v or ~v arguments" mand-n (+ mand-n opt-n))]
+          [else (format "between ~v and ~v arguments" mand-n (+ mand-n opt-n))]))
+  (define given-str (format "~v argument~a" given-n given-plural))
+  (raise-blame-error
+   (proj-blame prj)
+   #:missing-party (proj-neg-party prj)
+   v
+   `(expected: ,arity-str given: ,given-str)))
 
 ;; ---------------------------------------------------------

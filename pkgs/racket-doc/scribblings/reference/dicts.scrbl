@@ -1032,17 +1032,16 @@ keys and values as specified by the @racket[key/c] and
 @racket[iter/c] argument.
 
 When a non-flat @racket[dict/c] contract is applied to a
-dict, the resulting dict is usually not @racket[equal?] to
-the input.
+dict, the resulting dict is not @racket[eq?] to the input.
 
 @examples[
 #:eval dict-eval
 (define/contract good-dict
-  (dict/c integer? boolean? #:immutable #t)
+  (dict/c integer? boolean?)
   '((1 . #t) (2 . #f) (3 . #t)))
 (eval:error
  (define/contract bad-dict
-   (dict/c integer? boolean? #:immutable #t)
+   (dict/c integer? boolean?)
    '((1 . "elephant") (2 . "monkey") (3 . "manatee"))))]
 
 @itemlist[
@@ -1077,19 +1076,35 @@ the input.
   contracts cannot be nested as keys for other
   @racket[dict/c] contracts.
 
-  On both mutable and immutable @tech{dictionary}s when the
-  contract isn't flat, the contract produces a new wrapper
-  dictionary. The wrapper guards calls to @tech{dictionary}
-  methods such as @racket[dict-ref] and @racket[dict-set].
-  On immutable dicts, this means the contract applies even
-  to new keys and values added by @racket[dict-set] after
-  the contract has been applied.
+  On immutable built-in dicts, immutable @tech{hash tables}
+  and @tech{association lists}, the contract produces a copy
+  with keys and values replaced with their projections.
+
+  On mutable built-in dicts, mutable @tech{hash tables}
+  and @tech{vectors}, the contract produces an impersonator
+  that guards access and mutation operations.
+
+  On both mutable and immutable struct-based
+  @tech{dictionaries} when the contract isn't flat, the
+  contract produces an impersonator that guards dictionary
+  methods. On immutable struct-based dicts, this means the
+  contract applies even to new keys and values added by
+  @racket[dict-set] after the contract has been applied.
 
   @examples[
   #:eval dict-eval
+  (struct delegate [dict]
+    #:methods gen:dict
+    [(define-syntax-rule (deleg out op ...) (begin (deleg1 out op) ...))
+     (define-syntax-rule (deleg1 out op)
+       (begin (define/generic gen op)
+              (define (op d . as) (out (apply gen (delegate-dict d) as)))))
+     (deleg values dict-ref dict-count dict-iterate-first dict-iterate-next
+            dict-iterate-key dict-iterate-value)
+     (deleg delegate dict-set dict-remove)])
   (define/contract guarded-dict
     (dict/c integer? boolean?)
-    '((1 . #t) (2 . #f) (3 . #t)))
+    (delegate '((1 . #t) (2 . #f) (3 . #t))))
   (eval:error
    (dict-set guarded-dict 1 "dolphin"))]
  }
