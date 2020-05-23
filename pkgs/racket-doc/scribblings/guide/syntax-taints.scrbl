@@ -83,7 +83,7 @@ armed. Finally, if any part of a quoted syntax object is armed, then
 the corresponding part is tainted in the resulting syntax constant.
 
 Of course, the macro expander itself must be able to @deftech{disarm}
-a taint on a syntax object, so that it can further expand an
+a dye pack on a syntax object, so that it can further expand an
 expression or its sub-expressions. When a syntax object is armed with
 a dye pack, the dye pack has an associated inspector that can be used
 to disarm the dye pack. A @racket[(syntax-protect _stx)] function call
