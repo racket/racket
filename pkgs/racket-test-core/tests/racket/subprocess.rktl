@@ -467,7 +467,7 @@
                  (let loop ()
                    (when (running? sub-pid)
                      (sleep 0.05)
-                     (loop (sub1 n)))))
+                     (loop))))
                (test post-shutdown? running? sub-pid)
                (when post-shutdown?
                  (parameterize ([current-input-port (open-input-string "")])
