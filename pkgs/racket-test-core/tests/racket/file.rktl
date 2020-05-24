@@ -2338,6 +2338,10 @@
            resolve-path
            "C://testing-root////testing-dir\\\\testing-file")]))
 
+(unless (link-exists? (current-directory))
+  ;; Make sure directoryness is preserved
+  (test (current-directory) resolve-path (current-directory)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure `write-byte` and `write-char` don't try to test
 ;; a non-supplied argument:

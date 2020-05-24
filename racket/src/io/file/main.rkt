@@ -344,9 +344,10 @@
 
 (define (do-resolve-path p who)
   (check who path-string? p)
-  (define host-path (->host (path->path-without-trailing-separator (->path p)) who '(exists)))
+  (define host-path (->host p who '(exists)))
+  (define host-path/no-sep (host-path->host-path-without-trailing-separator host-path))
   (start-atomic)
-  (define r0 (rktio_readlink rktio host-path))
+  (define r0 (rktio_readlink rktio host-path/no-sep))
   (define r (if (rktio-error? r0)
                 r0
                 (begin0

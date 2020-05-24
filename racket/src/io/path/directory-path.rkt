@@ -7,7 +7,7 @@
 
 (provide directory-path?
          path->directory-path
-         path->path-without-trailing-separator)
+         host-path->host-path-without-trailing-separator)
 
 (define/who (path->directory-path p-in)
   (check-path-argument who p-in)
@@ -53,16 +53,15 @@
                          dots-end))))]
        [else (unixish-path-directory-path?)])]))
 
-(define (path->path-without-trailing-separator p)
-  (define bstr (path-bytes p))
+(define (host-path->host-path-without-trailing-separator bstr)
   (define orig-len (bytes-length bstr))
   (cond
-    [(= orig-len 1) p]
-    [(and (eq? (path-convention p) 'windows)
+    [(= orig-len 1) bstr]
+    [(and (eq? (system-path-convention-type) 'windows)
           (backslash-backslash-questionmark? bstr))
      ;; \\?\ is more complicated. Do we need to do anything,
      ;; considering that the use for this function is `resolve-path`?
-     p]
+     bstr]
     [else
      (define len
        (let loop ([len orig-len])
@@ -70,9 +69,9 @@
            [(zero? len) 0]
            [else
             (define c (bytes-ref bstr (sub1 len)))
-            (if (is-sep? c (path-convention p))
+            (if (is-sep? c (system-path-convention-type))
                 (loop (sub1 len))
                 len)])))
      (cond
-       [(< len orig-len) (path (subbytes bstr 0 len) (path-convention p))]
-       [else p])]))
+       [(< len orig-len) (subbytes bstr 0 len)]
+       [else bstr])]))

@@ -105,7 +105,12 @@
 
 ;; ----------------------------------------
 
-;; normalize-path needs tests
+;; normalize-path needs more tests
+
+(unless (directory-exists? "no-such-dir-here")
+  (err/rt-test (normalize-path (build-path "no-such-dir-here" 'up 'up))
+               exn:fail?
+               #rx"element within the input path is not a directory"))
 
 ;; ----------------------------------------
 
