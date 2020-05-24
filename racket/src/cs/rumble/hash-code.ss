@@ -179,7 +179,8 @@
      [else (values (+/fx hc (eq-hash-code x)) burn)])))
 
 (define (hash-code-combine hc v)
-  (bitwise-and (+ (bitwise-arithmetic-shift-left hc 2)
+  (bitwise-and (+ (bitwise-arithmetic-shift-left hc 10)
+                  (bitwise-arithmetic-shift-right hc 6)
                   v)
                (greatest-fixnum)))
 

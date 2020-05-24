@@ -1,0 +1,10 @@
+extraction:
+  cpp:
+    configure:
+      command:
+        - cd racket/src
+        - ./configure --disable-docs
+    index:
+      build_command:
+        - cd racket/src
+        - make -j2

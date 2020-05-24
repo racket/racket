@@ -773,13 +773,26 @@ The lazy annotations ensure that this contract does not
 change the running time of operations that do not
 inspect the entire tree.
 
-@racketblock[(struct bt (val left right))
-             (define (bst/c lo hi)
-               (or/c #f
-                     (struct/dc bt
-                                [val (between/c lo hi)]
-                                [left (val) #:lazy (bst lo val)]
-                                [right (val) #:lazy (bst val hi)])))]
+ @examples[#:eval (contract-eval) #:once
+           (struct bt (val left right))
+           (define (bst/c lo hi)
+             (or/c #f
+                   (struct/dc bt
+                              [val (between/c lo hi)]
+                              [left (val) #:lazy (bst/c lo val)]
+                              [right (val) #:lazy (bst/c val hi)])))
+
+           (define/contract not-really-a-bst
+             (bst/c -inf.0 +inf.0)
+             (bt 5
+                 (bt 4
+                     (bt 2 #f #f)
+                     (bt 6 #f #f))
+                 #f))
+
+           (bt-right not-really-a-bst)
+           (bt-val (bt-left (bt-left not-really-a-bst)))
+           (eval:error (bt-right (bt-left not-really-a-bst)))]
 
 @history[#:changed "6.0.1.6" @elem{Added @racket[#:inv].}]
 }

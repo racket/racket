@@ -172,6 +172,7 @@
                    (unless (identifier? id)
                      (raise-syntax-error
                       #f
+                      "expected an identifier"
                       #'orig-stx
                       id)))
                  ids)

@@ -34,14 +34,14 @@
   (unless (equal? c1 c2)
     (call-with-output-file* "/tmp/c1" #:exists 'truncate (lambda (o) (write-bytes c1 o)))
     (call-with-output-file* "/tmp/c2" #:exists 'truncate (lambda (o) (write-bytes c2 o)))    
-    (error "failed"))
+    (error 'check-file "failed: ~s ~s ~s ~s" dir collects-dir sub-dir f))
   (define zo (get-compilation-bytecode-file (build-path dir f) #:modes (use-compiled-file-paths)))
   (when (file-exists? zo)
     (define c3 (file->bytes zo))
     (unless (equal? c3 c1)
       (call-with-output-file* "/tmp/c1" #:exists 'truncate (lambda (o) (write-bytes c1 o)))
       (call-with-output-file* "/tmp/c2" #:exists 'truncate (lambda (o) (write-bytes c3 o)))
-      (error "failed relative to built"))))
+      (error 'check-file "failed relative to built: ~s ~s ~s ~s ~s" dir collects-dir sub-dir f zo))))
 
 (define (check dir [collects-dir dir] [sub-dir 'same] #:limit [limit +inf.0])
   (for/fold ([limit limit]) ([f (in-list (directory-list dir))]

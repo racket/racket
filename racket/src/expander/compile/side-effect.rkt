@@ -58,6 +58,14 @@
          (and (for/and ([e (in-list (m 'e))])
                 (not (effects? e #f locals)))
               (loop (m 'e0) locals))]
+        [(make-parameter)
+         (define-correlated-match m e #:try '(mp v g (quot nm)))
+         (and (m)
+              (not (any-side-effects? (m 'v) 1))
+              (eq? 'quote (m 'quot))
+              (symbol? (m 'nm))
+              (equal? #f (m 'g))
+              1)]
         [(make-struct-type)
          (and (ok-make-struct-type? e ready-variable? defns)
               5)]

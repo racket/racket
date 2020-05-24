@@ -9,6 +9,7 @@
   (hash-set! seen-defns 'make-thread-cell (known-struct-op 'constructor 1))
   (hash-set! seen-defns 'make-continuation-prompt-tag (known-struct-op 'constructor 1))
   (hash-set! seen-defns 'make-weak-hash (known-struct-op 'constructor 0))
+  (hash-set! seen-defns 'make-hash (known-struct-op 'constructor 0))
   (hash-set! seen-defns 'gensym (known-struct-op 'constructor 0))
   (hash-set! seen-defns 'string (known-struct-op 'constructor 2))
   (hash-set! seen-defns 'cons (known-struct-op 'constructor 2))
@@ -27,6 +28,7 @@
   (hash-set! seen-defns 'object-name (known-function 1 #t)) ; assuming no `prop:object-name`
   (hash-set! seen-defns 'procedure-rename (known-function-of-satisfying '(procedure symbol)))
   (hash-set! seen-defns 'prop:custom-write (known-property-of-function 3))
+  (hash-set! seen-defns 'prop:exn:srclocs (known-property-of-function 1))
   (hash-set! seen-defns 'prop:method-arity-error (known-property))
   (hash-set! seen-defns 'prop:incomplete-arity (known-property))
   (hash-set! seen-defns 'prop:impersonator-of (known-property-of-function 1))
