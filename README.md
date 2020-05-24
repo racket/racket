@@ -27,6 +27,11 @@ Building from Source
 For information on building Racket from this repository, see the
 [Build Guide](build.md).
 
+Contributing
+____________
+
+See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md)
+
 License
 -------
 
