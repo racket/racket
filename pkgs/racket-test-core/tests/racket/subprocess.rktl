@@ -464,11 +464,10 @@
                  ;; May need to wait for the init process to reap the
                  ;; sub-pid process (since that's a sub-sub-process to
                  ;; us)
-                 (let loop ([n 5])
-                   (unless (zero? n)
-                     (when (running? sub-pid)
-                       (sleep 0.05)
-                       (loop (sub1 n))))))
+                 (let loop ()
+                   (when (running? sub-pid)
+                     (sleep 0.05)
+                     (loop (sub1 n)))))
                (test post-shutdown? running? sub-pid)
                (when post-shutdown?
                  (parameterize ([current-input-port (open-input-string "")])
