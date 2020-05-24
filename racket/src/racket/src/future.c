@@ -1625,9 +1625,11 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
         return scheme_void;
       }
 
-      mzrt_mutex_unlock(sema->mut);
-      sema = block_until_sema_ready(sema);
-      mzrt_mutex_lock(sema->mut);
+      do {
+        mzrt_mutex_unlock(sema->mut);
+        sema = block_until_sema_ready(sema);
+        mzrt_mutex_lock(sema->mut);
+      } while (!sema->ready);
     } else {
       /* On a future thread, suspend the future (to be 
         resumed whenever the fsema becomes ready */
