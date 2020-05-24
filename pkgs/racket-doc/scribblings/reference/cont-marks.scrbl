@@ -150,12 +150,18 @@ reflected by @racket[mark-set] between frames that have keys in
 Returns the first element of the list that would be returned by
 @racket[(continuation-mark-set->list (or mark-set
 (current-continuation-marks prompt-tag)) key-v prompt-tag)], or
-@racket[none-v] if the result would be the empty list. The result
+@racket[none-v] if the result would be the empty list.
+
+The result
 is produced in (amortized) constant time. Typically, this
 result can be computed more quickly using
 @racket[continuation-mark-set-first] than using
 @racket[continuation-mark-set->list] or by using
-@racket[continuation-mark-set->iterator] and iterating just once.}
+@racket[continuation-mark-set->iterator] and iterating just once.
+
+Although @racket[#f] and @racket[(current-continuation-marks
+prompt-tag)] are equivalent for @racket[mark-set], providing @racket[#f]
+as @racket[mark-set] can enable shortcuts that make it even faster.}
 
 @defproc[(call-with-immediate-continuation-mark
           [key-v any/c]
