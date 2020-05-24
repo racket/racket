@@ -1269,6 +1269,24 @@
 (error-test #'(parameterize ([(lambda (a) 10) 10]) 8))
 (error-test #'(parameterize ([(lambda (a b) 10) 10]) 8))
 
+;; Check documented order of evaluation
+(let ([str (let ([o (open-output-string)])
+             (define p1 (make-parameter 1 (λ (x) (displayln "p1" o) x)))
+             (define p2 (make-parameter 2 (λ (x) (displayln "p2" o) x)))
+             (parameterize ([(begin (displayln "b1" o) p1) (begin (displayln "a1" o) 4)]
+                            [(begin (displayln "b2" o) p2) (begin (displayln "a2" o) 5)])
+               3)
+             (get-output-string o))])
+  (test "b1\na1\nb2\na2\np1\np2\n" values str))
+(let ([str (let ([o (open-output-string)])
+             (define p1 (make-parameter 1 (λ (x) (displayln "p1" o) x)))
+             (err/rt-test/once
+              (parameterize ([(begin (displayln "b1" o) p1) (begin (displayln "a1" o) 4)]
+                             [(begin (displayln "b2" o) 'no) (begin (displayln "a2" o) 5)])
+                3))
+             (get-output-string o))])
+  (test "b1\na1\nb2\na2\np1\n" values str))
+
 (test 1 'time (time 1))
 (test -1 'time (time (cons 1 2) -1))
 (test-values '(-1 1) (lambda () (time (values -1 1))))
