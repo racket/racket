@@ -1,6 +1,6 @@
-Contribute to Racket by submitting a pull request, joining the
+Contribute to Racket by [submitting a pull request](https://github.com/racket/racket), joining the
 [development mailing list](https://lists.racket-lang.org), or visiting
-the IRC or Slack channels.
+the [IRC](https://botbot.me/freenode/racket/) or [Slack](https://racket-slack.herokuapp.com/) channels.
 
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
