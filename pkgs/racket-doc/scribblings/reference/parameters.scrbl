@@ -63,12 +63,12 @@ The result of a @racket[parameterize] expression is the result of the
 last @racket[body]. The @racket[parameter-expr]s determine the
 parameters to set, and the @racket[value-expr]s determine the
 corresponding values to install while evaluating the
-@racket[body-expr]s. The @racket[parameter-expr]s and
+@racket[body]s. The @racket[parameter-expr]s and
 @racket[value-expr]s are evaluated left-to-right (interleaved), and
 then the parameters are bound in the continuation to preserved thread
 cells that contain the values of the @racket[value-expr]s; the result
 of each @racket[parameter-expr] is checked with @racket[parameter?]
-just before it is bound. The last @racket[body-expr] is in tail
+just before it is bound. The last @racket[body] is in tail
 position with respect to the entire @racket[parameterize] form.
 
 Outside the dynamic extent of a @racket[parameterize] expression,
