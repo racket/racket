@@ -2157,11 +2157,10 @@ Returns @racket[#t] if cross-installation mode has been detected,
 @defproc[(load-collections-xref [on-load (-> any/c) (lambda () (void))])
          xref?]{
 
-Like @racket[load-xref], but automatically find all cross-reference files for
-manuals that have been installed with @exec{raco setup}.
-
-A cached copy of cross-reference information can be used, in which
-case @racket[on-load] is @emph{not} called.}
+Either creates and caches or returns a cached cross-reference record
+created with @racket[make-collections-xref]. The @racket[on-load]
+function is called only when a previously cached record is not
+returned.}
 
 
 @defproc[(make-collections-xref [#:no-user? no-user? any/c #f]
@@ -2171,7 +2170,9 @@ case @racket[on-load] is @emph{not} called.}
                                 [#:register-shutdown! register-shutdown! ((-> any) . -> . any) void])
          xref?]{
 
-Like @racket[load-collections-xref], but takes advantage of a
+Like @racket[load-xref], but automatically finds all cross-reference
+files for manuals that have been installed with @exec{raco setup}.
+The resulting cross-reference record takes advantage of a
 cross-reference database @racket[db-path], when support is available,
 to delay the loading of cross-reference details until needed.
 

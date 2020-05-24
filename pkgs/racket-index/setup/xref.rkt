@@ -103,20 +103,25 @@
                                 (close p))))
                         (when main-db (close main-db))
                         (when user-db (close user-db))))
-  (define done-ht (make-hash)) ; tracks already-loaded documents
-  (define forced-all? #f)
-  (define (force-all)
+  (define done-hts (make-hasheq)) ; tracks already-loaded documents per ci
+  (define (get-done-ht use-id)
+    (or (hash-ref done-hts use-id #f)
+        (let ([ht (make-hash)])
+          (hash-set! done-hts use-id ht)
+          ht)))
+  (define forced-all?s (make-hasheq)) ; per ci: whether forced all
+  (define (force-all use-id)
     ;; force all documents
-    (define thunks (get-reader-thunks no-user? no-main? quiet-fail? done-ht))
-    (set! forced-all? #t)
+    (define thunks (get-reader-thunks no-user? no-main? quiet-fail? (get-done-ht use-id)))
+    (hash-set! forced-all?s use-id #t)
     (lambda () 
       ;; return a procedure so we can produce a list of results:
       (lambda () 
         (for/list ([thunk (in-list thunks)])
           (thunk)))))
-  (lambda (key)
+  (lambda (key use-id)
     (cond
-     [forced-all? #f]
+     [(hash-ref forced-all?s use-id #f) #f]
      [key
       (define (try p)
         (and p
@@ -140,11 +145,11 @@
       (define dest (or (try main-db) (try user-db)))
       (and dest
            (if (eq? dest #t)
-               (force-all)
-               ((dest->source done-ht quiet-fail?) dest)))]
+               (force-all use-id)
+               ((dest->source (get-done-ht use-id) quiet-fail?) dest)))]
      [else
-      (unless forced-all?
-        (force-all))])))
+      (unless (hash-ref forced-all?s use-id #f)
+        (force-all use-id))])))
 
 (define (get-reader-thunks no-user? no-main? quiet-fail? done-ht)
   (map (dest->source done-ht quiet-fail?)
@@ -165,8 +170,9 @@
                                #:register-shutdown! [register-shutdown! void])
   (if (doc-db-available?)
       (load-xref null
-                 #:demand-source (make-key->source db-path no-user? no-main? quiet-fail?
-                                                   register-shutdown!))
+                 #:demand-source-for-use
+                 (make-key->source db-path no-user? no-main? quiet-fail?
+                                   register-shutdown!))
       (load-xref (get-reader-thunks no-user? no-main? quiet-fail? (make-hash)))))
 
 
