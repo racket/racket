@@ -258,7 +258,7 @@
              (test 'done-error (list-ref p 4) 'status)
              
              (let ([p (open-input-string (get-output-string f2))])
-               (test (expt 10 50000) read p)
+               (test #t '1e50001 (equal? (expt 10 50000) (read p)))
                (test "" read-line p)
                (let ([p (if (eq? f3 'stdout)
                             p
@@ -471,7 +471,10 @@
                (test post-shutdown? running? sub-pid)
                (when post-shutdown?
                  (parameterize ([current-input-port (open-input-string "")])
-                   (system (format "kill ~a" sub-pid)))))))])
+                   (system (format "kill ~a" sub-pid))))
+               (close-input-port (car l))
+               (close-output-port (cadr l))
+               (close-input-port (cadddr l)))))])
     (try #t)
     (try #f))
 
