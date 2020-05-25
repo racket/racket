@@ -61,7 +61,7 @@ with a language specification, supply the @DPFlag{lang} flag to
 @exec{raco exe}. The argument after @DPFlag{lang} can be a language
 name, but more generally it can be text to appear just after
 @hash-lang[]. For example, @litchar{at-exp racket/base} makes sense as
-an argument to @DPFlag{lang} to allow @racketmodname[at-exp] combined
+an argument to @DPFlag{lang} to allow @racketmodname[at-exp #:indirect] combined
 with @racketmodname[racket/base] as a language for dynamically loaded
 modules.
 
@@ -213,7 +213,7 @@ The @exec{raco exe} command accepts the following command-line flags:
    dynamically. The @nonterm{lang} does not have to be a plain
    language or module name; it might be a more general text sequence,
    such as @litchar{at-exp racket/base} to support language
-   constructors like @racketmodname[at-exp].
+   constructors like @racketmodname[at-exp #:indirect].
    The initial @racket[require] for a @racket[module] read as
    @nonterm{lang} must be available though the language reader's
    @racketidfont{get-info} function and the @racket['module-language]
