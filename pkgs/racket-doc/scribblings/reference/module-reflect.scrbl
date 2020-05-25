@@ -544,10 +544,16 @@ above the @tech{base phase}.
   (dynamic-require ''a #f)
 ]
 
-@margin-note{The double quoted @racket[''a] evaluates to the @racket[root-module-path] @racket['a]
-(see the grammar for @racket[require]). Using @racket['a] or @racket[a] for @racket[mod] won't work
-because the former evaluates to @racket[root-module-path] @racket[a] which fails since the example is
-not a module installed in a collection, the latter is an undefined variable.}
+@margin-note{The double quoted @racket[''a] evaluates to the @racket[_root-module-path] @racket['a]
+(see the grammar for @racket[require]). Using @racket['a] for @racket[mod] won't work,
+because that evaluates to @racket[_root-module-path] @racket[a], and the example is
+not a module installed in a collection. Using @racket[a] won't work, because @racket[a]
+is an undefined variable.
+
+Declaring @racket[(module a ....)] within another module, instead of in
+the @racket[read-eval-print] loop, would create a submodule. In that case,
+@racket[(dynamic-require ''a #f)] would not access the module, because @racket[''a]
+does not refer to a submodule.}
 
 When @racket[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not
