@@ -456,11 +456,11 @@ be blocking in the sense of the @racket[#:blocking?] argument to
 @defmodule[ffi/objc]{The @racketmodname[ffi/objc] library is a
 deprecated entry point to @racketmodname[ffi/unsafe/objc]. It
 exports only safe operations directly, and unsafe operations are
-imported using @racket[objc-unsafe!].}
+imported using @racket[objc-unsafe!], analogous to @racketmodname[scheme/foreign #:indirect].}
 
 @defform[(objc-unsafe!)]{
 
-Analogous to @racket[(unsafe!)], makes unsafe bindings of
+Makes unsafe bindings of
 @racketmodname[ffi/unsafe/objc] available in the importing
 module.}
 

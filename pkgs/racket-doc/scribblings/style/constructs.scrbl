@@ -556,4 +556,4 @@ programmers.
 @section{Plural}
 
 Avoid plural when naming collections and libraries. Use @racketmodname[racket/contract]
-and @racketmodname[data/heap], not @tt{racket/contracts} or @tt{data/heaps}.
+and @racketmodname[data/heap #:indirect], not @tt{racket/contracts} or @tt{data/heaps}.

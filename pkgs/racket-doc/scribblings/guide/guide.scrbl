@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require scribble/eval "guide-utils.rkt")
+@(require scribble/eval "guide-utils.rkt" scribblings/private/docname)
 
 @title{The Racket Guide}
 
@@ -8,7 +8,7 @@
 This guide is intended for programmers who are new to Racket or new to
 some part of Racket. It assumes programming experience, so if you are
 new to programming, consider instead reading @|HtDP|. If you want an
-especially quick introduction to Racket, start with @|Quick|.
+especially quick introduction to Racket, start with @Quick[Quick-title].
 
 @seclink["to-scheme"]{Chapter 2} provides a brief introduction to
 Racket. From @seclink["datatypes"]{Chapter 3} on, this guide dives

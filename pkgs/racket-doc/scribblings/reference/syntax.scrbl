@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/bnf scribble/core
+@(require "mz.rkt" 
+          scribble/bnf scribble/core
+	  scribblings/private/docname
           (for-label (only-in racket/require-transform
                               make-require-transformer
                               current-require-module-path)
@@ -2469,10 +2471,9 @@ result of @racket[val-expr]. If no such @racket[datum] is present, the
 @racket[else] @racket[case-clause] is selected; if no @racket[else]
 @racket[case-clause] is present, either, then the result of the
 @racket[case] form is @|void-const|.@margin-note{The @racket[case]
-form of @racketmodname[racket] differs from that of @other-manual['(lib
-"r6rs/scribblings/r6rs.scrbl")] or @other-manual['(lib
-"r5rs/r5rs.scrbl")] by being based on @racket[equal?] instead of
-@racket[eqv?] (in addition to allowing internal definitions).}
+form of @racketmodname[racket] differs from that of @R6RS{R6RS} or
+@R5RS{R5RS} by being based on @racket[equal?] instead
+of @racket[eqv?] (in addition to allowing internal definitions).}
 
 For the selected @racket[case-clause], the results of the last
 @racket[then-body], which is in tail position with respect to the

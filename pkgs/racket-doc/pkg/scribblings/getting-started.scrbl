@@ -45,10 +45,10 @@ package may provide libraries that are far from each other in the
 hierarchy (but that are conceptually related, somehow).
 
 Racket documentation tells you which package provides a given library.
-For example, the documentation for the @racketmodname[pict/face]
+For example, the documentation for the @racketmodname[pict/face #:indirect]
 library says that it is provided by the @pkgname{pict-lib}
 package.@margin-note*{If you're reading this in a web browser, click
-@racketmodname[pict/face] to go straight to its documentation.}
+@racketmodname[pict/face #:indirect] to go straight to its documentation.}
 
 Over time, packages may be refactored so that a library moves to a
 different package, but the original package should continue to provide

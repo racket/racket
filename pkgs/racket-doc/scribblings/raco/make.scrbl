@@ -871,7 +871,7 @@ path.
 The @DFlag{no-deps} mode for @exec{raco make} is an improverished
 form of the compilation, because it does not track import
 dependencies. It does, however, support compilation of non-module
-source in a namespace that initially imports @racketmodname[scheme].
+source in a namespace that initially imports @racketmodname[scheme #:indirect].
 
 Outside of a module, top-level @racket[define-syntaxes],
 @racket[module], @racket[#%require],
@@ -909,7 +909,7 @@ reader, such as @racket[(read-case-sensitive #t)]. The @Flag{p} or
 compiling the source files specified on the command line.
 
 By default, the namespace for compilation is initialized by a
-@racket[require] of @racketmodname[scheme]. If the @DFlag{no-prim}
+@racket[require] of @racketmodname[scheme #:indirect]. If the @DFlag{no-prim}
 flag is specified, the namespace is instead initialized with
 @racket[namespace-require/copy], which allows mutation and
 redefinition of all initial bindings (other than syntactic forms, in

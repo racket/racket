@@ -9,41 +9,36 @@
                ["scribble-lib" #:version "1.34"]
                "racket-index"))
 (define build-deps '("rackunit-doc"
-                     "compatibility"
                      "errortrace-doc"
-                     "typed-racket-doc"
                      "at-exp-lib"
                      "rackunit-lib"
-                     "web-server-doc"
-                     "gui"
-                     "draw"
-                     "pict"
-                     "parser-tools-doc"
-                     "slideshow-doc"
-                     "r5rs-doc"
-                     "r6rs-doc"
-                     "xrepl"
-                     "readline"
-                     "syntax-color"
+                     "gui-doc"
+                     "gui-lib"
+                     "draw-doc"
+                     "draw-lib"
+                     "pict-lib"
+                     "readline-lib"
+                     "readline-doc"
+                     "syntax-color-doc"
+                     "syntax-color-lib"
                      "scribble-doc"
                      "future-visualizer"
-                     "distributed-places"
+                     "distributed-places-doc"
+                     "distributed-places-lib"
                      "serialize-cstruct-lib"
                      "cext-lib"
-                     "data-doc"
                      "net-doc"
                      "planet-doc"
-                     "mzscheme-doc"
                      "compiler-lib"
-                     "drracket"
-                     "math-doc"
-                     "math-lib"))
+                     "compatibility-lib"
+                     "xrepl-lib"
+                     "xrepl-doc"))
 
 (define pkg-desc "Base Racket documentation")
 
-(define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
+(define pkg-authors '(jay matthias mflatt robby ryanc samth))
 
-(define version "1.1")
+(define version "1.3")
 
 (define license
   '(Apache-2.0 OR MIT))

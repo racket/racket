@@ -2,9 +2,11 @@
 @(require scribble/manual
           scribble/urls
           scribble/eval
+          (only-in scribble/struct make-render-element)
+          racket/class
           (only-in scribble/core link-element)
-          scribblings/quick/keep
           (only-in xrepl/doc-utils [cmd xreplcmd])
+	  scribblings/private/docname
           (for-label racket/base
                      racket/tcp
                      racket/enter
@@ -16,7 +18,13 @@
 
 @(begin
 
-(define quick @other-manual['(lib "quick.scrbl" "scribblings/quick")])
+(define (keep-file file)
+  (make-render-element
+   #f
+   null
+   (lambda (r s i) (send r install-file file))))
+
+
 (define guide @other-manual['(lib "guide.scrbl" "scribblings/guide")])
 
 (define more-eval (make-base-eval))
@@ -54,14 +62,14 @@
 
 @author["Matthew Flatt"]
 
-In contrast to the impression that @|quick| may give, Racket is
+In contrast to the impression that @Quick[Quick-title] may give, Racket is
 not just another pretty face. Underneath the graphical facade of
 DrRacket lies a sophisticated toolbox for managing threads and
 processes, which is the subject of this tutorial.
 
 Specifically, we show how to build a secure, multi-threaded,
 servlet-extensible, continuation-based web server. We use much more of
-the language than in @|quick|, and we expect you to click on syntax or
+the language than in @Quick[Quick-title], and we expect you to click on syntax or
 function names that you don't recognize (which will take you to the
 relevant documentation). Beware that the last couple of sections
 present material that is normally considered difficult. If you're
@@ -108,7 +116,7 @@ Readline instead of Editline, set the @envvar{PLT_READLINE_LIB}
 environment variable or install the @filepath{readline-gpl} package.}
 @exec{racket} by default supports line editing and comma-prefixed
 meta-commands that support exploration and development. See
-@racketmodname[xrepl] for more information.
+@racketmodname[xrepl #:indirect] for more information.
 
 @; ----------------------------------------------------------------------
 @section[#:tag "set"]{Set...}
@@ -790,13 +798,10 @@ the server updated, visit @tt{http://localhost:8081/sum2}.
 @; ----------------------------------------------------------------------
 @section{Where to Go From Here}
 
-The Racket distribution includes a production-quality web server
-that addresses all of the design points mentioned here and more.
-To learn more, see the tutorial @other-manual['(lib
-"web-server/scribblings/tutorial/continue.scrbl")], the
-documentation @other-manual['(lib
-"web-server/scribblings/web-server.scrbl")], or the research paper
-@cite["Krishnamurthi07"].
+The Racket distribution includes a production-quality web server that
+addresses all of the design points mentioned here and more.  To learn
+more, see the tutorial @Continue[Continue-title], @Web[], or the
+research paper @cite["Krishnamurthi07"].
 
 Otherwise, if you arrived here as part of an introduction to
 Racket, then your next stop is probably @|guide|.

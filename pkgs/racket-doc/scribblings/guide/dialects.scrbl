@@ -1,5 +1,5 @@
 #lang scribble/base
-@(require scribble/manual
+@(require scribble/manual (except-in scribblings/private/docname Quick)
           "guide-utils.rkt")
 
 @title[#:tag "dialects" #:style 'toc]{Dialects of Racket and Scheme}
@@ -40,9 +40,9 @@ including the following:
 
 @itemize[
 
- @item{@racketmodname[typed/racket] --- like
+ @item{@racketmodname[typed/racket #:indirect] --- like
        @racketmodname[racket], but statically typed; see
-       @other-manual['(lib "typed-racket/scribblings/ts-guide.scrbl")]}
+       @TR-guide[].}
 
  @item{@racketmodname[lazy #:indirect] --- like
        @racketmodname[racket/base], but avoids evaluating an
@@ -94,10 +94,10 @@ Racket tools in their default modes do not conform to @|r5rs|,
 mainly because Racket tools generally expect modules, and @|r5rs|
 does not define a module system. Typical single-file @|r5rs| programs
 can be converted to Racket programs by prefixing them with
-@racket[@#,hash-lang[] @#,racketmodname[r5rs]], but other Scheme
+@racket[@#,hash-lang[] @#,racketmodname[r5rs #:indirect]], but other Scheme
 systems do not recognize @racket[@#,hash-lang[]
-@#,racketmodname[r5rs]]. The @exec{plt-r5rs} executable (see
-@secref[#:doc '(lib "r5rs/r5rs.scrbl") "plt-r5rs"]) more directly
+@#,racketmodname[r5rs #:indirect]]. The @exec{plt-r5rs} executable (see
+@R5RS[#:section "plt-r5rs"]{@exec{plt-r5rs}}) more directly
 conforms to the @|r5rs| standard.
 
 Aside from the module system, the syntactic forms and functions of
@@ -108,7 +108,7 @@ relatively few Racket programs become @|r5rs| programs when a
 with Racket modules, beware that @|r5rs| pairs correspond to
 Racket mutable pairs (as constructed with @racket[mcons]).
 
-See @other-manual['(lib "r5rs/r5rs.scrbl")] for more
+See @R5RS[] for more
 information about running @|r5rs| programs with Racket.
 
 @subsection{@|r6rs|}
@@ -119,16 +119,16 @@ which extends @|r5rs| with a module system that is similar to the
 Racket module system.
 
 When an @|r6rs| library or top-level program is prefixed with
-@racketmetafont{#!}@racketmodname[r6rs] (which is valid @|r6rs|
+@racketmetafont{#!}@racketmodname[r6rs #:indirect] (which is valid @|r6rs|
 syntax), then it can also be used as a Racket program. This works
 because @racketmetafont{#!} in Racket is treated as a shorthand
 for @hash-lang[] followed by a space, so
-@racketmetafont{#!}@racketmodname[r6rs] selects the
-@racketmodname[r6rs] module language. As with @|r5rs|, however, beware
+@racketmetafont{#!}@racketmodname[r6rs #:indirect] selects the
+@racketmodname[r6rs #:indirect] module language. As with @|r5rs|, however, beware
 that the syntactic forms and functions of @|r6rs| differ from
 Racket, and @|r6rs| pairs are mutable pairs.
 
-See @other-manual['(lib "r6rs/scribblings/r6rs.scrbl")] for more
+See @R6RS[] for more
 information about running @|r6rs| programs with Racket.
 
 @; --------------------------------------------------
@@ -137,8 +137,7 @@ information about running @|r6rs| programs with Racket.
 
 The @|HtDP| textbook relies on pedagogic variants of Racket that
 smooth the introduction of programming concepts for new programmers.
-See @other-doc['(lib "scribblings/htdp-langs/htdp-langs.scrbl")
-#:indirect @list{@|HtDP| language}].
+See @HtDP-doc[].
 
 The @|HtDP| languages are typically not used with @hash-lang[]
 prefixes, but are instead used within DrRacket by selecting the
