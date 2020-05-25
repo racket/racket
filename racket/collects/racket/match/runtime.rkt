@@ -1,12 +1,8 @@
 #lang racket/base
 
-(require racket/stxparam
-         (for-syntax racket/base))
-
 (provide match-equality-test
          exn:misc:match?
          match:error
-         fail
          matchable?
          match-prompt-tag
          mlist? mlist->list
@@ -28,11 +24,6 @@
           (current-continuation-marks)
           val
           srclocs)))
-
-(define-syntax-parameter fail
-  (lambda (stx)
-    (raise-syntax-error
-     #f "used out of context: not in match pattern" stx)))
 
 ;; can we pass this value to regexp-match?
 (define (matchable? e)

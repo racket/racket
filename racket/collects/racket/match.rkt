@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/match/match "match/runtime.rkt"
+         "match/stx-runtime.rkt"
          (for-syntax racket/base))
 (provide (except-out (all-from-out racket/match/match)
                      define-match-expander)
