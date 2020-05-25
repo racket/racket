@@ -33,7 +33,7 @@ default @tech{exit handler}) is used to exit early. The argument to
 the handler is the status code that is returned to the system on exit.
 The default executable-yield handler simply returns @|void-const|.
 
-The @racketmodname[scheme/gui/base] library sets this parameter to
+The @racketmodname[racket/gui/base] library sets this parameter to
 wait until all frames are closed, timers stopped, and queued events
-handled in the main eventspace. See @racketmodname[scheme/gui/base]
+handled in the main eventspace. See @racketmodname[racket/gui/base]
 for more information.}

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual "guide-utils.rkt")
+@(require scribble/manual "guide-utils.rkt" scribblings/private/docname)
 
 @title{More Libraries}
 
@@ -11,8 +11,7 @@ additional libraries.
 
 @section{The Web Server}
 
-@other-manual['(lib "web-server/scribblings/web-server.scrbl")]
-describes the Racket web server, which supports servlets implemented
+@Web[] describes the Racket web server, which supports servlets implemented
 in Racket.
 
 @section{Using Foreign Libraries}
@@ -28,7 +27,7 @@ other libraries, including libraries that are installed as packages.
 Run @exec{raco docs} to find documentation for libraries that are
 installed on your system and specific to your user account.
 
-@link["http://pkgs.racket-lang.org/"]{PLT Package Catalog} at
+@link["http://pkgs.racket-lang.org/"]{Racket Package Catalog} at
 @url{https://pkgs.racket-lang.org} offers even more downloadable
 packages contributed by Racketeers. The
 @link["https://docs.racket-lang.org"]{online Racket documentation}
