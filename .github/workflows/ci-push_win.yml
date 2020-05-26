@@ -1,0 +1,27 @@
+name: CI Win
+
+on: [push]
+
+jobs:
+  
+# Build jobs
+# These jobs build each Racket component separately and tests on the component start as soon as each
+# component finishes building.
+
+  build-win:
+    runs-on: windows-latest
+
+    # According to
+    # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#windows-server-2019
+    # VS2019 is what is installed in the hosted runners:
+    #   Version: VisualStudio/16.3.6+29418.71
+    #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      working-directory: .\racket\src\worksp
+      shell: cmd
+      run: |
+        call msvcprep.bat x86_amd64
+        call build.bat
+        call ..\..\racket.exe csbuild.rkt -- --recurse-submodules --depth=1

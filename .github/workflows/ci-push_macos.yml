@@ -1,0 +1,368 @@
+name: CI MacOS
+
+on: [push]
+
+jobs:
+  
+# Build jobs
+# These jobs build each Racket component separately and tests on the component start as soon as each
+# component finishes building.
+
+  build-racketcgc:
+    strategy:
+      fail-fast: false
+      matrix:
+        cify: [cify, nocify]
+          
+    runs-on: macos-latest
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - name: Setup cify if enabled1
+      if: matrix.cify == 'cify'
+      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+    - name: Setup cify if disabled
+      if: matrix.cify == 'nocify'
+      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    - name: Configuring Racket CGC
+      working-directory: ./racket/src
+      run: >
+        ./configure 
+        --prefix=$GITHUB_WORKSPACE/racketcgc
+        $RACKET_EXTRA_CONFIGURE_ARGS 
+        --enable-cgcdefault 
+        --enable-jit 
+        --enable-foreign
+        --enable-macprefix
+        --enable-places 
+        --enable-futures 
+        --enable-float
+        $CIFY_OPTION
+        --enable-pthread
+        --disable-docs 
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(sysctl -n hw.physicalcpu)
+        make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
+    - name: Installing
+      working-directory: ./racket/src
+      run: make -j  $((cpus+1)) install
+    - name: Tarballing
+      working-directory: ${{ github.workspace }}
+      run: tar -cvjf racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
+    - uses: actions/upload-artifact@v2
+      with:
+        name: racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
+        path: ${{ github.workspace }}/racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+
+  build-racket3m:
+    strategy:
+      fail-fast: false
+      matrix:
+        cify: [cify, nocify]
+            
+    runs-on: macos-latest
+    
+    needs: build-racketcgc
+    
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - name: Setup cify if enabled
+      if: matrix.cify == 'cify'
+      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+    - name: Setup cify if disabled
+      if: matrix.cify == 'nocify'
+      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+    - uses: actions/download-artifact@v2
+      with:
+        name: racketcgc-macos-nocify-x64_git${{ github.sha }}
+        path: ${{ runner.temp }}
+    - name: Untar
+      working-directory: ${{ github.workspace }}
+      run: tar -xvjf ${{ runner.temp }}/racketcgc-macos-nocify-x64_git${{ github.sha }}.tar.bz2
+    - name: Configuring Racket 3m
+      working-directory: ./racket/src
+      env:
+        CC: clang
+      run: >
+        ./configure
+        --prefix=$GITHUB_WORKSPACE/racket3m 
+        $RACKET_EXTRA_CONFIGURE_ARGS 
+        --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket 
+        --enable-jit 
+        --enable-foreign
+        --enable-macprefix
+        --enable-places 
+        --enable-futures 
+        --enable-float 
+        --disable-docs 
+        $CIFY_OPTION 
+        --enable-pthread
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(sysctl -n hw.physicalcpu)
+        make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
+    - name: Installing
+      working-directory: ./racket/src
+      run: make -j  $((cpus+1)) install
+    - name: Tarballing
+      working-directory: ${{ github.workspace }}
+      run: tar -cvjf racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
+    - uses: actions/upload-artifact@v2
+      with:
+        name: racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
+        path: ${{ github.workspace }}/racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+
+  build-racketcs:
+    runs-on: macos-latest
+    needs: build-racketcgc
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - uses: actions/download-artifact@master
+      with:
+        name: racketcgc-macos-nocify-x64_git${{ github.sha }}
+        path: ${{ runner.temp }}
+    - name: Untar
+      working-directory: ${{ github.workspace }}
+      run: tar -xvjf ${{ runner.temp }}/racketcgc-macos-nocify-x64_git${{ github.sha}}.tar.bz2
+    - name: Checking out ChezScheme
+      working-directory: ./racket/src
+      run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
+    - name: Configuring Racket CS
+      working-directory: ./racket/src
+      env:
+        CC: ${{ matrix.cc }}
+      run: >
+        ./configure 
+        --prefix=$GITHUB_WORKSPACE/racketcs
+        --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket
+        --enable-macprefix
+        --enable-compress 
+        --disable-docs 
+        --enable-pthread 
+        --enable-csdefault 
+        --enable-csonly
+    - name: Building
+      working-directory: ./racket/src
+      run: |
+        export cpus=$(sysctl -n hw.physicalcpu)
+        make -l $cpus -j $((cpus+1))
+    - name: Installing
+      working-directory: ./racket/src
+      run: make -j  $((cpus+1)) install
+    - name: Tarballing
+      working-directory: ${{ github.workspace }}
+      run: tar -cvjf racketcs-macos-x64_git${{ github.sha}}.tar.bz2 racketcs
+    - uses: actions/upload-artifact@v2
+      with:
+        name: racketcs-macos-x64_git${{ github.sha }}
+        path: ${{ github.workspace }}/racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+
+  # Tests
+  # Unfortunately Actions does not support atm yaml anchors
+  # otherwise all the following jobs could be simplified
+  # Note: the reason we cannot transform this into a matrix
+  # build is because we cannot use variables in the needs keyword.
+  test-cgc:
+    strategy:
+      fail-fast: false
+      matrix:
+        cify: [cify, nocify]
+
+    runs-on: macos-latest
+
+    needs: build-racketcgc
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
+          path: ${{ github.workspace }}
+      - name: Untar
+        working-directory: ${{ github.workspace }}
+        run: tar -xvjf racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+      - name: Extend PATH with Racket executable
+        working-directory: ${{ github.workspace }}
+        run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
+      - name: Check for Racket
+        run: racket --version
+      - name: Install catalog
+        run: |
+          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
+          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
+      - name: Install racket-test dependency
+        run: raco pkg install --auto racket-test
+      - name: Run tests/racket/test
+        run: raco test -l tests/racket/test
+      - name: Run tests/racket/contract/all
+        run: racket -l tests/racket/contract/all
+      - name: Run tests/json/json
+        run: raco test -l tests/json/json
+      - name: Run tests/file/main
+        run: raco test -l tests/file/main
+      - name: Run tests/net/head
+        run: raco test -l tests/net/head
+      - name: Run tests/net/uri-codec
+        run: raco test -l tests/net/uri-codec
+      - name: Run tests/net/url
+        run: raco test -l tests/net/url
+      - name: Run tests/net/url-port
+        run: raco test -l tests/net/url-port
+      - name: Run tests/net/encoders
+        run: raco test -l tests/net/encoders
+      - name: Run tests/openssl/basic
+        run: raco test -l tests/openssl/basic
+      - name: Run tests/openssl/https
+        run: raco test -l tests/openssl/https
+      - name: Run tests/match/main
+        run: raco test -l tests/match/main
+      - name: Run tests/zo-path
+        run: raco test -l tests/zo-path
+      - name: Run tests/xml
+        run: raco test -c tests/xml
+      - name: Run tests/stxparse
+        run: raco test -c tests/stxparse
+      - name: Install db tests dependency
+        run: raco pkg install --auto db-test
+      - name: Run db tests
+        run: raco test -l tests/db/all-tests
+
+  test-3m:
+    strategy:
+      fail-fast: false
+      matrix:
+        cify: [cify, nocify]
+
+    runs-on: macos-latest
+
+    needs: build-racket3m
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
+          path: ${{ github.workspace }}
+      - name: Untar
+        working-directory: ${{ github.workspace }}
+        run: tar -xvjf racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
+      - name: Extend PATH with Racket executable
+        working-directory: ${{ github.workspace }}
+        run: echo "::set-env name=PATH::$PWD/racket3m/bin:$PATH"
+      - name: Check for Racket
+        run: racket --version
+      - name: Install catalog and required packages
+        run: |
+          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
+          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
+      - name: Install racket-test dependency
+        run: raco pkg install --auto racket-test
+      - name: Run tests/racket/test
+        run: raco test -l tests/racket/test
+      - name: Run tests/racket/contract/all
+        run: racket -l tests/racket/contract/all
+      - name: Run tests/json/json
+        run: raco test -l tests/json/json
+      - name: Run tests/file/main
+        run: raco test -l tests/file/main
+      - name: Run tests/net/head
+        run: raco test -l tests/net/head
+      - name: Run tests/net/uri-codec
+        run: raco test -l tests/net/uri-codec
+      - name: Run tests/net/url
+        run: raco test -l tests/net/url
+      - name: Run tests/net/url-port
+        run: raco test -l tests/net/url-port
+      - name: Run tests/net/encoders
+        run: raco test -l tests/net/encoders
+      - name: Run tests/openssl/basic
+        run: raco test -l tests/openssl/basic
+      - name: Run tests/openssl/https
+        run: raco test -l tests/openssl/https
+      - name: Run tests/match/main
+        run: raco test -l tests/match/main
+      - name: Run tests/zo-path
+        run: raco test -l tests/zo-path
+      - name: Run tests/xml
+        run: raco test -c tests/xml
+      - name: Run tests/stxparse
+        run: raco test -c tests/stxparse
+      - name: Install db tests dependency
+        run: raco pkg install --auto db-test
+      - name: Run db tests
+        run: raco test -l tests/db/all-tests
+          
+  test-cs:
+    runs-on: macos-latest
+
+    needs: build-racketcs
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: racketcs-macos-x64_git${{ github.sha }}
+          path: ${{ github.workspace }}
+      - name: Untar
+        working-directory: ${{ github.workspace }}
+        run: tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+      - name: Extend PATH with Racket executable
+        working-directory: ${{ github.workspace }}
+        run: echo "::set-env name=PATH::$PWD/racketcs/bin:$PATH"
+      - name: Check for Racket
+        run: racket --version
+      - name: Install catalog and required packages
+        run: |
+          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
+          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
+      - name: Install racket-test dependency
+        run: raco pkg install --auto racket-test
+      - name: Run tests/racket/test
+        run: raco test -l tests/racket/test
+      - name: Run tests/racket/contract/all
+        run: racket -l tests/racket/contract/all
+      - name: Run tests/json/json
+        run: raco test -l tests/json/json
+      - name: Run tests/file/main
+        run: raco test -l tests/file/main
+      - name: Run tests/net/head
+        run: raco test -l tests/net/head
+      - name: Run tests/net/uri-codec
+        run: raco test -l tests/net/uri-codec
+      - name: Run tests/net/url
+        run: raco test -l tests/net/url
+      - name: Run tests/net/url-port
+        run: raco test -l tests/net/url-port
+      - name: Run tests/net/encoders
+        run: raco test -l tests/net/encoders
+      - name: Run tests/openssl/basic
+        run: raco test -l tests/openssl/basic
+      - name: Run tests/openssl/https
+        run: raco test -l tests/openssl/https
+      - name: Run tests/match/main
+        run: raco test -l tests/match/main
+      - name: Run tests/zo-path
+        run: raco test -l tests/zo-path
+      - name: Run tests/xml
+        run: raco test -c tests/xml
+      - name: Run tests/stxparse
+        run: raco test -c tests/stxparse
+      - name: Install db tests dependency
+        run: raco pkg install --auto db-test
+      - name: Run db tests
+        run: raco test -l tests/db/all-tests
