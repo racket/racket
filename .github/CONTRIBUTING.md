@@ -10,3 +10,5 @@ racket/src/LICENSE-MIT.txt.
 
 See the [Racket Build Guide](../build.md) for more guidance on
 contributing.
+
+The [Friendly Environment Policy](https://racket-lang.org/friendly.html) contains guidelines on expected behavior within the Racket community.
