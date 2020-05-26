@@ -1196,7 +1196,7 @@ static void get_size(struct hblk *h, word lptr)
 
   *(long *)lptr += bytes;
 }
-long GC_get_memory_use()
+long GC_get_memory_use(void)
 {
   long c = 0;
   LOCK();

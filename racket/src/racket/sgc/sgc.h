@@ -35,9 +35,9 @@ SGC_EXTERN void *GC_base(void *);
 
 SGC_EXTERN void GC_dump(void);
 
-SGC_EXTERN size_t GC_get_memory_use();
-SGC_EXTERN size_t GC_get_memory_peak_use();
-SGC_EXTERN size_t GC_get_total_bytes();
+SGC_EXTERN size_t GC_get_memory_use(void);
+SGC_EXTERN size_t GC_get_memory_peak_use(void);
+SGC_EXTERN size_t GC_get_total_bytes(void);
 
 SGC_EXTERN void GC_end_stubborn_change(void *);
 
@@ -104,9 +104,9 @@ SGC_EXTERN void GC_trace_path(void);
 
 SGC_EXTERN void GC_store_path(void *v, uintptr_t src, void *path_data);
 SGC_EXTERN void **GC_get_next_path(void **prev, int *len);
-SGC_EXTERN void GC_clear_paths();
+SGC_EXTERN void GC_clear_paths(void);
 
-SGC_EXTERN void GC_flush_mark_stack();
+SGC_EXTERN void GC_flush_mark_stack(void);
 SGC_EXTERN void GC_push_all_stack(void *sp, void *ep);
 SGC_EXTERN void GC_register_indirect_disappearing_link(void **p, void *a);
 
