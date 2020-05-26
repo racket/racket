@@ -2221,17 +2221,17 @@ void GC_dump(void)
   FPRINTF(STDERR, "End Map\n");
 }
 
-size_t GC_get_memory_use()
+size_t GC_get_memory_use(void)
 {
   return (size_t)mem_real_use;
 }
 
-size_t GC_get_memory_peak_use()
+size_t GC_get_memory_peak_use(void)
 {
   return (size_t)mem_peak_use;
 }
 
-size_t GC_get_total_bytes()
+size_t GC_get_total_bytes(void)
 {
   return (size_t)mem_cumulative_use;
 }
@@ -4505,7 +4505,7 @@ void GC_push_all_stack(void *sp, void *ep)
   prepare_stack_collect();
 }
 
-void GC_flush_mark_stack()
+void GC_flush_mark_stack(void)
 {
   collect();  
 }
