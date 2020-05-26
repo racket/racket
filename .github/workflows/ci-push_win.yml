@@ -7,8 +7,7 @@ jobs:
 # Build jobs
 # These jobs build each Racket component separately and tests on the component start as soon as each
 # component finishes building.
-
-  build-win:
+  buildtest-win:
     runs-on: windows-latest
 
     # According to
@@ -25,3 +24,24 @@ jobs:
         call msvcprep.bat x86_amd64
         call build.bat
         call ..\..\racket.exe csbuild.rkt -- --recurse-submodules --depth=1
+        ..\..\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
+    - name: Test
+      shell: cmd
+      run: |
+        call racket\raco.exe test -l tests/racket/test
+        call racket\racket.exe -l tests/racket/contract/all
+        call racket\raco.exe test -l tests/json/json
+        call racket\raco.exe test -l tests/file/main
+        call racket\raco.exe test -l tests/net/head
+        call racket\raco.exe test -l tests/net/uri-codec
+        call racket\raco.exe test -l tests/net/url
+        call racket\raco.exe test -l tests/net/url-port
+        call racket\raco.exe test -l tests/net/encoders
+        call racket\raco.exe test -l tests/openssl/basic
+        call racket\raco.exe test -l tests/openssl/https
+        call racket\raco.exe test -l tests/match/main
+        call racket\raco.exe test -l tests/zo-path
+        call racket\raco.exe test -c tests/xml
+        call racket\raco.exe test -c tests/future
+        call racket\raco.exe test -l tests/db/all-tests
+        racket\raco.exe test -c tests/stxparse
