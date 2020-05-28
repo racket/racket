@@ -707,7 +707,8 @@
       (wr* pport obj depth display? qd))
 
     (define (wr-expr expr depth pair? car cdr open close qd)
-      (if (and (read-macro? expr pair? car cdr qd)
+      (if (and (not display?)
+               (read-macro? expr pair? car cdr qd)
                (equal? open "("))
           (begin
             (out (read-macro-prefix expr car))
@@ -761,7 +762,7 @@
                                 (pair? (cdr l))
                                 (null? (cdr (cdr l))))
                            (begin
-                             (out " . ,")
+                             (out " . #;HERE ,")
                              (wr (car (cdr l)) (dsub1 depth) qd)
                              (out close))
                            (begin
@@ -1159,7 +1160,8 @@
     (define (pp-expr expr extra depth
                      apair? acar acdr open close
                      qd)
-      (if (and (read-macro? expr apair? acar acdr qd)
+      (if (and (not display?)
+               (read-macro? expr apair? acar acdr qd)
                (equal? open "(")
                (not (and found (hash-ref found (acdr expr) #f))))
           (begin

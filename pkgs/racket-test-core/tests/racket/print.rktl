@@ -476,8 +476,8 @@
                   "(sub '(x) ...)"
                   "#(struct:sub (x) ...)")
 
-  (parameterize ([print-graph #t])
-  (for*/parameterize ([print-pair-curly-braces (in-list '(#t #f))]
+  (for*/parameterize ([print-graph (in-value #t)]
+                      [print-pair-curly-braces (in-list '(#t #f))]
                       [print-mpair-curly-braces (in-list '(#t #f))])
 
     (parameterize ([print-mpair-curly-braces #t])
@@ -629,8 +629,54 @@
                       "#fl(1.0 2.0 3.0 3.0 3.0)" "#fl(1.0 2.0 3.0 3.0 3.0)" "#fl(1.0 2.0 3.0 3.0 3.0)" "(flvector 1.0 2.0 3.0 3.0 3.0)" "#fl(1.0 2.0 3.0 3.0 3.0)")
       (test-print/all (flvector)
                       "#fl()" "#fl()" "#fl()" "(flvector)" "#fl()"))
-    (void))))
+    (void))
 
+  (parameterize ([print-reader-abbreviations #t]
+                 [pretty-print-abbreviate-read-macros #t])
+    (for*/parameterize (#;[print-mpair-curly-braces (in-list '(#t #f))])
+      (parameterize ([print-pair-curly-braces #f])
+        (test-print/all (list 'banana 4)
+                        "(banana 4)" "(banana 4)" "(banana 4)" "'(banana 4)" "(banana 4)")
+        (test-print/all (list 'quote 4)
+                        "'4" "(quote 4)" "'4" "''4" "'4")
+        (test-print/all (list 'quasiquote 4)
+                        "`4" "(quasiquote 4)" "`4" "'`4" "`4")
+        (test-print/all (list 'unquote 4)
+                        ",4" "(unquote 4)" ",4" "',4" ",4")
+        (test-print/all (list 'unquote '@)
+                        ", @" "(unquote @)" ", @" "', @" ", @")
+        (test-print/all (list 'unquote-splicing 4)
+                        ",@4" "(unquote-splicing 4)" ",@4" "',@4" ",@4"))
+      (parameterize ([print-pair-curly-braces #t])
+        (test-print/all (list 'banana 4)
+                        "{banana 4}" "{banana 4}" "{banana 4}" "'{banana 4}" "{banana 4}")
+        (test-print/all (list 'quote 4)
+                        "{quote 4}" "{quote 4}" "{quote 4}" "'{quote 4}" "{quote 4}"))))
+
+  (parameterize ([print-reader-abbreviations #t]
+                 [pretty-print-abbreviate-read-macros #t])
+    (for*/parameterize (#;[print-pair-curly-braces (in-list '(#t #f))])
+      (define (mlist x y) (mcons x (mcons y '())))
+      (parameterize ([print-mpair-curly-braces #f])
+        (test-print/all (mlist 'banana 4)
+                        "(banana 4)" "(banana 4)" "(banana 4)" "(mcons 'banana (mcons 4 '()))" "(banana 4)")
+        (test-print/all (mlist 'quote 4)
+                        "'4" "(quote 4)" "'4" "(mcons 'quote (mcons 4 '()))" "'4")
+        (test-print/all (mlist 'quasiquote 4)
+                        "`4" "(quasiquote 4)" "`4" "(mcons 'quasiquote (mcons 4 '()))" "`4")
+        (test-print/all (mlist 'unquote 4)
+                        ",4" "(unquote 4)" ",4" "(mcons 'unquote (mcons 4 '()))" ",4")
+        (test-print/all (mlist 'unquote '@)
+                        ", @" "(unquote @)" ", @" "(mcons 'unquote (mcons '@ '()))" ", @")
+        (test-print/all (mlist 'unquote-splicing 4)
+                        ",@4" "(unquote-splicing 4)" ",@4" "(mcons 'unquote-splicing (mcons 4 '()))" ",@4"))
+      (parameterize ([print-mpair-curly-braces #t])
+        (test-print/all (mlist 'banana 4)
+                        "{banana 4}" "{banana 4}" "{banana 4}" "(mcons 'banana (mcons 4 '()))" "{banana 4}")
+        (test-print/all (mlist 'quote 4)
+                        "{quote 4}" "{quote 4}" "{quote 4}" "(mcons 'quote (mcons 4 '()))" "{quote 4}"))))
+
+  (void))
 ;; ----------------------------------------
 ;; More `prop:custom-write` and `prop:custom-print-quotable` checking.
 ;; Make sure the `prop:custom-write` callback gets an approrpriate

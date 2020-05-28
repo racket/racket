@@ -3431,14 +3431,15 @@ print_byte_string(const char *str, int delta, int len, int notdisplay, PrintPara
   }
 }
 
-static int is_special_reader_form(PrintParams *pp, int notdisplay, Scheme_Object *p)
+static int is_special_reader_form(PrintParams *pp, int notdisplay,
+                                  Scheme_Type pair_type, Scheme_Object *p)
 {
   Scheme_Object *v;
 
   if (notdisplay && (notdisplay != 3) && pp->print_reader) {
     v = SCHEME_CAR(p);
     p = SCHEME_CDR(p);
-    if (!SCHEME_PAIRP(p)) return 0;
+    if (!SAME_TYPE(SCHEME_TYPE(p), pair_type)) return 0;
     p = SCHEME_CDR(p);
     if (!SCHEME_NULLP(p)) return 0;
     if (SCHEME_SYMBOLP(v)) {
@@ -3541,7 +3542,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
   } else {
     if (round_parens 
         && !first_unquoted 
-        && is_special_reader_form(pp, notdisplay, pair)) {
+        && is_special_reader_form(pp, notdisplay, pair_type, pair)) {
       print_special_reader_form(SCHEME_CAR(pair), pp, notdisplay);
       /* Corner case: if we just printed "#," or ",", make sure we don't
          next print a symbol that starts "@". For example, ","
@@ -3588,7 +3589,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 
   cdr = SCHEME_CDR(pair);
   while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)
-         && !is_special_reader_form(pp, notdisplay, pair)) {
+         && !is_special_reader_form(pp, notdisplay, pair_type, pair)) {
     if (ht && !super_compact) {
       if (is_graph_point(ht, cdr)) {
 	/* This needs a tag */
