@@ -74,6 +74,8 @@ static Scheme_Object *print_mpair_curly(int, Scheme_Object *[]);
 static Scheme_Object *print_syntax_width(int, Scheme_Object *[]);
 static Scheme_Object *print_reader(int, Scheme_Object *[]);
 static Scheme_Object *print_as_qq(int, Scheme_Object *[]);
+static Scheme_Object *print_number_to_string_proc(int, Scheme_Object *[]);
+
 static Scheme_Object *print_long_bool(int, Scheme_Object *[]);
 
 #define NOT_EOF_OR_SPECIAL(x) ((x) >= 0)
@@ -256,6 +258,7 @@ void scheme_init_read(Scheme_Startup_Env *env)
   ADD_PARAMETER("print-reader-abbreviations",    print_reader,           MZCONFIG_PRINT_READER,                env);
   ADD_PARAMETER("print-boolean-long-form",       print_long_bool,        MZCONFIG_PRINT_LONG_BOOLEAN,          env);
   ADD_PARAMETER("print-as-expression",           print_as_qq,            MZCONFIG_PRINT_AS_QQ,                 env);
+  ADD_PARAMETER("print-number->string-proc",     print_number_to_string_proc, MZCONFIG_PRINT_NUMBER_TO_STRING_PROCEDURE, env);
 
   ADD_NONCM_PRIM("datum-intern-literal", read_intern, 1, 1, env);
 
@@ -356,6 +359,26 @@ static Scheme_Object *
 print_as_qq(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("print-as-expression", MZCONFIG_PRINT_AS_QQ);
+}
+
+static Scheme_Object *check_valid_number_to_string_proc(int argc, Scheme_Object *argv[])
+{
+  // Only used by print_number_to_string_proc, with isbool = 1
+  // Contractually, argc = 1
+  Scheme_Object *newParam;
+  if(scheme_check_proc_arity2(NULL,1,0,1,argv,1)){
+    newParam = argv[0];
+  } else {
+    newParam = NULL;
+  }
+  return newParam;
+}
+
+static Scheme_Object *
+print_number_to_string_proc(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("print-number->string-param", scheme_make_integer(MZCONFIG_PRINT_NUMBER_TO_STRING_PROCEDURE),
+                             argc, argv, -1, &check_valid_number_to_string_proc, "(or boolean? (number? -> string?))", 1);
 }
 
 static Scheme_Object *
