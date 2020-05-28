@@ -11,8 +11,9 @@ jobs:
     runs-on: windows-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        mode: [3m, CS]
+        mode: ['3m', 'CS']
     
     # According to
     # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#windows-server-2019
@@ -23,12 +24,14 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build 3m
       working-directory: .\racket\src\worksp
+      if: matrix.mode == '3m'
       shell: cmd
       run: |
         call msvcprep.bat x86_amd64
         call build.bat
     - name: Build CS
       working-directory: .\racket\src\worksp
+      if: matrix.mode == 'CS'
       shell: cmd
       run: |
         call msvcprep.bat x86_amd64
