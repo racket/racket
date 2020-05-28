@@ -220,6 +220,16 @@
         baz 1)
  '(0 1))
 
+(test/spec-passed/result
+ 'object/c-error-checking-earlier-coerce-contract
+ '(with-handlers
+      ([exn:fail?
+        (λ (x)
+          (regexp-match? #rx"^object/c:"
+                        (exn-message x)))])
+    (object/c (field [f '(1)])))
+ #t)
+
 (test/pos-blame
  'object/c-multiple-wrapping-1
  '(let ()
