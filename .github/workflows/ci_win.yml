@@ -1,6 +1,6 @@
 name: CI Win
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   
@@ -10,6 +10,10 @@ jobs:
   buildtest-win:
     runs-on: windows-latest
 
+    strategy:
+      matrix:
+        mode: [3m, CS]
+    
     # According to
     # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#windows-server-2019
     # VS2019 is what is installed in the hosted runners:
@@ -17,14 +21,26 @@ jobs:
     #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
     steps:
     - uses: actions/checkout@v2
-    - name: Build
+    - name: Build 3m
       working-directory: .\racket\src\worksp
       shell: cmd
       run: |
         call msvcprep.bat x86_amd64
         call build.bat
-        call ..\..\racket.exe csbuild.rkt -- --recurse-submodules --depth=1
-        ..\..\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
+    - name: Build CS
+      working-directory: .\racket\src\worksp
+      shell: cmd
+      run: |
+        call msvcprep.bat x86_amd64
+        call build-cs.bat
+    - name: Check reported racket version
+      shell: cmd
+      run: |
+        call racket\racket.exe --version
+    - name: Install Testing Deps
+      shell: cmd
+      run: |
+        call racket\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
     - name: Test
       shell: cmd
       run: |
