@@ -120,7 +120,7 @@
     ;; Lift functions to avoid closure creation:
     (define lifted-body
       (time
-       (lift-in-schemified-body body)))
+       (lift-in-schemified-body body #t)))
     (append (for/list ([p (in-list lifted-constants)])
               (cons 'define p))
             lifted-body)))

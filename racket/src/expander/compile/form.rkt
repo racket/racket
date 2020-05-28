@@ -355,20 +355,23 @@
 ;; ----------------------------------------
 
 ;; Handle the `define-syntaxes`-with-zero-results hack for the top level;
-;; beware that we make two copies of `finish`
+;; beware that we may make two copies of `finish`, and we assume that `finish`
+;; is a `begin` form
 (define (generate-top-level-define-syntaxes gen-syms rhs transformer-set!s finish)
   `(call-with-values
     (lambda () ,rhs)
     (case-lambda
-      [,gen-syms
-       (begin
-         ,@transformer-set!s
-         ,finish
-         (void))]
+      ,@(if (null? gen-syms) ; avoid unnecessary duplication if no `gen-syms`
+            '()
+            `([,gen-syms
+               (begin
+                 ,@transformer-set!s
+                 ,@(cdr finish)
+                 (void))]))
       [()
        (let-values ([,gen-syms (values ,@(for/list ([s (in-list gen-syms)]) `'#f))])
          (begin
-           ,finish
+           ,@(cdr finish)
            (void)))]
       [args
        ;; Provoke the wrong-number-of-arguments error:

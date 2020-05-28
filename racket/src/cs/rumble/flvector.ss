@@ -59,14 +59,12 @@
     (unless (and (>= pos 0)
                  (< pos len))
       (raise-range-error who "flvector" "" pos flvec 0 len)))
-  (bytevector-ieee-double-ref (flvector-bstr flvec)
-                              (bitwise-arithmetic-shift-left pos 3)
-                              (native-endianness)))
+  (bytevector-ieee-double-native-ref (flvector-bstr flvec)
+                                     (bitwise-arithmetic-shift-left pos 3)))
 
 (define (unsafe-flvector-ref flvec pos)
-  (#3%bytevector-ieee-double-ref (flvector-bstr flvec)
-                                 (#3%fxsll pos 3)
-                                 (native-endianness)))
+  (#3%bytevector-ieee-double-native-ref (flvector-bstr flvec)
+                                        (#3%fxsll pos 3)))
 
 (define/who (flvector-set! flvec pos val)
   (check who flvector? flvec)
@@ -76,16 +74,14 @@
                  (< pos len))
       (raise-range-error who "flvector" ""  pos flvec 0 len)))
   (check who flonum? val)
-  (bytevector-ieee-double-set! (flvector-bstr flvec)
-                               (bitwise-arithmetic-shift-left pos 3)
-                               val
-                               (native-endianness)))
+  (bytevector-ieee-double-native-set! (flvector-bstr flvec)
+                                      (bitwise-arithmetic-shift-left pos 3)
+                                      val))
 
 (define (unsafe-flvector-set! flvec pos val)
-  (#3%bytevector-ieee-double-set! (flvector-bstr flvec)
-                                  (#3%fxsll pos 3)
-                                  val
-                                  (native-endianness)))
+  (#3%bytevector-ieee-double-native-set! (flvector-bstr flvec)
+                                         (#3%fxsll pos 3)
+                                         val))
 
 (define/who flvector-copy
   (case-lambda

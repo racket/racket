@@ -587,7 +587,9 @@
                                (lambda (key) (values #f #f #f)))
                            import-keys))
        (define impl-lam/lifts
-         (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)))
+         (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)
+                                     ;; preserve loop forms?
+                                     (not (eq? linklet-compilation-mode 'interp))))
        (define impl-lam/jitified
          (cond
            [(not jitify-mode?) impl-lam/lifts]

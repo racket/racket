@@ -26,6 +26,10 @@
   (define (same-results fl unsafe-fl args)
     (test (apply fl args) apply unsafe-fl args))
 
+  (for ([line (in-list 1nary-table)])
+    (test #t 'single (and ((car line) +nan.0) #t))
+    (test #t 'single (and ((cadr line) +nan.0) #t)))
+
   (for ([ignore (in-range 0 800)])
     (let ([i (random)]
           [j (random)]
