@@ -1293,14 +1293,16 @@ Returns @racket[(* z z)].}
 
 @defproc[(sgn [x real?]) (or/c (=/c -1) (=/c 0) (=/c 1) +nan.0 @#,racketvalfont{+nan.f})]{
 
-Returns the sign of @racket[x] as either @math{-1}, @math{0},
-@math{1}, or not-a-number.
+Returns the sign of @racket[x] as either @math{-1}, @math{0} (or a signed-zero variant, when
+inexact), @math{1}, or not-a-number.
 
 @mz-examples[
 #:eval math-eval
 (sgn 10)
 (sgn -10.0)
 (sgn 0)
+(sgn -0.0)
+(sgn +0.0)
 (sgn +nan.0)
 ]}
 
