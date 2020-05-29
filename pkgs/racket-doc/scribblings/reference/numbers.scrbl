@@ -1304,6 +1304,8 @@ inexact), @math{1}, or not-a-number.
 (sgn -0.0)
 (sgn +0.0)
 (sgn +nan.0)
+(sgn +inf.0)
+(sgn -inf.0)
 ]}
 
 @defproc[(conjugate [z number?]) number?]{
