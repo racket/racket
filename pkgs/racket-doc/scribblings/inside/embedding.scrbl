@@ -346,12 +346,12 @@ extended to work with either CGC or 3m depending on whether
 
 static int run(Scheme_Env *e, int argc, char *argv[])
 {
-  Scheme_Object *l;
-  Scheme_Object *a[2];
+  Scheme_Object *l = NULL;
+  Scheme_Object *a[2] = { NULL, NULL };
 
-  MZ_GC_DECL_REG(6);
+  MZ_GC_DECL_REG(5);
   MZ_GC_VAR_IN_REG(0, e);
-  MZ_GC_VAR_IN_REG(1, l)
+  MZ_GC_VAR_IN_REG(1, l);
   MZ_GC_ARRAY_VAR_IN_REG(2, a, 2);
 
   MZ_GC_REG();
