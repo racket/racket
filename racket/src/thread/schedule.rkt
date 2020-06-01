@@ -221,21 +221,25 @@
     [(null? callbacks) (swap-in-engine e t leftover-ticks)]
     [else
      (define done? #f)
-     (let loop ([e e])
+     (let loop ([e e] [callbacks callbacks])
        (end-implicit-atomic-mode)
        (e
         TICKS
-        (lambda ()
-          (run-callbacks callbacks)
-          (set! done? #t)
-          (engine-block))
+        (if (pair? callbacks)
+            ;; run callbacks as a "prefix" callbacks
+            (lambda ()
+              (run-callbacks callbacks)
+              (set! done? #t)
+              (engine-block))
+            ;; still running callbacks, so no new prefix
+            void)
         (lambda (e result remaining)
           (start-implicit-atomic-mode)
           (unless e
             (internal-error "thread ended while it should run callbacks atomically"))
           (if done?
               (swap-in-engine e t leftover-ticks)
-              (loop e)))))]))
+              (loop e null)))))]))
 
 ;; Run foreign "async-apply" callbacks, now that we're in some thread
 (define (run-callbacks callbacks)
