@@ -466,25 +466,34 @@ sub-commands.
    @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
         This behavior is the default for non-@tech{interactive mode}.}
    @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements.
-         Forcing an installation may leave package content in an inconsistent state.}
+         Forcing an installation may leave package content in an inconsistent state. Implied packages
+         via @racketidfont{implies} or @racketidfont{update-implies} (see @secref["metadata"]) are not updated,
+         even if @DFlag{ignore-implies} is not specified.}
    @item{@exec{search-ask} --- Looks for dependencies (when uninstalled) or updates (when version requirements are unmet)
          via the configured @tech{package catalogs},
          but asks the user whether packages should be installed or updated. This behavior is the default in @tech{interactive mode}.}
-   @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
-  ]}
+   @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update a dependency.}
+  ]
+
+         Unless @DFlag{ignore-implies} is specified, when a package is updated or installed, any package that
+         it implies via @racketidfont{implies} or @racketidfont{update-implies} (see @secref["metadata"]) is automatically
+         updated independent of @exec{fail}, @exec{search-ask}, or @exec{search-auto}, but implied dependencies
+         are not updated for @exec{force} behavior.}
 
   @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto}.}
 
   @item{@DFlag{update-deps} --- With @exec{search-ask} or @exec{search-auto} dependency behavior, checks
         already-installed dependencies transitively for updates (even when
-        not forced by version requirements), asking or automatically updating a
-        package when an update is available. When a package is updated or installed,
-        unless @DFlag{skip-implies} is specified, any package that
-        it implies (see @secref["metadata"]) is automatically updated independent of the behavior
-        requested via @DFlag{update-deps} and @DFlag{deps}.}
+        not forced by version requirements, @racketidfont{implies}, or @racketidfont{update-implies}), asking or automatically updating a
+        package when an update is available.
 
-  @item{@DFlag{skip-implies} --- Disables special treatment of dependencies that are listed
-        in @racketidfont{implies} (see @secref["metadata"]) for an installed or updated package.}
+        Unless @DFlag{ignore-implies} or @exec{@DFlag{deps} force} is specified, when a package is updated or installed,
+        any package that it implies @racketidfont{implies} or @racketidfont{update-implies} (see @secref["metadata"]) is
+        automatically updated independent of the behavior requested via @DFlag{update-deps}.}
+
+  @item{@DFlag{ignore-implies} --- Disables special treatment of dependencies that are listed
+        in @racketidfont{implies} or @racketidfont{update-implies} (see @secref["metadata"])
+        for an installed or updated package.}
 
   @item{@DFlag{link} --- Implies @exec{--type dir}
         and links the existing directory as an installed package, instead of copying the
@@ -714,7 +723,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto} plus @DFlag{update-deps}.}
  @item{@DFlag{update-deps} --- Same as for @command-ref{install}, but
        implied by @DFlag{auto} only for @command-ref{update}.}
- @item{@DFlag{skip-implies} --- Same as for @command-ref{install}.}
+ @item{@DFlag{ignore-implies} --- Same as for @command-ref{install}.}
  @item{@DFlag{link} --- Same as for @command-ref{install}, but a
        directory package source is treated as a link by default only
        when it does not correspond to a link or a Git repository
