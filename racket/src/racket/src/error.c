@@ -3989,8 +3989,8 @@ void *scheme_glib_log_message_test(char *str)
       }
     }
     scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
-    return NULL;
   }
+  return NULL;
 }
 
 #ifdef MZ_USE_MZRT
