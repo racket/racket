@@ -3975,18 +3975,22 @@ void scheme_glib_log_message(const char *log_domain,
 void *scheme_glib_log_message_test(char *str)
   XFORM_SKIP_PROC
 {
-  int i;
-  for (i = 0; str[i]; i++) {
-    if (str[i] == ';') {
-      str[i] = 0;
-      scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
-      str[i] = ';';
-      str = str + i + 1;
-      i = 0;
+  if (!str) {
+    scheme_glib_log_message(NULL, mzG_LOG_LEVEL_WARNING, "test", NULL);
+  } else {
+    int i;
+    for (i = 0; str[i]; i++) {
+      if (str[i] == ';') {
+        str[i] = 0;
+        scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
+        str[i] = ';';
+        str = str + i + 1;
+        i = 0;
+      }
     }
+    scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
+    return NULL;
   }
-  scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
-  return NULL;
 }
 
 #ifdef MZ_USE_MZRT

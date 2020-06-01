@@ -23,16 +23,21 @@
      (define scheme_glib_log_message_test
        (let ([glib-log-message (cast (vm-primitive 'glib-log-message)
                                      _intptr
-                                     (_fun _bytes/nul-terminated _int _bytes/nul-terminated -> _void))])
+                                     (_fun _bytes/nul-terminated _int _bytes/nul-terminated -> _void))]
+             [warning (arithmetic-shift 1 4)])
          (lambda (msg)
-           (let loop ([bstr (if (string? msg) (string->bytes/utf-8 msg) (cast msg _pointer _bytes))])
-             (define m (regexp-match-positions #rx";" bstr))
-             (cond
-               [(not m)
-                (glib-log-message #"test" (arithmetic-shift 1 4) bstr)]
-               [else
-                (loop (subbytes bstr 0 (caar m)))
-                (loop (subbytes bstr (cdar m)))])))))
+           (cond
+             [(not msg)
+              (glib-log-message #f warning #"test")]
+             [else
+              (let loop ([bstr (if (string? msg) (string->bytes/utf-8 msg) (cast msg _pointer _bytes))])
+                (define m (regexp-match-positions #rx";" bstr))
+                (cond
+                  [(not m)
+                   (glib-log-message #"test" warning bstr)]
+                  [else
+                   (loop (subbytes bstr 0 (caar m)))
+                   (loop (subbytes bstr (cdar m)))]))]))))
      (values
       ;; pthread_create
       (lambda (proc arg)
@@ -50,6 +55,10 @@
   (scheme_glib_log_message_test "hello")
   (check-equal? '#(warning "test: hello" #f #f) (sync r))
   
+  (check-equal? #f (sync/timeout 0 r))
+  
+  (scheme_glib_log_message_test #f)
+  (check-equal? '#(warning "test" #f #f) (sync r))  
   (check-equal? #f (sync/timeout 0 r))
   
   (define (make s)

@@ -469,7 +469,10 @@
                (let ([go (lambda ()
                            (unsafe-start-atomic)
                            (disable-interrupts)
-                           (log-message* (unsafe-root-logger) level #f (string-append domain ": " message) #f #f #f)
+                           (let ([message (if domain
+                                              (string-append domain ": " message)
+                                              message)])
+                             (log-message* (unsafe-root-logger) level #f message #f #f #f))
                            (enable-interrupts)
                            (unsafe-end-atomic))])
                  (cond
