@@ -464,7 +464,7 @@ Coerces @racket[q] to an exact number, finds the numerator of the
 @mz-examples[(numerator 5) (numerator 34/8) (numerator 2.3)]}
 
 
-@defproc[(denominator [q rational?]) integer?]{
+@defproc[(denominator [q rational?]) (and/c integer? positive?)]{
 
 Coerces @racket[q] to an exact number, finds the denominator of the
  number expressed in its simplest fractional form, and returns this
