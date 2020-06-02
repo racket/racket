@@ -239,7 +239,7 @@ mzsj86g.o: $(srcdir)/src/mzsj86g.S
 
 lib/libracketxxxxxxx.dll: lib/libmzgcxxxxxxx.dll libracket.@LIBSFX@ mzsj86g.o $(LIBRKTIO)
 	mkdir -p lib
-	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 lib/libmzgcxxxxxxx.dll -static-libgcc @LIBS@
+	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 -lwinmm lib/libmzgcxxxxxxx.dll -static-libgcc @LIBS@
 
 libracket.dll.a: lib/libracketxxxxxxx.dll
 	@DLLTOOL@ --def libracket.def -D libracketxxxxxxx.dll --output-exp libracketxxxxxxx.exp --output-lib libracketxxxxxxx.lib --output-delaylib libracket.dll.a
@@ -278,6 +278,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
                    $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/../start/parse_cmdl.inc \
+                   $(srcdir)/../start/cmdl_to_argv.inc \
 	           $(srcdir)/../start/config.inc $(srcdir)/../start/delayed.inc \
 	           $(srcdir)/../start/embedded_dll.inc
 

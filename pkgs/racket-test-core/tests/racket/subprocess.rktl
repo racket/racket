@@ -17,6 +17,9 @@
 (define tmpfile (build-path (find-system-path 'temp-dir) "cattmp"))
 (define tmpfile2 (build-path (find-system-path 'temp-dir) "cattmp2"))
 
+(unless cat
+  (error "\"cat\" executable not found"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; process* tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -616,6 +619,46 @@
                    "--" self)))
   (test "hello" get-output-string out)
   (test "goodbye" get-output-string err))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check Windows command-line parsing
+
+(when (eq? 'windows (system-type))
+  (define (try-arg cmdline-str result-str)
+    (let ()
+      (define-values (sp i o no-e)
+	(subprocess #f #f (current-error-port) self 'exact
+		    (string-append (regexp-replace* #rx" " (path->string self) "\" \"")
+                                   " -l racket/base"
+                                   " -e \"(write (vector-ref (current-command-line-arguments) 0))\""
+                                   " " cmdline-str)))
+      (close-output-port o)
+      (test result-str read i)
+      (subprocess-wait sp) 
+      (close-input-port i))
+    ;; Check encoding by `subprocess`, too
+    (let ()
+      (define-values (sp i o no-e)
+	(subprocess #f #f (current-error-port) self
+		    "-l" "racket/base"
+                    "-e" "(write (vector-ref (current-command-line-arguments) 0))"
+		    result-str))
+      (close-output-port o)
+      (test result-str read i)
+      (subprocess-wait sp) 
+      (close-input-port i)))
+
+  (try-arg "x" "x")
+  (try-arg "\"x\"" "x")
+  (try-arg "\"a \"\"b\"\" c\"" "a \"b\" c")
+  (try-arg "\"a \"\"b\"\" c" "a \"b\" c")
+  (try-arg "\"a\\\"" "a\"")
+  (try-arg "a\\\"" "a\"")
+  (try-arg "a\\\"b" "a\"b")
+  (try-arg "a\\\\\"b" "a\\b")
+  (try-arg "a\\\\\\\"b" "a\\\"b")
+  (try-arg "a\\\\\\\\\"b" "a\\\\b")
+  (try-arg "a\\\\\\\\\\\"b" "a\\\\\"b"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

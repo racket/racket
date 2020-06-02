@@ -319,7 +319,7 @@ raw_racketcs.exe: main.o MemoryModule.o rres.o
 raw_gracketcs.exe: grmain.o MemoryModule.o grres.o
 	$(CC) $(CFLAGS) -mwindows -o raw_gracketcs.exe grmain.o MemoryModule.o grres.o $(LDFLAGS)
 
-MINGW_LIBS = -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32
+MINGW_LIBS = -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm
 
 raw_libracketcs.dll: boot.o $(BOOT_OBJ_DEPS) libres.o
 	$(CC) $(CFLAGS) --shared -o raw_libracketcs.dll $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a $(MINGW_LIBS) -static-libgcc $(LIBS)

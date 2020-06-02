@@ -17,6 +17,7 @@ CSDIR = ..\..\cs\c
 
 MAIN_DEPS = ..\..\start\config.inc \
             ..\..\start\parse_cmdl.inc \
+            ..\..\start\cmdl_to_argv.inc \
             ..\..\start\delayed.inc \
             ..\..\start\win_single.inc \
             ..\..\start\embedded_dll.inc

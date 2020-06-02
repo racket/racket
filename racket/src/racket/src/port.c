@@ -3971,16 +3971,6 @@ Scheme_Object *scheme_open_output_file_with_mode(const char *name, const char *w
   return scheme_do_open_output_file((char *)who, 0, 3, a, 0, 0);
 }
 
-#ifdef WINDOWS_FILE_HANDLES
-static int win_seekable(intptr_t fd)
-{
-  /* SetFilePointer() requires " a file stored on a seeking device".
-     I'm not sure how to test that, so we approximate as "regular
-     file". */
-  return GetFileType((HANDLE)fd) == FILE_TYPE_DISK;
-}
-#endif
-
 static Scheme_Object *
 do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false)
 {

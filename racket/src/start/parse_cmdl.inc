@@ -1,45 +1,65 @@
-/* Windows command-line parsing */
+/* 
 
-#ifndef ASSUME_ASCII_COMMAND_LINE
-static char *wchar_to_char(wchar_t *wa, int len)
+   Windows command-line parsing:
+
+   This command-line parser is meant to be consistent with the MSVC
+   library for MSVC 2008 and later. It's mostly used when compiling
+   with MinGW, but it's also used for parsing arguments embedded in a
+   starter executable.
+
+   The parser was is based on Microsoft documentation plus the missing
+   parsing rule reported at
+
+     http://daviddeley.com/autohotkey/parameters/parameters.htm#WINCRULES
+
+   To quote from that page:
+
+     The missing undocumented rule has to do with how doubledouble quotes ("") are handled:
+       [...]
+       After 2008
+        A double quote encountered outside a double quoted block starts a double quoted block.
+        A double quote encountered inside a double quoted block:
+            not followed by another double quote ends the double quoted block.
+            followed immediately by another double quote (e.g. ""), a single double quote is
+            added to the output, and the double quoted block continues.
+
+   Note that the CommandLineToArgv() function from shell32 does not
+   parse the same way, specially in its handling of quotes.
+
+*/
+
+/* Note: modifies `buf`, and result array points into `buf` */
+static int parse_command_line(int pos, /* starting pos ifor output in `_command` */
+                              wchar_t ***_command, /*  initially `_command_len` in size */
+                              int *_command_len, /* returns number of allocated slots */
+                              wchar_t *buf, /* command line to parse */
+                              int skip_exe) /* handle an executable name (which is parsed differently)? */
 {
-  char *a;
-  int l;
+  wchar_t *parse, *created, *write;
+  int maxargs = *_command_len;
+  int findquote = 0; /* i.e., inside a quoted block? */
+  wchar_t **command = *_command;
 
-  l = scheme_utf8_encode((unsigned int *)wa, 0, len, 
-			 NULL, 0,
-			 1 /* UTF-16 */);
-  a = (char *)malloc(l + 1);
-  scheme_utf8_encode((unsigned int *)wa, 0, len, 
-		     (unsigned char *)a, 0,
-		     1 /* UTF-16 */);
-  a[l] = 0;
-
-  return a;
-}
-#endif
-
-static int parse_command_line(char ***_command, char *buf)
-{
-  GC_CAN_IGNORE unsigned char *parse, *created, *write;
-  int maxargs;
-  int findquote = 0;
-  char **command;
-  int count = 0;
-
-  maxargs = 49;
-  command = (char **)malloc((maxargs + 1) * sizeof(char *));
+  if (maxargs == 0) {
+    maxargs = 49;
+    command = (wchar_t **)malloc((maxargs + 1) * sizeof(wchar_t *));
+  }
   
-  parse = created = write = (unsigned char *)buf;
+  parse = created = write = buf;
   while (*parse) {
     int did_create = 0;
-    while (*parse && isspace(*parse)) { parse++; }
-    while (*parse && (!isspace(*parse) || findquote))	{
+    while (*parse && (*parse < 128) && isspace(*parse)) parse++;
+    while (*parse && ((*parse > 128) || !isspace(*parse) || findquote))	{
       if (*parse== '"') {
-	findquote = !findquote;
-	did_create = 1;
-      } else if (*parse== '\\') {
-	GC_CAN_IGNORE unsigned char *next;
+        if (!skip_exe && findquote && (parse[1] == '"')) {
+          parse++;
+          *(write++) = '"';
+        } else {
+          findquote = !findquote;
+          did_create = 1;
+        }
+      } else if (!skip_exe && *parse== '\\') {
+	wchar_t *next;
 	for (next = parse; *next == '\\'; next++) { }
 	if (*next == '"') {
 	  /* Special handling: */
@@ -63,78 +83,24 @@ static int parse_command_line(char ***_command, char *buf)
     *(write++) = 0;
     
     if (*created || did_create) {
-      command[count++] = (char *)created;
-      if (count == maxargs) {
-	char **c2;
-	c2 = (char **)malloc(((2 * maxargs) + 1) * sizeof(char *));
-	memcpy(c2, command, maxargs * sizeof(char *));
-	maxargs *= 2;
+      if (skip_exe > 0) {
+        --skip_exe;
+      } else {
+        command[pos++] = (wchar_t *)created;
+        if (pos == maxargs) {
+          wchar_t **c2;
+          c2 = (wchar_t **)malloc(((2 * maxargs) + 1) * sizeof(wchar_t *));
+          memcpy(c2, command, maxargs * sizeof(wchar_t *));
+          maxargs *= 2;
+        }
       }
     }
     created = write;
   }
 
-  command[count] = NULL;
+  command[pos] = NULL;
   *_command = command;
+  *_command_len = maxargs;
 
-  return count;
-}
-
-static char **cmdline_to_argv(int *_argc, char **_normalized_path)
-{
-#ifndef ASSUME_ASCII_COMMAND_LINE
-  LPWSTR m_lpCmdLine;
-  int j, l;
-#endif
-  int argc;
-  char *a, **argv, *normalized_path;
-
-#ifdef ASSUME_ASCII_COMMAND_LINE
-  a = GetCommandLine();
-#else
-  m_lpCmdLine = GetCommandLineW();
-  for (j = 0; m_lpCmdLine[j]; j++) {
-  }
-  a = wchar_to_char(m_lpCmdLine, j);
-#endif
-
-  argc = parse_command_line(&argv, a);
-
-#ifndef ASSUME_ASCII_COMMAND_LINE
-  /* argv[0] should be the name of the executable, but Windows doesn't
-     specify really where this name comes from, so we get it from
-     GetModuleFileName, just in case */
-  {
-    int name_len = 1024;
-    while (1) {
-      wchar_t *my_name;
-      my_name = (wchar_t *)malloc(sizeof(wchar_t) * name_len);
-      l = GetModuleFileNameW(NULL, my_name, name_len);
-      if (!l) {
-	name_len = GetLastError();
-	free(my_name);
-	my_name = NULL;
-	break;
-      } else if (l < name_len) {
-	a = wchar_to_char(my_name, l);
-	argv[0] = a;
-	CharLowerBuffW(my_name, l);
-	normalized_path = wchar_to_char(my_name, l);
-	free(my_name);
-	break;
-      } else {
-	free(my_name);
-	name_len = name_len * 2;
-      }
-    }
-  }
-#else
-  normalized_path = "?";
-#endif
-
-  *_argc = argc;
-  if (_normalized_path)
-    *_normalized_path = normalized_path;
-
-  return argv;
+  return pos;
 }

@@ -32,7 +32,6 @@
 #endif
 
 #define MAXCOMMANDLEN 1024
-#define MAX_ARGS 100
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define MSC_IZE(x) _ ## x
@@ -121,6 +120,8 @@ static void wc_strcat(wchar_t *dest, const wchar_t *src)
   wc_strcpy(dest, src);
 }
 
+#include "parse_cmdl.inc"
+
 static wchar_t *protect(wchar_t *s)
 {
   wchar_t *naya;
@@ -169,57 +170,6 @@ static wchar_t *protect(wchar_t *s)
   }
 
   return s;
-}
-
-static int parse_command_line(int count, wchar_t **command, 
-			      wchar_t *buf, int maxargs, int skip)
-
-{
-  wchar_t *parse, *created, *write;
-  int findquote = 0;
-    
-  parse = created = write = buf;
-  while (*parse) {
-    while (*parse && (*parse < 128) && isspace(*parse)) parse++;
-    while (*parse && ((*parse > 128) || !isspace(*parse) || findquote))	{
-      if (*parse== '"') {
-	findquote = !findquote;
-      } else if (*parse== '\\') {
-	wchar_t *next;
-	for (next = parse; *next == '\\'; next++);
-	if (*next == '"') {
-	  /* Special handling: */
-	  int count = (next - parse), i;
-	  for (i = 1; i < count; i += 2)
-	    *(write++) = '\\';
-	  parse += (count - 1);
-	  if (count & 0x1) {
-	    *(write++) = '\"';
-	    parse++;
-	  }
-	}	else
-	  *(write++) = *parse;
-      } else
-	*(write++) = *parse;
-      parse++;
-    }
-    if (*parse)
-      parse++;
-    *(write++) = 0;
-	  
-    if (*created) {
-      if (skip) {
-	skip--;
-      } else {
-	command[count++] = created;
-	if (count == maxargs)
-	  return count;
-      }
-    }
-    created = write;
-  }
-
-  return count;
 }
 
 static wchar_t *make_command_line(int argc, wchar_t **argv)
@@ -272,7 +222,8 @@ int wmain(int argc_in, wchar_t **argv_in)
 #endif
 {
   wchar_t go[MAXCOMMANDLEN * 2];
-  wchar_t *args[MAX_ARGS + 1];
+  wchar_t **args = NULL;
+  int args_len = 0;
   wchar_t *command_line; 
   int count, i, cl_len;
   struct MSC_IZE(stat) st;
@@ -291,8 +242,7 @@ int wmain(int argc_in, wchar_t **argv_in)
   variant = copy_string(variant);
 #endif
 
-  count = 1;
-  count = parse_command_line(count, args, input, MAX_ARGS, 0);
+  count = parse_command_line(1, &args, &args_len, input, 0);
   
   /* exedir can be relative to the current executable */
   if ((exedir[0] == '\\')
@@ -351,7 +301,7 @@ int wmain(int argc_in, wchar_t **argv_in)
 
     buf = (wchar_t *)malloc((wc_strlen(m_lpCmdLine) + 1) * sizeof(wchar_t));
     memcpy(buf, m_lpCmdLine, (wc_strlen(m_lpCmdLine) + 1) * sizeof(wchar_t));
-    count = parse_command_line(count, args, buf, MAX_ARGS, 1);
+    count = parse_command_line(count, &args, &args_len, buf, 1);
   }
 #else
   {

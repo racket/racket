@@ -77,8 +77,6 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
 			  200,
 			  &result);
 
-  printf("try %p result %d\n", wnd, result);
-
   if (ok == 0)
     return TRUE; /* ignore and continue */
   if ((intptr_t)result == 79) {

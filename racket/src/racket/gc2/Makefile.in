@@ -379,7 +379,9 @@ $(XSRCDIR)/main.c: $(XFORMDEP)
 @INCLUDEDEP@ foreign.d
 @INCLUDEDEP@ main.d
 
-$(XSRCDIR)/mzobj.cxx: $(XFORMDEP) $(srcdir)/../../mzcom/mzobj.cxx
+CMDL_DEPS = $(srcdir)/../../start/parse_cmdl.inc $(srcdir)/../../start/cmdl_to_argv.inc
+
+$(XSRCDIR)/mzobj.cxx: $(XFORMDEP) $(srcdir)/../../mzcom/mzobj.cxx $(CMDL_DEPS)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/mzobj.cxx $(DEF_C_DIRS) $(srcdir)/../../mzcom/mzobj.cxx
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
@@ -621,7 +623,7 @@ MACLIBRKT_LINK_static = $(MACLIBRKT_LIBS)
 
 ../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o $(LIBRKTIO)
 	mkdir -p ../lib
-	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 -static-libgcc @LIBS@
+	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 -lwinmm -static-libgcc @LIBS@
 
 libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
 	@DLLTOOL@ --def libracket3m.def -D libracket3mxxxxxxx.dll --output-exp libracket3mxxxxxxx.exp --output-lib libracket3mxxxxxxx.lib --output-delaylib libracket3m.dll.a

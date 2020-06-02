@@ -7,9 +7,7 @@ extern intptr_t _tls_index;
 #  define REGISTER_TLS_INDEX_ARG 0
 # endif
 
-# ifdef __MINGW32__
-static __thread void *tls_space;
-# else
+# ifndef __MINGW32__
 static __declspec(thread) void *tls_space;
 # endif
 

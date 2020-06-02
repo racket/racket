@@ -97,7 +97,7 @@ static void *in_memory_open(const char *name, int as_global)
 	  CloseHandle(fd);
 
 	  if (got != len)
-	    fprintf(stderr, "partial load %d vs %ld\n", got, len);
+	    fprintf(stderr, "partial load %ld vs %ld\n", got, len);
 
 	  loaded_h = MemoryLoadLibraryEx(p, len,
 					 MemoryDefaultAlloc, MemoryDefaultFree,
@@ -105,7 +105,7 @@ static void *in_memory_open(const char *name, int as_global)
 					 MemoryDefaultFreeLibrary, NULL);
 	  if (noisy_embedded) {
 	    if (!loaded_h) {
-	      fprintf(stderr, "failed %s %d\n", name, GetLastError());
+	      fprintf(stderr, "failed %s %ld\n", name, GetLastError());
 	    } else
 	      fprintf(stderr, "ok %s\n", name);
 	  }

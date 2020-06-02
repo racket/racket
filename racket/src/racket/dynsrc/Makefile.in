@@ -21,7 +21,7 @@ CC = @CC@
 PLAIN_CC = @PLAIN_CC@
 CFLAGS = @CFLAGS@ @COMPFLAGS@
 CPPFLAGS = @PREFLAGS@
-ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src @MZOPTIONS@
+ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src -I$(srcdir)/../../start @MZOPTIONS@
 
 dynlib@NOT_MINGW@:
 	$(MAKE) ../mzdyn.o
@@ -63,7 +63,9 @@ dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 ../starter@NOT_MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/ustart.c
 	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter@EXE_SUFFIX@ $(srcdir)/../../start/ustart.c
 
-../starter@MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/start.c ../mrstarter@EXE_SUFFIX@ sres.o
+PARSE_CMDL = $(srcdir)/../../start/parse_cmdl.inc
+
+../starter@MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/start.c $(PARSE_CMDL) ../mrstarter@EXE_SUFFIX@ sres.o
 	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter@EXE_SUFFIX@ $(srcdir)/../../start/start.c sres.o
 ../mrstarter@EXE_SUFFIX@:  smrres.o
 	$(PLAIN_CC) $(ALL_CFLAGS) -mwindows -DMRSTART -o ../mrstarter@EXE_SUFFIX@ $(srcdir)/../../start/start.c smrres.o

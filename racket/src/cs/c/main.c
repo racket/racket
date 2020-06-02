@@ -276,7 +276,7 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
   return WideCharToMultiByte(CP_UTF8, 0, (wchar_t *)path, len, dest, dest_len, NULL, NULL);
 }
 
-# include "../start/parse_cmdl.inc"
+# include "../start/cmdl_to_argv.inc"
 
 # undef USE_GENERIC_GET_SELF_PATH
 #endif
