@@ -12,9 +12,9 @@
 (define (dest-dir-name)
   (case (current-mode)
     [("release") "ci-release"]
-    [else (~a "ci-snapshots/" (current-stamp))]))
+    [else (~a (current-stamp))]))
 
-(define server-base-url (~a "https://snapshots.racket-lang.org/" (dest-dir-name) "/"))
+(define server-base-url (~a "https://ci-snapshot.racket-lang.org/" (dest-dir-name) "/"))
 
 (define distro-content
   '("main-distribution"))
