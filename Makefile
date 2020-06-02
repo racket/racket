@@ -130,6 +130,9 @@ win32-as-is:
 	$(MAKE) win32-base
 	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
 
+win32-in-place-setup:
+	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
+
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS, only)
 
@@ -414,6 +417,7 @@ update-ChezScheme-as-extra:
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
                                      SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" \
+                                     PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
                                      DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)"
 WIN32_CS_COPY_ARGS_EXCEPT_SUT = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
 WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" WIN32_CS_SETUP_TARGET=$(WIN32_CS_SETUP_TARGET) $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
@@ -493,6 +497,13 @@ both:
 
 also-cs:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
+
+win32-both:
+	$(MAKE) win32-in-place
+	$(MAKE) win32-also-cs
+
+win32-also-cs:
+	$(MAKE) win32-cs WIN32_CS_SETUP_TARGET=win32-in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 # ------------------------------------------------------------
 # Clean (which just gives advice)
