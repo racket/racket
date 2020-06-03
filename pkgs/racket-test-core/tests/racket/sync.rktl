@@ -689,6 +689,29 @@
                                        (lambda (_)
                                          (+ a b))))))
 
+(let ()
+  (define (chain-evts e1 e2)
+    (sync (make-semaphore) (replace-evt e1
+                                        (lambda (v)
+                                          (choice-evt
+                                           e2
+                                           (make-semaphore))))))
+  (test always-evt chain-evts always-evt always-evt)
+  (test always-evt chain-evts (make-semaphore 1) always-evt)
+  (let ([s (make-semaphore 1)])
+    (test always-evt chain-evts s always-evt))
+  (let ([s (make-semaphore 1)])
+    (test s chain-evts (make-semaphore 1) s))
+  (let ([s (make-semaphore 2)])
+    (test s chain-evts s s)
+    (test #f sync/timeout 0 s))
+  (let ([s (make-semaphore)])
+    (thread (lambda () (semaphore-post s)))
+    (test always-evt chain-evts s always-evt))
+  (let ([s (make-semaphore)])
+    (thread (lambda () (semaphore-post s) (sleep) (semaphore-post s)))
+    (test s chain-evts s s)))
+
 ;; ----------------------------------------
 ;; Structures as waitables
 

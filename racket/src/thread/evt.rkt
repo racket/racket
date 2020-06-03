@@ -137,6 +137,12 @@
 ;; semaphore was meanwhile posted). As another example, a
 ;; `nack-guard-evt`'s result uses `abandon-proc` to post to the NACK
 ;; event.
+;;
+;; A sync slot can have at most one non-`void` `interupt-proc` and
+;; `retry-proc` (but any number of `abandon-proc`s). The
+;; `interrupt-proc` and `abandon-proc` fields in `control-state-evt`
+;; can be 'reset to discard existing procedures for the slot.
+;;
 ;; Beware that it doesn't make sense to use `wrap-evt` around the
 ;; `control-state-evt` or the `evt` inside for an asynchronously
 ;; satisfied event (like the way that semaphores are implemented). The
@@ -144,6 +150,7 @@
 ;; event is found, so that the result turns out to be an unwrapped
 ;; event. Or the `interrupt-proc`, etc., callbacks may not be found
 ;; early enough if the `control-state-evt` is wrapped.
+;;
 (struct control-state-evt (evt
                            wrap-proc
                            interrupt-proc ; thunk for break/kill initiated or otherwise before `abandon-proc`
