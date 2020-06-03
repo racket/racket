@@ -11,7 +11,7 @@ jobs:
   build-racketcgc:
     runs-on: ubuntu-18.04
     container:
-      image: racket/racket-ci:builddeps
+      image: racket/racket-ci:latest
 
     strategy:
       fail-fast: false
@@ -62,7 +62,7 @@ jobs:
   build-racket3m:
     runs-on: ubuntu-18.04
     container:
-      image: racket/racket-ci:builddeps
+      image: racket/racket-ci:latest
                 
     needs: build-racketcgc
       
@@ -146,7 +146,7 @@ jobs:
   build-racketcs:
     runs-on: ubuntu-18.04
     container:
-      image: racket/racket-ci:builddeps
+      image: racket/racket-ci:latest
 
     needs: build-racketcgc
     
@@ -206,7 +206,7 @@ jobs:
   test-cgc:
     runs-on: ubuntu-18.04
     container:
-      image: racket/racket-ci:testdeps
+      image: racket/racket-ci:latest
       options: --init
 
     needs: build-racketcgc
@@ -277,7 +277,7 @@ jobs:
   test-3m:
     runs-on: ubuntu-18.04
     container:
-      image: racket/racket-ci:testdeps
+      image: racket/racket-ci:latest
       options: --init
 
     needs: build-racket3m
@@ -351,7 +351,7 @@ jobs:
   test-cs:
     runs-on: ubuntu-18.04
     container:
-      image: racket/racket-ci:testdeps
+      image: racket/racket-ci:latest
       options: --init
 
     needs: build-racketcs

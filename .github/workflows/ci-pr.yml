@@ -6,7 +6,7 @@ jobs:
 
   buildtest-linux:
     container:
-      image: racket/racket-ci:testdeps
+      image: racket/racket-ci:latest
       options: --init
 
     runs-on: ubuntu-18.04
