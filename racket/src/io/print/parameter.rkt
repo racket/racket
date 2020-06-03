@@ -4,7 +4,8 @@
          "../path/relativity.rkt")
 
 (provide current-write-relative-directory
-         print-syntax-width)
+         print-syntax-width
+         print-number->string-routine)
 
 (define-syntax-rule (define-boolean-parameter print-x init-val)
   (begin
@@ -59,5 +60,16 @@
                                                v))
                        v)
                   'print-syntax-width))
+
+(define print-number->string-routine
+  (make-parameter number->string
+                  (lambda (v)
+                    (unless (and (procedure? v)
+                                 (procedure-arity-includes? v 1))
+                      (raise-argument-error 'print-number->string-routine
+                                            "Must accept 1 by-position argument"
+                                            v))
+                    v)
+                  'print-number->string-routine))
 
 

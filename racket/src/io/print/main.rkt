@@ -186,7 +186,7 @@
                     [max-length (write-string/max g o max-length)])
                (write-string/max "#" o max-length))]
             [else
-             (let* ([gs (number->string (if (as-constructor? g)
+             (let* ([gs ((print-number->string-routine) (if (as-constructor? g)
                                             (as-constructor-tag g)
                                             g))]
                     [max-length (write-string/max "#" o max-length)]
@@ -227,7 +227,7 @@
     [(null? v)
      (write-string/max "()" o max-length)]
     [(number? v)
-     (write-string/max (number->string v) o max-length)]
+     (write-string/max ((print-number->string-routine) v) o max-length)]
     [(string? v)
      (cond
        [(eq? mode DISPLAY-MODE) (write-string/max v o max-length)]

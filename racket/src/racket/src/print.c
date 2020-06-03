@@ -70,6 +70,7 @@ typedef struct Scheme_Print_Params {
   char can_read_pipe_quote;
   char case_sens;
   Scheme_Object *inspector;
+  Scheme_Object *print_number_to_string_proc;
 
   char printing_quoted;
 
@@ -1034,6 +1035,19 @@ print_to_string(Scheme_Object *obj,
     params.can_read_pipe_quote = 1;
     params.case_sens = 1;
     params.inspector = scheme_false;
+    switch(SCHEME_NUMBERP(obj)){
+        default: {
+            Scheme_Config *config;
+            config = scheme_current_config();
+            v = scheme_get_param(config, MZCONFIG_PRINT_NUMBER_TO_STRING_PROCEDURE);
+            if(SCHEME_PROCP(v)){
+                params.print_number_to_string_proc = v;
+                break;
+	    }
+        }
+        case 0:
+            params.print_number_to_string_proc = scheme_false;
+    }
     params.print_syntax = -1;
   } else {
     Scheme_Config *config;
@@ -1098,6 +1112,8 @@ print_to_string(Scheme_Object *obj,
     params.print_long_bools = SCHEME_TRUEP(v);
     v = scheme_get_param(config, MZCONFIG_INSPECTOR);
     params.inspector = v;
+    v = scheme_get_param(config, MZCONFIG_PRINT_NUMBER_TO_STRING_PROCEDURE);
+    params.print_number_to_string_proc = v;
   }
 
   uq_ht = NULL;
@@ -1984,8 +2000,25 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           }
 	}
       } else {
-	sprintf(quick_buffer, "%" PRIdPTR "", SCHEME_INT_VAL(obj));
-	print_utf8_string(pp, quick_buffer, 0, -1);
+        Scheme_Object *val;
+        val = pp->print_number_to_string_proc;
+        switch(SCHEME_FALSEP(val)) {
+	  case 0: {
+            // Must be a procedure based on how pp are set, or else we have a big problem
+            Scheme_Object *ret, *args[1];
+            args[0] = obj;
+            ret = scheme_apply(val, 1, args);
+            // But we should still make sure the return-type is sensible.
+            if(SCHEME_CHAR_STRINGP(ret)) {
+              do_print_string(0, 0, pp, SCHEME_CHAR_STR_VAL(ret), 0, SCHEME_CHAR_STRTAG_VAL(ret));
+              break;
+            }
+	  }
+          default: {
+            sprintf(quick_buffer, "%" PRIdPTR "", SCHEME_INT_VAL(obj));
+            print_utf8_string(pp, quick_buffer, 0, -1);
+          }
+        }
       }
     }
   else if (SCHEME_NUMBERP(obj) || SCHEME_LONG_DBLP(obj))
@@ -1994,7 +2027,24 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_escaped(pp, notdisplay, obj, ht, mt, 1);
 	closed = 1;
       } else {
-	print_utf8_string(pp, scheme_number_to_string(10, obj), 0, -1);
+        Scheme_Object *val;
+        val = pp->print_number_to_string_proc;
+        switch(SCHEME_FALSEP(val)) {
+	  case 0: {
+            // Must be a procedure based on how pp are set, or else we have a big problem
+            Scheme_Object *ret, *args[1];
+            args[0] = obj;
+            ret = scheme_apply(val, 1, args);
+            // But we should still make sure the return-type is sensible.
+            if(SCHEME_CHAR_STRINGP(ret)) {
+              do_print_string(0, 0, pp, SCHEME_CHAR_STR_VAL(ret), 0, SCHEME_CHAR_STRTAG_VAL(ret));
+              break;
+            }
+	  }
+          default: {
+	    print_utf8_string(pp, scheme_number_to_string(10, obj), 0, -1);
+          }
+        }
       }
     }
   else if (SCHEME_NULLP(obj))
