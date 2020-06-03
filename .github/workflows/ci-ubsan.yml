@@ -8,7 +8,7 @@ jobs:
 # These jobs build Racket using the sanitizers and gather the results into a final log
   racket3m-ubsan:
     runs-on: ubuntu-18.04
-    container: racket/racket-ci:testdeps
+    container: racket/racket-ci:latest
 
     steps:
     - uses: actions/checkout@v2
@@ -92,7 +92,7 @@ jobs:
 
   racketcs-ubsan:
     runs-on: ubuntu-18.04
-    container: racket/racket-ci:testdeps
+    container: racket/racket-ci:latest
 
     steps:
     - uses: actions/checkout@v2

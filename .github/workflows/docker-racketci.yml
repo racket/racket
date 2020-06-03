@@ -1,12 +1,12 @@
-name: Build TestDeps RacketCI Image
+name: Build RacketCI Docker Image
 
 on:
   push:
     branches:
       - master
     paths:
-      - '.github/workflows/DockerImages/Dockerfile.testdeps'
-      - '.github/workflows/docker-racketci-testdeps.yml'
+      - '.github/images/Dockerfile'
+      - '.github/workflows/docker-racketci.yml'
 
 jobs:
   build-image:
@@ -14,13 +14,13 @@ jobs:
 
     env:
       IMAGE_NAME: racket-ci
-      VERSION: testdeps
-
+      VERSION: ${{ github.sha }}
+      
     steps:
       - uses: actions/checkout@v2
       - name: Build image
-        working-directory: ./.github/workflows/DockerImages
-        run: docker build --tag image --file Dockerfile.testdeps .
+        working-directory: ./.github/images
+        run: docker build --tag image .
       - name: Log into registry
         run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u pmatos --password-stdin
       - name: Push image
@@ -28,3 +28,5 @@ jobs:
           IMAGE_ID=racket/$IMAGE_NAME
           docker tag image $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
+          docker tag image $IMAGE_ID:latest
+          docker push $IMAGE_ID:latest
