@@ -14,5 +14,6 @@
         (error 'check "didn't find non-growing iteration"))
       (loop (add1 tries)))))
 
+(pseudo-random-generator->vector (current-pseudo-random-generator))
 (check "strings" (lambda (i j) (format "string-~a-~a" i j)))
 (check "flonums" (lambda (i j) (random)))
