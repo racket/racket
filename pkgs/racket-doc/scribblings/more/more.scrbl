@@ -95,8 +95,14 @@ start @exec{racket} with no command-line arguments:
   > 
 }
 
-@margin-note{Set your @tt{PATH} environment variable so you can use @exec{raco} and other Racket command line functions. On MacOS: @tt{sudo sh -c @literal{'}echo "/Applications/Racket v@version{}/bin" >> /etc/paths.d/racket@literal{'}} (This assumes you have installed Racket in the @tt{Applications} folder). On Windows: add the racket @tt{bin} path to @tt{Path} in 'Environment Variables' (under System Properties, Advanced tab)}
-
+@margin-note{Set your @tt{PATH} environment variable so you can use
+ @exec{raco} and other Racket command line functions. On MacOS:
+ @tt{sudo sh -c @literal{'}echo "/Applications/Racket v@version{}/bin" 
+ >> /etc/paths.d/racket@literal{'}} (This assumes you have installed
+ Racket in the @tt{Applications} folder). On Windows: add the racket
+ @tt{bin} path to @tt{Path} in 'Environment Variables' (under System
+ Properties, Advanced tab)}
+ 
 Assuming that you have Editline installed,@margin-note*{To use GNU
 Readline instead of Editline, set the @envvar{PLT_READLINE_LIB}
 environment variable or install the @filepath{readline-gpl} package.}
