@@ -119,7 +119,6 @@
                      [mpair? binding?]
                      [fx+ r6rs:fx+]
                      [fx- r6rs:fx-]
-                     [< $fxu<]
                      [add1 fx1+]
                      [sub1 fx1-]
                      [add1 1+]
@@ -179,6 +178,7 @@
                      [logbit1 fxlogbit1]
                      [logbit0 fxlogbit0]
                      [logtest fxlogtest])
+         $fxu<
          fxsrl
          fxbit-field
          fxpopcount
@@ -805,6 +805,11 @@
   (bitwise-and (bitwise-not (arithmetic-shift 1 i)) n))
 (define (logtest a b)
   (not (eqv? 0 (bitwise-and a b))))
+
+(define ($fxu< a b)
+  (if (< a 0)
+      #f
+      (< a b)))
 
 (define (fxsrl v amt)
   (if (and (v . fx< . 0)

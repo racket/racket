@@ -119,6 +119,7 @@
 (namespace-require ''nanopass ns)
 
 (namespace-require scheme-lang-mod ns)
+
 (reset-toplevels '(run-cp0
                    errorf
                    $oops

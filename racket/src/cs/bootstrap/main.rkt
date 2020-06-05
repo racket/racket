@@ -25,5 +25,5 @@
 
 ;; Dynamic, so that environment variables are visible to
 ;; compile-time instantiation of `make-boot`:
-(define-runtime-module-path make-boot "make-boot.rkt")
+(define-runtime-path make-boot "make-boot.rkt")
 (dynamic-require make-boot #f)
