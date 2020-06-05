@@ -47,7 +47,8 @@ to download the repository whose name on the server is
 @racket[repository] (normally ending in @filepath{.git}).  The tree
 within the repository that is identified by @racket[ref] (which can be
 a branch, tag, commit ID, or tree ID) is extracted to
-@racket[dest-dir], and the result id an ID corresponding to @racket[ref].
+@racket[dest-dir], and it returns a string containing a commit ID corresponding 
+to @racket[ref].
 
 If @racket[transport] is @racket['git], then the server is contacted
 using Git's native transport. If @racket[transport] is
