@@ -100,7 +100,7 @@ start @exec{racket} with no command-line arguments:
  @tt{sudo sh -c @literal{'}echo "/Applications/Racket v@version{}/bin" 
  >> /etc/paths.d/racket@literal{'}} (This assumes you have installed
  Racket in the @tt{Applications} folder). On Windows: add the racket
- @tt{bin} path to @onscreen{Path} in `@onscreen{Environment Variables}'
+ @tt{bin} path to @onscreen{Path} in @onscreen{Environment Variables}
  (under @onscreen{System Properties}, @onscreen{Advanced} tab)}
  
 Assuming that you have Editline installed,@margin-note*{To use GNU
