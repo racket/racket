@@ -165,7 +165,7 @@ forms like @racket[with-disappeared-uses].
 
 Evaluates the @racket[body-expr]s and @racket[stx-expr], catching identifiers
 looked up using @racket[syntax-local-value/record]. Adds the caught identifiers
-to the @racket['disappeared-uses] syntax property of the syntax object produced
+to the @racket['disappeared-use] syntax property of the syntax object produced
 by @racket[stx-expr].
 
 @history[#:changed "6.5.0.7" @elem{Added the option to include @racket[body-expr]s.}]
