@@ -18,5 +18,5 @@ record that parts of @racket[stx] were expanded via
 
 Specifically, the identifiers produced by
 @racket[(internal-definition-context-binding-identifiers intdef-ctx)]
-are added to the @racket['disappeared-bindings] property of
+are added to the @racket['disappeared-binding] property of
 @racket[stx].}
