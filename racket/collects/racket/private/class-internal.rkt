@@ -20,8 +20,8 @@
                      syntax/flatten-begin
                      syntax/private/boundmap
                      syntax/parse
-                     syntax/intdef
-                     "classidmap.rkt"))
+                     "classidmap.rkt"
+                     "intdef-util.rkt"))
 
 (define insp (current-inspector)) ; for all opaque structures
 
@@ -388,7 +388,7 @@
                        (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
                        (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                     (syntax->list #'(id ...)))])
-                         (cons (syntax/loc e (define-syntaxes (id ...) rhs))
+                         (cons (datum->syntax e (list #'define-syntaxes #'(id ...) #'rhs) e e)
                                (loop (cdr l))))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
@@ -956,30 +956,7 @@
                           [(rename-inners)
                            (flatten pair (extract* (list (quote-syntax -rename-inner)) decls))])
               
-              ;; this function copies properties from the declarations expressions
-              ;; that get dropped from a class form (e.g. (public x) from the body
-              ;; of a class). It doesn't use syntax-track-origin because there is
-              ;; no residual code that it would make sense to be the result of expanding
-              ;; those away. So, instead we only look at a few properties (as below).
-              ;; Also, add 'disappeared-binding properties from `ctx`.
-              (define (add-decl-props stx)
-                (internal-definition-context-track
-                 def-ctx
-                 (for/fold ([stx stx])
-                           ([decl (in-list (append inspect-decls decls))])
-                   (define (copy-prop src dest stx)
-                     (syntax-property 
-                      stx
-                      dest
-                      (cons (syntax-property decl src)
-                            (syntax-property stx dest))))
-                   (copy-prop
-                    'origin 'disappeared-use
-                    (copy-prop
-                     'disappeared-use 'disappeared-use
-                     (copy-prop
-                      'disappeared-binding 'disappeared-binding
-                      stx))))))
+
               ;; At most one inspect:
               (unless (or (null? inspect-decls)
                           (null? (cdr inspect-decls)))
@@ -1536,6 +1513,8 @@
                                           [private-field-names private-field-names])
                               (class-syntax-protect
                               (add-decl-props
+                              def-ctx
+                              (append inspect-decls decls)
                               (quasisyntax/loc stx
                                 (detect-field-unsafe-undefined
                                  compose-class
