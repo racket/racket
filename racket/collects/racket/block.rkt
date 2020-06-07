@@ -7,7 +7,7 @@
                          "private/cond.rkt"
                          "private/stxcase-scheme.rkt"
                          "private/qqstx.rkt"
-                         syntax/intdef))
+                         "private/intdef-util.rkt"))
 
 (#%provide block)
 
@@ -46,14 +46,24 @@
                       #'rhs def-ctx)
                      (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                   (syntax->list #'(id ...)))])
-                       (loop todo (cons #'(define-syntaxes (id ...) rhs) r))))]
+                       (loop todo (cons (datum->syntax
+                                         expr
+                                         (list #'define-syntaxes #'(id ...) #'rhs)
+                                         expr
+                                         expr)
+                                        r))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
                    (let ([ids (syntax->list #'(id ...))])
                      (syntax-local-bind-syntaxes ids #f def-ctx)
                      (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                     (syntax->list #'(id ...)))])
-                       (loop todo (cons #'(define-values (id ...) rhs) r))))]
+                       (loop todo (cons (datum->syntax
+                                         expr
+                                         (list #'define-values #'(id ...) #'rhs)
+                                         expr
+                                         expr)
+                                        r))))]
                   [else (loop todo (cons expr r))]))))])
     (internal-definition-context-seal def-ctx)
     (let loop ([exprs exprs]
@@ -62,8 +72,9 @@
                [prev-exprs null])
       (cond
         [(null? exprs)
-         (internal-definition-context-track
+         (add-decl-props
           def-ctx
+          (append prev-stx-defns prev-defns)
           #`(letrec-syntaxes+values
              #,(map stx-cdr (reverse prev-stx-defns))
              #,(map stx-cdr (reverse prev-defns))

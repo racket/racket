@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         (for-syntax syntax/kerncase))
+         (for-syntax syntax/kerncase
+                     "intdef-util.rkt"))
 (provide (for-syntax do-local))
 
 (define-for-syntax (do-local stx combine)
@@ -52,7 +53,7 @@
                                                      'expression
                                                      null)])
                                    (syntax-local-bind-syntaxes ids #'rhs def-ctx)
-                                   (list (quasisyntax/loc d (define-syntaxes #,ids rhs)))))]
+                                   (list (datum->syntax d (list #'define-syntaxes #'(id ...) #'rhs) d d))))]
                               [(define-syntaxes . rest)
                                (raise-syntax-error
                                 #f "ill-formed definition" stx d)]
@@ -97,10 +98,13 @@
                                 stx
                                 'add))
                              (syntax->list #'(body1 body ...)))])
-           (combine def-ctx
-                    expand-context
-                    #'sbindings
-                    #'vbindings
-                    #'(body ...)))))]
+           (add-decl-props
+            def-ctx
+            defs
+            (combine def-ctx
+                     expand-context
+                     #'sbindings
+                     #'vbindings
+                     #'(body ...))))))]
     [(_ x body1 body ...)
      (raise-syntax-error #f "not a definition sequence" stx (syntax x))]))
