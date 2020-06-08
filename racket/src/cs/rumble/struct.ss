@@ -945,7 +945,7 @@
                     (or (record? v rtd*)
                         (and (impersonator? v)
                              (record? (impersonator-val v) rtd*)))))])
-      (register-struct-constructor! pred)
+      (register-struct-predicate! pred)
       pred)))
 
 ;; ----------------------------------------
