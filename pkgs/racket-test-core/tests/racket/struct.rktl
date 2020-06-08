@@ -70,7 +70,12 @@
       (test #f struct-accessor-procedure? set1)
       (err/rt-test (make-struct-field-accessor sel 3) exn:application:mismatch?)
       (test 'make-a object-name (struct-type-make-constructor type))
-      (test 'some-other-name object-name (struct-type-make-constructor type 'some-other-name))
+      (let ([new-ctor (struct-type-make-constructor type 'some-other-name)])
+        (test 'some-other-name object-name new-ctor)
+        (test #t struct-constructor-procedure? new-ctor))
+      (let ([new-pred (struct-type-make-predicate type)])
+        (test #t struct-predicate-procedure? new-pred)
+        (test #f struct-constructor-procedure? new-pred))
       (let ([an-a (make 'one 'two)]
 	    [an-ax (makex)])
         (test #f procedure-struct-type? type)
