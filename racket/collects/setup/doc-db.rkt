@@ -327,7 +327,8 @@
 
 (define (doc-db-get-dependencies filename db-file
                                  #:attach [attach-db-path #f]
-                                 #:main-doc-relative-ok? [main-doc-relative-ok? #f])
+                                 #:main-doc-relative-ok? [main-doc-relative-ok? #f]
+                                 #:include-tags? [include-tags? #f])
   (call-with-database
    'doc-db-get-dependencies
    db-file
@@ -337,10 +338,13 @@
      (define pathid (filename->pathid db filename #f))
      (define ((rows->paths in-other?) rows)
        (for/list ([row (in-list rows)])
-         (pathid->filename db (vector-ref row 0) in-other? main-doc-relative-ok?)))
+         (define v (pathid->filename db (vector-ref row 0) in-other? main-doc-relative-ok?))
+         (if include-tags?
+             (cons v (vector-ref row 1))
+             v)))
      (append
       ((rows->paths #f)
-       (query-rows db (~a "SELECT D.pathid "
+       (query-rows db (~a "SELECT D.pathid, D.stag"
                           " FROM dependencies P, documented D"
                           " WHERE P.pathid = $1"
                           "   AND D.stag = P.stag"
@@ -348,7 +352,7 @@
                    pathid))
       (if attach-db-path
           ((rows->paths #t)
-           (query-rows db (~a "SELECT D.pathid "
+           (query-rows db (~a "SELECT D.pathid, D.stag "
                               " FROM dependencies P, other.documented D"
                               " WHERE P.pathid = $1"
                               "   AND D.stag = P.stag"

@@ -331,7 +331,8 @@
   (define doc-pkgs (make-hash))
   (define doc-reported (make-hash))
   (define doc-all-registered? #f)
-  (define (check-doc! pkg dep dest-dir)
+  (define (check-doc! pkg dep+tag dest-dir)
+    (define dep (car dep+tag))
     (define-values (base name dir?) (split-path dep))
     (when (and all-pkgs-lazily?
                (not doc-all-registered?)
@@ -354,11 +355,13 @@
                            "  for package: ~s\n"
                            "  on package: ~s\n"
                            "  from document: ~s\n"
-                           "  to document: ~s")
+                           "  to document: ~s\n"
+                           "  for tag: ~s")
                           pkg
                           src-pkg
                           (get-name dest-dir)
-                          (get-name base))))))
+                          (get-name base)
+                          (cdr dep+tag))))))
 
   ;; ----------------------------------------
   (define (check-bytecode-deps f dir coll-path pkg)
@@ -449,13 +452,15 @@
                                (build-path path "doc" name)))
           (cond
            [check?
-            (for ([dep (in-list (doc-db-get-dependencies (build-path dest-dir "in.sxref") 
-                                                         db-file
-                                                         #:attach (if main? 
-                                                                      #f
-                                                                      (and (file-exists? main-db-file)
-                                                                           main-db-file))))])
-              (check-doc! pkg dep dest-dir))]
+            (for ([dep+tag (in-list (doc-db-get-dependencies
+                                     (build-path dest-dir "in.sxref")
+                                     db-file
+                                     #:include-tags? #t
+                                     #:attach (if main?
+                                                  #f
+                                                  (and (file-exists? main-db-file)
+                                                       main-db-file))))])
+              (check-doc! pkg dep+tag dest-dir))]
            [else
             (hash-set! doc-pkgs (path->directory-path dest-dir) pkg)])))))
 
