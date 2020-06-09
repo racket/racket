@@ -104,8 +104,14 @@
        null))
 
   (define (setup-fprintf p task s . args)
-    (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p (string-append name-str ": " task s "\n") args)
+    (let* ([task (if task (string-append task ": ") "")]
+           [fmt (string-append name-str ": " task s "\n")])
+      ;; Check for this case explicitly to allow clients that need to
+      ;; print text with format characters in it to do the formatting
+      ;; ahead of time and avoid errors here.
+      (if (not (null? args))
+          (apply fprintf p fmt args)
+          (display fmt p))
       (flush-output p)))
 
   (define (setup-printf task s . args)
