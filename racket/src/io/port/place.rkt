@@ -17,7 +17,7 @@
         (values #f (dup-fd (fd-port-fd in) void "stdin dup"))
         (reverse-pipe void "stdin pipe")))
   (define (clean-in)
-    (rktio_close child-in-fd)
+    (rktio_close rktio child-in-fd)
     (unless in
       (rktio_close rktio parent-in-fd)))
   (define-values (parent-out-fd child-out-fd)
@@ -25,9 +25,9 @@
         (values #f (dup-fd (fd-port-fd out) clean-in "stdout dup"))
         (pipe clean-in "stdout pipe")))
   (define (clean-out+in)
-    (rktio_close child-out-fd)
+    (rktio_close rktio child-out-fd)
     (unless out
-      (rktio_close parent-out-fd))
+      (rktio_close rktio parent-out-fd))
     (clean-in))
   (define-values (parent-err-fd child-err-fd)
     (if err

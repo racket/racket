@@ -1127,6 +1127,18 @@ int rktio_initialize_signal(rktio_t *rktio)
 #endif
 }
 
+void rktio_free_signal(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  rktio_reliably_close(rktio->external_event_fd);
+  rktio_reliably_close(rktio->put_external_event_fd);
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+  CloseHandle(rktio->break_semaphore);
+#endif
+}
+
 rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_UNIX

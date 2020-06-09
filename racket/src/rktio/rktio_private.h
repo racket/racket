@@ -141,6 +141,7 @@ struct rktio_t {
 void rktio_alloc_global_poll_set(rktio_t *rktio);
 void rktio_free_global_poll_set(rktio_t *rktio);
 int rktio_initialize_signal(rktio_t *rktio);
+void rktio_free_signal(rktio_t *rktio);
 
 #ifdef USE_FAR_RKTIO_FDCALLS
 

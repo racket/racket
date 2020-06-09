@@ -600,6 +600,7 @@
           unsafe-extflvector-length unsafe-extflvector-ref unsafe-extflvector-set!
 
           set-start-place!           ; not exported to Racket
+          set-destroy-place!         ; not exported to Racket
           fork-place                 ; not exported to Racket
           start-place                ; not exported to Racket
           place-enabled?

@@ -818,6 +818,9 @@
       (lambda ()
         (let ([f (dynamic-require mod sym)])
           (f pch)))))
+   (set-destroy-place!
+    (lambda ()
+      (io-place-destroy!)))
 
    (let ([a (or addon-dir
                 (getenv-bytes "PLTADDONDIR"))])

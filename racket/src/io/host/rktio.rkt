@@ -10,7 +10,8 @@
          rktio-errno
          rktio-errstep
          racket-error?
-         rktio-place-init!)
+         rktio-place-init!
+         rktio-place-destroy!)
 ;; More `provide`s added by macros below
 
 (define rktio-table
@@ -81,6 +82,10 @@
 
 (define (rktio-place-init!)
   (set! rktio (rktio_init)))
+
+(define (rktio-place-destroy!)
+  (rktio_destroy rktio)
+  (set! rktio #f))
 
 ;; Only in the main place:
 (void (rktio_do_install_os_signal_handler rktio))
