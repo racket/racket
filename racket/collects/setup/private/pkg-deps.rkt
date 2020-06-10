@@ -56,7 +56,7 @@
   (hash-set! pkg-reps "racket" "racket")
   
   ;; ----------------------------------------
-  ;; printinf helpers:
+  ;; printing helpers:
   (define (setup-printf* task s . args)
     (for ([s (string-split (apply format s args) "\n")])
       (setup-printf task s)))
@@ -330,7 +330,8 @@
   (define doc-pkgs (make-hash))
   (define doc-reported (make-hash))
   (define doc-all-registered? #f)
-  (define (check-doc! pkg dep dest-dir)
+  (define (check-doc! pkg dep+tag dest-dir)
+    (define dep (car dep+tag))
     (define-values (base name dir?) (split-path dep))
     (when (and all-pkgs-lazily?
                (not doc-all-registered?)
@@ -353,11 +354,13 @@
                            "  for package: ~s\n"
                            "  on package: ~s\n"
                            "  from document: ~s\n"
-                           "  to document: ~s")
+                           "  to document: ~s\n"
+                           "  for tag: ~s")
                           pkg
                           src-pkg
                           (get-name dest-dir)
-                          (get-name base))))))
+                          (get-name base)
+                          (cdr dep+tag))))))
 
   ;; ----------------------------------------
   (define (check-bytecode-deps f dir coll-path pkg)

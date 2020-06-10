@@ -161,7 +161,7 @@ collection-based module path:
  @item{First, if the unquoted path contains no @litchar{/}, then
        @racket[require] automatically adds a @filepath{/main} to the
        reference. For example, @racket[(require
-       @#,racketmodname[slideshow])] is equivalent to @racket[(require
+       @#,racketmodname[slideshow #:indirect])] is equivalent to @racket[(require
        slideshow/main)].}
 
  @item{Second, @racket[require] implicitly adds a @filepath{.rkt}

@@ -116,7 +116,7 @@ for this rule to make sense. If you add new constructs, say a for loop,
 please contact Robby for advice on how to add a default setting for the
 indentation functionality. If you add entire languages, say something on
 the order of Typed Racket, see
-@secref[#:doc '(lib "scribblings/tools/tools.scrbl") "lang-languages-customization"]
+@seclink[#:indirect? #t #:doc '(lib "scribblings/tools/tools.scrbl") "lang-languages-customization"]{@elem{DrRacket support for @tt{#lang}-based Languages}}
 for how to implement tabbing.
 
 @bold{Caveat 2}: This rule does not apply to scribble code.

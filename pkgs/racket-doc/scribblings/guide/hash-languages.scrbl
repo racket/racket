@@ -35,7 +35,7 @@ parsing of a module.
 The syntax of a @racket[_language] intentionally overlaps with the
 syntax of a module path as used in @racket[require] or as a
 @tech{module language}, so that names like @racketmodname[racket],
-@racketmodname[racket/base], @racketmodname[slideshow], or
+@racketmodname[racket/base], @racketmodname[slideshow #:indirect], or
 @racketmodname[scribble/manual] can be used both as @hash-lang[]
 languages and as module paths.
 
@@ -307,8 +307,8 @@ After DrRacket obtains the result of @racketidfont{get-info} for a
 language, it calls the function with a @racket['color-lexer] query;
 the result should be a function that implements syntax-coloring
 parsing on an input stream. For @racket[literal], the
-@racketmodname[syntax-color/default-lexer] module provides a
-@racket[default-lexer] syntax-coloring parser that is suitable for
+@racketmodname[syntax-color/default-lexer #:indirect] module provides a
+@racketidfont{default-lexer} syntax-coloring parser that is suitable for
 plain text, so @racket[literal] loads and returns that parser in
 response to a @racket['color-lexer] query.
 

@@ -9,7 +9,6 @@
                      (only-in racket/unit struct/ctc)
                      (only-in scheme/gui/base make-gui-namespace make-gui-empty-namespace)
                      (only-in scheme/gui/dynamic gui-dynamic-require)
-                     (only-in mzlib/unit struct~s struct~s/ctc)
                      scheme/gui/base
                      scheme/sandbox))
 
@@ -375,8 +374,7 @@ and @|make-module-evaluator-id| from @racketmodname[racket/sandbox].}
 @compat[scheme/udp racket/udp]
 
 @compat-except[scheme/unit racket/unit]{, except that @|unit-struct|
-and @|unit-struct/ctc| are @racket[struct~s] and
-@racket[struct~s/ctc] from @racketmodname[mzlib/unit] instead of
+and @|unit-struct/ctc| are from @racketmodname[mzlib/unit #:indirect] instead of
 @racket[struct] from @racket[racket/base] and @racket[struct/ctc] from
 @racketmodname[racket/unit]}
 

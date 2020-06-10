@@ -569,7 +569,8 @@
                                                           (if as-user? user-db main-db)
                                                           #:attach (if as-user? main-db #f))
                                 null)])
-              (for ([found-dep (in-list found-deps)])
+              (for ([found-dep+tag (in-list found-deps)])
+                (define found-dep (car found-dep+tag))
                 ;; Record a definite dependency:
                 (define i (out-path->info found-dep infos out-path->info-cache))
                 (unless i
