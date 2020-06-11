@@ -2155,6 +2155,11 @@ intptr_t scheme_get_semaphore_init(const char *who, int n, Scheme_Object **p);
 
 void scheme_configure_floating_point(void);
 
+extern double scheme_double_too_positive_for_fixnum, scheme_double_too_negative_for_fixnum;
+#ifdef MZ_LONG_DOUBLE
+extern long_double scheme_extfl_too_positive_for_fixnum, scheme_extfl_too_negative_for_fixnum;
+#endif
+
 /****** Bignums *******/
 
 #ifdef USE_LONG_LONG_FOR_BIGDIG

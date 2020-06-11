@@ -221,6 +221,7 @@
                                   MOVEIri(JIT_AUX,-4), \
                                   STFIWXrrr(7,JIT_SP,JIT_AUX),   \
                                   LWZrm((rd),-4,JIT_SP))
+#define jit_truncr_d_l(rd,rs) jit_truncr_d_i(rd,rs)
 
 /* Uses JIT_FPR5 as scratch: */
 #define jit_extr_i_d(rd, rs) (jit_movi_l(JIT_AUX, 0x43300000), \

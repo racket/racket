@@ -196,6 +196,7 @@ float float_from_long_double(long_double a)
 {
   return (float)a.val;
 }
+
 intptr_t int_from_long_double(long_double a)
 {
   return (intptr_t)a.val;

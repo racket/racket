@@ -110,13 +110,16 @@ Like @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
 @defproc[(extfl->exact-integer [a extflonum?]) exact-integer?]
 @defproc[(real->extfl [a real?]) extflonum?]
 @defproc[(extfl->exact [a extflonum?]) (and/c real? exact?)]
+@defproc[(extfl->fl [a extflonum?]) fixnum?]
 @defproc[(extfl->inexact [a extflonum?]) flonum?]
 )]{
 
-The first four are like @racket[->fl], @racket[fl->exact],
-@racket[fl->real], @racket[inexact->exact], but for @tech{extflonums}.
+The first five are like @racket[->fl], @racket[fl->exact-integer],
+@racket[real->fl], @racket[inexact->exact], and @racket[fl->fx], but for @tech{extflonums}.
 The @racket[extfl->inexact] function converts a @tech{extflonum} to
-its closest @tech{flonum} approximation.}
+its closest @tech{flonum} approximation.
+
+@history[#:changed "7.7.0.8" @elem{Changed @racket[extfl->fx] to truncate.}]}
 
 @; ------------------------------------------------------------------------
 

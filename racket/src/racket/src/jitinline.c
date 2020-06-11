@@ -2240,11 +2240,13 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl->fx")) {
-      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_TRUNC_EX, 0, 0, NULL, 1, 0, 1, NULL, dest);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "fl->exact-integer")
-               || IS_NAMED_PRIM(rator, "fl->fx")) {
+    } else if (IS_NAMED_PRIM(rator, "fl->exact-integer")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fl->fx")) {
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_TRUNC_EX, 0, 0, NULL, 1, 0, -1, NULL, dest);
       return 1;
 #ifdef MZ_LONG_DOUBLE
     } else if (IS_NAMED_PRIM(rator, "unsafe-extflabs")) {
@@ -2287,11 +2289,13 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-extfl->fx")) {
-      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_TRUNC_EX, 0, 0, NULL, 1, 0, 1, NULL, dest);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "extfl->exact-integer")
-               || IS_NAMED_PRIM(rator, "extfl->fx")) {
+    } else if (IS_NAMED_PRIM(rator, "extfl->exact-integer")) {
       scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl->fx")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_TRUNC_EX, 0, 0, NULL, 1, 0, -1, NULL, dest);
       return 1;
 #endif
     } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {

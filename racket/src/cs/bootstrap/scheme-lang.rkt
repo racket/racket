@@ -3,6 +3,7 @@
                      racket/match)
          (prefix-in r: racket/include)
          racket/fixnum
+         racket/flonum
          racket/vector
          racket/splicing
          racket/pretty
@@ -140,6 +141,7 @@
                      [bitwise-and logand]
                      [bitwise-bit-set? fxbit-set?]
                      [integer-length bitwise-length]
+                     [->fl fixnum->flonum]
                      [+ cfl+]
                      [- cfl-]
                      [* cfl*]

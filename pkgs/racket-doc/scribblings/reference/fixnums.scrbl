@@ -96,10 +96,21 @@ Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
 
 @deftogether[(
 @defproc[(fx->fl [a fixnum?]) flonum?]
-@defproc[(fl->fx [a flonum?]) fixnum?]
+@defproc[(fl->fx [fl flonum?]) fixnum?]
 )]{
 
-Safe versions of @racket[unsafe-fx->fl] and @racket[unsafe-fl->fx].}
+Conversion between @tech{fixnums} and @tech{flonums} with truncation
+in the case of converting a @tech{flonum} to a @tech{fixnum}.
+
+The @racket[fx->fl] function is the same as @racket[exact->inexact] or
+@racket[->fl] constrained to a fixnum argument.
+
+The @racket[fl->fx] function is the same as @racket[truncate] followed
+by @racket[inexact->exact] or @racket[fl->exact-integer] constrained
+to returning a fixnum. If the truncated flonum does not fit into a
+fixnum, the @exnraise[exn:fail:contract].
+
+@history[#:changed "7.7.0.8" @elem{Changed @racket[fl->fx] to truncate.}]}
 
 
 @defproc[(fixnum-for-every-system? [v any/c]) boolean?]{

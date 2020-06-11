@@ -196,10 +196,10 @@ For @tech{flonums}: Unchecked versions of @racket[make-flrectangular],
 @defproc[(unsafe-fx->fl [a fixnum?]) flonum?]
 @defproc[(unsafe-fl->fx [a flonum?]) fixnum?]
 )]{
-Unchecked conversion of a fixnum to an integer flonum and vice versa.
-These are similar to the safe bindings @racket[->fl] and @racket[fl->exact-integer],
-but further constrained to consume or produce a fixnum.
-}
+Unchecked versions of @racket[fx->fl] and @racket[fl->fx].
+
+@history[#:changed "7.7.0.8" @elem{Changed @racket[unsafe-fl->fx] to truncate.}]}
+
 
 @defproc[(unsafe-flrandom [rand-gen pseudo-random-generator?]) (and flonum? (>/c 0) (</c 1))]{
 
@@ -669,10 +669,9 @@ aliases for the corresponding safe bindings.}
 @defproc[(unsafe-fx->extfl [a fixnum?]) extflonum?]
 @defproc[(unsafe-extfl->fx [a extflonum?]) fixnum?]
 )]{
-Unchecked conversion of a @tech{fixnum} to an integer @tech{extflonum} and vice versa.
-These are similar to the safe bindings @racket[->extfl] and @racket[extfl->exact-integer],
-but further constrained to consume or produce a fixnum.
-}
+Unchecked (potentially) versions of @racket[fx->extfl] and @racket[extfl->fx].
+
+@history[#:changed "7.7.0.8" @elem{Changed @racket[unsafe-fl->fx] to truncate.}]}
 
 @deftogether[(
 @defproc[(unsafe-extflvector-length [v extflvector?]) fixnum?]

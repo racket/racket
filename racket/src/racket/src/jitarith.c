@@ -451,7 +451,8 @@ static int can_fast_double(int arith, int cmp, int two_args)
       || (arith == ARITH_EX_INEX)
       || (arith == ARITH_SQRT)
       || (arith == ARITH_FLUNOP)
-      || (arith == ARITH_INEX_EX))
+      || (arith == ARITH_INEX_EX)
+      || (arith == ARITH_INEX_TRUNC_EX))
     return 1;
 #endif
 #ifdef INLINE_FP_COMP
@@ -596,7 +597,7 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
    If unboxed in push/pop mode, first arg is pushed before second.
    If unboxed in direct mode, first arg is in JIT_FPR0+depth
     and second is in JIT_FPR1+depth (which is backward). 
-   Unboxed implies unsafe unless arith == ARITH_INEX_EX. */
+   Unboxed implies unsafe unless arith == ARITH_INEX_EX or arith == ARITH_INEX_TRUNC_EX. */
 {
 #if defined(INLINE_FP_OPS) || defined(INLINE_FP_COMP)
   GC_CAN_IGNORE jit_insn *ref8, *ref9, *ref10, *refd, *refdt, *refs = NULL, *refs2 = NULL;
@@ -660,6 +661,8 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
       /* exact->inexact needs no extra number */
     } else if (arith == ARITH_INEX_EX) {
       /* inexact->exact needs no extra number */
+    } else if (arith == ARITH_INEX_TRUNC_EX) {
+      /* fl->fx needs no extra number */
     } else {
 #ifdef MZ_LONG_DOUBLE
       long_double d;
@@ -822,6 +825,52 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
             jit_FPSEL_roundr_xd_l_fppop(extfl, JIT_R1, JIT_FPR2); /* slow path won't be needed */
 #endif
         }
+        jit_fixnum_l(dest, JIT_R1);
+        no_alloc = 1;
+        break;
+      case ARITH_INEX_TRUNC_EX: /* fl->fx */
+        if (!unsafe_fl) {
+#ifdef DIRECT_FPR_ACCESS
+          if (unboxed && USES_DIRECT_FPR_ACCESS) {
+            JIT_ASSERT(jitter->unbox_depth == 0);
+            jit_FPSEL_movr_xd_fppush(extfl, JIT_FPR2, fpr0); /* for slow path */
+          }
+#endif
+#if !defined(DIRECT_FPR_ACCESS) || defined(MZ_LONG_DOUBLE)
+          if (!USES_DIRECT_FPR_ACCESS) {
+            jit_FPSEL_movr_xd_fppush(extfl, fpr0, fpr0); /* copy for comparison */
+          }
+#endif
+#ifdef MZ_LONG_DOUBLE
+          if (extfl) {
+            mz_fpu_movi_ld_fppush(fpr1, scheme_extfl_too_positive_for_fixnum, JIT_R1);
+          } else
+#endif
+            {
+              mz_movi_d_fppush(fpr1, scheme_double_too_positive_for_fixnum, JIT_R1);
+            }
+          __START_TINY_JUMPS__(1);
+          refs = jit_FPSEL_bantigtr_xd_fppop(extfl, jit_forward(), fpr1, fpr0);
+          __END_TINY_JUMPS__(1);
+          
+#if !defined(DIRECT_FPR_ACCESS) || defined(MZ_LONG_DOUBLE)
+          if (!USES_DIRECT_FPR_ACCESS) {
+            jit_FPSEL_movr_xd_fppush(extfl, fpr0, fpr0); /* copy for comparison */
+          }
+#endif
+#ifdef MZ_LONG_DOUBLE
+          if (extfl) {
+            mz_fpu_movi_ld_fppush(fpr1, scheme_extfl_too_negative_for_fixnum, JIT_R1);
+          } else
+#endif
+            {
+              mz_movi_d_fppush(fpr1, scheme_double_too_negative_for_fixnum, JIT_R1);
+            }
+          __START_TINY_JUMPS__(1);
+          refs2 = jit_FPSEL_bantiltr_xd_fppop(extfl, jit_forward(), fpr1, fpr0);
+          __END_TINY_JUMPS__(1);
+        }
+        jit_FPSEL_truncr_xd_l_fppop(extfl, JIT_R1, fpr0);
         jit_fixnum_l(dest, JIT_R1);
         no_alloc = 1;
         break;
@@ -1166,7 +1215,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
     int args_unboxed = (((arith != ARITH_MIN) && (arith != ARITH_MAX)) || rand);
     int flonum_depth, fl_reversed = 0, can_direct1, can_direct2;
 
-    if (inlined_flonum1 && inlined_flonum2 && (arith != ARITH_INEX_EX))
+    if (inlined_flonum1 && inlined_flonum2 && (arith != ARITH_INEX_EX) && (arith != ARITH_INEX_TRUNC_EX))
       /* safe can be implemented as unsafe */
       unsafe_fl = 1;
     
@@ -1278,19 +1327,20 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
     if (!jitter->unbox && jitter->unbox_depth && rand)
       scheme_signal_error("internal error: broken unbox depth");
     if (for_branch
-        || (arith == ARITH_INEX_EX)) /* has slow path */
+        || (arith == ARITH_INEX_EX)        /* has slow path */
+        || (arith == ARITH_INEX_TRUNC_EX)) /* could have slow path */
       mz_rs_sync(); /* needed if arguments were unboxed */
 
     generate_float_point_arith(jitter, rator, arith, cmp, reversed, !!rand2, 0,
                                &refd, &refdt, for_branch, branch_short, 
-                               (arith == ARITH_INEX_EX) ? (unsafe_fl > 0) : 1, 
+                               ((arith == ARITH_INEX_EX) || (arith == ARITH_INEX_TRUNC_EX)) ? (unsafe_fl > 0) : 1, 
                                args_unboxed, jitter->unbox, dest, extfl);
     CHECK_LIMIT();
     ref3 = NULL;
     ref = NULL;
     ref4 = NULL;
 
-    if ((arith == ARITH_INEX_EX) && (unsafe_fl < 1)) {
+    if (((arith == ARITH_INEX_EX) || (arith == ARITH_INEX_TRUNC_EX)) && (unsafe_fl < 1)) {
       /* need a slow path */
       if (args_unboxed) {
         MZ_FPUSEL_STMT(extfl,
@@ -1618,7 +1668,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
             if (arith == ARITH_DIV) {
               GC_CAN_IGNORE jit_insn *refx, *refz;
               __START_INNER_TINY__(branch_short);
-              /* watch out for negation of most negative fixnum,
+              /* watch out for negation of most neg<ative fixnum,
                  which is a positive number too big for a fixnum */
               refz = jit_beqi_p(jit_forward(), JIT_R0, (void *)(((uintptr_t)1 << ((8 * JIT_WORD_SIZE) - 2))));
               __END_INNER_TINY__(branch_short);

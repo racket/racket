@@ -150,7 +150,7 @@ XFORM_NONGCING int long_double_available();
 
 # define double_from_long_double(a) (a)
 # define float_from_long_double(a) (a)
-# define int_from_long_double(a) ((int)(a))
+# define int_from_long_double(a) ((intptr_t)(a))
 # define uintptr_from_long_double(a) ((uintptr_t)(a))
 
 # define long_double_plus(a,b) ((a)+(b))

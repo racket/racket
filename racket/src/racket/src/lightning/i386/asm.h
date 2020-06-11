@@ -1185,6 +1185,7 @@ typedef _uc		jit_insn;
 #define FISTWm(D,B,I,S)		ESCmi(D,B,I,S,072)     /* fist m16int  */
 #define FSTPSm(D,B,I,S)		ESCmi(D,B,I,S,013)     /* fstp m32real */
 #define FISTPLm(D,B,I,S)	ESCmi(D,B,I,S,033)     /* fistp m32int */
+#define FISTTPLm(D,B,I,S)	ESCmi(D,B,I,S,031)     /* fisttp m32int */
 #define FSTPLm(D,B,I,S)		ESCmi(D,B,I,S,053)     /* fstp m64real */
 #define FISTPWm(D,B,I,S)	ESCmi(D,B,I,S,073)     /* fistp m16int */
 #define FLDTm(D,B,I,S)		ESCmi(D,B,I,S,035)     /* fld m80real  */
@@ -1192,8 +1193,10 @@ typedef _uc		jit_insn;
 #define FSTPTm(D,B,I,S)		ESCmi(D,B,I,S,037)     /* fstp m80real */
 #ifdef JIT_X86_64
 # define FISTPQm(D,B,I,S)	ESCmi(D,B,I,S,077)     /* fistp m64int */
+# define FISTTPQm(D,B,I,S)	ESCmi(D,B,I,S,051)     /* fisttp m64int */
 #else
 # define FISTPQm(D,B,I,S)	FISTPLm(D,B,I,S)
+# define FISTTPQm(D,B,I,S)	FISTTPLm(D,B,I,S)
 #endif
 
 #define FADDrr(RS,RD)		ESCrri(RS,RD,000)

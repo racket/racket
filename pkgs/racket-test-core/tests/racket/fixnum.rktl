@@ -269,4 +269,79 @@
 
 ;; ----------------------------------------
 
+(test 2.0 fx->fl 2)
+(test -2.0 fx->fl -2)
+
+(test 2 fl->fx 2.0)
+(test 2 fl->fx 2.2)
+(test -2 fl->fx -2.0)
+(test -2 fl->fx -2.2)
+
+(test 0 fl->fx 0.0)
+(test 0 fl->fx -0.0)
+
+(err/rt-test (fl->fx +inf.0))
+(err/rt-test (fl->fx -inf.0))
+(err/rt-test (fl->fx +nan.0))
+
+(if (fixnum? 536870911)
+    (begin
+      (test 536870911 fl->fx 536870911.0)
+      (test 536870911 fl->fx 536870911.5))
+    (begin
+      (err/rt-test (fl->fx 536870911.0))
+      (err/rt-test (fl->fx 536870911.5))))
+(if (fixnum? -536870912)
+    (begin
+      (test -536870912 fl->fx -536870912.0)
+      (test -536870912 fl->fx -536870912.5))
+    (begin
+      (err/rt-test (fl->fx -536870912.0))
+      (err/rt-test (fl->fx -536870912.5))))
+
+(if (fixnum? 1073741823)
+    (begin
+      (test 1073741823 fl->fx 1073741823.0)
+      (test 1073741823 fl->fx 1073741823.5))
+    (begin
+      (err/rt-test (fl->fx 1073741823.0))
+      (err/rt-test (fl->fx 1073741823.5))))
+(if (fixnum? -1073741824)
+    (begin
+      (test -1073741824 fl->fx -1073741824.0)
+      (test -1073741824 fl->fx -1073741824.5))
+    (begin
+      (err/rt-test (fl->fx -1073741824.0))
+      (err/rt-test (fl->fx -1073741824.5))))
+
+(if (fixnum? 1152921504606846975)
+    (test 1152921504606846848 fl->fx 1152921504606846800.0)
+    (err/rt-test (fl->fx 1152921504606846800.0)))
+(if (fixnum? -1152921504606846976)
+    (test -1152921504606846976 fl->fx -1152921504606847000.0)
+    (err/rt-test (fl->fx -1152921504606847000.0)))
+
+(if (fixnum? 1152921504606846976)
+    (test 1152921504606846976 fl->fx 1152921504606847000.0)
+    (err/rt-test (fl->fx 1152921504606847000.0)))
+(if (fixnum? -1152921504606847232)
+    (test -1152921504606847232 fl->fx -1152921504606847200.0)
+    (err/rt-test (fl->fx -1152921504606847200.0)))
+
+(if (fixnum? 4611686018427387903)
+    ;; Note: 4611686018427387903 won't round-trip
+    ;; if it's the biggest fixnum
+    (test 4611686018427387392 fl->fx 4.6116860184273874e+18)
+    (err/rt-test (fl->fx 4.6116860184273874e+18)))
+(if (fixnum? -4611686018427387904)
+    ;; Ditto (about round-trip)
+    (test -4611686018427387904 fl->fx -4.611686018427388e+18)
+    (err/rt-test (fl->fx -4.611686018427388e+18)))
+
+;; Too big for all current fixnum ranges:
+(err/rt-test (fl->fx 4.611686018427388e+18))
+(err/rt-test (fl->fx -4.611686018427389e+18))
+
+;; ----------------------------------------
+
 (report-errs)

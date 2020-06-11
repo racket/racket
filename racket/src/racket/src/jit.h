@@ -1231,6 +1231,7 @@ static void emit_indentation(mz_jit_state *jitter)
 #define jit_bantieqr_d_fppop(d, s1, s2) jit_bantieqr_d(d, s1, s2)
 #define jit_extr_l_d_fppush(rd, rs)   jit_extr_l_d(rd, rs)
 #define jit_roundr_d_l_fppop(rd, rs)  jit_roundr_d_l(rd, rs)
+#define jit_truncr_d_l_fppop(rd, rs)  jit_truncr_d_l(rd, rs)
 #define jit_movr_d_rel(rd, rs)        jit_movr_d(rd, rs)
 #define jit_movr_d_fppush(rd, rs)        jit_movr_d(rd, rs)
 #define R0_FP_ADJUST(x) /* empty */
@@ -1668,10 +1669,12 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 /*  flfloor, flceiling, flround, fltruncate, flsin,  flcos, fltan, */
 /*  flasin, flacos, flatan, flexp, fllog */
 #define ARITH_FLUNOP   14
-/*  inexact->exact, unsafe-fl->fx, fl->exact-integer, fl->fx */
+/*  inexact->exact, fl->exact-integer */
 #define ARITH_INEX_EX  15
+/*  fl->fx, unsafe-fl->fx, extfl->fx, unsafe-extfl->fx */
+#define ARITH_INEX_TRUNC_EX  16
 /*  flexpt */
-#define ARITH_EXPT     16
+#define ARITH_EXPT     17
 
 /* Comparison codes. Used in jitarith.c and jitinline.c. */
 

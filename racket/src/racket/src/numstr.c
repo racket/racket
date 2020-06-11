@@ -39,6 +39,8 @@ static Scheme_Object *sch_check_pack(int argc, Scheme_Object *argv[]);
 
 static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc);
 
+static void init_double_fixnum_extremes(void);
+
 READ_ONLY static char *infinity_str = "+inf.0";
 READ_ONLY static char *minus_infinity_str = "-inf.0";
 READ_ONLY static char *not_a_number_str = "+nan.0";
@@ -59,6 +61,11 @@ READ_ONLY static char *single_other_not_a_number_str = "-nan.f";
 
 #if !defined(SIXTY_FOUR_BIT_INTEGERS) && defined(NO_LONG_LONG_TYPE)
 SHARED_OK static Scheme_Object *num_limits[3];
+#endif
+
+READ_ONLY double scheme_double_too_positive_for_fixnum, scheme_double_too_negative_for_fixnum;
+#ifdef MZ_LONG_DOUBLE
+READ_ONLY long_double scheme_extfl_too_positive_for_fixnum, scheme_extfl_too_negative_for_fixnum;
 #endif
 
 #ifdef SCHEME_BIG_ENDIAN
@@ -190,6 +197,8 @@ void scheme_init_numstr(Scheme_Startup_Env *env)
     num_limits[MZ_S8LO] = v;
   }
 #endif
+
+  init_double_fixnum_extremes();
 }
 
 void scheme_init_extfl_numstr(Scheme_Startup_Env *env)
@@ -3008,3 +3017,46 @@ static Scheme_Object *pseudo_random_generator_p(int argc, Scheme_Object **argv)
 	  : scheme_false);
 }
 
+/* Just to make sure there are no C compiler number issues, we
+   record floting-point values just outside of the fixnum
+   range as little-endian byte sequences: */
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+
+#if MZ_IS_BIG_ENDIAN
+# define double_too_positive_for_fixnum_bytes "C\320\0\0\0\0\0\0" /* 4.611686018427388e+18 */
+# define double_too_negative_for_fixnum_bytes "\303\320\0\0\0\0\0\1" /* -4.611686018427389e+18 */
+#else
+# define double_too_positive_for_fixnum_bytes "\0\0\0\0\0\0\320C" /* 4.611686018427388e+18 */
+# define double_too_negative_for_fixnum_bytes "\1\0\0\0\0\0\320\303" /* -4.611686018427389e+18 */
+#endif
+
+/* always little-endian: */
+#define extfl_too_positive_for_fixnum_bytes "\0\0\0\0\0\0\0\200=@" /* 4611686018427387904.0t0 */
+#define extfl_too_negative_for_fixnum_bytes "\2\0\0\0\0\0\0\200=\300" /* -4611686018427387905.0t0 */
+
+#else
+
+#if MZ_IS_BIG_ENDIAN
+# define double_too_positive_for_fixnum_bytes "A\320\0\0\0\0\0\0" /* 1073741824.0 */
+# define double_too_negative_for_fixnum_bytes "\301\320\0\0\0@\0\0" /* -1073741825.0 */
+#else
+# define double_too_positive_for_fixnum_bytes "\0\0\0\0\0\0\320A" /* 1073741824.0 */
+# define double_too_negative_for_fixnum_bytes "\0\0@\0\0\0\320\301" /* -1073741825.0 */
+#endif
+
+/* always little-endian: */
+#define extfl_too_positive_for_fixnum_bytes "\0\0\0\0\0\0\0\200\35@" /* 1073741824.0 */
+#define extfl_too_negative_for_fixnum_bytes "\0\0\0\0\2\0\0\200\35\300" /* -1073741825.0 */
+
+#endif
+
+static void init_double_fixnum_extremes(void)
+{
+  memcpy(&scheme_double_too_positive_for_fixnum, double_too_positive_for_fixnum_bytes, sizeof(double));
+  memcpy(&scheme_double_too_negative_for_fixnum, double_too_negative_for_fixnum_bytes, sizeof(double));
+#ifdef MZ_LONG_DOUBLE
+  memcpy(&scheme_extfl_too_positive_for_fixnum, extfl_too_positive_for_fixnum_bytes, 10);
+  memcpy(&scheme_extfl_too_negative_for_fixnum, extfl_too_negative_for_fixnum_bytes, 10);
+#endif
+}

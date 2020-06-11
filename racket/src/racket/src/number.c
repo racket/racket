@@ -4065,19 +4065,16 @@ scheme_exact_to_inexact (int argc, Scheme_Object *argv[])
 }
 
 XFORM_NONGCING static int double_fits_fixnum(double d)
-/* returns TRUE if the number definitely fits in an intptr_t
-   and might fit in a fixnum */
+/* returns TRUE if the number is an integer that fits in a fixnum */
 {
-  int exp;
-  
-  if (MZ_IS_NAN(d)
-      || MZ_IS_POS_INFINITY(d)
-      || MZ_IS_NEG_INFINITY(d))
+#ifdef NAN_EQUALS_ANYTHING
+  if (MZ_IS_NAN(d))
     return 0;
+#endif
 
-  (void)frexp(d, &exp);
-
-  return (exp < (8 * sizeof(intptr_t)) - 1);
+  return ((d < scheme_double_too_positive_for_fixnum)
+          && (d > scheme_double_too_negative_for_fixnum)
+          && ((double)((intptr_t)d) == d));
 }
 
 Scheme_Object *
@@ -4091,36 +4088,20 @@ scheme_inexact_to_exact (int argc, Scheme_Object *argv[])
   t = _SCHEME_TYPE(o);
   if (t == scheme_double_type) {
     double d = SCHEME_DBL_VAL(o);
-    Scheme_Object *i;
 
     /* Try simple case: */
-    i = (double_fits_fixnum(d)
-         ? scheme_make_integer((intptr_t)d)
-         : scheme_make_integer(0));
-    if ((double)SCHEME_INT_VAL(i) == d) {
-#ifdef NAN_EQUALS_ANYTHING
-      if (!MZ_IS_NAN(d))
-#endif
-	return i;
-    }
+    if (double_fits_fixnum(d))
+      return scheme_make_integer((intptr_t)d);
 
     return scheme_rational_from_double(d);
   }
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
     float d = SCHEME_FLT_VAL(o);
-    Scheme_Object *i;
 
     /* Try simple case: */
-    i = (double_fits_fixnum(d)
-         ? scheme_make_integer((intptr_t)d)
-         : scheme_make_integer(0));
-    if ((double)SCHEME_INT_VAL(i) == d) {
-# ifdef NAN_EQUALS_ANYTHING
-      if (!MZ_IS_NAN(d))
-# endif
-	return i;
-    }
+    if (double_fits_fixnum(d))
+      return scheme_make_integer((intptr_t)d);
 
     return scheme_rational_from_float(d);
   }
@@ -4179,6 +4160,7 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
 #ifdef MZ_LONG_DOUBLE
   Scheme_Object *o = argv[0], *i;
   long_double d;
+  intptr_t v;
 
   CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->exact");
 
@@ -4188,7 +4170,8 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
   d = SCHEME_LONG_DBL_VAL(o);
 
   /* Try simple case: */
-  i = scheme_make_integer((intptr_t)int_from_long_double(d));
+  v = int_from_long_double(d);
+  i = scheme_make_integer(v);
   if (long_double_eqv_i(int_from_long_double(d), d)) {
 # ifdef NAN_EQUALS_ANYTHING
     if (!MZ_IS_LONG_NAN(d))
@@ -5309,21 +5292,15 @@ static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[])
 static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
 {
   double d;
-  intptr_t v;
-  Scheme_Object *o;
 
-  if (!SCHEME_DBLP(argv[0])
-      || !scheme_is_integer(argv[0]))
-    scheme_wrong_contract("fl->fx", "(and/c flonum? integer?)", 0, argc, argv);
+  if (!SCHEME_DBLP(argv[0]))
+    scheme_wrong_contract("fl->fx", "flonum?", 0, argc, argv);
 
   d = SCHEME_DBL_VAL(argv[0]);
-  if (double_fits_fixnum(d)) {
-    v = (intptr_t)d;
-    if ((double)v == d) {
-      o = scheme_make_integer_value(v);
-      if (SCHEME_INTP(o))
-        return o;
-    }
+  if ((d < scheme_double_too_positive_for_fixnum)
+      && (d > scheme_double_too_negative_for_fixnum)) {
+    intptr_t v = (intptr_t)d;
+    return scheme_make_integer(v);
   }
 
   scheme_contract_error("fl->fx", "no fixnum representation", 
@@ -5383,20 +5360,18 @@ static Scheme_Object *extfl_to_fx (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
   long_double d;
-  intptr_t v;
-  Scheme_Object *o;
 
   WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extfl->fx"));
 
   if (!SCHEME_LONG_DBLP(argv[0]))
-    scheme_wrong_contract("extfl->fx", "(and/c extflonum?)", 0, argc, argv);
+    scheme_wrong_contract("extfl->fx", "extflonum?", 0, argc, argv);
 
   d = SCHEME_LONG_DBL_VAL(argv[0]);
-  v = (intptr_t)int_from_long_double(d);
-  if (long_double_eqv_i(v, d)) {
-    o = scheme_make_integer_value(v);
-    if (SCHEME_INTP(o))
-      return o;
+  if (long_double_less(d, scheme_extfl_too_positive_for_fixnum)
+      && long_double_greater(d, scheme_extfl_too_negative_for_fixnum)) {
+    intptr_t v;
+    v = int_from_long_double(d);
+    return scheme_make_integer(v);
   }
 
   scheme_contract_error("extfl->fx", "no fixnum representation", 
@@ -5525,7 +5500,7 @@ static Scheme_Object *unsafe_fx_to_fl (int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_fl_to_fx (int argc, Scheme_Object *argv[])
 {
   intptr_t v;
-  if (scheme_current_thread->constant_folding) return scheme_inexact_to_exact(argc, argv);
+  if (scheme_current_thread->constant_folding) return fl_to_fx(argc, argv);
   v = (intptr_t)(SCHEME_DBL_VAL(argv[0]));
   return scheme_make_integer(v);
 }
@@ -5589,7 +5564,7 @@ static Scheme_Object *unsafe_extfl_to_fx (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
   intptr_t v;
-  if (scheme_current_thread->constant_folding) return extfl_to_exact(argc, argv);
+  if (scheme_current_thread->constant_folding) return extfl_to_fx(argc, argv);
   v = (intptr_t)int_from_long_double(SCHEME_LONG_DBL_VAL(argv[0]));
   return scheme_make_integer(v);
 #else

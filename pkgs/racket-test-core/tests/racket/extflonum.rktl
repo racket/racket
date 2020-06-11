@@ -418,6 +418,61 @@
 
   ;; ----------------------------------------
 
+  (test 2 extfl->fx 2.0t0)
+  (test 2 extfl->fx 2.2t0)
+  (test -2 extfl->fx -2.0t0)
+  (test -2 extfl->fx -2.2t0)
+
+  (test 0 extfl->fx 0.0t0)
+  (test 0 extfl->fx -0.0t0)
+
+  (err/rt-test (extfl->fx +inf.t))
+  (err/rt-test (extfl->fx -inf.t))
+  (err/rt-test (extfl->fx +nan.t))
+
+  (if (fixnum? 536870911)
+      (begin
+        (test 536870911 extfl->fx 536870911.0t0)
+        (test 536870911 extfl->fx 536870911.5t0))
+      (begin
+        (err/rt-test (extfl->fx 536870911.0t0))
+        (err/rt-test (extfl->fx 536870911.5t0))))
+  (if (fixnum? -536870912)
+      (begin
+        (test -536870912 extfl->fx -536870912.0t0)
+        (test -536870912 extfl->fx -536870912.5t0))
+      (begin
+        (err/rt-test (extfl->fx -536870912.0t0))
+        (err/rt-test (extfl->fx -536870912.5t0))))
+
+  (if (fixnum? 1073741823)
+      (begin
+        (test 1073741823 extfl->fx 1073741823.0t0)
+        (test 1073741823 extfl->fx 1073741823.5t0))
+      (begin
+        (err/rt-test (extfl->fx 1073741823.0t0))
+        (err/rt-test (extfl->fx 1073741823.5t0))))
+  (if (fixnum? -1073741824)
+      (begin
+        (test -1073741824 extfl->fx -1073741824.0t0)
+        (test -1073741824 extfl->fx -1073741824.5t0))
+      (begin
+        (err/rt-test (extfl->fx -1073741824.0t0))
+        (err/rt-test (extfl->fx -1073741824.5t0))))
+
+  (if (fixnum? 4611686018427387903)
+      (test 4611686018427387903 extfl->fx 4611686018427387903.0t0)
+      (err/rt-test (extfl->fx 4611686018427387903.0t0)))
+  (if (fixnum? -4611686018427387904)
+      (test -4611686018427387904 extfl->fx -4611686018427387904.0t0)
+      (err/rt-test (extfl->fx -4611686018427387904.0t0)))
+
+  ;; Too big for all current fixnum ranges:
+  (err/rt-test (extfl->fx 4611686018427387904.0t0))
+  (err/rt-test (extfl->fx -4611686018427387905.0t0))
+
+
+  
   )
 
 (report-errs)

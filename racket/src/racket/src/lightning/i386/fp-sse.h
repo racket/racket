@@ -170,8 +170,8 @@
    jit_addi_l(JIT_SP, JIT_SP, sizeof(int) << 1))
 #endif
 
-/* Racket uses jit_roundr_l only for inexact->exact of fixnums,
-   so a truncate is good enough. */
+/* Racket has used jit_roundr_l only for inexact->exact of fixnums,
+   where a truncate was good enough. */
 #define jit_roundr_d_i(r0, f0) jit_truncr_d_i(r0, f0)
 #define jit_roundr_d_l(r0, f0) jit_truncr_d_l(r0, f0)
 
@@ -183,7 +183,7 @@
 #endif
 
 #define jit_bltr_d(label, f0, f1) (UCOMISDrr(f0, f1), JAEm(label,0,0,0), (_jit.x.pc))
-#define jit_bler_d(label, f0, f1) (UCOMISDrr(f0, f1), JBEm(label,0,0,0), (_jit.x.pc))
+#define jit_bler_d(label, f0, f1) (UCOMISDrr(f1, f0), JBEm(label,0,0,0), (_jit.x.pc))
 #define jit_bgtr_d(label, f0, f1) (UCOMISDrr(f1, f0), JAm(label,0,0,0), (_jit.x.pc))
 #define jit_bger_d(label, f0, f1) (UCOMISDrr(f1, f0), JAEm(label,0,0,0), (_jit.x.pc))
 #define jit_beqr_d(label, f0, f1) \

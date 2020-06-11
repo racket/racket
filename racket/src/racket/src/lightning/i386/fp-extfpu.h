@@ -298,15 +298,35 @@ union jit_fpu_double_imm {
 #define jit_fpu_extr_d_f(r1, r2) jit_fpu_movr_d(r1, r2)
 #define jit_fpu_extr_f_d(r1, r2) jit_fpu_movr_d(r1, r2)
 
-/* Assume round to near mode */
+/* the easy one */
+#define jit_fpu_roundr_d_i(rd, rs)              \
+  (PUSHLr(_EAX),                                \
+   jit_fpu_fxch ((rs), FISTPLm(0, _ESP, 0, 0)), \
+   POPLr((rd)))
+
+#define jit_fpu_roundr_ld_i(rd, rs) jit_fpu_roundr_d_i(rd, rs)
+
+#define jit_fpu_roundr_d_l(rd, rs)              \
+  (PUSHQr(_EAX),                                \
+   jit_fpu_fxch ((rs), FISTPQm(0, _ESP, 0, 0)), \
+   POPQr((rd)))
+
+#define jit_fpu_roundr_ld_l(rd, rs) jit_fpu_roundr_d_l(rd, rs)
+
+#define jit_fpu_roundr_d_l_fppop(rd, rs)        \
+  (PUSHQr(_EAX),                                \
+   FISTPQm(0, _ESP, 0, 0),                      \
+   POPQr((rd)))
+
+#define jit_fpu_roundr_ld_l_fppop(rd, rs) jit_fpu_roundr_d_l_fppop(rd, rs)
+
+/* Other rounding modes assume round to near mode */
+
 #define jit_fpu_floorr_d_i(rd, rs)                              \
   (FLDr (rs), jit_fpu_floor2((rd), ((rd) == _EDX ? _EAX : _EDX)))
 
 #define jit_fpu_ceilr_d_i(rd, rs)                               \
   (FLDr (rs), jit_fpu_ceil2((rd), ((rd) == _EDX ? _EAX : _EDX)))
-
-#define jit_fpu_truncr_d_i(rd, rs)                              \
-  (FLDr (rs), jit_fpu_trunc2((rd), ((rd) == _EDX ? _EAX : _EDX)))
 
 #define jit_fpu_calc_diff(ofs)                  \
   FISTLm(ofs, _ESP, 0, 0),                      \
@@ -337,11 +357,16 @@ union jit_fpu_double_imm {
    ADCLir(0, rd),                                       \
    POPLr(aux))
 
+#ifndef JIT_X86_64
+
+/* 32-bit mode: FSTT is part of SSE3, so not necessarily available,
+   so use the same strategy as floor and ceiling */
+
 /* a mingling of the two above */
-#define jit_fpu_trunc2(rd, aux)			\
+#define jit_fpu_trunc2(rd, aux, store)          \
   (PUSHLr(aux),                                 \
    SUBLir(12, _ESP),                            \
-   FSTSm(0, _ESP, 0, 0),			\
+   store(0, _ESP, 0, 0),			\
    jit_fpu_calc_diff(4),			\
    POPLr(aux),                                  \
    POPLr(rd),                                   \
@@ -357,27 +382,40 @@ union jit_fpu_double_imm {
    ADCLir(0, rd),			/* 3 */ \
    POPLr(aux))
 
-/* the easy one */
-#define jit_fpu_roundr_d_i(rd, rs)              \
-  (PUSHLr(_EAX),                                \
-   jit_fpu_fxch ((rs), FISTPLm(0, _ESP, 0, 0)), \
-   POPLr((rd)))
+#define jit_fpu_truncr_d_i(rd, rs)                              \
+  (FLDr (rs), jit_fpu_trunc2((rd), ((rd) == _EDX ? _EAX : _EDX), FSTSm))
 
-#define jit_fpu_roundr_ld_i(rd, rs) jit_fpu_roundr_d_i(rd, rs)
+#define jit_fpu_truncr_d_i_fppop(rd, rs)                                      \
+  (FLDr (rs), jit_fpu_trunc2((rd), ((rd) == _EDX ? _EAX : _EDX), FSTPSm))
 
-#define jit_fpu_roundr_d_l(rd, rs)              \
+#define jit_fpu_truncr_ld_i(rd, rs) jit_fpu_truncr_d_i(rd, rs)
+#define jit_fpu_truncr_ld_i_fppop(rd, rs) jit_fpu_truncr_d_i_fppop(rd, rs)
+
+#define jit_fpu_truncr_d_l(rd, rs) jit_fpu_truncr_d_i(rd, rs)
+#define jit_fpu_truncr_d_l_fppop(rd, rs) jit_fpu_truncr_d_i_fppop(rd, rs)
+
+#define jit_fpu_truncr_ld_l(rd, rs) jit_fpu_truncr_d_l(rd, rs)
+#define jit_fpu_truncr_ld_l_fppop(rd, rs) jit_fpu_truncr_d_l_fppop(rd, rs)
+
+#else
+
+/* 64-bit mode, so SSE3 must be available: use FSTT */
+
+#define jit_fpu_truncr_d_l(rd, rs)              \
   (PUSHQr(_EAX),                                \
-   jit_fpu_fxch ((rs), FISTPQm(0, _ESP, 0, 0)), \
+   jit_fpu_fxch ((rs), FISTTPQm(0, _ESP, 0, 0)), \
    POPQr((rd)))
 
-#define jit_fpu_roundr_ld_l(rd, rs) jit_fpu_roundr_d_l(rd, rs)
+#define jit_fpu_truncr_ld_l(rd, rs) jit_fpu_truncr_d_l(rd, rs)
 
-#define jit_fpu_roundr_d_l_fppop(rd, rs)        \
+#define jit_fpu_truncr_d_l_fppop(rd, rs)        \
   (PUSHQr(_EAX),                                \
-   FISTPQm(0, _ESP, 0, 0),                      \
+   FISTTPQm(0, _ESP, 0, 0),                      \
    POPQr((rd)))
 
-#define jit_fpu_roundr_ld_l_fppop(rd, rs) jit_fpu_roundr_d_l_fppop(rd, rs)
+#define jit_fpu_truncr_ld_l_fppop(rd, rs) jit_fpu_truncr_d_l_fppop(rd, rs)
+
+#endif
 
 #define jit_fpu_fp_test(d, s1, s2, n, _and, res)                        \
   (((s1) == 0 ? FUCOMr((s2)) : (FLDr((s1)), FUCOMPr((s2) + 1))),        \
@@ -506,7 +544,7 @@ union jit_fpu_double_imm {
 /* #define jit_fpu_bantiger_d_fppop(d, s1, s2)   jit_fpu_fp_btest_fppop((d), 9, 0, 0, JCm) */
 #define jit_fpu_bantiger_d_fppop(d, s1, s2)   jit_fpu_fp_btest_fppop_2((d), JBm)
 #define jit_fpu_bantiger_ld_fppop(d, s1, s2)  jit_fpu_bantiger_d_fppop(d, s1, s2)
-#define jit_fpu_bler_d_fppop(d, s1, s2)       (FXCHr(1), jit_fpu_bger_d_fppop(d, s1, s2))
+#define jit_fpu_bler_d_fppop(d, s1, s2)       jit_fpu_fp_btest_fppop((d), 9, 0, 0, JNAm)
 #define jit_fpu_bler_ld_fppop(d, s1, s2)      jit_fpu_bler_d_fppop(d, s1, s2)
 #define jit_fpu_bantiler_d_fppop(d, s1, s2)   (FXCHr(1), jit_fpu_bantiger_d_fppop(d, s1, s2))
 #define jit_fpu_bantiler_ld_fppop(d, s1, s2)  jit_fpu_bantiler_d_fppop(d, s1, s2)
