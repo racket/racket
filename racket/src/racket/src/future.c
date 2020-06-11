@@ -2023,13 +2023,20 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
       }
     else if (ft->status == WAITING_FOR_PRIM)
       {
-        /* Invoke the primitive and stash the result.
-           Release the lock so other threads can manipulate the queue
-           while the runtime call executes. */
-        ft->status = HANDLING_PRIM;
-        ft->want_lw = 0;
-        mzrt_mutex_unlock(fs->future_mutex);
-        invoke_rtcall(fs, ft, 0);
+	if (ft->rt_prim_is_atomic) {
+	  /* Should be in the atomic-wait queue, so
+	     handle those actions now: */
+	  mzrt_mutex_unlock(fs->future_mutex);
+	  scheme_check_future_work();
+	} else {
+          /* Invoke the primitive and stash the result.
+             Release the lock so other threads can manipulate the queue
+             while the runtime call executes. */
+          ft->status = HANDLING_PRIM;
+          ft->want_lw = 0;
+          mzrt_mutex_unlock(fs->future_mutex);
+          invoke_rtcall(fs, ft, 0);
+        }
       }
     else if (ft->maybe_suspended_lw && (ft->status != WAITING_FOR_FSEMA))
       {
@@ -2768,7 +2775,8 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   /* Check whether we are in slow-path trace mode */ 
   if (fts->is_runtime_thread) { 
     /* On runtime thread - must be slow-path tracing */ 
-    future->prim_func = func; 
+    future->prim_func = func;
+    future->rt_prim_is_atomic = 0;
     future->status = WAITING_FOR_PRIM;
     invoke_rtcall(scheme_future_state, future, 0);
     fts->worker_gc_counter = *fs->gc_counter_ptr;
