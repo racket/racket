@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require "mz.rkt" (for-label racket/extflonum
+                              racket/fixnum ; for fl->fx and fx->fl
                               racket/flonum))
 
 @title[#:tag "extflonums"]{Extflonums}
@@ -110,12 +111,14 @@ Like @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
 @defproc[(extfl->exact-integer [a extflonum?]) exact-integer?]
 @defproc[(real->extfl [a real?]) extflonum?]
 @defproc[(extfl->exact [a extflonum?]) (and/c real? exact?)]
-@defproc[(extfl->fl [a extflonum?]) fixnum?]
+@defproc[(extfl->fx [a extflonum?]) fixnum?]
+@defproc[(fx->extfl [a fixnum?]) extflonum?]
 @defproc[(extfl->inexact [a extflonum?]) flonum?]
 )]{
 
-The first five are like @racket[->fl], @racket[fl->exact-integer],
-@racket[real->fl], @racket[inexact->exact], and @racket[fl->fx], but for @tech{extflonums}.
+The first six are like @racket[->fl], @racket[fl->exact-integer],
+@racket[real->double-flonum], @racket[inexact->exact], @racket[fl->fx],
+and @racket[fx->fl], but for @tech{extflonums}.
 The @racket[extfl->inexact] function converts a @tech{extflonum} to
 its closest @tech{flonum} approximation.
 
