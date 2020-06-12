@@ -1404,7 +1404,7 @@
    [(eq? mode 'raw)
     (make-cpointer (foreign-alloc size) #f)]
    [(eq? mode 'atomic)
-    (make-cpointer (make-bytevector size 0) #f)]
+    (make-cpointer (make-bytevector size) #f)]
    [(eq? mode 'nonatomic)
     (make-cpointer (#%make-vector (quotient size ptr-size-in-bytes) 0) #f)]
    [(eq? mode 'atomic-interior)

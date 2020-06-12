@@ -254,11 +254,13 @@ specification is required at minimum:
        the garbage collector's space and is not traced by the garbage
        collector (i.e., is treated as holding no pointers to
        collectable memory). This memory must be freed with
-       @racket[free].}
+       @racket[free]. The initial content of the memory is
+       unspecified.}
 
      @item{@indexed-racket['atomic] --- Allocates memory that can be
-       reclaimed by the garbage collector, is not traced by the
-       garbage collector, and is initially filled with zeros.
+       reclaimed by the garbage collector but is not traced by the
+       garbage collector. The initial content of the memory is
+       unspecified.
 
        For the @3m[] and @CGC[] Racket variants, this allocation mode corresponds
        to @cpp{scheme_malloc_atomic} in the C API.}
