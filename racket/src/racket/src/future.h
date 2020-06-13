@@ -138,6 +138,8 @@ typedef struct future_t {
      in any thread atomically (i.e., it's a "synchronizing" 
      operation insteda of a general blocking operation) */
 
+  char in_future_queue, in_atomic_queue;
+
   double time_of_request;
   const char *source_of_request;
   int source_type;
