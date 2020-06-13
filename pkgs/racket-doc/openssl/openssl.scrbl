@@ -834,6 +834,25 @@ If @racket[ssl-peer-verified?] would return @racket[#t] for
 the certificate presented by the SSL port's peer, otherwise the result
 is @racket[#f].}
 
+@defproc[(ssl-channel-binding [p ssl-port?]
+                              [type (or/c 'tls-unique 'tls-server-end-point)])
+         bytes?]{
+
+Returns channel binding information for the TLS connection of
+@racket[p]. An authentication protocol run over TLS can incorporate
+information identifying the TLS connection (@racket['tls-unique]) or
+server certificate (@racket['tls-server-end-point]) into the
+authentication process, thus preventing the authentication steps from
+being replayed on another channel. Channel binding is described in
+general in @hyperlink["https://tools.ietf.org/html/rfc5056"]{RFC 5056};
+channel binding for TLS is described in
+@hyperlink["https://tools.ietf.org/html/rfc5929"]{RFC 5929}.
+
+If the channel binding cannot be retrieved (for example, if the
+connection is closed), an exception is raised.
+}
+
+
 @; ----------------------------------------------------------------------
 
 @section{SHA-1 Hashing}
