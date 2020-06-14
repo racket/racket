@@ -98,7 +98,9 @@ case "$host_os" in
     ;;
   *mingw*)
     skip_iconv_check=yes
-    ;;    
+    # force pthread off for Windows:
+    enable_pthread=no
+    ;;
   cygwin*)
     ;;
   darwin*)
