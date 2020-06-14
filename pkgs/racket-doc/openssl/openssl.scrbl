@@ -850,7 +850,8 @@ channel binding for TLS is described in
 
 If the channel binding cannot be retrieved (for example, if the
 connection is closed), an exception is raised.
-}
+
+@history[#:added "7.7.0.9"]}
 
 
 @; ----------------------------------------------------------------------
