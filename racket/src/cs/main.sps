@@ -843,6 +843,9 @@
                 (#%memv (string-ref s 0) '(#\0 #\n #\N)))
        (set-incremental-collection-enabled! #f)))
 
+   (when (getenv "PLTDISABLEGC")
+     (collect-request-handler void))
+
    (when version?
      (display (banner)))
    (call/cc ; Chez Scheme's `call/cc`, used here to escape from the Racket-thread engine loop

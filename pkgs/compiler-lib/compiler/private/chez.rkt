@@ -4,7 +4,10 @@
          racket/promise)
 
 (provide decompile-chez-procedure
-         unwrap-chez-interpret-jitified)
+         unwrap-chez-interpret-jitified
+         current-can-disassemble)
+
+(define current-can-disassemble (make-parameter #t))
 
 (define (decompile-chez-procedure p)
   (unless (procedure? p)
@@ -106,7 +109,8 @@
          null))
    ;; Show machine/assembly code:
    (cond
-     [(force disassemble-bytes)
+     [(and (current-can-disassemble)
+           (force disassemble-bytes))
       => (lambda (disassemble-bytes)
            (define o (open-output-bytes))
            (parameterize ([current-output-port o])

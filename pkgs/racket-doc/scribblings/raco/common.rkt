@@ -2,6 +2,7 @@
 (require scribble/manual)
 
 (provide inside-doc
+         guide-doc
          reference-doc)
 
 (define inside-doc

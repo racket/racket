@@ -1299,6 +1299,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
   
   if (no_compiled)
     scheme_set_compiled_file_paths(scheme_make_null());
+  else {
+    char *s;
+    s = getenv("PLT_ZO_PATH");
+    if (s)
+      scheme_set_compiled_file_paths(scheme_make_pair(scheme_make_path(s),
+                                                      scheme_make_null()));
+  }
 
   /* Setup compiled-file search path: */
   if (!compiled_paths) {

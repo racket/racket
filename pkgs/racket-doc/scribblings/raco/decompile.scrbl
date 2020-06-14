@@ -12,9 +12,12 @@
 The @exec{raco decompile} command takes the path of a bytecode file (which usually
  has the file extension @filepath{.zo}) or a source file with an
  associated bytecode file (usually created with @exec{raco make}) and
- converts the bytecode file's content back to an approximation of Racket code. Decompiled
- bytecode is mostly useful for checking the compiler's transformation
- and optimization of the source program.
+ converts the bytecode file's content back to an approximation of Racket code.
+ When the ``bytecode'' file contains machine code, as for the @tech[#:doc guide-doc]{CS}
+ variant of Racket, then it cannot be converted back to an approximation of
+ Racket, but installing the @filepath{disassemble} package may enable disassembly
+ of the machine code. Decompilation is mostly useful for checking the
+ compiler's transformation and optimization of the source program.
 
 The @exec{raco decompile} command accepts the following command-line flags:
 
@@ -23,11 +26,16 @@ The @exec{raco decompile} command accepts the following command-line flags:
         given file's path and an associated @filepath{.zo} file (if any)}
   @item{@Flag{n} @nonterm{n} or @DFlag{columns} @nonterm{n} --- format
         output for a display with @nonterm{n} columns}
+  @item{@DFlag{linklet} --- decompile only as far as linklets, instead
+        of decoding linklets to approximate Racket @racket[module] forms}
+  @item{@DFlag{no-disassemble} --- show machine code as-is in a byte string,
+        instead of attempting to disassemble}
 ]
 
-Many forms in the decompiled code, such as @racket[module],
- @racket[define], and @racket[lambda], have the same meanings as
- always. Other forms and transformations are specific to the rendering
+To the degree that it can be converted back to Racket code,
+ many forms in the decompiled code have the same meanings as
+ always, such as @racket[module], @racket[define], and @racket[lambda].
+ Other forms and transformations are specific to the rendering
  of bytecode, and they reflect a specific execution model:
 
 @itemize[
@@ -125,7 +133,15 @@ Many forms in the decompiled code, such as @racket[module],
 @item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
  object.}
 
+@item{A @racketidfont{#%machine-code} form corresponds to machine code
+ that is not disassembled, where the machine code is in a byte string.}
+
+@item{A @racketidfont{#%assembly-code} form corresponds to disassembled
+ machine code, where the assembly code is shown as a sequence of strings.}
+
 ]
+
+@history[#:changed "1.8" @elem{Added @DFlag{no-disassemble}.}]
 
 @; ------------------------------------------------------------
 

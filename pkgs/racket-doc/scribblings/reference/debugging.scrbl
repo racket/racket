@@ -5,12 +5,17 @@
 
 Racket's built-in debugging support is limited to context (i.e.,
 ``stack trace'') information that is printed with an exception. In
-some cases, disabling the @tech{JIT} compiler can affect context
-information. The @racketmodname[errortrace] library supports more
-consistent (independent of the @tech{JIT} compiler) and precise context
-information.  The @racketmodname[racket/trace] library provides simple
+some cases, for 3m and CGC variants of Racket, disabling the
+@tech{JIT} compiler can affect context information. For the CS variant
+of Racket, setting the @envvar-indexed{PLT_CS_DEBUG} environment
+variable causes compilation to record expression-level context
+information, instead of just function-level information.
+
+The @racketmodname[errortrace] library supports more consistent
+(independent of the compiler) and precise context
+information. The @racketmodname[racket/trace] library provides simple
 tracing support. Finally, the @seclink[#:doc '(lib
-"scribblings/drracket/drracket.scrbl") "top" #:indirect? #t]{DrRacket} programming environment
-provides much more debugging support.
+"scribblings/drracket/drracket.scrbl") "top" #:indirect? #t]{DrRacket}
+programming environment provides much more debugging support.
 
 @include-section["trace.scrbl"]

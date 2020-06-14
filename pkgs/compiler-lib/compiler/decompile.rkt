@@ -189,7 +189,7 @@
              `((begin-for-all
                  (define (.get-syntax-literal! pos)
                    ....
-                   ,(decompile-data-linklet l)
+                   ,@(decompile-data-linklet l)
                    ....)))
              null))))
 

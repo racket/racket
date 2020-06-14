@@ -3,6 +3,13 @@
 
 @title[#:tag "eval"]{Evaluation and Compilation}
 
+@guideintro["reflection"]{dynamic evaluation}
+
+Racket provides programmatic control over evaluation through
+@racket[eval] and related functions. See @secref["compiler"] for
+information about extra-linguistic facilities related to the Racket
+compiler.
+
 @defparam[current-eval proc (any/c . -> . any)]{
 
 A @tech{parameter} that determines the current @deftech{evaluation handler}.
@@ -373,7 +380,13 @@ path. (The directory need not exist.)}
 
 A list of relative paths, which defaults to @racket[(list
 (string->path "compiled"))]. It is used by the @tech{compiled-load
-handler} (see @racket[current-load/use-compiled]).}
+handler} (see @racket[current-load/use-compiled]).
+
+If the @envvar-indexed{PLT_ZO_PATH} environment variable is set on
+startup, it supplies a path instead of @racket["compiled"] to
+use for the initial parameter value.
+
+@history[#:changed "7.7.0.9" @elem{Added @envvar{PLT_ZO_PATH}.}]}
 
 
 @defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'same))]{

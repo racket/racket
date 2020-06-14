@@ -162,3 +162,6 @@
   (history #:changed "7.0.0.13" @elem{Allow one argument, in addition to allowing two or more.}
            arg ...))
 
+(provide envvar-indexed)
+(define (envvar-indexed s)
+  (as-index (envvar s)))
