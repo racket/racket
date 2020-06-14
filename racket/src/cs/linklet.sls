@@ -137,17 +137,6 @@
                            n))))
              10000)))
 
-  (define no-future-jit-db? (getenv "PLT_NO_FUTURE_JIT_CACHE")) ; => don't calculate key for cache
-  (define jit-db-path (let ([bstr (environment-variables-ref
-                                   (|#%app| current-environment-variables)
-                                   (string->utf8 "PLT_JIT_CACHE"))])
-                        (cond
-                         [(equal? bstr '#vu8()) #f] ; empty value disables the JIT cache
-                         [(not bstr)
-                          (build-path (find-system-path 'addon-dir)
-                                      "cs-jit.sqlite")]
-                         [else (bytes->path bstr)])))
-
   ;; For "main.sps" to select the default ".zo" directory name:
   (define platform-independent-zo-mode? (not (eq? linklet-compilation-mode 'mach)))
 
@@ -225,7 +214,6 @@
   (include "linklet/read.ss")
   (include "linklet/annotation.ss")
   (include "linklet/performance.ss")
-  (include "linklet/db.ss")
 
   ;; `compile`, `interpret`, etc. have `dynamic-wind`-based state
   ;; that need to be managed correctly when swapping Racket
@@ -353,28 +341,6 @@
          (fx= (char->integer #\e) (bytevector-u8-ref bv 6))
          (fx= (char->integer #\z) (bytevector-u8-ref bv 7))))
 
-  (define-values (lookup-code insert-code delete-code)
-    (let ([get-procs!-maker
-           (lambda (retry)
-             (lambda args
-               (let-values ([(lookup insert delete) (get-code-database-procedures)])
-                 (set! lookup-code lookup)
-                 (set! insert-code insert)
-                 (set! delete-code delete)
-                 (apply retry args))))])
-      (values (get-procs!-maker (lambda (hash) (lookup-code hash)))
-              (get-procs!-maker (lambda (hash code) (insert-code hash code)))
-              (get-procs!-maker (lambda (hash) (delete-code hash))))))
-
-  (define (add-code-hash a)
-    (cond
-     [no-future-jit-db? a]
-     [else
-      ;; Combine an annotation with a hash code in a vector
-      (let-values ([(o get) (open-bytevector-output-port)])
-        (fasl-write* (cons (version) a) o)
-        (vector (sha1-bytes (get)) a))]))
-
   (define-record-type wrapped-code
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
             arity-mask
@@ -387,38 +353,17 @@
           f
           (performance-region
            'on-demand
-           (let ([f (if (and (vector? f)
-                             (or (not jit-db-path)
-                                 (wrong-jit-db-thread?)))
-                        (vector-ref f 1)
-                        f)])
-             (cond
-              [(bytevector? f)
-               (let* ([f (code-from-bytevector f)])
-                 (wrapped-code-content-set! wc f)
-                 f)]
-              [(vector? f)
-               (when jit-demand-on?
-                 (show "JIT demand" (strip-nested-annotations (vector-ref f 1))))
-               (let* ([hash (vector-ref f 0)]
-                      [code (lookup-code hash)])
-                 (cond
-                  [code
-                   (let* ([f (eval-from-bytevector code '() 'compile)])
-                     (wrapped-code-content-set! wc f)
-                     f)]
-                  [else
-                   (let ([code (compile-to-bytevector (vector-ref f 1) '() 'compile)])
-                     (insert-code hash code)
-                     (let* ([f (eval-from-bytevector code '() 'compile)])
-                       (wrapped-code-content-set! wc f)
-                       f))]))]
-              [else
-               (let ([f (compile* f)])
-                 (when jit-demand-on?
-                   (show "JIT demand" (strip-nested-annotations (wrapped-code-content wc))))
-                 (wrapped-code-content-set! wc f)
-                 f)]))))))
+           (cond
+             [(bytevector? f)
+              (let* ([f (code-from-bytevector f)])
+                (wrapped-code-content-set! wc f)
+                f)]
+             [else
+              (let ([f (compile* f)])
+                (when jit-demand-on?
+                  (show "JIT demand" (strip-nested-annotations (wrapped-code-content wc))))
+                (wrapped-code-content-set! wc f)
+                f)])))))
 
   (define (jitified-extract-closed wc)
     (let ([f (wrapped-code-content wc)])
@@ -612,9 +557,7 @@
                                            ;; Preserve annotated `lambda` source for on-demand compilation:
                                            (lambda (expr arity-mask name)
                                              (let ([a (correlated->annotation (xify expr) serializable? sfd-cache)])
-                                               (make-wrapped-code (if serializable?
-                                                                      (add-code-hash a)
-                                                                      a)
+                                               (make-wrapped-code a
                                                                   arity-mask
                                                                   (extract-inferred-name expr name))))]
                                           [else

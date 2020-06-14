@@ -127,8 +127,7 @@ LINKLET_SRCS = linklet/version.ss \
                linklet/performance.ss \
                linklet/annotation.ss \
                linklet/compress.ss \
-               linklet/cross-compile.ss \
-               linklet/db.ss
+               linklet/cross-compile.ss
 
 $(BUILDDIR)linklet.$(CSO): linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) linklet.sls $(LINKLET_DEPS)
