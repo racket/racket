@@ -7,6 +7,7 @@
 (define-runtime-path server-crt "server_crt.pem")
 (define-runtime-path client-key "client_key.pem")
 (define-runtime-path client-crt "client_crt.pem")
+(define-runtime-path this-dir ".")
 
 (define (call/custodian proc)
   (define cust (make-custodian))
@@ -57,7 +58,8 @@
 (cond [(and (file-exists? server-bin)
             (memq 'execute (file-or-directory-permissions server-bin)))
        (test-case "channel binding agrees w/ gnutls server"
-         (parameterize ((current-subprocess-custodian-mode 'kill))
+         (parameterize ((current-subprocess-custodian-mode 'kill)
+                        (current-directory this-dir))
            (call/custodian
             (lambda ()
               (define server-cb
