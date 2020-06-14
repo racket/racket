@@ -439,10 +439,10 @@
       [`(let . ,_)
        (find-let-loops v lifts loop-if-tail loops)]
       [`(lambda ,args . ,body)
-       (find-loops body lifts #hasheq() loops)]
+       (find-seq-loops body lifts #hasheq() loops)]
       [`(case-lambda [,argss . ,bodys] ...)
        (for/fold ([loops loops]) ([body (in-list bodys)])
-         (find-loops body lifts #hasheq() loops))]
+         (find-seq-loops body lifts #hasheq() loops))]
       [`(begin . ,vs)
        (find-seq-loops vs lifts loop-if-tail loops)]
       [`(begin0 ,v . ,vs)
