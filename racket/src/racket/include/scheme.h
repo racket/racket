@@ -1701,7 +1701,7 @@ MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
                                GC_variable_stack = (void **)(void*)(b).gcvs, \
                                scheme_jit_longjmp((b).jb, v))
 # define scheme_setjmp(b)     ((b).gcvs = (intptr_t)__gc_var_stack__, \
-                               (b).gcvs_cnt = (intptr_t)(__gc_var_stack__[1]), \
+                               (b).gcvs_cnt = XFORM_CURRENT_COUNT, \
                                scheme_jit_setjmp((b).jb))
 #else
 # define scheme_longjmp(b, v) scheme_jit_longjmp(b, v)

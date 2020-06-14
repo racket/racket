@@ -3877,6 +3877,14 @@
                                                                 "array access"))
                                                        memcpy?)])
                      (loop (cdr e-) (cons v result) live-vars #t)))]
+                [(eq? '|XFORM_CURRENT_COUNT| (tok-n (car e-)))
+                 (loop (cdr e-)
+                       (cons (make-tok (string->symbol (format "~a_COUNT" (live-var-info-tag live-vars)))
+                                       (tok-line (car e-))
+                                       (tok-file (car e-)))
+                             result)
+                       live-vars
+                       #t)]
                 [(and (assq (tok-n (car e-)) vars)
                       (not (assq (tok-n (car e-)) (live-var-info-vars live-vars))))
                  ;; Add a live variable:
