@@ -961,11 +961,14 @@
 (define (n->th n)
   (string-append 
    (number->string n)
-   (case (modulo n 10)
-     [(1) "st"]
-     [(2) "nd"]
-     [(3) "rd"]
-     [else "th"])))
+   (case (remainder n 100)
+     [(11 12 13) "th"]
+     [else
+      (case (modulo n 10)
+        [(1) "st"]
+        [(2) "nd"]
+        [(3) "rd"]
+        [else "th"])])))
 
 (define (nth-element-of/alloc n)
   (format "the ~a element of" (n->th n)))
