@@ -161,6 +161,8 @@ TO DO:
    (c-> ssl-port? (or/c bytes? #f))]
   [ssl-peer-issuer-name
    (c-> ssl-port? (or/c bytes? #f))]
+  [ssl-channel-binding
+   (c-> ssl-port? (or/c 'tls-unique 'tls-server-end-point) bytes?)]
   [ports->ssl-ports
    (->* [input-port?
          output-port?]
@@ -325,6 +327,8 @@ TO DO:
   #:wrap (deallocator))
 (define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*/null)
   #:wrap (allocator X509_free))
+(define-ssl SSL_get_certificate (_fun _SSL* -> _X509*/null)
+  #:wrap (allocator X509_free))
 
 (define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*))
 (define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*))
@@ -369,6 +373,26 @@ TO DO:
 (define-crypto X509_get_default_cert_file (_fun -> _string))
 (define-crypto X509_get_default_cert_dir_env (_fun -> _string))
 (define-crypto X509_get_default_cert_file_env (_fun -> _string))
+
+(define-ssl SSL_get_peer_finished (_fun _SSL* _pointer _size -> _size))
+(define-ssl SSL_get_finished (_fun _SSL* _pointer _size -> _size))
+
+(define-cpointer-type _EVP_MD*)
+(define-crypto EVP_sha224 (_fun -> _EVP_MD*/null))
+(define-crypto EVP_sha256 (_fun -> _EVP_MD*/null))
+(define-crypto EVP_sha384 (_fun -> _EVP_MD*/null))
+(define-crypto EVP_sha512 (_fun -> _EVP_MD*/null))
+(define-crypto EVP_MD_size (_fun _EVP_MD* -> _int))
+
+(define-ssl OBJ_find_sigid_algs
+  (_fun _int (alg : (_ptr o _int)) (_pointer = #f) -> (r : _int)
+        -> (if (> r 0) alg 0)))
+
+(define-ssl X509_get_signature_nid
+  (_fun _X509* -> _int))
+
+(define-ssl X509_digest
+  (_fun _X509* _EVP_MD* _pointer (_ptr i _uint) -> _int))
 
 (define (x509-root-sources)
   (cond
@@ -480,6 +504,13 @@ TO DO:
 
 (define SSL_TLSEXT_ERR_OK 0)
 (define SSL_TLSEXT_ERR_NOACK 3)
+
+(define NID_md5 4)
+(define NID_sha1 64)
+(define NID_sha224 675)
+(define NID_sha256 672)
+(define NID_sha384 673)
+(define NID_sha512 674)
 
 (define ssl-dh4096-param-bytes
   (include/reader "dh4096.pem" (lambda (src port)
@@ -1685,6 +1716,43 @@ TO DO:
   (let* ([lit-parts (string-split glob #rx"[*]" #:trim? #f)]
          [lit-rxs (for/list ([part (in-list lit-parts)]) (regexp-quote part #f))])
     (regexp (string-join lit-rxs ".*"))))
+
+(define (ssl-channel-binding p type)
+  ;; Reference: https://tools.ietf.org/html/rfc5929
+  (define who 'ssl-channel-binding)
+  (define-values (mzssl _in?) (lookup 'ssl-channel-binding p))
+  (define ssl (mzssl-ssl mzssl))
+  (case type
+    [(tls-unique)
+     (define MAX_FINISH_LEN 50) ;; usually 12 bytes, but be cautious (see RFC 5246 7.4.9)
+     (define get-finished ;; assumes no session resumption
+       (cond [(mzssl-server? mzssl) SSL_get_peer_finished]
+             [else SSL_get_finished]))
+     (define buf (make-bytes MAX_FINISH_LEN))
+     (define r (get-finished ssl buf (bytes-length buf)))
+     (cond [(zero? r) (error who "unable to get TLS Finished message")]
+           [(< 0 r MAX_FINISH_LEN) (subbytes buf 0 r)]
+           [else (error who "internal error: TLS Finished message too large")])]
+    [(tls-server-end-point)
+     (define x509
+       (cond [(mzssl-server? mzssl) (SSL_get_certificate ssl)]
+             [else (SSL_get_peer_certificate ssl)]))
+     (unless x509 (error who "failed to get server certificate"))
+     (define sig-nid (X509_get_signature_nid x509))
+     (define hash-nid (OBJ_find_sigid_algs sig-nid))
+     (define hash-evp ;; change md5, sha1 to sha256, per RFC 5929 4.1
+       (cond [(or (= hash-nid NID_md5) (= hash-nid NID_sha1)) (EVP_sha256)]
+             [(= hash-nid NID_sha224) (EVP_sha224)]
+             [(= hash-nid NID_sha256) (EVP_sha256)]
+             [(= hash-nid NID_sha384) (EVP_sha384)]
+             [(= hash-nid NID_sha512) (EVP_sha512)]
+             [else (error who "unsupported digest in certificate")]))
+     (define buflen (EVP_MD_size hash-evp))
+     (unless (> buflen 0) (error who "internal error: bad digest length"))
+     (define buf (make-bytes buflen))
+     (define r (X509_digest x509 hash-evp buf buflen))
+     (X509_free x509)
+     (if (> r 0) buf (error who "internal error: certificate digest failed"))]))
 
 (define (ssl-port? v)
   (and (hash-ref ssl-ports v #f) #t))
