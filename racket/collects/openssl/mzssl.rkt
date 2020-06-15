@@ -1750,8 +1750,9 @@ TO DO:
      (define buflen (EVP_MD_size hash-evp))
      (unless (> buflen 0) (error who "internal error: bad digest length"))
      (define buf (make-bytes buflen))
-     (cond [(> (X509_digest x509 hash-evp buf buflen) 0) buf]
-           [else (error who "internal error: certificate digest failed")])]))
+     (define r (X509_digest x509 hash-evp buf buflen))
+     (X509_free x509)
+     (if (> r 0) buf (error who "internal error: certificate digest failed"))]))
 
 (define (ssl-port? v)
   (and (hash-ref ssl-ports v #f) #t))
