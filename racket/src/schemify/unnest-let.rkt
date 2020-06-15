@@ -58,7 +58,8 @@
                             (immediate-lambda? body)))
                    e]
                   [(and (or (eq? 'let nest-let-id)
-                            (eq? 'letrec* nest-let-id))
+                            (and (eq? 'letrec* nest-let-id)
+                                 (not (could-be-loop? ids body))))
                         (for/and ([rhs (in-list rhss)])
                           (and (or (eq? 'let let-id)
                                    (immediate-lambda? rhs))
@@ -100,3 +101,10 @@
     [`(lambda . ,_) #t]
     [`(case-lambda . ,_) #t]
     [`,_ #f]))
+
+(define (could-be-loop? ids body)
+  (and (pair? ids)
+       (null? (cdr ids))
+       (wrap-pair? body)
+       (eq? (unwrap (car ids))
+            (unwrap (wrap-car body)))))
