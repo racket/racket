@@ -136,6 +136,10 @@
          set-car!
          set-cdr!
          bytevector-copy!
+         bytevector-ieee-double-native-set!
+         bytevector-ieee-double-native-ref
+         bytevector-u64-native-set!
+         bytevector-u64-native-ref
          call-with-bytevector-output-port
          make-compile-time-value
          optimize-level)
@@ -776,6 +780,16 @@
 
 (define (bytevector-copy! src src-start dst dst-start n)
   (bytes-copy! dst dst-start src src-start (+ src-start n)))
+
+(define (bytevector-ieee-double-native-set! bv pos val)
+  (real->floating-point-bytes val 8 (system-big-endian?) bv pos))
+(define (bytevector-ieee-double-native-ref bv pos)
+  (floating-point-bytes->real bv (system-big-endian?) pos (+ pos 8)))
+
+(define (bytevector-u64-native-set! bv pos val)
+  (integer->integer-bytes val 8 #f (system-big-endian?) bv pos))
+(define (bytevector-u64-native-ref bv pos)
+  (integer-bytes->integer bv #f (system-big-endian?) pos (+ pos 8)))
 
 (define (call-with-bytevector-output-port proc)
   (define o (open-output-bytes))
