@@ -1390,37 +1390,39 @@
                                        (lambda (args)
                                          (quasisyntax/loc stx
                                            (if (variable-reference-constant? (#%variable-reference #,wrap-id))
-                                               (#,impl-id/prop
-                                                ;; keyword arguments:
-                                                #,@(let loop ([kw-args kw-args] [all-kws all-kws])
-                                                     (cond
-                                                      [(null? all-kws) null]
-                                                      [(and (pair? kw-args)
-                                                            (eq? (syntax-e (caar kw-args)) (caar all-kws)))
-                                                       (cons (cdar kw-args) 
-                                                             (loop (cdr kw-args) (cdr all-kws)))]
-                                                      [else
-                                                       (cons (list-ref (car all-kws) 4)
-                                                             (loop kw-args (cdr all-kws)))]))
-                                                ;; required arguments:
-                                                #,@(let loop ([i n-req] [args args])
-                                                     (if (zero? i)
-                                                         null
-                                                         (cons (car args)
-                                                               (loop (sub1 i) (cdr args)))))
-                                                ;; optional arguments:
-                                                #,@(let loop ([opt-not-supplieds opt-not-supplieds] [args (list-tail args n-req)])
-                                                     (cond
-                                                      [(null? opt-not-supplieds) null]
-                                                      [(null? args)
-                                                       (cons (car opt-not-supplieds)
-                                                             (loop (cdr opt-not-supplieds) null))]
-                                                      [else
-                                                       (cons (car args) (loop (cdr opt-not-supplieds) (cdr args)))]))
-                                                ;; rest args:
-                                                #,@(if rest?
-                                                       #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
-                                                       null))
+                                               #,(quasisyntax/loc stx
+                                                   (#%app
+                                                    #,impl-id/prop
+                                                    ;; keyword arguments:
+                                                    #,@(let loop ([kw-args kw-args] [all-kws all-kws])
+                                                         (cond
+                                                           [(null? all-kws) null]
+                                                           [(and (pair? kw-args)
+                                                                 (eq? (syntax-e (caar kw-args)) (caar all-kws)))
+                                                            (cons (cdar kw-args)
+                                                                  (loop (cdr kw-args) (cdr all-kws)))]
+                                                           [else
+                                                            (cons (list-ref (car all-kws) 4)
+                                                                  (loop kw-args (cdr all-kws)))]))
+                                                    ;; required arguments:
+                                                    #,@(let loop ([i n-req] [args args])
+                                                         (if (zero? i)
+                                                             null
+                                                             (cons (car args)
+                                                                   (loop (sub1 i) (cdr args)))))
+                                                    ;; optional arguments:
+                                                    #,@(let loop ([opt-not-supplieds opt-not-supplieds] [args (list-tail args n-req)])
+                                                         (cond
+                                                           [(null? opt-not-supplieds) null]
+                                                           [(null? args)
+                                                            (cons (car opt-not-supplieds)
+                                                                  (loop (cdr opt-not-supplieds) null))]
+                                                           [else
+                                                            (cons (car args) (loop (cdr opt-not-supplieds) (cdr args)))]))
+                                                    ;; rest args:
+                                                    #,@(if rest?
+                                                           #`((list #,@(list-tail args (min (length args) (+ n-req n-opt)))))
+                                                           null)))
                                                #,(if lifted?
                                                      orig
                                                      (quasisyntax/loc stx (#%app #,wrap-id/prop . #,args)))))))))
