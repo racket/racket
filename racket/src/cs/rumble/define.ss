@@ -84,19 +84,23 @@
                                      #'((begin e ...) ...))])
                    (list #'(case-lambda [args body] ...)
                          (append-all #'(lifts ...))))]
-                [(let loop ([arg val] ...) e ...)
+                [(let loop ([arg val] ...) body-e ...)
                  (symbol? (syntax->datum #'loop))
-                 (generate-lifted env binds mutated
-                                  #'loop          ; name
-                                  #'(arg ...)     ; argument names
-                                  #'(begin e ...) ; body
-                                  #t              ; recursive
-                                  (lambda (defn-to-lift new-loop-name free-vars wrap-bind-of-lifted)
-                                    (with-syntax ([(free-var ...) free-vars]
-                                                  [new-loop-name new-loop-name]
-                                                  [defn-to-lift defn-to-lift])
-                                      #`((new-loop-name val ... free-var ...)
-                                         (defn-to-lift)))))]
+                 (cond
+                   [(true-loop? (syntax->datum #'loop) #t #'(begin body-e ...))
+                    (lift-local-functions-in-named-let e env binds mutated)]
+                   [else
+                    (generate-lifted env binds mutated
+                                     #'loop          ; name
+                                     #'(arg ...)     ; argument names
+                                     #'(begin body-e ...) ; body
+                                     #t              ; recursive
+                                     (lambda (defn-to-lift new-loop-name free-vars wrap-bind-of-lifted)
+                                       (with-syntax ([(free-var ...) free-vars]
+                                                     [new-loop-name new-loop-name]
+                                                     [defn-to-lift defn-to-lift])
+                                         #`((new-loop-name val ... free-var ...)
+                                            (defn-to-lift)))))])]
                 [(let* () e ...)
                  (lift-local-functions #`(begin e ...) env binds mutated)]
                 [(let* ([id rhs] . more-binds) e ...)
@@ -205,6 +209,20 @@
                                 (loop (cdr proc-binds)
                                       (wrap-bind-of-lifted e)
                                       (cons defn-to-lift lifts)))))]))])))]))]
+
+           [lift-local-functions-in-named-let
+            (lambda (e env binds mutated)
+              (syntax-case e ()
+                [(form loop ([id rhs] ...) e ...)
+                 (let ([body-env (add-args env #'(id ...))])
+                   (with-syntax ([((new-rhs lifts) ...)
+                                  (map (lambda (rhs)
+                                         (lift-local-functions rhs env binds mutated))
+                                       #'(rhs ...))])
+                     (with-syntax ([(new-body body-lifts)
+                                    (lift-local-functions #'(begin e ...) body-env binds mutated)])
+                       (list #'(form loop ([id new-rhs] ...) new-body)
+                             (append #'body-lifts (append-all #'(lifts ...)))))))]))]
 
            [split-proc-binds
             ;; Helper to split `lambda` from non-`lambda`
@@ -340,6 +358,79 @@
                 [(rator rand ...)
                  (extract-free-vars #'(begin rator rand ...) env)]
                 [_ '()]))]
+
+           [true-loop?
+            (lambda (name tail? e)
+              (syntax-case e (quote begin begin0 if cond lambda case-lambda
+                                    let* let letrec let-values
+                                    fluid-let-syntax let-syntax
+                                    set!)
+                [id
+                 (symbol? (syntax->datum #'id))
+                 (not (eq? (syntax->datum #'id) name))]
+                [(set! id rhs)
+                 (and (not (eq? (syntax->datum #'id) name))
+                      (true-loop? name #f e))]
+                [(quote _) '()]
+                [(begin e ... e0)
+                 (and (#%andmap (lambda (e) (true-loop? name #f e))
+                                #'(e ...))
+                      (true-loop? name tail? #'e0))]
+                [(begin0 e ...)
+                 (#%andmap (lambda (e) (true-loop? name #f e))
+                           #'(e ...))]
+                [(if e0 e1 e2)
+                 (and (true-loop? name #f #'e0)
+                      (true-loop? name tail? #'e1)
+                      (true-loop? name tail? #'e2))]
+                [(cond [test expr ...] ...)
+                 (#%andmap (lambda (b) (true-loop? name #f b))
+                           #'((begin test expr ...) ...))]
+                [(lambda args e ...) #f]
+                [(case-lambda [args e ...] ...) #f]
+                [(let loop ([arg val] ...) e ...)
+                 (or (eq? name (syntax->datum #'loop))
+                     (and
+                      (#%andmap (lambda (val) (true-loop? name #f val))
+                                #'(val ...))
+                      (true-loop? name tail? #'(begin e ...))))]
+                [(let* () e ...)
+                 (true-loop? name tail? #'(begin e ...))]
+                [(let* ([id rhs] . binds) e ...)
+                 (true-loop? name tail? #`(let ([id rhs]) (let* binds e ...)))]
+                [(let ([id rhs] ...) e ...)
+                 (and (#%andmap (lambda (rhs) (true-loop? name #f #'rhs))
+                                #'(rhs ...))
+                      (or (#%ormap (lambda (id) (eq? (syntax->datum id) name))
+                                   #'(id ...))
+                          (true-loop? name tail? #'(begin e ...))))]
+                [(let-values ([(id ...) rhs] ...) e ...)
+                 (and (#%andmap (lambda (rhs) (true-loop? name #f #'rhs))
+                                #'(rhs ...))
+                      (or (#%ormap (lambda (id) (eq? (syntax->datum id) name))
+                                   #'(id ... ...))
+                          (true-loop? name tail? #'(begin e ...))))]
+                [(letrec ([id rhs] ...) e ...)
+                 (or (#%ormap (lambda (id) (eq? (syntax->datum id) name))
+                              #'(id ...))
+                     (and (#%andmap (lambda (rhs) (true-loop? name #f #'rhs))
+                                    #'(rhs ...))
+                          (true-loop? name tail? #'(begin e ...))))]
+                [(fluid-let-syntax ([id rhs] ...) e ...)
+                 (or (#%ormap (lambda (id) (eq? (syntax->datum id) name))
+                              #'(id ...))
+                     (true-loop? name tail? #'(begin e ...)))]
+                [(let-syntax ([id rhs] ...) e ...)
+                 (or (#%ormap (lambda (id) (eq? (syntax->datum id) name))
+                              #'(id ...))
+                     (true-loop? name tail? #'(begin e ...)))]
+                [(rator rand ...)
+                 (and (or (and tail?
+                               (eq? name (syntax->datum #'rator)))
+                          (true-loop? name #f #'rator))
+                      (#%andmap (lambda (rand) (true-loop? name #f rand))
+                                #'(rand ...)))]
+                [_ #t]))]
 
            [filter-shadowed-binds
             ;; Simplify `binds` to drop bindings that are shadowned by
