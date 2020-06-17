@@ -713,11 +713,6 @@ case "$host_os" in
     # Use -Wno-nullability-completeness if supported
     try_no_nullability_completeness=yes
 
-    # ".a" is typically not useful, since we always build a ".dylib":
-    if test "${enable_libs}" = "" ; then
-      INSTALL_LIBS_ENABLE=no-install
-    fi
-
     SO_SUFFIX=.dylib
 
     if test "${need_cc_in_extras}" = "yes" ; then
@@ -757,6 +752,10 @@ case "$host_os" in
       fi
       if test "${enable_embedfw}" = "yes" ; then
         strip_needs_dash_s=yes
+      fi
+      # ".a" is typically not useful, since we always build a ".dylib":
+      if test "${enable_libs}" = "" ; then
+        INSTALL_LIBS_ENABLE=no-install
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "

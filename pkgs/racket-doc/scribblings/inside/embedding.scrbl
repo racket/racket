@@ -25,11 +25,14 @@ To embed Racket CGC in a program, follow these steps:
   standard distribution provides 3m libraries, only, you will most
   likely have to @seclink["src-build"]{build from source}.
 
-  On Unix, the libraries are @as-index{@filepath{libracket.a}}
+  On Unix, the libraries are @as-index{@filepath{libracket.a}},
+  @as-index{@filepath{librktio.a}},
   and @as-index{@filepath{libmzgc.a}} (or
-  @as-index{@filepath{libracket.so}} and
+  @as-index{@filepath{libracket.so}},
+  @as-index{@filepath{librrktio.so}}, and
   @as-index{@filepath{libmzgc.so}} for a dynamic-library build, with
-  @as-index{@filepath{libracket.la}} and
+  @as-index{@filepath{libracket.la}},
+  @as-index{@filepath{librktio.la}}, and
   @as-index{@filepath{libmzgc.la}} files for use with
   @exec{libtool}). Building from source and installing places the
   libraries into the installation's @filepath{lib} directory. Be sure
@@ -310,10 +313,10 @@ In addition, some library details are different:
 
 @itemize[
 
- @item{On Unix, the library is just
-  @as-index{@filepath{libracket3m.a}} (or
-  @as-index{@filepath{libracket3m.so}} for a dynamic-library build,
-  with @as-index{@filepath{libracket3m.la}} for use with
+ @item{On Unix, the libraries are just
+  @as-index{@filepath{libracket3m.a}} and @as-index{@filepath{librrktio.a}} (or
+  @as-index{@filepath{libracket3m.so}} and @as-index{@filepath{librktio.so}} for a dynamic-library build,
+  with @as-index{@filepath{libracket3m.la}} and @as-index{@filepath{librktio.la}} for use with
   @exec{libtool}). There is no separate library for 3m analogous to
   CGC's @filepath{libmzgc.a}.}
 
