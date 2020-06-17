@@ -2274,5 +2274,14 @@
                exn:fail?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make sure `(set! ...)` on a local variable
+;; in the first position of ` begin0` is not miscompiled
+
+(test (void) (let ([i 0])
+               (λ () (begin0
+                       (set! i (add1 i))
+                       (+ i 1)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

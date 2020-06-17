@@ -506,13 +506,15 @@ static Scheme_Object *resolve_wcm(Scheme_Object *o, Resolve_Info *info)
 
 static Scheme_Object *look_for_letv_change(Scheme_Sequence *s)
 {
-  int i;
+  int i, start;
 
   /* Change (begin e1 ... (set!-for-let [x 10] (void)) e2 ...)
      to (begin e1 ... (set!-for-let [x 10] e2 ...)), which 
      avoids an unneeded recursive call in the evaluator */
 
-  for (i = 0; i < s->count - 1; i++) {
+  start = ((SCHEME_TYPE(s) == scheme_begin0_sequence_type) ? 1 : 0);
+
+  for (i = start; i < s->count - 1; i++) {
     Scheme_Object *v;
     v = s->array[i];
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_let_value_type)) {
@@ -570,7 +572,7 @@ static Scheme_Object *resolve_sequence(Scheme_Object *o, Resolve_Info *info)
     le = resolve_expr(s->array[i], info);
     s->array[i] = le;
   }
-  
+
   return look_for_letv_change(s);
 }
 
