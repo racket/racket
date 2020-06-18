@@ -381,20 +381,21 @@
         ;; In case of `(module ...)` instead of `#lang ...`:
         [`(module info ,info-lib . ,defns)
          (convert-mod info-lib defns)]))
-    ;; write updated:
-    (call-with-output-file* 
-     new-p
-     #:exists 'truncate
-     (lambda (out)
-       (write new-content out)
-       (newline out)))
-    ;; sanity check:
-    (unless (get-info/full dir #:namespace (make-base-namespace))
-      (error 'pkg-binary-create "rewrite failed"))
-    ;; compile it, if not package-level:
-    (when (strip-binary-compile-info)
-      (unless (eq? level 'package)
-        (managed-compile-zo new-p)))))
+    (unless (equal? new-content content)
+      ;; write updated:
+      (call-with-output-file* 
+       new-p
+       #:exists 'truncate
+       (lambda (out)
+         (write new-content out)
+         (newline out)))
+      ;; sanity check:
+      (unless (get-info/full dir #:namespace (make-base-namespace))
+        (error 'pkg-binary-create "rewrite failed"))
+      ;; compile it, if not package-level:
+      (when (strip-binary-compile-info)
+        (unless (eq? level 'package)
+          (managed-compile-zo new-p))))))
 
 (define ((fixup-info-definition get-info mode) defn)
   (match defn
