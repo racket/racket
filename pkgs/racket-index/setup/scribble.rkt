@@ -412,23 +412,22 @@
                (not latex-dest)
                infos)
       (log-setup-info "tidying database")
-      (define files (make-hash))
       (define tidy-docs (if tidy?
                             docs
                             (map info-doc infos)))
-      (define (get-files! main?)
+      (define (get-files main?)
+        (define files (make-hash))
         (for ([doc (in-list tidy-docs)]
               #:when (eq? main? (main-doc? doc)))
           (hash-set! files (sxref-path latex-dest doc "in.sxref") #t)
           (for ([c (in-range (add1 (doc-out-count doc)))])
-            (hash-set! files (sxref-path latex-dest doc (format "out~a.sxref" c)) #t))))
+            (hash-set! files (sxref-path latex-dest doc (format "out~a.sxref" c)) #t)))
+        files)
       (unless avoid-main?
-        (get-files! #t)
-        (doc-db-clean-files main-db files))
+        (doc-db-clean-files main-db (get-files #t)))
       (when (and (file-exists? user-db)
                  (not (equal? main-db user-db)))
-        (get-files! #f)
-        (doc-db-clean-files user-db files))))
+        (doc-db-clean-files user-db (get-files #f)))))
 
   (define (make-loop first? iter)
     (let ([infos (filter-not info-failed? infos)]
