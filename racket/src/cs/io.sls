@@ -60,7 +60,7 @@
     (define-ftype uintptr_t uptr)
     (define-ftype rktio_int64_t integer-64)
     (define-ftype function-pointer uptr)
-    (define _uintptr _uint64)
+    (define _uintptr (if (> (fixnum-width) 32) _uint64 _uint32))
     (define NULL 0)
 
     (define (<< a b) (bitwise-arithmetic-shift-left a b))
