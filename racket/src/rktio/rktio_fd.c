@@ -108,6 +108,7 @@ static void deinit_fd(rktio_fd_t *rfd, int full_close)
 
 #define DELAYED_CONSOLE_HANDLE ((HANDLE)-2)
 static void force_console(rktio_fd_t *rfd);
+static HANDLE get_std_handle(int which);
 
 static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th);
 static void WindowsFDICleanup(Win_FD_Input_Thread *th, int close_mode);
@@ -282,7 +283,7 @@ rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which)
     which = STD_ERROR_HANDLE;
     break;
   }
-  h = GetStdHandle(which);
+  h = get_std_handle(which);
   if ((h == INVALID_HANDLE_VALUE) || (h == NULL)) {
     h = DELAYED_CONSOLE_HANDLE; /* => open a console on demand */
   }
@@ -1985,6 +1986,31 @@ static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode)
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+# define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x4
+#endif
+
+static HANDLE get_std_handle(int which) {
+  HANDLE h;
+
+  h = GetStdHandle(which);
+
+  if ((h == INVALID_HANDLE_VALUE) || (h == NULL))
+    return h;
+
+  if ((which == STD_OUTPUT_HANDLE) || (which == STD_ERROR_HANDLE)) {
+    if (GetFileType(h) == FILE_TYPE_CHAR) {
+      /* Try to enable ANSI escape codes, which should work for a recent
+         enough version of Windows */
+      DWORD mode = 0;
+      GetConsoleMode(h, &mode);
+      SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
+  }
+
+  return h;
+}
+
 static void force_console(rktio_fd_t *rfd) {
   /* DELAYED_CONSOLE_HANDLE is used to indicate that a console should be created on demand */
   if (rfd->fd == DELAYED_CONSOLE_HANDLE) {
@@ -1997,7 +2023,7 @@ static void force_console(rktio_fd_t *rfd) {
       which = STD_INPUT_HANDLE;
     else
       which = STD_OUTPUT_HANDLE;
-    h = GetStdHandle(which);
+    h = get_std_handle(which);
 
     rfd->fd = h;
   }
