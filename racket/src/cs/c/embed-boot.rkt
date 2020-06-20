@@ -113,11 +113,18 @@
        (error 'embed-boot "cannot file boot-file offset tag"))
 
      (define terminator-len (bytes-length terminator))
-     
+
+     (define big-endian?
+       (if target
+           (case target
+             [("tppc32le") #t]
+             [else #f])
+           (system-big-endian?)))
+
      (file-position o (cdar m))
-     (void (write-bytes (integer->integer-bytes pos 4 #t #f) o))
-     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) terminator-len) 4 #t #f) o))
-     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) (* 2 terminator-len)) 4 #t #f) o)))
+     (void (write-bytes (integer->integer-bytes pos 4 #t big-endian?) o))
+     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) terminator-len) 4 #t big-endian?) o))
+     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) (* 2 terminator-len)) 4 #t big-endian?) o)))
 
    (cond
     [(null? alt-dests)
