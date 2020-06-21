@@ -2491,5 +2491,18 @@
   (test #t values found-it?))
 
 ;; ----------------------------------------
+;; Make sure that `block` forces an expression context with #%expression
+
+(let ()
+  (define-syntax-rule (m x) (set! x 'outer))
+  (define res #f)
+  (let ()
+    (block
+      (m res))
+    (define-syntax-rule (m x) (set! x 'inner))
+    (void))
+  (test 'inner values res))
+
+;; ----------------------------------------
 
 (report-errs)
