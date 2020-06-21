@@ -2,7 +2,9 @@
 
 (require (for-template racket/base))
 
-(provide make-variable-like-transformer)
+(provide
+  make-variable-like-transformer
+  make-expression-transformer)
 
 (struct variable-like-transformer [procedure]
   #:property prop:procedure (struct-field-index procedure)
@@ -31,3 +33,11 @@
        [(id . args)
         (let ([stx* (cons #'(#%expression id) (cdr (syntax-e stx)))])
           (datum->syntax stx stx* stx))]))))
+
+(define (make-expression-transformer transformer)
+  (unless (and (procedure? transformer) (procedure-arity-includes? transformer 1))
+    (raise-argument-error 'make-expression-transformer "(-> syntax? syntax?)" transformer))
+  (lambda (stx)
+    (if (eq? 'expression (syntax-local-context))
+      (transformer stx)
+      #`(#%expression #,stx))))
