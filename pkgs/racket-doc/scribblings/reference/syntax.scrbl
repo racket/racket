@@ -2875,7 +2875,7 @@ form is typically abbreviated with @litchar{`}, @litchar{,}, or
 `(0 1 2)
 `(1 ,(+ 1 2) 4)
 `#s(stuff 1 ,(+ 1 2) 4)
-(eval:alts #,(racketfont (racketvalfont "`#hash((\"a\" . ") "," (racket (+ 1 2)) (racketvalfont "))")) #hash(("a" . 3)))
+`#hash(("a" . ,(+ 1 2)))
 `#hash((,(+ 1 2) . "a"))
 `(1 ,@(list 1 2) 4)
 `#(1 ,@(list 1 2) 4)
