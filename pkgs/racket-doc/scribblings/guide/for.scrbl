@@ -193,7 +193,7 @@ mutually nested, instead of in parallel, even with @racket[for].
   (printf "~a Chapter ~a. ~a\n" book i chapter))
 ]
 
-An @racket[#:unless] clause is analogus to a @racket[#:when] clause, but
+An @racket[#:unless] clause is analogous to a @racket[#:when] clause, but
 the @racket[_body]s evaluate only when the @racket[_boolean-expr]
 produces a false value.
 

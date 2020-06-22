@@ -55,7 +55,7 @@ then calls @racket[any-double?] on the list and binds the result to
 In DrRacket, after saving and running the above program, evaluate
 @racket[(main)] in the interactions window to create the new
 place. @margin-note*{When using @tech{places} inside DrRacket, the
-module containg place code must be saved to a file before it will
+module containing place code must be saved to a file before it will
 execute.}  Alternatively, save the program as @filepath{double.rkt}
 and run from a command line with
 

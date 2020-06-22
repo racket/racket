@@ -36,7 +36,7 @@ lexical-binding information with each part of the form. The
 source-location information is used when reporting syntax errors (for
 example), and the lexical-binding information allows the macro system
 to maintain lexical scope. To accommodate this extra information, the
-represention of the expression @racket[(+ 1 2)] is not merely
+representation of the expression @racket[(+ 1 2)] is not merely
 @racket['(+ 1 2)], but a packaging of @racket['(+ 1 2)] into a syntax
 object.
 
@@ -330,7 +330,7 @@ turned partially inside-out.
 As sets of macros get more complicated, you might want to write
 your own helper functions, like
 @racket[generate-temporaries]. For example, to provide good
-syntax error messsages, @racket[swap], @racket[rotate], and
+syntax error messages, @racket[swap], @racket[rotate], and
 @racket[define-cbr] all should check that certain sub-forms in
 the source form are identifiers. We could use a
 @racket[check-ids] function to perform this checking everywhere:

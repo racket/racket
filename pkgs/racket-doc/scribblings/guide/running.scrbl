@@ -30,7 +30,7 @@ runs in @seclink["start-interactive-mode"]{interactive mode},
 @subsection[#:tag "start-interactive-mode"]{Interactive Mode}
 
 When @exec{racket} is run with no command-line arguments (other than
-confguration options, like @Flag{j}), then it starts a @tech{REPL}
+configuration options, like @Flag{j}), then it starts a @tech{REPL}
 with a @litchar{> } prompt:
 
 @verbatim[#:indent 2]{

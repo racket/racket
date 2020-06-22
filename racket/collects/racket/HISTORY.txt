@@ -1788,7 +1788,7 @@ Changed initial setting of current-library-collection-paths
 Unit definitions and embedded definitions are not allowed
  to shadow syntax or macro names; this restriction resolves
  all potential ambiguity resulting from shadowing syntax
-Changed display for symbols containg special characters:
+Changed display for symbols containing special characters:
  the special characters are not escaped (or bar-quoted)
 Changed write to use the value of (read-accept-bar-quote)
  for printing symbols containing special characters; if

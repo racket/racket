@@ -51,7 +51,7 @@ symbol.
 The code for the tuple-server place exists in the file
 @filepath{tuple.rkt}.  The @filepath{tuple.rkt} file contains the use of
 @racket[define-named-remote-server] form, which defines a RPC server
-suitiable for invocation by @racket[supervise-place-at].
+suitable for invocation by @racket[supervise-place-at].
 
 
 
