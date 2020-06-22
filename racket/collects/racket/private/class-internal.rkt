@@ -373,6 +373,9 @@
           (if (null? l)
               null
               (let ([e (expand (car l))])
+                (define (copy-prop stx . ps) (for/fold ([stx stx])
+                                                       ([p ps])
+                                               (syntax-property stx p (syntax-property e p))))
                 (syntax-case e (begin define-syntaxes define-values)
                   [(begin . _)
                    (loop (append
@@ -388,7 +391,8 @@
                        (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
                        (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                     (syntax->list #'(id ...)))])
-                         (cons (datum->syntax e (list #'define-syntaxes #'(id ...) #'rhs) e e)
+                         (cons (copy-prop (syntax/loc e (define-syntaxes (id ...) rhs))
+                                          'disappeared-use 'origin 'disappeared-binding)
                                (loop (cdr l))))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
