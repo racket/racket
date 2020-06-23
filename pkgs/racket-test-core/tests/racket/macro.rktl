@@ -2504,5 +2504,41 @@
   (test 'inner values res))
 
 ;; ----------------------------------------
+;; Make sure that `block` works normally in a non-expression context
+(let ()
+  (block
+    ; ensure forward references work
+    (define (f x) (g x))
+    ; ensure definition splices
+    (define-syntax-rule (def-g name)
+      (define (name x) (h x)))
+    ; ensure use-site binder doesn't capture
+    (define-syntax-rule (def-h name arg)
+      (define (name x)
+        (let ([arg 'bad])
+          x)))
+    (def-g g)
+    (def-h h x)
+    (test 'ok values (f 'ok))))
+
+;; ----------------------------------------
+;; Make sure that `local` works normally in a non-expression context
+
+(require racket/local)
+(let ()
+  (local [; ensure forward references work
+          (define (f x) (g x))
+          ; ensure definition splices
+          (define-syntax-rule (def-g name)
+            (define (name x) x))
+          ; ensure use-site binder doesn't capture
+          (define-syntax-rule (def-h name arg)
+            (define (name x)
+              (let ([arg 'bad])
+                x)))
+          (def-g g)
+          (def-h h x)]
+    (test 'ok values (f 'ok))))
+
 
 (report-errs)
