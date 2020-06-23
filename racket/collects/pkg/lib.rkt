@@ -85,8 +85,12 @@
         pkg-desc?)]
   [pkg-config
    (->* (boolean? (listof string?))
-        (#:from-command-line? boolean?)
+        (#:from-command-line? boolean?
+         #:default-scope-scope (or/c package-scope/c #f))
         void?)]
+  [pkg-config-default-scope-scope
+   (->* ()
+        (or/c package-scope/c #f))]
   [pkg-new
    (-> path-string? void?)]
   [pkg-create

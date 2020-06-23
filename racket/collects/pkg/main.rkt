@@ -541,6 +541,10 @@
              scope-flags ...
              #:handlers
              (lambda (accum . key+vals)
+               (define default-scope-scope (and (terminal-port? (current-output-port))
+                                                (parameterize ([current-pkg-scope 'user])
+                                                  (with-pkg-lock/read-only
+                                                    (pkg-config-default-scope-scope)))))
                (call-with-package-scope
                 'config
                 scope scope-dir installation user #f #f #f #f
@@ -548,10 +552,12 @@
                   (if set
                       (with-pkg-lock
                        (pkg-config #t key+vals
-                                   #:from-command-line? #t))
+                                   #:from-command-line? #t
+                                   #:default-scope-scope default-scope-scope))
                       (with-pkg-lock/read-only
                        (pkg-config #f key+vals
-                                   #:from-command-line? #t))))))
+                                   #:from-command-line? #t
+                                   #:default-scope-scope default-scope-scope))))))
              (list "key" "val")]
             ;; ----------------------------------------
             [catalog-show

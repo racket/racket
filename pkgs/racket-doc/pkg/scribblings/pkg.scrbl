@@ -419,6 +419,11 @@ scope}. Search then proceeds in a configured order, where
 @exec{installation} @tech{package scope} typically precedes other
 directory @tech{package scopes}.
 
+The default package scope is determined by first checking the
+configuration at @racket['user] scope, and then checking for
+configuration in wider scopes like @racket['installation]. If the
+default package scope is not configured in any scope, then it defaults
+to @racket['user].
 
 @; ----------------------------------------
 

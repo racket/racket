@@ -47,13 +47,23 @@
     (pkg-error "only 'basic credentials are supported"))
   (cdr format+creds))
 
-(define (read-pkg-cfg/def k)
+;; Must hold lock for current scope
+(define (read-pkg-cfg/def key)
+  (read-pkg-cfg/def/scope key (lambda (v scope) v)))
+
+;; Must hold lock for current scope
+(define (read-pkg-cfg-effective-scope key)
+  (read-pkg-cfg/def/scope key (lambda (v scope) scope)))
+
+;; `k` receives value and scope where it was found
+(define (read-pkg-cfg/def/scope key k)
   ;; Lock is held for the current scope, but if
   ;; the key is not found in the current scope,
   ;; get the next scope's lock and try there,
-  ;; etc.
+  ;; etc., based on the rule that we can look
+  ;; wider with a given lock
   (define (get-default)
-    (match k
+    (match key
       ['catalogs
        (list "https://pkgs.racket-lang.org"
              "https://planet-compats.racket-lang.org")]
@@ -69,36 +79,50 @@
       ['git-checkout-credentials '(basic)]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
-  (define v (hash-ref c k 'none))
+  (define v (hash-ref c key 'none))
   (cond
    [(eq? v 'none)
     ;; Default from enclosing scope or hard-wired default:
     (define s (current-pkg-scope))
-    (if (eq? s 'installation)
-        ;; Hard-wided:
-        (get-default)
-        ;; Enclosing:
-        (parameterize ([current-pkg-scope 'installation])
-          (read-pkg-cfg/def k)))]
+    (define all-scopes (get-all-pkg-scopes))
+    ;; We want to search all scopes before the current one in `all-scopes`.
+    ;; Instead of `reverse` plus `member`, this loop handles a path
+    ;; appearing multiple times in the list (which is not a good configuration,
+    ;; but this approach is better than potentially looping forever:
+    (define check-scopes
+      (let loop ([scopes all-scopes] [accum '()])
+        (cond
+          [(null? scopes) accum]
+          [(equal? s (car scopes)) accum]
+          [else (loop (cdr scopes) (cons (car scopes) accum))])))
+    (cond
+      [(null? check-scopes)
+       ;; Use hard-wired default:
+       (k (get-default) #f)]
+      [else
+       ;; Enclosing:
+       (parameterize ([current-pkg-scope (car check-scopes)])
+         (read-pkg-cfg/def/scope key k))])]
    [else
-    (match k
-      ['catalogs
-       ;; Replace #f with default URLs, relative path
-       ;; with absolute path:
-       (apply append (for/list ([i (in-list v)])
-                       (cond
-                        [(not i) (get-default)]
-                        [(regexp-match? #rx"^[a-z]+://" i)
-                         (list i)]
-                        [else
-                         ;; If it doesn't look like a URL, then treat it as
-                         ;; a path (potentially relative to the configuration file):
-                         (list
-                          (url->string
-                           (path->url
-                            (simple-form-path
-                             (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))]
-      [_ v])]))
+    (k (match key
+         ['catalogs
+          ;; Replace #f with default URLs, relative path
+          ;; with absolute path:
+          (apply append (for/list ([i (in-list v)])
+                          (cond
+                            [(not i) (get-default)]
+                            [(regexp-match? #rx"^[a-z]+://" i)
+                             (list i)]
+                            [else
+                             ;; If it doesn't look like a URL, then treat it as
+                             ;; a path (potentially relative to the configuration file):
+                             (list
+                              (url->string
+                               (path->url
+                                (simple-form-path
+                                 (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))]
+         [_ v])
+       (current-pkg-scope))]))
 
 (define (update-pkg-cfg! key val)
   (define f (pkg-config-file))
@@ -121,10 +145,22 @@
   (or (current-pkg-catalogs)
       (map string->url (read-pkg-cfg/def 'catalogs))))
 
-;; ----------------------------------------
+(define (narrower-scope? scope than-scope)
+  (define all-scopes (get-all-pkg-scopes))
+  (and (member scope (cdr (or (member than-scope all-scopes)
+                              '(#f))))
+       #t))
 
+;; Makes the most sense when `(current-pkg-scope)` is 'user,
+;; and a read lock must be held for the current scope.
+(define (pkg-config-default-scope-scope)
+  (read-pkg-cfg-effective-scope 'default-scope))
+
+;; ----------------------------------------
+              
 (define (pkg-config config:set key+vals
-                    #:from-command-line? [from-command-line? #f])
+                    #:from-command-line? [from-command-line? #f]
+                    #:default-scope-scope [default-scope-scope #f])
   (cond
     [config:set
      (match key+vals
@@ -175,10 +211,14 @@
                          "  valid values: installation, user")
                      key
                      val))
-        (update-pkg-cfg! 'default-scope val)]
+        (update-pkg-cfg! 'default-scope val)
+        (when (and default-scope-scope
+                   (narrower-scope? default-scope-scope (current-pkg-scope)))
+          (printf " Note: setting `default-scope` in ~a scope is not effective,\n" (current-pkg-scope))
+          (printf " because `default-scope` is configured in a narrower scope\n"))]
        [(list (and key "name") val)
         (unless (eq? 'installation (current-pkg-scope))
-          (pkg-error (~a "setting `name' makes sense only in `installation' scope\n"
+          (pkg-error (~a "setting `name` makes sense only ininstallation scope\n"
                          "  current package scope: ~a")
                      (current-pkg-scope)))
         (update-pkg-cfg! 'installation-name val)]
@@ -204,7 +244,7 @@
         (update-pkg-cfg! (string->symbol key) (string->number val))]
        [(list (and key "doc-open-url") val)
         (unless (eq? 'installation (current-pkg-scope))
-          (pkg-error (~a "setting `doc-open-url' works only in `installation' scope\n"
+          (pkg-error (~a "setting `doc-open-url` works only in `installation` scope\n"
                          "  current package scope: ~a")
                      (current-pkg-scope)))
         (update-pkg-cfg! 'doc-open-url (if (equal? val "") #f val))]
@@ -249,7 +289,12 @@
              (for ([s (in-list (read-pkg-cfg/def 'catalogs))])
                (printf "~a~a\n" indent s))]
             ["default-scope"
-             (printf "~a~a\n" indent (read-pkg-cfg/def 'default-scope))]
+             (define val (read-pkg-cfg/def 'default-scope))
+             (printf "~a~a\n" indent val)
+             (when (and default-scope-scope
+                        (narrower-scope? default-scope-scope (current-pkg-scope)))
+               (printf "~a Note: `default-scope` in ~a scope is not effective,\n" indent (current-pkg-scope))
+               (printf "~a because `default-scope` is configured in a narrower scope\n" indent))]
             ["name"
              (printf "~a~a\n" indent (read-pkg-cfg/def 'installation-name))]
             [(or "download-cache-dir"
@@ -271,7 +316,7 @@
          [_
           (pkg-error (~a "multiple config keys provided"
                          (if from-command-line?
-                             ";\n supply `--set' to set a config key's value"
+                             ";\n supply `--set` to set a config key's value"
                              "")))]))
      (match key+vals
        [(list)
