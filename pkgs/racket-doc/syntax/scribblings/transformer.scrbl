@@ -42,3 +42,15 @@ op
 }
 
 @close-eval[the-eval]
+
+@defproc[(make-expression-transformer
+           [transformer (-> syntax? syntax?)])
+         (-> syntax? syntax?)]{
+
+Creates a transformer derived from @racket[transformer] that ensures it expands
+in an expression context. When invoked in an expression context, it calls
+@racket[transformer]. When invoked in any other context, the new
+transformer wraps the argument syntax with @racket[#%expression].
+
+@history[#:added "7.7.0.9"]{}
+}

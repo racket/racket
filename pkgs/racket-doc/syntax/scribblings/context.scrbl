@@ -13,6 +13,11 @@ Returns a list suitable for use as a context argument to
 expansion. The context list builds on @racket[(syntax-local-context)]
 if it is a list.}
 
-@defproc[(generate-expand-context) list?]{
+@defproc[(generate-expand-context [liberal-definitions? boolean? #f]) list?]{
 
-Calls @racket[build-expand-context] with a generated symbol.}
+Calls @racket[build-expand-context] with a generated unique value.
+When @racket[liberal-definitions?] is true, the value is an instance of
+a structure type with a true value for the @racket[prop:liberal-define-context]
+property.
+
+}
