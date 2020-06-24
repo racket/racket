@@ -1036,13 +1036,11 @@
                        (write-bytes (string->bytes/utf-8 (number->string i)) port-ab)))))
   (define worker2 (thread
                    (lambda ()
-                     (for ([i 10])
-                       (write-bytes (string->bytes/utf-8 (number->string (- 10 i))) port-ab)))))
+                     (write-bytes-avail* #"0123456789" port-ab))))
   (thread-wait worker1)
   (thread-wait worker2)
-  (test #t or (equal? (get-output-string port-a) "hello, world109876543210123456789")
-              (equal? (get-output-string port-a) "hello, world012345678910987654321"))
-  (test (get-output-string port-a) get-output-string port-b)
+  (test "hello, world01234567890123456789" get-output-string port-a)
+  (test "hello, world01234567890123456789" get-output-string port-b)
   (test (void) close-output-port port-ab))
 
 ;; --------------------------------------------------
