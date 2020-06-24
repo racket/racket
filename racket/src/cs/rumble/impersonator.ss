@@ -139,10 +139,12 @@
           (unsafe-struct*-set! v abs-pos a)])))]
    [else
     (raise-argument-error (string->symbol
-                           (string-append "set"
+                           (string-append "set-"
                                           (symbol->string (or record-name 'struct))
                                           "-"
-                                          (symbol->string (or field-name 'field))
+                                          (if field-name
+                                              (symbol->string field-name)
+                                              (string-append "field" (number->string pos)))
                                           "!"))
                           (string-append (symbol->string (or record-name 'struct)) "?")
                           orig)]))

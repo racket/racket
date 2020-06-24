@@ -750,24 +750,24 @@
       (let* ([abs-pos (+ pos (position-based-mutator-offset pbm))]
              [p (record-field-mutator rtd abs-pos)]
              [rec-name (record-type-name rtd)]
-             [name (string->symbol
-                    (string-append "set-"
-                                   (symbol->string rec-name)
-                                   "-"
-                                   (if name
-                                       (symbol->string name)
-                                       (string-append "field" (number->string pos)))
-                                   "!"))]
+             [mut-name (string->symbol
+                        (string-append "set-"
+                                       (symbol->string rec-name)
+                                       "-"
+                                       (if name
+                                           (symbol->string name)
+                                           (string-append "field" (number->string pos)))
+                                       "!"))]
              [wrap-p
               (procedure-rename
                (if (struct-type-field-mutable? rtd pos)
                    (lambda (v a)
                      (if (record? v rtd)
                          (p v a)
-                         (impersonate-set! p rtd pos abs-pos v a rec-name (or name 'field))))
+                         (impersonate-set! p rtd pos abs-pos v a rec-name name)))
                    (lambda (v a)
-                     (cannot-modify-by-pos-error name v pos)))
-               name)])
+                     (cannot-modify-by-pos-error mut-name v pos)))
+               mut-name)])
         (register-struct-field-mutator! wrap-p rtd pos)
         wrap-p))]
    [(pbm pos)

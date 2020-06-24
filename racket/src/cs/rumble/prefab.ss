@@ -313,7 +313,7 @@
         vec
         (list->vector
          (append (vector->list vec)
-                 (let loop ([auto auto] [pos (fx- init+auto-count auto 1)])
+                 (let loop ([auto auto] [pos (fx- init+auto-count auto)])
                    (if (fx= auto 0)
                        '()
                        (cons pos (loop (fx- auto 1) (fx+ pos 1))))))))))

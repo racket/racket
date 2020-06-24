@@ -1287,6 +1287,29 @@
   (test 'ok -ref v 3))
 
 ;; ----------------------------------------
+;; Check that prefab auto fields count as mutable
+
+(let ()
+  (struct flag ([x #:auto #:mutable]) #:prefab)
+  (define f (flag))
+  (set-flag-x! f 'ok)
+  (test 'ok flag-x f)
+
+  (err/rt-test (set-flag-x! 'no 'way) exn:fail:contract? #rx"^set-flag-x!:")
+
+  (define f2 (read (open-input-string "#s((flag (1 #f)) #f)")))
+  (test #f flag-x f2)
+  (set-flag-x! f2 'ok)
+  (test 'ok flag-x f2)
+
+  (struct flag-3d flag (y [z #:auto #:mutable]) #:prefab)
+  (define f3 (flag-3d 'y))
+  (set-flag-x! f3 'three)
+  (test 'three flag-x f3)
+  (set-flag-3d-z! f3 'zee)
+  (test 'zee flag-3d-z f3))
+
+;; ----------------------------------------
 ;; Make sure that a JIT-inlined predicate doesn't
 ;; fail improperly on chaperones and struct types
 
