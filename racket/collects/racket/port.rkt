@@ -170,11 +170,11 @@
   (struct buffer (bstr out start end) #:authentic #:mutable)
   (define pending #f)
   (define lock (make-semaphore 1))
-  (define ready-evt (replace-evt lock (λ (_) (replace-evt out1 (λ (_) out2)))))
+  (define ready-evt (replace-evt lock (λ (_) (replace-evt a-out (λ (_) b-out)))))
   (define retry-evt (handle-evt
                      (replace-evt
                       (semaphore-peek-evt lock)
-                      (λ (_) (replace-evt out1 (λ (_) out2))))
+                      (λ (_) (replace-evt a-out (λ (_) b-out))))
                      (λ (_) #f)))
   (define (write-pending!)
     (when pending
@@ -195,7 +195,6 @@
        lock
        (λ ()
          (write-pending!)
-         
          (cond
            [pending       retry-evt]
            [(= start end) 0]
@@ -203,20 +202,20 @@
            [else          (write-out* write-bytes-avail* bstr start end)]))
        (λ () retry-evt)))
     (when (eqv? result 0)
-      (flush-output out1)
-      (flush-output out2))
+      (flush-output a-out)
+      (flush-output b-out))
     result)
   (define (write-out* write-initial bstr start end)
-    (define m (write-initial bstr out1 start end))
+    (define m (write-initial bstr a-out start end))
     (cond
       [(or (not m) (= m 0))
        retry-evt]
       [else
        (define n
-         (or (write-bytes-avail* bstr out2 start (+ start m))
+         (or (write-bytes-avail* bstr b-out start (+ start m))
              0))
        (when (< n m)
-         (set! pending (buffer bstr out2 (+ start n) (+ start m))))
+         (set! pending (buffer bstr b-out (+ start n) (+ start m))))
        m]))
   (define (close)
     (call-with-semaphore
@@ -228,8 +227,8 @@
                       (buffer-start pending)
                       (buffer-end pending))
          (set! pending #f))))
-    (flush-output out1)
-    (flush-output out2)) 
+    (flush-output a-out)
+    (flush-output b-out))
   (make-output-port
    'tee
    ready-evt
