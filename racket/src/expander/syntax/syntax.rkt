@@ -233,25 +233,26 @@
    [else
     (define insp (if (syntax? s) 'not-needed (current-module-code-inspector)))
     (define (wrap content)
-      (syntax (if (and stx-c
-                       (syntax-tamper stx-c))
-                  (modified-content content
-                                    (tamper-tainted-for-content content))
-                  content)
-              (if stx-c
-                  (syntax-scopes stx-c)
-                  empty-scopes)
-              (if stx-c
-                  (syntax-shifted-multi-scopes stx-c)
-                  empty-shifted-multi-scopes)
-              (if stx-c
-                  (syntax-mpi-shifts stx-c)
-                  empty-mpi-shifts)
-              (and stx-l (syntax-srcloc stx-l))
-              empty-props
-              (and insp
-                   stx-c
-                   (weaker-inspector insp (syntax-inspector stx-c)))))
+      (let ([content (datum-intern-literal content)])
+        (syntax (if (and stx-c
+                         (syntax-tamper stx-c))
+                    (modified-content content
+                                      (tamper-tainted-for-content content))
+                    content)
+                (if stx-c
+                    (syntax-scopes stx-c)
+                    empty-scopes)
+                (if stx-c
+                    (syntax-shifted-multi-scopes stx-c)
+                    empty-shifted-multi-scopes)
+                (if stx-c
+                    (syntax-mpi-shifts stx-c)
+                    empty-mpi-shifts)
+                (and stx-l (syntax-srcloc stx-l))
+                empty-props
+                (and insp
+                     stx-c
+                     (weaker-inspector insp (syntax-inspector stx-c))))))
     (define result-s
       (non-syntax-map s
                       (lambda (tail? x) (cond

@@ -53,6 +53,10 @@
   (test 'val syntax-property s 'key)
   (test #f syntax-property (syntax-property-remove s 'key) 'key))
 
+(test #t immutable? (syntax-e (datum->syntax #f (string #\a))))
+(test #t immutable? (syntax-e (syntax-case (datum->syntax #f (list (string #\a))) ()
+                                [(a) #'a])))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some syntax-case patterns
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
