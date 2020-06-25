@@ -72,7 +72,7 @@ means specifically @tech{@Spattern}.
                 [H-pattern
                  pvar-id:splicing-syntax-class-id
                  (@#,ref[~var h] id splicing-syntax-class-id maybe-role)
-                 (@#,ref[~var h] id (splicing-syntax-class-id arg ...) 
+                 (@#,ref[~var h] id (splicing-syntax-class-id arg ...)
                                  maybe-role)
                  (~seq . L-pattern)
                  (@#,ref[~and h] proper-H/A-pattern ...+)
@@ -579,7 +579,7 @@ key and whose sequence of fields, when considered as a list, match the
 ]
 }
 
-@specsubform[#&@#,svar[S-pattern]]{ 
+@specsubform[#&@#,svar[S-pattern]]{
 
 Matches a term that is a box whose contents matches the inner
 @tech{@Spattern}.
@@ -1155,13 +1155,24 @@ Returns a @tech{pattern expander} that uses @racket[proc] to transform the patte
      (syntax-case stx ()
        [(~maybe pat ...)
         #'(~optional (~seq pat ...))]))))
-]}
+]
+
+@tech{Pattern expander} transformer procedures should not
+arm their output patterns with syntax
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dye packs},
+though they may arm expressions embedded within the
+patterns. Because of this, avoid using forms like
+@racket[syntax-rules] and @racket[syntax-id-rules]
+for @tech{pattern expanders}, and only call
+@racket[syntax-protect] or @racket[syntax-arm] on
+expressions within patterns, not on patterns themselves.
+}
 
 @defthing[prop:pattern-expander (struct-type-property/c (-> pattern-expander? (-> syntax? syntax?)))]{
 
 A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{structure type property} to
 identify structure types that act as @tech{pattern expanders} like the
-ones created by @racket[pattern-expander]. 
+ones created by @racket[pattern-expander].
 
 @racketblock[
 (begin-for-syntax

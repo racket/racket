@@ -152,7 +152,7 @@ element.
               #:contracts ([length-expr exact-nonnegative-integer?])]{
 
 Iterates like @racket[for/list], but results are accumulated into
-a vector instead of a list. 
+a vector instead of a list.
 
 If the optional @racket[#:length] clause is specified, the result of
 @racket[length-expr] determines the length of the result vector.  In
@@ -520,7 +520,7 @@ nested.
 
 @deftogether[(
 @defform[(for*/list (for-clause ...) body-or-break ... body)]
-@defform[(for*/lists (id ... maybe-result) (for-clause ...) 
+@defform[(for*/lists (id ... maybe-result) (for-clause ...)
            body-or-break ... body)]
 @defform[(for*/vector maybe-length (for-clause ...) body-or-break ... body)]
 @defform[(for*/hash (for-clause ...) body-or-break ... body)]
@@ -685,7 +685,7 @@ The result can be either @racket[#f], to indicate that the forms
 should not be treated specially (perhaps because the number of bound
 identifiers is inconsistent with the @racket[(id . _rest)] form), or a
 new @racket[_for-clause] to replace the given one. The new clause might
-use @racket[:do-in]. To protect identifiers in the result of 
+use @racket[:do-in]. To protect identifiers in the result of
 @racket[clause-transform-expr], use @racket[for-clause-syntax-protect]
 instead of @racket[syntax-protect].
 
@@ -716,7 +716,16 @@ instead of @racket[syntax-protect].
 (for/list ([d (in-digits 1138)]) d)
 
 (map in-digits (list 137 216))
-]}
+]
+
+Sequence syntax transformer procedures should not arm their
+output clauses with syntax @tech{dye packs}, though they
+may arm expressions embedded within the clauses. Because of
+this, avoid using forms like @racket[syntax-rules] for
+@racket[clause-transform-expr], and only call
+@racket[syntax-protect] or @racket[syntax-arm] on
+expressions within clauses, not on clauses themselves.
+}
 
 @defform[(:do-in ([(outer-id ...) outer-expr] ...)
                  outer-check
