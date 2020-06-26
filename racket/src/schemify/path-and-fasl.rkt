@@ -125,20 +125,25 @@
     [else (relative-path-elements->path e)]))
 
 (define (force-unfasl tf)
-  (define vb (to-fasl-vb tf))
-  (define v (unbox vb))
   (cond
-    [(bytes? v)
-     (define v2 (parameterize ([current-load-relative-directory (to-fasl-wrt tf)])
-                  (fasl->s-exp v
-                               #:datum-intern? #t
-                               #:external-lifts (to-fasl-lifts tf))))
-     (box-cas! vb v v2)
-     (set-to-fasl-wrt! tf #f)
-     (unbox vb)]
+    [(not (to-fasl? tf))
+     ;; act as identity on other values for the benefit of `raco decompile`
+     tf]
     [else
-     ;; already forced (or never fasled)
-     v]))
+     (define vb (to-fasl-vb tf))
+     (define v (unbox vb))
+     (cond
+       [(bytes? v)
+        (define v2 (parameterize ([current-load-relative-directory (to-fasl-wrt tf)])
+                     (fasl->s-exp v
+                                  #:datum-intern? #t
+                                  #:external-lifts (to-fasl-lifts tf))))
+        (box-cas! vb v v2)
+        (set-to-fasl-wrt! tf #f)
+        (unbox vb)]
+       [else
+        ;; already forced (or never fasled)
+        v])]))
 
 (define (cannot-fasl v)
   (error 'write

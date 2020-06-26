@@ -84,7 +84,8 @@
                (list '#:key k '#:value (decompile v #:to-linklets? to-linklets?))]))))]
        [else
         (decompile-module top)])]
-    [(linkl? top)
+    [(or (linkl? top)
+         (linklet? top))
      (decompile-linklet top)]
     [(faslable-correlated-linklet? top)
      (strip-correlated (faslable-correlated-linklet-expr top))]
@@ -257,7 +258,10 @@
            (case fmt
              [(compile)
               (define proc ((vm-eval `(load-compiled-from-port (open-bytevector-input-port ,uncompressed-code)))))
-              (decompile-chez-procedure (if (null? args) proc (apply proc args)))]
+              (let ([proc (decompile-chez-procedure (if (null? args) proc (apply proc args)))])
+                (if (null? args)
+                    proc
+                    (cons proc (map (vm-primitive 'force-unfasl) args))))]
              [(interpret)
               (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,uncompressed-code))))
               (list `(#%interpret ,(unwrap-chez-interpret-jitified bytecode)))]
