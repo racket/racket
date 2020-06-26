@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve the latest dev version of Racket 
+about: Create a report to help us improve Racket 
 title: ''
 labels: bug
 assignees: ''
