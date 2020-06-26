@@ -27,10 +27,6 @@ If applicable, add screenshots to help explain your problem.
  - OS: [e.g. Windows 10, Macos, Linux]
  - Version: [e.g. 7.7]
 
-**Expected development cost**
-As you know nothing happens magically, so do you have an idea of the development effort required? 
-In addition, are you willing to help because after all Racket is yours too?
-
 **Additional context**
 Add any other context about the problem here.
 
