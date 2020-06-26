@@ -2789,7 +2789,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
     jit_ldxi_i(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
   } else {
     /* Unlikely, due to folding, but possible due to specialization */
-    jit_ldi_i(JIT_R0, SCHEME_CHAR_VAL(r1));
+    jit_movi_i(JIT_R0, SCHEME_CHAR_VAL(r1));
   }
 
   if (!SCHEME_CHARP(r2)) {

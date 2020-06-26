@@ -1919,8 +1919,8 @@ static int common4(mz_jit_state *jitter, void *_data)
     mz_prolog(JIT_R2);
     JIT_UPDATE_THREAD_RSPTR();
     jit_prepare(3);
-    jit_pusharg_p(JIT_R0);
-    jit_pusharg_p(JIT_V1);
+    jit_pusharg_i(JIT_R0);
+    jit_pusharg_i(JIT_V1);
     jit_pusharg_p(JIT_R1);
     (void)mz_finish_lwe(ts_unsafe_struct_refs, ref);
     jit_retval(JIT_R0);

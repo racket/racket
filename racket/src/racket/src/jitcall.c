@@ -2483,7 +2483,7 @@ static int generate_unsafe_struct_ref_sequence(mz_jit_state *jitter, Scheme_Obje
     jit_addi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(stack_pos));
     jit_str_p(JIT_R1, JIT_R0);
     jit_movi_i(JIT_V1, base);
-    jit_movi_p(JIT_R0, count);
+    jit_movi_i(JIT_R0, count);
     (void)jit_calli(sjc.struct_raw_refs_code);
     ref2 = jit_jmpi(jit_forward());
     mz_patch_branch(ref);
