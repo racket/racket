@@ -233,7 +233,8 @@
                               stream-ref stream-via-prop?
                               stream? stream-empty? stream-first stream-rest
                               prop:stream in-stream empty-stream make-do-stream
-                              split-for-body)
+                              split-for-body
+                              expand-for-clause)
              (all-from "kernstruct.rkt")
              (all-from "member.rkt")
              #%top-interaction
