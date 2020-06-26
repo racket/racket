@@ -315,12 +315,6 @@ case "$host_os" in
     ;;
 esac
 
-case "$host_cpu" in
-  arm*)
-    enable_pthread_by_default=no
-    ;;
-esac
-
 if test "${enable_pthread}" = "" ; then
   if test "${enable_pthread_by_default}" = "yes" ; then
     enable_pthread=yes
