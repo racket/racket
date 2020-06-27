@@ -52,8 +52,11 @@ by @racket[kind], which must be one of the following:
  the current executable is used as the home directory.}
 
  @item{@indexed-racket['pref-dir] --- the standard directory for
- storing the current user's preferences. On Unix, the directory is
- @filepath{.racket} in the @tech{user's home directory}.  On Windows,
+ storing the current user's preferences. On Unix, the directory is the
+ @filepath{racket} subdirectory of the path specified by
+ @indexed-envvar{XDG_CONFIG_HOME}, or @filepath{.config/racket} in the
+ @tech{user's home directory} if @envvar{XDG_CONFIG_HOME} is not set to
+ an absolute path. On Windows,
  it is @filepath{Racket} in the @tech{user's home directory} if
  determined by @envvar{PLTUSERHOME}, otherwise in the user's
  application-data folder as specified by the Windows registry; the
@@ -121,8 +124,11 @@ by @racket[kind], which must be one of the following:
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
  @filepath{Library/Racket} in the @tech{user's home directory} on Mac
- OS and @racket['pref-dir] otherwise.  The directory might not
- exist.}
+ OS and @racket['pref-dir] on Windows. On Unix, it is the
+ @filepath{racket} subdirectory of the path specified by
+ @indexed-envvar{XDG_DATA_HOME}, or @filepath{.local/share/racket} in
+ the @tech{user's home directory} if @envvar{XDG_CONFIG_HOME} is not
+ set to an absolute path.  The directory might not exist.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for
  storing the current user's documents. On Unix, it's
