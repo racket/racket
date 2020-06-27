@@ -47,6 +47,7 @@
       [(pref-file) (rktio-system-path who RKTIO_PATH_PREF_FILE)]
       [(addon-dir) (as-dir (or addon-dir
                                (rktio-system-path who RKTIO_PATH_ADDON_DIR)))]
+      [(cache-dir) (as-dir (rktio-system-path who RKTIO_PATH_CACHE_DIR))]
       [(home-dir) (as-dir (rktio-system-path who RKTIO_PATH_HOME_DIR))]
       [(desk-dir) (as-dir (rktio-system-path who RKTIO_PATH_DESK_DIR))]
       [(doc-dir) (as-dir (rktio-system-path who RKTIO_PATH_DOC_DIR))]
@@ -55,7 +56,7 @@
       [else (raise-argument-error who
                                   (string-append
                                    "(or/c 'home-dir 'pref-dir 'pref-file 'temp-dir\n"
-                                   "      'init-dir 'init-file 'addon-dir\n"
+                                   "      'init-dir 'init-file 'addon-dir 'cache-dir\n"
                                    "      'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                                    "      'collects-dir 'config-dir 'orig-dir\n"
                                    "      'host-collects-dir 'host-config-dir)")

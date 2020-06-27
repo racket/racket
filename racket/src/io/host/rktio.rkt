@@ -89,3 +89,5 @@
 
 ;; Only in the main place:
 (void (rktio_do_install_os_signal_handler rktio))
+
+(void 1) ;; force recompile due to ../../rktio/rktio.rktl change

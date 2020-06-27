@@ -1904,10 +1904,12 @@ char *rktio_system_path(rktio_t *rktio, int which)
     if ((which == RKTIO_PATH_PREF_DIR) 
         || (which == RKTIO_PATH_PREF_FILE)
         || (which == RKTIO_PATH_ADDON_DIR)
+        || (which == RKTIO_PATH_CACHE_DIR)
         || (which == RKTIO_PATH_INIT_DIR)
         || (which == RKTIO_PATH_INIT_FILE)) {
 #if defined(OS_X) && !defined(XONX)
-      if (which == RKTIO_PATH_ADDON_DIR)
+      if ((which == RKTIO_PATH_ADDON_DIR)
+          || (which == RKTIO_PATH_CACHE_DIR))
 	home_str = "~/Library/Racket/";
       else if ((which == RKTIO_PATH_INIT_DIR)
                || (which == RKTIO_PATH_INIT_FILE))
@@ -1919,6 +1921,10 @@ char *rktio_system_path(rktio_t *rktio, int which)
       if (which == RKTIO_PATH_ADDON_DIR) {
         home_str = "~/.local/share/racket/";
         envvar = "XDG_DATA_HOME";
+        suffix = "racket/";
+      } else if (which == RKTIO_PATH_CACHE_DIR) {
+        home_str = "~/.cache/racket/";
+        envvar = "XDG_CACHE_HOME";
         suffix = "racket/";
       } else {
         home_str = "~/.config/racket/";
@@ -1973,7 +1979,8 @@ char *rktio_system_path(rktio_t *rktio, int which)
     
     if ((which == RKTIO_PATH_PREF_DIR) || (which == RKTIO_PATH_INIT_DIR) 
 	|| (which == RKTIO_PATH_HOME_DIR) || (which == RKTIO_PATH_ADDON_DIR)
-	|| (which == RKTIO_PATH_DESK_DIR) || (which == RKTIO_PATH_DOC_DIR))
+	|| (which == RKTIO_PATH_DESK_DIR) || (which == RKTIO_PATH_DOC_DIR)
+        || (which == RKTIO_PATH_CACHE_DIR))
       return home;
 
     if (which == RKTIO_PATH_INIT_FILE) {
@@ -2036,6 +2043,7 @@ char *rktio_system_path(rktio_t *rktio, int which)
       int which_folder;
 
       if ((which == RKTIO_PATH_ADDON_DIR)
+          || (which == RKTIO_PATH_CACHE_DIR) /* maybe CSIDL_LOCAL_APPDATA instead? */
 	  || (which == RKTIO_PATH_PREF_DIR)
 	  || (which == RKTIO_PATH_PREF_FILE)) 
 	which_folder = CSIDL_APPDATA;
@@ -2129,6 +2137,7 @@ char *rktio_system_path(rktio_t *rktio, int which)
       return home;
 
     if ((which == RKTIO_PATH_ADDON_DIR)
+        || (which == RKTIO_PATH_CACHE_DIR)
 	|| (which == RKTIO_PATH_PREF_DIR)
 	|| (which == RKTIO_PATH_PREF_FILE)) {
       home = append_paths(home, "Racket", 1, 0);
