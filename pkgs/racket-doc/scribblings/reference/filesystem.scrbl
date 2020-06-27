@@ -82,8 +82,9 @@ by @racket[kind], which must be one of the following:
  if it is defined, otherwise it is the current directory.}
 
  @item{@indexed-racket['init-dir] --- the directory containing the
- initialization file used by the Racket executable.
- It is the same as the @tech{user's home directory}.}
+ initialization file used by the Racket executable.  On Unix, it is
+ the same as the result returned for @racket['pref-dir]; on Mac OS and
+ Windows, it is the same as the @tech{user's home directory}.}
 
  @item{@indexed-racket['init-file] --- the file loaded at start-up by
  the Racket executable. The directory part of the
@@ -92,9 +93,9 @@ by @racket[kind], which must be one of the following:
 
   @itemize[
 
-  @item{@|AllUnix|: @indexed-file{.racketrc}}
+  @item{Unix and Windows: @indexed-file{racketrc.rktl}}
 
-  @item{Windows: @indexed-file{racketrc.rktl}}
+  @item{Mac OS: @indexed-file{.racketrc}}
 
   ]}
 
