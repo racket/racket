@@ -155,7 +155,7 @@
    (host:mutex-release (place-lock p))))
 
 (define (place-has-activity! p)
-  (box-cas! (place-activity-canary p) #f #t)
+  (set-box! (place-activity-canary p) #t)
   (sandman-wakeup (place-wakeup-handle p)))
 
 (void
@@ -163,8 +163,8 @@
   ;; Called in atomic mode by scheduler
   (lambda (callbacks)
     (define p current-place)
-    (unless (box-cas! (place-activity-canary p) #f #f)
-      (box-cas! (place-activity-canary p) #t #f)
+    (when (unbox (place-activity-canary p))
+      (set-box! (place-activity-canary p) #f)
       (host:mutex-acquire (place-lock p))
       (define queued-result (place-queued-result p))
       (define break (place-pending-break p))

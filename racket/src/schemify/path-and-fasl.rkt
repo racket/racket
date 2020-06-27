@@ -138,9 +138,20 @@
                      (fasl->s-exp v
                                   #:datum-intern? #t
                                   #:external-lifts (to-fasl-lifts tf))))
-        (box-cas! vb v v2)
-        (set-to-fasl-wrt! tf #f)
-        (unbox vb)]
+        (let loop ()
+          (cond
+            [(box-cas! vb v v2)
+             (set-to-fasl-wrt! tf #f)
+             v2]
+            [else
+             (let ([v (unbox vb)])
+               (cond
+                 [(bytes? v)
+                  ;; must be a spurious CAS failure
+                  (loop)]
+                 [else
+                  ;; other thread beat us to it
+                  v]))]))]
        [else
         ;; already forced (or never fasled)
         v])]))

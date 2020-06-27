@@ -653,7 +653,10 @@
 
 ;; lock-free synchronization to check whether the box content is #f
 (define (worker-pinged? w)
-  (box-cas! (worker-ping w) #t #t))
+  (cond
+    [(box-cas! (worker-ping w) #t #t) #t]
+    [(box-cas! (worker-ping w) #f #f) #f]
+    [else (worker-pinged? w)]))
 
 ;; called with scheduler lock
 (define (check-in w)

@@ -122,9 +122,16 @@
                                ,(add-module-path-index! mpis self)
                                ,self-id
                                ,inspector-id)])
-                  (begin
-                    (vector-cas! ,syntax-literals-id pos #f stx)
-                    (unsafe-vector*-ref ,syntax-literals-id pos))))))))))
+                  ;; loop in case of spurious CAS failure
+                  (letrec-values ([(loop)
+                                   (lambda ()
+                                     (begin
+                                       (vector-cas! ,syntax-literals-id pos #f stx)
+                                       (let-values ([(stx) (unsafe-vector*-ref ,syntax-literals-id pos)])
+                                         (if stx
+                                             stx
+                                             (loop)))))])
+                    (loop))))))))))
 
 ;; Generate on-demand deserialization (shared across instances); the
 ;; result defines `deserialize-syntax-id`
