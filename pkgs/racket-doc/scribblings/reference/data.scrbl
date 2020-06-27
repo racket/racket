@@ -120,10 +120,16 @@ boxes that are not @tech{impersonators}.
   @racketblock[
   (and (eq? old (unbox loc)) (set-box! loc new) #t)]
 
+  except that @racket[box-cas!] can spuriously fail on some platforms.
+  That is, with low probability, the result can be @racket[#f] with the
+  value in @racket[box] left unchanged, even if @racket[box] contains
+  @racket[old].
+
   When Racket is compiled with support for @tech{futures},
-  @racket[box-cas!] uses a hardware @emph{compare and set} operation.
-  Uses of @racket[box-cas!] be performed safely in a @tech{future} (i.e.,
-  allowing the future thunk to continue in parallel). }
+  @racket[box-cas!] is guaranteed to use a hardware @emph{compare and
+  set} operation. Uses of @racket[box-cas!] be performed safely in a
+  @tech{future} (i.e., allowing the future thunk to continue in
+  parallel).}
 
 @; ----------------------------------------------------------------------
 @include-section["hashes.scrbl"]
