@@ -13,7 +13,11 @@
 
              prop:struct-auto-info
              struct-auto-info?
-             struct-auto-info-lists)
+             struct-auto-info-lists
+
+             prop:struct-field-info
+             struct-field-info?
+             struct-field-info-list)
 
   (define-values (prop:struct-info has-struct-info-prop? struct-info-prop-ref)
     (make-struct-type-property 'struct-info
@@ -130,5 +134,26 @@
                      (andmap identifier? (cadr l)))
           (error 'struct-auto-info-lists
                  "struct-auto-info procedure result not properly formed: ~e"
+                 l))
+        l)))
+
+  (define-values (prop:struct-field-info
+                  struct-field-info?
+                  struct-field-info-ref)
+    (make-struct-type-property 'struct-field-info
+                               (lambda (val info)
+                                 (unless (and (procedure? val)
+                                              (procedure-arity-includes? val 1))
+                                   (raise-argument-error 'guard-for-prop:struct-field-info "(procedure-arity-includes/c 1)" val))
+                                 val)))
+
+  (define-values (struct-field-info-list)
+    (lambda (v)
+      (unless (struct-field-info? v)
+        (raise-argument-error 'struct-field-info-list "struct-field-info?" v))
+      (let ([l ((struct-field-info-ref v) v)])
+        (unless (and (list? l) (andmap symbol? l))
+          (error 'struct-field-info-list
+                 "struct-field-info procedure result not properly formed: ~e"
                  l))
         l))))

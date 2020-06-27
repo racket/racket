@@ -919,6 +919,36 @@ subset of the accessor identifiers for the structure type described by
 @racket[sai], and the second list should be a subset of the mutator
 identifiers. The two subsets correspond to @racket[#:auto] fields.}
 
+@deftogether[(
+@defthing[prop:struct-field-info struct-type-property?]
+@defproc[(struct-field-info? [v any/c]) boolean?]
+@defproc[(struct-field-info-list [sfi struct-field-info?]) (listof symbol?)])]{
+
+The @racket[prop:struct-field-info] property is implemented to provide
+static information about field names in a structure type. The property
+value must be a procedure that accepts an instance structure to which
+the property is given, and the result must be a list of symbols
+suitable as a result from @racket[struct-field-info-list].
+
+The @racket[struct-field-info?] predicate recognizes values that
+implement the @racket[prop:struct-field-info] property.
+
+The @racket[struct-field-info-list] function extracts a list of
+symbols from a value that implements the @racket[prop:struct-field-info] property.
+The list should contain every immediate field name
+(that is, not including fields from its super struct type)
+in the reverse order.
+
+@examples[
+#:eval struct-eval
+(struct foo (x))
+(struct bar foo (y z))
+(define-syntax (get-bar-field-names stx)
+  #`'#,(struct-field-info-list (syntax-local-value #'bar)))
+(get-bar-field-names)
+]
+}
+
 @; ----------------------------------------------------------------------
 
 @close-eval[struct-eval]

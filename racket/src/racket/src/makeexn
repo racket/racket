@@ -208,9 +208,22 @@ Not an exception in the above sense:
                       
                       (#%provide (all-defined))
 
+                      (define-values-for-syntax
+                        (struct:struct-field-info
+                         make-struct-field-info
+                         struct-field-info-rec?
+                         struct-field-info-ref
+                         struct-field-info-set!)
+                        (make-struct-type 'struct-field-info struct:struct-info
+                                          1 0 #f
+                                          (list (cons prop:struct-field-info
+                                                      (lambda (rec)
+                                                        (struct-field-info-ref rec 0))))))
+
+
                       (define-values-for-syntax (make-self-ctr-struct-info)
                         (letrec-values ([(struct: make- ? ref set!)
-                                         (make-struct-type 'self-ctor-struct-info struct:struct-info
+                                         (make-struct-type 'self-ctor-struct-info struct:struct-field-info
                                                            1 0 #f
                                                            (list (cons prop:procedure
                                                                        (lambda (v stx)
@@ -230,7 +243,7 @@ Not an exception in the above sense:
   (define (non-parent x)
     (or (equal? #f x) (equal? #t x)))
   
-  (define (gen-ds name-string fields parent)
+  (define (gen-ds name-string fields num-selector parent)
     (let* ([name (sss name-string)]
            [kern-name (sss "kernel:" name)]
            [sn (sss "struct:" name)]
@@ -238,7 +251,11 @@ Not an exception in the above sense:
            [pn (sss name "?")]
            [fds `(list ,@(map (λ (x) `(quote-syntax ,x)) fields))]
            [fdsset! `'(,@(map (λ (x) #f) fields))]
-           [prnt (if (non-parent parent) #t `(quote-syntax ,parent))])
+           [prnt (if (non-parent parent) #t `(quote-syntax ,parent))]
+           [name-length (string-length (symbol->string name))]
+           [field-names (for/list ([fld (take fields num-selector)])
+                          ;; add1 for hyphen
+                          (string->symbol (substring (symbol->string fld) (add1 name-length))))])
       `(begin
          (#%require (rename '#%kernel ,kern-name ,name))
          (define ,mn ,kern-name)
@@ -248,6 +265,7 @@ Not an exception in the above sense:
                                            (quote-syntax ,pn)                              
                                            ,fds
                                            ,fdsset! ,prnt))
+                               ',field-names
                                (λ () (quote-syntax ,kern-name)))))))
   
   (define (parent-sym x)
@@ -262,17 +280,16 @@ Not an exception in the above sense:
     (if (non-parent exn)
         null
         (append (reverse (map (λ (field) (field-name exn field)) (ex-args exn))) (fields (ex-parent exn)))))
-  
-  
-  (define exceptions (map (λ (x) (gen-ds (ex-string x) (fields x) (parent-sym x))) l))
+
+  (define exceptions (map (λ (x) (gen-ds (ex-string x) (fields x) (length (ex-args x)) (parent-sym x))) l))
   (define structs (map (λ (x) (apply gen-ds x))
-                       '((arity-at-least (arity-at-least-value) #t)
+                       '((arity-at-least (arity-at-least-value) 1 #t)
                          (date (date-time-zone-offset date-dst? date-year-day date-week-day date-year 
-                                 date-month date-day date-hour date-minute date-second) #t)
+                                 date-month date-day date-hour date-minute date-second) 10 #t)
                          (date* (date*-time-zone-name date*-nanosecond
                                  date-time-zone-offset date-dst? date-year-day date-week-day date-year 
-                                 date-month date-day date-hour date-minute date-second) date)
-                         (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source) #t))))
+                                 date-month date-day date-hour date-minute date-second) 2 date)
+                         (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source) 5 #t))))
   
   (with-output-to-file filename #:exists 'replace
     (λ ()

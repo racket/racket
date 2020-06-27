@@ -7,11 +7,27 @@
   (#%require (for-syntax "struct-info.rkt"))
   (#%provide (all-defined))
   (define-values-for-syntax
+   (struct:struct-field-info
+    make-struct-field-info
+    struct-field-info-rec?
+    struct-field-info-ref
+    struct-field-info-set!)
+   (make-struct-type
+    'struct-field-info
+    struct:struct-info
+    1
+    0
+    #f
+    (list
+     (cons
+      prop:struct-field-info
+      (lambda (rec) (struct-field-info-ref rec 0))))))
+  (define-values-for-syntax
    (make-self-ctr-struct-info)
    (letrec-values (((struct: make- ? ref set!)
                     (make-struct-type
                      'self-ctor-struct-info
-                     struct:struct-info
+                     struct:struct-field-info
                      1
                      0
                      #f
@@ -46,6 +62,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           #t))
+       '(continuation-marks message)
        (λ () (quote-syntax kernel:exn)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail exn:fail))
@@ -62,6 +79,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn)))
+       '()
        (λ () (quote-syntax kernel:exn:fail)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:contract exn:fail:contract))
@@ -78,6 +96,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:contract)))))
   (begin
     (#%require
@@ -95,6 +114,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail:contract)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:contract:arity)))))
   (begin
     (#%require
@@ -115,6 +135,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail:contract)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:contract:divide-by-zero)))))
   (begin
     (#%require
@@ -135,6 +156,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail:contract)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:contract:non-fixnum-result)))))
   (begin
     (#%require
@@ -155,6 +177,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail:contract)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:contract:continuation)))))
   (begin
     (#%require
@@ -175,6 +198,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:contract)))
+       '(id)
        (λ () (quote-syntax kernel:exn:fail:contract:variable)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:syntax exn:fail:syntax))
@@ -192,6 +216,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail)))
+       '(exprs)
        (λ () (quote-syntax kernel:exn:fail:syntax)))))
   (begin
     (#%require
@@ -210,6 +235,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:syntax)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:syntax:unbound)))))
   (begin
     (#%require
@@ -232,6 +258,7 @@
            (quote-syntax exn-message))
           '(#f #f #f #f)
           (quote-syntax exn:fail:syntax)))
+       '(path)
        (λ () (quote-syntax kernel:exn:fail:syntax:missing-module)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:read exn:fail:read))
@@ -249,6 +276,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail)))
+       '(srclocs)
        (λ () (quote-syntax kernel:exn:fail:read)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:read:eof exn:fail:read:eof))
@@ -266,6 +294,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:read)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:read:eof)))))
   (begin
     (#%require
@@ -284,6 +313,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:read)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:read:non-char)))))
   (begin
     (#%require
@@ -301,6 +331,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:filesystem)))))
   (begin
     (#%require
@@ -320,6 +351,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail:filesystem)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:filesystem:exists)))))
   (begin
     (#%require
@@ -340,6 +372,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail:filesystem)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:filesystem:version)))))
   (begin
     (#%require
@@ -360,6 +393,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:filesystem)))
+       '(errno)
        (λ () (quote-syntax kernel:exn:fail:filesystem:errno)))))
   (begin
     (#%require
@@ -381,6 +415,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:filesystem)))
+       '(path)
        (λ () (quote-syntax kernel:exn:fail:filesystem:missing-module)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:network exn:fail:network))
@@ -397,6 +432,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:network)))))
   (begin
     (#%require
@@ -415,6 +451,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:fail:network)))
+       '(errno)
        (λ () (quote-syntax kernel:exn:fail:network:errno)))))
   (begin
     (#%require
@@ -432,6 +469,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:out-of-memory)))))
   (begin
     (#%require
@@ -449,6 +487,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:unsupported)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:user exn:fail:user))
@@ -465,6 +504,7 @@
            (quote-syntax exn-message))
           '(#f #f)
           (quote-syntax exn:fail)))
+       '()
        (λ () (quote-syntax kernel:exn:fail:user)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:break exn:break))
@@ -482,6 +522,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn)))
+       '(continuation)
        (λ () (quote-syntax kernel:exn:break)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:break:hang-up exn:break:hang-up))
@@ -499,6 +540,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:break)))
+       '()
        (λ () (quote-syntax kernel:exn:break:hang-up)))))
   (begin
     (#%require
@@ -517,6 +559,7 @@
            (quote-syntax exn-message))
           '(#f #f #f)
           (quote-syntax exn:break)))
+       '()
        (λ () (quote-syntax kernel:exn:break:terminate)))))
   (begin
     (#%require (rename '#%kernel kernel:arity-at-least arity-at-least))
@@ -531,6 +574,7 @@
           (list (quote-syntax arity-at-least-value))
           '(#f)
           #t))
+       '(value)
        (λ () (quote-syntax kernel:arity-at-least)))))
   (begin
     (#%require (rename '#%kernel kernel:date date))
@@ -555,6 +599,16 @@
            (quote-syntax date-second))
           '(#f #f #f #f #f #f #f #f #f #f)
           #t))
+       '(time-zone-offset
+         dst?
+         year-day
+         week-day
+         year
+         month
+         day
+         hour
+         minute
+         second)
        (λ () (quote-syntax kernel:date)))))
   (begin
     (#%require (rename '#%kernel kernel:date* date*))
@@ -581,6 +635,7 @@
            (quote-syntax date-second))
           '(#f #f #f #f #f #f #f #f #f #f #f #f)
           (quote-syntax date)))
+       '(time-zone-name nanosecond)
        (λ () (quote-syntax kernel:date*)))))
   (begin
     (#%require (rename '#%kernel kernel:srcloc srcloc))
@@ -600,4 +655,5 @@
            (quote-syntax srcloc-source))
           '(#f #f #f #f #f)
           #t))
+       '(span position column line source)
        (λ () (quote-syntax kernel:srcloc))))))

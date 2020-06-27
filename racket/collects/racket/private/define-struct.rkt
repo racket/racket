@@ -21,12 +21,24 @@
               (rename checked-struct-info-rec? checked-struct-info?)))
 
   (define-values-for-syntax
+    (struct:struct-field-info
+     make-struct-field-info
+     struct-field-info-rec?
+     struct-field-info-ref
+     struct-field-info-set!)
+    (make-struct-type 'struct-field-info struct:struct-info
+                      1 0 #f
+                      (list (cons prop:struct-field-info
+                                  (lambda (rec)
+                                    (struct-field-info-ref rec 0))))))
+
+  (define-values-for-syntax
     (struct:struct-auto-info 
      make-struct-auto-info 
      struct-auto-info-rec?
      struct-auto-info-ref
      struct-auto-info-set!)
-    (make-struct-type 'struct-auto-info struct:struct-info
+    (make-struct-type 'struct-auto-info struct:struct-field-info
                       1 0 #f
                       (list (cons prop:struct-auto-info
                                   (lambda (rec)
@@ -48,10 +60,10 @@
                          "bad syntax;\n identifier for static struct-type information cannot be used as an expression"
                          stx))
                       null
-                      (lambda (proc autos info)
+                      (lambda (proc fields autos info)
                         (if (and (procedure? proc)
                                  (procedure-arity-includes? proc 0))
-                            (values proc autos)
+                            (values proc fields autos)
                             (raise-argument-error 'make-struct-info
                                                   "(procedure-arity-includes/c 0)"
                                                   proc)))))
@@ -412,7 +424,7 @@
                             (and (identifier? #'id)
                                  (identifier? #'super-id))
                             (values #'id #'super-id)]
-                           [else
+                           [_
                             (raise-syntax-error 
                              #f
                              "bad syntax;\n expected <id> for structure-type name or (<id> <id>) for name and supertype\n name"
@@ -725,6 +737,7 @@
                                                  (if super-expr
                                                      #f
                                                      #t))))
+                                        '#,(map field-id (reverse fields))
                                         #,@(if include-autos?
                                                (list #`(list (list #,@(map protect 
                                                                            (list-tail sels (- (length sels) auto-count)))
@@ -896,26 +909,44 @@
         "unable to cope with a struct type whose predicate doesn't end with `?'"
         orig-stx)]))
 
-  (define-for-syntax (find-accessor the-struct-info fld stx)
+  (define-for-syntax (find-accessor/no-field-info the-struct-info fld stx)
     (define accessors (list-ref the-struct-info 3))
     (define parent (list-ref the-struct-info 5))
     (define num-fields (length accessors))
+    (define-values (parent-struct-info _) (id->struct-info parent stx))
     (define num-super-fields
-      (if (identifier? parent) (length (cadddr (id->struct-info parent stx))) 0))
+      (if (identifier? parent) (length (cadddr parent-struct-info)) 0))
     (define num-own-fields (- num-fields num-super-fields))
     (define own-accessors (take accessors num-own-fields))
     (define struct-name (predicate->struct-name stx (list-ref the-struct-info 2)))
     (define accessor-name (string->symbol (format "~a-~a" struct-name (syntax-e fld))))
     (or (findf (λ (a) (eq? accessor-name (syntax-e a))) own-accessors)
         (raise-syntax-error
-         #f "accessor name not associated with the given structure type"
+         #f "field name not associated with the given structure type"
          stx fld)))
 
+  (define-for-syntax (find-accessor/field-info the-struct-info the-field-info fld stx)
+    (define accessors (list-ref the-struct-info 3))
+    (define num-own-fields (length the-field-info))
+    (define own-accessors (take accessors num-own-fields))
+    (car
+     (or (findf (λ (a) (eq? (syntax-e fld) (cdr a))) (map cons own-accessors the-field-info))
+         (raise-syntax-error
+          #f "field name not associated with the given structure type"
+          stx fld))))
+
+  (define-for-syntax (find-accessor the-struct-info maybe-field-info fld stx)
+    (if maybe-field-info
+        (find-accessor/field-info the-struct-info maybe-field-info fld stx)
+        (find-accessor/no-field-info the-struct-info fld stx)))
+
   (define-for-syntax (id->struct-info id stx)
-    (define the-struct-info (syntax-local-value id (lambda () #f)))
-    (unless (struct-info? the-struct-info)
+    (define compile-time-info (syntax-local-value id (lambda () #f)))
+    (unless (struct-info? compile-time-info)
       (raise-syntax-error #f "identifier is not bound to a structure type" stx id))
-    (extract-struct-info the-struct-info))
+    (values (extract-struct-info compile-time-info)
+            (and (struct-field-info? compile-time-info)
+                 (struct-field-info-list compile-time-info))))
 
   (define-for-syntax (struct-copy-core stx)
     (with-syntax ([(form-name info struct-expr field+val ...) stx])
@@ -953,7 +984,7 @@
                                          an)]))
                 ans)
 
-      (define the-struct-info (id->struct-info #'info stx))
+      (define-values (the-struct-info maybe-field-info) (id->struct-info #'info stx))
       (define construct (cadr the-struct-info))
       (define pred (caddr the-struct-info))
       (define accessors (cadddr the-struct-info))
@@ -970,7 +1001,8 @@
             [else
              (let ([v (syntax-local-value parent (lambda () #f))])
                (unless (struct-info? v)
-                 (raise-syntax-error #f "unknown parent struct" stx id)) ;; probably won't happen(?)
+                 ;; this is possible: https://gist.github.com/deeglaze/6ae7424cc2d093661df2
+                 (raise-syntax-error #f "unknown parent struct" stx id))
                (let ([v (extract-struct-info v)])
                  (loop (list-ref v 5))))])))
 
@@ -978,15 +1010,16 @@
         (map (lambda (an)
                (syntax-case an ()
                  [(field expr)
-                  (list (find-accessor the-struct-info #'field stx)
+                  (list (find-accessor the-struct-info maybe-field-info #'field stx)
                         #'expr
                         (car (generate-temporaries (list #'field))))]
                  [(field #:parent id expr)
                   (begin
                     (ensure-really-parent #'id)
-                    (list (find-accessor (id->struct-info #'id stx) #'field stx)
-                          #'expr
-                          (car (generate-temporaries (list #'field)))))]))
+                    (let-values ([(the-struct-info maybe-field-info) (id->struct-info #'id stx)])
+                      (list (find-accessor the-struct-info maybe-field-info #'field stx)
+                            #'expr
+                            (car (generate-temporaries (list #'field))))))]))
              ans))
 
       ;; new-binding-for : syntax[field-name] -> (union syntax[expression] #f)
