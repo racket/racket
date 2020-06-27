@@ -161,8 +161,8 @@ directory}:
  @item{@indexed-racket['download-cache-dir] --- a path string used as
        the location for storing downloaded package archives. When not
        specified, packages are cached in a @filepath{download-cache}
-       directory in the user's add-on directory as reported by
-       @racket[(find-system-path 'addon-dir)].}
+       directory in the user's cache directory as reported by
+       @racket[(find-system-path 'cache-dir)].}
 
  @item{@indexed-racket['download-cache-max-files] and
        @indexed-racket['download-cache-max-bytes] --- real numbers that

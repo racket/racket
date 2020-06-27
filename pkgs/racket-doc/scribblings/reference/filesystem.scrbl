@@ -131,6 +131,14 @@ by @racket[kind], which must be one of the following:
  the @tech{user's home directory} if @envvar{XDG_CONFIG_HOME} is not
  set to an absolute path.  The directory might not exist.}
 
+ @item{@indexed-racket['cache-dir] --- a directory for storing
+ user-specific caches. On Unix, it is the @filepath{racket}
+ subdirectory of the path specified by @indexed-envvar{XDG_CACHE_HOME},
+ or @filepath{.cache/racket} in the @tech{user's home directory} if
+ @envvar{XDG_CACHE_HOME} is not set to an absolute path. On Mac OS and
+ Windows, it is the same as the result returned for @racket['addon-dir].
+ The directory might not exists.}
+
  @item{@indexed-racket['doc-dir] --- the standard directory for
  storing the current user's documents. On Unix, it's
  the @tech{user's home directory}.  On Windows, it is the @tech{user's
