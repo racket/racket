@@ -1896,18 +1896,41 @@ char *rktio_system_path(rktio_t *rktio, int which)
     return rktio_get_current_directory(rktio);
   }
   
+#define USE_XDG_BASEDIR 1
   {
     /* Everything else is in ~: */
     char *home_str, *alt_home, *home;
 
     if ((which == RKTIO_PATH_PREF_DIR) 
-	|| (which == RKTIO_PATH_PREF_FILE)
-	|| (which == RKTIO_PATH_ADDON_DIR)) {
+        || (which == RKTIO_PATH_PREF_FILE)
+        || (which == RKTIO_PATH_ADDON_DIR)) {
 #if defined(OS_X) && !defined(XONX)
       if (which == RKTIO_PATH_ADDON_DIR)
 	home_str = "~/Library/Racket/";
       else
 	home_str = "~/Library/Preferences/";
+#elif USE_XDG_BASEDIR
+      char *envvar, *xdg_dir, *suffix;
+      if (which == RKTIO_PATH_ADDON_DIR) {
+        home_str = "~/.local/share/racket/";
+        envvar = "XDG_DATA_HOME";
+        suffix = "racket/";
+      } else {
+        home_str = "~/.config/racket/";
+        envvar = "XDG_CONFIG_HOME";
+        if (which == RKTIO_PATH_PREF_DIR) {
+          suffix = "racket/";
+        } else { /* which == RKTIO_PATH_PREF_FILE */
+          suffix = "racket/racket-prefs.rktd";
+        }
+      }
+      xdg_dir = rktio_getenv(rktio, envvar);
+      /* xdg_dir is invalid if it is not an absolute path */
+      if (xdg_dir && (strlen(xdg_dir) > 0) && (xdg_dir[0] == '/')) {
+        return append_paths(xdg_dir, suffix, 1, 0);
+      } else {
+        free(xdg_dir);
+      }
 #else
       home_str = "~/.racket/";
 #endif 
