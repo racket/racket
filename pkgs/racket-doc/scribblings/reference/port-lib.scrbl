@@ -313,6 +313,7 @@ the second port to sync, so it cannot be guaranteed that both
 ports are ready at once. Closing the combined port is done
 after writing all remaining bytes to @racket[b-out].}
 
+@history[#:added "7.7.0.9"]
 
 @defproc[(merge-input [a-in input-port?]
                       [b-in input-port?]

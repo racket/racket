@@ -170,7 +170,7 @@
   (struct buffer (bstr out start end) #:authentic #:mutable)
   (define pending #f)
   (define lock (make-semaphore 1))
-  (define ready-evt (replace-evt lock (λ (_) (replace-evt a-out (λ (_) b-out)))))
+  (define ready-evt (replace-evt a-out (λ (_) b-out)))
   (define retry-evt (handle-evt
                      (replace-evt
                       (semaphore-peek-evt lock)
