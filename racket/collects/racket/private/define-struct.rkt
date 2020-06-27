@@ -913,9 +913,11 @@
     (define accessors (list-ref the-struct-info 3))
     (define parent (list-ref the-struct-info 5))
     (define num-fields (length accessors))
-    (define-values (parent-struct-info _) (id->struct-info parent stx))
     (define num-super-fields
-      (if (identifier? parent) (length (cadddr parent-struct-info)) 0))
+      (if (identifier? parent)
+          (let-values ([(parent-struct-info _) (id->struct-info parent stx)])
+            (length (cadddr parent-struct-info)))
+          0))
     (define num-own-fields (- num-fields num-super-fields))
     (define own-accessors (take accessors num-own-fields))
     (define struct-name (predicate->struct-name stx (list-ref the-struct-info 2)))
