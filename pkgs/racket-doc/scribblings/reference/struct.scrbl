@@ -939,7 +939,7 @@ The list should contain every immediate field name
 (that is, not including fields from its super struct type)
 in the reverse order.
 
-@examples[
+@examples[#:escape no-escape
 #:eval struct-eval
 (struct foo (x))
 (struct bar foo (y z))
