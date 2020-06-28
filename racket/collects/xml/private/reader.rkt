@@ -293,24 +293,29 @@
     (let* ([delimiter (read-char-or-special in)]
            [value (case delimiter
                     [(#\' #\")
-                     (list->string
-                      (let read-more ()
-                        (let ([c (non-eof peek-char-or-special in pos)])
-                          (cond
-                            [(eq? c 'special)
-                             (lex-error in pos "attribute values cannot contain non-text values")]
-                            [(eq? c delimiter) (read-char in) null]
-                            [(eq? c #\&)
-                             (let ([entity (expand-entity (lex-entity in pos))])
-                               (append (cond
-                                         [(pcdata? entity)
-                                          (string->list (pcdata-string entity))]
-                                         [(number? (entity-text entity))
-                                          (list (integer->char (entity-text entity)))]
-                                         ;; more here - do something with user defined entities
-                                         [else '()])
-                                       (read-more)))]
-                            [else (read-char in) (cons c (read-more))]))))]
+                     (define out (open-output-string))
+                     (let read-more ()
+                       (let ([c (non-eof peek-char-or-special in pos)])
+                         (cond
+                           [(eq? c 'special)
+                            (lex-error in pos "attribute values cannot contain non-text values")]
+                           [(eq? c delimiter)
+                            (void (read-char in))]
+                           [(eq? c #\&)
+                            (let ([entity (expand-entity (lex-entity in pos))])
+                              (cond
+                                [(pcdata? entity)
+                                 (write-string (pcdata-string entity) out)]
+                                [(number? (entity-text entity))
+                                 (write-char (integer->char (entity-text entity)) out)]
+                                [else ;; more here - do something with user defined entities
+                                 (void)]))
+                            (read-more)]
+                           [else
+                            (write-char c out)
+                            (void (read-char in))
+                            (read-more)])))
+                     (get-output-string out)]
                     [else (if (char? delimiter)
                               (lex-error in pos "attribute values must be in ''s or in \"\"s")
                               delimiter)])])
@@ -330,21 +335,26 @@
 ;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec 
 (define (lex-pcdata in pos)
   (let ([start (pos)]
-        [data (let loop ()
-                (let ([next (peek-char-or-special in)])
-                  (cond
-                    [(or (eof-object? next)
-                         (not (char? next))
-                         (eq? next #\&)
-                         (eq? next #\<))
-                     null]
-                    [(and (char-whitespace? next) (collapse-whitespace))
-                     (skip-space in)
-                     (cons #\space (loop))]
-                    [else (cons (read-char in) (loop))])))])
-    (make-pcdata start
-                 (pos)
-                 (list->string data))))
+        [data (let ()
+                (define out (open-output-string))
+                (let loop ()
+                  (let ([next (peek-char-or-special in)])
+                    (cond
+                      [(or (eof-object? next)
+                           (not (char? next))
+                           (eq? next #\&)
+                           (eq? next #\<))
+                       (void)]
+                      [(and (char-whitespace? next) (collapse-whitespace))
+                       (skip-space in)
+                       (write-char #\space out)
+                       (loop)]
+                      [else
+                       (write-char next out)
+                       (void (read-char in))
+                       (loop)])))
+                (get-output-string out))])
+    (make-pcdata start (pos) data)))
 
 ;; lex-name : Input-port (-> Location) -> Symbol
 (define (lex-name in pos)
@@ -352,15 +362,20 @@
     (unless (name-start? c)
       (lex-error in pos "expected name, received ~e" c))
     (string->symbol
-     (list->string
-      (cons c (let lex-rest ()
-                (let ([c (non-eof peek-char-or-special in pos)])
-                  (cond
-                    [(eq? c 'special)
-                     (lex-error in pos "names cannot contain non-text values")]
-                    [(name-char? c)
-                     (cons (read-char in) (lex-rest))]
-                    [else null]))))))))
+     (let ()
+       (define out (open-output-string))
+       (write-char c out)
+       (let lex-rest ()
+         (let ([c (non-eof peek-char-or-special in pos)])
+           (cond
+             [(eq? c 'special)
+              (lex-error in pos "names cannot contain non-text values")]
+             [(name-char? c)
+              (write-char c out)
+              (void (read-char in))
+              (lex-rest)]
+             [else (void)])))
+       (get-output-string out)))))
 
 ;; skip-dtd : Input-port (-> Location) -> Void
 (define (skip-dtd in pos)
@@ -396,12 +411,13 @@
 ;; read-until : Char Input-port (-> Location) -> String
 ;; discards the stop character, too
 (define (read-until char in pos)
-  (list->string
-   (let read-more ()
-     (let ([c (non-eof read-char in pos)])
-       (cond
-         [(eq? c char) null]
-         [else (cons c (read-more))])))))
+  (define out (open-output-string))
+  (let read-more ()
+    (let ([c (non-eof read-char in pos)])
+      (cond
+        [(eq? c char) (void)]
+        [else (write-char c out) (read-more)])))
+  (get-output-string out))
 
 ;; non-eof : (Input-port -> (U Char Eof)) Input-port (-> Location) -> Char
 (define (non-eof f in pos)
@@ -454,9 +470,10 @@
                     (kmp-search m i))
                   (let ([i 0])
                     (kmp-search m i)))))))
-    (list->string
-     (for/list ([i (in-range 0 W-starts-at)])
-       (hash-string-ref S i)))))
+    (define out (open-output-string))
+    (for ([i (in-range 0 W-starts-at)])
+      (write-char (hash-string-ref S i) out))
+    (get-output-string out)))
 
 ;; "-->" makes more sense, but "--" follows the spec.
 (define lex-comment-contents (gen-read-until-string "--"))
