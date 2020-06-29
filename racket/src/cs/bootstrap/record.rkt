@@ -334,8 +334,15 @@
        [(size)
         (assert-accessor)
         (lambda (rtd)
-          (* (add1 (length ((csv7:record-field-accessor base-rtd 'flds) rtd)))
-             ptr-bytes))]
+          (let loop ([flds ((csv7:record-field-accessor base-rtd 'flds) rtd)] [x ptr-bytes])
+            (cond
+              [(null? flds) x]
+              [(eq? (fld-type (car flds)) 'double)
+               (let ([x (if (zero? (modulo x max-float-alignment))
+                            x
+                            (+ x (- 8 (modulo x max-float-alignment))))])
+                 (loop (cdr flds) (+ x 8)))]
+              [else (loop (cdr flds) (+ x ptr-bytes))])))]
        [(pm)
         (assert-accessor)
         (lambda (rtd)
@@ -537,12 +544,21 @@
   (void))
 
 (define (fix-offsets flds)
-  (let loop ([flds flds] [offset (+ record-ptr-offset ptr-bytes)])
+  (let loop ([flds flds] [offset ptr-bytes])
     (unless (null? flds)
-      (set-fld-byte! (car flds) offset)
-      (loop (cdr flds) (+ offset ptr-bytes))))
+      (cond
+        [(eq? (fld-type (car flds)) 'double)
+         (let ([offset (if (zero? (modulo offset max-float-alignment))
+                           offset
+                           (+ offset (- 8 (modulo offset max-float-alignment))))])
+           (set-fld-byte! (car flds)  (+ record-ptr-offset offset))
+           (loop (cdr flds) (+ offset 8)))]
+        [else
+         (set-fld-byte! (car flds)  (+ record-ptr-offset offset))
+         (loop (cdr flds) (+ offset ptr-bytes))])))
   flds)
 
+;; assumes that `v` has only pointer-sized fields
 (define ($object-ref type v offset)
   (cond
     [(flonum? v)

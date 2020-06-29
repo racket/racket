@@ -50,6 +50,7 @@
 (define-constant
   ptr-bytes
   fixnum-bits
+  max-float-alignment
   annotation-debug
   annotation-profile
   visit-tag
