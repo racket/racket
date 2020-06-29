@@ -21,7 +21,7 @@
 (define (update-loc stx loc)
   (datum->syntax stx (syntax-e stx) loc))
 
-;; lookup-struct-info : syntax -> (union #f struct-info?)
+;; lookup-struct-info : syntax -> struct-info?
 (define (lookup-struct-info stx provide-stx)
   (define id (syntax-case stx ()
                [(a b) (syntax a)]
