@@ -504,10 +504,10 @@ foreign.@LTO@: $(XSRCDIR)/foreign.c
 main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
-$(SRCDIR)/gmp_alpha_gcc.@LTO@: $(SRCDIR)/gmp/gmp_alpha_gcc.s
-	$(AS) -o $(SRCDIR)/gmp_alpha_gcc.@LTO@ $(SRCDIR)/gmp/gmp_alpha_gcc.s
-$(SRCDIR)/gmp_arm_gcc.@LTO@: $(SRCDIR)/gmp/gmp_arm_gcc.s
-	$(AS) -o $(SRCDIR)/gmp_arm_gcc.@LTO@ $(SRCDIR)/gmp/gmp_arm_gcc.s
+gmp_alpha_gcc.@LTO@: $(SRCDIR)/gmp/gmp_alpha_gcc.s
+	$(AS) -o gmp_alpha_gcc.@LTO@ $(SRCDIR)/gmp/gmp_alpha_gcc.s
+gmp_arm_gcc.@LTO@: $(SRCDIR)/gmp/gmp_arm_gcc.s
+	$(CC) -o gmp_arm_gcc.@LTO@ -c $(SRCDIR)/gmp/gmp_arm_gcc.S
 
 mzcom.@LTO@: $(srcdir)/../../mzcom/mzcom.cxx
 	$(CC) -DMZCOM_3M $(ALL_CFLAGS) -fno-exceptions -c $(srcdir)/../../mzcom/mzcom.cxx -o mzcom.@LTO@
@@ -584,7 +584,7 @@ LIBRKTIO_FOR_LIB = $(LIBRKTIO_FOR_LIB_@LIBSFX@)
 LIBRKTIO_UP_FOR_LIB = $(LIBRKTIO_UP_FOR_LIB_@LIBSFX@)
 
 LTO=@LTO@ # Need for replacement of EXTRA_GMP_OBJ which carries the variable
-EXTRA_GMP_DEP_FILE = $(SRCDIR)/@EXTRA_GMP_OBJ@
+EXTRA_GMP_DEP_FILE = @EXTRA_GMP_OBJ@
 EXTRA_GMP = @EXTRA_GMP_DEP@
 
 EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB) $(LIBRKTIO_FOR_DLL)
