@@ -948,7 +948,8 @@ in the reverse order.
   #`'#,(struct-field-info-list (syntax-local-value #'bar)))
 (get-bar-field-names)
 ]
-}
+
+@history[#:added "7.7.0.10"]}
 
 @; ----------------------------------------------------------------------
 
