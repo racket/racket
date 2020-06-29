@@ -789,7 +789,8 @@ derived from @racket[struct:struct-info] or with the
 @racket[prop:struct-info] property that also implements
 @racket[prop:procedure], and where the instance is further is wrapped
 by @racket[make-set!-transformer]. In addition, the representation may
-implement the @racket[prop:struct-auto-info] property.
+implement the @racket[prop:struct-auto-info] and
+@racket[prop:struct-field-info] properties.
 
 Use @racket[struct-info?] to recognize all allowed forms of the
 information, and use @racket[extract-struct-info] to obtain a list
