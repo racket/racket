@@ -57,6 +57,10 @@
       (loop))))
 
 (define (lock-release lock)
-  (unless (box-cas! lock 1 0)
-    (internal-error "lock release failed!"))
-  (end-future-uninterrupted))
+  (cond
+    [(box-cas! lock 1 0)
+     (end-future-uninterrupted)]
+    [(eq? (unbox lock) 0)
+     ;; not just a spurious failure...
+     (internal-error "lock release failed!")]
+    [else (lock-release lock)]))
