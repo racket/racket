@@ -399,12 +399,6 @@ behaves in several different ways:
    receiving values in a callback), the received pointer must
    correspond to the content of a byte string or vector.
 
- * Calling a foreign function implicitly uses atomic mode and also
-   disables GC. If the foreign function calls back to Racket, the
-   callback runs in atomic mode with the GC still disabled. Use the
-   `blocking?` option for a foreign call or callback to adjuse that
-   behavior.
-
  * An immobile cell must be modified only through its original pointer
    or a reconstructed `_gcpointer`. If it is cast or reconstructed as
    a `_pointer`, setting the cell will not cooperate correctly with
