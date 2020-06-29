@@ -235,24 +235,27 @@
   (when (module-cross-phase-persistent? prior-m)
     (raise-arguments-error 'module
                            "cannot redeclare cross-phase persistent module"
-                           "module name" mod-name))
+                           "module name" (module-name->error-string mod-name)))
   (when (and prior-mi
              (or (module-instance-attached? prior-mi)
                  (not (inspector-superior? (current-code-inspector)
                                            (namespace-inspector (module-instance-namespace prior-mi))))))
     (raise-arguments-error 'module
                            "current code inspector cannot redeclare module"
-                           "module name" mod-name)))
+                           "module name" (module-name->error-string mod-name))))
 
 (define (raise-unknown-module-error who mod-name)
   (raise-arguments-error who
                          "unknown module" 
-                         "module name" mod-name))
+                         "module name" (module-name->error-string mod-name)))
 
 (define (namespace->module-linklet-info ns name phase-level)
   (define m (namespace->module ns name))
   (and m
        ((module-phase-level-linklet-info-callback m) phase-level ns (module-inspector m))))
+
+(define (module-name->error-string mod-name)
+  (unquoted-printing-string (format "~a" mod-name)))
 
 ;; ----------------------------------------
 
