@@ -1838,7 +1838,7 @@ earlier fields.}}
   (code:line)
   (code:line #:unprotected-submodule submodule-name)]
  [contract-out-item
-  (struct id/super ((id contract-expr) ...)
+  (struct id/ignored ((id contract-expr) ...)
     struct-option)
   (rename orig-id id contract-expr)
   (id contract-expr)
@@ -1847,8 +1847,8 @@ earlier fields.}}
   (code:line #:∀ poly-variables)
   (code:line #:forall poly-variables)]
  [poly-variables id (id ...)]
- [id/super id
-           (id super-id)]
+ [id/ignored id
+             (id ignored-id)]
  [struct-option (code:line)
                 #:omit-constructor])]{
 
@@ -1876,13 +1876,8 @@ first variable (the internal name) with the name specified by the
 second variable (the external name).
 
 The @racket[struct] form of @racket[contract-out]
-provides a structure-type definition, and each field has a contract
-that dictates the contents of the fields. The structure-type
-definition must appear before the @racket[provide] clause within the
-enclosing module. If the structure type has a parent, the second
-@racket[struct] form (above) must be used, with the first name
-referring to the structure type to export and the second name
-referring to the parent structure type. Unlike a @racket[struct]
+provides a structure-type definition @racket[id], and each field has a contract
+that dictates the contents of the fields. Unlike a @racket[struct]
 definition, however, all of the fields (and their contracts) must be
 listed. The contract on the fields that the sub-struct shares with its
 parent are only used in the contract for the sub-struct's constructor, and
@@ -1890,7 +1885,10 @@ the selector or mutators for the super-struct are not provided. The
 exported structure-type name always doubles as a constructor, even if
 the original structure-type name does not act as a constructor.
 If the @racket[#:omit-constructor] option is present, the constructor
-is not provided.
+is not provided. The second form of @racket[id/ignored], which has both
+@racket[id] and @racket[ignored-id], is deprecated and allowed
+in the grammar only for backward compatability, where @racket[ignored-id] is ignored.
+The first form should be used instead.
 
 Note that if the struct is created with @racket[serializable-struct]
 or @racket[define-serializable-struct], @racket[contract-out] does not
@@ -1918,7 +1916,8 @@ is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.
 
-@history[#:changed "7.3.0.3" @list{Added @racket[#:unprotected-submodule].}]
+@history[#:changed "7.3.0.3" @list{Added @racket[#:unprotected-submodule].}
+         #:changed "7.7.0.9" @list{Deprecated @racket[ignored-id].}]
 }
 
 @defform[(recontract-out id ...)]{

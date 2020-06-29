@@ -15,6 +15,7 @@
 
 (require (for-syntax racket/base
                      racket/list
+                     racket/string
                      racket/struct-info
                      setup/path-to-relative
                      "application-arity-checking.rkt"
@@ -63,25 +64,51 @@
 ;; Return the original struct name associated with the argument, or #f if
 ;;  the input is not an indirect struct info.
 (define-values-for-syntax [make-contract-out-redirect-struct-info
+                           make-contract-out-redirect/field-struct-info
                            make-applicable-contract-out-redirect-struct-info
+                           make-applicable-contract-out-redirect/field-struct-info
                            undo-contract-out-redirect]
-  (let-values ([(struct:r make-r r? r-ref r-set!)
-                (make-struct-type
-                  'contract-out-redirect-struct-info struct:struct-info
-                  1 0 #f
-                  '()
-                  (current-inspector) #f '(0))])
-    (letrec-values ([(struct:app-r make-app-r app-r? app-r-ref app-r-set!)
-                     (make-struct-type
-                       'applicable-contract-out-redirect-struct-info struct:r
-                        1 0 #f
-                        (list (cons prop:procedure
-                                    (lambda (v stx)
-                                      (self-ctor-transformer ((app-r-ref v 0)) stx))))
-                        (current-inspector) #f '(0))])
-      (define (undo-contract-out-redirect v)
-        (and (r? v) ((r-ref v 0))))
-      (values make-r make-app-r undo-contract-out-redirect))))
+  (let ()
+    (define-values (struct:r make-r r? r-ref r-set!)
+      (make-struct-type
+       'contract-out-redirect-struct-info struct:struct-info
+       1 0 #f
+       '()
+       (current-inspector) #f '(0)))
+
+    (define-values (struct:r/field make-r/field r/field? r/field-ref r/field-set!)
+      (make-struct-type
+       'contract-out-redirect/field-struct-info struct:r
+       1 0 #f
+       (list (cons prop:struct-field-info
+                   (lambda (rec)
+                     (r/field-ref rec 0))))))
+
+    (define-values (struct:app-r make-app-r app-r? app-r-ref app-r-set!)
+      (make-struct-type
+       'applicable-contract-out-redirect-struct-info struct:r
+       1 0 #f
+       (list (cons prop:procedure
+                   (lambda (v stx)
+                     (self-ctor-transformer ((app-r-ref v 0)) stx))))
+       (current-inspector) #f '(0)))
+
+    (define-values (struct:app-r/field
+                    make-app-r/field
+                    app-r/field?
+                    app-r/field-ref
+                    app-r/field-set!)
+      (make-struct-type
+       'applicable-contract-out-redirect/field-struct-info struct:app-r
+       1 0 #f
+       (list (cons prop:struct-field-info
+                   (lambda (rec)
+                     (app-r/field-ref rec 0))))))
+
+    (define (undo-contract-out-redirect v)
+      (and (r? v) ((r-ref v 0))))
+
+    (values make-r make-r/field make-app-r make-app-r/field undo-contract-out-redirect)))
 
 (begin-for-syntax
 
@@ -651,6 +678,10 @@
                                            "malformed struct option" 
                                            provide-stx
                                            option)))
+                   (unless (<= (length (syntax->list #'(options ...))) 1)
+                     (raise-syntax-error who
+                                         "malformed struct option"
+                                         provide-stx))
                    (add-to-dups-table #'struct-name)
                    (define omit-constructor? 
                      (member '#:omit-constructor (map syntax-e (syntax->list #'(options ...)))))
@@ -731,7 +762,7 @@
                 (and (identifier? (syntax name))
                      (identifier? (syntax super)))
                 #t]
-               [else #f])))
+               [_ #f])))
 
        ;; build-struct-code : syntax syntax (listof syntax) (listof syntax) -> syntax
        ;; constructs the code for a struct clause
@@ -741,23 +772,9 @@
          (let* ([struct-name (syntax-case struct-name-position ()
                                [(a b) (syntax a)]
                                [else struct-name-position])]
-                [super-id (syntax-case struct-name-position ()
-                            [(a b) (syntax b)]
-                            [else #t])]
-
-
-                [all-parent-struct-count/names 
-                 (get-field-counts/struct-names struct-name provide-stx)]
-                [_ (and (syntax? super-id)
-                        (a:lookup-struct-info super-id provide-stx))] ;; for the error check
-                [parent-struct-count (if (null? all-parent-struct-count/names)
-                                         #f
-                                         (let ([pp (cdr all-parent-struct-count/names)])
-                                           (if (null? pp)
-                                               #f
-                                               (car (car pp)))))]
-
                 [the-struct-info (a:lookup-struct-info struct-name-position provide-stx)]
+                [true-field-names (and (struct-field-info? the-struct-info)
+                                       (struct-field-info-list the-struct-info))]
                 [orig-struct-name
                   (or (undo-contract-out-redirect the-struct-info)
                       struct-name)]
@@ -767,7 +784,24 @@
                 [predicate-id (list-ref the-struct-info-list 2)]
                 [orig-predicate-id (list-ref orig-struct-info-list 2)]
                 [selector-ids (reverse (list-ref the-struct-info-list 3))]
+                [_ (when (and (not (null? selector-ids))
+                              (not (last selector-ids)))
+                     (raise-syntax-error
+                      who
+                      (format "cannot determine the number of fields in struct")
+                      provide-stx
+                      struct-name))]
                 [orig-selector-ids (reverse (list-ref orig-struct-info-list 3))]
+                [super-id (list-ref the-struct-info-list 5)]
+                [parent-struct-count (cond
+                                       [(boolean? super-id) #f]
+                                       [else (length
+                                              (list-ref
+                                               (extract-struct-info
+                                                (a:lookup-struct-info
+                                                 super-id
+                                                 provide-stx))
+                                               3))])]
                 [type-is-only-constructor? (free-identifier=? constructor-id struct-name)]
                 ; I think there's no way to detect when the struct-name binding isn't a constructor
                 [type-is-constructor? #t] 
@@ -781,13 +815,7 @@
                        #t))]
                 [mutator-ids (reverse (list-ref the-struct-info-list 4))] ;; (listof (union #f identifier))
                 [orig-mutator-ids (reverse (list-ref orig-struct-info-list 4))]
-                [field-contract-ids (map (λ (field-name field-contract)
-                                           (mangled-id-scope
-                                            (a:mangle-id "provide/contract-field-contract"
-                                                         field-name
-                                                         struct-name)))
-                                         field-names
-                                         field-contracts)]
+
                 [struct:struct-name
                  (or (list-ref the-struct-info-list 0)
                      (datum->syntax
@@ -832,60 +860,43 @@
                                   selector-ids))))
 
            (unless (equal? (length selector-ids)
-                           (length field-contract-ids))
+                           (length field-names))
              (raise-syntax-error who
                                  (format "found ~a field~a in struct, but ~a contract~a"
                                          (length selector-ids)
                                          (if (= 1 (length selector-ids)) "" "s")
-                                         (length field-contract-ids)
-                                         (if (= 1 (length field-contract-ids)) "" "s"))
+                                         (length field-names)
+                                         (if (= 1 (length field-names)) "" "s"))
                                  provide-stx
                                  struct-name))
 
            ;; make sure the field names are right.
-           (let* ([relative-counts (let loop ([c (map car all-parent-struct-count/names)])
-                                     (cond
-                                       [(null? c) null]
-                                       [(null? (cdr c)) c]
-                                       [else (cons (- (car c) (cadr c))
-                                                   (loop (cdr c)))]))]
-                  [names (map cdr all-parent-struct-count/names)]
-                  [predicate-name (format "~a" (syntax-e predicate-id))])
-             (let loop ([count (car relative-counts)]
-                        [name (car names)]
-                        [counts (cdr relative-counts)]
-                        [names (cdr names)]
-                        [selector-strs (reverse (map (λ (x) (format "~a" (syntax-e x))) 
-                                                     selector-ids))]
-                        [field-names (reverse field-names)])
-               (cond
-                 [(or (null? selector-strs) (null? field-names))
-                  (void)]
-                 [(zero? count)
-                  (loop (car counts) (car names) (cdr counts) (cdr names)
-                        selector-strs
-                        field-names)]
-                 [else
-                  (let* ([selector-str (car selector-strs)]
-                         [field-name (car field-names)]
-                         [field-name-should-be
-                          (substring selector-str
-                                     (+ (string-length name) 1)
-                                     (string-length selector-str))]
-                         [field-name-is (format "~a" (syntax-e field-name))])
-                    (unless (equal? field-name-should-be field-name-is)
-                      (raise-syntax-error who
-                                          (format "expected field name to be ~a, but found ~a"
-                                                  field-name-should-be
-                                                  field-name-is)
-                                          provide-stx
-                                          field-name))
-                    (loop (- count 1)
-                          name
-                          counts
-                          names
-                          (cdr selector-strs)
-                          (cdr field-names)))])))
+           (define all-field+struct-names
+             (extract-field+struct-names the-struct-info struct-name provide-stx))
+           (for ([field+struct-name (in-list all-field+struct-names)]
+                 [field-name (in-list (reverse field-names))])
+             (define field-name-should-be (car field+struct-name))
+             (define field-name-is (syntax-e field-name))
+             (unless (equal? field-name-should-be field-name-is)
+               (raise-syntax-error who
+                                   (format "expected field name to be ~a, but found ~a"
+                                           field-name-should-be
+                                           field-name-is)
+                                   provide-stx
+                                   field-name)))
+
+           (define (make-identifier sym)
+             (datum->syntax #f sym))
+
+           (define field-contract-ids
+             (for/list ([field+struct-name (in-list all-field+struct-names)])
+               (mangled-id-scope
+                (a:mangle-id "provide/contract-field-contract"
+                             (make-identifier (car field+struct-name))
+                             (make-identifier (cdr field+struct-name))
+                             (make-identifier 'for)
+                             struct-name))))
+
            (with-syntax ([((selector-codes selector-new-names) ...)
                           (for/list ([selector-id (in-list selector-ids)]
                                      [orig-selector-id (in-list orig-selector-ids)]
@@ -987,6 +998,14 @@
                                                      [(a b) #'(quote-syntax b)]
                                                      [else #f])))]
                                               [(exported-selector-ids ...) (reverse selector-ids)])
+                                  (define mk
+                                    (if (and type-is-constructor? (not omit-constructor?))
+                                        (if true-field-names
+                                            #'make-applicable-contract-out-redirect/field-struct-info
+                                            #'make-applicable-contract-out-redirect-struct-info)
+                                        (if true-field-names
+                                            #'make-contract-out-redirect/field-struct-info
+                                            #'make-contract-out-redirect-struct-info)))
                                   (define proc
                                     #`(λ ()
                                         (list (quote-syntax -struct:struct-name)
@@ -998,20 +1017,22 @@
                                                     (quote-syntax rev-selector-old-names) ...)
                                               (list rev-mutator-id-info ...)
                                               super-id)))
+                                  (define the-constructor
+                                    (if (and type-is-constructor? (not omit-constructor?))
+                                        #'((lambda () (quote-syntax constructor-new-name)))
+                                        #'()))
+                                  (define the-field-names
+                                    (if true-field-names
+                                        #`('#,true-field-names)
+                                        #'()))
                                   #`(begin
                                       (provide (rename-out [id-rename struct-name]))
                                       (define-syntax id-rename
-                                        #,(if (and type-is-constructor? (not omit-constructor?))
-                                              #`(make-applicable-contract-out-redirect-struct-info
-                                                 #,proc
-                                                 (lambda ()
-                                                   (quote-syntax orig-struct-name))
-                                                 (lambda ()
-                                                   (quote-syntax constructor-new-name)))
-                                              #`(make-contract-out-redirect-struct-info
-                                                 #,proc
-                                                 (lambda ()
-                                                   (quote-syntax orig-struct-name)))))))]
+                                        (#,mk
+                                         #,proc
+                                         (lambda () (quote-syntax orig-struct-name))
+                                         #,@the-constructor
+                                         #,@the-field-names))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
@@ -1064,41 +1085,77 @@
                         (loop (cdr l1)
                               (+ i 1)))])))
 
-       ;; get-field-counts/struct-names : syntax syntax -> (listof (cons number symbol))
-       ;; returns a list of numbers corresponding to the numbers of fields for each parent struct
-       (define (get-field-counts/struct-names struct-name provide-stx)
-         (let loop ([parent-info-id struct-name]
-                    [orig-struct? #t])
-           (let ([parent-info
-                  (and (identifier? parent-info-id)
-                       (extract-struct-info (a:lookup-struct-info parent-info-id provide-stx)))])
-             (cond
-               [(boolean? parent-info) null]
-               [else
-                (let ([fields (list-ref parent-info 3)]
-                      [predicate (list-ref parent-info 2)])
-                  (cond
-                    [(and (not (null? fields))
-                          (not (last fields)))
-                     (raise-syntax-error
-                      who
-                      (format "cannot determine the number of fields in ~astruct"
-                              (if orig-struct? "" "parent "))
-                      provide-stx
-                      struct-name)]
-                    [else
-                     (cons (cons (length fields) (predicate->struct-name provide-stx predicate))
-                           (loop (list-ref parent-info 5) #f))]))]))))
-
        (define (predicate->struct-name orig-stx stx)
-         (and stx
-              (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
-                (cond
-                  [m (cadr m)]
-                  [else (raise-syntax-error 
-                         who
-                         "unable to cope with a struct supertype whose predicate doesn't end with `?'"
-                         orig-stx)]))))
+         (if stx
+             (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
+               (cond
+                 [m (cadr m)]
+                 [else (raise-syntax-error
+                        who
+                        "unable to cope with a struct supertype whose predicate doesn't end with `?'"
+                        orig-stx)]))
+             (raise-syntax-error
+              who
+              "unable to cope with a struct whose predicate is unknown"
+              orig-stx)))
+
+       ;; get-field-names/no-field-info :: string?
+       ;;                                  (listof identifier?)
+       ;;                                  (or/c identifier? boolean?)
+       ;;                                  syntax?
+       ;;                                  syntax?
+       ;;                                  ->
+       ;;                                  (listof symbol?)
+       ;; attempts to extract field names from accessors
+       (define (get-field-names/no-field-info struct-name
+                                              accessors
+                                              super-info
+                                              orig-struct-name-stx
+                                              provide-stx)
+         (define own-accessors
+           (cond
+             [(boolean? super-info) accessors]
+             [else
+              (define parent-accessors
+                (list-ref (extract-struct-info (a:lookup-struct-info super-info provide-stx)) 3))
+              (drop-right accessors (length parent-accessors))]))
+         (for/list ([accessor (in-list own-accessors)])
+           (define accessor-str (symbol->string (syntax-e accessor)))
+           (unless (string-prefix? accessor-str (string-append struct-name "-"))
+             (raise-syntax-error
+              who
+              (format "unexpected accessor name ~a should start with ~a-"
+                      accessor-str struct-name)
+              provide-stx
+              orig-struct-name-stx))
+           (string->symbol (substring accessor-str (add1 (string-length struct-name))))))
+
+       ;; extract-field+struct-names : struct-info? syntax? syntax? -> (listof (cons/c symbol? symbol?))
+       ;; returns a list of pair of field name and the struct name the field belongs to
+       (define (extract-field+struct-names the-struct-info orig-struct-name-stx provide-stx)
+         (define struct-info-list (extract-struct-info the-struct-info))
+         (define predicate (list-ref struct-info-list 2))
+         (define accessors (list-ref struct-info-list 3))
+         (define super-info (list-ref struct-info-list 5))
+         (define struct-name (predicate->struct-name provide-stx predicate))
+         (define immediate-field-names
+           (if (struct-field-info? the-struct-info)
+               (struct-field-info-list the-struct-info)
+               (get-field-names/no-field-info struct-name
+                                              accessors
+                                              super-info
+                                              orig-struct-name-stx
+                                              provide-stx)))
+         (define immediate-field+struct-names
+           (for/list ([fld (in-list immediate-field-names)])
+             (cons fld (string->symbol struct-name))))
+         (cond
+           [(boolean? super-info) immediate-field+struct-names]
+           [else (append immediate-field+struct-names
+                         (extract-field+struct-names
+                          (a:lookup-struct-info super-info provide-stx)
+                          orig-struct-name-stx
+                          provide-stx))]))
 
        ;; build-constructor-contract : syntax (listof syntax) syntax -> syntax
        (define (build-constructor-contract stx field-contract-ids predicate-id)
@@ -1183,37 +1240,41 @@
                                     #f))]
            [_ (values (syntax->list (syntax (p/c-ele ...))) #f)]))
        (define struct-id-mapping (make-free-identifier-mapping))
-       (define (add-struct-clause-to-struct-id-mapping a parent flds/stx)
+       (define (add-struct-clause-to-struct-id-mapping a flds/stx)
          (define flds (syntax->list flds/stx))
+         (define compile-time-info (syntax-local-value a (λ () #f)))
          (when (and (identifier? a)
-                    (struct-info? (syntax-local-value a (λ () #f)))
-                    (or (not parent)
-                        (and (identifier? parent)
-                             (struct-info? (syntax-local-value parent (λ () #f)))))
-                    flds
-                    (andmap identifier? flds))
-           (free-identifier-mapping-put!
-            struct-id-mapping
-            a
-            (mangled-id-scope
-             (a:mangle-id "provide/contract-struct-expansion-info-id"
-                          a)))
-           (define parent-selectors
-             (if parent
-                 (let ([parent-selectors (list-ref (extract-struct-info (syntax-local-value parent))
-                                                   3)])
-                   (length parent-selectors))
-                 0))
-           ;; this test will fail when the syntax is bad; we catch syntax errors elsewhere
-           (when (< parent-selectors (length flds))
-             (for ([f (in-list (list-tail flds parent-selectors))])
-               (define selector-id (datum->syntax 
-                                    a 
-                                    (string->symbol (format "~a-~a" (syntax-e a) (syntax-e f)))))
-               (free-identifier-mapping-put!
-                struct-id-mapping
-                selector-id
-                (id-for-one-id #f #f selector-id))))))
+                    (struct-info? compile-time-info))
+           (define parent
+             (let ([parent (list-ref (extract-struct-info compile-time-info) 5)])
+               (if (boolean? parent) #f parent)))
+           (when (and (or (not parent)
+                          (and (identifier? parent)
+                               (struct-info? (syntax-local-value parent (λ () #f)))))
+                      flds
+                      (andmap identifier? flds))
+             (free-identifier-mapping-put!
+              struct-id-mapping
+              a
+              (mangled-id-scope
+               (a:mangle-id "provide/contract-struct-expansion-info-id"
+                            a)))
+             (define parent-selectors
+               (if parent
+                   (let ([parent-selectors (list-ref (extract-struct-info (syntax-local-value parent))
+                                                     3)])
+                     (length parent-selectors))
+                   0))
+             ;; this test will fail when the syntax is bad; we catch syntax errors elsewhere
+             (when (< parent-selectors (length flds))
+               (for ([f (in-list (list-tail flds parent-selectors))])
+                 (define selector-id (datum->syntax
+                                      a
+                                      (string->symbol (format "~a-~a" (syntax-e a) (syntax-e f)))))
+                 (free-identifier-mapping-put!
+                  struct-id-mapping
+                  selector-id
+                  (id-for-one-id #f #f selector-id)))))))
        (parameterize ([current-unprotected-submodule-name unprotected-submodule-name])
          (cond
            [just-check-errors?
@@ -1224,9 +1285,9 @@
               (syntax-case* clause (struct) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
                 [(struct a ((fld ctc) ...) options ...)
                  (identifier? #'a)
-                 (add-struct-clause-to-struct-id-mapping #'a #f #'(fld ...))]
+                 (add-struct-clause-to-struct-id-mapping #'a #'(fld ...))]
                 [(struct (a b) ((fld ctc) ...) options ...)
-                 (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
+                 (add-struct-clause-to-struct-id-mapping #'a #'(fld ...))]
                 [_ (void)]))
             (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)]
                           [pos-module-source-id pos-module-source-id])
