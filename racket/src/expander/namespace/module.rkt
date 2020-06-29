@@ -289,6 +289,7 @@
                             [declaration-inspector (module-inspector m)]
                             [inspector (namespace-inspector existing-m-ns)]))
   (define mi (make-module-instance m-ns m))
+  (set-module-instance-attached?! mi #t)
   (cond
    [(module-cross-phase-persistent? m)
     (small-hash-set! (namespace-phase-to-namespace m-ns) 0 m-ns)

@@ -2708,6 +2708,19 @@ case of module-leve bindings; it doesn't cover local bindings.
 (namespace-attach-module-declaration (current-namespace) ''please-attach-me-successfully (make-base-namespace))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a module with an attached instance
+;; cannot be redeclared in the target namespace
+
+(module module-to-attach-elsewhere racket/base)
+(dynamic-require ''module-to-attach-elsewhere #f)
+(eval '(module module-to-attach-elsewhere racket/base)) ; to to redeclare here
+(let ([ns (make-base-namespace)])
+  (namespace-attach-module (current-namespace) ''module-to-attach-elsewhere ns)
+  (err/rt-test (eval '(module module-to-attach-elsewhere racket/base)))
+  (parameterize ([current-namespace ns])
+    (err/rt-test (eval '(module module-to-attach-elsewhere racket/base)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `local-expand` doesn't make module available in a way
 ;; that allows the module to import itself
 
