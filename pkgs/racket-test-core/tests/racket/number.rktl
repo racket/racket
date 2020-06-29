@@ -2915,16 +2915,20 @@
 (test 121 integer-length (+ (expt 2 120) 1))
 
 (define (avoid-big-allocation?)
-  ;; A Raspberry Pi running Linux is a likely too-small device,
-  ;; so at least detect that one:
-  (and (file-exists? "/proc/meminfo")
-       (call-with-input-file*
-        "/proc/meminfo"
-        (lambda (i)
-          (define m (regexp-match #rx"MemTotal: +([0-9]+) kB" i))
-          (and m
-               (< (string->number (bytes->string/utf-8 (cadr m)))
-                  (* 1.5 1024 1024)))))))
+  (or
+   ;; A Raspberry Pi running Linux is a likely too-small device,
+   ;; so at least detect that one:
+   (and (file-exists? "/proc/meminfo")
+        (call-with-input-file*
+         "/proc/meminfo"
+         (lambda (i)
+           (define m (regexp-match #rx"MemTotal: +([0-9]+) kB" i))
+           (and m
+                (< (string->number (bytes->string/utf-8 (cadr m)))
+                   (* 1.5 1024 1024))))))
+   ;; If (sub1 (expt 2 31)) is a bignum, then `expt` will likely give
+   ;; up
+   (not (fixnum? (sub1 (expt 2 31))))))
 
 (unless (avoid-big-allocation?)
   ; don't attempt to print numbers that are billions of bits long
