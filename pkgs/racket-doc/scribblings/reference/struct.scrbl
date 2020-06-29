@@ -949,7 +949,7 @@ in the reverse order.
 (get-bar-field-names)
 ]
 
-@history[#:added "7.7.0.10"]}
+@history[#:added "7.7.0.9"]}
 
 @; ----------------------------------------------------------------------
 
