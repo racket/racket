@@ -523,7 +523,11 @@
       (cond
         [f (f arg)]
         [else
-         (box-cas! b #f expr)
+         (define v expr)
+         (let loop ()
+           (unless (box-cas! b #f v)
+             (unless (unbox b)
+               (loop))))
          ((unbox b) arg)]))))
 
 ;; for internal use
