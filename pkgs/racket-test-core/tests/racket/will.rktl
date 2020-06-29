@@ -247,6 +247,10 @@
 (unless (eq? 'cgc (system-type 'gc))
   (define s (make-semaphore))
   (define c (make-custodian))
+  (define bits (let loop ([bits 29])
+                 (if (fixnum? (expt 2 bits))
+                     bits
+                     (loop (sub1 bits)))))
   (define t (parameterize ([current-custodian c])
               (thread (lambda ()
                         (semaphore-wait s)

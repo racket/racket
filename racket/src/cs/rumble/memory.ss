@@ -123,7 +123,7 @@
           ;; `post-allocated+overhead` seems to be too long a wait, because
           ;; that value may include underused pages that have locked objects.
           ;; Using just `post-allocated` is too small, because it may force an
-          ;; immediate major GC too soon. Split the difference.
+            ;; immediate major GC too soon. Split the difference.
           (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
           (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
         (update-eq-hash-code-table-size!)
@@ -490,6 +490,7 @@
 
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
+  (guard-large-allocation who "byte string" k 1)
   (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
     (when (or (>= (bytes-allocated) trigger-major-gc-allocated)
               (>= (current-memory-bytes) trigger-major-gc-allocated+overhead))
@@ -499,6 +500,8 @@
 (define/who (set-phantom-bytes! phantom-bstr k)
   (check who phantom-bytes? phantom-bstr)
   (check who exact-nonnegative-integer? k)
+  (when (> k (phantom-bytevector-length (phantom-bytes-pbv phantom-bstr)))
+    (guard-large-allocation who "byte string" k 1))
   (set-phantom-bytevector-length! (phantom-bytes-pbv phantom-bstr) k))
 
 ;; ----------------------------------------
