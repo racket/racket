@@ -6,7 +6,7 @@ SCHEME = scheme
 
 # Controls whether Racket layers are built as unsafe; beware that
 # building some Racket libraries using safe mode may require setting
-# `PLT_CS_COMPILE_LIMIT` to 1000 (instead of 1000):
+# `PLT_CS_COMPILE_LIMIT` to 1000 (instead of 10000):
 UNSAFE_COMP = --unsafe
 
 # Controls whether compiled code is compressed:
