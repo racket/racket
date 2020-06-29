@@ -1467,4 +1467,14 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (struct foo (x))
+  (struct bar foo (y z))
+  (define-syntax (get-bar-field-names stx)
+    #`'#,(struct-field-info-list (syntax-local-value #'bar)))
+  (define (get-bar-field-names*) (get-bar-field-names))
+  (test '(z y) get-bar-field-names*))
+
+;; ----------------------------------------
+
 (report-errs)
