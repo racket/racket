@@ -42,7 +42,10 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+        scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v1
+      sarif_file: racketcgc-report
     - name: Tarballing
       run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
     - uses: actions/upload-artifact@v1
