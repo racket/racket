@@ -1917,7 +1917,7 @@ syntax object for the expression that produces the contract controlling
 the export.
 
 @history[#:changed "7.3.0.3" @list{Added @racket[#:unprotected-submodule].}
-         #:changed "7.7.0.9" @list{Deprecated @racket[ignored-id].}]
+         #:changed "7.7.0.9" @list{Started ignoring @racket[ignored-id].}]
 }
 
 @defform[(recontract-out id ...)]{
