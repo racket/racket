@@ -656,6 +656,7 @@ USE_WXPRECOMP
 WXPRECOMP
 MAKE_FINISH
 MRLIBINSTALL
+ICP_STATIC_LIB
 ICP_LIB
 ICP
 WXVARIANT
@@ -7011,6 +7012,7 @@ if test "${enable_shared}" = "yes" ; then
   WXLIBS=WXLIBSDYN
   ICP="${LIBTOOLPROG} --mode=install cp"
   ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+  ICP_STATIC_LIB='$(NOOP)'
   MRLIBINSTALL="install-lib"
   LIBFINISH="${LIBTOOLPROG} --mode=finish"
   LTO="lo"
@@ -7024,6 +7026,7 @@ else
   WXLIBS=WXLIBSNORM
   ICP=cp
   ICP_LIB=cp
+  ICP_STATIC_LIB=cp
   MRLIBINSTALL="install-no-lib"
   LIBFINISH=echo
   LTO="o"
@@ -7043,6 +7046,7 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

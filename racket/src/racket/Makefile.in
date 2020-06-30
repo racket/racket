@@ -375,6 +375,7 @@ clean@OSX@:
 BUILDINFO=$(DESTDIR)$(libpltdir)/buildinfo
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
+ICP_STATIC_LIB=@ICP_STATIC_LIB@
 
 install:
 	$(MAKE) install-@MAIN_VARIANT@
@@ -428,7 +429,7 @@ unix-install-cgc:
 unix-install-libs-cgc:
 	cd ..; $(ICP_LIB) racket/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(ICP_LIB) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
-	cd ..; $(ICP_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
+	cd ..; $(ICP_STATIC_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 
@@ -447,7 +448,7 @@ unix-install-3m:
 
 unix-install-libs-3m:
 	cd ..; $(ICP_LIB) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
-	cd ..; $(ICP_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
+	cd ..; $(ICP_STATIC_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 
 unix-no-install-libs-3m:

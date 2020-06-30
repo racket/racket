@@ -1409,6 +1409,7 @@ if test "${enable_shared}" = "yes" ; then
   WXLIBS=WXLIBSDYN
   ICP="${LIBTOOLPROG} --mode=install cp"
   ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+  ICP_STATIC_LIB='$(NOOP)'
   MRLIBINSTALL="install-lib"
   LIBFINISH="${LIBTOOLPROG} --mode=finish"
   LTO="lo"
@@ -1422,6 +1423,7 @@ else
   WXLIBS=WXLIBSNORM
   ICP=cp
   ICP_LIB=cp
+  ICP_STATIC_LIB=cp
   MRLIBINSTALL="install-no-lib"
   LIBFINISH=echo
   LTO="o"
@@ -1499,6 +1501,7 @@ AC_SUBST(WXLIBS)
 AC_SUBST(WXVARIANT)
 AC_SUBST(ICP)
 AC_SUBST(ICP_LIB)
+AC_SUBST(ICP_STATIC_LIB)
 AC_SUBST(MRLIBINSTALL)
 
 AC_SUBST(MAKE_FINISH)
