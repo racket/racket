@@ -18,9 +18,8 @@ A clear and concise description of what you want to happen.
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
 
-**Expected development effort**
-Racket is yours too!
-What is the development effort required and how can you contribute?
+***Do you want to contribute to this feature***
+If you're interested in working on the development of this feature, say so here. 
 
 **[Optional]Additional context**
 Add any other context or screenshots about the feature request here.
