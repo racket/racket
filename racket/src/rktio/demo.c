@@ -954,6 +954,7 @@ int main(int argc, char **argv)
 
     result = rktio_process(rktio, argv[0], argc, argv,
                            NULL, NULL, err_fd,
+                           NULL,
                            pwd, envvars,
                            0);
     check_valid(result);
@@ -991,10 +992,11 @@ int main(int argc, char **argv)
     for (i = (CAN_INTERRUPT_NON_GROUP ? 0 : 1); i < 2; i++) {
       result = rktio_process(rktio, argv[0], 1, argv,
                              NULL, NULL, err_fd,
+                             NULL,
                              pwd, envvars,
                              0);
       check_valid(result);
-      
+
       check_valid(!rktio_poll_process_done(rktio, result->process));
       rktio_sleep(rktio, 0.05, NULL, NULL);
       check_valid(!rktio_poll_process_done(rktio, result->process));
@@ -1057,9 +1059,10 @@ int main(int argc, char **argv)
       check_valid(s);
       check_valid(!strcmp(s, "howdy"));
       free(s);
-      
+
       result = rktio_process(rktio, argv[0], argc, argv,
                              NULL, NULL, err_fd,
+                             NULL,
                              pwd, envvars,
                              flags);
       check_valid(result);
