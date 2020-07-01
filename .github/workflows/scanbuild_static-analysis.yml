@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update
-        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git
+        apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git tree
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -43,6 +43,7 @@ jobs:
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+        tree ../../racketcgc-report/
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
