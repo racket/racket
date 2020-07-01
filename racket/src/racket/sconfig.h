@@ -122,6 +122,9 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-" SPLS_LINUX
 #  define FFI_CALLBACK_NEED_INT_CLEAR
 # endif
+# if defined(__aarch64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "aarch64-" SPLS_LINUX
+# endif
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-" SPLS_LINUX
 #  define REGISTER_POOR_MACHINE
