@@ -1268,6 +1268,68 @@ int main(int argc, char **argv)
   }
 
   if (verbose)
+    printf("sendfile\n");
+
+  {
+    rktio_addrinfo_t *addr;
+    rktio_listener_t *lnr;
+    rktio_fd_t *src;
+
+    src = rktio_open(rktio, "sendfile-test", RKTIO_OPEN_WRITE | RKTIO_OPEN_TRUNCATE);
+    check_valid(src);
+    rktio_write(rktio, src, "hello, world!", 13);
+    rktio_close(rktio, src);
+
+    src = rktio_open(rktio, "sendfile-test", RKTIO_OPEN_READ);
+    check_valid(src);
+
+    addr = lookup_loop(rktio, NULL, 4536, -1, 1, 1);
+    lnr = rktio_listen(rktio, addr, 5, 1);
+    check_valid(lnr);
+    rktio_addrinfo_free(rktio, addr);
+
+    addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 1);
+    fd = connect_loop(rktio, addr, NULL);
+    check_valid(fd);
+
+    fd2 = accept_loop(rktio, lnr);
+    check_valid(!rktio_poll_accept_ready(rktio, lnr));
+
+    {
+      char buf[50] = {0};
+      intptr_t amt;
+      check_valid(rktio_sendfile(rktio, fd2, src, 0, 0));
+      wait_read(rktio, fd);
+      amt = rktio_read(rktio, fd, buf, sizeof(buf));
+      if (verbose)
+        printf(" buf = %s amt = %ld\n", buf, amt);
+    }
+
+    {
+      char buf[50] = {0};
+      intptr_t amt;
+      check_valid(rktio_sendfile(rktio, fd2, src, 0, 5));
+      wait_read(rktio, fd);
+      amt = rktio_read(rktio, fd, buf, sizeof(buf));
+      if (verbose)
+        printf(" buf = %s amt = %ld\n", buf, amt);
+    }
+
+    {
+      char buf[50] = {0};
+      intptr_t amt;
+      check_valid(rktio_sendfile(rktio, fd2, src, 7, 5));
+      wait_read(rktio, fd);
+      amt = rktio_read(rktio, fd, buf, sizeof(buf));
+      if (verbose)
+        printf(" buf = %s amt = %ld\n", buf, amt);
+    }
+
+    rktio_close(rktio, src);
+    rktio_listen_stop(rktio, lnr);
+  }
+
+  if (verbose)
     printf("done\n");
 
   free(pwd);

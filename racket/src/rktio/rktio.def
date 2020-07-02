@@ -23,6 +23,7 @@ rktio_std_fd
 rktio_create_console
 rktio_read
 rktio_write
+rktio_sendfile
 rktio_read_converted
 rktio_read_in
 rktio_write_in

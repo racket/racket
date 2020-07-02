@@ -11,6 +11,7 @@
   [tcp-connect/enable-break (known-procedure 28)]
   [tcp-listen (known-procedure 30)]
   [tcp-listener? (known-procedure 2)]
+  [tcp-sendfile (known-procedure 28)]
   [tcp-port? (known-procedure 2)]
   [udp-bind! (known-procedure 24)]
   [udp-bound? (known-procedure 2)]

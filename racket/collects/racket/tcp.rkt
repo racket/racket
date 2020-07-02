@@ -3,17 +3,18 @@
   (#%require (all-except '#%network tcp-addresses)
              (rename '#%network c:tcp-addresses tcp-addresses))
 
-  (#%provide tcp-connect 
-             tcp-connect/enable-break 
-             tcp-listen 
-             tcp-close 
-             tcp-accept-ready? 
-             tcp-accept 
-             tcp-accept-evt 
-             tcp-accept/enable-break 
-             tcp-listener? 
-             tcp-addresses 
-             tcp-abandon-port 
+  (#%provide tcp-connect
+             tcp-connect/enable-break
+             tcp-listen
+             tcp-close
+             tcp-accept-ready?
+             tcp-accept
+             tcp-accept-evt
+             tcp-accept/enable-break
+             tcp-listener?
+             tcp-addresses
+             tcp-abandon-port
+             tcp-sendfile
              tcp-port?
              port-number?
              listen-port-number?)

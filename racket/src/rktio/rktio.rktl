@@ -320,6 +320,16 @@
   ((*ref char) buffer)
   (intptr_t len)))
 (define-function/errno
+ RKTIO_WRITE_ERROR
+ ()
+ intptr_t
+ rktio_sendfile
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) dst)
+  ((ref rktio_fd_t) src)
+  (intptr_t offset)
+  (intptr_t count)))
+(define-function/errno
  RKTIO_READ_ERROR
  ()
  intptr_t

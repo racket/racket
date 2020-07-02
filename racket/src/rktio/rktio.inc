@@ -23,6 +23,7 @@ Sforeign_symbol("rktio_std_fd", (void *)rktio_std_fd);
 Sforeign_symbol("rktio_create_console", (void *)rktio_create_console);
 Sforeign_symbol("rktio_read", (void *)rktio_read);
 Sforeign_symbol("rktio_write", (void *)rktio_write);
+Sforeign_symbol("rktio_sendfile", (void *)rktio_sendfile);
 Sforeign_symbol("rktio_read_converted", (void *)rktio_read_converted);
 Sforeign_symbol("rktio_read_in", (void *)rktio_read_in);
 Sforeign_symbol("rktio_write_in", (void *)rktio_write_in);

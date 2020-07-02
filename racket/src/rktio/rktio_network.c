@@ -14,6 +14,11 @@
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
+# if defined(__linux__) || defined(__sun)
+#  include <sys/sendfile.h>
+# else
+#  include <sys/uio.h>
+# endif
 # include <fcntl.h>
 # include <errno.h>
 # define TCP_SOCKSENDBUF_SIZE 32768
@@ -1144,6 +1149,57 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
 intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
 {
   return do_socket_write(rktio, rfd, buffer, len, NULL);
+}
+
+intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr_t offset, intptr_t nbytes) {
+  intptr_t s = rktio_fd_system_fd(rktio, src);
+  intptr_t d = rktio_fd_system_fd(rktio, dst);
+#ifdef RKTIO_SYSTEM_UNIX
+# if                                             \
+   defined(__linux__) ||                         \
+   defined(__sun)
+  {
+    intptr_t pos;
+    off_t off = offset;
+    if (nbytes == 0) {
+      /* TODO(bogdan): Handle errors. */
+      pos = lseek(s, 0, SEEK_CUR);
+      nbytes = lseek(s, 0, SEEK_END);
+      lseek(s, 0, pos);
+    }
+
+    intptr_t sent = sendfile(d, s, &off, nbytes);
+    if (sent >= 0) {
+      return (intptr_t)sent;
+    }
+  }
+# elif                                           \
+   defined(__APPLE__)   ||                       \
+   defined(__DragonFly__) ||                     \
+   defined(__FreeBSD__)
+  {
+    int res;
+    off_t sent = nbytes;
+
+#  if defined(__APPLE__)
+    res = sendfile(s, d, (off_t)offset, &sent, NULL, 0);
+#  else
+    res = sendfile(s, d, (off_t)offset, nbytes, NULL, &sent, 0);
+#  endif
+
+    if (res == 0 || ((errno == EAGAIN || errno == EINTR) && sent != 0)) {
+      return (intptr_t)sent;
+    }
+  }
+# else
+  /* TODO(bogdan): Emulate on other platforms */
+# endif
+#else
+  /* TODO(bogdan): Use TransmitFile on Windows */
+#endif
+
+  get_socket_error();
+  return RKTIO_WRITE_ERROR;
 }
 
 /*========================================================================*/

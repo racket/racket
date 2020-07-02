@@ -52,6 +52,7 @@ static Scheme_Object *tcp_accept_break(int argc, Scheme_Object *argv[]);
 static Scheme_Object *tcp_listener_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[]);
 static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[]);
+static Scheme_Object *tcp_sendfile(int argc, Scheme_Object *argv[]);
 static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_udp(int argc, Scheme_Object *argv[]);
@@ -115,6 +116,7 @@ void scheme_init_network(Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM  ( "tcp-listener?"             , tcp_listener_p           , 1 , 1 , 1 , env) ;
   ADD_PRIM_W_ARITY2 ( "tcp-addresses"             , tcp_addresses            , 1 , 2 , 2 , 4 , env) ;
   ADD_PRIM_W_ARITY  ( "tcp-abandon-port"          , tcp_abandon_port         , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY2 ( "tcp-sendfile"              , tcp_sendfile             , 2 , 4 , 2 , 2 , env) ;
   ADD_FOLDING_PRIM  ( "tcp-port?"                 , tcp_port_p               , 1 , 1 , 1 , env) ;
 
   ADD_PRIM_W_ARITY  ( "udp-open-socket"           , make_udp                 , 0 , 2 , env) ;
@@ -1455,6 +1457,81 @@ static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
 
 void scheme_tcp_abandon_port(Scheme_Object *port) {
   tcp_abandon_port(1, &port);
+}
+
+static Scheme_Object *tcp_sendfile(int argc, Scheme_Object *argv[]) {
+  Scheme_Tcp *data;
+  Scheme_Input_Port *ip;
+  Scheme_Output_Port *op;
+  rktio_fd_t *src_fd;
+  intptr_t sent;
+  intptr_t offset = -1;
+  intptr_t nbytes = -1;
+  if (SCHEME_OUTPUT_PORTP(argv[0])) {
+    op = scheme_output_port_record(argv[0]);
+    if (op->sub_type == scheme_tcp_output_port_type) {
+      if (op->closed) {
+        scheme_raise_exn(MZEXN_FAIL_NETWORK, "tcp-sendfile: tcp port closed");
+        return NULL;
+      }
+
+      if (SCHEME_INPUT_PORTP(argv[1])) {
+        ip = scheme_input_port_record(argv[1]);
+        if (SCHEME_FALSEP(scheme_file_stream_port_p(1, &ip))) {
+          scheme_wrong_contract("tcp-sendfile", "(and/c file-stream-port? input-port?)", 1, argc, argv);
+          return NULL;
+        }
+
+        if (argc > 2) {
+          if (SCHEME_INTP(argv[2])) {
+            offset = SCHEME_INT_VAL(argv[2]);
+          }
+
+          if (offset < 0) {
+            scheme_wrong_contract("tcp-sendfile", "exact-nonnegative-integer?", 2, argc, argv);
+            return NULL;
+          }
+        } else {
+          offset = 0;
+        }
+
+        if (argc > 3) {
+          if (SCHEME_INTP(argv[3])) {
+            nbytes = SCHEME_INT_VAL(argv[3]);
+          }
+
+          if (nbytes < 0) {
+            scheme_wrong_contract("tcp-sendfile", "exact-nonnegative-integer?", 3, argc, argv);
+            return NULL;
+          }
+        } else {
+          nbytes = 0;
+        }
+
+        if (!scheme_get_port_rktio_file_descriptor(ip, &src_fd)) {
+          scheme_raise_exn(MZEXN_FAIL_NETWORK, "tcp-sendfile: failed to get source file descriptor");
+          return NULL;
+        }
+
+        data = (Scheme_Tcp *)op->port_data;
+        sent = rktio_sendfile(scheme_rktio, data->tcp, src_fd, offset, nbytes);
+        if (sent == RKTIO_WRITE_ERROR) {
+          scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                           "tcp-sendfile: error writing\n"
+                           "  system error: %R");
+          return NULL;
+        }
+
+        return scheme_make_integer(sent);
+      }
+
+      scheme_wrong_contract("tcp-sendfile", "(and/c file-stream-port? input-port?)", 1, argc, argv);
+      return NULL;
+    }
+  }
+
+  scheme_wrong_contract("tcp-sendfile", "(and/c tcp-port? output-port?)", 0, argc, argv);
+  return NULL;
 }
 
 static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[])

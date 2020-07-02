@@ -12,7 +12,8 @@
 
 (provide open-input-output-tcp
          tcp-port?
-         tcp-abandon-port)
+         tcp-abandon-port
+         tcp-sendfile)
 
 (class tcp-input-port #:extends fd-input-port
   #:field
@@ -92,3 +93,22 @@
     [(tcp-output-port? cp)
      (set-tcp-output-port-abandon?! cp #t)
      (close-port p)]))
+
+(define/who (tcp-sendfile dst-p src-p [offset 0] [nbytes 0])
+  (define op (->core-output-port dst-p #:default #f))
+  (unless (tcp-output-port? op)
+    (raise-argument-error who "(and/c tcp-port? output-port?)" dst-p))
+  (define ip (->core-input-port src-p))
+  (unless (file-stream-port? ip)
+    (raise-argument-error who "(and/c file-stream-port? input-port?)" src-p))
+  (unless (>= offset 0)
+    (raise-argument-error who "exact-nonnegative-integer?" offset))
+  (unless (>= nbytes 0)
+    (raise-argument-error who "exact-nonnegative-integer?" nbytes))
+  (define n
+    (rktio_sendfile rktio (fd-output-port-fd op) (fd-input-port-fd ip) offset nbytes))
+  (cond
+    [(rktio-error? n)
+     (send tcp-output-port op raise-write-error n)]
+    [else
+     n]))
