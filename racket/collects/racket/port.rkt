@@ -24,6 +24,8 @@
          call-with-input-string
          call-with-input-bytes
 
+         combine-output
+
          ;; `mzlib/port` exports
          open-output-nowhere
          make-pipe-with-specials
@@ -163,6 +165,75 @@
 
 (define (call-with-input-bytes str proc)
   (with-input-from-x 'call-with-input-bytes 1 #t str proc))
+
+(define (combine-output a-out b-out)
+  (struct buffer (bstr out start end) #:authentic #:mutable)
+  (define pending #f)
+  (define lock (make-semaphore 1))
+  (define ready-evt (replace-evt a-out (λ (_) b-out)))
+  (define retry-evt (handle-evt
+                     (replace-evt
+                      (semaphore-peek-evt lock)
+                      (λ (_) (replace-evt a-out (λ (_) b-out))))
+                     (λ (_) #f)))
+  (define (write-pending!)
+    (when pending
+      (define bstr  (buffer-bstr pending))
+      (define out   (buffer-out pending))
+      (define start (buffer-start pending))
+      (define end   (buffer-end pending))
+      (define n (write-bytes-avail* bstr out start end))
+      (when n
+        (cond
+          [(= n (- end start))
+           (set! pending #f)]
+          [(> n 0)
+           (set-buffer-start! pending (+ start n))]))))
+  (define (write-out bstr start end non-blocking? enable-break?)
+    (define result
+      (call-with-semaphore
+       lock
+       (λ ()
+         (write-pending!)
+         (cond
+           [pending       retry-evt]
+           [(= start end) 0]
+           [enable-break? (write-out* write-bytes-avail/enable-break bstr start end)]
+           [else          (write-out* write-bytes-avail* bstr start end)]))
+       (λ () retry-evt)))
+    (when (eqv? result 0)
+      (flush-output a-out)
+      (flush-output b-out))
+    result)
+  (define (write-out* write-initial bstr start end)
+    (define m (write-initial bstr a-out start end))
+    (cond
+      [(or (not m) (= m 0))
+       retry-evt]
+      [else
+       (define n
+         (or (write-bytes-avail* bstr b-out start (+ start m))
+             0))
+       (when (< n m)
+         (set! pending (buffer bstr b-out (+ start n) (+ start m))))
+       m]))
+  (define (close)
+    (call-with-semaphore
+     lock
+     (λ ()
+       (when pending
+         (write-bytes (buffer-bstr pending)
+                      (buffer-out pending)
+                      (buffer-start pending)
+                      (buffer-end pending))
+         (set! pending #f))))
+    (flush-output a-out)
+    (flush-output b-out))
+  (make-output-port
+   'tee
+   ready-evt
+   write-out
+   close))
 
 ;; ----------------------------------------
 ;; the code below used to be in `mzlib/port`

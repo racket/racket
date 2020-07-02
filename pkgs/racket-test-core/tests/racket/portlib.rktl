@@ -996,6 +996,72 @@
   (test 0 file-position o2))
 
 ;; --------------------------------------------------
+;; test combine-output
+(let ([port-a (open-output-string)]
+      [port-b (open-output-string)])
+  (define two-byte-port (make-output-port
+                          `two-byte-port
+                          port-b
+                          (lambda (s start end non-blocking? breakable?)
+                            (cond
+                              [non-blocking?
+                               (write-bytes-avail* (subbytes
+                                                    s
+                                                    start
+                                                    (if (< start (- end 1)) (+ start 2) end))
+                                                    port-b)]
+                              [breakable?
+                               (write-bytes-avail/enable-break
+                                (subbytes
+                                 s
+                                 start
+                                 (if (< start (- end 1)) (+ start 2) end))
+                                 port-b)]
+                              [else
+                               (write-bytes s port-b)]))
+                          void))
+  (define port-ab (combine-output port-a two-byte-port))
+  (test 12  write-bytes #"hello, world" port-ab)
+  (test "hello, world" get-output-string port-a)
+  (test "he" get-output-string port-b)
+  (test 0 write-bytes-avail* #" test" port-ab)
+  (test "hello, world" get-output-string port-a)
+  (test "hell" get-output-string port-b)
+  (test (void) flush-output port-ab)
+  (test "hello, world" get-output-string port-a)
+  (test "hello, world" get-output-string port-b)
+  (define worker1 (thread
+                   (lambda ()
+                     (for ([i 10])
+                       (write-bytes (string->bytes/utf-8 (number->string i)) port-ab)))))
+  (define worker2 (thread
+                   (lambda ()
+                     (write-bytes-avail* #"0123456789" port-ab))))
+  (thread-wait worker1)
+  (thread-wait worker2)
+  (test "hello, world01234567890123456789" get-output-string port-a)
+  (test "hello, world01234567890123456789" get-output-string port-b)
+  (test (void) close-output-port port-ab)
+  (test (void) close-output-port port-a)
+  (test (void) close-output-port port-b)
+  (define-values (i1 o1) (make-pipe 10 'i1 'o1))
+  (define-values (i2 o2) (make-pipe 10 'i2 'o2))
+  (define two-pipes (combine-output o1 o2))
+  (test 10 write-bytes #"0123456789" two-pipes)
+  (define sync-test-var 0)
+  (define sync-thread (thread (lambda ()
+                                (begin
+                                  (sync two-pipes)
+                                  (set! sync-test-var 1)))))
+  (test #t equal? sync-test-var 0)
+  (test "01234" read-string 5 i1)
+  (test #t equal? sync-test-var 0)
+  (test "012" read-string 3 i2)
+  (thread-wait sync-thread)
+  (test #t equal? sync-test-var 1)
+  (test 5 write-bytes-avail* #"test123" two-pipes))
+
+;; --------------------------------------------------
 
 (let-values ([(in out) (make-pipe)])
   (let ([in2 (dup-input-port in #f)]
