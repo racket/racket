@@ -12,7 +12,9 @@
                   [make-engine rumble:make-engine]
                   [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
+                  [engine-roots rumble:engine-roots]
                   [call-with-engine-completion rumble:call-with-engine-completion]
+                  [call-with-current-continuation-roots rumble:call-with-current-continuation-roots]
                   [make-condition rumble:make-condition]
                   [condition-wait rumble:condition-wait]
                   [condition-signal rumble:condition-signal]
@@ -133,6 +135,7 @@
         'make-engine rumble:make-engine
         'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
+        'engine-roots rumble:engine-roots
         'call-with-engine-completion rumble:call-with-engine-completion
         'set-ctl-c-handler! rumble:set-ctl-c-handler!
         'poll-will-executors poll-will-executors
@@ -161,7 +164,7 @@
         'fork-pthread rumble:fork-thread
         'get-initial-place rumble:get-initial-pthread
         'current-place-roots rumble:current-place-roots
-        'call-with-current-pthread-continuation call/cc
+        'call-with-current-continuation-roots rumble:call-with-current-continuation-roots 
         'exit place-exit
         'pthread? rumble:thread?
         'call-as-asynchronous-callback rumble:call-as-asynchronous-callback

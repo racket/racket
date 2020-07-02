@@ -49,11 +49,14 @@
           chaperone-continuation-mark-key
           call-with-system-wind ; not exported to Racket
 
+          call-with-current-continuation-roots ; not exported to Racket
+
           ;; not exported to Racket:
           make-engine
           engine-block
           engine-timeout
           engine-return
+          engine-roots
           call-with-engine-completion
           set-ctl-c-handler!
           get-ctl-c-handler

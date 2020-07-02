@@ -239,6 +239,7 @@
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
+                  'engine-roots (lambda (e) '()) ; used only for memory accounting
                   'call-with-engine-completion call-with-engine-completion
                   'current-process-milliseconds current-process-milliseconds
                   'set-ctl-c-handler! set-ctl-c-handler!
@@ -272,7 +273,7 @@
                   'get-thread-id (lambda () 0)
                   'current-place-roots (lambda () '())
                   'get-initial-place (lambda () #f)
-                  'call-with-current-place-continuation call/cc
+                  'call-with-current-continuation-roots (lambda (proc) (proc null))
                   'make-condition (lambda () (make-semaphore))
                   'condition-wait (lambda (c s)
                                     (semaphore-post s)

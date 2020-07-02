@@ -38,7 +38,8 @@
          check-queued-custodian-shutdown
          set-place-custodian-procs!
          set-post-shutdown-action!
-         custodian-check-immediate-limit)
+         custodian-check-immediate-limit
+         set-thread-engine-for-roots!)
 
 (module+ scheduling
   (provide do-custodian-shutdown-all
@@ -448,6 +449,13 @@
 
 ;; ----------------------------------------
 
+(define thread-engine-for-roots (lambda (t) #f))
+
+(define (set-thread-engine-for-roots! thread-engine)
+  (set! thread-engine-for-roots thread-engine))
+
+;; ----------------------------------------
+
 (define futures-sync-for-custodian-shutdown (lambda () (void)))
 (define future-scheduler-add-thread-custodian-mapping! (lambda (s ht) (void)))
 
@@ -471,8 +479,8 @@
        (lambda (call-with-size-increments)
          (if (zero? compute-memory-sizes)
              (call-with-size-increments null null (lambda (sizes custs) (void)))
-             (host:call-with-current-place-continuation
-              (lambda (starting-k)
+             (host:call-with-current-continuation-roots
+              (lambda (k-roots)
                 ;; A place may have future pthreads, and each pthread may
                 ;; be running a future that becomes to a particular custodian;
                 ;; build up a custodian-to-pthread mapping in this table:
@@ -527,10 +535,17 @@
                               (define more-local-roots (cons (place-host-thread pl)
                                                              new-local-roots))
                               (if (eq? pl current-place) ; assuming host thread is place main thread
-                                  (cons starting-k more-local-roots)
+                                  (append k-roots more-local-roots)
                                   more-local-roots)]
                              [else new-local-roots]))
-                         (loop (cdr roots) more-local-roots accum-roots accum-custs)]))))
+                         (define even-more-local-roots
+                           (cond
+                             [(thread-engine-for-roots root)
+                              ;; scheduler runs in some thread's continuation, so
+                              ;; gather a thread's continuation, just in case it's this one
+                              => (lambda (e) (append (engine-roots e) more-local-roots))]
+                             [else more-local-roots]))
+                         (loop (cdr roots) even-more-local-roots accum-roots accum-custs)]))))
                 (call-with-size-increments
                  roots custs
                  (lambda (sizes custs)

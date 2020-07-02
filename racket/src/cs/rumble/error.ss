@@ -524,58 +524,97 @@
 ;; For `instantiate-linklet` to help report which linklet is being run:
 (define linklet-instantiate-key '#{linklet o9xm0uula3d2mbq9wueixh79r-1})
 
+;; Limit on length of a context extracted from a continuation. This is
+;; not a hard limit on the total length, because it only applied to an
+;; individual frame in a metacontinuation, and it only applies to an
+;; extension of a cached context. But it keeps from tunrning an
+;; out-of-memory situation due to a deep continuation into one that
+;; uses even more memory.
+(define trace-length-limit 65535)
+
 ;; Convert a continuation to a list of function-name and
 ;; source information. Cache the result half-way up the
 ;; traversal, so that it's amortized constant time.
 (define-thread-local cached-traces (make-ephemeron-eq-hashtable))
 (define (continuation->trace k)
-  (call-with-values
-   (lambda ()
-     (let loop ([k k] [slow-k k] [move? #f] [attachments (continuation-next-attachments k)])
-       (cond
-         [(or (not (#%$continuation? k))
-              (eq? k #%$null-continuation))
-          (values slow-k '())]
-         [(hashtable-ref cached-traces k #f)
-          => (lambda (l)
-               (values slow-k l))]
-         [else
-          (let* ([next-attachments (continuation-next-attachments k)]
-                 [name (or (let ([n (and (not (eq? attachments next-attachments))
-                                         (pair? attachments)
-                                         (extract-mark-from-frame (car attachments) linklet-instantiate-key #f))])
-                             (and n
-                                  (string->symbol (format "body of ~a" n))))
-                           (let* ([c (#%$continuation-return-code k)]
-                                  [n (#%$code-name c)])
-                             (if (path-or-empty-procedure-name-string? n)
-                                 #f
-                                 (procedure-name-string->visible-name-string n))))]
-                 [desc
-                  (let* ([ci (#%$code-info (#%$continuation-return-code k))]
-                         [src (and
-                               (code-info? ci)
-                               (or
-                                ;; when per-expression inspector info is available:
-                                (find-rpi (#%$continuation-return-offset k) ci)
-                                ;; when only per-function source location is available:
-                                (code-info-src ci)))])
-                    (and (or name src)
-                         (cons name src)))])
-            (#%$split-continuation k 0)
-            (call-with-values
-             (lambda () (loop (#%$continuation-link k)
-                              (if move? (#%$continuation-link slow-k) slow-k) (not move?)
-                              next-attachments))
-             (lambda (slow-k l)
-               (let ([l (if desc
-                            (cons desc l)
-                            l)])
-                 (when (eq? k slow-k)
-                   (hashtable-set! cached-traces k l))
-                 (values slow-k l)))))])))
-   (lambda (slow-k l)
-     l)))
+  (let loop ([k k] [offset #f] [n 0] [accum '()] [accums '()] [slow-k k] [move? #f])
+    (cond
+      [(or (not (#%$continuation? k))
+           (eq? k #%$null-continuation)
+           (fx= n trace-length-limit))
+       (finish-continuation-trace slow-k '() accum accums)]
+      [(and (not offset)
+            (hashtable-ref cached-traces k #f))
+       => (lambda (l)
+            (finish-continuation-trace slow-k l accum accums))]
+      [else
+       (let* ([name (or (and (not offset)
+                             (let ([attachments (continuation-next-attachments k)])
+                               (and (pair? attachments)
+                                    (not (eq? attachments (continuation-next-attachments (#%$continuation-link k))))
+                                    (let ([n (extract-mark-from-frame (car attachments) linklet-instantiate-key #f)])
+                                      (and n
+                                           (string->symbol (format "body of ~a" n)))))))
+                        (let* ([c (if offset
+                                      (#%$continuation-stack-return-code k offset)
+                                      (#%$continuation-return-code k))]
+                               [n (#%$code-name c)])
+                          (if (path-or-empty-procedure-name-string? n)
+                              #f
+                              n)))]
+              [desc
+               (let* ([ci (#%$code-info (if offset
+                                            (#%$continuation-stack-return-code k offset)
+                                            (#%$continuation-return-code k)))]
+                      [src (and
+                            (code-info? ci)
+                            (or
+                             ;; when per-expression inspector info is available:
+                             (find-rpi (if offset
+                                           (#%$continuation-stack-return-offset k offset)
+                                           (#%$continuation-return-offset k))
+                                       ci)
+                             ;; when only per-function source location is available:
+                             (code-info-src ci)))])
+                 (and (or name src)
+                      (cons name src)))])
+         (let* ([offset (if offset
+                            (fx- offset (#%$continuation-stack-return-frame-words k offset))
+                            (fx- (#%$continuation-stack-clength k)
+                                 (#%$continuation-return-frame-words k)))]
+                [offset (if (fx= offset 0) #f offset)]
+                [move? (and move? (not offset) (not (eq? k slow-k)))]
+                [next-k (if offset k (#%$continuation-link k))]
+                [accum (if desc (cons desc accum) accum)]
+                [accums (if offset accums (cons (cons k accum) accums))]
+                [accum (if offset accum '())])
+           (loop next-k
+                 offset
+                 (fx+ n 1)
+                 accum accums
+                 (if move? (#%$continuation-link slow-k) slow-k) (not move?))))])))
+
+;; `slow-k` is the place to cache, `l` is the tail of the result,
+;; `accum` is a list in reverse order to add to `l`, and `accums`
+;; is a list of `(cons k accum)` of `accum`s to add in reverse
+;; order, caching the result so far if `k` is `slow-k`
+(define (finish-continuation-trace slow-k l accum accums)
+  (let ([reverse-onto
+         (lambda (rev l)
+           (let loop ([l l] [rev rev])
+             (cond
+               [(null? rev) l]
+               [else (loop (cons (car rev) l)
+                           (cdr rev))])))])
+    (let loop ([l (reverse-onto accum l)] [accums accums])
+      (cond
+        [(null? accums) l]
+        [else
+         (let* ([a (car accums)]
+                [l (reverse-onto (cdr a) l)])
+           (when (eq? (car a) slow-k)
+             (hashtable-set! cached-traces slow-k l))
+           (loop l (cdr accums)))]))))
 
 (define primitive-names #f)
 (define (install-primitives-table! primitives)
@@ -614,7 +653,8 @@
           (loop (car ls) (cdr ls)))]
      [else
       (let* ([p (car l)]
-             [name (car p)]
+             [name (and (car p)
+                        (procedure-name-string->visible-name-string (car p)))]
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]

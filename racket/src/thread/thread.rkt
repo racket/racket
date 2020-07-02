@@ -1024,3 +1024,11 @@
            (define mrefs (thread-custodian-references t))
            (unless (null? mrefs)
              (custodian-check-immediate-limit (car mrefs) n))))))
+
+(void (set-thread-engine-for-roots!
+       (lambda (v)
+         (and (thread? v)
+              (let ([e (thread-engine v)])
+                (and (not (eq? e 'done))
+                     (not (eq? e 'running))
+                     e))))))

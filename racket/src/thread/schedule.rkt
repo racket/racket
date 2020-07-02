@@ -117,14 +117,19 @@
        (loop child callbacks (lambda (callbacks) (loop g none-k callbacks)))])))
 
 (define (swap-in-thread t leftover-ticks callbacks)
+  (current-thread/in-atomic t)
   (define e (thread-engine t))
-  (set-thread-engine! t 'running)
+  ;; Remove `e` from the thread in `check-breaks-prefix`, in case
+  ;; a GC happens between here and there, because `e` needs to
+  ;; be attached to the thread for accounting purposes at a GC.
   (set-thread-sched-info! t #f)
   (current-future (thread-future t))
-  (current-thread/in-atomic t)
   (set-place-current-thread! current-place t)
   (set! thread-swap-count (add1 thread-swap-count))
   (run-callbacks-in-engine e callbacks t leftover-ticks))
+
+(define (current-thread-now-running!)
+  (set-thread-engine! (current-thread/in-atomic) 'running))
 
 (define (swap-in-engine e t leftover-ticks)
   (let loop ([e e])
@@ -158,11 +163,11 @@
              (define new-leftover-ticks (- leftover-ticks (- TICKS remaining-ticks)))
              (accum-cpu-time! t (new-leftover-ticks . <= . 0))
              (set-thread-future! t (current-future))
-             (current-thread/in-atomic #f)
              (current-future #f)
              (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
                (set-thread-engine! t e))
+             (current-thread/in-atomic #f)
              (poll-and-select-thread! new-leftover-ticks)]
             [else
              ;; Swap out when the atomic region ends and at a point
@@ -172,6 +177,7 @@
              (loop e)])])))))
 
 (define (check-break-prefix)
+  (current-thread-now-running!)
   (check-for-break)
   (when atomic-timeout-callback
     (when (positive? (current-atomic))
@@ -226,8 +232,9 @@
        (e
         TICKS
         (if (pair? callbacks)
-            ;; run callbacks as a "prefix" callbacks
+            ;; run callbacks as a "prefix" callback
             (lambda ()
+              (current-thread-now-running!)
               (run-callbacks callbacks)
               (set! done? #t)
               (engine-block))

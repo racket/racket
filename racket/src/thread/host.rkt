@@ -36,6 +36,7 @@
         make-engine
         engine-timeout
         engine-return
+        engine-roots
         call-with-engine-completion
         current-process-milliseconds
         set-ctl-c-handler!
@@ -81,7 +82,7 @@
         [exit host:exit]
         [current-place-roots host:current-place-roots]
         [get-initial-place host:get-initial-place]
-        [call-with-current-pthread-continuation host:call-with-current-place-continuation]
+        [call-with-current-continuation-roots host:call-with-current-continuation-roots]
 
         fork-pthread
         pthread?

@@ -343,13 +343,14 @@
                                                  #f)])
             (current-winders '())
             (current-mark-splice empty-mark-frame)
-            (current-metacontinuation (cons mf (current-metacontinuation)))
-            (let ([r (proc (current-metacontinuation))])
-              (let ([mf (pop-metacontinuation-frame)])
-                (#%call-in-continuation
-                 (metacontinuation-frame-resume-k mf)
-                 (metacontinuation-frame-marks mf)
-                 (lambda () r)))))))))))
+            (let ([mc (cons mf (current-metacontinuation))])
+              (current-metacontinuation '())
+              (let ([r (proc mc)])
+                (let ([mf (pop-metacontinuation-frame)])
+                  (#%call-in-continuation
+                   (metacontinuation-frame-resume-k mf)
+                   (metacontinuation-frame-marks mf)
+                   (lambda () r))))))))))))
 
 (define (call-in-empty-metacontinuation-frame-for-compose proc)
   (call-getting-continuation-attachment
@@ -2058,3 +2059,10 @@
   (CHECK-uninterrupted
    (when (current-system-wind-start-k)
      (internal-error 'not-in-system-wind "assertion failed"))))
+
+;; ----------------------------------------
+
+(define (call-with-current-continuation-roots proc)
+  (call/cc
+   (lambda (k)
+     (proc (cons k (current-metacontinuation))))))
