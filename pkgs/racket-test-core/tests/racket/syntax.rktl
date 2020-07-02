@@ -2174,6 +2174,49 @@
    (syntax-property expanded-body-stx 'origin)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that `strip-context` works on prefabs, hash tables, etc.
+
+(let ()
+  (define (same? a b)
+    (cond
+      [(syntax? a)
+       (and (syntax? b)
+            (equal? (for/hash ([k (in-list (hash-ref (syntax-debug-info a) 'context))])
+                      (values k #t))
+                    (for/hash ([k (in-list (hash-ref (syntax-debug-info b) 'context))])
+                      (values k #t)))
+            (same? (syntax-e a) (syntax-e b)))]
+      [(pair? a) (and (pair? b)
+                      (same? (car a) (car b))
+                      (same? (cdr a) (cdr b)))]
+      [(box? a) (and (box? b)
+                     (same? (unbox a) (unbox b)))]
+      [(vector? a) (and (vector? b)
+                        (= (vector-length a) (vector-length b))
+                        (for/and ([a (in-vector a)]
+                                  [b (in-vector b)])
+                          (same? a b)))]
+      [(hash? a) (and (eq? (hash-eq? a) (hash-eq? b))
+                      (eq? (hash-eqv? a) (hash-eqv? b))
+                      (eq? (hash-equal? a) (hash-equal? b))
+                      (for/and ([(ak av) (in-hash a)])
+                        (same? av (hash-ref b ak #f))))]
+      [(prefab-struct-key a)
+       => (lambda (ak)
+            (and (equal? ak (prefab-struct-key b))
+                 (same? (struct->vector a) (struct->vector b))))]
+      [else (eqv? a b)]))
+
+  (define (check v)
+    (same? (datum->syntax #f v)
+           (strip-context (datum->syntax #'here v))))
+
+  (test #t check '(a b))
+  (test #t check '#(a b #hash((c . 9))))
+  (test #t check '(#hasheqv((10 . 11) (12 . 13)) #&"str" #s(color r G #b0)))
+  (test #t check '(#hasheq((x . 11) (y . 13) (z . #f)) (1 . 2))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (module tries-to-use-foo-before-defined racket/base
   (provide result)
