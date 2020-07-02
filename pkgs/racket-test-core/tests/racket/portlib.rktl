@@ -1059,7 +1059,8 @@
   (test "012" read-string 3 i2)
   (thread-wait sync-thread)
   (test #t equal? sync-test-var 1)
-  (test 5 write-bytes-avail* #"test123" two-pipes))
+  (let ([n (write-bytes-avail* #"test123" two-pipes)]) 
+    (test #t <= 1 n 5)))
 
 ;; --------------------------------------------------
 
