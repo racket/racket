@@ -87,8 +87,9 @@ numbers). In particular, adding, multiplying, subtracting, and
 dividing exact numbers always produces an exact result.
 
 A @deftech{fixnum} is an exact integer whose two's complement
-representation fit into 31 bits on a 32-bit platform or 63 bits on a
-64-bit platform; furthermore, no allocation is required when computing
+representation fits into 30 or 31 bits (depending on the Racket variant)
+on a 32-bit platform or 61 or 63 bits (depending on the Racket variant) on a
+64-bit platform. No allocation is required when computing
 with fixnums. See also the @racketmodname[racket/fixnum] module, below.
 
 Two fixnums that are @racket[=] are also the same
