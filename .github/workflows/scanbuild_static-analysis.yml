@@ -103,7 +103,16 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+        scan-build -sarif -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
+    - name: Move sarif results
+      run: |
+        mkdir sarif-files
+        find racket3m-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v1
+      if: always()
+      with:
+        sarif_file: sarif-files
     - name: Tarballing
       run: tar -cvjf racket3m-report-${{ github.sha }}.tar.bz2 racket3m-report
     - uses: actions/upload-artifact@v1
@@ -155,7 +164,16 @@ jobs:
       working-directory: ./racket/src
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
+        scan-build -sarif -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1))
+    - name: Move sarif results
+      run: |
+        mkdir sarif-files
+        find racketcs-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v1
+      if: always()
+      with:
+        sarif_file: sarif-files
     - name: Tarballing
       run: tar -cvjf racketcs-report-${{ github.sha }}.tar.bz2 racketcs-report
     - uses: actions/upload-artifact@v1
