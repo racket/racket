@@ -43,12 +43,15 @@ jobs:
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1))
-        tree ../../racketcgc-report/
+    - name: Move sarif results
+      run: |
+        mkdir sarif-files
+        find racketcgc-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
       with:
-        sarif_file: racketcgc-report
+        sarif_file: sarif-files
     - name: Tarballing
       run: tar -cvjf racketcgc-report-${{ github.sha }}.tar.bz2 racketcgc-report
     - uses: actions/upload-artifact@v1
