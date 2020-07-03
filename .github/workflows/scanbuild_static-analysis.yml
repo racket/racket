@@ -10,7 +10,7 @@ jobs:
   scanbuild-racketcgc:
 
     runs-on: ubuntu-latest
-    container: pmatos/scan-build:latest
+    container: pmatos/scan-build:10.0.0
 
     steps:
     - name: Install dependencies
@@ -60,7 +60,7 @@ jobs:
   scanbuild-racket3m:
 
     runs-on: ubuntu-latest
-    container: pmatos/scan-build:latest
+    container: pmatos/scan-build:10.0.0
 
     steps:
     - name: Install dependencies
@@ -112,7 +112,7 @@ jobs:
   scanbuild-racketcs:
 
     runs-on: ubuntu-18.04
-    container: pmatos/scan-build:latest
+    container: pmatos/scan-build:10.0.0
 
     steps:
     - name: Install pkg dependencies
