@@ -2289,7 +2289,7 @@ accepted by the third argument to @racket[datum->syntax].
 @deftogether[(
 @defproc[(make-contract
           [#:name name any/c 'anonymous-contract]
-          [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:first-order first-order (-> any/c any/c) (λ (x) #t)]
           [#:late-neg-projection
            late-neg-proj
            (or/c #f (-> blame? (-> any/c any/c any/c)))
@@ -2305,7 +2305,7 @@ accepted by the third argument to @racket[datum->syntax].
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
              (λ (x)
-               (if (test x)
+               (if (first-order x)
                  x
                  (raise-blame-error
                   b x
@@ -2321,7 +2321,7 @@ accepted by the third argument to @racket[datum->syntax].
          contract?]
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
-          [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:first-order first-order (-> any/c any/c) (λ (x) #t)]
           [#:late-neg-projection
            late-neg-proj
            (or/c #f (-> blame? (-> any/c any/c any/c)))
@@ -2337,7 +2337,7 @@ accepted by the third argument to @racket[datum->syntax].
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
              (λ (x)
-               (if (test x)
+               (if (first-order x)
                  x
                  (raise-blame-error
                   b x
@@ -2353,7 +2353,7 @@ accepted by the third argument to @racket[datum->syntax].
          chaperone-contract?]
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
-          [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:first-order first-order (-> any/c any/c) (λ (x) #t)]
           [#:late-neg-projection
            late-neg-proj
            (or/c #f (-> blame? (-> any/c any/c any/c)))
@@ -2369,7 +2369,7 @@ accepted by the third argument to @racket[datum->syntax].
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
              (λ (x)
-               (if (test x)
+               (if (first-order x)
                  x
                  (raise-blame-error
                   b x
@@ -2396,12 +2396,13 @@ higher-order contracts is @racketresult[anonymous-contract], for
 @tech{chaperone contracts} is @racketresult[anonymous-chaperone-contract], and for
 @tech{flat contracts} is @racketresult[anonymous-flat-contract].
 
-The first-order predicate @racket[test] is used to determine which values
+The first-order predicate @racket[first-order] is used to determine which values
 the contract applies to.  This test is used
 by @racket[contract-first-order-passes?], and indirectly by @racket[or/c]
-and @racket[from-or/c] to determine which higher-order contract to wrap a
+and @racket[first-or/c] to determine which higher-order contract to wrap a
 value with when there are multiple higher-order contracts to choose from.
-The default test accepts any value. The predicate should be influenced by
+The default value accepts any value, but it must match the behavior of the
+projection argument (see below for how). The predicate should be influenced by
 the value of @racket[(contract-first-order-okay-to-give-up?)] (see it's documentation
 for more explanation).
 
@@ -2435,21 +2436,22 @@ The @racket[val-first-proj] is like @racket[late-neg-proj], except with
 an extra layer of currying.
 
 At least one of the @racket[late-neg-proj], @racket[proj],
- @racket[val-first-proj], or @racket[test] must be non-@racket[#f].
+ @racket[val-first-proj], or @racket[first-order] must be non-@racket[#f].
 
 The projection arguments (@racket[late-neg-proj], @racket[proj], and
- @racket[val-first-proj]) must be in sync with the @racket[test] argument.
- In particular, if the test argument returns @racket[#f] for some value,
+ @racket[val-first-proj]) must be in sync with the @racket[first-order] argument.
+ In particular, if the @racket[first-order] argument returns @racket[#f] for some value,
  then the projections must raise a blame error for that value and if the
- test argument returns @racket[#t] for some value, then the projection must
+ @racket[first-order] argument returns @racket[#t] for some value, then the projection must
  not signal any blame for this value, unless there are higher-order interactions
- later. In other words, for @tech{flat contracts}, the @racket[test] and
- @racket[projection] arguments must check the same predicate (which is
- why thee default projection uses the @racket[test] argument directly).
+ later. In other words, for @tech{flat contracts}, the @racket[first-order] and
+ @racket[projection] arguments must check the same predicate. For convenience, the
+ the default projection uses the @racket[first-order] argument, signalling an error
+ when it returns @racket[#f] and never signalling one otherwise.
 
 Projections for @tech{chaperone contracts} must produce a value that passes
 @racket[chaperone-of?] when compared with the original, uncontracted value.
-Projections for @tech{flat contracts} must fail precisely when the first-order test
+Projections for @tech{flat contracts} must fail precisely when @racket[first-order]
 does, and must produce the input value unchanged otherwise.  Applying a
 @tech{flat contract} may result in either an application of the predicate, or the
 projection, or both; therefore, the two must be consistent.  The existence of a
