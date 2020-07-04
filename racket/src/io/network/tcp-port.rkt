@@ -1,19 +1,21 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../common/class.rkt"
+         "../file/main.rkt"
          "../host/rktio.rkt"
          "../port/port.rkt"
          "../port/close.rkt"
          "../port/input-port.rkt"
          "../port/output-port.rkt"
          "../port/fd-port.rkt"
+         "../port/file-port.rkt"
          "../port/file-stream.rkt"
          "error.rkt")
 
 (provide open-input-output-tcp
          tcp-port?
          tcp-abandon-port
-         tcp-sendfile)
+         tcp-copy-file)
 
 (class tcp-input-port #:extends fd-input-port
   #:field
@@ -94,20 +96,47 @@
      (set-tcp-output-port-abandon?! cp #t)
      (close-port p)]))
 
-(define/who (tcp-sendfile dst-p src-p [offset 0] [nbytes 0])
-  (define op (->core-output-port dst-p #:default #f))
-  (check who tcp-output-port? op)
-  (define ip (->core-input-port src-p #:default #f))
-  (check who file-stream-port? ip)
-  (check who nonnegative-fixnum? offset)
-  (check who nonnegative-fixnum? nbytes)
-  (define n
-    (rktio_sendfile rktio (fd-output-port-fd op) (fd-input-port-fd ip) offset nbytes))
-  (cond
-    [(rktio-error? n)
-     (send tcp-output-port op raise-write-error n)]
-    [else
-     n]))
+(define max-file-offset-for-platform
+  (case (system-type 'word)
+    [(32) (sub1 (expt 2 31))]
+    [(64) (sub1 (expt 2 63))]))
 
-(define (nonnegative-fixnum? v)
-  (and (fixnum? v) (>= 0 v)))
+(define/who (tcp-copy-file dst-p path
+                           [start 0]
+                           [end (file-size path)])
+  (define op (->core-output-port dst-p))
+  (check who tcp-output-port? op)
+  (check who path-string? path)
+  (check who exact-nonnegative-integer? start)
+  (check who exact-positive-integer? end)
+  (unless (< start max-file-offset-for-platform)
+    (raise-argument-error who (string-append "(</c #x" (number->string max-file-offset-for-platform 16) ")") 2 dst-p path start end))
+  (unless (<= end max-file-offset-for-platform)
+    (raise-argument-error who (string-append "(<=/c #x" (number->string max-file-offset-for-platform 16) ")") 3 dst-p path start end))
+  (unless (< start end)
+    (raise-arguments-error who "start must be less than end" "start" start "end" end))
+
+  (define size (file-size path))
+  (unless (<= end size)
+    (raise-argument-error who (string-append "(<=/c " (number->string size) ")") end))
+
+  (define chunksize #x7FFFFFFD)
+  (define ip (->core-input-port (open-input-file path)))
+  (define dst-fd (fd-output-port-fd op))
+  (define src-fd (fd-input-port-fd ip))
+  (let loop ([offset start]
+             [nbytes (- end start)])
+    (define sent
+      (rktio_sendfile rktio dst-fd src-fd offset (min nbytes chunksize)))
+    (cond
+      [(rktio-error? sent)
+       (close-input-port ip)
+       (send tcp-output-port op raise-write-error sent)]
+
+      [(zero? (- nbytes sent))
+       (close-input-port ip)]
+
+      [else
+       (sync op)
+       (loop (+ offset sent) (- nbytes sent))])))
+

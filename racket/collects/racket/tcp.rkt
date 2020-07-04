@@ -14,7 +14,7 @@
              tcp-listener?
              tcp-addresses
              tcp-abandon-port
-             tcp-sendfile
+             tcp-copy-file
              tcp-port?
              port-number?
              listen-port-number?)

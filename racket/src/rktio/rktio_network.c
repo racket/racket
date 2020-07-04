@@ -1154,8 +1154,8 @@ intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer,
 
 /**
  * Differences from what you might expect:
- * - The caller must always pass a non-zero nbytes value and said
- *   value must be less than 0x7FFFFFFE.
+ * - The caller must always pass a positive nbytes value that is less
+ *   than 0x7FFFFFFE.
  *
  * Differences between the various implementations:
  * - Linux will send at most 0x7FFFF000 bytes at a time, but will not

@@ -22,4 +22,4 @@
 
          tcp-addresses
 
-         tcp-sendfile)
+         tcp-copy-file)
