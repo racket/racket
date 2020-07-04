@@ -21,6 +21,10 @@ tries to find Visual Studio and run its "vcvarsall.bat". Provide an
 argument such as "x86" (32-bit mode) or "x86_amd64" (64-bit mode) to
 select the build mode.
 
+When using Power Shell, use the "msvcprep.ps1" script instead of
+"msvcprep.bat".  Running the latter from PS will appear to work, but
+will not actually change any environment variables.
+
 After you have Visual Studio command-line tools set up, then you can
 build either the traditional Racket implementation or Racket-on-Chez
 (or both).
