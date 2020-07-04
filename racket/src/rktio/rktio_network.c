@@ -1152,6 +1152,46 @@ intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer,
   return do_socket_write(rktio, rfd, buffer, len, NULL);
 }
 
+/*========================================================================*/
+/* TCP sendfile                                                           */
+/*========================================================================*/
+
+/**
+ * To avoid blocking on Windows, we need to keep track of the
+ * OVERLAPPED structures associated with each call to
+ * TransmitFile.
+ */
+struct rktio_sendfile_status_t {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  LPOVERLAPPED olap;
+#endif
+};
+
+rktio_sendfile_status_t *rktio_make_sendfile_status(rktio_t *rktio) {
+  rktio_sendfile_status_t *status;
+  status = malloc(sizeof(rktio_sendfile_status_t));
+#ifdef RKTIO_SYSTEM_WINDOWS
+  status->olap = NULL;
+#endif
+  return status;
+}
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+static void do_free_olap(LPOVERLAPPED olap) {
+  CloseHandle(olap->hEvent);
+  free(olap);
+}
+#endif
+
+void rktio_sendfile_status_free(rktio_t *rktio, rktio_sendfile_status_t *status) {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  LPOVERLAPPED olap = status->olap;
+  if (olap != NULL) {
+    do_free_olap(olap);
+  }
+#endif
+}
+
 /**
  * Differences from what you might expect:
  * - The caller must always pass a positive nbytes value that is less
@@ -1163,7 +1203,10 @@ intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer,
  * - Windows will only send 0x7FFFFFFE bytes at a time and will fail
  *   if given a larger nbytes.
  */
-intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr_t offset, intptr_t nbytes) {
+intptr_t rktio_sendfile(rktio_t *rktio,
+                        rktio_fd_t *dst, rktio_fd_t *src,
+                        intptr_t offset, intptr_t nbytes,
+                        rktio_sendfile_status_t *status) {
   intptr_t s_fd, d_fd;
   if (nbytes == 0 || nbytes >= 0x7FFFFFFE) {
     return RKTIO_WRITE_ERROR;
@@ -1180,7 +1223,7 @@ intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr
     off_t off = offset;
     sent = sendfile(d_fd, s_fd, &off, nbytes);
     if (sent >= 0) {
-      return (intptr_t)sent;
+      return sent;
     }
   }
 # elif                                           \
@@ -1207,18 +1250,40 @@ intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr
 #else
   {
     BOOL res;
-    OVERLAPPED olap;
+    LPOVERLAPPED olap;
     intptr_t sent;
 
-    olap.Offset = offset & 0xFFFFFF;
-    olap.OffsetHigh = offset >> 32;
-    olap.hEvent = 0;
-    res = TransmitFile(d_fd, s_fd, nbytes, 0, &olap, NULL, 0);
-    if (res == TRUE || WSAGetLastError() == WSA_IO_PENDING) {
-      res = GetOverlappedResult(s_fd, &olap, &sent, TRUE);
-      if (res == TRUE)
+    if (status->olap == NULL) {
+      olap = malloc(sizeof(OVERLAPPED));
+      if (olap == NULL) {
+        return RKTIO_WRITE_ERROR;
+      }
+
+      status->olap = olap;
+      olap->Offset = offset & 0xFFFF;
+      olap->OffsetHigh = offset >> 32;
+      olap->hEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+      res = TransmitFile(d_fd, s_fd, nbytes, 0, olap, NULL, 0);
+      if (res) {
+        status->olap = NULL;
+        do_free_olap(olap);
+        return nbytes;
+      } else if (WSAGetLastError() == WSA_IO_PENDING) {
+        return 0;
+      }
+    } else {
+      olap = status->olap;
+      res = GetOverlappedResult(d_fd, olap, &sent, FALSE);
+      if (res) {
+        status->olap = NULL;
+        do_free_olap(olap);
         return sent;
+      } else if (WSAGetLastError() == ERROR_IO_INCOMPLETE) {
+        return 0;
+      }
     }
+
+    do_free_olap(olap);
   }
 #endif
 

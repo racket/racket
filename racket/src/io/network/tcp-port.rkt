@@ -125,6 +125,7 @@
   (define ip (->core-input-port (open-input-file path)))
   (define dst-fd (fd-output-port-fd op))
   (define src-fd (fd-input-port-fd ip))
+  (define status (rktio_make_sendfile_status rktio))
   (let loop ([offset start]
              [nbytes (- end start)])
     (define sent
@@ -132,13 +133,15 @@
       ;; an intptr?  In my tests, values up to 2^63-1 get passed to
       ;; the rktio_layer correctly even though they exceed the max
       ;; fixnum, but that may be a fluke.
-      (rktio_sendfile rktio dst-fd src-fd offset (min nbytes chunksize)))
+      (rktio_sendfile rktio dst-fd src-fd offset (min nbytes chunksize) status))
     (cond
       [(rktio-error? sent)
+       (rktio_sendfile_status_free rktio status)
        (close-input-port ip)
        (send tcp-output-port op raise-write-error sent)]
 
       [(zero? (- nbytes sent))
+       (rktio_sendfile_status_free rktio status)
        (close-input-port ip)]
 
       [else

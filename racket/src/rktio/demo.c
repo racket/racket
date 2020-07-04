@@ -1295,10 +1295,11 @@ int main(int argc, char **argv)
     fd2 = accept_loop(rktio, lnr);
     check_valid(!rktio_poll_accept_ready(rktio, lnr));
 
+    rktio_sendfile_status_t *status = rktio_make_sendfile_status(rktio);
     {
       char buf[50] = {0};
       intptr_t amt;
-      check_valid(rktio_sendfile(rktio, fd2, src, 0, 13));
+      check_valid(rktio_sendfile(rktio, fd2, src, 0, 13, status));
       wait_read(rktio, fd);
       amt = rktio_read(rktio, fd, buf, sizeof(buf));
       if (verbose)
@@ -1308,7 +1309,7 @@ int main(int argc, char **argv)
     {
       char buf[50] = {0};
       intptr_t amt;
-      check_valid(rktio_sendfile(rktio, fd2, src, 0, 5));
+      check_valid(rktio_sendfile(rktio, fd2, src, 0, 5, status));
       wait_read(rktio, fd);
       amt = rktio_read(rktio, fd, buf, sizeof(buf));
       if (verbose)
@@ -1318,13 +1319,14 @@ int main(int argc, char **argv)
     {
       char buf[50] = {0};
       intptr_t amt;
-      check_valid(rktio_sendfile(rktio, fd2, src, 7, 5));
+      check_valid(rktio_sendfile(rktio, fd2, src, 7, 5, status));
       wait_read(rktio, fd);
       amt = rktio_read(rktio, fd, buf, sizeof(buf));
       if (verbose)
         printf(" buf = %s amt = %ld\n", buf, amt);
     }
 
+    rktio_sendfile_status_free(rktio, status);
     rktio_close(rktio, src);
     rktio_listen_stop(rktio, lnr);
   }

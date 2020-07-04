@@ -282,8 +282,19 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *buffer, intptr_
    `rktio_poll_write_flushed` to make sure the data is received by the
    destination before closing `fd`. */
 
+typedef struct rktio_sendfile_status_t rktio_sendfile_status_t;
+
+RKTIO_EXTERN
+rktio_sendfile_status_t *rktio_make_sendfile_status(rktio_t *rktio);
+
+RKTIO_EXTERN
+void rktio_sendfile_status_free(rktio_t *rktio, rktio_sendfile_status_t *progress);
+
 RKTIO_EXTERN_ERR(RKTIO_WRITE_ERROR)
-intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr_t offset, intptr_t nbytes);
+intptr_t rktio_sendfile(rktio_t *rktio,
+                        rktio_fd_t *dst, rktio_fd_t *src,
+                        intptr_t offset, intptr_t nbytes,
+                        rktio_sendfile_status_t *status);
 
 #define RKTIO_WRITE_ERROR (-2)
 

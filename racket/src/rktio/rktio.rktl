@@ -320,6 +320,17 @@
   ((*ref char) buffer)
   (intptr_t len)))
 (define-function/errno
+ NULL
+ ()
+ (ref rktio_sendfile_status_t)
+ rktio_make_sendfile_status
+ (((ref rktio_t) rktio)))
+(define-function
+ ()
+ void
+ rktio_sendfile_status_free
+ (((ref rktio_t) rktio) ((ref rktio_sendfile_status_t) progress)))
+(define-function/errno
  RKTIO_WRITE_ERROR
  ()
  intptr_t
@@ -328,7 +339,8 @@
   ((ref rktio_fd_t) dst)
   ((ref rktio_fd_t) src)
   (intptr_t offset)
-  (intptr_t count)))
+  (intptr_t nbytes)
+  ((ref rktio_sendfile_status_t) status)))
 (define-function/errno
  RKTIO_READ_ERROR
  ()
