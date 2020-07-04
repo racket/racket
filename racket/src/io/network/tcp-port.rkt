@@ -111,6 +111,7 @@
   (check who exact-positive-integer? end)
   (unless (< start max-file-offset-for-platform)
     (raise-argument-error who (string-append "(</c #x" (number->string max-file-offset-for-platform 16) ")") 2 dst-p path start end))
+  ;; TODO(bogdan): should this be relaxed to (<= end (+ max-... chunksize))?
   (unless (<= end max-file-offset-for-platform)
     (raise-argument-error who (string-append "(<=/c #x" (number->string max-file-offset-for-platform 16) ")") 3 dst-p path start end))
   (unless (< start end)
@@ -127,6 +128,10 @@
   (let loop ([offset start]
              [nbytes (- end start)])
     (define sent
+      ;; QUESTION(bogdan): does offset need to be explicitly cast to
+      ;; an intptr?  In my tests, values up to 2^63-1 get passed to
+      ;; the rktio_layer correctly even though they exceed the max
+      ;; fixnum, but that may be a fluke.
       (rktio_sendfile rktio dst-fd src-fd offset (min nbytes chunksize)))
     (cond
       [(rktio-error? sent)
