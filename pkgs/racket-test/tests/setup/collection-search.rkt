@@ -59,3 +59,7 @@
                      l))
       (when file
         (check-search-finds-one `(lib ,(~a coll "/" file)))))))
+
+(check-exn
+ #px"contract violation"
+ (λ () (collection-search 1234 #:combine list)))

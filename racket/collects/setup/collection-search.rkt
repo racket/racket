@@ -11,7 +11,7 @@
                            #:break? [break? (lambda (r) #f)]
                            #:all-possible-roots? [all-possible-roots? #f])
   (unless (normalized-lib-module-path? mp)
-    (error 'collection-search "normalized-lib-module-path?" mp))
+    (raise-argument-error 'collection-search "normalized-lib-module-path?" mp))
   (define els (string-split (cadr mp) "/"))
   (define coll-str (car els))
   (define coll-sym (string->symbol coll-str))
