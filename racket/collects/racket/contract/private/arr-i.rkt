@@ -1140,15 +1140,18 @@ evaluted left-to-right.)
             (procedure-arity-includes? orig-ctc 1))
        (if (or indy-blame? (orig-ctc obj))
            obj
-           (raise-predicate-blame-error-failure blame obj neg-party
-                                                (contract-name orig-ctc)))]
+           ;; this will signal the violation
+           (undep-and-apply-the-contract orig-ctc obj blame neg-party chaperone?))]
       [(and indy-blame? (flat-contract? orig-ctc))
        obj]
       [else
-       (define ctc (if chaperone?
-                       (coerce-chaperone-contract '->i orig-ctc)
-                       (coerce-contract '->i orig-ctc)))
-       (((get/build-late-neg-projection ctc) blame) obj neg-party)]))
+       (undep-and-apply-the-contract orig-ctc obj blame neg-party chaperone?)]))
+
+  (define (undep-and-apply-the-contract orig-ctc obj blame neg-party chaperone?)
+    (define ctc (if chaperone?
+                    (coerce-chaperone-contract '->i orig-ctc)
+                    (coerce-contract '->i orig-ctc)))
+    (((get/build-late-neg-projection ctc) blame) obj neg-party))
 
   (define (un-dep/chaperone orig-ctc obj blame neg-party indy-blame?)
     (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t indy-blame?))
