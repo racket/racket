@@ -62,6 +62,7 @@ typedef struct sockaddr_in rktio_unspec_address;
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <process.h>
+# include <mswsock.h>
 # include <winsock2.h>
 # include <ws2tcpip.h>
 # ifndef __MINGW32__
@@ -1151,24 +1152,33 @@ intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer,
   return do_socket_write(rktio, rfd, buffer, len, NULL);
 }
 
+/**
+ * Differences from what you might expect:
+ * - The caller must always pass a non-zero nbytes value and said
+ *   value must be less than 0x7FFFFFFE.
+ *
+ * Differences between the various implementations:
+ * - Linux will send at most 0x7FFFF000 bytes at a time, but will not
+ *   error if given a larger nbytes or offset on a 64-bit machine.
+ * - Windows will only send 0x7FFFFFFE bytes at a time and will fail
+ *   if given a larger nbytes.
+ */
 intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr_t offset, intptr_t nbytes) {
-  intptr_t s = rktio_fd_system_fd(rktio, src);
-  intptr_t d = rktio_fd_system_fd(rktio, dst);
+  intptr_t s_fd, d_fd;
+  if (nbytes == 0 || nbytes >= 0x7FFFFFFE) {
+    return RKTIO_WRITE_ERROR;
+  }
+
+  s_fd = rktio_fd_system_fd(rktio, src);
+  d_fd = rktio_fd_system_fd(rktio, dst);
 #ifdef RKTIO_SYSTEM_UNIX
 # if                                             \
    defined(__linux__) ||                         \
    defined(__sun)
   {
-    intptr_t pos;
+    intptr_t pos, sent;
     off_t off = offset;
-    if (nbytes == 0) {
-      /* TODO(bogdan): Handle errors. */
-      pos = lseek(s, 0, SEEK_CUR);
-      nbytes = lseek(s, 0, SEEK_END);
-      lseek(s, 0, pos);
-    }
-
-    intptr_t sent = sendfile(d, s, &off, nbytes);
+    sent = sendfile(d_fd, s_fd, &off, nbytes);
     if (sent >= 0) {
       return (intptr_t)sent;
     }
@@ -1182,9 +1192,9 @@ intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr
     off_t sent = nbytes;
 
 #  if defined(__APPLE__)
-    res = sendfile(s, d, (off_t)offset, &sent, NULL, 0);
+    res = sendfile(s_fd, d_fd, (off_t)offset, &sent, NULL, 0);
 #  else
-    res = sendfile(s, d, (off_t)offset, nbytes, NULL, &sent, 0);
+    res = sendfile(s_fd, d_fd, (off_t)offset, nbytes, NULL, &sent, 0);
 #  endif
 
     if (res == 0 || ((errno == EAGAIN || errno == EINTR) && sent != 0)) {
@@ -1195,7 +1205,21 @@ intptr_t rktio_sendfile(rktio_t *rktio, rktio_fd_t *dst, rktio_fd_t *src, intptr
   /* TODO(bogdan): Emulate on other platforms */
 # endif
 #else
-  /* TODO(bogdan): Use TransmitFile on Windows */
+  {
+    BOOL res;
+    OVERLAPPED olap;
+    intptr_t sent;
+
+    olap.Offset = offset & 0xFFFFFF;
+    olap.OffsetHigh = offset >> 32;
+    olap.hEvent = 0;
+    res = TransmitFile(d_fd, s_fd, nbytes, 0, &olap, NULL, 0);
+    if (res == TRUE || WSAGetLastError() == WSA_IO_PENDING) {
+      res = GetOverlappedResult(s_fd, &olap, &sent, TRUE);
+      if (res == TRUE)
+        return sent;
+    }
+  }
 #endif
 
   get_socket_error();

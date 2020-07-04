@@ -1298,7 +1298,7 @@ int main(int argc, char **argv)
     {
       char buf[50] = {0};
       intptr_t amt;
-      check_valid(rktio_sendfile(rktio, fd2, src, 0, 0));
+      check_valid(rktio_sendfile(rktio, fd2, src, 0, 13));
       wait_read(rktio, fd);
       amt = rktio_read(rktio, fd, buf, sizeof(buf));
       if (verbose)
