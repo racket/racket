@@ -75,7 +75,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>WS2_32.lib;User32.lib;Advapi32.lib;delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mswsock.lib;WS2_32.lib;User32.lib;Advapi32.lib;delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\..\lib\GRacketCGC.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <IgnoreSpecificDefaultLibraries>libcd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>

@@ -2,4 +2,4 @@
 echo ============================================
 echo Assumes that the "librktio" project is built
 echo ============================================
-cl /Zi /I..\worksp\librktio demo.c ..\worksp\librktio\x64\Release\librktio.lib ws2_32.lib user32.lib shell32.lib
+cl /Zi /I..\worksp\librktio demo.c ..\worksp\librktio\x64\Release\librktio.lib mswsock.lib ws2_32.lib user32.lib shell32.lib
