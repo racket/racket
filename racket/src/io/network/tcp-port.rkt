@@ -129,10 +129,6 @@
   (let loop ([offset start]
              [nbytes (- end start)])
     (define sent
-      ;; QUESTION(bogdan): does offset need to be explicitly cast to
-      ;; an intptr?  In my tests, values up to 2^63-1 get passed to
-      ;; the rktio_layer correctly even though they exceed the max
-      ;; fixnum, but that may be a fluke.
       (rktio_sendfile rktio dst-fd src-fd offset (min nbytes chunksize) status))
     (cond
       [(rktio-error? sent)
@@ -145,5 +141,6 @@
        (close-input-port ip)]
 
       [else
+       ;; TODO(bogdan): Need to allow breaks?
        (sync op)
        (loop (+ offset sent) (- nbytes sent))])))
