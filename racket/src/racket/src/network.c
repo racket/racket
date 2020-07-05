@@ -1488,56 +1488,9 @@ static Scheme_Object *tcp_copy_file(int argc, Scheme_Object *argv[]) {
     return NULL;
   }
 
-  scheme_raise_exn(MZEXN_FAIL_NETWORK, "tcp-copy-file: not implemented");
+  /* TODO(bogdan): Implement the rest of this. */
+  scheme_raise_exn(MZEXN_FAIL_NETWORK, "tcp-copy-file: not yet implemented");
   return NULL;
-
-  /* ip = scheme_input_port_record(argv[1]); */
-  /* if (SCHEME_FALSEP(scheme_file_stream_port_p(1, &ip))) { */
-  /*   scheme_wrong_contract("tcp-copy-file", "(and/c file-stream-port? input-port?)", 1, argc, argv); */
-  /*   return NULL; */
-  /* } */
-
-  /* if (argc > 2) { */
-  /*   if (SCHEME_INTP(argv[2])) { */
-  /*     offset = SCHEME_INT_VAL(argv[2]); */
-  /*   } */
-
-  /*   if (offset < 0) { */
-  /*     scheme_wrong_contract("tcp-copy-file", "exact-nonnegative-integer?", 2, argc, argv); */
-  /*     return NULL; */
-  /*   } */
-  /* } else { */
-  /*   offset = 0; */
-  /* } */
-
-  /* if (argc > 3) { */
-  /*   if (SCHEME_INTP(argv[3])) { */
-  /*     nbytes = SCHEME_INT_VAL(argv[3]); */
-  /*   } */
-
-  /*   if (nbytes < 0) { */
-  /*     scheme_wrong_contract("tcp-copy-file", "exact-nonnegative-integer?", 3, argc, argv); */
-  /*     return NULL; */
-  /*   } */
-  /* } else { */
-  /*   nbytes = 0; */
-  /* } */
-
-  /* if (!scheme_get_port_rktio_file_descriptor(ip, &src_fd)) { */
-  /*   scheme_raise_exn(MZEXN_FAIL_NETWORK, "tcp-copy-file: failed to get source file descriptor"); */
-  /*   return NULL; */
-  /* } */
-
-  /* data = (Scheme_Tcp *)op->port_data; */
-  /* sent = rktio_sendfile(scheme_rktio, data->tcp, src_fd, offset, nbytes); */
-  /* if (sent == RKTIO_WRITE_ERROR) { */
-  /*   scheme_raise_exn(MZEXN_FAIL_NETWORK, */
-  /*                    "tcp-copy-file: error writing\n" */
-  /*                    "  system error: %R"); */
-  /*   return NULL; */
-  /* } */
-
-  /* return scheme_make_integer(sent); */
 }
 
 static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[])
