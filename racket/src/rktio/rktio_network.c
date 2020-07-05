@@ -1283,6 +1283,7 @@ intptr_t rktio_sendfile(rktio_t *rktio,
       }
     }
 
+    status->olap = NULL;
     do_free_olap(olap);
   }
 #endif
