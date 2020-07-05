@@ -1162,6 +1162,7 @@ intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer,
  * TransmitFile.
  */
 struct rktio_sendfile_status_t {
+  intptr_t ignored;
 #ifdef RKTIO_SYSTEM_WINDOWS
   LPOVERLAPPED olap;
 #endif
