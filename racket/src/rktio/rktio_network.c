@@ -1190,6 +1190,7 @@ void rktio_sendfile_status_free(rktio_t *rktio, rktio_sendfile_status_t *status)
     do_free_olap(olap);
   }
 #endif
+  free(status);
 }
 
 /**
