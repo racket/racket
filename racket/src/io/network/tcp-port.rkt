@@ -119,7 +119,7 @@
 
   (define size (file-size path))
   (unless (<= end size)
-    (raise-argument-error who (string-append "(<=/c " (number->string size) ")") end))
+    (raise-argument-error who (string-append "(<=/c " (number->string size) ")") 3 dst-p path start end))
 
   (define chunksize #x7FFFFFFD)
   (define ip (->core-input-port (open-input-file path)))
