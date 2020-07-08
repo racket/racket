@@ -7,7 +7,6 @@
          racket/contract/base
          "make.rkt"
          "minimatch.rkt"
-         syntax/apply-transformer
          syntax/private/id-table
          syntax/stx
          syntax/keyword
@@ -464,13 +463,13 @@
           (not-shadowed? #'id)
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
      (begin (disappeared! #'id)
-            (recur (expand-pattern (syntax-local-value #'id) stx)))]
+            (recur (expand-pattern (syntax-local-value #'id) #'id stx)))]
     [(id . rst)
      (and (identifier? #'id)
           (not-shadowed? #'id)
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
      (begin (disappeared! #'id)
-            (recur (expand-pattern (syntax-local-value #'id) stx)))]
+            (recur (expand-pattern (syntax-local-value #'id) #'id stx)))]
     [wildcard
      (and (wildcard? #'wildcard)
           (not-shadowed? #'wildcard))
@@ -608,9 +607,9 @@
          (pat:pstruct key lp)))])))
 
 ;; expand-pattern : pattern-expander Syntax -> Syntax
-(define (expand-pattern pe stx)
+(define (expand-pattern pe pe-binding-id stx)
   (let ([proc (pattern-expander-proc pe)])
-    (local-apply-transformer proc stx 'expression)))
+    (syntax-local-apply-transformer proc pe-binding-id 'expression #f stx)))
 
 ;; parse-ellipsis-head-pattern : stx DeclEnv -> (listof EllipsisHeadPattern)
 (define (parse-ellipsis-head-pattern stx decls)
@@ -634,13 +633,13 @@
           (not-shadowed? #'id)
           (pattern-expander? (syntax-local-value #'id (lambda () #f))))
      (begin (disappeared! #'id)
-            (recur (expand-pattern (syntax-local-value #'id) stx)))]
+            (recur (expand-pattern (syntax-local-value #'id) #'id stx)))]
     [(id . rst)
      (and (identifier? #'id)
           (not-shadowed? #'id)
           (pattern-expander? (syntax-local-value #'id (lambda () #f))))
      (begin (disappeared! #'id)
-            (recur (expand-pattern (syntax-local-value #'id) stx)))]
+            (recur (expand-pattern (syntax-local-value #'id) #'id stx)))]
     [(~eh-var name eh-alt-set-id)
      (disappeared! stx)
      (let ()

@@ -2462,7 +2462,7 @@
                                 intdef)
     (define-values [value target]
       (syntax-local-value/immediate
-       (internal-definition-context-introduce intdef #'add1-indirect 'add)
+       (internal-definition-context-introduce intdef (syntax-local-introduce #'add1-indirect) 'add)
        #f
        (list intdef)))
     #`'#,(indirect-rename-transformer? value))
@@ -2616,6 +2616,338 @@
   (eval '(define-syntax-rule (#%app id) (begin (define-syntax (id stx) #''id) (begin))))
   (eval '(v))
   (test 'v eval 'v))
+
+;; ----------------------------------------
+;; Check definition context outside-edge scope behavior
+
+(module definition-context-outside-edge-macro-defs racket/base
+  (require (for-syntax racket/base))
+  (provide simple-let-syntax partial-expand-in-ctx)
+
+  (define-syntax (simple-let-syntax stx)
+    (syntax-case stx ()
+      [(_ [v e] b)
+       (let ([ctx (syntax-local-make-definition-context)])
+         (syntax-local-bind-syntaxes
+           (list (internal-definition-context-add-scopes ctx #'v))
+           #'e ctx)
+         (local-expand
+           (internal-definition-context-add-scopes ctx #'b)
+           'expression '() ctx))]))
+
+  (define-syntax (partial-expand-in-ctx stx)
+    (syntax-case stx ()
+      [(_ b)
+       (let ([ctx (syntax-local-make-definition-context)])
+         (local-expand
+           (internal-definition-context-add-scopes ctx #'b)
+           'expression (list #'#%expression) ctx))])))
+
+;; The scope should prevent introduced reference capture
+(module definition-context-outside-edge-introduced-reference racket/base
+  (require 'definition-context-outside-edge-macro-defs (for-syntax racket/base))
+  (provide res)
+  (define-syntax-rule (x) 'outside)
+  (define-syntax-rule (m) (x))
+  (define res
+    (simple-let-syntax [x (lambda (stx) #''captured)]
+      (m))))
+(test 'outside dynamic-require ''definition-context-outside-edge-introduced-reference 'res)
+
+;; The scope should be removed at quote-syntax, either within local-expand
+;; or when expanded later
+(module definition-context-outside-edge-quote-syntax racket/base
+  (require (for-syntax racket/base 'definition-context-outside-edge-macro-defs) (for-meta 2 racket/base))
+  (provide res1 res2)
+  (define-syntax (m1 stx)
+    (define id (simple-let-syntax [m (lambda (stx) #''ignore)]
+                                  #'x))
+    #`(let ([#,id 'bound])
+        x))
+  (define res1 (m1))
+  (define-syntax (m2 stx)
+    (define id (partial-expand-in-ctx (#%expression #'x)))
+    #`(let ([#,id 'bound])
+        x))
+  (define res2 (m2)))
+(test 'bound dynamic-require ''definition-context-outside-edge-quote-syntax 'res1)
+(test 'bound dynamic-require ''definition-context-outside-edge-quote-syntax 'res2)
+
+;; The scope should be added by syntax-local-get-shadower
+(module definition-context-outside-edge-get-shadower racket/base
+  (require 'definition-context-outside-edge-macro-defs (for-syntax racket/base))
+  (provide res)
+  (define-for-syntax id (car (generate-temporaries '(x))))
+  (define-syntax (ref stx)
+    (syntax-local-get-shadower (syntax-local-introduce id)))
+  (define-syntax (binding stx)
+    #`(simple-let-syntax [#,(syntax-local-identifier-as-binding
+                              (syntax-local-introduce id))
+                          (lambda (stx)
+                            #''bound)]
+        (ref)))
+  (define res (binding)))
+(test 'bound dynamic-require ''definition-context-outside-edge-get-shadower 'res)
+
+;; internal-definition-context-splice-binding-identifier should remove the scope
+(module definition-context-outside-edge-splice racket/base
+  (require (for-syntax racket/base))
+  (provide res)
+  (define-syntax (two-level-block stx)
+    (syntax-case stx (splicing-let-syntax define-syntax)
+      [(_ (splicing-let-syntax ([v1 e1]) (define-syntax v2 e2)) e3)
+       (let* ([outer-ctx (syntax-local-make-definition-context)]
+              [inner-ctx (syntax-local-make-definition-context outer-ctx)])
+         (with-syntax ([(v1 e1 v2 e2 e3) (internal-definition-context-add-scopes outer-ctx #'(v1 e1 v2 e2 e3))])
+           (with-syntax ([(v1 e1 v2 e2) (internal-definition-context-add-scopes inner-ctx #'(v1 e1 v2 e2))])
+             (syntax-local-bind-syntaxes
+               (list #'v1)
+               #'e1 inner-ctx)
+             (syntax-local-bind-syntaxes
+               (list (internal-definition-context-splice-binding-identifier inner-ctx #'v2))
+               #'e2 outer-ctx)
+             (local-expand #'e3 'expression '() inner-ctx))))]))
+  (define-syntax-rule (m1) 'outer)
+  (define res (two-level-block
+                (splicing-let-syntax ([m1 (lambda (stx) #''inner)])
+                  (define-syntax m2 (lambda (stx) #'(m1))))
+                (m2))))
+(test 'inner dynamic-require ''definition-context-outside-edge-splice 'res)
+
+;; ----------------------------------------
+;; Check that `syntax-local-bind-syntaxes` returns identifiers with intdef
+;; scopes attached and use-site scopes removed.
+
+(let ()
+  (define res
+    (let ()
+      ; define and use in same definition context to trigger use-site scope
+      (define-syntax m
+        (lambda (stx)
+          (syntax-case stx ()
+            [(_ arg)
+             (let ()
+               (define ctx (syntax-local-make-definition-context))
+               (define orig-id #'arg)
+               (define bind-id (car (syntax-local-bind-syntaxes (list orig-id) #f ctx)))
+               (define scoped-id
+                 (syntax-local-identifier-as-binding
+                   (internal-definition-context-introduce ctx orig-id 'add) ctx))
+               #`#,(bound-identifier=? bind-id scoped-id))])))
+      (m x)))
+  (test #t values res))
+
+;; ----------------------------------------
+;; Check that definitions in `block` don't capture introduced references
+
+(let ()
+  (define x 'outer)
+  (define-syntax-rule (m) x)
+  (define res
+   (block
+     (define x 'inner)
+     (m)))
+  (test 'outer values res))
+
+;; ----------------------------------------
+;; Test the behavior of the definition context scope operations
+;; in the context of define*-like definitions. The easist way to
+;; do this is via a block macro that supports define*.
+
+(module define-*-definition-context racket/base
+  (require (for-syntax racket/base syntax/transformer syntax/context racket/syntax))
+  (provide do-test)
+
+  (define-syntax define-values*
+    (lambda (stx) (raise-syntax-error #f "define-values* may only be used in block*" stx)))
+  (define-syntax (define* stx)
+    (syntax-case stx ()
+      [(_ a b) (syntax-property #'(define-values* (a) b) 'taint-mode 'transparent-binding)]))
+
+  (define-syntax block*
+    (make-expression-transformer
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ body ...)
+          (let ()
+            (define stop-list (list #'begin #'define-values #'define-values* #'define-syntaxes))
+            (define ctx-id (list (generate-expand-context #t)))
+            (define top-def-ctx (syntax-local-make-definition-context))
+
+            ; mutated
+            (define stxs '())
+            (define vals '())
+            (define def-ctx top-def-ctx)
+            (define inner-def-ctxs '())
+            (define last-expr #'(void))
+            (define worklist (syntax->list (internal-definition-context-add-scopes top-def-ctx #'(body ...))))
+          
+            (define (pop!)
+              (let ([r (car worklist)])
+                (set! worklist (cdr worklist))
+                r))
+          
+            (define (new-scope!)
+              (set! def-ctx (syntax-local-make-definition-context def-ctx))
+              (set! inner-def-ctxs (cons def-ctx inner-def-ctxs))
+              (set! worklist
+                    (for/list ([s worklist])
+                      (internal-definition-context-add-scopes def-ctx s))))
+      
+            (define (splice id)
+              (for/fold ([id id])
+                        ([def-ctx inner-def-ctxs])
+                (internal-definition-context-splice-binding-identifier def-ctx id)))
+
+            (define (drop-use-sites stx)
+              (for/fold ([stx stx])
+                        ([def-ctx (cons top-def-ctx inner-def-ctxs)])
+                (syntax-local-identifier-as-binding stx def-ctx)))
+
+            (let loop ()
+              (define form^ (local-expand (pop!) ctx-id stop-list def-ctx))
+            
+              (syntax-case form^ (begin define-values define-values* define-syntaxes)
+                [(begin . rest)
+                 (set! worklist (append (syntax->list #'rest) worklist))]
+                [(define-syntaxes (v ...) rhs)
+                 (with-syntax* ([rhs^ (local-transformer-expand #'rhs
+                                                                'expression '() def-ctx)]
+                                [(v^ ...) (syntax-local-bind-syntaxes
+                                           (map splice (syntax->list #'(v ...)))
+                                           #'rhs^ def-ctx)])
+                   (set! stxs (cons #'[(v^ ...) rhs^] stxs)))]
+                [(define-values (v ...) rhs)
+                 (with-syntax ([(v^ ...) (syntax-local-bind-syntaxes
+                                          (map splice (syntax->list #'(v ...)))
+                                          #f top-def-ctx)])
+                   (set! vals (cons #'[(v^ ...) rhs] vals)))]
+                [(define-values* (v ...) rhs)
+                 (begin
+                   (new-scope!)
+                   (with-syntax* ([(v^ ...)
+                                   (syntax-local-bind-syntaxes
+                                    (map drop-use-sites (syntax->list (internal-definition-context-add-scopes def-ctx #'(v ...))))
+                                    #f def-ctx)])
+                     (set! vals (cons #'[(v^ ...) rhs] vals))))]
+                [other-stx
+                 (with-syntax ([tmp (generate-temporary #'tmp)])
+                   (set! vals (cons #'[(tmp) other-stx] vals))
+                   (set! last-expr #'tmp))])
+
+              (unless (null? worklist) (loop)))
+
+            #`(letrec-syntaxes+values #,(reverse stxs)
+                #,(reverse vals)
+                #,last-expr))]))))
+
+  (define (do-test test)
+    ; basic functionality
+    (test
+     11
+     'define-*-definition-context
+     (block*
+      (define f (lambda () y))
+      (define x 5)
+      (set! x (+ x 1))
+      (define* x (+ x 2))
+      (define y (+ x 3))
+      (f)))
+
+    ; Analgue of test in compatibility-test/tests/racket/package.rkt
+    (test
+     10
+     'define-*-definition-context
+     (block*
+       (define* x 10)
+       (define-syntax (y stx)
+         (syntax-case stx ()
+           [(_ z) #'(begin (define z x))]))
+       (define* x 12)
+       (define* z 13)
+       (y q)
+       q))
+
+    ; correct use-site binder behavior
+    (test
+     '(new new)
+     'define-*-definition-context
+     (let ()
+       (define x 'old)
+       (define y 'old)
+       (block*
+        (define-syntax-rule (m arg1 arg2)
+          (begin
+            (define* arg1 'new)
+            (define arg2 'new)
+            (list x y)))
+        (m x y))))
+
+    ; correct inside-edge scope behavior
+    (test
+     '(inner inner)
+     'define-*-definition-context
+     (let ()
+       (define x 'outer)
+
+       (define-syntax (m1 stx)
+         (with-syntax ([id (syntax-local-introduce #'x)])
+           #'(begin
+               (define id 'inner)
+               id)))
+     
+       (define-syntax (m2 stx)
+         (with-syntax ([id (syntax-local-introduce #'x)])
+           #'(begin
+               (define* id 'inner)
+               id)))
+       (list
+        (block*
+         (m1)
+         (m2)
+         (m2))
+        (block*
+         (m1)
+         (m2)
+         (m2)))))
+
+    ; correct quote-syntax scope stripping
+    (test
+     #t
+     'define-*-definition-context
+     (let ([id1 (quote-syntax x)])
+       (block*
+        (define* x 5)
+        (define id2 (quote-syntax x))
+        (bound-identifier=? id1 id2))))))
+
+((dynamic-require ''define-*-definition-context 'do-test) test)
+
+;; ----------------------------------------
+;; Check that backwards compatibility behavior for local-expand
+;; with a list of definition contexts minimizes breakage via precise
+;; frame id
+
+(module defctx-list racket
+  (provide res)
+  
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ d e)
+       (let ()
+         (define def-ctx (syntax-local-make-definition-context))
+         (syntax-case (local-expand #'d (list (gensym)) (list #'define-values) (list def-ctx)) (define-values)
+           [(define-values (v) rhs)
+            (syntax-local-bind-syntaxes (list #'v) #f def-ctx)])
+         (define e^ (local-expand #'e 'expression '() (list def-ctx)))
+         #''success)]))
+
+  (define res
+    (m
+     (define x 5)
+     (+ x x))))
+
+(test 'success dynamic-require ''defctx-list 'res)
 
 ;; ----------------------------------------
 

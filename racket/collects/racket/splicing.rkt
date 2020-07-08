@@ -41,37 +41,42 @@
          (for-meta 2 'syntax/loc/props))
 
 (define-syntax (splicing-local stx)
-  (do-local stx (lambda (def-ctx expand-context sbindings vbindings bodys)
-                  (if (eq? 'expression (syntax-local-context))
-                      (quasisyntax/loc stx
-                        (letrec-syntaxes+values
-                         #,sbindings
-                         #,vbindings
-                         #,@bodys))
-                      ;; Since we alerady have bindings for the current scopes,
-                      ;; add an extra scope for re-binding:
-                      (let ([i (make-syntax-introducer #t)])
-                        (with-syntax ([([s-ids s-rhs] ...) (i sbindings)]
-                                      [([(v-id ...) v-rhs] ...) (i vbindings)]
-                                      [(body ...) (i bodys)]
-                                      [(marked-id markless-id)
-                                       (let ([id #'id])
-                                         ;; The marked identifier should have both the extra
-                                         ;; scope and the intdef scope, to be removed from
-                                         ;; definitions expanded from `body`:
-                                         (list (i (internal-definition-context-introduce def-ctx id))
-                                               id))])
-                          (with-syntax ([(top-decl ...)
-                                         (if (equal? 'top-level (syntax-local-context))
-                                             #'((define-syntaxes (v-id ... ...) (values)))
-                                             null)])
-                            (quasisyntax/loc stx
-                              (begin
-                                top-decl ...
-                                (define-syntaxes s-ids s-rhs) ...
-                                (define-values (v-id ...) v-rhs) ...
-                                (splicing-let-start/body marked-id markless-id body)
-                                ...)))))))))
+  (do-local
+   stx
+   (not (eq? 'expression (syntax-local-context)))
+   (lambda (def-ctx expand-context sbindings vbindings bodys)
+     (if (eq? 'expression (syntax-local-context))
+         (quasisyntax/loc stx
+           (letrec-syntaxes+values
+               #,sbindings
+             #,vbindings
+             #,@bodys))
+         ;; Since we already have bindings for the current scopes,
+         ;; add extra scopes for re-binding:
+         (let ([i (let ([extra-ctx (syntax-local-make-definition-context)])
+                    (lambda (stx) (internal-definition-context-add-scopes
+                                   extra-ctx stx)))])
+           (with-syntax ([([s-ids s-rhs] ...) (i sbindings)]
+                         [([(v-id ...) v-rhs] ...) (i vbindings)]
+                         [(body ...) (i bodys)]
+                         [(marked-id markless-id)
+                          (let ([id #'id])
+                            ;; The marked identifier should have both the extra
+                            ;; scopes and the intdef scopes, to be removed from
+                            ;; definitions expanded from `body`:
+                            (list (i (internal-definition-context-add-scopes def-ctx id))
+                                  id))])
+             (with-syntax ([(top-decl ...)
+                            (if (equal? 'top-level (syntax-local-context))
+                                #'((define-syntaxes (v-id ... ...) (values)))
+                                null)])
+               (quasisyntax/loc stx
+                 (begin
+                   top-decl ...
+                   (define-syntaxes s-ids s-rhs) ...
+                   (define-values (v-id ...) v-rhs) ...
+                   (splicing-let-start/body marked-id markless-id body)
+                   ...)))))))))
 
 (define-syntax (splicing-let-syntax stx)
   (do-let-syntax stx #f #f #'let-syntax #'define-syntaxes #f))
@@ -117,7 +122,8 @@
                          [rec? rec?]
                          [(marked-id markless-id)
                           (let ([id #'id])
-                            (list ((make-syntax-introducer #t) id)
+                            (list (internal-definition-context-add-scopes
+                                   (syntax-local-make-definition-context) id)
                                   id))])
              (with-syntax ([(top-decl ...)
                             (if (and need-top-decl? (equal? 'top-level (syntax-local-context)))
@@ -268,7 +274,8 @@
            (with-syntax ([((vid ...) ...) all-vids]
                          [(marked-id markless-id)
                           (let ([id #'id])
-                            (list ((make-syntax-introducer #t) id)
+                            (list (internal-definition-context-add-scopes
+                                   (syntax-local-make-definition-context) id)
                                   id))])
              (with-syntax ([(top-decl ...)
                             (if (equal? 'top-level (syntax-local-context))
@@ -305,54 +312,53 @@
 (define-syntax (expand-ssp-body stx)
   (syntax-case stx ()
     [(_ binds orig-ids body)
-     (let ([ctx (syntax-local-make-definition-context #f #f)])
-       (let ([body (with-continuation-mark
-                    current-parameter-environment
-                    (extend-parameter-environment (current-parameter-environment) #'binds)
-                    (local-expand #'(force-expand body)
-                                  (syntax-local-context)
-                                  null ;; `force-expand' actually determines stopping places
-                                  ctx))])
-         (let ([body
-                ;; Extract expanded body out of `body':
-                (syntax-case body (quote)
-                  [(quote body) #'body])])
-           (syntax-case body ( begin
-                               define-values
-                               define-syntaxes
-                               begin-for-syntax
-                               module
-                               module*
-                               #%require
-                               #%provide
-                               #%declare )
-              [(begin expr ...)
-               (syntax/loc/props body
-                 (begin (expand-ssp-body binds orig-ids expr) ...))]
-              [(define-values (id ...) rhs)
-               (syntax/loc/props body
-                 (define-values (id ...)
-                   (let-local-keys binds rhs)))]
-              [(define-syntaxes ids rhs)
-               (syntax/loc/props body
-                 (define-syntaxes ids (wrap-param-et rhs binds)))]
-              [(begin-for-syntax e ...)
-               (syntax/loc/props body
-                 (begin-for-syntax (wrap-param-et e binds) ...))]
-              [(module . _) body]
-              [(module* name #f form ...)
-               (datum->syntax body
-                              (list #'module* #'name #f
-                                    #`(expand-ssp-module-begin
-                                       binds orig-ids
-                                       #,body name form ...))
-                              body)]
-              [(module* . _) body]
-              [(#%require . _) body]
-              [(#%provide . _) body]
-              [(#%declare . _) body]
-              [expr (syntax/loc body
-                      (let-local-keys binds expr))]))))]))
+     (let ([body (with-continuation-mark
+                  current-parameter-environment
+                  (extend-parameter-environment (current-parameter-environment) #'binds)
+                  (local-expand #'(force-expand body)
+                                (syntax-local-context)
+                                null ;; `force-expand' actually determines stopping places
+                                ))])
+       (let ([body
+              ;; Extract expanded body out of `body':
+              (syntax-case body (quote)
+                [(quote body) #'body])])
+         (syntax-case body ( begin
+                             define-values
+                             define-syntaxes
+                             begin-for-syntax
+                             module
+                             module*
+                             #%require
+                             #%provide
+                             #%declare )
+            [(begin expr ...)
+             (syntax/loc/props body
+               (begin (expand-ssp-body binds orig-ids expr) ...))]
+            [(define-values (id ...) rhs)
+             (syntax/loc/props body
+               (define-values (id ...)
+                 (let-local-keys binds rhs)))]
+            [(define-syntaxes ids rhs)
+             (syntax/loc/props body
+               (define-syntaxes ids (wrap-param-et rhs binds)))]
+            [(begin-for-syntax e ...)
+             (syntax/loc/props body
+               (begin-for-syntax (wrap-param-et e binds) ...))]
+            [(module . _) body]
+            [(module* name #f form ...)
+             (datum->syntax body
+                            (list #'module* #'name #f
+                                  #`(expand-ssp-module-begin
+                                     binds orig-ids
+                                     #,body name form ...))
+                            body)]
+            [(module* . _) body]
+            [(#%require . _) body]
+            [(#%provide . _) body]
+            [(#%declare . _) body]
+            [expr (syntax/loc body
+                    (let-local-keys binds expr))])))]))
 
 (define-syntax (expand-ssp-module-begin stx)
   (syntax-case stx ()
@@ -461,7 +467,9 @@
        (if (eq? (syntax-local-context) 'expression)
            #'(parameterize ([param/checked value] ...)
                body ...)
-           (let ([introduce (make-syntax-introducer #t)])
+           (let ([introduce (let ([ctx (syntax-local-make-definition-context)])
+                              (lambda (stx) (internal-definition-context-add-scopes
+                                             ctx stx)))])
              (with-syntax ([scopeless-id (datum->syntax #f 'scopeless-id)]
                            [scoped-id (introduce (datum->syntax #f 'scoped-id))]
                            [(scoped-body ...) (map introduce (syntax->list #'(body ...)))]

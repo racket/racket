@@ -2362,5 +2362,43 @@
                        x)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `class` applies an outside-edge scope
+
+(let ()
+  (define x 'good)
+  (define-syntax-rule (m a) (define/public (a) x))
+  (define c% (class object%
+               (super-new)
+               (define x 'bad)
+               (m f)))
+  (test 'good values (send (new c%) f)))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `class` only removes use-site scopes for
+;; its definition context from internal definitions, and
+;; not those of the surrounding definition context.
+
+(let ()
+  (define x 'outer)
+  
+  (define c1%
+    (class object%
+      (super-new)
+      (define-syntax-rule (m1 a)
+        (define a 'inner-good))
+      (m1 x)
+      (define/public (f) x)))
+  (test 'inner-good values (send (new c1%) f))
+  
+  (define-syntax-rule (m2 a)
+    (class object%
+      (super-new)
+      (define a 'inner-bad)
+      (define/public (f) x)))
+  (define c2% (m2 x))
+  (test 'outer values (send (new c2%) f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

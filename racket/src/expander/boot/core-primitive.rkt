@@ -18,6 +18,7 @@
          "../expand/syntax-local.rkt"
          "../expand/definition-context.rkt"
          "../expand/local-expand.rkt"
+         "../expand/apply-transformer.rkt"
          "../syntax/api.rkt"
          "../syntax/api-taint.rkt"
          "../syntax/error.rkt"
@@ -162,6 +163,8 @@
                       syntax-local-module-interned-scope-symbols
                       
                       syntax-local-get-shadower
+
+                      syntax-local-apply-transformer
                       
                       (protect local-expand)
                       (protect local-expand/capture-lifts)
@@ -176,6 +179,8 @@
                       internal-definition-context-introduce
                       internal-definition-context-seal
                       identifier-remove-from-definition-context
+                      internal-definition-context-add-scopes
+                      internal-definition-context-splice-binding-identifier
                       
                       make-set!-transformer
                       prop:set!-transformer
