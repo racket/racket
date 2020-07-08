@@ -1530,6 +1530,11 @@
                                                                        [(_) (abcdefg 10)]
                                                                        [(_ x) (+ 3 x)])])
                                                            (abcdefg))))
+(test 10 'splicing-letrec-syntax (let ()
+                                   (splicing-letrec-syntax ([m (syntax-rules ()
+                                                                 [(_ id) (define id 10)])])
+                                     (m x))
+                                   x))
 (test 12 'splicing-let-syntax (splicing-let-syntax ([abcdefg (syntax-rules ()
                                                                [(_) 12])])
                                                    (abcdefg)))
@@ -1542,6 +1547,12 @@
                                                                  [(_) (+ 2 (abcdefg 9))]
                                                                  [(_ ?) 77])])
                                                      (abcdefg))))
+(test 10 'splicing-let-syntax (let ()
+                                (splicing-let-syntax ([m (syntax-rules ()
+                                                           [(_ id) (define id 10)])])
+                                  (m x))
+                                x))
+
 (define expand-test-use-toplevel? #t)
 (splicing-let-syntax ([abcdefg (syntax-rules ()
                                  [(_) 8])])
@@ -1583,6 +1594,15 @@
                                     (define y a)))
         (list x y)))
 
+(test 11 'nested-splicing-def-use-site
+      (let ()
+        (splicing-let ([z 1])
+          (define-syntax-rule (m a b)
+            (splicing-let ([a 10])
+              (define b (+ a z))))
+          (m x y))
+        y))
+
 (test '(1 2)
       'nested-splicing-syntax
       (let ()
@@ -1604,6 +1624,17 @@
                                         [x q])
                            (define (z) x))
                          (z)))
+(test 10 'splicing-let (let ()
+                         (define-syntax-rule (m a b)
+                           (splicing-let ([a 10])
+                             (define b a)))
+                         (m x y)
+                         y))
+(test #t 'splicing-let (let ()
+                         (splicing-let ()
+                           (define id1 (quote-syntax x)))
+                         (bound-identifier=? id1 (quote-syntax x))))
+
 (test 81 'splicing-letrec (let ()
                             (define q 77)
                             (splicing-letrec ([q 81]
@@ -1630,6 +1661,15 @@
                                                  [q (lambda () 82)])
                                                 (define (z) x))
                                ((z)))))
+
+(test 10 'splicing-letrec
+      (let ()
+        (define-syntax-rule (m a b)
+          (splicing-letrec ([a 10])
+            (define b a)))
+        (m x y)
+        y))
+
 (err/rt-test (eval
               '(begin
                  (splicing-letrec ([x q]
@@ -1719,6 +1759,18 @@
          (define-syntax outer-x (make-rename-transformer #'x)))
         outer-x))
 
+(test 10 'splicing-local
+      (let ()
+        (define-syntax-rule (m a b)
+          (splicing-local ((define a 10))
+            (define b a)))
+        (m x y)
+        y))
+(test #t 'splicing-local (let ()
+                           (splicing-local ()
+                             (define id1 (quote-syntax x)))
+                           (bound-identifier=? id1 (quote-syntax x))))
+
 (test 10 'splicing+begin-for-syntax
       (eval
        '(begin
@@ -1792,6 +1844,28 @@
           (splicing-parameterize ([param 42])
             (deflocal x (param))
             x))))
+(test 10 'splicing-parameterize
+      (let ()
+        (define x (make-parameter #f))
+        (define-syntax-rule (m a b)
+          (splicing-parameterize ([a 10])
+            (define b (a))))
+        (m x y)
+        y))
+(test 11 'splicing-parameterize
+      (let ()
+        (define z (make-parameter #f))
+        (splicing-parameterize ([z 1])
+          (define-syntax-rule (m a b)
+            (splicing-let ([a 10])
+              (define b (+ a (z)))))
+          (m x y))
+        y))
+(test #t 'splicing-parameterize
+      (let ()
+        (splicing-parameterize ()
+          (define id1 (quote-syntax x)))
+        (bound-identifier=? id1 (quote-syntax x))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 

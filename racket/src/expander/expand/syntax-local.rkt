@@ -100,10 +100,15 @@
   (log-expand ctx 'track-syntax 'syntax-local-introduce new-s s)
   new-s)
 
-(define/who (syntax-local-identifier-as-binding id)
+(define/who (syntax-local-identifier-as-binding id [intdef #f])
   (check who identifier? id)
+  (when intdef
+    (check who internal-definition-context? intdef))
   (define ctx (get-current-expand-context 'syntax-local-identifier-as-binding))
-  (define new-id (remove-use-site-scopes id ctx))
+  (define new-id
+    (if intdef
+        (remove-intdef-use-site-scopes id intdef)
+        (remove-use-site-scopes id ctx)))
   (log-expand ctx 'track-syntax 'syntax-local-identifier-as-binding new-id id)
   new-id)
 

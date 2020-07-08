@@ -8,8 +8,12 @@
 @defproc[(local-apply-transformer [transformer (or/c (-> syntax? syntax?) set!-transformer?)]
                                   [stx syntax?]
                                   [context (or/c 'expression 'top-level 'module 'module-begin list?)]
-                                  [intdef-ctxs (listof internal-definition-context?) '()])
+                                  [intdef-ctx (or/c internal-definition-context?
+                                                     #f
+                                                     (listof internal-definition-context?))])
          syntax?]{
+
+For backwards compatibility only; @racket[syntax-local-apply-transformer] is preferred.
 
 Applies @racket[transformer] as a @tech[#:doc refman]{syntax transformer} to @racket[stx] in the
 current expansion context. The result is similar to expanding a use of an
@@ -22,7 +26,7 @@ Unlike simply applying @racket[transformer] to @racket[stx] directly, using
 @racket[local-apply-transformer] introduces the appropriate @tech[#:doc refman]{use-site scope} and
 @tech[#:doc refman]{macro-introduction scope} that would be added by the expander.
 
-The @racket[context] and @racket[intdef-ctxs] arguments are treated the same way as the corresponding
+The @racket[context] and @racket[intdef-ctx] arguments are treated the same way as the corresponding
 arguments to @racket[local-expand].
 
 @history[#:added "6.90.0.29"]}

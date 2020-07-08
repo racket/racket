@@ -23,19 +23,19 @@
          local-transformer-expand/capture-lifts
          syntax-local-expand-expression)
 
-(define (local-expand s context stop-ids [intdefs '()])
+(define (local-expand s context stop-ids [intdefs #f])
   (do-local-expand 'local-expand s context stop-ids intdefs))
 
-(define (local-expand/capture-lifts s context stop-ids [intdefs '()] [lift-key (generate-lift-key)])
+(define (local-expand/capture-lifts s context stop-ids [intdefs #f] [lift-key (generate-lift-key)])
   (do-local-expand 'local-expand s context stop-ids intdefs
                    #:capture-lifts? #t
                    #:lift-key lift-key))
 
-(define (local-transformer-expand s context stop-ids [intdefs '()])
+(define (local-transformer-expand s context stop-ids [intdefs #f])
   (do-local-expand 'local-expand s context stop-ids intdefs
                    #:as-transformer? #t))
 
-(define (local-transformer-expand/capture-lifts s context stop-ids [intdefs '()] [lift-key (generate-lift-key)])
+(define (local-transformer-expand/capture-lifts s context stop-ids [intdefs #f] [lift-key (generate-lift-key)])
   (do-local-expand 'local-expand s context stop-ids intdefs
                    #:as-transformer? #t
                    #:capture-lifts? #t
@@ -65,7 +65,7 @@
 
 ;; ----------------------------------------
 
-(define (do-local-expand who s-or-s-exp context stop-ids [intdefs '()]
+(define (do-local-expand who s-or-s-exp context stop-ids [intdefs #f]
                          #:capture-lifts? [capture-lifts? #f]
                          #:as-transformer? [as-transformer? #f]
                          #:to-parsed-ok? [to-parsed-ok? #f]

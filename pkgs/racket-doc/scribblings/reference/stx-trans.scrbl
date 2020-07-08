@@ -241,9 +241,9 @@ identifier, the @racket[exn:fail:contract] exception is raised.
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
                        [stop-ids (or/c (listof identifier?) empty #f)]
                        [intdef-ctx (or/c internal-definition-context?
-                                         (listof internal-definition-context?)
-                                         #f)
-                                   '()])
+                                         #f
+                                         (listof internal-definition-context?))
+                                   #f])
          syntax?]{
 
 Expands @racket[stx] in the lexical context of the expression
@@ -309,14 +309,18 @@ If the @racket[intdef-ctx] argument is an internal-definition context, its @tech
 @tech{local binding context} during the dynamic extent of the call to @racket[local-expand].
 Additionally, unless @racket[#f] was provided for the @racket[_add-scope?] argument to
 @racket[syntax-local-make-definition-context] when the internal-definition context was created,
-its @tech{scope} (but @emph{not} the scopes of any @tech{parent internal-definition contexts}) is
+its @tech{inside-edge scope} (but @emph{not} the scopes of any @tech{parent internal-definition contexts}) is
 added to the @tech{lexical information} for both @racket[stx] prior to its expansion and the expansion
 result (because the expansion might introduce bindings or references to internal-definition bindings).
-If @racket[intdef-ctx] is a list, all @tech{bindings} from all of the provided internal-definition
-contexts and their parents are added to the @tech{local binding context}, and the @tech{scope} from
-each context for which @racket[_add-scope?] was not @racket[#f] is added in the same way. For
-backwards compatibility, providing @racket[#f] for @racket[intdef-ctx] is treated the same as
-providing an empty list.
+
+For backwards compatibility, when @racket[intdef-ctx] is a list all @tech{bindings} from all of the provided internal-definition
+contexts and their parents are added to the @tech{local binding context}, and the @tech{inside-edge scope} from
+each context for which @racket[_add-scope?] was not @racket[#f] is added in the same way.
+
+Expansion records @tech{use-site scopes} for removal from definition bindings. When the
+@racket[intdef-ctx] argument is an internal-definition context, use-site scopes are recorded
+with that context. When @racket[intdef-ctx] is @racket[#f] or (for backwards compatibility) a list,
+use-site scopes are recorded with the current expand context.
 
 For a particular @tech{internal-definition context}, generate a unique
 value and put it into a list for @racket[context-v]. To allow
@@ -367,8 +371,7 @@ expansion history to external tools.
                                    so that it is never introduced as
                                    an explicit wrapper.}
          #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
-                                     allow an empty list, which is treated the same way as
-                                     @racket[#f].}
+                                     allow an empty list.}
          #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
 
 
@@ -412,9 +415,9 @@ result of @racket[syntax-local-expand-expression] can include
                                    [context-v (or/c 'expression 'top-level list?)]
                                    [stop-ids (or/c (listof identifier?) #f)]
                                    [intdef-ctx (or/c internal-definition-context?
-                                                     (listof internal-definition-context?)
-                                                     #f)
-                                    '()])
+                                                     #f
+                                                     (listof internal-definition-context?))
+                                    #f])
          syntax?]{
 
 Like @racket[local-expand], but @racket[stx] is expanded as a
@@ -440,9 +443,9 @@ or @racket[let-values] wrapper is added.
           [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
           [stop-ids (or/c (listof identifier?) #f)]
           [intdef-ctx (or/c internal-definition-context?
-                            (listof internal-definition-context?)
-                            #f)
-           '()]
+                            #f
+                            (listof internal-definition-context?))
+           #f]
           [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
@@ -471,9 +474,9 @@ If @racket[context-v] is @racket['top-level] or @racket['module], then
           [context-v (or/c 'expression 'top-level list?)]
           [stop-ids (or/c (listof identifier?) #f)]
           [intdef-ctx (or/c internal-definition-context?
-                            (listof internal-definition-context?)
-                            #f)
-           '()]
+                            #f
+                            (listof internal-definition-context?))
+           #f]
           [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
@@ -485,6 +488,33 @@ transformer environment).
 @provided-as-protected[]
 
 @history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+
+
+@defproc[(syntax-local-apply-transformer
+          [transformer procedure?]
+          [binding-id (or/c identifier? #f)]
+          [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+          [intdef-ctx (or/c internal-definition-context? #f)]
+          [v any/c] ...)
+         any]{
+
+Applies the procedure @racket[transformer] to the @racket[v]s in a new
+expansion @tech{context} and @tech{local binding context}. Adds and flips
+@tech{macro-introduction scopes} and @tech{use-site scopes} on the arguments
+and return values in the same manner as @tech{syntax transformer} application.
+The arguments and returns may be any value; scopes are manipulated only for
+those that are syntax objects.
+
+The @racket[context-v] argument is as in @racket[local-expand], and the
+@racket[intdef-ctx] is an @tech{internal-definition context} value or
+@racket[#f]. The @racket[binding-id] specifies a @tech{binding} associated with
+the @racket[transformer], which the expander uses to determine whether to add
+@tech{use-site scopes} and which @tech{code inspector} to use during
+expansion.
+
+@transform-time[]
+
+@history[#:added "8.2.0.7"]}
 
 
 @defproc[(internal-definition-context? [v any/c]) boolean?]{
@@ -500,13 +530,22 @@ context}, @racket[#f] otherwise.}
 
 Creates an opaque @tech{internal-definition context} value to be used with @racket[local-expand] and
 other functions. A transformer should create one context for each set of internal definitions to be
-expanded, and use it when expanding any form whose lexical context should include the definitions.
+expanded.
+
+Before expanding forms whose lexical context should include the definitions, the transformer
+should use @racket[internal-definition-context-add-scopes] to apply the context's scopes to the syntax.
+Calls to procedures such as @racket[local-expand] to expand the forms should
+provide the @tech{internal-definition context} value as an argument.
+
 After discovering an internal @racket[define-values] or @racket[define-syntaxes] form, use
 @racket[syntax-local-bind-syntaxes] to add @tech{bindings} to the context.
 
-An @tech{internal-definition context} internally creates a @tech{scope} to represent the context.
-Unless @racket[add-scope?] is @racket[#f], the @tech{scope} is added to any form that is expanded
-within the context or that appears as the result of a (partial) expansion within the context.
+An @tech{internal-definition context} internally creates an @tech{outside-edge
+scope} and an @tech{inside-edge scope} to represent the context. The
+@tech{inside-edge scope} is added to any form that is expanded within the
+context or that appears as the result of a (partial) expansion within the
+context.  For backward compatibility, providing @racket[#f] for
+@racket[add-scope?] disables this behavior.
 
 If @racket[parent-ctx] is not @racket[#f], then @racket[parent-ctx] is made the @deftech{parent
 internal-definition context} for the new internal-definition context. Whenever the new context’s
@@ -515,7 +554,7 @@ internal-definition context} for the new internal-definition context. Whenever t
 bindings from @racket[parent-ctx] are also added as well. If @racket[parent-ctx] was also created with a
 @tech{parent internal-definition context}, @tech{bindings} from its parent are also added, and so on
 recursively. Note that the @tech{scopes} of parent contexts are @emph{not} added implicitly, only the
-@tech{bindings}, even when the @tech{scope} of the child context would be implicitly added. If the
+@tech{bindings}, even when the @tech{inside-edge scope} of the child context would be implicitly added. If the
 @tech{scopes} of parent definition contexts should be added, the parent contexts must be provided
 explicitly.
 
@@ -525,7 +564,11 @@ argument to ensure the necessary @tech{use-site scopes} are added to macros expa
 Otherwise, expansion of nested definitions can be inconsistent with the expansion of definitions in
 the surrounding context.
 
-The scope associated with a new definition context is pruned from
+An @tech{internal-definition context} also tracks @tech{use-site scopes} created during expansion
+within the definition context, so that they can be removed from bindings created in the context,
+at @racket[syntax-local-identifier-as-binding], and at @racket[internal-definition-context-splice-binding-identifier].
+
+The scopes associated with a new definition context are pruned from
 @racket[quote-syntax] forms only when it is created during the dynamic
 extent of a @tech{syntax transformer} application or in a
 @racket[begin-for-syntax] form (potentially nested) within a module
@@ -536,7 +579,37 @@ being expanded.
 @history[#:changed "6.3" @elem{Added the @racket[add-scope?] argument,
                                and made calling
                                @racket[internal-definition-context-seal]
-                               no longer necessary.}]}
+                               no longer necessary.}
+         #:changed "8.2.0.7" @elem{Added the @tech{outside-edge scope} and @tech{use-site scope}
+                                   tracking behaviors.}]}
+
+
+@defproc[(internal-definition-context-add-scopes [intdef-ctx internal-definition-context?]
+                                                 [stx syntax?])
+         syntax?]{
+
+Adds the @tech{outside-edge scope} and @tech{inside-edge scope} for
+@racket[intdef-ctx] to @racket[stx].
+
+Use this function to apply the definition context scopes to syntax that
+originates within the definition context before expansion.
+
+@history[#:added "8.2.0.7"]}
+
+
+@defproc[(internal-definition-context-splice-binding-identifier
+          [intdef-ctx internal-definition-context?]
+          [id identifier?])
+         syntax?]{
+
+Removes scopes associated with the @racket[intdef-ctx] from @racket[id]: the
+@tech{outside-edge scope}, the @tech{inside-edge scope}, and @tech{use-site
+scopes} created by expansions within the definition context.
+
+Use when splicing a binding originating within the @racket[intdef-ctx] into a
+surrounding context.
+
+@history[#:added "8.2.0.7"]}
 
 
 @defproc[(syntax-local-bind-syntaxes [id-list (listof identifier?)]
@@ -545,13 +618,15 @@ being expanded.
                                      [extra-intdef-ctxs (or/c internal-definition-context?
                                                               (listof internal-definition-context?))
                                       '()])
-         void?]{
+         (listof identifier?)]{
 
 Binds each identifier in @racket[id-list] within the
 @tech{internal-definition context} represented by @racket[intdef-ctx], where
 @racket[intdef-ctx] is the result of
 @racket[syntax-local-make-definition-context].
-The @tech{lexical information} of each element of @racket[extra-intdef-ctxs]
+Returns identifiers with @tech{lexical information} matching the new bindings.
+
+For backwards compatibility, the @tech{lexical information} of each element of @racket[extra-intdef-ctxs]
 is also added to each identifier in @racket[id-list] before binding.
 
 Supply @racket[#f] for
@@ -571,7 +646,8 @@ for @racket[extra-intdef-ctxs] is ignored.
 
 @transform-time[]
 
-@history[#:changed "6.90.0.27" @elem{Added the @racket[extra-intdef-ctxs] argument.}]}
+@history[#:changed "6.90.0.27" @elem{Added the @racket[extra-intdef-ctxs] argument.}
+         #:changed "8.2.0.7" @elem{Changed the return value from @void-const to the list of bound identifiers.}]}
 
 
 @defproc[(internal-definition-context-binding-identifiers
@@ -594,6 +670,10 @@ context}'s @tech{scope}.
 Flips, adds, or removes (depending on @racket[mode]) the @tech{scope}
 for @racket[intdef-ctx] for all parts of @racket[stx].
 
+This function is provided for backwards compatibility;
+@racket[internal-definition-context-add-scopes] and
+@racket[internal-definition-context-splice-binding-identifier] are preferred.
+
 @history[#:added "6.3"]}
 
 
@@ -613,8 +693,8 @@ Removes all of the @tech{scopes} of @racket[intdef-ctx] (or of each
 element in a list @racket[intdef-ctx]) from @racket[id-stx].
 
 The @racket[identifier-remove-from-definition-context] function is
-provided for backward compatibility; the more general
-@racket[internal-definition-context-introduce] function is preferred.
+provided for backward compatibility; the
+@racket[internal-definition-context-splice-binding-identifier] function is preferred.
 
 @history[#:changed "6.3" @elem{Simplified the operation to @tech{scope} removal.}]}
 
@@ -667,9 +747,9 @@ the binding creates a binding alias that effectively routes around the
                              [failure-thunk (or/c (-> any) #f)
                                             #f]
                              [intdef-ctx (or/c internal-definition-context?
-                                               (listof internal-definition-context?)
-                                               #f)
-                              '()])
+                                               #f
+                                               (listof internal-definition-context?))
+                              #f])
          any]{
 
 Returns the @tech{transformer} binding value of the identifier @racket[id-stx] in the context of the
@@ -718,16 +798,16 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
  #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
                              contexts in addition to a single internal-definition context or
                              @racket[#f].}
- #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+ #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
                                        [failure-thunk (or/c (-> any) #f)
                                                       #f]
                                        [intdef-ctx (or/c internal-definition-context?
-                                                         (listof internal-definition-context?)
-                                                         #f)
-                                        '()])
+                                                         #f
+                                                         (listof internal-definition-context?))
+                                        #f])
          any]{
 
 Like @racket[syntax-local-value], but the result is normally two
@@ -988,7 +1068,7 @@ a less conservative list of symbols.
 
 @transform-time[]
 
-@history[#:added "8.2.0.6"]}
+@history[#:added "8.2.0.7"]}
 
 @defproc[(syntax-local-get-shadower [id-stx identifier?]
                                     [only-generated? any/c #f])
@@ -1053,11 +1133,16 @@ transformer} application by the expander for an expression
 within a @racket[module] form, @racket[#f] otherwise.}
 
 
-@defproc[(syntax-local-identifier-as-binding [id-stx identifier?]) identifier?]{
+@defproc[(syntax-local-identifier-as-binding [id-stx identifier?]
+                                             [intdef-ctx (or/c internal-definition-context? #f) #f])
+         identifier?]{
 
 Returns an identifier like @racket[id-stx], but without @tech{use-site
 scopes} that were previously added to the identifier as part of a
-macro expansion in the current definition context.
+macro expansion. When the @racket[intdef-ctx] is an internal-definition
+context, the function removes use-site scopes created during expansion
+in that context. When it is @racket[#f] (the default), it removes use-site
+scopes created during expansion in the current expansion context.
 
 In a @tech{syntax transformer} that runs in a non-expression context
 and forces the expansion of subforms with @racket[local-expand], use
@@ -1069,7 +1154,9 @@ definition context.
 
 @transform-time[]
 
-@history[#:added "6.3"]}
+@history[#:added "6.3"
+         #:changed "8.2.0.7" @elem{Added the optional
+                               @racket[intdef-ctx] argument.}]}
 
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
 

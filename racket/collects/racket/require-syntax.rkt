@@ -4,7 +4,6 @@
          (for-syntax syntax-local-require-introduce))
 
 (require (for-syntax racket/base
-                     syntax/apply-transformer
                      "require-transform.rkt"))
 
 (define-for-syntax (syntax-local-require-introduce x)
@@ -15,7 +14,7 @@
 (define-for-syntax (make-require-macro proc)
   (make-require-transformer
    (lambda (stx)
-     (expand-import (local-apply-transformer proc stx 'expression)))))
+     (expand-import (syntax-local-apply-transformer proc #f 'expression #f stx)))))
 
 (define-syntax (define-require-syntax stx)
   (syntax-case stx ()
