@@ -58,6 +58,7 @@
      [(a6le ta6le) "x86_64-linux"]
      [(i3le ti3le) "i386-linux"]
      [(arm32le tarm32le) "arm-linux"]
+     [(arm64le tarm64le) "aarch64-linux"]
      [(ppc32le tppc32le) "ppc-linux"]
      [(i3ob ti3ob) "i386-openbsd"]
      [(a6ob ta6ob) "x86_64-openbsd"]

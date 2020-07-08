@@ -338,6 +338,9 @@ case "$MACH_HOST_CPU" in
   arm*)
     MACH="${thread_prefix}arm32${MACH_OS}"
     ;;
+  aarch64*)
+    MACH="${thread_prefix}arm64${MACH_OS}"
+    ;;
   power*)
     MACH="${thread_prefix}ppc32${MACH_OS}"
     ;;
@@ -391,6 +394,9 @@ elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
       ;;
     arm*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}arm32${BUILD_OS}"
+      ;;
+    aarch64*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}arm64${BUILD_OS}"
       ;;
     power*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}ppc32${BUILD_OS}"
