@@ -19,7 +19,8 @@ thread is eventually unblocked.
 In addition to its use with semaphore-specific procedures, a semaphore
 can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A semaphore is @tech{ready for synchronization} when
-@racket[semaphore-wait] would not block; @resultItself{semaphore}.
+@racket[semaphore-wait] would not block. Upon synchronization, the
+semaphore's counter is decremented, and @resultItself{semaphore}.
 
 @defproc[(semaphore? [v any/c]) boolean?]{
 
