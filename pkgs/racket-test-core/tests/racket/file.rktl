@@ -1446,6 +1446,7 @@
   (err/rt-test (format "apple~"))
   (err/rt-test (format "~"))
   (err/rt-test (format "~~~"))
+  (err/rt-test (format "~s") (lambda (e) (regexp-match "requires one")))
   (err/rt-test (format "~o") exn:application:mismatch?)
   (err/rt-test (format "~o" 1 2) exn:application:mismatch?)
   (err/rt-test (format "~c" 1) exn:application:mismatch?)

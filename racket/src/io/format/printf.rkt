@@ -197,7 +197,7 @@
 
 (define (arguments->string fmt+args)
   (define args (cdr fmt+args))
-  (if (or (null? args) (<= (length args) 50))
+  (if (<= 1 (length args) 50)
       (parameterize ([error-print-width
                       (max 2 (round (/ (error-print-width) (length args))))])
         (apply string-append
