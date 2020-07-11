@@ -129,7 +129,7 @@ boxes that are not @tech{impersonators}.
   @racket[box-cas!] is guaranteed to use a hardware @emph{compare and
   set} operation. Uses of @racket[box-cas!] be performed safely in a
   @tech{future} (i.e., allowing the future thunk to continue in
-  parallel).}
+  parallel). See also @secref["memory-order"].}
 
 @; ----------------------------------------------------------------------
 @include-section["hashes.scrbl"]

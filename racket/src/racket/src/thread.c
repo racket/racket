@@ -391,6 +391,8 @@ static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost);
 
 static Scheme_Object *check_break_now(int argc, Scheme_Object *args[]);
 
+static Scheme_Object *memory_order(int argc, Scheme_Object *args[]);
+
 static Scheme_Object *unsafe_start_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_end_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_start_breakable_atomic(int argc, Scheme_Object **argv);
@@ -608,7 +610,9 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("custodian-require-memory"              , custodian_require_mem, 3, 3, env);
   ADD_PRIM_W_ARITY("custodian-limit-memory"                , custodian_limit_mem  , 2, 3, env);
   ADD_PRIM_W_ARITY("custodian-memory-accounting-available?", custodian_can_mem    , 0, 0, env);
-  
+
+  ADD_FOLDING_PRIM("memory-order-acquire", memory_order, 0, 0, 1, env);
+  ADD_FOLDING_PRIM("memory-order-release", memory_order, 0, 0, 1, env);
 
   ADD_FOLDING_PRIM("evt?"                      , evt_p                        , 1, 1 , 1, env);
   ADD_PRIM_W_ARITY2("sync"                     , sch_sync                     , 0, -1, 0, -1, env);
@@ -8842,6 +8846,19 @@ static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost)
 {
   *repost = 1;
   return ((WillExecutor *)w)->sema;
+}
+
+/*========================================================================*/
+/*                         GC preparation and timing                      */
+/*========================================================================*/
+
+/* We don't currently support threads on a platform with a weaked
+   memory model than x86, and no memory-order operations are needed on
+   x86. */
+
+static Scheme_Object *memory_order(int argc, Scheme_Object *args[])
+{
+  return scheme_void;
 }
 
 /*========================================================================*/
