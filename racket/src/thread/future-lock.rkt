@@ -53,12 +53,14 @@
 (define (lock-acquire lock)
   (start-future-uninterrupted)
   (let loop ()
-    (unless (box-cas! lock 0 1)
-      (loop))))
+    (if (box-cas! lock 0 1)
+        (memory-order-acquire)
+        (loop))))
 
 (define (lock-release lock)
   (cond
     [(box-cas! lock 1 0)
+     (memory-order-release)
      (end-future-uninterrupted)]
     [(eq? (unbox lock) 0)
      ;; not just a spurious failure...

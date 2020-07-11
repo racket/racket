@@ -19,3 +19,4 @@ support for parallelism to improve performance.
 @include-section["futures.scrbl"]
 @include-section["places.scrbl"]
 @include-section["engine.scrbl"]
+@include-section["memory-order.scrbl"]
