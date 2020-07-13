@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    A variant of msvcprep.bat for Power Shell users.
+    A variant of msvcprep.bat for PowerShell users.
 
 .DESCRIPTION
     Runs Visual Studio's vcvarsall.bat script to set the necessary
