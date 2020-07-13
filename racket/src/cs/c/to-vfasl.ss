@@ -1,4 +1,4 @@
-(compile-compressed #f)
+(fasl-compressed #f)
 (define compile-cross? #f)
 
 (define-values (src dest deps)
@@ -6,7 +6,7 @@
     (cond
       [(and (pair? args)
             (equal? (car args) "--compress"))
-       (compile-compressed #t)
+       (fasl-compressed #t)
        (loop (cdr args))]
       [(and (pair? args)
             (equal? (car args) "--cross"))

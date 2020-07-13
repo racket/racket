@@ -45,11 +45,8 @@
                            (delete-file dest-file))
                          (raise x))])
    (define terminator
-     (if (compress-enabled?)
-         ;; zero byte stops a gzip-read sequence
-         #"\0"
-         ;; A 127 byte teriminates a fasl-read sequence
-         #"\177"))
+     ;; A 127 byte teriminates a fasl-read sequence
+     #"\177")
    (define data
      (bytes-append bstr1 terminator
                    bstr2 terminator

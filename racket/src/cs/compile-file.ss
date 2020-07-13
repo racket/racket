@@ -2,7 +2,7 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 (define-values (need-maj need-min need-sub need-dev)
-  (values 9 5 3 32))
+  (values 9 5 3 33))
 
 (unless (guard (x [else #f]) (eval 'scheme-fork-version-number))
   (error 'compile-file
@@ -42,7 +42,7 @@
 (define whole-program? #f)
 (generate-inspector-information #f)
 (generate-procedure-source-information #f)
-(compile-compressed #f)
+(fasl-compressed #f)
 (enable-arithmetic-left-associative #t)
 (define build-dir "")
 (define xpatch-path #f)
@@ -64,7 +64,7 @@
            (loop args))]
      [(get-opt args "--compress" 0)
       => (lambda (args)
-           (compile-compressed #t)
+           (fasl-compressed #t)
            (putenv "PLT_CS_MAKE_COMPRESSED" "y") ; for "linklet.sls"
            (loop args))]
      [(get-opt args "--whole-program" 0)

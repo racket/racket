@@ -235,8 +235,14 @@
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
     (call-with-system-wind (lambda () (fasl-write s o))))
+  (define (fasl-write-code* s o)
+    (call-with-system-wind (lambda ()
+                             (parameterize ([fasl-compressed compress-code?])
+                               (fasl-write s o)))))
   (define (compile-to-port* s o)
-    (call-with-system-wind (lambda () (compile-to-port s o))))
+    (call-with-system-wind (lambda ()
+                             (parameterize ([fasl-compressed compress-code?])
+                               (compile-to-port s o)))))
 
   (define (eval/foreign e mode)
     (performance-region
@@ -275,49 +281,36 @@
       (get)))
 
   (define (compile-to-bytevector s paths format)
-    (let ([bv (cond
-               [(eq? format 'interpret)
-                (let-values ([(o get) (open-bytevector-output-port)])
-                  (fasl-write* s o)
-                  (get))]
-               [else (compile*-to-bytevector s)])])
-      (if compress-code?
-          (bytevector-compress bv)
-          bv)))
+    (cond
+      [(eq? format 'interpret)
+       (let-values ([(o get) (open-bytevector-output-port)])
+         (fasl-write-code* s o)
+         (get))]
+      [else (compile*-to-bytevector s)]))
 
   (define (make-cross-compile-to-bytevector machine)
     (lambda (s paths format)
-      (let ([bv (cond
-                 [(eq? format 'interpret) (cross-fasl-to-string machine s)]
-                 [else (cross-compile machine s)])])
-        (if compress-code?
-            (bytevector-compress bv)
-            bv))))
-
-  (define (eval-from-bytevector c-bv paths format)
-    (let ([bv (if (bytevector-uncompressed-fasl? c-bv)
-                  c-bv
-                  (begin
-                    (add-performance-memory! 'uncompress (bytevector-length c-bv))
-                    (performance-region
-                     'uncompress
-                     (bytevector-uncompress c-bv))))])
-      (add-performance-memory! 'faslin-code (bytevector-length bv))
       (cond
-       [(eq? format 'interpret)
-        (let ([r (performance-region
-                  'faslin-code
-                  (fasl-read (open-bytevector-input-port bv)))])
-          (performance-region
-           'outer
-           (run-interpret r paths)))]
-       [else
-        (let ([proc (performance-region
-                     'faslin-code
-                     (code-from-bytevector bv))])
-          (if (null? paths)
-              proc
-              (#%apply proc paths)))])))
+        [(eq? format 'interpret) (cross-fasl-to-string machine s)]
+        [else (cross-compile machine s)])))
+
+  (define (eval-from-bytevector bv paths format)
+    (add-performance-memory! 'faslin-code (bytevector-length bv))
+    (cond
+      [(eq? format 'interpret)
+       (let ([r (performance-region
+                 'faslin-code
+                 (fasl-read (open-bytevector-input-port bv)))])
+         (performance-region
+          'outer
+          (run-interpret r paths)))]
+      [else
+       (let ([proc (performance-region
+                    'faslin-code
+                    (code-from-bytevector bv))])
+         (if (null? paths)
+             proc
+             (#%apply proc paths)))]))
 
   (define (code-from-bytevector bv)
     (let ([i (open-bytevector-input-port bv)])
@@ -325,21 +318,6 @@
         (performance-region
          'outer
          (r)))))
-
-  (define (bytevector-uncompressed-fasl? bv)
-    ;; There's not actually a way to distinguish a fasl header from a
-    ;; compression header, but the fasl header as a compression header
-    ;; would mean a > 1GB uncompressed bytevector, so we can safely
-    ;; assume that it's a fasl stream in that case.
-    (and (> (bytevector-length bv) 8)
-         (fx= 0 (bytevector-u8-ref bv 0))
-         (fx= 0 (bytevector-u8-ref bv 1))
-         (fx= 0 (bytevector-u8-ref bv 2))
-         (fx= 0 (bytevector-u8-ref bv 3))
-         (fx= (char->integer #\c) (bytevector-u8-ref bv 4))
-         (fx= (char->integer #\h) (bytevector-u8-ref bv 5))
-         (fx= (char->integer #\e) (bytevector-u8-ref bv 6))
-         (fx= (char->integer #\z) (bytevector-u8-ref bv 7))))
 
   (define-record-type wrapped-code
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
@@ -1231,6 +1209,8 @@
   (enable-arithmetic-left-associative #t)
   (expand-omit-library-invocations #t)
   (enable-error-source-expression #f)
+  (fasl-compressed #f)
+  (compile-omit-concatenate-support #t)
 
   ;; Avoid gensyms for generated record-tyope UIDs. Otherwise,
   ;; printing one of those gensyms --- perhaps when producing a trace

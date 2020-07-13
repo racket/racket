@@ -1,11 +1,11 @@
-(compile-compressed #f)
+(fasl-compressed #f)
 
 (define-values (src dest machine)
   (let loop ([args (command-line-arguments)])
     (cond
       [(and (pair? args)
             (equal? (car args) "--compress"))
-       (compile-compressed #t)
+       (fasl-compressed #t)
        (loop (cdr args))]
       [(and (pair? args)
             (equal? (car args) "--xpatch")

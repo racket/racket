@@ -46,19 +46,10 @@
 
 ;; Before fasl conversion, change 'cross or 'faslable-unsafe to 'faslable
 (define (adjust-cross-perparation l)
-  (adjust-linklet-compress
-   (let ([p (linklet-preparation l)])
-     (if (or (pair? p) (eq? p 'faslable-unsafe))
-         (set-linklet-preparation l 'faslable)
-         l))))
-
-(define (adjust-linklet-compress l)
-  (if (or compress-code?
-          (bytevector-uncompressed-fasl? (linklet-code l)))
-      l
-      (set-linklet-code l
-                        (bytevector-uncompress (linklet-code l))
-                        (linklet-preparation l))))
+  (let ([p (linklet-preparation l)])
+    (if (or (pair? p) (eq? p 'faslable-unsafe))
+        (set-linklet-preparation l 'faslable)
+        l)))
 
 (define (check-fasl-preparation l)
   (case (linklet-preparation l)
