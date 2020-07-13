@@ -24,7 +24,7 @@
 (define-syntax (function stx)
   (syntax-case stx ()
     [(_ (ret name [type arg] ...) . body)
-     #'(*function (cpp/sym 'ret)
+     #'(*function (type/sym 'ret)
                   (as-cpp-defn 'name (cpp/sym 'name))
                   (list (type/sym 'type) ...)
                   (list (var/sym 'arg) ...)

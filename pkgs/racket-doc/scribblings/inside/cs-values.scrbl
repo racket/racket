@@ -172,15 +172,15 @@ In the case of @cppi{Sstring_utf8}, @var{str} is decoded as
 UTF-8, otherwise it is decided as Latin-1.}
 
 
-@function[(uptr string_length [ptr str])]{
+@function[(uptr Sstring_length [ptr str])]{
 
 Returns the length of the string @var{str}.}
 
-@function[(ptr Sstring_ref [ptr str] [i uptr])]{
+@function[(ptr Sstring_ref [ptr str] [uptr i])]{
 
 Returns the @var{i}th Racket character of the string @var{str}.}
 
-@function[(int Sstring_set [ptr str] [i uptr] [ptr ch])]{
+@function[(int Sstring_set [ptr str] [uptr i] [ptr ch])]{
 
 Installs @var{ch} as the @var{i}th Racket character of the string @var{str}.}
 
@@ -197,12 +197,12 @@ Allocates a fresh mutable @tech[#:doc reference-doc]{vector} of length
 Returns the length of the vector @var{vec}.}
 
 
-@function[(uptr Svector_ref [ptr vec] [i uptr])]{
+@function[(ptr Svector_ref [ptr vec] [uptr i])]{
 
 Returns the @var{i}th element of the vector @var{vec}.}
 
 
-@function[(void Svector_set [ptr vec] [i uptr] [ptr v])]{
+@function[(void Svector_set [ptr vec] [uptr i] [ptr v])]{
 
 Installs @var{v} as the @var{i}th element of the vector @var{vec}.}
 
@@ -218,12 +218,12 @@ length @var{len} and with @var{v} initially in every slot.}
 Returns the length of the fxvector @var{vec}.}
 
 
-@function[(uptr Sfxvector_ref [ptr vec] [i uptr])]{
+@function[(iptr Sfxvector_ref [ptr vec] [uptr i])]{
 
 Returns the @var{i}th fixnum of the fxvector @var{vec}.}
 
 
-@function[(void Sfxvector_set [ptr vec] [i uptr] [ptr v])]{
+@function[(void Sfxvector_set [ptr vec] [uptr i] [ptr v])]{
 
 Installs the fixnum @var{v} as the @var{i}th element of the fxvector
 @var{vec}.}
@@ -239,11 +239,11 @@ length @var{len} and with @var{byte} initially in every slot.}
 
 Returns the length of the byte string @var{bstr}.}
 
-@function[(int Sbytevector_u8_ref [ptr bstr] [i uptr])]{
+@function[(int Sbytevector_u8_ref [ptr bstr] [uptr i])]{
 
 Returns the @var{i}th byte of the byte string @var{bstr}.}
 
-@function[(int Sbytevector_u8_set [ptr bstr] [i uptr] [int byte])]{
+@function[(int Sbytevector_u8_set [ptr bstr] [uptr i] [int byte])]{
 
 Installs @var{byte} as the @var{i}th byte of the byte string @var{bstr}.}
 
