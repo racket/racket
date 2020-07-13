@@ -550,6 +550,8 @@
   [mcar (known-procedure/no-prompt 2)]
   [mcdr (known-procedure/no-prompt 2)]
   [mcons (known-procedure/pure 4)]
+  [memory-order-acquire (known-procedure 1)]
+  [memory-order-release (known-procedure 1)]
   [min (known-procedure/folding -2)]
   [modulo (known-procedure/folding 4)]
   [mpair? (known-procedure/pure/folding 2)]
