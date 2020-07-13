@@ -4,7 +4,7 @@ on: [pull_request]
 
 jobs:
 
-  buildtest-linux:
+  buildtest-linux-x86:
     container:
       image: racket/racket-ci:latest
       options: --init
