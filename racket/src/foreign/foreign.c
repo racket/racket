@@ -1348,6 +1348,12 @@ static void wrong_intptr(const char *who, int which, int argc, Scheme_Object **a
   }
 }
 
+#if defined(__aarch64__)
+# define SMALL_ARRAY_THRESHOLD 64
+#else
+# define SMALL_ARRAY_THRESHOLD 32
+#endif
+
 /* (make-array-type type len) -> ctype */
 /* This creates a new primitive type that is an array. An array is the
  * same as a cpointer as an argument, but it behave differently within
@@ -1374,9 +1380,10 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
   /* libffi doesn't seem to support array types, but we try to make
      libffi work anyway by making a structure type that is used when
      an array appears as a struct field. If the array size is 4 or
-     less, or if the total size is 32 bytes or less, then we make a
-     full `elements' array, because the x86_64 ABI always shifts
-     to memory mode after 32 bytes. */
+     less, or if the total size is SMALL_ARRAY_THRESHOLD bytes or
+     less, then we make a full `elements' array, because the x86_64
+     ABI always shifts to memory mode after 32 bytes and the AArch64
+     ABI shifts after 64 bytes. */
 
   /* Allocate the new libffi type object, which is only provided to
      libffi as a type for a structure field.  When a FOREIGN_array
@@ -1391,7 +1398,7 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
   libffi_type->alignment = CTYPE_PRIMTYPE(base)->alignment;
   libffi_type->type      = FFI_TYPE_STRUCT;
 
-  if ((libffi_type->size <= 32) || (len <= 4)) {
+  if ((libffi_type->size <= SMALL_ARRAY_THRESHOLD) || (len <= 4)) {
     int i;
     elements = malloc((len + 1) * sizeof(ffi_type*));
     for (i = 0; i < len; i++) {
@@ -1435,12 +1442,12 @@ static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
   Scheme_Object *base, *basetype;
   GC_CAN_IGNORE ffi_type *libffi_type, **elements = NULL;
   ctype_struct *type;
-  int i, align = 1, a, sz = 0, count = 0;
+  int i, align = 1, a, sz = 0, count = 0, float_kinds = 0, float_kind;
   int some_non_floats = 0;
 
   /* libffi doesn't support union types, so we try to make a
      reasonable approximation. The calling convention of a union type
-     mostly likely depends on of the maximum size of al alternative
+     mostly likely depends on of the maximum size of all alternatives
      and whether it's floating-point or not. Synthesize a struct that
      is big enough and composed of only floats if the union
      alternative are only floats or integers otherwise. This is not
@@ -1457,7 +1464,9 @@ static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
     a = CTYPE_PRIMTYPE(base)->size;
     if (sz < a) sz = a;
 
-    if (!all_float_types(CTYPE_PRIMTYPE(base)))
+    float_kind = all_float_types(CTYPE_PRIMTYPE(base));
+    if (i == 0) float_kinds = float_kind;
+    if (!float_kind || (float_kind != float_kinds))
       some_non_floats = 1;
   }
 
@@ -1548,8 +1557,22 @@ static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
 static Scheme_Object *all_float_types_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  return all_float_types((ffi_type *)p->ku.k.i1) ? scheme_true : scheme_false;
+  int r;
+  r = all_float_types((ffi_type *)p->ku.k.i1);
+  return scheme_make_integer(r);
 }
+
+#if defined(__arm__) || defined(__thumb__) || defined(__aarch64__)
+/* Arm: uniform floats must be the same type */
+# define FLOAT_KIND_DOUBLE 1
+# define FLOAT_KIND_FLOAT  2
+# define FLOAT_KIND_EXT    3
+#else
+/* Other: different kinds of floats are treated the same */
+# define FLOAT_KIND_DOUBLE 1
+# define FLOAT_KIND_FLOAT  1
+# define FLOAT_KIND_EXT    1
+#endif
 
 static int all_float_types(GC_CAN_IGNORE ffi_type *libffi_type)
 {
@@ -1557,25 +1580,32 @@ static int all_float_types(GC_CAN_IGNORE ffi_type *libffi_type)
 # include "mzstkchk.h"
     {
       Scheme_Thread *p = scheme_current_thread;
+      Scheme_Object *r;
       p->ku.k.i1 = (intptr_t)libffi_type;
-      return SCHEME_TRUEP(scheme_handle_stack_overflow(all_float_types_k));
+      r = scheme_handle_stack_overflow(all_float_types_k);
+      return SCHEME_INT_VAL(r);
     }
   }
 
   if (libffi_type == &ffi_type_double)
-    return 1;
+    return FLOAT_KIND_DOUBLE;
   if (libffi_type == &ffi_type_float)
-    return 1;
+    return FLOAT_KIND_FLOAT;
   if (libffi_type == &ffi_type_longdouble)
-    return 1;
+    return FLOAT_KIND_EXT;
 
   if (libffi_type->type == FFI_TYPE_STRUCT) {
-    int i;
+    int i, kind = 0, k;
     for (i = 0; libffi_type->elements[i]; i++) {
-      if (!all_float_types(libffi_type->elements[i]))
+      k = all_float_types(libffi_type->elements[i]);
+      if (!k)
+        return 0;
+      if (!i)
+        kind = k;
+      else if (kind != k)
         return 0;
     }
-    return 1;
+    return kind;
   }
 
   return 0;
