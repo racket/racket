@@ -3,7 +3,6 @@
          (for-syntax racket/base
                      racket/struct-info
                      racket/list
-                     racket/set
                      "../private/struct-util.rkt"))
 
 (define-for-syntax (extract-field-names orig-stx the-struct-info)
@@ -44,7 +43,8 @@
            (if (struct-field-info? v)
                (struct-field-info-list v)
                (extract-field-names stx the-struct-info)))
-         (define field-set (list->set own-fields))
+         ;; Use hash instead of set so that we don't need to require racket/set
+         (define field-set (for/hash ([field own-fields]) (values field #t)))
 
          ;; Check that all field names are valid
          (for ([an (in-list (syntax->list #'(field+pat ...)))])
@@ -54,7 +54,7 @@
                 (unless (identifier? #'field)
                   (fail-field "not an identifier for field name"))
                 (define name (syntax-e #'field))
-                (unless (set-member? field-set name)
+                (unless (hash-has-key? field-set name)
                   (fail-field "field name not associated with given structure type"))
                 (when (hash-has-key? field->pattern name)
                   (fail-field "field name appears twice"))
