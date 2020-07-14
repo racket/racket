@@ -29,7 +29,7 @@
   (command-line
    #:program (short-program+command-name)
    #:multi
-   [("-l") path "Compile <path> interpreted as a collection path"
+   [("-l") path "Compile <path> interpreted as a collection-based module path"
     (coll-paths (cons path (coll-paths)))]
    #:once-each
    [("-j") n "Compile with up to <n> tasks in parallel" 
@@ -56,7 +56,7 @@
    #:args files
    (when (and (null? files)
               (null? (coll-paths)))
-     (raise-user-error (format "~a: expects at least one file path or collection path"
+     (raise-user-error (format "~a: expects at least one file or module path"
                                (short-program+command-name))))
    files))
 

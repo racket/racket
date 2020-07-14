@@ -37,7 +37,7 @@ The @exec{raco make} command accepts a few flags:
 @itemlist[
 
  @item{@Flag{l} @nonterm{path} --- Compiles @nonterm{path} interpreted
-       as a library path, as for @racket[require].}
+       as a collection-based module path, as for @racket[require].}
 
 @item{@Flag{j} @nonterm{n} --- Compiles argument modules in parallel,
        using up to @nonterm{n} parallel tasks.}
