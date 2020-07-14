@@ -17,4 +17,6 @@
   (delete-directory/files tmpdir)
 
   (unless ok?
-    (error "`raco make` test failed")))
+    (error "`raco make -j 2 tmp.rkt` test failed"))
+  (unless (system* exec-path "-l" "raco" "make" "-l" "racket/base")
+    (error "`raco make -l racket/base` test failed")))
