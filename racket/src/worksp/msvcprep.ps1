@@ -19,12 +19,12 @@
     * https://stackoverflow.com/a/2124759/144981
 #>
 
-$command = $PSScriptRoot + "\msvcprep.bat " + $Args[0] + " & set"
+$command = "echo off & " + $PSScriptRoot + "\msvcprep.bat " + $Args[0] + " & set"
 cmd /c $command |
   ForEach {
       if ($_ -match "=") {
-          $v = $_.split("=")
-          Set-Item -Force -Path "ENV:\$($v[0])"  -Value "$($v[1])"
+          $v = $_.split("=", 2)
+          Set-Item -Force -Path "ENV:\$($v[0])" -Value "$($v[1])"
       }
   }
 Write-Host "Visual Studio variables set." -ForegroundColor Yellow
