@@ -1919,12 +1919,11 @@ static int path_is_simple_dir_without_sep(Scheme_Object *path)
 static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr_t len, Scheme_Object *p, int just_check,
                                                 int kind)
 /* Although this function accepts an offset, the Windows part assumes that
-   `offset' is always 0. */
+   `offset' is always 0. If `just_check` is > 1, returns `p` for more
+   directory paths than just the ones that end in a separator. */
 {
   char *s2;
-#if DROP_REDUNDANT_SLASHES
   int not_a_sep = 0;
-#endif
 
   if (kind == SCHEME_WINDOWS_PATH_KIND) {
     int slash_dir_sep = 1;
@@ -1937,36 +1936,34 @@ static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr
       }
 
       if (check_dos_slashslash_qm(s, len, &drive_end, NULL, NULL)) {
-#if DROP_REDUNDANT_SLASHES
-        if (drive_end < 0) {
-          /* It's a \\?\REL\ or \\?\RED\ path. */
-          int litpos;
-          drive_end = get_slashslash_qm_dot_ups_end(s, len, &litpos);
-          /* If there's no path after the ..s, then nothing more is needed. */
-          if (litpos >= len)
-            return p;
-        } else {
-          /* If s is just a drive, then nothing more is needed. */
-          if (drive_end == len)
-            return p;
+        if (just_check > 1) {
+          if (drive_end < 0) {
+            /* It's a \\?\REL\ or \\?\RED\ path. */
+            int litpos;
+            drive_end = get_slashslash_qm_dot_ups_end(s, len, &litpos);
+            /* If there's no path after the ..s, then nothing more is needed. */
+            if (litpos >= len)
+              return p;
+          } else {
+            /* If s is just a drive, then nothing more is needed. */
+            if (drive_end == len)
+              return p;
+          }
         }
-#endif
 
         /* In \\?\, / can be part of a name, and it is never a separator. */
         slash_dir_sep = 0;
         /* Any "." or ".." at the end is a literal path element,
            not an up- or same-directory indicator: */
-#if DROP_REDUNDANT_SLASHES
         not_a_sep = 1;
-#endif
       } else {
-#if DROP_REDUNDANT_SLASHES
-        /* A slash after C: is not strictly necessary: */
-        if ((len == 2)
-            && is_drive_letter(s[offset])
-            && (s[offset+1] == ':'))
-          return p;
-#endif
+        if (just_check > 1) {
+          /* A slash after C: is not strictly necessary: */
+          if ((len == 2)
+              && is_drive_letter(s[offset])
+              && (s[offset+1] == ':'))
+            return p;
+        }
       }
     }
     {
@@ -1979,33 +1976,33 @@ static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr
       return p;
   }
 
-#if DROP_REDUNDANT_SLASHES
-  if (!not_a_sep
-      && (((len > 1) && (s[offset + len - 1] == '.') && IS_A_SEP(kind, s[offset + len - 2]))
-          || ((len == 1) && (s[offset] == '.'))))
-    return p;
-  if (!not_a_sep
-      && (((len > 2) 
-           && (s[offset + len - 1] == '.') 
-           && (s[offset + len - 2] == '.') 
-           && IS_A_SEP(kind, s[offset + len - 3]))
-          || ((len == 2) && (s[offset] == '.') && (s[offset + 1] == '.'))))
-    return p;
+  if (just_check > 1) {
+    if (!not_a_sep
+        && (((len > 1) && (s[offset + len - 1] == '.') && IS_A_SEP(kind, s[offset + len - 2]))
+            || ((len == 1) && (s[offset] == '.'))))
+      return p;
+    if (!not_a_sep
+        && (((len > 2) 
+             && (s[offset + len - 1] == '.') 
+             && (s[offset + len - 2] == '.') 
+             && IS_A_SEP(kind, s[offset + len - 3]))
+            || ((len == 2) && (s[offset] == '.') && (s[offset + 1] == '.'))))
+      return p;
   
 # ifdef TILDE_IS_ABSOLUTE
-  if (kind == SCHEME_UNIX_PATH_KIND) {
-    if (s[offset] == '~') {
-      intptr_t i;
-      for (i = 1; i < len; i++) {
-        if (IS_A_UNIX_SEP(s[offset + i]))
-          break;
+    if (kind == SCHEME_UNIX_PATH_KIND) {
+      if (s[offset] == '~') {
+        intptr_t i;
+        for (i = 1; i < len; i++) {
+          if (IS_A_UNIX_SEP(s[offset + i]))
+            break;
+        }
+        if (i >= len)
+          return p;
       }
-      if (i >= len)
-        return p;
     }
-  }
 # endif
-#endif
+  }
 
   if (just_check)
     return NULL;
@@ -4629,10 +4626,11 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
 
 
 #if defined(DOS_FILE_SYSTEM)
-  if (do_path_to_directory_path(src, 0, -1, argv[1], 1, SCHEME_WINDOWS_PATH_KIND))
-	dest_is_dir = 1;
+  if (do_path_to_directory_path(SCHEME_PATH_VAL(dest), 0, SCHEME_PATH_LEN(dest),
+                                argv[0], 2, SCHEME_WINDOWS_PATH_KIND))
+    dest_is_dir = 1;
   else
-	dest_is_dir = 0;
+    dest_is_dir = 0;
 #else
   dest_is_dir = 0;
 #endif

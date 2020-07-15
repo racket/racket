@@ -472,10 +472,15 @@ successfully,the @exnraise[exn:fail:filesystem].
 
 On Windows XP and earlier, the @exnraise[exn:fail:unsupported]. On
 later versions of Windows, the creation of links tends to be
-disallowed by security policies. Furthermore, a relative-path link is
-parsed specially; see @secref["windowspaths"] for more information.
-When @racket[make-file-or-directory-link] succeeds, it creates a symbolic
-link as opposed to a junction.
+disallowed by security policies. Windows distinguishes between file
+and directory links, and a directory link is created if @racket[to]
+parses syntactically as a directory. Furthermore, a relative-path link
+is parsed specially by the operating system; see
+@secref["windowspaths"] for more information. When
+@racket[make-file-or-directory-link] succeeds, it creates a symbolic
+link as opposed to a junction or hard link. Beware that directory
+links must be deleted using @racket[delete-directory] instead of
+@racket[delete-file].
 
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 

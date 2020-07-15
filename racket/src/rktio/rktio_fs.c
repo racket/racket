@@ -986,16 +986,21 @@ int rktio_make_link(rktio_t *rktio, const char *src, const char *dest, int dest_
 {
 #if defined(RKTIO_SYSTEM_WINDOWS)
   init_procs();
-    
+
+# ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
+#  define SYMBOLIC_LINK_FLAG_DIRECTORY 0x1
+# endif
+# ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#  define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE 0x2
+# endif
+
   if (CreateSymbolicLinkProc) {
-    int flags;
+    int flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
     wchar_t *src_w;
     wchar_t *dest_w;
 
     if (dest_is_directory)
-      flags = 0x1; /* directory */
-    else
-      flags = 0; /* file */
+      flags |= SYMBOLIC_LINK_FLAG_DIRECTORY; /* directory */
 
     src_w = WIDE_PATH_copy(src);
     if (!src_w) return 0;
