@@ -658,8 +658,7 @@
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]
-                                                  [path (convert-source-file-descriptor-path
-                                                         (source-file-descriptor-path (source-object-sfd src)))])
+                                                  [path (source-file-descriptor-path (source-object-sfd src))])
                                              (if (source-object-line src)
                                                  (values path
                                                          (source-object-line src)
@@ -676,10 +675,6 @@
         (if (or name loc)
             (cons (cons name loc) (loop (cdr l) ls))
             (loop (cdr l) ls)))])))
-
-(define convert-source-file-descriptor-path (lambda (s) s))
-(define (set-convert-source-file-descriptor-path! proc)
-  (set! convert-source-file-descriptor-path proc))
 
 (define (default-error-display-handler msg v)
   (eprintf "~a" msg)

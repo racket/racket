@@ -48,7 +48,7 @@
         [line (correlated-line v)]
         [column (correlated-column v)]
         [span (correlated-span v)])
-    (if (and pos span (or (path? src) (string? src)))
+    (if (and pos span (or (path? src) (string? src) (symbol? src)))
         (let ([pos (sub1 pos)]) ; Racket positions are 1-based; host Scheme positions are 0-based
           (make-annotation e
                            (if (and line column)
@@ -73,37 +73,12 @@
 (define (source->sfd src serializable? sfd-cache)
   (or (with-interrupts-disabled
        (hash-ref sfd-cache src #f))
-      (let ([str (cond
-                   [serializable?
-                    ;; Making paths to record for procedure obey
-                    ;; `current-write-relative-directory`, etc., is
-                    ;; difficult --- a lot of work for something that
-                    ;; shows up only in stack traces. So, just keep a
-                    ;; couple of path elements
-                    (let-values ([(base name dir?) (split-path src)])
-                      (cond
-                        [(or (not (path? name))
-                             (not base))
-                         "..."]
-                        [(path? base)
-                         (let-values ([(base name2 dir?) (split-path base)])
-                           (cond
-                             [(and (path? name2)
-                                   base)
-                              (string-append ".../" (path-element->string name2)
-                                             "/" (path-element->string name))]
-                             [else
-                              (string-append ".../" (path-element->string name))]))]
-                        [else
-                         (string-append ".../" (path-element->string name))]))]
-                   [(path? src) (path->string src)]
-                   [else src])])
-        ;; We'll use a file-position object in source objects, so
-        ;; the sfd checksum doesn't matter
-        (let ([sfd (source-file-descriptor str 0)])
-          (with-interrupts-disabled
-           (hash-set! sfd-cache src sfd))
-          sfd))))
+      ;; We'll use a file-position object in source objects, so
+      ;; the sfd checksum doesn't matter
+      (let ([sfd (source-file-descriptor src 0)])
+        (with-interrupts-disabled
+         (hash-set! sfd-cache src sfd))
+        sfd)))
 
 ;; --------------------------------------------------
 

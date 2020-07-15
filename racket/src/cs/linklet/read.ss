@@ -49,9 +49,13 @@
                       'faslable-strict])))
 
 (define (decode-linklet-paths linklet)
-  (let ([paths (linklet-paths linklet)])
+  (let ([paths (linklet-paths linklet)]
+        [sfd-paths (linklet-sfd-paths linklet)])
     (cond
-     [(null? paths)
-      linklet]
-     [else
-      (set-linklet-paths linklet (map compiled-path->path paths))])))
+      [(and (null? paths)
+            (fxzero? (#%vector-length sfd-paths)))
+       linklet]
+      [else
+       (set-linklet-paths linklet
+                          (#%map compiled-path->path paths)
+                          (#%vector-map compiled-path->path sfd-paths))])))

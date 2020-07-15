@@ -59,9 +59,9 @@
     (channel-put ch (list cmd
                           v
                           reply-ch))
-    (begin0
-     (channel-get reply-ch)
-     (cache-cross-compiler a))))
+    (let ([bv+paths (channel-get reply-ch)])
+      (cache-cross-compiler a)
+      (values (car bv+paths) (cdr bv+paths)))))
 
 (define (cross-compile machine v)
   (do-cross 'c machine v))
@@ -114,21 +114,33 @@
                (let ([msg (channel-get msg-ch)])
                  ;; msg is (list <command> <value> <reply-channel>)
                  (write-string (#%format "~a\n" (car msg)) to)
-                 (let ([bv (fasl-to-bytevector (cadr msg))])
+                 (let-values ([(bv sfd-paths) (fasl-to-bytevector (cadr msg))])
+                   ;; We can't send paths to the cross compiler, but we can tell it
+                   ;; how many paths there were, and the cross compiler can report
+                   ;; which of those remain used in the compiled form
                    (write-bytes (integer->integer-bytes (bytevector-length bv) 8 #f #f) to)
-                   (write-bytes bv to))
-                 (flush-output to)
-                 (let* ([len-bstr (read-bytes 8 from)]
-                        [len (integer-bytes->integer len-bstr #f #f)]
-                        [bv (read-bytes len from)])
-                   (channel-put (caddr msg) bv))
+                   (write-bytes bv to)
+                   (write-bytes (integer->integer-bytes (vector-length sfd-paths) 8 #f #f) to)
+                   (flush-output to)
+                   (let* ([read-num (lambda ()
+                                      (integer-bytes->integer (read-bytes 8 from) #f #f))]
+                          [len (read-num)]
+                          [bv (read-bytes len from)]
+                          [kept-sfd-paths-count (read-num)] ; number of used-path indices
+                          [kept-sfd-paths (list->vector
+                                           (let loop ([i 0])
+                                             (if (fx= i kept-sfd-paths-count)
+                                                 '()
+                                                 (cons (vector-ref sfd-paths (read-num))
+                                                       (loop (fx+ i 1))))))])
+                     (channel-put (caddr msg) (cons bv kept-sfd-paths))))
                  (loop)))))))
       (list machine msg-ch))))
 
 (define (fasl-to-bytevector v)
   (let-values ([(o get) (open-bytevector-output-port)])
-    (fasl-write* v o)
-    (get)))
+    (let ([sfd-paths (fasl-write/paths* v o)])
+      (values (get) sfd-paths))))
 
 (define (find-exe exe)
   (let-values ([(base name dir?) (split-path exe)])

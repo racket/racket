@@ -235,14 +235,32 @@
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
     (call-with-system-wind (lambda () (fasl-write s o))))
+  (define (fasl-write/paths* s o)
+    (call-with-system-wind (lambda ()
+                             (call-getting-sfd-paths
+                              (lambda (pred)
+                                (fasl-write s o pred))))))
   (define (fasl-write-code* s o)
     (call-with-system-wind (lambda ()
                              (parameterize ([fasl-compressed compress-code?])
-                               (fasl-write s o)))))
+                               (call-getting-sfd-paths
+                                (lambda (pred)
+                                  (fasl-write s o pred 'omit-rtds)))))))
   (define (compile-to-port* s o)
     (call-with-system-wind (lambda ()
                              (parameterize ([fasl-compressed compress-code?])
-                               (compile-to-port s o)))))
+                               (call-getting-sfd-paths
+                                (lambda (pred)
+                                  (compile-to-port s o #f #f #f (machine-type) #f pred 'omit-rtds)))))))
+
+  (define (call-getting-sfd-paths proc)
+    (let ([sfd-paths '()])
+      (proc (lambda (v)
+              (and (path? v)
+                   (begin
+                     (set! sfd-paths (cons v sfd-paths))
+                     #t))))
+      (list->vector (reverse sfd-paths))))
 
   (define (eval/foreign e mode)
     (performance-region
@@ -275,55 +293,58 @@
               proc
               (#%apply proc paths)))))
 
+  ;; returns code bytevector and sfd-paths vector
   (define (compile*-to-bytevector s)
     (let-values ([(o get) (open-bytevector-output-port)])
-      (compile-to-port* (list `(lambda () ,s)) o)
-      (get)))
+      (let ([sfd-paths (compile-to-port* (list `(lambda () ,s)) o)])
+        (values (get) sfd-paths))))
 
-  (define (compile-to-bytevector s paths format)
+  ;; returns code bytevector and sfd-paths vector
+  (define (compile-to-bytevector s format)
     (cond
       [(eq? format 'interpret)
        (let-values ([(o get) (open-bytevector-output-port)])
-         (fasl-write-code* s o)
-         (get))]
+         (let ([sfd-paths (fasl-write-code* s o)])
+           (values (get) sfd-paths)))]
       [else (compile*-to-bytevector s)]))
 
-  (define (make-cross-compile-to-bytevector machine)
-    (lambda (s paths format)
-      (cond
-        [(eq? format 'interpret) (cross-fasl-to-string machine s)]
-        [else (cross-compile machine s)])))
+  ;; returns code bytevector and sfd-paths vector
+  (define (cross-compile-to-bytevector machine s format)
+    (cond
+      [(eq? format 'interpret) (cross-fasl-to-string machine s)]
+      [else (cross-compile machine s)]))
 
-  (define (eval-from-bytevector bv paths format)
+  (define (eval-from-bytevector bv paths sfd-paths format)
     (add-performance-memory! 'faslin-code (bytevector-length bv))
     (cond
       [(eq? format 'interpret)
        (let ([r (performance-region
                  'faslin-code
-                 (fasl-read (open-bytevector-input-port bv)))])
+                 (fasl-read (open-bytevector-input-port bv) 'load sfd-paths))])
          (performance-region
           'outer
           (run-interpret r paths)))]
       [else
        (let ([proc (performance-region
                     'faslin-code
-                    (code-from-bytevector bv))])
+                    (code-from-bytevector bv sfd-paths))])
          (if (null? paths)
              proc
              (#%apply proc paths)))]))
 
-  (define (code-from-bytevector bv)
+  (define (code-from-bytevector bv sfd-paths)
     (let ([i (open-bytevector-input-port bv)])
-      (let ([r (load-compiled-from-port i)])
+      (let ([r (load-compiled-from-port i sfd-paths)])
         (performance-region
          'outer
          (r)))))
 
   (define-record-type wrapped-code
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
+            sfd-paths
             arity-mask
             name)
-    (nongenerative #{wrapped-code p6o2m72rgmi36pm8vy559b-0}))
+    (nongenerative #{wrapped-code p6o2m72rgmi36pm8vy559b-1}))
 
   (define (force-wrapped-code wc)
     (let ([f (wrapped-code-content wc)])
@@ -333,7 +354,7 @@
            'on-demand
            (cond
              [(bytevector? f)
-              (let* ([f (code-from-bytevector f)])
+              (let* ([f (code-from-bytevector f (wrapped-code-sfd-paths wc))])
                 (wrapped-code-content-set! wc f)
                 f)]
              [else
@@ -396,6 +417,7 @@
   (define-record-type linklet
     (fields (mutable code) ; the procedure or interpretable form
             paths          ; list of paths and other fasled; if non-empty, `code` expects them as arguments
+            sfd-paths      ; vector of additional source-location paths intercepted during fasl
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
             (mutable preparation) ; 'faslable, 'faslable-strict, 'faslable-unsafe, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
@@ -403,11 +425,12 @@
             name           ; name of the linklet (for debugging purposes)
             importss       ; list of list of import symbols
             exports)       ; list of export symbol-or-pair, pair is (cons export-symbol src-symbol)
-    (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-2}))
+    (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-3}))
 
   (define (set-linklet-code linklet code preparation)
     (make-linklet code
                   (linklet-paths linklet)
+                  (linklet-sfd-paths linklet)
                   (linklet-format linklet)
                   preparation
                   (linklet-importss-abi linklet)
@@ -416,9 +439,10 @@
                   (linklet-importss linklet)
                   (linklet-exports linklet)))
 
-  (define (set-linklet-paths linklet paths)
+  (define (set-linklet-paths linklet paths sfd-paths)
     (make-linklet (linklet-code linklet)
                   paths
+                  sfd-paths
                   (linklet-format linklet)
                   (linklet-preparation linklet)
                   (linklet-importss-abi linklet)
@@ -430,6 +454,7 @@
   (define (set-linklet-preparation linklet preparation)
     (make-linklet (linklet-code linklet)
                   (linklet-paths linklet)
+                  (linklet-sfd-paths linklet)
                   (linklet-format linklet)
                   preparation
                   (linklet-importss-abi linklet)
@@ -536,6 +561,7 @@
                                            (lambda (expr arity-mask name)
                                              (let ([a (correlated->annotation (xify expr) serializable? sfd-cache)])
                                                (make-wrapped-code a
+                                                                  #f
                                                                   arity-mask
                                                                   (extract-inferred-name expr name))))]
                                           [else
@@ -543,15 +569,13 @@
                                            (lambda (expr arity-mask name)
                                              (performance-region
                                               'compile-nested
-                                              (let ([code ((if serializable?
-                                                               (if cross-machine
-                                                                   (lambda (s) (cross-compile cross-machine s))
-                                                                   compile*-to-bytevector)
-                                                               compile*)
-                                                           (show lambda-on? "lambda" (correlated->annotation expr serializable? sfd-cache)))])
+                                              (let ([expr (show lambda-on? "lambda" (correlated->annotation expr serializable? sfd-cache))])
                                                 (if serializable?
-                                                    (make-wrapped-code code arity-mask (extract-inferred-name expr name))
-                                                    code))))])))]))
+                                                    (let-values ([(code sfd-paths) (if cross-machine
+                                                                                       (cross-compile cross-machine expr)
+                                                                                       (compile*-to-bytevector expr))])
+                                                      (make-wrapped-code code sfd-paths arity-mask (extract-inferred-name expr name)))
+                                                    (compile* expr)))))])))]))
        (define-values (paths impl-lam/paths)
          (if serializable?
              (extract-paths-and-fasls-from-schemified-linklet impl-lam/jitified (eq? format 'compile))
@@ -571,30 +595,31 @@
        (performance-region
         'compile-linklet
         ;; Create the linklet:
-        (let ([lk (make-linklet ((if serializable?
-                                     (if cross-machine
-                                         (make-cross-compile-to-bytevector cross-machine)
-                                         compile-to-bytevector)
-                                     compile-to-proc)
-                                 (show (and (eq? format 'interpret) post-interp-on?) "post-interp" impl-lam/interpable)
-                                 paths
-                                 format)
-                                paths
-                                format
-                                (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
-                                importss-abi
-                                exports-info
-                                name
-                                importss
-                                exports)])
-          (show "compiled" 'done)
-          ;; In general, `compile-linklet` is allowed to extend the set
-          ;; of linklet imports if `import-keys` is provided (e.g., for
-          ;; cross-linklet optimization where inlining needs a new
-          ;; direct import)
-          (if import-keys
-              (values lk new-import-keys)
-              lk))))]))
+        (let ([impl (show (and (eq? format 'interpret) post-interp-on?) "post-interp" impl-lam/interpable)])
+          (let-values ([(code sfd-paths)
+                        (if serializable?
+                            (if cross-machine
+                                (cross-compile-to-bytevector cross-machine impl format)
+                                (compile-to-bytevector impl format))
+                            (values (compile-to-proc impl paths format) '#()))])
+            (let ([lk (make-linklet code
+                                    paths
+                                    sfd-paths
+                                    format
+                                    (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
+                                    importss-abi
+                                    exports-info
+                                    name
+                                    importss
+                                    exports)])
+              (show "compiled" 'done)
+              ;; In general, `compile-linklet` is allowed to extend the set
+              ;; of linklet imports if `import-keys` is provided (e.g., for
+              ;; cross-linklet optimization where inlining needs a new
+              ;; direct import)
+              (if import-keys
+                  (values lk new-import-keys)
+                  lk))))))]))
 
   (define (lookup-linklet-or-instance get-import key)
     ;; Use the provided callback to get an linklet for the
@@ -638,7 +663,10 @@
        (set-linklet-code linklet (linklet-code linklet) 'lazy)]
       [(faslable-strict)
        (set-linklet-code linklet
-                         (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet))
+                         (eval-from-bytevector (linklet-code linklet)
+                                               (linklet-paths linklet)
+                                               (linklet-sfd-paths linklet)
+                                               (linklet-format linklet))
                          'callable)]
       [(faslable-unsafe)
        (raise (|#%app|
@@ -674,7 +702,10 @@
           (begin
            (when (eq? 'lazy (linklet-preparation linklet))
              ;; Trigger lazy conversion of code from bytevector
-             (let ([code (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet))])
+             (let ([code (eval-from-bytevector (linklet-code linklet)
+                                               (linklet-paths linklet)
+                                               (linklet-sfd-paths linklet)
+                                               (linklet-format linklet))])
                (with-interrupts-disabled
                 (when (eq? 'lazy (linklet-preparation linklet))
                   (linklet-code-set! linklet code)
@@ -692,7 +723,10 @@
                (apply
                 (if (eq? 'callable (linklet-preparation linklet))
                     (linklet-code linklet)
-                    (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet)))
+                    (eval-from-bytevector (linklet-code linklet)
+                                          (linklet-paths linklet)
+                                          (linklet-sfd-paths linklet)
+                                          (linklet-format linklet)))
                 (make-variable-reference target-instance #f)
                 (extract-imported-variabless target-instance
                                              import-instances

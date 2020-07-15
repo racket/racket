@@ -6,7 +6,9 @@
 (define (write-linklet-bundle-hash ht dest-o)
   (let-values ([(ht cross-machine) (encode-linklet-paths ht)])
     (let ([bstr (if cross-machine
-                    (cross-fasl-to-string cross-machine ht)
+                    (let-values ([(bstr sfd-paths) (cross-fasl-to-string cross-machine ht)])
+                      ;; sfd-paths should be empty
+                      bstr)
                     (let-values ([(o get) (open-bytevector-output-port)])
                       (fasl-write* ht o)
                       (get)))])
@@ -24,12 +26,15 @@
           (let ([new-v (cond
                         [(linklet? v)
                          (cond
-                          [(pair? (linklet-paths v))
+                          [(or (pair? (linklet-paths v))
+                               (fxpositive? (#%vector-length (linklet-sfd-paths v))))
                            (adjust-cross-perparation
                             (set-linklet-paths
                              v
-                             (map path->compiled-path
-                                  (linklet-paths v))))]
+                             (#%map path->compiled-path
+                                    (linklet-paths v))
+                             (#%vector-map (lambda (p) (path->compiled-path p #t))
+                                           (linklet-sfd-paths v))))]
                           [else (adjust-cross-perparation v)])]
                         [else v])])
             (when (linklet? new-v)

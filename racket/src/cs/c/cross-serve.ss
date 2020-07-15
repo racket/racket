@@ -32,27 +32,71 @@
         (unless (eof-object? cmd)
           (get-u8 in) ; newline
           (let-values ([(o get) (open-bytevector-output-port)])
-            (case (integer->char cmd)
-              [(#\c)
-               (compile-to-port (list `(lambda () ,(read-fasled in))) o)]
-              [(#\f)
-               ;; Reads host fasl format, then writes target fasl format
-               (let ([v (read-fasled in)])
-                 (parameterize ([#%$target-machine (string->symbol target)])
-                   (fasl-write v o)))]
-              [else
-               (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])
-            (let ([result (get)]
-                  [len-bv (make-bytevector 8)])
-              (bytevector-u64-set! len-bv 0 (bytevector-length result) (endianness little))
-              (put-bytevector out len-bv)
-              (put-bytevector out result)
-              (flush-output-port out)))
-          (loop))))))
+            (let ([sfd-paths
+                   (case (integer->char cmd)
+                     [(#\c)
+                      (call-with-fasled
+                       in
+                       (lambda (v pred)
+                         (compile-to-port (list `(lambda () ,v)) o #f #f #f (string->symbol target) #f pred)))]
+                     [(#\f)
+                      ;; Reads host fasl format, then writes target fasl format
+                      (call-with-fasled
+                       in
+                       (lambda (v pred)
+                         (parameterize ([#%$target-machine (string->symbol target)])
+                           (fasl-write v o pred))))]
+                     [else
+                      (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])])
+              (let ([result (get)])
+                (put-num out (bytevector-length result))
+                (put-bytevector out result)
+                (let ([len (vector-length sfd-paths)])
+                  (put-num out len)
+                  (let loop ([i 0])
+                    (unless (fx= i len)
+                      (put-num out (vector-ref sfd-paths i))
+                      (loop (fx+ i 1)))))
+                (flush-output-port out)))
+            (loop)))))))
 
 ;; ----------------------------------------
 
-(define (read-fasled in)
-  (let ([len-bv (get-bytevector-n in 8)])
-    (fasl-read (open-bytevector-input-port
-                (get-bytevector-n in (bytevector-u64-ref len-bv 0 (endianness little)))))))
+(define (put-num out n)
+  (let ([bv (make-bytevector 8)])
+    (bytevector-u64-set! bv 0 n (endianness little))
+    (put-bytevector out bv)))
+
+(define (get-num in)
+  (let ([bv (get-bytevector-n in 8)])
+    (bytevector-u64-ref bv 0 (endianness little))))
+
+;; ----------------------------------------
+
+(define-record-type path-placeholder
+  (fields pos))
+
+(define (call-with-fasled in proc)
+  (let* ([fasled-bv (get-bytevector-n in (get-num in))]
+         [num-sfd-paths (get-num in)]
+         [sfd-paths (list->vector
+                      (let loop ([i 0])
+                        (if (fx= i num-sfd-paths)
+                            '()
+                            (cons (make-path-placeholder i)
+                                  (loop (fx+ i 1))))))]
+         [used-placeholders '()]
+         ;; v is the Chez Scheme value communicated from the client,
+         ;; but with each path replace by a `path-placeholder`:
+         [v (fasl-read (open-bytevector-input-port fasled-bv)
+                       'load
+                       sfd-paths)])
+      (proc v
+            (lambda (a)
+              (and (path-placeholder? a)
+                   (begin
+                     (set! used-placeholders (cons a used-placeholders))
+                     #t))))
+      ;; Return indices of paths used in new fasled output, in the
+      ;; order that they're used
+      (list->vector (map path-placeholder-pos used-placeholders))))

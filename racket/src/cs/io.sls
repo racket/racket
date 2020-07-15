@@ -526,6 +526,5 @@
   (set-make-async-callback-poll-wakeup! unsafe-make-signal-received)
   (set-get-machine-info! get-machine-info)
   (set-processor-count! (1/processor-count))
-  (set-convert-source-file-descriptor-path! 1/string->path)
   (install-future-logging-procs! logging-future-events? log-future-event)
   (install-place-logging-procs! logging-place-events? log-place-event))

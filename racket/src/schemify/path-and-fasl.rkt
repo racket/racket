@@ -60,7 +60,7 @@
 
 (define (make-path->compiled-path who)
   (define path->relative-path-elements (make-path->relative-path-elements #:who who))
-  (lambda (orig-p)
+  (lambda (orig-p [for-srcloc? #f])
     (cond
       [(to-fasl? orig-p)
        (define v (force-unfasl orig-p))
@@ -95,7 +95,8 @@
          [(path? p)
           (or (path->relative-path-elements p)
               (cond
-                [(path-for-srcloc? orig-p)
+                [(or for-srcloc?
+                     (path-for-srcloc? orig-p))
                  ;; Can't make relative, so create a string that keeps up
                  ;; to two path elements
                  (truncate-path p)]
