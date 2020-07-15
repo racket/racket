@@ -224,9 +224,9 @@ to a value that starts with @litchar{0}, @litchar{n}, or @litchar{N} to
 disable incremental-mode requests.
 
 Each garbage collection logs a message (see @secref["logging"]) at the
-@racket['debug] level with topic @racket['GC]. In Racket 3m and CS
+@racket['debug] level with topic @racket['GC]. In the 3m and CS
 variants of Racket, ``major'' collections are also logged at the
-@racket['debug] level with the topic @racket['GC:major]. In Racket 3m
+@racket['debug] level with the topic @racket['GC:major]. In the 3m
 and CS variants of Racket, the data portion of the message is an
 instance of a @indexed-racket[gc-info] @tech{prefab} structure type
 with 10 fields as follows, but future versions of Racket may use a
