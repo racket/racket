@@ -893,6 +893,8 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
   }
 # endif
 
+  len = LIMIT_REQUEST_SIZE(len);
+
   if (rktio_fd_is_regular_file(rktio, rfd)) {
     /* Reading regular file never blocks */
     do {
@@ -1351,9 +1353,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
   flags = fcntl(rfd->fd, F_GETFL, 0);
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags | RKTIO_NONBLOCKING);
-  
-  amt = len;
-  
+
+  amt = LIMIT_REQUEST_SIZE(len);
+
   do {
     do {
       len = write(rfd->fd, buffer, amt);

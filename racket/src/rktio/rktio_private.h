@@ -300,6 +300,12 @@ intptr_t rktio_hash_string(const char *s);
 /* Misc                                                                   */
 /*========================================================================*/
 
+/* On Mac OS, for example, `read` and `write` expect a value less than
+   2GB. Use 32MB as a limit that is very large, but still likely small
+   enough for all OSes. */
+#define MAX_READ_WRITE_REQUESST_BYTES (32 * 1048576)
+#define LIMIT_REQUEST_SIZE(n) (((n) > MAX_READ_WRITE_REQUESST_BYTES) ? MAX_READ_WRITE_REQUESST_BYTES : (n))
+
 void rktio_get_posix_error(rktio_t *rktio);
 #define get_posix_error() rktio_get_posix_error(rktio)
 
