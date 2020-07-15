@@ -130,6 +130,7 @@ Sforeign_symbol("rktio_file_exists", (void *)rktio_file_exists);
 Sforeign_symbol("rktio_directory_exists", (void *)rktio_directory_exists);
 Sforeign_symbol("rktio_link_exists", (void *)rktio_link_exists);
 Sforeign_symbol("rktio_is_regular_file", (void *)rktio_is_regular_file);
+Sforeign_symbol("rktio_file_type", (void *)rktio_file_type);
 Sforeign_symbol("rktio_delete_file", (void *)rktio_delete_file);
 Sforeign_symbol("rktio_rename_file", (void *)rktio_rename_file);
 Sforeign_symbol("rktio_get_current_directory", (void *)rktio_get_current_directory);

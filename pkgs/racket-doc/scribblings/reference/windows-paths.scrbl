@@ -243,7 +243,7 @@ with a different parent than @litchar{d}, the path nevertheless refers
 to @litchar{f} in the same directory as @litchar{d}. A relative-path
 link is parsed as if prefixed with @litchar{\\?\REL} paths, except
 that @litchar{..}  and @litchar{.} elements are allowed throughout the
-path, and any number of redundant @litchar{/} separators are allowed.
+path, and any number of redundant @litchar{\} separators are allowed.
 
 Windows paths are @techlink{cleanse}d as follows: In paths that start
 @litchar{\\?\}, redundant @litchar{\}s are removed, an extra

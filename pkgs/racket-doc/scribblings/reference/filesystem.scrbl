@@ -286,6 +286,21 @@ symbolic links and junctions.
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
+@defproc[(file-or-directory-type [path path-string?] [must-exist? any/c #f])
+         (or/c 'file 'directory 'link 'directory-link #f)]{
+
+Reports whether @racket[path] refers to a file, directory, link, or
+directory link (in the case of Windows; see also
+@racket[make-file-or-directory-link]), assuming that @racket[path] can
+be accessed.
+
+If @racket[path] cannot be accessed, the result is @racket[#f] if
+@racket[must-exist?] is @racket[#f], otherwise the
+@exnraise[exn:fail:filesystem].
+
+@history[#:added "7.8.0.5"]}
+
+
 @defproc[(delete-file [path path-string?]) void?]{
 
 Deletes the file with path @racket[path] if it exists, otherwise the
@@ -473,14 +488,14 @@ successfully,the @exnraise[exn:fail:filesystem].
 On Windows XP and earlier, the @exnraise[exn:fail:unsupported]. On
 later versions of Windows, the creation of links tends to be
 disallowed by security policies. Windows distinguishes between file
-and directory links, and a directory link is created if @racket[to]
-parses syntactically as a directory. Furthermore, a relative-path link
-is parsed specially by the operating system; see
-@secref["windowspaths"] for more information. When
-@racket[make-file-or-directory-link] succeeds, it creates a symbolic
-link as opposed to a junction or hard link. Beware that directory
-links must be deleted using @racket[delete-directory] instead of
-@racket[delete-file].
+and directory links, and a directory link is created only if
+@racket[to] parses syntactically as a directory (see
+@racket[path->directory-path]). Furthermore, a relative-path link is
+parsed specially by the operating system; see @secref["windowspaths"]
+for more information. When @racket[make-file-or-directory-link]
+succeeds, it creates a symbolic link as opposed to a junction or hard
+link. Beware that directory links must be deleted using
+@racket[delete-directory] instead of @racket[delete-file].
 
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 

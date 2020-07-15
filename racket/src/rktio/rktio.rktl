@@ -63,6 +63,11 @@
 (define-constant RKTIO_LTPS_HANDLE_NONE 0)
 (define-constant RKTIO_LTPS_HANDLE_ZERO 1)
 (define-constant RKTIO_LTPS_HANDLE_FREE 2)
+(define-constant RKTIO_FILE_TYPE_FILE 1)
+(define-constant RKTIO_FILE_TYPE_DIRECTORY 2)
+(define-constant RKTIO_FILE_TYPE_LINK 3)
+(define-constant RKTIO_FILE_TYPE_DIRECTORY_LINK 4)
+(define-constant RKTIO_FILE_TYPE_ERROR -1)
 (define-constant RKTIO_PERMISSION_READ 4)
 (define-constant RKTIO_PERMISSION_WRITE 2)
 (define-constant RKTIO_PERMISSION_EXEC 1)
@@ -987,6 +992,12 @@
  ()
  rktio_bool_t
  rktio_is_regular_file
+ (((ref rktio_t) rktio) (rktio_const_string_t filename)))
+(define-function/errno
+ RKTIO_FILE_TYPE_ERROR
+ ()
+ int
+ rktio_file_type
  (((ref rktio_t) rktio) (rktio_const_string_t filename)))
 (define-function/errno
  #f

@@ -94,6 +94,7 @@ static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_drive(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_modify_seconds(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[]);
+static Scheme_Object *file_or_dir_type(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_identity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[]);
 static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
@@ -134,6 +135,8 @@ SHARED_OK static Scheme_Object *addon_dir;
 
 READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
 
+READ_ONLY static Scheme_Object *file_symbol, *directory_symbol, *link_symbol, *directory_link_symbol;
+
 void scheme_init_file(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
@@ -166,6 +169,11 @@ void scheme_init_file(Scheme_Startup_Env *env)
   REGISTER_SO(windows_symbol);
   REGISTER_SO(unix_symbol);
 
+  REGISTER_SO(file_symbol);
+  REGISTER_SO(directory_symbol);
+  REGISTER_SO(link_symbol);
+  REGISTER_SO(directory_link_symbol);
+
   up_symbol = scheme_intern_symbol("up");
   relative_symbol = scheme_intern_symbol("relative");
   same_symbol = scheme_intern_symbol("same");
@@ -194,6 +202,11 @@ void scheme_init_file(Scheme_Startup_Env *env)
 
   windows_symbol = scheme_intern_symbol("windows");
   unix_symbol = scheme_intern_symbol("unix");
+
+  file_symbol = scheme_intern_symbol("file");
+  directory_symbol = scheme_intern_symbol("directory");
+  link_symbol = scheme_intern_symbol("link");
+  directory_link_symbol = scheme_intern_symbol("directory-link");
 
   p = scheme_make_immed_prim(path_p, "path?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -386,6 +399,11 @@ void scheme_init_file(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("file-or-directory-permissions",
 			     scheme_make_prim_w_arity(file_or_dir_permissions,
 						      "file-or-directory-permissions",
+						      1, 2), 
+			     env);
+  scheme_addto_prim_instance("file-or-directory-type",
+			     scheme_make_prim_w_arity(file_or_dir_type,
+						      "file-or-directory-type",
 						      1, 2), 
 			     env);
   scheme_addto_prim_instance("file-or-directory-identity",
@@ -4795,6 +4813,44 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
                    filename_for_error(argv[0]));
 
   return NULL;
+}
+
+static Scheme_Object *file_or_dir_type(int argc, Scheme_Object *argv[])
+{
+  char *filename;
+  int type;
+  
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_contract("file-or-directory-type", "path-string?", 0, argc, argv);
+
+  filename = scheme_expand_string_filename(argv[0],
+					   "file-or-directory-type",
+					   NULL,
+					   SCHEME_GUARD_FILE_EXISTS);
+
+  if (scheme_is_special_filename(filename, 0))
+    type = RKTIO_FILE_TYPE_FILE;
+  else
+    type = rktio_file_type(scheme_rktio, filename);
+
+  if (type == RKTIO_FILE_TYPE_FILE)
+    return file_symbol;
+  else if (type == RKTIO_FILE_TYPE_DIRECTORY)
+    return directory_symbol;
+  else if (type == RKTIO_FILE_TYPE_LINK)
+    return link_symbol;
+  else if (type == RKTIO_FILE_TYPE_DIRECTORY_LINK)
+    return directory_link_symbol;
+  else {
+    MZ_ASSERT(type == RKTIO_FILE_TYPE_ERROR);
+    if ((argc > 1) && SCHEME_TRUEP(argv[1]))
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "file-or-directory-type: access failed\n"
+                       "  path: %q\n"
+                       "  system error: %R",
+                       filename_for_error(argv[0]));
+    return scheme_false;
+  }
 }
 
 static Scheme_Object *file_identity(int argc, Scheme_Object *argv[])

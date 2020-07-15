@@ -806,6 +806,21 @@ RKTIO_EXTERN rktio_bool_t rktio_file_exists(rktio_t *rktio, rktio_const_string_t
 RKTIO_EXTERN rktio_bool_t rktio_directory_exists(rktio_t *rktio, rktio_const_string_t dirname);
 RKTIO_EXTERN rktio_bool_t rktio_link_exists(rktio_t *rktio, rktio_const_string_t filename);
 RKTIO_EXTERN rktio_bool_t rktio_is_regular_file(rktio_t *rktio, rktio_const_string_t filename);
+/* On Windows, check for special filenames (like "aux") before calling
+   the `rktio_file_exists` or `rktio_is_regular_file`. */
+
+#define RKTIO_FILE_TYPE_FILE           1
+#define RKTIO_FILE_TYPE_DIRECTORY      2
+#define RKTIO_FILE_TYPE_LINK           3
+#define RKTIO_FILE_TYPE_DIRECTORY_LINK 4
+
+#define RKTIO_FILE_TYPE_ERROR  (-1)
+
+RKTIO_EXTERN_ERR(RKTIO_FILE_TYPE_ERROR)
+int rktio_file_type(rktio_t *rktio, rktio_const_string_t filename);
+/* Result is `RKTIO_FILE_TYPE_ERROR` for error, otherwise one of
+   the `RKTIO_FILE_TYPE_...` values. On Windows, check for special
+   filenames (like "aux") before calling this function. */
 
 RKTIO_EXTERN rktio_ok_t rktio_delete_file(rktio_t *rktio, rktio_const_string_t fn, rktio_bool_t enable_write_on_fail);
 

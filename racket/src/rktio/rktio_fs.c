@@ -372,7 +372,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
 
   wp = WIDE_PATH_temp(copy);
   if (!wp) {
-    /* Treat invalid path as non-existent */
+    /* Treat invalid path as non-existent; `WIDE_PATH_temp` set the error */
     free(copy);
     return 0;
   }
@@ -385,6 +385,8 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     if ((GET_FF_ATTRIBS(fad) & FF_A_LINK) && !same_path) {
       if (islink) {
 	*islink = 1;
+        if (isdir)
+          *isdir = (GET_FF_ATTRIBS(fad) & FF_A_DIR);
 	return 1;
       } else {
 	/* Resolve a link by opening the link and then getting
@@ -585,6 +587,46 @@ int rktio_link_exists(rktio_t *rktio, const char *filename)
       return 0;
   }
 #endif
+}
+
+int rktio_file_type(rktio_t *rktio, rktio_const_string_t filename)
+/* Windows: check for special filenames before calling */
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  {
+    int islink, isdir;
+    if (UNC_stat(rktio, filename, NULL, &isdir, &islink, NULL, NULL, NULL, -1)) {
+      if (islink) {
+        if (isdir)
+          return RKTIO_FILE_TYPE_DIRECTORY_LINK;
+        else
+          return RKTIO_FILE_TYPE_LINK;
+      } else if (isdir)
+        return RKTIO_FILE_TYPE_DIRECTORY;
+      else
+        return RKTIO_FILE_TYPE_FILE;
+    } else
+      return RKTIO_FILE_TYPE_ERROR;
+  }
+#else
+  {
+    struct MSC_IZE(stat) buf;
+    while (1) {
+      if (!MSC_W_IZE(lstat)(MSC_WIDE_PATH_temp(filename), &buf))
+	break;
+      else if (errno != EINTR)
+	return RKTIO_FILE_TYPE_ERROR;
+    }
+
+    if (S_ISLNK(buf.st_mode))
+      return RKTIO_FILE_TYPE_LINK;
+    else if (S_ISDIR(buf.st_mode))
+      return RKTIO_FILE_TYPE_DIRECTORY;
+    else
+      return RKTIO_FILE_TYPE_FILE;
+  }
+#endif
+  
 }
 
 char *rktio_get_current_directory(rktio_t *rktio)

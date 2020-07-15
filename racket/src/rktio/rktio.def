@@ -130,6 +130,7 @@ rktio_file_exists
 rktio_directory_exists
 rktio_link_exists
 rktio_is_regular_file
+rktio_file_type
 rktio_delete_file
 rktio_rename_file
 rktio_get_current_directory

@@ -4,6 +4,7 @@
          "../path/path.rkt"
          "../path/parameter.rkt"
          "../path/directory-path.rkt"
+         (only-in "../path/windows.rkt" special-filename?)
          "../host/rktio.rkt"
          "../host/thread.rkt"
          "../host/error.rkt"
@@ -19,6 +20,7 @@
 (provide directory-exists?
          file-exists?
          link-exists?
+         file-or-directory-type
          make-directory
          directory-list
          current-force-delete-permissions
@@ -46,11 +48,40 @@
 
 (define/who (file-exists? p)
   (check who path-string? p)
-  (rktio_file_exists rktio (->host p who '(exists))))
+  (define host-path (->host p who '(exists)))
+  (cond
+    [(and (eq? 'windows (system-type))
+          (special-filename? host-path #:immediate? #f))
+     #t]
+    [else
+     (rktio_file_exists rktio host-path)]))
 
 (define/who (link-exists? p)
   (check who path-string? p)
   (rktio_link_exists rktio (->host p who '(exists))))
+
+(define/who (file-or-directory-type p [must-exist? #f])
+  (check who path-string? p)
+  (define host-path (->host p who '(exists)))
+  (cond
+    [(and (eq? 'windows (system-type))
+          (special-filename? host-path #:immediate? #f))
+     'file]
+    [else
+     (define r (rktio_file_type rktio host-path))
+     (cond
+       [(eqv? r RKTIO_FILE_TYPE_FILE) 'file]
+       [(eqv? r RKTIO_FILE_TYPE_DIRECTORY) 'directory]
+       [(eqv? r RKTIO_FILE_TYPE_LINK) 'link]
+       [(eqv? r RKTIO_FILE_TYPE_DIRECTORY_LINK) 'directory-link]
+       [else
+        (and must-exist?
+             (raise-filesystem-error who
+                                     r
+                                     (format (string-append
+                                              "access failed\n"
+                                              "  path: ~a")
+                                             (host-> host-path))))])]))
 
 (define/who (make-directory p)
   (check who path-string? p)

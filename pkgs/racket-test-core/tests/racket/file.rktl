@@ -1789,6 +1789,7 @@
   (test #t file-exists? "tmp1")
   (test #f directory-exists? "tmp1")
   (test #f link-exists? "tmp1")
+  (test 'file file-or-directory-type "tmp1")
 
   (err/rt-test (open-output-file "tmp1") (fs-reject? 'open-output-file))
   (err/rt-test (delete-file "tmp1") (fs-reject? 'delete-file))
@@ -1831,6 +1832,7 @@
   (err/rt-test (file-exists? "tmp1") (fs-reject? 'file-exists?))
   (err/rt-test (directory-exists? "tmp1") (fs-reject? 'directory-exists?))
   (err/rt-test (link-exists? "tmp1") (fs-reject? 'link-exists?))
+  (err/rt-test (file-or-directory-type "tmp1") (fs-reject? 'file-or-directory-type))
   (err/rt-test (path->complete-path "tmp1") (fs-reject? 'path->complete-path))
   (err/rt-test (filesystem-root-list) (fs-reject? 'filesystem-root-list))
   (err/rt-test (find-system-path 'temp-dir) (fs-reject? 'find-system-path)))
@@ -2219,9 +2221,12 @@
     (define z (build-path z-dir "z"))
     (parameterize ([current-directory (pick-directory made)])
       (test #f directory-exists? z-dir)
+      (test #f file-or-directory-type z-dir)
+      (err/rt-test (file-or-directory-type z-dir #t) exn:fail:filesystem?)
       (test #f file-exists? z)
       (make-parent-directory* z)
       (test #t directory-exists? z-dir)
+      (test 'directory file-or-directory-type z-dir)
       (make-parent-directory* z)
       (delete-directory/files z-dir)
       (test #f directory-exists? z-dir)
@@ -2317,12 +2322,33 @@
 
 (let ([tf (make-temporary-file)])
   (test tf resolve-path (path->string tf))
-  (unless (eq? 'windows (system-type))
-    (delete-file tf)
-    (make-file-or-directory-link "other.txt" tf)
-    (err/rt-test (make-file-or-directory-link "other.txt" tf) exn:fail:filesystem? (regexp-quote tf))
-    (test (string->path "other.txt") resolve-path tf))
   (delete-file tf)
+  (define link-created?
+    (with-handlers ([(lambda (exn) (and (eq? 'windows (system-type))
+                                        (exn:fail:filesystem? exn)))
+                     (lambda (exn) #f)])
+      (make-file-or-directory-link "other.txt" tf)
+      #t))
+  (when link-created?
+    (err/rt-test (make-file-or-directory-link "other.txt" tf) exn:fail:filesystem? (regexp-quote tf))
+    (test (string->path "other.txt") resolve-path tf)
+    (test #t link-exists? tf)
+    (test 'link file-or-directory-type tf)
+    (delete-file tf)
+
+    (make-file-or-directory-link (path->directory-path "other") tf)
+    (test #t link-exists? tf)
+    (test (if (eq? (system-type) 'windows) 'directory-link 'link) file-or-directory-type tf)
+    (if (eq? (system-type) 'windows)
+        (delete-directory tf)
+        (delete-file tf))
+
+    (test #f link-exists? tf)
+    (make-file-or-directory-link (path->directory-path "other") tf)
+    (test #t link-exists? tf)
+    (delete-directory/files tf)
+    (test #f link-exists? tf))
+
   (case (system-path-convention-type)
     [(unix)
      (test (string->path "/testing-root/testing-dir/testing-file")
@@ -2342,6 +2368,18 @@
 (unless (link-exists? (current-directory))
   ;; Make sure directoryness is preserved
   (test (current-directory) resolve-path (current-directory)))
+
+(when (eq? (system-type) 'windows)
+  ;; special filenames exist everywhere 
+  (test #t file-exists? "aux")
+  (test #t file-exists? "aux.anything")
+  (test #t file-exists? "c:/aux")
+  (test #t file-exists? "c:/com1")
+  (test #t file-exists? "a:/x/lpt6")
+  (test 'file file-or-directory-type "a:/x/lpt6")
+  ;; \\?\ paths don't refer to special filenames
+  (test #f file-exists? "\\\\?\\C:\\aux")
+  (test #f file-or-directory-type "\\\\?\\C:\\aux"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure `write-byte` and `write-char` don't try to test

@@ -51,16 +51,18 @@
   (unless (path-string? path)
     (raise-argument-error 'delete-directory/files "path-string?" path))
   (let loop ([path path])
-    (cond
-     [(or (link-exists? path) (file-exists? path))
-      (delete-file* path)]
-     [(directory-exists? path)
-      (for-each (lambda (e) (loop (build-path path e)))
-                (directory-list path))
-      (delete-directory path)]
-     [else
-      (when must-exist?
-        (raise-not-a-file-or-directory 'delete-directory/files path))])))
+    (case (file-or-directory-type path)
+      [(file link)
+       (delete-file* path)]
+      [(directory)
+       (for-each (lambda (e) (loop (build-path path e)))
+                 (directory-list path))
+       (delete-directory path)]
+      [(directory-link)
+       (delete-directory path)]
+      [else
+       (when must-exist?
+         (raise-not-a-file-or-directory 'delete-directory/files path))])))
 
 (define (delete-file* path)
   (cond
