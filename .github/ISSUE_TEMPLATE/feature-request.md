@@ -6,7 +6,6 @@ labels: feature-request
 
 ---
 
-
 **Is your feature request related to a problem? Please describe.**
 A description of what the problem is. E.g., I'm always frustrated when [...]
 
