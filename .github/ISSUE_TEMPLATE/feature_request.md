@@ -20,5 +20,5 @@ A description of any alternative solutions or features you've considered.
 ***Do you want to contribute to this feature***
 If you're interested in working on the development of this feature, say so here. 
 
-**[Optional]Additional context**
+**[Optional] Additional context**
 Add any other context or screenshots about the feature request here.
