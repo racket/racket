@@ -28,7 +28,7 @@
   (cond
    [(simple? p convention) p]
    [else
-    (define clean-p (cleanse-path p))
+    (define clean-p (cleanse-path/convert-slashes p))
     (cond
       [(simple? clean-p convention) clean-p]
       [else

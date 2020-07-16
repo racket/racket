@@ -374,7 +374,7 @@ same file or directory as @racket[path]. If
 @racket[path] is a soft link to another path, then the referenced path
 is returned (this may be a relative path with respect to the directory
 owning @racket[path]), otherwise @racket[path] is returned (after
-expansion).
+cleansing).
 
 On Windows, the path for a link should be simplified syntactically, so
 that an up-directory indicator removes a preceding path element

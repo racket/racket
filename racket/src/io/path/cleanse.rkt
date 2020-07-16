@@ -7,11 +7,17 @@
          "windows.rkt")
 
 (provide cleanse-path
+         cleanse-path/convert-slashes
          clean-double-slashes)
 
 (define/who (cleanse-path p-in)
   (check-path-argument who p-in)
-  (define p (->path p-in))
+  (do-cleanse-path (->path p-in) #f))
+
+(define (cleanse-path/convert-slashes p)
+  (do-cleanse-path p #t))
+
+(define (do-cleanse-path p convert-slashes?)
   (define convention (path-convention p))
   (define (return bstr)
     (if (eq? bstr (path-bytes p))
@@ -49,21 +55,21 @@
        [(parse-unc bstr 0)
         => (lambda (drive-len)
              (return (clean-double-slashes bstr 'windows (sub1 drive-len)
-                                           #:to-backslash-from 0)))]
+                                           #:to-backslash-from (and convert-slashes? 0))))]
        [(letter-drive-start? bstr (bytes-length bstr))
         (cond
           [(and ((bytes-length bstr) . > . 2)
                 (is-sep? (bytes-ref bstr 2) 'windows))
            (return (clean-double-slashes bstr 'windows 2
-                                         #:to-backslash-from 2))]
+                                         #:to-backslash-from (and convert-slashes? 2)))]
           [else
            (return (bytes-append (subbytes bstr 0 2)
                                  #"\\"
                                  (clean-double-slashes (subbytes bstr 2) 'windows 0
-                                                       #:to-backslash-from 0)))])]
+                                                       #:to-backslash-from (and convert-slashes? 0))))])]
        [else
         (return (clean-double-slashes bstr 'windows 0
-                                      #:to-backslash-from 0))])]))
+                                      #:to-backslash-from (and convert-slashes? 0)))])]))
 
 ;; ----------------------------------------
 

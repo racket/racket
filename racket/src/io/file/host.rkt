@@ -18,7 +18,7 @@
   (let ([p (->path p)])
     (when who
       (security-guard-check-file who p guards))
-    (path-bytes (cleanse-path (path->complete-path p current-directory #:wrt-given? #f)))))
+    (path-bytes (cleanse-path/convert-slashes (path->complete-path p current-directory #:wrt-given? #f)))))
 
 (define (->host/as-is p who src)
   (let ([p (->path p)])

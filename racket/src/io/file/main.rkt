@@ -4,6 +4,7 @@
          "../path/path.rkt"
          "../path/parameter.rkt"
          "../path/directory-path.rkt"
+         "../path/cleanse.rkt"
          (only-in "../path/windows.rkt" special-filename?)
          "../host/rktio.rkt"
          "../host/thread.rkt"
@@ -375,7 +376,8 @@
 
 (define (do-resolve-path p who)
   (check who path-string? p)
-  (define host-path (->host p who '(exists)))
+  (define p-path (->path p))
+  (define host-path (->host p-path who '(exists)))
   (define host-path/no-sep (host-path->host-path-without-trailing-separator host-path))
   (start-atomic)
   (define r0 (rktio_readlink rktio host-path/no-sep))
@@ -388,10 +390,10 @@
   (cond
     [(rktio-error? r)
      ;; Errors are not reported, but are treated like non-links
-     (define new-path (host-> host-path))
+     (define new-path (cleanse-path p-path))
      ;; If cleansing didn't change p, then return an `eq?` path
      (cond
-       [(equal? new-path p) p]
+       [(equal? new-path p-path) p-path]
        [else new-path])]
     [else (host-> r)]))
 

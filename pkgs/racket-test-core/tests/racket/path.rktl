@@ -482,6 +482,22 @@
 ; normal-case-path now checks for pathness:
 (err/rt-test (normal-case-path (string #\a #\nul #\b)))
 
+;; Check that `cleanse-path` and `resolve-path` keep relative paths
+;; and keep forward slashes on Windows
+(let ()
+  (define (check-cleanse cleanse-path)
+    (test (build-path "not-there" "file-also-not-there")
+          cleanse-path 
+          (build-path "not-there" "file-also-not-there"))
+    (test (string->path "not-there/b") cleanse-path "not-there///b")
+    (when (eq? 'windows (system-path-convention-type))
+      (test (string->path "not-there\\b") cleanse-path "not-there\\\\b")
+      (test (string->path "not-there\\b/c") cleanse-path "not-there\\\\b/c")
+      (test (string->path "not-there\\b/c") cleanse-path "not-there\\b//c")
+      (test (string->path "not-there\\b/c") cleanse-path "not-there\\\\b//c")))
+  (check-cleanse cleanse-path)
+  (check-cleanse resolve-path))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; \\?\ paths in Windows
 

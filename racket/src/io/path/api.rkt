@@ -11,7 +11,8 @@
          "path.rkt"
          "relativity.rkt"
          "simplify.rkt"
-         "directory-path.rkt")
+         "directory-path.rkt"
+         (only-in "windows.rkt" split-drive))
 
 (provide path->complete-path
          current-drive
@@ -32,7 +33,8 @@
   (security-guard-check-file who #f '(exists))
   (if (eq? (system-path-convention-type) 'unix)
       (string->path "/")
-      (error who "not yet ready")))
+      (let ([dir (current-directory)])
+        (path (split-drive (path-bytes dir)) 'windows))))
 
 ;; ----------------------------------------
 
