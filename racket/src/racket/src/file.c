@@ -3560,7 +3560,7 @@ static Scheme_Object *convert_literal_relative(Scheme_Object *file)
   return file;
 }
 
-static Scheme_Object *simplify_qm_path(Scheme_Object *path)
+static Scheme_Object *simplify_qm_path(Scheme_Object *path, int *has_rel)
 {
   /* path is already expanded, so the only remaining
      clean-ups are dropping a trailing separator,
@@ -3599,6 +3599,7 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
     start_special_check = lit_start;
     drive_end = lit_start - 1;
   } else if (drive_end < 0) {
+    /* \\?\REL\ */
     int lit_start, dots_end;
     dots_end = get_slashslash_qm_dot_ups_end(s, len, &lit_start);
     if (lit_start == len) {
@@ -3609,6 +3610,7 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
     if (dots_end < 9)
       drive_end = lit_start; /* no dots, so just keep the literal part */
     else {
+      *has_rel = 1;
       drive_end = 8; /* \\?\REL\..\, and we keep the .. */
       drop_extra_slash = dots_end;
       is_dir = 1;
@@ -3740,8 +3742,8 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
   int isdir, cleaned_slashes = 0, must_be_dir = 0, last_was_dir = 0, did_first = 0;
   Scheme_Object *file = scheme_false, *base;
 
-  /* cleanse-path doesn't touch the filesystem. Always start with
-     that, to get things basically tidy. */
+  /* cleanse-path doesn't touch the filesystem. On Windows, always
+     start with that, to get things basically tidy. */
   if (kind == SCHEME_WINDOWS_PATH_KIND) {
     char *s;
     int expanded, add_sep = 0;
@@ -3749,10 +3751,12 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
                            NULL, &expanded, 0, 0, 0, kind, 0);
     {
       int slen;
-      if (expanded)
+      if (expanded) {
+        cleaned_slashes = 1;
         slen = strlen(s);
-      else
+      } else
         slen = SCHEME_PATH_LEN(path);
+      /* Note: not counting slash normalization as cleaned_slashes */
       s = do_normal_path_seps(s, &slen, 0, 0, SCHEME_WINDOWS_PATH_KIND, &expanded);
     }
     if (expanded) {
@@ -3792,7 +3796,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
      Also responsible for determining whether there's a
      redundant or missing trailing slash in the case that
      the path is just a root. */
-  {
+  if (!cleaned_slashes || !use_filesystem) {
     char *s;
     int len, i, saw_dot = 0;
     s = SCHEME_PATH_VAL(path);
@@ -3801,8 +3805,10 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     if (kind == SCHEME_WINDOWS_PATH_KIND) {
       if (!skip && check_dos_slashslash_qm(s, len, NULL, NULL, NULL)) {
         if (!force_rel_up) {
-	  int drive_end;
-          path = simplify_qm_path(path);
+          Scheme_Object *orig_path = path;
+	  int drive_end, has_up = 0;
+          path = simplify_qm_path(path, &has_up);
+          cleaned_slashes = has_up;
 	  len = SCHEME_PATH_LEN(path);
 	  if (check_dos_slashslash_qm(SCHEME_PATH_VAL(path), len, &drive_end, NULL, NULL)) {
 	    /* If it's a drive... */
@@ -3811,7 +3817,10 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	      path = scheme_path_to_directory_path(path);
 	    }
 	  }
-	  return path;
+          if (!SAME_OBJ(path, orig_path))
+            cleaned_slashes = 1;
+          if (!cleaned_slashes || !use_filesystem)
+	    return path;
         } else {
 	  /* force_rel_up means that we want a directory: */
           return scheme_path_to_directory_path(path);

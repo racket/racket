@@ -268,7 +268,9 @@
                                            (if (eqv? (bytes-ref bstr 8) (char->integer #\\))
                                                #""
                                                #"\\")
-                                           (subbytes bstr 8))
+                                           (subbytes bstr 8 (let ([len (bytes-length bstr)])
+                                                              (if is-dir? (sub1 len) len))))
+                                                                
                              'windows))
                (cond
                  [explode? (list elem base)]

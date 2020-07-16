@@ -50,7 +50,7 @@
     (let ([omit (info 'compile-omit-paths (lambda () '()))])
       (if (eq? 'all omit)
         'all
-        (map (lambda (e) (explode-path (simplify-path e)))
+        (map (lambda (e) (explode-path (simplify-path e #f)))
              ;; for backward compatibility
              (append omit (info 'compile-omit-files (lambda () '())))))))
   (cond

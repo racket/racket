@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../file/main.rkt"
+(require racket/fixnum
+         "../file/main.rkt"
          (submod "../file/main.rkt" for-simplify)
          "path.rkt"
          "check.rkt"
@@ -30,7 +31,16 @@
    [else
     (define clean-p (cleanse-path/convert-slashes p))
     (cond
-      [(simple? clean-p convention) clean-p]
+      [(simple? clean-p convention)
+       ;; The choice of creating a complete path in this case seems like
+       ;; it was probably the wrong one. The special treatement for Windows
+       ;; reflects a compromise between consistency and old behavior (where
+       ;; the conversion to a compleet path did not happe in the old behavior)
+       (if (or (not use-filesystem?)
+               (and (eq? 'windows (system-type))
+                    (same-modulo-slashes? p clean-p)))
+           clean-p
+           (path->complete-path clean-p (current-directory)))]
       [else
        (define l (explode-path clean-p))
        (define simple-p
@@ -121,16 +131,14 @@
         (is-sep? b convention)))
   (cond
     [(and (eq? convention 'windows)
-          (cond
-            [(and
-              (= len 2)
-              (letter-drive-start? bstr 2))
-             ;; Letter drive without trailing separator
-             #t]
-            [(non-normal-backslash-backslash-questionmark? bstr)
-             #t]
-            [else #f]))
+          (and (= len 2)
+               (letter-drive-start? bstr 2)))
+     ;; Letter drive without trailing separator
      #f]
+    [(and (eq? convention 'windows)
+          (backslash-backslash-questionmark-simple-status bstr))
+     => (lambda (status)
+          (eq? status 'simple))]
     [else
      (let loop ([i 0])
        (cond
@@ -161,12 +169,39 @@
           #f]
          [else (loop (add1 i))]))]))
 
-(define (non-normal-backslash-backslash-questionmark? bstr)
+(define (backslash-backslash-questionmark-simple-status bstr)
   (define-values (kind drive-len orig-drive-len clean-start-pos sep-bstr)
     (parse-backslash-backslash-questionmark bstr))
-  ;; We could try harder to recognize normal forms, but for now
-  ;; we assume that some normalization is needed in a \\?\ path.
-  kind)
+  (cond
+    [(not kind) #f]
+    [(and (fx= (bytes-ref bstr 4) (char->integer #\R))
+          (fx= (bytes-ref bstr 5) (char->integer #\E)))
+     ;; For \\?\REL\ and \\?\RED\ paths, in use-filesystem mode,
+     ;; we don't want to convert to a complete path unless there's
+     ;; some simplification possible. Rebuild the path to see
+     ;; whether it's already normalized and simple.
+     (let loop ([p (path bstr 'windows)] [accum '()] [as-dir? #f])
+       (define-values (base-dir name dir?) (split-path p))
+       (cond
+         [(symbol? name) 'non-simple]
+         [else
+          (define new-accum (cons name accum))
+          (define new-as-dir? (if (null? accum) dir? as-dir?))
+          (cond
+            [(path? base-dir) (loop base-dir new-accum new-as-dir?)]
+            [else
+             (define rebuilt0-p (apply build-path/convention-type 'windows new-accum))
+             (define rebuilt-p (if new-as-dir?
+                                   (path (bytes-append (path-bytes rebuilt0-p) #"\\") 'windows)
+                                   rebuilt0-p))
+             (define rebuilt-bstr (path-bytes (simplify-backslash-backslash-questionmark rebuilt-p)))
+             (if (bytes=? bstr rebuilt-bstr)
+                 'simple
+                 'non-simple)])]))]
+     
+    [else
+     ;; Conservatively assume non-simple
+     'non-simple]))
 
 ;; ----------------------------------------
 
@@ -256,3 +291,19 @@
      (bytes-append #"\\\\?\\UNC" (subbytes bstr 8))]
     [else
      (bytes-append #"\\\\?\\UNC" (subbytes bstr 7))]))
+
+(define (same-modulo-slashes? p1 p2)
+  (define bstr1 (path-bytes p1))
+  (define bstr2 (path-bytes p2))
+  (define len (bytes-length bstr1))
+  (and (fx= len (bytes-length bstr2))
+       (let loop ([i 0])
+         (or (fx= i len)
+             (and (let ([b1 (bytes-ref bstr1 i)]
+                        [b2 (bytes-ref bstr2 i)])
+                    (or (fx= b1 b2)
+                        (and (fx= b1 (char->integer #\\))
+                             (fx= b2 (char->integer #\/)))
+                        (and (fx= b1 (char->integer #\/))
+                             (fx= b2 (char->integer #\\)))))
+                  (loop (fx+ i 1)))))))

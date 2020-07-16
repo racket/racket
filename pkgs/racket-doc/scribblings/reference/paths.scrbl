@@ -422,7 +422,8 @@ and (on Windows) without changing the case of letters within the
 path.  If @racket[path] syntactically refers to a directory, the
 result ends with a directory separator.
 
-When @racket[path] is simplified and @racket[use-filesystem?] is true
+When @racket[path] is simplified other than just converting slashes
+to backslashes and @racket[use-filesystem?] is true
 (the default), a complete path is returned. If @racket[path] is
 relative, it is resolved with respect to the current directory.
 On @|AllUnix|, up-directory indicators are removed taking into account soft links (so

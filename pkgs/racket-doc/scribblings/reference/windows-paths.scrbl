@@ -251,8 +251,8 @@ Windows paths are @techlink{cleanse}d as follows: In paths that start
 @litchar{\\?\}, redundant @litchar{\}s are removed, an extra
 @litchar{\} is added in a @litchar{\\?\REL} if an extra one is
 not already present to separate up-directory indicators from literal
-path elements, and an extra @litchar{\} is removed after
-@litchar{\\?\RED} if an extra one is present.
+path elements, and an extra @litchar{\} is similarly added after
+@litchar{\\?\RED} if an extra one is not already present. 
 @;{>> I don't know what was meant to go in place of "???", and I can't
 figure out an example that could trigger this case: <<
 When @litchar{\\?\} acts as the drive and the path contains ???, two
