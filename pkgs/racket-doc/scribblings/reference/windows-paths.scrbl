@@ -3,6 +3,8 @@
 
 @(define MzAdd (italic "Racket-specific:"))
 
+@(define (litchar~ s) (litchar (regexp-replace* "~" s " ")))
+
 @title[#:tag "windowspaths"]{Windows Paths}
 
 In general, a Windows pathname consists of an optional drive specifier
@@ -249,8 +251,8 @@ Windows paths are @techlink{cleanse}d as follows: In paths that start
 @litchar{\\?\}, redundant @litchar{\}s are removed, an extra
 @litchar{\} is added in a @litchar{\\?\REL} if an extra one is
 not already present to separate up-directory indicators from literal
-path elements, and an extra @litchar{\} is similarly added after
-@litchar{\\?\RED} if an extra one is not already present. 
+path elements, and an extra @litchar{\} is removed after
+@litchar{\\?\RED} if an extra one is present.
 @;{>> I don't know what was meant to go in place of "???", and I can't
 figure out an example that could trigger this case: <<
 When @litchar{\\?\} acts as the drive and the path contains ???, two
@@ -310,8 +312,8 @@ already. Otherwise, if no indicators or redundant separators are in
 For @racket[(split-path _path)] producing @racket[_base],
 @racket[_name], and @racket[_must-be-dir?], splitting a path that does
 not start with @litchar{\\?\} can produce parts that start with
-@litchar{\\?\}. For example, splitting @litchar{C:/x~/aux/}
-produces @litchar{\\?\C:\x~\} and @litchar{\\?\REL\\aux};
+@litchar{\\?\}. For example, splitting @litchar~{C:/x~/aux/} twice
+produces @litchar~{\\?\REL\\x~} and @litchar{\\?\REL\\aux};
 the @litchar{\\?\} is needed in these cases to preserve a
 trailing space after @litchar{x} and to avoid referring to the AUX
 device instead of an @filepath{aux} file.

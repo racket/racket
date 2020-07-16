@@ -638,9 +638,12 @@
   (test (string->path "\\") build-path (coerce "\\\\?\\RED\\a") 'up 'same)
 
   (test (string->path "\\") build-path (coerce "\\\\?\\RED\\..") 'up)
-  (test (string->path "\\\\?\\RED\\\\..\\") build-path (coerce "\\\\?\\RED\\\\..") (coerce "\\\\?\\RED\\\\..") 'up)
-  (test (string->path "\\\\?\\RED\\\\x\\y\\..") build-path (coerce "/x/y") (coerce "\\\\?\\RED\\.."))
-  (test (string->path "\\\\?\\c:\\x\\y\\..") build-path (coerce "c:x/y") (coerce "\\\\?\\RED\\.."))
+  (test (string->path "\\\\?\\RED\\\\..\\") build-path (coerce "\\\\?\\RED\\\\..") (coerce "\\\\?\\REL\\\\..") 'up)
+  (test (string->path "\\\\?\\RED\\\\x\\y\\..") build-path (coerce "/x/y") (coerce "\\\\?\\REL\\\\.."))
+  (test (string->path "\\\\?\\c:\\x\\y\\..") build-path (coerce "c:x/y") (coerce "\\\\?\\REL\\\\.."))
+
+  (err/rt-test (build-path (coerce "\\\\?\\RED\\\\..") (coerce "\\\\?\\RED\\\\..") 'up))
+  (err/rt-test (build-path (coerce "/x/y") (coerce "\\\\?\\RED\\..")))
 
   (test-values (list (string->path "\\\\?\\RED\\..\\")
                      (string->path "\\\\?\\REL\\\\a")
@@ -693,8 +696,10 @@
   (test (string->path "\\\\?\\UNC\\goo\\bar\\b") build-path (coerce "\\\\?\\UNC\\goo\\bar") (coerce "\\b"))
   (test (string->path "\\\\?\\\\\\b") build-path (coerce "\\\\?\\") (coerce "\\b"))
   (test (string->path "\\\\?\\\\\\b\\") build-path (coerce "\\\\?\\") (coerce "\\b\\"))
-  (err/rt-test (build-path "\\\\?\\c:" (coerce "\\b")) exn:fail:contract?)
-  
+  (err/rt-test (build-path (coerce "\\\\?\\c:") (coerce "\\b")) exn:fail:contract?)
+
+  (err/rt-test (build-path (coerce "a") (coerce "\\b")) exn:fail:contract?)
+
   ;; Don't allow path addition on bad \\?\ to change the root:
   (test (string->path "\\\\?\\\\\\c") build-path (coerce "\\\\?\\") (coerce "c"))
   (test (string->path "\\\\?\\\\\\c:") build-path (coerce "\\\\?\\") (coerce "\\\\?\\REL\\c:"))

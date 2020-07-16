@@ -2228,7 +2228,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 	  if (check_dos_slashslash_qm(next, len, &drive_end, NULL, &plus_sep)) {
 	    if (drive_end < 0) {
 	      /* \\?\REL\ or \\?\RED\ path */
-	      rel = 1;
+	      rel = (next[6] == 'L');
 	      is_drive = 0;
 	      if (i) {
 		int dots_end, lit_start;

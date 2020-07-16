@@ -115,9 +115,9 @@
           (define (combine is-rel? is-complete? is-drive?)
             (when (or is-complete?
                       (and (not is-rel?)
-                           (not first?)
-                           (not (and (null? (cdr accum))
-                                     (drive? (car accum))))))
+                           (or (not first?)
+                               (not (and (null? (cdr accum))
+                                         (drive? (car accum)))))))
               (define what (if is-drive? "drive" "absolute path"))
               (raise-arguments-error who
                                      (string-append what " cannot be added to a base path")
@@ -239,7 +239,8 @@
     [(parse-unc s 0)
      => (lambda (drive-len) (just-separators-after? s drive-len))]
     [(letter-drive-start? s (bytes-length s))
-     (just-separators-after? s 2)]))
+     (just-separators-after? s 2)]
+    [else #f]))
 
 (struct starting-point (kind        ; 'rel, 'red, 'unc, or 'abs
                         bstr        ; byte string that contains the starting path
