@@ -146,7 +146,7 @@
              [else
               (rktio_free fnp)
               (end-atomic)
-              (loop (cons (host-> fn) accum))]))])))))
+              (loop (cons (host-element-> fn) accum))]))])))))
 
 (define/who (delete-file p)
   (check who path-string? p)

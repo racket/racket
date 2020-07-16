@@ -3,12 +3,14 @@
          "../path/complete.rkt"
          "../path/parameter.rkt"
          "../path/cleanse.rkt"
+         "../path/protect.rkt"
          "../host/rktio.rkt"
          "../security/main.rkt")
 
 (provide ->host
          ->host/as-is
-         host->)
+         host->
+         host-element->)
 
 ;; Note: `(host-> (->host x who flags))` is not the same as `x`, since
 ;; it normalizes `x`. That's why `(host-> (->host x))` is generally
@@ -31,3 +33,9 @@
 (define (host-> s)
   (path (bytes->immutable-bytes s)
         (system-path-convention-type)))
+
+(define (host-element-> s)
+  (if (eq? 'windows (system-path-convention-type))
+      (path (protect-path-element (bytes->immutable-bytes s) 'windows)
+            'windows)
+      (host-> s)))
