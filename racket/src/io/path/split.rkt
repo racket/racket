@@ -65,7 +65,7 @@
                               #:explode? explode?)]
           [else
            (split-after-drive p #:explode? explode?)])])]
-     [(and ((bytes-length bstr) . > . 2)
+     [(and ((bytes-length bstr) . >= . 2)
            (drive-letter? (bytes-ref bstr 0))
            (eq? (bytes-ref bstr 1) (char->integer #\:)))
       (split-after-drive p

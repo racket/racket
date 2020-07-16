@@ -256,9 +256,11 @@
 (current-directory original-dir)
 (delete-directory work-dir)
 
+(define unix-roots (list "/"))
+
 ; Redefine these per-platform
 (define drives null)
-(define nondrive-roots (list "/"))
+(define nondrive-roots unix-roots)
 (define -a (list "a"))
 (define a/b (list "a/b" "a//b"))
 (define a/b/c (list "a/b/c" "a//b/c"))
@@ -278,26 +280,15 @@
 		(cons s rest)
 		(loop naya (cons s rest))))))))
 
+(define windows-roots (list "c:" "c:/" "//hello/start" "//hello/start/"))
+
 (when (eq? (system-type) 'windows)
-      (set! drives (list "c:" "c:/" "//hello/start" "//hello/start/"))
-      (set! nondrive-roots null)
-      (for-each
-       (lambda (var)
-	 (eval `(set! ,var (add-slashes ,var))))
-       '(-a a/b a/b/c /a/b a/../b a/./b a/../../b)))
-
-
-(when (eq? (system-type) 'macos)
-      (set! drives null)
-      (set! nondrive-roots (filesystem-root-list))
-      (set! -a (list ":a"))
-	  (set! a/b (list ":a:b"))
-	  (set! a/b/c (list ":a:b:c"))
-      (set! /a/b (list "a:b"))
-      (set! a/../b (list ":a::b"))
-      (set! a/./b null)
-	  (set! a/../../b (list ":a:::b"))
-	  (set! trail-sep ":"))
+  (set! drives windows-roots)
+  (set! nondrive-roots null)
+  (for-each
+   (lambda (var)
+     (eval `(set! ,var (add-slashes ,var))))
+   '(-a a/b a/b/c /a/b a/../b a/./b a/../../b)))
 
 (define roots (append drives nondrive-roots))
 
@@ -390,23 +381,28 @@
    (test (string->path drive) path->complete-path drive drive))
  drives)
 
-(unless (eq? (system-type) 'macos)
- (for-each
-  (lambda (abs1)
-    (for-each
-     (lambda (abs2)
-       (err/rt-test (build-path abs1 abs2) exn:fail:contract?))
-     absols))
-  nondrive-roots))
+(for-each
+ (lambda (abs1)
+   (for-each
+    (lambda (abs2)
+      (err/rt-test (build-path abs1 abs2) exn:fail:contract?))
+    absols))
+ nondrive-roots)
 
 (for-each
  (lambda (root)
    (let-values ([(base name dir?) (split-path root)])
-     (when (eq? (system-type) 'macos)
-       (test root 'split-path name))
      (test #f 'split-path base)
      (test #t 'split-path dir?)))
- roots)
+ (append roots
+         (let-values ([(other-roots other-convention)
+                       (cond
+                         [(eq? 'windows (system-path-convention-type))
+                          (values unix-roots 'unix)]
+                         [else
+                          (values windows-roots 'windows)])])
+           (map (lambda (s) (bytes->path (string->bytes/utf-8 s) other-convention))
+                other-roots))))
 
 (let ([check-a/b
        (lambda (a/b end/?)
