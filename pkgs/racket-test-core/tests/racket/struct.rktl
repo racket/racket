@@ -1477,4 +1477,10 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (struct exn:foo exn () #:constructor-name make-exn:foo)
+  (test "foo" exn-message (make-exn:foo "foo" (current-continuation-marks))))
+
+;; ----------------------------------------
+
 (report-errs)
