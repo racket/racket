@@ -700,7 +700,7 @@
                                                     #'make-self-ctor-struct-info
                                                     (if include-autos?
                                                         #'make-struct-auto-info
-                                                        #'make-struct-info)))]
+                                                        #'make-struct-field-info)))]
                                    [define-syntax-body
                                      #`(#,mk-info
                                         (lambda ()
