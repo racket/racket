@@ -17,7 +17,7 @@
 
 ;; Represent a local binding with a key, where the value of
 ;; the key is kept in a separate environment. That indirection
-;; ensures that a fuly expanded program doesn't reference
+;; ensures that a fully expanded program doesn't reference
 ;; compile-time values from local bindings, but it records that
 ;; the binding was local. The `frame-id` field is used to
 ;; trigger use-site scopes as needed

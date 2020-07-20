@@ -9,8 +9,8 @@
 ;; The `struct*` form is like `struct`, but a field can be have a `*`
 ;; before it or not: the fields without `*` are moved into a nested
 ;; structure (and cannot be mutable), and the ones with `*` are kept
-;; immediate. This distinction is useful is `struct*-copy` is used
-;; often to asjust some fields and not others in a relatively larger
+;; immediate. This distinction is useful if `struct*-copy` is used
+;; often to adjust some fields and not others in a relatively larger
 ;; struct.
 
 ;; Example:

@@ -1,7 +1,7 @@
 #lang racket/base
 (require "../common/set.rkt")
 
-;; A reference record keeps tarck of which bindings in a frame are
+;; A reference record keeps track of which bindings in a frame are
 ;; being referenced and which have been already bound so that a
 ;; reference doesn't count as a forward reference. This information
 ;; is needed for expanding internal definitions to break them into

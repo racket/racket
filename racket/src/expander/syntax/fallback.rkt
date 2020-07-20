@@ -9,7 +9,7 @@
          fallback->list)
 
 ;; When a syntax object is expanded in namespace A and then
-;; re-expanded in namespace B, then the scopes of B are added to rhe
+;; re-expanded in namespace B, then the scopes of B are added to the
 ;; syntax object, but a failed binding search will fall back to the
 ;; scope set that doesn't include the additional scope for B. This
 ;; fallback makes it easier to work across namespaces (including
