@@ -112,7 +112,7 @@
     ;; that are just to extend the set of nominal imports. We keep those
     ;; separate --- and don't serialize them --- because they interfere
     ;; with bulk representations of binding and they're used only to
-    ;; commuincate to `provide`.
+    ;; communicate to `provide`.
     (define new-syms/serialize
       (cond
        [just-for-nominal? (table-with-bulk-bindings-syms/serialize bt)]
