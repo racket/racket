@@ -6,7 +6,8 @@
          (only-in "r6rs-lang.rkt"
                   optimize-level)
          (only-in "scheme-lang.rkt"
-                  current-expand)
+                  current-expand
+                  with-source-path)
          (submod "scheme-lang.rkt" callback)
          "syntax-mode.rkt"
          "r6rs-readtable.rkt"
@@ -206,21 +207,37 @@
      (current-eval
       (let ([e (current-eval)])
         (lambda (stx)
-          (define ex ((current-expand)
-                      (syntax->datum
-                       (let loop ([stx stx])
-                         (syntax-case* stx (#%top-interaction eval-when compile) (lambda (a b)
-                                                                                   (eq? (syntax-e a) (syntax-e b)))
-                           [(#%top-interaction . rest) (loop #'rest)]
-                           [(eval-when (compile) . rest)
-                            #'(eval-when (compile eval load) . rest)]
-                           [_ stx])))))
-          (define r (strip-$app
-                     (strip-$primitive
-                      (if (struct? ex)
-                          ($uncprep ex)
-                          ex))))
-          (e r))))
+          (define (go ex)
+            (define r (strip-$app
+                       (strip-$primitive
+                        (if (struct? ex)
+                            ($uncprep ex)
+                            ex))))
+            (e r))
+          (let loop ([stx stx])
+            (syntax-case* stx (#%top-interaction
+                               eval-when compile
+                               begin
+                               include) (lambda (a b)
+                                          (eq? (syntax-e a) (syntax-e b)))
+              [(#%top-interaction . rest) (loop #'rest)]
+              [(eval-when (compile) . rest)
+               #'(eval-when (compile eval load) . rest)]
+              [(begin e ...)
+               (for-each loop (syntax->list #'(e ...)))]
+              [(include fn)
+               (loop
+                #`(begin #,@(with-source-path 'include (syntax->datum #'fn)
+                              (lambda (n)
+                                (call-with-input-file*
+                                 n
+                                 (lambda (i)
+                                   (let loop ()
+                                     (define r (read-syntax n i))
+                                     (if (eof-object? r)
+                                         '()
+                                         (cons r (loop))))))))))]
+              [_ (go ((current-expand) (syntax->datum stx)))])))))
      (status "Load cmacros using expander")
      (load-ss (build-path scheme-dir "s/cmacros.ss"))
      (status "Continue loading expander")))

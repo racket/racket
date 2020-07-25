@@ -25,20 +25,47 @@
                         [(eqv? v v1) rv1]
                         [(eqv? v v2) rv2]
                         [else (error "unknown")]))]
-          [`(define-constant ,id ,v)
-           (when (exact-integer? v)
-             (hash-set! ht id v))]
+          [`(define-constant ,id ,e)
+           (let/cc esc
+             (hash-set! ht id (constant-eval e esc)))]
+          [`(define-constant-default ,id ,e)
+           (hash-ref ht id
+                     (lambda ()
+                       (let/cc esc
+                         (hash-set! ht id (constant-eval e esc)))))]
+          [`(include ,fn)
+           (unless (equal? fn "machine.def")
+             (read-constants-from-file fn))]
           [_ (void)])
         (loop)))))
 
-(when scheme-dir
+(define (constant-eval e esc)
+  (cond
+    [(pair? e)
+     (case (car e)
+       [(if)
+        (if (constant-eval (cadr e) esc)
+            (constant-eval (caddr e) esc)
+            (constant-eval (cadddr e) esc))]
+       [(constant)
+        (hash-ref ht (cadr e) esc)]
+       [(=)
+        (= (constant-eval (cadr e) ht)
+           (constant-eval (caddr e) ht))]
+       [(quote)
+        (cadr e)]
+       [else (esc)])]
+    [else e]))
+
+(define (read-constants-from-file fn)
   (call-with-input-file
-   (build-path scheme-dir "s" (string-append target-machine ".def"))
-   read-constants)
-  
-  (call-with-input-file
-   (build-path scheme-dir "s" "cmacros.ss")
+   (build-path scheme-dir "s" fn)
    read-constants))
+
+(when scheme-dir
+  (read-constants-from-file
+   (string-append target-machine ".def"))
+  (read-constants-from-file "cmacros.ss"))
 
 (define-syntax-rule (define-constant id ...)
   (begin
