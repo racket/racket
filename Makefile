@@ -705,7 +705,7 @@ PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata -
 PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:
-	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs racket/src/expander racket/src/cs/bootstrap
+	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs racket/src/expander
 	$(RUN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
 	$(RUN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 

@@ -125,7 +125,7 @@
 				       (orig-exit v))))])
     (putenv "SCHEME_SRC" (path->string scheme-dir))
     (putenv "MACH" machine)
-    (dynamic-require (build-path here 'up "cs" "bootstrap" "make-boot.rkt") #f)))
+    (dynamic-require (build-path scheme-dir "rktboot" "make-boot.rkt") #f)))
 
 ;; Prepare to use Chez Scheme makefile
 (prep-chez-scheme scheme-dir machine)

@@ -152,7 +152,7 @@ SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)" \
                      WINDRES="$(WINDRES)"
 
 scheme-make-finish:
-	env SCHEME_SRC="$(SCHEME_SRC)" MACH="$(MACH)" $(BOOTSTRAP_RACKET) $(srcdir)/../bootstrap/make-boot.rkt
+	env SCHEME_SRC="$(SCHEME_SRC)" MACH="$(MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_SRC)"/rktboot/make-boot.rkt
 	cd $(SCHEME_SRC) && ./configure @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
 	$(MAKE) sync-bootfiles
 	cd $(SCHEME_SRC) && $(MAKE)
@@ -185,7 +185,7 @@ $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot: $(SCHEME_SRC)/boot/$(MACH)/schem
 
 scheme-cross:
 	cd $(SCHEME_SRC) && git submodule -q init && git submodule -q update
-	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_SRC)" MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) $(srcdir)/../bootstrap/make-boot.rkt
+	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_SRC)" MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_SRC)"/rktboot/make-boot.rkt
 	$(MAKE) sync-bootfiles MACH="$(TARGET_MACH)"
 	cd $(SCHEME_SRC) && ./configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
 	cd $(SCHEME_SRC)/$(TARGET_MACH)/c && $(MAKE) o=o cross=t
