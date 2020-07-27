@@ -1,0 +1,8 @@
+contact_links:
+  - name: Racket Users - A discussion list for all things related to Racket. Ask your questions here!
+    url: https://groups.google.com/forum/#!forum/racket-users/
+    about: Please ask and answer questions here.
+  - name: Racket Slack - A chat list for all things related to Racket. Ask your questions here!
+    url: https://racket-slack.herokuapp.com/
+    about: Click here to join.
+    
