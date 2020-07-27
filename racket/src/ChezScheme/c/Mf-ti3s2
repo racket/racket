@@ -1,0 +1,8 @@
+# Mf-ti3s2
+
+m ?= ti3s2
+
+threadLibs = -lpthread 
+threadFlags = -D_REENTRANT
+
+include Mf-i3s2

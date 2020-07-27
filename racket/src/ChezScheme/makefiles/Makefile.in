@@ -1,0 +1,95 @@
+# Makefile.in
+# Copyright 1984-2017 Cisco Systems, Inc.
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+MAKEFLAGS += --no-print-directory
+
+.PHONY: build
+build:
+	(cd $(workarea) && $(MAKE) build)
+
+.PHONY: run
+run:
+	env SCHEMEHEAPDIRS=$(workarea)/boot/$(m) $(workarea)/bin/$(m)/scheme
+
+.PHONY: install
+install:
+	(cd $(workarea) && $(MAKE) install)
+
+.PHONY: uninstall
+uninstall:
+	(cd $(workarea) && $(MAKE) uninstall)
+
+.PHONY: test
+test:
+	(cd $(workarea) && $(MAKE) test PREFIX=$(workarea)/)
+
+.PHONY: coverage
+coverage:
+	(cd $(workarea) && $(MAKE) coverage)
+
+.PHONY: bootfiles
+bootfiles:
+	(cd $(workarea) && $(MAKE) bootfiles)
+
+.PHONY: reset
+reset:
+	(cd $(workarea) && $(MAKE) reset)
+
+# <machine>.boot to build boot files for <machine>
+%.boot:
+	(cd $(workarea) && $(MAKE) $*.boot)
+
+# <machine>.bootquick to build boot files for <machine>
+# with o=3 d=0 for the cross compiler, and only after
+# building the kernel for the configured machine
+%.bootquick:
+	(cd $(workarea) && $(MAKE) $*.bootquick)
+
+# Supply ORIG=<dir> to build using existing at <dir>
+.PHONY: from-orig
+from-orig:
+	(cd $(m)/s && $(MAKE) -f Mf-cross m=$(m) xm=$(m) base=$(ORIG)/$(m))
+	$(MAKE) build
+
+.PHONY: docs
+docs: build
+	(cd csug && $(MAKE) m=$(m))
+	(cd release_notes && $(MAKE) m=$(m))
+
+.PHONY: bintar
+bintar:
+	(cd $(workarea) && $(MAKE) bintar)
+
+.PHONY: rpm
+rpm:
+	(cd $(workarea) && $(MAKE) rpm)
+
+.PHONY: pkg
+pkg:
+	(cd $(workarea) && $(MAKE) pkg)
+
+.PHONY: clean
+clean:
+	(cd $(workarea) && $(MAKE) clean)
+
+.PHONY: distclean
+distclean:
+	(cd csug && if [ -e Makefile ] ; then $(MAKE) reallyreallyclean ; fi)
+	rm -f csug/Makefile
+	(cd release_notes && if [ -e Makefile ] ; then $(MAKE) reallyreallyclean ; fi)
+	rm -f release_notes/Makefile
+	rm -rf $(workarea)
+	rm -f Makefile
+	rm -f Make.out

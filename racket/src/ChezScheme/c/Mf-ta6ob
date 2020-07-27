@@ -1,0 +1,8 @@
+# Mf-ta6ob
+
+m ?= ta6ob
+
+threadLibs = -lpthread 
+threadFlags = -D_REENTRANT -pthread
+
+include Mf-a6ob

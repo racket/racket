@@ -1,0 +1,7 @@
+# Mf-tppc32le
+
+m = tppc32le
+
+threadFlags = -pthread
+ 
+include Mf-ppc32le
