@@ -22,9 +22,9 @@
         (let ([accum (let loop ([accum (cons (list indent path fs phase) accum)])
                        (cond
                          [(null? accum) null]
-                         [(hash-ref seen accum #f) null]
+                         [(and seen (hash-ref seen accum #f)) null]
                          [else
-                          (hash-set! seen accum #t)
+                          (when seen (hash-set! seen accum #t))
                           (cons (car accum) (loop (cdr accum)))]))])
           (for ([i (in-list (reverse accum))])
             (apply show i))))
