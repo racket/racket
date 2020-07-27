@@ -4,8 +4,8 @@
 @title[#:tag "strings"]{Strings (Unicode)}
 
 A @deftech{string} is a fixed-length array of
-@seclink["characters"]{characters}. It prints using doublequotes,
-where doublequote and backslash characters within the string are
+@seclink["characters"]{characters}. It prints using double quotes,
+where double quote and backslash characters within the string are
 escaped with backslashes. Other common string escapes are supported,
 including @litchar{\n} for a linefeed, @litchar{\r} for a
 carriage return, octal escapes using @litchar{\} followed by up
