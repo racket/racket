@@ -73,13 +73,10 @@ several options:
    See @secref["distribute"] for more instructions.}
 
  @item{@bold{In-place Racket on Chez Scheme build} --- This mode
-   builds using Chez Scheme via @exec{make cs}. Unless you use various
-   options described in @secref["build-cs"], this process downloads
-   Chez Scheme from GitHub, builds a traditional @exec{racket} with
-   minimal packages, builds Chez Scheme, and then builds Racket on
-   Chez Scheme using Racket and Chez Scheme. Final executables with
-   names that end in @litchar{cs} or @litchar{CS} are the Racket on
-   Chez Scheme variants.}
+   builds using Chez Scheme via @exec{make cs}. Chez Scheme is itself
+   built from a subtree of the Racket source repository. Final
+   executables with names that end in @litchar{cs} or @litchar{CS} are
+   the Racket on Chez Scheme variants.}
 
 ]
 
@@ -158,12 +155,12 @@ repository. A @exec{make in-place} links to the package in-place,
 while @exec{make unix-style} copies packages out of @filepath{pkgs} to
 install them.
 
-To install a subset of the packages in @filepath{pkgs}, supply @exec{PKGS} value to
-@exec{make}. For example,
+To install a subset of the packages that would otherwise be installed,
+supply a @exec{PKGS} value to @exec{make}. For example,
 
 @commandline{make PKGS="gui-lib readline-lib"}
 
-links only the @filepath{gui-lib} and @filepath{readline-lib} packages
+installs only the @filepath{gui-lib} and @filepath{readline-lib} packages
 and their dependencies. The default value of @exec{PKGS} is
 @tt{"main-distribution main-distribution-test"}. If you run @tt{make}
 a second time, all previously installed packages remain installed and
@@ -218,26 +215,17 @@ suffix, and they coexist with a traditional Racket build by keeping
 compiled files in a machine-specific subdirectory of the
 @filepath{compiled} directory. You can remove the @litchar{cs} suffix
 and the subdirectory in @filepath{compiled} by providing
-@exec{RACKETCS_SUFFIX=""} to @exec{make}. (One day, if all goes well,
+@exec{RACKETCS_SUFFIX=""} to @exec{make}. (One day,
 the default for @exec{RACKETCS_SUFFIX} will change from @tt{"cs"} to
 @tt{""}.)
 
-Building Racket on Chez Scheme requires an existing Racket and Chez
-Scheme. If you use @exec{make cs} with no further arguments, then the
-build process will bootstrap by building a traditional variant of
-Racket and by downloading and building Chez Scheme.
+Building Racket on Chez Scheme requires either an existing Racket or
+pb (portable bytecode) boot files for Chez Scheme. By default, pb
+bootf iles are downloaded from a separate Git repository by @exec{make
+cs}. If you have Racket v7.1 or later, then you can choose instead
+to bootstrap using that Racket implementation with
 
-If you have a sufficiently recent Racket installation already with at
-least the @filepath{compiler-lib} package installed, you can supply
-@exec{RACKET=...} with @exec{make cs} to skip that part of the
-bootstrap. And if you have a Chez Scheme source directory already, you
-can supply that with @exec{SCHEME_SRC=@nonterm{dir}} instead of
-downloading a new copy:
-
-@commandline{make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme}
-
-@margin-note{For now, Racket on Chez requires the variant of Chez Scheme at
-             @url{https://github.com/racket/ChezScheme}}
+@commandline{make cs RACKET=racket}
 
 Use @exec{make both} to build both traditional Racket and Racket on
 Chez Scheme, where packages are updated and documentation is built only

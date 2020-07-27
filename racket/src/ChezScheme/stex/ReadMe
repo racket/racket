@@ -1,0 +1,39 @@
+stex: stex => latex and latex => html converters and associated tools
+
+Copyright (c) 1998-2016 R. Kent Dybvig and Oscar Waddell
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+
+This directory contains the following files and subdirectories as of
+April 2016:
+
+  doc                a short stex overview
+  gifs/              support for building 'ghost' right arrows
+  inputs/            sample class files, style files, etc.
+  Makefile           for compiling stex itself
+  Makefile.template  template make file for stex-based docs
+  Mf-stex            common (included) makefile for stex-based docs
+  math/              base math subdirectory for stex-based docs
+  ReadMe             this file
+  sbin/              helper scripts
+  src/               stex sources
+
+See doc/stex.html for a brief overview of stex and how to use it.

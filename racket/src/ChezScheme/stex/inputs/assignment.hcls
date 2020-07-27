@@ -1,0 +1,173 @@
+%%% assignment.hcls
+
+\newif\iflatex\latexfalse
+\newif\ifhtml\htmltrue
+
+% should be built in
+\newenvironment{center}
+  {\raw{<center>}}
+  {\raw{</center>}}
+
+\def\copyrightnotice{\ifauthor\par\raw{<hr>}\copyright~\year~\theauthor\par\fi}
+\let\trueenddocument=\enddocument
+\def\enddocument{
+ \theselfstudy
+ \begin{divertoutput}[toc]
+  \ifsubsubsec\raw{</table></td></tr>}\fi
+  \ifsubsec\raw{</table></td></tr>}\fi
+ \end{divertoutput}
+ \copyrightnotice\trueenddocument}
+
+\newif\iftitle\titlefalse
+\newif\ifdate\datefalse
+\newif\ifauthor\authorfalse
+\def\title#1{\def\thetitle{#1}\titletrue}
+\def\date#1{\def\thedate{#1}\datetrue}
+\def\author#1{\def\theauthor{#1}\authortrue}
+\def\maketitle{%
+\iftitle\raw{<h1>}\thetitle\raw{</h1>}\fi
+\ifauthor
+ \ifdate
+  \raw{<h2>}\theauthor\\\thedate\raw{</h2>}%
+ \else
+  \raw{<h2>}\theauthor\raw{</h2>}%
+ \fi
+\else
+ \ifdate\raw{<h2>}\thedate\raw{</h2>}\fi
+\fi}
+
+%%% table of contents
+\newif\ifsubsec\subsecfalse
+\newif\ifsubsubsec\subsubsecfalse
+\newcommand{\tableofcontents}{
+\raw{<table cellpadding=0 cellspacing=0>}
+\rawinput{\jobname.htoc}
+\raw{</table>}
+\openrawfile{toc}{\jobname.htoc}}
+
+% we \let\label=\nolabel within toc entries to avoid inserting
+% labels that belong with the labeled entity, not the toc
+\def\nolabel#1{}
+
+%%% \section
+\newcounter{section}
+\renewcommand{\thesection}{\arabic{section}}
+\newcommand{\section}[1]{
+\refstepcounter{section}
+\edef\templabel{\genlab}
+\raw{<h3><br>}\label{\templabel}\thesection. #1\raw{</h3>}
+\begin{divertoutput}[toc]
+\ifsubsubsec\raw{</table></td></tr>}\fi
+\subsubsecfalse
+\ifsubsec\raw{</table></td></tr>}\fi
+\subsecfalse
+\raw{<tr><td align="right">}\textbf{\thesection.~}\raw{<td>}\textbf{\href[plain]{\templabel}{{\let\label=\nolabel #1}}}\raw{</td></tr>}
+\end{divertoutput}
+}
+
+%%% \subsection
+\newcounter{subsection}[section]
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\newcommand{\subsection}[1]{
+\refstepcounter{subsection}
+\edef\templabel{\genlab}
+\raw{<h4><br>}\label{\templabel}\thesubsection. #1\raw{</h4>}
+\begin{divertoutput}[toc]
+\ifsubsubsec\raw{</table></td></tr>}\fi
+\subsubsecfalse
+\ifsubsec\else\raw{<tr><td></td><td><table cellpadding=0 cellspacing=0>}\fi
+\subsectrue
+\raw{<tr><td>}\textbf{\thesubsection.~}\raw{</td><td>}\textbf{\href[plain]{\templabel}{{\let\label=\nolabel #1}}}\raw{</td></tr>}
+\end{divertoutput}
+}
+
+%%% \subsubsection
+\newcounter{subsubsection}[subsection]
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+\newcommand{\subsubsection}[1]{
+\refstepcounter{subsubsection}
+\edef\templabel{\genlab}
+\raw{<h4><br>}\label{\templabel}\thesubsubsection. #1\raw{</h4>}
+\begin{divertoutput}[toc]
+\ifsubsubsec\else\raw{<tr><td></td><td><table cellpadding=0 cellspacing=0>}\fi
+\subsubsectrue
+\raw{<tr><td>}\textbf{\thesubsubsection.~}\raw{</td><td>}\textbf{\href[plain]{\templabel}{{\let\label=\nolabel #1}}}\raw{</td></tr>}
+\end{divertoutput}
+}
+
+%%% figure
+\newcounter{figure}
+\renewcommand{\thefigure}{\arabic{figure}}
+\newcommand{\caption}[1]{\\ Figure \thefigure.~#1}
+\newenvironment{figure}
+  {\begingroup\refstepcounter{figure}}
+  {\endgroup}
+
+%%% exercise
+\newcounter{exercise}
+\renewcommand{\theexercise}{\arabic{exercise}}
+\def\@startexercise{\refstepcounter{exercise}
+  \raw{<hr>}
+  \textbf{Exercise \theexercise. }}
+\newenvironment{exercise}
+  {\begingroup\def\newexercise{\@startexercise}\newexercise}
+  {\raw{<hr>}}
+\newcounter{subexercise}[exercise]
+\renewcommand{\thesubexercise}{\theexercise\alph{subexercise}}
+\newcommand{\subexercise}{\par\refstepcounter{subexercise}\textbf{\thesubexercise. }}
+
+%%% self-study
+\newif\ifselfstudy\selfstudyfalse
+\def\selfstudy#1#2{\selfstudytrue}
+\def\theselfstudy{\ifselfstudy\realselfstudy\fi}
+\def\realselfstudy{\begingroup
+  \def\sstudyentry##1##2##3{\raw{<p>}\textbf{##3.} ##1 [see \hyperlink{######2}{here}]\raw{</p>}}
+  \section{Questions for self study}\label{section:selfstudy}
+  \input{\jobname.sst}
+  \endgroup}
+
+%%% alphalist
+\newcounter{alphalist}
+\def\alphalist{\begingroup\setcounter{alphalist}{0}
+ \def\endalphalistitem{}%
+ \renewcommand{\item}{\endalphalistitem
+  \def\endalphalistiem{\raw{</td></tr>}}%
+  \stepcounter{alphalist}%
+  \raw{<tr valign=top><td>}\alph{alphalist}.\raw{</td><td>}}
+ \raw{<table>}}
+\def\endalphalist{\endalphalistitem\raw{</table>}\endgroup}
+
+%%% define our own (compact) description environment
+\def\description{\begingroup
+ \renewcommand{\item}[1][]{\raw{<dt>}##1\raw{<dd>}}\raw{<dl compact>}}
+\def\enddescription{\raw{</dl>}\endgroup}
+
+%%% index
+\newcommand{\see}[2]{\emph{see} #1}
+\newenvironment{theindex}
+  {\begingroup\newcommand{\itemindent}{\raw{<tt>&nbsp;&nbsp;&nbsp;</tt>}}
+   \renewcommand{\item}{\raw{<br>}}
+   \newcommand{\subitem}{\raw{<br>}\itemindent}
+   \newcommand{\subsubitem}{\raw{<br>}\itemindent\itemindent}}
+  {\par\endgroup}
+
+\def\parheader#1 {\medskip\noindent{\bf #1.}~~}
+
+%%% grammar support
+\newenvironment{grammar}
+  {\begingroup
+    \def\orbar{&\bar&}
+    \def\nobar{&&}
+    \def\longis{&$\longrightarrow$&}
+   \begin{tabular}{lcl}}
+  {\end{tabular}\endgroup}
+\def\bar{\raw{|}}
+\def\kplus{\raw{<sup>+</sup>}}
+\def\kstar{\raw{*}}
+\def\ang#1{\raw{&lt;}#1\raw{&gt;}}
+
+\def\mbox#1{#1}
+
+%%% hyperlink support
+\newcommand{\hyperlink}[3][]{\raw{<a #1 href="}\url{#2}\raw{">}#3\raw{</a>}}
+

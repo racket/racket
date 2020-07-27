@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/file
 	 racket/system
-	 "../../cs/bootstrap/parse-makefile.rkt")
+	 "../../ChezScheme/rktboot/parse-makefile.rkt")
 
 (provide recompile)
 

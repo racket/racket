@@ -1,0 +1,727 @@
+2008-09-25 18:51:12 - 4865e596edc0ea8a68be26943c1463b9a9b3b6ab
+  * initial import of Dipa Sarkar's code
+      alltests.ss, compiler.ss, define-language.ss, define-pass.ss, driver.ss,
+      helpers.ss, match.ss, meta-parser.ss, meta-syntax-dispatch.ss,
+      nano-syntax-dispatch.ss, nano.ss, nanohelpers.ss, nanotest.ss, parser.ss,
+      preprocess.ss, records.ss, synforms.ss, syntaxconvert.ss, term.ss,
+      unparser.ss
+2008-10-03 19:28:03 - d0a9aa5cfe8463a0a7d52a8fc9e03283b5f86078
+  * added copyright notice
+      + Copyright.txt
+  * removed match, it was used to do initial parsing of sexp
+      - match.ss, nanotest.ss
+  * added first comment in trying to decode define-language
+      define-language.ss
+  * moved back to optimize-level 2 to give debugging information
+      nanotest.ss
+2008-10-06 09:40:52 - 1fd736e52b3ca305f56aaeac049176ddd6f5eb71
+  * removed execution bit from files, since they were unneeded
+      compiler.ss, define-language.ss, define-pass.ss, meta-parser.ss, 
+      meta-syntax-dispatch.ss, nano-syntax-dispatch.ss, nano.ss,
+      nanohelpers.ss, parser.ss, records.ss, syntaxconvert.ss, term.ss,
+      unparser.ss
+2008-10-06 09:48:17 - e06164bd5a6bf2437a833a2b8009e7dc8c7629a2
+  * reorganized code to move library source into src directory
+      moved: define-language.ss, define-pass.ss, meta-parser.ss,
+      meta-syntax-dispatch.ss, nano-syntax-dispatch.ss, nano.ss,
+      nanohelpers.ss, parser.ss, records.ss, syntaxconvert.ss, terms.ss, and
+      unparser.ss to src directory
+2008-10-06 09:49:43 - d72c88e555b24a6bc8738162c98d194b1069503f
+  * reorganized code to move testing source into tests directory
+      moved: alltests.ss, compiler.ss, driver.ss, helpers.ss, nanotest.ss,
+      preprocess.ss, and synforms.ss to tests directory
+2008-10-09 21:29:41 - a1b2dd8408b6f1282cfc9a962d38f0647dc32409
+  * accidentally changed (define-syntax define-langauge ... to
+    (define-language ...
+  * changed tests to support reorganized directories
+      tests/nanotest.ss
+  * began working to identify (and remove) unused code, along with code
+    reading to understand where and how functions are used.  Also changed
+    to use consistent function definition syntax and line-wrap.
+      src/define-language.ss, src/define-pass.ss
+  * removed code after #!eof to be put in chaff file.
+      src/define-language.ss, src/define-pass.ss
+  * lifted duplicated common functions from make-processor-clause and
+    do-define-pass
+      src/define-pass.ss
+2008-10-09 21:43:19 - d43213f91181deee413f86126fc3a0a56bfdf53e
+  * lifted make-incontext-transformer and make-quasiquote-transformer to
+    commonize these functions
+      src/define-pass.ss
+  * fixed (define-syntax define-language ... typo
+      src/define-language.ss
+2008-10-09 22:23:42 - 29d2029f0213605732712c2be60f586e02c27677
+  * commented out some of the lifted fields
+      src/define-pass.ss
+2008-10-09 22:23:42 - d14c0b3ed8e254991baddd15317a6a9e31dcf30c
+  * uncommented and generally reworked code for defining passes
+      src/define-pass.ss
+2008-10-10 11:18:17 - 4f7840c069d47d7cd68357c67cd5b805a98886de
+  * cleanup of language->s-expression code
+      src/define-language.ss
+  * more code reformating and moving of common functions into the helpers.ss
+      src/nanohelpers.ss, src/define-pass.ss, src/meta-parser.ss,
+      src/meta-syntax-dispatch.ss, src/nano-syntax-dispatch.ss, src/parser.ss,
+      src/records.ss, src/syntaxconvert.ss, src/unparser.ss
+2008-10-24 18:13:23 - d1dff8cb77922342f52a10ed36a89497f8df5f6b
+  * added external TODO list moved from other files
+      TODO.txt, src/define-language.ss
+  * added load-all.ss file to load the parts from the src and tests directories
+      load-all.ss
+  * moved spare code to scrap file
+      scraps.ss
+  * curried the rec-member? call to reuse the code in all of the member?
+    functions
+      src/define-language.ss
+  * removed alt-union, alt-difference, and tspec-union functions
+      src/define-language.ss
+  * reorganized deeply nested if statements into conds
+      src/define-language.ss, src/define-pass.ss
+2008-10-25 14:25:18 - 21451b92b0bd1a140b35cc375eda365530edfcc0
+  * removed calls to eval that were used for looking up the meta-parser by
+    changing the meta-parser from a meta define to a procedure stored in the
+    compile time environment (procedure is then passed around in define-pass).
+      src/define-pass.ss, src/define-language.ss
+2008-10-26 21:17:58 - 1284b9818ffb015f16d81e407aab94bfeaa59098
+  * R6RSification: changed syntax-object->datum => syntax->datum,
+    list* => cons*, datum->syntax-object => datum->syntax,
+    (sub1 ,x) =>  (- ,x 1), (add1 ,x) =>  (+ ,x 1), partition => partition-syn
+      src/define-language.ss, src/define-pass.ss, src/meta-parser.ss, 
+      src/nanohelpers.ss, src/records.ss, src/syntaxconvert.ss, src/unparser.ss
+  * removed unused, useless, or duplicated procedure definitions: show-decls, 
+    show-tspecs, show-productions, lookup-any, split-decls, any, every, choose, 
+    assp, remp, memp, filter, fold, reduce, empty-set, singleton-set,
+    add-element, member?, empty?, union, intersection, difference
+      src/nanohelpers.ss
+  * moved lookup-alt from nanohelpers.ss to meta-parser.ss
+      src/nanohelpers, src/meta-parser.ss
+  * removed module wrappers as part of r6rsification
+      src/unparser.ss, src/parser.ss, src/meta-parser.ss
+  * changed null syntax () to #'() in generation of field patterns
+      src/syntaxconvert.ss,
+  * added more to scraps from the tail end of unparser
+      src/scraps.ss
+2008-10-26 21:20:07 - dc1e9b02e6964ec0c36772380660a462cf8e73d6
+  * created R6RS libraries to wrap around existing code base
+      nanopass.ss, nanopass/helpers.ss, nanopass/language.ss,
+      nanopass/meta-parser.ss, nanopass/parser.ss, nanopass/pass.ss,
+      nanopass/r6rs-helpers.ss, nanopass/records.ss, nanopass/unparser.ss,
+  * added R6RS compatibililty wrappers for define-record, syntax-error,
+    literal-identifier=?, warning, and fx=
+      nanopass/r6rs-helpers.ss
+  * accidentally added swap file: nanopass/.records.ss.swp
+      nanopass/.records.ss.swp
+2008-10-26 22:15:18 - 871b67ad1d4e2dafabe71536f15a6ec6d364c2ec
+  * added test-all script wrapper to ease testing
+      test-all.ss
+2008-11-09 01:50:07 - 806ef5378ca0259b9a2a1bf3f1766e18a14ac227
+  * removed accidentally added swap files: nanopass/.records.ss.swp
+      nanopass/.records.ss.swp
+  * cleaned up imports as more code is changed to comply with R6RS
+      nanopass/helpers.ss, nanopass/language.ss, nanpoass/meta-parser.ss,
+      nanopass/parser.ss, nanopass/pass.ss, nanopass/r6rs-helpers.ss,
+      nanopass/records.ss, nanopass/syntaxconvert.ss, nanopass/unparser.ss
+  * continued to press an Chez -> R6RS compatibility macro for define-record
+      nanopass/r6rs-helpers.ss
+  * also introduced my-syntax-violation to push for syntax-error compatibility
+      nanopass/r6rs-helpers.ss
+  * committed some debugging source (trace-define of parse-language)
+      nanopass/define-language.ss,
+  * added R6RS version of test-all
+      test-all-r6rs.ss
+  * code reformatting (removed spaces, changed to consistent coding standard)
+      nanopass/r6rs-helpers.ss, tests/r6rs-compiler.ss
+  * added implementation-helpers to abstract away some of the implementation
+    specific code
+      nanopass/syntaxconvert.ss, nanopass/unparser.ss
+  * moved iota from tests/compiler.ss to tests/helpers.ss
+      nanopass/compiler.ss
+  * create r6rs copy of the test compiler
+      tests/r6rs-compiler.ss, tests/r6rs-helper.ss, tests/r6rs-nanotest.ss 
+2008-11-09 01:59:07 - 118a0a36a308f49c25c58c3b67539ce4e384d46d
+  * added the implementation helpers files to the repositor, one for 
+    Chez Scheme and one for Ikarus Scheme
+      nanopass/implementation-helpers.ikarus.ss,
+      nanopass/implementation-helpers.ss
+2008-11-24 20:30:17 - 6e88caf2af091aac629fddb896651fcca92512a2
+  * removed parse-language trace-define
+      src/define-language.ss
+  * commented out assert, since the R6RS one stands in fine
+      src/nanohelpers.ss
+2008-11-24 20:39:20 - afe583a450a94aa25f9884902a7ce1032d5b48d7
+  * resolving conflicts between two wroking copies, assert => syn-assert
+      src/nanohelpers.ss
+2008-11-24 20:50:04 - 370bd11afdfc8a0233cf82b9f3d7f3c9e2f3db80
+  * exported all of the internal exports from the main nanopass library
+      nanopass.ss
+  * more exports to allow this to run on Ikarus Scheme: added meta-define,
+    and a hack to support meta-define
+      nanopass/implementation-helpers.ikarus.ss, nanopass/term.ss
+  * exported more features of meta-parser: parse-cata, lookup-alt
+      nanopass/meta-parser.ss
+  * created library for meta-syntax-dispatch
+      nanopass/meta-syntax-dispatch.ss
+  * moved to more formal make-compile-time-value definition for
+    putting things into the compile-time environment to support ikarus.
+      src/define-language.ss
+  * more cleanup and R6RSification of meta-parser.ss
+      src/meta-parser.ss
+  * removed module tag from meta-syntax-dispatch
+      src/meta-syntax-dispatch.ss
+  * R6RSification of src/parser.ss: syntax-object->datum => syntax->datum,
+    assert => syn-assert
+      src/parser.ss, src/records.ss
+  * excluded datum from the R6RS compiler nanopss import
+      tests/r6rs-compiler.ss
+2008-11-22 11:05:22 - 61feff78ee11abef5624b2de493e2bdb09851ffe
+  * same changes as previous version on a differnt machine.
+      nanopass.ss, nanopass/helpers.ss, nanopass/meta-parser.ss
+      nanopass/implementation-helpers.ikarus.ss, src/define-language.ss,
+      src/meta-parser.ss, src/meta-syntax-dispatch.ss, src/nanohelpers.ss,
+      src/records.ss, tests/r6rs-compiler.ss
+2008-11-22 14:13:59 - 6b61d840e4e1b86eeacd1a489431a241023cf962
+  * finished copying changes from previous commit in different working copy
+      nanopass/meta-syntax-dispatch.ss, nanopass/term.ss
+2008-11-24 20:50:28 - 31d49c16511376b46781a3e5e737cb705b8f9609
+  * merged two working copies
+2008-11-24 22:36:14 - cbc2955a6fd540f482290fc92a39eaa4168d057b
+  * added trace-define-syntax and printf to the implementation-helpers to
+    support debugging
+      nanopass/implementation-helpers.ikarus.ss
+  * imported meta-syntax-dispatch into the meta-parser
+      nanopass/meta-parser.ss
+  * committed debugging code in the language definition
+      src/define-language.ss
+2008-11-24 20:27:30 - f79bcb8b4aab5e804246a4030d2061edcf560e8d
+  * added meta-define and make-compilet-time-value macros for Chez to expand
+    into the appropriate meta define and cons
+      load-all.ss
+  * reformatted the exports in the nanopass top-level
+      nanopass.ss
+  * exported more helper procedures
+      nanopass/helpers.ss, nanopass/implementation-helpers.ss
+  * created auxiliaary keywords to export from the libraries to ensure they
+    will be free-identifier=? when used as keywords outside the library with
+    macros defined within the library
+      nanopass/language.ss, nanopas/meta-parser.ss
+  * created nano-syntax-dispatch library based on the syntax dispatcher from
+    the original code.
+      nanopass/nano-syntax-dispatch.ss
+  * added inclusing of nanopass/nano-syntax-dispatch.ss to parser.ss
+      nanopass/parsers.ss
+  * small formatting changes and removed debugging code.
+      nanopass/language.ss, src/define-language.ss, src/define-pass.ss,
+      src/parser.ss, src/unparser.ss, tests/r6rs-compiler.ss
+  * pulled make-double-collector-over-list and map2 into helpers
+      nanopass/helpers.ss
+  * small changes to deal with chez style records (record-type-name => 
+    chez-record-type-name, record-type-descriptor => 
+    chez-record-type-descriptor
+      src/unparser.ss 
+  * added procedure definitions for compose, disjoin, any, every, choose,
+    reverse-filter, fold, reduce, partition, constant? keyword?, 
+    list-of-user-primitives, list-of-system-primitives, user-primitive?,
+    system-primitive? primitive? predicate-primitive? value-primitive?,
+    effect-primitive? effect-free-primitive? gen-label, gen-symbol-seed,
+    reset-seed, gen-symbol, set? iota, with-values, mvlet, empty-set,
+    singleton-set, add-element, member?, empty?, union, intersection, and
+    difference to tests version of r6rs-helpers
+      tests/r6rs-helpers.ss
+  * created tiny testing library for looking at a single language definition
+      tests/r6rs-tiny.ss, tests/tiny.ss
+2008-11-24 22:37:23 - 6f68e61e97d091ebad305b4406f7352e3cc14a6e
+  * no changes? looks like a merge node.
+2008-12-11 09:06:34 - 65049181072cd5a748e732d454617083814b724e
+  * re-added auxiliary keywords for $tspec, $metas, $production, and $alt
+      nanopass.ss
+  * added code to push wraps down into syntax to support Ikarus.  current
+    code makes extended use of car, cdr, etc. to decompose syntax rather than
+    syntax-case.  eventually more of this needs to be dropped.
+      nanopass/helpers.ss
+  * added more implementation specific helpers to the Ikarus specific code.
+    some of these are to support things like format, printf, etc.
+      nanopass/implementation-helpers.ikarus.ss,
+      nanopass/implementation-helpers.ss
+  * moved auxiliary keywords: $tspec, $metas, $production, $alt, in, where,
+    over, extends, definitions, and entry into aux-keywords library
+      nanopass/language.ss, nanopassrecords.ss, (nanopass/aux-keywords.ss?)
+  * added helper syntax for map to print out what is being mapped over
+    for debugging purposes
+      nanopass/pass.ss
+  * fixing syntax around null (replacing #'() with '())
+      nanopass/r6rs-helpers.ss
+  * tspec?, gramelt-metas, tspec-terminal, nonterminal-name, alt=?, and
+    define-language now use an eq? comparison to match aux-keywords rather
+    then relying on the auxiliary keyword facility
+      nanopass/define-language.ss
+  * general code cleanup (reformatting, removing debugging in places, etc.)
+      nanopass/define-language.ss
+LATEST
+  * reformatted a couple places where there was some odd indenting
+      tests/compiler-test.ss
+  * updated compiler passes to make use of the new pass syntax.  with this
+    change passes that utilized the automatic combining code needed to be
+    rewritten to explicitly do the combining themselves (this was usually
+    append or union).  these passes now thread a varaible through and 
+    perform a cheaper update when possible.
+      tests/compiler.ss, tests/unit-tests.ss
+  * added set-cons for adding individual items to a set (instead of using
+    union everywhere
+      tests/helpers.ss, test/compiler.ss
+  * worked a little on a new test compiler, but did not make much progress
+      tests/new-compiler.ss
+  * fixed error handling in the test driver so that we are no longer getting
+    a non-continuable error raised when there is an exception in a pass
+      tests/test-driver.ss
+2011-04-09 - 
+  * added todo to investigate the handling of tspec=? down the road we may want
+    to investigate the syntax for extending languages again and drop the
+    definitions section (or at least rename it)
+      nanopass/language.ss
+  * fixed the cata syntax to support cata to a Processor that returns 
+    zero values.  as part of this fix also improved support for mapping
+    over processors that return multiple values.  originally this was
+    limited to just mapping over processors with one or two values, but
+    now it supports zero or more.  (zero return value is special-cased to
+    use for-each, one return value is special-cased to use map, and a loop
+    is built on the fly to support two or more return values.)
+      nanopass/meta-parser.ss, nanopass/pass.ss
+  * improved error message when a processor meta-variable cannot be found in
+    the parser and unparser.
+      nanopass/parser.ss, nanopass/meta-parser.ss
+2011-04-25 -
+  * merged changes from work with some in progress changes here.
+  * updated tests to work with new meta-variable only nonterminal alternatives
+2011-05-13 -
+  * added nanopass-case macro to allow for local matching of nanopass
+    syntax.  currently this expands into a directly applied define-pass
+    and is restricted to returning a single, non-checked value.
+      nanopass/pass.ss
+  * extended the meta parser to allow more then statement in the body of
+    in-context and with-output-language transformers.
+      nanopass/meta-parser.ss
+  * fixed issue with processor internal definitions not being properly
+    recognized and placed definitions within a with-output-language so
+    that quasiquotes will be transformed into nanopass language-records
+    similar to the processor right-hand-sides.
+      nanopass/pass.ss
+  * fixed bug with define-pass that was causing it to return a single value
+    when a user provided body was checked for an appropriate language value.
+    the check now happens to the first return value and the extra returned
+    values are returned as is.
+      nanopass/pass.ss
+  * fixed bug in how extend pred-all checks were being generated so that
+    a call to the ntspec's pred is being generated instead of just the a
+    reference to the pred itself.
+      nanopass/records.ss
+  * fixed bug in the unparser that was causing non-terminal productions to
+    be handled through a recursively generated form rather then using the
+    existing pred-all for the non-terminal.
+      nanopass/unparser.ss
+  * improved error message when searching for procs fails, so that we know
+    the syntax we were trying to process (and hence whether it was a body,
+    auto-generated ntspec production, auto-generated cata, or cata call
+    that generated the problem).
+      nanopass/pass.ss
+  * changed a debugging pretty-print
+      nanopass/language.ss
+2011-05-17
+  * improved error message when a field cannot be autogenerated in an
+    autogenerated clause to a processor
+      nanopass/pass.ss
+  * changed from call-with-values to let-values in code produced in
+    body of a processor (now that the error message doesn't hold onto
+    the 3D code we were generating)
+      nanopass/pass.ss
+2011-05-22
+  * removed the syn-map, map2, make-double-collector, and find-matching-clause
+    since they were no longer being used.
+      nanopass/helpers.ss, tests/helpers.ss
+  * changed references to prod and production to ntspec
+      nanopass/languages.ss, nanopass/meta-parser.ss, nanopass/parser.ss,
+      nanopass/unparser.ss, nanopass/records.ss
+  * rewrote code for handling user clauses in order to support nonterminals on
+    the left-hand-side of a clause.  clauses are now matched in the order they
+    appear, with additional clauses autogenerated after user clauses have been
+    added. the code supports the current (limited) testing but has not yet been
+    tested with the new compiler code.  it also does not yet support terminal
+    or nonterminal catas.
+      nanopass/meta-parser.ss, nanopass/pass.ss
+2011-05-22
+  * fixed the processor builder by adding the input identifier from a cata to
+    the list of formal arguments (when it would not be otherwise shadowed).
+    note: the order is not necessarily maintained, but since these values will
+    be set by the let* that binds them, there does not seem to be a need of
+    ordering.  also fixed the else thunk to be a thunk.
+      nanopass/pass.ss
+  * incorporated changes to nanopass-case that Kent Dybvig made.  when an
+    identifier is used in as the expression to be matched the identifier is
+    rebound with the new value when the cata is called.
+      nanopass/pass.ss
+  * incorporated changes to meta-language quasiquote syntax from Kent Dybvig.
+    this change allows things like `(locals (,(reverse xnfv*) ...) ---) which
+    would previously have raised an error since ellispis expected to find an
+    identifier in its body.  to support this a quote form was also added to
+    make sure this feature does no cause automatically quoted items in the body
+    of an input, like booleans, symbols, and other constants.
+      nanopass/records.ss, nanopass/meta-parser.ss, nanopass/pass.ss
+2011-05-25
+  * fixed the error message for the output processor so that it would have the
+    preformatted name rather then the syntax I had inadvertently dropped in
+    (fix thanks to Kent Dybvig).
+      nanopass/meta-parser.ss
+2011-05-25
+  * setup the output process to leave quasiquote in the correct context
+    when an output expression is unquoted.  this should allow us to avoid
+    many of the in-context specifiers needed in the current np-compiler.
+      nanopass/meta-parser.ss
+2011-09-23
+  * removed definitions form from define-language.  added a todo for a better
+    solution to the problem of unparsing languages into a runnable s-expression
+    syntax.  also removed empty let wrapper from unparser output, since it is
+    no longer needed with the definitions support gone.
+      nanopass/language.ss, nanopass/record.ss, nanopass/unparser.ss
+  * added feature to gather up information about the syntax being passed to
+    a record constructor so that we can provide a slightly better error message
+    when the value passed for one of the fields is invalid.  this is done
+    using the source-annotation functionality, and produces a single message
+    for each fld (even though multiple syntax objects might have contributed,
+    e.g. in the case of a list field).  when the identifier is known, it will
+    report that the problem occurred at the given syntax item and when it is
+    not it will report that the problem ocurred near the given syntax item.
+      nanopass/records.ss, nanopass/meta-parser.ss, nanopass/parser.ss
+  * parser and unparser are now defined with define-who so that they can report
+    which parser or unparser went belly up when an error occurs.
+      nanopass/language.ss, nanopass/parser.ss
+  * added check in nano-meta->fml* to raise an error when a quoted terminal
+    is found in the list of formals.  this is just a more specific message
+    than the "unrecognized nano-rec" in the else case.
+      nanopass/pass.ss
+  * at optimize-level 3, the "checking" version of the pair-alt record
+    constructor is now a syntax definitions that washes down to a call to
+    the normal record constructor, so that the output of the checked and
+    unchecked cases will be the same.
+      nanopass/records.ss
+2011-09-24
+  * moved the preprocessor code into the tests/compiler.ss file and changed
+    it to use with-output-language, rather than the s-expression quasiquote.
+      tests/compiler.ss, tests/compiler-tests.ss, tests/preprocess.ss (removed)
+  * updated the synforms library to not require a quasiquoted expression.
+    also changed to use ... in place of dots or .. by using the Chez extended
+    syntax-rules (which allow for a general guard expression). also got rid of
+    top level quoted item, probably should have also made unquote legal as
+    start of pattern.
+      tests/synforms.ss
+  * now exporting define-who from tests/helpers.ss to allow for more convenient
+    error calls in the rename-var/verify-scheme function.
+      tests/helpers.ss, tests/compiler.ss
+2011-09-29
+  * added a (maybe x) form to language definitions to allow language defintions
+    to contain fields that can be occupied by either a non-terminal or #f.
+    this means it is now possible to have a production like:
+    (define-language L
+      (terminals
+        (integer (int))
+        ---)
+      (Exp (e)
+        (Foo int (maybe e))
+        ---))
+    and the e field in Foo maybe either be an Exp or #f. also added ? as a valid
+    character to put on a meta-variable to allow e? for those fields that are
+    maybe fields.
+      nanopass/helpers.ss, nanopass/meta-parser.ss, nanopass/pass.ss,
+      nanopass/records.ss, nanopass/syntaxconvert.ss, nanopass/unparser.ss
+      test-all.ss, tests/unit-test-helpers.ss, tests/unit-tests.ss
+  * Fixed variable overlap bug when a pattern and the langauge formal to a processor
+    share the same name. For example:
+    (Exp : Exp (e1) -> Exp ()
+      [(Foo ,e1 ,e2) ---]
+      ---)
+    this now produces the expected code and shadowing, instead of re-binding e1
+    before e2 has a chance to be extracted from e1.
+      nanopass/pass.ss
+  * Fixed bug when handling output expressions that can end in a terminal in the
+    meta-parser.  This means if you have:
+    (define-language L
+      (terminals
+        (integer (int))
+        (boolean (bool))
+        ---)
+      (Exp (e)
+        (Foo int e-or-bool)
+        ---)
+      (Exp-or-Bool (e-or-bool)
+        bool
+        e))
+    then the expression:
+    (with-output-language (L Exp) `(Foo 4 #f))
+    it should now work properly.
+      nanopass/meta-parser.ss
+  * Added indirect-export of record constructors, predicates, and accessors
+    created when defining a language, so that if the language is exported,
+    these will be exported as well.
+      nanopass/records.ss
+  * convert-pattern now returns fields and levels as separate list return
+    values along with a list of maybes.  it also parses the (maybe e) syntax
+    (see note above)
+      nanopass/syntaxconvert.ss
+  * Fixed some tests that were still expecting the (let () ---) wrapper
+    around the output of language unparsers. also cleaned up the output
+    to make it a little more obvious what was going on with these.
+      tests/unit-tests.ss, tests/unit-test-helpers.ss
+2011-09-09
+  * The nanopass library is now built as a library group to ease testing in
+    Chez Scheme 8.9.1 (which includes a built in copy of the nanopass framework
+    that will be used in place of the library if it is not carefully loaded).
+      nanopass.ss
+  * Cleaned up unique names so that they now have a single number added to them
+    rather then several, and the names are divided by : in stead of being
+    divided by .
+      nanopass/helpers.ss
+  * Small changes to error messages that report bad meta-variables, these now
+    report if they are from the parser or meta-parser.
+      nanopass/meta-parser.ss, nanopass/parser.ss
+  * First step at moving to record variants with case dispatch.  This version
+    includes the potential for some extra record checks, sometimes even when
+    they are not needed.  However the basic dispatch is there now.
+      nanopass/pass.ss, nanopass/records.ss
+2011-09-10
+  * Moved calculation of ntspec sub-terminal predicate and ntspec full tags
+    into the same code that calculates the all-pred for the ntspec. This
+    has the added benefit that when the else is used we only put in the 
+    nanopass-record check when there is a possibility that it could be a
+    terminal.
+      nanopass/records.ss, nanopass/pass.ss
+----
+2011-12-26
+  * Small fix to echo message for echoing passes (now includes newline)
+      nanopass/pass.ss
+  * Added basic support for nanopass records as terminals. This support is
+    incomplete, since it doesn't have a syntax that fully supports the
+    define-record-type syntax, but should be able to.
+      nanopass/pass.ss, nanopass/records.ss, nanopass/language.ss,
+      nanopass/meta-parser.ss
+  * Fixed (slightly) handling of mapping over input terms.  Now if there is
+    not an expression to map, it does not build a call to map.
+      nanopass/pass.ss
+----
+2012-12-17 - 949d59d57739e3a29cce020b244c81d049f73e5b
+  * Moved project to public github.
+      all files
+2013-01-30 - 41f14e679b5fb9c2a8eaabe6f908905c3f329fe1
+  * removed list-tail definition from helpers and turned it into an import in
+    implementation helpers. (thanks to Kent Dybvig, who made the change and
+    submitted a bug report).
+      nanopass/helpers.ss, nanopass/implementation-helpers.ss
+  * there is no longer an additional (duplicate) count for traversing into a
+    sub-nonterminal. counts for terminal elements of a wrapping nonterminal
+    have also been removed (not sure if this was a good change or not).
+      nanopass/language-node-counter.ss
+  * changed how the "trace" keyword determines when it should use an input or
+    output unparser. this is now determined by both checking that there is an
+    input (or output) language and an input (or output) nonterminal in the
+    transformer being traced.
+      nanopass/pass.ss
+  * changed the autogenerated clauses to call the checking record maker instead
+    of the non-checking version, because a recursive call could potentially hit
+    a compiler writer supplied terminal or nonterminal transformer that builds
+    an invalid item.
+      nanopass/pass.ss
+2013-01-30 - 65d35a107fcdd4e7091af6c159867215d8da0971
+  * Updated copyright information in all the files.
+      Copyright, nanopass.ss, nanopass/helpers.ss,
+      nanopass/implementation-helpers.chezscheme.ss,
+      nanopass/implementation-helpers.ikarus.ss,
+      nanopass/implementation-helpers.ss, nanopass/language-node-counter.ss,
+      nanopass/language.ss, nanopass/meta-parser.ss,
+      nanopass/meta-syntax-dispatch.ss, nanopass/nano-syntax-dispatch.ss,
+      nanopass/parser.ss, nanopass/pass.ss, nanopass/random-util.sls,
+      nanopass/records.ss, nanopass/syntax-handler.sls,
+      nanopass/syntaxconvert.ss, nanopass/unparser.ss, test-all.ss,
+      tests/alltests.ss, tests/compiler-test.ss, tests/compiler.ss,
+      tests/helpers.ss, tests/implementation-helpers.ikarus.ss,
+      tests/implementation-helpers.ss, tests/new-compiler.ss,
+      tests/synforms.ss, tests/test-driver.ss,
+      tests/unit-test-helpers-implementation.chezscheme.sls,
+      tests/unit-test-helpers.ss, tests/unit-tests.ss
+2013-07-18 - 097f7c428a1573af14556e76619fab323f7d42b8
+  * Merged typo fix in error message (courtesy of Eric Holk)
+      nanopass/pass.ss
+2013-07-18 - 79e0e644d5c490a2ea71418834228a429b97d581
+  * Merged another typo fix in another error message (courtesy of Eric Holk)
+      nanopass/records.ss
+2013-08-03 - ce94b43cfc1a6ef1dd7de5bd65d37c165902918d
+  * INCOMPATIBLE CHANGE: Extended languages now use the base languages's entry
+    point as the entry point for the language instead of the first listed
+    nonterminal.  In general, this seems like the behavior you want, though it
+    may break some existing libraries, so upgrade with caution.
+      nanopass/languages.ss, tests/compiler.ss
+  * Added a prune-language form that, when given a language, starts traversing
+    the language from the entry nontermainal and determines if there are any
+    dead nonterminals or terminals in the language, prunes them, and returns an
+    S-expression representing only the reachable parts of the language.
+      nanopass/language.ss, nanopass.ss
+2013-09-03 - f8fc318d2bc644357c02cef5e897702efa2d1675
+  * Added binaries of the nanopass framework for OS X
+      ReadMe, ReadMe.md, lib/ReadMe.md, lib/csv8.4/{,t}{a6,i3}osx/nanopass.so
+2013-09-03 - b13b070e578d960c895c45aafba616175d4c5782
+  * Added binaries ot the nanopass framework for Linux
+      lib/csv8.4/{,t}{a6,i3}le/nanopasss.so
+2013-09-16 - ad7ff9b1eba29bffc474fc94cb4fc0ab431fa3ab
+  * Fixed a bug with the parser that caused bare boolean terminals to fail to
+    parse.  Specifically, since #f was used to indicate a failed parse,
+    parsing the bare boolean #f was raising an error.
+      nanopass/parse.ss, tests/unit-tests.ss
+2013-10-01 - af34af0544292872a5f1de4a8f92c1caca5e51b2
+  * changed unique-id to unique-symbol, since we are now building the
+    unique-symbol and using it directly instead of generating the id to use in
+    output syntax.  also exporting make-list to make generating accessors
+    easier.
+      nanopass/helpers.ss, nanopass/implementation-helpers.chezscheme.ss,
+      nanopass/implementation-helpers.ss
+  * fixed language->s-expression to no longer output the nongenerative id of
+    an ntspec, since it is no longer necessary to specify for each ntspec
+      nanopass/language.ss
+  * small cleanup of the meta-parser.  removed extra (unused) argument to a
+    couple of procedures.
+      nanopass/meta-parsers.ss, nanopass/parser.ss, nanopass/unparser.ss
+  * removed differentiation between checking and non-checking maker, since we
+    are no longer using the non-checking maker.
+      nanopass/meta-parsers.ss, nanopass/records.ss, nanopass/parser.ss,
+      nanopass/pass.ss
+  * improved checking of meta-variables so that if the wrong meta-variable is
+    used, it will report it to the user, rather than doing a check that will
+    always fail we now report that an invalid meta-variable was used at expand
+    time.  also did some general cleanup and improved error messages around
+    using quoted items in a pattern match.
+      nanopass/pass.ss, nanopass/records.ss
+  * changed record creation code to skip the define-record-type macro and
+    instead we are creating the records directly using the procedural
+    interface.  this (hopefully) helps the memory usage and speed of expanding
+    language definitions.
+      nanopass/records.ss
+2013-10-02 - 3dd941537379b2a2a1a139daf8107a24ce919346
+  * added bin directory to automate the process of building binaries across Mac
+    OS X and Linux.  these scripts require a setup with multiple versions of
+    the Chez Scheme compiler installed.
+      bin/build-shared-objects, bin/compile-file-to-lib-dir
+2013-10-02 - 3dd941537379b2a2a1a139daf8107a24ce919346
+  * added a define-pruned-language form that prunes a language and then defines
+    it with a new name.  also changed diff-languages to output code that is
+    appropriate for the current implemntation of language extensions in the
+    nanopass framework.
+      nanopass.ss, nanopass/languages.ss
+2013-10-04 - 9cd67d5ee048370ca253b7fd3b942151921858fd
+  * added checking for mutually recursive nonterminals so that we now report
+    an error to the user.  this was a simple change, and if we want to support
+    this in the future, there is probably a way to do so, we just need to be
+    careful about pass generation.
+      nanopass/records.ss
+2013-10-04 - 1aa2c01274137066aa3de75f966ce7c11374d20f,
+             c38ba0f9fea350ca403f8d0892765aebbb80890b
+  * fixed a small bug in the error reporting code for the stricter checking of
+    nanopass meta-variables.
+      nanopass/pass.ss
+2013-10-15 - 47c580d5ee361d6aa209189baa3489c067e18248,
+             3c7b2c6eff3e0e724291063cddce46ad9a447d47
+  * added support for Vicare Scheme through the implementation helper files.
+    removed use of define-property, since it is not supported on other
+    Scheme platforms.
+      nanopass.ss, nanopass/helpers.ss, nanopass/language-node-counter.ss,
+      nanopass/language.ss, nanopass/meta-parser.ss,
+      nanopass/meta-syntax-dispatch.ss, nanopass/parser.ss, nanopass/pass.ss,
+      nanopass/record.ss, nanopass/unparser.ss, nanopass/synforms.ss,
+      nanopass.chezscheme.sls (new),
+      nanopass/implementation-helpers.chezscheme.sls
+      (renamed, was nanopass/implementation-helpers.chezscheme.ss),
+      nanopass/implementation-helpers.ss (removed),
+      nanopass/implementation-helpers.vicare.sls (new),
+      tests/implementation-helpers.chezscheme.sls (new),
+      tests/implementation-helpers.vicare.sls (new),
+      tests/unit-test-helpers-implementation.vicare.sls (new)
+  * moved language pruning code into a separate library to remove duplicated
+    code for prune-language and define-pruned-language.
+    nanopass/language-helpers.ss (new), nanopass/language.ss
+  * added a gitignore file so that I won't accidentally commit vim swap files.
+      .gitignore
+2013-10-16 - d7f3c8a71a99f2cc88a3a5f8c28b780dcf07c41d
+  * added support for Ikarus Scheme (which is a little easier to install on Mac
+    OS X).  moved more Chez specific code to the implementation specific
+    libraries.
+      nanopass/helpers.ss, implementation-helpers.chezscheme.sls,
+      implementation-helpers.ikarus.ss, implementation-helpers.vicare.sls,
+      nanopass/meta-parser.ss, nanopass/parser.ss, nanopass/pass.ss,
+      nanopass/records.ss, nanopass/unparser.ss, tests/compiler.ss,
+      tests/unit-test-helpers-implementation.ikarus.sls (new)
+  * test-all now prints output when running under Vicare Scheme.
+      tests/unit-test-helpers-implementation.vicare.sls
+  * started cleaning up code that is no longer used.
+      nanopass/helpers.ss, nanopass/random-util.sls (removed),
+      nanopass/syntax-handler.sls (removed)
+2013-10-17 - 31bdcd721d5685ca78c1f43974ffb0ea890ad8b2
+  * code cleanup.  removed more no longer used code.
+      nanopass/helpers.ss, nanopass/implementation-helpers.chezscheme.sls,
+      test-all.ss
+2013-10-17 -
+  * updated documentation and logs
+      LOG, TODO, ReadMe.md, CHANGES (removed), Notes (removed),
+      ReadMe (removed)
+  * updated binary build script and built updated binaries
+      bin/build-shared-objects, bin/compile-file-to-dir,
+      lib/csv8.4/{,t}{a6,i3}{le,osx}/nanopass.so
+2013-10-24 -
+  * fixed support for using improper lists in language productions.  this
+    addresses issue 7 from the github issues list.  it is now possible to
+    use an improper list as the top-level pattern for a production and
+    improper lists can now be matched in a pass without raising an invalid
+    pattern syntax error in the pass.  also added regression tests.
+      nanopass/language.ss, nanopass/meta-syntax-dispatch.ss,
+      tests/unit-tests.ss, test-all.ss,
+      lib/csv8.4/a6le/nanopass.so, lib/csv8.4/a6osx/nanopass.so,
+      lib/csv8.4/i3le/nanopass.so, lib/csv8.4/i3osx/nanopass.so,
+      lib/csv8.4/ta6le/nanopass.so, lib/csv8.4/ta6osx/nanopass.so,
+      lib/csv8.4/ti3le/nanopass.so, lib/csv8.4/ti3osx/nanopass.so
+2013-12-05 -
+  * added a with-r6rs-quasiquote and a with-extended-quasiquote forms.  the
+    r6rs version provides the normal quasiquote, while the extended version
+    includes support for ellipsis in the template (the extended quasiquote is
+    now needed for the pretty output forms).
+      nanopass.ss, nanopass/helpers.ss, nanopass/unparser.ss
+  * added a second pretty form (->) for writing procedural unparsing of
+    nonterminal productions.
+      nanopass/language.ss, nanopass/helpers.ss, nanopass.ss, nanopass/records.ss,
+      nanopass/unparser.ss
+  * changed how trace-define-pass and traced transformers work, so that the
+    tracing now outputs the raw S-expressions syntax, rather than the unparsed
+    S-expression syntax.
+      nanopass/unparser.ss
+  * fixed how the unparser handles terminals, so that they will be unparsed
+    using the pretty unparser, even when they are unparsed at the top level, if
+    they are not using the raw unparsing.
+      nanopass/unparser.ss
+  * fixed a bug in how the meta-parser generates catas so that it will now put
+    the correct type in for terminal specs. 
+      nanopass/meta-parser.ss
+  * fixed a bug in how the transformer syntax is parsed when there is no input
+    language, or when there is no output language.  (the code used to assume
+    that the language would be present, leading to unhelpful error messages.)
+      nanopass/pass.ss
+2013-12-05 -
+  * fixed a bug with how errors are reported when a language production gets
+    the wrong the value.  (Thanks to Eric Holk for pointing out the bug (and
+    the different handling of formats in Vicare).
+      nanopass/records.ss
+  * built csv8.4 binaries with the current updates.
+      lib/csv8.4/a6le/nanopass.so, lib/csv8.4/a6osx/nanopass.so,
+      lib/csv8.4/i3le/nanopass.so, lib/csv8.4/i3osx/nanopass.so,
+      lib/csv8.4/ta6le/nanopass.so, lib/csv8.4/ta6osx/nanopass.so,
+      lib/csv8.4/ti3le/nanopass.so, lib/csv8.4/ti3osx/nanopass.so
+2013-12-09 -
+  * fixed a bug with the unparsing of maybe fields, with an added test to make
+    sure that we don't wreck the handling of maybe fields again.
+      nanopass/unparser.ss, test-all.ss, tests/unit-tests.ss
+  * built csv8.4 binaries with the current updates.
+      lib/csv8.4/a6le/nanopass.so, lib/csv8.4/a6osx/nanopass.so,
+      lib/csv8.4/i3le/nanopass.so, lib/csv8.4/i3osx/nanopass.so,
+      lib/csv8.4/ta6le/nanopass.so, lib/csv8.4/ta6osx/nanopass.so,
+      lib/csv8.4/ti3le/nanopass.so, lib/csv8.4/ti3osx/nanopass.so

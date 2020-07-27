@@ -10,8 +10,7 @@
 
 (define-runtime-path here ".")
 
-(define scheme-dir-provided? #f)
-(define abs-scheme-dir (build-path here 'up "build" "ChezScheme"))
+(define scheme-dir (build-path 'up "ChezScheme"))
 (define pull? #f)
 (define static-libs? #t)
 (define machine (if (= 32 (system-type 'word))
@@ -24,10 +23,6 @@
 
 (command-line
  #:once-each
- [("--scheme-dir") dir "Select the Chez Scheme build directory, unless <dir> is \"\""
-                   (unless (equal? dir "")
-                     (set! scheme-dir-provided? #t)
-                     (set! abs-scheme-dir (path->complete-path dir)))]
  [("--pull") "Use `git pull` on auto-cloned Chez Scheme repo"
              (set! pull? #t)]
  [("--racketcs-suffix") str "Select the suffix for RacketCS"
@@ -46,9 +41,6 @@
  (set! git-clone-args clone-arg))
 
 (current-directory here)
-
-(define scheme-dir (find-relative-path (current-directory)
-                                       (simplify-path abs-scheme-dir)))
 
 (define (system*! prog . args)
   (printf "{in ~a}\n" (current-directory))
@@ -70,49 +62,6 @@
     (error 'csbuild "command failed")))
 
 ;; ----------------------------------------
-
-;; Download Chez Scheme source
-(let ([submodules '("nanopass"  "stex"   "zlib"   "lz4")]
-      [readmes    '("ReadMe.md" "ReadMe" "README" "README.md")])  
-  (define (clone from to [git-clone-args '()])
-    (apply system*! (append
-                     (list "git"
-                           "clone")
-                     git-clone-args
-                     (list from to))))
-  (define bundled-src-dir (build-path here 'up "ChezScheme"))
-  (cond
-    [(directory-exists? bundled-src-dir)
-     (unless (directory-exists? scheme-dir)
-       (copy-directory/files bundled-src-dir scheme-dir))]
-    [extra-repos-base
-     ;; Intentionally not using `git-clone-args`, because dumb transport
-     ;; (likely for `extra-repos-base`) does not support shallow copies
-     (unless (directory-exists? scheme-dir)
-       (clone (format "~aChezScheme/.git" extra-repos-base)
-              scheme-dir))
-     (for ([submodule (in-list submodules)]
-           [readme (in-list readmes)])
-       (define dir (build-path scheme-dir submodule))
-       (unless (file-exists? (build-path dir readme))
-         (clone (format "~a~a/.git" extra-repos-base submodule)
-                (build-path scheme-dir submodule))))
-     (when pull?
-       (parameterize ([current-directory scheme-dir])
-         (system*! "git" "pull")
-         (for ([submodule (in-list submodules)])
-           (parameterize ([current-directory (build-path submodule)])
-             (system*! "git" "pull" "origin" "master")))))]
-    [else
-     (unless (directory-exists? scheme-dir)
-       (clone "https://github.com/racket/ChezScheme"
-              scheme-dir
-              git-clone-args))
-     (when pull?
-       (parameterize ([current-directory scheme-dir])
-         (system*! "git" "pull")
-         (system*! "git" "submodule" "init")
-         (system*! "git" "submodule" "update")))]))
 
 ;; Bootstrap Chez Scheme boot files
 (let/ec esc
@@ -153,24 +102,28 @@
 
 ;; ----------------------------------------
 
-(define (build-layer name
-		     #:dir [dir name]
-		     #:skip-make? [skip-make? #f])
-  (parameterize ([current-directory (build-path 'up dir)])
-    (make-directory* (build-path build-dir "compiled"))
-    (unless skip-make?
-      (system*! "nmake"
-		(format "~a-src-generate" name)
-		(format "BUILDDIR=~a" build-dir)
-		(format "RACKET=~a ~a ~a" chain-racket "ignored" (build-path build-dir "compiled/ignored.d"))))))
+;; We could regenerate schemified layers in development mode
+;; (which on Unix is done by `make` in `racket/src/cs`).
 
-(build-layer "expander")
-(build-layer "thread")
-(build-layer "io")
-(build-layer "regexp")
+(when #f
+  (define (build-layer name
+                       #:dir [dir name]
+                       #:skip-make? [skip-make? #f])
+    (parameterize ([current-directory (build-path 'up dir)])
+      (make-directory* (build-path build-dir "compiled"))
+      (unless skip-make?
+        (system*! "nmake"
+                  (format "~a-src-generate" name)
+                  (format "BUILDDIR=~a" build-dir)
+                  (format "RACKET=~a ~a ~a" chain-racket "ignored" (build-path build-dir "compiled/ignored.d"))))))
 
-(build-layer "schemify")
-(build-layer "known" #:dir "schemify")
+  (build-layer "expander")
+  (build-layer "thread")
+  (build-layer "io")
+  (build-layer "regexp")
+
+  (build-layer "schemify")
+  (build-layer "known" #:dir "schemify"))
 
 ;; ----------------------------------------
 
@@ -180,9 +133,6 @@
 				   scheme
 				   (find-relative-path (current-directory) scheme))))
 
-;; Environment variable used by ".sls" files to find ".scm" files
-(putenv "COMPILED_SCM_DIR" "../build/compiled/")
-
 (parameterize ([current-directory (build-path 'up "cs")])
   (define convert.d (build-path build-dir "compiled" "convert.d"))
   (unless (file-exists? convert.d) (call-with-output-file convert.d void))
@@ -191,7 +141,8 @@
 	    (format "RACKET=~a" rel-racket)
 	    (format "SCHEME=~a" rel-scheme)
 	    (format "BUILDDIR=../build/") ; need forward slashes
-	    (format "CONVERT_RACKET=~a" chain-racket)))
+	    (format "CONVERT_RACKET=~a" chain-racket)
+            (format "BOOTSTRAPPED=~a" "done")))
 
 ;; ----------------------------------------
 
@@ -263,6 +214,7 @@
          "ignored" "../build/ignored.d"
          args))
 
+(make-directory* "../../lib")
 (bootstrap-racket! "../cs/c/embed-boot.rkt"
                    "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
                    "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)

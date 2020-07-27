@@ -1,0 +1,7 @@
+Acknowledgements
+
+The development of this software has been supported by Indiana University,
+Cadence Research Systems, Cisco Systems, and a gift from Microsoft Research.
+Jordon Johnson implemented an early version of the infrastructure.  The "cata"
+syntax and quasiquote extension to handle ellipses is patterned after Erik
+Hilsdale's match.ss, an early version of which was written by Dan Friedman.

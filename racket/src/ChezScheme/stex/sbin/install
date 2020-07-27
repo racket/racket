@@ -1,0 +1,73 @@
+#! /bin/sh
+# follows symbolic links.  to do otherwise is painful.
+
+usage() {
+  echo "usage: $0 [ -o owner] [ -g group ] [ -m mode ] -d dir ..."
+  echo "       $0 [ -o owner] [ -g group ] [ -m mode ] file destfile"
+  echo "       $0 [ -o owner] [ -g group ] [ -m mode ] file file ... destdir"
+  exit 1
+}
+
+installone() {
+  cp -f -p $1 $2
+  if [ "$owner" != "" ] ; then chown $owner $2; fi
+  if [ "$group" != "" ] ; then chgrp $group $2; fi
+  if [ "$mode" != "" ] ; then chmod $mode $2; fi
+}
+
+mkdir=0
+
+while [ $# -ge 0 ] ; do
+  case $1 in
+    -d) mkdir=1 ;;
+    -o) shift; owner=$1 ;;
+    -g) shift; group=$1 ;;
+    -m) shift; mode=$1 ;;
+    -*) usage ;;
+    *) break ;;
+  esac
+  shift
+done
+
+if [ $mkdir -eq 1 ] ; then
+  dirs=$*
+
+  for dir in $dirs ; do
+    case $dir in
+      /*) ;;
+      *) echo "directory name must begin with /; $dir does not" ; exit 1 ;;
+    esac
+
+    stack="$dir"
+    while [ "$dir" != "/" ] ; do
+      stack="$dir $stack"
+      dir=`dirname $dir`
+    done
+
+    for dir in $stack ; do
+      if [ ! -e $dir ] ; then
+        mkdir $dir
+        if [ "$owner" != "" ] ; then chown $owner $dir ; fi
+        if [ "$group" != "" ] ; then chgrp $group $dir ; fi
+        if [ "$mode" != "" ] ; then chmod $mode $dir ; fi
+      fi
+    done
+  done
+elif [ $# -eq 2 -a ! -d $2 ] ; then
+  installone $1 $2
+elif [ $# -ge 2 ] ; then
+  files=""
+  while [ $# -ne 1 ] ; do
+    files="$files $1"
+    shift
+  done
+  dest=$1
+
+  if [ ! -d $dest ]; then usage; fi
+
+  for file in $files ; do
+    installone $file $dest/`basename $file`
+  done
+else
+  usage
+fi

@@ -106,14 +106,9 @@ have several options:
   Variants](#2-distributing-racket-variants) for more instructions.
 
 * **In-place Racket on Chez Scheme build** — This mode builds using Chez
-  Scheme via `make cs`. Unless you use various options described in
-  [More Instructions: Building Racket on Chez
-  Scheme](#16-more-instructions-building-racket-on-chez-scheme), this
-  process downloads Chez Scheme from GitHub, builds a traditional
-  `racket` with minimal packages, builds Chez Scheme, and then builds
-  Racket on Chez Scheme using Racket and Chez Scheme. Final executables
-  with names that end in `cs` or `CS` are the Racket on Chez Scheme
-  variants.
+  Scheme via `make cs`. Chez Scheme is itself built from a subtree of
+  the Racket source repository. Final executables with names that end in
+  `cs` or `CS` are the Racket on Chez Scheme variants.
 
 ### 1.3. Quick Instructions: In-Place Build
 
@@ -181,12 +176,12 @@ core implementation and are therefore kept in the same Git repository. A
 `make in-place` links to the package in-place, while `make unix-style`
 copies packages out of `"pkgs"` to install them.
 
-To install a subset of the packages in `"pkgs"`, supply `PKGS` value to
-`make`. For example,
+To install a subset of the packages that would otherwise be installed,
+supply a `PKGS` value to `make`. For example,
 
   `make PKGS="gui-lib readline-lib"`
 
-links only the `"gui-lib"` and `"readline-lib"` packages and their
+installs only the `"gui-lib"` and `"readline-lib"` packages and their
 dependencies. The default value of `PKGS` is `"main-distribution
 main-distribution-test"`. If you run `make` a second time, all
 previously installed packages remain installed and are updated, while
@@ -239,24 +234,16 @@ variant all have a `cs` or `CS` suffix, and they coexist with a
 traditional Racket build by keeping compiled files in a machine-specific
 subdirectory of the `"compiled"` directory. You can remove the `cs`
 suffix and the subdirectory in `"compiled"` by providing
-`RACKETCS_SUFFIX=""` to `make`. (One day, if all goes well, the default
-for `RACKETCS_SUFFIX` will change from `"cs"` to `""`.)
+`RACKETCS_SUFFIX=""` to `make`. (One day, the default for
+`RACKETCS_SUFFIX` will change from `"cs"` to `""`.)
 
-Building Racket on Chez Scheme requires an existing Racket and Chez
-Scheme. If you use `make cs` with no further arguments, then the build
-process will bootstrap by building a traditional variant of Racket and
-by downloading and building Chez Scheme.
+Building Racket on Chez Scheme requires either an existing Racket or pb
+(portable bytecode) boot files for Chez Scheme. By default, pb bootf
+iles are downloaded from a separate Git repository by `make cs`. If you
+have Racket v7.1 or later, then you can choose instead to bootstrap
+using that Racket implementation with
 
-If you have a sufficiently recent Racket installation already with at
-least the `"compiler-lib"` package installed, you can supply
-`RACKET=...` with `make cs` to skip that part of the bootstrap. And if
-you have a Chez Scheme source directory already, you can supply that
-with `SCHEME_SRC=<dir>` instead of downloading a new copy:
-
-  `make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme`
-
-> For now, Racket on Chez requires the variant of Chez Scheme at
-> [https://github.com/racket/ChezScheme](https://github.com/racket/ChezScheme)
+  `make cs RACKET=racket`
 
 Use `make both` to build both traditional Racket and Racket on Chez
 Scheme, where packages are updated and documentation is built only once
@@ -368,9 +355,8 @@ on some number of client machines, each of which contacts the server
 machine to obtain pre-built packages. The server can act as a client,
 naturally, to create an installer for the server’s platform.
 
-GNU `make` is required on the server machine, `nmake` is required on
-Windows client machines, and any `make` should work on other client
-machines.
+GNU `make` is required on the server and non-windows client machines,
+`nmake` is required on Windows client machines.
 
 The distribution-build process is a collaboration between the Racket Git
 repository’s top-level makefile and the `"distro-build"` package.

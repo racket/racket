@@ -139,14 +139,6 @@ jobs:
     - name: Untar
       working-directory: ${{ github.workspace }}
       run: tar -xvjf ${{ runner.temp }}/racketcgc-macos-nocify-x64_git${{ github.sha}}.tar.bz2
-    - name: Checking out ChezScheme Release
-      if: github.ref == 'refs/heads/release'
-      working-directory: ./racket/src
-      run: git clone --single-branch --branch release --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
-    - name: Checking out ChezScheme
-      if: github.ref != 'refs/heads/release'
-      working-directory: ./racket/src
-      run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
     - name: Configuring Racket CS
       working-directory: ./racket/src
       env:

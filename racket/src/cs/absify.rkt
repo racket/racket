@@ -40,7 +40,7 @@
         p))
   
   (display (fix-trailing (simplify-path (path->complete-path p))))])
-  
+
 ;; In case there are extra arguments to an executable, preserve them
 (for ([e (in-list extras)])
   (display " ")

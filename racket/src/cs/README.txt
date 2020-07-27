@@ -1,4 +1,4 @@
-The implementation of Racket on Chez Scheme (Racket CS) in this
+<The implementation of Racket on Chez Scheme (Racket CS) in this
 directory is organized into two layers:
 
  * The immediate directory contains Scheme sources to implement Racket
@@ -10,33 +10,39 @@ directory is organized into two layers:
    wrapper executables that combine Chez Scheme with the Racket
    functionality implemented in this immediate directory.
 
-In addition, "bootstrap" implements a simulation of Chez Scheme in
-Racket that can be used to bootstrap Chez Scheme from source (i.e.,
-using an existing Racket build, but without an existing Chez Scheme
-build).
-
 
 ========================================================================
  Requirements
 ========================================================================
 
-Building Racket CS requires both an existing Racket build and Chez
-Scheme build.
+Building Racket CS from original sources requires an existing Racket
+build:
 
-The existing Racket must be "new enough" to build the current Racket
-CS version. In the worst case, it must be exactly the same version
-(using the traditional Racket implementation) as the one you're trying
-to build.
+ * Chez Scheme is typically used to compile Chez Scheme boot files,
+   but any recent version of Racket (v7.1 and up) can generate boot
+   files for Chez Scheme.
 
-  Note: When you use `configure --enable-cs` or similar as described
-  in "../README.txt", then a bootstrapping variant of Racket is built
-  automatically. You can select a different Racket excutable by
-  supplying `--enable-racket=...` to `configure`.
+   Currently, when you use `configure --enable-cs` or similar as
+   described in "../README.txt", then a bootstrapping variant of
+   Racket BC is built automatically and the used to build Racket CS
+   boot files. You can select a different Racket excutable by
+   supplying `--enable-racket=...` to `configure`.
 
-The Chez Scheme build must also be sufficiently new. See
-"../README.txt" for information on obtaining Chez Scheme (when not
-using a source Racket distribution that includes Chez Scheme's source
-already), and see "Building Chez Scheme" below for building.
+   Alternatively, boot files for the pb (portable bytecode) Chez
+   Scheme variant can be used to compile Chez Scheme on any supported
+   platform. The pb boot files must correspond to practically the same
+   version of Chez Scheme as being built, though.
+
+ * Racket is needed to generate the files in the "../bootstrapped"
+   directory from the sources in sibling directories like "io". The
+   Racket version must be practically the same as the current Racket
+   verson, although it can be the Racket BC implementation (instead of
+   the Racket CS implementation).
+
+   Unlike Chez Scheme boot files, the files generated in
+   "../bootstrapped" are human-readable and -editable Scheme code.
+   That possibilities provides a way out of bootstrapping black holes,
+   even without BC.
 
 
 ========================================================================
@@ -53,13 +59,13 @@ Development Mode
 ----------------
 
 The makefile in this directory is set up for modifying the
-implementation of Racket functionality and testing it out on a Chez
-Scheme installation.
+implementation of Racket functionality (including in the sibling
+directories, like "io") and testing it out on a Chez Scheme
+installation.
 
 For this development mode, either Chez Scheme needs to be installed as
 `scheme`, or you must use `make SCHEME=...` to set the command for
-`scheme`. For information on building Chez Scheme from source, see
-"Building Chez Scheme" below.
+`scheme`.
 
 Development mode also needs a Racket installation with at least the
 "compiler-lib" package installed. By default, the makefile looks for
@@ -111,10 +117,10 @@ build directory to use for building Racket CS:
    Building Racket CS requires a Chez Scheme build directory, not just
    a Chez Scheme installation that is accessible as `scheme`.
 
-The resulting Racket CS executable has the suffix "cs". To generate an
-executable without the "cs" suffix, supply `--enable-csdefault` to
-`configure`. The option to select the presence or absence of "cs" also
-affects the location of ".zo" files.
+The resulting Racket CS executable has the suffix "cs" by default. To
+generate an executable without the "cs" suffix, supply
+`--enable-csdefault` to `configure`. The option to select the presence
+or absence of "cs" also affects the location of ".zo" files.
 
 Compilation on Windows does not use the `configure` script in "c".
 Instead, from the directory "[here]\..\worksp", run "csbuild.rkt"
@@ -182,33 +188,6 @@ for ".zo" files. For example, you may want to preserve a normal build
 while also building in machine-code mode with `PLT_CS_DEBUG` set, in
 which case setting `PLT_ZO_PATH` to something like "ta6osx-debug" could
 be a good idea.
-
-
-========================================================================
- Building Chez Scheme
-========================================================================
-
-The Racket variant of Chez Scheme does not include boot files needed
-to compile Chez Scheme using Chez Scheme, but Racket can load enough
-of Chez Scheme to compile Chez Scheme boot files.
-
- * Obtain a sufficiently new Racket implementation, possibly by
-   following the directions in "../README.txt" to build the
-   traditional implementation of Racket. No extra packages are needed
-   beyond a minimal Racket build.
-
- * Set the current directory to a "ChezScheme" directory --- either a
-   checkout of the Git repository for the Racket branch of Chez Scheme
-   or the "ChezScheme" directory in the Racket source distribution.
-
- * In "ChezScheme", run "main.rkt" in the "bootstrap" subdirectory of
-   this directory:
-
-      racket [here]/bootstrap/main.rkt
-
-   Alternatively, install the "cs-bootstrap" package and run
-
-      racket -l cs-bootstrap
 
 
 ========================================================================
