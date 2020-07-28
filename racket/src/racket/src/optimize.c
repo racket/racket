@@ -9622,7 +9622,7 @@ Scheme_Object *optimize_expr(Scheme_Object *expr, Optimize_Info *info, int conte
             int save_fuel = info->inline_fuel, save_no_types = info->no_types;
             int save_vclock, save_aclock, save_kclock, save_sclock;
             info->size -= 1;
-            info->inline_fuel = 0; /* no more inlining; o->expr was already optimized */
+            info->inline_fuel = -1; /* no more inlining; o->expr was already optimized */
             info->no_types = 1; /* cannot used inferred types, in case `val' inferred them */
             save_vclock = info->vclock; /* allowed to move => no change to clocks */
             save_aclock = info->aclock;
