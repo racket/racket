@@ -6620,5 +6620,27 @@
           (lambda (x) (h x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test related to single-use variables
+;; and disabled inlining
+
+(parameterize ([compile-context-preservation-enabled #t]
+               [current-namespace (make-base-namespace)])
+  (void
+   (compile
+    '(module m racket/base
+       (letrec ([f (lambda () 0)]
+                [g (let ([g2
+                          (lambda ()
+                            (let ([x (f)])
+                              (list (lambda () x) h)))])
+                     g2)]
+                [h (letrec ([loop
+                             (lambda ()
+                               (let ([y (g)])
+                                 (list y loop)))])
+                     loop)])
+         h)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
