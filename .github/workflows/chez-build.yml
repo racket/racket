@@ -1,0 +1,74 @@
+name: Solo Chez Build CI
+
+on:
+  push:
+    paths:
+      - "racket/src/ChezScheme/**"
+  pull_request:
+    paths:
+      - "racket/src/ChezScheme/**"
+
+jobs:
+  
+  build-linux:
+    runs-on: ubuntu-18.04
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        mach: ['i3le', 'ti3le', 'a6le', 'ta6le'] 
+
+    env:
+      MACH: ${{ matrix.mach }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+      - name: Download pb boot files
+        run: make fetch-pb
+      - name: Proceed with TARGET_MACHINE == ${{ matrix.mach }}
+        run: echo $TARGET_MACHINE
+      - name: Install libs for 32-bit
+        if: matrix.mach == 'i3le' || matrix.mach == 'ti3le'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib lib32ncurses5-dev libx32ncurses5-dev uuid-dev:i386 libssl-dev:i386
+      - name: Install libs for 64-bit
+        if: matrix.mach == 'a6le' || matrix.mach == 'ta6le'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses5-dev uuid-dev libssl-dev
+      - name: Build Chez
+        working-directory: racket/src/ChezScheme
+        run: |
+          ./configure --pb
+          make -j$(($(nproc) + 1)) -l$(nproc) ${{ matrix.mach }}.bootquick
+      - name: Test Chez
+        working-directory: racket/src/ChezScheme
+        run: ../../../.github/scripts/test.sh
+
+  build-arm64:
+    runs-on: [self-hosted, ARM64, Linux]
+    container:
+      image: racket/racket-ci:latest
+      options: --init
+    
+    env:
+      MACH: tarm64le
+      
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+      - name: Download pb boot files
+        run: make fetch-pb
+      - name: Build Chez
+        working-directory: racket/src/ChezScheme
+        run: |
+          ./configure --pb
+          make -j$(($(nproc) + 1)) -l$(nproc) $MACH.bootquick
+      - name: Test Chez
+        working-directory: racket/src/ChezScheme
+        run: ../../../.github/scripts/test.sh
