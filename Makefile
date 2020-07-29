@@ -323,7 +323,7 @@ cs-with-configure:
 	$(MAKE) racket/src/build/cs/c/Makefile
 	cd racket/src/build/cs/c; $(MAKE)
 	$(MAKE) base-config
-	cd racket/src/build; $(MAKE) install-cs CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
+	cd racket/src/build/cs/c; $(MAKE) install CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
 	$(MAKE) cs-setup$(CS_CROSS_SUFFIX)
 
 cs-setup:
@@ -335,18 +335,9 @@ cs-setup-cross:
 nothing-after-base:
 	echo base done
 
-CS_CONFIG_TARGET = run-cfg-cs
-
 racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
 	mkdir -p cd racket/src/build/cs/c
 	cd racket/src/build/cs/c; ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
-	$(MAKE) $(CS_CONFIG_TARGET)
-
-run-cfg-cs:
-	cd racket/src/build; ../cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
-
-no-cfg-cs:
-	echo done
 
 no-fetch-pb:
 	echo done
@@ -443,7 +434,7 @@ both:
 	$(MAKE) also-cs IN_PLACE_SETUP_OPTIONS="--error-in build/step"
 
 also-cs:
-	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)" CS_CONFIG_TARGET=no-cfg-cs
+	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 win32-both:
 	$(MAKE) win32-in-place

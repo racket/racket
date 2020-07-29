@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/cmdline
          racket/format
-         racket/path)
+         racket/path
+         racket/file)
 
 ;; Adjust the configuration to consult a catalog that is
 ;; expected to map some packages to directory links.
@@ -58,6 +59,8 @@
 
 (unless (file-exists? config-file-path)
   (printf "Writing ~a\n" config-file-path)
+  (let-values ([(base name dir?) (split-path config-file-path)])
+    (when (path? base) (make-directory* base)))
   (call-with-output-file*
    config-file-path
    (lambda (o)

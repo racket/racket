@@ -60,7 +60,8 @@ collectsdir = @collectsdir@
 configdir = @etcpltdir@
 
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
-             "$(DESTDIR)$(libpltdir)"
+             "$(DESTDIR)$(libpltdir)" \
+             "$(DESTDIR)$(includepltdir)"
 
 # Defines FWVERSION:
 mainsrcdir = @srcdir@/../..
