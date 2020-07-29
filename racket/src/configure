@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# Using `--enable-csonly` avoids running `cfg-racket`
+# Using `--enable-csdefault` or `--enable-csonly` avoids running `cfg-racket`
 # and only uses `cfg-cs` and `cs/c/configure`.
 
 # Using `--enable-cs` or `--enable-csdefault` uses
@@ -12,23 +12,15 @@ dir=`dirname "$0"`
 
 use_cs=no
 use_racket=yes
-supplied_racket=no
-supplied_scheme=no
 
 for arg in $*; do 
   case "$arg" in
-    --enable-csdefault | --enable-cs)
+    --enable-cs)
       use_cs=yes
       ;;
-    --enable-csonly)
+    --enable-csdefault | --enable-csonly)
       use_racket=no
       use_cs=yes
-      ;;
-    --enable-racket=*)
-      supplied_racket=yes
-      ;;
-    --enable-scheme=*)
-      supplied_scheme=yes
       ;;
     --help | -h)
       echo $0:
@@ -48,23 +40,6 @@ for arg in $*; do
 done
 
 if test "$use_cs" = "yes" ; then
-  if test "$supplied_scheme" = "no" ; then
-    if ! test -d ChezScheme ; then
-      if ! test -d "$dir/ChezScheme" ; then
-        echo $0: supply --enable-scheme=... or check out a Chez Scheme
-        echo build directory as '"ChezScheme"' in the current directory
-        exit 1
-      fi
-    fi
-  fi
-
-  if test "$use_racket" = "no" ; then
-    if test "$supplied_racket" = "no" ; then
-      echo $0: --enable-csonly needs --enable-racket=...
-      exit 1
-    fi
-  fi
-
   # The "cs/c/configure" script doesn't report the installation
   # configuration, so we run it first and let "cfg-cs" or
   # "cfg-racket" report that information.
