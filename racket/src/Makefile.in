@@ -310,5 +310,5 @@ ON_RECONFIG = no
 reconfigure:
 	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
 
-Makefile$(ON_RECONFIG): $(srcdir)/configure $(srcdir)/cfg-racket $(srcdir)/cfg-cs $(SRC_MAKEFILES)
+Makefile$(ON_RECONFIG): $(srcdir)/configure $(srcdir)/cfg-bc $(srcdir)/cfg-cs $(SRC_MAKEFILES)
 	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)

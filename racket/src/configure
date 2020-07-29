@@ -1,9 +1,9 @@
 #! /bin/sh
 
 # Using `--enable-csdefault` or `--enable-csonly` avoids running
-# `cfg-racket` and only uses `cfg-cs` and `cs/c/configure`.
+# `cfg-bc` and only uses `cfg-cs` and `cs/c/configure`.
 
-# Using `--enable-cs` uses both `cfg-racket` and `cs/c/configure`.
+# Using `--enable-cs` uses both `cfg-bc` and `cs/c/configure`.
 
 set -e
 
@@ -30,7 +30,7 @@ for arg in $*; do
       exit 0
       ;;
     --help-racket)
-      exec "$dir/cfg-racket" --help
+      exec "$dir/cfg-bc" --help
       ;;
     --help-cs)
       exec "$dir/cs/c/configure" --help
@@ -41,7 +41,7 @@ done
 if test "$use_cs" = "yes" ; then
   # The "cs/c/configure" script doesn't report the installation
   # configuration, so we run it first and let "cfg-cs" or
-  # "cfg-racket" report that information.
+  # "cfg-bc" report that information.
 
   mkdir -p cs/c
   case "$dir" in
@@ -57,5 +57,5 @@ fi
 if test "$use_racket" = "no" ; then
   exec "$dir/cfg-cs" ${1+"$@"}
 else
-  exec "$dir/cfg-racket" ${1+"$@"}
+  exec "$dir/cfg-bc" ${1+"$@"}
 fi
