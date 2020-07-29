@@ -1,4 +1,4 @@
-<The implementation of Racket on Chez Scheme (Racket CS) in this
+The implementation of Racket on Chez Scheme (Racket CS) in this
 directory is organized into two layers:
 
  * The immediate directory contains Scheme sources to implement Racket
@@ -154,8 +154,7 @@ Racket CS currently supports three compilation modes:
    the implementation into a pure interpreter.
 
  * Interpreter mode --- The compiled form of a module is a "bytecode"
-   tree (not unlike the traditional Racket's bytecode) that is
-   interpreted.
+   tree (not unlike Racket BC's bytecode) that is interpreted.
 
    Select this mode by setting the `PLT_CS_INTERP` environment
    variable. Alternatively, set `PLT_LINKLET_COMPILE_QUICK` when
@@ -355,8 +354,8 @@ compatibility.
 FFI Differences
 ---------------
 
-Compared to the traditional Racket implementation, Racket CS's FFI
-behaves in several different ways:
+Compared to the Racket BC implementation, Racket CS's FFI behaves in
+several different ways:
 
  * The `make-sized-byte-string` function always raises an exception,
    because a foreign address cannot be turned into a byte string whose
@@ -371,7 +370,7 @@ behaves in several different ways:
 
  * A `_gcpointer` can only refer to the start of an allocated object,
    and never the interior of an 'atomic-interior allocation. Like
-   traditional Racket, `_gcpointer` is equivalent to `_pointer` for
+   Racket BC, `_gcpointer` is equivalent to `_pointer` for
    sending values to a foreign procedure, return values from a
    callback that is called from foreign code, or for `ptr-set!`. For
    the other direction (receiving a foreign result, `ptr-ref`, and

@@ -1,7 +1,6 @@
 This directory constraint source programs and fragments for wrapper
 executables used to start/embed Racket. The programs and fragments are
-used both for the traditional Racket virtual machine and Racket on
-Chez Scheme.
+used both for the Racket CS and BC implementations.
 
 ========================================================================
  Embedded Paths in the Executables

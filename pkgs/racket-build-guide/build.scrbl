@@ -210,8 +210,8 @@ If you need even more control over the build, carry on to
 The @exec{make cs} target (or @exec{make cs-as-is} for a rebuild, or
 @exec{nmake win32-cs} on Windows with Visual Studio) builds a variant
 of Racket that runs on Chez Scheme. By default, the executables for
-the Racket-on-Chez variant all have a @litchar{cs} or @litchar{CS}
-suffix, and they coexist with a traditional Racket build by keeping
+the Racket CS variant all have a @litchar{cs} or @litchar{CS}
+suffix, and they coexist with a Racket BC build by keeping
 compiled files in a machine-specific subdirectory of the
 @filepath{compiled} directory. You can remove the @litchar{cs} suffix
 and the subdirectory in @filepath{compiled} by providing
@@ -219,17 +219,17 @@ and the subdirectory in @filepath{compiled} by providing
 the default for @exec{RACKETCS_SUFFIX} will change from @tt{"cs"} to
 @tt{""}.)
 
-Building Racket on Chez Scheme requires either an existing Racket or
-pb (portable bytecode) boot files for Chez Scheme. By default, pb
-bootf iles are downloaded from a separate Git repository by @exec{make
-cs}. If you have Racket v7.1 or later, then you can choose instead
-to bootstrap using that Racket implementation with
+Building Racket CS requires either an existing Racket or pb (portable
+bytecode) boot files for Chez Scheme. By default, pb boot files are
+downloaded from a separate Git repository by @exec{make cs}. If you
+have Racket v7.1 or later, then you can choose instead to bootstrap
+using that Racket implementation with
 
 @commandline{make cs RACKET=racket}
 
-Use @exec{make both} to build both traditional Racket and Racket on
-Chez Scheme, where packages are updated and documentation is built only
-once (using traditional Racket).
+Use @exec{make both} to build both Racket BC and Racket CS, where
+packages are updated and documentation is built only once (using
+Racket BC).
 
 
 @; ------------------------------------------------------------

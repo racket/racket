@@ -1,13 +1,13 @@
-This directory contains most of the source code to the traditional
-implementation of Racket. See "../README.txt" for general information
-on building.
+This directory contains most of the source code to the Racket BC
+implementation. See "../README.txt" for general information on
+building.
 
 
 ========================================================================
  CGC versus 3m
 ========================================================================
 
-Traditional Racket and GRacket have two variants: CGC and 3m. The CGC
+Racket BC and GRacket BC have two variants: CGC and 3m. The CGC
 variant is older, and it cooperates more easily with extensions
 written in C. The 3m variant is the default: it is more robust and
 usually provides better overall performance.

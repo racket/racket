@@ -246,7 +246,7 @@ native-for-cross:
 	cd racket/src/build/cross; $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
 	cd racket/src/build/cross/racket; $(MAKE)
 
-racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-racket racket/src/Makefile.in
+racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-bc racket/src/Makefile.in
 	cd racket/src/build/cross; ../../configure $(MORE_CROSS_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------

@@ -1,10 +1,9 @@
 #! /bin/sh
 
-# Using `--enable-csdefault` or `--enable-csonly` avoids running `cfg-racket`
-# and only uses `cfg-cs` and `cs/c/configure`.
+# Using `--enable-csdefault` or `--enable-csonly` avoids running
+# `cfg-racket` and only uses `cfg-cs` and `cs/c/configure`.
 
-# Using `--enable-cs` or `--enable-csdefault` uses
-# both `cfg-racket` and `cs/c/configure`.
+# Using `--enable-cs` uses both `cfg-racket` and `cs/c/configure`.
 
 set -e
 

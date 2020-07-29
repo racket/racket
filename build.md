@@ -229,25 +229,24 @@ below.
 
 The `make cs` target (or `make cs-as-is` for a rebuild, or `nmake
 win32-cs` on Windows with Visual Studio) builds a variant of Racket that
-runs on Chez Scheme. By default, the executables for the Racket-on-Chez
-variant all have a `cs` or `CS` suffix, and they coexist with a
-traditional Racket build by keeping compiled files in a machine-specific
-subdirectory of the `"compiled"` directory. You can remove the `cs`
-suffix and the subdirectory in `"compiled"` by providing
-`RACKETCS_SUFFIX=""` to `make`. (One day, the default for
-`RACKETCS_SUFFIX` will change from `"cs"` to `""`.)
+runs on Chez Scheme. By default, the executables for the Racket CS
+variant all have a `cs` or `CS` suffix, and they coexist with a Racket
+BC build by keeping compiled files in a machine-specific subdirectory of
+the `"compiled"` directory. You can remove the `cs` suffix and the
+subdirectory in `"compiled"` by providing `RACKETCS_SUFFIX=""` to
+`make`. (One day, the default for `RACKETCS_SUFFIX` will change from
+`"cs"` to `""`.)
 
-Building Racket on Chez Scheme requires either an existing Racket or pb
-(portable bytecode) boot files for Chez Scheme. By default, pb bootf
-iles are downloaded from a separate Git repository by `make cs`. If you
-have Racket v7.1 or later, then you can choose instead to bootstrap
-using that Racket implementation with
+Building Racket CS requires either an existing Racket or pb (portable
+bytecode) boot files for Chez Scheme. By default, pb boot files are
+downloaded from a separate Git repository by `make cs`. If you have
+Racket v7.1 or later, then you can choose instead to bootstrap using
+that Racket implementation with
 
   `make cs RACKET=racket`
 
-Use `make both` to build both traditional Racket and Racket on Chez
-Scheme, where packages are updated and documentation is built only once
-(using traditional Racket).
+Use `make both` to build both Racket BC and Racket CS, where packages
+are updated and documentation is built only once (using Racket BC).
 
 ### 1.7. Even More Instructions: Building Racket Pieces
 
