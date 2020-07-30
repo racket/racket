@@ -65,7 +65,7 @@
                     (define-values (s z^i)
                       (for/fold ([s z]
                                  [z^i (* z z^2)])
-                                ([a (in-list '(6 120 5040 362880))]);3! 5! 7! ...
+                                ([a (in-list '(6. 120. 5040. 362880.))]);3! 5! 7! ...
                         (values (+ s (/ z^i a))
                                 (* z^i z^2))))
                     s]
