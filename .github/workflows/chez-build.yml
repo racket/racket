@@ -1,4 +1,4 @@
-name: Solo Chez Build CI
+name: Solo Chez Build
 
 on:
   push:
