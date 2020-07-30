@@ -1,4 +1,6 @@
 #!/bin/bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 runmats() {
   echo make allxhelp "$@"
   make -C ${MACH}/mats allxhelp "$@" 2>&1 | tee -a Make.out | grep '^matting '
@@ -13,7 +15,7 @@ runmats o=3 cp0=t eval=interpret
 
 if [ -f ${MACH}/mats/summary ]; then
   cat ${MACH}/mats/summary
-  diff -q .github/scripts/summary ${MACH}/mats/summary
+  diff -q ${DIR}/summary ${MACH}/mats/summary
   exit $?
 else
   exit 1
