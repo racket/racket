@@ -58,6 +58,17 @@
           [(real? z)
            (let loop ([z z])
              (cond [(z . < . 0) (- (loop (- z)))]
+                   [(< z .13)
+                    ;tailor expansion near 0 to avoid cancellation
+                    ;~ z+z^3/3!+z^5/5!+...
+                    (define z^2 (* z z))
+                    (define-values (s z^i)
+                      (for/fold ([s z]
+                                 [z^i (* z z^2)])
+                                ([a (in-list '(6 120 5040 362880))]);3! 5! 7! ...
+                        (values (+ s (/ z^i a))
+                                (* z^i z^2))))
+                    s]
                    [else        (/ (- (exp z) (exp (- z))) 2)]))]
           [else (/ (- (exp z) (exp (- z))) 2)]))
 
