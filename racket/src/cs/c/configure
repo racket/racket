@@ -796,8 +796,9 @@ enable_mac64
 enable_libs
 enable_noopt
 enable_ubsan
-enable_csdefault
+enable_bcdefault
 enable_csonly
+enable_csdefault
 enable_parent
 enable_crossany
 enable_libz
@@ -1446,8 +1447,10 @@ Optional Features:
   --enable-libs           install static libraries (enabled by default for Unix)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
-  --enable-csdefault      use CS as default build
-  --enable-csonly         build CS only
+  --enable-bcdefault      install BC without suffix
+  --enable-bconly         BC default, and skip CS build
+  --enable-csdefault      install CS without suffix
+  --enable-csonly         CS default, and skip BC build
   --enable-parent         Create "../Makefile" (internal use)
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
@@ -2678,6 +2681,16 @@ if test "${enable_ubsan+set}" = set; then :
 fi
 
 
+# Check whether --enable-bcdefault was given.
+if test "${enable_bcdefault+set}" = set; then :
+  enableval=$enable_bcdefault;
+fi
+
+# Check whether --enable-csonly was given.
+if test "${enable_csonly+set}" = set; then :
+  enableval=$enable_csonly;
+fi
+
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2687,6 +2700,7 @@ fi
 if test "${enable_csonly+set}" = set; then :
   enableval=$enable_csonly;
 fi
+
 
 # Check whether --enable-parent was given.
 if test "${enable_parent+set}" = set; then :
@@ -2792,10 +2806,61 @@ show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to libra
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 
-if test "${enable_csonly}" = "yes" ; then
-  enable_csdefault=yes
+if test "${enable_bconly}" = "yes" ; then
+   if test "${enable_csonly}" = "yes" ; then
+     echo "ERROR: cannot specify both --enable-bconly and --enable-csonly"
+   fi
 fi
-show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+
+if test "${enable_cgcdefault}" = "yes" ; then
+   if test "${enable_bcdefault}" = "no" ; then
+     echo "ERROR: cannot specify both --enable-cgcdefault and --disable-bcdefault"
+   fi
+   if test "${enable_csdefault}" = "yes" ; then
+     echo "ERROR: cannot specify both --enable-cgcdefault and --enable-csdefault"
+   fi
+   enable_bcdefault=yes
+fi
+
+if test "${enable_bcdefault}" = "yes" ; then
+   if test "${enable_csdefault}" = "yes" ; then
+     echo "ERROR: cannot specify both --enable-bcdefault and --enable-csdefault"
+   fi
+   if test "${enable_bconly}" = "no" ; then
+     echo "ERROR: cannot specify both --enable-bcdefault and --disable-bconly"
+   fi
+   enable_csdefault=no
+fi
+
+if test "${enable_csdefault}" = "yes" ; then
+   if test "${enable_csonly}" = "no" ; then
+     echo "ERROR: cannot specify both --enable-csdefault and --disable-csonly"
+   fi
+   enable_bcdefault=no
+fi
+
+if test "${enable_bconly}" = "yes" ; then
+   enable_bcdefault=yes
+   enable_csdefault=no
+fi
+
+if test "${enable_csonly}" = "yes" ; then
+   enable_csdefault=yes
+   enable_bcdefault=no
+fi
+
+if test "${enable_csdefault}" = "" ; then
+   if test "${enable_bcdefault}" = "" ; then
+      # Pick a default default here, but make it consistent with "src/configure"
+      enable_bcdefault=yes
+      enable_csdefault=no
+   fi
+fi
+
+show_explicitly_enabled "${enable_csdefault}" "CS executables without suffix"
+show_explicitly_enabled "${enable_bcdefault}" "BC executables without suffix"
+show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this mode is NOT RECOMMENDED for normal Racket use"
+
 
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
@@ -2896,10 +2961,10 @@ fi
 
 SUB_CONFIGURE_EXTRAS=
 
-
-CS_INSTALLED=cs
 if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
+else
+  CS_INSTALLED=cs
 fi
 
 CS_COMPILED_SUBDIR=1

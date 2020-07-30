@@ -218,8 +218,7 @@ win-base-config:
 # ------------------------------------------------------------
 # Racket BC
 
-# If `RACKETBC_SUFFIX` is set to the empty string, the Racket BC
-# is build as `racket` instead of `racketbc`
+# Can be `bc` or empty:
 RACKETBC_SUFFIX = 
 
 bc:
@@ -264,14 +263,15 @@ win-bc-in-place-setup:
 	$(MAKE) plain-in-place-setup PLAIN_RACKET=racket\racket$(RACKETBC_SUFFIX)
 
 bc-base:
-	$(MAKE) racket/src/build/Makefile
-	cd racket/src/build && $(MAKE) reconfigure
-	cd racket/src/build && $(MAKE) racket-variant $(SELF_FLAGS_qq)
-	cd racket/src/build && $(MAKE) install-racket-variant $(INSTALL_SETUP_ARGS)
+	if [ "$(RACKETBC_SUFFIX)" = "" ] ; \
+	  then $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-bcdefault" ; \
+	  else $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-bcdefault" ; fi
+	cd racket/src/build && $(MAKE) bc $(SELF_FLAGS_qq)
+	cd racket/src/build && $(MAKE) install-bc $(INSTALL_SETUP_ARGS)
 
 win-bc-base:
 	$(MAKE) win-remove-setup-dlls
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) $(JOB_OPTIONS) _$(RACKETBC_SUFFIX) $(PLT_SETUP_OPTIONS)
 
 # Start by removing DLLs that may be loaded by `raco setup`
 win-remove-setup-dlls:
@@ -281,12 +281,16 @@ win-remove-setup-dlls:
 	IF EXIST racket\lib\libeay32.dll cmd /c del racket\lib\libeay32.dll
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
-SRC_MAKEFILE_CONFIG := configure
 CONFIG_IN_PLACE_ARGS = --disable-useprefix --enable-origtree
+BC_CONFIGURE_ARGS == $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 
-racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
+bc-configure:
+	$(MAKE) racket/src/build/racket/Makefile
+	cd racket/src/build && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(BC_CONFIGURE_ARGS)"
+
+racket/src/build/racket/Makefile: racket/src/configure racket/src/Makefile.in
 	mkdir -p racket/src/build
-	cd racket/src/build && ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+	cd racket/src/build && ../configure --enable-bc $(CONFIGURE_ARGS_qq) $(BC_CONFIGURE_ARGS)
 
 MORE_CROSS_CONFIGURE_ARGS =
 
@@ -303,8 +307,7 @@ racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-bc racket/s
 # ------------------------------------------------------------
 # Racket CS
 
-# If `RACKETCS_SUFFIX` is set to the empty string, the Racket CS
-# is build as `racket` instead of `racketcs`
+# Can be `cs` or empty:
 RACKETCS_SUFFIX = cs
 
 # If `RACKET` and `RACKET_FOR_BOOTFILES` are not set, the build uses the
@@ -321,11 +324,6 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 # Propoagate `RACKET_FOR_BUILD` instead of `RACKET` to avoid conflicting
 # with makefiles in subdirectories:
 RACKET_FOR_BUILD = $(RACKET)
-
-# The built traditional Racket:
-RACKET_BUILT_FOR_CS = racket/src/build/racket/racket3m
-
-MAKE_BUILD_SCHEME = checkout
 
 # This branch name changes each time the pb boot files are updated:
 PB_BRANCH == circa-7.8.0.6-1
@@ -379,18 +377,25 @@ cs-in-place-setup:
 win-cs-in-place-setup:
 	$(MAKE) plain-in-place-setup PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX)
 
-RACKETCS_NOSUFFIX_CONFIG == MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault"
-
 cs-base:
 	$(MAKE) maybe-fetch-pb
-	$(MAKE) racket/src/build/cs/c/Makefile
+	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
+	  then $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" ; \
+	  else $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-csdefault" ; fi
 	cd racket/src/build/cs/c && $(MAKE)
 	$(MAKE) base-config
-	cd racket/src/build/cs/c && $(MAKE) install CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
+	cd racket/src/build && $(MAKE) install-cs $(INSTALL_SETUP_ARGS)
 
-racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
-	mkdir -p cd racket/src/build/cs/c
-	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+CS_CONFIGURE_ARGS == $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+
+cs-configure:
+	$(MAKE) racket/src/build/cs/c/Makefile
+	cd racket/src/build/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)"
+
+racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in 
+	mkdir -p racket/src/build/cs/c
+	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(CS_CONFIGURE_ARGS)
+	cd racket/src/build && ../cfg-cs $(CONFIGURE_ARGS_qq) $(CS_CONFIGURE_ARGS)
 
 cs-minimal-in-place-after-base:
 	$(MAKE) plain-minimal-in-place-after-base PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX)
@@ -434,7 +439,7 @@ pb-stage:
 pb-push:
 	git push -u origin $(PB_BRANCH)
 
-WIN32_BOOT_ARGS == SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=3m PLAIN_RACKET=racket\racket3m
+WIN32_BOOT_ARGS == SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
 
 win-cs-base:
 	IF "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-bc-then-cs-base $(WIN32_BOOT_ARGS)

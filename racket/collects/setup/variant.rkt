@@ -35,7 +35,7 @@
 (define (variant-suffix variant cased?)
   (let ([r (case variant
              [(3m script-3m)   (or (get-3m-suffix)
-                                   (if (eq? '3m (force plain-variant)) "" "3m"))]
+                                   (if (eq? '3m (force plain-variant)) "" "BC"))]
              [(cgc script-cgc) (or (get-cgc-suffix)
                                    (if (eq? 'cgc (force plain-variant)) "" "CGC"))]
              [(cs script-cs) (or (get-cs-suffix)

@@ -50,7 +50,8 @@ AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled 
 
 m4_include(../ac/sdk_arg.m4)
 
-AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
+m4_include(../ac/vm_arg.m4)
+
 AC_ARG_ENABLE(sgc,        [  --enable-sgc            obsolte; Senora GC is always enabled])
 AC_ARG_ENABLE(sgcdebug,   [  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
 AC_ARG_ENABLE(generations,[  --enable-generations    3m: support generational GC (enabled by default)], , enable_generations=yes)
@@ -165,13 +166,7 @@ show_explicitly_enabled()
   fi
 }
 
-if test "${enable_cgcdefault}" != "" ; then
-   if test "${enable_csdefault}" != "" ; then
-     echo "ERROR: cannot specify both --enable-cgcdefault and --enable-csdefault"
-   fi
-fi
-show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this mode is NOT RECOMMENDED for normal Racket use"
-show_explicitly_enabled "${enable_csdefault}" "CS will be default"
+m4_include(../ac/vm.m4)
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
@@ -771,11 +766,17 @@ esac
 
 ############## GC variant ################
 
-if test "${enable_cgcdefault}" ; then
-   MMM_INSTALLED=3m
-   MMM_CAP_INSTALLED=3m
+if test "${enable_bcdefault}" != "yes" ; then
+  MMM_INSTALLED=bc
+  MMM_CAP_INSTALLED=BC
+  AC_DEFINE(COMPILED_PATH_AS_BC,1,[compiled/bc subdirectory])
+fi
+
+if test "${enable_cgcdefault}" = "yes" ; then
    CGC_INSTALLED=
    CGC_CAP_INSTALLED=
+   MMM_INSTALLED=3m
+   MMM_CAP_INSTALLED=3m
    MAIN_VARIANT=cgc
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
@@ -787,9 +788,7 @@ else
 fi
 
 if test "${enable_csdefault}" ; then
-   MMM_INSTALLED=3m
-   MMM_CAP_INSTALLED=3m
-   MAIN_MAKE_TARGET=racketcs
+   MAIN_MAKE_TARGET=cs
 fi
 
 ############## SGC ################

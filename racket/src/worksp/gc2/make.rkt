@@ -9,7 +9,9 @@
  #:once-each
  [("--build-level") level "Specify a suffix-determining build level"
                     (unless (equal? level "all")
-                      (set! suffix level))]
+                      (set! suffix (if (equal? level "bc")
+                                       "BC"
+                                       level)))]
  #:args ()
  (void))
 

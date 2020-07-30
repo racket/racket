@@ -2004,8 +2004,7 @@ char *scheme_version(void)
 }
 
 #ifdef MZ_PRECISE_GC
-/* don't print " [3m]", which is the default: */
-# define VERSION_SUFFIX ""
+# define VERSION_SUFFIX " [bc]"
 #else
 # ifdef USE_SENORA_GC
 #  define VERSION_SUFFIX " [cgc]"

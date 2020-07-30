@@ -28,9 +28,7 @@ m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/instlib_arg.m4)
 m4_include(../ac/strip_arg.m4)
 m4_include(../ac/ubsan_arg.m4)
-AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
-AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
-AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
+m4_include(../ac/vm_arg.m4)
 m4_include(../ac/crossany_arg.m4)
 AC_ARG_ENABLE(libz,       [  --enable-libz           use installed libz if available])
 AC_ARG_ENABLE(liblz4,     [  --enable-liblz4         use installed liblz4 if available])
@@ -82,10 +80,7 @@ m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 
-if test "${enable_csonly}" = "yes" ; then
-  enable_csdefault=yes
-fi
-show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+m4_include(../ac/vm.m4)
 
 m4_include(../ac/instlib.m4)
 m4_include(../ac/sdk_show.m4)
@@ -105,10 +100,10 @@ m4_include(../ac/crossany.m4)
 
 SUB_CONFIGURE_EXTRAS=
 
-
-CS_INSTALLED=cs
 if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
+else
+  CS_INSTALLED=cs
 fi
 
 CS_COMPILED_SUBDIR=1

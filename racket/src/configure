@@ -1,35 +1,37 @@
 #! /bin/sh
 
-# Using `--enable-csdefault` or `--enable-csonly` avoids running
-# `cfg-bc` and only uses `cfg-cs` and `cs/c/configure`.
-
-# Using `--enable-cs` uses both `cfg-bc` and `cs/c/configure`.
-
 set -e
 
 dir=`dirname "$0"`
 
 use_cs=no
-use_racket=yes
+use_bc=yes
 
 for arg in $*; do 
   case "$arg" in
-    --enable-cs)
+    --enable-cs | --enable-csdefault)
       use_cs=yes
       ;;
-    --enable-csdefault | --enable-csonly)
-      use_racket=no
+    --enable-bc | --enable-bcdefault)
+      use_bc=yes
+      ;;
+    --enable-csonly)
       use_cs=yes
+      use_bc=no
+      ;;
+    --enable-bconly)
+      use_cs=no
+      use_bc=yes
       ;;
     --help | -h)
       echo $0:
-      echo see --help-racket or --help-cs, since the traditional Racket "(3m/CGC)" build
-      echo and the Chez Scheme "(CS)" build support different options. If you use
-      echo options that build both CS and 3m/CGC, then you can mix options that apply
+      echo see --help-bc or --help-cs, since the Racket CS build and the
+      echo Racket BC build support different options. If you use options
+      echo that build both CS and BC, then you can mix options that apply
       echo to both or either kind of build.
       exit 0
       ;;
-    --help-racket)
+    --help-bc)
       exec "$dir/cfg-bc" --help
       ;;
     --help-cs)

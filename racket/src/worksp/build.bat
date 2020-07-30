@@ -12,6 +12,8 @@ cl genvsx.c
 genvsx.exe
 if errorlevel 1 (set PLTSLNVER=X)
 
+echo #define COMPILED_PATH_AS%BC_SUFFIX% > bc_suffix.h
+
 if not exist ..\..\etc  mkdir ..\..\etc
 if not exist ..\..\doc  mkdir ..\..\doc
 if not exist ..\..\share  mkdir ..\..\share
@@ -47,6 +49,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 if "%BUILD_LEVEL%"=="3m" goto doneBuilding
+if "%BUILD_LEVEL%"=="bc" goto doneBuilding
 
 cd mzstart
 msbuild mzstart%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%

@@ -52,7 +52,7 @@ COPYING = "$(srcdir)/LICENSE-libscheme.txt" \
 all:
 	$(MAKE) @MAIN_MAKE_TARGET@
 
-racket-variant:
+bc:
 	$(MAKE) @MAIN_VARIANT@
 
 TAGS:
@@ -130,7 +130,7 @@ PROPAGATE_VARIABLES = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" \
 install:
 	$(MAKE) install-@MAIN_MAKE_TARGET@ $(PROPAGATE_VARIABLES)
 
-install-racket-variant:
+install-bc:
 	$(MAKE) install-@MAIN_VARIANT@ $(PROPAGATE_VARIABLES)
 
 plain-install:
@@ -321,4 +321,4 @@ reconfigure:
 	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
 
 Makefile$(ON_RECONFIG): $(srcdir)/configure $(srcdir)/cfg-bc $(srcdir)/cfg-cs $(SRC_MAKEFILES)
-	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	$(srcdir)/configure --enable-bc $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
