@@ -36,7 +36,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-multilib lib32ncurses5-dev libx32ncurses5-dev uuid-dev:i386 libssl-dev:i386
       - name: Install libs for 64-bit
-        if: matrix.mach == 'a6le' || matrix.mach == 'ta6le'
         run: |
           sudo apt-get update
           sudo apt-get install -y libncurses5-dev uuid-dev libssl-dev
