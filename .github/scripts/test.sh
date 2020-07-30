@@ -74,7 +74,7 @@ sort "${SUMMARYFILE}" > "${SUMMARYFILE}.sorted"
 if [[ "${ERR}" = "1" ]]; then
     exit 1
 else
-  cat "${SUMMARYFILE}.sorted"
-  diff -q ${DIR}/summary "${SUMMARYFILE}.sorted"
-  exit $?
+    cat "${SUMMARYFILE}"
+    diff -q ${DIR}/summary "${SUMMARYFILE}.sorted"    
+    exit $?
 fi
