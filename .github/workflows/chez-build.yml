@@ -4,12 +4,17 @@ on:
   push:
     paths:
       - "racket/src/ChezScheme/**"
+      - ".github/scripts/**"
+      - ".github/workflows/chez-build.yml"
+      - "Makefile"
   pull_request:
     paths:
       - "racket/src/ChezScheme/**"
-
+      - ".github/scripts/**"
+      - ".github/workflows/chez-build.yml"
+      - "Makefile"
+      
 jobs:
-  
   build-linux:
     runs-on: ubuntu-18.04
     
