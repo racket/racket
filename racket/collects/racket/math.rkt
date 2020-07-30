@@ -59,7 +59,7 @@
            (let loop ([z z])
              (cond [(z . < . 0) (- (loop (- z)))]
                    [(< z .13)
-                    ;tailor expansion near 0 to avoid cancellation
+                    ;; Taylor expansion near 0 to avoid cancellation
                     ;~ z+z^3/3!+z^5/5!+...
                     (define z^2 (* z z))
                     (define-values (s z^i)
