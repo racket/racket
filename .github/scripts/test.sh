@@ -16,7 +16,7 @@ SUMMARYFILE=${MACH}/summary
 declare -a PIDS
 
 # Clean and create summary file
-rm "${SUMMARYFILE}"
+rm -f "${SUMMARYFILE}"
 touch "${SUMMARYFILE}"
 
 end_make() {
