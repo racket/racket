@@ -112,16 +112,26 @@ local/Makefile:
 
 # Install (common) ----------------------------------------
 
+# Intended for configuration by an external makefile that drives this one:
+SELF_ROOT_CONFIG_FLAG = -Z
+SELF_ROOT_CONFIG_DIR = ../../../build/config
+SELF_ROOT_CONFIG = $(SELF_ROOT_CONFIG_FLAG) $(SELF_ROOT_CONFIG_DIR)
+
 INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
-SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_RACKET_FLAGS) @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_ROOT_CONFIG) @INSTALL_SETUP_RACKET_FLAGS@
 SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
 SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
 
+# Needed for non-GNU makes:
+PROPAGATE_VARIABLES = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" \
+                      PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
+                      SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+
 install:
-	$(MAKE) install-@MAIN_MAKE_TARGET@
+	$(MAKE) install-@MAIN_MAKE_TARGET@ $(PROPAGATE_VARIABLES)
 
 install-racket-variant:
-	$(MAKE) install-@MAIN_VARIANT@
+	$(MAKE) install-@MAIN_VARIANT@ $(PROPAGATE_VARIABLES)
 
 plain-install:
 	if [ "$(DESTDIR)" != "" ]; then \
@@ -264,17 +274,17 @@ install-cs-common:
 	$(MAKE) install-common-first
 	cd cs/c; $(MAKE) plain-install
 	$(MAKE) install-common-middle MIDDLE_POST_COLLECTS=install-no-post-collects
-	cd cs/c; $(MAKE) $(CS_SETUP_INSTALL_TARGET)
+	cd cs/c; $(MAKE) $(CS_SETUP_INSTALL_TARGET) $(PROPAGATE_VARIABLES)
 	$(MAKE) install-common-last
 
 install-racketcs:
-	$(MAKE) install-cs-common
+	$(MAKE) install-cs-common $(PROPAGATE_VARIABLES)
 
 plain-install-racketcs:
 	$(MAKE) install-cs-common CS_SETUP_INSTALL_TARGET=no-setup-install
 
 install-cs:
-	$(MAKE) install-racketcs
+	$(MAKE) install-racketcs $(PROPAGATE_VARIABLES)
 
 plain-install-cs:
 	$(MAKE) plain-install-racketcs

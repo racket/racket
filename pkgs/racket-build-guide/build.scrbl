@@ -87,7 +87,7 @@ On Unix (including Linux) and Mac OS, @exec{make} (or @exec{make in-place})
 creates a build in the @filepath{racket} directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2019/16.0), @exec{nmake win32-in-place} creates a build in the
+and 2019/16.0), @exec{nmake win} creates a build in the
 @filepath{racket} directory. For information on configuring your
 command-line environment for Visual Studio, see
 @filepath{racket/src/worksp/README.txt}.
@@ -144,10 +144,8 @@ information.
 
 If you would like to provide arguments to @exec{configure} for the
 minimal Racket build, then you can supply them with by adding
-@exec{CONFIGURE_ARGS_qq="@nonterm{options}"} to @exec{make in-place}
-or @exec{make unix-style}. (The @tt{_qq} suffix on the variable name
-@tt{CONFIGURE_ARGS_qq} is a convention that indicates that single- and
-double-quote marks are allowed in the value.)
+@exec{CONFIGURE_ARGS="@nonterm{options}"} to @exec{make in-place}
+or @exec{make unix-style}.
 
 The @filepath{pkgs} directory contains packages that are tied to the
 Racket core implementation and are therefore kept in the same Git
@@ -193,7 +191,7 @@ which recurs with @exec{make -j @nonterm{n} JOB_OPTIONS="-j
 @nonterm{n}"}. Setting @exec{CPUS} also works with @exec{make
 unix-style}.
 
-Use @exec{make as-is} (or @exec{nmake win32-as-is}) to perform the
+Use @exec{make as-is} (or @exec{nmake win-as-is}) to perform the
 same build actions as @exec{make in-place}, but without consulting any
 package catalogs or package sources to install or update packages. In
 other words, use @exec{make as-is} to rebuild after local changes that
@@ -208,7 +206,7 @@ If you need even more control over the build, carry on to
 @section[#:tag "build-cs"]{More Instructions: Building Racket on Chez Scheme}
 
 The @exec{make cs} target (or @exec{make cs-as-is} for a rebuild, or
-@exec{nmake win32-cs} on Windows with Visual Studio) builds a variant
+@exec{nmake win-cs} on Windows with Visual Studio) builds a variant
 of Racket that runs on Chez Scheme. By default, the executables for
 the Racket CS variant all have a @litchar{cs} or @litchar{CS}
 suffix, and they coexist with a Racket BC build by keeping
@@ -247,7 +245,7 @@ Instead of using the top-level makefile, you can go into
 which gives you more configuration options.
 
 If you don't want any special configuration and you just want the base
-build, you can use @exec{make base} (or @exec{nmake win32-base}) with the
+build, you can use @exec{make base} (or @exec{nmake win-base}) with the
 top-level makefile.
 
 Minimal Racket does not require additional native libraries to run,
@@ -263,7 +261,7 @@ minimal-Racket libraries. See the documentation for @exec{raco setup}
 for information on the options.
 
 For cross compilation, add configuration options to
-@exec{CONFIGURE_ARGS_qq="@nonterm{options}"} as described in the
+@exec{CONFIGURE_ARGS="@nonterm{options}"} as described in the
 @filepath{README.txt} of @filepath{racket/src}, but also add a
 @exec{PLAIN_RACKET=...} argument for the top-level makefile to specify
 the same executable as in an @exec{--enable-racket=...} for

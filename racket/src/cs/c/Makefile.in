@@ -409,22 +409,32 @@ repack-no-install-libs:
 # ----------------------------------------
 # Install
 
-install@NOT_MINGW@:
-	$(MAKE) plain-install
-	$(MAKE) setup-install
-
 # RUN_RACKET typically redirects to RUN_THIS_RACKET, but it can also
 # redirect to a compatible existing Racket executable (e.g., for
 # cross-compilation)
 RUN_THIS_RACKET = $(DESTDIR)$(bindir)/racket$(CS_INSTALLED)
 
+# Intended for configuration by an external makefile that drives this one:
+SELF_ROOT_CONFIG_FLAG = -Z
+SELF_ROOT_CONFIG_DIR = ../../../../../build/config
+SELF_ROOT_CONFIG = $(SELF_ROOT_CONFIG_FLAG) $(SELF_ROOT_CONFIG_DIR)
+
 INST_CONFIG = -X "$(DESTDIR)$(collectsdir)" -G "$(DESTDIR)$(configdir)"
-SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_RACKET_FLAGS) @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_ROOT_CONFIG) @INSTALL_SETUP_RACKET_FLAGS@
 SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
 SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
 
+# Needed for non-GNU makes:
+PROPAGATE_VARIABLES = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" \
+                      PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
+                      SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+
+install@NOT_MINGW@:
+	$(MAKE) plain-install
+	$(MAKE) setup-install $(PROPAGATE_VARIABLES)
+
 setup-install:
-	@RUN_RACKET@ $(SELF_RACKET_FLAGS) $(SETUP_ARGS)
+	@RUN_RACKET@ $(SELF_ROOT_CONFIG) $(SETUP_ARGS)
 
 no-setup-install:
 	echo done

@@ -116,9 +116,9 @@ On Unix (including Linux) and Mac OS, `make` (or `make in-place`)
 creates a build in the `"racket"` directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2019/16.0), `nmake win32-in-place` creates a build in the `"racket"`
-directory. For information on configuring your command-line environment
-for Visual Studio, see `"racket/src/worksp/README.txt"`.
+and 2019/16.0), `nmake win` creates a build in the `"racket"` directory.
+For information on configuring your command-line environment for Visual
+Studio, see `"racket/src/worksp/README.txt"`.
 
 On Windows with MinGW, use `make PLAIN_RACKET=racket/racket`, since
 MinGW uses Unix-style tools but generates a Windows-layout Racket build.
@@ -166,10 +166,7 @@ read `"racket/src/README"` for more information.
 
 If you would like to provide arguments to `configure` for the minimal
 Racket build, then you can supply them with by adding
-`CONFIGURE_ARGS_qq="<options>"` to `make in-place` or `make unix-style`.
-(The `_qq` suffix on the variable name `CONFIGURE_ARGS_qq` is a
-convention that indicates that single- and double-quote marks are
-allowed in the value.)
+`CONFIGURE_ARGS="<options>"` to `make in-place` or `make unix-style`.
 
 The `"pkgs"` directory contains packages that are tied to the Racket
 core implementation and are therefore kept in the same Git repository. A
@@ -213,7 +210,7 @@ and the `raco setup` part, use
 which recurs with `make -j <n> JOB_OPTIONS="-j <n>"`. Setting `CPUS`
 also works with `make unix-style`.
 
-Use `make as-is` (or `nmake win32-as-is`) to perform the same build
+Use `make as-is` (or `nmake win-as-is`) to perform the same build
 actions as `make in-place`, but without consulting any package catalogs
 or package sources to install or update packages. In other words, use
 `make as-is` to rebuild after local changes that could include changes
@@ -228,7 +225,7 @@ below.
 ### 1.6. More Instructions: Building Racket on Chez Scheme
 
 The `make cs` target (or `make cs-as-is` for a rebuild, or `nmake
-win32-cs` on Windows with Visual Studio) builds a variant of Racket that
+win-cs` on Windows with Visual Studio) builds a variant of Racket that
 runs on Chez Scheme. By default, the executables for the Racket CS
 variant all have a `cs` or `CS` suffix, and they coexist with a Racket
 BC build by keeping compiled files in a machine-specific subdirectory of
@@ -261,8 +258,8 @@ and follow the `"README.txt"` there, which gives you more configuration
 options.
 
 If you don’t want any special configuration and you just want the base
-build, you can use `make base` (or `nmake win32-base`) with the
-top-level makefile.
+build, you can use `make base` (or `nmake win-base`) with the top-level
+makefile.
 
 Minimal Racket does not require additional native libraries to run, but
 under Windows, encoding-conversion, extflonum, and SSL functionality is
@@ -276,7 +273,7 @@ libraries. See the documentation for `raco setup` for information on the
 options.
 
 For cross compilation, add configuration options to
-`CONFIGURE_ARGS_qq="<options>"` as described in the `"README.txt"` of
+`CONFIGURE_ARGS="<options>"` as described in the `"README.txt"` of
 `"racket/src"`, but also add a `PLAIN_RACKET=...` argument for the
 top-level makefile to specify the same executable as in an
 `--enable-racket=...` for `configure`. In general, the `PLAIN_RACKET`

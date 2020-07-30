@@ -1124,6 +1124,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
           argv++;
           was_config_flag = 1;
           break;
+        case 'Z':
+          if (argc < 2) {
+	    PRINTF("%s: missing argument to ignore after %s switch\n", 
+		   prog, 
+		   real_switch);
+	    goto show_need_help;
+	  }
+          --argc;
+          argv++;
+          was_config_flag = 1;
+          break;
 	default:
           specific_switch[0] = *str;
           specific_switch[1] = 0;
@@ -1432,6 +1443,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -L <levels>, --syslog <levels> : Set syslog logging to <levels>\n"
 	 " Meta options:\n"
 	 "  -- : No argument following this switch is used as a switch\n"
+	 "  -Z : Ignore the argument following this switch\n"
 	 "  -h, --help : Show this information and exits, ignoring other options\n"
          "Default options:\n"
          " If only configuration options are provided, -i is added\n"

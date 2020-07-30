@@ -4890,10 +4890,10 @@ if test "${enable_racket}" != "" ; then
   # Racket used only for generating Chez Scheme boot files
   if test "${CROSS_MODE}" = "cross" ; then
     RACKET="${enable_racket}"
-    SETUP_BOOT_MODE=--chain
   else
     BOOTFILE_RACKET="${enable_racket}"
   fi
+  SETUP_BOOT_MODE=--chain
 fi
 
 if test "${enable_compress}" != "no" ; then
