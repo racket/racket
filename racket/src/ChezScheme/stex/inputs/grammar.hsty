@@ -1,0 +1,15 @@
+%%% grammar support
+\newenvironment{grammar}
+ {\begingroup
+  \def\orbar{\raw{</td><td align=center>|</td><td nowrap>}}
+  \def\nobar{\raw{</td><td align=center></td><td nowrap>}}
+  \def\longis{\raw{</td><td align=center>}$\longrightarrow$\raw{</td><td nowrap>}}
+  \def\\{\raw{</td></tr><tr><td nowrap>}}
+  \raw{<table><tr><td nowrap>}}
+ {\raw{</td></tr></table>}\endgroup}
+
+\def\bar{\raw{|}}
+\def\kplus{\raw{<sup>+</sup>}}
+\def\kstar{\raw{*}}
+\def\ang#1{\raw{&lt;}#1\raw{&gt;}}
+

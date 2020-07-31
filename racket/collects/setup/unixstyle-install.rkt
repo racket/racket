@@ -92,6 +92,7 @@
       [(applications) #f]
       [(src)      1]
       [(ChezScheme) 1]
+      [(pb)       1]
       [(README)   #f] ; moved last
       [else (error 'level-of "internal-error -- unknown dir: ~e" dir)])))
 
@@ -567,14 +568,17 @@
     (define do-tree (move/copy-tree #f))
     (current-directory rktdir)
     ;; Copy source into place:
-    (current-skip-filter ; skip src/build
-     (lambda (p) (regexp-match? #rx"^build$" p)))
-    (do-tree "src" (build-path base-destdir "src"))
-    ;; Copy Chez Scheme source, if present
-    (let ([src-cs "src/build/ChezScheme"])
-      (when (directory-exists? src-cs)
-        (current-skip-filter (make-chez-source-skip src-cs))
-        (do-tree src-cs (build-path base-destdir "src/ChezScheme") #:build-path? #t)))
+    (current-skip-filter ; skip src/build and Chez Scheme build output
+     (let ([chez-skip (make-chez-source-skip "src/ChezScheme")])
+       (lambda (p)
+         (or (regexp-match? #rx"^build$" (basename p))
+             (chez-skip p)))))
+    (do-tree "src" (build-path base-destdir "src") #:build-path? #t)
+    ;; Copy pb boot files, if present
+    (let ([src-pb "src/ChezScheme/boot/pb"])
+      (when (directory-exists? src-pb)
+        (parameterize ([current-skip-filter (lambda (p) #f)])
+          (do-tree src-pb (build-path base-destdir src-pb) #:build-path? #t))))
     ;; Remove directories that get re-created:
     (define (remove! dst*) (rm (dir: dst*)))
     (remove! 'bin)
@@ -599,7 +603,8 @@
     (and (not (equal? (path->string name) "lib"))
          (path? base)
          (let-values ([(base name dir?) (split-path base)])
-           (and (equal? (explode-path base) src-cs-ex)
+           (and (path? base)
+                (equal? (explode-path base) src-cs-ex)
                 (equal? (path->string name) "lz4")))))
   (lambda (p)
     (or (dot-file? p)
@@ -608,7 +613,8 @@
         (lz4-skip? p))))
 
 (define (read-git-ignore-paths subdir)
-  (define subdir-len (length (explode-path subdir)))
+  (define subdir-elems (explode-path subdir))
+  (define subdir-len (length subdir-elems))
   (define pred-on-exploded
     (call-with-input-file*
      (build-path subdir ".gitignore")
@@ -625,12 +631,14 @@
             (loop (lambda (elems)
                     (or (pred elems)
                         (and (equal? (length elems) (+ subdir-len (length match-elems?)))
+                             (equal? (take elems subdir-len) subdir-elems)
                              (andmap (lambda (m? e) (m? e)) match-elems? (list-tail elems subdir-len))))))]
            [else
             (define match-elems? (map elem->matcher (explode-path (substring l 1))))
             (loop (lambda (elems)
                     (or (pred elems)
                         (and ((length elems) . >= . (+ subdir-len (length match-elems?)))
+                             (equal? (take elems subdir-len) subdir-elems)
                              (andmap (lambda (m? e) (m? e)) match-elems? (take-right elems (length match-elems?)))))))])))))
   (lambda (p)
     (pred-on-exploded (explode-path p))))

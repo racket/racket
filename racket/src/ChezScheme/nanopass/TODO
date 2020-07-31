@@ -1,0 +1,48 @@
+TODO
+
+Support:
+
+1. Create Racket version of the nanopass framework
+
+2. Extended to more R6RS libraries (at least if they support some form of
+   compile time environment).
+
+Nanopass Annoyances:
+
+1. Removal of patterns is too strict matching EXACTLY the variable names (see 
+   above example)  This may not be bad, but without the error is a very rough 
+   edge.
+
+2. Output forms need to match original language forms very closely, e.g. if we
+   have:
+   (define-language L
+     over
+     ---
+     where
+     (e in Expr
+        (begin e0 ... e1)
+        ---)
+     ---)
+   we cannot create the constructor:
+   `(begin (set! ,x0 (var ,tmp*)) ...)
+
+   because it sees this as a single form instead of a list.  Being able to
+   create a make-begin helper for this situation is helpful, but ultimately
+   we'd like it to match broader forms and complain at compilation time if it
+   cannot prove they are safe itself.  The contortion we are instead forced to
+   perform is:
+
+   (let* ([expr* (map (lambda (x tmp) `(set! ,x (var ,tmp))) x0 tmp*)]
+          [rexpr* (reverse expr*)]
+          [last-expr (car rexpr*)]
+          [expr* (reverse (cdr expr*))])
+     `(begin ,expr* ... ,last-expr))
+
+Features to add down the road:
+
+1. Pass fusing with deforestation of the intermediate passes.
+
+Error Handling/Loosening restrictions:
+
+1. Fix parser to use positional information to report errors on the syntax
+   error, in addition to reporting the error.

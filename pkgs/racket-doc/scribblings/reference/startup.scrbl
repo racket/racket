@@ -381,6 +381,10 @@ flags:
 
  @itemize[
 
+  @item{@FlagFirst{Z} : The argument following this flag is ignored.
+        This flag can be handy in some impoverished scripting environments
+        to replace or cancel another command-line argument.}
+ 
   @item{@FlagFirst{-} : No argument following this flag is itself used
         as a flag.}
  
@@ -462,7 +466,8 @@ Extra arguments following the last option are available from the
 @indexed-racket[current-command-line-arguments] parameter.
 
 @history[#:changed "6.90.0.17" @elem{Added @Flag{O}/@DFlag{stdout}.}
-         #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}]
+         #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}
+         #:changed "7.8.0.6" @elem{Added @Flag{Z}.}]
 
 @; ----------------------------------------------------------------------
 

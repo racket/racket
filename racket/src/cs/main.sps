@@ -556,6 +556,9 @@
               (flags-loop null (see saw 'non-config))]
              [("-j" "--no-jit")
               (loop (cdr args))]
+             [("-Z")
+              (let-values ([(ignored rest-args) (next-arg "argument to ignore" arg within-arg args)])
+                (flags-loop rest-args saw))]
              [("-h" "--help")
               (show-help)
               (exit)]

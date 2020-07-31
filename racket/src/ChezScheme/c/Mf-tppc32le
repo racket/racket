@@ -1,0 +1,8 @@
+# Mf-tppc32le
+
+m ?= tppc32le
+
+threadLibs = -lpthread 
+threadFlags = -D_REENTRANT -pthread
+
+include Mf-ppc32le

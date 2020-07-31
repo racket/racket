@@ -636,7 +636,6 @@ FRAMEWORK_INSTALL_DIR
 SCHEME_CROSS_CONFIG_ARGS
 SCHEME_CONFIG_ARGS
 MAKE_BUILD_SCHEME
-SCHEME_SRC
 ELF_COMP
 BOOT_COMPRESS_COMP
 COMPRESS_COMP
@@ -659,6 +658,7 @@ DIFF_MACH
 TARGET_MACH
 MACH
 SCHEME_DIR
+BOOTFILE_RACKET
 RACKET
 RKTL_POST
 RKTL_PRE
@@ -796,9 +796,9 @@ enable_mac64
 enable_libs
 enable_noopt
 enable_ubsan
-enable_csdefault
+enable_bcdefault
 enable_csonly
-enable_parent
+enable_csdefault
 enable_crossany
 enable_libz
 enable_liblz4
@@ -1446,9 +1446,10 @@ Optional Features:
   --enable-libs           install static libraries (enabled by default for Unix)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
-  --enable-csdefault      use CS as default build
-  --enable-csonly         build CS only
-  --enable-parent         Create "../Makefile" (internal use)
+  --enable-bcdefault      install BC without suffix
+  --enable-bconly         BC default, and skip CS build
+  --enable-csdefault      install CS without suffix
+  --enable-csonly         CS default, and skip BC build
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
   --enable-liblz4         use installed liblz4 if available
@@ -2678,6 +2679,16 @@ if test "${enable_ubsan+set}" = set; then :
 fi
 
 
+# Check whether --enable-bcdefault was given.
+if test "${enable_bcdefault+set}" = set; then :
+  enableval=$enable_bcdefault;
+fi
+
+# Check whether --enable-csonly was given.
+if test "${enable_csonly+set}" = set; then :
+  enableval=$enable_csonly;
+fi
+
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2688,10 +2699,6 @@ if test "${enable_csonly+set}" = set; then :
   enableval=$enable_csonly;
 fi
 
-# Check whether --enable-parent was given.
-if test "${enable_parent+set}" = set; then :
-  enableval=$enable_parent;
-fi
 
 # Check whether --enable-crossany was given.
 if test "${enable_crossany+set}" = set; then :
@@ -2792,10 +2799,61 @@ show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to libra
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 
-if test "${enable_csonly}" = "yes" ; then
-  enable_csdefault=yes
+if test "${enable_bconly}" = "yes" ; then
+   if test "${enable_csonly}" = "yes" ; then
+     echo "ERROR: cannot specify both --enable-bconly and --enable-csonly"
+   fi
 fi
-show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+
+if test "${enable_cgcdefault}" = "yes" ; then
+   if test "${enable_bcdefault}" = "no" ; then
+     echo "ERROR: cannot specify both --enable-cgcdefault and --disable-bcdefault"
+   fi
+   if test "${enable_csdefault}" = "yes" ; then
+     echo "ERROR: cannot specify both --enable-cgcdefault and --enable-csdefault"
+   fi
+   enable_bcdefault=yes
+fi
+
+if test "${enable_bcdefault}" = "yes" ; then
+   if test "${enable_csdefault}" = "yes" ; then
+     echo "ERROR: cannot specify both --enable-bcdefault and --enable-csdefault"
+   fi
+   if test "${enable_bconly}" = "no" ; then
+     echo "ERROR: cannot specify both --enable-bcdefault and --disable-bconly"
+   fi
+   enable_csdefault=no
+fi
+
+if test "${enable_csdefault}" = "yes" ; then
+   if test "${enable_csonly}" = "no" ; then
+     echo "ERROR: cannot specify both --enable-csdefault and --disable-csonly"
+   fi
+   enable_bcdefault=no
+fi
+
+if test "${enable_bconly}" = "yes" ; then
+   enable_bcdefault=yes
+   enable_csdefault=no
+fi
+
+if test "${enable_csonly}" = "yes" ; then
+   enable_csdefault=yes
+   enable_bcdefault=no
+fi
+
+if test "${enable_csdefault}" = "" ; then
+   if test "${enable_bcdefault}" = "" ; then
+      # Pick a default default here, but make it consistent with "src/configure"
+      enable_bcdefault=yes
+      enable_csdefault=no
+   fi
+fi
+
+show_explicitly_enabled "${enable_csdefault}" "CS executables without suffix"
+show_explicitly_enabled "${enable_bcdefault}" "BC executables without suffix"
+show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this mode is NOT RECOMMENDED for normal Racket use"
+
 
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
@@ -2896,10 +2954,10 @@ fi
 
 SUB_CONFIGURE_EXTRAS=
 
-
-CS_INSTALLED=cs
 if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
+else
+  CS_INSTALLED=cs
 fi
 
 CS_COMPILED_SUBDIR=1
@@ -3110,6 +3168,7 @@ FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
+BOOTFILE_RACKET='$(RACKET)'
 RUN_RACKET='$(RUN_THIS_RACKET)'
 SETUP_BOOT_MODE=--boot
 
@@ -4877,24 +4936,21 @@ fi
 
 ############## Racket and Chez Scheme ################
 
-SCHEME_SRC=../../ChezScheme
-SCHEME_SRC_NOW="$SCHEME_SRC"
+SCHEME_DIR=../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
-  SCHEME_SRC="${enable_scheme}"
-  SCHEME_SRC_NOW="$SCHEME_SRC"
-  MAKE_BUILD_SCHEME=none
-else
-  # Check for a directory packaged with a source distribution
-  if test -d "${srcdir}/../../ChezScheme" ; then
-    MAKE_BUILD_SCHEME=copy
-    SCHEME_SRC_NOW="${srcdir}/../../ChezScheme"
-  fi
+  echo Warning: --enable-scheme=... is obsolete and unsupported
 fi
 
 if test "${enable_racket}" != "" ; then
-  RACKET="${enable_racket}"
+  # In non-cross mode, we interpret `--enable-racket` to supply a
+  # Racket used only for generating Chez Scheme boot files
+  if test "${CROSS_MODE}" = "cross" ; then
+    RACKET="${enable_racket}"
+  else
+    BOOTFILE_RACKET="${enable_racket}"
+  fi
   SETUP_BOOT_MODE=--chain
 fi
 
@@ -5224,14 +5280,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_SRC_NOW/zlib" ; then
+  if test ! -d "$SCHEME_DIR/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_SRC_NOW/lz4" ; then
+  if test ! -d "$SCHEME_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi

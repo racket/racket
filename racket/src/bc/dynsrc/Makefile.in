@@ -1,0 +1,117 @@
+#
+# Makefile for racket
+#
+
+# dynlink is a script that uses the right set of link commands
+DYNLINK = mzc --ld 
+
+PACKAGE = racket
+
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+libpltdir = @libpltdir@
+sharepltdir = @sharepltdir@
+builddir = @builddir@
+
+MZSRC = $(srcdir)/../src
+
+CC = @CC@
+PLAIN_CC = @PLAIN_CC@
+CFLAGS = @CFLAGS@ @COMPFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src -I$(srcdir)/../../version -I$(srcdir)/../../start @MZOPTIONS@
+
+dynlib@NOT_MINGW@:
+	$(MAKE) ../mzdyn.o
+	$(MAKE) ../starter@EXE_SUFFIX@
+
+dynlib@MINGW@:
+	$(MAKE) dynlib@NOT_MINGW@
+	$(MAKE) ../mzdyn.exp
+
+dynlib3m@NOT_MINGW@:
+	$(MAKE) ../mzdyn3m.o
+
+dynlib3m@MINGW@:
+	$(MAKE) dynlib3m@NOT_MINGW@
+	$(MAKE) ../mzdyn3m.exp
+
+dynexample:
+	$(MAKE) ../dynexmpl.so
+
+HEADERS = $(builddir)/../mzconfig.h \
+          $(srcdir)/../include/scheme.h $(srcdir)/../src/schemef.h \
+          $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h \
+          $(srcdir)/../include/escheme.h $(srcdir)/../src/stypes.h \
+          $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../../version/racket_version.h
+
+MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/racket.exp
+
+../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../../version/racket_version.h  $(HEADERS)
+	$(PLAIN_CC) @DYN_CFLAGS@ $(ALL_CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
+
+../mzdyn3m.o: $(srcdir)/mzdyn.c $(srcdir)/../../version/racket_version.h  $(HEADERS)
+	$(PLAIN_CC) @DYN_CFLAGS@ $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
+
+../dynexmpl.so: dynexmpl.o $(MZDYNDEP)
+	$(DYNLINK) ../dynexmpl.so dynexmpl.o
+dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
+	$(PLAIN_CC) $(ALL_CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
+
+../starter@NOT_MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/ustart.c
+	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter@EXE_SUFFIX@ $(srcdir)/../../start/ustart.c
+
+PARSE_CMDL = $(srcdir)/../../start/parse_cmdl.inc
+
+../starter@MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/start.c $(PARSE_CMDL) ../mrstarter@EXE_SUFFIX@ sres.o
+	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter@EXE_SUFFIX@ $(srcdir)/../../start/start.c sres.o
+../mrstarter@EXE_SUFFIX@:  smrres.o
+	$(PLAIN_CC) $(ALL_CFLAGS) -mwindows -DMRSTART -o ../mrstarter@EXE_SUFFIX@ $(srcdir)/../../start/start.c smrres.o
+
+sres.o:
+	@WINDRES@ -DMZSTART -i $(srcdir)/../../worksp/starters/start.rc -o sres.o
+smrres.o:
+	@WINDRES@ -DMRSTART -i $(srcdir)/../../worksp/starters/start.rc -o smrres.o
+
+../mzdyn.exp: ../mzdyn.o
+	@DLLTOOL@ --output-exp ../mzdyn.exp ../mzdyn.o
+../mzdyn3m.exp: ../mzdyn3m.o
+	@DLLTOOL@ --output-exp ../mzdyn3m.exp ../mzdyn3m.o
+
+# Cygwin ########################################
+
+ILIBDIR = $(libpltdir)
+
+cygwin-install:
+	$(MAKE) cygwin-install-core
+	$(MAKE) cygwin-install-cgc
+	$(MAKE) cygwin-install-3m
+
+cygwin-install-core:
+	gcc -c $(srcdir)/init.cc
+	gcc -c $(srcdir)/fixup.c
+	cp $(srcdir)/mzdyn.def mzdynx.def
+	dlltool --def mzdynx.def --output-exp mzdyn.exp
+	cd ../..; mkdir -p $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
+	cd ../..; cp racket/dynsrc/init.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/fixup.o $(ILIBDIR)/gcc
+
+cygwin-install-cgc:
+	cd ../..; cp racket/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
+	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
+	gcc -c -O2 -DAS_MSVC_EXTENSION -I$(builddir)/.. -I$(srcdir)/../include -o mzdynw.o $(srcdir)/mzdyn.c
+	cd ../..; cp racket/dynsrc/mzdyn.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdynw.o $(ILIBDIR)/gcc
+
+cygwin-install-3m:
+	cd ../..; cp racket/dynsrc/mzdyn.exp $(ILIBDIR)/gcc/mzdyn3m.exp
+	gcc -c -O2 -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdyn3m.o
+	gcc -c -O2 -DAS_MSVC_EXTENSION -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdynw3m.o
+	cd ../..; cp racket/dynsrc/mzdyn3m.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdynw3m.o $(ILIBDIR)/gcc
+
+clean:
+	/bin/rm -f *.o Makefile.bak

@@ -18,225 +18,6 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="BDebug|Win32"
-			OutputDirectory="..\..\.."
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib user32.lib"
-				OutputFile="..\..\..\RacketCGC.exe"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
-				SubSystem="1"
-				StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
-			/>
-		</Configuration>
-		<Configuration
-			Name="BDebug|x64"
-			OutputDirectory="..\..\.."
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:X64 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib user32.lib"
-				OutputFile="..\..\..\RacketCGC.exe"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
-				SubSystem="1"
-				StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
-			/>
-		</Configuration>
-		<Configuration
-			Name="BRelease|Win32"
-			OutputDirectory="..\..\.."
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib user32.lib"
-				OutputFile="..\..\..\RacketCGC.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
-				SubSystem="1"
-				StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
-			/>
-		</Configuration>
-		<Configuration
-			Name="BRelease|x64"
-			OutputDirectory="..\..\.."
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib user32.lib"
-				OutputFile="..\..\..\RacketCGC.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				GenerateManifest="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
-				SubSystem="1"
-				StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
-			/>
-		</Configuration>
-		<Configuration
 			Name="SDebug|Win32"
 			OutputDirectory="..\..\.."
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
@@ -249,7 +30,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\bc\include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -279,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\bc ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\bc\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -295,7 +76,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\bc\include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -350,7 +131,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\bc ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\bc\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -368,7 +149,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\bc\include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -400,7 +181,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\bc ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\bc\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -418,7 +199,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\bc\include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -436,7 +217,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:X64 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
@@ -451,7 +232,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\bc ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\bc\mksystem.rkt &quot;$(TargetDir)/lib/system.rktd&quot;&#x0D;&#x0A;cd ..\..\bc\dynsrc&#x0D;&#x0A;call mkmzdyn.bat $(ConfigurationName) $(PlatformName)&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;addman.bat&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -463,7 +244,7 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
-				RelativePath="..\..\racket\main.c"
+				RelativePath="..\..\bc\main.c"
 				>
 			</File>
 			<File

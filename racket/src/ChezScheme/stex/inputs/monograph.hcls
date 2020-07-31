@@ -1,0 +1,149 @@
+%%% monograph.hcls
+
+\newif\iflatex\latexfalse
+\newif\ifhtml\htmltrue
+
+% should be built in
+\newenvironment{center}
+  {\raw{<center>}}
+  {\raw{</center>}}
+
+\def\copyrightnotice{\ifauthor\par\raw{<hr>}\copyright~\year~\theauthor\par\fi}
+\let\trueenddocument=\enddocument
+\def\enddocument{
+ \begin{divertoutput}[toc]
+  \ifsubsubsec\raw{</table></td></tr>}\fi
+  \ifsubsec\raw{</table></td></tr>}\fi
+ \end{divertoutput}
+ \copyrightnotice\trueenddocument}
+
+\newif\iftitle\titlefalse
+\newif\ifdate\datefalse
+\newif\ifauthor\authorfalse
+\def\title#1{\def\thetitle{#1}\titletrue}
+\def\date#1{\def\thedate{#1}\datetrue}
+\def\author#1{\def\theauthor{#1}\authortrue}
+\def\maketitle{%
+\iftitle\raw{<h1>}\thetitle\raw{</h1>}\fi
+\ifauthor\raw{<h2>}\theauthor\raw{</h2>}\fi
+\ifdate\raw{<h3>}\thedate\raw{</h3>}\fi
+}
+
+%%% table of contents
+\newif\ifsubsec\subsecfalse
+\newif\ifsubsubsec\subsubsecfalse
+\newcommand{\tableofcontents}{
+\raw{<table cellpadding=0 cellspacing=0>}
+\rawinput{\jobname.htoc}
+\raw{</table>}
+\openrawfile{toc}{\jobname.htoc}}
+\newcommand{\notableofcontents}{
+\openrawfile{toc}{\jobname.htoc}}
+
+%%% \section
+\newcounter{section}
+\renewcommand{\thesection}{\arabic{section}}
+\newcommand{\section}[1]{
+\refstepcounter{section}
+\edef\templabel{\genlab}
+\sectionstar{\label{\templabel}\thesection. #1}
+\begin{divertoutput}[toc]
+\ifsubsubsec\raw{</table></td></tr>}\fi
+\subsubsecfalse
+\ifsubsec\raw{</table></td></tr>}\fi
+\subsecfalse
+\raw{<tr><td align="right">}\textbf{\thesection.~}\raw{<td>}\textbf{\href[plain]{\templabel}{#1}}\raw{</td></tr>}
+\end{divertoutput}
+}
+\newcommand{\sectionstar}[1]{
+\raw{<h3>}#1\raw{</h3>}
+}
+
+%%% \subsection
+\newcounter{subsection}[section]
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\newcommand{\subsection}[1]{
+\refstepcounter{subsection}
+\edef\templabel{\genlab}
+\subsectionstar{\label{\templabel}\thesubsection. #1}
+\begin{divertoutput}[toc]
+\ifsubsubsec\raw{</table></td></tr>}\fi
+\subsubsecfalse
+\ifsubsec\else\raw{<tr><td></td><td><table cellpadding=0 cellspacing=0>}\fi
+\subsectrue
+\raw{<tr><td>}\textbf{\thesubsection.~}\raw{</td><td>}\textbf{\href[plain]{\templabel}{#1}}\raw{</td></tr>}
+\end{divertoutput}
+}
+\newcommand{\subsectionstar}[1]{
+\raw{<h4>}#1\raw{</h4>}
+}
+
+%%% \subsubsection
+\newcounter{subsubsection}[subsection]
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+\newcommand{\subsubsection}[1]{
+\refstepcounter{subsubsection}
+\edef\templabel{\genlab}
+\subsubsectionstar{\label{\templabel}\thesubsubsection. #1}
+\begin{divertoutput}[toc]
+\ifsubsubsec\else\raw{<tr><td></td><td><table cellpadding=0 cellspacing=0>}\fi
+\subsubsectrue
+\raw{<tr><td>}\textbf{\thesubsubsection.~}\raw{</td><td>}\textbf{\href[plain]{\templabel}{#1}}\raw{</td></tr>}
+\end{divertoutput}
+}
+\newcommand{\subsubsectionstar}[1]{
+\raw{<h4>}#1\raw{</h4>}
+}
+
+%%% figure
+\newcounter{figure}
+\renewcommand{\thefigure}{\arabic{figure}}
+\newcommand{\caption}[1]{\\ Figure \thefigure.~#1}
+\newenvironment{figure}[1][]
+  {\begingroup\refstepcounter{figure}}
+  {\endgroup}
+
+%%% exercise
+\newcounter{exercise}
+\renewcommand{\theexercise}{\arabic{exercise}}
+\def\@startexercise{\refstepcounter{exercise}
+  \raw{<hr>}
+  \textbf{Exercise \theexercise. }}
+\newenvironment{exercise}
+  {\begingroup\def\newexercise{\@startexercise}\newexercise}
+  {\raw{<hr>}}
+\newcounter{subexercise}[exercise]
+\renewcommand{\thesubexercise}{\theexercise\alph{subexercise}}
+\newcommand{\subexercise}{\par\refstepcounter{subexercise}\textbf{\thesubexercise. }}
+
+%%% alphalist
+\newcounter{alphalist}
+\def\alphalist{\begingroup\setcounter{alphalist}{0}
+ \def\endalphalistitem{}%
+ \renewcommand{\item}{\endalphalistitem
+  \def\endalphalistiem{\raw{</td></tr>}}%
+  \stepcounter{alphalist}%
+  \raw{<tr valign=top><td>}\alph{alphalist}.\raw{</td><td>}}
+ \raw{<table>}}
+\def\endalphalist{\endalphalistitem\raw{</table>}\endgroup}
+
+%%% define our own (compact) description environment
+\def\description{\begingroup
+ \renewcommand{\item}[1][]{\raw{<dt>}##1\raw{<dd>}}\raw{<dl compact>}}
+\def\enddescription{\raw{</dl>}\endgroup}
+
+%%% index
+\newcommand{\see}[2]{\emph{see} #1}
+\newenvironment{theindex}
+  {\begingroup\newcommand{\itemindent}{\raw{<tt>&nbsp;&nbsp;&nbsp;</tt>}}
+   \renewcommand{\item}{\raw{<br>}}
+   \newcommand{\subitem}{\raw{<br>}\itemindent}
+   \newcommand{\subsubitem}{\raw{<br>}\itemindent\itemindent}}
+  {\par\endgroup}
+
+\newcommand{\parheader}[2][. ]{\medskip\noindent{\bf #2#1}}
+
+\def\mbox#1{#1}
+
+%%% hyperlink support
+\newcommand{\hyperlink}[3][ref]{\raw{<a class=#1 href="#2">}#3\raw{</a>}}

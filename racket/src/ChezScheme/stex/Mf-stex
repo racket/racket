@@ -1,0 +1,150 @@
+# Mf-stex expects to be included in a make file that defines:
+#  Scheme   the path of the Chez Scheme executable
+#  STEXLIB  the path to the stex library (the library containing this file)
+
+m := $(shell echo '(machine-type)' | $(Scheme) -q)
+
+TEXINPUTS:=.:$(STEXLIB)/inputs:
+export TEXINPUTS
+ 
+ifeq ($(wildcard $(STEXLIB)/$m/scheme-prep),)
+  Sprep = $(Scheme) --libdirs "$(STEXLIB)/src" --program $(STEXLIB)/src/scheme-prep.ss
+else
+  Sprep = $(STEXLIB)/$m/scheme-prep
+endif
+
+ifeq ($(wildcard $(STEXLIB)/$m/html-prep),)
+  Hprep = $(Scheme) --libdirs "$(STEXLIB)/src" --program $(STEXLIB)/src/html-prep.ss
+else
+  Hprep = $(STEXLIB)/$m/html-prep
+endif
+
+ifeq ($(wildcard $(STEXLIB)/$m/fixbibtex),)
+  fixbibtex = $(Scheme) --libdirs "$(STEXLIB)/src" --program $(STEXLIB)/src/fixbibtex.ss
+else
+  fixbibtex = $(STEXLIB)/$m/fixbibtex
+endif
+
+mathdir=math/$(x)
+mathfiles=$(mathdir)/mathfiles
+
+# solaris /bin/sh doesn't support '!' in test
+SHELL=bash
+
+stexsrc = $(x).stex
+texsrc = $(x).tex
+spellobj = $(x).spell
+
+.SUFFIXES:
+.SUFFIXES: .stex .tex .spell .fig .ps .png .pdf .eps
+.stex.tex:
+	$(Sprep) $(stexmacrofiles) $*
+	chmod -w $*.tex
+.tex.spell:
+	latexspell $*.tex
+.fig.ps:
+	fig2dev -Leps $*.fig $*.ps
+.fig.png:
+	fig2dev -Lppm $*.fig | pnmcrop | pnmtopng -transparent white > $*.png
+	chmod go=r $*.png
+.ps.png:
+	echo | gs -q -dNOPAUSE -dSAFER -sDEVICE=ppmraw -sOutputFile=- -r90x90 $*.ps | pnmcrop | pnmtopng -transparent white > $*.png
+# need to generate eps first to compute bounding box
+# need --gs on my machine at home or it fails to find bounding box
+.ps.eps:
+	ps2epsi $*.ps $*.eps
+.eps.pdf:
+	epstopdf --gs $*.eps
+.fig.pdf:
+	fig2dev -Leps $*.fig | epstopdf --filter > $*.pdf
+
+ifeq "$(latex)" "latex"
+doitformebaby: $(x).ps $(x).html
+
+$(x).ps: $(x).thirdrun
+	dvips -o $(x).ps $(x).dvi
+
+$(x).pdf: $(x).ps
+	ps2pdf $*.ps $*.pdf
+	chmod 644 $*.pdf
+else
+doitformebaby: $(x).pdf $(x).html
+
+$(x).pdf: $(x).thirdrun
+	chmod 644 $(x).pdf
+endif
+
+$(x).dvi: $(x).thirdrun
+
+$(x).thirdrun: $(x).secondrun
+ifdef index
+	makeindex $(x)
+endif
+	$(latex) $(x)
+	touch $(x).thirdrun
+
+$(x).secondrun: $(x).firstrun $(bib)
+ifneq ($(strip $(bib)),)
+	bibtex $(x)
+	$(fixbibtex) $(x).bbl
+endif
+ifdef index
+	makeindex $(x)
+endif
+	$(latex) $(x)
+	touch $(x).secondrun
+
+$(x).firstrun: $(texsrc)
+	touch $(x).htoc
+	$(latex) $(x)
+	touch $(x).firstrun
+
+all.tex: $(texsrc)
+
+$(x).html: $(x).mathrun
+
+$(x).mathrun: gifs $(mathfiles)
+	@(cd $(mathdir); make)
+	touch $(x).mathrun
+
+gifs:
+	(cd $(STEXLIB); tar -cf - gifs) | tar -xpf -
+
+math:
+	(cd $(STEXLIB); tar -cf - math) | tar -xpf -
+
+$(mathfiles): $(x).hthirdrun $(figps)
+	echo -n gifs= > $(mathfiles)
+	(cd $(mathdir); echo *.tex | sed -e "s/\.tex/.gif/g") >> $(mathfiles)
+
+$(x).hthirdrun: $(x).hsecondrun
+	$(Hprep) --mathdir $(mathdir) $(x)
+	chmod 444 *.html
+	touch $(x).hthirdrun
+
+$(x).hsecondrun: $(x).hfirstrun
+	$(Hprep) --mathdir $(mathdir) $(x)
+	chmod 444 *.html
+	touch $(x).hsecondrun
+
+$(x).hfirstrun: math $(x).thirdrun
+	(if [ ! -e $(mathdir) ] ; then mkdir -p -m u=rwx,g=srx,o=rx $(mathdir); ln -s ../Makefile ../mathmacros $(mathdir); fi)
+	$(Hprep) --mathdir $(mathdir) $(x)
+	touch $(x).hfirstrun
+
+spell: $(spellobj)
+
+$(x).spell: $(x).bbl $(x).tex
+	latexspell $(x).bbl
+	latexspell $(x).tex
+
+clean: $(x).clean
+	-/bin/rm -f *.log *.dvi *.aux *.out *.toc *.tmp *.idx *.ilg *.ind *.blg *.bbl *.rfm *.sfm *.firstrun *.secondrun *.thirdrun
+	-/bin/rm -f *.haux *.htoc *.hidx *.hfirstrun *.hsecondrun *.hthirdrun *.mathrun
+	-/bin/rm -f *.tex
+
+reallyclean: clean $(x).reallyclean
+	-/bin/rm -f *.html *.ps *.pdf *.png
+
+reallyreallyclean: reallyclean $(x).reallyreallyclean
+	-/bin/rm -rf $(mathdir)

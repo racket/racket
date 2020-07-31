@@ -1,0 +1,603 @@
+\documentclass{monograph}
+
+\usepackage{scheme}
+
+\iflatex
+\usepackage{fullpage}
+\pagestyle{plain}
+\fi
+
+\ifhtml
+\documenttitle[stex.css]{Introduction to stex}
+\fi
+
+\begin{document}
+\title{Introduction to stex}
+\author{R. Kent Dybvig and Oscar Waddell}
+\date{April 2016}
+\maketitle
+\def\copyrightnotice{\copyright~1998--2016 R. Kent Dybvig and Oscar Waddell}
+
+\ifhtml
+\tableofcontents
+\fi
+
+\iflatex
+% block paragraphs
+\setlength\parskip{4pt plus 1pt}
+\setlength\parindent{0pt}
+\renewenvironment{quotation}
+               {\list{}{\listparindent 1.5em%
+                        \itemindent    0pt%
+                        \rightmargin   \leftmargin
+                        \parsep        0pt plus 1pt}%
+                \item\relax}
+               {\endlist}
+\fi
+
+\section{Overview}
+
+The \emph{stex} package consists of two main programs and some supporting
+items, such as make files, make-file templates, class files, and style
+files.
+The two main programs are \textbf{scheme-prep} and \textbf{html-prep}.
+\textbf{scheme-prep} performs a conversion from ``stex''-formatted files
+into latex-formatted files, while \textbf{html-prep} converts (some)
+latex-formatted files into html-formatted files.
+
+An stex file is really just a latex file extended with a handful of
+commands for including Scheme code (or pretty much any other kind of code,
+as long as you don't plan to use the Scheme-specific transcript support)
+in a document, plus a couple of additional features rather arbitrarily
+thrown in.
+
+The subset of latex-formatted files \textbf{html-prep} is capable of
+handling is rather small but has nevertheless been useful for our
+purposes, which include producing html versions of a couple of books
+(\emph{The Scheme Programming Language}, Editions 2--4 and the Chez Scheme
+User's Guides for Versions 6--9), the scheme.com web site, class websites,
+class assignments, and various other documents.
+
+\section{Installation}
+
+A prerequisite to building and using stex is to have Chez Scheme or
+Petite Chez Scheme installed on your system.
+You'll also need pdflatex, dvips, ghostscript, and netbpm.
+We've run stex under Linux and OS X but have not tried to run it under
+Windows.
+
+The simplest way to install stex for your personal use is to clone the
+stex directory into your home directory, cd into the stex directory,
+and run make:
+
+\schemedisplay
+make BIN=\var{bindir}
+\endschemedisplay
+
+where \var{bindir} is the directory where make will find the scheme or
+petite executables.
+
+This will create a subdirectory, named for the installed Chez Scheme
+machine type, containing binary versions of the programs.
+
+You can also use ``make install'' to make stex available for other users.
+
+\schemedisplay
+sudo make install BIN=\var{bindir} LIB=\var{libdir}
+\endschemedisplay
+
+where \var{bindir} is as described above, and \var{libdir} is the
+directory where the stex library directory should be installed.
+
+\section{Usage notes}
+
+The simplest way to get started with stex is to get this document to
+build (in the doc directory) and create your own document by cloning
+this document's source file (stex.stex) and make file (Makefile).
+If you've installed stex in your home directory, you should be able to
+build this document by running ``make'' without arguments in the doc
+directory.
+If you've installed stex elsewhere, you'll first have to modify the
+include for Mf-stex to reflect its installed location.
+
+Makefile is where you declare your stex sources and various other things,
+like bibtex and graphics files.
+If you don't have anything much more complicated than this document,
+you might just need to change the line that declares the main stex entry
+point, i.e., the line that reads \scheme{x = stex}, to reflect the name
+of your document.
+
+The make is orchestrated by Mf-stex, which knows how to run
+\textbf{scheme-prep}, \textbf{html-prep}, \textbf{pdflatex} (multiple
+times), and various other commands to produce both pdf and html versions
+of the stex document.
+
+You can also consult the more elaborate stex source and make files for the
+Chez Scheme User's Guide in the csug directory of a Chez Scheme release.
+
+\section{Basic stex commands}
+
+\subsection{Inline code}
+
+An stex document includes inline Scheme (or other) code via the
+\scheme{\scheme} command, e.g.:
+
+\begin{quotation}
+\schemeverbatim
+When called with two arguments, \scheme{cons} creates a pair of the two
+arguments, e.g., \scheme{(cons 3 4)} produces \scheme{(3 . 4)}.
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+When called with two arguments, \scheme{cons} creates a pair of the two
+arguments, e.g., \scheme{(cons 3 4)} produces \scheme{(3 . 4)}.
+\end{quotation}
+
+\subsection{Code displays}
+
+An stex document includes out-of-line Scheme (or other) code via
+\scheme{\schemedisplay} and \scheme{\endschemedisplay}, e.g.:
+
+\begin{quotation}
+\schemeverbatim
+\schemedisplay
+(define fact
+  (lambda (x)
+    "a light year is a measure of distance"))
+
+(define fib
+  (lambda (x)
+    "a light year is a measure of time"))
+\endschemedisplay
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+\schemedisplay
+(define fact
+  (lambda (x)
+    "a light year is a measure of distance"))
+
+(define fib
+  (lambda (x)
+    "a light year is a measure of time"))
+\endschemedisplay
+\end{quotation}
+
+Within a Scheme display, \scheme{;=>} is converted into a double right arrow
+($\Rightarrow$), \scheme{;->} into a single right arrow ($\rightarrow$), and
+\scheme{;==} into a phantom of the same size.
+This is useful for showing what a piece of code translates or evaluates to,
+e.g.:
+
+\begin{quotation}
+\schemeverbatim
+A \scheme{let} expression expands into a call to a \scheme{lambda}
+expression, e.g.:
+\schemedisplay
+(let ([a 17]) ;-> ((lambda (a) (+ a a))
+  (+ a a))    ;==  17)
+\endschemedisplay
+
+A \scheme{let} expression first evaluates the right-hand-side
+expression, then evaluates the body in an environment that binds
+the left-hand-side variable to the resulting value, e.g.:
+\schemedisplay
+(let ([a 17]) ;=> 17
+  (+ a a))
+\endschemedisplay
+\endschemeverbatim
+\end{quotation}
+
+produces
+
+\begin{quotation}
+A \scheme{let} expression expands into a call to a \scheme{lambda}
+expression, e.g.:
+\schemedisplay
+(let ([a 17]) ;-> ((lambda (a) (+ a a))
+  (+ a a))    ;==  17)
+\endschemedisplay
+
+A \scheme{let} expression first evaluates the right-hand-side
+expression, then evaluates the body in an environment that binds
+the left-hand-side variable to the resulting value, e.g.:
+\schemedisplay
+(let ([a 17]) ;=> 17
+  (+ a a))
+\endschemedisplay
+\end{quotation}
+
+\subsection{Variables}
+
+Code can include emphasized variables via the \scheme{\raw{{\schbackslash}var}} command, e.g.:
+
+\begin{quotation}
+\schemeverbatim
+\scheme{(let ([\var{x} \var{e}]) \var{body})} binds the variable \var{x} to
+the value of \var{e} in \var{body}.
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+\scheme{(let ([\var{x} \var{e}]) \var{body})} binds the variable \var{x} to
+the value of \var{e} in \var{body}.
+\end{quotation}
+
+If the text within a \scheme{\raw{{\schbackslash}var}} form contains an underscore, the
+following character or bracketed subform is converted into a subscript,
+e.g., \scheme{\raw{{\schbackslash}var{\schlbrace}abc\_3{\schrbrace}}}
+produces \var{abc_3}, and \scheme{\raw{{\schbackslash}var{\schlbrace}7e5\_{16}{\schrbrace}}}
+produces \var{7e5_{16}}.
+
+\scheme{\raw{{\schbackslash}var}} forms may appear within a \scheme{\scheme} form, within a Scheme display
+formed by \scheme{\schemedisplay} and \scheme{\endschemedisplay} commands,
+or by itself outside of either.
+
+\subsection{Raw text in code}
+
+Raw text can be included in code via the \scheme{\raw{{\schbackslash}raw}} command.
+For example:
+
+\begin{quotation}
+\schemeverbatim
+\schemedisplay
+(sqrt \raw{$x$}) \is \raw{$\sqrt{x}$}.
+\endschemedisplay
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+\schemedisplay
+(sqrt \raw{$x$}) ;=> \raw{$\sqrt{x}$}.
+\endschemedisplay
+\end{quotation}
+
+\subsection{Generated output}
+
+Output generated by a Scheme program can be inserted into the output via
+\scheme{\generated} and \scheme{\endgenerated} commands, e.g.:
+
+\begin{quotation}
+\schemeverbatim
+\generated
+(let ()
+  (define fibs
+    (lambda (x y n)
+      (if (= n 0)
+          '()
+          (cons x (fibs y (+ x y) (- n 1))))))
+  (let ([n 5])
+    (printf "first ~r primes: ~{~s~^, ~}\n" n (fibs 0 1 n))))
+\endgenerated
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+\generated
+(let ()
+  (define fibs
+    (lambda (x y n)
+      (if (= n 0)
+          '()
+          (cons x (fibs y (+ x y) (- n 1))))))
+  (let ([n 5])
+    (printf "first ~r primes: ~{~s~^, ~}\n" n (fibs 0 1 n))))
+\endgenerated
+\end{quotation}
+
+\subsection{Verbatim Scheme displays}
+
+When special features, like \scheme{\raw{{\schbackslash}var}} forms, need to be
+suppressed within a Scheme display, a document can use
+\scheme{\schemeverbatim} and \scheme{\endschemeverbatim} instead of
+\scheme{\schemedisplay} and \scheme{\endschemedisplay}.
+This document makes extensive use of this feature.
+
+\section{Scheme transcripts}
+
+\subsection{Automatic transcript generation}
+
+The \textbf{scheme-prep} package supports a
+\scheme{\transcript} command for automatically generating Scheme transcripts
+from input supplied in the document source.  
+All text from the \scheme{\transcript} marker up to and including the
+\scheme{\endtranscript} marker is replaced with a transcript generated
+by supplying the intervening text as the input to a Scheme caf\'e (REPL).
+If the Scheme transcript needs to contain the sequence
+\scheme{\endtranscript}, a different terminator may be specified as an
+optional argument to \scheme{\transcript}.  
+The terminator must be a backslash followed by one or more alphabetic
+characters, and is specified without the backslash in the optional argument.
+
+Three pairs of commands may be redefined to customize the typesetting
+of different elements within generated transcripts.  
+To modify the typesetting of error messages, redefine \scheme{\transerr}
+and \scheme{\endtranserr}.  
+To modify the typesetting of user input read from the current input port
+of the caf\'e, redefine \scheme{\transin} and \scheme{\endtransin}.
+To modify the typesetting of program output written to the current
+output port of new caf\'e, redefine \scheme{\transout} and
+\scheme{\endtransout}.
+
+For example, the following:
+
+\begin{quotation}
+\schemeverbatim
+\transcript
+(define f
+  (lambda (x)       ; indentation and comments are
+    (if (zero? x)   ; preserved in the transcript
+        1
+        (* x (f (- x 1))))))
+(values f (f 0) (f 5) (f 20))
+(trace f)
+(f 4)
+\endtranscript
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+\transcript
+(define f
+  (lambda (x)       ; indentation and comments are
+    (if (zero? x)   ; preserved in the transcript
+        1
+        (* x (f (- x 1))))))
+(values f (f 0) (f 5) (f 20))
+(trace f)
+(f 4)
+\endtranscript
+\end{quotation}
+
+The following example shows how to specify a different transcript
+terminator and shows the default formatting imposed by \scheme{\transerr},
+\scheme{\transin}, and \scheme{\transout}.
+
+\begin{quotation}
+\schemeverbatim
+\transcript[\stopthistranscript]
+#e4.5
+(begin (display "Enter a character: ") (read-char))
+(begin (display "Enter a character: ") (read-char))Z
+(begin (clear-input-port) (display "Enter a character: ") (read-char))
+Z
+(list (read-char) (read-char) (read-char))abc def
+(define silly-repl
+  (lambda (prompt)
+    (display prompt)
+    (let ([x (read)])
+      (unless (eof-object? x)
+        (let ([result (eval x)])
+          (unless (eq? result (void))
+            (pretty-print result))
+          (silly-repl prompt))))))
+(silly-repl "Enter a Scheme expression: ")
+(list 1
+      2
+      3)
+(silly-repl "Now what? ")
+(define interview
+  (lambda ()
+    (let* ([fname (begin (display "First name: ") (read))]
+           [lname (begin (display "Last name: ") (read))])
+      (printf "Hello ~a ~a!~%" fname lname))))
+(interview)
+john
+  doe
+#!eof
+(printf "good to be back~%")
+#!eof
+\stopthistranscript
+\endschemeverbatim
+\end{quotation}
+
+produces:
+
+\begin{quotation}
+\transcript[\stopthistranscript]
+#e4.5
+(begin (display "Enter a character: ") (read-char))
+(begin (display "Enter a character: ") (read-char))Z
+(begin (clear-input-port) (display "Enter a character: ") (read-char))
+Z
+(list (read-char) (read-char) (read-char))abc def
+(define silly-repl
+  (lambda (prompt)
+    (display prompt)
+    (let ([x (read)])
+      (unless (eof-object? x)
+        (let ([result (eval x)])
+          (unless (eq? result (void))
+            (pretty-print result))
+          (silly-repl prompt))))))
+(silly-repl "Enter a Scheme expression: ")
+(list 1
+      2
+      3)
+(silly-repl "Now what? ")
+(define interview
+  (lambda ()
+    (let* ([fname (begin (display "First name: ") (read))]
+           [lname (begin (display "Last name: ") (read))])
+      (printf "Hello ~a ~a!~%" fname lname))))
+(interview)
+john
+  doe
+#!eof
+(printf "good to be back~%")
+#!eof
+\stopthistranscript
+\end{quotation}
+
+Transcripts do not include a trailing prompt by design.
+This is done in such a way that an explicitly displayed string that
+happens to look like the prompt is not suppressed.
+For example:
+
+\begin{quotation}
+\schemeverbatim
+\transcript
+(begin (display "> \n") (exit))
+\endtranscript
+\endschemeverbatim
+\end{quotation}
+
+should leave the apparent prompt alone since it is generated as program
+output.
+
+\begin{quotation}
+\transcript
+(begin (display "> \n") (exit))
+\endtranscript
+\end{quotation}
+
+Prompt suppression works even with 
+changes to \scheme{waiter-prompt-string}.
+For example:
+
+\begin{quotation}
+\schemeverbatim
+\transcript
+(waiter-prompt-string "antelope? ")
+"no thanks"
+\endtranscript
+\endschemeverbatim
+\end{quotation}
+
+produces no trailing "antelope? " prompt:
+
+\begin{quotation}
+\transcript
+(waiter-prompt-string "antelope? ")
+"no thanks"
+\endtranscript
+\end{quotation}
+
+\subsection{Loading initialization code}
+
+The \scheme{stex} commands \scheme{\schemeinit} and \scheme{\endschemeinit}
+are used to bracket Scheme expressions that should be evaluated without
+generating a transcript of the results.
+This is useful, for example, when writing the description of a programming
+assignment.  The solutions can be loaded via \scheme{\schemeinit} and a
+transcript showing how the solutions behave can be generated using the
+\scheme{\transcript} command.
+
+For example, the following text:
+
+\begin{quotation}
+\schemeverbatim
+\schemeinit
+(waiter-prompt-string ">")    ; restore the original prompt setting so we
+                              ; don't get "antelope?" as the prompt
+(define compute-length
+  (lambda (x)
+    (cond
+      [(list? x) (length x)]
+      [(vector? x) (vector-length x)]
+      [(string? x) (string-length x)]
+      [else (errorf 'compute-length "cannot handle ~s" ls)])))
+\endschemeinit
+\emph{The \scheme{compute-length} procedure behaves as follows:}
+\transcript
+(compute-length '())
+(compute-length '(a b c))
+(compute-length "abcd")
+(compute-length (vector 1 2 3 4 5 6))
+(compute-length compute-length)
+\endtranscript
+\endschemeverbatim
+\end{quotation}
+
+produces the output shown below.
+
+\begin{quotation}
+\schemeinit
+(waiter-prompt-string ">")    ; restore the original prompt setting so we
+                              ; don't get "antelope?" as the prompt
+(define compute-length
+  (lambda (x)
+    (cond
+      [(list? x) (length x)]
+      [(vector? x) (vector-length x)]
+      [(string? x) (string-length x)]
+      [else (errorf 'compute-length "cannot handle ~s" x)])))
+\endschemeinit
+\emph{The \scheme{compute-length} procedure behaves as follows:}
+\transcript
+(compute-length '())
+(compute-length '(a b c))
+(compute-length "abcd")
+(compute-length (vector 1 2 3 4 5 6))
+(compute-length compute-length)
+\endtranscript
+\end{quotation}
+
+the last line of input intentionally causes an error, which is
+displayed just as it would be displayed in a caf\'e.
+
+\section{html-prep support for the \texttt{tabular} environment}
+
+Support for tables comes with a few caveats:
+
+\begin{enumerate}
+ \item \scheme{@\schlbrace\schrbrace} directives within \scheme{tabular}
+       column specifiers are flat-out ignored for the time being.
+ \item \scheme{|} directives within \scheme{tabular}
+       column specifiers are essentially ignored.  Their only effect is
+       to globally enable borders for the entire HTML table.
+ \item \scheme{\hrule} and \scheme{\cline} are not yet implemented.
+ \item no warranty is expressed or implied.
+\end{enumerate}
+
+The following code:
+
+\begin{quotation}
+\begin{verbatim}
+\begin{tabular}{rcl|r}
+y &=& f(x) & without loss of generality \\
+z & \multicolumn{2}{r}{whee} & this is fun? \\
+\multicolumn{4}{c}{
+ \begin{tabular}{cc}
+   1 & 2 \\
+   3 & 4
+ \end{tabular}
+} \\
+a & b & c & d \\
+12345 & z & \multicolumn{2}{l}{\scheme{(define x "foo")}}
+\end{tabular}
+\end{verbatim}
+\end{quotation}
+
+generates this table:
+
+\begin{quotation}
+\begin{tabular}{rcl|r}
+y &=& f(x) & without loss of generality \\
+z & \multicolumn{2}{r}{whee} & this is fun? \\
+\multicolumn{4}{c}{
+ \begin{tabular}{cc}
+   1 & 2 \\
+   3 & 4
+ \end{tabular}
+} \\
+a & b & c & d \\
+12345 & z & \multicolumn{2}{l}{\scheme{(define x "foo")}}
+\end{tabular}
+\end{quotation}
+
+\end{document}

@@ -1,0 +1,2 @@
+\xdef\selfstudy#1{%
+ \xedef\studylab{\genlab}\raw{\selfstudy}{#1}{\studylab}\label{\studylab}}

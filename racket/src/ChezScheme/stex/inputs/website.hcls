@@ -1,0 +1,93 @@
+%%% website.hcls
+%%% Kent Dybvig and Oscar Waddell
+%%% August 2003
+
+\newif\iflatex\latexfalse
+\newif\ifhtml\htmltrue
+
+\def\thetitleattributes{}
+
+%%% \webpage{title}
+\newcommand{\webpage}[2][]{
+\endwebpage
+\def\thetitleattributes{#1}
+\def\thetitle{#2}
+\begingroup\renewcommand{\hyperlink}[3][]{##3}\openhtmlfile{#2}\endgroup
+\renewcommand{\endwebpage}{\copyrightnotice
+ \closehtmlfile\renewcommand{\endwebpage}{}}}
+\newcommand{\endwebpage}{}
+
+\def\maketitle{\raw{<h1} \thetitleattributes\raw{>}\thetitle\raw{</h1>}}
+
+\newcommand{\hr}[1][]{\raw{<hr #1>}}
+
+\def\copyright{\raw{&copy;}}
+\newcommand{\copyrightnotice}{}
+
+\let\trueenddocument=\enddocument
+\def\enddocument{
+ \endwebpage
+ \trueenddocument}
+
+%%% \section{title}
+\newcommand{\section}[1]{
+\raw{<h2>}#1\raw{</h2>}
+}
+
+%%% \subsection{title}
+\newcommand{\subsection}[1]{
+\raw{<h3>}#1\raw{</h3>}
+}
+
+%%% \subsection{title}
+\newcommand{\subsubsection}[1]{
+\raw{<h4>}#1\raw{</h4>}
+}
+
+\newenvironment{DIV}[1]
+  {\raw{<div #1>}}
+  {\raw{</div>}}
+
+\def\span#1#2{\raw{<span #1>}#2\raw{</span>}}
+
+\newcommand{\img}[3][]{\raw{<img alt="#2" #1 src="#3">}}
+
+%%% \parheader{title}
+\def\parheader#1 {\medskip\noindent{\bf #1.}~~}
+
+%%% center: should be built in
+\newenvironment{center}
+  {\raw{<div align=center>}}
+  {\raw{</div>}}
+
+%%% alphalist
+\newcounter{alphalist}
+\def\alphalist{\begingroup\setcounter{alphalist}{0}
+ \def\endalphalistitem{}%
+ \renewcommand{\item}{\endalphalistitem
+  \def\endalphalistiem{\raw{</td></tr>}}%
+  \stepcounter{alphalist}%
+  \raw{<tr valign=top><td>}\textit{~~\alph{alphalist}}.\raw{</td><td>}}
+ \raw{<table>}}
+\def\endalphalist{\endalphalistitem\raw{</table>}\endgroup}
+
+%%% define our own (compact) description environment
+\def\description{\begingroup
+ \renewcommand{\item}[1][]{\raw{<dt>}##1\raw{<dd>}}\raw{<dl compact>}}
+\def\enddescription{\raw{</dl>}\endgroup}
+
+%%% hyperlink support
+\newcommand{\hyperlink}[3][]{\raw{<a #1 href="}\url{#2}\raw{">}#3\raw{</a>}}
+
+%%% \mailto{id}{name}
+\newcommand{\mailto}[3][]{\raw{<a #1 href="/cgi-bin/tomail.cgi?name=#2">}{#3}\raw{</a>}}
+
+%%% colors
+\def\textcolor#1#2{\raw{<span style="color: #1;">}#2\raw{</span>}}
+
+%%% forms
+\newenvironment{form}[1]{\raw{<form #1>}}{\raw{</form>}}
+\newcommand{\formtextarea}[2]{\raw{<textarea #1>}#2\raw{</textarea>}}
+\newcommand{\forminput}[1]{\raw{<input #1>}}
+\newcommand{\formselect}[2]{\raw{<select #1>}#2\raw{</select>}}
+\newcommand{\formoption}[2][]{\raw{<option #1>}#2\raw{</option>}}

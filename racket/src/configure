@@ -1,45 +1,38 @@
 #! /bin/sh
 
-# Using `--enable-csonly` avoids running `cfg-racket`
-# and only uses `cfg-cs` and `cs/c/configure`.
-
-# Using `--enable-cs` or `--enable-csdefault` uses
-# both `cfg-racket` and `cs/c/configure`.
-
 set -e
 
 dir=`dirname "$0"`
 
 use_cs=no
-use_racket=yes
-supplied_racket=no
-supplied_scheme=no
+use_bc=yes
 
 for arg in $*; do 
   case "$arg" in
-    --enable-csdefault | --enable-cs)
+    --enable-cs | --enable-csdefault)
       use_cs=yes
+      ;;
+    --enable-bc | --enable-bcdefault)
+      use_bc=yes
       ;;
     --enable-csonly)
-      use_racket=no
       use_cs=yes
+      use_bc=no
       ;;
-    --enable-racket=*)
-      supplied_racket=yes
-      ;;
-    --enable-scheme=*)
-      supplied_scheme=yes
+    --enable-bconly)
+      use_cs=no
+      use_bc=yes
       ;;
     --help | -h)
       echo $0:
-      echo see --help-racket or --help-cs, since the traditional Racket "(3m/CGC)" build
-      echo and the Chez Scheme "(CS)" build support different options. If you use
-      echo options that build both CS and 3m/CGC, then you can mix options that apply
+      echo see --help-bc or --help-cs, since the Racket CS build and the
+      echo Racket BC build support different options. If you use options
+      echo that build both CS and BC, then you can mix options that apply
       echo to both or either kind of build.
       exit 0
       ;;
-    --help-racket)
-      exec "$dir/cfg-racket" --help
+    --help-bc)
+      exec "$dir/cfg-bc" --help
       ;;
     --help-cs)
       exec "$dir/cs/c/configure" --help
@@ -48,26 +41,9 @@ for arg in $*; do
 done
 
 if test "$use_cs" = "yes" ; then
-  if test "$supplied_scheme" = "no" ; then
-    if ! test -d ChezScheme ; then
-      if ! test -d "$dir/ChezScheme" ; then
-        echo $0: supply --enable-scheme=... or check out a Chez Scheme
-        echo build directory as '"ChezScheme"' in the current directory
-        exit 1
-      fi
-    fi
-  fi
-
-  if test "$use_racket" = "no" ; then
-    if test "$supplied_racket" = "no" ; then
-      echo $0: --enable-csonly needs --enable-racket=...
-      exit 1
-    fi
-  fi
-
   # The "cs/c/configure" script doesn't report the installation
   # configuration, so we run it first and let "cfg-cs" or
-  # "cfg-racket" report that information.
+  # "cfg-bc" report that information.
 
   mkdir -p cs/c
   case "$dir" in
@@ -83,5 +59,5 @@ fi
 if test "$use_racket" = "no" ; then
   exec "$dir/cfg-cs" ${1+"$@"}
 else
-  exec "$dir/cfg-racket" ${1+"$@"}
+  exec "$dir/cfg-bc" ${1+"$@"}
 fi

@@ -35,4 +35,7 @@ rbuildmode.exe
 cstartup.obj
 cstartup.exe
 
+/bc_suffix.h
+/bc_suffix_new.h
+
 /compiled

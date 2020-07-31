@@ -1,0 +1,12 @@
+\newenvironment{grammar}
+  {\begingroup
+    \def\orbar{\hbox to 2em{\hfil}$\vert$\hbox to .75em{\hfil}}
+    \def\nobar{\hbox to 2em{\hfil}\phantom{$\vert$}\hbox to .75em{\hfil}}
+    \def\longis{ $\longrightarrow$\hbox to .75em{\hfil}}
+   \penalty-100\vskip 6pt plus 1pt\parindent=0pt\interlinepenalty=5000}
+  {\penalty-200\vskip6pt plus 1pt\endgroup}
+
+\def\bar{$\vert$}
+\def\ang#1{$\langle${\small\rm{}#1}$\rangle$}
+\def\kstar{\raise.5ex\hbox{\scheme{*}}}
+\def\kplus{\raise.5ex\hbox{\scheme{+}}}

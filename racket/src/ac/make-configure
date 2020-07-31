@@ -1,8 +1,8 @@
 #!/bin/sh
 #|
 cd "`dirname \"$0\"`"
-src="../racket/configure.ac"
-tgt="../cfg-racket"
+src="../bc/configure.ac"
+tgt="../cfg-bc"
 if [ ! -e "$src" ]; then echo "abort: did not find $src"; exit 1; fi
 echo "Creating $tgt from $src"
 autoconf "$src" | racket "$0" > "$tgt"

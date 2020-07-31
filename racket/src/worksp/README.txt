@@ -2,7 +2,7 @@ This directory contains scripts, solution files, and project files for
 building Racket using Visual Studio. Some parts or variants can be
 built using projects, but most use Visual Studio command-line tools.
 
-The traditional Racket implementation also compiles with MinGW; see
+The Racket BC implementation also compiles with MinGW; see
 "...\README.txt".
 
 
@@ -26,13 +26,12 @@ When using PowerShell, run the "msvcprep.ps1" script instead of
 work, but will not actually change any environment variables.
 
 After you have Visual Studio command-line tools set up, then you can
-build either the traditional Racket implementation or Racket-on-Chez
-(or both).
+build either the Racket BC or Racket CS implementations (or both).
 
-Traditional Racket
-------------------
+Racket BC
+---------
 
-Build the traditional Racket implementation using
+Build the Racket BC implementation using
 
    build.bat
 
@@ -44,32 +43,29 @@ the process of building "..\..\Racket.exe".
 
 See also "Completing the Build" below.
 
-Racket-on-Chez
---------------
+Racket CS
+---------
 
-Build the Racket-on-Chez implementation using
+Build the Racket CS implementation using
 
    build-cs.bat
 
-which builds "..\..\Racket3m.exe" to bootstrap the build.
+which builds "..\..\Racket3m.exe" to bootstrap the build, because the
+main build script is implemented in Racket.
 
-To instead build using an existing Racket installation, use
+To instead build using an existing Racket installation (version 7.1 or
+later), use
 
    racket.exe csbuild.rkt --racketcs-suffix ""
 
 The result is "..\..\Racket.exe", DLLs and "GRacket.exe" in
 "..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
-
-Many intermediate files will be put in "../build", including a Chez
-Scheme checkout if it's not already present there; if a "ChezScheme"
-directory exists in the Racket source directory, it is copied to the
-build directory, otherwise it is cloned from a Git repository (in
-which case `git` must be available).
+Many intermediate files will be put in "../build".
 
 See also "Completing the Build" below.
 
-Both Traditional Racket and Racket-on-Chez
-------------------------------------------
+Both Racket BC and Racket CS
+----------------------------
 
 When using "csbuild.rkt" directly, omit the `--racketcs-suffix ""`
 arguments to create "..\..\RacketCS.exe" executable instead of
@@ -78,8 +74,8 @@ read and bytecode in a subdirectory of "compiled" as described in
 "..\cs\README.txt".
 
 A "CS" suffix and using a subdirectory of "compiled" means that a
-Racket-on-Chez build as "RacketCS.exe" can coexist with a
-traditional build as "Racket.exe". So, the sequence
+Racket CS build as "RacketCS.exe" can coexist with a BC build as
+"Racket.exe". So, the sequence
 
    build.bat
    ..\..\Racket.exe csbuild.rkt
@@ -111,11 +107,10 @@ Only if you are starting completely from scratch, see also
  Building via Visual Studio Projects/Solutions
 ========================================================================
 
-Traditional Racket implementation's CGC variant can be built and
-debugged using visual Studio solutions and project. (See
-"..\racket\README.txt" for information on traditional Racket
-variants.) Further steps using the command line can then build the 3m
-variant and related executables.
+The Racket BC implementation's CGC variant can be built and debugged
+using visual Studio solutions and project. (See "..\racket\README.txt"
+for information on Racket BC variants.) Further steps using the
+command line can then build the 3m variant and related executables.
 
 The CGC implementation is split into several projects that are grouped
 into a few solutions. To build the `X' solution with Visual Studio,
@@ -147,8 +142,8 @@ To build GRacketCGC, build the GRacket solution:
 
 The build processes for RacketCGC and GRacketCGC automatically builds
 
-  libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
-               racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
+  sgc        - makes racket\lib\libmzgcxxxxxxx.dll and
+               racket\src\worksp\sgc\Release\libmzgcxxxxxxx.lib
 
   libracket  - makes racket\lib\libracketxxxxxxx.dll and
                racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
@@ -221,19 +216,6 @@ After building MzCOMCGC, you can build the 3m variant by
 
 The result is "..\..\lib\MzCOM.exe".
 
-SenoraGC versus the Boehm GC
-----------------------------
-
-The "Release" and "Debug" solution configurations use SenoraGC (SGC),
-while the "AltGCRelease" and "AltGCDebug" configurations use the
-variant of the Boehm GC that is included with Racket.
-
-In project files, "SRelease" and "SDebug" (as used by the "Release"
-and "Debug" solution configurations) build against SGC, while
-"BRelease" and "BDebug" (as used by the "AltGCRelease" and
-"AltGCDebug" solution configurations) build against the Boehm GC.
-
-
 ========================================================================
  Versioning
 ========================================================================
@@ -287,8 +269,8 @@ See also "..\start\README.txt" for information on the embedded
  Embedding
 ========================================================================
 
-The traditional Racket implementation's DLLs can be used within an
-embedding application.
+The Racket BC implementation's DLLs can be used within an embedding
+application.
 
 The libraries
 

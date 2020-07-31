@@ -1,0 +1,561 @@
+*** errors-compile-0-f-f-f	2020-03-11 22:32:59.000000000 -0600
+--- errors-interpret-0-f-f-f	2020-03-11 22:14:11.000000000 -0600
+***************
+*** 18,25 ****
+  primvars.mo:Expected error testing (environment (quote (chezscheme)) (quote (chezscheme)) (quote #f)): Exception in environment: invalid library reference #f
+  primvars.mo:Expected error testing (base-exception-handler (quote 0)): Exception in default-exception-handler: 0 is not a procedure
+  primvars.mo:Expected error testing (base-exception-handler (quote #f)): Exception in default-exception-handler: #f is not a procedure
+! primvars.mo:Expected error testing (eval 1.0+2.0i (quote ((a . b)))): Exception in compile: ((a . b)) is not an environment
+! primvars.mo:Expected error testing (eval 1.0+2.0i (quote #f)): Exception in compile: #f is not an environment
+  primvars.mo:Expected error testing (expand 1.0+2.0i (quote ((a . b)))): Exception in sc-expand: ((a . b)) is not an environment
+  primvars.mo:Expected error testing (expand 1.0+2.0i (quote #f)): Exception in sc-expand: #f is not an environment
+  primvars.mo:Expected error testing (expand 1.0+2.0i (quote ((a . b))) 1.0+2.0i): Exception in sc-expand: ((a . b)) is not an environment
+--- 18,25 ----
+  primvars.mo:Expected error testing (environment (quote (chezscheme)) (quote (chezscheme)) (quote #f)): Exception in environment: invalid library reference #f
+  primvars.mo:Expected error testing (base-exception-handler (quote 0)): Exception in default-exception-handler: 0 is not a procedure
+  primvars.mo:Expected error testing (base-exception-handler (quote #f)): Exception in default-exception-handler: #f is not a procedure
+! primvars.mo:Expected error testing (eval 1.0+2.0i (quote ((a . b)))): Exception in interpret: ((a . b)) is not an environment
+! primvars.mo:Expected error testing (eval 1.0+2.0i (quote #f)): Exception in interpret: #f is not an environment
+  primvars.mo:Expected error testing (expand 1.0+2.0i (quote ((a . b)))): Exception in sc-expand: ((a . b)) is not an environment
+  primvars.mo:Expected error testing (expand 1.0+2.0i (quote #f)): Exception in sc-expand: #f is not an environment
+  primvars.mo:Expected error testing (expand 1.0+2.0i (quote ((a . b))) 1.0+2.0i): Exception in sc-expand: ((a . b)) is not an environment
+***************
+*** 130,136 ****
+  primvars.mo:Expected error in mat make-parameter: "make-parameter: 2 is not a procedure".
+  primvars.mo:Expected error in mat make-parameter: "+: a is not a number".
+  primvars.mo:Expected error in mat make-parameter: "incorrect number of arguments 1 to #<procedure>".
+! primvars.mo:Expected error in mat parameterize: "incorrect number of arguments 0 to #<procedure x>".
+  primvars.mo:Expected error in mat collect-generation-radix: "collect-generation-radix: a is not a positive fixnum".
+  primvars.mo:Expected error in mat collect-generation-radix: "collect-generation-radix: -1 is not a positive fixnum".
+  primvars.mo:Expected error in mat collect-generation-radix: "collect-generation-radix: 0 is not a positive fixnum".
+--- 130,136 ----
+  primvars.mo:Expected error in mat make-parameter: "make-parameter: 2 is not a procedure".
+  primvars.mo:Expected error in mat make-parameter: "+: a is not a number".
+  primvars.mo:Expected error in mat make-parameter: "incorrect number of arguments 1 to #<procedure>".
+! primvars.mo:Expected error in mat parameterize: "incorrect number of arguments 0 to #<procedure>".
+  primvars.mo:Expected error in mat collect-generation-radix: "collect-generation-radix: a is not a positive fixnum".
+  primvars.mo:Expected error in mat collect-generation-radix: "collect-generation-radix: -1 is not a positive fixnum".
+  primvars.mo:Expected error in mat collect-generation-radix: "collect-generation-radix: 0 is not a positive fixnum".
+***************
+*** 157,227 ****
+  primvars.mo:Expected error in mat print-radix: "print-radix: 1 is not between 2 and 36".
+  primvars.mo:Expected error in mat timer-interrupt-handler: "timer-interrupt-handler: midnight is not a procedure".
+  primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input port string> is not a textual output port".
+! 3.mo:Expected error in mat matrest1: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest2: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest2: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest3: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest3: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest3: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 4 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 5 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 4 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 6 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 5 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 4 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 7 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 6 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 5 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 4 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 8 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 7 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 6 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 5 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 4 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 0 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 9 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 8 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 7 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 6 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 5 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 4 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 3 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 2 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 1 to #<procedure matrestf>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 0 to #<procedure matrestf>".
+  3.mo:Expected error in mat application: "attempt to apply non-procedure ((a b c))".
+  3.mo:Expected error in mat case-lambda: "incorrect argument count in call ((case-lambda))".
+  3.mo:Expected error in mat case-lambda: "incorrect argument count in call (f 3 4 5)".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 1 to #<procedure foo>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 2 to #<procedure foo>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 4 to #<procedure foo>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 1 to #<procedure foo>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 2 to #<procedure foo>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 4 to #<procedure foo>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments 2 to #<procedure foo>".
+  3.mo:Expected error in mat let: "incorrect argument count in call ((lambda (x . r) (eq? x (...))))".
+  3.mo:Expected error in mat letrec: "variable f is not bound".
+  3.mo:Expected error in mat letrec: "attempt to reference undefined variable a".
+--- 157,227 ----
+  primvars.mo:Expected error in mat print-radix: "print-radix: 1 is not between 2 and 36".
+  primvars.mo:Expected error in mat timer-interrupt-handler: "timer-interrupt-handler: midnight is not a procedure".
+  primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input port string> is not a textual output port".
+! 3.mo:Expected error in mat matrest1: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest2: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest2: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest3: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest3: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest3: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest4: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest5: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest6: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest7: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest8: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest9: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat matrest10: "incorrect number of arguments 0 to #<procedure>".
+  3.mo:Expected error in mat application: "attempt to apply non-procedure ((a b c))".
+  3.mo:Expected error in mat case-lambda: "incorrect argument count in call ((case-lambda))".
+  3.mo:Expected error in mat case-lambda: "incorrect argument count in call (f 3 4 5)".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+! 3.mo:Expected error in mat case-lambda: "incorrect number of arguments to #<procedure>".
+  3.mo:Expected error in mat let: "incorrect argument count in call ((lambda (x . r) (eq? x (...))))".
+  3.mo:Expected error in mat letrec: "variable f is not bound".
+  3.mo:Expected error in mat letrec: "attempt to reference undefined variable a".
+***************
+*** 320,331 ****
+  3.mo:Expected error in mat mrvs: "returned three values to single value return context".
+  3.mo:Expected error in mat mrvs: "returned three values to single value return context".
+  3.mo:Expected error in mat mrvs: "returned zero values to single value return context".
+! 3.mo:Expected error in mat mrvs: "incorrect number of values received in multiple value context".
+! 3.mo:Expected error in mat mrvs: "returned zero values to single value return context".
+! 3.mo:Expected error in mat mrvs: "incorrect number of values received in multiple value context".
+! 3.mo:Expected error in mat mrvs: "incorrect number of values received in multiple value context".
+  3.mo:Expected error in mat mrvs: "variable $mrvs-foo is not bound".
+! 3.mo:Expected error in mat mrvs: "attempt to apply non-procedure 17".
+  3.mo:Expected error in mat mrvs: "returned two values to single value return context".
+  3.mo:Expected error in mat mrvs: "returned two values to single value return context".
+  3.mo:Expected error in mat mrvs: "cdr: a is not a pair".
+--- 320,331 ----
+  3.mo:Expected error in mat mrvs: "returned three values to single value return context".
+  3.mo:Expected error in mat mrvs: "returned three values to single value return context".
+  3.mo:Expected error in mat mrvs: "returned zero values to single value return context".
+! 3.mo:Expected error in mat mrvs: "incorrect number of arguments 1 to #<procedure>".
+! 3.mo:Expected error in mat mrvs: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat mrvs: "incorrect number of arguments 0 to #<procedure>".
+! 3.mo:Expected error in mat mrvs: "incorrect number of arguments 0 to #<procedure>".
+  3.mo:Expected error in mat mrvs: "variable $mrvs-foo is not bound".
+! 3.mo:Expected error in mat mrvs: "call-with-values: 17 is not a procedure".
+  3.mo:Expected error in mat mrvs: "returned two values to single value return context".
+  3.mo:Expected error in mat mrvs: "returned two values to single value return context".
+  3.mo:Expected error in mat mrvs: "cdr: a is not a pair".
+***************
+*** 7462,7468 ****
+  7.mo:Expected error in mat maybe-compile: "separate-compile: Exception in include: failed for testfile-mc-1a.ss: no such file or directory
+  7.mo:Expected error in mat maybe-compile: "separate-compile: Exception in include: file "testfile-mc-1a.ss" not found in source directories
+  7.mo:Expected error in mat maybe-compile: "separate-compile: Exception in include: failed for ./testfile-mc-3a.ss: no such file or directory
+! 7.mo:Expected error in mat eval: "compile: 7 is not an environment".
+  7.mo:Expected error in mat eval: "interpret: 7 is not an environment".
+  7.mo:Expected error in mat eval: "compile: 7 is not an environment".
+  7.mo:Expected error in mat expand: "sc-expand: 7 is not an environment".
+--- 7462,7468 ----
+  7.mo:Expected error in mat maybe-compile: "separate-compile: Exception in include: failed for testfile-mc-1a.ss: no such file or directory
+  7.mo:Expected error in mat maybe-compile: "separate-compile: Exception in include: file "testfile-mc-1a.ss" not found in source directories
+  7.mo:Expected error in mat maybe-compile: "separate-compile: Exception in include: failed for ./testfile-mc-3a.ss: no such file or directory
+! 7.mo:Expected error in mat eval: "interpret: 7 is not an environment".
+  7.mo:Expected error in mat eval: "interpret: 7 is not an environment".
+  7.mo:Expected error in mat eval: "compile: 7 is not an environment".
+  7.mo:Expected error in mat expand: "sc-expand: 7 is not an environment".
+***************
+*** 7841,7847 ****
+  record.mo:Expected error in mat record25: "invalid value #\9 for foreign type uptr".
+  record.mo:Expected error in mat record25: "invalid value 10 for foreign type float".
+  record.mo:Expected error in mat record25: "invalid value 11.0+0.0i for foreign type double".
+! record.mo:Expected error in mat record25: "incorrect number of arguments 18 to #<procedure make-r25-bar>".
+  record.mo:Expected error in mat record25: "invalid value 12.0 for foreign type long-long".
+  record.mo:Expected error in mat record25: "invalid value 13.0 for foreign type unsigned-long-long".
+  record.mo:Expected error in mat record25: "invalid value 3.0 for foreign type int".
+--- 7841,7847 ----
+  record.mo:Expected error in mat record25: "invalid value #\9 for foreign type uptr".
+  record.mo:Expected error in mat record25: "invalid value 10 for foreign type float".
+  record.mo:Expected error in mat record25: "invalid value 11.0+0.0i for foreign type double".
+! record.mo:Expected error in mat record25: "incorrect number of arguments to #<procedure>".
+  record.mo:Expected error in mat record25: "invalid value 12.0 for foreign type long-long".
+  record.mo:Expected error in mat record25: "invalid value 13.0 for foreign type unsigned-long-long".
+  record.mo:Expected error in mat record25: "invalid value 3.0 for foreign type int".
+***************
+*** 7883,7889 ****
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 1 to #<procedure>".
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 1 to #<procedure>".
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 3 to #<procedure>".
+! record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 3 to #<procedure constructor>".
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 4 to #<procedure constructor>".
+  record.mo:Expected error in mat r6rs-records-procedural: "make-record-constructor-descriptor: record constructor descriptor #<record constructor descriptor> is not for parent of record type #<record type grand-child>".
+  record.mo:Expected error in mat r6rs-records-procedural: "make-record-type-descriptor: cannot extend sealed record type #<record type bar>".
+--- 7883,7889 ----
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 1 to #<procedure>".
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 1 to #<procedure>".
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 3 to #<procedure>".
+! record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 4 to #<procedure constructor>".
+  record.mo:Expected error in mat r6rs-records-procedural: "incorrect number of arguments 4 to #<procedure constructor>".
+  record.mo:Expected error in mat r6rs-records-procedural: "make-record-constructor-descriptor: record constructor descriptor #<record constructor descriptor> is not for parent of record type #<record type grand-child>".
+  record.mo:Expected error in mat r6rs-records-procedural: "make-record-type-descriptor: cannot extend sealed record type #<record type bar>".
+***************
+*** 9127,9139 ****
+  fx.mo:Expected error in mat r6rs:fx-: "fx-: #f is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx-: "fx-: #f is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: (a . b) is not a fixnum".
+! fx.mo:Expected error in mat fx*: "fx*: fixnum overflow with arguments <int> and 2".
+  fx.mo:Expected error in mat fx*: "fx*: <int> is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: <-int> is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: #f is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: #f is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: (a . b) is not a fixnum".
+! fx.mo:Expected error in mat r6rs:fx*: "fx*: fixnum overflow with arguments <int> and 2".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: <int> is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: <-int> is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: #f is not a fixnum".
+--- 9127,9139 ----
+  fx.mo:Expected error in mat r6rs:fx-: "fx-: #f is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx-: "fx-: #f is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: (a . b) is not a fixnum".
+! fx.mo:Expected error in mat fx*: "fx*: fixnum overflow computing (fx* <int> 2)".
+  fx.mo:Expected error in mat fx*: "fx*: <int> is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: <-int> is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: #f is not a fixnum".
+  fx.mo:Expected error in mat fx*: "fx*: #f is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: (a . b) is not a fixnum".
+! fx.mo:Expected error in mat r6rs:fx*: "fx*: fixnum overflow computing (fx* <int> 2)".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: <int> is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: <-int> is not a fixnum".
+  fx.mo:Expected error in mat r6rs:fx*: "fx*: #f is not a fixnum".
+***************
+*** 9894,9918 ****
+  foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+  foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+  foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument 83076749736557242056487941267521535".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument #f".
+! foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument "hi"".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument -5444517870735015415413993718908291383295".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument #f".
+! foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument "hi"".
+! foreign.mo:Expected error in mat foreign-procedure: "idfix: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idfix: invalid foreign-procedure argument <-int>".
+  foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier booleen".
+  foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier integer-34".
+  foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure result type specifier chare".
+--- 9894,9918 ----
+  foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+  foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+  foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument 83076749736557242056487941267521535".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument #f".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument "hi"".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument -5444517870735015415413993718908291383295".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument <-int>".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument #f".
+! foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument "hi"".
+! foreign.mo:Expected error in mat foreign-procedure: "idiptr: invalid foreign-procedure argument <int>".
+! foreign.mo:Expected error in mat foreign-procedure: "idiptr: invalid foreign-procedure argument <-int>".
+  foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier booleen".
+  foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier integer-34".
+  foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure result type specifier chare".
+***************
+*** 9925,9956 ****
+  foreign.mo:Expected error in mat foreign-sizeof: "incorrect argument count in call (foreign-sizeof (quote int) (quote int))".
+  foreign.mo:Expected error in mat foreign-sizeof: "foreign-sizeof: invalid foreign type specifier i-am-not-a-type".
+  foreign.mo:Expected error in mat foreign-sizeof: "foreign-sizeof: invalid foreign type specifier 1".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u8*->u8*: invalid foreign-procedure argument "hello"".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u16*->u16*: invalid foreign-procedure argument "hello"".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u32*->u32*: invalid foreign-procedure argument "hello"".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u8*->u8*: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u16*->u16*: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u32*->u32*: invalid foreign-procedure argument 0".
+  foreign.mo:Expected error in mat foreign-bytevectors: "foreign-callable: invalid return value (#vu8(2 3 4 5) 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-bytevectors: "foreign-callable: invalid return value (#vu8(3 4 5 6) 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-bytevectors: "foreign-callable: invalid return value (#vu8(5 6 7 8) 4) from #<procedure>".
+! foreign.mo:Expected error in mat foreign-bytevectors: "call-u8*: invalid foreign-procedure argument #(1 2 3 4 5 0)".
+! foreign.mo:Expected error in mat foreign-bytevectors: "call-u16*: invalid foreign-procedure argument #(1 2 3 4 5 6 ...)".
+! foreign.mo:Expected error in mat foreign-bytevectors: "call-u32*: invalid foreign-procedure argument #(1 2 3 4 5 6 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "utf-8->utf-8: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "utf-16le->utf-16le: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "utf-16be->utf-16be: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "utf-32le->utf-32le: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "utf-32be->utf-32be: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "string->string: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "wstring->wstring: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "utf-8->utf-8: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "utf-16le->utf-16le: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "utf-16be->utf-16be: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "utf-32le->utf-32le: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "utf-32be->utf-32be: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "string->string: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "wstring->wstring: invalid foreign-procedure argument 0".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+--- 9925,9956 ----
+  foreign.mo:Expected error in mat foreign-sizeof: "incorrect argument count in call (foreign-sizeof (quote int) (quote int))".
+  foreign.mo:Expected error in mat foreign-sizeof: "foreign-sizeof: invalid foreign type specifier i-am-not-a-type".
+  foreign.mo:Expected error in mat foreign-sizeof: "foreign-sizeof: invalid foreign type specifier 1".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u8_star_to_u8_star: invalid foreign-procedure argument "hello"".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u16_star_to_u16_star: invalid foreign-procedure argument "hello"".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u32_star_to_u32_star: invalid foreign-procedure argument "hello"".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u8_star_to_u8_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u16_star_to_u16_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-bytevectors: "u32_star_to_u32_star: invalid foreign-procedure argument 0".
+  foreign.mo:Expected error in mat foreign-bytevectors: "foreign-callable: invalid return value (#vu8(2 3 4 5) 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-bytevectors: "foreign-callable: invalid return value (#vu8(3 4 5 6) 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-bytevectors: "foreign-callable: invalid return value (#vu8(5 6 7 8) 4) from #<procedure>".
+! foreign.mo:Expected error in mat foreign-bytevectors: "call_u8_star: invalid foreign-procedure argument #(1 2 3 4 5 0)".
+! foreign.mo:Expected error in mat foreign-bytevectors: "call_u16_star: invalid foreign-procedure argument #(1 2 3 4 5 6 ...)".
+! foreign.mo:Expected error in mat foreign-bytevectors: "call_u32_star: invalid foreign-procedure argument #(1 2 3 4 5 6 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "u8_star_to_u8_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "u16_star_to_u16_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "u16_star_to_u16_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "u32_star_to_u32_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "u32_star_to_u32_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "char_star_to_char_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "wchar_star_to_wchar_star: invalid foreign-procedure argument #vu8(1 2 3 4 0 0 ...)".
+! foreign.mo:Expected error in mat foreign-strings: "u8_star_to_u8_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "u16_star_to_u16_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "u16_star_to_u16_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "u32_star_to_u32_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "u32_star_to_u32_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "char_star_to_char_star: invalid foreign-procedure argument 0".
+! foreign.mo:Expected error in mat foreign-strings: "wchar_star_to_wchar_star: invalid foreign-procedure argument 0".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+***************
+*** 9958,9983 ****
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i8-to-i8: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u8-to-u8: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i16-to-i16: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u16-to-u16: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i24-to-i24: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u24-to-u24: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i32-to-i32: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u32-to-u32: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i64-to-i64: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u64-to-u64: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i8-to-i8: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u8-to-u8: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i16-to-i16: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u16-to-u16: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i32-to-i32: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u32-to-u32: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i64-to-i64: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u64-to-u64: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "sf-to-sf: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "df-to-df: invalid foreign-procedure argument qqq".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+--- 9958,9983 ----
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-strings: "foreign-callable: invalid return value ("ello" 4) from #<procedure>".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i8_to_i8: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u8_to_u8: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i16_to_i16: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u16_to_u16: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i32_to_i32: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u32_to_u32: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i32_to_i32: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u32_to_u32: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i64_to_i64: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u64_to_u64: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i8_to_i8: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u8_to_u8: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i16_to_i16: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u16_to_u16: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i32_to_i32: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u32_to_u32: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "i64_to_i64: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "u64_to_u64: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-fixed-types: "sf_to_sf: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-fixed-types: "df_to_df: invalid foreign-procedure argument qqq".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+***************
+*** 9988,10022 ****
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+! foreign.mo:Expected error in mat foreign-C-types: "int-to-int: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-to-unsigned: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-int-to-unsigned-int: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-short-to-unsigned-short: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "short-to-short: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "long-to-long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-long-to-unsigned-long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "long-long-to-long-long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-long-long-to-unsigned-long-long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "iptr-to-iptr: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "uptr-to-uptr: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "void*-to-void*: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "int-to-int: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-to-unsigned: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-int-to-unsigned-int: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-short-to-unsigned-short: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "short-to-short: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "long-to-long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-long-to-unsigned-long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "long-long-to-long-long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned-long-long-to-unsigned-long-long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "iptr-to-iptr: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "uptr-to-uptr: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "void*-to-void*: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "char-to-char: invalid foreign-procedure argument 73".
+! foreign.mo:Expected error in mat foreign-C-types: "char-to-char: invalid foreign-procedure argument #\U+100".
+! foreign.mo:Expected error in mat foreign-C-types: "wchar-to-wchar: invalid foreign-procedure argument 73".
+! foreign.mo:Expected error in mat foreign-C-types: "float-to-float: invalid foreign-procedure argument qqq.5".
+! foreign.mo:Expected error in mat foreign-C-types: "double-to-double: invalid foreign-procedure argument qqq.5".
+  foreign.mo:Expected error in mat foreign-C-types: "foreign-callable: invalid return value (73 74) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-C-types: "foreign-callable: invalid return value (73 74) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-C-types: "foreign-callable: invalid return value (73 74) from #<procedure>".
+--- 9988,10022 ----
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-fixed-types: "foreign-callable: invalid return value (- x 7) from #<procedure>".
+! foreign.mo:Expected error in mat foreign-C-types: "int_to_int: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_to_unsigned: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_to_unsigned: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_short_to_unsigned_short: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "short_to_short: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "long_to_long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_long_to_unsigned_long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "long_long_to_long_long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_long_long_to_unsigned_long_long: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "iptr_to_iptr: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "uptr_to_uptr: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "uptr_to_uptr: invalid foreign-procedure argument qqq".
+! foreign.mo:Expected error in mat foreign-C-types: "int_to_int: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_to_unsigned: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_to_unsigned: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_short_to_unsigned_short: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "short_to_short: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "long_to_long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_long_to_unsigned_long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "long_long_to_long_long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "unsigned_long_long_to_unsigned_long_long: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "iptr_to_iptr: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "uptr_to_uptr: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "uptr_to_uptr: invalid foreign-procedure argument "oops"".
+! foreign.mo:Expected error in mat foreign-C-types: "char_to_char: invalid foreign-procedure argument 73".
+! foreign.mo:Expected error in mat foreign-C-types: "char_to_char: invalid foreign-procedure argument #\U+100".
+! foreign.mo:Expected error in mat foreign-C-types: "wchar_to_wchar: invalid foreign-procedure argument 73".
+! foreign.mo:Expected error in mat foreign-C-types: "float_to_float: invalid foreign-procedure argument qqq.5".
+! foreign.mo:Expected error in mat foreign-C-types: "double_to_double: invalid foreign-procedure argument qqq.5".
+  foreign.mo:Expected error in mat foreign-C-types: "foreign-callable: invalid return value (73 74) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-C-types: "foreign-callable: invalid return value (73 74) from #<procedure>".
+  foreign.mo:Expected error in mat foreign-C-types: "foreign-callable: invalid return value (73 74) from #<procedure>".
+***************
+*** 10623,10632 ****
+  exceptions.mo:Expected error in mat assert: "failed assertion (memq (quote b) (quote (1 2 a 3 4)))".
+  exceptions.mo:Expected error in mat assert: "failed assertion (q ...)".
+  exceptions.mo:Expected error in mat assert: "failed assertion (andmap symbol? (syntax (x ...)))".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 0 to #<procedure make-<a>>".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 2 to #<procedure make-<a>>".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 1 to #<procedure m1>".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 3 to #<procedure m1>".
+  oop.mo:Expected error in mat oop: "m1: not applicable to 17".
+  oop.mo:Expected error in mat oop: "variable <a>-x1 is not bound".
+  oop.mo:Expected error in mat oop: "variable <a>-x1-set! is not bound".
+--- 10623,10632 ----
+  exceptions.mo:Expected error in mat assert: "failed assertion (memq (quote b) (quote (1 2 a 3 4)))".
+  exceptions.mo:Expected error in mat assert: "failed assertion (q ...)".
+  exceptions.mo:Expected error in mat assert: "failed assertion (andmap symbol? (syntax (x ...)))".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 0 to #<procedure>".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 2 to #<procedure>".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 1 to #<procedure>".
+! oop.mo:Expected error in mat oop: "incorrect number of arguments 3 to #<procedure>".
+  oop.mo:Expected error in mat oop: "m1: not applicable to 17".
+  oop.mo:Expected error in mat oop: "variable <a>-x1 is not bound".
+  oop.mo:Expected error in mat oop: "variable <a>-x1-set! is not bound".

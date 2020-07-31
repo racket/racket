@@ -1,0 +1,49 @@
+%%% html-prep.tex
+
+%%% /* these don't handle nesting properly, i.e., nested \emph */
+\def\emph#1{\raw{<i>}#1\raw{</i>}}
+\def\textit#1{\raw{<i>}#1\raw{</i>}}
+\def\textsl#1{\raw{<i>}#1\raw{</i>}} % really want slant font
+\def\textbf#1{\raw{<b>}#1\raw{</b>}}
+\def\texttt#1{\raw{<tt>}#1\raw{</tt>}}
+
+\def\copyright{\raw{&copy;}}
+
+\def\protect{}
+\def\bigskip{\raw{<p>}}
+\def\medskip{\raw{<p>}}
+\def\smallskip{\raw{<p>}}
+\def\nobreak{}
+\def\noindent{}
+\def\_{\raw{_}}
+\def\par{\raw{
+<p>}}
+\def\dots{\raw{...}}
+\def\vdots{$\vdots$}
+\def\null{}
+\def\${\raw{$}}
+\def\&{\raw{&amp;}}
+\def\%{\raw{%}}
+\def\#{\raw{##}}
+
+\newcommand{\item}[1][]{\itemoutsideoflist}
+\def\itemize{\begingroup
+ \renewcommand{\item}[1][]{\raw{<li>}##1}\raw{<ul>}}
+\def\enditemize{\raw{</ul>}\endgroup\par}
+\newcounter{enumeratecounter}
+\def\enumerate{\begingroup\setcounter{enumeratecounter}{0}%
+ \renewcommand{\item}[1][]{\refstepcounter{enumeratecounter}\raw{<li>}##1}\raw{<ol>}}
+\def\endenumerate{\raw{</ol>}\endgroup\par}
+\def\description{\begingroup
+ \renewcommand{\item}[1][]{\raw{<dt>}##1\raw{<dd>}}\raw{<dl>}}
+\def\enddescription{\raw{</dl>}\endgroup\par}
+
+\newenvironment{flushleft}{}{}
+\newenvironment{thebibliography}[1]
+  {\begingroup\def\newblock{}}
+  {\endgroup}
+
+\newenvironment{quotation}
+  {\raw{<blockquote>}}
+  {\raw{</blockquote>}}
+

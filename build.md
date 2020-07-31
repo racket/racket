@@ -106,14 +106,9 @@ have several options:
   Variants](#2-distributing-racket-variants) for more instructions.
 
 * **In-place Racket on Chez Scheme build** — This mode builds using Chez
-  Scheme via `make cs`. Unless you use various options described in
-  [More Instructions: Building Racket on Chez
-  Scheme](#16-more-instructions-building-racket-on-chez-scheme), this
-  process downloads Chez Scheme from GitHub, builds a traditional
-  `racket` with minimal packages, builds Chez Scheme, and then builds
-  Racket on Chez Scheme using Racket and Chez Scheme. Final executables
-  with names that end in `cs` or `CS` are the Racket on Chez Scheme
-  variants.
+  Scheme via `make cs`. Chez Scheme is itself built from a subtree of
+  the Racket source repository. Final executables with names that end in
+  `cs` or `CS` are the Racket on Chez Scheme variants.
 
 ### 1.3. Quick Instructions: In-Place Build
 
@@ -121,9 +116,9 @@ On Unix (including Linux) and Mac OS, `make` (or `make in-place`)
 creates a build in the `"racket"` directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2019/16.0), `nmake win32-in-place` creates a build in the `"racket"`
-directory. For information on configuring your command-line environment
-for Visual Studio, see `"racket/src/worksp/README.txt"`.
+and 2019/16.0), `nmake win` creates a build in the `"racket"` directory.
+For information on configuring your command-line environment for Visual
+Studio, see `"racket/src/worksp/README.txt"`.
 
 On Windows with MinGW, use `make PLAIN_RACKET=racket/racket`, since
 MinGW uses Unix-style tools but generates a Windows-layout Racket build.
@@ -171,22 +166,19 @@ read `"racket/src/README"` for more information.
 
 If you would like to provide arguments to `configure` for the minimal
 Racket build, then you can supply them with by adding
-`CONFIGURE_ARGS_qq="<options>"` to `make in-place` or `make unix-style`.
-(The `_qq` suffix on the variable name `CONFIGURE_ARGS_qq` is a
-convention that indicates that single- and double-quote marks are
-allowed in the value.)
+`CONFIGURE_ARGS="<options>"` to `make in-place` or `make unix-style`.
 
 The `"pkgs"` directory contains packages that are tied to the Racket
 core implementation and are therefore kept in the same Git repository. A
 `make in-place` links to the package in-place, while `make unix-style`
 copies packages out of `"pkgs"` to install them.
 
-To install a subset of the packages in `"pkgs"`, supply `PKGS` value to
-`make`. For example,
+To install a subset of the packages that would otherwise be installed,
+supply a `PKGS` value to `make`. For example,
 
   `make PKGS="gui-lib readline-lib"`
 
-links only the `"gui-lib"` and `"readline-lib"` packages and their
+installs only the `"gui-lib"` and `"readline-lib"` packages and their
 dependencies. The default value of `PKGS` is `"main-distribution
 main-distribution-test"`. If you run `make` a second time, all
 previously installed packages remain installed and are updated, while
@@ -218,7 +210,7 @@ and the `raco setup` part, use
 which recurs with `make -j <n> JOB_OPTIONS="-j <n>"`. Setting `CPUS`
 also works with `make unix-style`.
 
-Use `make as-is` (or `nmake win32-as-is`) to perform the same build
+Use `make as-is` (or `nmake win-as-is`) to perform the same build
 actions as `make in-place`, but without consulting any package catalogs
 or package sources to install or update packages. In other words, use
 `make as-is` to rebuild after local changes that could include changes
@@ -233,34 +225,25 @@ below.
 ### 1.6. More Instructions: Building Racket on Chez Scheme
 
 The `make cs` target (or `make cs-as-is` for a rebuild, or `nmake
-win32-cs` on Windows with Visual Studio) builds a variant of Racket that
-runs on Chez Scheme. By default, the executables for the Racket-on-Chez
-variant all have a `cs` or `CS` suffix, and they coexist with a
-traditional Racket build by keeping compiled files in a machine-specific
-subdirectory of the `"compiled"` directory. You can remove the `cs`
-suffix and the subdirectory in `"compiled"` by providing
-`RACKETCS_SUFFIX=""` to `make`. (One day, if all goes well, the default
-for `RACKETCS_SUFFIX` will change from `"cs"` to `""`.)
+win-cs` on Windows with Visual Studio) builds a variant of Racket that
+runs on Chez Scheme. By default, the executables for the Racket CS
+variant all have a `cs` or `CS` suffix, and they coexist with a Racket
+BC build by keeping compiled files in a machine-specific subdirectory of
+the `"compiled"` directory. You can remove the `cs` suffix and the
+subdirectory in `"compiled"` by providing `RACKETCS_SUFFIX=""` to
+`make`. (One day, the default for `RACKETCS_SUFFIX` will change from
+`"cs"` to `""`.)
 
-Building Racket on Chez Scheme requires an existing Racket and Chez
-Scheme. If you use `make cs` with no further arguments, then the build
-process will bootstrap by building a traditional variant of Racket and
-by downloading and building Chez Scheme.
+Building Racket CS requires either an existing Racket or pb (portable
+bytecode) boot files for Chez Scheme. By default, pb boot files are
+downloaded from a separate Git repository by `make cs`. If you have
+Racket v7.1 or later, then you can choose instead to bootstrap using
+that Racket implementation with
 
-If you have a sufficiently recent Racket installation already with at
-least the `"compiler-lib"` package installed, you can supply
-`RACKET=...` with `make cs` to skip that part of the bootstrap. And if
-you have a Chez Scheme source directory already, you can supply that
-with `SCHEME_SRC=<dir>` instead of downloading a new copy:
+  `make cs RACKET=racket`
 
-  `make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme`
-
-> For now, Racket on Chez requires the variant of Chez Scheme at
-> [https://github.com/racket/ChezScheme](https://github.com/racket/ChezScheme)
-
-Use `make both` to build both traditional Racket and Racket on Chez
-Scheme, where packages are updated and documentation is built only once
-(using traditional Racket).
+Use `make both` to build both Racket BC and Racket CS, where packages
+are updated and documentation is built only once (using Racket BC).
 
 ### 1.7. Even More Instructions: Building Racket Pieces
 
@@ -275,8 +258,8 @@ and follow the `"README.txt"` there, which gives you more configuration
 options.
 
 If you don’t want any special configuration and you just want the base
-build, you can use `make base` (or `nmake win32-base`) with the
-top-level makefile.
+build, you can use `make base` (or `nmake win-base`) with the top-level
+makefile.
 
 Minimal Racket does not require additional native libraries to run, but
 under Windows, encoding-conversion, extflonum, and SSL functionality is
@@ -290,7 +273,7 @@ libraries. See the documentation for `raco setup` for information on the
 options.
 
 For cross compilation, add configuration options to
-`CONFIGURE_ARGS_qq="<options>"` as described in the `"README.txt"` of
+`CONFIGURE_ARGS="<options>"` as described in the `"README.txt"` of
 `"racket/src"`, but also add a `PLAIN_RACKET=...` argument for the
 top-level makefile to specify the same executable as in an
 `--enable-racket=...` for `configure`. In general, the `PLAIN_RACKET`
@@ -368,9 +351,8 @@ on some number of client machines, each of which contacts the server
 machine to obtain pre-built packages. The server can act as a client,
 naturally, to create an installer for the server’s platform.
 
-GNU `make` is required on the server machine, `nmake` is required on
-Windows client machines, and any `make` should work on other client
-machines.
+GNU `make` is required on the server and non-windows client machines,
+`nmake` is required on Windows client machines.
 
 The distribution-build process is a collaboration between the Racket Git
 repository’s top-level makefile and the `"distro-build"` package.

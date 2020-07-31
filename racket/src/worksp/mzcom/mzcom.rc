@@ -2,7 +2,7 @@
 //
 #include "resource.h"
 #include <windows.h>
-#include "../../racket/src/schvers.h"
+#include "../../version/racket_version.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources

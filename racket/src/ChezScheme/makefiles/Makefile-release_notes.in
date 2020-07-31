@@ -1,0 +1,55 @@
+m = $(m)
+Scheme=../$m/bin/$m/scheme -b ../$m/boot/$m/petite.boot -b ../$m/boot/$m/scheme.boot
+STEXLIB=../stex
+installdir=/tmp/csv9
+INSTALL=../$m/installsh
+
+# define default document pathname here
+# override on command line with 'make x=newdoc'
+x = release_notes
+
+# define latex processor: latex or pdflatex
+latex = pdflatex
+
+# define stex macro files here
+stexmacrofiles =
+
+# list bibliography files here
+bib =
+
+# define index if an index is to be generated
+# index=yes
+
+include $(STEXLIB)/Mf-stex
+
+# define or override suffixes here
+
+# define any additional targets here
+
+install: $x.pdf $x.html
+	$(INSTALL) -m 2755 -d $(installdir)
+	$(INSTALL) -m 0644 --ifdiff $x.html $x.pdf $(installdir)
+	$(INSTALL) -m 0644 --ifdiff releasenotes.css $(installdir)
+	(X=`echo canned/*` ;\
+         if [ "$$X" != "canned/*" ] ; then\
+           $(INSTALL) -m 2755 -d $(installdir)/canned ;\
+           $(INSTALL) -m 0644 --ifdiff canned/* $(installdir)/canned ;\
+         fi)
+	$(INSTALL) -m 2755 -d $(installdir)/gifs
+	$(INSTALL) -m 0644 --ifdiff gifs/*.gif $(installdir)/gifs
+	$(INSTALL) -m 2755 -d $(installdir)/math
+	-/bin/rm -rf $(installdir)/$(mathdir)
+	$(INSTALL) -m 2755 -d $(installdir)/$(mathdir)
+	if [ -e $(mathdir)/0.gif ] ; then $(INSTALL) -m 0644 $(mathdir)/*.gif $(installdir)/$(mathdir) ; fi
+
+# define any dependencies here
+
+$(x).firstrun: macros.tex
+
+# define cleanup targets here:
+
+$(x).clean:
+
+$(x).reallyclean:
+
+$(x).reallyreallyclean:

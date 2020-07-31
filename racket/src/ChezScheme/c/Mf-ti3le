@@ -1,0 +1,8 @@
+# Mf-ti3le
+
+m ?= ti3le
+
+threadLibs = -lpthread 
+threadFlags = -D_REENTRANT -pthread
+
+include Mf-i3le

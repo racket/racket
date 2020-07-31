@@ -1,0 +1,103 @@
+#!/bin/bash -e
+
+OS=$(uname)
+ARCH=$(uname -m)
+
+function retrieve_file {
+  URL=$1
+  FN=$2
+  GET=`which wget`
+  if test $? -eq 0 ; then
+    echo wget -O $FN $URL
+    wget -O $FN $URL
+  else
+    GET=`which curl`
+    if test $? -eq 0 ; then
+      echo curl -o $FN $URL
+      curl -o $FN $URL
+      echo "install requires curl or wget to pull tools"
+    fi
+  fi
+}
+
+function install_vicare {
+  VICARE_BASE="https://bitbucket.org/marcomaggi/vicare-scheme/downloads"
+  VICARE_BASE_VERSION="0.4d0"
+  VICARE_VERSION="${VICARE_BASE_VERSION}pre4"
+  VICARE_FILE="vicare-scheme-${VICARE_VERSION}.tar.xz"
+  VICARE_URL="${VICARE_BASE}/${VICARE_FILE}"
+
+  case $OS in
+    Linux) ;;
+    *) echo "unexpected operating system $OS" ; exit 1 ;;
+  esac 
+
+  retrieve_file ${VICARE_URL} ${VICARE_FILE}
+
+  xzcat ${VICARE_FILE} | tar xf -
+
+  pushd "vicare-scheme-${VICARE_BASE_VERSION}"
+
+  ./configure --enable-posix --with-libffi
+  make
+  sudo make install
+  popd  # vicare-scheme-${VICARE_BASE_VERSION}
+}
+
+function install_ikarus {
+  case $ARCH in
+    i386|i686) BITS=32 ;;
+    x86_64|amd64) BITS=64 ;;
+    *) echo "unexpected architecture $ARCH" ; exit 1 ;;
+  esac
+
+  case $OS in
+    Linux) PREFIX="/usr" ;;
+    Darwin) PREFIX="/usr/local" ;;
+    *) echo "unexpected operating system $OS" ; exit 1 ;;
+  esac
+
+  bzr branch lp:ikarus
+  pushd ikarus
+  ./configure --prefix=$PREFIX \
+    CFLAGS="-m${BITS} `pkg-config --cflags libffi` -I/usr/local/opt/gmp/include" \
+    LDFLAGS="-m${BITS} `pkg-config --libs libffi` -L/usr/local/opt/gmp/lib"
+  make
+  sudo make install
+  popd # ikarus
+}
+
+function install_chez {
+  BASE_URL="http://scheme.com/download"
+  CHEZ_VERSION="8.4"
+
+  case $ARCH in
+    i386|i686) CHEZ_ARCH="i3" ;;
+    x86_64|amd64) CHEZ_ARCH="a6" ;;
+    *) echo "unexpected architecture $ARCH" ; exit 1 ;;
+  esac
+
+  case $OS in
+    Linux) CHEZ_OS="le" ; PREFIX="/usr" ;;
+    Darwin) CHEZ_OS="osx" ; PREFIX="/usr/local" ;;
+    *) echo "unexpected operating system $OS" ; exit 1 ;;
+  esac
+
+  CHEZ_FILE="pcsv${CHEZ_VERSION}-${CHEZ_ARCH}${CHEZ_OS}.tar.gz"
+
+  retrieve_file "${BASE_URL}/${CHEZ_FILE}" ${CHEZ_FILE}
+  
+  tar zxf $CHEZ_FILE
+  pushd "csv${CHEZ_VERSION}/custom"
+  ./configure --installprefix=$PREFIX --installman=$PREFIX/man
+  make
+  sudo make install
+  popd  # "csv${CHEZ_VERSION}/custom"
+}
+
+case $SCHEME in
+  vicare) install_vicare ;;
+  ikarus) install_ikarus ;;
+  chez) install_chez ;;
+  *) echo "Please set the SCHEME environment variable to one of: vicare, ikarus, or chez before running" ; exit 1;;
+esac

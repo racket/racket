@@ -3,7 +3,7 @@
 
 (define rx:version
   ;; (this restricts the last component to be below 999 too, which is
-  ;; not really proper according to the spec in schvers.h)
+  ;; not really proper according to the spec in "racket_version.h")
   (pregexp (string-append "^(0|[1-9][0-9]*)[.]"
                           "(0|(0|[1-9][0-9]{0,1})([.](0|[1-9][0-9]{0,2})){0,2}"
                           "(?<![.]0))$")))

@@ -18,206 +18,6 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="BDebug|Win32"
-			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
-				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
-				SubSystem="2"
-                                StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-			/>
-		</Configuration>
-		<Configuration
-			Name="BDebug|x64"
-			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
-				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
-				SubSystem="2"
-                                StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				TargetMachine="17"
-			/>
-		</Configuration>
-		<Configuration
-			Name="BRelease|Win32"
-			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
-				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
-				SubSystem="2"
-                                StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-			/>
-		</Configuration>
-		<Configuration
-			Name="BRelease|x64"
-			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
-				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
-				SubSystem="2"
-                                StackReserveSize="8388608"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				TargetMachine="17"
-			/>
-		</Configuration>
-		<Configuration
 			Name="SDebug|Win32"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
@@ -234,7 +34,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				AdditionalIncludeDirectories="..,..\..\bc\include,."
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL,USE_SENORA_GC"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -282,7 +82,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				AdditionalIncludeDirectories="..,..\..\bc\include,."
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL,USE_SENORA_GC"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -332,7 +132,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				AdditionalIncludeDirectories="..,..\..\bc\include,."
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -384,7 +184,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				AdditionalIncludeDirectories="..,..\..\bc\include,."
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -436,7 +236,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				AdditionalIncludeDirectories="..,..\..\bc\include,."
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,MZCOM_3M"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -489,7 +289,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				AdditionalIncludeDirectories="..,..\..\bc\include,."
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,MZCOM_3M"
 				StringPooling="true"
 				RuntimeLibrary="0"

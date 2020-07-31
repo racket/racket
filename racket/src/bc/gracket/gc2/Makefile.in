@@ -1,0 +1,160 @@
+
+PACKAGE = racket
+
+srcdir = @srcdir@
+builddir = @builddir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+sharepltdir = @sharepltdir@
+collectsdir = @collectsdir@
+
+# for version.mak:
+mainsrcdir = @srcdir@/../../..
+@INCLUDEDEP@ @srcdir@/../../version.mak
+
+PLTSRCDIR = $(srcdir)/../../..
+PLTBUILDDIR = $(builddir)/../../..
+
+###########################
+#      Common Macros      #
+###########################
+CC = @CC@
+LINKER = $(CC)
+RANLIB = @RANLIB@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+OPTIONS = @OPTIONS@ @GC2OPTIONS@ @MROPTIONS@
+XINCLUDE = @X_CFLAGS@
+LDLIBS = @LIBS@
+GCDIRECTORY = @GCDIR@
+WBUILD = @WBUILD@
+WXVARIANT =  @WXVARIANT@
+
+NOGCINC = -I$(PLTBUILDDIR)/bc/ -I$(PLTSRCDIR)/bc/include/ -I$(PLTSRCDIR)/version
+INC = -I$(PLTSRCDIR)/bc/$(GCDIRECTORY) $(NOGCINC)
+CFLAGS = @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
+CPPFLAGS = @PREFLAGS@
+ALL_CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ $(CFLAGS) $(CPPFLAGS)
+LDFLAGS = @LDFLAGS@
+ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
+###########################
+
+CPP = @CPP@
+
+XFORM_INC_wx_xt = -Dwx_xt @WX_MMD_FLAG@
+XFORM_INC_wx_mac = -Dwx_mac -DOS_X -MMD -DWX_CARBON
+
+# See ../../Makefile about RUN_RACKET_MMM, which 
+# typically redirects to RUN_THIS_RACKET_MMM:
+RUN_THIS_RACKET_MMM = ../../racket@MMM@
+
+MZMMM_wx_xt = @RUN_RACKET_MMM@
+MZMMM_wx_mac = @RUN_RACKET_MMM@
+MZMMM = $(MZMMM_@WXVARIANT@)
+
+SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../../../setup-go.rkt ../../../compiled
+
+XFORM_CMD = $(MZMMM) $(SELF_RACKET_FLAGS) $(SETUP_BOOT) --tag ++out $(srcdir)/../../gc2/xform-mod.rkt
+XFORM_CPP_ARGS = -I$(srcdir)/../../gc2 $(NOGCINC) $(OPTIONS) @PREFLAGS@ $(XFORM_INC_@WXVARIANT@)
+
+XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o ++out
+XFORMDEP = $(srcdir)/../../gc2/xform-mod.rkt $(srcdir)/../../gc2/gc2.h
+
+GRACKETLDFLAGS = $(LDFLAGS) -L../../racket
+
+DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../../collects; @PWD@`"'"'
+DEF_CONFIG_DIR = +D INITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../../..; @PWD@`/etc"'"'
+DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
+
+XFORMWP = $(XFORM)
+
+xsrc/grmain.c: $(srcdir)/../grmain.c $(XFORMDEP)
+	$(XFORMWP) xsrc/grmain.c $(DEF_C_DIRS) $(srcdir)/../grmain.c
+@INCLUDEDEP@ grmain.d
+
+GCPREINC = -include $(srcdir)/../../gc2/gc2.h
+POSTFLAGS = $(OPTIONS)
+
+wx_xt_EXTRAFLAGS =
+wx_mac_EXTRAFLAGS =
+EXTRAFLAGS = $(@WXVARIANT@_EXTRAFLAGS)
+
+grmain.@LTO@: xsrc/grmain.c
+	$(CC) $(ALL_CFLAGS) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(POSTFLAGS) -o grmain.@LTO@ xsrc/grmain.c
+
+XSRCS = xsrc/grmain.c
+
+wx_xt_LIBS =
+wx_mac_LIBS = -framework CoreFoundation
+
+GRACKETLINKER = @MZLINKER@
+
+LIBRKTIO = ../../../rktio/librktio.@LTA@
+LIBRKTIO_a = $(LIBRKTO)
+LIBRKTIO_la =
+
+GRACKETLIBS_a = $(LDLIBS)
+GRACKETLIBS_la =
+GRACKETMZOBJS_a = $(MZOBJS) $(LIBRKTIO)
+GRACKETMZOBJS_la =
+
+../gracket@MMM@@NOT_OSX@@NOT_MINGW@: grmain.@LTO@ ../../libracket3m.@LIBSFX@ $(LIBRKTIO_@LIBSFX@)
+	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../libracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
+	@POST_LINKER@ ../gracket@MMM@
+
+../gracket@MMM@@EXE_SUFFIX@@MINGW@: grmain.@LTO@ ../../MemoryModule.@LTO@ ../../gc2/libracket3m.dll.a ../gres.o
+	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@@EXE_SUFFIX@ grmain.@LTO@ ../../MemoryModule.@LTO@ ../gres.o ../../gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp -static-libgcc
+
+MZFW = ../../Racket.framework/Versions/$(FWVERSION)_3m/Racket
+MRAPPSKEL = ../GRacket@MMM@.app/Contents/Info.plist
+
+# Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
+MACLIBRKT_LINK_fw = -F../../gc2 -framework Racket
+MACLIBRKT_LINK_static = ../../libracket3m.@LIBSFX@ $(LIBRKTIO) $(LDLIBS)
+
+../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@: $(MRAPPSKEL) $(MZFW) grmain.@LTO@
+	$(GRACKETLINKER) $(LDFLAGS) -o ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@ grmain.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) -framework CoreFoundation
+	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@"
+
+$(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../libracket3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
+	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
+
+$(MRAPPSKEL): $(srcdir)/../../../mac/osx_appl.rkt  $(srcdir)/../../../version/racket_version.h $(srcdir)/../../../mac/icon/GRacket.icns
+	env BUILDBASE=../../.. BUILDING_3M=yes @RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) $(MRAPPSKEL) mrappskel.d $(srcdir)/../../../mac/osx_appl.rkt $(srcdir)/../../.. "@MMM@"
+@INCLUDEDEP@ mrappskel.d
+
+../gracket@MMM@@OSX@ :
+	$(MAKE) ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@
+
+xsrc:
+	mkdir xsrc
+
+3m: xsrc
+	$(MAKE) ../gracket@MMM@@EXE_SUFFIX@
+
+########################################
+#             Make Depends             #
+########################################
+
+GRMAIN_DEPS = $(srcdir)/../grmain.c \
+  $(srcdir)/../../main.c \
+  $(srcdir)/../../include/scheme.h \
+  $(srcdir)/../../include/../sconfig.h \
+  ../../mzconfig.h \
+  $(srcdir)/../../include/../uconfig.h \
+  $(srcdir)/../../include/../src/stypes.h \
+  $(srcdir)/../../include/../gc2/gc2_obj.h \
+  $(srcdir)/../../include/schthread.h \
+  $(srcdir)/../../include/../src/schexn.h \
+  $(srcdir)/../../include/../gc2/gc2.h \
+  $(srcdir)/../../include/../gc2/../include/schthread.h \
+  $(srcdir)/../../include/../src/schemef.h \
+  $(srcdir)/../../cmdline.inc
+
+xsrc/grmain.c: $(GRMAIN_DEPS)
+
+grmain.@LTO@: $(GRMAIN_DEPS)

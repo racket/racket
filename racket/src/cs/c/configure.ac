@@ -28,9 +28,7 @@ m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/instlib_arg.m4)
 m4_include(../ac/strip_arg.m4)
 m4_include(../ac/ubsan_arg.m4)
-AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
-AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
-AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
+m4_include(../ac/vm_arg.m4)
 m4_include(../ac/crossany_arg.m4)
 AC_ARG_ENABLE(libz,       [  --enable-libz           use installed libz if available])
 AC_ARG_ENABLE(liblz4,     [  --enable-liblz4         use installed liblz4 if available])
@@ -82,10 +80,7 @@ m4_include(../ac/natipkg_show.m4)
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_enabled "${enable_liblz4}" "Installed liblz4"
 
-if test "${enable_csonly}" = "yes" ; then
-  enable_csdefault=yes
-fi
-show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+m4_include(../ac/vm.m4)
 
 m4_include(../ac/instlib.m4)
 m4_include(../ac/sdk_show.m4)
@@ -105,10 +100,10 @@ m4_include(../ac/crossany.m4)
 
 SUB_CONFIGURE_EXTRAS=
 
-
-CS_INSTALLED=cs
 if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
+else
+  CS_INSTALLED=cs
 fi
 
 CS_COMPILED_SUBDIR=1
@@ -145,6 +140,7 @@ FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
+BOOTFILE_RACKET='$(RACKET)'
 RUN_RACKET='$(RUN_THIS_RACKET)'
 SETUP_BOOT_MODE=--boot
 
@@ -426,24 +422,21 @@ fi
 
 ############## Racket and Chez Scheme ################
 
-SCHEME_SRC=../../ChezScheme
-SCHEME_SRC_NOW="$SCHEME_SRC"
+SCHEME_DIR=../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
-  SCHEME_SRC="${enable_scheme}"
-  SCHEME_SRC_NOW="$SCHEME_SRC"
-  MAKE_BUILD_SCHEME=none
-else
-  # Check for a directory packaged with a source distribution
-  if test -d "${srcdir}/../../ChezScheme" ; then
-    MAKE_BUILD_SCHEME=copy
-    SCHEME_SRC_NOW="${srcdir}/../../ChezScheme"
-  fi
+  echo Warning: --enable-scheme=... is obsolete and unsupported
 fi
 
 if test "${enable_racket}" != "" ; then
-  RACKET="${enable_racket}"
+  # In non-cross mode, we interpret `--enable-racket` to supply a
+  # Racket used only for generating Chez Scheme boot files
+  if test "${CROSS_MODE}" = "cross" ; then
+    RACKET="${enable_racket}"
+  else
+    BOOTFILE_RACKET="${enable_racket}"
+  fi
   SETUP_BOOT_MODE=--chain
 fi
 
@@ -523,14 +516,14 @@ fi
 ############## zlib and LZ4 ################
 
 if test "${enable_libz}" != "no" ; then
-  if test ! -d "$SCHEME_SRC_NOW/zlib" ; then
+  if test ! -d "$SCHEME_DIR/zlib" ; then
     echo "No libz in Scheme directory, so trying installed"
     enable_libz=yes
   fi
 fi
 
 if test "${enable_liblz4}" != "no" ; then
-  if test ! -d "$SCHEME_SRC_NOW/lz4" ; then
+  if test ! -d "$SCHEME_DIR/lz4" ; then
     echo "No lz4 in Scheme directory, so trying installed"
     enable_liblz4=yes
   fi
@@ -721,6 +714,7 @@ AC_SUBST(INCLUDEDEP)
 AC_SUBST(RKTL_PRE)
 AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
+AC_SUBST(BOOTFILE_RACKET)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
 AC_SUBST(TARGET_MACH)
@@ -743,7 +737,6 @@ AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(BOOT_COMPRESS_COMP)
 AC_SUBST(ELF_COMP)
-AC_SUBST(SCHEME_SRC)
 AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(SCHEME_CROSS_CONFIG_ARGS)

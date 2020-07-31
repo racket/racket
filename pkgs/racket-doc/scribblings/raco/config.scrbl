@@ -189,8 +189,13 @@ directory}:
 
  @item{@indexed-racket['3m-suffix] --- analogous to @racket['cgc-suffix], but
        for 3m. A @racket[#f] value means that if the @exec{racket}
-       binary identifies itself as CGC, then the suffix is
-       @racket["3m"], otherwise it is @racket[""].}
+       binary identifies itself as 3m, then the suffix is
+       @racket[""], otherwise it is @racket["BC"].}
+
+ @item{@indexed-racket['cs-suffix] --- analogous to @racket['cgc-suffix], but
+       for CS. A @racket[#f] value means that if the @exec{racket}
+       binary identifies itself as CS, then the suffix is
+       @racket[""], otherwise it is @racket["CS"].}
 
  @item{@indexed-racket['config-tethered-console-bin-dir] and
        @indexed-racket['config-tethered-gui-bin-dir] --- a path for a

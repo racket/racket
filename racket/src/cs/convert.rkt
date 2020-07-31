@@ -63,32 +63,48 @@
        (list? v)
        (andmap keyword? v)))
 
+(define generated-names (make-hasheq))
+
+;; To improve determinism, base a generated name for a lifted literal
+;; on the printed form of the literal:
+(define (generate-name v type #:d [d 0])
+  (define o (open-output-bytes))
+  (fprintf o "~s" v)
+  (define sum (for/sum ([i (in-bytes (sha1-bytes (get-output-bytes o)))])
+                i))
+  (define name (string->symbol (format "~a~a" type (+ sum d))))
+  (if (hash-ref generated-names name #f)
+      (generate-name v type #:d (add1 d))
+      (begin
+        (hash-set! generated-names name #t)
+        name)))
+
 ;; Gather all literal regexps and hash tables
 (define (lift v)
   (cond
    [(or (regexp? v) (byte-regexp? v))
-    (define s (gensym 'rx))
+    (define s (generate-name v 'rx))
     (lift-set! v s)]
    [(or (pregexp? v) (byte-pregexp? v))
-    (define s (gensym 'px))
+    (define s (generate-name v 'px))
     (lift-set! v s)]
    [(hash? v)
-    (define s (gensym 'hash))
+    (define s (generate-name v 'hash))
     (lift-set! v s)]
    [(and (quote? v)
          (nested-hash? (cadr v)))
-    (define s (gensym 'nhash))
+    (define s (generate-name v 'nhash))
     (lift-set! (cadr v) s)]
    [(keyword? v)
-    (define s (gensym 'kw))
+    (define s (generate-name v 'kw))
     (lift-set! v s)]
    [(and (quote? v)
          (list-of-keywords? (cadr v)))
-    (define s (gensym 'kws))
+    (define s (generate-name v 'kws))
     (lift-set! (cadr v) s)]
    [(and (quote? v)
          (extflonum? (cadr v)))
-    (define s (gensym 'extfl))
+    (define s (generate-name v 'extfl))
     (lift-set! (cadr v) s)]
    [(pair? v)
     (lift (car v))
@@ -198,6 +214,82 @@
 
 ;; ----------------------------------------
 
+;; Simplify local variables (which had been made globally unique at
+;; one point) to improve consistency after small changes
+(define (rename-locals e)
+  (define-struct env (locals used))
+  
+  (define (loop e env)
+    (match e
+      [(? wrap?) (reannotate e (loop (unwrap e) env))]
+      [`(define ,id ,rhs)
+       `(define ,id ,(loop rhs env))]
+      [`(define-values ,ids ,rhs)
+       `(define-values ,ids ,(loop rhs env))]
+      [`(lambda ,formals ,body ...)
+       (define new-env (add-new-names formals env))
+       `(lambda ,(rename formals new-env) ,@(rename-body body new-env))]
+      [`(lambda . ,_) (error 'convert "unexpected: ~s" e)]
+      [`(case-lambda [,formalss ,bodys ...] ...)
+       `(case-lambda
+          ,@(for/list ([formals (in-list formalss)]
+                       [body (in-list bodys)])
+              (define new-env (add-new-names formals env))
+              `[,(rename formals new-env) ,@(rename-body body new-env)]))]
+      [`(case-lambda . ,_) (error 'convert "unexpected: ~s" e)]
+      [`(let . ,_) (rename-let #f e env)]
+      [`(letrec . ,_) (rename-let #t e env)]
+      [`(letrec* . ,_) (rename-let #t e env)]
+      [`(quote ,_) e]
+      [`(,es ...)
+       (for/list ([e (in-list es)])
+         (loop e env))]
+      [_ (hash-ref (env-locals env) e e)]))
+
+  (define (rename-body body new-env)
+    (for/list ([e (in-list body)])
+      (loop e new-env)))
+
+  (define (rename-let rec? e env)
+    (match e
+      [`(,form ([,vars ,rhss] ...) ,body ...)
+       (define new-env (add-new-names vars env))
+       `(,form ,(for/list ([var (in-list vars)]
+                           [rhs (in-list rhss)])
+                  `[,(rename var new-env) ,(loop rhs (if rec? new-env env))])
+               ,@(rename-body body new-env))]
+      [_ (error 'convert "unexpected: ~s" e)]))
+
+  (define (add-new-names s env)
+    (cond
+      [(symbol? s)
+       (define str (symbol->string s))
+       (cond
+         [(regexp-match-positions #rx"_[0-9]+?" str)
+          => (lambda (m)
+               (define base (substring str 0 (caar m)))
+               (let loop ([i 0])
+                 (define sym (string->symbol (format "~a_~a" base i)))
+                 (if (hash-ref (env-used env) sym #f)
+                     (loop (add1 i))
+                     (make-env (hash-set (env-locals env) s sym)
+                               (hash-set (env-used env) sym #t)))))]
+         [else (make-env (hash-set (env-locals env) s s) (env-used env))])]
+      [(pair? s) (add-new-names (cdr s) (add-new-names (car s) env))]
+      [(null? s) env]
+      [else (error 'convert "unexpected vars ~s" s)]))
+
+  (define (rename s env)
+    (cond
+      [(symbol? s) (hash-ref (env-locals env) s s)]
+      [(pair? s) (cons (rename (car s) env) (rename (cdr s) env))]
+      [(null? s) '()]
+      [else (error 'convert "unexpected vars ~s" s)]))
+
+  (loop e (make-env #hasheq() #hasheq())))
+
+;; ----------------------------------------
+
 ;; Convert 'inferred-name properties to `#%name` forms
 (define (rename-functions e)
   (cond
@@ -268,4 +360,4 @@
              [`(begin ,vs ...)
               (for-each loop vs)]
              [else
-              (pretty-write (rename-functions v))])))))))
+              (pretty-write (rename-functions (rename-locals v)))])))))))
