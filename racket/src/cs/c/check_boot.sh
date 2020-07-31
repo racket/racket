@@ -5,11 +5,12 @@
 
 MACH=$1
 SCHEME_DIR=$2
+SCHEME_WORKAREA=$3
 
 check_pb()
 {
-    SRC=$SCHEME_DIR/boot/pb/$1
-    DEST=$SCHEME_DIR/pb/boot/pb/$1
+    SRC="$SCHEME_DIR"/boot/pb/$1
+    DEST=$SCHEME_WORKAREA/pb/boot/pb/$1
     if [ ! -e $DEST ] ; then
         touch boot_pending
     elif [ "`/usr/bin/find "$SRC" -newer "$DEST"`" != "" ] ; then
@@ -28,7 +29,7 @@ check_pb vfasl.inc
 check_mach()
 {
     SRC=$SCHEME_DIR/boot/pb/$1
-    INIT=$SCHEME_DIR/boot/$MACH/$1
+    INIT=$SCHEME_WORKAREA/boot/$MACH/$1
     if [ ! -e $INIT ] ; then
         touch boot_pending
     elif [ "`/usr/bin/find "$SRC" -newer "$INIT"`" != "" ] ; then

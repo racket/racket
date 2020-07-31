@@ -327,7 +327,7 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH == circa-7.8.0.6-1
+PB_BRANCH == circa-7.8.0.6-2
 PB_REPO == https://github.com/racket/pb
 
 # Alternative source for Chez Scheme boot files, normally set by
@@ -438,7 +438,7 @@ pb-stage:
 	cd $(PB_DIR) && git add . && git commit --amend -m "new build"
 
 pb-push:
-	git push -u origin $(PB_BRANCH)
+	cd $(PB_DIR) && git push -u origin $(PB_BRANCH)
 
 WIN32_BOOT_ARGS == SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
 

@@ -6,12 +6,12 @@
 # Then, delete `boot_pending`.
 
 MACH=$1
-SCHEME_DIR=$2
+SCHEME_WORKAREA=$2
 
 ready_mach()
 {
-    INIT=$SCHEME_DIR/boot/$MACH/$1
-    DEST=$SCHEME_DIR/$MACH/boot/$MACH/$1
+    INIT=$SCHEME_WORKAREA/boot/$MACH/$1
+    DEST=$SCHEME_WORKAREA/$MACH/boot/$MACH/$1
     if [ "`/usr/bin/find "$INIT" -newer "$DEST"`" != "" ] ; then
         cp "$INIT" "$DEST"
     fi

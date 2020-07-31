@@ -674,6 +674,7 @@ STATIC_AR
 ARFLAGS
 AR
 LD
+upsrcdir
 STRIP
 EGREP
 GREP
@@ -4932,6 +4933,15 @@ fi
 
 ############## Racket and Chez Scheme ################
 
+case "$srcdir" in
+    /*)
+        upsrcdir=$srcdir
+        ;;
+    *)
+        upsrcdir=../$srcdir
+        ;;
+esac
+
 SCHEME_DIR=${srcdir}/../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
 
@@ -5523,6 +5533,7 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+
 
 
 
