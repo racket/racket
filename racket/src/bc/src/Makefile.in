@@ -11,7 +11,7 @@ MZSRC = $(srcdir)
 
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
-RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
+RKTIO_INC = -I$(srcdir)/../../rktio -I../rktio
 ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../../version $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
 LTO=@LTO@ # Need for replacement of EXTRA_GMP_OBJ which carries the variable
 
@@ -315,7 +315,7 @@ COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../
                  $(srcdir)/longdouble/longdouble.h $(srcdir)/../utils/schiptr.h
 RKTIO_HEADERS =  $(srcdir)/schrktio.h \
                  $(srcdir)/../../rktio/rktio.h $(srcdir)/../../rktio/rktio_platform.h \
-                 ../../rktio/rktio_config.h
+                 ../rktio/rktio_config.h
 
 JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \

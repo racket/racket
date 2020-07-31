@@ -1,0 +1,57 @@
+############################################################
+# This configure script generates `cfg-bc`, which sets up  #
+# "Makefile" to drive a BC build by default.               #
+############################################################
+
+AC_INIT([setup-go.rkt])
+
+AC_CONFIG_AUX_DIR(lt)
+AC_CANONICAL_SYSTEM
+
+AC_DISABLE_OPTION_CHECKING
+
+m4_include(../ac/path_arg.m4)
+m4_include(../ac/sdk_arg.m4)
+m4_include(../ac/vm_arg.m4)
+m4_include(../ac/boothelp_arg.m4)
+
+show_explicitly_disabled()
+{
+  done=true
+}
+
+show_explicitly_enabled()
+{
+  done=true
+}
+
+
+m4_include(../ac/sdk.m4)
+m4_include(../ac/path_pkgscope.m4)
+m4_include(../ac/path.m4)
+m4_include(../ac/vm.m4)
+m4_include(../ac/boothelp.m4)
+
+MAKE_LOCAL_RACKET=no-local-racket
+
+if test "${enable_racket}" = "auto" ; then
+  MAKE_LOCAL_RACKET="local/bc/racket3m"
+fi
+
+if test "${enable_cgcdefault}" = "yes" ; then
+  MAIN_VARIANT=cgc
+else  
+  MAIN_VARIANT=3m
+fi
+MAIN_MAKE_TARGET="${MAIN_VARIANT}"
+RUN_RACKET="bc/racket${MAIN_VARIANT}"
+
+AC_SUBST(RUN_RACKET)
+AC_SUBST(MAKE_LOCAL_RACKET)
+
+makefiles="Makefile"
+
+AC_OUTPUT($makefiles)
+
+# From "../ac/path.m4":
+show_path_results

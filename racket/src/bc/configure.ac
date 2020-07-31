@@ -20,10 +20,10 @@
 # hence PREFLAGS, which is initialized to the original CPPFLAGS.
 
 AC_INIT([Racket])
-AC_CONFIG_SRCDIR(bc/src/bignum.c)
-AC_CONFIG_HEADERS([bc/mzconfig.h])
+AC_CONFIG_SRCDIR(src/bignum.c)
+AC_CONFIG_HEADERS([mzconfig.h])
 
-AC_CONFIG_AUX_DIR(lt)
+AC_CONFIG_AUX_DIR(../lt)
 AC_CANONICAL_SYSTEM
 
 AC_ARG_ENABLE(gracket, [  --enable-gracket        build GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
@@ -37,6 +37,7 @@ AC_ARG_ENABLE(extflonum,    [  --enable-extflonum      support extflonums (enabl
 
 AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 
+PREFIX_PATH_RELATIVE=/..
 m4_include(../ac/path_arg.m4)
 
 m4_include(../ac/natipkg_arg.m4)
@@ -142,7 +143,7 @@ m4_include(../ac/path.m4)
 ###### Make sure GRacket is really there ######
 
 if test "${enable_gracket}" = "yes" ; then
-  if test ! -d $srcdir/bc/gracket ; then
+  if test ! -d $srcdir/gracket ; then
     enable_gracket=no
   fi
 fi
@@ -314,8 +315,6 @@ else
   fi
 fi
 
-MAKE_LOCAL_RACKET=no-local-racket
-
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -369,7 +368,8 @@ COMPFLAGS=""
 ORIG_CC="${CC}"
 ORIG_CPP="${CPP}"
 # Include `--enable-portable-binary' by default for libffi
-SUB_CONFIGURE_EXTRAS=" --enable-portable-binary"
+LIBFFI_CONFIGURE_EXTRAS=" --enable-portable-binary"
+SUB_CONFIGURE_EXTRAS=
 
 if test "${enable_sysroot}" != "" ; then
    PREFLAGS="--sysroot=${enable_sysroot} ${PREFLAGS}"
@@ -780,12 +780,6 @@ if test "${enable_cgcdefault}" = "yes" ; then
    MAIN_VARIANT=cgc
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
-
-if test "${enable_racket}" = "" ; then
-  CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
-else
-  CS_BOOTSTRAP_HELP="no-${MAIN_VARIANT}"
-fi
 
 if test "${enable_csdefault}" = "yes" ; then
    MAIN_MAKE_TARGET=cs
@@ -1286,8 +1280,7 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "auto" ; then
-  enable_racket="`pwd`/local/bc/racket3m"
-  MAKE_LOCAL_RACKET="local/bc/racket3m"
+  enable_racket="`pwd`/../local/bc/racket3m"
 fi
 
 if test "${enable_racket}" = "" ; then
@@ -1309,9 +1302,6 @@ fi
 if test "${enable_shared}" = "yes" ; then
   echo "Configuring libtool"
 
-  if test ! -d "lt" ; then
-    mkdir "lt"
-  fi
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   # Try to convert libdir to an absolute path:
@@ -1321,10 +1311,10 @@ if test "${enable_shared}" = "yes" ; then
   else
     abslibdir="${libdir}"
   fi
-  
 
   if test "${LIBTOOLPROG}" = "" ; then  
-    (cd lt; sh ${abssrcdir}/lt/configure --enable-shared --disable-static)
+    mkdir -p lt
+    (cd lt; sh ${abssrcdir}/../lt/configure --enable-shared --disable-static)
     LIBTOOLPROG=`pwd`/lt/libtool
   fi
 
@@ -1343,10 +1333,10 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
 
     if test "${VERSION_W}" != "0" ; then
       plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
@@ -1516,9 +1506,8 @@ mk_needed_dir()
 }
 
 makefiles="Makefile
-           bc/Makefile
-             bc/src/Makefile bc/dynsrc/Makefile
-             bc/sgc/Makefile bc/gc2/Makefile"
+             src/Makefile dynsrc/Makefile
+             sgc/Makefile gc2/Makefile"
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
@@ -1541,10 +1530,10 @@ fi
 
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/bc/foreign" && test "${enable_foreign}" = "yes" ; then
+if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   if test "${have_libffi}" != "yes" ; then
-    AC_CONFIG_AUX_DIR( bc/foreign/libffi )
-    AC_CONFIG_SUBDIRS( bc/foreign/libffi )
+    AC_CONFIG_AUX_DIR( foreign/libffi )
+    AC_CONFIG_SUBDIRS( foreign/libffi )
   fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
@@ -1552,38 +1541,22 @@ else
   FOREIGNTARGET="foreign-stub"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
-makefiles="$makefiles bc/foreign/Makefile"
+makefiles="$makefiles foreign/Makefile"
 
-AC_CONFIG_SUBDIRS( rktio )
+m4_include(../ac/rktio_keep.m4)
 
-# Remove any --enable or --disable arguments from `ac_configure_args':
-new_configure_args=
-fixup_prev=
-eval "set x $ac_configure_args"
-shift
-for fixup_arg
-do
-  case $fixup_arg in
-  # Strip away all feature choices
-  -enable* | --enable* | -disable* | --disable*)
-    ;;
-  *)
-    case $fixup_arg in
-    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-    esac
-    new_configure_args="$new_configure_args '$fixup_arg'" ;;
-  esac
-done
 # Add in `SUB_CONFIGURE_EXTRAS'
-ac_configure_args="$new_configure_args$SUB_CONFIGURE_EXTRAS"
+ac_configure_args="$new_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
-             bc/gracket/Makefile
-               bc/gracket/gc2/Makefile"
+             gracket/Makefile
+               gracket/gc2/Makefile"
 fi
 
 AC_OUTPUT($makefiles)
 
-# From "../ac/path.m4":
-show_path_results
+mkdir -p rktio
+abssrcdir=`(cd ${srcdir}; pwd)`
+echo "=== configuring in rktio (${abssrcdir}/rktio)"
+cd rktio; eval "${abssrcdir}/../rktio/configure ${SUB_CONFIGURE_EXTRAS}"

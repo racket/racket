@@ -585,10 +585,10 @@ ac_unique_file="setup-go.rkt"
 enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-RUN_RACKET_CGC
-ICP
-MAKE_LOCAL_RACKET
+RUN_RACKET
+CS_USE_BOOTSTRAP_HELP
 CS_BOOTSTRAP_HELP
+MAKE_LOCAL_RACKET
 MAIN_MAKE_TARGET
 MAIN_VARIANT
 CGC_CAP_INSTALLED
@@ -682,6 +682,7 @@ enable_libfw
 enable_userfw
 enable_embedfw
 enable_mac64
+enable_boothelp
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1306,6 +1307,7 @@ Optional Features:
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
+  --enable-boothelp       use BC to boot CS
 
 Report bugs to the package provider.
 _ACEOF
@@ -1973,6 +1975,12 @@ else
 fi
 
 
+# Check whether --enable-boothelp was given.
+if test "${enable_boothelp+set}" = set; then :
+  enableval=$enable_boothelp;
+fi
+
+
 
 
 enable_quartz=no
@@ -2135,10 +2143,7 @@ fi
 GUI_COLLECTS_PATH="${COLLECTS_PATH}"
 GUI_CONFIG_PATH="${CONFIG_PATH}"
 
-CS_BOOTSTRAP_HELP="no-3m"
-
 ########################################
-
 
 
 
@@ -2212,13 +2217,24 @@ show_path_results()
 
 
 
+if test "${enable_boothelp}" = "yes" ; then
+   CS_BOOTSTRAP_HELP="3m"
+   CS_USE_BOOTSTRAP_HELP="BOOTFILE_RACKET=../../bc/racket3m"
+else
+   CS_BOOTSTRAP_HELP="no-3m"
+   CS_USE_BOOTSTRAP_HELP=""
+fi
+
+
+
+
+
+MAKE_LOCAL_RACKET=no-local-racket
+
 MAIN_MAKE_TARGET=racketcs
 MAIN_VARIANT=3m
-MAKE_GRACKET=no
-LIBFINISH=echo
 
-ICP=cp
-RUN_RACKET_CGC="cs/c/racketcs"
+RUN_RACKET="cs/c/racketcs"
 
 
 

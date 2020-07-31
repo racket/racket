@@ -2,10 +2,15 @@
 #|
 cd "`dirname \"$0\"`"
 src="../bc/configure.ac"
-tgt="../cfg-bc"
+tgt="../bc/configure"
 if [ ! -e "$src" ]; then echo "abort: did not find $src"; exit 1; fi
 echo "Creating $tgt from $src"
 autoconf "$src" | racket "$0" > "$tgt"
+chmod +x "$tgt"
+src="../bc/configure-parent.ac"
+tgt="../cfg-bc"
+echo "Creating $tgt from $src"
+autoconf "$src"  | racket "$0" > "$tgt"
 chmod +x "$tgt"
 src="../rktio/configure.ac"
 tgt="../rktio/configure"

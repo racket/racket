@@ -24,7 +24,7 @@ RANLIB = @RANLIB@
 
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
-RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
+RKTIO_INC = -I$(srcdir)/../../rktio -I../rktio
 ALL_CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../../version $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
 ALL_CFLAGS = $(CFLAGS) $(ALL_CPPFLAGS)
 LIBS = @LIBS@
@@ -572,7 +572,7 @@ FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
 FOREIGN_NOT_USED_OBJSLIB = 
 
-LIBRKTIO = ../../rktio/librktio.@LTA@
+LIBRKTIO = ../rktio/librktio.@LTA@
 LIBRKTIO_FOR_DLL_la = $(LIBRKTIO)
 LIBRKTIO_FOR_DLL_a = 
 LIBRKTIO_FOR_LIB_la =

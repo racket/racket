@@ -266,7 +266,7 @@ bc-base:
 	if [ "$(RACKETBC_SUFFIX)" = "" ] ; \
 	  then $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-bcdefault" ; \
 	  else $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-bcdefault" ; fi
-	cd racket/src/build && $(MAKE) racketbc $(SELF_FLAGS_qq)
+	cd racket/src/build/bc && $(MAKE) $(SELF_FLAGS_qq)
 	cd racket/src/build && $(MAKE) install-bc $(INSTALL_SETUP_ARGS)
 
 win-bc-base:
@@ -286,11 +286,12 @@ BC_CONFIGURE_ARGS == $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_
 
 bc-configure:
 	$(MAKE) racket/src/build/bc/Makefile
-	cd racket/src/build && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(BC_CONFIGURE_ARGS)"
+	cd racket/src/build/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(BC_CONFIGURE_ARGS)"
 
-racket/src/build/bc/Makefile: racket/src/configure racket/src/Makefile.in
-	mkdir -p racket/src/build
-	cd racket/src/build && ../configure --enable-bc $(CONFIGURE_ARGS_qq) $(BC_CONFIGURE_ARGS)
+racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in racket/src/cfg-bc racket/src/Makefile.in 
+	mkdir -p racket/src/build/bc
+	cd racket/src/build/bc && ../../bc/configure $(CONFIGURE_ARGS_qq) $(BC_CONFIGURE_ARGS)
+	cd racket/src/build && ../cfg-bc $(CONFIGURE_ARGS_qq) $(CS_CONFIGURE_ARGS)
 
 MORE_CROSS_CONFIGURE_ARGS =
 

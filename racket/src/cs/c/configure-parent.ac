@@ -1,9 +1,7 @@
-
-#################################################################
-# This configure script generates `cfg-cs`, which is used only  #
-# when building RacketCS without first building Racket. It      #
-# creates a "Makefile" that manages installation steps.         #
-#################################################################
+############################################################
+# This configure script generates `cfg-cs`, which sets up  #
+# "Makefile" to drive a CS build by default.               #
+############################################################
 
 AC_INIT([setup-go.rkt])
 
@@ -14,6 +12,7 @@ AC_DISABLE_OPTION_CHECKING
 
 m4_include(../ac/path_arg.m4)
 m4_include(../ac/sdk_arg.m4)
+m4_include(../ac/boothelp_arg.m4)
 
 m4_include(../ac/sdk.m4)
 
@@ -21,16 +20,17 @@ m4_include(../ac/path_pkgscope.m4)
 
 m4_include(../ac/path.m4)
 
+m4_include(../ac/boothelp.m4)
+
+MAKE_LOCAL_RACKET=no-local-racket
+
 MAIN_MAKE_TARGET=racketcs
 MAIN_VARIANT=3m
-MAKE_GRACKET=no
-LIBFINISH=echo
 
-ICP=cp
-RUN_RACKET_CGC="cs/c/racketcs"
+RUN_RACKET="cs/c/racketcs"
 
-AC_SUBST(ICP)
-AC_SUBST(RUN_RACKET_CGC)
+AC_SUBST(RUN_RACKET)
+AC_SUBST(MAKE_LOCAL_RACKET)
 
 makefiles="Makefile"
 

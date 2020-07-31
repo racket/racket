@@ -24,7 +24,7 @@ mainsrcdir = @srcdir@/../..
 WXDIR = $(srcdir)/../wxxt
 
 PLTSRCDIR = $(srcdir)/../..
-PLTBUILDDIR = $(builddir)/../..
+BCBUILDDIR = $(builddir)/..
 
 NOOP = :
 
@@ -48,7 +48,7 @@ GCDIRECTORY = @GCDIR@
 WBUILD = @WBUILD@
 WXVARIANT =  @WXVARIANT@
 
-NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/bc/ -I$(PLTSRCDIR)/bc/include/ -I$(PLTSRCDIR)/version/
+NOGCINC = $(WXINC) -I$(BCBUILDDIR)/ -I$(PLTSRCDIR)/bc/include/ -I$(PLTSRCDIR)/version/
 INC = -I$(PLTSRCDIR)/bc/$(GCDIRECTORY) $(NOGCINC)
 CFLAGS = @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
 CPPFLAGS = @PREFLAGS@
@@ -59,7 +59,7 @@ ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 
 GRACKETLINKER = @MZLINKER@
 
-LIBRKTIO = ../../rktio/librktio.@LTA@
+LIBRKTIO = ../rktio/librktio.@LTA@
 LIBRKTIO_a = $(LIBRKTIO)
 LIBRKTIO_la = 
 

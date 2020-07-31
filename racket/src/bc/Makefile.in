@@ -15,6 +15,7 @@ libpltdir = @libpltdir@
 libpltdir_rel = @libpltdir_rel@
 etcpltdir = @etcpltdir@
 sharepltdir = @sharepltdir@
+configdir = @etcpltdir@
 collectsdir = @collectsdir@
 builddir = @builddir@
 
@@ -82,12 +83,12 @@ bin:
 	$(MAKE) @MZBINTARGET@
 
 normal-bin:
-	$(MAKE) @MAIN_VARIANT@
+	$(MAKE) @MAIN_VARIANT@-with-gracket
 
 common:
 	$(MAKE) g-c
 	$(MAKE) @FOREIGNTARGET@
-	$(MAKE) rktio
+	$(MAKE) rktio-lib
 
 cgc:
 	$(MAKE) cgc-core
@@ -111,6 +112,26 @@ cgc-core:
 	cd gc2; $(MAKE) ../racket@MMM@@EXE_SUFFIX@
 	cd gc2; $(MAKE) ../mzcom@MMM@@EXE_SUFFIX@
 	$(MAKE) sysinfer@MMM@
+
+3m-with-gracket:
+	$(MAKE) 3m
+	$(MAKE) @MAKE_GRACKET@-3m
+
+gracket-3m:
+	cd gracket && $(MAKE) 3m
+
+no-3m:
+	$(NOOP)
+
+cgc-with-gracket:
+	$(MAKE) cgc
+	$(MAKE) @MAKE_GRACKET@-cgc
+
+gracket-cgc:
+	cd gracket && $(MAKE) cgc
+
+no-cgc:
+	$(NOOP)
 
 both:
 	$(MAKE) cgc-core
@@ -152,8 +173,8 @@ foreign-stuff:
 foreign-stub:
 	cd $(FOREIGN_DIR); $(MAKE) stub
 
-rktio:
-	cd ../rktio; $(MAKE) CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)"
+rktio-lib:
+	cd rktio; $(MAKE) CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)"
 
 mzlibrary:
 	cd src; $(MAKE) all 
@@ -164,7 +185,7 @@ mzlibrary:
 no-cgc-needed:
 	cd src; $(MAKE) plain-objs
 	$(MAKE) @FOREIGNTARGET@
-	$(MAKE) rktio
+	$(MAKE) rktio-lib
 	$(MAKE) main.@LTO@
 	$(MAKE) mingw-other
 	cd dynsrc; $(MAKE) ../starter@EXE_SUFFIX@
@@ -184,7 +205,7 @@ FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
 FOREIGN_NOT_USED_OBJSLIB = $(FOREIGN_OBJ)
 
-LIBRKTIO = ../rktio/librktio.@LTA@
+LIBRKTIO = rktio/librktio.@LTA@
 LIBRKTIO_FOR_DLL_la = $(LIBRKTIO)
 LIBRKTIO_FOR_DLL_a = 
 LIBRKTIO_FOR_LIB_la =
@@ -400,6 +421,36 @@ install-both:
 	$(MAKE) @MZINSTALLTARGET@-cgc
 	$(MAKE) @MZINSTALLTARGET@-@MAIN_VARIANT@-final
 
+install-lib-finish:
+	if [ "$(DESTDIR)" = "" ]; then \
+	  @LIBFINISH@ "$(LIB_FINISH_DIR)"; \
+	fi
+
+install-post-collects:
+	$(MAKE) install-@MAKE_GRACKET@-post-collects
+
+install-gracket-post-collects:
+	cd gracket && $(MAKE) install-post-collects
+
+install-no-post-collects:
+	$(NOOP)
+
+# Intended for configuration by an external makefile that drives this one:
+SELF_ROOT_CONFIG_FLAG = -Z
+SELF_ROOT_CONFIG_DIR = ../../../../build/config
+SELF_ROOT_CONFIG = $(SELF_ROOT_CONFIG_FLAG) $(SELF_ROOT_CONFIG_DIR)
+
+INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
+SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_ROOT_CONFIG) @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
+SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
+
+install-setup-3m:
+	@RUN_RACKET_MMM@ $(SETUP_ARGS)
+
+install-setup-cgc:
+	@RUN_RACKET_CGC@ $(SETUP_ARGS)
+
 # Unix install ----------------------------------------
 
 # Prefix might be relative to srcdir, or it might be absolute, so we
@@ -430,7 +481,7 @@ unix-install-cgc:
 unix-install-libs-cgc:
 	cd ..; $(ICP_LIB) bc/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(ICP_LIB) bc/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
-	cd ..; $(ICP_STATIC_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
+	cd ..; $(ICP_STATIC_LIB) bc/rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 
@@ -449,7 +500,7 @@ unix-install-3m:
 
 unix-install-libs-3m:
 	cd ..; $(ICP_LIB) bc/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
-	cd ..; $(ICP_STATIC_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
+	cd ..; $(ICP_STATIC_LIB) bc/rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 
 unix-no-install-libs-3m:
@@ -573,3 +624,21 @@ unix-cygwin-install-3m-final:
 
 mz-gdbinit: $(srcdir)/mk-gdbinit.rkt $(srcdir)/src/stypes.h
 	$(RACKET) $(srcdir)/mk-gdbinit.rkt
+
+
+# Reconfigure ----------------------------------------
+
+SRC_MAKEFILES = $(srcdir)/Makefile.in \
+                $(srcdir)/src/Makefile.in $(srcdir)/gracket/Makefile.in \
+                $(srcdir)/gc2/Makefile.in $(srcdir)/gracket/gc2/Makefile.in \
+                $(srcdir)/../rktio/Makefile.in $(srcdir)/dynsrc/Makefile.in
+
+# Only fire the `Makefile` rule explicitly via `reconfigure`
+NO_RECONFIG =
+ON_RECONFIG = no
+
+reconfigure:
+	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
+
+Makefile$(ON_RECONFIG): $(srcdir)/configure $(SRC_MAKEFILES)
+	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)

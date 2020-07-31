@@ -17,7 +17,7 @@ mainsrcdir = @srcdir@/../../..
 @INCLUDEDEP@ @srcdir@/../../version.mak
 
 PLTSRCDIR = $(srcdir)/../../..
-PLTBUILDDIR = $(builddir)/../../..
+BCBUILDDIR = $(builddir)/../..
 
 ###########################
 #      Common Macros      #
@@ -34,7 +34,7 @@ GCDIRECTORY = @GCDIR@
 WBUILD = @WBUILD@
 WXVARIANT =  @WXVARIANT@
 
-NOGCINC = -I$(PLTBUILDDIR)/bc/ -I$(PLTSRCDIR)/bc/include/ -I$(PLTSRCDIR)/version
+NOGCINC = -I$(BCBUILDDIR) -I$(PLTSRCDIR)/bc/include/ -I$(PLTSRCDIR)/version
 INC = -I$(PLTSRCDIR)/bc/$(GCDIRECTORY) $(NOGCINC)
 CFLAGS = @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
 CPPFLAGS = @PREFLAGS@
@@ -93,7 +93,7 @@ wx_mac_LIBS = -framework CoreFoundation
 
 GRACKETLINKER = @MZLINKER@
 
-LIBRKTIO = ../../../rktio/librktio.@LTA@
+LIBRKTIO = ../../rktio/librktio.@LTA@
 LIBRKTIO_a = $(LIBRKTO)
 LIBRKTIO_la =
 

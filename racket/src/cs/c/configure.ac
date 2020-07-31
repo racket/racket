@@ -422,7 +422,7 @@ fi
 
 ############## Racket and Chez Scheme ################
 
-SCHEME_DIR=../../ChezScheme
+SCHEME_DIR=${srcdir}/../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
@@ -671,24 +671,7 @@ fi
 
 ############## final output ################
 
-# Pass certain configure args on to rktio
-keep_configure_args=
-fixup_prev=
-eval "set x $ac_configure_args"
-shift
-for fixup_arg
-do
-  case $fixup_arg in
-  # Strip away all feature choices
-  -enable* | --enable* | -disable* | --disable*)
-    ;;
-  *)
-    case $fixup_arg in
-    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-    esac
-    keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
-  esac
-done
+m4_include(../ac/rktio_keep.m4)
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"

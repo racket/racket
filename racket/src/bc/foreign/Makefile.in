@@ -11,7 +11,7 @@ CPPFLAGS = @PREFLAGS@
 ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ \
          -I$(builddir)/.. \
          -I$(srcdir)/../include -I$(srcdir)/../src \
-         -I$(srcdir)/../../rktio -I$(builddir)/../../rktio \
+         -I$(srcdir)/../../rktio -I$(builddir)/../rktio \
          $(LIBFFI_LOCAL_INCLUDE_@OWN_LIBFFI@)
 ARFLAGS = @ARFLAGS@
 NOOP = :
