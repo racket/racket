@@ -799,7 +799,6 @@ enable_ubsan
 enable_bcdefault
 enable_csonly
 enable_csdefault
-enable_parent
 enable_crossany
 enable_libz
 enable_liblz4
@@ -1451,7 +1450,6 @@ Optional Features:
   --enable-bconly         BC default, and skip CS build
   --enable-csdefault      install CS without suffix
   --enable-csonly         CS default, and skip BC build
-  --enable-parent         Create "../Makefile" (internal use)
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
   --enable-liblz4         use installed liblz4 if available
@@ -2701,11 +2699,6 @@ if test "${enable_csonly+set}" = set; then :
   enableval=$enable_csonly;
 fi
 
-
-# Check whether --enable-parent was given.
-if test "${enable_parent+set}" = set; then :
-  enableval=$enable_parent;
-fi
 
 # Check whether --enable-crossany was given.
 if test "${enable_crossany+set}" = set; then :

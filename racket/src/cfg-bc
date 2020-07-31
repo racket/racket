@@ -5216,8 +5216,8 @@ else
   CS_BOOTSTRAP_HELP="no-${MAIN_VARIANT}"
 fi
 
-if test "${enable_csdefault}" ; then
-   MAIN_MAKE_TARGET=racketcs
+if test "${enable_csdefault}" = "yes" ; then
+   MAIN_MAKE_TARGET=cs
 fi
 
 ############## SGC ################

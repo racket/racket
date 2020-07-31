@@ -787,7 +787,7 @@ else
   CS_BOOTSTRAP_HELP="no-${MAIN_VARIANT}"
 fi
 
-if test "${enable_csdefault}" ; then
+if test "${enable_csdefault}" = "yes" ; then
    MAIN_MAKE_TARGET=cs
 fi
 
