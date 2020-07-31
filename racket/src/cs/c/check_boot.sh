@@ -13,7 +13,6 @@ check_pb()
     if [ ! -e $DEST ] ; then
         touch boot_pending
     elif [ "`/usr/bin/find "$SRC" -newer "$DEST"`" != "" ] ; then
-        echo older
         touch boot_pending
     fi
 }

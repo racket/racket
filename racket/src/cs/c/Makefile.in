@@ -65,7 +65,7 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
 
 # Defines FWVERSION:
 mainsrcdir = @srcdir@/../..
-@INCLUDEDEP@ @srcdir@/../../racket/version.mak
+@INCLUDEDEP@ @srcdir@/../../version/version.mak
 
 cs:
 	$(MAKE) scheme@T_CROSS_MODE@
@@ -108,12 +108,12 @@ bounce:
 
 scheme:
 	if [ "$(BOOTFILE_RACKET)" != "$(DEFAULT_RACKET)" ] ; \
-          then $(MAKE) scheme-via-rktboot ; \
+          then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
           else $(MAKE) scheme-via-pb ; fi
 
 scheme-via-rktboot:
 	if [ "$(BOOTFILE_RACKET)" != "$(RACKET)" ] ; \
-          then $(MAKE) scheme-via-rktboot-at BOOT_COMPILED_SUBDIR=/bf ; \
+          then $(MAKE) scheme-via-rktboot-at BOOT_COMPILED_SUBDIR=/bf BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
           else $(MAKE) scheme-via-rktboot-at ; fi
 
 scheme-via-rktboot-at:

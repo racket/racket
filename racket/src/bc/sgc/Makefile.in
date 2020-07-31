@@ -9,7 +9,7 @@ libdir = @libdir@
 
 # for version.mak:
 mainsrcdir = @srcdir@/../..
-@INCLUDEDEP@ @srcdir@/../version.mak
+@INCLUDEDEP@ @srcdir@/../../version/version.mak
 
 CC = @CC@
 CXX = @CXX@
