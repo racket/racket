@@ -1,5 +1,5 @@
 #include "schpriv.h"
-#include "schvers.h"
+#include "racket_version.h"
 #include "schmach.h"
 #include "schcpt.h"
 #include <ctype.h>

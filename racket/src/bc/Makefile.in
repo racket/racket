@@ -52,12 +52,12 @@ SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.r
 
 MZSRC = $(srcdir)/src
 
-FOREIGN_DIR = ../foreign
+FOREIGN_DIR = foreign
 FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@
 LIBFFI_OBJ_ON = $(FOREIGN_DIR)/libffi/src/*.@LTO@ $(FOREIGN_DIR)/libffi/src/*/*.@LTO@
 LIBFFI_OBJ_OFF = 
 FOREIGN_OBJS = $(FOREIGN_OBJ) $(LIBFFI_OBJ_@OWN_LIBFFI@)
-LIBFFI_LIB_ON = ../foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
+LIBFFI_LIB_ON = foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
 LIBFFI_LIB_OFF = 
 FOREIGN_LIB = $(FOREIGN_OBJ) $(LIBFFI_LIB_@OWN_LIBFFI@)
 FOREIGN_STUB_LIB = $(FOREIGN_OBJ)
@@ -169,7 +169,7 @@ no-cgc-needed:
 	$(MAKE) mingw-other
 	cd dynsrc; $(MAKE) ../starter@EXE_SUFFIX@
 
-ALL_CPPFLAGS = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/src $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
+ALL_CPPFLAGS = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/src -I$(srcdir)/../version $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
 MKSYSTEM_ARGS = -cqu $(srcdir)/mksystem.rkt system.rktd "$(CPP) $(ALL_CPPFLAGS) $(srcdir)/src/systype.c" "@MMM_INSTALLED@" @CROSS_COMPILE_TARGET_KIND@
 
 sysinfer@CGC@:
@@ -282,11 +282,13 @@ MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(sr
 	           $(srcdir)/../start/config.inc $(srcdir)/../start/delayed.inc \
 	           $(srcdir)/../start/embedded_dll.inc
 
+MAIN_INCLUDES = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/../version
+
 main.@LTO@: $(srcdir)/main.c $(MAIN_HEADER_DEPS)
-	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
+	$(CC) $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
 
 main_ee.@LTO@: main.@LTO@
-	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/main.c -o main_ee.@LTO@
+	$(CC) $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/main.c -o main_ee.@LTO@
 
 ee-main:
 	$(MAKE) main_ee.@LTO@
@@ -297,13 +299,13 @@ ee-app: $(RACKET) main_ee.@LTO@
 MZCOM_DEPS = $(MAIN_HEADER_DEPS) $(srcdir)/../mzcom/com_glue.h $(srcdir)/../mzcom/resource.h
 
 mzcom.@LTO@: $(srcdir)/../mzcom/mzcom.cxx $(MZCOM_DEPS)
-	$(CC) -fno-exceptions -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/../mzcom/mzcom.cxx -o mzcom.@LTO@
+	$(CC) -fno-exceptions $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/../mzcom/mzcom.cxx -o mzcom.@LTO@
 
 mzobj.@LTO@: $(srcdir)/../mzcom/mzobj.cxx $(MZCOM_DEPS)
-	$(CC) -fno-exceptions -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/mzobj.cxx -o mzobj.@LTO@
+	$(CC) -fno-exceptions $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/mzobj.cxx -o mzobj.@LTO@
 
 com_glue.@LTO@: $(srcdir)/../mzcom/com_glue.c $(MZCOM_DEPS)
-	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/com_glue.c -o com_glue.@LTO@
+	$(CC) $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/com_glue.c -o com_glue.@LTO@
 
 exn:
 	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
@@ -316,11 +318,11 @@ MZCONFIGDIR@MINGW@ = "$(srcdir)/../worksp"
 
 headers:
 	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt @DIRCVTPRE@"$(DESTDIR)$(includepltdir)"@DIRCVTPOST@ "$(srcdir)" $(MZCONFIGDIR)
-	cd ..; cp racket/system.rktd "$(DESTDIR)$(libpltdir)/system.rktd"
+	cd ..; cp bc/system.rktd "$(DESTDIR)$(libpltdir)/system.rktd"
 
 # The `cstartup` target may update "cstartup.inc", either replacing a
 # stub "cstartup.inc" that redirects to "startup.inc" or rebuilding
-# because "startup.inc" or "schvers.h" changed; so, during a CGC
+# because "startup.inc" or "racket_version.h" changed; so, during a CGC
 # build, we try again after building this target to potentially update
 # the CGC build to a compiled-startup build. A particular `cstartup`
 # target variant is selected by the `configure` script based on whether
@@ -333,7 +335,7 @@ cstartup@STARTUP_AS_AUTO@:
 
 # For compiling the startup code to bytecode
 cstartup@STARTUP_AS_BYTECODE@:
-	@RUN_RACKET_CGC@ -cu $(srcdir)/src/compile-startup.rkt $(CSTARTUPDEST) cstartup.zo $(srcdir)/src/startup.inc $(srcdir)/src/schvers.h
+	@RUN_RACKET_CGC@ -cu $(srcdir)/src/compile-startup.rkt $(CSTARTUPDEST) cstartup.zo $(srcdir)/src/startup.inc $(srcdir)/../version/racket_version.h
 
 # For compiling the startup code to C
 cstartup@STARTUP_AS_C@:
@@ -346,8 +348,8 @@ cstartup_:
 
 # Running "cify-startup.rkt" through "$(SETUP_BOOT)" generates more
 # dependencies in "cstartup.d" for `$(CSTARTUPDEST)`
-$(CSTARTUPDEST): $(srcdir)/src/startup.inc $(srcdir)/src/schvers.h
-	@RUN_RACKET_CGC@ $(SETUP_BOOT) cstartup.inc cstartup.d $(srcdir)/src/cify-startup.rkt $(srcdir)/src/startup.inc $(srcdir)/src/schvers.h
+$(CSTARTUPDEST): $(srcdir)/src/startup.inc $(srcdir)/../version/racket_version.h
+	@RUN_RACKET_CGC@ $(SETUP_BOOT) cstartup.inc cstartup.d $(srcdir)/src/cify-startup.rkt $(srcdir)/src/startup.inc $(srcdir)/../version/racket_version.h
 @INCLUDEDEP@ cstartup.d
 
 mark:
@@ -406,9 +408,9 @@ install-both:
 unix-install:
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
-	cd ..; cp racket/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
+	cd ..; cp bc/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
 	cp $(srcdir)/../start/starter-sh .
-	cd ..; cp racket/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
+	cd ..; cp bc/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
@@ -420,14 +422,14 @@ unix-install:
 
 unix-install-cgc:
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-cgc
-	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
+	cd ..; $(ICP) bc/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
-	cd ..; cp racket/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
+	cd ..; cp bc/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-cgc:
-	cd ..; $(ICP_LIB) racket/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(ICP_LIB) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
+	cd ..; $(ICP_LIB) bc/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
+	cd ..; $(ICP_LIB) bc/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 	cd ..; $(ICP_STATIC_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
@@ -439,14 +441,14 @@ unix-install-cgc-final:
 	$(NOOP)
 
 unix-install-3m:
-	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
+	cd ..; $(ICP) bc/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-3m
-	cd ..; $(ICP) racket/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
+	cd ..; $(ICP) bc/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
 	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-3m:
-	cd ..; $(ICP_LIB) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
+	cd ..; $(ICP_LIB) bc/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 	cd ..; $(ICP_STATIC_LIB) rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 
@@ -461,27 +463,27 @@ unix-install-3m-final:
 mingw-install:
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
-	cd ..; cp racket/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
-	cd ..; cp racket/mrstarter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
+	cd ..; cp bc/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
+	cd ..; cp bc/mrstarter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
 	cp "$(srcdir)/../mzcom/prebuilt/MzCOM.tlb" MzCOM.tlb
-	cd ..; cp racket/MzCOM.tlb "$(DESTDIR)$(libpltdir)/MzCOM.tlb"
+	cd ..; cp bc/MzCOM.tlb "$(DESTDIR)$(libpltdir)/MzCOM.tlb"
 
 mingw-install-cgc:
 	cd ..; mkdir -p "$(DESTDIR)$(libdir)/gcc"
-	cd ..; $(ICP) racket/libmzgcxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libmzgcxxxxxxx.lib"
-	cd ..; $(ICP) racket/libmzgcxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libmzgcxxxxxxx.exp"
-	cd ..; $(ICP) racket/libmzgc.def "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.def"
-	cd ..; $(ICP) racket/libracketxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libracketxxxxxxx.lib"
-	cd ..; $(ICP) racket/libracketxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libracketxxxxxxx.exp"
-	cd ..; $(ICP) racket/libracket.def "$(DESTDIR)$(libdir)/libracketxxxxxxx.def"
-	cd ..; $(ICP) racket/mzdyncgc.o "$(DESTDIR)$(libdir)/gcc/mzdyn.obj"
-	cd ..; $(ICP) racket/mzdyncgc.exp "$(DESTDIR)$(libdir)/gcc/mzdyn.exp"
-	cd ..; $(ICP) racket/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
-	cd ..; $(ICP) racket/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
-	cd ..; $(ICP) racket/racket@CGC@@EXE_SUFFIX@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(ICP) racket/mzcom@CGC@@EXE_SUFFIX@ "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) bc/libmzgcxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libmzgcxxxxxxx.lib"
+	cd ..; $(ICP) bc/libmzgcxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libmzgcxxxxxxx.exp"
+	cd ..; $(ICP) bc/libmzgc.def "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.def"
+	cd ..; $(ICP) bc/libracketxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libracketxxxxxxx.lib"
+	cd ..; $(ICP) bc/libracketxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libracketxxxxxxx.exp"
+	cd ..; $(ICP) bc/libracket.def "$(DESTDIR)$(libdir)/libracketxxxxxxx.def"
+	cd ..; $(ICP) bc/mzdyncgc.o "$(DESTDIR)$(libdir)/gcc/mzdyn.obj"
+	cd ..; $(ICP) bc/mzdyncgc.exp "$(DESTDIR)$(libdir)/gcc/mzdyn.exp"
+	cd ..; $(ICP) bc/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
+	cd ..; $(ICP) bc/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
+	cd ..; $(ICP) bc/racket@CGC@@EXE_SUFFIX@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) bc/mzcom@CGC@@EXE_SUFFIX@ "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
@@ -493,14 +495,14 @@ mingw-install-cgc-final:
 
 mingw-install-3m:
 	cd ..; mkdir -p "$(DESTDIR)$(libdir)/gcc"
-	cd ..; $(ICP) racket/gc2/libracket3mxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libracket3mxxxxxxx.lib"
-	cd ..; $(ICP) racket/gc2/libracket3mxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libracket3mxxxxxxx.exp"
-	cd ..; $(ICP) racket/gc2/libracket3m.def "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.def"
-	cd ..; $(ICP) racket/mzdyn3m.o "$(DESTDIR)$(libdir)/gcc/mzdyn3m.obj"
-	cd ..; $(ICP) racket/mzdyn3m.exp "$(DESTDIR)$(libdir)/gcc/mzdyn3m.exp"
-	cd ..; $(ICP) racket/racket@MMM@@EXE_SUFFIX@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(ICP) racket/mzcom@MMM@@EXE_SUFFIX@ "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(ICP) racket/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
+	cd ..; $(ICP) bc/gc2/libracket3mxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libracket3mxxxxxxx.lib"
+	cd ..; $(ICP) bc/gc2/libracket3mxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libracket3mxxxxxxx.exp"
+	cd ..; $(ICP) bc/gc2/libracket3m.def "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.def"
+	cd ..; $(ICP) bc/mzdyn3m.o "$(DESTDIR)$(libdir)/gcc/mzdyn3m.obj"
+	cd ..; $(ICP) bc/mzdyn3m.exp "$(DESTDIR)$(libdir)/gcc/mzdyn3m.exp"
+	cd ..; $(ICP) bc/racket@MMM@@EXE_SUFFIX@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) bc/mzcom@MMM@@EXE_SUFFIX@ "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) bc/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"

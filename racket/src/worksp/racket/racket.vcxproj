@@ -45,7 +45,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..;..\..\racket\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\bc\include</AdditionalIncludeDirectories>
       <PrecompiledHeader></PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -76,9 +76,9 @@ if exist "$(TargetPath)" goto :MzOK
 echo Error: did not find $(TargetPath)
 exit 1
 :MzOK
-"$(TargetPath)" -cu ..\..\racket\mkincludes.rkt "$(TargetDir)/include/" ..\..\racket ..
+"$(TargetPath)" -cu ..\..\bc\mkincludes.rkt "$(TargetDir)/include/" ..\..\bc ..
 if errorlevel 1 exit 1
-cd ..\..\racket\dynsrc
+cd ..\..\bc\dynsrc
 call mkmzdyn.bat $(Configuration) $(Platform)
 cd ..\..\worksp\racket
 addman.bat
@@ -130,7 +130,7 @@ addman.bat
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\racket\main.c" />
+    <ClCompile Include="..\..\bc\main.c" />
     <ClCompile Include="..\..\start\MemoryModule.c" />
   </ItemGroup>
   <ItemGroup>

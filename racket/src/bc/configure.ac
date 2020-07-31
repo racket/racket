@@ -20,8 +20,8 @@
 # hence PREFLAGS, which is initialized to the original CPPFLAGS.
 
 AC_INIT([Racket])
-AC_CONFIG_SRCDIR(racket/src/bignum.c)
-AC_CONFIG_HEADERS([racket/mzconfig.h])
+AC_CONFIG_SRCDIR(bc/src/bignum.c)
+AC_CONFIG_HEADERS([bc/mzconfig.h])
 
 AC_CONFIG_AUX_DIR(lt)
 AC_CANONICAL_SYSTEM
@@ -142,7 +142,7 @@ m4_include(../ac/path.m4)
 ###### Make sure GRacket is really there ######
 
 if test "${enable_gracket}" = "yes" ; then
-  if test ! -d $srcdir/gracket ; then
+  if test ! -d $srcdir/bc/gracket ; then
     enable_gracket=no
   fi
 fi
@@ -549,7 +549,7 @@ case "$host_os" in
     ;;
   aix*)
     enable_cgcdefault="yes"
-    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../racket/include/racket.exp"
+    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../bc/include/racket.exp"
     ;;
   *freebsd*)
     LIBS="$LIBS -rdynamic"
@@ -1286,8 +1286,8 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "auto" ; then
-  enable_racket="`pwd`/local/racket/racket3m"
-  MAKE_LOCAL_RACKET="local/racket/racket3m"
+  enable_racket="`pwd`/local/bc/racket3m"
+  MAKE_LOCAL_RACKET="local/bc/racket3m"
 fi
 
 if test "${enable_racket}" = "" ; then
@@ -1343,10 +1343,10 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
 
     if test "${VERSION_W}" != "0" ; then
       plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
@@ -1516,9 +1516,9 @@ mk_needed_dir()
 }
 
 makefiles="Makefile
-           racket/Makefile
-             racket/src/Makefile racket/dynsrc/Makefile
-             racket/sgc/Makefile racket/gc2/Makefile"
+           bc/Makefile
+             bc/src/Makefile bc/dynsrc/Makefile
+             bc/sgc/Makefile bc/gc2/Makefile"
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
@@ -1541,10 +1541,10 @@ fi
 
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
+if test -d "${srcdir}/bc/foreign" && test "${enable_foreign}" = "yes" ; then
   if test "${have_libffi}" != "yes" ; then
-    AC_CONFIG_AUX_DIR( foreign/libffi )
-    AC_CONFIG_SUBDIRS( foreign/libffi )
+    AC_CONFIG_AUX_DIR( bc/foreign/libffi )
+    AC_CONFIG_SUBDIRS( bc/foreign/libffi )
   fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
@@ -1552,7 +1552,7 @@ else
   FOREIGNTARGET="foreign-stub"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
-makefiles="$makefiles foreign/Makefile"
+makefiles="$makefiles bc/foreign/Makefile"
 
 AC_CONFIG_SUBDIRS( rktio )
 
@@ -1579,8 +1579,8 @@ ac_configure_args="$new_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
-             gracket/Makefile
-               gracket/gc2/Makefile"
+             bc/gracket/Makefile
+               bc/gracket/gc2/Makefile"
 fi
 
 AC_OUTPUT($makefiles)

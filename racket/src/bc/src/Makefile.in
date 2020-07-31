@@ -12,7 +12,7 @@ MZSRC = $(srcdir)
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
 RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
-ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include  $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
+ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../../version $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
 LTO=@LTO@ # Need for replacement of EXTRA_GMP_OBJ which carries the variable
 
 OBJS =  salloc.@LTO@ \
@@ -349,7 +349,7 @@ complex.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/stypes.h    
 dynext.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/stypes.h $(srcdir)/schemef.h \
-         $(srcdir)/schvers.h
+         $(srcdir)/../../version/racket_version.h
 env.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark_env.inc
 error.@LTO@: $(COMMON_HEADERS) \
@@ -405,17 +405,17 @@ place.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_place.inc
 port.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_port.inc
-portfun.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) $(srcdir)/schvers.h \
+portfun.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) $(srcdir)/../../version/racket_version.h \
         $(srcdir)/stypes.h $(srcdir)/mzmark_portfun.inc
 print.@LTO@: $(COMMON_HEADERS) $(srcdir)/stypes.h $(srcdir)/schcpt.h \
-          $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark_print.inc \
+          $(srcdir)/../../version/racket_version.h $(SCONFIG) $(srcdir)/mzmark_print.inc \
           $(srcdir)/print_vector.inc 
 thread.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_thread.inc
 rational.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h    
 read.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/schcpt.h $(srcdir)/schvers.h $(srcdir)/schminc.h \
+        $(srcdir)/schcpt.h $(srcdir)/../../version/racket_version.h $(srcdir)/schminc.h \
         $(srcdir)/stypes.h $(srcdir)/mzmark_read.inc
 regexp.@LTO@:  $(COMMON_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_regexp.inc $(srcdir)/schrx.h
@@ -427,11 +427,11 @@ sfs.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_sfs.inc
 sort.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h
-startup.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
+startup.@LTO@: $(COMMON_HEADERS) $(srcdir)/../../version/racket_version.h \
          $(srcdir)/stypes.h  $(srcdir)/schminc.h $(srcdir)/startup.inc ../cstartup.inc \
          $(srcdir)/startup-glue.inc
 string.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
-         $(srcdir)/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark_string.inc $(srcdir)/strops.inc \
+         $(srcdir)/stypes.h    $(srcdir)/../../version/racket_version.h $(srcdir)/mzmark_string.inc $(srcdir)/strops.inc \
          $(srcdir)/schustr.inc $(srcdir)/systype.inc
 struct.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_struct.inc

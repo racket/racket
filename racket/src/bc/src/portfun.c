@@ -2,7 +2,7 @@
    port types. See also "port.c". */
 
 #include "schpriv.h"
-#include "schvers.h"
+#include "racket_version.h"
 #include "schrktio.h"
 
 static Scheme_Object *input_port_p (int, Scheme_Object *[]);

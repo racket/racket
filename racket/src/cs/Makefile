@@ -312,7 +312,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/future.ss \
               rumble/version.ss \
               rumble/inline.ss \
-              ../racket/src/schvers.h
+              ../version/racket_version.h
 
 $(BUILDDIR)rumble.$(CSO): $(RUMBLE_DEPS) rumble.sls $(RUMBLE_SRCS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) rumble.sls $(RUMBLE_DEPS)

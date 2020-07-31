@@ -98,9 +98,9 @@ information.
 
 If you modify Racket and change any primitive syntax or the collection
 of built-in identifiers, be sure to update the version number in
-"racket/src/schvers.h", so that various tools know to rebuild
+"../version/racket_version.h", so that various tools know to rebuild
 bytecode. If you add or remove primitives, you'll also need to adjust
-the counter in "racket/src/schminc.h" .
+the counter in "src/schminc.h" .
 
 Some general guidelines for modying this code:
 

@@ -32,7 +32,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include"
+				AdditionalIncludeDirectories="..,..\..\bc\include"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -80,7 +80,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include"
+				AdditionalIncludeDirectories="..,..\..\bc\include"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -147,7 +147,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include"
+				AdditionalIncludeDirectories="..,..\..\bc\include"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -202,7 +202,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include"
+				AdditionalIncludeDirectories="..,..\..\bc\include"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -250,7 +250,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gracket\grmain.c"
+				RelativePath="..\..\bc\gracket\grmain.c"
 				>
 			</File>
 			<File

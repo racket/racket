@@ -21,7 +21,7 @@ CC = @CC@
 PLAIN_CC = @PLAIN_CC@
 CFLAGS = @CFLAGS@ @COMPFLAGS@
 CPPFLAGS = @PREFLAGS@
-ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src -I$(srcdir)/../../start @MZOPTIONS@
+ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src -I$(srcdir)/../../version -I$(srcdir)/../../start @MZOPTIONS@
 
 dynlib@NOT_MINGW@:
 	$(MAKE) ../mzdyn.o
@@ -45,14 +45,14 @@ HEADERS = $(builddir)/../mzconfig.h \
           $(srcdir)/../include/scheme.h $(srcdir)/../src/schemef.h \
           $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h \
           $(srcdir)/../include/escheme.h $(srcdir)/../src/stypes.h \
-          $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../src/schvers.h
+          $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../../version/racket_version.h
 
 MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/racket.exp
 
-../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
+../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../../version/racket_version.h  $(HEADERS)
 	$(PLAIN_CC) @DYN_CFLAGS@ $(ALL_CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
 
-../mzdyn3m.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
+../mzdyn3m.o: $(srcdir)/mzdyn.c $(srcdir)/../../version/racket_version.h  $(HEADERS)
 	$(PLAIN_CC) @DYN_CFLAGS@ $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
 
 ../dynexmpl.so: dynexmpl.o $(MZDYNDEP)

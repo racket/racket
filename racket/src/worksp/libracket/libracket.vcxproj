@@ -45,7 +45,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;..\..\rktio;..\librktio;..\libracket</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\bc\include;..\..\bc\src;..\..\version;..\libffi;..\..\bc\foreign\libffi\src\x86;..\..\bc\foreign\libffi\include;..\..\rktio;..\librktio;..\libracket</AdditionalIncludeDirectories>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader></PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -112,69 +112,69 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\racket\src\bignum.c" />
-    <ClCompile Include="..\..\racket\src\bool.c" />
-    <ClCompile Include="..\..\racket\src\char.c" />
-    <ClCompile Include="..\..\racket\src\compenv.c" />
-    <ClCompile Include="..\..\racket\src\compile.c" />
-    <ClCompile Include="..\..\racket\src\complex.c" />
-    <ClCompile Include="..\..\racket\src\dynext.c" />
-    <ClCompile Include="..\..\racket\src\env.c" />
-    <ClCompile Include="..\..\racket\src\error.c" />
-    <ClCompile Include="..\..\racket\src\eval.c" />
-    <ClCompile Include="..\..\racket\src\file.c" />
-    <ClCompile Include="..\..\foreign\foreign.c" />
-    <ClCompile Include="..\..\racket\src\fun.c" />
-    <ClCompile Include="..\..\racket\src\future.c" />
-    <ClCompile Include="..\..\racket\src\gmp\gmp.c" />
-    <ClCompile Include="..\..\racket\src\hash.c" />
-    <ClCompile Include="..\..\racket\src\jit.c" />
-    <ClCompile Include="..\..\racket\src\jitalloc.c" />
-    <ClCompile Include="..\..\racket\src\jitarith.c" />
-    <ClCompile Include="..\..\racket\src\jitcall.c" />
-    <ClCompile Include="..\..\racket\src\jitcommon.c" />
-    <ClCompile Include="..\..\racket\src\jitinline.c" />
-    <ClCompile Include="..\..\racket\src\jitprep.c" />
-    <ClCompile Include="..\..\racket\src\jitstack.c" />
-    <ClCompile Include="..\..\racket\src\jitstate.c" />
-    <ClCompile Include="..\..\racket\src\list.c" />
-    <ClCompile Include="..\..\racket\src\letrec_check.c" />
-    <ClCompile Include="..\..\racket\src\linklet.c" />
-    <ClCompile Include="..\..\racket\src\marshal.c" />
-    <ClCompile Include="..\..\racket\src\mzrt.c" />
-    <ClCompile Include="..\..\racket\src\mzsj86.c" />
-    <ClCompile Include="..\..\racket\src\network.c" />
-    <ClCompile Include="..\..\racket\src\numarith.c" />
-    <ClCompile Include="..\..\racket\src\number.c" />
-    <ClCompile Include="..\..\racket\src\numcomp.c" />
-    <ClCompile Include="..\..\racket\src\numstr.c" />
-    <ClCompile Include="..\..\racket\src\optimize.c" />
-    <ClCompile Include="..\..\racket\src\place.c" />
-    <ClCompile Include="..\..\racket\src\port.c" />
-    <ClCompile Include="..\..\racket\src\portfun.c" />
-    <ClCompile Include="..\..\racket\src\print.c" />
-    <ClCompile Include="..\..\racket\src\rational.c" />
-    <ClCompile Include="..\..\racket\src\read.c" />
-    <ClCompile Include="..\..\racket\src\regexp.c" />
-    <ClCompile Include="..\..\racket\src\resolve.c" />
-    <ClCompile Include="..\..\racket\src\salloc.c" />
-    <ClCompile Include="..\..\racket\src\sema.c" />
-    <ClCompile Include="..\..\racket\src\setjmpup.c" />
-    <ClCompile Include="..\..\racket\src\sfs.c" />
-    <ClCompile Include="..\..\racket\src\sort.c" />
-    <ClCompile Include="..\..\racket\src\startup.c" />
-    <ClCompile Include="..\..\racket\src\string.c" />
-    <ClCompile Include="..\..\racket\src\struct.c" />
-    <ClCompile Include="..\..\racket\src\symbol.c" />
-    <ClCompile Include="..\..\racket\src\syntax.c" />
-    <ClCompile Include="..\..\racket\src\thread.c" />
-    <ClCompile Include="..\..\racket\src\type.c" />
-    <ClCompile Include="..\..\racket\src\validate.c" />
-    <ClCompile Include="..\..\racket\src\vector.c" />
+    <ClCompile Include="..\..\bc\src\bignum.c" />
+    <ClCompile Include="..\..\bc\src\bool.c" />
+    <ClCompile Include="..\..\bc\src\char.c" />
+    <ClCompile Include="..\..\bc\src\compenv.c" />
+    <ClCompile Include="..\..\bc\src\compile.c" />
+    <ClCompile Include="..\..\bc\src\complex.c" />
+    <ClCompile Include="..\..\bc\src\dynext.c" />
+    <ClCompile Include="..\..\bc\src\env.c" />
+    <ClCompile Include="..\..\bc\src\error.c" />
+    <ClCompile Include="..\..\bc\src\eval.c" />
+    <ClCompile Include="..\..\bc\src\file.c" />
+    <ClCompile Include="..\..\bc\foreign\foreign.c" />
+    <ClCompile Include="..\..\bc\src\fun.c" />
+    <ClCompile Include="..\..\bc\src\future.c" />
+    <ClCompile Include="..\..\bc\src\gmp\gmp.c" />
+    <ClCompile Include="..\..\bc\src\hash.c" />
+    <ClCompile Include="..\..\bc\src\jit.c" />
+    <ClCompile Include="..\..\bc\src\jitalloc.c" />
+    <ClCompile Include="..\..\bc\src\jitarith.c" />
+    <ClCompile Include="..\..\bc\src\jitcall.c" />
+    <ClCompile Include="..\..\bc\src\jitcommon.c" />
+    <ClCompile Include="..\..\bc\src\jitinline.c" />
+    <ClCompile Include="..\..\bc\src\jitprep.c" />
+    <ClCompile Include="..\..\bc\src\jitstack.c" />
+    <ClCompile Include="..\..\bc\src\jitstate.c" />
+    <ClCompile Include="..\..\bc\src\list.c" />
+    <ClCompile Include="..\..\bc\src\letrec_check.c" />
+    <ClCompile Include="..\..\bc\src\linklet.c" />
+    <ClCompile Include="..\..\bc\src\marshal.c" />
+    <ClCompile Include="..\..\bc\src\mzrt.c" />
+    <ClCompile Include="..\..\bc\src\mzsj86.c" />
+    <ClCompile Include="..\..\bc\src\network.c" />
+    <ClCompile Include="..\..\bc\src\numarith.c" />
+    <ClCompile Include="..\..\bc\src\number.c" />
+    <ClCompile Include="..\..\bc\src\numcomp.c" />
+    <ClCompile Include="..\..\bc\src\numstr.c" />
+    <ClCompile Include="..\..\bc\src\optimize.c" />
+    <ClCompile Include="..\..\bc\src\place.c" />
+    <ClCompile Include="..\..\bc\src\port.c" />
+    <ClCompile Include="..\..\bc\src\portfun.c" />
+    <ClCompile Include="..\..\bc\src\print.c" />
+    <ClCompile Include="..\..\bc\src\rational.c" />
+    <ClCompile Include="..\..\bc\src\read.c" />
+    <ClCompile Include="..\..\bc\src\regexp.c" />
+    <ClCompile Include="..\..\bc\src\resolve.c" />
+    <ClCompile Include="..\..\bc\src\salloc.c" />
+    <ClCompile Include="..\..\bc\src\sema.c" />
+    <ClCompile Include="..\..\bc\src\setjmpup.c" />
+    <ClCompile Include="..\..\bc\src\sfs.c" />
+    <ClCompile Include="..\..\bc\src\sort.c" />
+    <ClCompile Include="..\..\bc\src\startup.c" />
+    <ClCompile Include="..\..\bc\src\string.c" />
+    <ClCompile Include="..\..\bc\src\struct.c" />
+    <ClCompile Include="..\..\bc\src\symbol.c" />
+    <ClCompile Include="..\..\bc\src\syntax.c" />
+    <ClCompile Include="..\..\bc\src\thread.c" />
+    <ClCompile Include="..\..\bc\src\type.c" />
+    <ClCompile Include="..\..\bc\src\validate.c" />
+    <ClCompile Include="..\..\bc\src\vector.c" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\racket\src\mzsj86w64.S">
-      <Command Condition="'$(Platform)'=='x64'">ml64.exe /c /Cx /Fo $(Platform)\$(Configuration)\mzsj86w64.obj ..\..\racket\src\mzsj86w64.S</Command>
+    <CustomBuild Include="..\..\bc\src\mzsj86w64.S">
+      <Command Condition="'$(Platform)'=='x64'">ml64.exe /c /Cx /Fo $(Platform)\$(Configuration)\mzsj86w64.obj ..\..\bc\src\mzsj86w64.S</Command>
       <Outputs>$(Platform)\$(Configuration)\mzsj86w64.obj;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>

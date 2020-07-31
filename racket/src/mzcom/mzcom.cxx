@@ -3,7 +3,7 @@
 // This file is not xformed for 3m. There's just one
 // bit of conditional compilation on MZCOM_3M.
 
-#include "../racket/src/schvers.h"
+#include "../version/racket_version.h"
 #include "resource.h"
 
 #include <objbase.h>

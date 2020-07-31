@@ -222,11 +222,11 @@ win-bc-in-place-setup:
 	$(MAKE) plain-in-place-setup PLAIN_RACKET=racket\racket$(RACKETBC_SUFFIX) IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 bc-base:
 	if [ "$(RACKETBC_SUFFIX)" = "" ] ; 	  then $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-bcdefault" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" ; 	  else $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-bcdefault" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" ; fi
-	cd racket/src/build && $(MAKE) bc  SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
+	cd racket/src/build && $(MAKE) racketbc  SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
 	cd racket/src/build && $(MAKE) install-bc   SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"  PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 win-bc-base:
 	$(MAKE) win-remove-setup-dlls
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) $(JOB_OPTIONS) _$(RACKETBC_SUFFIX) $(PLT_SETUP_OPTIONS)
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) _$(RACKETBC_SUFFIX) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 win-remove-setup-dlls:
 	IF EXIST racket\lib\longdouble.dll cmd /c del racket\lib\longdouble.dll
 	IF EXIST racket\lib\libiconv-2.dll cmd /c del racket\lib\libiconv-2.dll
@@ -234,9 +234,9 @@ win-remove-setup-dlls:
 	IF EXIST racket\lib\libeay32.dll cmd /c del racket\lib\libeay32.dll
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 bc-configure:
-	$(MAKE) racket/src/build/racket/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
+	$(MAKE) racket/src/build/bc/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
 	cd racket/src/build && $(MAKE) reconfigure MORE_CONFIGURE_ARGS=" $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
-racket/src/build/racket/Makefile: racket/src/configure racket/src/Makefile.in
+racket/src/build/bc/Makefile: racket/src/configure racket/src/Makefile.in
 	mkdir -p racket/src/build
 	cd racket/src/build && ../configure --enable-bc $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 native-for-cross:
@@ -283,7 +283,7 @@ cs-base:
 cs-configure:
 	$(MAKE) racket/src/build/cs/c/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
 	cd racket/src/build/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS=" $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
-racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
+racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in 
 	mkdir -p racket/src/build/cs/c
 	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 	cd racket/src/build && ../cfg-cs $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)

@@ -15,7 +15,7 @@
 #include "schmach.h"
 #include "schminc.h"
 #include "schcpt.h"
-#include "schvers.h"
+#include "racket_version.h"
 #include <stdlib.h>
 #include <ctype.h>
 #ifdef USE_STACKAVAIL

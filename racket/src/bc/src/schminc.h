@@ -7,10 +7,11 @@
    names shift).
 
    If you make a version with omissions or additions, set
-   USE_COMPILED_STARTUP to 0 and change the version on "schvers.h";
-   then, `make cgc' and then `make cstartup' to create "cstartup.inc";
-   finally, set EXPECTED_PRIM_COUNT to the right value and
-   USE_COMPILED_STARTUP to 1 and `make' again. */
+   USE_COMPILED_STARTUP to 0 and change the version at
+   "../version/racket_version.h"; then, `make cgc' and then `make
+   cstartup' to create "cstartup.inc"; finally, set
+   EXPECTED_PRIM_COUNT to the right value and USE_COMPILED_STARTUP to
+   1 and `make' again. */
 
 #define USE_COMPILED_STARTUP 1
 

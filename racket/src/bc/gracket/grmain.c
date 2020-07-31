@@ -51,7 +51,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 # define INITIAL_CONFIG_DIRECTORY "../etc"
 #endif
 
-# include "../racket/main.c"
+# include "../main.c"
 
 /***********************************************************************/
 /*                        Win32 handling                               */
@@ -63,7 +63,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 START_XFORM_SKIP;
 # endif
 
-# include "../start/win_single.inc"
+# include "../../start/win_single.inc"
 
 static void pre_filter_cmdline_arguments(int *argc, char ***argv)
 {
@@ -156,4 +156,4 @@ END_XFORM_SKIP;
 
 #endif
 
-#include "../start/gui_filter.inc"
+#include "../../start/gui_filter.inc"

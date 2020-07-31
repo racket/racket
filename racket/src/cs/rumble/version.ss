@@ -1,7 +1,7 @@
 
 (define-syntax (extract-version-string stx)
   (#%call-with-input-file
-   "../racket/src/schvers.h"
+   "../version/racket_version.h"
    (lambda (i)
      (let ([to-find "#define MZSCHEME_VERSION_"])
        (let numbers-loop ([numbers '()])

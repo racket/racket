@@ -266,12 +266,12 @@ bc-base:
 	if [ "$(RACKETBC_SUFFIX)" = "" ] ; \
 	  then $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-bcdefault" ; \
 	  else $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-bcdefault" ; fi
-	cd racket/src/build && $(MAKE) bc $(SELF_FLAGS_qq)
+	cd racket/src/build && $(MAKE) racketbc $(SELF_FLAGS_qq)
 	cd racket/src/build && $(MAKE) install-bc $(INSTALL_SETUP_ARGS)
 
 win-bc-base:
 	$(MAKE) win-remove-setup-dlls
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) $(JOB_OPTIONS) _$(RACKETBC_SUFFIX) $(PLT_SETUP_OPTIONS)
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) _$(RACKETBC_SUFFIX) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 # Start by removing DLLs that may be loaded by `raco setup`
 win-remove-setup-dlls:
@@ -285,10 +285,10 @@ CONFIG_IN_PLACE_ARGS = --disable-useprefix --enable-origtree
 BC_CONFIGURE_ARGS == $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 
 bc-configure:
-	$(MAKE) racket/src/build/racket/Makefile
+	$(MAKE) racket/src/build/bc/Makefile
 	cd racket/src/build && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(BC_CONFIGURE_ARGS)"
 
-racket/src/build/racket/Makefile: racket/src/configure racket/src/Makefile.in
+racket/src/build/bc/Makefile: racket/src/configure racket/src/Makefile.in
 	mkdir -p racket/src/build
 	cd racket/src/build && ../configure --enable-bc $(CONFIGURE_ARGS_qq) $(BC_CONFIGURE_ARGS)
 

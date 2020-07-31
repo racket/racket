@@ -44,7 +44,7 @@ To build Racket BC on Windows, see See "worksp\README.txt" for
 information.
 
 If you need more information specific to Racket BC, see
-"racket/README.txt".
+"bc/README.txt".
 
 Racket CS
 ---------
@@ -317,7 +317,7 @@ but note the following:
 ========================================================================
 
 To compile with Microsoft Visual C, see the instructions in
-"racket\src\worksp\README.txt".
+"worksp\README.txt".
 
 To compile with MinGW tools, follow the Unix instructions above; do
 not use `--enable-shared`, because DLLs will be generated
@@ -443,22 +443,21 @@ minimal Racket distribution.
 Sources for the Racket BC implementation
 -------------------------------------------------
 
- * "racket" --- `racket` BC executable
+ * "bc" --- `racket` BC executable
 
    This implementation can build from "scratch" with a C compiler, but
    first by building a CGC variant of Racket to transform the C
    sourses to build a (normal) 3m variant.
 
- * "gracket" --- `gracket` executable
-
- * "foreign" --- FFI implementation for "racket"
-
-   This directory includes a copy of "libffi" (as needed for some
-   platforms).
-
  * "mzcom" --- MzCOM executable (for Windows)
 
  * "mysink" --- `ffi/unsafe/com` helper DLL (for Windows)
+
+ * "cify" --- a Racket-to-C compiler
+
+   This compiler is used only when embedding the expander as C code in
+   Racket BC, instead of Racket bytecode, which is the default for
+   platforms where the Racket BC JIT is not supported.
 
 See also the shared sources below, which includes rktio and the macro
 expander.
@@ -506,12 +505,6 @@ Sources shared by both Racket implementations
    Similar to "expander", this layer is applied to itself and other
    libraries for inclusion in "cs". If you change it, be sure to run
    `make` in "cs".
-
- * "cify" --- a Racket-to-C compiler
-
-   This compiler is used only when embedding the expander as C code in
-   Racket BC, instead of Racket bytecode, which is the default for
-   platforms where the Racket BC JIT is not supported.
 
  * "start" --- main-executable wrapper
 

@@ -29,7 +29,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libffi;..\..\foreign\libffi\include;..\..\foreign\libffi\src\x86"
+				AdditionalIncludeDirectories="..\libffi;..\..\bc\foreign\libffi\include;..\..\bc\foreign\libffi\src\x86"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -49,7 +49,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libffi;..\..\foreign\libffi\include;..\..\foreign\libffi\src\x86"
+				AdditionalIncludeDirectories="..\libffi;..\..\bc\foreign\libffi\include;..\..\bc\foreign\libffi\src\x86"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -71,7 +71,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\libffi;..\..\foreign\libffi\include;..\..\foreign\libffi\src\x86"
+				AdditionalIncludeDirectories="..\libffi;..\..\bc\foreign\libffi\include;..\..\bc\foreign\libffi\src\x86"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -92,7 +92,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\libffi;..\..\foreign\libffi\include;..\..\foreign\libffi\src\x86"
+				AdditionalIncludeDirectories="..\libffi;..\..\bc\foreign\libffi\include;..\..\bc\foreign\libffi\src\x86"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -111,23 +111,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\foreign\libffi\src\closures.c"
+				RelativePath="..\..\bc\foreign\libffi\src\closures.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi\src\x86\ffi.c"
+				RelativePath="..\..\bc\foreign\libffi\src\x86\ffi.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi\src\prep_cif.c"
+				RelativePath="..\..\bc\foreign\libffi\src\prep_cif.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi\src\raw_api.c"
+				RelativePath="..\..\bc\foreign\libffi\src\raw_api.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi\src\types.c"
+				RelativePath="..\..\bc\foreign\libffi\src\types.c"
 				>
 			</File>
 			<File

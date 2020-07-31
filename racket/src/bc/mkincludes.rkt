@@ -62,7 +62,8 @@
                                 "#define INCLUDE_WITHOUT_PATHS"))
   (copy-if-newer mzsrcdir "include/schthread.h")
   (copy-if-newer mzsrcdir "src/schemef.h")
-  (copy-if-newer mzsrcdir "src/schvers.h")
+  (copy-if-newer mzsrcdir "../version/racket_version.h")
+  (copy-if-newer mzsrcdir "../version/racket_version.h" "schvers.h") ; for compatibility
   (copy-if-newer mzsrcdir "src/stypes.h")
   (copy-if-newer mzsrcdir "src/schemex.h")
   (copy-if-newer mzsrcdir "src/schemexm.h")

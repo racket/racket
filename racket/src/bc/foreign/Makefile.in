@@ -9,9 +9,9 @@ LIBFFI_LOCAL_INCLUDE_OFF =
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
 ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ \
-         -I$(builddir)/../racket \
-         -I$(srcdir)/../racket/include -I$(srcdir)/../racket/src \
-         -I$(srcdir)/../rktio -I$(builddir)/../rktio \
+         -I$(builddir)/.. \
+         -I$(srcdir)/../include -I$(srcdir)/../src \
+         -I$(srcdir)/../../rktio -I$(builddir)/../../rktio \
          $(LIBFFI_LOCAL_INCLUDE_@OWN_LIBFFI@)
 ARFLAGS = @ARFLAGS@
 NOOP = :
@@ -37,12 +37,12 @@ libffi/libffi@FOREIGN_CONVENIENCE@.la:
 	cd libffi; $(MAKE) libffi@FOREIGN_CONVENIENCE@.la
 
 foreign.@LTO@: $(srcdir)/foreign.c \
-           $(srcdir)/../racket/sconfig.h \
-           $(srcdir)/../racket/include/scheme.h \
-           $(srcdir)/../racket/include/schthread.h \
-           $(srcdir)/../racket/src/schemef.h \
-           $(srcdir)/../racket/src/stypes.h \
-           $(srcdir)/../racket/src/schpriv.h
+           $(srcdir)/../sconfig.h \
+           $(srcdir)/../include/scheme.h \
+           $(srcdir)/../include/schthread.h \
+           $(srcdir)/../src/schemef.h \
+           $(srcdir)/../src/stypes.h \
+           $(srcdir)/../src/schpriv.h
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
 
 clean:

@@ -583,7 +583,7 @@ PACKAGE_BUGREPORT=
 PACKAGE_URL=
 
 ac_unique_file="Racket"
-ac_unique_file="racket/src/bignum.c"
+ac_unique_file="bc/src/bignum.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -857,7 +857,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-ac_subdirs_all='foreign/libffi
+ac_subdirs_all='bc/foreign/libffi
 rktio '
 
 # Initialize some variables set by options.
@@ -2475,7 +2475,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-ac_config_headers="$ac_config_headers racket/mzconfig.h"
+ac_config_headers="$ac_config_headers bc/mzconfig.h"
 
 
 ac_aux_dir=
@@ -3209,7 +3209,7 @@ show_path_results()
 ###### Make sure GRacket is really there ######
 
 if test "${enable_gracket}" = "yes" ; then
-  if test ! -d $srcdir/gracket ; then
+  if test ! -d $srcdir/bc/gracket ; then
     enable_gracket=no
   fi
 fi
@@ -4897,7 +4897,7 @@ case "$host_os" in
     ;;
   aix*)
     enable_cgcdefault="yes"
-    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../racket/include/racket.exp"
+    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../bc/include/racket.exp"
     ;;
   *freebsd*)
     LIBS="$LIBS -rdynamic"
@@ -6951,8 +6951,8 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "auto" ; then
-  enable_racket="`pwd`/local/racket/racket3m"
-  MAKE_LOCAL_RACKET="local/racket/racket3m"
+  enable_racket="`pwd`/local/bc/racket3m"
+  MAKE_LOCAL_RACKET="local/bc/racket3m"
 fi
 
 if test "${enable_racket}" = "" ; then
@@ -7008,10 +7008,10 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
-    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/racket/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
+    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/bc/src/schvers.h | cut -d ' ' -f 3`
 
     if test "${VERSION_W}" != "0" ; then
       plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
@@ -7181,9 +7181,9 @@ mk_needed_dir()
 }
 
 makefiles="Makefile
-           racket/Makefile
-             racket/src/Makefile racket/dynsrc/Makefile
-             racket/sgc/Makefile racket/gc2/Makefile"
+           bc/Makefile
+             bc/src/Makefile bc/dynsrc/Makefile
+             bc/sgc/Makefile bc/gc2/Makefile"
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
@@ -7206,10 +7206,10 @@ fi
 
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
+if test -d "${srcdir}/bc/foreign" && test "${enable_foreign}" = "yes" ; then
   if test "${have_libffi}" != "yes" ; then
     ac_aux_dir=
-for ac_dir in foreign/libffi  "$srcdir"/foreign/libffi ; do
+for ac_dir in bc/foreign/libffi  "$srcdir"/bc/foreign/libffi ; do
   if test -f "$ac_dir/install-sh"; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -7225,7 +7225,7 @@ for ac_dir in foreign/libffi  "$srcdir"/foreign/libffi ; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in foreign/libffi  \"$srcdir\"/foreign/libffi " "$LINENO" 5
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in bc/foreign/libffi  \"$srcdir\"/bc/foreign/libffi " "$LINENO" 5
 fi
 
 # These three variables are undocumented and unsupported,
@@ -7239,7 +7239,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-subdirs="$subdirs foreign/libffi"
+subdirs="$subdirs bc/foreign/libffi"
 
   fi
   FOREIGNTARGET="foreign-stuff"
@@ -7248,7 +7248,7 @@ else
   FOREIGNTARGET="foreign-stub"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
-makefiles="$makefiles foreign/Makefile"
+makefiles="$makefiles bc/foreign/Makefile"
 
 subdirs="$subdirs rktio"
 
@@ -7276,8 +7276,8 @@ ac_configure_args="$new_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
-             gracket/Makefile
-               gracket/gc2/Makefile"
+             bc/gracket/Makefile
+               bc/gracket/gc2/Makefile"
 fi
 
 ac_config_files="$ac_config_files $makefiles"
@@ -7972,7 +7972,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "racket/mzconfig.h") CONFIG_HEADERS="$CONFIG_HEADERS racket/mzconfig.h" ;;
+    "bc/mzconfig.h") CONFIG_HEADERS="$CONFIG_HEADERS bc/mzconfig.h" ;;
     "$makefiles") CONFIG_FILES="$CONFIG_FILES $makefiles" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

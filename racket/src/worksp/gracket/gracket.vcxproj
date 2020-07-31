@@ -41,7 +41,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..;..\..\racket\gc;..\..\racket\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\bc\gc;..\..\bc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader></PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -121,7 +121,7 @@ addman.bat
     <ResourceCompile Include="gracket.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\gracket\grmain.c" />
+    <ClCompile Include="..\..\bc\gracket\grmain.c" />
     <ClCompile Include="..\..\start\MemoryModule.c" />
   </ItemGroup>
   <ItemGroup>

@@ -323,7 +323,7 @@ static void init_startup_env(void)
   if (builtin_ref_counter != EXPECTED_PRIM_COUNT) {
     fprintf(stderr,
             "Primitive count %d doesn't match expected count %d\n"
-            "Update the count in src/schminc.h and bump the version in src/schvers.h\n",
+            "Update the count in src/schminc.h and bump the version in ../version/racket_version.h\n",
             builtin_ref_counter, EXPECTED_PRIM_COUNT);
     abort();
   }

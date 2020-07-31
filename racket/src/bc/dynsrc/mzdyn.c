@@ -3,9 +3,9 @@
 
 #include "escheme.h"
 #ifdef INCLUDE_WITHOUT_PATHS
-# include "schvers.h"
+# include "racket_version.h"
 #else
-# include "../src/schvers.h"
+# include "../../version/racket_version.h"
 #endif
 
 #ifdef MZ_PRECISE_GC

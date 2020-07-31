@@ -5361,8 +5361,8 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
 int scheme_is_cpointer(Scheme_Object *cp)
 {
   return (SCHEME_FALSEP(cp)
-          || SCHEME_CPTRP(x)
-          || SCHEME_BYTE_STRINGP(x)
+          || SCHEME_CPTRP(cp)
+          || SCHEME_BYTE_STRINGP(cp)
           || (SCHEME_CHAPERONE_STRUCTP(cp)
               && scheme_struct_type_property_ref(scheme_cpointer_property, cp)));
 }

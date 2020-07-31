@@ -25,11 +25,11 @@ RANLIB = @RANLIB@
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
 RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
-ALL_CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
+ALL_CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../../version $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
 ALL_CFLAGS = $(CFLAGS) $(ALL_CPPFLAGS)
 LIBS = @LIBS@
 
-LIBFFI_INCLUDE_ON = -I../../foreign/libffi/include
+LIBFFI_INCLUDE_ON = -I../foreign/libffi/include
 LIBFFI_INCLUDE_OFF = 
 
 ARLIBFLAGS = @LDFLAGS@ $(LIBS)
@@ -187,7 +187,7 @@ xobjects: $(OBJS) main.@LTO@
 
 # These headers have only preprocessor definitions, so they're not
 # picked up in ".sdep":
-QUIET_DEPS = $(srcdir)/../src/schvers.h $(srcdir)/../sconfig.h ../mzconfig.h
+QUIET_DEPS = $(srcdir)/../../version/racket_version.h $(srcdir)/../sconfig.h ../mzconfig.h
 
 XFORMDEP_NOPRE = $(srcdir)/xform-mod.rkt $(QUIET_DEPS)
 XFORMDEP = $(XFORMDEP_NOPRE) $(XSRCDIR)/precomp.h
@@ -315,7 +315,7 @@ $(XSRCDIR)/validate.c: $(XFORMDEP)
 $(XSRCDIR)/vector.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
 $(XSRCDIR)/foreign.c: $(XFORMDEP)
-	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o ++out $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
+	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../src" @XFORMFLAGS@ -o ++out $(XSRCDIR)/foreign.c $(SRCDIR)/../foreign/foreign.c
 $(XSRCDIR)/main.c: $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_C_DIRS) $(srcdir)/../main.c
 
@@ -559,8 +559,8 @@ gc2.@LTO@: \
 		$(srcdir)/weak.c
 	$(CC) $(ALL_CFLAGS) -I$(builddir)/.. -c $(srcdir)/gc2.c -o gc2.@LTO@
 
-FOREIGN_OBJS_ON = ../../foreign/libffi/src/*.@LTO@ ../../foreign/libffi/src/*/*.@LTO@
-FOREIGN_LIB_ON = ../../foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
+FOREIGN_OBJS_ON = ../foreign/libffi/src/*.@LTO@ ../foreign/libffi/src/*/*.@LTO@
+FOREIGN_LIB_ON = ../foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
 FOREIGN_OBJS_OFF =
 FOREIGN_LIB_OFF =
 FOREIGN_OBJS = $(FOREIGN_OBJS_@OWN_LIBFFI@)

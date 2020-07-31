@@ -18,20 +18,20 @@ collectsdir = @collectsdir@
 builddir = @builddir@
 
 # for version.mak:
-mainsrcdir = @srcdir@/..
-@INCLUDEDEP@ @srcdir@/../racket/version.mak
+mainsrcdir = @srcdir@/../..
+@INCLUDEDEP@ @srcdir@/../version.mak
 
 WXDIR = $(srcdir)/../wxxt
 
-PLTSRCDIR = $(srcdir)/..
-PLTBUILDDIR = $(builddir)/..
+PLTSRCDIR = $(srcdir)/../..
+PLTBUILDDIR = $(builddir)/../..
 
 NOOP = :
 
 # See ../Makefile about RUN_RACKET_<X>, which 
 # typically redirects to RUN_THIS_RACKET_<X>:
-RUN_THIS_RACKET_CGC = ../racket/racket@CGC@
-RUN_THIS_RACKET_MMM = ../racket/racket@MMM@
+RUN_THIS_RACKET_CGC = ../racket@CGC@
+RUN_THIS_RACKET_MMM = ../racket@MMM@
 
 ###########################
 #      Common Macros      #
@@ -48,8 +48,8 @@ GCDIRECTORY = @GCDIR@
 WBUILD = @WBUILD@
 WXVARIANT =  @WXVARIANT@
 
-NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/racket/ -I$(PLTSRCDIR)/racket/include/
-INC = -I$(PLTSRCDIR)/racket/$(GCDIRECTORY) $(NOGCINC)
+NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/bc/ -I$(PLTSRCDIR)/bc/include/ -I$(PLTSRCDIR)/version/
+INC = -I$(PLTSRCDIR)/bc/$(GCDIRECTORY) $(NOGCINC)
 CFLAGS = @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
 CPPFLAGS = @PREFLAGS@
 ALL_CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) $(CFLAGS) $(CPPFLAGS)
@@ -59,26 +59,26 @@ ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 
 GRACKETLINKER = @MZLINKER@
 
-LIBRKTIO = ../rktio/librktio.@LTA@
+LIBRKTIO = ../../rktio/librktio.@LTA@
 LIBRKTIO_a = $(LIBRKTIO)
 LIBRKTIO_la = 
 
-GRACKETLDLIBS@NOT_MINGW@ = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LIBRKTIO_@LIBSFX@) $(LDLIBS)
-GRACKETLDLIBS@MINGW@ = ../racket/libracket.dll.a ../racket/libmzgc.dll.a $(LDLIBS) -ldelayimp -static-libgcc
-GRACKETLDFLAGS = $(LDFLAGS) -L../racket
+GRACKETLDLIBS@NOT_MINGW@ = ../libracket.@LIBSFX@ ../libmzgc.@LIBSFX@ $(LIBRKTIO_@LIBSFX@) $(LDLIBS)
+GRACKETLDLIBS@MINGW@ = ../libracket.dll.a ../libmzgc.dll.a $(LDLIBS) -ldelayimp -static-libgcc
+GRACKETLDFLAGS = $(LDFLAGS) -L..
 
 GRACKETRES@NOT_MINGW@ =
 GRACKETRESDEP@NOT_MINGW@ =
-GRACKETRES@MINGW@ = -mwindows gres.o ../racket/MemoryModule.@LTO@
-GRACKETRESDEP@MINGW@ = gres.o ../racket/MemoryModule.@LTO@
+GRACKETRES@MINGW@ = -mwindows gres.o ../MemoryModule.@LTO@
+GRACKETRESDEP@MINGW@ = gres.o ../MemoryModule.@LTO@
 
 LOCALFLAGS_wx_xt = @WX_MMD_FLAG@
-LOCALFLAGS_wx_mac = -I$(srcdir)/../mac/racket -MMD -DWX_CARBON
+LOCALFLAGS_wx_mac = -I$(srcdir)/../../mac/racket -MMD -DWX_CARBON
 LOCALFLAGS = $(LOCALFLAGS_@WXVARIANT@)
 
 GRACKETOBJECTS = grmain.@LTO@
 
-RACKETDEPS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@
+RACKETDEPS = ../libracket.@LIBSFX@ ../libmzgc.@LIBSFX@
 
 MRSTATIC = 
 MRSTATIC_STUB =
@@ -89,7 +89,7 @@ LINKRESULT_wx_xt = gracket@CGC@@EXE_SUFFIX@
 LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
-SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
 
 # Incremented each time the binaries change:
 DOWNLOAD_BIN_VERSION = 1
@@ -112,8 +112,8 @@ gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(MRSTATIC_STUB) $(G
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o gracket@CGC@ $(GRACKETOBJECTS) $(GRACKETRES) $(GRACKETLDLIBS) $(MRSTATIC_STUB)
 	@POST_LINKER@ gracket@CGC@
 
-gres.o : $(srcdir)/../worksp/gracket/gracket.rc
-	@WINDRES@ -i $(srcdir)/../worksp/gracket/gracket.rc -o gres.o
+gres.o : $(srcdir)/../../worksp/gracket/gracket.rc
+	@WINDRES@ -i $(srcdir)/../../worksp/gracket/gracket.rc -o gres.o
 
 resources@NOT_MINGW@ :
 	$(NOOP)
@@ -125,15 +125,15 @@ MRFW = Racket.framework/Versions/$(FWVERSION)/Racket
 MRAPPSKEL = GRacket@CGC@.app/Contents/Info.plist
 
 # Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
-MACLIBRKT_LINK_fw = -F../racket -framework Racket
-MACLIBRKT_LINK_static = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LIBRKTIO) $(LDLIBS)
+MACLIBRKT_LINK_fw = -F.. -framework Racket
+MACLIBRKT_LINK_static = ../libracket.@LIBSFX@ ../libmzgc.@LIBSFX@ $(LIBRKTIO) $(LDLIBS)
 
 GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@: $(MZFW) $(MRAPPSKEL) grmain.@LTO@ 
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@ grmain.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) -framework CoreFoundation @PROFFLAGS@
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
+	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)/Racket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 
-$(MRAPPSKEL): $(srcdir)/../mac/osx_appl.rkt $(srcdir)/../racket/src/schvers.h $(srcdir)/../mac/icon/GRacket.icns
-	env BUILDBASE=.. @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) $(MRAPPSKEL) mrappskel.d $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
+$(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../../version/racket_version.h $(srcdir)/../../mac/icon/GRacket.icns
+	env BUILDBASE=../.. @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) $(MRAPPSKEL) mrappskel.d $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@CGC@"
 @INCLUDEDEP@ mrappskel.d
 
 ee-app: gracket grmain_ee.@LTO@
@@ -148,13 +148,13 @@ solaris-static:
 linux-static:
 	$(MAKE) gracket MRSTATIC=--static LDNONSTATICLIBS='-ldl'
 
-DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; @PWD@`"'"'
-DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../..; @PWD@`/etc"'"'
+DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; @PWD@`"'"'
+DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../..; @PWD@`/etc"'"'
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
-grmain.@LTO@ :  $(srcdir)/grmain.c $(srcdir)/../racket/main.c \
-            $(srcdir)/../racket/cmdline.inc $(srcdir)/../racket/src/stypes.h \
-            $(srcdir)/../racket/include/scheme.h
+grmain.@LTO@ :  $(srcdir)/grmain.c $(srcdir)/../main.c \
+            $(srcdir)/../cmdline.inc $(srcdir)/../src/stypes.h \
+            $(srcdir)/../include/scheme.h
 	$(CC) $(LOCALFLAGS) $(ALL_CFLAGS) $(DEF_C_DIRS) -c $(srcdir)/grmain.c -o grmain.@LTO@
 
 grmain_ee.@LTO@ : gracket.@LTO@
@@ -224,7 +224,7 @@ install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) gracket/gracket@CGC@@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
 	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
 
 install-wx_xt-cgc-final:
 	$(NOOP)
@@ -239,7 +239,7 @@ install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) gracket/gracket@MMM@@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
+	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
 
 install-wx_xt-3m-final:
 	$(NOOP)
@@ -259,9 +259,9 @@ install-wx_mac:
 
 install-wx_mac-cgc:
 	cd ..; $(ICP) -r gracket/GRacket@CGC@.app $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(INSTALL_SETUP_BOOT) "$(srcdir)/../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(INSTALL_SETUP_BOOT) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
 	@STRIP_DEBUG@ $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
 
 install-wx_mac-cgc-final:
@@ -269,9 +269,9 @@ install-wx_mac-cgc-final:
 
 install-wx_mac-3m:
 	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) $(INSTALL_SETUP_BOOT) "$(srcdir)/../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
+	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) $(INSTALL_SETUP_BOOT) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
+	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
 	@STRIP_DEBUG@ $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 
 install-wx_mac-3m-final:

@@ -28,9 +28,9 @@ ICP = @ICP@
 # but it can also redirect to an existing Racket executable
 # that is the same as the version being built (which is
 # useful for cross-compilation, for example).
-RUN_THIS_RACKET_CGC = racket/racket@CGC@
-RUN_THIS_RACKET_MMM = racket/racket@MMM@
-RUN_THIS_RACKET_MAIN_VARIANT = racket/racket@MAIN_VARIANT@
+RUN_THIS_RACKET_CGC = bc/racket@CGC@
+RUN_THIS_RACKET_MMM = bc/racket@MMM@
+RUN_THIS_RACKET_MAIN_VARIANT = bc/racket@MAIN_VARIANT@
 
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(collectsdir)" \
@@ -52,30 +52,35 @@ COPYING = "$(srcdir)/LICENSE-libscheme.txt" \
 all:
 	$(MAKE) @MAIN_MAKE_TARGET@
 
-bc:
+racketbc:
 	$(MAKE) @MAIN_VARIANT@
+
+.PHONY: bc
+bc:
+	$(MAKE) racketbc
 
 TAGS:
 	etags `find "@srcdir@/racket" -type f`
 
 3m:
 	$(MAKE) @MAKE_LOCAL_RACKET@
-	cd racket; $(MAKE) 3m
+	cd bc && $(MAKE) 3m
 	$(MAKE) @MAKE_GRACKET@-3m
 
 gracket-3m:
-	cd gracket; $(MAKE) 3m
+	cd bc/gracket && $(MAKE) 3m
 
 no-3m:
 	$(NOOP)
 
+.PHONY: cgc
 cgc:
 	$(MAKE) @MAKE_LOCAL_RACKET@
-	cd racket; $(MAKE) cgc
+	cd bc && $(MAKE) cgc
 	$(MAKE) @MAKE_GRACKET@-cgc
 
 gracket-cgc:
-	cd gracket; $(MAKE) cgc
+	cd bc/gracket && $(MAKE) cgc
 
 no-cgc:
 	$(NOOP)
@@ -87,7 +92,7 @@ both:
 racketcs:
 	if [ ! -f cs/c/Makefile ]; then $(MAKE) cs-explain-configure; fi
 	$(MAKE) @CS_BOOTSTRAP_HELP@
-	cd cs/c; $(MAKE)
+	cd cs/c && $(MAKE)
 
 .PHONY: cs
 cs:
@@ -102,13 +107,13 @@ cs-explain-configure:
 no-local-racket:
 	$(NOOP)
 
-local/racket/racket3m:
+local/bc/racket3m:
 	mkdir -p local
 	$(MAKE) local/Makefile
-	cd local ; $(MAKE)
+	cd local  && $(MAKE)
 
 local/Makefile:
-	cd local ; `cd ..; cd $(srcdir); pwd`/configure --disable-gracket
+	cd local  && `cd ..; cd $(srcdir); pwd`/configure --disable-gracket
 
 # Install (common) ----------------------------------------
 
@@ -182,7 +187,7 @@ preserve-raco-pkg-default-scope:
 	$(NOOP)
 
 install-gracket-post-collects:
-	cd gracket; $(MAKE) install-post-collects
+	cd bc/gracket && $(MAKE) install-post-collects
 
 install-no-post-collects:
 	$(NOOP)
@@ -201,7 +206,7 @@ fix-paths:
 
 install-3m-common:
 	$(MAKE) install-common-first
-	cd racket; $(MAKE) install-3m
+	cd bc && $(MAKE) install-3m
 	$(MAKE) install-@MAKE_GRACKET@-3m
 	$(MAKE) install-common-middle
 
@@ -218,13 +223,13 @@ install-no-3m:
 	$(NOOP)
 
 install-gracket-3m:
-	cd gracket; $(MAKE) install-3m
+	cd bc/gracket && $(MAKE) install-3m
 
 # CGC install ----------------------------------------
 
 install-cgc-common:
 	$(MAKE) install-common-first
-	cd racket; $(MAKE) install-cgc
+	cd bc && $(MAKE) install-cgc
 	$(MAKE) install-@MAKE_GRACKET@-cgc
 	$(MAKE) install-common-middle
 
@@ -241,13 +246,13 @@ install-no-cgc:
 	$(NOOP)
 
 install-gracket-cgc:
-	cd gracket; $(MAKE) install-cgc
+	cd bc/gracket && $(MAKE) install-cgc
 
 # Both install ----------------------------------------
 
 install-both-common:
 	$(MAKE) install-common-first
-	cd racket; $(MAKE) install-both
+	cd bc && $(MAKE) install-both
 	$(MAKE) install-@MAKE_GRACKET@-both
 	$(MAKE) install-common-middle
 
@@ -264,7 +269,7 @@ install-no-both:
 	$(NOOP)
 
 install-gracket-both:
-	cd gracket; $(MAKE) install-both
+	cd bc/gracket && $(MAKE) install-both
 
 # CS install ----------------------------------------
 
@@ -272,9 +277,9 @@ CS_SETUP_INSTALL_TARGET = setup-install
 
 install-cs-common:
 	$(MAKE) install-common-first
-	cd cs/c; $(MAKE) plain-install
+	cd cs/c && $(MAKE) plain-install
 	$(MAKE) install-common-middle MIDDLE_POST_COLLECTS=install-no-post-collects
-	cd cs/c; $(MAKE) $(CS_SETUP_INSTALL_TARGET) $(PROPAGATE_VARIABLES)
+	cd cs/c && $(MAKE) $(CS_SETUP_INSTALL_TARGET) $(PROPAGATE_VARIABLES)
 	$(MAKE) install-common-last
 
 install-racketcs:
@@ -301,17 +306,17 @@ install-pdf:
 # Clean ----------------------------------------
 
 clean:
-	cd racket; $(MAKE) clean
-	if [ -d gracket ]; then cd gracket; $(MAKE) clean; fi
+	cd bc && $(MAKE) clean
+	if [ -d bc/gracket ]; then cd bc/gracket; $(MAKE) clean; fi
 	rm -rf compiled
 	rm -f TAGS
 
 # Reconfigure ----------------------------------------
 
-SRC_MAKEFILES = $(srcdir)/Makefile.in $(srcdir)/racket/Makefile.in \
-                $(srcdir)/racket/src/Makefile.in $(srcdir)/gracket/Makefile.in \
-                $(srcdir)/racket/gc2/Makefile.in $(srcdir)/gracket/gc2/Makefile.in \
-                $(srcdir)/rktio/Makefile.in $(srcdir)/racket/dynsrc/Makefile.in
+SRC_MAKEFILES = $(srcdir)/Makefile.in $(srcdir)/bc/Makefile.in \
+                $(srcdir)/bc/src/Makefile.in $(srcdir)/bc/gracket/Makefile.in \
+                $(srcdir)/bc/gc2/Makefile.in $(srcdir)/bc/gracket/gc2/Makefile.in \
+                $(srcdir)/rktio/Makefile.in $(srcdir)/bc/dynsrc/Makefile.in
 
 # Only fire the `Makefile` rule explicitly via `reconfigure`
 NO_RECONFIG =

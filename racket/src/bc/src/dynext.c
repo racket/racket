@@ -4,7 +4,7 @@
 #endif
 
 #include "schpriv.h"
-#include "schvers.h"
+#include "racket_version.h"
 #include "schgc.h"
 
 #ifdef UNIX_DYNAMIC_LOAD
