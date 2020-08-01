@@ -64,7 +64,7 @@ PLT_SETUP_OPTIONS =
 CPUS =
 
 # Target selector: `cs` or `bc`
-VM = bc
+VM = cs
 
 # Target selector: `minimal` or `skip`
 INITIAL_SETUP_MODE = minimal
@@ -219,7 +219,7 @@ win-base-config:
 # Racket BC
 
 # Can be `bc` or empty:
-RACKETBC_SUFFIX = 
+RACKETBC_SUFFIX = bc
 
 bc:
 	$(MAKE) bc-in-place
@@ -309,7 +309,7 @@ racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-bc racket/s
 # Racket CS
 
 # Can be `cs` or empty:
-RACKETCS_SUFFIX = cs
+RACKETCS_SUFFIX =
 
 # If `RACKET` and `RACKET_FOR_BOOTFILES` are not set, the build uses the
 # `pb` repo to get initial portable-byte Chez Scheme boot files.
@@ -483,8 +483,8 @@ racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/
 # ... but update packages and builds docs only once
 
 both:
-	$(MAKE) bc IN_PLACE_SETUP_OPTIONS="--error-out build/step"
-	$(MAKE) also-cs IN_PLACE_SETUP_OPTIONS="--error-in build/step"
+	$(MAKE) cs IN_PLACE_SETUP_OPTIONS="--error-out build/step"
+	$(MAKE) also-bc IN_PLACE_SETUP_OPTIONS="--error-in build/step"
 
 plain-also:
 	$(MAKE) $(VM) INITIAL_SETUP_MODE=skip PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
@@ -497,8 +497,8 @@ also-bc:
 
 
 win-both:
-	$(MAKE) win-bc
-	$(MAKE) win-also-cs
+	$(MAKE) win-cs
+	$(MAKE) win-also-bc
 
 win-plain-also:
 	$(MAKE) $(VM) INITIAL_SETUP_MODE=skip PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"

@@ -341,9 +341,11 @@
                    [(hash-equal? k) 'hash]
                    [(hash-eqv? k) 'hasheqv]
                    [else 'hasheq])
-                 ,@(for*/list ([(k v) (in-hash k)]
-                               [e (in-list (list k v))])
-                     `(quote ,e)))]
+                 ,@(apply append
+                          (hash-map k
+                                    (lambda (k v)
+                                      (list `(quote ,k)
+                                            `(quote ,v))))))]
               [(pair? k)
                `(cons ,(loop (car k)) ,(loop (cdr k)))]
               [(keyword? k)

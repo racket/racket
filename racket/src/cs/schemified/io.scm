@@ -360,91 +360,91 @@
 (define hash2725 (hash))
 (define hash2337
   (hasheq
-   'host-config-dir
-   '5
-   'init-file
-   '17
-   'collects-dir
-   '4
-   'run-file
-   '2
-   'desk-dir
-   '14
    'orig-dir
    '7
-   'sys-dir
-   '9
-   'addon-dir
-   '12
+   'home-dir
+   '13
+   'host-config-dir
+   '5
    'host-collects-dir
    '6
    'config-dir
    '3
-   'temp-dir
-   '8
-   'home-dir
-   '13
+   'init-file
+   '17
+   'collects-dir
+   '4
    'exec-file
    '1
-   'doc-dir
-   '15
-   'pref-dir
-   '10
+   'temp-dir
+   '8
+   'init-dir
+   '16
    'pref-file
    '11
-   'init-dir
-   '16))
+   'desk-dir
+   '14
+   'sys-dir
+   '9
+   'addon-dir
+   '12
+   'run-file
+   '2
+   'pref-dir
+   '10
+   'doc-dir
+   '15))
 (define hash2610 (hasheq))
 (define hash3229
   (hasheq
-   'SW_MINIMIZE
-   '3
-   'SW_SHOW
-   '5
-   'SW_SHOWNORMAL
-   '12
-   'sw_showminimized
-   '8
-   'SW_SHOWMAXIMIZED
-   '7
-   'SW_SHOWMINNOACTIVE
-   '9
-   'sw_showdefault
-   '6
+   'sw_maximize
+   '2
    'SW_RESTORE
    '4
-   'SW_MAXIMIZE
-   '2
-   'sw_showmaximized
-   '7
-   'SW_SHOWNA
-   '10
    'SW_SHOWDEFAULT
    '6
+   'SW_MINIMIZE
+   '3
+   'sw_showna
+   '10
+   'sw_showmaximized
+   '7
+   'sw_minimize
+   '3
+   'sw_showdefault
+   '6
+   'SW_SHOWMINNOACTIVE
+   '9
+   'sw_showminimized
+   '8
+   'SW_SHOWNOACTIVATE
+   '11
+   'SW_SHOWNA
+   '10
+   'SW_SHOWNORMAL
+   '12
+   'SW_SHOWMAXIMIZED
+   '7
+   'sw_show
+   '5
+   'SW_MAXIMIZE
+   '2
+   'SW_HIDE
+   '1
+   'SW_SHOWMINIMIZED
+   '8
    'sw_shownoactivate
    '11
    'sw_restore
    '4
+   'sw_hide
+   '1
    'sw_showminnoactive
    '9
-   'sw_showna
-   '10
-   'SW_SHOWNOACTIVATE
-   '11
-   'sw_maximize
-   '2
-   'sw_show
-   '5
-   'SW_SHOWMINIMIZED
-   '8
-   'SW_HIDE
-   '1
    'sw_shownormal
    '12
-   'sw_minimize
-   '3
-   'sw_hide
-   '1))
+   'SW_SHOW
+   '5))
 (define call/ec call-with-escape-continuation)
 (define bad-list$1
   (|#%name|

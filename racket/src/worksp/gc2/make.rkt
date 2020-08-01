@@ -3,15 +3,12 @@
          racket/cmdline
 	 (for-label "../../bc/gc2/xform-mod.rkt"))
 
-(define suffix "")
+(define bc-suffix "")
 
 (command-line
  #:once-each
- [("--build-level") level "Specify a suffix-determining build level"
-                    (unless (equal? level "all")
-                      (set! suffix (if (equal? level "bc")
-                                       "BC"
-                                       level)))]
+ [("--suffix") suffix "Specify an executable suffix"
+               (set! bc-suffix suffix)]
  #:args ()
  (void))
 
@@ -236,6 +233,8 @@
 
 (try "../../bc/main.c"
      (list* "../../bc/main.c"
+            "../bc_suffix.h"
+            "../mzconfig.h"
 	    common-deps)
      "xsrc/main.c"
      "xsrc/main.obj"
@@ -289,7 +288,7 @@
 (c-compile "../../bc/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
 
 (define dll "../../../lib/libracket3mxxxxxxx.dll")
-(define exe (format "../../../Racket~a.exe" suffix))
+(define exe (format "../../../Racket~a.exe" bc-suffix))
 
 (define libs "kernel32.lib user32.lib ws2_32.lib shell32.lib advapi32.lib winmm.lib")
 
@@ -408,7 +407,7 @@
 
 (check-rc "gracket.res" "../gracket/gracket.rc" "../gracket/gracket.ico")
 
-(define gui-exe (format "../../../lib/GRacket~a.exe" suffix))
+(define gui-exe (format "../../../lib/GRacket~a.exe" bc-suffix))
 
 (link-exe (list
            "gracket.res"
@@ -436,6 +435,6 @@
 (copy-file/diff "mzdyn3m.exp" "../../../lib/msvc/mzdyn3m.exp")
 (copy-file/diff "mzdyn3m.obj" "../../../lib/msvc/mzdyn3m.obj")
 
-(when (equal? suffix "")
+(when (equal? bc-suffix "")
   (parameterize ([current-command-line-arguments (vector "../../../lib/system.rktd")])
     (dynamic-require "../../bc/mksystem.rkt" #f)))

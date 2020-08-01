@@ -2958,13 +2958,9 @@ if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
 else
   CS_INSTALLED=cs
-fi
 
-CS_COMPILED_SUBDIR=1
-COMP_SUBDIR_CONFIGURE_ARGS=
-if test "${enable_csdefault}" = "yes" ; then
-  CS_COMPILED_SUBDIR=0
-  COMP_SUBDIR_CONFIGURE_ARGS=--enable-csdefault
+$as_echo "#define CS_COMPILED_SUBDIR 1" >>confdefs.h
+
 fi
 
 ############## Install targets ################

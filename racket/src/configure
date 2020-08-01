@@ -20,7 +20,7 @@ for arg in $*; do
         --enable-cs | --enable-csdefault)
             use_cs=yes
             ;;
-        --enable-bc | --enable-bcdefault)
+        --enable-bc | --enable-bcdefault | --enable-cgcdefault)
             use_bc=yes
             ;;
         --enable-csonly)

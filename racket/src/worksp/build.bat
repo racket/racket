@@ -12,7 +12,7 @@ cl genvsx.c
 genvsx.exe
 if errorlevel 1 (set PLTSLNVER=X)
 
-echo #define COMPILED_PATH_AS%BC_SUFFIX% > bc_suffix_new.h
+echo #define COMPILED_PATH_AS_%BC_SUFFIX% > bc_suffix_new.h
 fc bc_suffix.h bc_suffix_new.h
 if errorlevel 1 (copy bc_suffix_new.h bc_suffix.h)
 del bc_suffix_new.h
@@ -46,8 +46,11 @@ cd ..
 REM  Assumes that Racket is started in a subdirectory of here:
 set BOOT_SETUP=-W "info@compiler/cm error" -l- setup --boot ../../setup-go.rkt ../compiled
 
+REM Set after BC_SUFFIX is used to determine the "compiled" subdirectory
+if "%BUILD_LEVEL%"=="bc" set BC_SUFFIX=BC
+
 cd gc2
-..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt --build-level %BUILD_LEVEL%
+..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt --suffix "%BC_SUFFIX%"
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -68,7 +71,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
-..\..\..\racket -G ..\%BUILD_CONFIG% %BOOT_SETUP% mzcom.none ../compiled/mzcom.dep xform.rkt
+..\..\..\racket%BC_SUFFIX% -G ..\%BUILD_CONFIG% %BOOT_SETUP% mzcom.none ../compiled/mzcom.dep xform.rkt
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -89,10 +92,10 @@ copy ..\LICENSE-GPL.txt ..\..\share\
 if errorlevel 1 exit /B 1
 
 set PLT_REPLACE_INDEPENDENT_LAUNCHERS=yes
-..\..\racket -G %BUILD_CONFIG% -N "raco" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
+..\..\racket%BC_SUFFIX% -G %BUILD_CONFIG% -N "raco" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1
 
-..\..\racket -G ..\%BUILD_CONFIG% -u gendef.rkt
+..\..\racket%BC_SUFFIX% -G ..\%BUILD_CONFIG% -u gendef.rkt
 if errorlevel 1 exit /B 1
 
 :doneBuilding

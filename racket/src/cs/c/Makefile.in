@@ -379,15 +379,14 @@ DEF_CONFIG_DIR@NOT_MINGW@ = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../.
 DEF_COLLECTS_DIR@MINGW@ =
 DEF_CONFIG_DIR@MINGW@ =
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
-COMP_SUBDIR = -DCS_COMPILED_SUBDIR=@CS_COMPILED_SUBDIR@
 
-MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h $(srcdir)/../../start/config.inc
+MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h $(srcdir)/../../start/config.inc cs_config.h
 
 main.o: $(MAIN_DEPS)
-	$(CC) $(CFLAGS) $(DEF_C_DIRS) $(COMP_SUBDIR) -c -o main.o $(srcdir)/main.c
+	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o main.o $(srcdir)/main.c
 
 grmain.o: $(srcdir)/grmain.c $(MAIN_DEPS) $(srcdir)/../../start/gui_filter.inc
-	$(CC) $(CFLAGS) $(DEF_C_DIRS) $(COMP_SUBDIR) -c -o grmain.o $(srcdir)/grmain.c
+	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o grmain.o $(srcdir)/grmain.c
 
 boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
 	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
@@ -550,8 +549,6 @@ check-racketcs:
 # ----------------------------------------
 # Reconfigure
 
-COMP_SUBDIR_CONFIGURE_ARGS=@COMP_SUBDIR_CONFIGURE_ARGS@
-
 CONFIGURE_SRCS = $(srcdir)/configure $(srcdir)/Makefile.in \
                  $(srcdir)/../../rktio/Makefile.in $(srcdir)/../../rktio/configure
 
@@ -563,7 +560,7 @@ reconfigure:
 	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
 
 Makefile$(ON_RECONFIG): $(CONFIGURE_SRCS)
-	$(srcdir)/configure $(COMP_SUBDIR_CONFIGURE_ARGS) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
 Makefile$(NO_RECONFIG):
 	$(NOOP)

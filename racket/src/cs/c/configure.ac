@@ -104,13 +104,7 @@ if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
 else
   CS_INSTALLED=cs
-fi
-
-CS_COMPILED_SUBDIR=1
-COMP_SUBDIR_CONFIGURE_ARGS=
-if test "${enable_csdefault}" = "yes" ; then
-  CS_COMPILED_SUBDIR=0
-  COMP_SUBDIR_CONFIGURE_ARGS=--enable-csdefault
+  AC_DEFINE(CS_COMPILED_SUBDIR,1,[Use a subdirectory of "compiled"])
 fi
 
 ############## Install targets ################

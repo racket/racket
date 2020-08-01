@@ -24,7 +24,7 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 #endif
 
 #ifndef CS_COMPILED_SUBDIR
-# define CS_COMPILED_SUBDIR 1
+# define CS_COMPILED_SUBDIR 0
 #endif
 
 #define XFORM_SKIP_PROC /* empty */

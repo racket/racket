@@ -98,7 +98,7 @@ typedef unsigned long uintptr_t;
 /* For platforms like Linux, where context info may not be available: */
 #undef MZ_NO_UNWIND_SUPPORT
 
-/* Initialize the compiled directory path "compiled/bc": */
+/* Whether to put ".zo" files in "compiled" or "compiled/bc": */
 #undef COMPILED_PATH_AS_BC
 
 #endif
