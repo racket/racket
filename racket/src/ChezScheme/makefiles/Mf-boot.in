@@ -28,4 +28,4 @@ doit: $(bootfiles)
             mv -f ../xc-$*/boot/$*/$$x ../boot/$*/$$x ;\
           fi ;\
         done
-	: rm -rf ../xc-$*
+	rm -rf ../xc-$*
