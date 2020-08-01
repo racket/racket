@@ -429,7 +429,7 @@ install-gracket-3m:
 	cd gracket; $(MAKE) install-3m
 
 install-gracket-cgc:
-	cd gracket; $(MAKE) install-3m
+	cd gracket; $(MAKE) install-cgc
 
 install-no-3m:
 	$(NOOP)
