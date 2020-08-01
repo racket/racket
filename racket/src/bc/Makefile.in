@@ -407,12 +407,14 @@ install-3m:
 	$(MAKE) @MZINSTALLTARGET@
 	$(MAKE) @MZINSTALLTARGET@-3m
 	$(MAKE) @MZINSTALLTARGET@-3m-final
+	$(MAKE) install-@MAKE_GRACKET@-3m
 
 install-cgc:
 	$(MAKE) headers
 	$(MAKE) @MZINSTALLTARGET@
 	$(MAKE) @MZINSTALLTARGET@-cgc
 	$(MAKE) @MZINSTALLTARGET@-cgc-final
+	$(MAKE) install-@MAKE_GRACKET@-cgc
 
 install-both:
 	$(MAKE) headers
@@ -420,6 +422,20 @@ install-both:
 	$(MAKE) @MZINSTALLTARGET@-3m
 	$(MAKE) @MZINSTALLTARGET@-cgc
 	$(MAKE) @MZINSTALLTARGET@-@MAIN_VARIANT@-final
+	$(MAKE) install-@MAKE_GRACKET@-3m
+	$(MAKE) install-@MAKE_GRACKET@-cgc
+
+install-gracket-3m:
+	cd gracket; $(MAKE) install-3m
+
+install-gracket-cgc:
+	cd gracket; $(MAKE) install-3m
+
+install-no-3m:
+	$(NOOP)
+
+install-no-cgc:
+	$(NOOP)
 
 install-lib-finish:
 	if [ "$(DESTDIR)" = "" ]; then \
