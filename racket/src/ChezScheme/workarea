@@ -153,8 +153,10 @@ case "$srcdir" in
 esac
 
 if [ -f boot/$M/scheme.boot ] ; then
+    upbootdir=..
     upupupbootdir=../../..
 else
+    upbootdir=$upsrcdir
     upupupbootdir=$upupupsrcdir
 fi
 

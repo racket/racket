@@ -106,8 +106,10 @@ endif
 
 ProfileDumpSource = source.pd
 ProfileDumpBlock = block.pd
-PetiteBoot = ../boot/$m/petite.boot
-SchemeBoot = ../boot/$m/scheme.boot
+PetiteBootRel = boot/$m/petite.boot
+PetiteBoot = ../${PetiteBootRel}
+SchemeBootRel = boot/$m/scheme.boot
+SchemeBoot = ../${SchemeBootRel}
 Cheader = ../boot/$m/scheme.h
 Cequates = ../boot/$m/equates.h
 Cgcocd = ../boot/$m/gc-ocd.inc
@@ -349,13 +351,24 @@ resetbootlinks:
 	-@echo '(reset-handler abort)'\
                '(for-each'\
                   '(lambda (fn)'\
-                     '(let ([fn (symbol->string fn)])'\
+                     '(let ([fn (format "../~a" fn)]'\
+                           '[bn (format "$upupbootdir/~a" fn)]'\
+                           '[q  (integer->char 34)])'\
                         '(unless (file-symbolic-link? fn)'\
-                           '(when (guard (c [else #f]) (#%$$fasl-file-equal? (format "../~a" fn) fn))'\
-                              '(system (format "ln -sf ../../~a ~a" fn fn))'\
+                           '(when (guard (c [else #f]) (#%$$fasl-file-equal? bn fn))'\
+                              '(system (format "ln -sf ~a~a~a ~a" q fn q fn))'\
                               '(void)))))'\
-                  '(list (quote ${SchemeBoot}) (quote ${PetiteBoot})))'\
+                  '(list (quote ${SchemeBootRel}) (quote ${PetiteBootRel})))'\
              | ${Scheme} -q
+
+keepbootfiles:
+	for x in `echo scheme.boot petite.boot scheme.h equates.h gc-oce.inc gc-ocd.inc vfasl.inc` ; do\
+          if [ ! -h ../boot/$(m)/$$x ] ; then \
+            mv -f ../boot/$(m)/$$x ../../boot/$(m)/$$x ;\
+          elif [ "${upupupbootdir}" != "../../.." ] ; then \
+            cp ../boot/$(m)/$$x ../../boot/$(m)/$$x ;\
+          fi ;\
+        done
 
 ${PetiteBoot}: ${macroobj} ${patchfile} ${baseobj}
 	echo '(reset-handler abort)'\
