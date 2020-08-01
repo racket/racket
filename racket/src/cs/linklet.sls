@@ -882,7 +882,7 @@
           ""]
          [(instance-name i)
           => (lambda (name)
-               (#%format "\n  module: ~a" name))]
+               (#%format "\n  in module: ~a" name))]
          [else ""]))]
      [else ""]))
 
