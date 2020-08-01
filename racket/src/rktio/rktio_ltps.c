@@ -499,7 +499,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
       key = ev.data.fd;
       v = ltps_hash_get(lt, key);
       if (v) {
-	if (ev.events & (POLLIN | POLLHUP | POLLERR)) {
+	if (ev.events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
 	  s = v->read_handle;
           if (s) {
             ltps_signal_handle(lt, s);
@@ -507,7 +507,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
             v->read_handle = NULL;
           }
 	}
-	if (ev.events & (POLLOUT | POLLHUP | POLLERR)) {
+	if (ev.events & (EPOLLOUT | EPOLLHUP | EPOLLERR)) {
 	  s = v->write_handle;
           if (s) {
             ltps_signal_handle(lt, s);
@@ -521,8 +521,8 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
           kr = epoll_ctl(lt->fd, EPOLL_CTL_DEL, ev.data.fd, NULL);
           log_kqueue_error("remove*", kr);
         } else {
-	  ev.events = ((!v->read_handle ? 0 : POLLIN)
-		       | (!v->write_handle ? 0 : POLLOUT));
+	  ev.events = ((!v->read_handle ? 0 : EPOLLIN)
+		       | (!v->write_handle ? 0 : EPOLLOUT));
 	  kr = epoll_ctl(lt->fd, EPOLL_CTL_MOD, ev.data.fd, &ev);
 	  log_kqueue_error("update", kr);
 	}
