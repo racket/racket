@@ -15,7 +15,7 @@
 
 (define (exe s)
   (define me (path-replace-suffix (find-exe) #""))
-  (define ending (bytes->string/utf-8 (cadr (regexp-match #rx#"(?i:racket)([cs3mg]*)$" me))))
+  (define ending (bytes->string/utf-8 (cadr (regexp-match #rx#"(?i:racket)([cs3mgbc]*)$" me))))
   (string-append s ending (if (eq? (system-type) 'windows) ".exe" "")))
 
 (define (check auto-dir? v)
