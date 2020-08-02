@@ -43,25 +43,31 @@
             #:tgz? #t)))
 
 (define (cs-machine #:name name #:pkgs [pkgs distro-content])
-  (machine #:dir "cs-build"
-           #:repo source-dir
-           #:pull? #f
-           #:j 2
-           #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
-           #:variant 'cs
-           #:dist-suffix (if (null? pkgs) "min-cs" "cs")
-           #:versionless? #t
-           #:pkgs pkgs
-           #:log-file (convert-log-name name)
-           #:name name))
+  (machine
+   #:dist-suffix (if (null? pkgs) "min" "")
+   #:j 2
+   #:log-file (convert-log-name name)
+   #:name name
+   #:pkgs pkgs
+   #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
+   #:variant 'cs
+   #:versionless? #t))
 
 (define (bc-machine #:name name #:pkgs [pkgs distro-content])
-  (machine #:versionless? #t
-           #:pkgs pkgs
-           #:j 2
-           #:dist-suffix (if (null? pkgs) "min" "")
-           #:log-file (convert-log-name name)
-           #:name name))
+  (machine
+   ;; these three lines are because it's the non-default build
+   #:dir "bc-build"
+   #:repo source-dir
+   #:pull? #f
+   ;; this is just usual configuration (mirrored for cs-machine)
+   #:dist-suffix (if (null? pkgs) "min-bc" "bc")
+   #:j 2
+   #:log-file (convert-log-name name)
+   #:name name
+   #:pkgs pkgs
+   #:timeout (* 60 60 (if (null? pkgs) 1/2 2)) ;; 2 hours for the full build
+   #:variant 'bc
+   #:versionless? #t))
 
 ;; The overall configuration:
 (sequential
