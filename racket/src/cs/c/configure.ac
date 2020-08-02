@@ -194,14 +194,14 @@ case "$host_os" in
   *freebsd*)
     MACH_OS=fb
     CFLAGS="${CFLAGS} -I/usr/local/include"
-    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
+    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
   openbsd*)
     MACH_OS=ob
     CFLAGS="${CFLAGS} -I/usr/local/include"
-    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
+    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -221,14 +221,9 @@ case "$host_os" in
     ;;
   linux*)
     MACH_OS=le
-    LIBS="${LIBS} -lrt -luuid"
+    LIBS="${LIBS} -lrt"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
-    AC_CHECK_HEADER(uuid/uuid.h, ok_uuid=yes, ok_uuid=no)
-    if test "${ok_uuid}" != "yes"; then
-      echo Could not find uuid/uuid.h, needed for Chez Scheme
-      exit 1
-    fi
     ;;
   osf1*)
     ;;
