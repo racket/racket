@@ -20,9 +20,9 @@
                 ;; then claim to be the "setup" command:
                 ;; if the program name is "racket", assume that there's a "racket -l setup"
                 ;; going on in there and also claim to be the "raco setup" command
-                (if (if (regexp-match? #rx"^raco(?i:|3m|cgc|cs)$" (path->string name))
+                (if (if (regexp-match? #rx"^raco(?i:|3m|cgc|cs|bc)$" (path->string name))
                         #t
-                        (regexp-match? #rx"^racket(?i:|3m|cgc|cs)$" (path->string name)))
+                        (regexp-match? #rx"^racket(?i:|3m|cgc|cs|bc)$" (path->string name)))
                     (values "raco setup"
                             (string-append (regexp-replace*
                                             #rx"racket$"
