@@ -28,21 +28,6 @@ work, but will not actually change any environment variables.
 After you have Visual Studio command-line tools set up, then you can
 build either the Racket BC or Racket CS implementations (or both).
 
-Racket BC
----------
-
-Build the Racket BC implementation using
-
-   build.bat
-
-The result is "..\..\Racket.exe", DLLs and "GRacket.exe" in
-"..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
-
-A "..\..\RacketCGC.exe" executable and associated DLLs are built in
-the process of building "..\..\Racket.exe".
-
-See also "Completing the Build" below.
-
 Racket CS
 ---------
 
@@ -50,35 +35,51 @@ Build the Racket CS implementation using
 
    build-cs.bat
 
-which builds "..\..\Racket3m.exe" to bootstrap the build, because the
+which builds "..\..\RacketBC.exe" to bootstrap the build, because the
 main build script is implemented in Racket.
 
 To instead build using an existing Racket installation (version 7.1 or
 later), use
 
-   racket.exe csbuild.rkt --racketcs-suffix ""
+   racket.exe csbuild.rkt
 
 The result is "..\..\Racket.exe", DLLs and "GRacket.exe" in
 "..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
 Many intermediate files will be put in "../build".
+
+To add a "CS" suffix to the generated executables, call "csbuild.rkt"
+with `--racketcs-suffix "CS"`.
+
+See also "Completing the Build" below.
+
+Racket BC
+---------
+
+Build the Racket BC implementation using
+
+   build.bat
+
+The result is "..\..\RacketBC.exe", DLLs and "GRacketBC.exe" in
+"..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
+
+A "..\..\RacketCGC.exe" executable and associated DLLs are built in
+the process of building "..\..\RacketBC.exe".
+
+To avoid the "BC" suffix, set the `UNDERSCORE_BC_SUFFIX` environment
+variable to `_` before running "build.bat".
 
 See also "Completing the Build" below.
 
 Both Racket BC and Racket CS
 ----------------------------
 
-When using "csbuild.rkt" directly, omit the `--racketcs-suffix ""`
-arguments to create "..\..\RacketCS.exe" executable instead of
-"..\..\Racket.exe". A build with a "CS" suffix is also configured to
-read and bytecode in a subdirectory of "compiled" as described in
-"..\cs\README.txt".
-
-A "CS" suffix and using a subdirectory of "compiled" means that a
-Racket CS build as "RacketCS.exe" can coexist with a BC build as
-"Racket.exe". So, the sequence
+A Racket BC build with a "BC" suffix is also configured to read and
+bytecode in a "bc" subdirectory of "compiled". COnsequently, a
+"RacketBC.exe" build can coexist with a CS build as "Racket.exe". So,
+the sequence
 
    build.bat
-   ..\..\Racket.exe csbuild.rkt
+   ..\..\RacketBC.exe csbuild.rkt
 
 builds both.
 

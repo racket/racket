@@ -26,40 +26,19 @@ Report bugs:
 
 
 ========================================================================
- Racket BC (ByteCode / Before Chez) versus Racket CS (Chez Scheme)
+ Racket CS (Chez Scheme) versus Racket BC (ByteCode / Before Chez)
 ========================================================================
 
 This source directory contains implementations for two different
 versions of Racket: the original BC implementation that is
-substantially implemented in C, and the CS implementation that builds
-on Chez Scheme.
-
-Racket BC
----------
-
-By default, `configure` and the Windows scripts build the BC
-implementation of Racket.
-
-To build Racket BC on Windows, see See "worksp\README.txt" for
-information.
-
-If you need more information specific to Racket BC, see
-"bc/README.txt".
+substantially implemented in C, and the CS implementation that is
+implemented in Chez Scheme and Racket (compiled to Chez Scheme).
 
 Racket CS
 ---------
 
-To build Racket CS on Unix variants or Mac OS:
-
- * ... in addition Racket BC: supply `--enable-cs` to `configure`.
-
-   The generated Racket CS executables will have a "cs" suffix. Also,
-   plain `make` will still build Racket BC with `--enable-cs`; use
-   `make cs` to build and `make install-cs` to install.
-
- * ... by itself: supply `--enable-csdefault` to `configure`.
- 
-   The generated Racket CS executables will *not* have a "cs" suffix.
+By default, `configure` and the Windows scripts build the CS
+implementation of Racket.
 
 Chez Scheme is included in Racket source distributions and the source
 repository.
@@ -69,6 +48,29 @@ information.
 
 If you need more information specific to Racket CS, see
 "cs/README.txt".
+
+Racket BC
+---------
+
+To build Racket BC on Unix variants or Mac OS:
+
+ * ... in addition Racket CS: supply `--enable-cs --enable-bc` to
+   `configure`.
+
+   The generated Racket BC executables will have a "bc" suffix. A
+   plain `make` will still build Racket CS; use `make bc` to build and
+   `make install-bc` to install.
+
+ * ... by itself: supply `--enable-bcdefault` to `configure`.
+ 
+   The generated Racket BC executables will *not* have a "bc" suffix.
+
+To build Racket BC on Windows, see See "worksp\README.txt" for
+information.
+
+If you need more information specific to Racket BC, see
+"bc/README.txt".
+
 
 
 ========================================================================
@@ -87,7 +89,7 @@ Quick instructions:
    make install
 
  Those commands will create an in-place installation of Racket and
- store the results of C compilation in a separate "build"
+ store the results of intermediate compilation in a separate "build"
  subdirectory, which is useful if you need to update your sources,
  delete the build, and start from scratch.
 
@@ -138,12 +140,12 @@ Detailed instructions:
 
  2. From your build directory, run the script `configure` (which is in
     the same directory as this README), with optional command-line
-    arguments `--prefix=TARGETDIR` or `--enable-shared` (or both).
+    arguments like `--prefix=TARGETDIR`.
 
-    For example, if you want to install into "/usr/local/racket" using
-    dynamic libraries, then run:
+    For example, if you want to install into "/usr/local/racket", then
+    run:
 
-      [here]configure --prefix=/usr/local/racket --enable-shared
+      [here]configure --prefix=/usr/local/racket
 
     Again, "[here]" is the directory path containing the `configure`
     script. If you follow the convention of running from a "build"
@@ -198,8 +200,8 @@ Detailed instructions:
  3. Run `make`.  [As noted above, this might need to be GNU `make`.]
 
     Executables and libraries are placed in subdirectories of the
-    build directory. For example, the `racket3m` executable appears in
-    the "racket" directory.
+    build directory. For example, the `racketcs` executable appears in
+    the "cs/c" directory.
 
     You can run executables in-place before `make install`, but if you
     haven't yet built ".zo" bytecode files from Racket sources in
@@ -244,9 +246,9 @@ Detailed instructions:
     may accumulate user- and version-specific information in your
     "add-ons" directory, which you can most easily find by evaluating
       (find-system-path 'addon-dir)
-    in Racket.  In addition, if you configure with `--enabled-shared`,
-    you may accumulate many unused versions of the dynamic libraries in
-    your installation target.
+    in Racket. In addition, on Mac OS or if you configure with
+    `--enabled-shared` for Racket BC, you may accumulate many unused
+    versions of the dynamic libraries in your installation target.
 
 After an "in-place" install from a source distribution, the
 "racket/src" directory is no longer needed, and it can be safely
@@ -351,13 +353,6 @@ Cross-compilation requires at least two flags to `configure`:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
-For Racket-on-Chez, an additional flag is needed:
-
- * `--enable-scheme=SCHEME`, where SCHEME is a path to a Chez Scheme
-   build directory. Chez Scheme must be built there already for the
-   current platform, and a cross-compiled Chez Scheme will be created
-   in the same directory.
-
 Some less commonly needed `configure` flags for Racket BC:
 
  * `--enable-stackup`, if the target platform`s stack grows up.
@@ -440,6 +435,22 @@ of the `racket` executable (and variants), while "../collects"
 contains the additional Racket libraries that are included in a
 minimal Racket distribution.
 
+Sources for the Racket CS implementation
+----------------------------------------
+
+ * "cs" --- `racket` CS executable
+
+ * "thread" --- thread scheduler
+
+ * "io" --- I/O
+
+    This layer uses the "racketio" library to access OS facilties.
+
+ * "regexp" --- regexp matcher
+
+See also the shared sources below, which includes rktio, the macro
+expander, and schemify.
+
 Sources for the Racket BC implementation
 -------------------------------------------------
 
@@ -461,22 +472,6 @@ Sources for the Racket BC implementation
 
 See also the shared sources below, which includes rktio and the macro
 expander.
-
-Sources for the Racket CS implementation
-----------------------------------------
-
- * "cs" --- `racket` CS executable
-
- * "thread" --- thread scheduler
-
- * "io" --- I/O
-
-    This layer uses the "racketio" library to access OS facilties.
-
- * "regexp" --- regexp matcher
-
-See also the shared sources below, which includes rktio, the macro
-expander, and schemify.
 
 Sources shared by both Racket implementations
 ---------------------------------------------

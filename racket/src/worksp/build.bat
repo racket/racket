@@ -12,6 +12,12 @@ cl genvsx.c
 genvsx.exe
 if errorlevel 1 (set PLTSLNVER=X)
 
+REM Default is to add a BC suffix
+if "%UNDERSCORE_BC_SUFFIX%"=="" set UNDERSCORE_BC_SUFFIX=_bc
+
+if "%UNDERSCORE_BC_SUFFIX%"=="_bc" set BC_SUFFIX=BC
+if "%UNDERSCORE_BC_SUFFIX%"=="_" set BC_SUFFIX=
+
 echo #define COMPILED_PATH_AS_%BC_SUFFIX% > bc_suffix_new.h
 fc bc_suffix.h bc_suffix_new.h
 if errorlevel 1 (copy bc_suffix_new.h bc_suffix.h)

@@ -15,7 +15,7 @@ and how to contribute to Racket development.
 >> [1.3 Quick Instructions: In-Place Build](#13-quick-instructions-in-place-build)  
 >> [1.4 Quick Instructions: Unix-Style Install](#14-quick-instructions-unix-style-install)  
 >> [1.5 More Instructions: Building Racket](#15-more-instructions-building-racket)  
->> [1.6 More Instructions: Building Racket on Chez Scheme](#16-more-instructions-building-racket-on-chez-scheme)  
+>> [1.6 More Instructions: Building Racket CS and Racket BC](#16-more-instructions-building-racket-cs-and-racket-bc)  
 >> [1.7 Even More Instructions: Building Racket Pieces](#17-even-more-instructions-building-racket-pieces)  
 >>> [1.7.1 Building Minimal Racket](#171-building-minimal-racket)  
 >>> [1.7.2 Installing Packages](#172-installing-packages)  
@@ -105,10 +105,12 @@ have several options:
   created, and you can create your own. See [Distributing Racket
   Variants](#2-distributing-racket-variants) for more instructions.
 
-* **In-place Racket on Chez Scheme build** — This mode builds using Chez
-  Scheme via `make cs`. Chez Scheme is itself built from a subtree of
-  the Racket source repository. Final executables with names that end in
-  `cs` or `CS` are the Racket on Chez Scheme variants.
+* **In-place Racket BC build** — This mode builds the old Racket
+  implementation (where “BC” means “bytecode” or “before Chez Scheme”).
+  Final executables with names that end in `bc` or `BC` are the Racket
+  BC variants. See [More Instructions: Building Racket CS and Racket
+  BC](#16-more-instructions-building-racket-cs-and-racket-bc) for more
+  information.
 
 ### 1.3. Quick Instructions: In-Place Build
 
@@ -119,9 +121,6 @@ On Windows with Microsoft Visual Studio (any version between 2008/9.0
 and 2019/16.0), `nmake win` creates a build in the `"racket"` directory.
 For information on configuring your command-line environment for Visual
 Studio, see `"racket/src/worksp/README.txt"`.
-
-On Windows with MinGW, use `make PLAIN_RACKET=racket/racket`, since
-MinGW uses Unix-style tools but generates a Windows-layout Racket build.
 
 In all cases, an in-place build includes (via links) a few packages that
 are in the `"pkgs"` directory. To get new versions of those packages, as
@@ -222,28 +221,35 @@ Instructions: Building Racket
 Pieces](#17-even-more-instructions-building-racket-pieces) further
 below.
 
-### 1.6. More Instructions: Building Racket on Chez Scheme
+### 1.6. More Instructions: Building Racket CS and Racket BC
 
-The `make cs` target (or `make cs-as-is` for a rebuild, or `nmake
-win-cs` on Windows with Visual Studio) builds a variant of Racket that
-runs on Chez Scheme. By default, the executables for the Racket CS
-variant all have a `cs` or `CS` suffix, and they coexist with a Racket
-BC build by keeping compiled files in a machine-specific subdirectory of
-the `"compiled"` directory. You can remove the `cs` suffix and the
-subdirectory in `"compiled"` by providing `RACKETCS_SUFFIX=""` to
-`make`. (One day, the default for `RACKETCS_SUFFIX` will change from
-`"cs"` to `""`.)
+The default build of Racket, also known as Racket CS, uses and
+incorporates Chez Scheme. Chez Scheme sources are included in the Racket
+repository.
 
 Building Racket CS requires either an existing Racket or pb (portable
 bytecode) boot files for Chez Scheme. By default, pb boot files are
-downloaded from a separate Git repository by `make cs`. If you have
-Racket v7.1 or later, then you can choose instead to bootstrap using
-that Racket implementation with
+downloaded from a separate Git repository by `make`. If you have Racket
+v7.1 or later, then you can choose instead to bootstrap using that
+Racket implementation with
 
   `make cs RACKET=racket`
 
+The `make bc` target (or `make bc-as-is` for a rebuild, or `nmake
+win-bc` on Windows with Visual Studio) builds an older variant of
+Racket, called Racket BC, which does not use Chez Scheme. By default,
+the executables for the Racket BC variant all have a `bc` or `BC`
+suffix, and they coexist with a Racket CS build by keeping compiled
+files in a `"bc"` subdirectory of the `"compiled"` directory. You can
+remove the `bc` suffix and the subdirectory in `"compiled"` by providing
+`RACKETBC_SUFFIX=""` to `make bc`.
+
+Along similar lines, you can add a `cs` suffix to the Racket CS
+executables and cause them to use a machine-specific subdirectopry of
+`"compiled"` by providing `RACKETCS_SUFFIX="cs"` to `make` or `make cs`.
+
 Use `make both` to build both Racket BC and Racket CS, where packages
-are updated and documentation is built only once (using Racket BC).
+are updated and documentation is built only once (using Racket CS).
 
 ### 1.7. Even More Instructions: Building Racket Pieces
 

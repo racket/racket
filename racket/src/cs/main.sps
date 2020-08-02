@@ -130,19 +130,20 @@
 				        (ptr-add #f (#%string->number gracket-guid-or-x11-args 16))))))
 
    (define compiled-file-paths
-     (list (->path (cond
-                    [cs-compiled-subdir?
-                     (build-path "compiled"
-                                 (cond
-                                  [(getenv-bytes "PLT_ZO_PATH")
-                                   => (lambda (s)
-                                        (unless (and (not (equal? s #vu8()))
-                                                     (relative-path? (->path s)))
-                                          (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
-                                        (->path s))]
-                                  [platform-independent-zo-mode? "cs"]
-                                  [else (symbol->string (machine-type))]))]
-                    [else "compiled"]))))
+     (list (cond
+             [(getenv-bytes "PLT_ZO_PATH")
+              => (lambda (s)
+                   (unless (and (not (equal? s #vu8()))
+                                (relative-path? (->path s)))
+                     (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
+                   (->path s))]
+             [cs-compiled-subdir?
+              (build-path "compiled"
+                          (->path
+                           (cond
+                             [platform-independent-zo-mode? "cs"]
+                             [else (symbol->string (machine-type))])))]
+             [else "compiled"])))
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
    (define compile-target-machine (if (getenv "PLT_COMPILE_ANY")

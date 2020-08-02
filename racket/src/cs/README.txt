@@ -1,4 +1,4 @@
-The implementation of Racket on Chez Scheme (Racket CS) in this
+The implementation of Racket CS (Racket on Chez Scheme) in this
 directory is organized into two layers:
 
  * The immediate directory contains Scheme sources to implement Racket
@@ -12,8 +12,13 @@ directory is organized into two layers:
 
 
 ========================================================================
- Requirements
+ Bootstrapping
 ========================================================================
+
+The Racket source distribution includes already-bootstrapped files to
+build Racket CS. Some of those files are checked into the Racket Git
+rrepository, and the rest are in a sibling "pb" repository that that
+Racket repository's top-level makefile checks out.
 
 Building Racket CS from original sources requires an existing Racket
 build:
@@ -22,27 +27,27 @@ build:
    but any recent version of Racket (v7.1 and up) can generate boot
    files for Chez Scheme.
 
-   Currently, when you use `configure --enable-cs` or similar as
-   described in "../README.txt", then a bootstrapping variant of
-   Racket BC is built automatically and the used to build Racket CS
-   boot files. You can select a different Racket excutable by
-   supplying `--enable-racket=...` to `configure`.
+   When you use `configure` as described in "../README.txt", supply
+   `--enable-racket=...` to select a Racket implementation to build
+   Racket CS boot files. That implementation could be one that is
+   built by first using `configure --enable-bc`.
 
    Alternatively, boot files for the pb (portable bytecode) Chez
    Scheme variant can be used to compile Chez Scheme on any supported
    platform. The pb boot files must correspond to practically the same
-   version of Chez Scheme as being built, though.
+   version of Chez Scheme as being built, though. The should be
+   installed in the "../ChezScheme/boot/pb" directory as described by
+   "../ChezScheme/BUILDING".
 
- * Racket is needed to generate the files in the "../bootstrapped"
-   directory from the sources in sibling directories like "io". The
+ * Racket is needed to generate the files in the "schemified"
+   directory from the sources in sibling directories like "../io". The
    Racket version must be practically the same as the current Racket
    verson, although it can be the Racket BC implementation (instead of
    the Racket CS implementation).
 
-   Unlike Chez Scheme boot files, the files generated in
-   "../bootstrapped" are human-readable and -editable Scheme code.
-   That possibilities provides a way out of bootstrapping black holes,
-   even without BC.
+   Unlike Chez Scheme boot files, the files generated in "schemified"
+   are human-readable and -editable Scheme code. That possibilities
+   provides a way out of bootstrapping black holes, even without BC.
 
 
 ========================================================================
@@ -51,9 +56,9 @@ build:
 
 The Racket CS implementation can be built and run in two different
 ways: development mode for running directly using a Chez Scheme
-installation, and build mode for creating a `racket` or `racketcs`
-executable that combines Chez Scheme and Racket functionality into a
-single executable.
+installation, and build mode for creating a `racket` executable that
+combines Chez Scheme and Racket functionality into a single
+executable.
 
 Development Mode
 ----------------
@@ -101,33 +106,18 @@ However, you can use them directly with something like
 where [here] is the directory containing this "README.txt" and [build]
 is a build directory (usually "../build" relative to [here]).
 
-The `configure` script accepts flags like `--enable-racket=...` and
-`--enable-scheme=...` to select an existing Racket and a Chez Scheme
-build directory to use for building Racket CS:
-
- * By default, the build uses Racket as "[build]/racket/racket3m" and
-   bootstraps bytecode from "[here]/../../collects".
-
-   If you supply `--enable-racket=...` to specify a Racket executable,
-   then it must be part of a (minimal) installation.
-
- * By default, the build looks for a Chez Scheme build directory as
-   "build/ChezScheme".
-
-   Building Racket CS requires a Chez Scheme build directory, not just
-   a Chez Scheme installation that is accessible as `scheme`.
-
-The resulting Racket CS executable has the suffix "cs" by default. To
-generate an executable without the "cs" suffix, supply
-`--enable-csdefault` to `configure`. The option to select the presence
-or absence of "cs" also affects the location of ".zo" files.
+The resulting Racket CS executable is named "racket" by default. To
+generate an executable with a "cs" suffix, supply `--enable-bcdefault`
+to `configure` (which means that the name "racket" should be reserved
+for Racket BC). The option to select the presence or absence of "cs"
+also affects the location of ".zo" files, where they are written to a
+subdirectory of "compiled" if a "cs" suffix is used.
 
 Compilation on Windows does not use the `configure` script in "c".
 Instead, from the directory "[here]\..\worksp", run "csbuild.rkt"
 using an installed (minimal) Racket --- perhaps one created by running
-"[here]\..\build.bat". The "csbuild.rkt" script puts intermediate
-files in "[here]\..\build", including a Chez Scheme checkout if it's
-not already present (in which case `git` must be available).
+"[here]\..\build.bat". The "csbuild.rkt" script puts some intermediate
+files in "[here]\..\build".
 
 
 ========================================================================
@@ -144,9 +134,9 @@ Racket CS currently supports three compilation modes:
    Select this mode by setting the `PLT_CS_MACH` environment variable,
    but it's currently the default.
 
-   In development mode or when the "cs" suffix is used for build mode,
-   compiled ".zo" files in this mode are written to a subdirectory of
-   "compiled" using the Chez Scheme platform name (e.g., "ta6osx").
+   When the "cs" suffix is used for build mode, compiled ".zo" files
+   in this mode are written to a subdirectory of "compiled" using the
+   Chez Scheme platform name (e.g., "ta6osx").
 
    Set `PLT_CS_COMPILE_LIMIT` to set the maximum size of forms to
    compile before falling back to interpreted "bytecode". The default
@@ -163,9 +153,8 @@ Racket CS currently supports three compilation modes:
    At the linklet API level, this mode implements the 'quick option to
    `compile-linklet` and similar functions.
 
-   In development mode or when the "cs" suffix is used for build mode,
-   compiled ".zo" files in this mode are written to a "cs"
-   subdirectory of "compiled".
+   When the "cs" suffix is used for build mode, compiled ".zo" files
+   in this mode are written to a "cs" subdirectory of "compiled".
 
    Interpreter mode is used automatically for large modules in
    machine-code mode, as controlled by `PLT_CS_COMPILE_LIMIT`. It is
@@ -177,16 +166,14 @@ Racket CS currently supports three compilation modes:
 
    Select this mode by setting the `PLT_CS_JIT` environment variable.
 
-   In development mode or when the "cs" suffix is used for build mode,
-   compiled ".zo" files in this mode are written to a "cs"
-   subdirectory of "compiled".
+   When the "cs" suffix is used for build mode, compiled ".zo" files
+   in this mode are written to a "cs" subdirectory of "compiled".
 
-In development mode or when the "cs" suffix is used for build mode,
-set the `PLT_ZO_PATH` environment variable to override the path used
+Set the `PLT_ZO_PATH` environment variable to override the path used
 for ".zo" files. For example, you may want to preserve a normal build
 while also building in machine-code mode with `PLT_CS_DEBUG` set, in
-which case setting `PLT_ZO_PATH` to something like "ta6osx-debug" could
-be a good idea.
+which case setting `PLT_ZO_PATH` to something like "compiled/debug"
+could be a good idea.
 
 
 ========================================================================
@@ -275,7 +262,7 @@ Files in this directory:
          For example, "../thread" contains the implementation (in
          Racket) of the thread and event subsystem.
 
- compiled/*.scm (generated) - A conversion from a ".rktl" file to be
+ schemified/*.scm (generated) - A conversion from a ".rktl" file to be
          `included`d into an ".sls" library.
 
  ../build/so-rktio/rktio.rktl (generated) and

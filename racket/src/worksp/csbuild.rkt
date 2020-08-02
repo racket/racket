@@ -16,7 +16,7 @@
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
-(define cs-suffix "CS")
+(define cs-suffix "")
 (define boot-mode "--chain")
 (define extra-repos-base #f)
 (define git-clone-args '())
