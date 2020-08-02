@@ -297,13 +297,13 @@ MORE_CROSS_CONFIGURE_ARGS =
 
 # For cross-compilation, build a native executable with no configure options:
 native-for-cross:
-	mkdir -p racket/src/build/cross
-	$(MAKE) racket/src/build/cross/Makefile
-	cd racket/src/build/cross && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
-	cd racket/src/build/cross/racket && $(MAKE)
+	mkdir -p racket/src/build/cross/bc
+	$(MAKE) racket/src/build/cross/bc/Makefile
+	cd racket/src/build/cross/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
+	cd racket/src/build/cross/bc && $(MAKE)
 
-racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-bc racket/src/Makefile.in
-	cd racket/src/build/cross && ../../configure $(MORE_CROSS_CONFIGURE_ARGS)
+racket/src/build/cross/bc/Makefile: racket/src/bc/configure racket/src/cfg-bc racket/src/bc/Makefile.in
+	cd racket/src/build/cross/bc && ../../../bc/configure $(MORE_CROSS_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------
 # Racket CS
@@ -336,6 +336,11 @@ EXTRA_REPOS_BASE =
 
 # Target selector: `-cross` or ``
 CS_CROSS_SUFFIX =
+
+# Points a cross build at a directory containing a host build; this path
+# can be relative to the cross build directory, but it needs to end in
+# a separator if non-empty
+CS_HOST_WORKAREA_PREFIX = 
 
 cs:
 	$(MAKE) cs-in-place
@@ -383,7 +388,7 @@ cs-base:
 	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
 	  then $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" ; \
 	  else $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-csdefault" ; fi
-	cd racket/src/build/cs/c && $(MAKE)
+	cd racket/src/build/cs/c && $(MAKE) CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)"
 	$(MAKE) base-config
 	cd racket/src/build && $(MAKE) install-cs $(INSTALL_SETUP_ARGS)
 

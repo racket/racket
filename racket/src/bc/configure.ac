@@ -1546,7 +1546,7 @@ makefiles="$makefiles foreign/Makefile"
 m4_include(../ac/rktio_keep.m4)
 
 # Add in `SUB_CONFIGURE_EXTRAS'
-ac_configure_args="$new_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
+ac_configure_args="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
@@ -1559,4 +1559,4 @@ AC_OUTPUT($makefiles)
 mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/rktio)"
-cd rktio; eval "${abssrcdir}/../rktio/configure ${SUB_CONFIGURE_EXTRAS}"
+cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"

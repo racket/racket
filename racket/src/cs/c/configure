@@ -1427,9 +1427,9 @@ Optional Features:
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
   --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
-  --enable-scheme=<path>  Chez Scheme build directory at <path>
-  --enable-mach=<mach>    Use Chez Scheme machine type <mach>
-  --enable-target=<mach>  Cross-build for Chez Scheme machine type <mach>
+  --enable-scheme=<path>  obsolete
+  --enable-mach=<mach>    use Chez Scheme machine type <mach>
+  --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>
   --enable-natipkg        add "-natipkg" to library subpath
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory

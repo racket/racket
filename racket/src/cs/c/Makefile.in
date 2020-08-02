@@ -8,8 +8,10 @@ SCHEME_DIR = $(srcdir)/../../ChezScheme
 UP_SCHEME_DIR = $(upsrcdir)/../../ChezScheme
 SCHEME_WORKAREA = ChezScheme
 MACH = @MACH@
-SCHEME_BIN = $(SCHEME_WORKAREA)/$(MACH)/bin/$(MACH)/scheme
-SCHEME_INC = $(SCHEME_WORKAREA)/$(MACH)/boot/$(MACH)
+CS_HOST_WORKAREA_PREFIX =
+SCHEME_HOST_WORKAREA = $(CS_HOST_WORKAREA_PREFIX)$(SCHEME_WORKAREA)
+SCHEME_BIN = $(SCHEME_HOST_WORKAREA)/$(MACH)/bin/$(MACH)/scheme
+SCHEME_INC = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)
 SCHEME = $(SCHEME_BIN) -B $(SCHEME_INC)/petite.boot -B $(SCHEME_INC)/scheme.boot
 
 TARGET_MACH = @TARGET_MACH@
@@ -85,6 +87,7 @@ BOOT_COMPILED_SUBDIR =
 SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled$(BOOT_COMPILED_SUBDIR)
 
 ABS_SCHEME_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_WORKAREA)`"
+ABS_SCHEME_HOST_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_HOST_WORKAREA)`"
 ABS_BUILDDIR = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(builddir)`"
 
 SETUP_BOOT = -O 'info@compiler/cm' $(SETUP_COMMON_BOOT)
@@ -108,7 +111,7 @@ build-racket-so:
 	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" $(CS_PROGS) $(CS_OPTS@CROSS_MODE@) BUILDDIR="$(builddir)/" BOOTSTRAPPED="done" $(PASS_COMPILE_DEPS)
 
 bounce:
-	$(MAKE) builddir="$(ABS_BUILDDIR)" SCHEME_WORKAREA="$(ABS_SCHEME_WORKAREA)" $(TARGET)
+	$(MAKE) builddir="$(ABS_BUILDDIR)" SCHEME_WORKAREA="$(ABS_SCHEME_WORKAREA)" SCHEME_HOST_WORKAREA="$(ABS_SCHEME_HOST_WORKAREA)" $(TARGET)
 
 scheme:
 	mkdir -p $(SCHEME_WORKAREA)
@@ -154,14 +157,16 @@ config-scheme:
 scheme-cross:
 	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_DIR)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
 	/bin/sh $(srcdir)/reset_boot.sh $(TARGET_MACH) $(SCHEME_WORKAREA)
-	cd $(SCHEME_WORKAREA) && ./configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
+	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
 	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/c && $(MAKE) o=o cross=t
 	$(MAKE) $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
 
 # Rebuild patch file and cross "petite.boot" and "scheme.boot" when older
 # than the build-host "scheme.boot"
-$(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch: $(SCHEME_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot
-	rm -f $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/nanopass.so $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/nanopass/*.so
+$(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch: $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot
+	$(MAKE) bounce TARGET=build-xpatch-using-host
+
+build-xpatch-using-host:
 	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/s && $(MAKE) -f Mf-cross m=$(MACH) xm=$(TARGET_MACH) Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
 
 XPATCH =
