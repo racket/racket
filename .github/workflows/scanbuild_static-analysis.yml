@@ -101,6 +101,7 @@ jobs:
         ./configure
         CFLAGS="-O0 -g"
         CPPFLAGS="-DMZ_PRECISE_RETURN_SPEC"
+        --enable-bcdefault
         --disable-strip
         --enable-racket=/usr/bin/racket
         --enable-werror

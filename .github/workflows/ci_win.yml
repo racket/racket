@@ -28,6 +28,7 @@ jobs:
       shell: cmd
       run: |
         call msvcprep.bat x86_amd64
+        set UNDERSCORE_BC_SUFFIX=_
         call build.bat
     - name: Build CS
       working-directory: .\racket\src\worksp

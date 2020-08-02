@@ -99,6 +99,7 @@ jobs:
         --prefix=$GITHUB_WORKSPACE/racket3m 
         $RACKET_EXTRA_CONFIGURE_ARGS 
         --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket 
+        --enable-bcdefault 
         --enable-jit 
         --enable-foreign
         --enable-macprefix

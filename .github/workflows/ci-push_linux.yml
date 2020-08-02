@@ -114,6 +114,7 @@ jobs:
         ./configure
         --prefix=/usr/local/racket3m
         --enable-werror
+        --enable-bcdefault
         --enable-racket=/usr/local/racketcgc/bin/racket
         --enable-foreign
         --enable-float
