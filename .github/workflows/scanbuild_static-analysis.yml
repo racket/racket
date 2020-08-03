@@ -40,9 +40,7 @@ jobs:
         --disable-docs
     - name: Scan Build
       working-directory: ./racket/src
-      run: |
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1)) cgc
+      run: scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$(($(nproc) + 1)) cgc
     - name: Move sarif results
       run: |
         mkdir sarif-files
@@ -50,9 +48,6 @@ jobs:
     - name: Adjust tool name
       working-directory: sarif-files
       run: ../.github/scripts/adjust-sarif-tool.sh cgc
-    - name: Check SARIF files
-      working-directory: sarif-files
-      run: for file in '*.sarif'; do echo "$file:"; cat $file; done
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
@@ -108,9 +103,7 @@ jobs:
         --disable-docs
     - name: Scan Build
       working-directory: ./racket/src
-      run: |
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -sarif -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1)) 3m
+      run: scan-build -sarif -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$(($(nproc) + 1)) 3m
     - name: Move sarif results
       run: |
         mkdir sarif-files
@@ -169,9 +162,7 @@ jobs:
         --enable-csonly
     - name: Building
       working-directory: ./racket/src
-      run: |
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -sarif -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1)) cs
+      run: scan-build -sarif -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $(($(nproc)+1)) cs
     - name: Move sarif results
       run: |
         mkdir sarif-files
