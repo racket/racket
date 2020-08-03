@@ -338,7 +338,7 @@
          compiler/find-exe)
 (define (add-suffixes s)
   (define me (path-replace-suffix (find-exe) #""))
-  (define ending (regexp-match #rx#"(?i:racket([cs3mg]*))$" me))
+  (define ending (regexp-match #rx#"(?i:racket([cs3mgbc]*))$" me))
   (define s2 (string-append s (bytes->string/utf-8 (cadr ending))))
   (if (eq? 'windows (system-type))
       (string-append s2 ".exe")
