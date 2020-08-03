@@ -133,7 +133,7 @@ jobs:
     - name: Install pkg dependencies
       run: |
         apt update
-        apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev jq moreutils
+        apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git jq moreutils
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100

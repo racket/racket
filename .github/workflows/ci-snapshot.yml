@@ -31,7 +31,7 @@ jobs:
     - name: Install pkg dependencies
       run: |
         sudo apt update
-        sudo apt install -y libffi-dev unzip libfindbin-libs-perl uuid-dev
+        sudo apt install -y libffi-dev unzip libfindbin-libs-perl
 
 
     - name: Building
