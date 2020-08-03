@@ -539,7 +539,10 @@
 
     (define ext-base-dir
       (build-path (find-system-path 'temp-dir)
-                  "compiled"))
+                  (let ([l (use-compiled-file-paths)])
+                    (if (pair? l)
+                        (car l)
+                        "compiled"))))
 
     (define ext-dir
       (build-path ext-base-dir
