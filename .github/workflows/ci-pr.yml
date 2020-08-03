@@ -5,16 +5,30 @@ on: [pull_request]
 jobs:
 
   buildtest-linux:
+    runs-on: ubuntu-18.04
     container:
       image: racket/racket-ci:latest
       options: --init
+    strategy:
+      matrix:
+        bitwidth: [32, 64]
 
-    runs-on: ubuntu-18.04
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install 32bits dependencies
+      if: matrix.bitwidth == '32'
+      run: |
+        dpkg --add-architecture i386
+        apt-get update
+        apt-get install -y libc6:i386 gcc-multilib make openssl:i386 sqlite3:i386
+    - name: Setup 32bits
+      if: matrix.bitwidth == '32'
+      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::CONFIGURE_ARGS_qq='CFLAGS=-m32 CPPFLAGS=-m32 LDFLAGS=-m32' $RACKET_EXTRA_CONFIGURE_ARGS"
     - name: Build
-      run: make CPUS=$(nproc) PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS=$(nproc) $RACKET_EXTRA_CONFIGURE_ARGS PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
       run: |
         export PATH=$PATH:`pwd`/racket/bin
@@ -41,10 +55,13 @@ jobs:
 
     runs-on: macos-latest
 
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: make CPUS=$(sysctl -n hw.physicalcpu) PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS=$(sysctl -n hw.physicalcpu) $RACKET_EXTRA_CONFIGURE_ARGS PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
       run: |
         export PATH=$PATH:`pwd`/racket/bin
