@@ -91,7 +91,7 @@
           ;; Find the commits needed for `ref`:
           (define-values (ref-commit    ; #f or an ID string
                           want-commits) ; list of ID string
-            (select-commits ref refs status try-only-master?))
+            (select-commits ref refs status try-only-master? repo))
 
           (unless dest-dir
             (write-pkt o) ; clean termination
@@ -356,7 +356,7 @@
 ;;  initial response. If we can, the list of requested IDs will be
 ;;  just that one. Otherwise, we'll have to return a list of all
 ;;  IDs, and then we'll look for the reference later.
-(define (select-commits ref refs status try-only-master?)
+(define (select-commits ref refs status try-only-master? repo)
   (define ref-looks-like-id? (regexp-match? #rx"^[0-9a-f]+$" ref))
 
   (define ref-rx (byte-regexp (bytes-append
@@ -385,14 +385,14 @@
         [try-only-master?
          (status "Requested reference looks like commit id; try within master")
          (define-values (master-ref-commit want-commits)
-           (select-commits "master" refs status #f))
+           (select-commits "master" refs status #f repo))
          want-commits]
         [else
          (status "Requested reference looks like commit id; getting all commits")
          (for/list ([ref (in-list refs)])
            (cadr ref))])]
      [else
-      (raise-git-error 'git "could not find requested reference\n  reference: ~a" ref)]))
+      (raise-git-error 'git "could not find requested reference\n  reference: ~a\n  repo: ~a" ref repo)]))
   
   (values ref-commit want-commits))
 
