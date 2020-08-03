@@ -26,8 +26,8 @@ jobs:
       
     - name: Install libuuid
       run: |
-        apt-get update
-        apt-get install -y uuid-dev
+        sudo apt-get update
+        sudo apt-get install -y uuid-dev
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
