@@ -1,6 +1,6 @@
 name: LLVM Static Analysis
 
-on: [push, pull_request]
+on: push
 
 jobs:
 
