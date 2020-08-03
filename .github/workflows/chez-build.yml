@@ -39,11 +39,11 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y gcc-multilib lib32ncurses5-dev libx32ncurses5-dev uuid-dev:i386 libssl-dev:i386
+          sudo apt-get install -y gcc-multilib lib32ncurses5-dev libx32ncurses5-dev libssl-dev:i386
       - name: Install libs for 64-bit
         run: |
           sudo apt-get update
-          sudo apt-get install -y libncurses5-dev uuid-dev libssl-dev
+          sudo apt-get install -y libncurses5-dev libssl-dev
       - name: Build Chez with PB boot files
         working-directory: racket/src/ChezScheme
         run: |
