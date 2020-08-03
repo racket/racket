@@ -48,18 +48,8 @@ jobs:
         mkdir sarif-files
         find racketcgc-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Adjust tool name
-      run: |
-        cd sarif-files
-        cat > adjust.sh <<EOF
-        #!/bin/bash
-        shopt -s globstar
-        for file in **/*.sarif; do
-          echo "Processing $file"
-          jq "setpath([\"runs\",0,\"tool\",\"driver\",\"name\"]; \"clang-$1\")" $file | sponge $file
-        done
-        EOF
-        chmod +x adjust.sh
-        ./adjust.sh cgc
+      working-directory: sarif-files
+      run: ../.github/scripts/adjust-sarif-tool.sh cgc
     - name: Check SARIF files
       working-directory: sarif-files
       run: for file in '*.sarif'; do echo "$file:"; cat $file; done
@@ -126,18 +116,8 @@ jobs:
         mkdir sarif-files
         find racket3m-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Adjust tool name
-      run: |
-        cd sarif-files
-        cat > adjust.sh <<EOF
-        #!/bin/bash
-        shopt -s globstar
-        for file in **/*.sarif; do
-          jq "setpath([\"runs\",0,\"tool\",\"driver\",\"name\"]; \"clang-$1\")" $file | sponge $file
-        done
-        EOF
-        chmod +x adjust.sh
-        ./adjust.sh 3m
-
+      working-directory: sarif-files
+      run: ../.github/scripts/adjust-sarif-tool.sh 3m
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
@@ -197,18 +177,8 @@ jobs:
         mkdir sarif-files
         find racketcs-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Adjust tool name
-      run: |
-        cd sarif-files
-        cat > adjust.sh <<EOF
-        #!/bin/bash
-        shopt -s globstar
-        for file in **/*.sarif; do
-          jq "setpath([\"runs\",0,\"tool\",\"driver\",\"name\"]; \"clang-$1\")" $file | sponge $file
-        done
-        EOF
-        chmod +x adjust.sh
-        ./adjust.sh cs
-
+      working-directory: sarif-files
+      run: ../.github/scripts/adjust-sarif-tool.sh cs
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
