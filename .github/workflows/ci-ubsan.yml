@@ -19,7 +19,7 @@ jobs:
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' bc-in-place 2>&1 | tee logs/build.log
     - name: Add new racket to PATH
       # This should be:
       # run: echo "::add-path::${{ github.workspace }}/racket/bin"
@@ -98,21 +98,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
-    - name: Speed build and install racketcgc
-      working-directory: ./racket/src
-      run: |
-        ./configure --enable-cgcdefault --prefix=/usr
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make -j$((cpus+1))
-        make -j$((cpus+1)) install
-    - name: Clean repo
-      run: git clean -xdf
     - name: Create logs directory
       run: mkdir $PWD/logs
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKETCS_SUFFIX="" RACKET=/usr/bin/racket cs 2>&1 | tee logs/build.log
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' cs-in-place 2>&1 | tee logs/build.log
     - name: Add new racket to PATH
       # This should be:
       # run: echo "::add-path::${{ github.workspace }}/racket/bin"
