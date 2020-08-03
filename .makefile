@@ -57,6 +57,9 @@ RUN_RACO == $(RUN_RACKET) -N raco -l- raco
 
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 
+# Options passed along to any `raco pkg update` run:
+PKG_UPDATE_OPTIONS = 
+
 # Options passed along to any `raco setup` run:
 PLT_SETUP_OPTIONS = 
 
@@ -91,10 +94,11 @@ win-in-place:
 
 # Update before install to avoid needless work on the initial build,
 # and use `--no-setup` plus an explicit `raco setup` for the same reason.
-UPDATE_PKGS_ARGS == --all --auto --no-setup --scope installation
-INSTALL_PKGS_ARGS == $(JOB_OPTIONS) --no-setup --pkgs \
-                     --skip-installed --scope installation --deps search-auto \
-                     $(REQUIRED_PKGS) $(PKGS)
+ALL_PKG_UPDATE_OPTIONS == --all --auto --no-setup --scope installation \
+                          $(PKG_UPDATE_OPTIONS)
+ALL_PKG_INSTALL_OPTIONS == $(JOB_OPTIONS) --no-setup --pkgs --skip-installed \
+                           --scope installation --deps search-auto \
+                           $(REQUIRED_PKGS) $(PKGS)
 ALL_PLT_SETUP_OPTIONS == $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 # Allow `--error-out`, etc., for final setup step, so `make both` can
@@ -103,8 +107,8 @@ IN_PLACE_SETUP_OPTIONS =
 
 plain-minimal-in-place-after-base:
 	$(MAKE) pkgs-catalog
-	$(RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
-	$(RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(RUN_RACO) pkg update $(ALL_PKG_UPDATE_OPTIONS)
+	$(RUN_RACO) pkg install $(ALL_PKG_INSTALL_OPTIONS)
 	$(RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
 
 plain-in-place-setup:
