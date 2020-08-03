@@ -380,4 +380,8 @@ cat > $W/Mf-config << END
 srcdir=$srcdir
 END
 
+cat > $W/mats/Mf-config << END
+upupsrcdir=$upupsrcdir
+END
+
 exit 0
