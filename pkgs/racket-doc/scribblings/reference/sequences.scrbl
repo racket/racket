@@ -539,10 +539,10 @@ each element in the sequence.
                (void))
     (eval:alts (for/list ([f (in-directory)])
                   f)
-               (map string->path '("main.rkt"
-                                   "compiled"
+               (map string->path '("compiled"
                                    "compiled/main_rkt.dep"
-                                   "compiled/main_rkt.zo")))
+                                   "compiled/main_rkt.zo"
+                                   "main.rkt")))
     (eval:alts (for/list ([f (in-directory "compiled")])
                  f)
                (map string->path '("main_rkt.dep"
