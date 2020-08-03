@@ -1,6 +1,6 @@
 name: LLVM Static Analysis
 
-on: [push]
+on: push
 
 jobs:
 
@@ -40,26 +40,14 @@ jobs:
         --disable-docs
     - name: Scan Build
       working-directory: ./racket/src
-      run: |
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1)) cgc
+      run: scan-build -sarif -o ../../racketcgc-report -analyzer-config 'crosscheck-with-z3=true' make -j$(($(nproc) + 1)) cgc
     - name: Move sarif results
       run: |
         mkdir sarif-files
         find racketcgc-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Adjust tool name
-      run: |
-        cd sarif-files
-        cat > adjust.sh <<EOF
-        #!/bin/bash
-        shopt -s globstar
-        for file in **/*.sarif; do
-          jq "setpath([\"runs\",0,\"tool\",\"driver\",\"name\"]; \"clang-$1\")" $file | sponge $file
-        done
-        EOF
-        chmod +x adjust.sh
-        ./adjust.sh cgc
-
+      working-directory: sarif-files
+      run: ../.github/scripts/adjust-sarif-tool.sh cgc
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
@@ -115,26 +103,14 @@ jobs:
         --disable-docs
     - name: Scan Build
       working-directory: ./racket/src
-      run: |
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -sarif -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$((cpus + 1)) 3m
+      run: scan-build -sarif -o ../../racket3m-report -analyzer-config 'crosscheck-with-z3=true' make -j$(($(nproc) + 1)) 3m
     - name: Move sarif results
       run: |
         mkdir sarif-files
         find racket3m-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Adjust tool name
-      run: |
-        cd sarif-files
-        cat > adjust.sh <<EOF
-        #!/bin/bash
-        shopt -s globstar
-        for file in **/*.sarif; do
-          jq "setpath([\"runs\",0,\"tool\",\"driver\",\"name\"]; \"clang-$1\")" $file | sponge $file
-        done
-        EOF
-        chmod +x adjust.sh
-        ./adjust.sh 3m
-
+      working-directory: sarif-files
+      run: ../.github/scripts/adjust-sarif-tool.sh 3m
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
@@ -186,26 +162,14 @@ jobs:
         --enable-csonly
     - name: Building
       working-directory: ./racket/src
-      run: |
-        export cpus=$(grep -c ^processor /proc/cpuinfo)
-        scan-build -sarif -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $((cpus+1)) cs
+      run: scan-build -sarif -o ../../racketcs-report -analyzer-config 'crosscheck-with-z3=true' make -j $(($(nproc)+1)) cs
     - name: Move sarif results
       run: |
         mkdir sarif-files
         find racketcs-report -type f -name '*.sarif' -exec cp \{\} sarif-files/ \;
     - name: Adjust tool name
-      run: |
-        cd sarif-files
-        cat > adjust.sh <<EOF
-        #!/bin/bash
-        shopt -s globstar
-        for file in **/*.sarif; do
-          jq "setpath([\"runs\",0,\"tool\",\"driver\",\"name\"]; \"clang-$1\")" $file | sponge $file
-        done
-        EOF
-        chmod +x adjust.sh
-        ./adjust.sh cs
-
+      working-directory: sarif-files
+      run: ../.github/scripts/adjust-sarif-tool.sh cs
     - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v1
       if: always()
