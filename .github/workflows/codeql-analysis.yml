@@ -24,6 +24,11 @@ jobs:
     - run: git checkout HEAD^2
       if: ${{ github.event_name == 'pull_request' }}
       
+    - name: Install libuuid
+      run: |
+        apt-get update
+        apt-get install -y uuid-dev
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
