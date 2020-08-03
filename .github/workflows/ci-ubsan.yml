@@ -19,7 +19,7 @@ jobs:
     - name: Build
       run: |
         export cpus=$(grep -c ^processor /proc/cpuinfo)
-        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' bc-in-place 2>&1 | tee logs/build.log
+        make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' RACKETBC_SUFFIX="" bc-in-place 2>&1 | tee logs/build.log
     - name: Add new racket to PATH
       # This should be:
       # run: echo "::add-path::${{ github.workspace }}/racket/bin"
