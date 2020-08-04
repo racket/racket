@@ -428,7 +428,7 @@
 (define (raise-binding-result-arity-error expected-args args)
   (apply raise-result-arity-error #f
          (length expected-args)
-         "\n  at: local-binding form"
+         "\n  in: local-binding form"
          args))
 
 (define (raise-definition-result-arity-error expected-args args)
@@ -436,7 +436,7 @@
          (length expected-args)
          (if (null? expected-args)
              ""
-             (string-append "\n  at: definition of "
+             (string-append "\n  in: definition of "
                             (symbol->string (car expected-args))
                             " ..."))
          args))
