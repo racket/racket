@@ -248,22 +248,18 @@
     [(? linklet?)
      (case (system-type 'vm)
        [(chez-scheme)
-        (define-values (fmt code args) ((vm-primitive 'linklet-fasled-code+arguments) l))
+        (define-values (fmt code sfd-paths args) ((vm-primitive 'linklet-fasled-code+arguments) l))
         (cond
           [code
-           (define uncompressed-code
-             (if (regexp-match? #rx#"^\0\0\0\0chez" code)
-                 code
-                 (vm-eval `(bytevector-uncompress ,code))))
            (case fmt
              [(compile)
-              (define proc ((vm-eval `(load-compiled-from-port (open-bytevector-input-port ,uncompressed-code)))))
+              (define proc ((vm-eval `(load-compiled-from-port (open-bytevector-input-port ,code) ',sfd-paths))))
               (let ([proc (decompile-chez-procedure (if (null? args) proc (apply proc args)))])
                 (if (null? args)
                     proc
                     (cons proc (map (vm-primitive 'force-unfasl) args))))]
              [(interpret)
-              (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,uncompressed-code))))
+              (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,code) 'load ',sfd-paths)))
               (list `(#%interpret ,(unwrap-chez-interpret-jitified bytecode)))]
              [else
               '(....)])]

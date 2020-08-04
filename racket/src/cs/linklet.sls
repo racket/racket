@@ -755,8 +755,8 @@
       (raise-argument-error 'linklet-fasled-code+arguments "linklet?" linklet))
     (case (linklet-preparation linklet)
       [(faslable faslable-strict faslable-unsafe lazy)
-       (values (linklet-format linklet) (linklet-code linklet) (linklet-paths linklet))]
-      [else (values #f #f #f)]))
+       (values (linklet-format linklet) (linklet-code linklet) (linklet-sfd-paths linklet) (linklet-paths linklet))]
+      [else (values #f #f #f #f)]))
 
   (define (linklet-interpret-jitified? v)
     (wrapped-code? v))
