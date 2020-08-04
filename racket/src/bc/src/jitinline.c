@@ -2215,6 +2215,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "flceiling")
                || IS_NAMED_PRIM(rator, "flround")
                || IS_NAMED_PRIM(rator, "fltruncate")
+               || IS_NAMED_PRIM(rator, "flsingle")
                || IS_NAMED_PRIM(rator, "flsin")
                || IS_NAMED_PRIM(rator, "flcos")
                || IS_NAMED_PRIM(rator, "fltan")
@@ -2224,6 +2225,9 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "flexp")
                || IS_NAMED_PRIM(rator, "fllog")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_FLUNOP, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-flsingle")) {
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_FLUNOP, 0, 0, NULL, 1, 0, 1, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "exact->inexact")
 	       || IS_NAMED_PRIM(rator, "real->double-flonum")) {

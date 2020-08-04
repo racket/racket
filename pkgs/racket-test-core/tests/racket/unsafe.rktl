@@ -353,6 +353,20 @@
   (test-un 0.5 unsafe-flsqrt 0.25)
   (test-un +nan.0 unsafe-flsqrt -1.0)
 
+  (test-un 1.0 unsafe-flsingle 1.0)
+  (test-un -1.0 unsafe-flsingle -1.0)
+  (test-un +nan.0 unsafe-flsingle +nan.0)
+  (test-un +inf.0 unsafe-flsingle +inf.0)
+  (test-un -inf.0 unsafe-flsingle -inf.0)
+  (test-un 1.2500000360947476e38 unsafe-flsingle 1.25e38)
+  (test-un 1.2500000449239123e-37 unsafe-flsingle 1.25e-37)
+  (test-un -1.2500000360947476e38 unsafe-flsingle -1.25e38)
+  (test-un  -1.2500000449239123e-37 unsafe-flsingle -1.25e-37)
+  (test-un +inf.0 unsafe-flsingle 1e100)
+  (test-un -inf.0 unsafe-flsingle -1e100)
+  (test-un 0.0 unsafe-flsingle 1e-100)
+  (test-un -0.0 unsafe-flsingle -1e-100)
+
   (test-un 8.0 'unsafe-fx->fl 8)
   (test-un -8.0 'unsafe-fx->fl -8)
 

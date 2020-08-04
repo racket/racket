@@ -59,6 +59,7 @@
 (define unsafe-flfloor (unsafe-primitive flfloor))
 (define unsafe-flceiling (unsafe-primitive flceiling))
 (define unsafe-fltruncate (unsafe-primitive fltruncate))
+(define unsafe-flsingle (unsafe-primitive flsingle))
 
 (define unsafe-flsin (unsafe-primitive flsin))
 (define unsafe-flcos (unsafe-primitive flcos))

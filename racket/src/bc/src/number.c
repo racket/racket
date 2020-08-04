@@ -125,6 +125,7 @@ static Scheme_Object *fl_floor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_ceiling (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_truncate (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_round (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_single (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_sin (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_cos (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_tan (int argc, Scheme_Object *argv[]);
@@ -190,6 +191,7 @@ static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flsingle (int argc, Scheme_Object *argv[]);
 
 #ifdef MZ_USE_SINGLE_FLOATS
 static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
@@ -952,6 +954,16 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("flfloor", p, env);
 
+  p = scheme_make_folding_prim(fl_single, "flsingle", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    flags = SCHEME_PRIM_IS_UNARY_INLINED;
+  else
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
+                                                            | SCHEME_PRIM_WANTS_FLONUM_FIRST
+                                                            | SCHEME_PRIM_PRODUCES_FLONUM);
+  scheme_addto_prim_instance("flsingle", p, env);
+
   p = scheme_make_folding_prim(fl_sin, "flsin", 1, 1, 1);
   if (scheme_can_inline_fp_op())
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
@@ -1505,6 +1517,17 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("unsafe-flrandom", p, env);
+
+  p = scheme_make_folding_prim(unsafe_flsingle, "unsafe-flsingle", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    flags = SCHEME_PRIM_IS_UNARY_INLINED;
+  else
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FLONUM
+                                                            | SCHEME_PRIM_WANTS_FLONUM_FIRST);
+  scheme_addto_prim_instance("unsafe-flsingle", p, env);
 }
 
 void scheme_init_extfl_unsafe_number(Scheme_Startup_Env *env)
@@ -2588,6 +2611,7 @@ double scheme_double_truncate(double x) { return SCH_TRUNC(x); }
 double scheme_double_round(double x) { return SCH_ROUND(x); }
 double scheme_double_floor(double x) { return floor(x); }
 double scheme_double_ceiling(double x) { return ceil(x); }
+double scheme_double_single(double x) { return (double)(float)x; }
 
 #ifdef MZ_LONG_DOUBLE
 XFORM_NONGCING static long_double SCH_ROUNDL(long_double d)
@@ -5322,6 +5346,7 @@ SAFE_FL(floor)
 SAFE_FL(ceiling)
 SAFE_FL(truncate)
 SAFE_FL(round)
+SAFE_FL(single)
 SAFE_FL(sin)
 SAFE_FL(cos)
 SAFE_FL(tan)
@@ -5709,6 +5734,11 @@ static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[])
 {
   return scheme_make_double(scheme_double_random(argv[0]));
+}
+
+static Scheme_Object *unsafe_flsingle (int argc, Scheme_Object *argv[])
+{
+  return fl_single(argc, argv);
 }
 
 static Scheme_Object *integer_to_extfl (int argc, Scheme_Object *argv[])

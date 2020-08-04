@@ -75,6 +75,8 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
         if (IS_NAMED_PRIM(obj, "flceiling")) return 1;
         if (IS_NAMED_PRIM(obj, "fltruncate")) return 1;
         if (IS_NAMED_PRIM(obj, "flround")) return 1;
+        if (IS_NAMED_PRIM(obj, "flsingle")) return 1;
+        if (IS_NAMED_PRIM(obj, "unsafe-flsingle")) return 1;
         if (IS_NAMED_PRIM(obj, "flsin")) return 1;
         if (IS_NAMED_PRIM(obj, "flcos")) return 1;
         if (IS_NAMED_PRIM(obj, "fltan")) return 1;
@@ -488,6 +490,7 @@ DECL_FP_GLUE(floor)
 DECL_FP_GLUE(ceiling)
 DECL_FP_GLUE(truncate)
 DECL_FP_GLUE(round)
+DECL_FLONUM_GLUE(single)
 
 typedef void (*call_fp_proc)(void);
 #  ifdef MZ_LONG_DOUBLE
@@ -943,6 +946,8 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
               f = call_truncate;
             else if (IS_NAMED_PRIM(rator, "flround"))
               f = call_round;
+            else if (IS_NAMED_PRIM(rator, "flsingle") || IS_NAMED_PRIM(rator, "unsafe-flsingle"))
+              f = call_single;
             else {
               scheme_signal_error("internal error: unknown flonum function");
               f = NULL;

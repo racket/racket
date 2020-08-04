@@ -568,6 +568,7 @@
           unsafe-flfloor
           unsafe-flceiling
           unsafe-fltruncate
+          unsafe-flsingle
 
           unsafe-flsin
           unsafe-flcos

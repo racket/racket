@@ -2538,6 +2538,7 @@ XFORM_NONGCING double scheme_double_truncate(double x);
 XFORM_NONGCING double scheme_double_round(double x);
 XFORM_NONGCING double scheme_double_floor(double x);
 XFORM_NONGCING double scheme_double_ceiling(double x);
+XFORM_NONGCING double scheme_double_single(double x);
 XFORM_NONGCING double scheme_double_sin(double x);
 XFORM_NONGCING double scheme_double_cos(double x);
 XFORM_NONGCING double scheme_double_tan(double x);

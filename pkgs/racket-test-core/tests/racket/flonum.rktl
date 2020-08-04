@@ -3,7 +3,7 @@
 (Section 'flonum)
 
 (require racket/flonum
-         scheme/unsafe/ops
+         racket/unsafe/ops
          "for-util.rkt")
 
 (define 1nary-table
@@ -214,6 +214,23 @@
 (err/rt-test (for/flvector #:length 5 #:fill 0.0 ([i 5]) 8))
 (err/rt-test (for/flvector #:length 5 #:fill 0 ([i 5]) 8.0))
 (err/rt-test (for/flvector #:length 10 #:fill 0 ([i 5]) 8.0))
+
+;; ----------------------------------------
+;; flsingle
+
+(test 1.0 unsafe-flsingle 1.0)
+(test -1.0 unsafe-flsingle -1.0)
+(test +nan.0 unsafe-flsingle +nan.0)
+(test +inf.0 unsafe-flsingle +inf.0)
+(test -inf.0 unsafe-flsingle -inf.0)
+(test 1.2500000360947476e38 unsafe-flsingle 1.25e38)
+(test 1.2500000449239123e-37 unsafe-flsingle 1.25e-37)
+(test -1.2500000360947476e38 unsafe-flsingle -1.25e38)
+(test  -1.2500000449239123e-37 unsafe-flsingle -1.25e-37)
+(test +inf.0 unsafe-flsingle 1e100)
+(test -inf.0 unsafe-flsingle -1e100)
+(test 0.0 unsafe-flsingle 1e-100)
+(test -0.0 unsafe-flsingle -1e-100)
 
 ;; ----------------------------------------
 ;; flrandom

@@ -154,24 +154,13 @@ For @tech{flonums}: Unchecked (potentially) versions of
 the corresponding safe bindings.}
 
 
-@deftogether[(
-@defproc[(unsafe-flsin [a flonum?]) flonum?]
-@defproc[(unsafe-flcos [a flonum?]) flonum?]
-@defproc[(unsafe-fltan [a flonum?]) flonum?]
-@defproc[(unsafe-flasin [a flonum?]) flonum?]
-@defproc[(unsafe-flacos [a flonum?]) flonum?]
-@defproc[(unsafe-flatan [a flonum?]) flonum?]
-@defproc[(unsafe-fllog [a flonum?]) flonum?]
-@defproc[(unsafe-flexp [a flonum?]) flonum?]
-@defproc[(unsafe-flsqrt [a flonum?]) flonum?]
-@defproc[(unsafe-flexpt [a flonum?] [b flonum?]) flonum?]
-)]{
+@defproc[(unsafe-flsingle [a flonum?]) flonum?]{
 
-For @tech{flonums}: Unchecked (potentially) versions of
-@racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
-@racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp],
-@racket[flsqrt], and @racket[flexpt]. Currently, some of these
-bindings are simply aliases for the corresponding safe bindings.}
+For @tech{flonums}: Unchecked (potentially) version of
+@racket[flsingle].
+
+@history[#:added "7.8.0.7"]}
+
 
 @deftogether[(
 @defproc[(unsafe-make-flrectangular [a flonum?] [b flonum?])

@@ -28,6 +28,7 @@
   [flreal-part (known-procedure/folding 2)]
   [flround (known-procedure/folding 2)]
   [flsin (known-procedure/folding 2)]
+  [flsingle (known-procedure/folding 2)]
   [flsqrt (known-procedure/folding 2)]
   [fltan (known-procedure/folding 2)]
   [fltruncate (known-procedure/folding 2)]
