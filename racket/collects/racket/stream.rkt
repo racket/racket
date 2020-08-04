@@ -138,7 +138,9 @@
                              "index" i
                              "stream" st)]
      [else
-      (stream* (stream-first s) (loop (sub1 n) (stream-rest s)))])))
+      (make-do-stream (lambda () #f)
+                      (lambda () (stream-first s))
+                      (lambda () (loop (sub1 n) (stream-rest s))))])))
 
 (define (stream-append . l)
   (for ([s (in-list l)])
@@ -160,8 +162,10 @@
   (unless (stream? s) (raise-argument-error 'stream-map "stream?" s))
   (let loop ([s s])
     (if (stream-empty? s)
-      empty-stream
-      (stream-cons (f (stream-first s)) (loop (stream-rest s))))))
+        empty-stream
+        (make-do-stream (lambda () #f)
+                        (lambda () (call-with-values (lambda () (stream-first s)) f))
+                        (lambda () (loop (stream-rest s)))))))
 
 (define (stream-andmap f s)
   (unless (procedure? f) (raise-argument-error 'stream-andmap "procedure?" f))
@@ -196,7 +200,7 @@
    [else
     (let ([done? #f]
           [empty? #f]
-          [fst #f]
+          [stream-cons/fst #f]
           [rst #f])
       (define (force!)
         (unless done?
@@ -205,13 +209,13 @@
              [(stream-empty? s)
               (set! done? #t)
               (set! empty? #t)]
-             [(f (stream-first s))
-              (set! fst (stream-first s))
+             [(call-with-values (lambda () (stream-first s)) f)
+              (set! stream-cons/fst s)
               (set! rst (stream-filter f (stream-rest s)))]
              [else (loop (stream-rest s))]))
           (set! done? #t)))
       (make-do-stream (lambda () (force!) empty?)
-                      (lambda () (force!) fst)
+                      (lambda () (force!) (stream-first stream-cons/fst))
                       (lambda () (force!) rst)))]))
 
 (define (stream-add-between s e)
@@ -219,12 +223,19 @@
     (raise-argument-error 'stream-add-between "stream?" s))
   (if (stream-empty? s)
       empty-stream
-      (stream-cons
-       (stream-first s)
-       (let loop ([s (stream-rest s)])
-         (cond [(stream-empty? s) empty-stream]
-               [else (stream-cons e (stream-cons (stream-first s)
-                                                 (loop (stream-rest s))))])))))
+      (make-do-stream
+       (lambda () #f)
+       (lambda () (stream-first s))
+       (lambda ()
+         (let loop ([s (stream-rest s)])
+           (cond
+             [(stream-empty? s) empty-stream]
+             [else
+              (stream-cons e
+                           (make-do-stream
+                            (lambda () #f)
+                            (lambda () (stream-first s))
+                            (lambda () (loop (stream-rest s)))))]))))))
 
 ;; Impersonators and Chaperones ----------------------------------------------------------------------
 ;; (these are private because they would fail on lists, which satisfy `stream?`)

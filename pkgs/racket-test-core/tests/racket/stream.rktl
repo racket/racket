@@ -94,4 +94,44 @@
 (test 3/4 guarded-second (stream-take (div 3 4) 2))
 (err/rt-test (stream->list (stream-take (stream 1 2) 3)) exn:fail:contract? "stream-take")
 
+;; preserves multivalued-ness of stream
+(test '(1 2)
+      call-with-values
+      (λ ()
+        (stream-first
+         (stream-take
+          (sequence->stream
+           (in-parallel '(1 3) '(2 4))) 2)))
+      list)
+
+(test '(1 2)
+      call-with-values
+      (λ ()
+        (stream-first
+         (stream-map
+          values
+          (sequence->stream
+           (in-parallel '(1 3) '(2 4))))))
+      list)
+
+(test '(1 2)
+      call-with-values
+      (λ ()
+        (stream-first
+         (stream-add-between
+          (sequence->stream
+           (in-parallel '(1 3) '(2 4)))
+          #f)))
+      list)
+
+(test '(1 2)
+      call-with-values
+      (λ ()
+        (stream-first
+         (stream-filter
+          (λ _ #t)
+          (sequence->stream
+           (in-parallel '(1 3) '(2 4))))))
+      list)
+
 (report-errs)
