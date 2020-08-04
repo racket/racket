@@ -138,7 +138,9 @@
                              "index" i
                              "stream" st)]
      [else
-      (stream* (stream-first s) (loop (sub1 n) (stream-rest s)))])))
+      (make-do-stream (lambda () #f)
+                      (lambda () (stream-first s))
+                      (lambda () (loop (sub1 n) (stream-rest s))))])))
 
 (define (stream-append . l)
   (for ([s (in-list l)])
