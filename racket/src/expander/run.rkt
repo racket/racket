@@ -77,7 +77,7 @@
     (set! extract? #t)
     (set! extract-to-c? #t)
     (linklet-compile-to-s-expr #t)
-    (set! print-extracted-to (build-path checkout-directory "src" "racket" "src" "startup.inc"))]
+    (set! print-extracted-to (build-path checkout-directory "src" "bc" "src" "startup.inc"))]
    #:once-each
    [("-k") dir "Use Racket checkout at <dir>"
     (set! checkout-directory (path->complete-path dir))]
