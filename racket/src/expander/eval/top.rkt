@@ -68,7 +68,7 @@
            (hash-ref (linklet-bundle->hash (hash-ref (linklet-directory->hash data-ld) #f)) 0)
            ns)))]
    [else
-    ;; No shared data? Strage, but we can carry on, anyway:
+    ;; No shared data? Strange, but we can carry on, anyway:
     (eval-compiled-parts (compiled-top->compiled-tops c))]))
 
 (define (eval-one-top c ns [as-tail? #t]
