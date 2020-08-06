@@ -15,6 +15,7 @@ jobs:
       options: --init --platform ${{ matrix.arch }}
 
     env:
+      DOCKER_CLI_EXPERIMENTAL: "enabled"
       RACKET_EXTRA_CONFIGURE_ARGS: ""
 
     steps:
