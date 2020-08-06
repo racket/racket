@@ -595,7 +595,7 @@ int wmain(int argc, wchar_t **wargv)
 }
 #else
 static int x11_arg_count = 0;
-static char *x11_args = "0";
+static char *x11_args = "0x0";
 
 int main(int argc, char **argv) {
   do_pre_filter_cmdline_arguments(&argc, &argv);
