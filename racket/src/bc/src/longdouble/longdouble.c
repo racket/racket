@@ -916,7 +916,7 @@ END_XFORM_SKIP;
 
 /* Like regular glue mode, but only for the string operations.
 
-   It may seem strage to resort to a MinGW-compiled DLL to implement
+   It may seem strange to resort to a MinGW-compiled DLL to implement
    functionality when compiling with MinGW, but the MinGW version has
    to be recent enough to get __mingw_sscanf, so we do things this
    way to allow building with older MinGWs (such as the default MinGW
