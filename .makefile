@@ -300,14 +300,18 @@ racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in 
 MORE_CROSS_CONFIGURE_ARGS =
 
 # For cross-compilation, build a native executable with no configure options:
-native-for-cross:
+native-bc-for-cross:
 	mkdir -p racket/src/build/cross/bc
 	$(MAKE) racket/src/build/cross/bc/Makefile
-	cd racket/src/build/cross/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
+	cd racket/src/build/cross/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="--enable-bcdefault $(MORE_CROSS_CONFIGURE_ARGS)"
 	cd racket/src/build/cross/bc && $(MAKE)
 
 racket/src/build/cross/bc/Makefile: racket/src/bc/configure racket/src/cfg-bc racket/src/bc/Makefile.in
-	cd racket/src/build/cross/bc && ../../../bc/configure $(MORE_CROSS_CONFIGURE_ARGS)
+	cd racket/src/build/cross/bc && ../../../bc/configure --enable-bcdefault $(MORE_CROSS_CONFIGURE_ARGS)
+
+# Temporary compatibility for distro-build:
+native-for-cross:
+	$(MAKE) native-bc-for-cross
 
 # ------------------------------------------------------------
 # Racket CS
@@ -481,11 +485,11 @@ native-cs-for-cross:
 	$(MAKE) maybe-fetch-pb
 	mkdir -p racket/src/build/cross/cs/c
 	$(MAKE) racket/src/build/cross/cs/c/Makefile
-	cd racket/src/build/cross/cs/c && $(MAKE) reconfigure
+	cd racket/src/build/cross/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="--enable-csdefault $(MORE_CROSS_CONFIGURE_ARGS)"
 	cd racket/src/build/cross/cs/c && $(MAKE)
 
 racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
-	cd racket/src/build/cross/cs/c; ../../../../cs/c/configure --enable-csdefault
+	cd racket/src/build/cross/cs/c; ../../../../cs/c/configure --enable-csdefault $(MORE_CROSS_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------
 # Both traditional Racket and RacketCS
