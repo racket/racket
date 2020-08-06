@@ -127,7 +127,7 @@
         (unsafe-register-process-global (string->bytes/utf-8 "PLT_X11_ARGUMENT_COUNT")
 				        (ptr-add #f wm-is-gracket-or-x11-arg-count))
         (unsafe-register-process-global (string->bytes/utf-8 "PLT_X11_ARGUMENTS")
-				        (ptr-add #f (#%string->number gracket-guid-or-x11-args 16))))))
+				        (ptr-add #f (#%string->number (substring gracket-guid-or-x11-args 2) 16))))))
 
    (define compiled-file-paths
      (list (cond

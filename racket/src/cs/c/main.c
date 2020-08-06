@@ -443,8 +443,6 @@ static int bytes_main(int argc, char **argv,
   racket_boot_t racket_boot_p;
   long boot_rsrc_offset = 0;
 #endif
-  
-  do_pre_filter_cmdline_arguments(&argc, &argv);
 
   if (argc) {
     argc--;
@@ -600,6 +598,7 @@ static int x11_arg_count = 0;
 static char *x11_args = "0";
 
 int main(int argc, char **argv) {
+  do_pre_filter_cmdline_arguments(&argc, &argv);
   return bytes_main(argc, argv, x11_arg_count, x11_args);
 }
 #endif
