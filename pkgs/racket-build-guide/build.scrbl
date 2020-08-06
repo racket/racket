@@ -224,7 +224,7 @@ and the subdirectory in @filepath{compiled} by providing
 @exec{RACKETBC_SUFFIX=""} to @exec{make bc}.
 
 Along similar lines, you can add a @litchar{cs} suffix to the Racket
-CS executables and cause them to use a machine-specific subdirectopry
+CS executables and cause them to use a machine-specific subdirectory
 of @filepath{compiled} by providing @exec{RACKETCS_SUFFIX="cs"} to
 @exec{make} or @exec{make cs}.
 

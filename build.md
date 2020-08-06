@@ -245,7 +245,7 @@ remove the `bc` suffix and the subdirectory in `"compiled"` by providing
 `RACKETBC_SUFFIX=""` to `make bc`.
 
 Along similar lines, you can add a `cs` suffix to the Racket CS
-executables and cause them to use a machine-specific subdirectopry of
+executables and cause them to use a machine-specific subdirectory of
 `"compiled"` by providing `RACKETCS_SUFFIX="cs"` to `make` or `make cs`.
 
 Use `make both` to build both Racket BC and Racket CS, where packages
