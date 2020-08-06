@@ -2002,7 +2002,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact) {
 	print_compact(pp, CPT_NULL);
       } else {
-        notdisplay = to_quoted(NULL, pp, notdisplay);
+	to_quoted(NULL, pp, notdisplay);
 	print_utf8_string(pp, "()", 0, 2);
 	closed = 1;
       }
