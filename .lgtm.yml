@@ -2,6 +2,7 @@ extraction:
   cpp:
     configure:
       command:
+        - make fetch-pb
         - cd racket/src
         - ./configure --disable-docs
     index:
