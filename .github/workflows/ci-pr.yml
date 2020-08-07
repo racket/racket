@@ -6,16 +6,12 @@ jobs:
 
   buildtest-linux:
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        arch: ['linux/amd64', 'linux/386']
 
     container:
       image: racket/racket-ci:latest
-      options: --init --platform ${{ matrix.arch }}
+      options: --init
 
     env:
-      DOCKER_CLI_EXPERIMENTAL: "enabled"
       RACKET_EXTRA_CONFIGURE_ARGS: ""
 
     steps:
@@ -44,6 +40,42 @@ jobs:
         raco test -c tests/stxparse
         raco test -c tests/syntax
 
+  buildtest-linux_i386:
+    runs-on: [self-hosted, Linux, X64]
+
+    container:
+      image: racket/racket-ci:latest
+      options: --init --platform 'linux/386'
+
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: make CPUS=$(nproc) CONFIGURE_ARGS_qq="$RACKET_EXTRA_CONFIGURE_ARGS" PKGS="racket-test db-test unstable-flonum-lib net-test"
+    - name: Test
+      run: |
+        export PATH=$PATH:`pwd`/racket/bin
+        raco test -l tests/racket/test
+        racket -l tests/racket/contract/all
+        raco test -l tests/json/json
+        raco test -l tests/file/main
+        raco test -l tests/net/head
+        raco test -l tests/net/uri-codec
+        raco test -l tests/net/url
+        raco test -l tests/net/url-port
+        raco test -l tests/net/encoders
+        raco test -l tests/openssl/basic
+        raco test -l tests/openssl/https
+        raco test -l tests/match/main
+        raco test -l tests/zo-path
+        raco test -c tests/xml
+        raco test -c tests/future
+        raco test -l tests/db/all-tests
+        raco test -c tests/stxparse
+        raco test -c tests/syntax
+        
   buildtest-macos:
 
     runs-on: macos-latest
