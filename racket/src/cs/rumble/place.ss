@@ -79,6 +79,7 @@
  [(threaded?)
   (define (place-enabled?) #t)
   (define (fork-place thunk finish-proc)
+    (do-prepare-for-place)
     (fork-thread (lambda ()
                    (init-virtual-registers)
                    (place-registers (vector-copy place-register-inits))
@@ -101,6 +102,10 @@
   (define (place-enabled?) #f)
   (define (fork-place thunk finish-proc) #f)
   (define (current-place-roots) '())])
+
+(define do-prepare-for-place void)
+(define (set-prepare-for-place! proc)
+  (set! do-prepare-for-place proc))
 
 (define do-start-place void)
 (define (set-start-place! proc)

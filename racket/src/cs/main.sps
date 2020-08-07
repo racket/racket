@@ -808,6 +808,25 @@
        
    (set-make-place-ports+fds! make-place-ports+fds)
 
+   (set-prepare-for-place!
+    (lambda ()
+      ;; Force visit of modules to make sure that we don't end up
+      ;; with a race later by trying to visit the module in a place:
+      (call-with-system-wind
+       (lambda ()
+         (for-each (lambda (lib)
+                     (#%$visit-library lib '() #f))
+                   '((chezscheme)
+                     (rumble)
+                     (thread)
+                     (io)
+                     (regexp)
+                     (schemify)
+                     (linklet)
+                     (expander)))
+         ;; Only need to visit once (although multiple time is ok)
+         (set-prepare-for-place! void)))))
+
    (set-start-place!
     (lambda (pch mod sym in out err cust plumber)
       (io-place-init! in out err cust plumber)
