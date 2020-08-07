@@ -2335,7 +2335,7 @@
     (if orig-dir
 	(dir-list (path->complete-path orig-dir init-dir)
 		  orig-dir null)
-	(directory-list init-dir)))
+	(sort (directory-list init-dir) path<?)))
 
   (define in-directory
     (case-lambda 
