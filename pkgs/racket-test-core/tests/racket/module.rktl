@@ -3342,4 +3342,21 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module regression-test-for-cross-module-inline-quoted-identifier  racket/base
+  (module a racket/base
+    (provide FOUNDING)
+    (define-values (FOUNDING) 'FOUNDING))
+  
+  (module b racket/base
+    (require (submod ".." a))
+    (define (f x_2) (eq? x_2 'FOUNDING)) ; quoted `FOUNDING` should not get replaced
+    (if (f FOUNDING) FOUNDING (raise-user-error 'die)))
+
+  (require (submod "." b)))
+
+(parameterize ([current-output-port (open-output-bytes)])
+  (dynamic-require ''regression-test-for-cross-module-inline-quoted-identifier #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

@@ -360,91 +360,91 @@
 (define hash2725 (hash))
 (define hash2337
   (hasheq
-   'orig-dir
-   '7
-   'home-dir
-   '13
-   'host-config-dir
-   '5
-   'host-collects-dir
-   '6
-   'config-dir
-   '3
-   'init-file
-   '17
-   'collects-dir
-   '4
-   'exec-file
-   '1
-   'temp-dir
-   '8
-   'init-dir
-   '16
-   'pref-file
-   '11
-   'desk-dir
-   '14
-   'sys-dir
-   '9
    'addon-dir
    '12
-   'run-file
-   '2
+   'collects-dir
+   '4
+   'config-dir
+   '3
+   'desk-dir
+   '14
+   'doc-dir
+   '15
+   'exec-file
+   '1
+   'home-dir
+   '13
+   'host-collects-dir
+   '6
+   'host-config-dir
+   '5
+   'init-dir
+   '16
+   'init-file
+   '17
+   'orig-dir
+   '7
    'pref-dir
    '10
-   'doc-dir
-   '15))
+   'pref-file
+   '11
+   'run-file
+   '2
+   'sys-dir
+   '9
+   'temp-dir
+   '8))
 (define hash2610 (hasheq))
 (define hash3229
   (hasheq
-   'sw_maximize
-   '2
-   'SW_RESTORE
-   '4
-   'SW_SHOWDEFAULT
-   '6
-   'SW_MINIMIZE
-   '3
-   'sw_showna
-   '10
-   'sw_showmaximized
-   '7
-   'sw_minimize
-   '3
-   'sw_showdefault
-   '6
-   'SW_SHOWMINNOACTIVE
-   '9
-   'sw_showminimized
-   '8
-   'SW_SHOWNOACTIVATE
-   '11
-   'SW_SHOWNA
-   '10
-   'SW_SHOWNORMAL
-   '12
-   'SW_SHOWMAXIMIZED
-   '7
-   'sw_show
-   '5
-   'SW_MAXIMIZE
-   '2
    'SW_HIDE
    '1
+   'SW_MAXIMIZE
+   '2
+   'SW_MINIMIZE
+   '3
+   'SW_RESTORE
+   '4
+   'SW_SHOW
+   '5
+   'SW_SHOWDEFAULT
+   '6
+   'SW_SHOWMAXIMIZED
+   '7
    'SW_SHOWMINIMIZED
    '8
-   'sw_shownoactivate
+   'SW_SHOWMINNOACTIVE
+   '9
+   'SW_SHOWNA
+   '10
+   'SW_SHOWNOACTIVATE
    '11
-   'sw_restore
-   '4
+   'SW_SHOWNORMAL
+   '12
    'sw_hide
    '1
+   'sw_maximize
+   '2
+   'sw_minimize
+   '3
+   'sw_restore
+   '4
+   'sw_show
+   '5
+   'sw_showdefault
+   '6
+   'sw_showmaximized
+   '7
+   'sw_showminimized
+   '8
    'sw_showminnoactive
    '9
+   'sw_showna
+   '10
+   'sw_shownoactivate
+   '11
    'sw_shownormal
-   '12
-   'SW_SHOW
-   '5))
+   '12))
 (define call/ec call-with-escape-continuation)
 (define bad-list$1
   (|#%name|

@@ -111,6 +111,7 @@
           unsafe-mode?]
          [`(#%variable-reference) v]
          [`(#%variable-reference ,id) v]
+         [`(quote ,_) v]
          [`(,rator ,exps ...)
           `(,(optimize* rator) ,@(optimize*-body exps))]
          [`,_ v])))

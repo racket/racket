@@ -345,7 +345,8 @@
                           (hash-map k
                                     (lambda (k v)
                                       (list `(quote ,k)
-                                            `(quote ,v))))))]
+                                            `(quote ,v)))
+                                    #t)))]
               [(pair? k)
                `(cons ,(loop (car k)) ,(loop (cdr k)))]
               [(keyword? k)
