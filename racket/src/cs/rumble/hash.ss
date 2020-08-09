@@ -14,8 +14,8 @@
 (define-record eq-mutable-hash mutable-hash
   ())
 
-(define (create-mutable-hash ht kind) (make-mutable-hash (make-lock kind) #f #f ht))
-(define (create-eq-mutable-hash ht) (make-eq-mutable-hash (make-lock 'eq?) #f #f ht))
+(define (create-mutable-hash ht kind) (make-mutable-hash (make-lock kind) #f #t ht))
+(define (create-eq-mutable-hash ht) (make-eq-mutable-hash (make-lock 'eq?) #f #t ht))
 
 (define (mutable-hash-lock ht) (locked-iterable-hash-lock ht))
 (define (mutable-hash-cells ht) (locked-iterable-hash-cells ht))
@@ -654,7 +654,7 @@
                                  0)
                              32))])
         (let ([len (#%vector-length new-vec)])
-          (when (fx= len (hash-count ht))<
+          (when (fx= len (hash-count ht))
             (set-locked-iterable-hash-retry?! ht #f)))
         (let ([vec (cells-merge vec new-vec)])
           (set-locked-iterable-hash-cells! ht vec)

@@ -578,5 +578,26 @@
   (test #t eq? (car (hash-keys ht2)) g))
 
 ;; ----------------------------------------
+;; Regression test to make sure all elements are still
+;; reachable by iteration in a copy of a mutable hash table:
+
+(let ([ht (make-hash)])
+  (for ([i 113])
+    (hash-set! ht i 1))
+  
+  (define new-ht (hash-copy ht))
+
+  (test (hash-count ht) hash-count new-ht)
+  (test (for/sum ([k (in-hash-keys ht)])
+          k)
+        'sum
+        (for/sum ([k (in-hash-keys new-ht)])
+          k))
+  (test (hash-count ht)
+        'count
+        (for/sum ([v (in-hash-values new-ht)])
+          v)))
+
+;; ----------------------------------------
 
 (report-errs)
