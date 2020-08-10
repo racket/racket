@@ -1045,7 +1045,7 @@ plain-site-from-installers:
 	rm -rf build/docs
 	rm -rf "build/zo`pwd`/build/docs"
 	$(USER_RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
-	$(USER_RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
+	$(USER_RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q) "$(DIST_BASE)"
 
 # ------------------------------------------------------------
 # Create a snapshot site:
@@ -1058,7 +1058,7 @@ snapshot-at-site:
 	$(MAKE) with-setup-flags NEXT_TARGET=plain-snapshot-at-site
 
 plain-snapshot-at-site:
-	$(USER_RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q)
+	$(USER_RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q) "$(DIST_BASE)"
 
 # ------------------------------------------------------------
 # Compatibility targets
