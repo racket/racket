@@ -29,10 +29,17 @@
 ;; The attached values are (parallel-compile-event <worker-id> <original-data>).
 (define pb-logger (make-logger 'setup/parallel-build (current-logger)))
 
+(define-logger concurrentometer)
+
 (define lock-manager% 
   (class object%
+    (init-field worker-count)
     (field (locks (make-hash)))
     (define depends (make-hash))
+    (define currently-idle 0)
+    (define/private (idle! delta)
+      (set! currently-idle (+ currently-idle delta))
+      (log-concurrentometer-debug "~s" (- worker-count currently-idle)))
     (define/public (lock fn wrkr)
       (let ([v (hash-ref locks fn #f)])
         (hash-set!
@@ -48,6 +55,7 @@
                 (wrkr/send wrkr (list 'cycle (cons fn fns)))
                 v]
                [else
+                (idle! +1)
                 (hash-set! depends wrkr (cons w fn))
                 (list w (append waitlst (list wrkr)))]))]
            [else
@@ -57,7 +65,8 @@
     (define/public (unlock fn)
       (match (hash-ref locks fn)
         [(list w waitlst)
-          (for ([x (second (hash-ref locks fn))])
+         (for ([x (second (hash-ref locks fn))])
+            (idle! -1)
             (hash-remove! depends x)
             (wrkr/send x (list 'compiled)))
           (hash-set! locks fn 'done)]))
@@ -87,7 +96,8 @@
 (define collects-queue% 
   (class* object% (work-queue<%>) 
     (init-field cclst printer append-error options)
-    (field (lock-mgr (new lock-manager%)))
+    (init worker-count)
+    (field (lock-mgr (new lock-manager% [worker-count worker-count])))
     (field (hash (make-hash)))
     (inspect #f)
 
@@ -213,7 +223,8 @@
 (define file-list-queue% 
   (class* object% (work-queue<%>) 
     (init-field filelist handler options)
-    (field (lock-mgr (new lock-manager%)))
+    (init worker-count)
+    (field (lock-mgr (new lock-manager% [worker-count worker-count])))
     (field [results (void)])
     (inspect #f)
 
@@ -366,7 +377,7 @@
     (raise-argument-error 'parallel-compile-files "(listof path-string?)" list-of-files))
   (unless (and (procedure? handler) (procedure-arity-includes? handler 6))
     (raise-argument-error 'parallel-compile-files "(procedure-arity-includes/c 6)" handler))
-  (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count
+  (parallel-build (make-object file-list-queue% list-of-files handler options worker-count) worker-count
                   #:use-places? use-places?))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree
@@ -375,7 +386,8 @@
   (setup-fprintf (current-output-port) #f (add-time
                                            (format "--- parallel build using ~a jobs ---" worker-count)))
   (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error
-                                      (append options '(set-directory))))
+                                      (append options '(set-directory))
+                                      worker-count))
   (parallel-build collects-queue worker-count
                   #:use-places? use-places?))
 
