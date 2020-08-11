@@ -191,6 +191,7 @@
       (when clean?
         (delete-directory/files pkg-dir)))
     (define (show-dependencies deps update? auto?)
+      (define unique-deps (remove-duplicates deps))
       (unless quiet?
         (printf/flush "The following~a packages are listed as dependencies of ~a~a:~a\n"
                       (if update? " out-of-date" " uninstalled")
@@ -201,8 +202,8 @@
                                   (if update? "updated" "installed"))
                           "")
                       (if update?
-                          (format-deps deps)
-                          (format-list deps)))))
+                          (format-deps unique-deps)
+                          (format-list unique-deps)))))
     (define simultaneous-installs
       (for/hash ([i (in-list infos)])
         (values (install-info-name i) (install-info-directory i))))
