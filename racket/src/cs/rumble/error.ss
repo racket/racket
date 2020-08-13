@@ -427,7 +427,9 @@
 
 (define (raise-binding-result-arity-error expected-args args)
   (apply raise-result-arity-error #f
-         (length expected-args)
+         (if (integer? expected-args)
+             expected-args
+             (length expected-args))
          "\n  in: local-binding form"
          args))
 

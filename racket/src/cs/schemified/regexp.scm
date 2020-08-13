@@ -707,10 +707,7 @@
                               (unquoted-printing-string
                                (apply string-append (loop_1 w_0 ls_0))))
                              null))))))))))
-            (args
-             (raise-binding-result-arity-error
-              '(required-keywords_0 optional-keywords_0)
-              args)))))))))
+            (args (raise-binding-result-arity-error 2 args)))))))))
 (define gen-map
   (letrec ((loop_0
             (|#%name|
@@ -904,7 +901,7 @@
                              (case-lambda
                               (() (for-loop_0 rest_0))
                               (args
-                               (raise-binding-result-arity-error '() args))))))
+                               (raise-binding-result-arity-error 0 args))))))
                         (values)))))))
                (for-loop_0 range_0)))
             (void)
@@ -2756,11 +2753,8 @@
                       categories_0
                       (not (xor prop-negated?_0 cat-negated?_0)))
                      pos2_0))))
-               (args (raise-binding-result-arity-error '(l_13 pos2_0) args)))))
-            (args
-             (raise-binding-result-arity-error
-              '(cat-negated?_0 next-pos_0)
-              args))))
+               (args (raise-binding-result-arity-error 2 args)))))
+            (args (raise-binding-result-arity-error 2 args))))
           (let ((fmt_0 "expected `{` after `\\~a`"))
             (let ((args_0 (list (integer->char p-c_0))))
               (let ((fmt_1 fmt_0)) (apply regexp-error fmt_1 args_0)))))))))
@@ -2819,7 +2813,7 @@
            (case-lambda
             ((range_0 pos2_0)
              (values (range-invert range_0 (chytes-limit s_0)) pos2_0))
-            (args (raise-binding-result-arity-error '(range_18 pos2_1) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           (parse-range s_0 pos_0 config_0))))))
 (define parse-range
   (lambda (s_0 pos_0 config_0)
@@ -2949,9 +2943,7 @@
                                        temp39_0
                                        config8_0)))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(success?_0 range1_0 pos3_0)
-                                 args)))))
+                                (raise-binding-result-arity-error 3 args)))))
                            (let ((temp44_0 (add1 pos2_0)))
                              (parse-range-rest/span.1
                               must-span-from2_0
@@ -3001,10 +2993,7 @@
                            s6_0
                            temp62_0
                            config8_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(success?_1 range1_1 pos2_4)
-                       args))))
+                     (args (raise-binding-result-arity-error 3 args))))
                    (let ((temp66_0 (chytes-ref$1 s6_0 pos7_0)))
                      (let ((temp69_0 (add1 pos7_0)))
                        (let ((temp66_1 temp66_0))
@@ -3078,7 +3067,7 @@
                rx_0
                app_0
                (unbox (parse-config-references?-box config_0)))))
-           (args (raise-binding-result-arity-error '(rx_3 pos_11) args)))))))))
+           (args (raise-binding-result-arity-error 2 args)))))))))
 (define parse-regexp.1
   (letrec ((procz1
             (|#%name|
@@ -3111,11 +3100,9 @@
                       (let ((app_0 (rx-sequence rxs_0)))
                         (rx-alts app_0 rx_0 (chytes-limit s7_0)))
                       pos3_0))
-                    (args
-                     (raise-binding-result-arity-error '(rx_4 pos3_1) args))))
+                    (args (raise-binding-result-arity-error 2 args))))
                   (values (rx-sequence rxs_0) pos2_0))))
-             (args
-              (raise-binding-result-arity-error '(rxs_0 pos2_5) args))))))))))
+             (args (raise-binding-result-arity-error 2 args))))))))))
 (define parse-regexp/maybe-empty
   (lambda (s_0 pos_0 config_0)
     (let ((tmp_0
@@ -3145,11 +3132,8 @@
                 (lambda () (parse-pces s_0 pos2_0 config_0))
                 (case-lambda
                  ((rxs_0 pos3_0) (values (cons rx_0 rxs_0) pos3_0))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(rxs_1 pos3_2)
-                   args))))))))
-        (args (raise-binding-result-arity-error '(rx_5 pos2_6) args)))))))
+                 (args (raise-binding-result-arity-error 2 args))))))))
+        (args (raise-binding-result-arity-error 2 args)))))))
 (define parse-pce
   (lambda (s_0 pos_0 config_0)
     (call-with-values
@@ -3166,30 +3150,21 @@
             (case-lambda
              ((non-greedy?_0 pos3_0)
               (values (rx:repeat4.1 rx_0 0 +inf.0 non-greedy?_0) pos3_0))
-             (args
-              (raise-binding-result-arity-error
-               '(non-greedy?_0 pos3_3)
-               args))))
+             (args (raise-binding-result-arity-error 2 args))))
            (if (eqv? tmp_0 '#\x2b)
              (call-with-values
               (lambda () (parse-non-greedy s_0 (add1 pos2_0) config_0))
               (case-lambda
                ((non-greedy?_0 pos3_0)
                 (values (rx:repeat4.1 rx_0 1 +inf.0 non-greedy?_0) pos3_0))
-               (args
-                (raise-binding-result-arity-error
-                 '(non-greedy?_1 pos3_4)
-                 args))))
+               (args (raise-binding-result-arity-error 2 args))))
              (if (eqv? tmp_0 '#\x3f)
                (call-with-values
                 (lambda () (parse-non-greedy s_0 (add1 pos2_0) config_0))
                 (case-lambda
                  ((non-greedy?_0 pos3_0)
                   (values (rx:maybe5.1 rx_0 non-greedy?_0) pos3_0))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(non-greedy?_2 pos3_5)
-                   args))))
+                 (args (raise-binding-result-arity-error 2 args))))
                (if (eqv? tmp_0 '#\x7b)
                  (if (parse-config-px? config_0)
                    (call-with-values
@@ -3232,17 +3207,14 @@
                                        pos5_0))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(non-greedy?_3 pos5_0)
+                                       2
                                        args)))))
                                  (parse-error
                                   s_0
                                   pos3_0
                                   config_0
                                   "expected digit or `}` to end repetition specification started with `{`"))))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(n2_0 pos4_0)
-                              args))))
+                            (args (raise-binding-result-arity-error 2 args))))
                           (if (eqv? tmp_1 '#\x7d)
                             (call-with-values
                              (lambda ()
@@ -3253,19 +3225,16 @@
                                 (rx:repeat4.1 rx_0 n1_0 n1_0 non-greedy?_0)
                                 pos4_0))
                               (args
-                               (raise-binding-result-arity-error
-                                '(non-greedy?_4 pos4_1)
-                                args))))
+                               (raise-binding-result-arity-error 2 args))))
                             (parse-error
                              s_0
                              pos3_0
                              config_0
                              "expected digit, `,`, or `}' for repetition specification started with `{`")))))
-                     (args
-                      (raise-binding-result-arity-error '(n1_0 pos3_6) args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (values rx_0 pos2_0))
                  (values rx_0 pos2_0)))))))
-      (args (raise-binding-result-arity-error '(rx_6 pos2_7) args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define parse-non-greedy
   (lambda (s_0 pos_0 config_0)
     (let ((tmp_0
@@ -3307,8 +3276,7 @@
              (case-lambda
               ((range_0 pos2_0)
                (values (rx-range range_0 (chytes-limit s_0)) pos2_0))
-              (args
-               (raise-binding-result-arity-error '(range_21 pos2_8) args))))
+              (args (raise-binding-result-arity-error 2 args))))
             (if (eqv? tmp_0 '#\x2e)
               (let ((rx_0
                      (if (parse-config-multi-line? config_0)
@@ -3377,10 +3345,7 @@
                            (values
                             app_0
                             (check-close-paren s_0 pos3_0 config_0)))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(rx_8 pos3_7)
-                        args)))))
+                      (args (raise-binding-result-arity-error 2 args)))))
                   (if (eqv? tmp_1 '#\x28)
                     (parse-conditional s_0 (add1 pos2_0) config_0)
                     (if (if (eqv? tmp_1 '#\x69)
@@ -3413,9 +3378,7 @@
                                  rx_0
                                  (check-close-paren s_0 pos4_0 config2_0)))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(rx_9 pos4_2)
-                                 args))))
+                                (raise-binding-result-arity-error 2 args))))
                              (parse-error
                               s_0
                               pos3_0
@@ -3423,10 +3386,7 @@
                               (string-append
                                "expected `:` or another mode after `(?` and a mode sequence;\n"
                                " a mode is `i`, `-i`, `m`, `-m`, `s`, or `-s`")))))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(config2_0 pos3_8)
-                          args))))
+                        (args (raise-binding-result-arity-error 2 args))))
                       (parse-look s_0 pos2_0 config_0)))))))
           (let ((group-number_0
                  (unbox (parse-config-group-number-box config_0))))
@@ -3441,10 +3401,7 @@
                (values
                 (rx:group3.1 rx_0 group-number_0)
                 (check-close-paren s_0 pos2_0 config_0)))
-              (args
-               (raise-binding-result-arity-error
-                '(rx_10 pos2_10)
-                args))))))))))
+              (args (raise-binding-result-arity-error 2 args))))))))))
 (define parse-look
   (letrec ((span-num-groups_0
             (|#%name|
@@ -3470,7 +3427,7 @@
                        pre-num-groups_0
                        (span-num-groups_0 config_0 pre-num-groups_0))))
                  (values app_0 (check-close-paren s_0 pos3_0 config_0))))
-              (args (raise-binding-result-arity-error '(rx_11 pos3_9) args))))
+              (args (raise-binding-result-arity-error 2 args))))
             (if (eqv? tmp_0 '#\x21)
               (call-with-values
                (lambda ()
@@ -3484,8 +3441,7 @@
                          pre-num-groups_0
                          (span-num-groups_0 config_0 pre-num-groups_0))))
                    (values app_0 (check-close-paren s_0 pos3_0 config_0))))
-                (args
-                 (raise-binding-result-arity-error '(rx_12 pos3_10) args))))
+                (args (raise-binding-result-arity-error 2 args))))
               (if (eqv? tmp_0 '#\x3c)
                 (let ((pos2+_0 (add1 pos2_0)))
                   (let ((tmp_1
@@ -3520,10 +3476,7 @@
                              (values
                               app_0
                               (check-close-paren s_0 pos3_0 config_0))))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(rx_13 pos3_11)
-                            args))))
+                          (args (raise-binding-result-arity-error 2 args))))
                         (if (eqv? tmp_1 '#\x21)
                           (call-with-values
                            (lambda ()
@@ -3546,10 +3499,7 @@
                                (values
                                 app_0
                                 (check-close-paren s_0 pos3_0 config_0))))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(rx_14 pos3_12)
-                              args))))
+                            (args (raise-binding-result-arity-error 2 args))))
                           (parse-error
                            s_0
                            pos2+_0
@@ -3616,10 +3566,7 @@
                               pos4_0
                               config_0
                               "expected `)` to close `(?(...)...` after second branch")))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(pces2_1 pos4_3)
-                        args))))
+                      (args (raise-binding-result-arity-error 2 args))))
                     (if (eqv? tmp_0 '#\x29)
                       (let ((app_0
                              (rx-conditional
@@ -3630,9 +3577,8 @@
                               tst-span-num-groups_0)))
                         (values app_0 (add1 pos3_0)))
                       (void))))))
-             (args
-              (raise-binding-result-arity-error '(pces_0 pos3_13) args))))))
-        (args (raise-binding-result-arity-error '(tst_1 pos2_12) args)))))))
+             (args (raise-binding-result-arity-error 2 args))))))
+        (args (raise-binding-result-arity-error 2 args)))))))
 (define parse-test
   (lambda (s_0 pos_0 config_0)
     (let ((tmp_0
@@ -3666,8 +3612,7 @@
                         config_0
                         "expected `)` after `(?(` followed by digits"))
                      (values (rx:reference10.1 n_0 #f) (add1 pos3_0))))
-                  (args
-                   (raise-binding-result-arity-error '(n_3 pos3_14) args)))))
+                  (args (raise-binding-result-arity-error 2 args)))))
               (parse-error
                s_0
                pos_0
@@ -3730,7 +3675,7 @@
                (values
                 (rx:reference10.1 n_0 (parse-config-case-sensitive? config_0))
                 pos3_0))
-              (args (raise-binding-result-arity-error '(n_5 pos3_15) args)))))
+              (args (raise-binding-result-arity-error 2 args)))))
           (if (if (parse-config-px? config_0)
                 (let ((or-part_0 (if (>= c2_0 97) (<= c2_0 122) #f)))
                   (if or-part_0 or-part_0 (if (>= c2_0 65) (<= c2_0 90) #f)))
@@ -3753,10 +3698,7 @@
                           pos2_0
                           config_0
                           "illegal alphabetic escape")))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(success?_2 range_22 pos3_16)
-                        args))))))))
+                      (args (raise-binding-result-arity-error 3 args))))))))
             (values c2_0 (add1 pos2_0))))))))
 (define parse-mode
   (lambda (s_0 pos_0 config_0)
@@ -3895,12 +3837,10 @@
                                           (max lb1_0 lb2_0)))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(min2_0 max2_0 lb2_0)
+                                      3
                                       args)))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(min1_0 max1_0 lb1_0)
-                                   args))))
+                                  (raise-binding-result-arity-error 3 args))))
                                (if (rx:sequence? rx_0)
                                  (let ((lst_0 (rx:sequence-rxs rx_0)))
                                    (begin
@@ -3949,9 +3889,7 @@
                                                                   lb1_0)))))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(min1_1
-                                                               max1_1
-                                                               lb1_1)
+                                                             3
                                                              args)))))
                                                        (case-lambda
                                                         ((min-len_1
@@ -3963,9 +3901,7 @@
                                                           max-lb_1))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(min-len_4
-                                                            max-len_4
-                                                            max-lb_3)
+                                                          3
                                                           args)))))
                                                     (case-lambda
                                                      ((min-len_1
@@ -3978,9 +3914,7 @@
                                                        rest_0))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(min-len_2
-                                                         max-len_2
-                                                         max-lb_1)
+                                                       3
                                                        args))))))
                                                (values
                                                 min-len_0
@@ -4010,7 +3944,7 @@
                                         (values min1_0 max1_0 lb1_0)))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(min1_2 max1_2 lb1_2)
+                                       3
                                        args))))
                                    (if (rx:repeat? rx_0)
                                      (let ((old-depends-sizes_0
@@ -4060,7 +3994,7 @@
                                                  lb1_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(min1_3 max1_3 lb1_3)
+                                             3
                                              args))))))
                                      (if (rx:maybe? rx_0)
                                        (call-with-values
@@ -4076,7 +4010,7 @@
                                           (values 0 max1_0 lb1_0))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(min1_4 max1_4 lb1_4)
+                                           3
                                            args))))
                                        (if (rx:conditional? rx_0)
                                          (call-with-values
@@ -4124,15 +4058,15 @@
                                                         lb2_0)))))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(min2_1 max2_1 lb2_1)
+                                                   3
                                                    args)))))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(min1_5 max1_5 lb1_5)
+                                                3
                                                 args)))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(min0_0 max0_0 lb0_0)
+                                             3
                                              args))))
                                          (if (rx:lookahead? rx_0)
                                            (call-with-values
@@ -4148,7 +4082,7 @@
                                               (values 0 0 lb1_0))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(min1_6 max1_6 lb1_6)
+                                               3
                                                args))))
                                            (if (rx:lookbehind? rx_0)
                                              (call-with-values
@@ -4178,7 +4112,7 @@
                                                    (max max1_0 lb1_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(min1_7 max1_7 lb1_7)
+                                                 3
                                                  args))))
                                              (if (rx:cut? rx_0)
                                                (validate_0
@@ -4265,10 +4199,7 @@
                       (for-loop_0 (hash-iterate-first ht_0)))))
                  (void)
                  max-lookbehind_0))
-              (args
-               (raise-binding-result-arity-error
-                '(min-len_0 max-len_0 max-lookbehind_0)
-                args))))))))))
+              (args (raise-binding-result-arity-error 3 args))))))))))
 (define merge-depends-sizes
   (lambda (ht1_0 ht2_0)
     (if (zero? (hash-count ht1_0))
@@ -4614,10 +4545,7 @@
                            result_1)))
                      result_0))))))
             (for-loop_0 #t start*_0))))
-        (args
-         (raise-binding-result-arity-error
-          '(v*_0 start*_0 stop*_1 step*_0)
-          args)))))))
+        (args (raise-binding-result-arity-error 4 args)))))))
 (define anchored?
   (lambda (rx_0)
     (if (eq? rx_0 'start)
@@ -5641,14 +5569,8 @@
                                               result_1)))))
                                     result_0))))))
                            (for-loop_0 #t start*_2 start*_1)))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(v*_2 start*_2 stop*_3 step*_2)
-                       args)))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(v*_1 start*_1 stop*_2 step*_1)
-                    args))))
+                     (args (raise-binding-result-arity-error 4 args)))))
+                  (args (raise-binding-result-arity-error 4 args))))
                 #f)
               (call-with-values
                (lambda ()
@@ -5708,10 +5630,7 @@
                                        result_1)))
                                  result_0))))))
                         (for-loop_0 #t start*_1 start_1))))))
-                (args
-                 (raise-binding-result-arity-error
-                  '(v*_3 start*_3 stop*_4 step*_3)
-                  args)))))
+                (args (raise-binding-result-arity-error 4 args)))))
           (|#%app|
            next-m_0
            s_0
@@ -5799,14 +5718,8 @@
                                               result_1)))))
                                     result_0))))))
                            (for-loop_0 #t start*_2 start*_1)))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(v*_5 start*_5 stop*_6 step*_5)
-                       args)))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(v*_4 start*_4 stop*_5 step*_4)
-                    args))))
+                     (args (raise-binding-result-arity-error 4 args)))))
+                  (args (raise-binding-result-arity-error 4 args))))
                 #f)
               (call-with-values
                (lambda ()
@@ -5866,10 +5779,7 @@
                                        result_1)))
                                  result_0))))))
                         (for-loop_0 #t start*_1 start_1))))))
-                (args
-                 (raise-binding-result-arity-error
-                  '(v*_6 start*_6 stop*_7 step*_6)
-                  args)))))
+                (args (raise-binding-result-arity-error 4 args)))))
           (+ pos_0 len_0)
           #f)))))
 (define bytes-matcher*
@@ -5989,11 +5899,11 @@
                                              start*_1)))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(v*_8 start*_8 stop*_9 step*_8)
+                                        4
                                         args)))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(v*_7 start*_7 stop*_8 step*_7)
+                                     4
                                      args)))))))
                           (values pos_1 n_0 len_0)
                           (loop_0 pos3_0 (add1 n_0)))))))))
@@ -6099,7 +6009,7 @@
                                               start_1))))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(v*_9 start*_9 stop*_10 step*_9)
+                                       4
                                        args)))))))))
                         (values pos_1 n_0 len_0)
                         (let ((app_0 (+ pos_1 len_0)))
@@ -6601,10 +6511,7 @@
                              (let ((app_0 (- pos_1 back-amt_0)))
                                (bloop_0 app_0 (sub1 n_1)))))))))))))
             (bloop_0 pos2_0 n_0)))
-          (args
-           (raise-binding-result-arity-error
-            '(pos2_17 n_23 back-amt_1)
-            args))))))))
+          (args (raise-binding-result-arity-error 3 args))))))))
 (define lazy-repeat-matcher
   (letrec ((rloop_0
             (|#%name|
@@ -6880,13 +6787,8 @@
                                              result_0))))))
                                     (for-loop_0 #t start*_2 start*_1)))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(v*_11 start*_11 stop*_12 step*_11)
-                                args)))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(v*_10 start*_10 stop*_11 step*_10)
-                             args))))
+                               (raise-binding-result-arity-error 4 args)))))
+                           (args (raise-binding-result-arity-error 4 args))))
                          #f)
                        (let ((start_1 (car p_0)))
                          (let ((end_1 (cdr p_0)))
@@ -7044,13 +6946,8 @@
                                              result_0))))))
                                     (for-loop_0 #t start*_2 start*_1)))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(v*_13 start*_13 stop*_14 step*_13)
-                                args)))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(v*_12 start*_12 stop*_13 step*_12)
-                             args))))
+                               (raise-binding-result-arity-error 4 args)))))
+                           (args (raise-binding-result-arity-error 4 args))))
                          #f)
                        (let ((start_1 (car p_0)))
                          (let ((end_1 (cdr p_0)))
@@ -7928,10 +7825,7 @@
                        app_0
                        app_1
                        (get-start-range rx_0))))))))
-           (args
-            (raise-binding-result-arity-error
-             '(raw-rx_0 num-groups_1 references?_0)
-             args))))))
+           (args (raise-binding-result-arity-error 3 args))))))
      regexp-error-tag
      (lambda (str_0)
        (if handler_0
@@ -8221,10 +8115,7 @@
                                    (unsafe-fx+ 1 pos_0))))
                               fold-var_0))))))
                      (for-loop_0 null 0))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(vec_3 len_17)
-                   args)))))))))))))
+                 (args (raise-binding-result-arity-error 2 args)))))))))))))
 (define byte-positions->bytess.1
   (|#%name|
    byte-positions->bytess
@@ -8270,8 +8161,7 @@
                                 (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
                             fold-var_0))))))
                    (for-loop_0 null 0))))
-               (args
-                (raise-binding-result-arity-error '(vec_5 len_18) args)))))
+               (args (raise-binding-result-arity-error 2 args)))))
             null)))))))
 (define byte-positions->string-positions.1
   (letrec ((string-offset_0
@@ -8364,8 +8254,7 @@
                                    (unsafe-fx+ 1 pos_0))))
                               fold-var_0))))))
                      (for-loop_0 null 0))))
-                 (args
-                  (raise-binding-result-arity-error '(vec_7 len_19) args)))))
+                 (args (raise-binding-result-arity-error 2 args)))))
               null))))))))
 (define byte-positions->strings.1
   (|#%name|
@@ -8417,8 +8306,7 @@
                                 (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
                             fold-var_0))))))
                    (for-loop_0 null 0))))
-               (args
-                (raise-binding-result-arity-error '(vec_9 len_20) args)))))
+               (args (raise-binding-result-arity-error 2 args)))))
             null)))))))
 (define byte-index->string-index
   (lambda (str_0 start-pos_0 pos_0)
@@ -8574,10 +8462,7 @@
                                      result_1)))
                                result_0))))))
                       (for-loop_0 #f start*_0))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(v*_14 start*_14 stop*_15 step*_14)
-                    args)))))
+                  (args (raise-binding-result-arity-error 4 args)))))
               (let ((mc1_0 (unsafe-bytes-ref must-string_0 0)))
                 (let ((end_0
                        (-
@@ -8698,17 +8583,11 @@
                                                           start*_1)))))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(v*_16
-                                                       start*_16
-                                                       stop*_17
-                                                       step*_16)
+                                                     4
                                                      args)))))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(v*_15
-                                                    start*_15
-                                                    stop*_16
-                                                    step*_15)
+                                                  4
                                                   args))))
                                               #f)))
                                        (values result_1))))
@@ -8788,8 +8667,7 @@
           state_0))
        (case-lambda
         ((ms-pos_0 me-pos_0) (if ms-pos_0 #t #f))
-        (args
-         (raise-binding-result-arity-error '(ms-pos_4 me-pos_5) args)))))))
+        (args (raise-binding-result-arity-error 2 args)))))))
 (define fast-drive-regexp-match?/string
   (lambda (rx_0 in-str_0 start-offset_0 end-offset_0)
     (let ((state_0
@@ -8807,8 +8685,7 @@
            (search-match rx_0 in_0 0 0 (unsafe-bytes-length in_0) state_0))
          (case-lambda
           ((ms-pos_0 me-pos_0) (if ms-pos_0 #t #f))
-          (args
-           (raise-binding-result-arity-error '(ms-pos_5 me-pos_6) args))))))))
+          (args (raise-binding-result-arity-error 2 args))))))))
 (define fast-drive-regexp-match-positions/bytes
   (lambda (rx_0 in_0 start-pos_0 end-pos_0)
     (let ((state_0
@@ -8830,8 +8707,7 @@
              (cons (cons ms-pos_0 me-pos_0) (vector->list state_0))
              (list (cons ms-pos_0 me-pos_0)))
            #f))
-        (args
-         (raise-binding-result-arity-error '(ms-pos_6 me-pos_7) args)))))))
+        (args (raise-binding-result-arity-error 2 args)))))))
 (define fast-drive-regexp-match-positions/string
   (letrec ((string-offset_0
             (|#%name|
@@ -8908,16 +8784,10 @@
                                          (unsafe-fx+ 1 pos_0))))
                                     fold-var_0))))))
                            (for-loop_0 null 0))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(vec_11 len_22)
-                         args)))))
+                       (args (raise-binding-result-arity-error 2 args)))))
                     null)))
                #f))
-            (args
-             (raise-binding-result-arity-error
-              '(ms-pos_7 me-pos_8)
-              args)))))))))
+            (args (raise-binding-result-arity-error 2 args)))))))))
 (define fast-drive-regexp-match/bytes
   (lambda (rx_0 in_0 start-pos_0 end-pos_0)
     (let ((state_0
@@ -8974,14 +8844,10 @@
                                      (unsafe-fx+ 1 pos_0))))
                                 fold-var_0))))))
                        (for-loop_0 null 0))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(vec_13 len_23)
-                     args)))))
+                   (args (raise-binding-result-arity-error 2 args)))))
                 null)))
            #f))
-        (args
-         (raise-binding-result-arity-error '(ms-pos_8 me-pos_9) args)))))))
+        (args (raise-binding-result-arity-error 2 args)))))))
 (define fast-drive-regexp-match/string
   (lambda (rx_0 in-str_0 start-offset_0 end-offset_0)
     (let ((in_0
@@ -9039,14 +8905,10 @@
                                        (unsafe-fx+ 1 pos_0))))
                                   fold-var_0))))))
                          (for-loop_0 null 0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(vec_15 len_24)
-                       args)))))
+                     (args (raise-binding-result-arity-error 2 args)))))
                   null)))
              #f))
-          (args
-           (raise-binding-result-arity-error '(ms-pos_9 me-pos_10) args))))))))
+          (args (raise-binding-result-arity-error 2 args))))))))
 (define drive-regexp-match.1
   (letrec ((write/consume-skipped_0
             (|#%name|
@@ -9276,9 +9138,7 @@
                                                  me-pos_0))
                                               (void))))))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(ms-pos_10 me-pos_11)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (string? in_0)
                                      (if (not out24_0)
                                        (if (equal? #vu8() prefix25_0)
@@ -9391,7 +9251,7 @@
                                                       (void))))))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(ms-pos_11 me-pos_12)
+                                           2
                                            args)))))))
                                  (let ((prefix-len_0
                                         (unsafe-bytes-length prefix25_0)))
@@ -9627,7 +9487,7 @@
                                                    prefix-len_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(ms-pos_12 me-pos_13)
+                                                 2
                                                  args)))))))))))))))))))))))))))
 (define check-range
   (lambda (who_0 what_0 in_0 pos_0 start-pos_0)

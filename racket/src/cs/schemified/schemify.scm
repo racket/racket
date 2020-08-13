@@ -2165,10 +2165,7 @@
                               (unquoted-printing-string
                                (apply string-append (loop_1 w_0 ls_0))))
                              null))))))))))
-            (args
-             (raise-binding-result-arity-error
-              '(required-keywords_0 optional-keywords_0)
-              args)))))))))
+            (args (raise-binding-result-arity-error 2 args)))))))))
 (define gen-map
   (letrec ((loop_0
             (|#%name|
@@ -4960,10 +4957,7 @@
                (set-import-group-converter! grp_0 converter_0)
                (set-import-group-import-keys! grp_0 import-keys_0)
                knowns-or-empty_0)))
-          (args
-           (raise-binding-result-arity-error
-            '(knowns_0 converter_0 import-keys_0)
-            args))))
+          (args (raise-binding-result-arity-error 3 args))))
         knowns/proc_0))))
 (define import-group-lookup-ready?
   (lambda (grp_0)
@@ -5486,8 +5480,7 @@
                                                                          rhss_0)))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(idss12_0
-                                                                          rhss13_0)
+                                                                        2
                                                                         args)))))
                                                                   (case-lambda
                                                                    ((idss_1
@@ -5497,8 +5490,7 @@
                                                                      rhss_1))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(idss_6
-                                                                       rhss_6)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((idss_1
@@ -5509,8 +5501,7 @@
                                                                   rest_0))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(idss_4
-                                                                    rhss_4)
+                                                                  2
                                                                   args)))))))
                                                         (values
                                                          idss_0
@@ -5524,7 +5515,7 @@
                                                (reverse$1 rhss_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(idss_2 rhss_2)
+                                             2
                                              args))))))
                                      (case-lambda
                                       ((idss_0 rhss_0)
@@ -5536,7 +5527,7 @@
                                            (values idss_1 rhss_1 body_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(idss_1 rhss_1)
+                                        2
                                         args)))))))
                               (case-lambda
                                ((idss_0 rhss_0 body_0)
@@ -5651,9 +5642,7 @@
                                             r_1))
                                         r_0)))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(idss_0 rhss_0 body_0)
-                                 args))))
+                                (raise-binding-result-arity-error 3 args))))
                              (if (if (eq? 'let hd_0)
                                    (let ((a_0 (cdr (unwrap e_0))))
                                      (let ((p_0 (unwrap a_0)))
@@ -5902,9 +5891,7 @@
                                               r_1))
                                           r_0)))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(rhss_8 body_2)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (eq? 'letrec-values hd_0)
                                      (let ((a_0 (cdr (unwrap e_0))))
                                        (let ((p_0 (unwrap a_0)))
@@ -6081,8 +6068,7 @@
                                                                              rhss_0)))
                                                                           (args
                                                                            (raise-binding-result-arity-error
-                                                                            '(idss15_0
-                                                                              rhss16_0)
+                                                                            2
                                                                             args)))))
                                                                       (case-lambda
                                                                        ((idss_1
@@ -6092,8 +6078,7 @@
                                                                          rhss_1))
                                                                        (args
                                                                         (raise-binding-result-arity-error
-                                                                         '(idss_14
-                                                                           rhss_21)
+                                                                         2
                                                                          args)))))
                                                                    (case-lambda
                                                                     ((idss_1
@@ -6104,8 +6089,7 @@
                                                                       rest_0))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(idss_12
-                                                                        rhss_19)
+                                                                      2
                                                                       args)))))))
                                                             (values
                                                              idss_0
@@ -6123,7 +6107,7 @@
                                                    (reverse$1 rhss_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(idss_10 rhss_17)
+                                                 2
                                                  args))))))
                                          (case-lambda
                                           ((idss_0 rhss_0)
@@ -6137,7 +6121,7 @@
                                                (values idss_1 rhss_1 body_0))))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(idss_9 rhss_16)
+                                            2
                                             args)))))))
                                   (case-lambda
                                    ((idss_0 rhss_0 body_0)
@@ -6256,7 +6240,7 @@
                                             r_0)))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(idss_8 rhss_15 body_4)
+                                     3
                                      args))))
                                  (if (if (eq? 'letrec* hd_0)
                                        (let ((a_0 (cdr (unwrap e_0))))
@@ -6427,8 +6411,7 @@
                                                                                rhss_0)))
                                                                             (args
                                                                              (raise-binding-result-arity-error
-                                                                              '(ids17_0
-                                                                                rhss18_0)
+                                                                              2
                                                                               args)))))
                                                                         (case-lambda
                                                                          ((ids_1
@@ -6438,8 +6421,7 @@
                                                                            rhss_1))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(ids_8
-                                                                             rhss_29)
+                                                                           2
                                                                            args)))))
                                                                      (case-lambda
                                                                       ((ids_1
@@ -6450,8 +6432,7 @@
                                                                         rest_0))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(ids_6
-                                                                          rhss_27)
+                                                                        2
                                                                         args)))))))
                                                               (values
                                                                ids_0
@@ -6469,7 +6450,7 @@
                                                      (reverse$1 rhss_0))))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(ids_4 rhss_25)
+                                                   2
                                                    args))))))
                                            (case-lambda
                                             ((ids_0 rhss_0)
@@ -6487,7 +6468,7 @@
                                                   body_0))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(ids_3 rhss_24)
+                                              2
                                               args)))))))
                                     (case-lambda
                                      ((ids_0 rhss_0 body_0)
@@ -6586,7 +6567,7 @@
                                               r_0)))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(ids_2 rhss_23 body_6)
+                                       3
                                        args))))
                                    (if (if (if (eq? 'begin hd_0)
                                              (let ((a_0 (cdr (unwrap e_0))))
@@ -6782,7 +6763,7 @@
                                                   r_0)))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(e0_0 es_2)
+                                           2
                                            args))))
                                        (if (if (if (eq? 'set! hd_0)
                                                  (let ((a_0
@@ -7087,7 +7068,7 @@
                                                         r_0)))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(proc_0 args_2)
+                                                 2
                                                  args))))
                                              (let ((e_1 (unwrap e_0)))
                                                (if (returns_0 result-arity_0 1)
@@ -7199,7 +7180,7 @@
        (find-known+import key_0 prim-knowns_0 knowns_0 imports_0 mutated_0))
      (case-lambda
       ((k_0 im_0) k_0)
-      (args (raise-binding-result-arity-error '(k_3 im_5) args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define struct:struct-type-info
   (make-record-type-descriptor* 'struct-type-info #f #f #f #f 9 511))
 (define effect657
@@ -7595,8 +7576,7 @@
                                                               vals_0)))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(props3_0
-                                                               vals4_0)
+                                                             2
                                                              args)))))
                                                        (case-lambda
                                                         ((props_1 vals_1)
@@ -7605,7 +7585,7 @@
                                                           vals_1))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(props_5 vals_5)
+                                                          2
                                                           args)))))
                                                     (case-lambda
                                                      ((props_1 vals_1)
@@ -7615,7 +7595,7 @@
                                                        rest_1))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(props_3 vals_3)
+                                                       2
                                                        args)))))))
                                              (values props_0 vals_0)))))))
                                     (for-loop_0 null null d_0))))
@@ -7624,9 +7604,7 @@
                                  (let ((app_0 (reverse$1 props_0)))
                                    (values app_0 (reverse$1 vals_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(props_1 vals_1)
-                                  args))))))
+                                 (raise-binding-result-arity-error 2 args))))))
                           (case-lambda
                            ((props_0 vals_0)
                             (begin
@@ -7655,10 +7633,7 @@
                                                 result_1))))
                                         result_0))))))
                                (for-loop_0 #f props_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(props_0 vals_0)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          #f)))
                    #f))))))
     (lambda (v_0 prim-knowns_0 knowns_0 imports_0 mutated_0)
@@ -7745,17 +7720,12 @@
                                (let ((parent_1 parent_0))
                                  (values parent_1 fields_0 rest_0)))
                               (args
-                               (raise-binding-result-arity-error
-                                '(fields_2 rest_21)
-                                args))))))))
+                               (raise-binding-result-arity-error 2 args))))))))
                     (case-lambda
                      ((parent_0 fields_0 rest_0)
                       (let ((name_1 name_0))
                         (values name_1 parent_0 fields_0 rest_0)))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(parent_1 fields_1 rest_20)
-                       args))))))))
+                     (args (raise-binding-result-arity-error 3 args))))))))
            (case-lambda
             ((name_0 parent_0 fields_0 rest_0)
              (let ((u-name_0 (unwrap name_0)))
@@ -7782,7 +7752,7 @@
                                 ((k_0 im_0) k_0)
                                 (args
                                  (raise-binding-result-arity-error
-                                  '(k_3692 im_5693)
+                                  2
                                   args)))))))
                        (if (exact-nonnegative-integer? fields_0)
                          (let ((prefab-imms_0
@@ -8137,7 +8107,7 @@
                                       ((k_0 im_0) k_0)
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(k_3778 im_5779)
+                                        2
                                         args))))
                                     #f)))
                              (let ((prefab-imms_1 prefab-imms_0))
@@ -8195,10 +8165,7 @@
                          #f)
                        #f)
                      #f)))))
-            (args
-             (raise-binding-result-arity-error
-              '(name_1 parent_0 fields_0 rest_19)
-              args))))
+            (args (raise-binding-result-arity-error 4 args))))
           (if (if (eq? 'let-values hd_0)
                 (let ((a_0 (cdr (unwrap v_0))))
                   (let ((p_0 (unwrap a_0)))
@@ -8349,21 +8316,21 @@
                                             (cons vals6_0 vals_0)))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(props5_0 vals6_0)
+                                            2
                                             args)))))
                                       (case-lambda
                                        ((props_1 vals_1)
                                         (values props_1 vals_1))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(props_12 vals_12)
+                                         2
                                          args)))))
                                    (case-lambda
                                     ((props_1 vals_1)
                                      (for-loop_0 props_1 vals_1 rest_0))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(props_10 vals_10)
+                                      2
                                       args)))))))
                             (values props_0 vals_0)))))))
                    (for-loop_0 null null d_0))))
@@ -8371,8 +8338,7 @@
                ((props_0 vals_0)
                 (let ((app_0 (reverse$1 props_0)))
                   (values app_0 (reverse$1 vals_0))))
-               (args
-                (raise-binding-result-arity-error '(props_8 vals_8) args))))))
+               (args (raise-binding-result-arity-error 2 args))))))
          (case-lambda
           ((props_0 vals_0)
            (begin
@@ -8404,7 +8370,7 @@
                                                         ((k_0 im_0) k_0)
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(k_3866 im_5867)
+                                                          2
                                                           args)))))
                                                    (simple?.1
                                                     #t
@@ -8431,7 +8397,7 @@
                                    result_1))))))
                        result_0))))))
               (for-loop_0 #t props_0 vals_0))))
-          (args (raise-binding-result-arity-error '(props_7 vals_7) args))))
+          (args (raise-binding-result-arity-error 2 args))))
         (if (let ((app_0 (unwrap 'null))) (eq? app_0 (unwrap e_0)))
           #t
           (if (if (eq? 'quote hd_0)
@@ -8590,12 +8556,8 @@
                     ((tmp2_0 tmp3_0)
                      (let ((tmp1_1 tmp1_0) (id_1 id_0))
                        (values tmp1_1 id_1 tmp2_0 tmp3_0)))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(tmp2_1 tmp3_1)
-                      args)))))
-                 (args
-                  (raise-binding-result-arity-error '(tmp1_1 id_3) args)))))))
+                    (args (raise-binding-result-arity-error 2 args)))))
+                 (args (raise-binding-result-arity-error 2 args)))))))
          (case-lambda
           ((tmp1_0 id_0 tmp2_0 tmp3_0)
            (let ((u-tmp1_0 (unwrap tmp1_0)))
@@ -8604,10 +8566,7 @@
                  (let ((u_0 (unwrap id_0))) (if (symbol? u_0) u_0 #f))
                  #f)
                #f)))
-          (args
-           (raise-binding-result-arity-error
-            '(tmp1_0 id_2 tmp2_0 tmp3_0)
-            args))))
+          (args (raise-binding-result-arity-error 4 args))))
         #f))))
 (define literal?
   (lambda (v_0)
@@ -8806,11 +8765,10 @@
                             (let ((e1_1 e1_0)) (values e1_1 e2_0)))))))
                   (case-lambda
                    ((e1_0 e2_0) (let ((t_1 t_0)) (values t_1 e1_0 e2_0)))
-                   (args
-                    (raise-binding-result-arity-error '(e1_1 e2_1) args))))))))
+                   (args (raise-binding-result-arity-error 2 args))))))))
          (case-lambda
           ((t_0 e1_0 e2_0) (if (literal? t_0) (if (unwrap t_0) e1_0 e2_0) v_0))
-          (args (raise-binding-result-arity-error '(t_0 e1_0 e2_0) args))))
+          (args (raise-binding-result-arity-error 3 args))))
         (if (if (eq? 'begin hd_0)
               (let ((a_0 (cdr (unwrap v_0))))
                 (let ((p_0 (unwrap a_0)))
@@ -8852,7 +8810,7 @@
               knowns_0
               imports_0
               mutated_0))
-            (args (raise-binding-result-arity-error '(e_11 es_5) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           (if (if (eq? 'not hd_0)
                 (let ((a_0 (cdr (unwrap v_0))))
                   (let ((p_0 (unwrap a_0)))
@@ -8891,9 +8849,7 @@
                             (case-lambda
                              ((k_0 im_0) k_0)
                              (args
-                              (raise-binding-result-arity-error
-                               '(k_3984 im_5985)
-                               args))))))
+                              (raise-binding-result-arity-error 2 args))))))
                       (if (known-procedure? k_0) #t v_0))
                     v_0)))
               (if (if (eq? 'procedure-arity-includes? hd_0)
@@ -8938,7 +8894,7 @@
                                   ((k_0 im_0) k_0)
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(k_3998 im_5999)
+                                    2
                                     args))))))
                            (if (if (known-procedure? k_0)
                                  (bitwise-bit-set?
@@ -8948,7 +8904,7 @@
                              #t
                              v_0))
                          v_0))))
-                  (args (raise-binding-result-arity-error '(e_14 n_13) args))))
+                  (args (raise-binding-result-arity-error 2 args))))
                 (if (let ((p_0 (unwrap v_0))) (if (pair? p_0) #t #f))
                   (call-with-values
                    (lambda ()
@@ -9020,10 +8976,7 @@
                                     #f)
                                   #f)))
                            (if c1_0 (car c1_0) v_0)))))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(rator_0 rands_0)
-                      args))))
+                    (args (raise-binding-result-arity-error 2 args))))
                   (let ((u_0 (unwrap v_0)))
                     (if (symbol? u_0)
                       (let ((k_0 (hash-ref-either knowns_0 imports_0 u_0)))
@@ -9243,8 +9196,7 @@
                                                                       rhss_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(idss3_0
-                                                                       rhss4_0)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((idss_1
@@ -9254,8 +9206,7 @@
                                                                   rhss_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(idss_23
-                                                                    rhss_38)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((idss_1 rhss_1)
@@ -9265,8 +9216,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(idss_21
-                                                                 rhss_36)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       idss_0
@@ -9278,7 +9228,7 @@
                                            (values app_0 (reverse$1 rhss_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(idss_19 rhss_34)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((idss_0 rhss_0)
@@ -9289,16 +9239,14 @@
                                         (values idss_1 rhss_1 body_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(idss_18 rhss_33)
+                                     2
                                      args)))))))
                            (case-lambda
                             ((idss_0 rhss_0 body_0)
                              (let ((let-id_1 let-id_0))
                                (values let-id_1 idss_0 rhss_0 body_0)))
                             (args
-                             (raise-binding-result-arity-error
-                              '(idss_17 rhss_32 body_20)
-                              args)))))))
+                             (raise-binding-result-arity-error 3 args)))))))
                     (case-lambda
                      ((let-id_0 idss_0 rhss_0 body_0)
                       (let ((app_0
@@ -9349,10 +9297,7 @@
                           primitives_0
                           unsafe-mode?_0
                           body_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(let-id_0 idss_16 rhss_31 body_19)
-                       args))))
+                     (args (raise-binding-result-arity-error 4 args))))
                    (error 'match "failed ~e" v_0))))))
            (optimize*_0
             (|#%name|
@@ -9403,9 +9348,7 @@
                                   unsafe-mode?_0
                                   body_0)))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(formal_0 body_9)
-                                 args))))
+                                (raise-binding-result-arity-error 2 args))))
                              (if (if (eq? 'case-lambda hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (if (wrap-list? a_0)
@@ -9524,8 +9467,7 @@
                                                                     bodys_0)))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(formalss1_0
-                                                                     bodys2_0)
+                                                                   2
                                                                    args)))))
                                                              (case-lambda
                                                               ((formalss_1
@@ -9535,8 +9477,7 @@
                                                                 bodys_1))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(formalss_5
-                                                                  bodys_5)
+                                                                2
                                                                 args)))))
                                                           (case-lambda
                                                            ((formalss_1
@@ -9547,8 +9488,7 @@
                                                              rest_0))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(formalss_3
-                                                               bodys_3)
+                                                             2
                                                              args)))))))
                                                    (values
                                                     formalss_0
@@ -9560,7 +9500,7 @@
                                          (values app_0 (reverse$1 bodys_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(formalss_1 bodys_1)
+                                        2
                                         args))))))
                                 (case-lambda
                                  ((formalss_0 bodys_0)
@@ -9612,9 +9552,7 @@
                                         formalss_0
                                         bodys_0))))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(formalss_0 bodys_0)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (eq? 'let-values hd_0) #t #f)
                                  (optimize*-let_0
                                   imports_0
@@ -9690,7 +9628,7 @@
                                                    (values tst_1 thn_0 els_0)))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(thn_1 els_1)
+                                                  2
                                                   args))))))))
                                       (case-lambda
                                        ((tst_0 thn_0 els_0)
@@ -9726,7 +9664,7 @@
                                               els_0)))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(tst_0 thn_0 els_0)
+                                         3
                                          args))))
                                      (if (if (eq? 'with-continuation-mark hd_0)
                                            (let ((a_0 (cdr (unwrap v_0))))
@@ -9790,7 +9728,7 @@
                                                       body_0)))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(val_3 body_13)
+                                                    2
                                                     args))))))))
                                         (case-lambda
                                          ((key_0 val_0 body_0)
@@ -9826,7 +9764,7 @@
                                                 body_0)))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(key_11 val_2 body_12)
+                                           3
                                            args))))
                                        (if (if (eq? 'begin hd_0)
                                              (let ((a_0 (cdr (unwrap v_0))))
@@ -9893,7 +9831,7 @@
                                                   body_0))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(e_16 body_16)
+                                               2
                                                args))))
                                            (if (if (eq? 'set! hd_0)
                                                  (let ((a_0
@@ -9951,7 +9889,7 @@
                                                   rhs_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(id_5 rhs_4)
+                                                 2
                                                  args))))
                                              (if (if (eq?
                                                       'variable-reference-from-unsafe?
@@ -10118,7 +10056,7 @@
                                                               exps_0))))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(rator_2 exps_1)
+                                                           2
                                                            args))))
                                                        v_0))))))))))))))))))
                    (optimize
@@ -10199,15 +10137,11 @@
                    app_0
                    "/"
                    (path-elem->string name1_0))))))
-           (args
-            (raise-binding-result-arity-error
-             '(base2_0 name2_0 dir?_1)
-             args))))
+           (args (raise-binding-result-arity-error 3 args))))
          (if (eq? base1_0 'relative)
            (path-elem->string name1_0)
            (path-for-some-system->string p_0))))
-      (args
-       (raise-binding-result-arity-error '(base1_0 name1_0 dir?_0) args))))))
+      (args (raise-binding-result-arity-error 3 args))))))
 (define path-elem->string
   (lambda (p_0)
     (if (eq? p_0 'same)
@@ -10239,10 +10173,7 @@
                          span_0)))
                    (datum->syntax #f u-e_0 new-srcloc_0 e_0))
                  (reannotate e_0 u-e_0))))
-            (args
-             (raise-binding-result-arity-error
-              '(src_0 line_0 col_0 pos_1 span_0)
-              args))))))
+            (args (raise-binding-result-arity-error 5 args))))))
       (if (pair? e_0)
         (let ((a_0 (wrap-truncate-paths (car e_0))))
           (let ((d_0 (wrap-truncate-paths (cdr e_0))))
@@ -10271,7 +10202,7 @@
          (case-lambda
           ((args_0 bodys_0)
            (smaller-than? bodys_0 (+ 3 (* 3 (args-size args_0)))))
-          (args (raise-binding-result-arity-error '(args_5 bodys_7) args))))
+          (args (raise-binding-result-arity-error 2 args))))
         (if (if (eq? 'case-lambda hd_0)
               (let ((a_0 (cdr (unwrap v_0))))
                 (if (wrap-list? a_0)
@@ -10354,21 +10285,21 @@
                                               (cons bodyss2_0 bodyss_0)))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(argss1_0 bodyss2_0)
+                                              2
                                               args)))))
                                         (case-lambda
                                          ((argss_1 bodyss_1)
                                           (values argss_1 bodyss_1))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(argss_5 bodyss_5)
+                                           2
                                            args)))))
                                      (case-lambda
                                       ((argss_1 bodyss_1)
                                        (for-loop_0 argss_1 bodyss_1 rest_0))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(argss_3 bodyss_3)
+                                        2
                                         args)))))))
                               (values argss_0 bodyss_0)))))))
                      (for-loop_0 null null d_0))))
@@ -10376,10 +10307,7 @@
                  ((argss_0 bodyss_0)
                   (let ((app_0 (reverse$1 argss_0)))
                     (values app_0 (reverse$1 bodyss_0))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(argss_1 bodyss_1)
-                   args))))))
+                 (args (raise-binding-result-arity-error 2 args))))))
            (case-lambda
             ((argss_0 bodyss_0)
              (begin
@@ -10415,8 +10343,7 @@
                                      result_1))))))
                          result_0))))))
                 (for-loop_0 #t argss_0 bodyss_0))))
-            (args
-             (raise-binding-result-arity-error '(argss_0 bodyss_0) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           #f)))))
 (define args-size
   (lambda (args_0)
@@ -10479,12 +10406,8 @@
                      'lambda
                      new-args_0
                      (clone-body bodys_0 new-env_0 mutated_0)))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(new-args_0 new-env_0)
-                     args)))))
-                (args
-                 (raise-binding-result-arity-error '(args_9 bodys_10) args))))
+                   (args (raise-binding-result-arity-error 2 args)))))
+                (args (raise-binding-result-arity-error 2 args))))
               (if (if (eq? 'case-lambda hd_0)
                     (let ((a_0 (cdr (unwrap v_0))))
                       (if (wrap-list? a_0)
@@ -10574,14 +10497,14 @@
                                                     (cons bodyss4_0 bodyss_0)))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(argss3_0 bodyss4_0)
+                                                    2
                                                     args)))))
                                               (case-lambda
                                                ((argss_1 bodyss_1)
                                                 (values argss_1 bodyss_1))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(argss_12 bodyss_12)
+                                                 2
                                                  args)))))
                                            (case-lambda
                                             ((argss_1 bodyss_1)
@@ -10591,7 +10514,7 @@
                                               rest_0))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(argss_10 bodyss_10)
+                                              2
                                               args)))))))
                                     (values argss_0 bodyss_0)))))))
                            (for-loop_0 null null d_0))))
@@ -10599,10 +10522,7 @@
                        ((argss_0 bodyss_0)
                         (let ((app_0 (reverse$1 argss_0)))
                           (values app_0 (reverse$1 bodyss_0))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(argss_8 bodyss_8)
-                         args))))))
+                       (args (raise-binding-result-arity-error 2 args))))))
                  (case-lambda
                   ((argss_0 bodyss_0)
                    (list*
@@ -10640,8 +10560,7 @@
                                                              mutated_0)))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(new-args_1
-                                                              new-env_1)
+                                                            2
                                                             args))))
                                                         fold-var_0)))
                                                   (values fold-var_1))))
@@ -10651,10 +10570,7 @@
                                             rest_1))))))
                                  fold-var_0))))))
                         (for-loop_0 null argss_0 bodyss_0))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(argss_7 bodyss_7)
-                    args))))
+                  (args (raise-binding-result-arity-error 2 args))))
                 (let ((c1_0 (hash-ref imports_0 (unwrap v_0) #f)))
                   (if c1_0
                     (let ((i-k_0 (import-lookup c1_0)))
@@ -10929,14 +10845,14 @@
                                                         (cons rhss6_0 rhss_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(idss5_0 rhss6_0)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((idss_1 rhss_1)
                                                     (values idss_1 rhss_1))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(idss_32 rhss_47)
+                                                     2
                                                      args)))))
                                                (case-lambda
                                                 ((idss_1 rhss_1)
@@ -10946,7 +10862,7 @@
                                                   rest_0))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(idss_30 rhss_45)
+                                                  2
                                                   args)))))))
                                         (values idss_0 rhss_0)))))))
                                (for-loop_0 null null a_0))))
@@ -10954,28 +10870,19 @@
                            ((idss_0 rhss_0)
                             (let ((app_0 (reverse$1 idss_0)))
                               (values app_0 (reverse$1 rhss_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(idss_28 rhss_43)
-                             args))))))
+                           (args (raise-binding-result-arity-error 2 args))))))
                      (case-lambda
                       ((idss_0 rhss_0)
                        (let ((bodys_0
                               (let ((d_1 (cdr p_1))) (unwrap-list d_1))))
                          (let ((idss_1 idss_0) (rhss_1 rhss_0))
                            (values idss_1 rhss_1 bodys_0))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(idss_27 rhss_42)
-                        args)))))))
+                      (args (raise-binding-result-arity-error 2 args)))))))
               (case-lambda
                ((idss_0 rhss_0 bodys_0)
                 (let ((let-id_1 let-id_0))
                   (values let-id_1 idss_0 rhss_0 bodys_0)))
-               (args
-                (raise-binding-result-arity-error
-                 '(idss_26 rhss_41 bodys_14)
-                 args)))))))
+               (args (raise-binding-result-arity-error 3 args)))))))
        (case-lambda
         ((let-id_0 idss_0 rhss_0 bodys_0)
          (call-with-values
@@ -11004,22 +10911,18 @@
                                       new-env_0))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(new-ids_0 new-env_3)
+                                      2
                                       args)))))
                                 (case-lambda
                                  ((rev-new-idss_1 env_2)
                                   (values rev-new-idss_1 env_2))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(rev-new-idss_4 env_13)
-                                   args)))))
+                                  (raise-binding-result-arity-error 2 args)))))
                              (case-lambda
                               ((rev-new-idss_1 env_2)
                                (for-loop_0 rev-new-idss_1 env_2 rest_0))
                               (args
-                               (raise-binding-result-arity-error
-                                '(rev-new-idss_2 env_11)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (values rev-new-idss_0 env_1)))))))
                (for-loop_0 null env_0 idss_0))))
           (case-lambda
@@ -11057,14 +10960,8 @@
                                   fold-var_0))))))
                          (for-loop_0 null lst_0 rhss_0)))))))
               (list* let-id_0 app_0 (clone-body bodys_0 new-env_0 mutated_0))))
-           (args
-            (raise-binding-result-arity-error
-             '(rev-new-idss_0 new-env_2)
-             args)))))
-        (args
-         (raise-binding-result-arity-error
-          '(let-id_2 idss_25 rhss_40 bodys_13)
-          args))))
+           (args (raise-binding-result-arity-error 2 args)))))
+        (args (raise-binding-result-arity-error 4 args))))
       (error 'match "failed ~e" v_0))))
 (define clone-expr
   (lambda (v_0 env_0 mutated_0)
@@ -11086,7 +10983,7 @@
           (case-lambda
            ((args_0 bodys_0)
             (list* 'lambda args_0 (clone-body bodys_0 env_0 mutated_0)))
-           (args (raise-binding-result-arity-error '(args_15 bodys_16) args))))
+           (args (raise-binding-result-arity-error 2 args))))
          (if (if (eq? 'case-lambda hd_0)
                (let ((a_0 (cdr (unwrap v_0))))
                  (if (wrap-list? a_0)
@@ -11169,21 +11066,21 @@
                                                (cons bodyss8_0 bodyss_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(argss7_0 bodyss8_0)
+                                               2
                                                args)))))
                                          (case-lambda
                                           ((argss_1 bodyss_1)
                                            (values argss_1 bodyss_1))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(argss_19 bodyss_19)
+                                            2
                                             args)))))
                                       (case-lambda
                                        ((argss_1 bodyss_1)
                                         (for-loop_0 argss_1 bodyss_1 rest_0))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(argss_17 bodyss_17)
+                                         2
                                          args)))))))
                                (values argss_0 bodyss_0)))))))
                       (for-loop_0 null null d_0))))
@@ -11191,10 +11088,7 @@
                   ((argss_0 bodyss_0)
                    (let ((app_0 (reverse$1 argss_0)))
                      (values app_0 (reverse$1 bodyss_0))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(argss_15 bodyss_15)
-                    args))))))
+                  (args (raise-binding-result-arity-error 2 args))))))
             (case-lambda
              ((argss_0 bodyss_0)
               (list*
@@ -11229,8 +11123,7 @@
                                        rest_1))))))
                             fold-var_0))))))
                    (for-loop_0 null argss_0 bodyss_0))))))
-             (args
-              (raise-binding-result-arity-error '(argss_14 bodyss_14) args))))
+             (args (raise-binding-result-arity-error 2 args))))
            (if (if (eq? 'quote hd_0)
                  (let ((a_0 (cdr (unwrap v_0))))
                    (let ((p_0 (unwrap a_0)))
@@ -11282,9 +11175,7 @@
                                (let ((tst_1 tst_0))
                                  (values tst_1 thn_0 els_0)))
                               (args
-                               (raise-binding-result-arity-error
-                                '(thn_4 els_4)
-                                args))))))))
+                               (raise-binding-result-arity-error 2 args))))))))
                     (case-lambda
                      ((tst_0 thn_0 els_0)
                       (let ((app_0 (clone-expr tst_0 env_0 mutated_0)))
@@ -11294,10 +11185,7 @@
                            app_0
                            app_1
                            (clone-expr els_0 env_0 mutated_0)))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(tst_2 thn_3 els_3)
-                       args))))
+                     (args (raise-binding-result-arity-error 3 args))))
                    (if (if (eq? 'with-continuation-mark hd_0)
                          (let ((a_0 (cdr (unwrap v_0))))
                            (let ((p_0 (unwrap a_0)))
@@ -11337,7 +11225,7 @@
                                    (values key_1 val_0 body_0)))
                                 (args
                                  (raise-binding-result-arity-error
-                                  '(val_6 body_23)
+                                  2
                                   args))))))))
                       (case-lambda
                        ((key_0 val_0 body_0)
@@ -11348,10 +11236,7 @@
                              app_0
                              app_1
                              (clone-expr body_0 env_0 mutated_0)))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(key_13 val_5 body_22)
-                         args))))
+                       (args (raise-binding-result-arity-error 3 args))))
                      (if (if (eq? 'begin hd_0)
                            (let ((a_0 (cdr (unwrap v_0)))) (wrap-list? a_0))
                            #f)
@@ -11396,10 +11281,7 @@
                                'set!
                                id_0
                                (clone-expr rhs_0 env_0 mutated_0)))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(id_11 rhs_8)
-                               args))))
+                             (args (raise-binding-result-arity-error 2 args))))
                            (if (if (eq? '|#%variable-reference| hd_0)
                                  (let ((a_0 (cdr (unwrap v_0))))
                                    (let ((app_0 (unwrap '())))
@@ -11560,8 +11442,7 @@
               exports_0
               (add-args env_0 args_0)
               needed_0))
-            (args
-             (raise-binding-result-arity-error '(args_18 bodys_19) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           (if (if (eq? 'case-lambda hd_0)
                 (let ((a_0 (cdr (unwrap v_0))))
                   (if (wrap-list? a_0)
@@ -11645,21 +11526,21 @@
                                                 (cons bodyss10_0 bodyss_0)))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(argss9_0 bodyss10_0)
+                                                2
                                                 args)))))
                                           (case-lambda
                                            ((argss_1 bodyss_1)
                                             (values argss_1 bodyss_1))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(argss_26 bodyss_26)
+                                             2
                                              args)))))
                                        (case-lambda
                                         ((argss_1 bodyss_1)
                                          (for-loop_0 argss_1 bodyss_1 rest_0))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(argss_24 bodyss_24)
+                                          2
                                           args)))))))
                                 (values argss_0 bodyss_0)))))))
                        (for-loop_0 null null d_0))))
@@ -11667,10 +11548,7 @@
                    ((argss_0 bodyss_0)
                     (let ((app_0 (reverse$1 argss_0)))
                       (values app_0 (reverse$1 bodyss_0))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(argss_22 bodyss_22)
-                     args))))))
+                   (args (raise-binding-result-arity-error 2 args))))))
              (case-lambda
               ((argss_0 bodyss_0)
                (begin
@@ -11698,8 +11576,7 @@
                                      (for-loop_0 needed_2 rest_0 rest_1))))))
                            needed_1))))))
                   (for-loop_0 needed_0 argss_0 bodyss_0))))
-              (args
-               (raise-binding-result-arity-error '(argss_21 bodyss_21) args))))
+              (args (raise-binding-result-arity-error 2 args))))
             (if (if (eq? 'quote hd_0)
                   (let ((a_0 (cdr (unwrap v_0))))
                     (let ((p_0 (unwrap a_0)))
@@ -11765,7 +11642,7 @@
                                   (values tst_1 thn_0 els_0)))
                                (args
                                 (raise-binding-result-arity-error
-                                 '(thn_7 els_7)
+                                 2
                                  args))))))))
                      (case-lambda
                       ((tst_0 thn_0 els_0)
@@ -11788,10 +11665,7 @@
                           exports_0
                           env_0
                           needed_0))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(tst_4 thn_6 els_6)
-                        args))))
+                      (args (raise-binding-result-arity-error 3 args))))
                     (if (if (eq? 'with-continuation-mark hd_0)
                           (let ((a_0 (cdr (unwrap v_0))))
                             (let ((p_0 (unwrap a_0)))
@@ -11833,7 +11707,7 @@
                                     (values key_1 val_0 body_0)))
                                  (args
                                   (raise-binding-result-arity-error
-                                   '(val_9 body_26)
+                                   2
                                    args))))))))
                        (case-lambda
                         ((key_0 val_0 body_0)
@@ -11856,10 +11730,7 @@
                             exports_0
                             env_0
                             needed_0))))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(key_15 val_8 body_25)
-                          args))))
+                        (args (raise-binding-result-arity-error 3 args))))
                       (if (if (eq? 'begin hd_0)
                             (let ((a_0 (cdr (unwrap v_0)))) (wrap-list? a_0))
                             #f)
@@ -11929,9 +11800,7 @@
                                      env_0
                                      needed_0)))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(id_14 rhs_10)
-                                args))))
+                               (raise-binding-result-arity-error 2 args))))
                             (if (if (eq? '|#%variable-reference| hd_0) #t #f)
                               #f
                               (if (let ((p_0 (unwrap v_0)))
@@ -12146,14 +12015,14 @@
                                                          rhss_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(idss11_0 rhss12_0)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((idss_1 rhss_1)
                                                     (values idss_1 rhss_1))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(idss_41 rhss_56)
+                                                     2
                                                      args)))))
                                                (case-lambda
                                                 ((idss_1 rhss_1)
@@ -12163,7 +12032,7 @@
                                                   rest_0))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(idss_39 rhss_54)
+                                                  2
                                                   args)))))))
                                         (values idss_0 rhss_0)))))))
                                (for-loop_0 null null a_0))))
@@ -12171,28 +12040,19 @@
                            ((idss_0 rhss_0)
                             (let ((app_0 (reverse$1 idss_0)))
                               (values app_0 (reverse$1 rhss_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(idss_37 rhss_52)
-                             args))))))
+                           (args (raise-binding-result-arity-error 2 args))))))
                      (case-lambda
                       ((idss_0 rhss_0)
                        (let ((bodys_0
                               (let ((d_1 (cdr p_1))) (unwrap-list d_1))))
                          (let ((idss_1 idss_0) (rhss_1 rhss_0))
                            (values idss_1 rhss_1 bodys_0))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(idss_36 rhss_51)
-                        args)))))))
+                      (args (raise-binding-result-arity-error 2 args)))))))
               (case-lambda
                ((idss_0 rhss_0 bodys_0)
                 (let ((let-id_1 let-id_0))
                   (values let-id_1 idss_0 rhss_0 bodys_0)))
-               (args
-                (raise-binding-result-arity-error
-                 '(idss_35 rhss_50 bodys_23)
-                 args)))))))
+               (args (raise-binding-result-arity-error 3 args)))))))
        (case-lambda
         ((let-id_0 idss_0 rhss_0 bodys_0)
          (let ((new-env_0
@@ -12265,10 +12125,7 @@
                               (for-loop_0 needed_2 rest_0))))
                         needed_1))))))
                (for-loop_0 needed_0 rhss_0))))))
-        (args
-         (raise-binding-result-arity-error
-          '(let-id_4 idss_34 rhss_49 bodys_22)
-          args))))
+        (args (raise-binding-result-arity-error 4 args))))
       (error 'match "failed ~e" v_0))))
 (define add-args
   (lambda (env_0 args_0)
@@ -12330,10 +12187,7 @@
                                  lam_0)))
                           (known-procedure/can-inline arity-mask_0 lam_1))
                         (known-procedure arity-mask_0))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(lam_0 inlinable?_0)
-                     args))))
+                   (args (raise-binding-result-arity-error 2 args))))
                  (if (if (literal? rhs_0)
                        (not (hash-ref mutated13_0 (unwrap id9_0) #f))
                        #f)
@@ -12527,17 +12381,11 @@
                                   (let ((a_0 (car (unwrap d_1)))) a_0))))
                            (let ((id_1 id_0) (rhs_1 rhs_0))
                              (values id_1 rhs_1 body_0))))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(id_19 rhs_16)
-                          args)))))))
+                        (args (raise-binding-result-arity-error 2 args)))))))
                 (case-lambda
                  ((id_0 rhs_0 body_0)
                   (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(id_18 rhs_15 body_28)
-                   args))))
+                 (args (raise-binding-result-arity-error 3 args))))
                (if (if (eq? 'letrec-values hd_0)
                      (let ((a_0 (cdr (unwrap v19_0))))
                        (let ((p_0 (unwrap a_0)))
@@ -12612,17 +12460,11 @@
                                     (let ((a_0 (car (unwrap d_1)))) a_0))))
                              (let ((id_1 id_0) (rhs_1 rhs_0))
                                (values id_1 rhs_1 body_0))))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(id_22 rhs_19)
-                            args)))))))
+                          (args (raise-binding-result-arity-error 2 args)))))))
                   (case-lambda
                    ((id_0 rhs_0 body_0)
                     (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(id_21 rhs_18 body_30)
-                     args))))
+                   (args (raise-binding-result-arity-error 3 args))))
                  (if (if (eq? 'let hd_0)
                        (let ((a_0 (cdr (unwrap v19_0))))
                          (let ((p_0 (unwrap a_0)))
@@ -12683,16 +12525,11 @@
                                (let ((id_1 id_0) (rhs_1 rhs_0))
                                  (values id_1 rhs_1 body_0))))
                             (args
-                             (raise-binding-result-arity-error
-                              '(id_25 rhs_22)
-                              args)))))))
+                             (raise-binding-result-arity-error 2 args)))))))
                     (case-lambda
                      ((id_0 rhs_0 body_0)
                       (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(id_24 rhs_21 body_31)
-                       args))))
+                     (args (raise-binding-result-arity-error 3 args))))
                    (if (if (eq? 'letrec* hd_0)
                          (let ((a_0 (cdr (unwrap v19_0))))
                            (let ((p_0 (unwrap a_0)))
@@ -12754,16 +12591,11 @@
                                  (let ((id_1 id_0) (rhs_1 rhs_0))
                                    (values id_1 rhs_1 body_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(id_28 rhs_25)
-                                args)))))))
+                               (raise-binding-result-arity-error 2 args)))))))
                       (case-lambda
                        ((id_0 rhs_0 body_0)
                         (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(id_27 rhs_24 body_33)
-                         args))))
+                       (args (raise-binding-result-arity-error 3 args))))
                      (if (if (eq? 'let-values hd_0)
                            (let ((a_0 (cdr (unwrap v19_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -12916,16 +12748,10 @@
                                (let ((a_0 (car (unwrap d_1)))) a_0))))
                         (let ((id_1 id_0) (rhs_1 rhs_0))
                           (values id_1 rhs_1 body_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(id_32 rhs_29)
-                       args)))))))
+                     (args (raise-binding-result-arity-error 2 args)))))))
              (case-lambda
               ((id_0 rhs_0 body_0) (extract-let-lambda #f id_0 rhs_0 body_0))
-              (args
-               (raise-binding-result-arity-error
-                '(id_31 rhs_28 body_22)
-                args))))
+              (args (raise-binding-result-arity-error 3 args))))
             (if (if (eq? 'letrec-values hd_0)
                   (let ((a_0 (cdr (unwrap v_0))))
                     (let ((p_0 (unwrap a_0)))
@@ -12997,16 +12823,10 @@
                                  (let ((a_0 (car (unwrap d_1)))) a_0))))
                           (let ((id_1 id_0) (rhs_1 rhs_0))
                             (values id_1 rhs_1 body_0))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(id_13 rhs_32)
-                         args)))))))
+                       (args (raise-binding-result-arity-error 2 args)))))))
                (case-lambda
                 ((id_0 rhs_0 body_0) (extract-let-lambda #t id_0 rhs_0 body_0))
-                (args
-                 (raise-binding-result-arity-error
-                  '(id_34 rhs_31 body_40)
-                  args))))
+                (args (raise-binding-result-arity-error 3 args))))
               (if (if (eq? 'let hd_0)
                     (let ((a_0 (cdr (unwrap v_0))))
                       (let ((p_0 (unwrap a_0)))
@@ -13066,17 +12886,11 @@
                                    (let ((a_0 (car (unwrap d_1)))) a_0))))
                             (let ((id_1 id_0) (rhs_1 rhs_0))
                               (values id_1 rhs_1 body_0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(id_37 rhs_35)
-                           args)))))))
+                         (args (raise-binding-result-arity-error 2 args)))))))
                  (case-lambda
                   ((id_0 rhs_0 body_0)
                    (extract-let-lambda #f id_0 rhs_0 body_0))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(id_36 rhs_34 body_42)
-                    args))))
+                  (args (raise-binding-result-arity-error 3 args))))
                 (if (if (eq? 'letrec* hd_0)
                       (let ((a_0 (cdr (unwrap v_0))))
                         (let ((p_0 (unwrap a_0)))
@@ -13137,16 +12951,11 @@
                               (let ((id_1 id_0) (rhs_1 rhs_0))
                                 (values id_1 rhs_1 body_0))))
                            (args
-                            (raise-binding-result-arity-error
-                             '(id_40 rhs_38)
-                             args)))))))
+                            (raise-binding-result-arity-error 2 args)))))))
                    (case-lambda
                     ((id_0 rhs_0 body_0)
                      (extract-let-lambda #t id_0 rhs_0 body_0))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(id_39 rhs_37 body_44)
-                      args))))
+                    (args (raise-binding-result-arity-error 3 args))))
                   (if (if (eq? 'let-values hd_0)
                         (let ((a_0 (cdr (unwrap v_0))))
                           (let ((p_0 (unwrap a_0)))
@@ -13257,7 +13066,7 @@
      (lambda () (extract-lambda v_0))
      (case-lambda
       ((lam_0 inlinable?_0) (values lam_0 #f))
-      (args (raise-binding-result-arity-error '(lam_2 inlinable?_1) args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define lambda-arity-mask
   (lambda (v_0)
     (let ((hd_0
@@ -13446,8 +13255,7 @@
                          unsafe-mode?11_0)))
                    (if k_0 (hash-set knowns7_0 (unwrap id_0) k_0) knowns7_0))
                  #f)))
-             (args
-              (raise-binding-result-arity-error '(id_43 orig-rhs_0) args))))
+             (args (raise-binding-result-arity-error 2 args))))
            (if (if (eq? 'define-values hd_0)
                  (let ((a_0 (cdr (unwrap v5_0))))
                    (let ((p_0 (unwrap a_0)))
@@ -13689,7 +13497,7 @@
                                            (values make-s_1 s?_0 acc/muts_0)))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(s?_3 acc/muts_3)
+                                          2
                                           args))))))))
                               (case-lambda
                                ((make-s_0 s?_0 acc/muts_0)
@@ -13701,7 +13509,7 @@
                                    acc/muts_0)))
                                (args
                                 (raise-binding-result-arity-error
-                                 '(make-s_2 s?_2 acc/muts_2)
+                                 3
                                  args))))))))
                      (case-lambda
                       ((struct:s_0 make-s_0 s?_0 acc/muts_0)
@@ -13784,8 +13592,7 @@
                                                                             -set!_0)))
                                                                         (args
                                                                          (raise-binding-result-arity-error
-                                                                          '(-ref_36
-                                                                            -set!_36)
+                                                                          2
                                                                           args))))))))
                                                               (case-lambda
                                                                ((?_0
@@ -13800,9 +13607,7 @@
                                                                    -set!_0)))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(?_35
-                                                                   -ref_35
-                                                                   -set!_35)
+                                                                 3
                                                                  args))))))))
                                                      (case-lambda
                                                       ((make_0
@@ -13819,10 +13624,7 @@
                                                           -set!_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(make_4
-                                                          ?_34
-                                                          -ref_34
-                                                          -set!_34)
+                                                        4
                                                         args))))))))
                                             (case-lambda
                                              ((struct:_0
@@ -13850,11 +13652,7 @@
                                                    rhs_0))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(struct:_33
-                                                 make_3
-                                                 ?_33
-                                                 -ref_33
-                                                 -set!_33)
+                                               5
                                                args))))))))
                                    (case-lambda
                                     ((struct:_0
@@ -13917,8 +13715,7 @@
                                                                  make-acc/muts_0)))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(?2_4
-                                                                 make-acc/muts_4)
+                                                               2
                                                                args))))))))
                                                    (case-lambda
                                                     ((make2_0
@@ -13933,9 +13730,7 @@
                                                         make-acc/muts_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(make2_3
-                                                        ?2_3
-                                                        make-acc/muts_3)
+                                                      3
                                                       args))))))))))
                                       (case-lambda
                                        ((struct:2_0
@@ -13961,19 +13756,11 @@
                                            make-acc/muts_0)))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(struct:2_2
-                                           make2_2
-                                           ?2_2
-                                           make-acc/muts_2)
+                                         4
                                          args)))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(struct:_32
-                                        make_2
-                                        ?_32
-                                        -ref_32
-                                        -set!_32
-                                        rhs_44)
+                                      6
                                       args)))))))))
                         (case-lambda
                          ((struct:_0
@@ -14005,23 +13792,8 @@
                              make2_0
                              ?2_0
                              make-acc/muts_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(struct:_31
-                             make_1
-                             ?_31
-                             -ref_31
-                             -set!_31
-                             rhs_43
-                             struct:2_1
-                             make2_1
-                             ?2_1
-                             make-acc/muts_1)
-                           args)))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(struct:s_1 make-s_1 s?_1 acc/muts_1)
-                        args)))))))
+                         (args (raise-binding-result-arity-error 10 args)))))
+                      (args (raise-binding-result-arity-error 4 args)))))))
               (case-lambda
                ((struct:s_0
                  make-s_0
@@ -14262,8 +14034,7 @@
                                                                                                name_0)))
                                                                                            (args
                                                                                             (raise-binding-result-arity-error
-                                                                                             '(pos_4
-                                                                                               name_6)
+                                                                                             2
                                                                                              args))))))))
                                                                                  (case-lambda
                                                                                   ((ref-or-set_0
@@ -14278,9 +14049,7 @@
                                                                                       name_0)))
                                                                                   (args
                                                                                    (raise-binding-result-arity-error
-                                                                                    '(ref-or-set_1
-                                                                                      pos_3
-                                                                                      name_5)
+                                                                                    3
                                                                                     args)))))))
                                                                           (case-lambda
                                                                            ((make_1
@@ -14360,10 +14129,7 @@
                                                                                 knowns_2)))
                                                                            (args
                                                                             (raise-binding-result-arity-error
-                                                                             '(make_6
-                                                                               ref-or-set_0
-                                                                               pos_2
-                                                                               name_4)
+                                                                             4
                                                                              args))))
                                                                          knowns_2)))
                                                                   (values
@@ -14391,23 +14157,7 @@
                                     info_0)))))
                              info_0)))))
                     (values knowns7_0 #f))))
-               (args
-                (raise-binding-result-arity-error
-                 '(struct:s_0
-                   make-s_0
-                   s?_0
-                   acc/muts_0
-                   struct:_30
-                   make_0
-                   ?_30
-                   -ref_30
-                   -set!_30
-                   rhs_42
-                   struct:2_0
-                   make2_0
-                   ?2_0
-                   make-acc/muts_0)
-                 args))))
+               (args (raise-binding-result-arity-error 14 args))))
              (if (if (eq? 'define-values hd_0)
                    (let ((a_0 (cdr (unwrap v5_0))))
                      (let ((p_0 (unwrap a_0)))
@@ -14505,7 +14255,7 @@
                                                        s-set!_0)))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(s-ref_4 s-set!_4)
+                                                     2
                                                      args))))))))
                                          (case-lambda
                                           ((s?_0 s-ref_0 s-set!_0)
@@ -14517,7 +14267,7 @@
                                               s-set!_0)))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(s?_8 s-ref_3 s-set!_3)
+                                            3
                                             args))))))))
                                 (case-lambda
                                  ((make-s_0 s?_0 s-ref_0 s-set!_0)
@@ -14530,7 +14280,7 @@
                                      s-set!_0)))
                                  (args
                                   (raise-binding-result-arity-error
-                                   '(make-s_6 s?_7 s-ref_2 s-set!_2)
+                                   4
                                    args))))))))
                        (case-lambda
                         ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0)
@@ -14549,10 +14299,7 @@
                               s-ref_1
                               s-set!_1
                               rhs_0))))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(struct:s_4 make-s_5 s?_6 s-ref_1 s-set!_1)
-                          args)))))))
+                        (args (raise-binding-result-arity-error 5 args)))))))
                 (case-lambda
                  ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0 rhs_0)
                   (let ((info_0
@@ -14603,10 +14350,7 @@
                                     info_0)))))))
                          info_0))
                       (values knowns7_0 #f))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(struct:s_3 make-s_4 s?_5 s-ref_0 s-set!_0 rhs_46)
-                   args))))
+                 (args (raise-binding-result-arity-error 6 args))))
                (if (if (eq? 'define-values hd_0)
                      (let ((a_0 (cdr (unwrap v5_0))))
                        (let ((p_0 (unwrap a_0)))
@@ -14678,7 +14422,7 @@
                                       (values prop:s_1 s?_0 s-ref_0)))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(s?_12 s-ref_8)
+                                     2
                                      args))))))))
                          (case-lambda
                           ((prop:s_0 s?_0 s-ref_0)
@@ -14692,10 +14436,7 @@
                                    (s?_1 s?_0)
                                    (s-ref_1 s-ref_0))
                                (values prop:s_1 s?_1 s-ref_1 rest_0))))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(prop:s_1 s?_11 s-ref_7)
-                            args)))))))
+                          (args (raise-binding-result-arity-error 3 args)))))))
                   (case-lambda
                    ((prop:s_0 s?_0 s-ref_0 rest_0)
                     (let ((type_0
@@ -14724,10 +14465,7 @@
                               (known-struct-type-property/immediate-guard))
                              knowns_1)))
                        #f)))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(prop:s_0 s?_10 s-ref_6 rest_75)
-                     args))))
+                   (args (raise-binding-result-arity-error 4 args))))
                  (if (if (eq? 'define-values hd_0)
                        (let ((a_0 (cdr (unwrap v5_0))))
                          (let ((p_0 (unwrap a_0)))
@@ -14847,8 +14585,7 @@
                                                                               new-knowns_0)
                                                                              (args
                                                                               (raise-binding-result-arity-error
-                                                                               '(new-knowns_0
-                                                                                 info_2)
+                                                                               2
                                                                                args))))))
                                                                       (values
                                                                        knowns_1))))
@@ -14865,10 +14602,7 @@
                                         (values knowns7_0 #f)))
                                     (values knowns7_0 #f)))))))))
                        (loop_0 rhs_0)))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(ids_14 rhs_31)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (values knowns7_0 #f)))))))))))
 (define struct-convert
   (lambda (form_0
@@ -15106,16 +14840,14 @@
                                       (values make-s_1 s?_0 acc/muts_0)))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(s?_17 acc/muts_8)
+                                     2
                                      args))))))))
                          (case-lambda
                           ((make-s_0 s?_0 acc/muts_0)
                            (let ((struct:s_1 struct:s_0))
                              (values struct:s_1 make-s_0 s?_0 acc/muts_0)))
                           (args
-                           (raise-binding-result-arity-error
-                            '(make-s_10 s?_16 acc/muts_7)
-                            args))))))))
+                           (raise-binding-result-arity-error 3 args))))))))
                 (case-lambda
                  ((struct:s_0 make-s_0 s?_0 acc/muts_0)
                   (call-with-values
@@ -15194,8 +14926,7 @@
                                                                        -set!_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(-ref_44
-                                                                       -set!_44)
+                                                                     2
                                                                      args))))))))
                                                          (case-lambda
                                                           ((?1_0
@@ -15210,9 +14941,7 @@
                                                               -set!_0)))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(?1_5
-                                                              -ref_43
-                                                              -set!_43)
+                                                            3
                                                             args))))))))
                                                 (case-lambda
                                                  ((make_0 ?1_0 -ref_0 -set!_0)
@@ -15225,10 +14954,7 @@
                                                      -set!_0)))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(make_12
-                                                     ?1_4
-                                                     -ref_42
-                                                     -set!_42)
+                                                   4
                                                    args))))))))
                                        (case-lambda
                                         ((struct:_0 make_0 ?1_0 -ref_0 -set!_0)
@@ -15251,11 +14977,7 @@
                                               mk_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(struct:_38
-                                            make_11
-                                            ?1_3
-                                            -ref_41
-                                            -set!_41)
+                                          5
                                           args))))))))
                               (case-lambda
                                ((struct:_0 make_0 ?1_0 -ref_0 -set!_0 mk_0)
@@ -15307,8 +15029,7 @@
                                                             make-acc/muts_0)))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(?2_10
-                                                            make-acc/muts_10)
+                                                          2
                                                           args))))))))
                                               (case-lambda
                                                ((make2_0 ?2_0 make-acc/muts_0)
@@ -15320,9 +15041,7 @@
                                                    make-acc/muts_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(make2_8
-                                                   ?2_9
-                                                   make-acc/muts_9)
+                                                 3
                                                  args))))))))))
                                  (case-lambda
                                   ((struct:2_0 make2_0 ?2_0 make-acc/muts_0)
@@ -15345,16 +15064,11 @@
                                       make-acc/muts_0)))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(struct:2_6 make2_7 ?2_8 make-acc/muts_8)
+                                    4
                                     args)))))
                                (args
                                 (raise-binding-result-arity-error
-                                 '(struct:_37
-                                   make_10
-                                   ?1_2
-                                   -ref_40
-                                   -set!_40
-                                   mk_2)
+                                 6
                                  args)))))))))
                    (case-lambda
                     ((struct:_0
@@ -15386,23 +15100,8 @@
                         make2_0
                         ?2_0
                         make-acc/muts_0)))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(struct:_36
-                        make_9
-                        ?1_1
-                        -ref_39
-                        -set!_39
-                        mk_1
-                        struct:2_5
-                        make2_6
-                        ?2_7
-                        make-acc/muts_7)
-                      args)))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(struct:s_7 make-s_9 s?_15 acc/muts_6)
-                   args)))))))
+                    (args (raise-binding-result-arity-error 10 args)))))
+                 (args (raise-binding-result-arity-error 4 args)))))))
          (case-lambda
           ((struct:s_0
             make-s_0
@@ -15593,8 +15292,7 @@
                                                                                  field-name_0)))
                                                                              (args
                                                                               (raise-binding-result-arity-error
-                                                                               '(pos_7
-                                                                                 field-name_1)
+                                                                               2
                                                                                args))))))))
                                                                    (case-lambda
                                                                     ((ref-id_0
@@ -15615,9 +15313,7 @@
                                                                        #f))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(ref-id_0
-                                                                        pos_6
-                                                                        field-name_0)
+                                                                      3
                                                                       args))))
                                                                   (if (if (eq?
                                                                            'make-struct-field-mutator
@@ -15761,8 +15457,7 @@
                                                                                    field-name_0)))
                                                                                (args
                                                                                 (raise-binding-result-arity-error
-                                                                                 '(pos_10
-                                                                                   field-name_4)
+                                                                                 2
                                                                                  args))))))))
                                                                      (case-lambda
                                                                       ((set-id_0
@@ -15783,9 +15478,7 @@
                                                                          #f))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(set-id_0
-                                                                          pos_9
-                                                                          field-name_3)
+                                                                        3
                                                                         args))))
                                                                     #f)))))
                                                          (values result_1))))
@@ -16452,8 +16145,7 @@
                                                                                          raw-def_0)))
                                                                                     (args
                                                                                      (raise-binding-result-arity-error
-                                                                                      '(pos_13
-                                                                                        field-name_6)
+                                                                                      2
                                                                                       args))))
                                                                                   (if (if (eq?
                                                                                            'make-struct-field-mutator
@@ -16702,8 +16394,7 @@
                                                                                              raw-def_0))))
                                                                                       (args
                                                                                        (raise-binding-result-arity-error
-                                                                                        '(pos_15
-                                                                                          field-name_8)
+                                                                                        2
                                                                                         args))))
                                                                                     (error
                                                                                      "oops")))))
@@ -16912,23 +16603,7 @@
                                                make-acc/muts_0))))
                                           '((void))))))))))))))))))))
                #f)))
-          (args
-           (raise-binding-result-arity-error
-            '(struct:s_6
-              make-s_8
-              s?_14
-              acc/muts_5
-              struct:_35
-              make_8
-              ?1_0
-              -ref_38
-              -set!_38
-              mk_0
-              struct:2_4
-              make2_5
-              ?2_6
-              make-acc/muts_6)
-            args))))
+          (args (raise-binding-result-arity-error 14 args))))
         #f))))
 (define struct-convert-local.1
   (letrec ((loop_0
@@ -16965,10 +16640,7 @@
                                 (values forms_1 rest_0))))))
                       (case-lambda
                        ((forms_0 rest_0) (loop_0 (append forms_0 rest_0)))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(forms_0 rest_85)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (let ((p_0 (unwrap new-seq_0)))
                            (if (pair? p_0)
                              (if (let ((a_0 (car p_0)))
@@ -17017,16 +16689,11 @@
                                  (let ((id_1 id_0) (rhs_1 rhs_0))
                                    (values id_1 rhs_1 rest_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(id_48 rhs_56)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((id_0 rhs_0 rest_0)
                           (cons (list id_0 rhs_0) (loop_0 rest_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(id_47 rhs_55 rest_87)
-                           args))))
+                         (args (raise-binding-result-arity-error 3 args))))
                        (error 'match "failed ~e" new-seq_0))))))))
            (loop_1
             (|#%name|
@@ -17071,10 +16738,7 @@
                          new-knowns_0
                          schemify11_0
                          (append forms_0 rest_0)))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(forms_2 rest_89)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (let ((p_0 (unwrap new-seq_0)))
                            (if (pair? p_0)
                              (if (let ((a_0 (car p_0)))
@@ -17123,19 +16787,14 @@
                                  (let ((id_1 id_0) (rhs_1 rhs_0))
                                    (values id_1 rhs_1 rest_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(id_51 rhs_59)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((id_0 rhs_0 rest_0)
                           (list
                            'let
                            (list (list id_0 rhs_0))
                            (loop_1 bodys_0 new-knowns_0 schemify11_0 rest_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(id_50 rhs_58 rest_91)
-                           args))))
+                         (args (raise-binding-result-arity-error 3 args))))
                        (error 'match "failed ~e" new-seq_0)))))))))
     (|#%name|
      struct-convert-local
@@ -17196,10 +16855,7 @@
                      (let ((bodys_0 (let ((d_1 (cdr p_0))) (unwrap-list d_1))))
                        (let ((ids_1 ids_0) (rhs_1 rhs_0))
                          (values ids_1 rhs_1 bodys_0))))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(ids_17 rhs_53)
-                      args)))))))
+                    (args (raise-binding-result-arity-error 2 args)))))))
             (case-lambda
              ((ids_0 rhs_0 bodys_0)
               (let ((defn_0 (list 'define-values ids_0 rhs_0)))
@@ -17247,16 +16903,10 @@
                                 new-knowns_0
                                 schemify11_0
                                 new-seq_1)))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(new-knowns_1 info_3)
-                              args)))))
+                            (args (raise-binding-result-arity-error 2 args)))))
                         (error 'match "failed ~e" new-seq_0)))
                     #f))))
-             (args
-              (raise-binding-result-arity-error
-               '(ids_16 rhs_52 bodys_20)
-               args))))
+             (args (raise-binding-result-arity-error 3 args))))
            #f))))))
 (define schemify-body$1
   (|#%name|
@@ -17387,7 +17037,7 @@
                                             (for-loop_1 src-syms_0 ids_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(ids_19 rhs_61)
+                                          2
                                           args))))
                                       src-syms_0))))
                              (values src-syms_1))))
@@ -17609,14 +17259,14 @@
                                                        (cons rhss4_0 rhss_0)))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(ids3_0 rhss4_1)
+                                                       2
                                                        args)))))
                                                  (case-lambda
                                                   ((ids_2 rhss_1)
                                                    (values ids_2 rhss_1))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(ids_29 rhss_6)
+                                                    2
                                                     args)))))
                                               (case-lambda
                                                ((ids_2 rhss_1)
@@ -17626,7 +17276,7 @@
                                                  rest_0))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(ids_27 rhss_4)
+                                                 2
                                                  args)))))))
                                        (values ids_1 rhss_0)))))))
                               (for-loop_0 null null a_0))))
@@ -17634,19 +17284,13 @@
                           ((ids_1 rhss_0)
                            (let ((app_0 (reverse$1 ids_1)))
                              (values app_0 (reverse$1 rhss_0))))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(ids_25 rhss_2)
-                            args))))))
+                          (args (raise-binding-result-arity-error 2 args))))))
                     (case-lambda
                      ((ids_1 rhss_0)
                       (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                         (let ((ids_2 ids_1) (rhss_1 rhss_0))
                           (values ids_2 rhss_1 body_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(ids_24 rhss_1)
-                       args)))))))
+                     (args (raise-binding-result-arity-error 2 args)))))))
              (case-lambda
               ((ids_1 rhss_0 body_0)
                (let ((app_0
@@ -17700,10 +17344,7 @@
                                 fold-var_0))))))
                        (for-loop_0 null ids_1 rhss_0))))
                    body_0))))
-              (args
-               (raise-binding-result-arity-error
-                '(ids_23 rhss_0 body_0)
-                args))))
+              (args (raise-binding-result-arity-error 3 args))))
             (error 'match "failed ~e" e_0))
           e_0)))))
 (define mutated-in-body
@@ -17803,9 +17444,7 @@
                                       (for-loop_1 ids_0)))
                                    (void)))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(ids_31 rhs_66)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (void)))
                           (for-loop_0 rest_0))))
                     (values)))))))
@@ -17997,7 +17636,7 @@
                                                     (void)))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(ids_32 rhs_68)
+                                                   2
                                                    args))))
                                                (find-mutated!
                                                 form_0
@@ -18010,7 +17649,7 @@
                                            knowns_1))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(knowns_29 info_4)
+                                          2
                                           args))))))
                                  (values prev-knowns_1))))
                           (for-loop_0 prev-knowns_1 rest_0))))
@@ -18094,9 +17733,7 @@
                                       (for-loop_1 ids_0)))
                                    (void)))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(ids_34 rhs_65)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (void)))
                           (for-loop_0 rest_0))))
                     (values)))))))
@@ -18259,10 +17896,7 @@
                            simples_0
                            body_0
                            #f)))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(formals_1 body_54)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'case-lambda hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (if (wrap-list? a_0)
@@ -18369,8 +18003,7 @@
                                                             bodys_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(formalss9_0
-                                                             bodys10_0)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((formalss_1 bodys_1)
@@ -18379,7 +18012,7 @@
                                                         bodys_1))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(formalss_12 bodys_33)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((formalss_1 bodys_1)
@@ -18389,7 +18022,7 @@
                                                      rest_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(formalss_10 bodys_31)
+                                                     2
                                                      args)))))))
                                            (values formalss_0 bodys_0)))))))
                                   (for-loop_0 null null d_0))))
@@ -18398,9 +18031,7 @@
                                (let ((app_0 (reverse$1 formalss_0)))
                                  (values app_0 (reverse$1 bodys_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(formalss_8 bodys_29)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((formalss_0 bodys_0)
                           (if ids_0
@@ -18457,10 +18088,7 @@
                                           (values)))))))
                                  (for-loop_0 bodys_0)))
                               (void))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(formalss_7 bodys_28)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'quote hd_0)
                              (let ((a_0 (cdr (unwrap v_0))))
                                (let ((p_0 (unwrap a_0)))
@@ -18623,8 +18251,7 @@
                                                                        rhss_0)))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(idss11_1
-                                                                        rhss12_1)
+                                                                      2
                                                                       args)))))
                                                                 (case-lambda
                                                                  ((idss_1
@@ -18634,8 +18261,7 @@
                                                                    rhss_1))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(idss_51
-                                                                     rhss_67)
+                                                                   2
                                                                    args)))))
                                                              (case-lambda
                                                               ((idss_1 rhss_1)
@@ -18645,8 +18271,7 @@
                                                                 rest_0))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(idss_49
-                                                                  rhss_65)
+                                                                2
                                                                 args)))))))
                                                       (values
                                                        idss_0
@@ -18658,7 +18283,7 @@
                                             (values app_0 (reverse$1 rhss_0))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(idss_47 rhss_63)
+                                           2
                                            args))))))
                                    (case-lambda
                                     ((idss_0 rhss_0)
@@ -18669,7 +18294,7 @@
                                          (values idss_1 rhss_1 bodys_0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(idss_46 rhss_62)
+                                      2
                                       args)))))))
                             (case-lambda
                              ((idss_0 rhss_0 bodys_0)
@@ -18714,10 +18339,7 @@
                                  simples_0
                                  bodys_0
                                  ids_0)))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(idss_45 rhss_61 bodys_35)
-                               args))))
+                             (args (raise-binding-result-arity-error 3 args))))
                            (if (if (eq? 'letrec-values hd_0)
                                  (let ((a_0 (cdr (unwrap v_0))))
                                    (let ((p_0 (unwrap a_0)))
@@ -18872,8 +18494,7 @@
                                                                          rhss_0)))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(idss13_0
-                                                                          rhss14_1)
+                                                                        2
                                                                         args)))))
                                                                   (case-lambda
                                                                    ((idss_1
@@ -18883,8 +18504,7 @@
                                                                      rhss_1))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(idss_59
-                                                                       rhss_75)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((idss_1
@@ -18895,8 +18515,7 @@
                                                                   rest_0))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(idss_57
-                                                                    rhss_73)
+                                                                  2
                                                                   args)))))))
                                                         (values
                                                          idss_0
@@ -18910,7 +18529,7 @@
                                                (reverse$1 rhss_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(idss_55 rhss_71)
+                                             2
                                              args))))))
                                      (case-lambda
                                       ((idss_0 rhss_0)
@@ -18921,7 +18540,7 @@
                                            (values idss_1 rhss_1 bodys_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(idss_54 rhss_70)
+                                        2
                                         args)))))))
                               (case-lambda
                                ((idss_0 rhss_0 bodys_0)
@@ -18995,7 +18614,7 @@
                                                       (() (for-loop_0 rest_0))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '()
+                                                        0
                                                         args))))))
                                                 (values)))))))
                                        (for-loop_0 idss_0)))
@@ -19142,9 +18761,7 @@
                                      bodys_0
                                      ids_0))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(idss_53 rhss_69 bodys_37)
-                                 args))))
+                                (raise-binding-result-arity-error 3 args))))
                              (if (if (eq? 'if hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (let ((p_0 (unwrap a_0)))
@@ -19193,7 +18810,7 @@
                                              (values tst_1 thn_0 els_0)))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(thn_10 els_10)
+                                            2
                                             args))))))))
                                 (case-lambda
                                  ((tst_0 thn_0 els_0)
@@ -19223,9 +18840,7 @@
                                      els_0
                                      #f)))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(tst_6 thn_9 els_9)
-                                   args))))
+                                  (raise-binding-result-arity-error 3 args))))
                                (if (if (eq? 'with-continuation-mark hd_0)
                                      (let ((a_0 (cdr (unwrap v_0))))
                                        (let ((p_0 (unwrap a_0)))
@@ -19277,7 +18892,7 @@
                                                (values key_1 val_0 body_0)))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(val_12 body_59)
+                                              2
                                               args))))))))
                                   (case-lambda
                                    ((key_0 val_0 body_0)
@@ -19308,7 +18923,7 @@
                                        ids_0)))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(key_17 val_11 body_58)
+                                     3
                                      args))))
                                  (if (if (eq? 'begin hd_0)
                                        (let ((a_0 (cdr (unwrap v_0))))
@@ -19366,7 +18981,7 @@
                                            #f)))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(exp_1 exps_8)
+                                         2
                                          args))))
                                      (if (if (eq? 'set! hd_0)
                                            (let ((a_0 (cdr (unwrap v_0))))
@@ -19428,7 +19043,7 @@
                                              #f)))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(id_66 rhs_73)
+                                           2
                                            args))))
                                        (if (if (eq?
                                                 '|#%variable-reference|
@@ -19475,8 +19090,7 @@
                                                                       k_0)
                                                                      (args
                                                                       (raise-binding-result-arity-error
-                                                                       '(k_32584
-                                                                         im_52585)
+                                                                       2
                                                                        args))))))
                                                               (if (known-constructor?
                                                                    v_1)
@@ -19567,7 +19181,7 @@
                                                    #f))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(rator_6 exps_10)
+                                               2
                                                args))))
                                            (let ((v_1 (unwrap v_0)))
                                              (if (symbol? v_1)
@@ -19699,9 +19313,7 @@
                                       (loop_0 (wrap-cdr mut-l_1)))
                                     mut-l_1))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(ids_43 rhs_75)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                mut-l_1)))))))))
                 (loop_0 mut-l_0))))
           (if (eq? mut-l_0 l_0) (wrap-cdr mut-l_0) l_0))
@@ -20025,7 +19637,7 @@
                  'args
                  (list*
                   'raise-binding-result-arity-error
-                  (list 'quote ids_0)
+                  (length ids_0)
                   '(args))))))))))))
 (define prefab-key-all-fields-immutable?
   (lambda (k_0)
@@ -20063,7 +19675,7 @@
                     (all-fields-immutable? rk_2)))))))))))
 (define struct:path-for-srcloc
   (make-record-type-descriptor* 'path-for-srcloc #f #f #f #f 1 1))
-(define effect2676
+(define effect2680
   (struct-type-install-properties!
    struct:path-for-srcloc
    'path-for-srcloc
@@ -20081,35 +19693,35 @@
    path-for-srcloc
    (record-constructor
     (make-record-constructor-descriptor struct:path-for-srcloc #f #f))))
-(define path-for-srcloc?2675
+(define path-for-srcloc?2679
   (|#%name| path-for-srcloc? (record-predicate struct:path-for-srcloc)))
 (define path-for-srcloc?
   (|#%name|
    path-for-srcloc?
    (lambda (v)
-     (if (path-for-srcloc?2675 v)
+     (if (path-for-srcloc?2679 v)
        #t
        ($value
         (if (impersonator? v)
-          (path-for-srcloc?2675 (impersonator-val v))
+          (path-for-srcloc?2679 (impersonator-val v))
           #f))))))
-(define path-for-srcloc-path2677
+(define path-for-srcloc-path2681
   (|#%name| path-for-srcloc-path (record-accessor struct:path-for-srcloc 0)))
 (define path-for-srcloc-path
   (|#%name|
    path-for-srcloc-path
    (lambda (s)
-     (if (path-for-srcloc?2675 s)
-       (path-for-srcloc-path2677 s)
+     (if (path-for-srcloc?2679 s)
+       (path-for-srcloc-path2681 s)
        ($value
         (impersonate-ref
-         path-for-srcloc-path2677
+         path-for-srcloc-path2681
          struct:path-for-srcloc
          0
          s
          'path-for-srcloc
          'path))))))
-(define effect2678
+(define effect2682
   (begin
     (register-struct-constructor! path-for-srcloc1.1)
     (register-struct-predicate! path-for-srcloc?)
@@ -20119,7 +19731,7 @@
      0)
     (void)))
 (define struct:to-fasl (make-record-type-descriptor* 'to-fasl #f #f #f #f 3 7))
-(define effect2680
+(define effect2684
   (struct-type-install-properties!
    struct:to-fasl
    'to-fasl
@@ -20137,62 +19749,62 @@
    to-fasl
    (record-constructor
     (make-record-constructor-descriptor struct:to-fasl #f #f))))
-(define to-fasl?2679 (|#%name| to-fasl? (record-predicate struct:to-fasl)))
+(define to-fasl?2683 (|#%name| to-fasl? (record-predicate struct:to-fasl)))
 (define to-fasl?
   (|#%name|
    to-fasl?
    (lambda (v)
-     (if (to-fasl?2679 v)
+     (if (to-fasl?2683 v)
        #t
        ($value
-        (if (impersonator? v) (to-fasl?2679 (impersonator-val v)) #f))))))
-(define to-fasl-vb2681
+        (if (impersonator? v) (to-fasl?2683 (impersonator-val v)) #f))))))
+(define to-fasl-vb2685
   (|#%name| to-fasl-vb (record-accessor struct:to-fasl 0)))
 (define to-fasl-vb
   (|#%name|
    to-fasl-vb
    (lambda (s)
-     (if (to-fasl?2679 s)
-       (to-fasl-vb2681 s)
+     (if (to-fasl?2683 s)
+       (to-fasl-vb2685 s)
        ($value
-        (impersonate-ref to-fasl-vb2681 struct:to-fasl 0 s 'to-fasl 'vb))))))
-(define to-fasl-lifts2682
+        (impersonate-ref to-fasl-vb2685 struct:to-fasl 0 s 'to-fasl 'vb))))))
+(define to-fasl-lifts2686
   (|#%name| to-fasl-lifts (record-accessor struct:to-fasl 1)))
 (define to-fasl-lifts
   (|#%name|
    to-fasl-lifts
    (lambda (s)
-     (if (to-fasl?2679 s)
-       (to-fasl-lifts2682 s)
+     (if (to-fasl?2683 s)
+       (to-fasl-lifts2686 s)
        ($value
         (impersonate-ref
-         to-fasl-lifts2682
+         to-fasl-lifts2686
          struct:to-fasl
          1
          s
          'to-fasl
          'lifts))))))
-(define to-fasl-wrt2683
+(define to-fasl-wrt2687
   (|#%name| to-fasl-wrt (record-accessor struct:to-fasl 2)))
 (define to-fasl-wrt
   (|#%name|
    to-fasl-wrt
    (lambda (s)
-     (if (to-fasl?2679 s)
-       (to-fasl-wrt2683 s)
+     (if (to-fasl?2683 s)
+       (to-fasl-wrt2687 s)
        ($value
-        (impersonate-ref to-fasl-wrt2683 struct:to-fasl 2 s 'to-fasl 'wrt))))))
-(define set-to-fasl-vb!2684
+        (impersonate-ref to-fasl-wrt2687 struct:to-fasl 2 s 'to-fasl 'wrt))))))
+(define set-to-fasl-vb!2688
   (|#%name| set-to-fasl-vb! (record-mutator struct:to-fasl 0)))
 (define set-to-fasl-vb!
   (|#%name|
    set-to-fasl-vb!
    (lambda (s v)
-     (if (to-fasl?2679 s)
-       (set-to-fasl-vb!2684 s v)
+     (if (to-fasl?2683 s)
+       (set-to-fasl-vb!2688 s v)
        ($value
         (impersonate-set!
-         set-to-fasl-vb!2684
+         set-to-fasl-vb!2688
          struct:to-fasl
          0
          0
@@ -20200,17 +19812,17 @@
          v
          'to-fasl
          'vb))))))
-(define set-to-fasl-lifts!2685
+(define set-to-fasl-lifts!2689
   (|#%name| set-to-fasl-lifts! (record-mutator struct:to-fasl 1)))
 (define set-to-fasl-lifts!
   (|#%name|
    set-to-fasl-lifts!
    (lambda (s v)
-     (if (to-fasl?2679 s)
-       (set-to-fasl-lifts!2685 s v)
+     (if (to-fasl?2683 s)
+       (set-to-fasl-lifts!2689 s v)
        ($value
         (impersonate-set!
-         set-to-fasl-lifts!2685
+         set-to-fasl-lifts!2689
          struct:to-fasl
          1
          1
@@ -20218,17 +19830,17 @@
          v
          'to-fasl
          'lifts))))))
-(define set-to-fasl-wrt!2686
+(define set-to-fasl-wrt!2690
   (|#%name| set-to-fasl-wrt! (record-mutator struct:to-fasl 2)))
 (define set-to-fasl-wrt!
   (|#%name|
    set-to-fasl-wrt!
    (lambda (s v)
-     (if (to-fasl?2679 s)
-       (set-to-fasl-wrt!2686 s v)
+     (if (to-fasl?2683 s)
+       (set-to-fasl-wrt!2690 s v)
        ($value
         (impersonate-set!
-         set-to-fasl-wrt!2686
+         set-to-fasl-wrt!2690
          struct:to-fasl
          2
          2
@@ -20236,7 +19848,7 @@
          v
          'to-fasl
          'wrt))))))
-(define effect2687
+(define effect2691
   (begin
     (register-struct-constructor! to-fasl1.1)
     (register-struct-predicate! to-fasl?)
@@ -20346,7 +19958,7 @@
                                                (for-loop_0 #f 0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(vec_9 len_3)
+                                             2
                                              args))))
                                          (if (box? q_0)
                                            (lift-quoted?_0
@@ -20446,10 +20058,7 @@
                                            (unsafe-fx+ 1 pos_0))))
                                       fuel_1))))))
                              (for-loop_0 (fx- fuel_0 1) 0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(vec_11 len_4)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (box? q_0)
                          (let ((app_0 (unbox q_0)))
                            (remain_0 app_0 (fx- fuel_0 1)))
@@ -20583,7 +20192,7 @@
                                      (values name_1 body_1 bodys_0)))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(body_72 bodys_53)
+                                    2
                                     args)))))))))
                       (case-lambda
                        ((name_0 body_1 bodys_0)
@@ -20598,10 +20207,7 @@
                            lifted-eq-constants_0
                            lifted-equal-constants_0
                            (cons body_1 bodys_0)))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(name_10 body_71 bodys_52)
-                         args))))
+                       (args (raise-binding-result-arity-error 3 args))))
                      (convert-body_0
                       add-lifted_0
                       datum-intern?_0
@@ -20681,10 +20287,7 @@
                              lifted-eq-constants_0
                              lifted-equal-constants_0
                              body_0)))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(formals_3 body_62)
-                            args))))
+                          (args (raise-binding-result-arity-error 2 args))))
                         (if (if (eq? 'case-lambda hd_0)
                               (let ((a_0 (cdr (unwrap v_0))))
                                 (if (wrap-list? a_0)
@@ -20797,8 +20400,7 @@
                                                                bodys_0)))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(formalss1_1
-                                                                bodys2_1)
+                                                              2
                                                               args)))))
                                                         (case-lambda
                                                          ((formalss_1 bodys_1)
@@ -20807,8 +20409,7 @@
                                                            bodys_1))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(formalss_19
-                                                             bodys_46)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((formalss_1 bodys_1)
@@ -20818,7 +20419,7 @@
                                                         rest_0))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(formalss_17 bodys_44)
+                                                        2
                                                         args)))))))
                                               (values formalss_0 bodys_0)))))))
                                      (for-loop_0 null null d_0))))
@@ -20828,7 +20429,7 @@
                                     (values app_0 (reverse$1 bodys_0))))
                                  (args
                                   (raise-binding-result-arity-error
-                                   '(formalss_15 bodys_42)
+                                   2
                                    args))))))
                            (case-lambda
                             ((formalss_0 bodys_0)
@@ -20873,10 +20474,7 @@
                                                       rest_1))))))
                                            fold-var_0))))))
                                   (for-loop_0 null formalss_0 bodys_0))))))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(formalss_14 bodys_41)
-                              args))))
+                            (args (raise-binding-result-arity-error 2 args))))
                           (if (if (eq? 'define-values hd_0)
                                 (let ((a_0 (cdr (unwrap v_0))))
                                   (let ((p_0 (unwrap a_0)))
@@ -20914,9 +20512,7 @@
                                  lifted-equal-constants_0
                                  rhs_0)))
                               (args
-                               (raise-binding-result-arity-error
-                                '(ids_48 rhs_81)
-                                args))))
+                               (raise-binding-result-arity-error 2 args))))
                             (if (if (eq? 'let-values hd_0)
                                   (let ((a_0 (cdr (unwrap v_0))))
                                     (let ((p_0 (unwrap a_0)))
@@ -21075,8 +20671,7 @@
                                                                           rhss_0)))
                                                                        (args
                                                                         (raise-binding-result-arity-error
-                                                                         '(idss3_1
-                                                                           rhss4_2)
+                                                                         2
                                                                          args)))))
                                                                    (case-lambda
                                                                     ((idss_1
@@ -21086,8 +20681,7 @@
                                                                       rhss_1))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(idss_69
-                                                                        rhss_84)
+                                                                      2
                                                                       args)))))
                                                                 (case-lambda
                                                                  ((idss_1
@@ -21098,8 +20692,7 @@
                                                                    rest_0))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(idss_67
-                                                                     rhss_12)
+                                                                   2
                                                                    args)))))))
                                                          (values
                                                           idss_0
@@ -21113,7 +20706,7 @@
                                                 (reverse$1 rhss_0))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(idss_65 rhss_82)
+                                              2
                                               args))))))
                                       (case-lambda
                                        ((idss_0 rhss_0)
@@ -21125,7 +20718,7 @@
                                             (values idss_1 rhss_1 bodys_0))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(idss_64 rhss_81)
+                                         2
                                          args)))))))
                                (case-lambda
                                 ((idss_0 rhss_0 bodys_0)
@@ -21188,9 +20781,7 @@
                                      lifted-equal-constants_0
                                      bodys_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(idss_63 rhss_80 bodys_48)
-                                  args))))
+                                 (raise-binding-result-arity-error 3 args))))
                               (if (if (eq? 'letrec-values hd_0)
                                     (let ((a_0 (cdr (unwrap v_0))))
                                       (let ((p_0 (unwrap a_0)))
@@ -21350,8 +20941,7 @@
                                                                             rhss_0)))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(idss5_1
-                                                                             rhss6_1)
+                                                                           2
                                                                            args)))))
                                                                      (case-lambda
                                                                       ((idss_1
@@ -21361,8 +20951,7 @@
                                                                         rhss_1))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(idss_77
-                                                                          rhss_92)
+                                                                        2
                                                                         args)))))
                                                                   (case-lambda
                                                                    ((idss_1
@@ -21373,8 +20962,7 @@
                                                                      rest_0))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(idss_75
-                                                                       rhss_90)
+                                                                     2
                                                                      args)))))))
                                                            (values
                                                             idss_0
@@ -21389,7 +20977,7 @@
                                                   (reverse$1 rhss_0))))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(idss_73 rhss_88)
+                                                2
                                                 args))))))
                                         (case-lambda
                                          ((idss_0 rhss_0)
@@ -21401,7 +20989,7 @@
                                               (values idss_1 rhss_1 bodys_0))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(idss_72 rhss_87)
+                                           2
                                            args)))))))
                                  (case-lambda
                                   ((idss_0 rhss_0 bodys_0)
@@ -21466,9 +21054,7 @@
                                        lifted-equal-constants_0
                                        bodys_0))))
                                   (args
-                                   (raise-binding-result-arity-error
-                                    '(idss_71 rhss_86 bodys_50)
-                                    args))))
+                                   (raise-binding-result-arity-error 3 args))))
                                 (if (if (eq? 'if hd_0)
                                       (let ((a_0 (cdr (unwrap v_0))))
                                         (let ((p_0 (unwrap a_0)))
@@ -21520,7 +21106,7 @@
                                                 (values tst_1 thn_0 els_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(thn_13 els_13)
+                                               2
                                                args))))))))
                                    (case-lambda
                                     ((tst_0 thn_0 els_0)
@@ -21553,7 +21139,7 @@
                                            els_0)))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(tst_8 thn_12 els_12)
+                                      3
                                       args))))
                                   (if (if (eq? 'with-continuation-mark* hd_0)
                                         (let ((a_0 (cdr (unwrap v_0))))
@@ -21634,7 +21220,7 @@
                                                             body_0)))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(val_16 body_67)
+                                                          2
                                                           args))))))))
                                               (case-lambda
                                                ((key_0 val_0 body_0)
@@ -21646,7 +21232,7 @@
                                                    body_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(key_20 val_15 body_66)
+                                                 3
                                                  args))))))))
                                      (case-lambda
                                       ((mode_0 key_0 val_0 body_0)
@@ -21680,7 +21266,7 @@
                                              body_0)))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(mode_0 key_19 val_14 body_65)
+                                        4
                                         args))))
                                     (if (if (eq? 'begin hd_0)
                                           (let ((a_0 (cdr (unwrap v_0))))
@@ -21765,7 +21351,7 @@
                                                rhs_0)))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(id_74 rhs_84)
+                                              2
                                               args))))
                                           (if (if (eq?
                                                    '|#%variable-reference|
@@ -21835,7 +21421,7 @@
                                                        exps_0))))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(rator_10 exps_14)
+                                                    2
                                                     args))))
                                                 (if (if (not (symbol? v_0))
                                                       (lift-quoted?
@@ -21944,10 +21530,7 @@
                         (case-lambda
                          ((formals_0 body_0)
                           (convert-any?_0 datum-intern?_0 for-cify?_0 body_0))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(formals_6 body_74)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'case-lambda hd_0)
                              (let ((a_0 (cdr (unwrap v_0))))
                                (if (wrap-list? a_0)
@@ -22060,8 +21643,7 @@
                                                               bodys_0)))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(formalss7_0
-                                                               bodys8_0)
+                                                             2
                                                              args)))))
                                                        (case-lambda
                                                         ((formalss_1 bodys_1)
@@ -22070,8 +21652,7 @@
                                                           bodys_1))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(formalss_26
-                                                            bodys_60)
+                                                          2
                                                           args)))))
                                                     (case-lambda
                                                      ((formalss_1 bodys_1)
@@ -22081,7 +21662,7 @@
                                                        rest_0))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(formalss_24 bodys_58)
+                                                       2
                                                        args)))))))
                                              (values formalss_0 bodys_0)))))))
                                     (for-loop_0 null null d_0))))
@@ -22090,19 +21671,14 @@
                                  (let ((app_0 (reverse$1 formalss_0)))
                                    (values app_0 (reverse$1 bodys_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(formalss_22 bodys_56)
-                                  args))))))
+                                 (raise-binding-result-arity-error 2 args))))))
                           (case-lambda
                            ((formalss_0 bodys_0)
                             (convert-any?_0
                              datum-intern?_0
                              for-cify?_0
                              bodys_0))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(formalss_21 bodys_55)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          (if (if (eq? 'define-values hd_0)
                                (let ((a_0 (cdr (unwrap v_0))))
                                  (let ((p_0 (unwrap a_0)))
@@ -22133,10 +21709,7 @@
                                datum-intern?_0
                                for-cify?_0
                                rhs_0))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(ids_52 rhs_86)
-                               args))))
+                             (args (raise-binding-result-arity-error 2 args))))
                            (if (if (eq? 'let-values hd_0)
                                  (let ((a_0 (cdr (unwrap v_0))))
                                    (let ((p_0 (unwrap a_0)))
@@ -22291,8 +21864,7 @@
                                                                          rhss_0)))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(idss9_0
-                                                                          rhss10_0)
+                                                                        2
                                                                         args)))))
                                                                   (case-lambda
                                                                    ((idss_1
@@ -22302,8 +21874,7 @@
                                                                      rhss_1))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(idss_85
-                                                                       rhss_100)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((idss_1
@@ -22314,8 +21885,7 @@
                                                                   rest_0))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(idss_83
-                                                                    rhss_98)
+                                                                  2
                                                                   args)))))))
                                                         (values
                                                          idss_0
@@ -22329,7 +21899,7 @@
                                                (reverse$1 rhss_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(idss_81 rhss_96)
+                                             2
                                              args))))))
                                      (case-lambda
                                       ((idss_0 rhss_0)
@@ -22340,7 +21910,7 @@
                                            (values idss_1 rhss_1 bodys_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(idss_80 rhss_95)
+                                        2
                                         args)))))))
                               (case-lambda
                                ((idss_0 rhss_0 bodys_0)
@@ -22356,9 +21926,7 @@
                                      for-cify?_0
                                      bodys_0))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(idss_79 rhss_94 bodys_62)
-                                 args))))
+                                (raise-binding-result-arity-error 3 args))))
                              (if (if (eq? 'letrec-values hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (let ((p_0 (unwrap a_0)))
@@ -22517,8 +22085,7 @@
                                                                            rhss_0)))
                                                                         (args
                                                                          (raise-binding-result-arity-error
-                                                                          '(idss11_2
-                                                                            rhss12_2)
+                                                                          2
                                                                           args)))))
                                                                     (case-lambda
                                                                      ((idss_1
@@ -22528,8 +22095,7 @@
                                                                        rhss_1))
                                                                      (args
                                                                       (raise-binding-result-arity-error
-                                                                       '(idss_93
-                                                                         rhss_108)
+                                                                       2
                                                                        args)))))
                                                                  (case-lambda
                                                                   ((idss_1
@@ -22540,8 +22106,7 @@
                                                                     rest_0))
                                                                   (args
                                                                    (raise-binding-result-arity-error
-                                                                    '(idss_91
-                                                                      rhss_106)
+                                                                    2
                                                                     args)))))))
                                                           (values
                                                            idss_0
@@ -22555,7 +22120,7 @@
                                                  (reverse$1 rhss_0))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(idss_89 rhss_104)
+                                               2
                                                args))))))
                                        (case-lambda
                                         ((idss_0 rhss_0)
@@ -22567,7 +22132,7 @@
                                              (values idss_1 rhss_1 bodys_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(idss_88 rhss_103)
+                                          2
                                           args)))))))
                                 (case-lambda
                                  ((idss_0 rhss_0 bodys_0)
@@ -22583,9 +22148,7 @@
                                        for-cify?_0
                                        bodys_0))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(idss_87 rhss_102 bodys_64)
-                                   args))))
+                                  (raise-binding-result-arity-error 3 args))))
                                (if (if (eq? 'if hd_0)
                                      (let ((a_0 (cdr (unwrap v_0))))
                                        (let ((p_0 (unwrap a_0)))
@@ -22637,7 +22200,7 @@
                                                (values tst_1 thn_0 els_0)))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(thn_16 els_16)
+                                              2
                                               args))))))))
                                   (case-lambda
                                    ((tst_0 thn_0 els_0)
@@ -22661,7 +22224,7 @@
                                              els_0))))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(tst_10 thn_15 els_15)
+                                     3
                                      args))))
                                  (if (if (eq? 'with-continuation-mark* hd_0)
                                        (let ((a_0 (cdr (unwrap v_0))))
@@ -22731,7 +22294,7 @@
                                                     body_0)))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(val_19 body_77)
+                                                  2
                                                   args)))))))))
                                     (case-lambda
                                      ((key_0 val_0 body_0)
@@ -22755,7 +22318,7 @@
                                                body_0))))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(key_22 val_18 body_76)
+                                       3
                                        args))))
                                    (if (if (eq? 'begin hd_0)
                                          (let ((a_0 (cdr (unwrap v_0))))
@@ -22820,7 +22383,7 @@
                                              rhs_0))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(id_76 rhs_87)
+                                             2
                                              args))))
                                          (if (if (eq?
                                                   '|#%variable-reference|
@@ -23083,8 +22646,7 @@
                                                                                   i_0))))
                                                                              (args
                                                                               (raise-binding-result-arity-error
-                                                                               '(k_16
-                                                                                 v_143)
+                                                                               2
                                                                                args))))
                                                                            fold-var_0))))))
                                                                   (for-loop_0
@@ -23377,10 +22939,7 @@
               (case-lambda
                ((binds_0 body_0)
                 (let ((let-id_1 let-id_0)) (values let-id_1 binds_0 body_0)))
-               (args
-                (raise-binding-result-arity-error
-                 '(binds_2 body_81)
-                 args)))))))
+               (args (raise-binding-result-arity-error 2 args)))))))
        (case-lambda
         ((let-id_0 binds_0 body_0)
          (if (let ((or-part_0 (eq? let-id_0 'let)))
@@ -23610,8 +23169,7 @@
                                                                                        rhss_0)))
                                                                                     (args
                                                                                      (raise-binding-result-arity-error
-                                                                                      '(ids1_0
-                                                                                        rhss2_0)
+                                                                                      2
                                                                                       args)))))
                                                                                 (case-lambda
                                                                                  ((ids_1
@@ -23621,8 +23179,7 @@
                                                                                    rhss_1))
                                                                                  (args
                                                                                   (raise-binding-result-arity-error
-                                                                                   '(ids_48
-                                                                                     rhss_117)
+                                                                                   2
                                                                                    args)))))
                                                                              (case-lambda
                                                                               ((ids_1
@@ -23633,8 +23190,7 @@
                                                                                 rest_0))
                                                                               (args
                                                                                (raise-binding-result-arity-error
-                                                                                '(ids_59
-                                                                                  rhss_115)
+                                                                                2
                                                                                 args)))))))
                                                                       (values
                                                                        ids_0
@@ -23654,7 +23210,7 @@
                                                               rhss_0))))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(ids_57 rhss_113)
+                                                           2
                                                            args))))))
                                                    (case-lambda
                                                     ((ids_0 rhss_0)
@@ -23674,7 +23230,7 @@
                                                           body_1))))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(ids_56 rhss_112)
+                                                      2
                                                       args)))))))
                                             (case-lambda
                                              ((ids_0 rhss_0 body_1)
@@ -23687,7 +23243,7 @@
                                                  body_1)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(ids_55 rhss_111 body_84)
+                                               3
                                                args)))))))))
                                  (case-lambda
                                   ((nest-let-id_0 ids_0 rhss_0 body_1)
@@ -23700,7 +23256,7 @@
                                       body_1)))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(nest-let-id_1 ids_54 rhss_110 body_83)
+                                    4
                                     args)))))))
                           (case-lambda
                            ((id_0 nest-let-id_0 ids_0 rhss_0 body_1)
@@ -23844,10 +23400,7 @@
                                    (cons (car binds_1) accum-binds_0)
                                    wraps_0
                                    convert?_0)))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(id_82 nest-let-id_0 ids_24 rhss_1 body_1)
-                             args))))
+                           (args (raise-binding-result-arity-error 5 args))))
                          (if (let ((p_0 (unwrap v_0)))
                                (if (pair? p_0)
                                  (let ((a_0 (cdr p_0)))
@@ -23875,8 +23428,7 @@
                            (error 'match "failed ~e" v_0))))))))))
             (loop_0 binds_0 '() '() #f))
            e_0))
-        (args
-         (raise-binding-result-arity-error '(let-id_6 binds_0 body_80) args))))
+        (args (raise-binding-result-arity-error 3 args))))
       e_0)))
 (define immediate-lambda?
   (lambda (e_0)
@@ -23966,10 +23518,7 @@
                     'inferred-name
                     '|[|)
                    new-s_0))))
-            (args
-             (raise-binding-result-arity-error
-              '(src_2 line_1 col_1 pos_23 span_1)
-              args)))))))))
+            (args (raise-binding-result-arity-error 5 args)))))))))
 (define source->string
   (lambda (src_0)
     (let ((str_0 (if (string? src_0) src_0 (path->string src_0))))
@@ -24056,17 +23605,11 @@
               (case-lambda
                ((type-e_0 offset-e_0)
                 (let ((ptr-e_1 ptr-e_0)) (values ptr-e_1 type-e_0 offset-e_0)))
-               (args
-                (raise-binding-result-arity-error
-                 '(type-e_1 offset-e_1)
-                 args)))))))
+               (args (raise-binding-result-arity-error 2 args)))))))
        (case-lambda
         ((ptr-e_0 type-e_0 offset-e_0)
          (type->direct type-e_0 ptr-e_0 offset-e_0 #t make-ref #f))
-        (args
-         (raise-binding-result-arity-error
-          '(ptr-e_0 type-e_0 offset-e_0)
-          args))))
+        (args (raise-binding-result-arity-error 3 args))))
       (if (let ((p_0 (unwrap args_0)))
             (if (pair? p_0)
               (let ((a_0 (cdr p_0)))
@@ -24099,17 +23642,11 @@
                  ((type-e_0 offset-e_0)
                   (let ((ptr-e_1 ptr-e_0))
                     (values ptr-e_1 type-e_0 offset-e_0)))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(type-e_4 offset-e_4)
-                   args)))))))
+                 (args (raise-binding-result-arity-error 2 args)))))))
          (case-lambda
           ((ptr-e_0 type-e_0 offset-e_0)
            (type->direct type-e_0 ptr-e_0 offset-e_0 #f make-ref #f))
-          (args
-           (raise-binding-result-arity-error
-            '(ptr-e_2 type-e_3 offset-e_3)
-            args))))
+          (args (raise-binding-result-arity-error 3 args))))
         (if (let ((p_0 (unwrap args_0)))
               (if (pair? p_0)
                 (let ((a_0 (cdr p_0)))
@@ -24130,8 +23667,7 @@
            (case-lambda
             ((ptr-e_0 type-e_0)
              (type->direct type-e_0 ptr-e_0 0 #f make-ref #f))
-            (args
-             (raise-binding-result-arity-error '(ptr-e_4 type-e_6) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           #f)))))
 (define make-ref
   (lambda (ref_0 set_0 ptr-e_0 offset-e_0 val-e_0 abs?_0)
@@ -24205,25 +23741,16 @@
                         ((offset-e_0 val-e_0)
                          (let ((type-e_1 type-e_0))
                            (values type-e_1 offset-e_0 val-e_0)))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(offset-e_9 val-e_3)
-                          args))))))))
+                        (args (raise-binding-result-arity-error 2 args))))))))
               (case-lambda
                ((type-e_0 offset-e_0 val-e_0)
                 (let ((ptr-e_1 ptr-e_0))
                   (values ptr-e_1 type-e_0 offset-e_0 val-e_0)))
-               (args
-                (raise-binding-result-arity-error
-                 '(type-e_9 offset-e_8 val-e_2)
-                 args)))))))
+               (args (raise-binding-result-arity-error 3 args)))))))
        (case-lambda
         ((ptr-e_0 type-e_0 offset-e_0 val-e_0)
          (type->direct type-e_0 ptr-e_0 offset-e_0 #t make-set val-e_0))
-        (args
-         (raise-binding-result-arity-error
-          '(ptr-e_7 type-e_8 offset-e_7 val-e_1)
-          args))))
+        (args (raise-binding-result-arity-error 4 args))))
       (if (let ((p_0 (unwrap args_0)))
             (if (pair? p_0)
               (let ((a_0 (cdr p_0)))
@@ -24267,24 +23794,16 @@
                            (let ((type-e_1 type-e_0))
                              (values type-e_1 offset-e_0 val-e_0)))
                           (args
-                           (raise-binding-result-arity-error
-                            '(offset-e_13 val-e_7)
-                            args))))))))
+                           (raise-binding-result-arity-error 2 args))))))))
                 (case-lambda
                  ((type-e_0 offset-e_0 val-e_0)
                   (let ((ptr-e_1 ptr-e_0))
                     (values ptr-e_1 type-e_0 offset-e_0 val-e_0)))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(type-e_12 offset-e_12 val-e_6)
-                   args)))))))
+                 (args (raise-binding-result-arity-error 3 args)))))))
          (case-lambda
           ((ptr-e_0 type-e_0 offset-e_0 val-e_0)
            (type->direct type-e_0 ptr-e_0 offset-e_0 #f make-set val-e_0))
-          (args
-           (raise-binding-result-arity-error
-            '(ptr-e_9 type-e_11 offset-e_11 val-e_5)
-            args))))
+          (args (raise-binding-result-arity-error 4 args))))
         (if (let ((p_0 (unwrap args_0)))
               (if (pair? p_0)
                 (let ((a_0 (cdr p_0)))
@@ -24317,17 +23836,11 @@
                    ((type-e_0 val-e_0)
                     (let ((ptr-e_1 ptr-e_0))
                       (values ptr-e_1 type-e_0 val-e_0)))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(type-e_15 val-e_10)
-                     args)))))))
+                   (args (raise-binding-result-arity-error 2 args)))))))
            (case-lambda
             ((ptr-e_0 type-e_0 val-e_0)
              (type->direct type-e_0 ptr-e_0 0 #f make-set val-e_0))
-            (args
-             (raise-binding-result-arity-error
-              '(ptr-e_11 type-e_14 val-e_9)
-              args))))
+            (args (raise-binding-result-arity-error 3 args))))
           #f)))))
 (define make-set
   (lambda (ref_0 set_0 ptr-e_0 offset-e_0 val-e_0 abs?_0)
@@ -24602,10 +24115,7 @@
                       ((ex-ids_0 bodys_0)
                        (let ((im-idss_1 im-idss_0))
                          (values im-idss_1 ex-ids_0 bodys_0)))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(ex-ids_1 bodys_67)
-                        args))))))))
+                      (args (raise-binding-result-arity-error 2 args))))))))
             (case-lambda
              ((im-idss_0 ex-ids_0 bodys_0)
               (let ((grps_0
@@ -25211,17 +24721,10 @@
                                                  (hasheq)
                                                  ex-ids_0)))))))))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(new-body_0 defn-info_0 mutated_24)
-                                 args))))))
+                                (raise-binding-result-arity-error 3 args))))))
                           (args
-                           (raise-binding-result-arity-error
-                            '(bodys/constants-lifted_0 lifted-constants_1)
-                            args))))))))))
-             (args
-              (raise-binding-result-arity-error
-               '(im-idss_0 ex-ids_0 bodys_66)
-               args))))
+                           (raise-binding-result-arity-error 2 args))))))))))
+             (args (raise-binding-result-arity-error 3 args))))
            (error 'match "failed ~e" lk_0)))))))
 (define schemify-body
   (letrec ((procz1 (lambda (im_0 ext-id_0 index_0) #f)))
@@ -25260,10 +24763,7 @@
            explicit-unnamed?_0))
         (case-lambda
          ((new-body_0 defn-info_0 mutated_0) new-body_0)
-         (args
-          (raise-binding-result-arity-error
-           '(new-body_1 defn-info_1 mutated_25)
-           args))))))))
+         (args (raise-binding-result-arity-error 3 args))))))))
 (define schemify-body*
   (letrec ((add-extra-variables_0
             (|#%name|
@@ -25303,9 +24803,7 @@
                                       extra-variables_0
                                       i_0))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(int-id_2 ex_1)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                fold-var_0))))))
                       (for-loop_0
                        null
@@ -25444,7 +24942,7 @@
                                                    unsafe-mode?_0))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(id_93 rhs_47)
+                                                   2
                                                    args))))
                                                (error
                                                 'match
@@ -25898,9 +25396,7 @@
                                    (list id_0)
                                    rhs_0)))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(id_67 rhs_74)
-                                 args))))
+                                (raise-binding-result-arity-error 2 args))))
                              (if (if (eq? 'define-values hd_0)
                                    (let ((a_0 (cdr (unwrap schemified_0))))
                                      (let ((p_0 (unwrap a_0)))
@@ -26109,9 +25605,7 @@
                                      ids_0
                                      rhs_0)))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(ids_66 rhs_95)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (if (eq? 'quote hd_0)
                                          (let ((a_0
                                                 (cdr (unwrap schemified_0))))
@@ -26587,7 +26081,7 @@
                                                   new-knowns_0)
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(new-knowns_2 info_5)
+                                                   2
                                                    args))))))
                                           (values knowns_1))))
                                    (for-loop_0 knowns_1 rest_0))))
@@ -26971,10 +26465,7 @@
                                app_0
                                (sub1 inline-fuel_0)))
                             #f))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(k_24 im_18)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        #f)
                      #f))))))
            (inline-struct-predicate_0
@@ -27150,10 +26641,7 @@
                                               (list app_2 (car args_0)))
                                             binds_0))))))))))))
                          (loop_0 formal-args_0 exps_0 '())))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(formal-args_0 bodys_91)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'case-lambda hd_0)
                            (let ((a_0 (cdr (unwrap rator_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -27191,7 +26679,7 @@
                                      (values formal-args_1 bodys_1 rest_0))))
                                 (args
                                  (raise-binding-result-arity-error
-                                  '(formal-args_4 bodys_94)
+                                  2
                                   args)))))))
                         (case-lambda
                          ((formal-args_0 bodys_0 rest_0)
@@ -27238,10 +26726,7 @@
                                wcm-state_0
                                (list* 'case-lambda rest_0)
                                inline-fuel_0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(formal-args_3 bodys_93 rest_191)
-                           args))))
+                         (args (raise-binding-result-arity-error 3 args))))
                        #f)))))))
            (maybe-tmp_0
             (|#%name|
@@ -27468,9 +26953,7 @@
                                    'tail))
                                  explicit-unnamed?_0))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(formals_8 body_86)
-                                 args))))
+                                (raise-binding-result-arity-error 2 args))))
                              (if (if (eq? 'case-lambda hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (if (wrap-list? a_0)
@@ -27589,8 +27072,7 @@
                                                                     bodys_0)))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(formalss76_0
-                                                                     bodys77_0)
+                                                                   2
                                                                    args)))))
                                                              (case-lambda
                                                               ((formalss_1
@@ -27600,8 +27082,7 @@
                                                                 bodys_1))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(formalss_33
-                                                                  bodys_74)
+                                                                2
                                                                 args)))))
                                                           (case-lambda
                                                            ((formalss_1
@@ -27612,8 +27093,7 @@
                                                              rest_0))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(formalss_31
-                                                               bodys_72)
+                                                             2
                                                              args)))))))
                                                    (values
                                                     formalss_0
@@ -27625,7 +27105,7 @@
                                          (values app_0 (reverse$1 bodys_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(formalss_29 bodys_70)
+                                        2
                                         args))))))
                                 (case-lambda
                                  ((formalss_0 bodys_0)
@@ -27692,9 +27172,7 @@
                                          bodys_0)))))
                                    explicit-unnamed?_0))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(formalss_28 bodys_69)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (if (eq? 'define-values hd_0)
                                          (let ((a_0 (cdr (unwrap v_0))))
                                            (let ((p_0 (unwrap a_0)))
@@ -28000,8 +27478,7 @@
                                                                 acc/muts_0)))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(s?_22
-                                                                acc/muts_13)
+                                                              2
                                                               args))))))))
                                                   (case-lambda
                                                    ((make-s_0 s?_0 acc/muts_0)
@@ -28014,9 +27491,7 @@
                                                        acc/muts_0)))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(make-s_14
-                                                       s?_21
-                                                       acc/muts_12)
+                                                     3
                                                      args))))))))
                                          (case-lambda
                                           ((struct:s_0
@@ -28117,8 +27592,7 @@
                                                                                                 -set!_0)))
                                                                                             (args
                                                                                              (raise-binding-result-arity-error
-                                                                                              '(-ref_52
-                                                                                                -set!_52)
+                                                                                              2
                                                                                               args))))))))
                                                                                   (case-lambda
                                                                                    ((?1_0
@@ -28133,9 +27607,7 @@
                                                                                        -set!_0)))
                                                                                    (args
                                                                                     (raise-binding-result-arity-error
-                                                                                     '(?1_12
-                                                                                       -ref_51
-                                                                                       -set!_51)
+                                                                                     3
                                                                                      args))))))))
                                                                          (case-lambda
                                                                           ((make_0
@@ -28152,10 +27624,7 @@
                                                                               -set!_0)))
                                                                           (args
                                                                            (raise-binding-result-arity-error
-                                                                            '(make_18
-                                                                              ?1_11
-                                                                              -ref_50
-                                                                              -set!_50)
+                                                                            4
                                                                             args))))))))
                                                                 (case-lambda
                                                                  ((struct:_0
@@ -28191,11 +27660,7 @@
                                                                        mk_0))))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(struct:_43
-                                                                     make_17
-                                                                     ?1_10
-                                                                     -ref_49
-                                                                     -set!_49)
+                                                                   5
                                                                    args))))))))
                                                        (case-lambda
                                                         ((struct:_0
@@ -28272,8 +27737,7 @@
                                                                                      make-acc/muts_0)))
                                                                                  (args
                                                                                   (raise-binding-result-arity-error
-                                                                                   '(?2_16
-                                                                                     make-acc/muts_16)
+                                                                                   2
                                                                                    args))))))))
                                                                        (case-lambda
                                                                         ((make2_0
@@ -28288,9 +27752,7 @@
                                                                             make-acc/muts_0)))
                                                                         (args
                                                                          (raise-binding-result-arity-error
-                                                                          '(make2_13
-                                                                            ?2_15
-                                                                            make-acc/muts_15)
+                                                                          3
                                                                           args))))))))))
                                                           (case-lambda
                                                            ((struct:2_0
@@ -28320,19 +27782,11 @@
                                                                make-acc/muts_0)))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(struct:2_10
-                                                               make2_12
-                                                               ?2_14
-                                                               make-acc/muts_14)
+                                                             4
                                                              args)))))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(struct:_42
-                                                            make_16
-                                                            ?1_9
-                                                            -ref_48
-                                                            -set!_48
-                                                            mk_6)
+                                                          6
                                                           args)))))))))
                                             (case-lambda
                                              ((struct:_0
@@ -28366,23 +27820,11 @@
                                                  make-acc/muts_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(struct:_41
-                                                 make_15
-                                                 ?1_8
-                                                 -ref_47
-                                                 -set!_47
-                                                 mk_5
-                                                 struct:2_9
-                                                 make2_11
-                                                 ?2_13
-                                                 make-acc/muts_13)
+                                               10
                                                args)))))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(struct:s_10
-                                              make-s_13
-                                              s?_20
-                                              acc/muts_11)
+                                            4
                                             args)))))))
                                   (case-lambda
                                    ((struct:s_0
@@ -28495,25 +27937,12 @@
                                                'fresh)))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(ids_71 rhs_98)
+                                              2
                                               args))))
                                           (error 'match "failed ~e" v_0)))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(struct:s_9
-                                       make-s_12
-                                       s?_19
-                                       acc/muts_10
-                                       struct:_40
-                                       make_14
-                                       ?1_7
-                                       -ref_46
-                                       -set!_46
-                                       mk_4
-                                       struct:2_8
-                                       make2_10
-                                       ?2_12
-                                       make-acc/muts_12)
+                                     14
                                      args))))
                                  (if (if (eq? 'define-values hd_0)
                                        (let ((a_0 (cdr (unwrap v_0))))
@@ -28585,7 +28014,7 @@
                                         'fresh)))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(id_105 rhs_100)
+                                       2
                                        args))))
                                    (if (if (eq? 'define-values hd_0)
                                          (let ((a_0 (cdr (unwrap v_0))))
@@ -28644,7 +28073,7 @@
                                           'fresh)))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(ids_73 rhs_102)
+                                         2
                                          args))))
                                      (if (if (eq? 'quote hd_0)
                                            (let ((a_0 (cdr (unwrap v_0))))
@@ -28939,8 +28368,7 @@
                                                                                          rhss_0)))
                                                                                       (args
                                                                                        (raise-binding-result-arity-error
-                                                                                        '(ids78_0
-                                                                                          rhss79_0)
+                                                                                        2
                                                                                         args)))))
                                                                                   (case-lambda
                                                                                    ((ids_1
@@ -28950,8 +28378,7 @@
                                                                                      rhss_1))
                                                                                    (args
                                                                                     (raise-binding-result-arity-error
-                                                                                     '(ids_81
-                                                                                       rhss_126)
+                                                                                     2
                                                                                      args)))))
                                                                                (case-lambda
                                                                                 ((ids_1
@@ -28962,8 +28389,7 @@
                                                                                   rest_0))
                                                                                 (args
                                                                                  (raise-binding-result-arity-error
-                                                                                  '(ids_79
-                                                                                    rhss_124)
+                                                                                  2
                                                                                   args)))))))
                                                                         (values
                                                                          ids_0
@@ -28983,7 +28409,7 @@
                                                                 rhss_0))))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(ids_77 rhss_122)
+                                                             2
                                                              args))))))
                                                      (case-lambda
                                                       ((ids_0 rhss_0)
@@ -29001,7 +28427,7 @@
                                                             bodys_0))))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(ids_76 rhss_121)
+                                                        2
                                                         args)))))))
                                               (case-lambda
                                                ((ids_0 rhss_0 bodys_0)
@@ -29279,7 +28705,7 @@
                                                      simples_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(ids_75 rhss_120 bodys_77)
+                                                 3
                                                  args))))
                                              (if (if (eq? 'let-values hd_0)
                                                    (let ((a_0
@@ -29537,7 +28963,7 @@
                                                        wcm-state_0)))))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(rhss_128 bodys_79)
+                                                   2
                                                    args))))
                                                (if (if (eq? 'let-values hd_0)
                                                      (let ((a_0
@@ -29712,8 +29138,7 @@
                                                                                              rhss_0)))
                                                                                           (args
                                                                                            (raise-binding-result-arity-error
-                                                                                            '(idss90_0
-                                                                                              rhss91_0)
+                                                                                            2
                                                                                             args)))))
                                                                                       (case-lambda
                                                                                        ((idss_1
@@ -29723,8 +29148,7 @@
                                                                                          rhss_1))
                                                                                        (args
                                                                                         (raise-binding-result-arity-error
-                                                                                         '(idss_101
-                                                                                           rhss_136)
+                                                                                         2
                                                                                          args)))))
                                                                                    (case-lambda
                                                                                     ((idss_1
@@ -29735,8 +29159,7 @@
                                                                                       rest_0))
                                                                                     (args
                                                                                      (raise-binding-result-arity-error
-                                                                                      '(idss_99
-                                                                                        rhss_134)
+                                                                                      2
                                                                                       args)))))))
                                                                             (values
                                                                              idss_0
@@ -29756,8 +29179,7 @@
                                                                     rhss_0))))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(idss_97
-                                                                   rhss_132)
+                                                                 2
                                                                  args))))))
                                                          (case-lambda
                                                           ((idss_0 rhss_0)
@@ -29777,7 +29199,7 @@
                                                                 bodys_0))))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(idss_96 rhss_131)
+                                                            2
                                                             args)))))))
                                                   (case-lambda
                                                    ((idss_0 rhss_0 bodys_0)
@@ -29906,9 +29328,7 @@
                                                          simples_0))))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(idss_95
-                                                       rhss_130
-                                                       bodys_81)
+                                                     3
                                                      args))))
                                                  (if (if (eq?
                                                           'letrec-values
@@ -30303,8 +29723,7 @@
                                                                       bodys_0))))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(id_112
-                                                                    rhs_108)
+                                                                  2
                                                                   args)))))))
                                                         (case-lambda
                                                          ((id_0 rhs_0 bodys_0)
@@ -30335,9 +29754,7 @@
                                                            wcm-state_0))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(id_111
-                                                             rhs_107
-                                                             bodys_85)
+                                                           3
                                                            args))))
                                                        (if (if (eq?
                                                                 'letrec-values
@@ -30547,8 +29964,7 @@
                                                                                                      rhss_0)))
                                                                                                   (args
                                                                                                    (raise-binding-result-arity-error
-                                                                                                    '(ids100_0
-                                                                                                      rhss101_0)
+                                                                                                    2
                                                                                                     args)))))
                                                                                               (case-lambda
                                                                                                ((ids_1
@@ -30558,8 +29974,7 @@
                                                                                                  rhss_1))
                                                                                                (args
                                                                                                 (raise-binding-result-arity-error
-                                                                                                 '(ids_89
-                                                                                                   rhss_144)
+                                                                                                 2
                                                                                                  args)))))
                                                                                            (case-lambda
                                                                                             ((ids_1
@@ -30570,8 +29985,7 @@
                                                                                               rest_0))
                                                                                             (args
                                                                                              (raise-binding-result-arity-error
-                                                                                              '(ids_87
-                                                                                                rhss_142)
+                                                                                              2
                                                                                               args)))))))
                                                                                     (values
                                                                                      ids_0
@@ -30592,8 +30006,7 @@
                                                                             rhss_0))))
                                                                        (args
                                                                         (raise-binding-result-arity-error
-                                                                         '(ids_85
-                                                                           rhss_140)
+                                                                         2
                                                                          args))))))
                                                                  (case-lambda
                                                                   ((ids_0
@@ -30614,8 +30027,7 @@
                                                                         bodys_0))))
                                                                   (args
                                                                    (raise-binding-result-arity-error
-                                                                    '(ids_84
-                                                                      rhss_139)
+                                                                    2
                                                                     args)))))))
                                                           (case-lambda
                                                            ((ids_0
@@ -30707,8 +30119,7 @@
                                                                                           body-knowns_1))
                                                                                         (args
                                                                                          (raise-binding-result-arity-error
-                                                                                          '(rhs-knowns_4
-                                                                                            body-knowns_4)
+                                                                                          2
                                                                                           args)))))
                                                                                     (case-lambda
                                                                                      ((rhs-knowns_1
@@ -30720,8 +30131,7 @@
                                                                                        rest_1))
                                                                                      (args
                                                                                       (raise-binding-result-arity-error
-                                                                                       '(rhs-knowns_2
-                                                                                         body-knowns_2)
+                                                                                       2
                                                                                        args))))))))
                                                                            (values
                                                                             rhs-knowns_0
@@ -30862,14 +30272,11 @@
                                                                 simples_0))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(rhs-knowns_0
-                                                                  body-knowns_0)
+                                                                2
                                                                 args)))))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(ids_83
-                                                               rhss_138
-                                                               bodys_87)
+                                                             3
                                                              args))))
                                                          (if (if (eq?
                                                                   'letrec-values
@@ -31055,8 +30462,7 @@
                                                                                                        rhss_0)))
                                                                                                     (args
                                                                                                      (raise-binding-result-arity-error
-                                                                                                      '(idss111_0
-                                                                                                        rhss112_0)
+                                                                                                      2
                                                                                                       args)))))
                                                                                                 (case-lambda
                                                                                                  ((idss_1
@@ -31066,8 +30472,7 @@
                                                                                                    rhss_1))
                                                                                                  (args
                                                                                                   (raise-binding-result-arity-error
-                                                                                                   '(idss_109
-                                                                                                     rhss_152)
+                                                                                                   2
                                                                                                    args)))))
                                                                                              (case-lambda
                                                                                               ((idss_1
@@ -31078,8 +30483,7 @@
                                                                                                 rest_0))
                                                                                               (args
                                                                                                (raise-binding-result-arity-error
-                                                                                                '(idss_107
-                                                                                                  rhss_150)
+                                                                                                2
                                                                                                 args)))))))
                                                                                       (values
                                                                                        idss_0
@@ -31100,8 +30504,7 @@
                                                                               rhss_0))))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(idss_105
-                                                                             rhss_148)
+                                                                           2
                                                                            args))))))
                                                                    (case-lambda
                                                                     ((idss_0
@@ -31122,8 +30525,7 @@
                                                                           bodys_0))))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(idss_104
-                                                                        rhss_147)
+                                                                      2
                                                                       args)))))))
                                                             (case-lambda
                                                              ((idss_0
@@ -31367,9 +30769,7 @@
                                                                            wcm-state_0)))))))))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(idss_103
-                                                                 rhss_146
-                                                                 bodys_89)
+                                                               3
                                                                args))))
                                                            (if (if (eq?
                                                                     'if
@@ -31465,8 +30865,7 @@
                                                                             els_0)))
                                                                         (args
                                                                          (raise-binding-result-arity-error
-                                                                          '(thn_19
-                                                                            els_19)
+                                                                          2
                                                                           args))))))))
                                                               (case-lambda
                                                                ((tst_0
@@ -31537,9 +30936,7 @@
                                                                       wcm-state_0)))))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(tst_12
-                                                                   thn_18
-                                                                   els_18)
+                                                                 3
                                                                  args))))
                                                              (if (if (eq?
                                                                       'with-continuation-mark
@@ -31635,8 +31032,7 @@
                                                                               body_0)))
                                                                           (args
                                                                            (raise-binding-result-arity-error
-                                                                            '(val_30
-                                                                              body_93)
+                                                                            2
                                                                             args))))))))
                                                                 (case-lambda
                                                                  ((key_0
@@ -31761,9 +31157,7 @@
                                                                                  s-body_0)))))))))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(key_25
-                                                                     val_29
-                                                                     body_92)
+                                                                   3
                                                                    args))))
                                                                (if (if (eq?
                                                                         'begin
@@ -32000,8 +31394,7 @@
                                                                               'fresh))))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(exp_7
-                                                                             exps_20)
+                                                                           2
                                                                            args))))
                                                                        (if (if (eq?
                                                                                 'set!
@@ -32146,8 +31539,7 @@
                                                                                          new-rhs_0))))))))
                                                                            (args
                                                                             (raise-binding-result-arity-error
-                                                                             '(id_117
-                                                                               rhs_114)
+                                                                             2
                                                                              args))))
                                                                          (if (if (eq?
                                                                                   'variable-reference-constant?
@@ -32568,8 +31960,7 @@
                                                                                                  simples_0)))))))
                                                                                      (args
                                                                                       (raise-binding-result-arity-error
-                                                                                       '(exp1_0
-                                                                                         exp2_0)
+                                                                                       2
                                                                                        args))))
                                                                                    (if (if (eq?
                                                                                             'call-with-values
@@ -32747,8 +32138,7 @@
                                                                                              simples_0))))
                                                                                        (args
                                                                                         (raise-binding-result-arity-error
-                                                                                         '(generator_0
-                                                                                           receiver_0)
+                                                                                         2
                                                                                          args))))
                                                                                      (if (if (eq?
                                                                                               'single-flonum-available?
@@ -32881,8 +32271,7 @@
                                                                                                       rands_0))))
                                                                                                 (args
                                                                                                  (raise-binding-result-arity-error
-                                                                                                  '(binds_6
-                                                                                                    rator_13)
+                                                                                                  2
                                                                                                   args))))))
                                                                                           (case-lambda
                                                                                            ((binds_0
@@ -32914,9 +32303,7 @@
                                                                                              wcm-state_0))
                                                                                            (args
                                                                                             (raise-binding-result-arity-error
-                                                                                             '(binds_5
-                                                                                               rator_12
-                                                                                               rands_3)
+                                                                                             3
                                                                                              args))))
                                                                                          (if (let ((p_0
                                                                                                     (unwrap
@@ -33217,13 +32604,11 @@
                                                                                                                                         simples_0)))))))))))))
                                                                                                                 (args
                                                                                                                  (raise-binding-result-arity-error
-                                                                                                                  '(k_28
-                                                                                                                    im_22)
+                                                                                                                  2
                                                                                                                   args)))))))))))))
                                                                                              (args
                                                                                               (raise-binding-result-arity-error
-                                                                                               '(rator_15
-                                                                                                 exps_22)
+                                                                                               2
                                                                                                args))))
                                                                                            (let ((u-v_0
                                                                                                   (unwrap
@@ -33394,7 +32779,7 @@
        v_0))))
 (define struct:liftable
   (make-record-type-descriptor* 'liftable #f #f #f #f 3 7))
-(define effect3992
+(define effect3996
   (struct-type-install-properties!
    struct:liftable
    'liftable
@@ -33412,74 +32797,74 @@
    liftable
    (record-constructor
     (make-record-constructor-descriptor struct:liftable #f #f))))
-(define liftable?3991 (|#%name| liftable? (record-predicate struct:liftable)))
+(define liftable?3995 (|#%name| liftable? (record-predicate struct:liftable)))
 (define liftable?
   (|#%name|
    liftable?
    (lambda (v)
-     (if (liftable?3991 v)
+     (if (liftable?3995 v)
        #t
        ($value
-        (if (impersonator? v) (liftable?3991 (impersonator-val v)) #f))))))
-(define liftable-expr3993
+        (if (impersonator? v) (liftable?3995 (impersonator-val v)) #f))))))
+(define liftable-expr3997
   (|#%name| liftable-expr (record-accessor struct:liftable 0)))
 (define liftable-expr
   (|#%name|
    liftable-expr
    (lambda (s)
-     (if (liftable?3991 s)
-       (liftable-expr3993 s)
+     (if (liftable?3995 s)
+       (liftable-expr3997 s)
        ($value
         (impersonate-ref
-         liftable-expr3993
+         liftable-expr3997
          struct:liftable
          0
          s
          'liftable
          'expr))))))
-(define liftable-frees3994
+(define liftable-frees3998
   (|#%name| liftable-frees (record-accessor struct:liftable 1)))
 (define liftable-frees
   (|#%name|
    liftable-frees
    (lambda (s)
-     (if (liftable?3991 s)
-       (liftable-frees3994 s)
+     (if (liftable?3995 s)
+       (liftable-frees3998 s)
        ($value
         (impersonate-ref
-         liftable-frees3994
+         liftable-frees3998
          struct:liftable
          1
          s
          'liftable
          'frees))))))
-(define liftable-binds3995
+(define liftable-binds3999
   (|#%name| liftable-binds (record-accessor struct:liftable 2)))
 (define liftable-binds
   (|#%name|
    liftable-binds
    (lambda (s)
-     (if (liftable?3991 s)
-       (liftable-binds3995 s)
+     (if (liftable?3995 s)
+       (liftable-binds3999 s)
        ($value
         (impersonate-ref
-         liftable-binds3995
+         liftable-binds3999
          struct:liftable
          2
          s
          'liftable
          'binds))))))
-(define set-liftable-frees!3996
+(define set-liftable-frees!4000
   (|#%name| set-liftable-frees! (record-mutator struct:liftable 1)))
 (define set-liftable-frees!
   (|#%name|
    set-liftable-frees!
    (lambda (s v)
-     (if (liftable?3991 s)
-       (set-liftable-frees!3996 s v)
+     (if (liftable?3995 s)
+       (set-liftable-frees!4000 s v)
        ($value
         (impersonate-set!
-         set-liftable-frees!3996
+         set-liftable-frees!4000
          struct:liftable
          1
          1
@@ -33487,17 +32872,17 @@
          v
          'liftable
          'frees))))))
-(define set-liftable-binds!3997
+(define set-liftable-binds!4001
   (|#%name| set-liftable-binds! (record-mutator struct:liftable 2)))
 (define set-liftable-binds!
   (|#%name|
    set-liftable-binds!
    (lambda (s v)
-     (if (liftable?3991 s)
-       (set-liftable-binds!3997 s v)
+     (if (liftable?3995 s)
+       (set-liftable-binds!4001 s v)
        ($value
         (impersonate-set!
-         set-liftable-binds!3997
+         set-liftable-binds!4001
          struct:liftable
          2
          2
@@ -33505,7 +32890,7 @@
          v
          'liftable
          'binds))))))
-(define effect3998
+(define effect4002
   (begin
     (register-struct-constructor! liftable1.1)
     (register-struct-predicate! liftable?)
@@ -33517,7 +32902,7 @@
     (void)))
 (define struct:indirected
   (make-record-type-descriptor* 'indirected #f #f #f #f 1 1))
-(define effect4000
+(define effect4004
   (struct-type-install-properties!
    struct:indirected
    'indirected
@@ -33535,43 +32920,43 @@
    indirected
    (record-constructor
     (make-record-constructor-descriptor struct:indirected #f #f))))
-(define indirected?3999
+(define indirected?4003
   (|#%name| indirected? (record-predicate struct:indirected)))
 (define indirected?
   (|#%name|
    indirected?
    (lambda (v)
-     (if (indirected?3999 v)
+     (if (indirected?4003 v)
        #t
        ($value
-        (if (impersonator? v) (indirected?3999 (impersonator-val v)) #f))))))
-(define indirected-check?4001
+        (if (impersonator? v) (indirected?4003 (impersonator-val v)) #f))))))
+(define indirected-check?4005
   (|#%name| indirected-check? (record-accessor struct:indirected 0)))
 (define indirected-check?
   (|#%name|
    indirected-check?
    (lambda (s)
-     (if (indirected?3999 s)
-       (indirected-check?4001 s)
+     (if (indirected?4003 s)
+       (indirected-check?4005 s)
        ($value
         (impersonate-ref
-         indirected-check?4001
+         indirected-check?4005
          struct:indirected
          0
          s
          'indirected
          'check?))))))
-(define set-indirected-check?!4002
+(define set-indirected-check?!4006
   (|#%name| set-indirected-check?! (record-mutator struct:indirected 0)))
 (define set-indirected-check?!
   (|#%name|
    set-indirected-check?!
    (lambda (s v)
-     (if (indirected?3999 s)
-       (set-indirected-check?!4002 s v)
+     (if (indirected?4003 s)
+       (set-indirected-check?!4006 s v)
        ($value
         (impersonate-set!
-         set-indirected-check?!4002
+         set-indirected-check?!4006
          struct:indirected
          0
          0
@@ -33579,7 +32964,7 @@
          v
          'indirected
          'check?))))))
-(define effect4003
+(define effect4007
   (begin
     (register-struct-constructor! indirected2.1)
     (register-struct-predicate! indirected?)
@@ -33669,9 +33054,7 @@
                                    v_0
                                    (list* 'lambda args_0 new-body_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(args_34 body_62)
-                                args))))
+                               (raise-binding-result-arity-error 2 args))))
                             (if (if (eq? 'let* hd_0)
                                   (let ((a_0 (cdr (unwrap v_0))))
                                     (let ((p_0 (unwrap a_0)))
@@ -33707,9 +33090,7 @@
                                      v_0
                                      (list 'let* bindings_0 new-body_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(bindings_1 body_96)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (error 'match "failed ~e" v_0)))))))))
            (|#%name|
             lift-in-schemified-linklet
@@ -33816,7 +33197,7 @@
                                        (hash-iterate-next lifts_0 i_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(f_12 info_6)
+                                     2
                                      args))))
                                  (values)))))))
                         (for-loop_0 (hash-iterate-first lifts_0))))
@@ -33917,7 +33298,7 @@
                                        (hash-iterate-next new-lifts_0 i_0)))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '()
+                                       0
                                        args)))))
                                  (values)))))))
                         (for-loop_0 (hash-iterate-first new-lifts_0))))
@@ -33943,7 +33324,7 @@
                                        (hash-iterate-next lifts_0 i_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(f_14 info_8)
+                                     2
                                      args))))
                                  (values)))))))
                         (for-loop_0 (hash-iterate-first lifts_0))))
@@ -34112,8 +33493,7 @@
                                                                rhss_0)))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(ids33_0
-                                                                rhss34_0)
+                                                              2
                                                               args)))))
                                                         (case-lambda
                                                          ((ids_1 rhss_1)
@@ -34122,7 +33502,7 @@
                                                            rhss_1))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(ids_86 rhss_141)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((ids_1 rhss_1)
@@ -34132,7 +33512,7 @@
                                                         rest_0))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(ids_85 rhss_140)
+                                                        2
                                                         args)))))))
                                               (values ids_0 rhss_0)))))))
                                      (for-loop_0 null null a_0))))
@@ -34142,7 +33522,7 @@
                                     (values app_0 (reverse$1 rhss_0))))
                                  (args
                                   (raise-binding-result-arity-error
-                                   '(ids_83 rhss_138)
+                                   2
                                    args))))))
                            (case-lambda
                             ((ids_0 rhss_0)
@@ -34150,9 +33530,7 @@
                                (let ((ids_1 ids_0) (rhss_1 rhss_0))
                                  (values ids_1 rhss_1 body_0))))
                             (args
-                             (raise-binding-result-arity-error
-                              '(ids_111 rhss_184)
-                              args)))))))
+                             (raise-binding-result-arity-error 2 args)))))))
                     (case-lambda
                      ((ids_0 rhss_0 body_0)
                       (let ((all-lambda-or-immediate?_0
@@ -34247,10 +33625,7 @@
                                    ids_0
                                    frees+binds_2
                                    lifts_0))))))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(ids_110 rhss_183 body_133)
-                       args))))
+                     (args (raise-binding-result-arity-error 3 args))))
                    (error 'match "failed ~e" v_0))))))
            (compute-lifts!_0
             (|#%name|
@@ -34417,8 +33792,7 @@
                                                                  rhss_0)))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(ids29_0
-                                                                  rhss30_0)
+                                                                2
                                                                 args)))))
                                                           (case-lambda
                                                            ((ids_1 rhss_1)
@@ -34427,8 +33801,7 @@
                                                              rhss_1))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(ids_107
-                                                               rhss_180)
+                                                             2
                                                              args)))))
                                                        (case-lambda
                                                         ((ids_1 rhss_1)
@@ -34438,7 +33811,7 @@
                                                           rest_0))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(ids_105 rhss_178)
+                                                          2
                                                           args)))))))
                                                 (values ids_0 rhss_0)))))))
                                        (for-loop_0 null null a_0))))
@@ -34448,7 +33821,7 @@
                                       (values app_0 (reverse$1 rhss_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(ids_72 rhss_176)
+                                     2
                                      args))))))
                              (case-lambda
                               ((ids_0 rhss_0)
@@ -34456,9 +33829,7 @@
                                  (let ((ids_1 ids_0) (rhss_1 rhss_0))
                                    (values ids_1 rhss_1 body_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(ids_71 rhss_175)
-                                args)))))))
+                               (raise-binding-result-arity-error 2 args)))))))
                       (case-lambda
                        ((ids_0 rhss_0 body_0)
                         (begin
@@ -34502,10 +33873,7 @@
                                ids_0
                                frees+binds_1
                                lifts16_0)))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(ids_103 rhss_174 body_125)
-                         args))))
+                       (args (raise-binding-result-arity-error 3 args))))
                      (if (if (eq? 'letrec hd_0) #t #f)
                        (compute-letrec-lifts!_0
                         v14_0
@@ -34634,7 +34002,7 @@
                                                 (values id_1 rhs_1 rator_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(id_130 rhs_132)
+                                             2
                                              args))))))))
                                  (case-lambda
                                   ((id_0 rhs_0 rator_0)
@@ -34647,7 +34015,7 @@
                                        (values id_1 rhs_1 rator_1 rands_0))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(id_129 rhs_131 rator_21)
+                                    3
                                     args))))))
                             (case-lambda
                              ((id_0 rhs_0 rator_0 rands_0)
@@ -34659,10 +34027,7 @@
                                frees+binds15_0
                                lifts16_0
                                locals17_0))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(id_128 rhs_130 rator_20 rands_7)
-                               args))))
+                             (args (raise-binding-result-arity-error 4 args))))
                            (if (let ((p_0 (unwrap v14_0)))
                                  (if (pair? p_0)
                                    (if (let ((a_0 (car p_0)))
@@ -34786,7 +34151,7 @@
                                                    rator_0))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(id_134 rhs_136)
+                                               2
                                                args))))))))
                                    (case-lambda
                                     ((id_0 rhs_0 rator_0)
@@ -34799,7 +34164,7 @@
                                          (values id_1 rhs_1 rator_1 rands_0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(id_133 rhs_135 rator_24)
+                                      3
                                       args))))))
                               (case-lambda
                                ((id_0 rhs_0 rator_0 rands_0)
@@ -34812,9 +34177,7 @@
                                  lifts16_0
                                  locals17_0))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(id_132 rhs_134 rator_23 rands_9)
-                                 args))))
+                                (raise-binding-result-arity-error 4 args))))
                              (if (if (eq? 'lambda hd_0)
                                    (let ((a_0 (cdr (unwrap v14_0))))
                                      (let ((p_0 (unwrap a_0)))
@@ -34869,9 +34232,7 @@
                                              app_0
                                              (cdr body-frees+binds_2))))))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(args_40 body_127)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (eq? 'case-lambda hd_0)
                                      (let ((a_0 (cdr (unwrap v14_0))))
                                        (if (wrap-list? a_0)
@@ -34989,8 +34350,7 @@
                                                                       bodys_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(argss31_0
-                                                                       bodys32_0)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((argss_1
@@ -35000,8 +34360,7 @@
                                                                   bodys_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(argss_46
-                                                                    bodys_119)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((argss_1 bodys_1)
@@ -35011,8 +34370,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(argss_44
-                                                                 bodys_117)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       argss_0
@@ -35024,7 +34382,7 @@
                                            (values app_0 (reverse$1 bodys_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(argss_42 bodys_115)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((argss_0 bodys_0)
@@ -35106,7 +34464,7 @@
                                              (cdr new-frees+binds_0)))))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(argss_41 bodys_114)
+                                     2
                                      args))))
                                  (if (if (eq? 'begin hd_0) #t #f)
                                    (let ((vs_0
@@ -35194,7 +34552,7 @@
                                                         els_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(thn_30 els_30)
+                                                      2
                                                       args))))))))
                                           (case-lambda
                                            ((tst_0 thn_0 els_0)
@@ -35219,7 +34577,7 @@
                                                   frees+binds_2))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(tst_20 thn_29 els_29)
+                                             3
                                              args))))
                                          (if (if (eq?
                                                   'with-continuation-mark*
@@ -35304,7 +34662,7 @@
                                                             body_0)))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(val_43 body_131)
+                                                          2
                                                           args)))))))))
                                             (case-lambda
                                              ((key_0 val_0 body_0)
@@ -35329,7 +34687,7 @@
                                                     frees+binds_2))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(key_34 val_42 body_130)
+                                               3
                                                args))))
                                            (if (if (eq? 'set! hd_0)
                                                  (let ((a_0
@@ -35401,7 +34759,7 @@
                                                      locals17_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(id_136 rhs_138)
+                                                 2
                                                  args))))
                                              (if (if (eq?
                                                       '|#%variable-reference|
@@ -35483,7 +34841,7 @@
                                                         frees+binds_1)))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(producer_0 consumer_0)
+                                                     2
                                                      args))))
                                                  (if (let ((p_0
                                                             (unwrap v14_0)))
@@ -35555,7 +34913,7 @@
                                                            locals17_0))))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(rator_26 rands_11)
+                                                       2
                                                        args))))
                                                    (let ((x_0 (unwrap v14_0)))
                                                      (if (let ((or-part_0
@@ -36030,8 +35388,7 @@
                                                                       rhss_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(ids44_0
-                                                                       rhss45_0)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((ids_1 rhss_1)
@@ -36040,8 +35397,7 @@
                                                                   rhss_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids_121
-                                                                    rhss_201)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((ids_1 rhss_1)
@@ -36051,8 +35407,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(ids_119
-                                                                 rhss_199)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       ids_0
@@ -36064,7 +35419,7 @@
                                            (values app_0 (reverse$1 rhss_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(ids_117 rhss_197)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((ids_0 rhss_0)
@@ -36073,16 +35428,14 @@
                                         (values ids_1 rhss_1 body_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(ids_116 rhss_196)
+                                     2
                                      args)))))))
                            (case-lambda
                             ((ids_0 rhss_0 body_0)
                              (let ((let-id_1 let-id_0))
                                (values let-id_1 ids_0 rhss_0 body_0)))
                             (args
-                             (raise-binding-result-arity-error
-                              '(ids_115 rhss_195 body_154)
-                              args)))))))
+                             (raise-binding-result-arity-error 3 args)))))))
                     (case-lambda
                      ((let-id_0 ids_0 rhss_0 body_0)
                       (let ((bindings_0
@@ -36145,10 +35498,7 @@
                           (reannotate
                            v_0
                            (rebuild-let_0 let-id_0 bindings_0 new-body_0)))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(let-id_10 ids_114 rhss_194 body_153)
-                       args))))
+                     (args (raise-binding-result-arity-error 4 args))))
                    (error 'match "failed ~e" v_0))))))
            (convert-lifted-calls-in-letrec_0
             (|#%name|
@@ -36307,8 +35657,7 @@
                                                                       rhss_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(ids46_0
-                                                                       rhss47_0)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((ids_1 rhss_1)
@@ -36317,8 +35666,7 @@
                                                                   rhss_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids_130
-                                                                    rhss_210)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((ids_1 rhss_1)
@@ -36328,8 +35676,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(ids_128
-                                                                 rhss_208)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       ids_0
@@ -36341,7 +35688,7 @@
                                            (values app_0 (reverse$1 rhss_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(ids_126 rhss_206)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((ids_0 rhss_0)
@@ -36350,16 +35697,14 @@
                                         (values ids_1 rhss_1 body_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(ids_125 rhss_205)
+                                     2
                                      args)))))))
                            (case-lambda
                             ((ids_0 rhss_0 body_0)
                              (let ((let-id_1 let-id_0))
                                (values let-id_1 ids_0 rhss_0 body_0)))
                             (args
-                             (raise-binding-result-arity-error
-                              '(ids_124 rhss_204 body_157)
-                              args)))))))
+                             (raise-binding-result-arity-error 3 args)))))))
                     (case-lambda
                      ((let-id_0 ids_0 rhss_0 body_0)
                       (let ((pre-bindings_0
@@ -36474,10 +35819,7 @@
                                 let-id_0
                                 new-bindings_0
                                 new-body_0)))))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(let-id_12 ids_123 rhss_203 body_156)
-                       args))))
+                     (args (raise-binding-result-arity-error 4 args))))
                    (error 'match "failed ~e" v_0))))))
            (convert-lifted-calls-in-seq/box-mutated_0
             (|#%name|
@@ -36664,7 +36006,7 @@
                                                 (values id_1 rhs_1 rator_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(id_157 rhs_158)
+                                             2
                                              args))))))))
                                  (case-lambda
                                   ((id_0 rhs_0 rator_0)
@@ -36677,7 +36019,7 @@
                                        (values id_1 rhs_1 rator_1 rands_0))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(id_156 rhs_157 rator_37)
+                                    3
                                     args))))))
                             (case-lambda
                              ((id_0 rhs_0 rator_0 rands_0)
@@ -36691,10 +36033,7 @@
                                  'letrec
                                  (list (list id_0 rhs_0))
                                  (list* rator_0 rands_0)))))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(id_155 rhs_156 rator_36 rands_22)
-                               args))))
+                             (args (raise-binding-result-arity-error 4 args))))
                            (if (let ((p_0 (unwrap v_0)))
                                  (if (pair? p_0)
                                    (if (let ((a_0 (car p_0)))
@@ -36818,7 +36157,7 @@
                                                    rator_0))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(id_161 rhs_162)
+                                               2
                                                args))))))))
                                    (case-lambda
                                     ((id_0 rhs_0 rator_0)
@@ -36831,7 +36170,7 @@
                                          (values id_1 rhs_1 rator_1 rands_0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(id_160 rhs_161 rator_40)
+                                      3
                                       args))))))
                               (case-lambda
                                ((id_0 rhs_0 rator_0 rands_0)
@@ -36846,9 +36185,7 @@
                                    (list (list id_0 rhs_0))
                                    (list* rator_0 rands_0)))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(id_159 rhs_160 rator_39 rands_24)
-                                 args))))
+                                (raise-binding-result-arity-error 4 args))))
                              (if (if (eq? 'lambda hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (let ((p_0 (unwrap a_0)))
@@ -36882,9 +36219,7 @@
                                       frees_0
                                       empties_0)))))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(args_47 body_146)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (eq? 'case-lambda hd_0)
                                      (let ((a_0 (cdr (unwrap v_0))))
                                        (if (wrap-list? a_0)
@@ -37002,8 +36337,7 @@
                                                                       bodys_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(argss42_0
-                                                                       bodys43_0)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((argss_1
@@ -37013,8 +36347,7 @@
                                                                   bodys_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(argss_67
-                                                                    bodys_140)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((argss_1 bodys_1)
@@ -37024,8 +36357,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(argss_65
-                                                                 bodys_138)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       argss_0
@@ -37037,7 +36369,7 @@
                                            (values app_0 (reverse$1 bodys_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(argss_63 bodys_136)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((argss_0 bodys_0)
@@ -37096,7 +36428,7 @@
                                             bodys_0))))))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(argss_62 bodys_135)
+                                     2
                                      args))))
                                  (if (if (eq? 'begin hd_0) #t #f)
                                    (let ((vs_0
@@ -37192,7 +36524,7 @@
                                                         els_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(thn_36 els_36)
+                                                      2
                                                       args))))))))
                                           (case-lambda
                                            ((tst_0 thn_0 els_0)
@@ -37221,7 +36553,7 @@
                                                    els_0))))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(tst_24 thn_35 els_35)
+                                             3
                                              args))))
                                          (if (if (eq?
                                                   'with-continuation-mark*
@@ -37316,8 +36648,7 @@
                                                                    body_0)))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(val_51
-                                                                   body_151)
+                                                                 2
                                                                  args))))))))
                                                      (case-lambda
                                                       ((key_0 val_0 body_0)
@@ -37329,9 +36660,7 @@
                                                           body_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(key_40
-                                                          val_50
-                                                          body_150)
+                                                        3
                                                         args))))))))
                                             (case-lambda
                                              ((mode_0 key_0 val_0 body_0)
@@ -37361,7 +36690,7 @@
                                                      body_0))))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(mode_5 key_39 val_49 body_149)
+                                               4
                                                args))))
                                            (if (if (eq? 'set! hd_0)
                                                  (let ((a_0
@@ -37445,7 +36774,7 @@
                                                        rhs_0))))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(id_163 rhs_164)
+                                                 2
                                                  args))))
                                              (if (if (eq?
                                                       '|#%variable-reference|
@@ -37517,7 +36846,7 @@
                                                               rands_1)))))))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(rator_42 rands_26)
+                                                     2
                                                      args))))
                                                  (let ((var_0 (unwrap v_0)))
                                                    (let ((info_0
@@ -37580,7 +36909,7 @@
                                                    i_0))))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(f_17 proc_9)
+                                                2
                                                 args))))
                                             fold-var_0))))))
                                    (for-loop_0
@@ -37640,8 +36969,7 @@
                                                                                                   val_0))
                                                                                                 (args
                                                                                                  (raise-binding-result-arity-error
-                                                                                                  '(key_42
-                                                                                                    val_53)
+                                                                                                  2
                                                                                                   args))))))
                                                                                          (values
                                                                                           table_1))))
@@ -37726,8 +37054,7 @@
                                                                          body_1))))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(args_50
-                                                                        body_159)
+                                                                      2
                                                                       args))))
                                                                   (if (if (eq?
                                                                            'case-lambda
@@ -37868,8 +37195,7 @@
                                                                                                          bodys_0)))
                                                                                                       (args
                                                                                                        (raise-binding-result-arity-error
-                                                                                                        '(argss51_0
-                                                                                                          bodys52_0)
+                                                                                                        2
                                                                                                         args)))))
                                                                                                   (case-lambda
                                                                                                    ((argss_1
@@ -37879,8 +37205,7 @@
                                                                                                      bodys_1))
                                                                                                    (args
                                                                                                     (raise-binding-result-arity-error
-                                                                                                     '(argss_74
-                                                                                                       bodys_147)
+                                                                                                     2
                                                                                                      args)))))
                                                                                                (case-lambda
                                                                                                 ((argss_1
@@ -37891,8 +37216,7 @@
                                                                                                   rest_1))
                                                                                                 (args
                                                                                                  (raise-binding-result-arity-error
-                                                                                                  '(argss_72
-                                                                                                    bodys_145)
+                                                                                                  2
                                                                                                   args)))))))
                                                                                         (values
                                                                                          argss_0
@@ -37913,8 +37237,7 @@
                                                                                 bodys_0))))
                                                                            (args
                                                                             (raise-binding-result-arity-error
-                                                                             '(argss_70
-                                                                               bodys_143)
+                                                                             2
                                                                              args))))))
                                                                      (case-lambda
                                                                       ((argss_0
@@ -37979,8 +37302,7 @@
                                                                               bodys_0)))))))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(argss_69
-                                                                          bodys_142)
+                                                                        2
                                                                         args))))
                                                                     (error
                                                                      'match
@@ -38159,10 +37481,7 @@
                          lifts_0
                          loop-if-tail_0
                          new-loops_0)))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(rhss_187 body_141)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (error 'match "failed ~e" v_0))))))
            (find-letrec-loops_0
             (|#%name|
@@ -38245,13 +37564,9 @@
                                 (let ((id_1 id_0) (rhs_1 rhs_0))
                                   (values id_1 rhs_1 id2_0 rands_0)))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(id2_2 rands_20)
-                                 args)))))
+                                (raise-binding-result-arity-error 2 args)))))
                             (args
-                             (raise-binding-result-arity-error
-                              '(id_151 rhs_154)
-                              args)))))))
+                             (raise-binding-result-arity-error 2 args)))))))
                     (case-lambda
                      ((id_0 rhs_0 id2_0 rands_0)
                       (let ((u-id_0 (unwrap id_0)))
@@ -38321,8 +37636,7 @@
                                                                          val_0))
                                                                        (args
                                                                         (raise-binding-result-arity-error
-                                                                         '(key_38
-                                                                           val_48)
+                                                                         2
                                                                          args))))))
                                                                 (values
                                                                  table_1))))
@@ -38333,7 +37647,7 @@
                                                            i_0))))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(id_153 bx_1)
+                                                        2
                                                         args))))
                                                     table_0))))))
                                            (for-loop_0
@@ -38383,7 +37697,7 @@
                                                          i_0))))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(id_154 bx_2)
+                                                      2
                                                       args))))
                                                   loops_3))))))
                                          (for-loop_0
@@ -38396,10 +37710,7 @@
                            lifts_0
                            loop-if-tail_0
                            loops_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(id_150 rhs_153 id2_1 rands_19)
-                       args))))
+                     (args (raise-binding-result-arity-error 4 args))))
                    (find-let-loops_0
                     find-loops_0
                     v_0
@@ -38434,10 +37745,7 @@
                          lifts_0
                          loop-if-tail_0
                          loops_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(args_45 body_143)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'case-lambda hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (if (wrap-list? a_0)
@@ -38538,8 +37846,7 @@
                                                             bodys_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(argss38_0
-                                                             bodys39_0)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((argss_1 bodys_1)
@@ -38548,7 +37855,7 @@
                                                         bodys_1))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(argss_60 bodys_133)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((argss_1 bodys_1)
@@ -38558,7 +37865,7 @@
                                                      rest_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(argss_58 bodys_131)
+                                                     2
                                                      args)))))))
                                            (values argss_0 bodys_0)))))))
                                   (for-loop_0 null null d_0))))
@@ -38567,9 +37874,7 @@
                                (let ((app_0 (reverse$1 argss_0)))
                                  (values app_0 (reverse$1 bodys_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(argss_56 bodys_129)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((argss_0 bodys_0)
                           (begin
@@ -38594,10 +37899,7 @@
                                             (for-loop_0 loops_2 rest_0))))
                                       loops_1))))))
                              (for-loop_0 loops_0 bodys_0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(argss_55 bodys_128)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (find-loops_0 v_0 lifts_0 hash2610 loops_0))))))))
            (find-seq-loops_0
             (|#%name|
@@ -38904,7 +38206,7 @@
                                                    (values tst_1 thn_0 els_0)))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(thn_22 els_22)
+                                                  2
                                                   args))))))))
                                       (case-lambda
                                        ((tst_0 thn_0 els_0)
@@ -38919,7 +38221,7 @@
                                                 (lift-in-expr?_0 els_0))))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(tst_14 thn_21 els_21)
+                                         3
                                          args))))
                                      (if (if (eq?
                                               'with-continuation-mark*
@@ -38997,7 +38299,7 @@
                                                         body_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(val_33 body_104)
+                                                      2
                                                       args)))))))))
                                         (case-lambda
                                          ((key_0 val_0 body_0)
@@ -39012,7 +38314,7 @@
                                                   (lift-in-expr?_0 body_0))))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(key_27 val_32 body_103)
+                                           3
                                            args))))
                                        (if (if (eq? 'quote hd_0)
                                              (let ((a_0 (cdr (unwrap v_0))))
@@ -39140,10 +38442,7 @@
                                             (unbox empties_0)
                                             lifted-bindings_0)
                                            new-body_0)))))))))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(args_36 body_113)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'case-lambda hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (if (wrap-list? a_0)
@@ -39244,8 +38543,7 @@
                                                             bodys_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(argss25_0
-                                                             bodys26_0)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((argss_1 bodys_1)
@@ -39254,7 +38552,7 @@
                                                         bodys_1))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(argss_39 bodys_112)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((argss_1 bodys_1)
@@ -39264,7 +38562,7 @@
                                                      rest_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(argss_37 bodys_110)
+                                                     2
                                                      args)))))))
                                            (values argss_0 bodys_0)))))))
                                   (for-loop_0 null null d_0))))
@@ -39273,9 +38571,7 @@
                                (let ((app_0 (reverse$1 argss_0)))
                                  (values app_0 (reverse$1 bodys_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(argss_35 bodys_108)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((argss_0 bodys_0)
                           (let ((lams_0
@@ -39318,10 +38614,7 @@
                                               fold-var_0))))))
                                      (for-loop_0 null argss_0 bodys_0))))))
                             (reannotate v_0 (loop_0 lams_0 null null))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(argss_34 bodys_107)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'let hd_0) #t #f)
                          (lift-in-let_0 find-loops_0 leave-loops-intact?_0 v_0)
                          (if (if (eq? 'letrec hd_0) #t #f)
@@ -39442,7 +38735,7 @@
                                                    (values tst_1 thn_0 els_0)))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(thn_27 els_27)
+                                                  2
                                                   args))))))))
                                       (case-lambda
                                        ((tst_0 thn_0 els_0)
@@ -39468,7 +38761,7 @@
                                                els_0))))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(tst_18 thn_26 els_26)
+                                         3
                                          args))))
                                      (if (if (eq?
                                               'with-continuation-mark*
@@ -39557,7 +38850,7 @@
                                                                body_0)))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(val_40 body_120)
+                                                             2
                                                              args))))))))
                                                  (case-lambda
                                                   ((key_0 val_0 body_0)
@@ -39569,7 +38862,7 @@
                                                       body_0)))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(key_32 val_39 body_119)
+                                                    3
                                                     args))))))))
                                         (case-lambda
                                          ((mode_0 key_0 val_0 body_0)
@@ -39596,7 +38889,7 @@
                                                  body_0))))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(mode_3 key_31 val_38 body_118)
+                                           4
                                            args))))
                                        (if (if (eq? 'quote hd_0)
                                              (let ((a_0 (cdr (unwrap v_0))))
@@ -39673,7 +38966,7 @@
                                                    rhs_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(id_124 rhs_126)
+                                                 2
                                                  args))))
                                              (if (wrap-list? v_0)
                                                (lift-in-seq_0
@@ -39848,10 +39141,7 @@
                                          result_0))))))
                                 (for-loop_0 #f rhss_0)))))
                         (if or-part_0 or-part_0 (lift-in-seq?_0 body_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(rhss_73 body_38)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (error 'match "failed ~e" v_0))))))
            (lift-in-let_0
             (|#%name|
@@ -40010,8 +39300,7 @@
                                                                       rhss_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(ids27_0
-                                                                       rhss28_0)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((ids_1 rhss_1)
@@ -40020,8 +39309,7 @@
                                                                   rhss_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids_101
-                                                                    rhss_172)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((ids_1 rhss_1)
@@ -40031,8 +39319,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(ids_99
-                                                                 rhss_170)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       ids_0
@@ -40044,7 +39331,7 @@
                                            (values app_0 (reverse$1 rhss_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(ids_97 rhss_168)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((ids_0 rhss_0)
@@ -40053,16 +39340,14 @@
                                         (values ids_1 rhss_1 body_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(ids_96 rhss_167)
+                                     2
                                      args)))))))
                            (case-lambda
                             ((ids_0 rhss_0 body_0)
                              (let ((let-id_1 let-id_0))
                                (values let-id_1 ids_0 rhss_0 body_0)))
                             (args
-                             (raise-binding-result-arity-error
-                              '(ids_95 rhss_166 body_123)
-                              args)))))))
+                             (raise-binding-result-arity-error 3 args)))))))
                     (case-lambda
                      ((let-id_0 ids_0 rhss_0 body_0)
                       (reannotate
@@ -40110,10 +39395,7 @@
                            find-loops_0
                            leave-loops-intact?_0
                            body_0)))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(let-id_8 ids_94 rhss_165 body_122)
-                       args))))
+                     (args (raise-binding-result-arity-error 4 args))))
                    (error 'match "failed ~e" v_0))))))
            (lift-in-seq?_0
             (|#%name|
@@ -40305,10 +39587,7 @@
                            find-loops_0
                            leave-loops-intact?_0
                            rhs_0))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(id_122 rhs_122)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'define-values hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -40344,10 +39623,7 @@
                              find-loops_0
                              leave-loops-intact?_0
                              rhs_0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(ids_92 rhs_124)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'begin hd_0)
                              (let ((a_0 (cdr (unwrap v_0)))) (wrap-list? a_0))
                              #f)
@@ -40566,10 +39842,7 @@
                                          result_0))))))
                                 (for-loop_0 #f rhss_0)))))
                         (if or-part_0 or-part_0 (lift?/seq_0 body_0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(rhss_159 body_111)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (error 'match "failed ~e" v_0))))))
            (lift?/seq_0
             (|#%name|
@@ -40813,7 +40086,7 @@
                                                         els_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(thn_24 els_24)
+                                                      2
                                                       args))))))))
                                           (case-lambda
                                            ((tst_0 thn_0 els_0)
@@ -40827,7 +40100,7 @@
                                                     (lift?_0 els_0))))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(tst_16 thn_23 els_23)
+                                             3
                                              args))))
                                          (if (if (eq?
                                                   'with-continuation-mark*
@@ -40911,7 +40184,7 @@
                                                             body_0)))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(val_36 body_109)
+                                                          2
                                                           args)))))))))
                                             (case-lambda
                                              ((key_0 val_0 body_0)
@@ -40926,7 +40199,7 @@
                                                       (lift?_0 body_0))))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(key_29 val_35 body_108)
+                                               3
                                                args))))
                                            (if (if (eq? 'set! hd_0)
                                                  (let ((a_0
@@ -41032,7 +40305,7 @@
                                                            rands_0))))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(rator_18 rands_5)
+                                                       2
                                                        args))))
                                                    #f)))))))))))))))))))))
            (lookup-indirected-variable_0
@@ -41100,10 +40373,7 @@
                                (append
                                 (unwrap-list new-bindings_0)
                                 bindings_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(new-bindings_0 lam_3)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          (if (if (eq? 'lambda hd_0)
                                (let ((a_0 (cdr (unwrap v_0))))
                                  (let ((p_0 (unwrap a_0)))
@@ -41123,10 +40393,7 @@
                                (cdr lams_0)
                                (cons (list* args_0 body_0) clauses_0)
                                bindings_0))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(args_25 body_116)
-                               args))))
+                             (args (raise-binding-result-arity-error 2 args))))
                            (error 'match "failed ~e" v_0))))))))))
            (loop_1
             (|#%name|
@@ -41436,7 +40703,7 @@
                                            (values id_1 rhs_1 rator_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(id_142 rhs_144)
+                                        2
                                         args))))))))
                             (case-lambda
                              ((id_0 rhs_0 rator_0)
@@ -41448,9 +40715,7 @@
                                       (rator_1 rator_0))
                                   (values id_1 rhs_1 rator_1 rands_0))))
                              (args
-                              (raise-binding-result-arity-error
-                               '(id_141 rhs_143 rator_29)
-                               args))))))
+                              (raise-binding-result-arity-error 3 args))))))
                        (case-lambda
                         ((id_0 rhs_0 rator_0 rands_0)
                          (find-loops_0
@@ -41461,10 +40726,7 @@
                           lifts_0
                           loop-if-tail_0
                           loops_0))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(id_140 rhs_142 rator_28 rands_13)
-                          args))))
+                        (args (raise-binding-result-arity-error 4 args))))
                       (if (let ((p_0 (unwrap v_1)))
                             (if (pair? p_0)
                               (if (let ((a_0 (car p_0)))
@@ -41571,7 +40833,7 @@
                                              (values id_1 rhs_1 rator_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(id_146 rhs_148)
+                                          2
                                           args))))))))
                               (case-lambda
                                ((id_0 rhs_0 rator_0)
@@ -41583,9 +40845,7 @@
                                         (rator_1 rator_0))
                                     (values id_1 rhs_1 rator_1 rands_0))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(id_145 rhs_147 rator_32)
-                                 args))))))
+                                (raise-binding-result-arity-error 3 args))))))
                          (case-lambda
                           ((id_0 rhs_0 rator_0 rands_0)
                            (find-loops_0
@@ -41596,10 +40856,7 @@
                             lifts_0
                             loop-if-tail_0
                             loops_0))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(id_144 rhs_146 rator_31 rands_15)
-                            args))))
+                          (args (raise-binding-result-arity-error 4 args))))
                         (if (if (eq? 'let hd_0) #t #f)
                           (find-let-loops_0
                            find-loops_0
@@ -41630,9 +40887,7 @@
                                 hash2610
                                 loops_0))
                               (args
-                               (raise-binding-result-arity-error
-                                '(args_43 body_135)
-                                args))))
+                               (raise-binding-result-arity-error 2 args))))
                             (if (if (eq? 'case-lambda hd_0)
                                   (let ((a_0 (cdr (unwrap v_1))))
                                     (if (wrap-list? a_0)
@@ -41744,8 +40999,7 @@
                                                                    bodys_0)))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(argss35_0
-                                                                    bodys36_0)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((argss_1 bodys_1)
@@ -41754,8 +41008,7 @@
                                                                bodys_1))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(argss_53
-                                                                 bodys_126)
+                                                               2
                                                                args)))))
                                                          (case-lambda
                                                           ((argss_1 bodys_1)
@@ -41765,8 +41018,7 @@
                                                             rest_0))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(argss_51
-                                                              bodys_124)
+                                                            2
                                                             args)))))))
                                                   (values
                                                    argss_0
@@ -41778,7 +41030,7 @@
                                         (values app_0 (reverse$1 bodys_0))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(argss_49 bodys_122)
+                                       2
                                        args))))))
                                (case-lambda
                                 ((argss_0 bodys_0)
@@ -41808,9 +41060,7 @@
                                              loops_1))))))
                                     (for-loop_0 loops_0 bodys_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(argss_48 bodys_121)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (if (if (eq? 'begin hd_0) #t #f)
                                 (let ((vs_0
                                        (let ((d_0 (cdr (unwrap v_1)))) d_0)))
@@ -41853,7 +41103,7 @@
                                           new-loops_0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(v_226 vs_13)
+                                      2
                                       args))))
                                   (if (if (eq? 'quote hd_0) #t #f)
                                     loops_0
@@ -41918,7 +41168,7 @@
                                                      els_0)))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(thn_33 els_33)
+                                                   2
                                                    args))))))))
                                        (case-lambda
                                         ((tst_0 thn_0 els_0)
@@ -41943,7 +41193,7 @@
                                                loops_3))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(tst_22 thn_32 els_32)
+                                          3
                                           args))))
                                       (if (if (eq?
                                                'with-continuation-mark*
@@ -42022,7 +41272,7 @@
                                                          body_0)))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(val_46 body_139)
+                                                       2
                                                        args)))))))))
                                          (case-lambda
                                           ((key_0 val_0 body_0)
@@ -42045,7 +41295,7 @@
                                                 loops_2))))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(key_36 val_45 body_138)
+                                            3
                                             args))))
                                         (if (if (eq? 'set! hd_0)
                                               (let ((a_0 (cdr (unwrap v_1))))
@@ -42093,7 +41343,7 @@
                                               loops_0))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(id_148 rhs_150)
+                                              2
                                               args))))
                                           (if (if (eq?
                                                    '|#%variable-reference|
@@ -42166,7 +41416,7 @@
                                                     loops_1)))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(producer_2 consumer_2)
+                                                  2
                                                   args))))
                                               (if (let ((p_0 (unwrap v_1)))
                                                     (if (pair? p_0) #t #f))
@@ -42245,7 +41495,7 @@
                                                            rands_0))))))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(rator_34 rands_17)
+                                                    2
                                                     args))))
                                                 (let ((x_0 (unwrap v_1)))
                                                   (if (symbol? x_0)
@@ -42263,7 +41513,7 @@
          v_0)))))
 (define struct:convert-mode
   (make-record-type-descriptor* 'convert-mode #f #f #f #f 4 15))
-(define effect5040
+(define effect5044
   (struct-type-install-properties!
    struct:convert-mode
    'convert-mode
@@ -42281,65 +41531,65 @@
    convert-mode
    (record-constructor
     (make-record-constructor-descriptor struct:convert-mode #f #f))))
-(define convert-mode?5039
+(define convert-mode?5043
   (|#%name| convert-mode? (record-predicate struct:convert-mode)))
 (define convert-mode?
   (|#%name|
    convert-mode?
    (lambda (v)
-     (if (convert-mode?5039 v)
+     (if (convert-mode?5043 v)
        #t
        ($value
-        (if (impersonator? v) (convert-mode?5039 (impersonator-val v)) #f))))))
-(define convert-mode-sizes5041
+        (if (impersonator? v) (convert-mode?5043 (impersonator-val v)) #f))))))
+(define convert-mode-sizes5045
   (|#%name| convert-mode-sizes (record-accessor struct:convert-mode 0)))
 (define convert-mode-sizes
   (|#%name|
    convert-mode-sizes
    (lambda (s)
-     (if (convert-mode?5039 s)
-       (convert-mode-sizes5041 s)
+     (if (convert-mode?5043 s)
+       (convert-mode-sizes5045 s)
        ($value
         (impersonate-ref
-         convert-mode-sizes5041
+         convert-mode-sizes5045
          struct:convert-mode
          0
          s
          'convert-mode
          'sizes))))))
-(define convert-mode-called?5042
+(define convert-mode-called?5046
   (|#%name| convert-mode-called? (record-accessor struct:convert-mode 1)))
 (define convert-mode-called?
   (|#%name|
    convert-mode-called?
    (lambda (s)
-     (if (convert-mode?5039 s)
-       (convert-mode-called?5042 s)
+     (if (convert-mode?5043 s)
+       (convert-mode-called?5046 s)
        ($value
         (impersonate-ref
-         convert-mode-called?5042
+         convert-mode-called?5046
          struct:convert-mode
          1
          s
          'convert-mode
          'called?))))))
-(define convert-mode-lift?5043
+(define convert-mode-lift?5047
   (|#%name| convert-mode-lift? (record-accessor struct:convert-mode 2)))
 (define convert-mode-lift?
   (|#%name|
    convert-mode-lift?
    (lambda (s)
-     (if (convert-mode?5039 s)
-       (convert-mode-lift?5043 s)
+     (if (convert-mode?5043 s)
+       (convert-mode-lift?5047 s)
        ($value
         (impersonate-ref
-         convert-mode-lift?5043
+         convert-mode-lift?5047
          struct:convert-mode
          2
          s
          'convert-mode
          'lift?))))))
-(define convert-mode-no-more-conversions?5044
+(define convert-mode-no-more-conversions?5048
   (|#%name|
    convert-mode-no-more-conversions?
    (record-accessor struct:convert-mode 3)))
@@ -42347,17 +41597,17 @@
   (|#%name|
    convert-mode-no-more-conversions?
    (lambda (s)
-     (if (convert-mode?5039 s)
-       (convert-mode-no-more-conversions?5044 s)
+     (if (convert-mode?5043 s)
+       (convert-mode-no-more-conversions?5048 s)
        ($value
         (impersonate-ref
-         convert-mode-no-more-conversions?5044
+         convert-mode-no-more-conversions?5048
          struct:convert-mode
          3
          s
          'convert-mode
          'no-more-conversions?))))))
-(define effect5045
+(define effect5049
   (begin
     (register-struct-constructor! convert-mode1.1)
     (register-struct-predicate! convert-mode?)
@@ -42626,10 +41876,7 @@
                                       (values m_2 orig-id_0)))))))
                           (case-lambda
                            ((m_1 orig-id_0) orig-id_0)
-                           (args
-                            (raise-binding-result-arity-error
-                             '(m_4 orig-id_0)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          (if (if (eq? 'self hd_0)
                                (let ((a_0 (cdr (unwrap m_0))))
                                  (let ((p_0 (unwrap a_0)))
@@ -42679,10 +41926,7 @@
                                 body_0
                                 (plain-add-args_1 env_0 args_0))))
                           (reannotate v_0 (list* 'lambda args_0 new-body_0))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(args_63 body_165)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'let* hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -42719,10 +41963,7 @@
                             (reannotate
                              v_0
                              (list 'let* bindings_0 new-body_0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(bindings_7 body_167)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (error 'match "failed ~e" v_0))))))))
            (loop_1
             (|#%name|
@@ -42758,10 +41999,7 @@
                            env_0
                            app_0
                            (list 'variable-ref (unwrap var-id_0)))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(var-id_0 id_172)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'variable-set!/define hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -42789,10 +42027,7 @@
                              env_0
                              app_0
                              (list 'variable-ref (unwrap var-id_0)))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(var-id_2 id_174)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'call-with-module-prompt hd_0)
                              (let ((a_0 (cdr (unwrap v_0))))
                                (let ((p_0 (unwrap a_0)))
@@ -42886,10 +42121,7 @@
                                                    rest_1))))))
                                         env_1))))))
                                (for-loop_0 env_0 ids_0 var-ids_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(ids_135 var-ids_0)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          (if (if (eq? 'define hd_0)
                                (let ((a_0 (cdr (unwrap v_0))))
                                  (let ((p_0 (unwrap a_0)))
@@ -42916,10 +42148,7 @@
                                         (values id_1 rhs_0)))))))
                             (case-lambda
                              ((id_0 rhs_0) (plain-add-args_1 env_0 id_0 #f))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(id_177 rhs_171)
-                               args))))
+                             (args (raise-binding-result-arity-error 2 args))))
                            (if (if (eq? 'define-values hd_0)
                                  (let ((a_0 (cdr (unwrap v_0))))
                                    (let ((p_0 (unwrap a_0)))
@@ -42948,9 +42177,7 @@
                                ((ids_0 rhs_0)
                                 (plain-add-args_1 env_0 ids_0 #f))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(ids_137 rhs_173)
-                                 args))))
+                                (raise-binding-result-arity-error 2 args))))
                              (if (if (eq? 'begin hd_0) #t #f)
                                (let ((vs_0
                                       (let ((d_0 (cdr (unwrap v_0)))) d_0)))
@@ -43149,8 +42376,7 @@
                                                                     constance_0)))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(id_180
-                                                                    constance_1)
+                                                                  2
                                                                   args))))))))
                                                       (case-lambda
                                                        ((var-id_0
@@ -43171,9 +42397,7 @@
                                                           v_0))
                                                        (args
                                                         (raise-binding-result-arity-error
-                                                         '(var-id_5
-                                                           id_179
-                                                           constance_0)
+                                                         3
                                                          args))))
                                                      (if (if (eq? 'define hd_0)
                                                            (let ((a_0
@@ -43252,7 +42476,7 @@
                                                                id_0)))))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(id_65 rhs_6)
+                                                           2
                                                            args))))
                                                        (if (if (eq?
                                                                 'define-values
@@ -43329,7 +42553,7 @@
                                                                #f))))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(ids_139 rhs_176)
+                                                             2
                                                              args))))
                                                          (if (if (eq?
                                                                   'begin
@@ -43392,10 +42616,7 @@
                       (case-lambda
                        ((new-v_0 new-free_0 new-lifts_0)
                         (values (list new-v_0) new-free_0 new-lifts_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(new-v_6 new-free_9 new-lifts_14)
-                         args))))
+                       (args (raise-binding-result-arity-error 3 args))))
                      (call-with-values
                       (lambda ()
                         (let ((app_0 (wrap-car vs_0)))
@@ -43429,14 +42650,8 @@
                             (cons new-v_0 new-rest_0)
                             newer-free_0
                             newer-lifts_0))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(new-rest_0 newer-free_1 newer-lifts_1)
-                            args)))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(new-v_7 new-free_10 new-lifts_15)
-                         args))))))))))
+                          (args (raise-binding-result-arity-error 3 args)))))
+                       (args (raise-binding-result-arity-error 3 args))))))))))
            (loop_4
             (|#%name|
              loop
@@ -43470,10 +42685,7 @@
                        (add-one_0 env4_0 replace?3_0 id_0)
                        args_0
                        replace?3_0))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(id_190 args_72)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (if (let ((app_0 (unwrap '())))
                          (eq? app_0 (unwrap args5_0)))
                      env4_0
@@ -43553,8 +42765,7 @@
                                                                    val_0))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(key_43
-                                                                     val_54)
+                                                                   2
                                                                    args))))))
                                                           (values table_1))))
                                                    (for-loop_0
@@ -43632,7 +42843,7 @@
                                              #f))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(m_7 orig-name_0)
+                                            2
                                             args))))
                                         #f)))))
                              (if or-part_0
@@ -43691,9 +42902,7 @@
                                     get-e_0)
                                   new-lifts_0))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(get-e_0 new-lifts_1)
-                                  args)))))
+                                 (raise-binding-result-arity-error 2 args)))))
                             (let ((e_0
                                    (|#%app|
                                     extractable-annotation_0
@@ -43733,7 +42942,7 @@
                                          new-lifts_0))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(get-sub-lift_0 new-lifts_3)
+                                         2
                                          args)))))))
                                (case-lambda
                                 ((all-captures_0 new-lifts_0)
@@ -43754,11 +42963,11 @@
                                      newer-lifts_0))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(get-e_1 newer-lifts_0)
+                                     2
                                      args)))))
                                 (args
                                  (raise-binding-result-arity-error
-                                  '(all-captures_0 new-lifts_2)
+                                  2
                                   args))))))))))))))))
         (top_0
          (|#%name|
@@ -43828,10 +43037,7 @@
                           lifts-id
                           (list 'quote (lifts->datum_0 lifts_0))))
                         new-v_0)))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(new-v_2 free_0 lifts_25)
-                      args))))))))))
+                    (args (raise-binding-result-arity-error 3 args))))))))))
         (jitify-expr_0
          (|#%name|
           jitify-expr
@@ -43938,18 +43144,13 @@
                                             new-lifts_0))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(converted-v_0 new-lifts_4)
+                                            2
                                             args)))))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(new-body_9
-                                       lam-body-free_0
-                                       new-body-lifts_0)
+                                     3
                                      args)))))))))))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(args_65 body_169)
-                      args))))
+                    (args (raise-binding-result-arity-error 2 args))))
                   (if (if (eq? 'case-lambda hd_0)
                         (let ((a_0 (cdr (unwrap v_1))))
                           (if (wrap-list? a_0)
@@ -44045,14 +43246,14 @@
                                                          bodys_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(argss8_0 bodys9_0)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((argss_1 bodys_1)
                                                     (values argss_1 bodys_1))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(argss_88 bodys_19)
+                                                     2
                                                      args)))))
                                                (case-lambda
                                                 ((argss_1 bodys_1)
@@ -44062,7 +43263,7 @@
                                                   rest_0))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(argss_86 bodys_152)
+                                                  2
                                                   args)))))))
                                         (values argss_0 bodys_0)))))))
                                (for-loop_0 null null d_0))))
@@ -44070,10 +43271,7 @@
                            ((argss_0 bodys_0)
                             (let ((app_0 (reverse$1 argss_0)))
                               (values app_0 (reverse$1 bodys_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(argss_84 bodys_150)
-                             args))))))
+                           (args (raise-binding-result-arity-error 2 args))))))
                      (case-lambda
                       ((argss_0 bodys_0)
                        (let ((convert?_0
@@ -44158,9 +43356,7 @@
                                                                     new-body-lifts_0))
                                                                   (args
                                                                    (raise-binding-result-arity-error
-                                                                    '(new-body_10
-                                                                      lam-body-free_1
-                                                                      new-body-lifts_2)
+                                                                    3
                                                                     args))))))
                                                             (case-lambda
                                                              ((rev-new-bodys_1
@@ -44172,9 +43368,7 @@
                                                                body-lifts_2))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(rev-new-bodys_4
-                                                                 lam-free_5
-                                                                 body-lifts_6)
+                                                               3
                                                                args)))))
                                                          (case-lambda
                                                           ((rev-new-bodys_1
@@ -44188,9 +43382,7 @@
                                                             rest_1))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(rev-new-bodys_2
-                                                              lam-free_3
-                                                              body-lifts_4)
+                                                            3
                                                             args))))))))
                                                 (values
                                                  rev-new-bodys_0
@@ -44282,18 +43474,13 @@
                                           new-lifts_0))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(converted-v_1 new-lifts_5)
+                                          2
                                           args))))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(rev-new-bodys_0
-                                       lam-free_1
-                                       new-body-lifts_1)
+                                     3
                                      args))))))))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(argss_83 bodys_149)
-                        args))))
+                      (args (raise-binding-result-arity-error 2 args))))
                     (if (if (eq? 'let hd_0) #t #f)
                       (jitify-let_0
                        v_1
@@ -44344,9 +43531,7 @@
                                   new-free_0
                                   new-lifts_0))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(new-body_11 new-free_0 new-lifts_6)
-                                  args)))))
+                                 (raise-binding-result-arity-error 3 args)))))
                             (if (if (eq? 'begin0 hd_0)
                                   (let ((a_0 (cdr (unwrap v_1))))
                                     (let ((p_0 (unwrap a_0)))
@@ -44398,16 +43583,14 @@
                                         new-lifts_0))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(new-body_12 new-free_1 new-lifts_7)
+                                        3
                                         args)))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(new-v0_0 v0-free_0 v0-lifts_0)
+                                     3
                                      args)))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(v0_0 vs_24)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (if (if (eq? '$value hd_0)
                                     (let ((a_0 (cdr (unwrap v_1))))
                                       (let ((p_0 (unwrap a_0)))
@@ -44440,7 +43623,7 @@
                                       new-lifts_0))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(new-e_0 new-free_2 new-lifts_8)
+                                      3
                                       args)))))
                                 (if (if (eq? 'if hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
@@ -44493,7 +43676,7 @@
                                                 (values tst_1 thn_0 els_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(thn_39 els_39)
+                                               2
                                                args))))))))
                                    (case-lambda
                                     ((tst_0 thn_0 els_0)
@@ -44557,25 +43740,19 @@
                                                  new-lifts/els_0))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(new-els_0
-                                                   new-free/els_0
-                                                   new-lifts/els_0)
+                                                 3
                                                  args)))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(new-thn_0
-                                                new-free/thn_0
-                                                new-lifts/thn_0)
+                                              3
                                               args)))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(new-tst_0
-                                             new-free/tst_0
-                                             new-lifts/tst_0)
+                                           3
                                            args))))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(tst_26 thn_38 els_38)
+                                      3
                                       args))))
                                   (if (if (eq? 'with-continuation-mark* hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
@@ -44656,7 +43833,7 @@
                                                             body_0)))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(val_56 body_173)
+                                                          2
                                                           args))))))))
                                               (case-lambda
                                                ((key_0 val_0 body_0)
@@ -44668,7 +43845,7 @@
                                                    body_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(key_44 val_55 body_172)
+                                                 3
                                                  args))))))))
                                      (case-lambda
                                       ((mode_0 key_0 val_0 body_0)
@@ -44733,25 +43910,19 @@
                                                    new-lifts/body_0))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(new-body_13
-                                                     new-free/body_0
-                                                     new-lifts/body_0)
+                                                   3
                                                    args)))))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(new-val_0
-                                                  new-free/val_0
-                                                  new-lifts/val_0)
+                                                3
                                                 args)))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(new-key_0
-                                               new-free/key_0
-                                               new-lifts/key_0)
+                                             3
                                              args))))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(mode_8 key_23 val_19 body_77)
+                                        4
                                         args))))
                                     (if (if (eq? 'quote hd_0)
                                           (let ((a_0 (cdr (unwrap v_1))))
@@ -45046,13 +44217,11 @@
                                                          new-lifts_0)))))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(new-rhs_2
-                                                 new-free_3
-                                                 new-lifts_9)
+                                               3
                                                args)))))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(var_6 rhs_178)
+                                            2
                                             args))))
                                         (if (if (eq? 'call-with-values hd_0)
                                               (let ((a_0 (cdr (unwrap v_1))))
@@ -45145,19 +44314,15 @@
                                                         new-lifts2_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(new-proc2_0
-                                                        new-free2_0
-                                                        new-lifts2_0)
+                                                      3
                                                       args)))))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(new-proc1_0
-                                                     new-free1_0
-                                                     new-lifts1_0)
+                                                   3
                                                    args))))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(proc1_0 proc2_0)
+                                              2
                                               args))))
                                           (if (if (eq?
                                                    'call-with-module-prompt
@@ -45217,13 +44382,11 @@
                                                      new-lifts_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(new-proc_0
-                                                       new-free_4
-                                                       new-lifts_10)
+                                                     3
                                                      args))))))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(proc_12 var-info_0)
+                                                2
                                                 args))))
                                             (if (if (eq? '|#%app| hd_0)
                                                   (let ((a_0
@@ -45255,9 +44418,7 @@
                                                   new-lifts_0))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(new-vs_0
-                                                    new-free_5
-                                                    new-lifts_11)
+                                                  3
                                                   args))))
                                               (if (let ((p_0 (unwrap v_1)))
                                                     (if (pair? p_0)
@@ -45361,9 +44522,7 @@
                                                                 new-lifts_0))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(new-vs_1
-                                                                  new-free_6
-                                                                  new-lifts_12)
+                                                                3
                                                                 args)))))
                                                           (call-with-values
                                                            (lambda ()
@@ -45389,9 +44548,7 @@
                                                               new-lifts_0))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(new-vs_2
-                                                                new-free_7
-                                                                new-lifts_13)
+                                                              3
                                                               args)))))))))
                                                 (let ((id_0 (unwrap v_1)))
                                                   (let ((dest_0
@@ -45697,8 +44854,7 @@
                                                                    rhss_0)))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids10_0
-                                                                    rhss11_0)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((ids_1 rhss_1)
@@ -45707,8 +44863,7 @@
                                                                rhss_1))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(ids_146
-                                                                 rhss_217)
+                                                               2
                                                                args)))))
                                                          (case-lambda
                                                           ((ids_1 rhss_1)
@@ -45718,7 +44873,7 @@
                                                             rest_0))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(ids_144 rhss_215)
+                                                            2
                                                             args)))))))
                                                   (values ids_0 rhss_0)))))))
                                          (for-loop_0 null null a_0))))
@@ -45728,7 +44883,7 @@
                                         (values app_0 (reverse$1 rhss_0))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(ids_142 rhss_213)
+                                       2
                                        args))))))
                                (case-lambda
                                 ((ids_0 rhss_0)
@@ -45737,16 +44892,13 @@
                                      (values ids_1 rhss_1 body_0))))
                                 (args
                                  (raise-binding-result-arity-error
-                                  '(ids_141 rhss_212)
+                                  2
                                   args)))))))
                         (case-lambda
                          ((ids_0 rhss_0 body_0)
                           (let ((let-form_1 let-form_0))
                             (values let-form_1 ids_0 rhss_0 body_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(ids_102 rhss_173 body_176)
-                           args)))))))
+                         (args (raise-binding-result-arity-error 3 args)))))))
                  (case-lambda
                   ((let-form_0 ids_0 rhss_0 body_0)
                    (let ((rec?_0
@@ -45822,9 +44974,7 @@
                                                             rhs-lifts_0))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(new-rhs_3
-                                                              rhs-free_1
-                                                              rhs-lifts_1)
+                                                            3
                                                             args))))))
                                                     (case-lambda
                                                      ((rev-new-rhss_1
@@ -45836,9 +44986,7 @@
                                                        lifts_2))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(rev-new-rhss_4
-                                                         free_8
-                                                         lifts_33)
+                                                       3
                                                        args)))))
                                                  (case-lambda
                                                   ((rev-new-rhss_1
@@ -45852,9 +45000,7 @@
                                                     rest_1))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(rev-new-rhss_2
-                                                      free_6
-                                                      lifts_31)
+                                                    3
                                                     args))))))))
                                         (values
                                          rev-new-rhss_0
@@ -46095,17 +45241,10 @@
                                       (remove-args_0 new-free_0 ids_0)
                                       new-lifts_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(new-body_14 new-free_11 new-lifts_16)
-                                  args))))))
+                                 (raise-binding-result-arity-error 3 args))))))
                            (args
-                            (raise-binding-result-arity-error
-                             '(rev-new-rhss_0 rhs-free_0 rhs-lifts_0)
-                             args))))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(let-form_0 ids_101 rhss_172 body_175)
-                    args))))
+                            (raise-binding-result-arity-error 3 args))))))))
+                  (args (raise-binding-result-arity-error 4 args))))
                 (error 'match "failed ~e" v_1))))))
         (mutable-box-bindings_0
          (|#%name|
@@ -46150,8 +45289,7 @@
                     args_1
                     mutables_0
                     convert-mode_0))
-                  (args
-                   (raise-binding-result-arity-error '(id_194 args_77) args))))
+                  (args (raise-binding-result-arity-error 2 args))))
                 (if (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap args_0)))
                   env_0
                   (add-one_1
@@ -46186,8 +45324,7 @@
                     mutables_0
                     var-rec?_0
                     convert-mode_0))
-                  (args
-                   (raise-binding-result-arity-error '(id_198 args_80) args))))
+                  (args (raise-binding-result-arity-error 2 args))))
                 (if (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap args_0)))
                   env_0
                   (add-one_2
@@ -46212,8 +45349,7 @@
                  (case-lambda
                   ((id_0 args_1)
                    (remove-args_0 (hash-remove env_0 (unwrap id_0)) args_1))
-                  (args
-                   (raise-binding-result-arity-error '(id_201 args_83) args))))
+                  (args (raise-binding-result-arity-error 2 args))))
                 (if (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap args_0)))
                   env_0
                   (hash-remove env_0 (unwrap args_0))))))))
@@ -46533,9 +45669,7 @@
                                         (values b_2))))
                                  (for-loop_0 b_2 (hash-iterate-next a_0 i_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(k_32 v_164)
-                                args))))
+                               (raise-binding-result-arity-error 2 args))))
                             b_1))))))
                    (for-loop_0 b_0 (hash-iterate-first a_0)))))))))
         (body->expr_0 procz6)
@@ -46565,10 +45699,7 @@
                       (plain-add-args_1 env_0 args_0)
                       body_0
                       accum_0))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(args_88 body_184)
-                      args))))
+                    (args (raise-binding-result-arity-error 2 args))))
                   (if (if (eq? 'case-lambda hd_0)
                         (let ((a_0 (cdr (unwrap v_1))))
                           (if (wrap-list? a_0)
@@ -46666,14 +45797,14 @@
                                                          bodys_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(argss13_0 bodys14_0)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((argss_1 bodys_1)
                                                     (values argss_1 bodys_1))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(argss_96 bodys_160)
+                                                     2
                                                      args)))))
                                                (case-lambda
                                                 ((argss_1 bodys_1)
@@ -46683,7 +45814,7 @@
                                                   rest_0))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(argss_94 bodys_158)
+                                                  2
                                                   args)))))))
                                         (values argss_0 bodys_0)))))))
                                (for-loop_0 null null d_0))))
@@ -46691,10 +45822,7 @@
                            ((argss_0 bodys_0)
                             (let ((app_0 (reverse$1 argss_0)))
                               (values app_0 (reverse$1 bodys_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(argss_92 bodys_156)
-                             args))))))
+                           (args (raise-binding-result-arity-error 2 args))))))
                      (case-lambda
                       ((argss_0 bodys_0)
                        (begin
@@ -46724,10 +45852,7 @@
                                               rest_1))))))
                                    accum_1))))))
                           (for-loop_0 accum_0 argss_0 bodys_0))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(argss_91 bodys_155)
-                        args))))
+                      (args (raise-binding-result-arity-error 2 args))))
                     (if (if (eq? 'let hd_0) #t #f)
                       (find-mutable-in-let_0 env_0 v_1 accum_0)
                       (if (if (eq? 'letrec hd_0) #t #f)
@@ -46791,7 +45916,7 @@
                                               (values tst_1 thn_0 els_0)))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(thn_42 els_42)
+                                             2
                                              args))))))))
                                  (case-lambda
                                   ((tst_0 thn_0 els_0)
@@ -46803,9 +45928,7 @@
                                      thn_0
                                      (find-mutable_0 env_0 els_0 accum_0))))
                                   (args
-                                   (raise-binding-result-arity-error
-                                    '(tst_28 thn_41 els_41)
-                                    args))))
+                                   (raise-binding-result-arity-error 3 args))))
                                 (if (if (eq? 'with-continuation-mark* hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
                                         (let ((p_0 (unwrap a_0)))
@@ -46881,7 +46004,7 @@
                                                           body_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(val_61 body_189)
+                                                        2
                                                         args))))))))
                                             (case-lambda
                                              ((key_0 val_0 body_0)
@@ -46893,7 +46016,7 @@
                                                  body_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(key_47 val_60 body_188)
+                                               3
                                                args))))))))
                                    (case-lambda
                                     ((mode_0 key_0 val_0 body_0)
@@ -46906,7 +46029,7 @@
                                        (find-mutable_0 env_0 body_0 accum_0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(mode_10 key_46 val_59 body_187)
+                                      4
                                       args))))
                                   (if (if (eq? 'quote hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
@@ -46960,7 +46083,7 @@
                                               accum_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(var_13 rhs_181)
+                                          2
                                           args))))
                                       (if (wrap-list? v_1)
                                         (body-find-mutable_0 env_0 v_1 accum_0)
@@ -47149,8 +46272,7 @@
                                                                    rhss_0)))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids15_0
-                                                                    rhss16_1)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((ids_1 rhss_1)
@@ -47159,8 +46281,7 @@
                                                                rhss_1))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(ids_161
-                                                                 rhss_226)
+                                                               2
                                                                args)))))
                                                          (case-lambda
                                                           ((ids_1 rhss_1)
@@ -47170,7 +46291,7 @@
                                                             rest_0))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(ids_159 rhss_224)
+                                                            2
                                                             args)))))))
                                                   (values ids_0 rhss_0)))))))
                                          (for-loop_0 null null a_0))))
@@ -47180,7 +46301,7 @@
                                         (values app_0 (reverse$1 rhss_0))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(ids_157 rhss_222)
+                                       2
                                        args))))))
                                (case-lambda
                                 ((ids_0 rhss_0)
@@ -47189,16 +46310,13 @@
                                      (values ids_1 rhss_1 body_0))))
                                 (args
                                  (raise-binding-result-arity-error
-                                  '(ids_156 rhss_221)
+                                  2
                                   args)))))))
                         (case-lambda
                          ((ids_0 rhss_0 body_0)
                           (let ((let-form_1 let-form_0))
                             (values let-form_1 ids_0 rhss_0 body_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(ids_155 rhss_220 body_193)
-                           args)))))))
+                         (args (raise-binding-result-arity-error 3 args)))))))
                  (case-lambda
                   ((let-form_0 ids_0 rhss_0 body_0)
                    (let ((local-env_0
@@ -47258,10 +46376,7 @@
                                                rest_1))))))
                                     accum_1))))))
                            (for-loop_0 accum_0 ids_0 rhss_0)))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(let-form_2 ids_154 rhss_219 body_192)
-                    args))))
+                  (args (raise-binding-result-arity-error 4 args))))
                 (error 'match "failed ~e" v_1))))))
         (init-convert-mode_0
          (|#%name|
@@ -47342,10 +46457,7 @@
                     ((args_0 body_0)
                      (let ((size_0 (body-record-sizes!_0 body_0 sizes_0)))
                        (begin (begin (hash-set! sizes_0 v_1 size_0) size_0))))
-                    (args
-                     (raise-binding-result-arity-error
-                      '(args_91 body_195)
-                      args))))
+                    (args (raise-binding-result-arity-error 2 args))))
                   (if (if (eq? 'case-lambda hd_0)
                         (let ((a_0 (cdr (unwrap v_1))))
                           (if (wrap-list? a_0)
@@ -47517,7 +46629,7 @@
                                               (values tst_1 thn_0 els_0)))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(thn_45 els_45)
+                                             2
                                              args))))))))
                                  (case-lambda
                                   ((tst_0 thn_0 els_0)
@@ -47531,9 +46643,7 @@
                                         app_1
                                         (record-sizes!_0 els_0 sizes_0)))))
                                   (args
-                                   (raise-binding-result-arity-error
-                                    '(tst_30 thn_44 els_44)
-                                    args))))
+                                   (raise-binding-result-arity-error 3 args))))
                                 (if (if (eq? 'with-continuation-mark* hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
                                         (let ((p_0 (unwrap a_0)))
@@ -47609,7 +46719,7 @@
                                                           body_0)))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(val_65 body_200)
+                                                        2
                                                         args))))))))
                                             (case-lambda
                                              ((key_0 val_0 body_0)
@@ -47621,7 +46731,7 @@
                                                  body_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(key_50 val_64 body_199)
+                                               3
                                                args))))))))
                                    (case-lambda
                                     ((mode_0 key_0 val_0 body_0)
@@ -47636,7 +46746,7 @@
                                           (record-sizes!_0 body_0 sizes_0)))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(mode_12 key_49 val_63 body_198)
+                                      4
                                       args))))
                                   (if (if (eq? 'quote hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
@@ -47850,10 +46960,7 @@
                          ((rhss_0 body_0)
                           (let ((let-form_1 let-form_0))
                             (values let-form_1 rhss_0 body_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(rhss_229 body_204)
-                           args)))))))
+                         (args (raise-binding-result-arity-error 2 args)))))))
                  (case-lambda
                   ((let-form_0 rhss_0 body_0)
                    (let ((app_0
@@ -47879,10 +46986,7 @@
                                       result_0))))))
                              (for-loop_0 0 rhss_0)))))
                      (+ 1 app_0 (body-record-sizes!_0 body_0 sizes_0))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(let-form_4 rhss_228 body_203)
-                    args))))
+                  (args (raise-binding-result-arity-error 3 args))))
                 (error 'match "failed ~e" v_1)))))))
        (with-continuation-mark*
         authentic
@@ -47947,20 +47051,14 @@
                         (case-lambda
                          ((rest-xs_0 rest-env_0)
                           (values (cons x_0 rest-xs_0) rest-env_0))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(rest-xs_0 rest-env_0)
-                           args))))))
+                         (args (raise-binding-result-arity-error 2 args))))))
                    (if (null? ids_0)
                      (values '() env_0)
                      (call-with-values
                       (lambda () (xify-ids_0 (list ids_0) env_0))
                       (case-lambda
                        ((xs_0 new-env_0) (values (car xs_0) new-env_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(xs_0 new-env_7)
-                         args))))))))))
+                       (args (raise-binding-result-arity-error 2 args))))))))))
            (xify-let_0
             (|#%name|
              xify-let
@@ -48006,10 +47104,7 @@
                                         fold-var_0))))))
                                (for-loop_0 null new-ids_0 rhss_0))))))
                       (list* form_0 app_0 (xify-body_0 body_0 new-env_0))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(new-ids_2 new-env_6)
-                     args))))))))
+                   (args (raise-binding-result-arity-error 2 args))))))))
            (xify_0
             (|#%name|
              xify
@@ -48042,14 +47137,8 @@
                              'lambda
                              new-ids_0
                              (xify-body_0 body_0 new-env_0)))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(new-ids_1 new-env_5)
-                             args)))))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(ids_163 body_80)
-                          args))))
+                           (args (raise-binding-result-arity-error 2 args)))))
+                        (args (raise-binding-result-arity-error 2 args))))
                       (if (if (eq? 'case-lambda hd_0)
                             (let ((a_0 (cdr (unwrap e_0)))) (wrap-list? a_0))
                             #f)
@@ -48234,8 +47323,7 @@
                                                                       rhss_0)))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(ids1_1
-                                                                       rhss2_1)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((ids_1 rhss_1)
@@ -48244,8 +47332,7 @@
                                                                   rhss_1))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids_169
-                                                                    rhss_240)
+                                                                  2
                                                                   args)))))
                                                             (case-lambda
                                                              ((ids_1 rhss_1)
@@ -48255,8 +47342,7 @@
                                                                rest_0))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(ids_54
-                                                                 rhss_110)
+                                                               2
                                                                args)))))))
                                                      (values
                                                       ids_0
@@ -48268,7 +47354,7 @@
                                            (values app_0 (reverse$1 rhss_0))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(ids_167 rhss_238)
+                                          2
                                           args))))))
                                   (case-lambda
                                    ((ids_0 rhss_0)
@@ -48277,15 +47363,12 @@
                                         (values ids_1 rhss_1 body_0))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(ids_166 rhss_237)
+                                     2
                                      args)))))))
                            (case-lambda
                             ((ids_0 rhss_0 body_0)
                              (xify-let_0 'let ids_0 rhss_0 body_0 env_0))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(ids_165 rhss_236 body_206)
-                              args))))
+                            (args (raise-binding-result-arity-error 3 args))))
                           (if (if (eq? 'letrec hd_0)
                                 (let ((a_0 (cdr (unwrap e_0))))
                                   (let ((p_0 (unwrap a_0)))
@@ -48439,8 +47522,7 @@
                                                                         rhss_0)))
                                                                      (args
                                                                       (raise-binding-result-arity-error
-                                                                       '(ids3_1
-                                                                         rhss4_3)
+                                                                       2
                                                                        args)))))
                                                                  (case-lambda
                                                                   ((ids_1
@@ -48450,8 +47532,7 @@
                                                                     rhss_1))
                                                                   (args
                                                                    (raise-binding-result-arity-error
-                                                                    '(ids_176
-                                                                      rhss_247)
+                                                                    2
                                                                     args)))))
                                                               (case-lambda
                                                                ((ids_1 rhss_1)
@@ -48461,8 +47542,7 @@
                                                                  rest_0))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(ids_174
-                                                                   rhss_245)
+                                                                 2
                                                                  args)))))))
                                                        (values
                                                         ids_0
@@ -48476,7 +47556,7 @@
                                               (reverse$1 rhss_0))))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(ids_172 rhss_243)
+                                            2
                                             args))))))
                                     (case-lambda
                                      ((ids_0 rhss_0)
@@ -48486,15 +47566,13 @@
                                           (values ids_1 rhss_1 body_0))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(ids_171 rhss_242)
+                                       2
                                        args)))))))
                              (case-lambda
                               ((ids_0 rhss_0 body_0)
                                (xify-let_0 'letrec ids_0 rhss_0 body_0 env_0))
                               (args
-                               (raise-binding-result-arity-error
-                                '(ids_170 rhss_241 body_208)
-                                args))))
+                               (raise-binding-result-arity-error 3 args))))
                             (if (if (eq? 'letrec* hd_0)
                                   (let ((a_0 (cdr (unwrap e_0))))
                                     (let ((p_0 (unwrap a_0)))
@@ -48650,8 +47728,7 @@
                                                                           rhss_0)))
                                                                        (args
                                                                         (raise-binding-result-arity-error
-                                                                         '(ids5_0
-                                                                           rhss6_2)
+                                                                         2
                                                                          args)))))
                                                                    (case-lambda
                                                                     ((ids_1
@@ -48661,8 +47738,7 @@
                                                                       rhss_1))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(ids_183
-                                                                        rhss_255)
+                                                                      2
                                                                       args)))))
                                                                 (case-lambda
                                                                  ((ids_1
@@ -48673,8 +47749,7 @@
                                                                    rest_0))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(ids_181
-                                                                     rhss_253)
+                                                                   2
                                                                    args)))))))
                                                          (values
                                                           ids_0
@@ -48688,7 +47763,7 @@
                                                 (reverse$1 rhss_0))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(ids_62 rhss_251)
+                                              2
                                               args))))))
                                       (case-lambda
                                        ((ids_0 rhss_0)
@@ -48698,7 +47773,7 @@
                                             (values ids_1 rhss_1 body_0))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(ids_179 rhss_250)
+                                         2
                                          args)))))))
                                (case-lambda
                                 ((ids_0 rhss_0 body_0)
@@ -48709,9 +47784,7 @@
                                   body_0
                                   env_0))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(ids_178 rhss_249 body_210)
-                                  args))))
+                                 (raise-binding-result-arity-error 3 args))))
                               (if (if (eq? 'quote hd_0)
                                     (let ((a_0 (cdr (unwrap e_0))))
                                       (let ((p_0 (unwrap a_0)))
@@ -48784,7 +47857,7 @@
                                                   (values tst_1 thn_0 els_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(thn_48 els_48)
+                                                 2
                                                  args))))))))
                                      (case-lambda
                                       ((tst_0 thn_0 els_0)
@@ -48797,7 +47870,7 @@
                                             (xify_0 els_0 env_0)))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(tst_32 thn_47 els_47)
+                                        3
                                         args))))
                                     (if (if (eq? 'with-continuation-mark* hd_0)
                                           (let ((a_0 (cdr (unwrap e_0))))
@@ -48881,7 +47954,7 @@
                                                               body_0)))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(val_68 body_214)
+                                                            2
                                                             args))))))))
                                                 (case-lambda
                                                  ((key_0 val_0 body_0)
@@ -48893,7 +47966,7 @@
                                                      body_0)))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(key_53 val_67 body_213)
+                                                   3
                                                    args))))))))
                                        (case-lambda
                                         ((mode_0 key_0 val_0 body_0)
@@ -48907,7 +47980,7 @@
                                               (xify_0 body_0 env_0)))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(mode_14 key_52 val_4 body_14)
+                                          4
                                           args))))
                                       (if (if (eq? 'set! hd_0)
                                             (let ((a_0 (cdr (unwrap e_0))))
@@ -48950,7 +48023,7 @@
                                               (xify_0 rhs_0 env_0))))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(id_208 rhs_186)
+                                            2
                                             args))))
                                         (if (let ((p_0 (unwrap e_0)))
                                               (if (pair? p_0) #t #f))
@@ -49499,9 +48572,7 @@
                                             (values)))))))
                                    (for-loop_0 0))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(vec_13 len_6)
-                                 args))))
+                                (raise-binding-result-arity-error 2 args))))
                              (void))
                            (if (hash? v_0)
                              (hash-for-each
@@ -49580,7 +48651,7 @@
                                            (for-loop_0 start*_0))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(v*_0 start*_0 stop*_1 step*_0)
+                                         4
                                          args))))
                                      (void))
                                    (if (srcloc? v_0)
@@ -50022,8 +49093,7 @@
                                                                   v_0))))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(n_19
-                                                                 normal-list?_0)
+                                                               2
                                                                args))))
                                                            (begin
                                                              (write-byte
@@ -50104,8 +49174,7 @@
                                                                     0))))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(vec_15
-                                                                   len_8)
+                                                                 2
                                                                  args))))
                                                              (void))
                                                            (if (box? v_0)
@@ -50202,10 +49271,7 @@
                                                                                 start*_0))))
                                                                            (args
                                                                             (raise-binding-result-arity-error
-                                                                             '(v*_1
-                                                                               start*_1
-                                                                               stop*_2
-                                                                               step*_1)
+                                                                             4
                                                                              args))))
                                                                          (void)))))
                                                                  (if (hash?
@@ -51178,10 +50244,7 @@
                                                (+ pos_1 1))))
                                           (values)))))))
                                  (for-loop_0 0 start_0))))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(vec_18 len_9)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (let ((len_0 (read-fasl-integer init-i_0)))
                          (let ((i_0
                                 (if (mpair? init-i_0)
@@ -51462,10 +50525,7 @@
                              (list 'let* other-bindings_0 body_0)))))
                        (values paths_0 linklet-e_0)))
                    (values '() linklet-e_0))))
-              (args
-               (raise-binding-result-arity-error
-                '(bindings_11 body_217)
-                args))))
+              (args (raise-binding-result-arity-error 2 args))))
             (error 'match "failed ~e" linklet-e_0)))))))
 (define make-path->compiled-path
   (letrec ((make-path->compiled-path_0
@@ -51612,7 +50672,7 @@
      "cannot marshal value that is embedded in compiled code\n  value: ~v"
      v_0)))
 (define struct:node (make-record-type-descriptor* 'node #f #f #f #f 5 31))
-(define effect6230
+(define effect6234
   (struct-type-install-properties!
    struct:node
    'node
@@ -51636,7 +50696,7 @@
 (define node-height (|#%name| node-height (record-accessor struct:node 2)))
 (define node-left (|#%name| node-left (record-accessor struct:node 3)))
 (define node-right (|#%name| node-right (record-accessor struct:node 4)))
-(define effect6231
+(define effect6235
   (begin
     (register-struct-constructor! node1.1)
     (register-struct-predicate! node?)
@@ -51929,7 +50989,7 @@
          (loop_0 pos_0 vals_0 count_0 stack_0))))))
 (define struct:stack-info
   (make-record-type-descriptor* 'stack-info #f #f #f #f 5 31))
-(define effect6339
+(define effect6343
   (struct-type-install-properties!
    struct:stack-info
    'stack-info
@@ -51947,81 +51007,81 @@
    stack-info
    (record-constructor
     (make-record-constructor-descriptor struct:stack-info #f #f))))
-(define stack-info?6338
+(define stack-info?6342
   (|#%name| stack-info? (record-predicate struct:stack-info)))
 (define stack-info?
   (|#%name|
    stack-info?
    (lambda (v)
-     (if (stack-info?6338 v)
+     (if (stack-info?6342 v)
        #t
        ($value
-        (if (impersonator? v) (stack-info?6338 (impersonator-val v)) #f))))))
-(define stack-info-capture-depth6340
+        (if (impersonator? v) (stack-info?6342 (impersonator-val v)) #f))))))
+(define stack-info-capture-depth6344
   (|#%name| stack-info-capture-depth (record-accessor struct:stack-info 0)))
 (define stack-info-capture-depth
   (|#%name|
    stack-info-capture-depth
    (lambda (s)
-     (if (stack-info?6338 s)
-       (stack-info-capture-depth6340 s)
+     (if (stack-info?6342 s)
+       (stack-info-capture-depth6344 s)
        ($value
         (impersonate-ref
-         stack-info-capture-depth6340
+         stack-info-capture-depth6344
          struct:stack-info
          0
          s
          'stack-info
          'capture-depth))))))
-(define stack-info-closure-map6341
+(define stack-info-closure-map6345
   (|#%name| stack-info-closure-map (record-accessor struct:stack-info 1)))
 (define stack-info-closure-map
   (|#%name|
    stack-info-closure-map
    (lambda (s)
-     (if (stack-info?6338 s)
-       (stack-info-closure-map6341 s)
+     (if (stack-info?6342 s)
+       (stack-info-closure-map6345 s)
        ($value
         (impersonate-ref
-         stack-info-closure-map6341
+         stack-info-closure-map6345
          struct:stack-info
          1
          s
          'stack-info
          'closure-map))))))
-(define stack-info-use-map6342
+(define stack-info-use-map6346
   (|#%name| stack-info-use-map (record-accessor struct:stack-info 2)))
 (define stack-info-use-map
   (|#%name|
    stack-info-use-map
    (lambda (s)
-     (if (stack-info?6338 s)
-       (stack-info-use-map6342 s)
+     (if (stack-info?6342 s)
+       (stack-info-use-map6346 s)
        ($value
         (impersonate-ref
-         stack-info-use-map6342
+         stack-info-use-map6346
          struct:stack-info
          2
          s
          'stack-info
          'use-map))))))
-(define stack-info-local-use-map6343
+(define stack-info-local-use-map6347
   (|#%name| stack-info-local-use-map (record-accessor struct:stack-info 3)))
 (define stack-info-local-use-map
   (|#%name|
    stack-info-local-use-map
    (lambda (s)
-     (if (stack-info?6338 s)
-       (stack-info-local-use-map6343 s)
+     (if (stack-info?6342 s)
+       (stack-info-local-use-map6347 s)
        ($value
         (impersonate-ref
-         stack-info-local-use-map6343
+         stack-info-local-use-map6347
          struct:stack-info
          3
          s
          'stack-info
          'local-use-map))))))
-(define stack-info-non-tail-call-later?6344
+(define stack-info-non-tail-call-later?6348
   (|#%name|
    stack-info-non-tail-call-later?
    (record-accessor struct:stack-info 4)))
@@ -52029,27 +51089,27 @@
   (|#%name|
    stack-info-non-tail-call-later?
    (lambda (s)
-     (if (stack-info?6338 s)
-       (stack-info-non-tail-call-later?6344 s)
+     (if (stack-info?6342 s)
+       (stack-info-non-tail-call-later?6348 s)
        ($value
         (impersonate-ref
-         stack-info-non-tail-call-later?6344
+         stack-info-non-tail-call-later?6348
          struct:stack-info
          4
          s
          'stack-info
          'non-tail-call-later?))))))
-(define set-stack-info-use-map!6345
+(define set-stack-info-use-map!6349
   (|#%name| set-stack-info-use-map! (record-mutator struct:stack-info 2)))
 (define set-stack-info-use-map!
   (|#%name|
    set-stack-info-use-map!
    (lambda (s v)
-     (if (stack-info?6338 s)
-       (set-stack-info-use-map!6345 s v)
+     (if (stack-info?6342 s)
+       (set-stack-info-use-map!6349 s v)
        ($value
         (impersonate-set!
-         set-stack-info-use-map!6345
+         set-stack-info-use-map!6349
          struct:stack-info
          2
          2
@@ -52057,7 +51117,7 @@
          v
          'stack-info
          'use-map))))))
-(define set-stack-info-local-use-map!6346
+(define set-stack-info-local-use-map!6350
   (|#%name|
    set-stack-info-local-use-map!
    (record-mutator struct:stack-info 3)))
@@ -52065,11 +51125,11 @@
   (|#%name|
    set-stack-info-local-use-map!
    (lambda (s v)
-     (if (stack-info?6338 s)
-       (set-stack-info-local-use-map!6346 s v)
+     (if (stack-info?6342 s)
+       (set-stack-info-local-use-map!6350 s v)
        ($value
         (impersonate-set!
-         set-stack-info-local-use-map!6346
+         set-stack-info-local-use-map!6350
          struct:stack-info
          3
          3
@@ -52077,7 +51137,7 @@
          v
          'stack-info
          'local-use-map))))))
-(define set-stack-info-non-tail-call-later?!6347
+(define set-stack-info-non-tail-call-later?!6351
   (|#%name|
    set-stack-info-non-tail-call-later?!
    (record-mutator struct:stack-info 4)))
@@ -52085,11 +51145,11 @@
   (|#%name|
    set-stack-info-non-tail-call-later?!
    (lambda (s v)
-     (if (stack-info?6338 s)
-       (set-stack-info-non-tail-call-later?!6347 s v)
+     (if (stack-info?6342 s)
+       (set-stack-info-non-tail-call-later?!6351 s v)
        ($value
         (impersonate-set!
-         set-stack-info-non-tail-call-later?!6347
+         set-stack-info-non-tail-call-later?!6351
          struct:stack-info
          4
          4
@@ -52097,7 +51157,7 @@
          v
          'stack-info
          'non-tail-call-later?))))))
-(define effect6348
+(define effect6352
   (begin
     (register-struct-constructor! stack-info4.1)
     (register-struct-predicate! stack-info?)
@@ -52314,7 +51374,7 @@
     (set-stack-info-non-tail-call-later?! stk-i_0 #t)))
 (define struct:indirect
   (make-record-type-descriptor* 'indirect #f #f #f #f 2 3))
-(define effect6367
+(define effect6371
   (struct-type-install-properties!
    struct:indirect
    'indirect
@@ -52332,48 +51392,48 @@
    indirect
    (record-constructor
     (make-record-constructor-descriptor struct:indirect #f #f))))
-(define indirect?6366 (|#%name| indirect? (record-predicate struct:indirect)))
+(define indirect?6370 (|#%name| indirect? (record-predicate struct:indirect)))
 (define indirect?
   (|#%name|
    indirect?
    (lambda (v)
-     (if (indirect?6366 v)
+     (if (indirect?6370 v)
        #t
        ($value
-        (if (impersonator? v) (indirect?6366 (impersonator-val v)) #f))))))
-(define indirect-pos6368
+        (if (impersonator? v) (indirect?6370 (impersonator-val v)) #f))))))
+(define indirect-pos6372
   (|#%name| indirect-pos (record-accessor struct:indirect 0)))
 (define indirect-pos
   (|#%name|
    indirect-pos
    (lambda (s)
-     (if (indirect?6366 s)
-       (indirect-pos6368 s)
+     (if (indirect?6370 s)
+       (indirect-pos6372 s)
        ($value
         (impersonate-ref
-         indirect-pos6368
+         indirect-pos6372
          struct:indirect
          0
          s
          'indirect
          'pos))))))
-(define indirect-element6369
+(define indirect-element6373
   (|#%name| indirect-element (record-accessor struct:indirect 1)))
 (define indirect-element
   (|#%name|
    indirect-element
    (lambda (s)
-     (if (indirect?6366 s)
-       (indirect-element6369 s)
+     (if (indirect?6370 s)
+       (indirect-element6373 s)
        ($value
         (impersonate-ref
-         indirect-element6369
+         indirect-element6373
          struct:indirect
          1
          s
          'indirect
          'element))))))
-(define effect6370
+(define effect6374
   (begin
     (register-struct-constructor! indirect1.1)
     (register-struct-predicate! indirect?)
@@ -52381,7 +51441,7 @@
     (register-struct-field-accessor! indirect-element struct:indirect 1)
     (void)))
 (define struct:boxed (make-record-type-descriptor* 'boxed #f #f #f #f 1 1))
-(define effect6372
+(define effect6376
   (struct-type-install-properties!
    struct:boxed
    'boxed
@@ -52399,24 +51459,24 @@
    boxed
    (record-constructor
     (make-record-constructor-descriptor struct:boxed #f #f))))
-(define boxed?6371 (|#%name| boxed? (record-predicate struct:boxed)))
+(define boxed?6375 (|#%name| boxed? (record-predicate struct:boxed)))
 (define boxed?
   (|#%name|
    boxed?
    (lambda (v)
-     (if (boxed?6371 v)
+     (if (boxed?6375 v)
        #t
-       ($value (if (impersonator? v) (boxed?6371 (impersonator-val v)) #f))))))
-(define boxed-pos6373 (|#%name| boxed-pos (record-accessor struct:boxed 0)))
+       ($value (if (impersonator? v) (boxed?6375 (impersonator-val v)) #f))))))
+(define boxed-pos6377 (|#%name| boxed-pos (record-accessor struct:boxed 0)))
 (define boxed-pos
   (|#%name|
    boxed-pos
    (lambda (s)
-     (if (boxed?6371 s)
-       (boxed-pos6373 s)
+     (if (boxed?6375 s)
+       (boxed-pos6377 s)
        ($value
-        (impersonate-ref boxed-pos6373 struct:boxed 0 s 'boxed 'pos))))))
-(define effect6374
+        (impersonate-ref boxed-pos6377 struct:boxed 0 s 'boxed 'pos))))))
+(define effect6378
   (begin
     (register-struct-constructor! boxed2.1)
     (register-struct-predicate! boxed?)
@@ -52424,7 +51484,7 @@
     (void)))
 (define struct:boxed/check
   (make-record-type-descriptor* 'boxed/check struct:boxed #f #f #f 0 0))
-(define effect6376
+(define effect6380
   (struct-type-install-properties!
    struct:boxed/check
    'boxed/check
@@ -52442,17 +51502,17 @@
    boxed/check
    (record-constructor
     (make-record-constructor-descriptor struct:boxed/check #f #f))))
-(define boxed/check?6375
+(define boxed/check?6379
   (|#%name| boxed/check? (record-predicate struct:boxed/check)))
 (define boxed/check?
   (|#%name|
    boxed/check?
    (lambda (v)
-     (if (boxed/check?6375 v)
+     (if (boxed/check?6379 v)
        #t
        ($value
-        (if (impersonator? v) (boxed/check?6375 (impersonator-val v)) #f))))))
-(define effect6377
+        (if (impersonator? v) (boxed/check?6379 (impersonator-val v)) #f))))))
+(define effect6381
   (begin
     (register-struct-constructor! boxed/check3.1)
     (register-struct-predicate! boxed/check?)
@@ -52808,8 +51868,7 @@
                                                                            val_0))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(key_64
-                                                                             val_74)
+                                                                           2
                                                                            args))))))
                                                                   (values
                                                                    table_1))))
@@ -52820,7 +51879,7 @@
                                                              i_0))))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(i_59 pos_36)
+                                                          2
                                                           args))))
                                                       table_0))))))
                                              (for-loop_0
@@ -52913,14 +51972,8 @@
                                              mutated_0
                                              body-env_0
                                              body-stk-i_0)))))))))))
-                          (args
-                           (raise-binding-result-arity-error
-                            '(body-env_3 count_3 rest?_1)
-                            args)))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(ids_187 body_224)
-                         args))))
+                          (args (raise-binding-result-arity-error 3 args)))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'case-lambda hd_0)
                            (let ((a_0 (cdr (unwrap e_0))))
                              (if (wrap-list? a_0)
@@ -53021,15 +52074,14 @@
                                                             bodys_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(idss13_1
-                                                             bodys14_1)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((idss_1 bodys_1)
                                                        (values idss_1 bodys_1))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(idss_60 bodys_170)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((idss_1 bodys_1)
@@ -53039,7 +52091,7 @@
                                                      rest_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(idss_113 bodys_168)
+                                                     2
                                                      args)))))))
                                            (values idss_0 bodys_0)))))))
                                   (for-loop_0 null null d_0))))
@@ -53048,9 +52100,7 @@
                                (let ((app_0 (reverse$1 idss_0)))
                                  (values app_0 (reverse$1 bodys_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(idss_112 bodys_166)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((idss_0 bodys_0)
                           (let ((lams_0
@@ -53139,10 +52189,7 @@
                                 mask_0
                                 (extract-procedure-wrap-data_0 e_0)
                                 lams_0)))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(idss_111 bodys_165)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'let hd_0)
                              (let ((a_0 (cdr (unwrap e_0))))
                                (let ((p_0 (unwrap a_0)))
@@ -53292,8 +52339,7 @@
                                                                      rhss_0)))
                                                                   (args
                                                                    (raise-binding-result-arity-error
-                                                                    '(ids15_1
-                                                                      rhss16_2)
+                                                                    2
                                                                     args)))))
                                                               (case-lambda
                                                                ((ids_1 rhss_1)
@@ -53302,8 +52348,7 @@
                                                                  rhss_1))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(ids_194
-                                                                   rhss_264)
+                                                                 2
                                                                  args)))))
                                                            (case-lambda
                                                             ((ids_1 rhss_1)
@@ -53313,8 +52358,7 @@
                                                               rest_0))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(ids_192
-                                                                rhss_262)
+                                                              2
                                                               args)))))))
                                                     (values ids_0 rhss_0)))))))
                                            (for-loop_0 null null a_0))))
@@ -53324,7 +52368,7 @@
                                           (values app_0 (reverse$1 rhss_0))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(ids_140 rhss_260)
+                                         2
                                          args))))))
                                  (case-lambda
                                   ((ids_0 rhss_0)
@@ -53333,7 +52377,7 @@
                                        (values ids_1 rhss_1 body_0))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(ids_139 rhss_259)
+                                    2
                                     args)))))))
                           (case-lambda
                            ((ids_0 rhss_0 body_0)
@@ -53558,10 +52602,7 @@
                                                  pos_0
                                                  (list->vector new-rhss_0)
                                                  new-body_0))))))))))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(ids_190 rhss_258 body_227)
-                             args))))
+                           (args (raise-binding-result-arity-error 3 args))))
                          (if (if (eq? 'letrec hd_0) #t #f)
                            (compile-letrec_0
                             serializable?_0
@@ -53652,7 +52693,7 @@
                                          new-body_0)))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(e_67 vs_33)
+                                       2
                                        args))))
                                    (if (if (eq? '$value hd_0)
                                          (let ((a_0 (cdr (unwrap e_0))))
@@ -53739,7 +52780,7 @@
                                                       els_0)))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(thn_51 els_51)
+                                                    2
                                                     args))))))))
                                         (case-lambda
                                          ((tst_0 thn_0 els_0)
@@ -53796,7 +52837,7 @@
                                                           all-clear_0))))))))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(tst_34 thn_50 els_50)
+                                           3
                                            args))))
                                        (if (if (eq?
                                                 'with-continuation-mark*
@@ -53889,8 +52930,7 @@
                                                                  body_0)))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(val_77
-                                                                 body_231)
+                                                               2
                                                                args))))))))
                                                    (case-lambda
                                                     ((key_0 val_0 body_0)
@@ -53902,7 +52942,7 @@
                                                         body_0)))
                                                     (args
                                                      (raise-binding-result-arity-error
-                                                      '(key_66 val_76 body_230)
+                                                      3
                                                       args))))))))
                                           (case-lambda
                                            ((mode_0 key_0 val_0 body_0)
@@ -53938,7 +52978,7 @@
                                                  new-body_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(mode_16 key_65 val_75 body_229)
+                                             4
                                              args))))
                                          (if (if (eq? 'quote hd_0)
                                                (let ((a_0 (cdr (unwrap e_0))))
@@ -54037,7 +53077,7 @@
                                                  mutated_0))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(id_42 rhs_40)
+                                                 2
                                                  args))))
                                              (if (if (eq? 'define hd_0)
                                                    (let ((a_0
@@ -54096,7 +53136,7 @@
                                                    mutated_0))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(id_100 rhs_191)
+                                                   2
                                                    args))))
                                                (if (if (eq?
                                                         'define-values
@@ -54252,7 +53292,7 @@
                                                        mutated_0)))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(ids_196 rhs_11)
+                                                     2
                                                      args))))
                                                  (if (if (eq?
                                                           'call-with-values
@@ -54367,8 +53407,7 @@
                                                                   body_0)))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(ids_199
-                                                                  body_234)
+                                                                2
                                                                 args))))))))
                                                     (case-lambda
                                                      ((proc1_0 ids_0 body_0)
@@ -54387,9 +53426,7 @@
                                                        mutated_0))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(proc1_2
-                                                         ids_198
-                                                         body_233)
+                                                       3
                                                        args))))
                                                    (if (if (eq?
                                                             'call-with-values
@@ -54647,8 +53684,7 @@
                                                                                                        bodys_0)))
                                                                                                     (args
                                                                                                      (raise-binding-result-arity-error
-                                                                                                      '(idss20_0
-                                                                                                        bodys21_1)
+                                                                                                      2
                                                                                                       args)))))
                                                                                                 (case-lambda
                                                                                                  ((idss_1
@@ -54658,8 +53694,7 @@
                                                                                                    bodys_1))
                                                                                                  (args
                                                                                                   (raise-binding-result-arity-error
-                                                                                                   '(idss_120
-                                                                                                     bodys_176)
+                                                                                                   2
                                                                                                    args)))))
                                                                                              (case-lambda
                                                                                               ((idss_1
@@ -54670,8 +53705,7 @@
                                                                                                 rest_0))
                                                                                               (args
                                                                                                (raise-binding-result-arity-error
-                                                                                                '(idss_118
-                                                                                                  bodys_174)
+                                                                                                2
                                                                                                 args)))))))
                                                                                       (values
                                                                                        idss_0
@@ -54692,8 +53726,7 @@
                                                                               bodys_0))))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(idss_116
-                                                                             bodys_74)
+                                                                           2
                                                                            args))))))))
                                                                (case-lambda
                                                                 ((idss_0
@@ -54706,8 +53739,7 @@
                                                                     bodys_0)))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(idss_42
-                                                                    bodys_172)
+                                                                  2
                                                                   args))))))))
                                                       (case-lambda
                                                        ((body_0 idss_0 bodys_0)
@@ -54834,9 +53866,7 @@
                                                                                                                        new-body_0)))))))
                                                                                                            (args
                                                                                                             (raise-binding-result-arity-error
-                                                                                                             '(new-env_8
-                                                                                                               count_4
-                                                                                                               rest?_2)
+                                                                                                             3
                                                                                                              args))))
                                                                                                          fold-var_0)))
                                                                                                    (values
@@ -54989,9 +54019,7 @@
                                                                           body-stk-is_0))))))))))))
                                                        (args
                                                         (raise-binding-result-arity-error
-                                                         '(body_236
-                                                           idss_41
-                                                           bodys_70)
+                                                         3
                                                          args))))
                                                      (if (if (eq?
                                                               'call-with-module-prompt
@@ -55331,8 +54359,7 @@
                                                                                  vars_0)))
                                                                              (args
                                                                               (raise-binding-result-arity-error
-                                                                               '(constances_2
-                                                                                 vars_2)
+                                                                               2
                                                                                args))))))))
                                                                    (case-lambda
                                                                     ((ids_0
@@ -55347,9 +54374,7 @@
                                                                         vars_0)))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(ids_203
-                                                                        constances_1
-                                                                        vars_1)
+                                                                      3
                                                                       args))))))))
                                                           (case-lambda
                                                            ((body_0
@@ -55380,10 +54405,7 @@
                                                                 mutated_0))))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(body_242
-                                                               ids_202
-                                                               constances_0
-                                                               vars_0)
+                                                             4
                                                              args))))
                                                          (if (if (eq?
                                                                   'variable-set!
@@ -55473,8 +54495,7 @@
                                                                    #f))))
                                                              (args
                                                               (raise-binding-result-arity-error
-                                                               '(dest-id_0
-                                                                 e_70)
+                                                               2
                                                                args))))
                                                            (if (if (eq?
                                                                     'variable-set!/define
@@ -55618,8 +54639,7 @@
                                                                             constance_0)))
                                                                         (args
                                                                          (raise-binding-result-arity-error
-                                                                          '(e_73
-                                                                            constance_4)
+                                                                          2
                                                                           args))))))))
                                                               (case-lambda
                                                                ((dest-id_0
@@ -55650,9 +54670,7 @@
                                                                      #t))))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(dest-id_2
-                                                                   e_72
-                                                                   constance_3)
+                                                                 3
                                                                  args))))
                                                              (if (if (eq?
                                                                       'variable-ref
@@ -56014,8 +55032,7 @@
                                                                rhss_0)))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(ids42_0
-                                                                rhss43_0)
+                                                              2
                                                               args)))))
                                                         (case-lambda
                                                          ((ids_1 rhss_1)
@@ -56024,7 +55041,7 @@
                                                            rhss_1))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(ids_211 rhss_273)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((ids_1 rhss_1)
@@ -56034,7 +55051,7 @@
                                                         rest_0))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(ids_209 rhss_271)
+                                                        2
                                                         args)))))))
                                               (values ids_0 rhss_0)))))))
                                      (for-loop_0 null null a_0))))
@@ -56044,7 +55061,7 @@
                                     (values app_0 (reverse$1 rhss_0))))
                                  (args
                                   (raise-binding-result-arity-error
-                                   '(ids_207 rhss_269)
+                                   2
                                    args))))))
                            (case-lambda
                             ((ids_0 rhss_0)
@@ -56052,9 +55069,7 @@
                                (let ((ids_1 ids_0) (rhss_1 rhss_0))
                                  (values ids_1 rhss_1 body_0))))
                             (args
-                             (raise-binding-result-arity-error
-                              '(ids_206 rhss_268)
-                              args)))))))
+                             (raise-binding-result-arity-error 2 args)))))))
                     (case-lambda
                      ((ids_0 rhss_0 body_0)
                       (let ((count_0 (length ids_0)))
@@ -56116,10 +55131,7 @@
                                          pos_0
                                          new-rhss_0
                                          new-body_0)))))))))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(ids_205 rhss_267 body_244)
-                       args))))
+                     (args (raise-binding-result-arity-error 3 args))))
                    (error 'match "failed ~e" e_0))))))
            (compile-linklet-body_0
             (|#%name|
@@ -56214,8 +55226,7 @@
                                                             num-body-vars_1))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(env_79
-                                                              num-body-vars_6)
+                                                            2
                                                             args)))))
                                                       (case-lambda
                                                        ((env_2 num-body-vars_1)
@@ -56225,8 +55236,7 @@
                                                          rest_0))
                                                        (args
                                                         (raise-binding-result-arity-error
-                                                         '(env_77
-                                                           num-body-vars_4)
+                                                         2
                                                          args)))))))
                                                (values
                                                 env_1
@@ -56257,12 +55267,9 @@
                                           num-body-vars_0)))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(body-env_2 num-body-vars_2)
+                                    2
                                     args)))))))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(args_94 body_219)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (error 'match "failed ~e" v_0)))))))
            (compile-list_0
             (|#%name|
@@ -56338,10 +55345,7 @@
                       (case-lambda
                        ((ids_0 body_0)
                         (extract-list-mutated_0 body_0 mutated_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(ids_212 body_246)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'case-lambda hd_0)
                            (let ((a_0 (cdr (unwrap e_0))))
                              (if (wrap-list? a_0)
@@ -56442,15 +55446,14 @@
                                                             bodys_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(idss51_0
-                                                             bodys52_1)
+                                                           2
                                                            args)))))
                                                      (case-lambda
                                                       ((idss_1 bodys_1)
                                                        (values idss_1 bodys_1))
                                                       (args
                                                        (raise-binding-result-arity-error
-                                                        '(idss_127 bodys_183)
+                                                        2
                                                         args)))))
                                                   (case-lambda
                                                    ((idss_1 bodys_1)
@@ -56460,7 +55463,7 @@
                                                      rest_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(idss_125 bodys_181)
+                                                     2
                                                      args)))))))
                                            (values idss_0 bodys_0)))))))
                                   (for-loop_0 null null d_0))))
@@ -56469,9 +55472,7 @@
                                (let ((app_0 (reverse$1 idss_0)))
                                  (values app_0 (reverse$1 bodys_0))))
                               (args
-                               (raise-binding-result-arity-error
-                                '(idss_123 bodys_179)
-                                args))))))
+                               (raise-binding-result-arity-error 2 args))))))
                         (case-lambda
                          ((idss_0 bodys_0)
                           (begin
@@ -56493,10 +55494,7 @@
                                             (for-loop_0 mutated_2 rest_0))))
                                       mutated_1))))))
                              (for-loop_0 mutated_0 bodys_0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(idss_122 bodys_178)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (if (eq? 'let hd_0)
                              (let ((a_0 (cdr (unwrap e_0))))
                                (let ((p_0 (unwrap a_0)))
@@ -56646,8 +55644,7 @@
                                                                      rhss_0)))
                                                                   (args
                                                                    (raise-binding-result-arity-error
-                                                                    '(ids53_0
-                                                                      rhss54_0)
+                                                                    2
                                                                     args)))))
                                                               (case-lambda
                                                                ((ids_1 rhss_1)
@@ -56656,8 +55653,7 @@
                                                                  rhss_1))
                                                                (args
                                                                 (raise-binding-result-arity-error
-                                                                 '(ids_219
-                                                                   rhss_133)
+                                                                 2
                                                                  args)))))
                                                            (case-lambda
                                                             ((ids_1 rhss_1)
@@ -56667,8 +55663,7 @@
                                                               rest_0))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(ids_217
-                                                                rhss_132)
+                                                              2
                                                               args)))))))
                                                     (values ids_0 rhss_0)))))))
                                            (for-loop_0 null null a_0))))
@@ -56678,7 +55673,7 @@
                                           (values app_0 (reverse$1 rhss_0))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(ids_215 rhss_130)
+                                         2
                                          args))))))
                                  (case-lambda
                                   ((ids_0 rhss_0)
@@ -56687,17 +55682,14 @@
                                        (values ids_1 rhss_1 body_0))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(ids_214 rhss_275)
+                                    2
                                     args)))))))
                           (case-lambda
                            ((ids_0 rhss_0 body_0)
                             (extract-list-mutated_0
                              body_0
                              (extract-list-mutated_0 rhss_0 mutated_0)))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(ids_213 rhss_274 body_249)
-                             args))))
+                           (args (raise-binding-result-arity-error 3 args))))
                          (if (if (eq? 'letrec hd_0)
                                (let ((a_0 (cdr (unwrap e_0))))
                                  (let ((p_0 (unwrap a_0)))
@@ -56850,8 +55842,7 @@
                                                                        rhss_0)))
                                                                     (args
                                                                      (raise-binding-result-arity-error
-                                                                      '(ids55_0
-                                                                        rhss56_0)
+                                                                      2
                                                                       args)))))
                                                                 (case-lambda
                                                                  ((ids_1
@@ -56861,8 +55852,7 @@
                                                                    rhss_1))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(ids_227
-                                                                     rhss_284)
+                                                                   2
                                                                    args)))))
                                                              (case-lambda
                                                               ((ids_1 rhss_1)
@@ -56872,8 +55862,7 @@
                                                                 rest_0))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(ids_225
-                                                                  rhss_282)
+                                                                2
                                                                 args)))))))
                                                       (values
                                                        ids_0
@@ -56885,7 +55874,7 @@
                                             (values app_0 (reverse$1 rhss_0))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(ids_223 rhss_280)
+                                           2
                                            args))))))
                                    (case-lambda
                                     ((ids_0 rhss_0)
@@ -56895,17 +55884,14 @@
                                          (values ids_1 rhss_1 body_0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(ids_222 rhss_279)
+                                      2
                                       args)))))))
                             (case-lambda
                              ((ids_0 rhss_0 body_0)
                               (extract-list-mutated_0
                                body_0
                                (extract-list-mutated_0 rhss_0 mutated_0)))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(ids_221 rhss_278 body_251)
-                               args))))
+                             (args (raise-binding-result-arity-error 3 args))))
                            (if (if (eq? 'letrec* hd_0)
                                  (let ((a_0 (cdr (unwrap e_0))))
                                    (let ((p_0 (unwrap a_0)))
@@ -57059,8 +56045,7 @@
                                                                          rhss_0)))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(ids57_0
-                                                                          rhss58_0)
+                                                                        2
                                                                         args)))))
                                                                   (case-lambda
                                                                    ((ids_1
@@ -57070,8 +56055,7 @@
                                                                      rhss_1))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(ids_235
-                                                                       rhss_292)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((ids_1 rhss_1)
@@ -57081,8 +56065,7 @@
                                                                   rest_0))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(ids_233
-                                                                    rhss_290)
+                                                                  2
                                                                   args)))))))
                                                         (values
                                                          ids_0
@@ -57096,7 +56079,7 @@
                                                (reverse$1 rhss_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(ids_231 rhss_288)
+                                             2
                                              args))))))
                                      (case-lambda
                                       ((ids_0 rhss_0)
@@ -57106,7 +56089,7 @@
                                            (values ids_1 rhss_1 body_0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(ids_230 rhss_287)
+                                        2
                                         args)))))))
                               (case-lambda
                                ((ids_0 rhss_0 body_0)
@@ -57114,9 +56097,7 @@
                                  body_0
                                  (extract-list-mutated_0 rhss_0 mutated_0)))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(ids_229 rhss_286 body_253)
-                                 args))))
+                                (raise-binding-result-arity-error 3 args))))
                              (if (if (eq? 'begin hd_0) #t #f)
                                (let ((vs_0
                                       (let ((d_0 (cdr (unwrap e_0)))) d_0)))
@@ -57206,7 +56187,7 @@
                                                    (values tst_1 thn_0 els_0)))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(thn_54 els_54)
+                                                  2
                                                   args))))))))
                                       (case-lambda
                                        ((tst_0 thn_0 els_0)
@@ -57223,7 +56204,7 @@
                                              thn-mutated_0))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(tst_36 thn_53 els_53)
+                                         3
                                          args))))
                                      (if (if (eq?
                                               'with-continuation-mark*
@@ -57312,7 +56293,7 @@
                                                                body_0)))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(val_81 body_257)
+                                                             2
                                                              args))))))))
                                                  (case-lambda
                                                   ((key_0 val_0 body_0)
@@ -57324,7 +56305,7 @@
                                                       body_0)))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(key_69 val_80 body_256)
+                                                    3
                                                     args))))))))
                                         (case-lambda
                                          ((mode_0 key_0 val_0 body_0)
@@ -57341,7 +56322,7 @@
                                                val-mutated_0))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(mode_18 key_68 val_79 body_255)
+                                           4
                                            args))))
                                        (if (if (eq? 'quote hd_0)
                                              (let ((a_0 (cdr (unwrap e_0))))
@@ -57411,7 +56392,7 @@
                                                  new-mutated_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(id_219 rhs_195)
+                                               2
                                                args))))
                                            (if (if (eq? 'define hd_0)
                                                  (let ((a_0
@@ -57461,7 +56442,7 @@
                                                  mutated_0))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(id_220 rhs_197)
+                                                 2
                                                  args))))
                                              (if (if (eq? 'define-values hd_0)
                                                    (let ((a_0
@@ -57515,7 +56496,7 @@
                                                    mutated_0))
                                                  (args
                                                   (raise-binding-result-arity-error
-                                                   '(ids_237 rhs_198)
+                                                   2
                                                    args))))
                                                (if (if (eq?
                                                         'variable-set!
@@ -57576,7 +56557,7 @@
                                                      mutated_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(dest-id_4 e_79)
+                                                     2
                                                      args))))
                                                  (if (if (eq?
                                                           'variable-set!/define
@@ -57714,8 +56695,7 @@
                                                                   constance_0)))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(e_44
-                                                                  constance_7)
+                                                                2
                                                                 args))))))))
                                                     (case-lambda
                                                      ((dest-id_0
@@ -57726,9 +56706,7 @@
                                                        mutated_0))
                                                      (args
                                                       (raise-binding-result-arity-error
-                                                       '(dest-id_6
-                                                         e_81
-                                                         constance_6)
+                                                       3
                                                        args))))
                                                    (if (if (eq?
                                                             'variable-ref
@@ -57944,7 +56922,7 @@
                                                   num-body-vars_2))
                                                 (args
                                                  (raise-binding-result-arity-error
-                                                  '(env_83 num-body-vars_11)
+                                                  2
                                                   args)))))
                                             (case-lambda
                                              ((env_2 num-body-vars_2)
@@ -57954,7 +56932,7 @@
                                                rest_0))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(env_82 num-body-vars_9)
+                                               2
                                                args)))))))
                                      (values env_1 num-body-vars_1)))))))
                             (for-loop_0 env_0 num-body-vars_0 ids_0))))
@@ -57993,7 +56971,7 @@
                                                     num-body-vars_2))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(env_87 num-body-vars_15)
+                                                    2
                                                     args)))))
                                               (case-lambda
                                                ((env_2 num-body-vars_2)
@@ -58003,7 +56981,7 @@
                                                  rest_0))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(env_85 num-body-vars_13)
+                                                 2
                                                  args)))))))
                                        (values env_1 num-body-vars_1)))))))
                               (for-loop_0 env_0 num-body-vars_0 body_0))))
@@ -58053,10 +57031,7 @@
                          stack-depth_0
                          stk-i_0
                          (append subs_0 rest_0)))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(subs_0 rest_329)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (let ((p_0 (unwrap body_0))) (if (pair? p_0) #t #f))
                        (call-with-values
                         (lambda ()
@@ -58084,10 +57059,7 @@
                               #t
                               mutated_0)
                              new-rest_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(e_61 rest_10)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (error 'match "failed ~e" body_0))))))))
            (loop_2
             (|#%name|
@@ -58181,10 +57153,7 @@
                       (case-lambda
                        ((compiled-body_0 num-body-vars_0)
                         (vector #f num-body-vars_0 compiled-body_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(compiled-body_0 num-body-vars_0)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      (if (if (eq? 'let* hd_0)
                            (let ((a_0 (cdr (unwrap linklet-e_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -58235,7 +57204,7 @@
                                           compiled-body_0))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(compiled-body_1 num-body-vars_1)
+                                          2
                                           args))))
                                       (let ((binding_0 (car bindings_1)))
                                         (let ((app_0 (cdr bindings_1)))
@@ -58273,10 +57242,7 @@
                                                      hash2610))
                                                   accum_0)))))))))))))
                              (loop_4 bindings_0 0 hash2610 '()))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(bindings_1 body_96)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (error 'match "failed ~e" linklet-e_0)))))))))
     (lambda (linklet-e_0 serializable?_0)
       (with-continuation-mark*
@@ -58354,10 +57320,7 @@
                                                    (+ pos_1 1))))
                                               paths_1))))))
                                      (for-loop_0 paths_0 0 start_0))))))
-                             (args
-                              (raise-binding-result-arity-error
-                               '(vec_22 len_26)
-                               args))))
+                             (args (raise-binding-result-arity-error 2 args))))
                            vec_0)))
                      #f)))
               (lambda args_0
@@ -58461,7 +57424,7 @@
                                    (stack-set captured_0 (- -1 i_0) val_0))))
                                (args
                                 (raise-binding-result-arity-error
-                                 '(val-stack_2 val_101)
+                                 2
                                  args))))))))))
                     (loop_3 0 stack_0 #f)))))))
            (interpret_0
@@ -58489,10 +57452,7 @@
                             (if return-mode63_0
                               (values new-stack_0 val_0)
                               val_0)))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(new-stack_0 vec_24)
-                           args))))
+                         (args (raise-binding-result-arity-error 2 args))))
                        (if (symbol? b64_0)
                          (let ((val_0 (hash-ref primitives b64_0)))
                            (if return-mode63_0 (values stack65_0 val_0) val_0))
@@ -58548,7 +57508,7 @@
                                                                 i_0))))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(k_41 v_322)
+                                                              2
                                                               args))))))))))
                                                  (loop_3
                                                   (hash-iterate-first
@@ -58614,8 +57574,7 @@
                                                                      i_0))))
                                                                  (args
                                                                   (raise-binding-result-arity-error
-                                                                   '(k_42
-                                                                     v_229)
+                                                                   2
                                                                    args))))))))))
                                                       (loop_3
                                                        (hash-iterate-first
@@ -58631,7 +57590,7 @@
                                              (|#%app| rator_0 rand_0)))
                                           (args
                                            (raise-binding-result-arity-error
-                                            '(stack_20 rand_3)
+                                            2
                                             args))))
                                         (if (eq? len_0 4)
                                           (call-with-values
@@ -58700,8 +57659,7 @@
                                                                           i_0))))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(k_43
-                                                                          v_380)
+                                                                        2
                                                                         args))))))))))
                                                            (loop_3
                                                             (hash-iterate-first
@@ -58722,11 +57680,11 @@
                                                    rand2_0)))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(stack2_1 rand2_0)
+                                                 2
                                                  args)))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(stack1_0 rand1_0)
+                                              2
                                               args))))
                                           (call-with-values
                                            (lambda ()
@@ -58779,8 +57737,7 @@
                                                                          rev-rands_0)))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(new-stack_1
-                                                                          v_382)
+                                                                        2
                                                                         args)))))
                                                                   (case-lambda
                                                                    ((stack_1
@@ -58790,8 +57747,7 @@
                                                                      rev-rands_1))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(stack_25
-                                                                       rev-rands_4)
+                                                                     2
                                                                      args)))))
                                                                (case-lambda
                                                                 ((stack_1
@@ -58804,8 +57760,7 @@
                                                                    1)))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(stack_23
-                                                                    rev-rands_2)
+                                                                  2
                                                                   args)))))
                                                             (values
                                                              stack_0
@@ -58816,10 +57771,7 @@
                                                     start*_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(v*_2
-                                                   start*_2
-                                                   stop*_3
-                                                   step*_2)
+                                                 4
                                                  args)))))
                                            (case-lambda
                                             ((stack_0 rev-rands_0)
@@ -58872,8 +57824,7 @@
                                                                          i_0))))
                                                                      (args
                                                                       (raise-binding-result-arity-error
-                                                                       '(k_44
-                                                                         v_384)
+                                                                       2
                                                                        args))))))))))
                                                           (loop_3
                                                            (hash-iterate-first
@@ -58889,11 +57840,11 @@
                                                  (apply rator_0 rands_0))))
                                             (args
                                              (raise-binding-result-arity-error
-                                              '(stack_21 rev-rands_0)
+                                              2
                                               args))))))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(rand-stack_0 rator_46)
+                                     2
                                      args))))))
                              (if (if (eq? 'quote (unsafe-vector*-ref b64_0 0))
                                    #t
@@ -58918,7 +57869,7 @@
                                           val_0)))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(new-stack_2 bx_3)
+                                       2
                                        args)))))
                                  (if (if (eq?
                                           'unbox/checked
@@ -58943,7 +57894,7 @@
                                                   val_0))))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(new-stack_3 bx_4)
+                                             2
                                              args)))))))
                                    (if (if (eq?
                                             'ref-variable
@@ -58964,7 +57915,7 @@
                                               val_0)))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(new-stack_4 var_24)
+                                           2
                                            args)))))
                                      (if (if (eq?
                                               'ref-variable/checked
@@ -58986,7 +57937,7 @@
                                                 val_0)))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(new-stack_5 var_25)
+                                             2
                                              args)))))
                                        (if (if (eq?
                                                 'let
@@ -59105,8 +58056,7 @@
                                                                                                                val_0))))
                                                                                                           (args
                                                                                                            (raise-binding-result-arity-error
-                                                                                                            '(new-stack_7
-                                                                                                              val_90)
+                                                                                                            2
                                                                                                             args))))))))))
                                                                                                (loop_3
                                                                                                 0
@@ -59201,8 +58151,7 @@
                                                                              boxes_1)))))
                                                                       (args
                                                                        (raise-binding-result-arity-error
-                                                                        '(new-stack_9
-                                                                          val_91)
+                                                                        2
                                                                         args))))))))))
                                                            (loop_3
                                                             0
@@ -59210,8 +58159,7 @@
                                                             boxes_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(body-stack_2
-                                                             boxes_0)
+                                                           2
                                                            args)))))))))
                                              (if (eq?
                                                   'begin
@@ -59386,8 +58334,7 @@
                                                             v_0))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(new-stack_17
-                                                             v_398)
+                                                           2
                                                            args)))))
                                                      (if (if (eq?
                                                               'clear
@@ -59505,8 +58452,7 @@
                                                                          return-mode63_0)))
                                                                      (args
                                                                       (raise-binding-result-arity-error
-                                                                       '(new-stack_19
-                                                                         val_95)
+                                                                       2
                                                                        args))))))))
                                                            (if (if (eq?
                                                                     'wcm
@@ -59605,13 +58551,11 @@
                                                                                   v-val_0))))))
                                                                           (args
                                                                            (raise-binding-result-arity-error
-                                                                            '(v-stack_0
-                                                                              v-val_0)
+                                                                            2
                                                                             args)))))
                                                                        (args
                                                                         (raise-binding-result-arity-error
-                                                                         '(k-stack_0
-                                                                           k-val_0)
+                                                                         2
                                                                          args))))))))
                                                              (if (if (eq?
                                                                       'cwv
@@ -59714,8 +58658,7 @@
                                                                                 0))))
                                                                            (args
                                                                             (raise-binding-result-arity-error
-                                                                             '(new-stack_20
-                                                                               vs_46)
+                                                                             2
                                                                              args)))))))))
                                                                (if (if (eq?
                                                                         'cwmp0
@@ -59879,8 +58822,7 @@
                                                                                       val_0)))
                                                                                  (args
                                                                                   (raise-binding-result-arity-error
-                                                                                   '(new-stack_21
-                                                                                     captured_0)
+                                                                                   2
                                                                                    args)))))))))
                                                                      (if (if (eq?
                                                                               'case-lambda
@@ -59987,8 +58929,7 @@
                                                                                       val_0)))
                                                                                  (args
                                                                                   (raise-binding-result-arity-error
-                                                                                   '(new-stack_22
-                                                                                     captureds_0)
+                                                                                   2
                                                                                    args))))))))
                                                                        (if (if (eq?
                                                                                 'set-variable!
@@ -60053,13 +58994,11 @@
                                                                                              (void))))
                                                                                         (args
                                                                                          (raise-binding-result-arity-error
-                                                                                          '(val-stack_0
-                                                                                            val_99)
+                                                                                          2
                                                                                           args)))))
                                                                                      (args
                                                                                       (raise-binding-result-arity-error
-                                                                                       '(var-stack_0
-                                                                                         var_26)
+                                                                                       2
                                                                                        args)))))))))
                                                                          (if (if (eq?
                                                                                   'set!-indirect
@@ -60112,13 +59051,11 @@
                                                                                              (void))))
                                                                                         (args
                                                                                          (raise-binding-result-arity-error
-                                                                                          '(val-stack_1
-                                                                                            val_100)
+                                                                                          2
                                                                                           args)))))
                                                                                      (args
                                                                                       (raise-binding-result-arity-error
-                                                                                       '(vec-stack_0
-                                                                                         vec_25)
+                                                                                       2
                                                                                        args))))))))
                                                                            (if (if (eq?
                                                                                     'set!-boxed
@@ -60170,13 +59107,11 @@
                                                                                                (void))))
                                                                                           (args
                                                                                            (raise-binding-result-arity-error
-                                                                                            '(v-stack_1
-                                                                                              v_415)
+                                                                                            2
                                                                                             args)))))
                                                                                        (args
                                                                                         (raise-binding-result-arity-error
-                                                                                         '(bx-stack_0
-                                                                                           bx_6)
+                                                                                         2
                                                                                          args))))))))
                                                                              (if (if (eq?
                                                                                       'set!-boxed/checked
@@ -60232,13 +59167,11 @@
                                                                                                  (void))))
                                                                                             (args
                                                                                              (raise-binding-result-arity-error
-                                                                                              '(v-stack_2
-                                                                                                v_417)
+                                                                                              2
                                                                                               args)))))
                                                                                          (args
                                                                                           (raise-binding-result-arity-error
-                                                                                           '(bx-stack_1
-                                                                                             bx_7)
+                                                                                           2
                                                                                            args))))))))
                                                                                (error
                                                                                 'interp-match
@@ -60266,10 +59199,7 @@
                               (fx+ i_0 1)
                               new-stack_0)))
                         (stack-set app_0 (fx+ i_0 pos_0) val_0)))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(new-stack_6 val_89)
-                       args)))))))))
+                     (args (raise-binding-result-arity-error 2 args)))))))))
            (loop_1
             (|#%name|
              loop
@@ -60289,10 +59219,7 @@
                       (case-lambda
                        ((new-stack_0 boxes_0)
                         (values new-stack_0 (cons bx_0 boxes_0)))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(new-stack_8 boxes_1)
-                         args))))))))))
+                       (args (raise-binding-result-arity-error 2 args))))))))))
            (loop_2
             (|#%name|
              loop
@@ -60324,14 +59251,8 @@
                          (values
                           new-stack_0
                           (cons captured_0 rest-captureds_0)))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(new-stack_23 captured_1)
-                          args)))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(rest-stack_0 rest-captureds_0)
-                       args))))))))))
+                        (args (raise-binding-result-arity-error 2 args)))))
+                     (args (raise-binding-result-arity-error 2 args))))))))))
     (lambda (b_0 stack_0)
       (if (vector? b_0)
         (if (eq? 'begin (unsafe-vector*-ref b_0 0))
@@ -60402,8 +59323,7 @@
                                 v_1
                                 (s-expr-leftover-size_0 k_0 size_0))))
                           (next-k-proc_2 i_0 v_0 size_1))))
-                     (args
-                      (raise-binding-result-arity-error '(k_45 v_426) args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    size_0)))))
            (for-loop_2
             (|#%name|
@@ -60718,9 +59638,7 @@
                                    (cons rhss_0 body_0)
                                    (sub1 size_0)))
                                  (args
-                                  (raise-binding-result-arity-error
-                                   '(rhss_110 body_83)
-                                   args))))
+                                  (raise-binding-result-arity-error 2 args))))
                                (if (if (eq? 'letrec-values hd_0)
                                      (let ((a_0 (cdr (unwrap e_0))))
                                        (let ((p_0 (unwrap a_0)))
@@ -60875,7 +59793,7 @@
                                      (sub1 size_0)))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(rhss_299 body_264)
+                                     2
                                      args))))
                                  (if (if (eq? 'if hd_0)
                                        (let ((a_0 (cdr (unwrap e_0))))
@@ -60930,7 +59848,7 @@
                                                  (values tst_1 thn_0 els_0)))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(thn_58 els_58)
+                                                2
                                                 args))))))))
                                     (case-lambda
                                      ((tst_0 thn_0 els_0)
@@ -60946,7 +59864,7 @@
                                          (sub1 size_0)))))
                                      (args
                                       (raise-binding-result-arity-error
-                                       '(tst_39 thn_57 els_57)
+                                       3
                                        args))))
                                    (if (if (eq? 'with-continuation-mark* hd_0)
                                          (let ((a_0 (cdr (unwrap e_0))))
@@ -61019,7 +59937,7 @@
                                                       body_0)))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(val_103 body_165)
+                                                    2
                                                     args)))))))))
                                       (case-lambda
                                        ((key_0 val_0 body_0)
@@ -61035,7 +59953,7 @@
                                            (sub1 size_0)))))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(key_72 val_102 body_266)
+                                         3
                                          args))))
                                      (if (if (eq? 'begin0 hd_0) #t #f)
                                        (let ((body_0
@@ -61115,7 +60033,7 @@
                                                (sub1 size_0)))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(id_223 rhs_201)
+                                               2
                                                args))))
                                            (if (if (eq?
                                                     '|#%variable-reference|
@@ -61172,10 +60090,7 @@
                             (begin
                               #f
                               (for-loop_2 len_0 vec_0 (sub1 size_0) 0)))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(vec_26 len_35)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          (if (prefab-struct-key v_0)
                            (s-expr-leftover-size_0 (struct->vector v_0) size_0)
                            (if (hash? v_0)

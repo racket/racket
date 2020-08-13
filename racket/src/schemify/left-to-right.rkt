@@ -128,4 +128,4 @@
           `(call-with-values (lambda () ,rhs)
              (case-lambda 
                [,ids ,body]
-               [args (raise-binding-result-arity-error ',ids args)]))])])]))
+               [args (raise-binding-result-arity-error ,(length ids) args)]))])])]))

@@ -2555,10 +2555,7 @@
                               (unquoted-printing-string
                                (apply string-append (loop_1 w_0 ls_0))))
                              null))))))))))
-            (args
-             (raise-binding-result-arity-error
-              '(required-keywords_0 optional-keywords_0)
-              args)))))))))
+            (args (raise-binding-result-arity-error 2 args)))))))))
 (define gen-map
   (letrec ((loop_0
             (|#%name|
@@ -5565,10 +5562,7 @@
                      0
                      #f)
                     str_0)))))
-           (args
-            (raise-binding-result-arity-error
-             '(used-bytes_0 got-chars_0 state_1)
-             args)))))))))
+           (args (raise-binding-result-arity-error 3 args)))))))))
 (define utf-8-encode!
   (letrec ((continue_0
             (|#%name|
@@ -6034,14 +6028,10 @@
                                        (string-ref str_0 0))
                                      #f)))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(used-bytes_1 got-chars_1 new-state_0)
-                                  args))))))
+                                 (raise-binding-result-arity-error 3 args))))))
                           #f)))
                      (args
-                      (raise-binding-result-arity-error
-                       '(initial-used-bytes_0 initial-got-chars_0 state_2)
-                       args))))))))))))))
+                      (raise-binding-result-arity-error 3 args))))))))))))))
 (define 1/bytes-utf-8-ref
   (let ((bytes-utf-8-ref_0
          (|#%name|
@@ -6242,10 +6232,7 @@
                         (begin
                           (utf-8-encode! str47_0 start49_0 end50_0 bstr_0 0 #f)
                           bstr_0))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(used-chars_0 got-bytes_0 status_0)
-                     args)))))))))))))
+                   (args (raise-binding-result-arity-error 3 args)))))))))))))
 (define 1/string->bytes/utf-8
   (let ((string->bytes/utf-8_0
          (|#%name|
@@ -6873,10 +6860,7 @@
                            app_1
                            (keep-aborts_0 new-state_0)
                            #f)))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(used-bytes_2 got-chars_2 new-state_1)
-                     args))))))))
+                   (args (raise-binding-result-arity-error 3 args))))))))
            (keep-aborts_0
             (|#%name|
              keep-aborts
@@ -7606,10 +7590,7 @@
                                                   rest_0))))
                                            fold-var_0))))))
                                   (for-loop_0 null live-resps_0)))))))))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(live-reqs_0 new-resps_0)
-                     args)))))))))
+                   (args (raise-binding-result-arity-error 2 args)))))))))
     (lambda ()
       (let ((pause-ch_0 (make-channel)))
         (let ((commit-ch_0 (make-channel)))
@@ -9290,10 +9271,7 @@
                   ((ip_0 op_0)
                    (let ((app_0 (finish-port/count ip_0)))
                      (values app_0 (finish-port/count op_0))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(ip_0 op_0)
-                    args))))))))))
+                  (args (raise-binding-result-arity-error 2 args))))))))))
     (|#%name|
      make-pipe
      (case-lambda
@@ -11303,10 +11281,7 @@
                  this-id_0
                  v*_0
                  start*_0)))
-             (args
-              (raise-binding-result-arity-error
-               '(v*_0 start*_0 stop*_1 step*_0)
-               args))))
+             (args (raise-binding-result-arity-error 4 args))))
            (void)))))))
 (define temp21.1
   (|#%name|
@@ -13669,9 +13644,7 @@
                                  (+ total-chars_0 got-chars_0)
                                  actually-used-bytes_0))))))
                        (args
-                        (raise-binding-result-arity-error
-                         '(used-bytes_4 got-chars_4 new-state_2)
-                         args)))))))))))
+                        (raise-binding-result-arity-error 3 args)))))))))))
     (|#%name|
      read-some-chars!
      (lambda (extra-bytes-amt2_0
@@ -13778,9 +13751,7 @@
                                  (- actually-used-bytes_0 consumed-v_0)))
                               (values got-chars_0 actually-used-bytes_0)))))
                        (args
-                        (raise-binding-result-arity-error
-                         '(used-bytes_3 got-chars_3 state_4)
-                         args)))))))))))))))
+                        (raise-binding-result-arity-error 3 args)))))))))))))))
 (define do-read-string!.1
   (|#%name|
    do-read-string!
@@ -13851,14 +13822,9 @@
                                   new-got_0
                                   (+ total-used-bytes_0 used-bytes_1))))))
                           (args
-                           (raise-binding-result-arity-error
-                            '(v_74 used-bytes_6)
-                            args)))))))))
+                           (raise-binding-result-arity-error 2 args)))))))))
                  (loop_0 v_0 used-bytes_0)))))
-           (args
-            (raise-binding-result-arity-error
-             '(v_73 used-bytes_5)
-             args)))))))))
+           (args (raise-binding-result-arity-error 2 args)))))))))
 (define read-char-via-read-byte.1
   (|#%name|
    read-char-via-read-byte
@@ -13919,13 +13885,10 @@
                                         next-remaining_0))))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '(next-accum_2 next-remaining_0 state_7)
+                                    3
                                     args)))))))))))
                      (loop_0 0 accum_0 remaining_0))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(accum_20 remaining_11 state_6)
-                   args))))))))))))
+                 (args (raise-binding-result-arity-error 3 args))))))))))))
 (define read-a-char.1
   (|#%name|
    read-a-char
@@ -14491,10 +14454,7 @@
                      line_0
                      app_0
                      (if pos_0 (+ pos_0 delta_0) #f))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(line_2 col_1 pos_20)
-                   args))))))
+                 (args (raise-binding-result-arity-error 3 args))))))
           (if special-wrap_0 (|#%app| special-wrap_0 special_0) special_0)))
       v_0)))
 (define special-wrap-for-peek?
@@ -15898,10 +15858,7 @@
               (if (eq? status_0 'aborts)
                 30
                 (if (eq? status_0 'continues) 28 #f)))))
-          (args
-           (raise-binding-result-arity-error
-            '(in-consumed_0 out-produced_0 status_1)
-            args))))))))
+          (args (raise-binding-result-arity-error 3 args))))))))
 (define utf-8-ish-reencode!.1
   (letrec ((continue-after-permissive_0
             (|#%name|
@@ -17316,7 +17273,7 @@
                             ((bstr_0 used_0 status_0) (values bstr_0 status_0))
                             (args
                              (raise-binding-result-arity-error
-                              '(bstr_118 used_0 status_3)
+                              3
                               args)))))))))))))))
     (|#%name|
      bytes-convert-end
@@ -17437,10 +17394,7 @@
                                    (if (eqv? err_0 28)
                                      'continues
                                      'complete))))))))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(in-consumed_1 out-produced_1 err_5)
-                     args)))))))))
+                   (args (raise-binding-result-arity-error 3 args)))))))))
     (lambda (who_0
              converter_0
              src-bstr_0
@@ -17625,10 +17579,7 @@
                                             (+ pos_0 inc_0))))
                                        (values)))))))
                               (for-loop_0 start*_1 start_2))))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(v*_1 start*_1 stop*_2 step*_1)
-                    args))))
+                  (args (raise-binding-result-arity-error 4 args))))
                 (void))
               (begin
                 (call-with-values
@@ -17719,10 +17670,7 @@
                                             (+ pos_0 inc_0))))
                                        (values)))))))
                               (for-loop_0 start*_1 start_2))))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(v*_2 start*_2 stop*_3 step*_2)
-                    args))))
+                  (args (raise-binding-result-arity-error 4 args))))
                 (void)))
             (check-not-unsafe-undefined bstr_0 'bstr_119)))))))
 (define struct:cache (make-record-type-descriptor* 'cache #f #f #f #f 4 15))
@@ -17898,9 +17846,7 @@
                                         bstr_0
                                         (cons err-bstr_0 r_0)))))))))
                           (args
-                           (raise-binding-result-arity-error
-                            '(bstr_2 in-used_0 status_4)
-                            args)))))))))
+                           (raise-binding-result-arity-error 3 args)))))))))
            (|#%name|
             string->bytes/locale
             (lambda (str4_0 err-byte1_0 start2_0 end3_0)
@@ -18022,9 +17968,7 @@
                                         bstr_0
                                         (cons err-bstr_0 r_0)))))))))
                           (args
-                           (raise-binding-result-arity-error
-                            '(bstr_120 in-used_1 status_5)
-                            args)))))))))
+                           (raise-binding-result-arity-error 3 args)))))))))
            (|#%name|
             bytes->string/locale
             (lambda (in-bstr8_0 err-char5_0 start6_0 end7_0)
@@ -18234,7 +18178,7 @@
                            result_1)))
                      result_0))))))
             (for-loop_0 #t 0))))
-        (args (raise-binding-result-arity-error '(vec_9 len_10) args))))
+        (args (raise-binding-result-arity-error 2 args))))
       #f)))
 (define string->path$1
   (|#%name|
@@ -18287,7 +18231,7 @@
                          (for-loop_0 (unsafe-fx+ 1 pos_0))))
                      (values)))))))
             (for-loop_0 0))))
-        (args (raise-binding-result-arity-error '(vec_11 len_11) args))))
+        (args (raise-binding-result-arity-error 2 args))))
       (void))))
 (define check-path-bytes
   (lambda (who_0 s_0)
@@ -18321,7 +18265,7 @@
                          (for-loop_0 (unsafe-fx+ 1 pos_0))))
                      (values)))))))
             (for-loop_0 0))))
-        (args (raise-binding-result-arity-error '(vec_13 len_12) args))))
+        (args (raise-binding-result-arity-error 2 args))))
       (void))))
 (define check-path-argument
   (lambda (who_0 p_0)
@@ -18520,11 +18464,11 @@
                                                                    0)))))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(vec_17 len_16)
+                                                              2
                                                               args)))))
                                                          (args
                                                           (raise-binding-result-arity-error
-                                                           '(vec_15 len_15)
+                                                           2
                                                            args))))
                                                      (let ((or-part_0
                                                             (=
@@ -18616,10 +18560,7 @@
                                                                         start*_0))))
                                                                    (args
                                                                     (raise-binding-result-arity-error
-                                                                     '(v*_3
-                                                                       start*_3
-                                                                       stop*_4
-                                                                       step*_3)
+                                                                     4
                                                                      args))))))))))
                                                      #f)
                                                    #f))))
@@ -18666,14 +18607,7 @@
         clean-start-pos_0
         add-sep-pos_0)
        kind_0)
-      (args
-       (raise-binding-result-arity-error
-        '(kind_2
-          drive-end-pos_0
-          orig-drive-end-pos_0
-          clean-start-pos_0
-          add-sep-pos_0)
-        args))))))
+      (args (raise-binding-result-arity-error 5 args))))))
 (define parse-backslash-backslash-questionmark
   (lambda (bstr_0)
     (if (not (backslash-backslash-questionmark? bstr_0))
@@ -19086,10 +19020,7 @@
                                                                               start*_0))))
                                                                          (args
                                                                           (raise-binding-result-arity-error
-                                                                           '(v*_4
-                                                                             start*_4
-                                                                             stop*_5
-                                                                             step*_4)
+                                                                           4
                                                                            args))))))
                                                                  j_5
                                                                  #f)
@@ -19151,14 +19082,7 @@
        (case-lambda
         ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 add-sep-pos_0)
          (subbytes bstr_0 0 drive-len_0))
-        (args
-         (raise-binding-result-arity-error
-          '(kind_3
-            drive-len_2
-            orig-drive-len_3
-            clean-start-pos_2
-            add-sep-pos_1)
-          args))))
+        (args (raise-binding-result-arity-error 5 args))))
       (let ((c3_0 (parse-unc.1 #f #f bstr_0 0)))
         (if c3_0
           (subbytes bstr_0 0 c3_0)
@@ -19218,14 +19142,7 @@
        (if (eq? kind_0 'rel)
          (subbytes bstr_0 (if (eqv? (unsafe-bytes-ref bstr_0 8) 92) 9 8))
          bstr_0))
-      (args
-       (raise-binding-result-arity-error
-        '(kind_4
-          drive-end-pos_1
-          orig-drive-end-pos_1
-          clean-start-pos_3
-          add-sep-pos_2)
-        args))))))
+      (args (raise-binding-result-arity-error 5 args))))))
 (define check-path-test-argument
   (lambda (who_0 p_0)
     (if (let ((or-part_0 (1/path? p_0)))
@@ -21203,8 +21120,7 @@
                                           result_1)))
                                     result_0))))))
                            (for-loop_0 #t 0 start_0))))))
-                   (args
-                    (raise-binding-result-arity-error '(vec_18 len_34) args))))
+                   (args (raise-binding-result-arity-error 2 args))))
                (if (if for-keyword?11_0
                      for-keyword?11_0
                      (if for-type?9_0
@@ -21257,10 +21173,7 @@
                                             result_1)))
                                       result_0))))))
                              (for-loop_0 #f 0))))
-                         (args
-                          (raise-binding-result-arity-error
-                           '(vec_20 len_35)
-                           args))))))
+                         (args (raise-binding-result-arity-error 2 args))))))
                  (let ((len_0 (string-length str_0)))
                    (apply
                     string-append
@@ -21615,10 +21528,7 @@
                                vec_0
                                (sub1 fuel_0)
                                0)))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(vec_13 len_12)
-                             args))))
+                           (args (raise-binding-result-arity-error 2 args))))
                          #f)
                        (if (if (box? v_0) (config-get config_0 1/print-box) #f)
                          (if (not print-graph?_0)
@@ -21862,7 +21772,7 @@
                                           (for-loop_0 #f 0))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(vec_22 len_37)
+                                        2
                                         args))))))
                                (done!_0 constructor?_0 ht_0 v_0 unquoted?_0)))
                            (if (if (box? v_0)
@@ -22123,7 +22033,7 @@
                                                            (for-loop_0 #f 0))))
                                                        (args
                                                         (raise-binding-result-arity-error
-                                                         '(vec_24 len_38)
+                                                         2
                                                          args))))))
                                                 (if or-part_0
                                                   or-part_0
@@ -24695,11 +24605,7 @@
                                            #f)))))
                                    (args
                                     (raise-binding-result-arity-error
-                                     '(kind_5
-                                       drive-len_1
-                                       orig-drive-len_1
-                                       clean-start-pos_4
-                                       add-sep-pos_3)
+                                     5
                                      args))))
                                  (let ((c1_0 (parse-unc.1 #f #f bstr_0 0)))
                                    (if c1_0
@@ -24884,10 +24790,7 @@
              keep-trailing-separator?_0
              bstr_0
              literal-start_0))))
-        (args
-         (raise-binding-result-arity-error
-          '(dots-end_0 literal-start_0)
-          args))))
+        (args (raise-binding-result-arity-error 2 args))))
       (extract-separate-parts.1 #f keep-trailing-separator?_0 bstr_0 0))))
 (define as-bytes
   (lambda (p_0)
@@ -24935,10 +24838,7 @@
                            result_1)))
                      result_0))))))
             (for-loop_0 #t start*_0))))
-        (args
-         (raise-binding-result-arity-error
-          '(v*_5 start*_5 stop*_6 step*_5)
-          args)))))))
+        (args (raise-binding-result-arity-error 4 args)))))))
 (define just-backslashes-after?
   (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
            (procz1 (lambda (x_0) (bytes? x_0))))
@@ -24976,10 +24876,7 @@
                              result_2))))
                      result_0))))))
             (for-loop_0 #t start*_0))))
-        (args
-         (raise-binding-result-arity-error
-          '(v*_6 start*_6 stop*_7 step*_6)
-          args)))))))
+        (args (raise-binding-result-arity-error 4 args)))))))
 (define drive?
   (lambda (s_0)
     (if (starting-point? s_0)
@@ -25286,14 +25183,8 @@
                         kind_0
                         bstr_0
                         temp72_1)))))))
-             (args
-              (raise-binding-result-arity-error
-               '(dots-end_1 literal-start_1)
-               args))))))
-        (args
-         (raise-binding-result-arity-error
-          '(kind_7 drive-len_7 orig-drive-len_4 clean-start-pos_5 add-sep_0)
-          args))))
+             (args (raise-binding-result-arity-error 2 args))))))
+        (args (raise-binding-result-arity-error 5 args))))
       (let ((c3_0 (parse-unc.1 #f #f bstr_0 0)))
         (if c3_0
           (call-with-values
@@ -25325,8 +25216,7 @@
                      'unc
                      unc-bstr_0
                      unc-len_0))))))
-            (args
-             (raise-binding-result-arity-error '(machine_0 volume_0) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           (if (bytes=? #vu8(46) bstr_0)
             (let ((temp87_0 #vu8(92 92 63 92 82 69 76)))
               (make-starting-point.1 #t #f #vu8() unsafe-undefined 'rel temp87_0 7))
@@ -25755,18 +25645,8 @@
                                     (subbytes
                                      new-bstr_0
                                      literal-start_0)))))))))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(dots-end_3 literal-start_2)
-                         args))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(kind_8
-                      drive-len_8
-                      orig-drive-len_5
-                      clean-start-pos_6
-                      sep-bstr_0)
-                    args))))
+                       (args (raise-binding-result-arity-error 2 args))))))
+                  (args (raise-binding-result-arity-error 5 args))))
                 (let ((c1_0 (parse-unc.1 #f #f bstr_0 0)))
                   (if c1_0
                     (return_0
@@ -25987,10 +25867,7 @@
                                              result_2))))
                                      result_0))))))
                             (for-loop_0 #f start*_0))))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(v*_7 start*_7 stop*_8 step*_7)
-                          args)))))))
+                        (args (raise-binding-result-arity-error 4 args)))))))
                  #f)
              bstr5_0
              (let ((new-bstr_0
@@ -28216,8 +28093,7 @@
                                                                      'block))))))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(init-offset_1
-                                                                file-position_8)
+                                                              2
                                                               args))))))))))))))))))))))))))))))))
     (|#%name|
      make-input-port
@@ -28741,9 +28617,7 @@
                                                                  r_0)))))
                                                         (args
                                                          (raise-binding-result-arity-error
-                                                          '(imm-bstr_0
-                                                            imm-start_0
-                                                            imm-end_0)
+                                                          3
                                                           args))))))))))
                                              (let ((get-write-evt_0
                                                     (|#%name|
@@ -28803,9 +28677,7 @@
                                                                    #t)))))
                                                            (args
                                                             (raise-binding-result-arity-error
-                                                             '(imm-bstr_1
-                                                               imm-start_1
-                                                               imm-end_1)
+                                                             3
                                                              args)))))))))
                                                (let ((write-out-special_0
                                                       (|#%name|
@@ -28925,8 +28797,7 @@
                                                               #f)))))
                                                        (args
                                                         (raise-binding-result-arity-error
-                                                         '(init-offset_2
-                                                           file-position_9)
+                                                         2
                                                          args)))))))))))))))))))))))))))))
     (|#%name|
      make-output-port
@@ -29451,9 +29322,7 @@
                                            #t))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(used-bytes_7
-                                            got-chars_5
-                                            new-state_3)
+                                          3
                                           args))))
                                       #f))))))
                              (loop_0 0 #f)))))
@@ -29543,10 +29412,7 @@
                        #f
                        #f
                        p3_0)))))
-               (args
-                (raise-binding-result-arity-error
-                 '(//?-kind_0 //?-drive-end_0 //?-orig-drive-end_0)
-                 args))))
+               (args (raise-binding-result-arity-error 3 args))))
              (if (if (>= (unsafe-bytes-length bstr_0) 2)
                    (if (drive-letter? (unsafe-bytes-ref bstr_0 0))
                      (eq? (unsafe-bytes-ref bstr_0 1) 58)
@@ -29655,10 +29521,7 @@
                          (if explode?11_0
                            (list name_0)
                            (values 'relative name_0 is-dir?_0)))
-                        (args
-                         (raise-binding-result-arity-error
-                          '(name_26 is-dir?_0)
-                          args)))))
+                        (args (raise-binding-result-arity-error 2 args)))))
                     (call-with-values
                      (lambda ()
                        (let ((temp72_0 (add1 split-pos_0)))
@@ -29710,18 +29573,9 @@
                                       (subbytes exposed-bstr_0 0 exposed-len_0)
                                       convention_0)))
                                 (values base_0 name_0 is-dir?_0))))
-                           (args
-                            (raise-binding-result-arity-error
-                             '(exposed-bstr_0 exposed-len_0)
-                             args))))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(name_27 is-dir?_1)
-                        args))))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(split-pos_0 ends-sep?_0)
-                   args))))))))))))
+                           (args (raise-binding-result-arity-error 2 args))))))
+                      (args (raise-binding-result-arity-error 2 args))))))
+                 (args (raise-binding-result-arity-error 2 args))))))))))))
 (define split-tail.1
   (|#%name|
    split-tail
@@ -29776,10 +29630,7 @@
      (case-lambda
       ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 add-sep-pos_0)
        (values kind_0 drive-len_0 orig-drive-len_0))
-      (args
-       (raise-binding-result-arity-error
-        '(kind_9 drive-len_10 orig-drive-len_6 clean-start-pos_7 add-sep-pos_4)
-        args))))))
+      (args (raise-binding-result-arity-error 5 args))))))
 (define parse-//-drive (lambda (bstr_0) (parse-unc.1 #f #f bstr_0 0)))
 (define split-reld.1
   (letrec ((explode-loop_0
@@ -29914,14 +29765,8 @@
                               'up
                               #t)
                              (values 'relative 'up #t)))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(dots-end_4 literal-start_3)
-                        args)))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(len_48 is-dir?_2)
-                     args))))))))
+                      (args (raise-binding-result-arity-error 2 args)))))
+                   (args (raise-binding-result-arity-error 2 args))))))))
            (loop_0
             (|#%name|
              loop
@@ -30052,9 +29897,7 @@
                                (case-lambda
                                 ((dots-end_0 literal-start_0) dots-end_0)
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(dots-end_6 literal-start_4)
-                                  args)))))
+                                 (raise-binding-result-arity-error 2 args)))))
                              #f)
                            #f)))
                      (unixish-path-directory-path?_0
@@ -31042,9 +30885,7 @@
                                                     base-dir_0))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(base-dir_0
-                                                      name_28
-                                                      dir?_0)
+                                                    3
                                                     args)))))))
                                          (begin
                                            (if (hash-ref seen_0 from-base_0 #f)
@@ -31089,11 +30930,11 @@
                                            new-seen_0)))
                                        (args
                                         (raise-binding-result-arity-error
-                                         '(next-base_0 name_29 dir?_1)
+                                         3
                                          args)))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(from-base_0 new-seen_0)
+                                      2
                                       args))))))
                               (let ((app_0 (cdr l_0)))
                                 (loop_1
@@ -31342,16 +31183,10 @@
                                     (if (bytes=? bstr_0 rebuilt-bstr_0)
                                       'simple
                                       'non-simple)))))))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(base-dir_1 name_30 dir?_2)
-                       args)))))))))
+                     (args (raise-binding-result-arity-error 3 args)))))))))
             (loop_0 (path1.1 bstr_0 'windows) '() #f))
            'non-simple)))
-      (args
-       (raise-binding-result-arity-error
-        '(kind_10 drive-len_11 orig-drive-len_7 clean-start-pos_8 sep-bstr_1)
-        args))))))
+      (args (raise-binding-result-arity-error 5 args))))))
 (define unc-without-trailing-separator?
   (lambda (p_0)
     (let ((bstr_0 (|#%app| path-bytes p_0)))
@@ -31504,19 +31339,9 @@
                               (subbytes bstr_0 literal-start_0)))
                            'windows)
                           p_0))
-                       (args
-                        (raise-binding-result-arity-error
-                         '(dots-end_7 literal-start_5)
-                         args))))
+                       (args (raise-binding-result-arity-error 2 args))))
                      p_0)))))
-            (args
-             (raise-binding-result-arity-error
-              '(kind_11
-                drive-len_12
-                orig-drive-len_8
-                clean-start-pos_9
-                sep-bstr_2)
-              args)))))))))
+            (args (raise-binding-result-arity-error 5 args)))))))))
 (define normalize-backslash-backslash-unc
   (lambda (bstr_0)
     (if (if (eqv? (unsafe-bytes-ref bstr_0 4) 85)
@@ -31590,7 +31415,7 @@
                             result_1)))
                       result_0))))))
              (for-loop_0 #f 0))))
-         (args (raise-binding-result-arity-error '(vec_26 len_58) args)))))
+         (args (raise-binding-result-arity-error 2 args)))))
       #f)))
 (define bytes-environment-variable-name?
   (lambda (k_0)
@@ -31922,7 +31747,7 @@
                                                             val_0))
                                                           (args
                                                            (raise-binding-result-arity-error
-                                                            '(key_3 val_6)
+                                                            2
                                                             args))))))
                                                    (values table_1))))
                                             (for-loop_0 table_1 (+ pos_0 1)))
@@ -32399,17 +32224,14 @@
                                       (for-loop_0 #f start*_1 start_0))))))
                               (args
                                (raise-binding-result-arity-error
-                                '(v*_8 start*_8 stop*_9 step*_8)
+                                4
                                 args)))))))))
                  (call-with-values
                   (lambda () (1/split-path p7_0))
                   (case-lambda
                    ((base_0 name_0 dir?_0)
                     (if (symbol? base_0) (if (1/path? name_0) name_0 #f) #f))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(base_10 name_31 dir?_3)
-                     args))))
+                   (args (raise-binding-result-arity-error 3 args))))
                  #f)))
            #f))))))
 (define path-element? (lambda (p_0) (if (path-element-clean.1 #t p_0) #t #f)))
@@ -32456,8 +32278,7 @@
                                      result_2))))
                              result_0))))))
                     (for-loop_0 #f 0))))
-                (args
-                 (raise-binding-result-arity-error '(vec_28 len_59) args))))
+                (args (raise-binding-result-arity-error 2 args))))
             (bad-element_0 orig-arg_0 who_0)
             (void))
           (void))
@@ -32587,8 +32408,7 @@
                               (for-loop_0 n_1 (unsafe-fx+ 1 pos_0))))
                           n_0))))))
                  (for-loop_0 0 0))))
-             (args
-              (raise-binding-result-arity-error '(vec_27 len_33) args))))))
+             (args (raise-binding-result-arity-error 2 args))))))
       (let ((bstr_0
              (make-bytes (* 2 (+ (string-length s_0) surrogate-count_0)))))
         (begin
@@ -32667,7 +32487,7 @@
                              (for-loop_0 pos_2 (unsafe-fx+ 1 pos_1))))
                          pos_0))))))
                 (for-loop_0 0 0))))
-            (args (raise-binding-result-arity-error '(vec_31 len_60) args))))
+            (args (raise-binding-result-arity-error 2 args))))
           bstr_0)))))
 (define big-endian? (system-big-endian?))
 (define utf-16-decode
@@ -32708,10 +32528,7 @@
                                   (for-loop_0 n_1 (+ idx_0 2))))
                               n_0))))))
                      (for-loop_0 0 start*_0))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(v*_9 start*_9 stop*_10 step*_9)
-                   args))))))
+                 (args (raise-binding-result-arity-error 4 args))))))
           (let ((str_0
                  (make-string
                   (- (arithmetic-shift len_0 -1) surrogate-count_0))))
@@ -32873,10 +32690,7 @@
                                       (if (eqv? pos_0 0)
                                         (apply string-append ls_0 err-s_0 r_0)
                                         (list* ls_0 err-s_0 r_0)))))))))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(bstr_166 in-used_2 status_7)
-                       args))))))))))
+                     (args (raise-binding-result-arity-error 3 args))))))))))
     (lambda (s_0 up?_0)
       (if (if (equal? (1/current-locale) "")
             (not
@@ -33179,14 +32993,8 @@
                                         pos2_0
                                         app_0
                                         (+ pos2_0 len_0)))))))))))
-                      (args
-                       (raise-binding-result-arity-error
-                        '(bstr2_3 in-used2_0 status2_0)
-                        args)))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(bstr1_2 in-used1_0 status1_0)
-                     args)))))))))
+                      (args (raise-binding-result-arity-error 3 args)))))
+                   (args (raise-binding-result-arity-error 3 args)))))))))
     (lambda (s1_0 s2_0 ci?_0)
       (if (if (equal? (1/current-locale) "")
             (not
@@ -34706,9 +34514,7 @@
                                topic-max-level_1
                                rest_0)))
                            (args
-                            (raise-binding-result-arity-error
-                             '(max-level_5 topic-max-level_5)
-                             args)))))))
+                            (raise-binding-result-arity-error 2 args)))))))
                    (values max-level_0 topic-max-level_0))))))
            (next-k-proc_0
             (|#%name|
@@ -34901,10 +34707,7 @@
                                     1
                                     topic-max-level_0)))))
                            (void))))))
-                  (args
-                   (raise-binding-result-arity-error
-                    '(max-level_0 topic-max-level_0)
-                    args)))))))))
+                  (args (raise-binding-result-arity-error 2 args)))))))))
          (loop_0 logger_0 'debug 'none 'debug 'none))))))
 (define logger-all-levels
   (lambda (logger_0)
@@ -34942,7 +34745,7 @@
                                           (values topics_2 default-level_2))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(topics_7 default-level_8)
+                                           2
                                            args)))))
                                      (case-lambda
                                       ((topics_2 default-level_2)
@@ -34952,7 +34755,7 @@
                                         rest_0))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(topics_5 default-level_6)
+                                        2
                                         args))))))
                                 (values topics_1 default-level_1)))))))
                        (for-loop_0 topics_0 'none lst_0)))))
@@ -34976,10 +34779,7 @@
                            max-default-level_1
                            parent-logger_0))
                         (values new-topics_0 next-default-level_0)))))
-                 (args
-                  (raise-binding-result-arity-error
-                   '(new-topics_0 new-default-level_0)
-                   args)))))))))
+                 (args (raise-binding-result-arity-error 2 args)))))))))
         (loop_0 hash2610 'none 'debug logger_0)))
      (case-lambda
       ((topics_0 default-level_0)
@@ -35021,8 +34821,7 @@
                              (hash-iterate-next topics_0 i_0))))
                         fold-var_0))))))
                (for-loop_0 null (hash-iterate-first topics_0)))))))))
-      (args
-       (raise-binding-result-arity-error '(topics_2 default-level_3) args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define make-root-logger (lambda () (create-logger.1 #f 'none #f)))
 (define cell.1$4 (unsafe-make-place-local (make-root-logger)))
 (define unsafe-root-logger (lambda () (unsafe-place-local-ref cell.1$4)))
@@ -35613,7 +35412,7 @@
                                                 cell.1$3)))))
                                          (args
                                           (raise-binding-result-arity-error
-                                           '(base_11 name_32 dir_2)
+                                           3
                                            args))))
                                        (begin
                                          (unsafe-start-atomic)
@@ -36176,10 +35975,7 @@
                     (case-lambda
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(group_0 command_0 exact/args_0)
-                       args)))))
+                     (args (raise-binding-result-arity-error 3 args)))))
                  (set! group_0 (unsafe-vector*-ref lr3711 0))
                  (set! command_0 (unsafe-vector*-ref lr3711 1))
                  (set! exact/args_0 (unsafe-vector*-ref lr3711 2))
@@ -36514,10 +36310,7 @@
                                                                        in_0
                                                                        out_0
                                                                        err_0)))))))))))))))))))))))))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(exact?_1 args_14)
-                     args)))))))))))))
+                   (args (raise-binding-result-arity-error 2 args)))))))))))))
 (define 1/subprocess-wait
   (|#%name|
    subprocess-wait
@@ -38387,7 +38180,7 @@
                        (for-loop_0 v_1 (unsafe-fx+ 1 pos_0))))
                    v_0))))))
           (for-loop_0 0 0))))
-      (args (raise-binding-result-arity-error '(vec_26 len_58) args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define struct:udp (make-record-type-descriptor* 'udp #f #f #f #f 3 7))
 (define effect3945
   (struct-type-install-properties!
@@ -38954,9 +38747,7 @@
                                         local-hostname_0
                                         peer-hostname_0))))))))))
                       (args
-                       (raise-binding-result-arity-error
-                        '(local-address_0 peer-address_0)
-                        args))))))))))))
+                       (raise-binding-result-arity-error 2 args))))))))))))
     (|#%name|
      tcp-addresses
      (case-lambda
@@ -40722,15 +40513,9 @@
                            (current-inexact-milliseconds))
                           (void))
                         (values #f self_0)))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(vals_1 evt_19)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (values #f evt_0))))
-              (args
-               (raise-binding-result-arity-error
-                '(vals_0 evt_18)
-                args)))))))))))
+              (args (raise-binding-result-arity-error 2 args)))))))))))
 (define 1/unsafe-poll-ctx-fd-wakeup
   (|#%name|
    unsafe-poll-ctx-fd-wakeup
@@ -40969,10 +40754,7 @@
             build-number_0
             (if (equal? CSD-vers_0 #vu8()) "" " ")
             CSD-vers_0))
-          (args
-           (raise-binding-result-arity-error
-            '(major_0 minor_0 build-number_0 CSD-vers_0)
-            args))))
+          (args (raise-binding-result-arity-error 4 args))))
         (call-with-escape-continuation
          (lambda (done_0)
            (begin
@@ -41043,7 +40825,7 @@
                                                  (void)))))))
                                       (args
                                        (raise-binding-result-arity-error
-                                        '(subproc_0 stdout_1 stdin_1 stderr_1)
+                                        4
                                         args))))
                                     (void))
                                   (for-loop_0 rest_0))))
@@ -41255,18 +41037,9 @@
                       child-in-fd_0
                       child-out-fd_0
                       child-err-fd_0))))
-                (args
-                 (raise-binding-result-arity-error
-                  '(parent-err-fd_0 child-err-fd_0)
-                  args))))))
-           (args
-            (raise-binding-result-arity-error
-             '(parent-out-fd_0 child-out-fd_0)
-             args))))))
-      (args
-       (raise-binding-result-arity-error
-        '(parent-in-fd_0 child-in-fd_0)
-        args))))))
+                (args (raise-binding-result-arity-error 2 args))))))
+           (args (raise-binding-result-arity-error 2 args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define dup-fd
   (lambda (fd_0 cleanup_0 during_0)
     (let ((new-fd_0 (|#%app| rktio_dup (unsafe-place-local-ref cell.1) fd_0)))
@@ -41303,14 +41076,14 @@
          (lambda () (|#%app| rktio_pipe_results p_0))
          (case-lambda
           ((in_0 out_0) (begin (|#%app| rktio_free p_0) (values in_0 out_0)))
-          (args (raise-binding-result-arity-error '(in_97 out_41) args))))))))
+          (args (raise-binding-result-arity-error 2 args))))))))
 (define reverse-pipe
   (lambda (cleanup_0 during_0)
     (call-with-values
      (lambda () (pipe cleanup_0 during_0))
      (case-lambda
       ((in_0 out_0) (values out_0 in_0))
-      (args (raise-binding-result-arity-error '(in_24 out_42) args))))))
+      (args (raise-binding-result-arity-error 2 args))))))
 (define io-place-init!
   (lambda (in-fd_0 out-fd_0 err-fd_0 cust_0 plumber_0)
     (begin

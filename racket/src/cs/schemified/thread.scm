@@ -872,10 +872,7 @@
                               (unquoted-printing-string
                                (apply string-append (loop_1 w_0 ls_0))))
                              null))))))))))
-            (args
-             (raise-binding-result-arity-error
-              '(required-keywords_0 optional-keywords_0)
-              args)))))))))
+            (args (raise-binding-result-arity-error 2 args)))))))))
 (define gen-map
   (letrec ((loop_0
             (|#%name|
@@ -1528,10 +1525,7 @@
                           node-left
                           node-right
                           combine))))))
-                (args
-                 (raise-binding-result-arity-error
-                  '(move-key_0 move-val_0)
-                  args)))))))))))
+                (args (raise-binding-result-arity-error 2 args)))))))))))
 (define delete-at
   (lambda (t_0 key_0 <?_0 node-to_0 node-from_0 combine_0 reverse-combine_0)
     (let ((new-to_0 (delete (|#%app| node-to_0 t_0) key_0 <?_0)))
@@ -1894,10 +1888,7 @@
                    (for-loop_0 (hash-iterate-first threads_0))))
                 (void)))
             (void)))
-         (args
-          (raise-binding-result-arity-error
-           '(timeout-at_1 threads_0)
-           args))))))
+         (args (raise-binding-result-arity-error 2 args))))))
    (lambda () (|#%app| host:get-wakeup-handle))
    (lambda (h_0) (|#%app| host:wakeup h_0))
    (lambda () (not (let ((t_0 (unsafe-place-local-ref cell.3$1))) (not t_0))))
@@ -1907,8 +1898,7 @@
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
         (case-lambda
          ((timeout-at_0 threads_0) timeout-at_0)
-         (args
-          (raise-binding-result-arity-error '(timeout-at_2 threads_1) args))))
+         (args (raise-binding-result-arity-error 2 args))))
        #f))
    (lambda (t_0 sleep-until_0)
      (begin
@@ -3277,8 +3267,7 @@
                                                                              0))))
                                                                         (args
                                                                          (raise-binding-result-arity-error
-                                                                          '(vec_2
-                                                                            len_3)
+                                                                          2
                                                                           args)))))))
                                                                 #f)
                                                               #f)))
@@ -3358,8 +3347,7 @@
                                                                                0))))
                                                                           (args
                                                                            (raise-binding-result-arity-error
-                                                                            '(vec_4
-                                                                              len_4)
+                                                                            2
                                                                             args)))))))
                                                                   #f)))
                                                            (if or-part_10
@@ -3437,8 +3425,7 @@
                                                                                                  result_1)))
                                                                                             (args
                                                                                              (raise-binding-result-arity-error
-                                                                                              '(k_2
-                                                                                                v_30)
+                                                                                              2
                                                                                               args))))
                                                                                           result_0))))))
                                                                                  (for-loop_0
@@ -3644,7 +3631,7 @@
                                                       (for-loop_0 0 0))))
                                                   (args
                                                    (raise-binding-result-arity-error
-                                                    '(vec_6 len_6)
+                                                    2
                                                     args)))))
                                               v_1)))))))
                                  (let ((c1_0
@@ -3713,10 +3700,7 @@
                                                   (for-loop_0 null start*_0))))
                                               (args
                                                (raise-binding-result-arity-error
-                                                '(v*_0
-                                                  start*_0
-                                                  stop*_1
-                                                  step*_0)
+                                                4
                                                 args)))))))))
                                      (if (hash? v_0)
                                        (let ((ph_0 (make-placeholder #f)))
@@ -3772,8 +3756,7 @@
                                                                                val_0))
                                                                              (args
                                                                               (raise-binding-result-arity-error
-                                                                               '(key_6
-                                                                                 val_3)
+                                                                               2
                                                                                args))))))
                                                                       (values
                                                                        table_1))))
@@ -3784,7 +3767,7 @@
                                                                  i_0))))
                                                             (args
                                                              (raise-binding-result-arity-error
-                                                              '(k_4 v_38)
+                                                              2
                                                               args))))
                                                           table_0))))))
                                                  (for-loop_0
@@ -3832,8 +3815,7 @@
                                                                                  val_0))
                                                                                (args
                                                                                 (raise-binding-result-arity-error
-                                                                                 '(key_7
-                                                                                   val_4)
+                                                                                 2
                                                                                  args))))))
                                                                         (values
                                                                          table_1))))
@@ -3844,7 +3826,7 @@
                                                                    i_0))))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(k_5 v_39)
+                                                                2
                                                                 args))))
                                                             table_0))))))
                                                    (for-loop_0
@@ -3891,8 +3873,7 @@
                                                                                  val_0))
                                                                                (args
                                                                                 (raise-binding-result-arity-error
-                                                                                 '(key_8
-                                                                                   val_5)
+                                                                                 2
                                                                                  args))))))
                                                                         (values
                                                                          table_1))))
@@ -3903,7 +3884,7 @@
                                                                    i_0))))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(k_6 v_40)
+                                                                2
                                                                 args))))
                                                             table_0))))))
                                                    (for-loop_0
@@ -4044,7 +4025,7 @@
                                         (for-loop_0 0 0))))
                                     (args
                                      (raise-binding-result-arity-error
-                                      '(vec_8 len_8)
+                                      2
                                       args)))))
                                 v_1)))))
                        (let ((c3_0 (immutable-prefab-struct-key v_0)))
@@ -4093,9 +4074,7 @@
                                             fold-var_0))))))
                                    (for-loop_0 null start*_0))))
                                (args
-                                (raise-binding-result-arity-error
-                                 '(v*_1 start*_1 stop*_2 step*_1)
-                                 args))))))
+                                (raise-binding-result-arity-error 4 args))))))
                            (if (hash? v_0)
                              (if (hash-eq? v_0)
                                (begin
@@ -4132,7 +4111,7 @@
                                                                 val_0))
                                                               (args
                                                                (raise-binding-result-arity-error
-                                                                '(key_9 val_6)
+                                                                2
                                                                 args))))))
                                                        (values table_1))))
                                                 (for-loop_0
@@ -4140,7 +4119,7 @@
                                                  (hash-iterate-next v_0 i_0))))
                                              (args
                                               (raise-binding-result-arity-error
-                                               '(k_8 v_45)
+                                               2
                                                args))))
                                            table_0))))))
                                   (for-loop_0
@@ -4183,8 +4162,7 @@
                                                                   val_0))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(key_10
-                                                                    val_7)
+                                                                  2
                                                                   args))))))
                                                          (values table_1))))
                                                   (for-loop_0
@@ -4194,7 +4172,7 @@
                                                     i_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(k_9 v_46)
+                                                 2
                                                  args))))
                                              table_0))))))
                                     (for-loop_0
@@ -4236,8 +4214,7 @@
                                                                   val_0))
                                                                 (args
                                                                  (raise-binding-result-arity-error
-                                                                  '(key_11
-                                                                    val_8)
+                                                                  2
                                                                   args))))))
                                                          (values table_1))))
                                                   (for-loop_0
@@ -4247,7 +4224,7 @@
                                                     i_0))))
                                                (args
                                                 (raise-binding-result-arity-error
-                                                 '(k_10 v_47)
+                                                 2
                                                  args))))
                                              table_0))))))
                                     (for-loop_0
@@ -5840,9 +5817,7 @@
                                      (void))
                                    (for-loop_0 (hash-iterate-next ht_0 i_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(child_3 callback_4)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (values)))))))
                      (for-loop_0 (hash-iterate-first ht_0)))))
                 (let ((self-ref_0 (custodian-self-reference c_0)))
@@ -5969,7 +5944,7 @@
                                   (() (for-loop_0 rest_0))
                                   (args
                                    (raise-binding-result-arity-error
-                                    '()
+                                    0
                                     args))))))
                             (values)))))))
                    (for-loop_0 queued_0)))
@@ -6019,10 +5994,7 @@
                                    (|#%app| callback_0 child_0))
                                  (void))
                                (for-loop_0 (hash-iterate-next ht_0 i_0))))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(child_4 callback_5)
-                              args))))
+                            (args (raise-binding-result-arity-error 2 args))))
                           (values)))))))
                  (for-loop_0 (hash-iterate-first ht_0)))))
             (begin
@@ -6463,7 +6435,7 @@
                                              new-custs_0))
                                            (args
                                             (raise-binding-result-arity-error
-                                             '(new-roots_0 new-custs_0)
+                                             2
                                              args))))
                                          (if (1/place? (car roots_1))
                                            (let ((pl_1 (car roots_1)))
@@ -6495,7 +6467,7 @@
                                                      new-custs_0))
                                                    (args
                                                     (raise-binding-result-arity-error
-                                                     '(new-roots_1 new-custs_1)
+                                                     2
                                                      args)))))))
                                            (let ((root_0 (car roots_1)))
                                              (let ((new-local-roots_0
@@ -6747,9 +6719,7 @@
                                    (sub1 compute-memory-sizes)))
                                (set! computed-memory-sizes? #t)))))))
                      (args
-                      (raise-binding-result-arity-error
-                       '(roots_0 custs_1)
-                       args)))))))))))))
+                      (raise-binding-result-arity-error 2 args)))))))))))))
     (void)))
 (define effect744
   (begin
@@ -10206,10 +10176,7 @@
                                         (if first_0 first_0 sr_0)
                                         sr_0)))))))))))))
                   (loop_0 evts17_0 #f #f)))
-                (args
-                 (raise-binding-result-arity-error
-                  '(extended-commits_0 guarded-abandons_0)
-                  args)))))))))
+                (args (raise-binding-result-arity-error 2 args)))))))))
     (case-lambda
      ((who_0 evts_0) (evts->syncers_0 who_0 evts_0 null null null))
      ((who_0 evts_0 wraps_0 commits_0 abandons15_0)
@@ -10668,7 +10635,7 @@
                                                    no-wrappers?_0)))))))))))
                                (args
                                 (raise-binding-result-arity-error
-                                 '(results_0 new-evt_1)
+                                 2
                                  args)))))))))))))))
           (loop_0 (syncing-syncers s32_0) 0 #t #t)))))))
 (define make-result
@@ -10810,10 +10777,7 @@
                                    (syncer-wraps sr_0)))
                                  (syncing-done! s_0 sr_0))
                                (void)))
-                            (args
-                             (raise-binding-result-arity-error
-                              '(result_13 ready?_0)
-                              args))))
+                            (args (raise-binding-result-arity-error 2 args))))
                           (void))))
                     (void))
                   (loop_0 (syncer-next sr_0)))
@@ -14461,17 +14425,9 @@
                                                 parent-err_0)))))
                                         (args
                                          (raise-binding-result-arity-error
-                                          '(parent-in_0
-                                            parent-out_0
-                                            parent-err_0
-                                            child-in-fd_0
-                                            child-out-fd_0
-                                            child-err-fd_0)
+                                          6
                                           args))))))))))))))
-                   (args
-                    (raise-binding-result-arity-error
-                     '(place-pch_0 child-pch_0)
-                     args)))))))))))))
+                   (args (raise-binding-result-arity-error 2 args)))))))))))))
 (define 1/place-break
   (let ((place-break_0
          (|#%name|
@@ -14662,10 +14618,7 @@
                                       (for-loop_0 (unsafe-fx+ 1 pos_0))))
                                   (values)))))))
                          (for-loop_0 0))))
-                     (args
-                      (raise-binding-result-arity-error
-                       '(vec_14 len_9)
-                       args))))
+                     (args (raise-binding-result-arity-error 2 args))))
                    (void)
                    (set-place-pumpers! p_0 #f))
                  (void))
@@ -14963,9 +14916,7 @@
                                    (for-loop_0
                                     (hash-iterate-next waiters_0 i_0))))
                                 (args
-                                 (raise-binding-result-arity-error
-                                  '(pl_4 s_51)
-                                  args))))
+                                 (raise-binding-result-arity-error 2 args))))
                               (values)))))))
                      (for-loop_0 (hash-iterate-first waiters_0))))
                   (void)))))
