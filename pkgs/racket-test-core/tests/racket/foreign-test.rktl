@@ -396,6 +396,7 @@
         (let ([ic7i-3 ((ffi 'ic7i_cb (_fun _ic7i (_fun _ic7i -> _ic7i) -> _ic7i))
                        ic7i
                        (lambda (ic7i-4)
+                         (collect-garbage 'minor)
                          (test 12 ic7i-i1 ic7i-4)
                          (test (cons 255 (map sub1 (cdr v))) ic7i-c7 ic7i-4)
                          (test 13 ic7i-i2 ic7i-4)

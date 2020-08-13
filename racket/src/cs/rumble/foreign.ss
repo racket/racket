@@ -1423,6 +1423,14 @@
     (with-interrupts-disabled*
      (foreign-free (cpointer-address p)))))
 
+(define (lock-cpointer p)
+  (when (authentic-cpointer? p)
+    (lock-object (cpointer-memory p))))
+
+(define (unlock-cpointer p)
+  (when (authentic-cpointer? p)
+    (unlock-object (cpointer-memory p))))
+
 (define-record-type (cpointer/cell make-cpointer/cell cpointer/cell?)
   (parent cpointer)
   (fields))
@@ -1758,7 +1766,9 @@
                                          (let ([r (#%apply (gen-proc (cpointer-address proc-p))
                                                            (append
                                                             (if ret-ptr
-                                                                (list (ret-maker (cpointer-address ret-ptr)))
+                                                                (begin
+                                                                  (lock-cpointer ret-ptr)
+                                                                  (list (ret-maker (cpointer-address ret-ptr))))
                                                                 '())
                                                             (map (lambda (arg in-type maker)
                                                                    (let ([host-rep (array-rep-to-pointer-rep
@@ -1775,7 +1785,7 @@
                                              [(posix) (thread-cell-set! errno-cell (get-errno))]
                                              [(windows) (thread-cell-set! errno-cell (get-last-error))])
                                            (cond
-                                            [ret-ptr ret-ptr]
+                                            [ret-ptr (unlock-cpointer ret-ptr) ret-ptr]
                                             [(eq? (ctype-our-rep out-type) 'gcpointer)
                                              (addr->gcpointer-memory r)]
                                             [else r])))))])
