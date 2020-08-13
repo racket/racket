@@ -172,7 +172,13 @@
           (define im-ready? (import-group-lookup-ready? grp))
           (for/list ([im (in-list (import-group-imports grp))])
             (and im-ready?
-                 (known-constant? (import-group-lookup grp (import-ext-id im))))))
+                 (let ([k (import-group-lookup grp (import-ext-id im))])
+                   (and (known-constant? k)
+                        (if (known-procedure? k)
+                            ;; A call to the procedure is probably in unsafe form:
+                            'proc
+                            ;; Otherwise, accept any value:
+                            #t))))))
         ;; Convert internal to external identifiers for known-value info
         (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
           (define id (ex-int-id ex-id))

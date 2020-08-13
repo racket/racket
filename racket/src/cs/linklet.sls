@@ -859,7 +859,11 @@
           (when (eq? (variable-val var) variable-undefined)
             (raise-linking-failure "is uninitialized" target-inst inst sym))
           (let ([v (if import-abi
-                       (variable-val var)
+                       (let ([v (variable-val var)])
+                         (when (eq? import-abi 'proc)
+                           (unless (#%procedure? v)
+                             (raise-linking-failure "was expected to have a procedure value" target-inst inst sym)))
+                         v)
                        var)])
             (cons v
                   (extract-imported-variables target-inst inst (cdr syms) (cdr imports-abi) accum)))))]))
