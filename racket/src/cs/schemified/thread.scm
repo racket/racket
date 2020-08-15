@@ -5679,7 +5679,7 @@
              #f
              (let ((we_0
                     (if (not weak?7_0)
-                      (|#%app| host:make-will-executor void)
+                      (|#%app| host:make-late-will-executor void)
                       #f)))
                (begin
                  (let ((app_0 (custodian-children cust12_0)))
