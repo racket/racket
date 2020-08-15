@@ -42,18 +42,19 @@
           c))))
 
 (define (cache-save! c enc get update!)
-  (atomically
-   (unless (equal? enc (cache-enc local-cache))
-     (cache-clear! cache-to set-cache-to!)
-     (cache-clear! cache-to2 set-cache-to2!)
-     (cache-clear! cache-from set-cache-from!)
-     (set-cache-enc! local-cache enc))
-   (cond
-     [(get local-cache)
-      (bytes-close-converter c)]
-     [else
-      (bytes-reset-converter c) ; must be in atomic mode
-      (update! local-cache c)])))
+  (when c
+    (atomically
+     (unless (equal? enc (cache-enc local-cache))
+       (cache-clear! cache-to set-cache-to!)
+       (cache-clear! cache-to2 set-cache-to2!)
+       (cache-clear! cache-from set-cache-from!)
+       (set-cache-enc! local-cache enc))
+     (cond
+       [(get local-cache)
+        (bytes-close-converter c)]
+       [else
+        (bytes-reset-converter c) ; must be in atomic mode
+        (update! local-cache c)]))))
 
 ;; ----------------------------------------
 
