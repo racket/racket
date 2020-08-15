@@ -58,7 +58,6 @@ is taken.}
                  [callback (any/c . -> . any)]
                  [custodian custodian? (current-custodian)]
                  [#:at-exit? at-exit? any/c #f]
-                 [#:weak? weak? any/c #f]
                  [#:custodian-unavailable unavailable-callback ((-> void?) -> any) (lambda (reg-fnl) (reg-fnl))])
          any]{
 
