@@ -39,6 +39,8 @@
                 (1/custodian-require-memory custodian-require-memory)
                 (1/custodian-shut-down? custodian-shut-down?)
                 (1/custodian-shutdown-all custodian-shutdown-all)
+                (custodian-shutdown-root-at-exit
+                 custodian-shutdown-root-at-exit)
                 (1/custodian? custodian?)
                 (1/dynamic-place dynamic-place)
                 (1/evt? evt?)
@@ -5623,11 +5625,11 @@
                     (begin
                       (set-custodian-place! c_0 (custodian-place parent_0))
                       (let ((cref_0
-                             (let ((temp29_0
+                             (let ((temp31_0
                                     (let ((children_0
                                            (custodian-children c_0)))
                                       (|#%name|
-                                       temp29
+                                       temp31
                                        (lambda (c_1)
                                          (begin
                                            (begin
@@ -5640,7 +5642,7 @@
                                 #t
                                 parent_0
                                 c_0
-                                temp29_0))))
+                                temp31_0))))
                         (begin
                           (set-custodian-parent-reference! c_0 cref_0)
                           (if cref_0
@@ -5793,20 +5795,20 @@
                                                 #f)
                                               #f)))
                                        (if (willed-callback? callback_0)
-                                         (let ((temp50_0
+                                         (let ((temp52_0
                                                 (willed-callback-proc
                                                  callback_0)))
-                                           (let ((temp51_0
+                                           (let ((temp53_0
                                                   (at-exit-callback?
                                                    callback_0)))
-                                             (let ((temp50_1 temp50_0))
+                                             (let ((temp52_1 temp52_0))
                                                (do-custodian-register.1
-                                                temp51_0
+                                                temp53_0
                                                 gc-root?_0
                                                 #f
                                                 parent_0
                                                 child_0
-                                                temp50_1))))
+                                                temp52_1))))
                                          (do-custodian-register.1
                                           #f
                                           gc-root?_0
@@ -5859,6 +5861,13 @@
          (start-atomic)
          (begin0 (do-custodian-shutdown-all c_0) (end-atomic))
          (|#%app| post-shutdown-action))))))
+(define custodian-shutdown-root-at-exit
+  (lambda ()
+    (begin
+      (start-atomic)
+      (begin0
+        (do-custodian-shutdown-all (unsafe-place-local-ref cell.1$6) #t)
+        (end-atomic)))))
 (define queued-shutdowns null)
 (define queue-custodian-shutdown!
   (lambda (c_0)
@@ -5964,74 +5973,103 @@
 (define custodian-this-place?
   (lambda (c_0) (eq? (custodian-place c_0) (unsafe-place-local-ref cell.1$2))))
 (define do-custodian-shutdown-all
-  (lambda (c_0)
-    (if (1/custodian-shut-down? c_0)
-      (void)
-      (begin
-        (set-custodian-shut-down! c_0)
-        (begin
-          (if (custodian-sync-futures? c_0)
-            (|#%app| futures-sync-for-custodian-shutdown)
-            (void))
-          (begin
-            (let ((ht_0 (custodian-children c_0)))
-              (begin
-                (letrec*
-                 ((for-loop_0
-                   (|#%name|
-                    for-loop
-                    (lambda (i_0)
-                      (begin
-                        (if i_0
-                          (call-with-values
-                           (lambda () (hash-iterate-key+value ht_0 i_0 #f))
-                           (case-lambda
-                            ((child_0 callback_0)
-                             (begin
-                               (if child_0
-                                 (if (procedure-arity-includes? callback_0 2)
-                                   (|#%app| callback_0 child_0 c_0)
-                                   (|#%app| callback_0 child_0))
-                                 (void))
-                               (for-loop_0 (hash-iterate-next ht_0 i_0))))
-                            (args (raise-binding-result-arity-error 2 args))))
-                          (values)))))))
-                 (for-loop_0 (hash-iterate-first ht_0)))))
+  (let ((do-custodian-shutdown-all_0
+         (|#%name|
+          do-custodian-shutdown-all
+          (lambda (c17_0 only-at-exit?16_0)
             (begin
-              (hash-clear! (custodian-children c_0))
-              (begin
-                (if (custodian-gc-roots c_0)
-                  (hash-clear! (custodian-gc-roots c_0))
-                  (void))
+              (if (1/custodian-shut-down? c17_0)
+                (void)
                 (begin
-                  (let ((lst_0 (custodian-post-shutdown c_0)))
-                    (begin
-                      (letrec*
-                       ((for-loop_0
-                         (|#%name|
-                          for-loop
-                          (lambda (lst_1)
-                            (begin
-                              (if (pair? lst_1)
-                                (let ((proc_0 (unsafe-car lst_1)))
-                                  (let ((rest_0 (unsafe-cdr lst_1)))
-                                    (begin
-                                      (|#%app| proc_0)
-                                      (for-loop_0 rest_0))))
-                                (values)))))))
-                       (for-loop_0 lst_0))))
+                  (set-custodian-shut-down! c17_0)
                   (begin
-                    (set-custodian-post-shutdown! c_0 null)
+                    (if (custodian-sync-futures? c17_0)
+                      (|#%app| futures-sync-for-custodian-shutdown)
+                      (void))
                     (begin
-                      (let ((sema_0 (custodian-shutdown-sema c_0)))
-                        (if sema_0 (semaphore-post-all sema_0) (void)))
-                      (let ((p-cref_0 (custodian-parent-reference c_0)))
+                      (let ((ht_0 (custodian-children c17_0)))
                         (begin
-                          (if p-cref_0
-                            (1/unsafe-custodian-unregister c_0 p-cref_0)
+                          (letrec*
+                           ((for-loop_0
+                             (|#%name|
+                              for-loop
+                              (lambda (i_0)
+                                (begin
+                                  (if i_0
+                                    (call-with-values
+                                     (lambda ()
+                                       (hash-iterate-key+value ht_0 i_0 #f))
+                                     (case-lambda
+                                      ((child_0 callback_0)
+                                       (begin
+                                         (if (if child_0
+                                               (let ((or-part_0
+                                                      (not only-at-exit?16_0)))
+                                                 (if or-part_0
+                                                   or-part_0
+                                                   (at-exit-callback?
+                                                    callback_0)))
+                                               #f)
+                                           (if (procedure-arity-includes?
+                                                callback_0
+                                                2)
+                                             (|#%app| callback_0 child_0 c17_0)
+                                             (|#%app| callback_0 child_0))
+                                           (void))
+                                         (for-loop_0
+                                          (hash-iterate-next ht_0 i_0))))
+                                      (args
+                                       (raise-binding-result-arity-error
+                                        2
+                                        args))))
+                                    (values)))))))
+                           (for-loop_0 (hash-iterate-first ht_0)))))
+                      (begin
+                        (hash-clear! (custodian-children c17_0))
+                        (begin
+                          (if (custodian-gc-roots c17_0)
+                            (hash-clear! (custodian-gc-roots c17_0))
                             (void))
-                          (remove-limit-custodian! c_0)
-                          (set-custodian-memory-limits! c_0 null))))))))))))))
+                          (begin
+                            (let ((lst_0 (custodian-post-shutdown c17_0)))
+                              (begin
+                                (letrec*
+                                 ((for-loop_0
+                                   (|#%name|
+                                    for-loop
+                                    (lambda (lst_1)
+                                      (begin
+                                        (if (pair? lst_1)
+                                          (let ((proc_0 (unsafe-car lst_1)))
+                                            (let ((rest_0 (unsafe-cdr lst_1)))
+                                              (begin
+                                                (|#%app| proc_0)
+                                                (for-loop_0 rest_0))))
+                                          (values)))))))
+                                 (for-loop_0 lst_0))))
+                            (begin
+                              (set-custodian-post-shutdown! c17_0 null)
+                              (begin
+                                (let ((sema_0 (custodian-shutdown-sema c17_0)))
+                                  (if sema_0
+                                    (semaphore-post-all sema_0)
+                                    (void)))
+                                (let ((p-cref_0
+                                       (custodian-parent-reference c17_0)))
+                                  (begin
+                                    (if p-cref_0
+                                      (1/unsafe-custodian-unregister
+                                       c17_0
+                                       p-cref_0)
+                                      (void))
+                                    (remove-limit-custodian! c17_0)
+                                    (set-custodian-memory-limits!
+                                     c17_0
+                                     null)))))))))))))))))
+    (case-lambda
+     ((c_0) (do-custodian-shutdown-all_0 c_0 #f))
+     ((c_0 only-at-exit?16_0)
+      (do-custodian-shutdown-all_0 c_0 only-at-exit?16_0)))))
 (define custodian-get-shutdown-sema
   (lambda (c_0)
     (begin
@@ -6052,28 +6090,28 @@
   (let ((unsafe-add-post-custodian-shutdown_0
          (|#%name|
           unsafe-add-post-custodian-shutdown
-          (lambda (proc17_0 custodian16_0)
+          (lambda (proc19_0 custodian18_0)
             (begin
               (begin
-                (if (if (procedure? proc17_0)
-                      (procedure-arity-includes? proc17_0 0)
+                (if (if (procedure? proc19_0)
+                      (procedure-arity-includes? proc19_0 0)
                       #f)
                   (void)
                   (raise-argument-error
                    'unsafe-add-post-custodian-shutdown
                    "(procedure-arity-includes/c 0)"
-                   proc17_0))
+                   proc19_0))
                 (begin
-                  (if (let ((or-part_0 (not custodian16_0)))
-                        (if or-part_0 or-part_0 (1/custodian? custodian16_0)))
+                  (if (let ((or-part_0 (not custodian18_0)))
+                        (if or-part_0 or-part_0 (1/custodian? custodian18_0)))
                     (void)
                     (raise-argument-error
                      'unsafe-add-post-custodian-shutdown
                      "(or/c custodian? #f)"
-                     custodian16_0))
+                     custodian18_0))
                   (let ((c_0
-                         (if custodian16_0
-                           custodian16_0
+                         (if custodian18_0
+                           custodian18_0
                            (place-custodian
                             (unsafe-place-local-ref cell.1$2)))))
                     (if (if (not
@@ -6088,14 +6126,14 @@
                         (begin0
                           (set-custodian-post-shutdown!
                            c_0
-                           (cons proc17_0 (custodian-post-shutdown c_0)))
+                           (cons proc19_0 (custodian-post-shutdown c_0)))
                           (end-atomic))))))))))))
     (|#%name|
      unsafe-add-post-custodian-shutdown
      (case-lambda
       ((proc_0) (begin (unsafe-add-post-custodian-shutdown_0 proc_0 #f)))
-      ((proc_0 custodian16_0)
-       (unsafe-add-post-custodian-shutdown_0 proc_0 custodian16_0))))))
+      ((proc_0 custodian18_0)
+       (unsafe-add-post-custodian-shutdown_0 proc_0 custodian18_0))))))
 (define custodian-subordinate?
   (lambda (c_0 super-c_0)
     (letrec*
@@ -6188,25 +6226,25 @@
   (let ((custodian-limit-memory_0
          (|#%name|
           custodian-limit-memory
-          (lambda (limit-cust19_0 need-amt20_0 stop-cust18_0)
+          (lambda (limit-cust21_0 need-amt22_0 stop-cust20_0)
             (begin
               (let ((stop-cust_0
-                     (if (eq? stop-cust18_0 unsafe-undefined)
-                       limit-cust19_0
-                       stop-cust18_0)))
+                     (if (eq? stop-cust20_0 unsafe-undefined)
+                       limit-cust21_0
+                       stop-cust20_0)))
                 (begin
-                  (if (1/custodian? limit-cust19_0)
+                  (if (1/custodian? limit-cust21_0)
                     (void)
                     (raise-argument-error
                      'custodian-limit-memory
                      "custodian?"
-                     limit-cust19_0))
-                  (if (exact-nonnegative-integer? need-amt20_0)
+                     limit-cust21_0))
+                  (if (exact-nonnegative-integer? need-amt22_0)
                     (void)
                     (raise-argument-error
                      'custodian-limit-memory
                      "exact-nonnegative-integer?"
-                     need-amt20_0))
+                     need-amt22_0))
                   (if (1/custodian? stop-cust_0)
                     (void)
                     (raise-argument-error
@@ -6217,36 +6255,36 @@
                   (start-atomic/no-interrupts)
                   (begin0
                     (if (let ((or-part_0
-                               (1/custodian-shut-down? limit-cust19_0)))
+                               (1/custodian-shut-down? limit-cust21_0)))
                           (if or-part_0
                             or-part_0
                             (1/custodian-shut-down? stop-cust_0)))
                       (void)
                       (begin
                         (set-custodian-memory-limits!
-                         limit-cust19_0
+                         limit-cust21_0
                          (let ((app_0
                                 (cons
-                                 need-amt20_0
-                                 (if (eq? limit-cust19_0 stop-cust_0)
+                                 need-amt22_0
+                                 (if (eq? limit-cust21_0 stop-cust_0)
                                    #f
                                    stop-cust_0))))
                            (cons
                             app_0
-                            (custodian-memory-limits limit-cust19_0))))
-                        (if (eq? stop-cust_0 limit-cust19_0)
+                            (custodian-memory-limits limit-cust21_0))))
+                        (if (eq? stop-cust_0 limit-cust21_0)
                           (let ((old-limit_0
-                                 (custodian-immediate-limit limit-cust19_0)))
+                                 (custodian-immediate-limit limit-cust21_0)))
                             (if (let ((or-part_0 (not old-limit_0)))
                                   (if or-part_0
                                     or-part_0
-                                    (> old-limit_0 need-amt20_0)))
+                                    (> old-limit_0 need-amt22_0)))
                               (set-custodian-immediate-limit!
-                               limit-cust19_0
-                               need-amt20_0)
+                               limit-cust21_0
+                               need-amt22_0)
                               (void)))
                           (void))
-                        (check-limit-custodian limit-cust19_0)))
+                        (check-limit-custodian limit-cust21_0)))
                     (end-atomic/no-interrupts))
                   (void))))))))
     (|#%name|
@@ -6255,8 +6293,8 @@
       ((limit-cust_0 need-amt_0)
        (begin
          (custodian-limit-memory_0 limit-cust_0 need-amt_0 unsafe-undefined)))
-      ((limit-cust_0 need-amt_0 stop-cust18_0)
-       (custodian-limit-memory_0 limit-cust_0 need-amt_0 stop-cust18_0))))))
+      ((limit-cust_0 need-amt_0 stop-cust20_0)
+       (custodian-limit-memory_0 limit-cust_0 need-amt_0 stop-cust20_0))))))
 (define custodians-with-limits (make-hasheq))
 (define check-limit-custodian
   (lambda (limit-cust_0)
@@ -6286,7 +6324,7 @@
 (define 1/make-custodian-box
   (letrec ((procz1
             (|#%name|
-             temp65
+             temp67
              (lambda (b_0) (begin (set-custodian-box-v! b_0 #f))))))
     (|#%name|
      make-custodian-box
@@ -6299,8 +6337,8 @@
            (let ((b_0
                   (custodian-box1.1 v_0 (custodian-get-shutdown-sema c_0))))
              (begin
-               (if (let ((temp65_0 procz1))
-                     (do-custodian-register.1 #f #t #t c_0 b_0 temp65_0))
+               (if (let ((temp67_0 procz1))
+                     (do-custodian-register.1 #f #t #t c_0 b_0 temp67_0))
                  (void)
                  (raise-arguments-error
                   'make-custodian-box

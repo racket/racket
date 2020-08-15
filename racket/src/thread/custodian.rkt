@@ -33,6 +33,7 @@
          unsafe-custodian-unregister
          custodian-register-thread
          custodian-register-place
+         custodian-shutdown-root-at-exit
          raise-custodian-is-shut-down
          unsafe-add-post-custodian-shutdown
          check-queued-custodian-shutdown
@@ -222,6 +223,10 @@
   ;; should be swapped out
   (post-shutdown-action))
 
+(define (custodian-shutdown-root-at-exit)
+  (atomically
+   (do-custodian-shutdown-all root-custodian #t)))
+
 ;; Custodians across all places that have a queued shutdown. Hold the
 ;; memory-limit lock and also disable interrupts (or OK as a GC
 ;; callback) while modifying this list:
@@ -292,13 +297,15 @@
   (eq? (custodian-place c) current-place))
 
 ;; In atomic mode
-(define (do-custodian-shutdown-all c)
+(define (do-custodian-shutdown-all c [only-at-exit? #f])
   (unless (custodian-shut-down? c)
     (set-custodian-shut-down! c)
     (when (custodian-sync-futures? c)
       (futures-sync-for-custodian-shutdown))
     (for ([(child callback) (in-hash (custodian-children c) #f)])
-      (when child
+      (when (and child
+                 (or (not only-at-exit?)
+                     (at-exit-callback? callback)))
         (if (procedure-arity-includes? callback 2)
             (callback child c)
             (callback child))))

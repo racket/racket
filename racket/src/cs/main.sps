@@ -110,9 +110,6 @@
    (define gracket-guid-or-x11-args (list-ref the-command-line-arguments 9))
 
    (seq
-    (when (foreign-entry? "racket_exit")
-      (#%exit-handler (foreign-procedure "racket_exit" (int) void)))
-
     (when (eq? 'windows (system-type))
       (unsafe-register-process-global (string->bytes/utf-8 "PLT_WM_IS_GRACKET")
 				      (ptr-add #f wm-is-gracket-or-x11-arg-count))
@@ -678,32 +675,35 @@
                    (when debug-GC:major?
                      (log-message* root-logger 'debug 'GC:major msg data #f in-interrupt?)))))))))))
 
-   (seq
-    (exit-handler
-     (let ([orig (exit-handler)]
-           [root-logger (current-logger)])
-       (lambda (v)
-         (when gcs-on-exit?
-           (collect-garbage)
-           (collect-garbage))
-         (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
-               [debug-GC:major? (log-level?* root-logger 'debug 'GC:major)])
-           (when (or debug-GC? debug-GC:major?)
-             (let ([msg (chez:format "GC: 0:atexit peak ~a(~a); alloc ~a; major ~a; minor ~a; ~ams"
-                                     (K "" peak-mem)
-                                     (K "+" (- (maximum-memory-bytes) peak-mem))
-                                     (K "" (- (+ (bytes-deallocated) (bytes-allocated)) (initial-bytes-allocated)))
-                                     major-gcs
-                                     minor-gcs
-                                     (let ([t (sstats-gc-cpu (statistics))])
-                                       (+ (* (time-second t) 1000)
-                                          (quotient (time-nanosecond t) 1000000))))])
-               (when debug-GC?
-                 (log-message root-logger 'info 'GC msg #f #f))
-               (when debug-GC:major?
-                 (log-message root-logger 'info 'GC:major msg #f #f)))))
-         (linklet-performance-report!)
-         (|#%app| orig v)))))
+   (define (initialize-exit-handler!)
+     (when (foreign-entry? "racket_exit")
+       (#%exit-handler (foreign-procedure "racket_exit" (int) void)))
+     (#%exit-handler
+      (let ([orig (#%exit-handler)]
+            [root-logger (current-logger)])
+        (lambda (v)
+          (when gcs-on-exit?
+            (collect-garbage)
+            (collect-garbage))
+          (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
+                [debug-GC:major? (log-level?* root-logger 'debug 'GC:major)])
+            (when (or debug-GC? debug-GC:major?)
+              (let ([msg (chez:format "GC: 0:atexit peak ~a(~a); alloc ~a; major ~a; minor ~a; ~ams"
+                                      (K "" peak-mem)
+                                      (K "+" (- (maximum-memory-bytes) peak-mem))
+                                      (K "" (- (+ (bytes-deallocated) (bytes-allocated)) (initial-bytes-allocated)))
+                                      major-gcs
+                                      minor-gcs
+                                      (let ([t (sstats-gc-cpu (statistics))])
+                                        (+ (* (time-second t) 1000)
+                                           (quotient (time-nanosecond t) 1000000))))])
+                (when debug-GC?
+                  (log-message root-logger 'info 'GC msg #f #f))
+                (when debug-GC:major?
+                  (log-message root-logger 'info 'GC:major msg #f #f)))))
+          (linklet-performance-report!)
+          (custodian-shutdown-root-at-exit)
+          (|#%app| orig v)))))
 
    (define stderr-logging
      (or stderr-logging-arg
@@ -805,7 +805,7 @@
                (when as-predefined?
                  (set! embedded-load-in-places (cons (list path start end bstr) embedded-load-in-places))))))
            (escape))))))
-       
+
    (set-make-place-ports+fds! make-place-ports+fds)
 
    (set-prepare-for-place!
@@ -875,6 +875,7 @@
     (lambda (entry-point-k)
       (call-in-main-thread
        (lambda ()
+         (initialize-exit-handler!)
          (initialize-place!)
 
          (when init-library

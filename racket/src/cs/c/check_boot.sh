@@ -28,7 +28,7 @@ check_pb vfasl.inc
 
 check_mach()
 {
-    SRC=$SCHEME_DIR/boot/pb/$1
+    SRC="$SCHEME_DIR"/boot/pb/$1
     INIT=$SCHEME_WORKAREA/boot/$MACH/$1
     if [ ! -e $INIT ] ; then
         touch boot_pending

@@ -122,6 +122,7 @@
          custodian-require-memory
          custodian-limit-memory
          custodian-shut-down?
+         custodian-shutdown-root-at-exit
 
          make-will-executor
          make-late-will-executor
