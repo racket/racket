@@ -18,6 +18,8 @@
 # ifndef __MINGW32__
 #  undef FORCEINLINE
 #  define FORCEINLINE static __forceinline
+# else
+#  define FORCEINLINE static
 # endif
 #else
 #define FORCEINLINE static inline
