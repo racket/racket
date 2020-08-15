@@ -194,14 +194,16 @@ case "$host_os" in
   *freebsd*)
     MACH_OS=fb
     CFLAGS="${CFLAGS} -I/usr/local/include"
-    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread"
+    LDFLAGS="${LDFLAGS} -L/usr/local/lib"
+    LIBS="${LIBS} -liconv -lm -lpthread"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
   openbsd*)
     MACH_OS=ob
     CFLAGS="${CFLAGS} -I/usr/local/include"
-    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread"
+    LDFLAGS="${LDFLAGS} -L/usr/local/lib"
+    LIBS="${LIBS} -liconv -lm -lpthread"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -586,6 +588,7 @@ CPPFLAGS="$CPPFLAGS $PREFLAGS"
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LIBS="'"'"${LIBS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
