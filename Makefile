@@ -10,51 +10,51 @@ PKGS = main-distribution main-distribution-test
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 SETUP_MACHINE_FLAGS =
-RUN_RACKET =  $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects
-RUN_RACO =  $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco
+RUN_RACKET = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects
+RUN_RACO = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 PKG_UPDATE_OPTIONS = 
 PLT_SETUP_OPTIONS = 
 CPUS =
 VM = cs
 INITIAL_SETUP_MODE = minimal
-ALL_PKG_UPDATE_OPTIONS =  --all --auto --no-setup --scope installation $(PKG_UPDATE_OPTIONS)
-ALL_PKG_INSTALL_OPTIONS =  $(JOB_OPTIONS) --no-setup --pkgs --skip-installed --scope installation --deps search-auto $(REQUIRED_PKGS) $(PKGS)
-ALL_PLT_SETUP_OPTIONS =  $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+ALL_PKG_UPDATE_OPTIONS = --all --auto --no-setup --scope installation $(PKG_UPDATE_OPTIONS)
+ALL_PKG_INSTALL_OPTIONS = $(JOB_OPTIONS) --no-setup --pkgs --skip-installed --scope installation --deps search-auto $(REQUIRED_PKGS) $(PKGS)
+ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 IN_PLACE_SETUP_OPTIONS =
 PREFIX = 
-CONFIG_PREFIX_ARGS =  --prefix=$(PREFIX) --enable-macprefix
-UNIXSTYLE_CONFIG_qq =  MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --prefix=$(PREFIX) --enable-macprefix" CONFIG_IN_PLACE_ARGS=""
-UNIX_CATALOG =  build/local/catalog
-UNIX_RACO_ARGS =  $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
-UNIX_BASE_ARGS =  SELF_ROOT_CONFIG_FLAG="-Z" SKIP_DESTDIR_FIX="skip"
-LOC_CATALOG =  build/local/pkgs-catalog
+CONFIG_PREFIX_ARGS = --prefix=$(PREFIX) --enable-macprefix
+UNIXSTYLE_CONFIG_qq = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --prefix=$(PREFIX) --enable-macprefix" CONFIG_IN_PLACE_ARGS=""
+UNIX_CATALOG = build/local/catalog
+UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
+UNIX_BASE_ARGS = SELF_ROOT_CONFIG_FLAG="-Z" SKIP_DESTDIR_FIX="skip"
+LOC_CATALOG = build/local/pkgs-catalog
 CONFIGURE_ARGS_qq =
 CONFIGURE_ARGS = 
 MORE_CONFIGURE_ARGS = 
 SELF_ROOT_CONFIG_FLAG = -G
-SELF_FLAGS_qq =  SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
-PLT_SETUP_OPTIONS_qq =  PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
-INSTALL_SETUP_ARGS =  SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+SELF_FLAGS_qq = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
+PLT_SETUP_OPTIONS_qq = PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
+INSTALL_SETUP_ARGS = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 WIN32_BUILD_LEVEL = all
 RACKETBC_SUFFIX = bc
 CONFIG_IN_PLACE_ARGS = --disable-useprefix --enable-origtree
-BC_CONFIGURE_ARGS =  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+BC_CONFIGURE_ARGS = $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 MORE_CROSS_CONFIGURE_ARGS =
 RACKETCS_SUFFIX =
 RACKET =
 RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
-PB_BRANCH =  circa-7.8.0.8-3
-PB_REPO =  https://github.com/racket/pb
+PB_BRANCH = circa-7.8.0.8-3
+PB_REPO = https://github.com/racket/pb
 EXTRA_REPOS_BASE =
 CS_CROSS_SUFFIX =
 CS_HOST_WORKAREA_PREFIX = 
-CS_CONFIGURE_ARGS =  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
-PB_DIR =  racket/src/ChezScheme/boot/pb
-WIN32_BOOT_ARGS =  SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
-WIN32_SETUP_BOOT =  -O "info@compiler/cm" -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled ignored racket/src/build/ignored.d
-CSBUILD_ARGUMENTS =  --pull --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) --boot-mode "$(SETUP_BOOT_MODE)" --extra-repos-base "$(EXTRA_REPOS_BASE)" -- $(GIT_CLONE_ARGS_qq)
+CS_CONFIGURE_ARGS = $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+PB_DIR = racket/src/ChezScheme/boot/pb
+WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc
+WIN32_SETUP_BOOT = -O "info@compiler/cm" -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled ignored racket/src/build/ignored.d
+CSBUILD_ARGUMENTS = --pull --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) --boot-mode "$(SETUP_BOOT_MODE)" --extra-repos-base "$(EXTRA_REPOS_BASE)" -- $(GIT_CLONE_ARGS_qq)
 SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 DOC_SEARCH = 
 SERVER = localhost
@@ -96,41 +96,41 @@ SVR_PRT = $(SERVER):$(SERVER_PORT)
 SVR_CAT = $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 SERVER_PKG_INSTALL_OPTIONS =
 PKG_INSTALL_OPTIONS =
-RECOMPILE_OPTIONS =  --recompile-only
-USER_CONFIG =  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
-USER_RACKET =  $(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
-USER_RACO =  $(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco
-WIN32_RACKET =  $(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
-WIN32_RACO =  $(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco
-X_AUTO_OPTIONS =  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
-USER_AUTO_OPTIONS =  --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
-SOURCE_USER_AUTO_q =  --catalog build/catalog-copy --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS)
-REMOTE_USER_AUTO =  --catalog $(SVR_CAT) --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
-REMOTE_INST_AUTO =  --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only
-CONFIG_MODE_q =  "$(CONFIG)" "$(CONFIG_MODE)"
-BUNDLE_CONFIG =  bundle/racket/etc/config.rktd
-BUNDLE_RACO_FLAGS =  -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
-BUNDLE_RACO =  $(PLAIN_RACKET) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
-WIN32_BUNDLE_RACO =  $(WIN32_PLAIN_RACKET) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
+RECOMPILE_OPTIONS = --recompile-only
+USER_CONFIG = -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
+USER_RACKET = $(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
+USER_RACO = $(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco
+WIN32_RACKET = $(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
+WIN32_RACO = $(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco
+X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
+USER_AUTO_OPTIONS = --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
+SOURCE_USER_AUTO_q = --catalog build/catalog-copy --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS)
+REMOTE_USER_AUTO = --catalog $(SVR_CAT) --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
+REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only
+CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
+BUNDLE_CONFIG = bundle/racket/etc/config.rktd
+BUNDLE_RACO_FLAGS = -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
+BUNDLE_RACO = $(PLAIN_RACKET) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
+WIN32_BUNDLE_RACO = $(WIN32_PLAIN_RACKET) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
 IN_BUNDLE_RACO = bundle/racket/bin/raco
-WIN32_IN_BUNDLE_RACO =  bundle\racket\raco
-PKGS_CATALOG =  -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate
-PKGS_CONFIG =  -U -G build/config racket/src/pkgs-config.rkt
+WIN32_IN_BUNDLE_RACO = bundle\racket\raco
+PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate
+PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 SERVER_COMPILE_MACHINE = -M
-ANY_COMPILE_MACHINE_ARGS_qq =  SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
+ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
 NEXT_TARGET = 
 PACK_BUILT_OPTIONS =
 CLIENT_BASE = base
 WIN32_CLIENT_BASE = win-base
-SET_BUNDLE_CONFIG_q =  bundle/racket/etc/config.rktd "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+SET_BUNDLE_CONFIG_q = bundle/racket/etc/config.rktd "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 BUNDLE_FROM_SERVER_TARGET = bundle-from-server
-UPLOAD_q =  --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
-DIST_ARGS_q =  --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)" $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)" --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" --post-process "$(INSTALLER_POST_PROCESS_BASE64)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
+UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
+DIST_ARGS_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)" $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)" --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" --post-process "$(INSTALLER_POST_PROCESS_BASE64)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 SITE_PATH =
-FROM_SITE_ARGS =  SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/ DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" $(PROP_ARGS)
-DRIVE_ARGS_q =  $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
+FROM_SITE_ARGS = SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/ DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""' DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" $(PROP_ARGS)
+DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_DESCRIBE =
-DRIVE_CMD_q =  -l- distro-build/drive-clients $(DRIVE_DESCRIBE) $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
+DRIVE_CMD_q = -l- distro-build/drive-clients $(DRIVE_DESCRIBE) $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DOC_CATALOGS = build/built/catalog build/native/catalog
 main:
 	$(MAKE) in-place CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CPUS="$(CPUS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_CROSS_SUFFIX="$(CS_CROSS_SUFFIX)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" INITIAL_SETUP_MODE="$(INITIAL_SETUP_MODE)" IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PKGS="$(PKGS)" PKG_UPDATE_OPTIONS="$(PKG_UPDATE_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SRC_CATALOG="$(SRC_CATALOG)" VM="$(VM)"
@@ -148,11 +148,11 @@ win-in-place:
 	$(MAKE) win-$(VM)-in-place-setup IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 plain-minimal-in-place-after-base:
 	$(MAKE) pkgs-catalog DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" PLAIN_RACKET="$(PLAIN_RACKET)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SRC_CATALOG="$(SRC_CATALOG)"
-	  $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco pkg update  --all --auto --no-setup --scope installation                           $(PKG_UPDATE_OPTIONS)
-	  $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco pkg install  $(JOB_OPTIONS) --no-setup --pkgs --skip-installed                            --scope installation --deps search-auto                            $(REQUIRED_PKGS) $(PKGS)
-	  $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco setup --only-foreign-libs  $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco pkg update --all --auto --no-setup --scope installation                           $(PKG_UPDATE_OPTIONS)
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco pkg install $(JOB_OPTIONS) --no-setup --pkgs --skip-installed                            --scope installation --deps search-auto                            $(REQUIRED_PKGS) $(PKGS)
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco setup --only-foreign-libs $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 plain-in-place-setup:
-	  $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco setup  $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
 as-is:
 	if [ "$(CPUS)" = "" ] ;          then $(MAKE) plain-as-is CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" VM="$(VM)" ;          else $(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" VM="$(VM)" ; fi
 plain-as-is:
@@ -165,10 +165,10 @@ unix-style:
 	if [ "$(CPUS)" = "" ] ;          then $(MAKE) plain-unix-style CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" DESTDIR="$(DESTDIR)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PKGS="$(PKGS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PREFIX="$(PREFIX)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" REQUIRED_PKGS="$(REQUIRED_PKGS)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SRC_CATALOG="$(SRC_CATALOG)" VM="$(VM)" ;          else $(MAKE) -j $(CPUS) plain-unix-style JOB_OPTIONS="-j $(CPUS)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" DESTDIR="$(DESTDIR)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PKGS="$(PKGS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PREFIX="$(PREFIX)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" REQUIRED_PKGS="$(REQUIRED_PKGS)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SRC_CATALOG="$(SRC_CATALOG)" VM="$(VM)" ; fi
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) $(VM)-base MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)  --prefix=$(PREFIX) --enable-macprefix" CONFIG_IN_PLACE_ARGS="" SELF_ROOT_CONFIG_FLAG="-Z" SKIP_DESTDIR_FIX="skip" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+	$(MAKE) $(VM)-base MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --prefix=$(PREFIX) --enable-macprefix" CONFIG_IN_PLACE_ARGS="" SELF_ROOT_CONFIG_FLAG="-Z" SKIP_DESTDIR_FIX="skip" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 	$(MAKE) set-src-catalog DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" DESTDIR="$(DESTDIR)" PREFIX="$(PREFIX)" SRC_CATALOG="$(SRC_CATALOG)"
 	$(MAKE) local-catalog DESTDIR="$(DESTDIR)" PREFIX="$(PREFIX)"
-	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install  $(JOB_OPTIONS) --catalog  build/local/catalog --auto -i $(REQUIRED_PKGS) $(PKGS)
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(JOB_OPTIONS) --catalog build/local/catalog --auto -i $(REQUIRED_PKGS) $(PKGS)
 	cd racket/src/build && $(MAKE) fix-paths
 error-need-prefix:
 	: ================================================================
@@ -176,8 +176,8 @@ error-need-prefix:
 	: ================================================================
 	exit 1
 local-catalog:
-	"$(DESTDIR)$(PREFIX)/bin/racket" -l- pkg/dirs-catalog --check-metadata  build/local/pkgs-catalog pkgs
-	"$(DESTDIR)$(PREFIX)/bin/raco" pkg catalog-copy --force --from-config  build/local/pkgs-catalog  build/local/catalog
+	"$(DESTDIR)$(PREFIX)/bin/racket" -l- pkg/dirs-catalog --check-metadata build/local/pkgs-catalog pkgs
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg catalog-copy --force --from-config build/local/pkgs-catalog build/local/catalog
 set-src-catalog:
 	if [ ! "$(SRC_CATALOG)" = "$(DEFAULT_SRC_CATALOG)" ] ; 	 then "$(DESTDIR)$(PREFIX)/bin/raco" pkg config -i --set catalogs "$(SRC_CATALOG)" ""; fi
 base:
@@ -224,8 +224,8 @@ win-bc-in-place-setup:
 	$(MAKE) plain-in-place-setup PLAIN_RACKET=racket\racket$(RACKETBC_SUFFIX) IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 bc-base:
 	if [ "$(RACKETBC_SUFFIX)" = "" ] ; 	  then $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-bcdefault" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" ; 	  else $(MAKE) bc-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-bcdefault" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" ; fi
-	cd racket/src/build/bc && $(MAKE)  SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
-	cd racket/src/build && $(MAKE) install-bc   SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"  PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+	cd racket/src/build/bc && $(MAKE) SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"
+	cd racket/src/build && $(MAKE) install-bc SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 win-bc-base:
 	$(MAKE) win-remove-setup-dlls
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) _$(RACKETBC_SUFFIX) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
@@ -237,11 +237,11 @@ win-remove-setup-dlls:
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 bc-configure:
 	$(MAKE) racket/src/build/bc/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
-	cd racket/src/build/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS=" $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
+	cd racket/src/build/bc && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
 racket/src/build/bc/Makefile: racket/src/bc/configure racket/src/bc/Makefile.in racket/src/cfg-bc racket/src/Makefile.in 
 	mkdir -p racket/src/build/bc
-	cd racket/src/build/bc && ../../bc/configure $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
-	cd racket/src/build && ../cfg-bc $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+	cd racket/src/build/bc && ../../bc/configure $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+	cd racket/src/build && ../cfg-bc $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 native-bc-for-cross:
 	mkdir -p racket/src/build/cross/bc
 	$(MAKE) racket/src/build/cross/bc/Makefile MORE_CROSS_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
@@ -284,14 +284,14 @@ cs-base:
 	if [ "$(RACKETCS_SUFFIX)" = "" ] ; 	  then $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" ; 	  else $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-csdefault" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" ; fi
 	cd racket/src/build/cs/c && $(MAKE) CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)"
 	$(MAKE) base-config
-	cd racket/src/build && $(MAKE) install-cs   SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)"  PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+	cd racket/src/build && $(MAKE) install-cs SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 cs-configure:
 	$(MAKE) racket/src/build/cs/c/Makefile CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)"
-	cd racket/src/build/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS=" $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
+	cd racket/src/build/cs/c && $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)"
 racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs racket/src/Makefile.in 
 	mkdir -p racket/src/build/cs/c
-	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
-	cd racket/src/build && ../cfg-cs $(CONFIGURE_ARGS_qq)  $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+	cd racket/src/build/cs/c && ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
+	cd racket/src/build && ../cfg-cs $(CONFIGURE_ARGS_qq) $(CONFIGURE_ARGS) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 cs-minimal-in-place-after-base:
 	$(MAKE) plain-minimal-in-place-after-base PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX) DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" JOB_OPTIONS="$(JOB_OPTIONS)" PKGS="$(PKGS)" PKG_UPDATE_OPTIONS="$(PKG_UPDATE_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" REQUIRED_PKGS="$(REQUIRED_PKGS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SRC_CATALOG="$(SRC_CATALOG)"
 cs-minimal-in-place-after-base-cross:
@@ -304,14 +304,14 @@ maybe-fetch-pb:
 	if [ "$(RACKET_FOR_BOOTFILES)" = "" ] ;           then $(MAKE) fetch-pb EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" ; fi
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
-	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q -b  circa-7.8.0.8-3  https://github.com/racket/pb  racket/src/ChezScheme/boot/pb ; 	  else cd  racket/src/ChezScheme/boot/pb && git fetch -q origin  circa-7.8.0.8-3 ; fi
-	cd  racket/src/ChezScheme/boot/pb && git checkout -q  circa-7.8.0.8-3
+	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q -b circa-7.8.0.8-3 https://github.com/racket/pb racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-7.8.0.8-3:remotes/origin/circa-7.8.0.8-3 ; fi
+	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-7.8.0.8-3
 pb-stage:
-	cd  racket/src/ChezScheme/boot/pb && git branch  circa-7.8.0.8-3
-	cd  racket/src/ChezScheme/boot/pb && git checkout  circa-7.8.0.8-3
-	cd  racket/src/ChezScheme/boot/pb && git add . && git commit --amend -m "new build"
+	cd racket/src/ChezScheme/boot/pb && git branch circa-7.8.0.8-3
+	cd racket/src/ChezScheme/boot/pb && git checkout circa-7.8.0.8-3
+	cd racket/src/ChezScheme/boot/pb && git add . && git commit --amend -m "new build"
 pb-push:
-	cd  racket/src/ChezScheme/boot/pb && git push -u origin  circa-7.8.0.8-3
+	cd racket/src/ChezScheme/boot/pb && git push -u origin circa-7.8.0.8-3
 win-cs-base:
 	IF "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-bc-then-cs-base SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)"
 	IF not "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-just-cs-base SETUP_BOOT_MODE=--chain DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)"
@@ -320,7 +320,7 @@ win-bc-then-cs-base:
 	$(MAKE) win-just-cs-base RACKET_FOR_BUILD="$(PLAIN_RACKET)" DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" SETUP_BOOT_MODE="$(SETUP_BOOT_MODE)"
 win-just-cs-base:
 	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
-	cmd /c $(RACKET_FOR_BUILD)  -O "info@compiler/cm"                     -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled                     ignored racket/src/build/ignored.d racket\src\worksp\csbuild.rkt  --pull                      --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS)                      --boot-mode "$(SETUP_BOOT_MODE)"                      --extra-repos-base "$(EXTRA_REPOS_BASE)"                      -- $(GIT_CLONE_ARGS_qq)
+	cmd /c $(RACKET_FOR_BUILD) -O "info@compiler/cm"                     -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled                     ignored racket/src/build/ignored.d racket\src\worksp\csbuild.rkt --pull                      --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS)                      --boot-mode "$(SETUP_BOOT_MODE)"                      --extra-repos-base "$(EXTRA_REPOS_BASE)"                      -- $(GIT_CLONE_ARGS_qq)
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
@@ -362,9 +362,9 @@ clean:
 	@echo "  git clean -d -x -f ."
 	@exit 1
 pkgs-catalog:
-	 $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects  -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate racket/share/pkgs-catalog pkgs racket/src/expander
-	 $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects  -U -G build/config racket/src/pkgs-config.rkt "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
-	 $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects racket/src/pkgs-check.rkt racket/share/pkgs-catalog
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate racket/share/pkgs-catalog pkgs racket/src/expander
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects -U -G build/config racket/src/pkgs-config.rkt "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
+	$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 with-setup-flags:
 	if [ "$(SERVER_COMPILE_MACHINE)" = "-M" ] ;          then $(MAKE) $(NEXT_TARGET) SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany" BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)" ;          else $(MAKE) $(NEXT_TARGET) BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)" ; fi
 random:
@@ -399,99 +399,99 @@ stamp-from-date:
 build-from-catalog:
 	rm -rf build/user
 	rm -rf build/catalog-copy
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
 	$(MAKE) server-cache-config PLAIN_RACKET="$(PLAIN_RACKET)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg install --all-platforms  --catalog build/catalog-copy  --scope user  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg install --all-platforms --catalog build/catalog-copy --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config CONFIG="$(CONFIG)" CONFIG_MODE="$(CONFIG_MODE)" DOC_SEARCH="$(DOC_SEARCH)" PLAIN_RACKET="$(PLAIN_RACKET)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/install-pkgs  "$(CONFIG)" "$(CONFIG_MODE)" "$(PKGS) $(TEST_PKGS)"  --catalog build/catalog-copy  --scope user  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS) --all-platforms
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco setup --avoid-main $(JOB_OPTIONS)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/install-pkgs "$(CONFIG)" "$(CONFIG_MODE)" "$(PKGS) $(TEST_PKGS)" --catalog build/catalog-copy --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS) --all-platforms
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco setup --avoid-main $(JOB_OPTIONS)
 server-cache-config:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg config -i --set download-cache-dir build/cache
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg config -i --set download-cache-max-files 1023
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg config -i --set download-cache-max-bytes 671088640
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg config -i --set download-cache-dir build/cache
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg config -i --set download-cache-max-files 1023
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg config -i --set download-cache-max-bytes 671088640
 set-server-config:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/set-server-config build/user/config/config.rktd  "$(CONFIG)" "$(CONFIG_MODE)" "" "" "$(DOC_SEARCH)" ""
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/set-server-config build/user/config/config.rktd "$(CONFIG)" "$(CONFIG_MODE)" "" "" "$(DOC_SEARCH)" ""
 origin-collects:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/pack-collects
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/pack-collects
 built-catalog:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/pack-built $(PACK_BUILT_OPTIONS) build/pkgs.rktd
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/pack-built $(PACK_BUILT_OPTIONS) build/pkgs.rktd
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/serve-catalog  "$(CONFIG)" "$(CONFIG_MODE)" "$(SERVER_HOSTS)" $(SERVER_PORT)  $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) $(SERVE_DURING_CMD_qq)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/serve-catalog "$(CONFIG)" "$(CONFIG_MODE)" "$(SERVER_HOSTS)" $(SERVER_PORT) $(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) $(SERVE_DURING_CMD_qq)
 binary-catalog:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/pack-built --mode binary build/pkgs.rktd
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/pack-built --mode binary build/pkgs.rktd
 binary-catalog-server:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/serve-catalog --mode binary  "$(CONFIG)" "$(CONFIG_MODE)" "$(SERVER_HOSTS)" $(SERVER_PORT)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/serve-catalog --mode binary "$(CONFIG)" "$(CONFIG_MODE)" "$(SERVER_HOSTS)" $(SERVER_PORT)
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
 	$(MAKE) $(CLIENT_BASE) MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(DISABLE_STATIC_LIBS)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CPUS="$(CPUS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" VM="$(VM)"
 	$(MAKE) distro-build-from-server JOB_OPTIONS="$(JOB_OPTIONS)" PLAIN_RACKET="$(PLAIN_RACKET)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SVR_CAT="$(SVR_CAT)"
 	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) COPY_ARGS="$(COPY_ARGS)" IN_BUNDLE_RACO="$(IN_BUNDLE_RACO)" JOB_OPTIONS="$(JOB_OPTIONS)" PKGS="$(PKGS)" PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" PLAIN_RACKET="$(PLAIN_RACKET)" SERVER_COLLECTS_PATH="$(SERVER_COLLECTS_PATH)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SOURCE_MODE="$(SOURCE_MODE)" SVR_CAT="$(SVR_CAT)" SVR_PRT="$(SVR_PRT)" UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)"
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/set-config   bundle/racket/etc/config.rktd "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/set-config bundle/racket/etc/config.rktd "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 	$(MAKE) installer-from-bundle DIST_BASE="$(DIST_BASE)" DIST_DESC="$(DIST_DESC)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DIST_SUFFIX="$(DIST_SUFFIX)" INSTALLER_OPTIONS="$(INSTALLER_OPTIONS)" INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)" INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" MAC_PKG_MODE="$(MAC_PKG_MODE)" OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" PLAIN_RACKET="$(PLAIN_RACKET)" README="$(README)" RELEASE_MODE="$(RELEASE_MODE)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SIGN_IDENTITY="$(SIGN_IDENTITY)" SOURCE_MODE="$(SOURCE_MODE)" TGZ_MODE="$(TGZ_MODE)" UPLOAD="$(UPLOAD)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)"
 win-client:
 	IF EXIST build\user cmd /c del /f /s /q build\user
 	$(MAKE) $(WIN32_CLIENT_BASE) DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)" VM="$(VM)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
 	$(MAKE) win-distro-build-from-server JOB_OPTIONS="$(JOB_OPTIONS)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SVR_CAT="$(SVR_CAT)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 	$(MAKE) win-bundle-from-server JOB_OPTIONS="$(JOB_OPTIONS)" PKGS="$(PKGS)" PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" SERVER_COLLECTS_PATH="$(SERVER_COLLECTS_PATH)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SOURCE_MODE="$(SOURCE_MODE)" SVR_CAT="$(SVR_CAT)" SVR_PRT="$(SVR_PRT)" UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/set-config   bundle/racket/etc/config.rktd "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l distro-build/set-config bundle/racket/etc/config.rktd "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 	$(MAKE) win-installer-from-bundle DIST_BASE="$(DIST_BASE)" DIST_DESC="$(DIST_DESC)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DIST_SUFFIX="$(DIST_SUFFIX)" INSTALLER_OPTIONS="$(INSTALLER_OPTIONS)" INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)" INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" MAC_PKG_MODE="$(MAC_PKG_MODE)" OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" README="$(README)" RELEASE_MODE="$(RELEASE_MODE)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SIGN_IDENTITY="$(SIGN_IDENTITY)" SOURCE_MODE="$(SOURCE_MODE)" TGZ_MODE="$(TGZ_MODE)" UPLOAD="$(UPLOAD)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 client-compile-any:
 	$(MAKE) client SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany" BUNDLE_FROM_SERVER_TARGET=bundle-cross-from-server BUILD_STAMP="$(BUILD_STAMP)" CLIENT_BASE="$(CLIENT_BASE)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" COPY_ARGS="$(COPY_ARGS)" CPUS="$(CPUS)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" DIST_BASE="$(DIST_BASE)" DIST_CATALOGS_q="$(DIST_CATALOGS_q)" DIST_DESC="$(DIST_DESC)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DIST_SUFFIX="$(DIST_SUFFIX)" DOC_SEARCH="$(DOC_SEARCH)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" INSTALLER_OPTIONS="$(INSTALLER_OPTIONS)" INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)" INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" INSTALL_NAME="$(INSTALL_NAME)" IN_BUNDLE_RACO="$(IN_BUNDLE_RACO)" JOB_OPTIONS="$(JOB_OPTIONS)" MAC_PKG_MODE="$(MAC_PKG_MODE)" OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" PKGS="$(PKGS)" PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" README="$(README)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER_COLLECTS_PATH="$(SERVER_COLLECTS_PATH)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SIGN_IDENTITY="$(SIGN_IDENTITY)" SOURCE_MODE="$(SOURCE_MODE)" SVR_CAT="$(SVR_CAT)" SVR_PRT="$(SVR_PRT)" TGZ_MODE="$(TGZ_MODE)" UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" UPLOAD="$(UPLOAD)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 distro-build-from-server:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg install  --catalog $(SVR_CAT)  --scope user  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) distro-build-client
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg install --catalog $(SVR_CAT) --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) distro-build-client
 bundle-from-server:
 	rm -rf bundle
 	mkdir -p bundle/racket
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/unixstyle-install bundle racket bundle/racket
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winstrip bundle/racket
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winvers-change bundle/racket
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(IN_BUNDLE_RACO) setup --no-user $(JOB_OPTIONS)  --recompile-only
-	$(IN_BUNDLE_RACO) pkg install  --catalog $(SVR_CAT) --scope installation  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS)  --recompile-only $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	$(IN_BUNDLE_RACO) pkg install  --catalog $(SVR_CAT) --scope installation  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS)  --recompile-only $(PKG_SOURCE_MODE) $(PKGS)
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/unixstyle-install bundle racket bundle/racket
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winstrip bundle/racket
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winvers-change bundle/racket
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(IN_BUNDLE_RACO) setup --no-user $(JOB_OPTIONS) --recompile-only
+	$(IN_BUNDLE_RACO) pkg install --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(IN_BUNDLE_RACO) pkg install --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only $(PKG_SOURCE_MODE) $(PKGS)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 bundle-cross-from-server:
 	rm -rf "build/zo`pwd`/bundle"
-	$(MAKE) bundle-from-server IN_BUNDLE_RACO="$(IN_BUNDLE_RACO)" JOB_OPTIONS="$(JOB_OPTIONS)" PKGS="$(PKGS)" PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" PLAIN_RACKET="$(PLAIN_RACKET)" SERVER_COLLECTS_PATH="$(SERVER_COLLECTS_PATH)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SOURCE_MODE="$(SOURCE_MODE)" SVR_CAT="$(SVR_CAT)" SVR_PRT="$(SVR_PRT)" UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" $(COPY_ARGS) IN_BUNDLE_RACO="$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS)  -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco"
+	$(MAKE) bundle-from-server IN_BUNDLE_RACO="$(IN_BUNDLE_RACO)" JOB_OPTIONS="$(JOB_OPTIONS)" PKGS="$(PKGS)" PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" PLAIN_RACKET="$(PLAIN_RACKET)" SERVER_COLLECTS_PATH="$(SERVER_COLLECTS_PATH)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SOURCE_MODE="$(SOURCE_MODE)" SVR_CAT="$(SVR_CAT)" SVR_PRT="$(SVR_PRT)" UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" $(COPY_ARGS) IN_BUNDLE_RACO="$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco"
 installer-from-bundle:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/installer   --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)" $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE)                $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)"                --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)"                --post-process "$(INSTALLER_POST_PROCESS_BASE64)"                "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"                "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/installer --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)" $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE)                $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)"                --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)"                --post-process "$(INSTALLER_POST_PROCESS_BASE64)"                "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"                "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 win-distro-build-from-server:
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg install  --catalog $(SVR_CAT)  --scope user  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) distro-build-client
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -N raco -l- raco pkg install --catalog $(SVR_CAT) --scope user --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) distro-build-client
 win-bundle:
 	IF EXIST bundle cmd /c rmdir /S /Q bundle
 	cmd /c mkdir bundle\racket
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/unixstyle-install bundle$(SOURCE_MODE) racket bundle\racket
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winstrip bundle\racket
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winvers-change bundle\racket
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/unixstyle-install bundle$(SOURCE_MODE) racket bundle\racket
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winstrip bundle\racket
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l setup/winvers-change bundle\racket
 win-bundle-from-server:
 	$(MAKE) win-bundle SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SOURCE_MODE="$(SOURCE_MODE)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	 bundle\racket\raco setup --no-user -l racket/base
-	 bundle\racket\raco pkg install  --catalog $(SVR_CAT) --scope installation  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS)  --recompile-only $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	 bundle\racket\raco pkg install  --catalog $(SVR_CAT) --scope installation  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS)  --recompile-only $(PKG_SOURCE_MODE) $(PKGS)
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) $(SERVER_URL_SCHEME)://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	bundle\racket\raco setup --no-user -l racket/base
+	bundle\racket\raco pkg install --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	bundle\racket\raco pkg install --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only $(PKG_SOURCE_MODE) $(PKGS)
 win-installer-from-bundle:
-	 $(WIN32_PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/installer   --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)" $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE)                $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)"                --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)"                --post-process "$(INSTALLER_POST_PROCESS_BASE64)"                "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"                "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
+	$(WIN32_PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/installer --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)" $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE)                $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)"                --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)"                --post-process "$(INSTALLER_POST_PROCESS_BASE64)"                "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"                "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 test-client:
-	 $(PLAIN_RACKET)  -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco pkg install  --catalog $(SVR_CAT) --scope installation  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS)  --recompile-only $(PKG_SOURCE_MODE) $(TEST_PKGS)
+	$(PLAIN_RACKET) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco pkg install --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only $(PKG_SOURCE_MODE) $(TEST_PKGS)
 	$(IN_BUNDLE_RACO) test $(TEST_ARGS_q)
 win-test-client:
-	 $(WIN32_PLAIN_RACKET)  -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco pkg install  --catalog $(SVR_CAT) --scope installation  --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS)  --recompile-only $(PKG_SOURCE_MODE) $(TEST_PKGS)
-	 bundle\racket\raco test $(TEST_ARGS_q)
+	$(WIN32_PLAIN_RACKET) -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco pkg install --catalog $(SVR_CAT) --scope installation --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS) $(PKG_INSTALL_OPTIONS) --recompile-only $(PKG_SOURCE_MODE) $(TEST_PKGS)
+	bundle\racket\raco test $(TEST_ARGS_q)
 client-from-site:
 	$(MAKE) with-setup-flags NEXT_TARGET=plain-client-from-site BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 plain-client-from-site:
-	make client  SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/                   DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""'                   DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html"                   $(PROP_ARGS)
+	make client SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$(SITE_PATH)origin/                   DIST_CATALOGS_q='$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)catalog/ ""'                   DOC_SEARCH="$(SERVER_URL_SCHEME)://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html"                   $(PROP_ARGS)
 installers:
 	rm -rf build/installers
-	$(MAKE) server SERVE_DURING_CMD_qq=' -l- distro-build/drive-clients $(DRIVE_DESCRIBE)  $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE)                 $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)"                 $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)"                 "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)' BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
+	$(MAKE) server SERVE_DURING_CMD_qq='-l- distro-build/drive-clients $(DRIVE_DESCRIBE) $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE)                 $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)"                 $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)"                 "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)' BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 installers-from-built:
 	$(MAKE) with-setup-flags NEXT_TARGET=plain-installers-from-built BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 plain-installers-from-built:
-	$(MAKE) built-catalog-server SERVE_DURING_CMD_qq=' -l- distro-build/drive-clients $(DRIVE_DESCRIBE)  $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE)                 $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)"                 $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)"                 "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)' CONFIG="$(CONFIG)" CONFIG_MODE="$(CONFIG_MODE)" PLAIN_RACKET="$(PLAIN_RACKET)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PORT="$(SERVER_PORT)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+	$(MAKE) built-catalog-server SERVE_DURING_CMD_qq='-l- distro-build/drive-clients $(DRIVE_DESCRIBE) $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE)                 $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)"                 $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)"                 "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)' CONFIG="$(CONFIG)" CONFIG_MODE="$(CONFIG_MODE)" PLAIN_RACKET="$(PLAIN_RACKET)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PORT="$(SERVER_PORT)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 drive-clients:
-	$(PLAIN_RACKET)  -l- distro-build/drive-clients $(DRIVE_DESCRIBE)  $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE)                 $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)"                 $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)"                 "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
+	$(PLAIN_RACKET) -l- distro-build/drive-clients $(DRIVE_DESCRIBE) $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE)                 $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)"                 $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)"                 "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 describe-clients:
 	$(MAKE) drive-clients DRIVE_DESCRIBE=--describe CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIG_MODE="$(CONFIG_MODE)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_SEARCH="$(DOC_SEARCH)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" RELEASE_MODE="$(RELEASE_MODE)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PORT="$(SERVER_PORT)" SOURCE_MODE="$(SOURCE_MODE)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)"
 site:
@@ -502,15 +502,15 @@ site-from-installers:
 plain-site-from-installers:
 	rm -rf build/docs
 	rm -rf "build/zo`pwd`/build/docs"
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/install-for-docs build/docs  "$(CONFIG)" "$(CONFIG_MODE)" "$(PKGS)" $(DOC_CATALOGS)
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/assemble-site  "$(CONFIG)" "$(CONFIG_MODE)" "$(DIST_BASE)"
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/install-for-docs build/docs "$(CONFIG)" "$(CONFIG_MODE)" "$(PKGS)" $(DOC_CATALOGS)
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/assemble-site "$(CONFIG)" "$(CONFIG_MODE)" "$(DIST_BASE)"
 snapshot-site:
 	$(MAKE) site BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 	$(MAKE) snapshot-at-site BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 snapshot-at-site:
 	$(MAKE) with-setup-flags NEXT_TARGET=plain-snapshot-at-site BUILD_STAMP="$(BUILD_STAMP)" CLEAN_MODE="$(CLEAN_MODE)" CONFIG="$(CONFIG)" CONFIGURE_ARGS="$(CONFIGURE_ARGS)" CONFIG_IN_PLACE_ARGS="$(CONFIG_IN_PLACE_ARGS)" CONFIG_MODE="$(CONFIG_MODE)" CS_CONFIGURE_ARGS="$(CS_CONFIGURE_ARGS)" CS_HOST_WORKAREA_PREFIX="$(CS_HOST_WORKAREA_PREFIX)" DIST_BASE="$(DIST_BASE)" DIST_DIR="$(DIST_DIR)" DIST_NAME="$(DIST_NAME)" DOC_CATALOGS="$(DOC_CATALOGS)" DOC_SEARCH="$(DOC_SEARCH)" DRIVE_DESCRIBE="$(DRIVE_DESCRIBE)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" JOB_OPTIONS="$(JOB_OPTIONS)" MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS)" PACK_BUILT_OPTIONS="$(PACK_BUILT_OPTIONS)" PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" PROP_ARGS="$(PROP_ARGS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BOOTFILES="$(RACKET_FOR_BOOTFILES)" RELEASE_MODE="$(RELEASE_MODE)" SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" SERVER="$(SERVER)" SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" SERVER_HOSTS="$(SERVER_HOSTS)" SERVER_PKG_INSTALL_OPTIONS="$(SERVER_PKG_INSTALL_OPTIONS)" SERVER_PORT="$(SERVER_PORT)" SERVER_URL_SCHEME="$(SERVER_URL_SCHEME)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SITE_PATH="$(SITE_PATH)" SOURCE_MODE="$(SOURCE_MODE)" SRC_CATALOG="$(SRC_CATALOG)" TEST_PKGS="$(TEST_PKGS)" VERSIONLESS_MODE="$(VERSIONLESS_MODE)" VM="$(VM)"
 plain-snapshot-at-site:
-	 $(PLAIN_RACKET)  -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/manage-snapshots  "$(CONFIG)" "$(CONFIG_MODE)" "$(DIST_BASE)"
+	$(PLAIN_RACKET) -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS) -l- distro-build/manage-snapshots "$(CONFIG)" "$(CONFIG_MODE)" "$(DIST_BASE)"
 win32-in-place:
 	$(MAKE) win-in-place DEFAULT_SRC_CATALOG="$(DEFAULT_SRC_CATALOG)" DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" INITIAL_SETUP_MODE="$(INITIAL_SETUP_MODE)" IN_PLACE_SETUP_OPTIONS="$(IN_PLACE_SETUP_OPTIONS)" JOB_OPTIONS="$(JOB_OPTIONS)" PKGS="$(PKGS)" PKG_UPDATE_OPTIONS="$(PKG_UPDATE_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)" SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)" SRC_CATALOG="$(SRC_CATALOG)" VM="$(VM)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
 win32-as-is:

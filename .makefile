@@ -436,7 +436,7 @@ fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
 	if [ ! -d racket/src/ChezScheme/boot/pb ] ; \
 	  then git clone -q -b $(PB_BRANCH) $(PB_REPO) $(PB_DIR) ; \
-	  else cd $(PB_DIR) && git fetch -q origin $(PB_BRANCH) ; fi
+	  else cd $(PB_DIR) && git fetch -q origin $(PB_BRANCH):remotes/origin/$(PB_BRANCH) ; fi
 	cd $(PB_DIR) && git checkout -q $(PB_BRANCH)
 
 # Helpers for managing the "pb" repo:

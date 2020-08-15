@@ -60,8 +60,8 @@
       (for/fold ([s s]) ([rx+val (in-list macros)])
         (regexp-replace* (car rx+val) s (cdr rx+val)))))
 
-(define rx:macro #rx"^([A-Za-z_0-9]+) *==(.*)$")
-(define rx:static #rx"^([A-Za-z_0-9]+) *:=(.*)$")
+(define rx:macro #rx"^([A-Za-z_0-9]+) *== *(.*)$")
+(define rx:static #rx"^([A-Za-z_0-9]+) *:= *(.*)$")
 (define rx:var #rx"^([A-Za-z_0-9]+) *=")
 (define rx:target #rx"^([-A-Za-z_0-9/\\.]+) *:")
 
