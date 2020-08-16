@@ -17750,23 +17750,25 @@
         (unsafe-end-atomic)))))
 (define cache-save!
   (lambda (c_0 enc_0 get_0 update!_0)
-    (begin
-      (unsafe-start-atomic)
-      (begin0
-        (begin
-          (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$5)))
-            (void)
-            (begin
-              (cache-clear! cache-to set-cache-to!)
-              (cache-clear! cache-to2 set-cache-to2!)
-              (cache-clear! cache-from set-cache-from!)
-              (set-cache-enc! (unsafe-place-local-ref cell.1$5) enc_0)))
-          (if (|#%app| get_0 (unsafe-place-local-ref cell.1$5))
-            (1/bytes-close-converter c_0)
-            (begin
-              (bytes-reset-converter c_0)
-              (|#%app| update!_0 (unsafe-place-local-ref cell.1$5) c_0))))
-        (unsafe-end-atomic)))))
+    (if c_0
+      (begin
+        (unsafe-start-atomic)
+        (begin0
+          (begin
+            (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$5)))
+              (void)
+              (begin
+                (cache-clear! cache-to set-cache-to!)
+                (cache-clear! cache-to2 set-cache-to2!)
+                (cache-clear! cache-from set-cache-from!)
+                (set-cache-enc! (unsafe-place-local-ref cell.1$5) enc_0)))
+            (if (|#%app| get_0 (unsafe-place-local-ref cell.1$5))
+              (1/bytes-close-converter c_0)
+              (begin
+                (bytes-reset-converter c_0)
+                (|#%app| update!_0 (unsafe-place-local-ref cell.1$5) c_0))))
+          (unsafe-end-atomic)))
+      (void))))
 (define bytes-open-converter/cached-to
   (lambda (enc_0)
     (let ((or-part_0 (cache-lookup! enc_0 cache-to set-cache-to!)))
