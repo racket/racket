@@ -81,6 +81,7 @@
   (define (fork-place thunk finish-proc)
     (do-prepare-for-place)
     (fork-thread (lambda ()
+                   (collect-trip-for-allocating-places! +1)
                    (init-virtual-registers)
                    (place-registers (vector-copy place-register-inits))
                    (root-thread-cell-values (make-empty-thread-cell-values))
@@ -93,6 +94,7 @@
                                     (thunk)
                                     0))])
                      (finish-proc result)
+                     (collect-trip-for-allocating-places! -1)
                      (do-destroy-place)))))
   ;; Must be called within an engine, used for memory accounting:
   (define (current-place-roots)

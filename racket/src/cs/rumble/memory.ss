@@ -32,6 +32,12 @@
 (define (set-reachable-size-increments-callback! proc)
   (set! reachable-size-increments-callback proc))
 
+(define allocating-places 1)
+(define (collect-trip-for-allocating-places! delta)
+  (with-global-lock
+   (set! allocating-places (+ allocating-places delta))
+   (collect-trip-bytes (* allocating-places (* 8 1024 1024)))))
+
 ;; Replicate the counting that `(collect)` would do
 ;; so that we can report a generation to the notification
 ;; callback
