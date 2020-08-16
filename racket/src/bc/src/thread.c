@@ -656,7 +656,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-thread-at-root", unsafe_thread_at_root, 1, 1, env);
  
   ADD_PRIM_W_ARITY("unsafe-make-custodian-at-root", unsafe_make_custodian_at_root, 0, 0, env);
-  ADD_PRIM_W_ARITY("unsafe-custodian-register", unsafe_custodian_register, 5, 5, env);
+  ADD_PRIM_W_ARITY("unsafe-custodian-register", unsafe_custodian_register, 5, 6, env);
   ADD_PRIM_W_ARITY("unsafe-custodian-unregister", unsafe_custodian_unregister, 2, 2, env);
 
   ADD_PRIM_W_ARITY("unsafe-add-post-custodian-shutdown", unsafe_add_post_custodian_shutdown, 1, 2, env);
@@ -1418,6 +1418,7 @@ static Scheme_Object *unsafe_custodian_register(int argc, Scheme_Object *argv[])
   Scheme_Object *callback = argv[2];
   int at_exit = SCHEME_TRUEP(argv[3]);
   int init_weak = SCHEME_TRUEP(argv[4]);
+  /* optional `late?` sixth argument is not used */
 
   /* Some checks, just to be polite */
   if (!SCHEME_CUSTODIANP(argv[0]))

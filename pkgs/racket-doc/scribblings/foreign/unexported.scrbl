@@ -101,7 +101,12 @@ Creates a ``late'' will executor that readies a will for a value
 normal weak references to @scheme[_v] are cleared before a will for
 @racket[_v] is readied by the late will executor, but late weak
 references created by @racket[make-late-weak-box] and
-@racket[make-late-weak-hasheq] are not.
+@racket[make-late-weak-hasheq] are not. For the @CS[] variant of
+Racket, a will is readied for @racket[_v] only when it is not reachable
+from any value that has a late will; if a value @racket[_v] is
+reachable from itself (i.e., through any field of @racket[_v], as
+opposed to the immediate value itself), a ``late'' will for
+@racket[_v] never becomes ready.
 
 Unlike a normal will executor, if a late will executor becomes
 inaccessible, the values for which it has pending wills are retained

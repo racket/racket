@@ -16,8 +16,9 @@
 
 (define (register-custodian-shutdown obj proc [custodian (current-custodian)]
                                      #:at-exit? [at-exit? #f]
-                                     #:weak? [weak? #f])
-  (unsafe-custodian-register custodian obj proc at-exit? weak?))
+                                     #:weak? [weak? #f]
+                                     #:ordered? [late? #f])
+  (unsafe-custodian-register custodian obj proc at-exit? weak? late?))
 
 (define (unregister-custodian-shutdown obj mref)
   (when mref
@@ -33,7 +34,7 @@
       (set! done? #t)
       (callback obj)))
   (define registration
-    (register-custodian-shutdown value do-callback custodian #:at-exit? at-exit?))
+    (register-custodian-shutdown value do-callback custodian #:at-exit? at-exit? #:ordered? #t))
   (define (do-finalizer)
     (register-finalizer
      value

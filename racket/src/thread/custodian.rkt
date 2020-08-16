@@ -116,13 +116,19 @@
 (define (do-custodian-register cust obj callback
                                #:at-exit? [at-exit? #f]
                                #:weak? [weak? #f]
+                               #:late? [late? #f]
                                #:gc-root? [gc-root? #f])
   (atomically
    (cond
      [(custodian-shut-down? cust) #f]
      [else
       (define we (and (not weak?)
-                      (host:make-will-executor void)))
+                      (if late?
+                          ;; caller is responsible for ensuring that a late
+                          ;; executor makes sense for `obj` --- especially
+                          ;; that it doesn't refer back to itself
+                          (host:make-late-will-executor void)
+                          (host:make-will-executor void))))
       (hash-set! (custodian-children cust)
                  obj
                  (cond
@@ -149,8 +155,8 @@
             (set-custodian-self-reference! cust cref)
             cref))])))
 
-(define (unsafe-custodian-register cust obj callback at-exit? weak?)
-  (do-custodian-register cust obj callback #:at-exit? at-exit? #:weak? weak?))
+(define (unsafe-custodian-register cust obj callback at-exit? weak? [late? #f])
+  (do-custodian-register cust obj callback #:at-exit? at-exit? #:weak? weak? #:late? late?))
 
 (define (custodian-register-thread cust obj callback)
   (do-custodian-register cust obj callback #:weak? #t #:gc-root? #t))

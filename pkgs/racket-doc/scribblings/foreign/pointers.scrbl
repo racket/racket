@@ -386,7 +386,7 @@ been cleared, which implies that the value is unreachable and no
 normal @tech[#:doc reference.scrbl]{will executor} has a will ready
 for the value. The finalizer is invoked when the will for @racket[obj]
 becomes ready in the ``late'' will executor, which means that the
-value is unreachable (even from wills) by safe code.
+value is unreachable (even from wills, and even from itself) by safe code.
 
 The finalizer is invoked in a thread that is in charge of triggering
 will executors for @racket[register-finalizer]. The given
