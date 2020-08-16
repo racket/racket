@@ -8,7 +8,7 @@
          racket/unsafe/ops
          (only-in racket/syntax format-symbol)
          (only-in racket/generic exn:fail:support)
-         (for-syntax racket/base racket/syntax))
+         (for-syntax racket/base racket/syntax syntax/for-body))
 
 (provide set seteq seteqv
          weak-set weak-seteq weak-seteqv
@@ -1045,13 +1045,14 @@
       (lambda (stx)
         (syntax-case stx ()
           [(form clauses body ... expr)
-           (with-syntax ([original stx])
+           (with-syntax ([original stx]
+                         [((pre-body ...) (post-body ...)) (split-for-body stx #'(body ... expr))])
              (syntax-protect
               #'(immutable-custom-set
                  (begin0 #f (dprintf "~a\n" 'form))
                  (for_/fold/derived original ([table (make-table)]) clauses
-                   body ...
-                   (hash-set table expr #t)))))]))))
+                   pre-body ...
+                   (hash-set table (let () post-body ...) #t)))))]))))
 
   (define (immutable-fors table-id)
     (values (immutable-for #'for/fold/derived table-id)
@@ -1064,13 +1065,14 @@
       (lambda (stx)
         (syntax-case stx ()
           [(form clauses body ... expr)
-           (with-syntax ([original stx])
+           (with-syntax ([original stx]
+                         [((pre-body ...) (post-body ...)) (split-for-body stx #'(body ... expr))])
              (syntax-protect
               #'(let ([table (make-table)])
                   (dprintf "~a\n" 'form)
                   (for_/fold/derived original () clauses
-                    body ...
-                    (hash-set! table expr #t)
+                    pre-body ...
+                    (hash-set! table (let () post-body ...) #t)
                     (values))
                   (make-set #f table))))]))))
 

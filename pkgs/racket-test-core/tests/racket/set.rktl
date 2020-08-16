@@ -564,6 +564,50 @@
                        (add1 i)))
 
 ;; ----------------------------------------
+
+(test (set 0) 'non-expression-last-form
+      (for/set ([x '(1)])
+        (begin
+          (define-syntax (m stx) #'0)
+          m)))
+
+(test (set 10) 'non-expression-last-form
+      (for/set ([x '(1)])
+        (define (f x) (g x))
+        (define-syntax-rule (m g)
+          (begin
+            (define (g x) 10)
+            (f 1)))
+        (m g)))
+
+(test (mutable-set 0) 'non-expression-last-form
+      (for/mutable-set ([x '(1)])
+        (begin
+          (define-syntax (m stx) #'0)
+          m)))
+
+(test (set 0) 'non-expression-last-form
+      (for*/set ([x '(1)])
+        (begin
+          (define-syntax (m stx) #'0)
+          m)))
+
+(test (set 10) 'non-expression-last-form
+      (for*/set ([x '(1)])
+        (define (f x) (g x))
+        (define-syntax-rule (m g)
+          (begin
+            (define (g x) 10)
+            (f 1)))
+        (m g)))
+
+(test (mutable-set 0) 'non-expression-last-form
+      (for*/mutable-set ([x '(1)])
+        (begin
+          (define-syntax (m stx) #'0)
+          m)))
+
+;; ----------------------------------------
 ;; chaperone-hash-set tests
 
 (let ()
