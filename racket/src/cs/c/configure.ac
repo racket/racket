@@ -261,6 +261,9 @@ case "$host_os" in
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
       strip_needs_dash_s=yes
     fi
+    if test "${enable_embedfw}" = "yes" ; then
+      strip_needs_dash_s=yes
+    fi
 
     PROPAGATE_SUB_CONFIGURE=no
     m4_include(../ac/sdk_mac.m4)
