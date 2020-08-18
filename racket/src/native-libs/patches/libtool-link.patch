@@ -1,6 +1,6 @@
 diff -r -u old/poppler-0.24.5/libtool new/poppler-0.24.5/libtool
---- old/poppler-0.24.5/libtool	2014-04-01 07:00:21.000000000 -0600
-+++ new/poppler-0.24.5/libtool	2014-04-01 07:00:07.000000000 -0600
+--- old/poppler-0.24.5/libtool	2020-08-18 14:20:55.000000000 -0600
++++ new/poppler-0.24.5/libtool	2020-08-18 14:22:24.000000000 -0600
 @@ -10167,14 +10167,14 @@
  old_archive_from_expsyms_cmds=""
  
@@ -18,17 +18,11 @@ diff -r -u old/poppler-0.24.5/libtool new/poppler-0.24.5/libtool
  
  # Commands used to build a loadable module if different from building
  # a shared archive.
-@@ -10256,10 +10256,10 @@
+@@ -10266,2 +10266,7 @@
  
- # Dependencies to place before and after the objects being linked to
- # create a shared library.
--predep_objects="/usr/local/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/../../../../i686-w64-mingw32/lib/../lib/dllcrt2.o /usr/local/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtbegin.o"
--postdep_objects="/usr/local/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtend.o"
++
++# Clear these back out:
 +predep_objects=""
 +postdep_objects=""
- predeps=""
--postdeps="-lstdc++ -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lmsvcrt -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lmsvcrt"
 +postdeps=""
- 
- # The library search path used internally by the compiler when linking
- # a shared library.
+ # ### END LIBTOOL TAG CONFIG: CXX

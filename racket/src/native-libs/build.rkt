@@ -64,8 +64,8 @@
              candidates))
     (car candidates)]))
 
-(define-runtime-path longdouble-c "../racket/src/longdouble/longdouble.c")
-(define-runtime-path longdouble-h "../racket/src/longdouble/longdouble.h")
+(define-runtime-path longdouble-c "../bc/src/longdouble/longdouble.c")
+(define-runtime-path longdouble-h "../bc/src/longdouble/longdouble.h")
 
 (unless skip-unpack?
   (case package-name
@@ -128,6 +128,10 @@
 ;; Avoid crash when CTFontCollectionCreateMatchingFontDescriptors fails:
 (define-runtime-path coretext-nullarray "patches/coretext-nullarray.patch")
 
+;; MinGW doesn't like `-Wp,-D_FORTIFY_SOURCE=2`, at least not without
+;; linking extra libraries:
+(define-runtime-path cairo-nofortfy-patch "patches/cairo-nofortify.patch")
+
 ;; Define some functions that aren't in Mac OS 10.5 (for the 32-bit build)
 (define-runtime-path pango-surrogate-patch "patches/pango-surrogate.patch")
 
@@ -156,6 +160,9 @@
 ;; strerror_s is not available in XP
 (define-runtime-path glib-strerror-patch "patches/glib-strerror.patch")
 
+;; avoid a print before NULL check
+(define-runtime-path glib-debugprint-patch "patches/glib-debugprint.patch")
+
 ;; For now, disable glib functionality that depends on Mac OS 10.8:
 (define-runtime-path gcocoanotify-patch "patches/gcocoanotify.patch")
 
@@ -174,7 +181,6 @@
 ;; Disable libtool's management of standard libs so that
 ;; MinGW's -static-libstdc++ works:
 (define-runtime-path libtool-link-patch "patches/libtool-link.patch")
-(define-runtime-path libtool64-link-patch "patches/libtool64-link.patch")
 
 ;; Add FcSetFallbackDirs to set fallback directories dynamically:
 (define-runtime-path fcdirs-patch "patches/fcdirs.patch")
@@ -209,6 +215,8 @@
 
 (define (sdk n)
   (~a " -isysroot /Developer/SDKs/MacOSX10."n".sdk -mmacosx-version-min=10."n))
+(define mac32-sdk 6)
+(define mac64-sdk 9)
 
 (define all-env
   (cond
@@ -229,12 +237,14 @@
    [mac?
     (cond
      [m32?
-      (define sdk-flags (sdk 5))
+      (define sdk-flags (sdk mac32-sdk))
       (list
        (list "CPPFLAGS" (~a "-m32" sdk-flags))
-       (list "LDFLAGS" (~a "-m32" sdk-flags)))]
+       (list "LDFLAGS" (~a "-m32" sdk-flags
+                           ;; suppress deprecation warning:
+                           " -Wl,-w")))]
      [else
-      (define sdk-flags (sdk 9))
+      (define sdk-flags (sdk mac64-sdk))
       (list
        (list "CPPFLAGS" (~a "-m64" sdk-flags))
        (list "LDFLAGS" (~a "-m64" sdk-flags)))])]
@@ -470,11 +480,13 @@
                                     ;; Disable Valgrind support, which particularly
                                     ;; goes wrong for 64-bit Windows builds.
                                     (list (list "CPPFLAGS" "-DNVALGRIND=1")))
-                      #:patches (cond
-                                  [win? (list glib-win32-weekday-patch
-                                              glib-strerror-patch)]
-                                  [mac? (list gcocoanotify-patch)]
-                                  [else null]))]
+                      #:patches (append
+                                 (cond
+                                   [win? (list glib-win32-weekday-patch
+                                               glib-strerror-patch)]
+                                   [mac? (list gcocoanotify-patch)]
+                                   [else null])
+                                 (list glib-debugprint-patch)))]
     [("libpng") (config #:depends (if (or win? linux?) '("zlib") '())
                         #:env (if (or linux? win?)
                                   (append
@@ -493,11 +505,12 @@
                                                       "--without-libintl-prefix")
                                                     '()))
                             #:patches (list fcdirs-patch))]
-    [("pixman") (config #:patches (cond
-                                    [(and win? (not m32?)) (list noforceinline-patch)]
-                                    [ppc? (list pixman-altivec-patch)]
-                                    [else null])
-                        #:post-patches (list pixman-notest-patch))]
+    [("pixman") (config #:patches (append
+                                   (cond
+                                     [(and win? (not m32?)) (list noforceinline-patch)]
+                                     [ppc? (list pixman-altivec-patch)]
+                                     [else null])
+                                   (list pixman-notest-patch)))]
     [("cairo")
      (when mac?
        (define zlib.pc (build-path dest "lib" "pkgconfig" "zlib.pc"))
@@ -518,9 +531,13 @@
                           (if mac?
                               '("CFLAGS=-include Kernel/uuid/uuid.h")
                               '()))
-             #:patches (list cairo-emptyglyph.patch
-                             cairo-coretext-patch
-                             courier-new-patch))]
+             #:patches (append
+                        (list cairo-emptyglyph.patch
+                              cairo-coretext-patch
+                              courier-new-patch)
+                        (if win?
+                            (list cairo-nofortfy-patch)
+                            null)))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
                           #:env cxx-env
@@ -549,7 +566,7 @@
                                   (if mac?
                                       (list pango-preferoblique-patch)
                                       null)
-                                  (if (and mac? m32?)
+                                  (if (and mac? m32? (mac32-sdk . < . 6))
                                       (list pango-surrogate-patch)
                                       null)
                                   (if (or mac? win?)
@@ -576,9 +593,7 @@
                                        cxx-env)
                          #:patches (list nonochecknew-patch)
                          #:post-patches (if win?
-                                            (list (if m32?
-                                                      libtool-link-patch
-                                                      libtool64-link-patch))
+                                            (list libtool-link-patch)
                                             null)
                          #:configure '("--enable-zlib"
 				       "--disable-splash-output"

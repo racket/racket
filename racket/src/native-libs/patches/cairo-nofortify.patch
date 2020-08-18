@@ -1,0 +1,13 @@
+diff -r -u old/cairo-1.14.12/configure new/cairo-1.14.12/configure
+--- old/cairo-1.14.12/configure	2020-08-18 14:03:24.000000000 -0600
++++ new/cairo-1.14.12/configure	2020-08-18 14:03:55.000000000 -0600
+@@ -19118,7 +19118,7 @@
+ 
+ MAYBE_WARN="$MAYBE_WARN -fno-strict-aliasing -fno-common"
+ 
+-MAYBE_WARN="$MAYBE_WARN -Wp,-D_FORTIFY_SOURCE=2"
++# MAYBE_WARN="$MAYBE_WARN -Wp,-D_FORTIFY_SOURCE=2"
+ 
+ # invalidate cached value if MAYBE_WARN has changed
+ if test "x$cairo_cv_warn_maybe" != "x$MAYBE_WARN"; then
+Only in new/cairo-1.14.12: configure~

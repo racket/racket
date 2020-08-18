@@ -18,7 +18,7 @@ Currently, we use the following external packages and versions:
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed`)
  sqlite[-autoconf]-3220000 (Windows, Linux, and PPC Mac OS only)
- openssl-1.1.0h
+ openssl-1.1.1g
  libiconv-1.15 (Windows only)
  zlib-1.2.11 (Windows and Linux only)
  libffi-3.2.1
