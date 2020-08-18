@@ -322,6 +322,12 @@
      (define that-start (or (integer-in-ctc-start that) -inf.0))
      (define that-end (or (integer-in-ctc-end that) +inf.0))
      (<= that-start this-start this-end that-end)]
+    [(between/c-s? that)
+     (define that-low (between/c-s-low that))
+     (define that-high (between/c-s-high that))
+     (define this-start (or (integer-in-ctc-start this) -inf.0))
+     (define this-end (or (integer-in-ctc-end this) +inf.0))
+     (<= that-low this-start this-end that-high)]
     [else #f]))
 
 (define (integer-in-equivalent this that)

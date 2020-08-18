@@ -68,6 +68,13 @@
   (ctest #t trust/not-stronger? (integer-in 0 #f) (and/c exact-nonnegative-integer? (>=/c -4)))
   (ctest #t trust/not-stronger? (and/c exact-nonnegative-integer? (>=/c -4)) (integer-in 0 #f))
 
+  (ctest #t trust/not-stronger? (integer-in -1 10) (between/c -1 10))
+  (ctest #t trust/not-stronger? (integer-in  2 10) (between/c -1 10))
+  (ctest #t trust/not-stronger? (integer-in -1 6) (between/c -1 10))
+  (ctest #f trust/not-stronger? (integer-in -1 11) (between/c -1 10))
+  (ctest #t trust/not-stronger? (integer-in -1 10) real?)
+  (ctest #t trust/not-stronger? exact-integer? real?)
+
   (ctest #t trust/not-stronger? #\a (char-in #\a #\c))
   (ctest #f trust/not-stronger? #\a (char-in #\b #\c))
   (ctest #t trust/not-stronger? (char-in #\f #\q) (char-in #\a #\z))
