@@ -470,7 +470,11 @@ typedef char tputsputcchar;
 #define USE_DEV_URANDOM_UUID
 
 #if defined(__arm64__) || defined(__arm32__)
-# define STORE_FENCE() __asm__ __volatile__ ("dmb ishst" : : : "memory")
+# if arm_isa_version == 6
+#  define STORE_FENCE() __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
+# else
+#  define STORE_FENCE() __asm__ __volatile__ ("dmb ishst" : : : "memory")
+# endif
 #elif defined(__powerpc64__)
 # define STORE_FENCE() __asm__ __volatile__ ("lwsync" : : : "memory")
 #elif defined(__powerpc__) || defined(__POWERPC__)
