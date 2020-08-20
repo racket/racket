@@ -469,7 +469,7 @@ typedef char tputsputcchar;
 /* Use "/dev/urandom" everywhere except Windows */
 #define USE_DEV_URANDOM_UUID
 
-#if defined(__arm64__) || defined(__arm32__)
+#if defined(__arm64__) || defined(__arm__)
 # if arm_isa_version == 6
 #  define STORE_FENCE() __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
 # else
