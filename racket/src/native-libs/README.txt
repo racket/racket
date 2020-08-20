@@ -65,24 +65,27 @@ Preliminiaries
 
 For Windows (cross-compile from Mac OS or Linux):
 
-The build scripts assume a MinGW cross compiler installed in
-"/usr[/local]/mw32" (for 32-bit builds) and "/usr[/local]/mw64" (for
-64-bit builds). In addition, building "glib" requires "gettext"
-executables that run on the build machine in your PATH.
+The build scripts assume a MinGW cross compiler installed as
+"x86_64-w64-mingw32-gcc" and "i686-w64-mingw32-gcc", but for
+historical reasons, they'll be found in "/usr[/local]/mw32" (for
+32-bit builds) and "/usr[/local]/mw64" (for 64-bit builds) if not in
+PATH. In addition, building "glib" requires "gettext" executables that
+run on the build machine in your PATH.
 
-Beware that the "libdir" configuration in
-  /usr[/local]/mw{32,64}/{i686,x86_64}-w64-mingw32/lib/libstdc++.la
+Beware that the "libdir" configuration in old MinGW installations at
+  ..../{i686,x86_64}-w64-mingw32/lib/libstdc++.la
 may be wrong, in which case you'll need to fix it by hand.
 
 For Mac OS (i386 and x86_64 on Intel, ppc on PowerPC):
 
-The script assumes that "/Developer/SDKs/MacOSX10.5.sdk" (for 32-bit
+The script assumes that "/Developer/SDKs/MacOSX10.6.sdk" (for 32-bit
 builds) and "/Developer/SDKs/MacOSX10.9.sdk" (for 64-bit builds) are
 available.
 
-You can get the 10.5 SDK out of the ".dmg" for Xcode 3.2.6; mount it
-(don't run it), open -R "MacOSX10.5.pkg", and right click to run.
-Probably you can get the 10.9 SDK in a similar way.
+The build used to use the 10.5 SDK, which you can get it out out of
+the ".dmg" for Xcode 3.2.6; mount it (don't run it), open -R
+"MacOSX10.5.pkg", and right click to run. Probably you can get the
+10.6 and 10.9 SDKs in a similar way.
 
 If you wanted to build for 10.4, and if you're using gcc instead of
 Clang, then note that you'll need gcc-4.0 --- but the Pango version
@@ -157,8 +160,8 @@ More details for Windows:
 
 More details for Mac OS:
 
- * 32-bit binaries are built for 10.5 and up. 64-bit binaries are
-   built for 10.6 and up.
+ * 32-bit binaries are built for 10.6 and up. 64-bit binaries are
+   built for 10.9 and up.
 
  * The generated ".dylib"s go to "dest/lib".
 
@@ -237,7 +240,7 @@ If You Have to Start Over Completely
 The "build.rkt" script automates most everything we learned, but
 for old build notes, see also
 
- * "racket/src/mac/README.txt" in a Racket v5.x source distirbution
+ * "racket/src/mac/README.txt" in a Racket v5.x source distribution
 
  * https://github.com/soegaard/racket-osx-libs
 
