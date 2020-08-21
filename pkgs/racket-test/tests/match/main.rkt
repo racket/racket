@@ -3,7 +3,8 @@
 (require (for-syntax scheme/base)
          "match-tests.rkt" "match-exn-tests.rkt" "other-plt-tests.rkt" "other-tests.rkt"
          "examples.rkt"
-         rackunit rackunit/text-ui)
+         rackunit rackunit/text-ui
+         (only-in racket/base local-require))
 
 (require mzlib/plt-match)
 
@@ -300,6 +301,10 @@
    
    ))
 
+(module test-struct*-struct-info racket/base
+  (struct foo (a))
+  (provide (rename-out [foo bar])))
+
 (define struct*-tests
   (test-suite 
    "Tests of struct*"
@@ -381,7 +386,24 @@
                       [val b]))]))
                  (make-tree 0 (make-tree 1 #f #f) #f))
                 (check = 0 a)
-                (check = 1 b)))))
+                (check = 1 b)))
+   (test-case "also from documentation"
+              (let ()
+                (define-struct tree (val left right))
+                (define-struct (tree* tree) (val))
+                (match-define
+                  (and (struct* tree* ([val a]))
+                       (struct* tree ([val b])))
+                  (tree* 0 #f #f 42))
+                (check = 42 a)
+                (check = 0 b)))
+   (test-case "hygiene"
+              (let ()
+                (local-require 'test-struct*-struct-info)
+                (match-define
+                  (struct* bar ([a x]))
+                  (bar 1))
+                (check = x 1)))))
 
 (define plt-match-tests
   (test-suite "Tests for plt-match.rkt"

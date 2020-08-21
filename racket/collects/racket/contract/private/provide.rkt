@@ -18,6 +18,7 @@
                      racket/string
                      racket/struct-info
                      setup/path-to-relative
+                     "../../private/struct-util.rkt"
                      "application-arity-checking.rkt"
                      "arr-i-parse.rkt"
                      (prefix-in a: "helpers.rkt")
@@ -1085,20 +1086,6 @@
                         (loop (cdr l1)
                               (+ i 1)))])))
 
-       (define (predicate->struct-name orig-stx stx)
-         (if stx
-             (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
-               (cond
-                 [m (cadr m)]
-                 [else (raise-syntax-error
-                        who
-                        "unable to cope with a struct supertype whose predicate doesn't end with `?'"
-                        orig-stx)]))
-             (raise-syntax-error
-              who
-              "unable to cope with a struct whose predicate is unknown"
-              orig-stx)))
-
        ;; get-field-names/no-field-info :: string?
        ;;                                  (listof identifier?)
        ;;                                  (or/c identifier? boolean?)
@@ -1137,7 +1124,7 @@
          (define predicate (list-ref struct-info-list 2))
          (define accessors (list-ref struct-info-list 3))
          (define super-info (list-ref struct-info-list 5))
-         (define struct-name (predicate->struct-name provide-stx predicate))
+         (define struct-name (predicate->struct-name who provide-stx predicate))
          (define immediate-field-names
            (if (struct-field-info? the-struct-info)
                (struct-field-info-list the-struct-info)

@@ -10,7 +10,8 @@
                          "stx.rkt" "stxcase-scheme.rkt" "qq-and-or.rkt" "cond.rkt"
                          "define-et-al.rkt"
                          "stxloc.rkt" "qqstx.rkt"
-                         "struct-info.rkt"))
+                         "struct-info.rkt"
+                         "struct-util.rkt"))
 
   (#%provide define-struct*
              define-struct/derived
@@ -899,16 +900,6 @@
       [(null? xs) xs]
       [else (cons (car xs) (take (cdr xs) (sub1 n)))]))
 
-  ;; modified from racket/collects/racket/contract/private/provide.rkt
-  (define-for-syntax (predicate->struct-name orig-stx stx)
-    (cond
-      [(regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx))) => cadr]
-      [else
-       (raise-syntax-error
-        #f
-        "unable to cope with a struct type whose predicate doesn't end with `?'"
-        orig-stx)]))
-
   (define-for-syntax (find-accessor/no-field-info the-struct-info fld stx)
     (define accessors (list-ref the-struct-info 3))
     (define parent (list-ref the-struct-info 5))
@@ -920,7 +911,7 @@
           0))
     (define num-own-fields (- num-fields num-super-fields))
     (define own-accessors (take accessors num-own-fields))
-    (define struct-name (predicate->struct-name stx (list-ref the-struct-info 2)))
+    (define struct-name (predicate->struct-name #f stx (list-ref the-struct-info 2)))
     (define accessor-name (string->symbol (format "~a-~a" struct-name (syntax-e fld))))
     (or (findf (λ (a) (eq? accessor-name (syntax-e a))) own-accessors)
         (raise-syntax-error

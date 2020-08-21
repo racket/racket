@@ -2,8 +2,24 @@
 (require racket/match/match-expander
          (for-syntax racket/base
                      racket/struct-info
-                     syntax/id-table
-                     racket/list))
+                     racket/list
+                     "../private/struct-util.rkt"))
+
+(define-for-syntax (extract-field-names orig-stx the-struct-info)
+  (define accessors (list-ref the-struct-info 3))
+  (define parent (list-ref the-struct-info 5))
+  (define num-fields (length accessors))
+  (define num-super-fields
+    (if (identifier? parent)
+        (length (cadddr (syntax-local-value parent)))
+        0))
+  (define num-own-fields (- num-fields num-super-fields))
+  (define own-accessors (take accessors num-own-fields))
+  (define struct-name (predicate->struct-name 'struct* orig-stx (list-ref the-struct-info 2)))
+  (for/list ([accessor (in-list own-accessors)])
+    ;; add1 for hyphen
+    (string->symbol (substring (symbol->string (syntax-e accessor))
+                               (add1 (string-length struct-name))))))
 
 (define-match-expander
   struct*
@@ -17,57 +33,44 @@
               [v (if (identifier? #'struct-name)
                      (syntax-local-value #'struct-name fail)
                      (fail))]
-              [field-acc->pattern (make-free-id-table)])
+              [field->pattern (make-hash)])
          (unless (struct-info? v) (fail))
-         ; Check each pattern and capture the field-accessor name
-         (for-each (lambda (an)
-                     (syntax-case an ()
-                       [(field pat)
-                        (unless (identifier? #'field)
-                          (raise-syntax-error 
-                           'struct* "not an identifier for field name" 
-                           stx #'field))
-                        (let ([field-acc
-                               (datum->syntax #'field
-                                              (string->symbol
-                                               (format "~a-~a"
-                                                       (syntax-e #'struct-name)
-                                                       (syntax-e #'field)))
-                                              #'field)])
-                          (when (free-id-table-ref field-acc->pattern field-acc #f)
-                            (raise-syntax-error 'struct* "Field name appears twice" stx #'field)) 
-                          (free-id-table-set! field-acc->pattern field-acc #'pat))]
-                       [_
-                        (raise-syntax-error
-                         'struct* "expected a field pattern of the form (<field-id> <pat>)"
-                         stx an)]))
-                   (syntax->list #'(field+pat ...)))
-         (let* (; Get the structure info
-                [acc (fourth (extract-struct-info v))]
-                ;; the accessors come in reverse order
-                [acc (reverse acc)]
-                ;; remove the first element, if it's #f
-                [acc (cond [(empty? acc) acc]
-                           [(not (first acc)) (rest acc)]
-                           [else acc])]
-                ; Order the patterns in the order of the accessors
-                [pats-in-order
-                 (for/list ([field-acc (in-list acc)])
-                   (begin0
-                     (free-id-table-ref
-                      field-acc->pattern field-acc
-                      (syntax/loc stx _))
-                     ; Use up pattern
-                     (free-id-table-remove! field-acc->pattern field-acc)))])
-           ; Check that all patterns were used
-           (free-id-table-for-each
-            field-acc->pattern
-            (lambda (field-acc pat)
-              (when pat
-                (raise-syntax-error 'struct* "field name not associated with given structure type"
-                                    stx field-acc))))
-           (quasisyntax/loc stx
-             (struct struct-name #,pats-in-order))))])))
+         (define the-struct-info (extract-struct-info v))
+
+         ;; own-fields and all-accessors are in the reverse order
+         (define all-accessors (list-ref the-struct-info 3))
+         (define own-fields
+           (if (struct-field-info? v)
+               (struct-field-info-list v)
+               (extract-field-names stx the-struct-info)))
+         ;; Use hash instead of set so that we don't need to require racket/set
+         (define field-set (for/hash ([field own-fields]) (values field #t)))
+
+         ;; Check that all field names are valid
+         (for ([an (in-list (syntax->list #'(field+pat ...)))])
+           (syntax-case an ()
+             [(field pat)
+              (let ([fail-field (λ (msg) (raise-syntax-error 'struct* msg stx #'field))])
+                (unless (identifier? #'field)
+                  (fail-field "not an identifier for field name"))
+                (define name (syntax-e #'field))
+                (unless (hash-has-key? field-set name)
+                  (fail-field "field name not associated with given structure type"))
+                (when (hash-has-key? field->pattern name)
+                  (fail-field "field name appears twice"))
+                (hash-set! field->pattern name #'pat))]
+             [_ (raise-syntax-error
+                 'struct* "expected a field pattern of the form (<field-id> <pat>)"
+                 stx an)]))
+
+         ;; pats is in the reverse order
+         (define pats
+           (for/list ([field (in-sequences (in-list own-fields)
+                                           (in-cycle '(#f)))]
+                      [accessor (in-list all-accessors)]
+                      #:when accessor)
+             (hash-ref field->pattern field (syntax/loc stx _))))
+         (quasisyntax/loc stx (struct struct-name #,(reverse pats))))])))
 
 (provide struct* ==)
 

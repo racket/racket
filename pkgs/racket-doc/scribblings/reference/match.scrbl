@@ -808,6 +808,7 @@ not provided, it defaults to @racket[equal?].
  A @racket[match] pattern form that matches an instance of a structure
  type named @racket[struct-id], where the field @racket[field] in the
  instance matches the corresponding @racket[pat].
+ The fields do not include those from super types.
 
  Any field of @racket[struct-id] may be omitted, and such fields can
  occur in any order.
@@ -815,10 +816,15 @@ not provided, it defaults to @racket[equal?].
  @examples[
   #:eval match-eval
   (eval:no-prompt
-   (struct tree (val left right)))
+   (struct tree (val left right))
+   (struct tree* tree (val)))
   (match (tree 0 (tree 1 #f #f) #f)
     [(struct* tree ([val a]
                     [left (struct* tree ([right #f] [val b]))]))
+     (list a b)])
+  (match (tree* 0 #f #f 42)
+    [(and (struct* tree* ([val a]))
+          (struct* tree ([val b])))
      (list a b)])
  ]
  }
