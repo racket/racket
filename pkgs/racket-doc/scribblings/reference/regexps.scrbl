@@ -63,7 +63,8 @@ A literal or printed @tech{regexp value} starts with @litchar{#rx} or
 values produced by the default reader are @tech{interned} in 
 @racket[read-syntax] mode.
 
-The internal size of a @tech{regexp value} is limited to 32 kilobytes; this
+On the @tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{BC} variant of Racket,
+the internal size of a @tech{regexp value} is limited to 32 kilobytes; this
 limit roughly corresponds to a source string with 32,000 literal
 characters or 5,000 operators.
 
