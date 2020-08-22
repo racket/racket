@@ -63,7 +63,7 @@
                             [plt-home-rel? (printf " unpack to main installation\n")]
                             [plt-rel? (printf " unpack to user add-ons\n")]
                             [else (printf " unpack locally\n")])]
-                          [else
+                          [_
                            (printf "config function:\n")
                            (pretty-write config)]))
                       a)
@@ -74,7 +74,7 @@
                            (printf "setup collections:\n")
                            (for ([c (in-list c)])
                              (printf " ~s\n" (string-join c "/")))]
-                          [else
+                          [_
                            (printf "setup unit:\n")
                            (pretty-write setup)]))
                       a)

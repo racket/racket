@@ -21,7 +21,7 @@
                ['start (printf " Making ~a\n" work)]
                ['done (printf " Made ~a\n" work)]
                ['output (printf " Output from: ~a\n~a~a" work out err)]
-               [else (eprintf " Error compiling ~a\n~a\n~a~a" work msg out err)])))
+               [_ (eprintf " Error compiling ~a\n~a\n~a~a" work msg out err)])))
 
 (define compiled (car (use-compiled-file-paths)))
 

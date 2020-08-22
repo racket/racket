@@ -58,7 +58,7 @@
                 (idle! +1)
                 (hash-set! depends wrkr (cons w fn))
                 (list w (append waitlst (list wrkr)))]))]
-           [else
+           [_
             (wrkr/send wrkr (list 'locked))
             (list wrkr null)]))
         (not v)))
@@ -122,18 +122,18 @@
                   (append-error cc "making" #f out err "output"))
                 ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
                 #t]
-              [else (eprintf "Failed trying to match:\n~s\n" result-type)]))]
+              [_ (eprintf "Failed trying to match:\n~s\n" result-type)]))]
         [(list _ (list 'ADD fn))
          ;; Currently ignoring queued individual files
          #f]
-        [else
+        [_
           (match work 
             [(list-rest (list cc file last) message)
               (append-error cc "making" #f "" "" "error")
               (eprintf "work-done match cc failed.\n")
               (eprintf "trying to match:\n~e\n" (list work msg))
               #t]
-            [else
+            [_
               (eprintf "work-done match cc failed.\n")
               (eprintf "trying to match:\n~e\n" (list work msg))
               (eprintf "FATAL\n")
@@ -176,7 +176,7 @@
             [(cons (list cc (cons file ft) subs) tail)
               (hash-set! hash id (cons (list cc ft subs) tail))
               (build-job cc file #f)]
-            [else
+            [_
               (eprintf "get-job match cc failed.\n")
               (eprintf "trying to match:\n~v\n" cc)]))
 
@@ -258,7 +258,7 @@
            (set! filelist (cons fn filelist))
            (set! seen (hash-set seen fn #t)))
          #f]
-        [else
+        [_
           (handler id 'fatalerror (format "Error matching work: ~a queue ~a" work filelist) "" "") #t]))
            
       (define/public (get-job workerid)
@@ -316,12 +316,12 @@
                  [(list 'compiled) #f]
                  [(list 'DIE) (worker/die 1)]
                  [x (send/error (format "DIDNT MATCH B ~v\n" x))]
-                 [else (send/error (format "DIDNT MATCH B\n"))])]
+                 [_ (send/error (format "DIDNT MATCH B\n"))])]
              ['unlock 
                (DEBUG_COMM (eprintf "UNLOCKING ~a ~a ~a\n" worker-id name _full-file))
               (send/msg (list (list 'UNLOCK (path->bytes fn)) "" ""))]
              [x (send/error (format "DIDNT MATCH C ~v\n" x))]
-             [else (send/error (format "DIDNT MATCH C\n"))]))
+             [_ (send/error (format "DIDNT MATCH C\n"))]))
          (with-handlers ([exn:fail? (lambda (x)             
                                       (send/resp (list 'ERROR
                                                        ;; Long form shows context:
@@ -364,7 +364,7 @@
              (stop-logging-thread))
            (send/resp 'DONE))]
         [x (send/error (format "DIDNT MATCH A ~v\n" x))]
-        [else (send/error (format "DIDNT MATCH A\n"))]))))
+        [_ (send/error (format "DIDNT MATCH A\n"))]))))
   
 (define (parallel-compile-files list-of-files
                                 #:worker-count [worker-count (processor-count)]

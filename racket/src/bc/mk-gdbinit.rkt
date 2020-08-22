@@ -558,7 +558,7 @@ EOS
                           out))]
               [#"highest_type" (display highest-type out)]
               [#"lowest_type"  (display lowest-type  out)]
-              [else
+              [_
                (let ([m2 (regexp-match (format "~a, */[*] ([0-9]+) [*]/" (cadr m))
                                        styles)])
                  (if m2

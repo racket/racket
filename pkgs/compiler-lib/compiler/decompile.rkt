@@ -282,9 +282,9 @@
                                   num-shares share-vec
                                   mutable-fill-vec
                                   result-vec)]
-           [else
+           [_
             (decompile-linklet l)])]
-       [else
+       [_
         (decompile-linklet l)])]
     [(struct faslable-correlated-linklet (expr name))
      (match (strip-correlated expr)
@@ -307,9 +307,9 @@
                                num-shares share-vec
                                mutable-fill-vec
                                result-vec)]
-       [else
+       [_
         (decompile-linklet l)])]
-    [else
+    [_
      (decompile-linklet l)]))
      
 (define (decompile-form form globs stack closed)
@@ -330,7 +330,7 @@
      `(begin ,@(map (lambda (form)
                       (decompile-form form globs stack closed))
                     forms))]
-    [else
+    [_
      (decompile-expr form globs stack closed)]))
 
 (define (extract-name name)
@@ -348,7 +348,7 @@
      (extract-name name)]
     [(struct closure (lam gen-id))
      (extract-id lam)]
-    [else #f]))
+    [_ #f]))
 
 (define (extract-ids! body ids)
   (match body
@@ -362,7 +362,7 @@
      (extract-ids! body ids)]
     [(struct boxenv (pos body))
      (extract-ids! body ids)]
-    [else #f]))
+    [_ #f]))
 
 (define (decompile-tl expr globs stack closed no-check?)
   (match expr
@@ -441,10 +441,10 @@
        `(begin
           (set! ,id (#%box ,id))
           ,(decompile-expr body globs stack closed)))]
-    [(struct branch (test then else))
+    [(struct branch (test then els))
      `(if ,(decompile-expr test globs stack closed)
           ,(decompile-expr then globs stack closed)
-          ,(decompile-expr else globs stack closed))]
+          ,(decompile-expr els globs stack closed))]
     [(struct application (rator rands))
      (let ([stack (append (for/list ([i (in-list rands)]) (gensym 'rand))
                           stack)])
@@ -485,7 +485,7 @@
            (hash-set! closed gen-id #t)
            `(#%closed ,gen-id ,(decompile-expr lam globs stack closed))))]
     [(? void?) (list 'void)]
-    [else `(quote ,expr)]))
+    [_ `(quote ,expr)]))
 
 (define (decompile-lam expr globs stack closed)
   (match expr

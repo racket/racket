@@ -124,7 +124,7 @@
                       ['start (when (verbose) (printf " ~a making ~a\n" id (->rel work)))]
                       ['done (when (verbose) (printf " ~a made ~a\n" id (->rel work)))]
                       ['output (printf " ~a output from: ~a\n~a~a" id work out err)]
-                      [else (printf " ~a error compiling ~a\n~a\n~a~a" id work msg out err)]))
+                      [_ (printf " ~a error compiling ~a\n~a\n~a~a" id work msg out err)]))
         #:options (let ([cons-if-true (lambda (bool carv cdrv)
                                         (if bool
                                             (cons carv cdrv)

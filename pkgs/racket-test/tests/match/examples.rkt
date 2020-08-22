@@ -576,10 +576,10 @@
            [_ 'no]))
 
    (comp 1
-         (match (box 'x) ('#&x 1) (else #f)))
+         (match (box 'x) ('#&x 1) (_ #f)))
 
    (comp 2
-         (match (vector 1 2) ('#(1 2) 2) (else #f)))
+         (match (vector 1 2) ('#(1 2) 2) (_ #f)))
 
    (comp 'yes
          (with-handlers ([exn:fail? (lambda _ 'yes)]
@@ -622,7 +622,7 @@
    (comp 'bad
          (match #(1)
            [(vector a b) a]
-           [else 'bad]))
+           [_ 'bad]))
 
    (comp '(1 2)
          (call-with-values
@@ -680,7 +680,7 @@
 
            (match (make-pose 1 2 3)
              [(struct pose (x y a)) "Gotcha!"]
-             [else "Epic fail!"])))
+             [_ "Epic fail!"])))
 
    (comp #f
          (match (list 'a 'b 'c)

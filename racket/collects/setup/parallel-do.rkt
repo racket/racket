@@ -293,7 +293,7 @@
                           (begin
                             (queue/work-done work-queue node wrkr (string-append msg (wrkr/read-all wrkr)))
                             (kill/remove-dead-worker node-worker wrkr))))))]
-               [else 
+               [_
                 (log-error (format "parallel-do-event-loop match node-worker failed trying to match: ~e" 
                                    node-worker))]))
            (DEBUG_COMM (printf "WAITING ON WORKERS TO RESPOND\n"))

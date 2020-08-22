@@ -35,7 +35,7 @@
                                (find-files file-exists?)))])
              (display f)
              (newline))))]
-      [else
+      [_
        (define pkg (format "~a.~a" pkg-name create:format))
        (define actual-dest-dir (if dest-dir
                                    (path->complete-path dest-dir)

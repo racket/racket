@@ -151,7 +151,7 @@
                     ;; Can use compiled bytecode, etc.:
                     (parameterize ([current-namespace ns])
                       (dynamic-require file '#%info-lookup)))))])]
-         [else (err "does not contain a module of the right shape")])))
+         [_ (err "does not contain a module of the right shape")])))
 
 (define (filter-environment-variables ev)
   (let ([keep (environment-variables-ref ev #"PLT_INFO_ALLOW_VARS")]

@@ -69,7 +69,7 @@
      (cons (prune rator #f)
            (for/list ([rand (in-list rands)])
              (prune rand #f)))]
-    [else e]))
+    [_ e]))
 
 (define (get-single-id ids)
   (and (pair? ids)

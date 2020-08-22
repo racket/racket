@@ -16,11 +16,11 @@
                          (check eq? #t (match '(tile a b c)
                                          [`(tile ,@'(a b c))
                                           #t]
-                                         [else #f]))
+                                         [_ #f]))
                          (check eq? #t (match '(tile a b c)
                                          [`(tile ,@`(a b c))
                                           #t]
-                                         [else #f])))))
+                                         [_ #f])))))
 (define cons-tests
   (test-suite "Tests for cons pattern"
               (test-case "simple"
@@ -197,7 +197,7 @@
                 (define (origin? pt)
                   (match pt
                     ((struct point (0 0)) #t)
-                    (else #f)))
+                    (_ #f)))
                 (check-true (origin? (make-point 0 0)))
                 (check-false (origin? (make-point 1 1)))))
    ; These tests ensures that the unsafe struct optimization is correct
@@ -209,7 +209,7 @@
                   (define (origin? pt)
                     (match pt
                       ((struct point (0 0)) #t)
-                      (else #f)))
+                      (_ #f)))
                   (check-true (origin? (make-point 'a 0 0)))
                   (check-false (origin? (make-point 'a 1 1))))))
    (test-case "struct patterns (with fake struct info)"
@@ -221,7 +221,7 @@
                 (define (origin? pt)
                   (match pt
                     ((struct point (0 1)) #t)
-                    (else #f)))
+                    (_ #f)))
                 (check-true (origin? (list 0 1)))
                 (check-false (origin? (list 1 1)))
                 (check-false (origin? (list 1 1 1)))

@@ -301,7 +301,7 @@
                                                      (not (eq? test-dirs 'else))
                                                      (cadr test-dirs))]
                                [else (failure)]))]
-                          [else
+                          [_
                            (error "info-procedure S-expression did not have the expected shape: "
                                   v)]))])
            (unless (and (procedure? info)
@@ -458,7 +458,7 @@
                                  ((length target-dir-info) . > . 1)
                                  print-status)
                         collections]
-                       [else
+                       [_
                         (error "expected a `unit' pattern, got" u)])))
 
                  ;; Cancelled: no collections

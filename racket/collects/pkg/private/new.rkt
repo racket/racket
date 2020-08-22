@@ -26,7 +26,7 @@
               (system "whoami")]
              ['windows
               (system "echo %username%")]
-             [else (pkg-error "not supported")])))))
+             [_ (pkg-error "not supported")])))))
 
   (define ====
     (make-string (string-length name) #\=))
