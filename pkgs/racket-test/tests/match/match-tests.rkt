@@ -37,7 +37,7 @@
                        (define (origin? pt)
                          (match pt
                            (($ point 0 0) #t)
-                           (else #f)))
+                           (_ #f)))
                        (check-true (origin? (make-point 0 0)))
                        (check-false (origin? (make-point 1 1)))))
      (test-case "empty hash-table pattern bug"

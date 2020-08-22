@@ -97,7 +97,7 @@
   (match n 
     [(? (lambda (x) (x . < . 0))) (raise (format "split-n: n: ~a less than 0" n))]
     [1  lst]
-    [else
+    [_
       (define splits (sub1 n))
       (define-values (q r) (quotient/remainder (length lst) n))
       (let loop ([lst-in lst]

@@ -432,7 +432,7 @@
         (pkg-desc url-str (if reject-existing? 'clone current-type) name
                   checksum auto? extra-path)]
        [else #f])]
-    [else #f]))
+    [_ #f]))
 
 ;; For a `desc`, extract it's clone location, if it's a clone
 (define (desc-clone desc)

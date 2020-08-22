@@ -362,5 +362,5 @@
            (match v
              [`(begin ,vs ...)
               (for-each loop vs)]
-             [else
+             [_
               (pretty-write (rename-functions (rename-locals v)))])))))))

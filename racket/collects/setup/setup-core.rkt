@@ -1276,7 +1276,7 @@
                                                     (and (path? base)
                                                          (equal? (path->directory-path p)
                                                                  (path->directory-path base)))))))]
-                                     [else
+                                     [_
                                       #t])
                                    p)]))
                          (if (and dir

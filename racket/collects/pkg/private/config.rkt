@@ -133,7 +133,7 @@
 (define (default-pkg-scope)
   (match (default-pkg-scope-as-string)
     ["installation" 'installation]
-    [else 'user]))
+    [_ 'user]))
 (define (default-pkg-scope-as-string)
   (read-pkg-cfg/def 'default-scope))
 

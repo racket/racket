@@ -75,7 +75,7 @@
     ;; Strip away a `begin` that's there to record a function name:
     (match orig-body
       [`(begin (quote ,_) ,e) e]
-      [else orig-body]))
+      [_ orig-body]))
   (cond
    [(let ([result (extract-result body)])
       (and (pair? result)

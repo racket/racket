@@ -160,7 +160,7 @@
                         [(def-values ids rhs)
                          (for/or ([id (in-list ids)])
                            (eq? 'used (hash-ref used (toplevel-pos id) #f)))]
-                        [else (not (pure? b))]))
+                        [_ (not (pure? b))]))
       b))
 
   (define new-body (remap-positions used-body
