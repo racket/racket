@@ -361,6 +361,12 @@ plain-install-upcased:
 	$(STRIP_DEBUG) $(libpltdir)/MzStart.exe
 	$(STRIP_DEBUG) $(libpltdir)/MrStart.exe
 	$(MAKE) system-install
+	$(MAKE) install-cross
+
+# ----------------------------------------
+# Cross-compiled install
+
+install-cross:
 	$(MAKE) compile-xpatch.$(TARGET_MACH)
 	$(MAKE) library-xpatch.$(TARGET_MACH)
 
@@ -449,7 +455,7 @@ no-setup-install:
 	echo done
 
 plain-install@NOT_OSX@@NOT_MINGW@:
-	$(MAKE) unix-install
+	$(MAKE) unix-install@T_CROSS_MODE@
 
 plain-install@OSX@:
 	$(MAKE) macos-install
@@ -488,6 +494,10 @@ unix-install:
 	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs
+
+unix-install-cross:
+	$(MAKE) unix-install
+	$(MAKE) install-cross
 
 unix-install-libs:
 	$(MAKE) unix-install-boot-files

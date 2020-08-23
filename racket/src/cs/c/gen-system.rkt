@@ -26,7 +26,11 @@
     (machine-lookup '((ta6nt . "win32\\x86_64")
                       (a6nt . "win32\\x86_64")
                       (ti3nt . "win32\\i386")
-                      (i3nt . "win32\\i386"))
+                      (i3nt . "win32\\i386")
+                      (tarm32le . "arm-linux")
+                      (arm32le . "arm-linux")
+                      (tarm64le . "aarch64-linux")
+                      (arm64le . "aarch64-linux"))
                     (bytes->string/utf-8 (path->bytes (system-library-subpath #f)))))
 
   (define-values (ht)
@@ -34,7 +38,11 @@
           'word (machine-lookup '((ta6nt . 64)
                                   (a6nt . 64)
                                   (ti3nt . 32)
-                                  (i3nt . 32))
+                                  (i3nt . 32)
+                                  (tarm32le . 32)
+                                  (arm32le . 32)
+                                  (tarm64le . 64)
+                                  (arm64le . 64))
                                 (system-type 'word))
           'gc 'cs
           'vm 'chez-scheme
