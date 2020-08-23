@@ -162,8 +162,11 @@ scheme-cross:
 	$(MAKE) $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
 
 # Rebuild patch file and cross "petite.boot" and "scheme.boot" when older
-# than the build-host "scheme.boot"
-$(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch: $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot
+# than the build-host "scheme.boot" or when "make-boot.rkt" touchs dummy boot files
+XPATCH_DEPS = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot \
+              $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot
+
+$(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch: $(XPATCH_DEPS)
 	$(MAKE) bounce TARGET=build-xpatch-using-host
 
 build-xpatch-using-host:
