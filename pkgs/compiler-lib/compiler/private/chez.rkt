@@ -80,7 +80,7 @@
     (vm-eval
      `(let ([code ',code]
             [memcpy ',(lambda (to from len)
-                        (memcpy to (cast from _intptr _pointer) len))])
+                        (memcpy to (cast from _uintptr _pointer) len))])
         (lock-object code)
         (let* ([code-p (($primitive $object-address) code ,code-pointer-adjust)]
                [length (foreign-ref 'uptr code-p (foreign-sizeof 'uptr))]

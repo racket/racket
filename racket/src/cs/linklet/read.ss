@@ -18,18 +18,20 @@
                     v)
 		  'read-on-demand-source))
 
-(define (adjust-linklet-bundle-laziness-and-paths ht)
-  (let loop ([i (hash-iterate-first ht)])
+(define (adjust-linklet-bundle-laziness-and-paths ls)
+  (let loop ([ls ls] [ht (hasheq)])
     (cond
-     [(not i) (hasheq)]
+     [(null? ls) ht]
      [else
-      (let-values ([(key val) (hash-iterate-key+value ht i)])
-        (hash-set (loop (hash-iterate-next ht i))
-                  key
-                  (if (linklet? val)
-                      (adjust-linklet-laziness
-                       (decode-linklet-paths val))
-                      val)))])))
+      (let ([key (car ls)]
+            [val (cadr ls)])
+        (loop (cddr ls)
+              (hash-set ht
+                        key
+                        (if (linklet? val)
+                            (adjust-linklet-laziness
+                             (decode-linklet-paths val))
+                            val))))])))
 
 (define (adjust-linklet-laziness linklet)
   (set-linklet-code linklet

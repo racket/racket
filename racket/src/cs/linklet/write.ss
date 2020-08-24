@@ -4,22 +4,22 @@
   #vu8(99 104 101 122 45 115 99 104 101 109 101))
 
 (define (write-linklet-bundle-hash ht dest-o)
-  (let-values ([(ht cross-machine) (encode-linklet-paths ht)])
+  (let-values ([(ls cross-machine) (encode-linklet-paths ht)])
     (let ([bstr (if cross-machine
-                    (let-values ([(bstr sfd-paths) (cross-fasl-to-string cross-machine ht)])
+                    (let-values ([(bstr sfd-paths) (cross-fasl-to-string cross-machine ls)])
                       ;; sfd-paths should be empty
                       bstr)
                     (let-values ([(o get) (open-bytevector-output-port)])
-                      (fasl-write* ht o)
+                      (fasl-write* ls o)
                       (get)))])
       (write-bytes (integer->integer-bytes (bytes-length bstr) 4 #f #f) dest-o)
       (write-bytes bstr dest-o))))
 
 (define (encode-linklet-paths orig-ht)
   (let ([path->compiled-path (make-path->compiled-path 'write-linklet)])
-    (let loop ([i (hash-iterate-first orig-ht)] [ht orig-ht] [cross-machine #f])
+    (let loop ([i (hash-iterate-first orig-ht)] [accum '()] [cross-machine #f])
       (cond
-       [(not i) (values ht cross-machine)]
+       [(not i) (values accum cross-machine)]
        [else
         (let-values ([(key v) (hash-iterate-key+value orig-ht i)])
           (when (linklet? v) (check-fasl-preparation v))
@@ -39,11 +39,9 @@
                         [else v])])
             (when (linklet? new-v)
               (linklet-pack-exports-info! new-v))
-            (let ([new-ht (if (eq? v new-v)
-                              ht
-                              (hash-set ht key new-v))])
+            (let ([accum (cons* key new-v accum)])
               (loop (hash-iterate-next orig-ht i)
-                    new-ht
+                    accum
                     (or cross-machine
                         (and (linklet? v)
                              (let ([prep (linklet-preparation v)])
