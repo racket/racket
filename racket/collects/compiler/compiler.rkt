@@ -99,7 +99,14 @@
                                      #:skip-paths orig-skip-paths
                                      #:skip-doc-sources? skip-docs?)
     (define info* (or info (lambda (key mk-default) (mk-default))))
-    (define omit-paths (omitted-paths dir c-get-info/full omit-root))
+    (define omit-paths (omitted-paths dir
+                                      (if info
+                                          (let ([dir (path->complete-path dir)])
+                                            (lambda (for-dir)
+                                              (and (equal? dir for-dir)
+                                                   info)))
+                                          c-get-info/full)
+                                      omit-root))
     (define skip-paths (for/list ([p (in-list (if orig-skip-path
                                                   (cons orig-skip-path orig-skip-paths)
                                                   orig-skip-paths))])
@@ -122,7 +129,7 @@
                                                 [b (path->bytes simp-path)])
                                            (for/or ([skip-path (in-list skip-paths)])
                                              (let ([len (bytes-length skip-path)])
-                                               (and ((bytes-length b) . > . len)
+                                               (and ((bytes-length b) . >= . len)
                                                     (bytes=? (subbytes b 0 len) skip-path)
                                                     (let-values ([(base name dir?) (split-path simp-path)])
                                                       (or (and (path? base)
