@@ -335,7 +335,7 @@ static void check_linklet_allowed(const char *who, Scheme_Linklet *linklet)
 {
   if (linklet->reject_eval) {
     scheme_raise_exn(MZEXN_FAIL,
-                     "%s: cannot use linklet loaded with non-original code inspector",
+                     "%s: cannot use unsafe linklet loaded with non-original code inspector",
                      who);
   }
 }

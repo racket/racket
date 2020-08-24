@@ -671,7 +671,7 @@
       [(faslable-unsafe)
        (raise (|#%app|
                exn:fail
-               "eval-linklet: cannot use linklet loaded with non-original code inspector"
+               "eval-linklet: cannot use unsafe linklet loaded with non-original code inspector"
                (current-continuation-marks)))]
       [else
        linklet]))
