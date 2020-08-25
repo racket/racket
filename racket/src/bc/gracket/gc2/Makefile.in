@@ -64,7 +64,7 @@ XFORM_CPP_ARGS = -I$(srcdir)/../../gc2 $(NOGCINC) $(OPTIONS) @PREFLAGS@ $(XFORM_
 XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o ++out
 XFORMDEP = $(srcdir)/../../gc2/xform-mod.rkt $(srcdir)/../../gc2/gc2.h
 
-GRACKETLDFLAGS = $(LDFLAGS) -L../../racket
+GRACKETLDFLAGS = $(LDFLAGS) -L../..
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../../collects; @PWD@`"'"'
 DEF_CONFIG_DIR = +D INITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../../..; @PWD@`/etc"'"'
