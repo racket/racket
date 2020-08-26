@@ -12,6 +12,7 @@
                      racket/future
                      racket/flonum
                      racket/fixnum
+		     (only-in syntax/location quote-module-path)
                      (only-in racket/place/distributed create-place-node)))
 
 @; ----------------------------------------------------------------------
@@ -43,6 +44,9 @@ instance of the Racket virtual machine, although all places run within
 a single operating-system process. Places communicate through
 @deftech{place channels}, which are endpoints for a two-way buffered
 communication.
+
+See @racket[dynamic-place] for an example of launching, communicating
+with, and waiting for the termination of places.
 
 To a first approximation, place channels support only immutable,
 transparent values as messages. In addition, place
@@ -76,33 +80,6 @@ kinds of data that places share---enable greater parallelism than
 @racket[future], even including separate @tech{garbage collection} of
 separate places. At the same time, the setup and communication costs
 for places can be higher than for @tech{futures}.
-
-For example, the following expression launches two places, echoes a
-message to each, and then waits for the places to terminate:
-
-@racketblock[
-(let ([pls (for/list ([i (in-range 2)])
-              (dynamic-place "place-worker.rkt" 'place-main))])
-   (for ([i (in-range 2)]
-         [p pls])
-      (place-channel-put p i)
-      (printf "~a\n" (place-channel-get p)))
-   (map place-wait pls))
-]
-
-The @filepath{place-worker.rkt} module must export the
-@racket[place-main] function that each place executes, where
-@racket[place-main] must accept a single @tech{place channel}
-argument:
-
-@racketmod[
-racket
-(provide place-main)
-
-(define (place-main pch)
-  (place-channel-put pch (format "Hello from place ~a" 
-                                  (place-channel-get pch))))
-]
 
 Place channels are subject to @tech{garbage collection}, like other
 Racket values, and a @tech{thread} that is blocked reading from a
@@ -198,8 +175,60 @@ such as a distributed places node produced by @racket[create-place-node].
 
 The @racket[dynamic-place] binding is protected in the sense of
  @racket[protect-out], so access to this operation can be prevented
- by adjusting the code inspector (see @secref["modprotect"]).}
+ by adjusting the code inspector (see @secref["modprotect"]).
 
+For example, the following expression launches two places, echoes a
+message to each, and then waits for the places to terminate:
+
+@racketblock[
+(let ([pls (for/list ([i (in-range 2)])
+              (dynamic-place "place-worker.rkt" 'place-main))])
+   (for ([i (in-range 2)]
+         [p pls])
+      (place-channel-put p i)
+      (printf "~a\n" (place-channel-get p)))
+   (map place-wait pls))
+]
+
+The @filepath{place-worker.rkt} module must export the
+@racket[place-main] function that each place executes, where
+@racket[place-main] must accept a single @tech{place channel}
+argument:
+
+@racketmod[
+racket
+(provide place-main)
+
+(define (place-main pch)
+  (place-channel-put pch (format "Hello from place ~a" 
+                                  (place-channel-get pch))))
+]
+
+An alternative approach is to use a submodule for the place-worker. In
+this case, @racket[quote-module-path] should be used to refer to the
+submodule in the call to @racket[dynamic-place]:
+
+@racketmod[
+racket
+
+(require (only-in syntax/location quote-module-path))
+
+(module place-worker racket
+  (provide place-main)
+  (define (place-main pch)
+    (place-channel-put pch (format "Hello from place ~a" 
+				   (place-channel-get pch)))))
+
+(let ([pls (for/list ([i (in-range 2)])
+	     (dynamic-place (quote-module-path place-worker) 'place-main))])
+  (for ([i (in-range 2)]
+	[p pls])
+    (place-channel-put p i)
+    (printf "~a\n" (place-channel-get p)))
+  (map place-wait pls))
+]
+
+}
 
 @defproc[(dynamic-place* [module-path (or/c module-path? path?)]
                          [start-name symbol?]
