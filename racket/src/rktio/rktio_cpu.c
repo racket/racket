@@ -3,20 +3,20 @@
 
 #if defined(__linux__) || defined(__QNX__)
 # include <unistd.h>
-#elif defined(OS_X)
+#elif defined(OS_X) || defined(__FreeBSD__)
 # include <sys/param.h>
 # include <sys/sysctl.h>
 #elif defined(RKTIO_SYSTEM_WINDOWS)
 # include <windows.h>
-#endif 
+#endif
 
 void rktio_init_cpu(rktio_t *rktio)
 {
   int processor_count;
-  
+
 #if defined(__linux__) || defined(__QNX__)
   processor_count = sysconf(_SC_NPROCESSORS_ONLN);
-#elif defined(OS_X)
+#elif defined(OS_X) || defined(__FreeBSD__)
   size_t size = sizeof(processor_count);
 
   if (sysctlbyname("hw.ncpu", &processor_count, &size, NULL, 0))
