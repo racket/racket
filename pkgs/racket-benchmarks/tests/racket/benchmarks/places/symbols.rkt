@@ -1,5 +1,5 @@
 #lang racket/base
-;; stress tests for place-channels communciating symbols
+;; stress tests for place-channels communicating symbols
 (require racket/place
          racket/match
          tests/racket/place-utils)
