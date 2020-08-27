@@ -94,7 +94,7 @@ wx_mac_LIBS = -framework CoreFoundation
 GRACKETLINKER = @MZLINKER@
 
 LIBRKTIO = ../../rktio/librktio.@LTA@
-LIBRKTIO_a = $(LIBRKTO)
+LIBRKTIO_a = $(LIBRKTIO)
 LIBRKTIO_la =
 
 GRACKETLIBS_a = $(LDLIBS)

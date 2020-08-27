@@ -41,7 +41,7 @@
 (define-syntax-rule (define-function/errno+step _ _ _ name . _)
   (define-function () #f name))
 
-(include "../../rktio/rktio.rktl") ; 1
+(include "../../rktio/rktio.rktl")
 
 (define-function () #f rktio_filesize_ref)
 (define-function () #f rktio_timestamp_ref)

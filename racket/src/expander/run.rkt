@@ -299,6 +299,9 @@
                            [else (eval c)])]))]))]
                  [else (orig-load path #f)])))
 
+(define accomplice (make-log-receiver (current-logger) 'info 'cm-accomplice))
+(struct file-dependency (path module?) #:prefab)
+
 (define orig-resolver (current-module-name-resolver))
 (current-module-name-resolver
  (case-lambda
@@ -308,6 +311,16 @@
     (define n (resolved-module-path-name p))
     (when (and (path? n) cache)
       (register-dependency! cache n))
+    (let loop ()
+      (define vec (sync/timeout 0 accomplice))
+      (when vec
+        (define e (vector-ref vec 2))
+        (define v (and (file-dependency? e)
+                       (not (file-dependency-module? e))
+                       (file-dependency-path e)))
+        (when (and (path? v) cache)
+          (register-dependency! cache v))
+        (loop)))
     p]))
 
 (define (apply-to-module proc mod-path)
