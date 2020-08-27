@@ -31,7 +31,9 @@
              (not (read-config-keep-comment? config)))
         (skip-loop #f)]
        [else c])]
-     [(char-whitespace? ec)
+     [(or (char-whitespace? ec)
+          ;; treat BOM as whitespace in the same sense as a comment:
+          (eqv? #\uFEFF ec))
       (skip-loop #f)]
      [(char=? #\; ec)
       (let loop ()

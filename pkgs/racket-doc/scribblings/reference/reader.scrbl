@@ -53,8 +53,8 @@ necessarily produce an @tech{interned} value at the receiving
 @;------------------------------------------------------------------------
 @section[#:tag "default-readtable-dispatch"]{Delimiters and Dispatch}
 
-Along with @racketlink[char-whitespace?]{whitespace}, the following
-characters are @defterm{delimiters}:
+Along with @racketlink[char-whitespace?]{whitespace} and a BOM
+character, the following characters are @defterm{delimiters}:
 
 @t{
   @hspace[2] @ilitchar{(} @ilitchar{)} @ilitchar{[} @ilitchar{]}
@@ -86,8 +86,9 @@ characters play special roles:
 
 ]
 
-More precisely, after skipping whitespace, the reader dispatches based
-on the next character or characters in the input stream as follows:
+More precisely, after skipping whitespace and @racket[#\uFEFF] BOM
+characters, the reader dispatches based on the next character or
+characters in the input stream as follows:
 
 @dispatch-table[
 
@@ -188,6 +189,11 @@ on the next character or characters in the input stream as follows:
   @dispatch[@italic{otherwise}]{starts a @tech{symbol}; see @secref["parse-symbol"]}
 
 ]
+
+@history[#:changed "7.8.0.9" @elem{Changed treatment of the BOM
+                                   character so that it is treated
+                                   like whitespace in the same places
+                                   that comments are allowed.}]
 
 
 @section[#:tag "parse-symbol"]{Reading Symbols}
@@ -978,7 +984,7 @@ numbers are followed by a @litchar{.} intended to be read as a C-style
 infix dot, then a delimiter must precede the @litchar{.}.
 
 Finally, after reading any datum @racket[_x], the reader will seek
-through whitespace and comments and look for zero or more sequences of a
+through whitespace, BOM characters, and comments and look for zero or more sequences of a
 @litchar{.} followed by another datum @racket[_y]. It will then group
 @racket[_x] and @racket[_y] together in a @racket[#%dot] form so that
 @racket[_x.y] reads equal to @racket[(#%dot _x _y)].

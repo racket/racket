@@ -26,6 +26,7 @@
         (char=? dc #\,)
         (char=? dc #\;)
         (char=? dc #\")
+        (char=? dc #\uFEFF) ; treat BOM as comment-like whitespace
         (and (char=? dc #\.)
              (check-parameter read-cdot config)))]))
 

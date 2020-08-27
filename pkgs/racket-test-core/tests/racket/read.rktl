@@ -655,6 +655,26 @@
     (test-write-sym (cadar l) (cadar l) (cadar l))
     (loop (cdr l))]))
 
+(let ()
+  (define BOM-utf8 (bytes #xEF #xBB #xBF))
+  
+  (test "it-works" symbol->string
+        (read (open-input-bytes
+               (bytes-append BOM-utf8 #"it-works"))))
+
+  (test '(1 2 3) read (open-input-bytes
+                       (bytes-append BOM-utf8
+                                     #"(" BOM-utf8 BOM-utf8
+                                     #"1" BOM-utf8
+                                     #"2" BOM-utf8
+                                     #"3" BOM-utf8 BOM-utf8 #")"
+                                     BOM-utf8)))
+
+  (test #t procedure?
+        (parameterize ([read-accept-reader #t])
+          (read-language (open-input-bytes
+                          (bytes-append BOM-utf8 #"#lang racket/base"))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test mid-stream EOF
 
