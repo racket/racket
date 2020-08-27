@@ -15629,6 +15629,7 @@
            rktio_set_locale
            (unsafe-place-local-ref cell.1)
            (1/string->bytes/utf-8 (unsafe-place-local-ref cell.1$6))))))))
+(define effect1674 (begin (void (sync-locale!)) (void)))
 (define locale-encoding-is-utf-8?
   (lambda ()
     (let ((t_0 (system-type)))
@@ -15721,7 +15722,7 @@
         (unsafe-bytes-set! out-bstr_0 (+ j_0 1) hi_0)))))
 (define struct:utf-8-converter
   (make-record-type-descriptor* 'utf-8-converter #f #f #f #f 2 3))
-(define effect1689
+(define effect1691
   (struct-type-install-properties!
    struct:utf-8-converter
    'utf-8-converter
@@ -15739,51 +15740,51 @@
    utf-8-converter
    (record-constructor
     (make-record-constructor-descriptor struct:utf-8-converter #f #f))))
-(define utf-8-converter?1688
+(define utf-8-converter?1690
   (|#%name| utf-8-converter? (record-predicate struct:utf-8-converter)))
 (define utf-8-converter?
   (|#%name|
    utf-8-converter?
    (lambda (v)
-     (if (utf-8-converter?1688 v)
+     (if (utf-8-converter?1690 v)
        #t
        ($value
         (if (impersonator? v)
-          (utf-8-converter?1688 (impersonator-val v))
+          (utf-8-converter?1690 (impersonator-val v))
           #f))))))
-(define utf-8-converter-from1690
+(define utf-8-converter-from1692
   (|#%name| utf-8-converter-from (record-accessor struct:utf-8-converter 0)))
 (define utf-8-converter-from
   (|#%name|
    utf-8-converter-from
    (lambda (s)
-     (if (utf-8-converter?1688 s)
-       (utf-8-converter-from1690 s)
+     (if (utf-8-converter?1690 s)
+       (utf-8-converter-from1692 s)
        ($value
         (impersonate-ref
-         utf-8-converter-from1690
+         utf-8-converter-from1692
          struct:utf-8-converter
          0
          s
          'utf-8-converter
          'from))))))
-(define utf-8-converter-to1691
+(define utf-8-converter-to1693
   (|#%name| utf-8-converter-to (record-accessor struct:utf-8-converter 1)))
 (define utf-8-converter-to
   (|#%name|
    utf-8-converter-to
    (lambda (s)
-     (if (utf-8-converter?1688 s)
-       (utf-8-converter-to1691 s)
+     (if (utf-8-converter?1690 s)
+       (utf-8-converter-to1693 s)
        ($value
         (impersonate-ref
-         utf-8-converter-to1691
+         utf-8-converter-to1693
          struct:utf-8-converter
          1
          s
          'utf-8-converter
          'to))))))
-(define effect1692
+(define effect1694
   (begin
     (register-struct-constructor! utf-8-converter1.1)
     (register-struct-predicate! utf-8-converter?)
@@ -16758,7 +16759,7 @@
           out-start23_0))))))
 (define struct:bytes-converter
   (make-record-type-descriptor* 'bytes-converter #f #f #f #f 2 3))
-(define effect1813
+(define effect1815
   (struct-type-install-properties!
    struct:bytes-converter
    'bytes-converter
@@ -16776,35 +16777,35 @@
    bytes-converter
    (record-constructor
     (make-record-constructor-descriptor struct:bytes-converter #f #f))))
-(define 1/bytes-converter?1812
+(define 1/bytes-converter?1814
   (|#%name| bytes-converter? (record-predicate struct:bytes-converter)))
 (define 1/bytes-converter?
   (|#%name|
    bytes-converter?
    (lambda (v)
-     (if (1/bytes-converter?1812 v)
+     (if (1/bytes-converter?1814 v)
        #t
        ($value
         (if (impersonator? v)
-          (1/bytes-converter?1812 (impersonator-val v))
+          (1/bytes-converter?1814 (impersonator-val v))
           #f))))))
-(define bytes-converter-c1814
+(define bytes-converter-c1816
   (|#%name| bytes-converter-c (record-accessor struct:bytes-converter 0)))
 (define bytes-converter-c
   (|#%name|
    bytes-converter-c
    (lambda (s)
-     (if (1/bytes-converter?1812 s)
-       (bytes-converter-c1814 s)
+     (if (1/bytes-converter?1814 s)
+       (bytes-converter-c1816 s)
        ($value
         (impersonate-ref
-         bytes-converter-c1814
+         bytes-converter-c1816
          struct:bytes-converter
          0
          s
          'bytes-converter
          'c))))))
-(define bytes-converter-custodian-reference1815
+(define bytes-converter-custodian-reference1817
   (|#%name|
    bytes-converter-custodian-reference
    (record-accessor struct:bytes-converter 1)))
@@ -16812,27 +16813,27 @@
   (|#%name|
    bytes-converter-custodian-reference
    (lambda (s)
-     (if (1/bytes-converter?1812 s)
-       (bytes-converter-custodian-reference1815 s)
+     (if (1/bytes-converter?1814 s)
+       (bytes-converter-custodian-reference1817 s)
        ($value
         (impersonate-ref
-         bytes-converter-custodian-reference1815
+         bytes-converter-custodian-reference1817
          struct:bytes-converter
          1
          s
          'bytes-converter
          'custodian-reference))))))
-(define set-bytes-converter-c!1816
+(define set-bytes-converter-c!1818
   (|#%name| set-bytes-converter-c! (record-mutator struct:bytes-converter 0)))
 (define set-bytes-converter-c!
   (|#%name|
    set-bytes-converter-c!
    (lambda (s v)
-     (if (1/bytes-converter?1812 s)
-       (set-bytes-converter-c!1816 s v)
+     (if (1/bytes-converter?1814 s)
+       (set-bytes-converter-c!1818 s v)
        ($value
         (impersonate-set!
-         set-bytes-converter-c!1816
+         set-bytes-converter-c!1818
          struct:bytes-converter
          0
          0
@@ -16840,7 +16841,7 @@
          v
          'bytes-converter
          'c))))))
-(define set-bytes-converter-custodian-reference!1817
+(define set-bytes-converter-custodian-reference!1819
   (|#%name|
    set-bytes-converter-custodian-reference!
    (record-mutator struct:bytes-converter 1)))
@@ -16848,11 +16849,11 @@
   (|#%name|
    set-bytes-converter-custodian-reference!
    (lambda (s v)
-     (if (1/bytes-converter?1812 s)
-       (set-bytes-converter-custodian-reference!1817 s v)
+     (if (1/bytes-converter?1814 s)
+       (set-bytes-converter-custodian-reference!1819 s v)
        ($value
         (impersonate-set!
-         set-bytes-converter-custodian-reference!1817
+         set-bytes-converter-custodian-reference!1819
          struct:bytes-converter
          1
          1
@@ -16860,7 +16861,7 @@
          v
          'bytes-converter
          'custodian-reference))))))
-(define effect1818
+(define effect1820
   (begin
     (register-struct-constructor! bytes-converter1.1)
     (register-struct-predicate! 1/bytes-converter?)
@@ -17674,7 +17675,7 @@
                 (void)))
             (check-not-unsafe-undefined bstr_0 'bstr_119)))))))
 (define struct:cache (make-record-type-descriptor* 'cache #f #f #f #f 4 15))
-(define effect1868
+(define effect1870
   (struct-type-install-properties!
    struct:cache
    'cache
@@ -17704,7 +17705,7 @@
   (|#%name| set-cache-to2! (record-mutator struct:cache 2)))
 (define set-cache-from!
   (|#%name| set-cache-from! (record-mutator struct:cache 3)))
-(define effect1869
+(define effect1871
   (begin
     (register-struct-constructor! cache1.1)
     (register-struct-predicate! cache?)
@@ -18046,7 +18047,7 @@
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
 (define struct:path (make-record-type-descriptor* 'path #f #f #f #f 2 3))
-(define effect1889
+(define effect1891
   (struct-type-install-properties!
    struct:path
    'path
@@ -18093,41 +18094,41 @@
    path
    (record-constructor
     (make-record-constructor-descriptor struct:path #f #f))))
-(define 1/path?1888 (|#%name| path? (record-predicate struct:path)))
+(define 1/path?1890 (|#%name| path? (record-predicate struct:path)))
 (define 1/path?
   (|#%name|
    path?
    (lambda (v)
-     (if (1/path?1888 v)
+     (if (1/path?1890 v)
        #t
        ($value
-        (if (impersonator? v) (1/path?1888 (impersonator-val v)) #f))))))
-(define path-bytes1906 (|#%name| path-bytes (record-accessor struct:path 0)))
+        (if (impersonator? v) (1/path?1890 (impersonator-val v)) #f))))))
+(define path-bytes1908 (|#%name| path-bytes (record-accessor struct:path 0)))
 (define path-bytes
   (|#%name|
    path-bytes
    (lambda (s)
-     (if (1/path?1888 s)
-       (path-bytes1906 s)
+     (if (1/path?1890 s)
+       (path-bytes1908 s)
        ($value
-        (impersonate-ref path-bytes1906 struct:path 0 s 'path 'bytes))))))
-(define path-convention1907
+        (impersonate-ref path-bytes1908 struct:path 0 s 'path 'bytes))))))
+(define path-convention1909
   (|#%name| path-convention (record-accessor struct:path 1)))
 (define path-convention
   (|#%name|
    path-convention
    (lambda (s)
-     (if (1/path?1888 s)
-       (path-convention1907 s)
+     (if (1/path?1890 s)
+       (path-convention1909 s)
        ($value
         (impersonate-ref
-         path-convention1907
+         path-convention1909
          struct:path
          1
          s
          'path
          'convention))))))
-(define effect1908
+(define effect1910
   (begin
     (register-struct-constructor! path1.1)
     (register-struct-predicate! 1/path?)
@@ -19389,7 +19390,7 @@
    #f
    3
    7))
-(define effect2067
+(define effect2069
   (struct-type-install-properties!
    struct:bytes-input-port
    'bytes-input-port
@@ -19429,7 +19430,7 @@
   (|#%name|
    set-bytes-input-port-alt-pos!
    (record-mutator struct:bytes-input-port 2)))
-(define effect2068
+(define effect2070
   (begin
     (register-struct-constructor! create-bytes-input-port)
     (register-struct-predicate! bytes-input-port?)
@@ -19467,7 +19468,7 @@
    #f
    0
    0))
-(define effect2070
+(define effect2072
   (struct-type-install-properties!
    struct:bytes-input-port-methods.1
    'bytes-input-port-methods
@@ -19488,7 +19489,7 @@
      struct:bytes-input-port-methods.1
      #f
      #f))))
-(define bytes-input-port-methods?.12069
+(define bytes-input-port-methods?.12071
   (|#%name|
    bytes-input-port-methods?
    (record-predicate struct:bytes-input-port-methods.1)))
@@ -19496,13 +19497,13 @@
   (|#%name|
    bytes-input-port-methods?
    (lambda (v)
-     (if (bytes-input-port-methods?.12069 v)
+     (if (bytes-input-port-methods?.12071 v)
        #t
        ($value
         (if (impersonator? v)
-          (bytes-input-port-methods?.12069 (impersonator-val v))
+          (bytes-input-port-methods?.12071 (impersonator-val v))
           #f))))))
-(define effect2071
+(define effect2073
   (begin
     (register-struct-constructor! bytes-input-port-methods4.1)
     (register-struct-predicate! bytes-input-port-methods?.1)
@@ -19708,7 +19709,7 @@
    #f
    3
    7))
-(define effect2099
+(define effect2101
   (struct-type-install-properties!
    struct:bytes-output-port
    'bytes-output-port
@@ -19752,7 +19753,7 @@
   (|#%name|
    set-bytes-output-port-max-pos!
    (record-mutator struct:bytes-output-port 2)))
-(define effect2100
+(define effect2102
   (begin
     (register-struct-constructor! create-bytes-output-port)
     (register-struct-predicate! bytes-output-port?)
@@ -19790,7 +19791,7 @@
    #f
    2
    3))
-(define effect2102
+(define effect2104
   (struct-type-install-properties!
    struct:bytes-output-port-methods.1
    'bytes-output-port-methods
@@ -19811,7 +19812,7 @@
      struct:bytes-output-port-methods.1
      #f
      #f))))
-(define bytes-output-port-methods?.12101
+(define bytes-output-port-methods?.12103
   (|#%name|
    bytes-output-port-methods?
    (record-predicate struct:bytes-output-port-methods.1)))
@@ -19819,13 +19820,13 @@
   (|#%name|
    bytes-output-port-methods?
    (lambda (v)
-     (if (bytes-output-port-methods?.12101 v)
+     (if (bytes-output-port-methods?.12103 v)
        #t
        ($value
         (if (impersonator? v)
-          (bytes-output-port-methods?.12101 (impersonator-val v))
+          (bytes-output-port-methods?.12103 (impersonator-val v))
           #f))))))
-(define bytes-output-port-methods-get-length.12103
+(define bytes-output-port-methods-get-length.12105
   (|#%name|
    bytes-output-port-methods-get-length
    (record-accessor struct:bytes-output-port-methods.1 0)))
@@ -19833,17 +19834,17 @@
   (|#%name|
    bytes-output-port-methods-get-length
    (lambda (s)
-     (if (bytes-output-port-methods?.12101 s)
-       (bytes-output-port-methods-get-length.12103 s)
+     (if (bytes-output-port-methods?.12103 s)
+       (bytes-output-port-methods-get-length.12105 s)
        ($value
         (impersonate-ref
-         bytes-output-port-methods-get-length.12103
+         bytes-output-port-methods-get-length.12105
          struct:bytes-output-port-methods.1
          0
          s
          'bytes-output-port-methods
          'get-length))))))
-(define bytes-output-port-methods-get-bytes.12104
+(define bytes-output-port-methods-get-bytes.12106
   (|#%name|
    bytes-output-port-methods-get-bytes
    (record-accessor struct:bytes-output-port-methods.1 1)))
@@ -19851,17 +19852,17 @@
   (|#%name|
    bytes-output-port-methods-get-bytes
    (lambda (s)
-     (if (bytes-output-port-methods?.12101 s)
-       (bytes-output-port-methods-get-bytes.12104 s)
+     (if (bytes-output-port-methods?.12103 s)
+       (bytes-output-port-methods-get-bytes.12106 s)
        ($value
         (impersonate-ref
-         bytes-output-port-methods-get-bytes.12104
+         bytes-output-port-methods-get-bytes.12106
          struct:bytes-output-port-methods.1
          1
          s
          'bytes-output-port-methods
          'get-bytes))))))
-(define effect2105
+(define effect2107
   (begin
     (register-struct-constructor! bytes-output-port-methods8.1)
     (register-struct-predicate! bytes-output-port-methods?.1)
@@ -20255,7 +20256,7 @@
    #f
    2
    3))
-(define effect2157
+(define effect2159
   (struct-type-install-properties!
    struct:max-output-port
    'max-output-port
@@ -20287,7 +20288,7 @@
   (|#%name|
    set-max-output-port-max-length!
    (record-mutator struct:max-output-port 1)))
-(define effect2158
+(define effect2160
   (begin
     (register-struct-constructor! create-max-output-port)
     (register-struct-predicate! max-output-port?)
@@ -20317,7 +20318,7 @@
    #f
    0
    0))
-(define effect2160
+(define effect2162
   (struct-type-install-properties!
    struct:max-output-port-methods.1
    'max-output-port-methods
@@ -20338,7 +20339,7 @@
      struct:max-output-port-methods.1
      #f
      #f))))
-(define max-output-port-methods?.12159
+(define max-output-port-methods?.12161
   (|#%name|
    max-output-port-methods?
    (record-predicate struct:max-output-port-methods.1)))
@@ -20346,13 +20347,13 @@
   (|#%name|
    max-output-port-methods?
    (lambda (v)
-     (if (max-output-port-methods?.12159 v)
+     (if (max-output-port-methods?.12161 v)
        #t
        ($value
         (if (impersonator? v)
-          (max-output-port-methods?.12159 (impersonator-val v))
+          (max-output-port-methods?.12161 (impersonator-val v))
           #f))))))
-(define effect2161
+(define effect2163
   (begin
     (register-struct-constructor! max-output-port-methods1.1)
     (register-struct-predicate! max-output-port-methods?.1)
@@ -21253,7 +21254,7 @@
    #f
    0
    0))
-(define effect2255
+(define effect2257
   (struct-type-install-properties!
    struct:nowhere-output-port
    'nowhere-output-port
@@ -21275,7 +21276,7 @@
   (|#%name|
    nowhere-output-port?
    (record-predicate struct:nowhere-output-port)))
-(define effect2256
+(define effect2258
   (begin
     (register-struct-constructor! create-nowhere-output-port)
     (register-struct-predicate! nowhere-output-port?)
@@ -21289,7 +21290,7 @@
    #f
    0
    0))
-(define effect2258
+(define effect2260
   (struct-type-install-properties!
    struct:nowhere-output-port-methods.1
    'nowhere-output-port-methods
@@ -21310,7 +21311,7 @@
      struct:nowhere-output-port-methods.1
      #f
      #f))))
-(define nowhere-output-port-methods?.12257
+(define nowhere-output-port-methods?.12259
   (|#%name|
    nowhere-output-port-methods?
    (record-predicate struct:nowhere-output-port-methods.1)))
@@ -21318,13 +21319,13 @@
   (|#%name|
    nowhere-output-port-methods?
    (lambda (v)
-     (if (nowhere-output-port-methods?.12257 v)
+     (if (nowhere-output-port-methods?.12259 v)
        #t
        ($value
         (if (impersonator? v)
-          (nowhere-output-port-methods?.12257 (impersonator-val v))
+          (nowhere-output-port-methods?.12259 (impersonator-val v))
           #f))))))
-(define effect2259
+(define effect2261
   (begin
     (register-struct-constructor! nowhere-output-port-methods1.1)
     (register-struct-predicate! nowhere-output-port-methods?.1)
@@ -21599,7 +21600,7 @@
       (quick-no-graph?_0 config_0 mode_0 print-graph?_0 v_0 fuel_0))))
 (define struct:as-constructor
   (make-record-type-descriptor* 'as-constructor #f #f #f #f 1 1))
-(define effect2288
+(define effect2290
   (struct-type-install-properties!
    struct:as-constructor
    'as-constructor
@@ -21617,35 +21618,35 @@
    as-constructor
    (record-constructor
     (make-record-constructor-descriptor struct:as-constructor #f #f))))
-(define as-constructor?2287
+(define as-constructor?2289
   (|#%name| as-constructor? (record-predicate struct:as-constructor)))
 (define as-constructor?
   (|#%name|
    as-constructor?
    (lambda (v)
-     (if (as-constructor?2287 v)
+     (if (as-constructor?2289 v)
        #t
        ($value
         (if (impersonator? v)
-          (as-constructor?2287 (impersonator-val v))
+          (as-constructor?2289 (impersonator-val v))
           #f))))))
-(define as-constructor-tag2289
+(define as-constructor-tag2291
   (|#%name| as-constructor-tag (record-accessor struct:as-constructor 0)))
 (define as-constructor-tag
   (|#%name|
    as-constructor-tag
    (lambda (s)
-     (if (as-constructor?2287 s)
-       (as-constructor-tag2289 s)
+     (if (as-constructor?2289 s)
+       (as-constructor-tag2291 s)
        ($value
         (impersonate-ref
-         as-constructor-tag2289
+         as-constructor-tag2291
          struct:as-constructor
          0
          s
          'as-constructor
          'tag))))))
-(define effect2290
+(define effect2292
   (begin
     (register-struct-constructor! as-constructor1.1)
     (register-struct-predicate! as-constructor?)
@@ -24891,7 +24892,7 @@
             #f))))))
 (define struct:starting-point
   (make-record-type-descriptor* 'starting-point #f #f #f #f 7 127))
-(define effect2626
+(define effect2628
   (struct-type-install-properties!
    struct:starting-point
    'starting-point
@@ -24909,83 +24910,83 @@
    starting-point
    (record-constructor
     (make-record-constructor-descriptor struct:starting-point #f #f))))
-(define starting-point?2625
+(define starting-point?2627
   (|#%name| starting-point? (record-predicate struct:starting-point)))
 (define starting-point?
   (|#%name|
    starting-point?
    (lambda (v)
-     (if (starting-point?2625 v)
+     (if (starting-point?2627 v)
        #t
        ($value
         (if (impersonator? v)
-          (starting-point?2625 (impersonator-val v))
+          (starting-point?2627 (impersonator-val v))
           #f))))))
-(define starting-point-kind2627
+(define starting-point-kind2629
   (|#%name| starting-point-kind (record-accessor struct:starting-point 0)))
 (define starting-point-kind
   (|#%name|
    starting-point-kind
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-kind2627 s)
+     (if (starting-point?2627 s)
+       (starting-point-kind2629 s)
        ($value
         (impersonate-ref
-         starting-point-kind2627
+         starting-point-kind2629
          struct:starting-point
          0
          s
          'starting-point
          'kind))))))
-(define starting-point-bstr2628
+(define starting-point-bstr2630
   (|#%name| starting-point-bstr (record-accessor struct:starting-point 1)))
 (define starting-point-bstr
   (|#%name|
    starting-point-bstr
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-bstr2628 s)
+     (if (starting-point?2627 s)
+       (starting-point-bstr2630 s)
        ($value
         (impersonate-ref
-         starting-point-bstr2628
+         starting-point-bstr2630
          struct:starting-point
          1
          s
          'starting-point
          'bstr))))))
-(define starting-point-len2629
+(define starting-point-len2631
   (|#%name| starting-point-len (record-accessor struct:starting-point 2)))
 (define starting-point-len
   (|#%name|
    starting-point-len
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-len2629 s)
+     (if (starting-point?2627 s)
+       (starting-point-len2631 s)
        ($value
         (impersonate-ref
-         starting-point-len2629
+         starting-point-len2631
          struct:starting-point
          2
          s
          'starting-point
          'len))))))
-(define starting-point-orig-len2630
+(define starting-point-orig-len2632
   (|#%name| starting-point-orig-len (record-accessor struct:starting-point 3)))
 (define starting-point-orig-len
   (|#%name|
    starting-point-orig-len
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-orig-len2630 s)
+     (if (starting-point?2627 s)
+       (starting-point-orig-len2632 s)
        ($value
         (impersonate-ref
-         starting-point-orig-len2630
+         starting-point-orig-len2632
          struct:starting-point
          3
          s
          'starting-point
          'orig-len))))))
-(define starting-point-extra-sep2631
+(define starting-point-extra-sep2633
   (|#%name|
    starting-point-extra-sep
    (record-accessor struct:starting-point 4)))
@@ -24993,49 +24994,49 @@
   (|#%name|
    starting-point-extra-sep
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-extra-sep2631 s)
+     (if (starting-point?2627 s)
+       (starting-point-extra-sep2633 s)
        ($value
         (impersonate-ref
-         starting-point-extra-sep2631
+         starting-point-extra-sep2633
          struct:starting-point
          4
          s
          'starting-point
          'extra-sep))))))
-(define starting-point-add-ups?2632
+(define starting-point-add-ups?2634
   (|#%name| starting-point-add-ups? (record-accessor struct:starting-point 5)))
 (define starting-point-add-ups?
   (|#%name|
    starting-point-add-ups?
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-add-ups?2632 s)
+     (if (starting-point?2627 s)
+       (starting-point-add-ups?2634 s)
        ($value
         (impersonate-ref
-         starting-point-add-ups?2632
+         starting-point-add-ups?2634
          struct:starting-point
          5
          s
          'starting-point
          'add-ups?))))))
-(define starting-point-drive?2633
+(define starting-point-drive?2635
   (|#%name| starting-point-drive? (record-accessor struct:starting-point 6)))
 (define starting-point-drive?
   (|#%name|
    starting-point-drive?
    (lambda (s)
-     (if (starting-point?2625 s)
-       (starting-point-drive?2633 s)
+     (if (starting-point?2627 s)
+       (starting-point-drive?2635 s)
        ($value
         (impersonate-ref
-         starting-point-drive?2633
+         starting-point-drive?2635
          struct:starting-point
          6
          s
          'starting-point
          'drive?))))))
-(define effect2634
+(define effect2636
   (begin
     (register-struct-constructor! starting-point7.1)
     (register-struct-predicate! starting-point?)
@@ -25986,7 +25987,7 @@
   (lambda (v_0) (if (fixnum? v_0) (<= 0 v_0 65535) #f)))
 (define struct:security-guard
   (make-record-type-descriptor* 'security-guard #f #f #f #f 4 15))
-(define effect2766
+(define effect2768
   (struct-type-install-properties!
    struct:security-guard
    'security-guard
@@ -26004,35 +26005,35 @@
    security-guard
    (record-constructor
     (make-record-constructor-descriptor struct:security-guard #f #f))))
-(define 1/security-guard?2765
+(define 1/security-guard?2767
   (|#%name| security-guard? (record-predicate struct:security-guard)))
 (define 1/security-guard?
   (|#%name|
    security-guard?
    (lambda (v)
-     (if (1/security-guard?2765 v)
+     (if (1/security-guard?2767 v)
        #t
        ($value
         (if (impersonator? v)
-          (1/security-guard?2765 (impersonator-val v))
+          (1/security-guard?2767 (impersonator-val v))
           #f))))))
-(define security-guard-parent2767
+(define security-guard-parent2769
   (|#%name| security-guard-parent (record-accessor struct:security-guard 0)))
 (define security-guard-parent
   (|#%name|
    security-guard-parent
    (lambda (s)
-     (if (1/security-guard?2765 s)
-       (security-guard-parent2767 s)
+     (if (1/security-guard?2767 s)
+       (security-guard-parent2769 s)
        ($value
         (impersonate-ref
-         security-guard-parent2767
+         security-guard-parent2769
          struct:security-guard
          0
          s
          'security-guard
          'parent))))))
-(define security-guard-file-guard2768
+(define security-guard-file-guard2770
   (|#%name|
    security-guard-file-guard
    (record-accessor struct:security-guard 1)))
@@ -26040,17 +26041,17 @@
   (|#%name|
    security-guard-file-guard
    (lambda (s)
-     (if (1/security-guard?2765 s)
-       (security-guard-file-guard2768 s)
+     (if (1/security-guard?2767 s)
+       (security-guard-file-guard2770 s)
        ($value
         (impersonate-ref
-         security-guard-file-guard2768
+         security-guard-file-guard2770
          struct:security-guard
          1
          s
          'security-guard
          'file-guard))))))
-(define security-guard-network-guard2769
+(define security-guard-network-guard2771
   (|#%name|
    security-guard-network-guard
    (record-accessor struct:security-guard 2)))
@@ -26058,17 +26059,17 @@
   (|#%name|
    security-guard-network-guard
    (lambda (s)
-     (if (1/security-guard?2765 s)
-       (security-guard-network-guard2769 s)
+     (if (1/security-guard?2767 s)
+       (security-guard-network-guard2771 s)
        ($value
         (impersonate-ref
-         security-guard-network-guard2769
+         security-guard-network-guard2771
          struct:security-guard
          2
          s
          'security-guard
          'network-guard))))))
-(define security-guard-link-guard2770
+(define security-guard-link-guard2772
   (|#%name|
    security-guard-link-guard
    (record-accessor struct:security-guard 3)))
@@ -26076,17 +26077,17 @@
   (|#%name|
    security-guard-link-guard
    (lambda (s)
-     (if (1/security-guard?2765 s)
-       (security-guard-link-guard2770 s)
+     (if (1/security-guard?2767 s)
+       (security-guard-link-guard2772 s)
        ($value
         (impersonate-ref
-         security-guard-link-guard2770
+         security-guard-link-guard2772
          struct:security-guard
          3
          s
          'security-guard
          'link-guard))))))
-(define effect2771
+(define effect2773
   (begin
     (register-struct-constructor! security-guard1.1)
     (register-struct-predicate! 1/security-guard?)
@@ -29215,7 +29216,7 @@
                o_0
                quote-depth34_0))))))))
    'global-port-print-handler))
-(define effect2920
+(define effect2922
   (begin
     (void
      (install-do-global-print!
@@ -31032,7 +31033,7 @@
       ((p-in_0) (begin (simplify-path_0 p-in_0 #t)))
       ((p-in_0 use-filesystem?1_0)
        (simplify-path_0 p-in_0 use-filesystem?1_0))))))
-(define effect3150
+(define effect3152
   (begin (void (set! simplify-path/dl 1/simplify-path)) (void)))
 (define simple?
   (letrec ((is-a-sep?_0
@@ -31434,7 +31435,7 @@
       k_0)))
 (define struct:environment-variables
   (make-record-type-descriptor* 'environment-variables #f #f #f #f 1 1))
-(define effect3192
+(define effect3194
   (struct-type-install-properties!
    struct:environment-variables
    'environment-variables
@@ -31464,7 +31465,7 @@
   (|#%name|
    set-environment-variables-ht!
    (record-mutator struct:environment-variables 0)))
-(define effect3193
+(define effect3195
   (begin
     (register-struct-constructor! environment-variables1.1)
     (register-struct-predicate! 1/environment-variables?)
@@ -31960,7 +31961,7 @@
     (begin
       (current-directory$1 orig-dir)
       (current-directory-for-user$1 orig-dir))))
-(define effect3240 (begin (void (init-current-directory!)) (void)))
+(define effect3242 (begin (void (init-current-directory!)) (void)))
 (define 1/path->complete-path
   (|#%name|
    path->complete-path
@@ -33151,7 +33152,7 @@
                         len_0)
                        (1/get-output-string o_0)))))))))
     (lambda () (error-value->string-handler procz1))))
-(define effect3419
+(define effect3421
   (begin (void (install-error-value->string-handler!)) (void)))
 (define 1/srcloc->string
   (|#%name|
@@ -33174,7 +33175,7 @@
   (lambda (p_0) (let ((dir_0 (current-directory-for-user$1))) p_0)))
 (define struct:logger
   (make-record-type-descriptor* 'logger #f #f #f #f 11 2047))
-(define effect3421
+(define effect3423
   (struct-type-install-properties!
    struct:logger
    'logger
@@ -33192,192 +33193,192 @@
    logger
    (record-constructor
     (make-record-constructor-descriptor struct:logger #f #f))))
-(define 1/logger?3420 (|#%name| logger? (record-predicate struct:logger)))
+(define 1/logger?3422 (|#%name| logger? (record-predicate struct:logger)))
 (define 1/logger?
   (|#%name|
    logger?
    (lambda (v)
-     (if (1/logger?3420 v)
+     (if (1/logger?3422 v)
        #t
        ($value
-        (if (impersonator? v) (1/logger?3420 (impersonator-val v)) #f))))))
-(define logger-topic3422
+        (if (impersonator? v) (1/logger?3422 (impersonator-val v)) #f))))))
+(define logger-topic3424
   (|#%name| logger-topic (record-accessor struct:logger 0)))
 (define logger-topic
   (|#%name|
    logger-topic
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-topic3422 s)
+     (if (1/logger?3422 s)
+       (logger-topic3424 s)
        ($value
         (impersonate-ref
-         logger-topic3422
+         logger-topic3424
          struct:logger
          0
          s
          'logger
          'topic))))))
-(define logger-parent3423
+(define logger-parent3425
   (|#%name| logger-parent (record-accessor struct:logger 1)))
 (define logger-parent
   (|#%name|
    logger-parent
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-parent3423 s)
+     (if (1/logger?3422 s)
+       (logger-parent3425 s)
        ($value
         (impersonate-ref
-         logger-parent3423
+         logger-parent3425
          struct:logger
          1
          s
          'logger
          'parent))))))
-(define logger-propagate-filters3424
+(define logger-propagate-filters3426
   (|#%name| logger-propagate-filters (record-accessor struct:logger 2)))
 (define logger-propagate-filters
   (|#%name|
    logger-propagate-filters
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-propagate-filters3424 s)
+     (if (1/logger?3422 s)
+       (logger-propagate-filters3426 s)
        ($value
         (impersonate-ref
-         logger-propagate-filters3424
+         logger-propagate-filters3426
          struct:logger
          2
          s
          'logger
          'propagate-filters))))))
-(define logger-receiver-box+backrefs3425
+(define logger-receiver-box+backrefs3427
   (|#%name| logger-receiver-box+backrefs (record-accessor struct:logger 3)))
 (define logger-receiver-box+backrefs
   (|#%name|
    logger-receiver-box+backrefs
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-receiver-box+backrefs3425 s)
+     (if (1/logger?3422 s)
+       (logger-receiver-box+backrefs3427 s)
        ($value
         (impersonate-ref
-         logger-receiver-box+backrefs3425
+         logger-receiver-box+backrefs3427
          struct:logger
          3
          s
          'logger
          'receiver-box+backrefs))))))
-(define logger-prune-counter3426
+(define logger-prune-counter3428
   (|#%name| logger-prune-counter (record-accessor struct:logger 4)))
 (define logger-prune-counter
   (|#%name|
    logger-prune-counter
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-prune-counter3426 s)
+     (if (1/logger?3422 s)
+       (logger-prune-counter3428 s)
        ($value
         (impersonate-ref
-         logger-prune-counter3426
+         logger-prune-counter3428
          struct:logger
          4
          s
          'logger
          'prune-counter))))))
-(define logger-permanent-receivers3427
+(define logger-permanent-receivers3429
   (|#%name| logger-permanent-receivers (record-accessor struct:logger 5)))
 (define logger-permanent-receivers
   (|#%name|
    logger-permanent-receivers
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-permanent-receivers3427 s)
+     (if (1/logger?3422 s)
+       (logger-permanent-receivers3429 s)
        ($value
         (impersonate-ref
-         logger-permanent-receivers3427
+         logger-permanent-receivers3429
          struct:logger
          5
          s
          'logger
          'permanent-receivers))))))
-(define logger-max-receiver-level3428
+(define logger-max-receiver-level3430
   (|#%name| logger-max-receiver-level (record-accessor struct:logger 6)))
 (define logger-max-receiver-level
   (|#%name|
    logger-max-receiver-level
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-max-receiver-level3428 s)
+     (if (1/logger?3422 s)
+       (logger-max-receiver-level3430 s)
        ($value
         (impersonate-ref
-         logger-max-receiver-level3428
+         logger-max-receiver-level3430
          struct:logger
          6
          s
          'logger
          'max-receiver-level))))))
-(define logger-topic-level-cache3429
+(define logger-topic-level-cache3431
   (|#%name| logger-topic-level-cache (record-accessor struct:logger 7)))
 (define logger-topic-level-cache
   (|#%name|
    logger-topic-level-cache
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-topic-level-cache3429 s)
+     (if (1/logger?3422 s)
+       (logger-topic-level-cache3431 s)
        ($value
         (impersonate-ref
-         logger-topic-level-cache3429
+         logger-topic-level-cache3431
          struct:logger
          7
          s
          'logger
          'topic-level-cache))))))
-(define logger-local-level-timestamp3430
+(define logger-local-level-timestamp3432
   (|#%name| logger-local-level-timestamp (record-accessor struct:logger 8)))
 (define logger-local-level-timestamp
   (|#%name|
    logger-local-level-timestamp
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-local-level-timestamp3430 s)
+     (if (1/logger?3422 s)
+       (logger-local-level-timestamp3432 s)
        ($value
         (impersonate-ref
-         logger-local-level-timestamp3430
+         logger-local-level-timestamp3432
          struct:logger
          8
          s
          'logger
          'local-level-timestamp))))))
-(define logger-root-level-timestamp-box3431
+(define logger-root-level-timestamp-box3433
   (|#%name| logger-root-level-timestamp-box (record-accessor struct:logger 9)))
 (define logger-root-level-timestamp-box
   (|#%name|
    logger-root-level-timestamp-box
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-root-level-timestamp-box3431 s)
+     (if (1/logger?3422 s)
+       (logger-root-level-timestamp-box3433 s)
        ($value
         (impersonate-ref
-         logger-root-level-timestamp-box3431
+         logger-root-level-timestamp-box3433
          struct:logger
          9
          s
          'logger
          'root-level-timestamp-box))))))
-(define logger-level-sema-box3432
+(define logger-level-sema-box3434
   (|#%name| logger-level-sema-box (record-accessor struct:logger 10)))
 (define logger-level-sema-box
   (|#%name|
    logger-level-sema-box
    (lambda (s)
-     (if (1/logger?3420 s)
-       (logger-level-sema-box3432 s)
+     (if (1/logger?3422 s)
+       (logger-level-sema-box3434 s)
        ($value
         (impersonate-ref
-         logger-level-sema-box3432
+         logger-level-sema-box3434
          struct:logger
          10
          s
          'logger
          'level-sema-box))))))
-(define set-logger-receiver-box+backrefs!3433
+(define set-logger-receiver-box+backrefs!3435
   (|#%name|
    set-logger-receiver-box+backrefs!
    (record-mutator struct:logger 3)))
@@ -33385,11 +33386,11 @@
   (|#%name|
    set-logger-receiver-box+backrefs!
    (lambda (s v)
-     (if (1/logger?3420 s)
-       (set-logger-receiver-box+backrefs!3433 s v)
+     (if (1/logger?3422 s)
+       (set-logger-receiver-box+backrefs!3435 s v)
        ($value
         (impersonate-set!
-         set-logger-receiver-box+backrefs!3433
+         set-logger-receiver-box+backrefs!3435
          struct:logger
          3
          3
@@ -33397,17 +33398,17 @@
          v
          'logger
          'receiver-box+backrefs))))))
-(define set-logger-prune-counter!3434
+(define set-logger-prune-counter!3436
   (|#%name| set-logger-prune-counter! (record-mutator struct:logger 4)))
 (define set-logger-prune-counter!
   (|#%name|
    set-logger-prune-counter!
    (lambda (s v)
-     (if (1/logger?3420 s)
-       (set-logger-prune-counter!3434 s v)
+     (if (1/logger?3422 s)
+       (set-logger-prune-counter!3436 s v)
        ($value
         (impersonate-set!
-         set-logger-prune-counter!3434
+         set-logger-prune-counter!3436
          struct:logger
          4
          4
@@ -33415,17 +33416,17 @@
          v
          'logger
          'prune-counter))))))
-(define set-logger-permanent-receivers!3435
+(define set-logger-permanent-receivers!3437
   (|#%name| set-logger-permanent-receivers! (record-mutator struct:logger 5)))
 (define set-logger-permanent-receivers!
   (|#%name|
    set-logger-permanent-receivers!
    (lambda (s v)
-     (if (1/logger?3420 s)
-       (set-logger-permanent-receivers!3435 s v)
+     (if (1/logger?3422 s)
+       (set-logger-permanent-receivers!3437 s v)
        ($value
         (impersonate-set!
-         set-logger-permanent-receivers!3435
+         set-logger-permanent-receivers!3437
          struct:logger
          5
          5
@@ -33433,17 +33434,17 @@
          v
          'logger
          'permanent-receivers))))))
-(define set-logger-max-receiver-level!3436
+(define set-logger-max-receiver-level!3438
   (|#%name| set-logger-max-receiver-level! (record-mutator struct:logger 6)))
 (define set-logger-max-receiver-level!
   (|#%name|
    set-logger-max-receiver-level!
    (lambda (s v)
-     (if (1/logger?3420 s)
-       (set-logger-max-receiver-level!3436 s v)
+     (if (1/logger?3422 s)
+       (set-logger-max-receiver-level!3438 s v)
        ($value
         (impersonate-set!
-         set-logger-max-receiver-level!3436
+         set-logger-max-receiver-level!3438
          struct:logger
          6
          6
@@ -33451,7 +33452,7 @@
          v
          'logger
          'max-receiver-level))))))
-(define set-logger-local-level-timestamp!3437
+(define set-logger-local-level-timestamp!3439
   (|#%name|
    set-logger-local-level-timestamp!
    (record-mutator struct:logger 8)))
@@ -33459,11 +33460,11 @@
   (|#%name|
    set-logger-local-level-timestamp!
    (lambda (s v)
-     (if (1/logger?3420 s)
-       (set-logger-local-level-timestamp!3437 s v)
+     (if (1/logger?3422 s)
+       (set-logger-local-level-timestamp!3439 s v)
        ($value
         (impersonate-set!
-         set-logger-local-level-timestamp!3437
+         set-logger-local-level-timestamp!3439
          struct:logger
          8
          8
@@ -33471,7 +33472,7 @@
          v
          'logger
          'local-level-timestamp))))))
-(define effect3438
+(define effect3440
   (begin
     (register-struct-constructor! logger1.1)
     (register-struct-predicate! 1/logger?)
@@ -33681,7 +33682,7 @@
 (define level->user-representation
   (lambda (lvl_0) (if (eq? lvl_0 'none) #f lvl_0)))
 (define struct:queue (make-record-type-descriptor* 'queue #f #f #f #f 2 3))
-(define effect3458
+(define effect3460
   (struct-type-install-properties!
    struct:queue
    'queue
@@ -33706,7 +33707,7 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define effect3459
+(define effect3461
   (begin
     (register-struct-constructor! queue1.1)
     (register-struct-predicate! queue?)
@@ -33716,7 +33717,7 @@
     (register-struct-field-mutator! set-queue-end! struct:queue 1)
     (void)))
 (define struct:node (make-record-type-descriptor* 'node #f #f #f #f 3 7))
-(define effect3460
+(define effect3462
   (struct-type-install-properties!
    struct:node
    'node
@@ -33742,7 +33743,7 @@
   (|#%name| set-node-prev! (record-mutator struct:node 1)))
 (define set-node-next!
   (|#%name| set-node-next! (record-mutator struct:node 2)))
-(define effect3461
+(define effect3463
   (begin
     (register-struct-constructor! node2.1)
     (register-struct-predicate! node?)
@@ -33783,7 +33784,7 @@
         (set-queue-end! q_0 (node-prev n_0))))))
 (define struct:log-receiver
   (make-record-type-descriptor* 'log-receiver #f #f #f #f 1 1))
-(define effect3470
+(define effect3472
   (struct-type-install-properties!
    struct:log-receiver
    'log-receiver
@@ -33801,35 +33802,35 @@
    log-receiver
    (record-constructor
     (make-record-constructor-descriptor struct:log-receiver #f #f))))
-(define 1/log-receiver?3469
+(define 1/log-receiver?3471
   (|#%name| log-receiver? (record-predicate struct:log-receiver)))
 (define 1/log-receiver?
   (|#%name|
    log-receiver?
    (lambda (v)
-     (if (1/log-receiver?3469 v)
+     (if (1/log-receiver?3471 v)
        #t
        ($value
         (if (impersonator? v)
-          (1/log-receiver?3469 (impersonator-val v))
+          (1/log-receiver?3471 (impersonator-val v))
           #f))))))
-(define log-receiver-filters3471
+(define log-receiver-filters3473
   (|#%name| log-receiver-filters (record-accessor struct:log-receiver 0)))
 (define log-receiver-filters
   (|#%name|
    log-receiver-filters
    (lambda (s)
-     (if (1/log-receiver?3469 s)
-       (log-receiver-filters3471 s)
+     (if (1/log-receiver?3471 s)
+       (log-receiver-filters3473 s)
        ($value
         (impersonate-ref
-         log-receiver-filters3471
+         log-receiver-filters3473
          struct:log-receiver
          0
          s
          'log-receiver
          'filters))))))
-(define effect3472
+(define effect3474
   (begin
     (register-struct-constructor! log-receiver1.1)
     (register-struct-predicate! 1/log-receiver?)
@@ -33850,7 +33851,7 @@
    #f
    3
    7))
-(define effect3474
+(define effect3476
   (struct-type-install-properties!
    struct:queue-log-receiver
    'log-receiver
@@ -33918,35 +33919,35 @@
    queue-log-receiver
    (record-constructor
     (make-record-constructor-descriptor struct:queue-log-receiver #f #f))))
-(define queue-log-receiver?3473
+(define queue-log-receiver?3475
   (|#%name| log-receiver? (record-predicate struct:queue-log-receiver)))
 (define queue-log-receiver?
   (|#%name|
    log-receiver?
    (lambda (v)
-     (if (queue-log-receiver?3473 v)
+     (if (queue-log-receiver?3475 v)
        #t
        ($value
         (if (impersonator? v)
-          (queue-log-receiver?3473 (impersonator-val v))
+          (queue-log-receiver?3475 (impersonator-val v))
           #f))))))
-(define queue-log-receiver-msgs3498
+(define queue-log-receiver-msgs3500
   (|#%name| log-receiver-msgs (record-accessor struct:queue-log-receiver 0)))
 (define queue-log-receiver-msgs
   (|#%name|
    log-receiver-msgs
    (lambda (s)
-     (if (queue-log-receiver?3473 s)
-       (queue-log-receiver-msgs3498 s)
+     (if (queue-log-receiver?3475 s)
+       (queue-log-receiver-msgs3500 s)
        ($value
         (impersonate-ref
-         queue-log-receiver-msgs3498
+         queue-log-receiver-msgs3500
          struct:queue-log-receiver
          0
          s
          'log-receiver
          'msgs))))))
-(define queue-log-receiver-waiters3499
+(define queue-log-receiver-waiters3501
   (|#%name|
    log-receiver-waiters
    (record-accessor struct:queue-log-receiver 1)))
@@ -33954,17 +33955,17 @@
   (|#%name|
    log-receiver-waiters
    (lambda (s)
-     (if (queue-log-receiver?3473 s)
-       (queue-log-receiver-waiters3499 s)
+     (if (queue-log-receiver?3475 s)
+       (queue-log-receiver-waiters3501 s)
        ($value
         (impersonate-ref
-         queue-log-receiver-waiters3499
+         queue-log-receiver-waiters3501
          struct:queue-log-receiver
          1
          s
          'log-receiver
          'waiters))))))
-(define queue-log-receiver-backref3500
+(define queue-log-receiver-backref3502
   (|#%name|
    log-receiver-backref
    (record-accessor struct:queue-log-receiver 2)))
@@ -33972,17 +33973,17 @@
   (|#%name|
    log-receiver-backref
    (lambda (s)
-     (if (queue-log-receiver?3473 s)
-       (queue-log-receiver-backref3500 s)
+     (if (queue-log-receiver?3475 s)
+       (queue-log-receiver-backref3502 s)
        ($value
         (impersonate-ref
-         queue-log-receiver-backref3500
+         queue-log-receiver-backref3502
          struct:queue-log-receiver
          2
          s
          'log-receiver
          'backref))))))
-(define effect3501
+(define effect3503
   (begin
     (register-struct-constructor! queue-log-receiver2.1)
     (register-struct-predicate! queue-log-receiver?)
@@ -34044,7 +34045,7 @@
    #f
    2
    3))
-(define effect3514
+(define effect3516
   (struct-type-install-properties!
    struct:stdio-log-receiver
    'stdio-log-receiver
@@ -34097,19 +34098,19 @@
    stdio-log-receiver
    (record-constructor
     (make-record-constructor-descriptor struct:stdio-log-receiver #f #f))))
-(define stdio-log-receiver?3513
+(define stdio-log-receiver?3515
   (|#%name| stdio-log-receiver? (record-predicate struct:stdio-log-receiver)))
 (define stdio-log-receiver?
   (|#%name|
    stdio-log-receiver?
    (lambda (v)
-     (if (stdio-log-receiver?3513 v)
+     (if (stdio-log-receiver?3515 v)
        #t
        ($value
         (if (impersonator? v)
-          (stdio-log-receiver?3513 (impersonator-val v))
+          (stdio-log-receiver?3515 (impersonator-val v))
           #f))))))
-(define stdio-log-receiver-rktio3518
+(define stdio-log-receiver-rktio3520
   (|#%name|
    stdio-log-receiver-rktio
    (record-accessor struct:stdio-log-receiver 0)))
@@ -34117,17 +34118,17 @@
   (|#%name|
    stdio-log-receiver-rktio
    (lambda (s)
-     (if (stdio-log-receiver?3513 s)
-       (stdio-log-receiver-rktio3518 s)
+     (if (stdio-log-receiver?3515 s)
+       (stdio-log-receiver-rktio3520 s)
        ($value
         (impersonate-ref
-         stdio-log-receiver-rktio3518
+         stdio-log-receiver-rktio3520
          struct:stdio-log-receiver
          0
          s
          'stdio-log-receiver
          'rktio))))))
-(define stdio-log-receiver-which3519
+(define stdio-log-receiver-which3521
   (|#%name|
    stdio-log-receiver-which
    (record-accessor struct:stdio-log-receiver 1)))
@@ -34135,17 +34136,17 @@
   (|#%name|
    stdio-log-receiver-which
    (lambda (s)
-     (if (stdio-log-receiver?3513 s)
-       (stdio-log-receiver-which3519 s)
+     (if (stdio-log-receiver?3515 s)
+       (stdio-log-receiver-which3521 s)
        ($value
         (impersonate-ref
-         stdio-log-receiver-which3519
+         stdio-log-receiver-which3521
          struct:stdio-log-receiver
          1
          s
          'stdio-log-receiver
          'which))))))
-(define effect3520
+(define effect3522
   (begin
     (register-struct-constructor! stdio-log-receiver3.1)
     (register-struct-predicate! stdio-log-receiver?)
@@ -34203,7 +34204,7 @@
    #f
    2
    3))
-(define effect3525
+(define effect3527
   (struct-type-install-properties!
    struct:syslog-log-receiver
    'syslog-log-receiver
@@ -34245,7 +34246,7 @@
    syslog-log-receiver
    (record-constructor
     (make-record-constructor-descriptor struct:syslog-log-receiver #f #f))))
-(define syslog-log-receiver?3524
+(define syslog-log-receiver?3526
   (|#%name|
    syslog-log-receiver?
    (record-predicate struct:syslog-log-receiver)))
@@ -34253,13 +34254,13 @@
   (|#%name|
    syslog-log-receiver?
    (lambda (v)
-     (if (syslog-log-receiver?3524 v)
+     (if (syslog-log-receiver?3526 v)
        #t
        ($value
         (if (impersonator? v)
-          (syslog-log-receiver?3524 (impersonator-val v))
+          (syslog-log-receiver?3526 (impersonator-val v))
           #f))))))
-(define syslog-log-receiver-rktio3529
+(define syslog-log-receiver-rktio3531
   (|#%name|
    syslog-log-receiver-rktio
    (record-accessor struct:syslog-log-receiver 0)))
@@ -34267,17 +34268,17 @@
   (|#%name|
    syslog-log-receiver-rktio
    (lambda (s)
-     (if (syslog-log-receiver?3524 s)
-       (syslog-log-receiver-rktio3529 s)
+     (if (syslog-log-receiver?3526 s)
+       (syslog-log-receiver-rktio3531 s)
        ($value
         (impersonate-ref
-         syslog-log-receiver-rktio3529
+         syslog-log-receiver-rktio3531
          struct:syslog-log-receiver
          0
          s
          'syslog-log-receiver
          'rktio))))))
-(define syslog-log-receiver-cmd3530
+(define syslog-log-receiver-cmd3532
   (|#%name|
    syslog-log-receiver-cmd
    (record-accessor struct:syslog-log-receiver 1)))
@@ -34285,17 +34286,17 @@
   (|#%name|
    syslog-log-receiver-cmd
    (lambda (s)
-     (if (syslog-log-receiver?3524 s)
-       (syslog-log-receiver-cmd3530 s)
+     (if (syslog-log-receiver?3526 s)
+       (syslog-log-receiver-cmd3532 s)
        ($value
         (impersonate-ref
-         syslog-log-receiver-cmd3530
+         syslog-log-receiver-cmd3532
          struct:syslog-log-receiver
          1
          s
          'syslog-log-receiver
          'cmd))))))
-(define effect3531
+(define effect3533
   (begin
     (register-struct-constructor! syslog-log-receiver4.1)
     (register-struct-predicate! syslog-log-receiver?)
@@ -35189,7 +35190,7 @@
           (void))))))
 (define struct:fs-change-evt
   (make-record-type-descriptor* 'filesystem-change-evt #f #f #f #f 2 3))
-(define effect3653
+(define effect3655
   (struct-type-install-properties!
    struct:fs-change-evt
    'filesystem-change-evt
@@ -35232,19 +35233,19 @@
    fs-change-evt
    (record-constructor
     (make-record-constructor-descriptor struct:fs-change-evt #f #f))))
-(define fs-change-evt?3652
+(define fs-change-evt?3654
   (|#%name| filesystem-change-evt? (record-predicate struct:fs-change-evt)))
 (define fs-change-evt?
   (|#%name|
    filesystem-change-evt?
    (lambda (v)
-     (if (fs-change-evt?3652 v)
+     (if (fs-change-evt?3654 v)
        #t
        ($value
         (if (impersonator? v)
-          (fs-change-evt?3652 (impersonator-val v))
+          (fs-change-evt?3654 (impersonator-val v))
           #f))))))
-(define fs-change-evt-rfc3658
+(define fs-change-evt-rfc3660
   (|#%name|
    filesystem-change-evt-rfc
    (record-accessor struct:fs-change-evt 0)))
@@ -35252,17 +35253,17 @@
   (|#%name|
    filesystem-change-evt-rfc
    (lambda (s)
-     (if (fs-change-evt?3652 s)
-       (fs-change-evt-rfc3658 s)
+     (if (fs-change-evt?3654 s)
+       (fs-change-evt-rfc3660 s)
        ($value
         (impersonate-ref
-         fs-change-evt-rfc3658
+         fs-change-evt-rfc3660
          struct:fs-change-evt
          0
          s
          'filesystem-change-evt
          'rfc))))))
-(define fs-change-evt-cust-ref3659
+(define fs-change-evt-cust-ref3661
   (|#%name|
    filesystem-change-evt-cust-ref
    (record-accessor struct:fs-change-evt 1)))
@@ -35270,17 +35271,17 @@
   (|#%name|
    filesystem-change-evt-cust-ref
    (lambda (s)
-     (if (fs-change-evt?3652 s)
-       (fs-change-evt-cust-ref3659 s)
+     (if (fs-change-evt?3654 s)
+       (fs-change-evt-cust-ref3661 s)
        ($value
         (impersonate-ref
-         fs-change-evt-cust-ref3659
+         fs-change-evt-cust-ref3661
          struct:fs-change-evt
          1
          s
          'filesystem-change-evt
          'cust-ref))))))
-(define set-fs-change-evt-rfc!3660
+(define set-fs-change-evt-rfc!3662
   (|#%name|
    set-filesystem-change-evt-rfc!
    (record-mutator struct:fs-change-evt 0)))
@@ -35288,11 +35289,11 @@
   (|#%name|
    set-filesystem-change-evt-rfc!
    (lambda (s v)
-     (if (fs-change-evt?3652 s)
-       (set-fs-change-evt-rfc!3660 s v)
+     (if (fs-change-evt?3654 s)
+       (set-fs-change-evt-rfc!3662 s v)
        ($value
         (impersonate-set!
-         set-fs-change-evt-rfc!3660
+         set-fs-change-evt-rfc!3662
          struct:fs-change-evt
          0
          0
@@ -35300,7 +35301,7 @@
          v
          'filesystem-change-evt
          'rfc))))))
-(define set-fs-change-evt-cust-ref!3661
+(define set-fs-change-evt-cust-ref!3663
   (|#%name|
    set-filesystem-change-evt-cust-ref!
    (record-mutator struct:fs-change-evt 1)))
@@ -35308,11 +35309,11 @@
   (|#%name|
    set-filesystem-change-evt-cust-ref!
    (lambda (s v)
-     (if (fs-change-evt?3652 s)
-       (set-fs-change-evt-cust-ref!3661 s v)
+     (if (fs-change-evt?3654 s)
+       (set-fs-change-evt-cust-ref!3663 s v)
        ($value
         (impersonate-set!
-         set-fs-change-evt-cust-ref!3661
+         set-fs-change-evt-cust-ref!3663
          struct:fs-change-evt
          1
          1
@@ -35320,7 +35321,7 @@
          v
          'filesystem-change-evt
          'cust-ref))))))
-(define effect3662
+(define effect3664
   (begin
     (register-struct-constructor! fs-change-evt1.1)
     (register-struct-predicate! fs-change-evt?)
@@ -35491,7 +35492,7 @@
            (unsafe-place-local-ref cell.1)
            rfc_0))
         (void)))))
-(define effect3683
+(define effect3685
   (begin
     (void
      (|#%app|
@@ -35712,7 +35713,7 @@
                   (begin (|#%app| final_0 p_0 bstr_0) bstr_0))))))))))
 (define struct:subprocess
   (make-record-type-descriptor* 'subprocess #f #f #f #f 3 7))
-(define effect3694
+(define effect3696
   (struct-type-install-properties!
    struct:subprocess
    'subprocess
@@ -35752,75 +35753,75 @@
    make-subprocess
    (record-constructor
     (make-record-constructor-descriptor struct:subprocess #f #f))))
-(define 1/subprocess?3693
+(define 1/subprocess?3695
   (|#%name| subprocess? (record-predicate struct:subprocess)))
 (define 1/subprocess?
   (|#%name|
    subprocess?
    (lambda (v)
-     (if (1/subprocess?3693 v)
+     (if (1/subprocess?3695 v)
        #t
        ($value
-        (if (impersonator? v) (1/subprocess?3693 (impersonator-val v)) #f))))))
-(define subprocess-process3702
+        (if (impersonator? v) (1/subprocess?3695 (impersonator-val v)) #f))))))
+(define subprocess-process3704
   (|#%name| subprocess-process (record-accessor struct:subprocess 0)))
 (define subprocess-process
   (|#%name|
    subprocess-process
    (lambda (s)
-     (if (1/subprocess?3693 s)
-       (subprocess-process3702 s)
+     (if (1/subprocess?3695 s)
+       (subprocess-process3704 s)
        ($value
         (impersonate-ref
-         subprocess-process3702
+         subprocess-process3704
          struct:subprocess
          0
          s
          'subprocess
          'process))))))
-(define subprocess-cust-ref3703
+(define subprocess-cust-ref3705
   (|#%name| subprocess-cust-ref (record-accessor struct:subprocess 1)))
 (define subprocess-cust-ref
   (|#%name|
    subprocess-cust-ref
    (lambda (s)
-     (if (1/subprocess?3693 s)
-       (subprocess-cust-ref3703 s)
+     (if (1/subprocess?3695 s)
+       (subprocess-cust-ref3705 s)
        ($value
         (impersonate-ref
-         subprocess-cust-ref3703
+         subprocess-cust-ref3705
          struct:subprocess
          1
          s
          'subprocess
          'cust-ref))))))
-(define subprocess-is-group?3704
+(define subprocess-is-group?3706
   (|#%name| subprocess-is-group? (record-accessor struct:subprocess 2)))
 (define subprocess-is-group?
   (|#%name|
    subprocess-is-group?
    (lambda (s)
-     (if (1/subprocess?3693 s)
-       (subprocess-is-group?3704 s)
+     (if (1/subprocess?3695 s)
+       (subprocess-is-group?3706 s)
        ($value
         (impersonate-ref
-         subprocess-is-group?3704
+         subprocess-is-group?3706
          struct:subprocess
          2
          s
          'subprocess
          'is-group?))))))
-(define set-subprocess-process!3705
+(define set-subprocess-process!3707
   (|#%name| set-subprocess-process! (record-mutator struct:subprocess 0)))
 (define set-subprocess-process!
   (|#%name|
    set-subprocess-process!
    (lambda (s v)
-     (if (1/subprocess?3693 s)
-       (set-subprocess-process!3705 s v)
+     (if (1/subprocess?3695 s)
+       (set-subprocess-process!3707 s v)
        ($value
         (impersonate-set!
-         set-subprocess-process!3705
+         set-subprocess-process!3707
          struct:subprocess
          0
          0
@@ -35828,17 +35829,17 @@
          v
          'subprocess
          'process))))))
-(define set-subprocess-cust-ref!3706
+(define set-subprocess-cust-ref!3708
   (|#%name| set-subprocess-cust-ref! (record-mutator struct:subprocess 1)))
 (define set-subprocess-cust-ref!
   (|#%name|
    set-subprocess-cust-ref!
    (lambda (s v)
-     (if (1/subprocess?3693 s)
-       (set-subprocess-cust-ref!3706 s v)
+     (if (1/subprocess?3695 s)
+       (set-subprocess-cust-ref!3708 s v)
        ($value
         (impersonate-set!
-         set-subprocess-cust-ref!3706
+         set-subprocess-cust-ref!3708
          struct:subprocess
          1
          1
@@ -35846,7 +35847,7 @@
          v
          'subprocess
          'cust-ref))))))
-(define effect3707
+(define effect3709
   (begin
     (register-struct-constructor! make-subprocess)
     (register-struct-predicate! 1/subprocess?)
@@ -35919,11 +35920,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3711 unsafe-undefined)
+               (let ((lr3713 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3711
+                 (set! lr3713
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -35978,9 +35979,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3711 0))
-                 (set! command_0 (unsafe-vector*-ref lr3711 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3711 2))
+                 (set! group_0 (unsafe-vector*-ref lr3713 0))
+                 (set! command_0 (unsafe-vector*-ref lr3713 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3713 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)
@@ -36528,7 +36529,7 @@
                                (current-continuation-marks)))))
                          (void))
                        #f))))))))))))
-(define effect3785
+(define effect3787
   (begin
     (void
      (|#%app|
@@ -36600,7 +36601,7 @@
    #f
    1
    1))
-(define effect3805
+(define effect3807
   (struct-type-install-properties!
    struct:tcp-input-port
    'tcp-input-port
@@ -36632,7 +36633,7 @@
   (|#%name|
    set-tcp-input-port-abandon?!
    (record-mutator struct:tcp-input-port 0)))
-(define effect3806
+(define effect3808
   (begin
     (register-struct-constructor! create-tcp-input-port)
     (register-struct-predicate! tcp-input-port?)
@@ -36654,7 +36655,7 @@
    #f
    0
    0))
-(define effect3808
+(define effect3810
   (struct-type-install-properties!
    struct:tcp-input-port-methods.1
    'tcp-input-port-methods
@@ -36675,7 +36676,7 @@
      struct:tcp-input-port-methods.1
      #f
      #f))))
-(define tcp-input-port-methods?.13807
+(define tcp-input-port-methods?.13809
   (|#%name|
    tcp-input-port-methods?
    (record-predicate struct:tcp-input-port-methods.1)))
@@ -36683,13 +36684,13 @@
   (|#%name|
    tcp-input-port-methods?
    (lambda (v)
-     (if (tcp-input-port-methods?.13807 v)
+     (if (tcp-input-port-methods?.13809 v)
        #t
        ($value
         (if (impersonator? v)
-          (tcp-input-port-methods?.13807 (impersonator-val v))
+          (tcp-input-port-methods?.13809 (impersonator-val v))
           #f))))))
-(define effect3809
+(define effect3811
   (begin
     (register-struct-constructor! tcp-input-port-methods1.1)
     (register-struct-predicate! tcp-input-port-methods?.1)
@@ -36794,7 +36795,7 @@
    #f
    1
    1))
-(define effect3825
+(define effect3827
   (struct-type-install-properties!
    struct:tcp-output-port
    'tcp-output-port
@@ -36828,7 +36829,7 @@
   (|#%name|
    set-tcp-output-port-abandon?!
    (record-mutator struct:tcp-output-port 0)))
-(define effect3826
+(define effect3828
   (begin
     (register-struct-constructor! create-tcp-output-port)
     (register-struct-predicate! tcp-output-port?)
@@ -36850,7 +36851,7 @@
    #f
    0
    0))
-(define effect3828
+(define effect3830
   (struct-type-install-properties!
    struct:tcp-output-port-methods.1
    'tcp-output-port-methods
@@ -36871,7 +36872,7 @@
      struct:tcp-output-port-methods.1
      #f
      #f))))
-(define tcp-output-port-methods?.13827
+(define tcp-output-port-methods?.13829
   (|#%name|
    tcp-output-port-methods?
    (record-predicate struct:tcp-output-port-methods.1)))
@@ -36879,13 +36880,13 @@
   (|#%name|
    tcp-output-port-methods?
    (lambda (v)
-     (if (tcp-output-port-methods?.13827 v)
+     (if (tcp-output-port-methods?.13829 v)
        #t
        ($value
         (if (impersonator? v)
-          (tcp-output-port-methods?.13827 (impersonator-val v))
+          (tcp-output-port-methods?.13829 (impersonator-val v))
           #f))))))
-(define effect3829
+(define effect3831
   (begin
     (register-struct-constructor! tcp-output-port-methods7.1)
     (register-struct-predicate! tcp-output-port-methods?.1)
@@ -37004,7 +37005,7 @@
              (void))))))))
 (define struct:rktio-evt
   (make-record-type-descriptor* 'rktio-evt #f #f #f #f 2 3))
-(define effect3845
+(define effect3847
   (struct-type-install-properties!
    struct:rktio-evt
    'rktio-evt
@@ -37040,7 +37041,7 @@
   (|#%name| rktio-evt-poll (record-accessor struct:rktio-evt 0)))
 (define rktio-evt-add-to-poll-set
   (|#%name| rktio-evt-add-to-poll-set (record-accessor struct:rktio-evt 1)))
-(define effect3852
+(define effect3854
   (begin
     (register-struct-constructor! rktio-evt1.1)
     (register-struct-predicate! rktio-evt?)
@@ -37196,7 +37197,7 @@
       (void))))
 (define struct:connect-progress
   (make-record-type-descriptor* 'connect-progress #f #f #f #f 2 3))
-(define effect3866
+(define effect3868
   (struct-type-install-properties!
    struct:connect-progress
    'connect-progress
@@ -37230,7 +37231,7 @@
   (|#%name|
    set-connect-progress-trying-fd!
    (record-mutator struct:connect-progress 1)))
-(define effect3867
+(define effect3869
   (begin
     (register-struct-constructor! connect-progress1.1)
     (register-struct-predicate! connect-progress?)
@@ -37619,7 +37620,7 @@
         (void)))))
 (define struct:tcp-listener
   (make-record-type-descriptor* 'tcp-listener #f #f #f #f 3 7))
-(define effect3880
+(define effect3882
   (struct-type-install-properties!
    struct:tcp-listener
    'tcp-listener
@@ -37640,51 +37641,51 @@
    tcp-listener
    (record-constructor
     (make-record-constructor-descriptor struct:tcp-listener #f #f))))
-(define 1/tcp-listener?3879
+(define 1/tcp-listener?3881
   (|#%name| tcp-listener? (record-predicate struct:tcp-listener)))
 (define 1/tcp-listener?
   (|#%name|
    tcp-listener?
    (lambda (v)
-     (if (1/tcp-listener?3879 v)
+     (if (1/tcp-listener?3881 v)
        #t
        ($value
         (if (impersonator? v)
-          (1/tcp-listener?3879 (impersonator-val v))
+          (1/tcp-listener?3881 (impersonator-val v))
           #f))))))
-(define tcp-listener-lnr3884
+(define tcp-listener-lnr3886
   (|#%name| tcp-listener-lnr (record-accessor struct:tcp-listener 0)))
 (define tcp-listener-lnr
   (|#%name|
    tcp-listener-lnr
    (lambda (s)
-     (if (1/tcp-listener?3879 s)
-       (tcp-listener-lnr3884 s)
+     (if (1/tcp-listener?3881 s)
+       (tcp-listener-lnr3886 s)
        ($value
         (impersonate-ref
-         tcp-listener-lnr3884
+         tcp-listener-lnr3886
          struct:tcp-listener
          0
          s
          'tcp-listener
          'lnr))))))
-(define tcp-listener-closed3885
+(define tcp-listener-closed3887
   (|#%name| tcp-listener-closed (record-accessor struct:tcp-listener 1)))
 (define tcp-listener-closed
   (|#%name|
    tcp-listener-closed
    (lambda (s)
-     (if (1/tcp-listener?3879 s)
-       (tcp-listener-closed3885 s)
+     (if (1/tcp-listener?3881 s)
+       (tcp-listener-closed3887 s)
        ($value
         (impersonate-ref
-         tcp-listener-closed3885
+         tcp-listener-closed3887
          struct:tcp-listener
          1
          s
          'tcp-listener
          'closed))))))
-(define tcp-listener-custodian-reference3886
+(define tcp-listener-custodian-reference3888
   (|#%name|
    tcp-listener-custodian-reference
    (record-accessor struct:tcp-listener 2)))
@@ -37692,17 +37693,17 @@
   (|#%name|
    tcp-listener-custodian-reference
    (lambda (s)
-     (if (1/tcp-listener?3879 s)
-       (tcp-listener-custodian-reference3886 s)
+     (if (1/tcp-listener?3881 s)
+       (tcp-listener-custodian-reference3888 s)
        ($value
         (impersonate-ref
-         tcp-listener-custodian-reference3886
+         tcp-listener-custodian-reference3888
          struct:tcp-listener
          2
          s
          'tcp-listener
          'custodian-reference))))))
-(define effect3887
+(define effect3889
   (begin
     (register-struct-constructor! tcp-listener1.1)
     (register-struct-predicate! 1/tcp-listener?)
@@ -38015,7 +38016,7 @@
          (accept-evt6.1 listener_0))))))
 (define struct:accept-evt
   (make-record-type-descriptor* 'tcp-accept-evt #f #f #f #f 1 1))
-(define effect3916
+(define effect3918
   (struct-type-install-properties!
    struct:accept-evt
    'tcp-accept-evt
@@ -38100,33 +38101,33 @@
    accept-evt
    (record-constructor
     (make-record-constructor-descriptor struct:accept-evt #f #f))))
-(define accept-evt?3915
+(define accept-evt?3917
   (|#%name| tcp-accept-evt? (record-predicate struct:accept-evt)))
 (define accept-evt?
   (|#%name|
    tcp-accept-evt?
    (lambda (v)
-     (if (accept-evt?3915 v)
+     (if (accept-evt?3917 v)
        #t
        ($value
-        (if (impersonator? v) (accept-evt?3915 (impersonator-val v)) #f))))))
-(define accept-evt-listener3936
+        (if (impersonator? v) (accept-evt?3917 (impersonator-val v)) #f))))))
+(define accept-evt-listener3938
   (|#%name| tcp-accept-evt-listener (record-accessor struct:accept-evt 0)))
 (define accept-evt-listener
   (|#%name|
    tcp-accept-evt-listener
    (lambda (s)
-     (if (accept-evt?3915 s)
-       (accept-evt-listener3936 s)
+     (if (accept-evt?3917 s)
+       (accept-evt-listener3938 s)
        ($value
         (impersonate-ref
-         accept-evt-listener3936
+         accept-evt-listener3938
          struct:accept-evt
          0
          s
          'tcp-accept-evt
          'listener))))))
-(define effect3937
+(define effect3939
   (begin
     (register-struct-constructor! accept-evt6.1)
     (register-struct-predicate! accept-evt?)
@@ -38184,7 +38185,7 @@
           (for-loop_0 0 0))))
       (args (raise-binding-result-arity-error 2 args))))))
 (define struct:udp (make-record-type-descriptor* 'udp #f #f #f #f 3 7))
-(define effect3945
+(define effect3947
   (struct-type-install-properties!
    struct:udp
    'udp
@@ -38211,7 +38212,7 @@
   (|#%name| set-udp-is-bound?! (record-mutator struct:udp 1)))
 (define set-udp-is-connected?!
   (|#%name| set-udp-is-connected?! (record-mutator struct:udp 2)))
-(define effect3946
+(define effect3948
   (begin
     (register-struct-constructor! udp1.1)
     (register-struct-predicate! 1/udp?)
@@ -39391,7 +39392,7 @@
             who59_0)))))))
 (define struct:udp-sending-evt
   (make-record-type-descriptor* 'udp-send-evt #f #f #f #f 2 3))
-(define effect4002
+(define effect4004
   (struct-type-install-properties!
    struct:udp-sending-evt
    'udp-send-evt
@@ -39438,7 +39439,7 @@
   (|#%name| udp-send-evt-u (record-accessor struct:udp-sending-evt 0)))
 (define udp-sending-evt-try
   (|#%name| udp-send-evt-try (record-accessor struct:udp-sending-evt 1)))
-(define effect4010
+(define effect4012
   (begin
     (register-struct-constructor! udp-sending-evt66.1)
     (register-struct-predicate! udp-sending-evt?)
@@ -39460,7 +39461,7 @@
    #f
    0
    0))
-(define effect4011
+(define effect4013
   (struct-type-install-properties!
    struct:udp-sending-ready-evt
    'udp-send-ready-evt
@@ -39482,7 +39483,7 @@
   (|#%name|
    udp-send-ready-evt?
    (record-predicate struct:udp-sending-ready-evt)))
-(define effect4012
+(define effect4014
   (begin
     (register-struct-constructor! udp-sending-ready-evt67.1)
     (register-struct-predicate! udp-sending-ready-evt?)
@@ -39813,7 +39814,7 @@
 (define cell.2 (unsafe-make-place-local ""))
 (define struct:udp-receiving-evt
   (make-record-type-descriptor* 'udp-receive-evt #f #f #f #f 2 3))
-(define effect4035
+(define effect4037
   (struct-type-install-properties!
    struct:udp-receiving-evt
    'udp-receive-evt
@@ -39865,7 +39866,7 @@
   (|#%name| udp-receive-evt-u (record-accessor struct:udp-receiving-evt 0)))
 (define udp-receiving-evt-try
   (|#%name| udp-receive-evt-try (record-accessor struct:udp-receiving-evt 1)))
-(define effect4043
+(define effect4045
   (begin
     (register-struct-constructor! udp-receiving-evt39.1)
     (register-struct-predicate! udp-receiving-evt?)
@@ -39887,7 +39888,7 @@
    #f
    0
    0))
-(define effect4044
+(define effect4046
   (struct-type-install-properties!
    struct:udp-receiving-ready-evt
    'udp-receive-ready-evt
@@ -39912,7 +39913,7 @@
   (|#%name|
    udp-receive-ready-evt?
    (record-predicate struct:udp-receiving-ready-evt)))
-(define effect4045
+(define effect4047
   (begin
     (register-struct-constructor! udp-receiving-ready-evt40.1)
     (register-struct-predicate! udp-receiving-ready-evt?)
@@ -41095,5 +41096,6 @@
       (shared-ltps-place-init!)
       (install-error-value->string-handler!)
       (init-current-directory!)
-      (init-current-ports! in-fd_0 out-fd_0 err-fd_0 cust_0 plumber_0))))
+      (init-current-ports! in-fd_0 out-fd_0 err-fd_0 cust_0 plumber_0)
+      (sync-locale!))))
 (define io-place-destroy! (lambda () (rktio-place-destroy!)))

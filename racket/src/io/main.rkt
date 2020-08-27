@@ -33,6 +33,8 @@
                   shared-ltps-place-init!)
          (only-in "locale/cache.rkt"
                   convert-cache-init!)
+         (only-in "locale/parameter.rkt"
+                  sync-locale!)
          "port/place.rkt")
 
 (provide (all-from-out "port/main.rkt")
@@ -69,7 +71,8 @@
   (shared-ltps-place-init!)
   (install-error-value->string-handler!)
   (init-current-directory!)
-  (init-current-ports! in-fd out-fd err-fd cust plumber))
+  (init-current-ports! in-fd out-fd err-fd cust plumber)
+  (sync-locale!))
 
 (define (io-place-destroy!)
   ;; We expect everything based on rktio to be destroyed at this point
