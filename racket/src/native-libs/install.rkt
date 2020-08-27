@@ -42,7 +42,8 @@
     "libpangowin32-1.0.0"))
 
 (define mac-libs
-  '("PSMTabBarControl.framework"))
+  '("libedit.0"
+    "PSMTabBarControl.framework"))
 
 (define mac64-libs
   '("MMTabBarView.framework"))
@@ -129,7 +130,10 @@
       ["libiconv-2" "libiconv is released under the GNU Lesser General Public License (GNU LGPL)."]
       ["longdouble" ,(~a "The source to longdouble is included with the Racket source code,\n"
                          "which is available from\n"
-                         "  http://www.racket-lang.org/")])]
+                         "  http://www.racket-lang.org/")]
+      ["libedit" ,(~a "This package includes libedit software developed for NetBSD under the\n"
+                      "NetBSD license.")])]
+
     ["math"
      ""
      "math"

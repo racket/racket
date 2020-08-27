@@ -1,0 +1,62 @@
+diff -u -r old/libedit-20191231-3.1/src/sys.h new/libedit-20191231-3.1/src/sys.h
+--- old/libedit-20191231-3.1/src/sys.h	2020-08-27 10:57:43.000000000 -0600
++++ new/libedit-20191231-3.1/src/sys.h	2020-08-27 10:57:56.000000000 -0600
+@@ -43,6 +43,7 @@
+ #ifdef HAVE_SYS_CDEFS_H
+ #include <sys/cdefs.h>
+ #endif
++#include <sys/types.h>
+ 
+ #if !defined(__attribute__) && (defined(__cplusplus) || !defined(__GNUC__)  || __GNUC__ == 2 && __GNUC_MINOR__ < 8)
+ # define __attribute__(A)
+diff -u -r old/libedit-20191231-3.1/src/wcsdup.c new/libedit-20191231-3.1/src/wcsdup.c
+--- old/libedit-20191231-3.1/src/wcsdup.c	2020-08-27 10:57:43.000000000 -0600
++++ new/libedit-20191231-3.1/src/wcsdup.c	2020-08-27 12:03:37.000000000 -0600
+@@ -41,3 +41,46 @@
+ }
+ 
+ #endif
++
++
++#ifndef HAVE_GETLINE
++#include <sys/types.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++ssize_t getline(char **line, size_t *len, FILE *fp) {
++  char *buffer, *r;
++  int buflen, delta = 0, slen;
++
++  if (*line == NULL) {
++    buflen = 256;
++    buffer = malloc(buflen);
++  } else {
++    buffer = *line;
++    buflen = *len;
++    if (buflen == 0) {
++      buflen = 128;
++      buffer = realloc(buffer, buflen);
++    }
++  }
++
++  while (1) {
++    r = fgets(buffer + delta, buflen - delta, fp);
++    if (!r) {
++      if (delta == 0)
++        return -1;
++    }
++    delta += strlen(buffer + delta);
++    if ((delta > 0) && (buffer[delta-1] == '\n')) {
++      *line = buffer;
++      *len  = buflen;
++      return delta;
++    }
++    if (delta + 1 == buflen) {
++      buflen *= 2;
++      buffer = realloc(buffer, buflen);
++    }
++  }
++}
++#endif
+Only in new/libedit-20191231-3.1/src: wcsdup.c~

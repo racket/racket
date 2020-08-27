@@ -154,6 +154,9 @@
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
+;; For `getline` on 32-bit Mac OS 10.6:
+(define-runtime-path libedit-getline-patch "patches/libedit-getline.patch")
+
 ;; Upstream patch to fix Win32 build:
 (define-runtime-path glib-win32-weekday-patch "patches/glib-win32-weekday.patch")
 
@@ -359,6 +362,10 @@
     [("pkg-config") (config #:configure (list "--with-internal-glib"))]
     [("sed") (config)]
     [("longdouble") (config)]
+    [("libedit") (config
+                  #:patches (if (and mac? m32?)
+                                (list libedit-getline-patch)
+                                null))]
     [("libiconv")
      (nonmac-only)
      (config)]
