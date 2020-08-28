@@ -964,8 +964,7 @@
 ;; the above with '= -- but the numbers have to be specified in some way.  The
 ;; generated type will convert a list of these symbols into the logical-or of
 ;; their values and back.
-(define (_bitmask name orig-s->i . base?)
-  (define basetype (if (pair? base?) (car base?) _uint))
+(define (_bitmask/named name orig-s->i [basetype _uint])
   (define s->c
     (if name (string->symbol (format "bitmask:~a->int" name)) 'bitmask->int))
   (define symbols->integers
@@ -1005,12 +1004,15 @@
                       (cons (caar s->i) l)
                       l)))))))))
 
+(define (_bitmask orig-s->i [base _uint])
+  (_bitmask/named #f orig-s->i base))
+
 ;; Macro wrapper -- no need for a name
 (provide (rename-out [_bitmask* _bitmask]))
 (define-syntax (_bitmask* stx)
   (syntax-case stx ()
     [(_ x ...)
-     (with-syntax ([name (syntax-local-name)]) #'(_bitmask 'name x ...))]
+     (with-syntax ([name (syntax-local-name)]) #'(_bitmask/named 'name x ...))]
     [id (identifier? #'id) #'_bitmask]))
 
 ;; ----------------------------------------------------------------------------

@@ -157,6 +157,10 @@
   (check s 'c 14)
   (check s 'd 16))
 
+(let ([_bm _bitmask])
+  (let ([s (_bm '(a b c = 14 d))])
+    (test 2 values (cast 'b s _int))))
+
 (let ()
   (define _test32_enum (_enum `(TEST32 = 1073741906) _sint32))
   (define _test64_enum (_enum `(TEST64 = 4611686018427387904) _sint64))
