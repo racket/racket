@@ -114,7 +114,7 @@
          (parameterize ([current-environment-variables
                          (environment-variables-copy
                           (current-environment-variables))])
-           (putenv "PLTADDONDIR" tmp-dir-s)
+           (putenv "PLTUSERHOME" tmp-dir-s)
            (t)))
       (λ ()
         (delete-directory/files tmp-dir))))
