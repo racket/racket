@@ -606,6 +606,23 @@
   (test +inf.f expt -4.0f0 (lcm (exact-round -1.7976931348623151e+308)))
   (test -inf.f expt -4.0f0 (add1 (lcm (exact-round -1.7976931348623151e+308)))))
 
+(test  5.540619075645279e+34 expt   1.000000000000001 (expt 2 56))
+(test  5.540619075645279e+34 expt  -1.000000000000001 (expt 2 56))
+(test -5.5406190756452855e+34 expt -1.000000000000001 (add1 (expt 2 56)))
+
+(let ()
+  (define nrs (list -inf.0 -2.0 -1.0 -0.5 -0.0 0.0 0.5 1.0 2.0 +inf.0))
+  (define (neg-even nr) (- (- nr) 1))
+  (define (neg-odd nr) (- nr))
+  (define (pos-even nr) (+ nr 1))
+  (define (pos-odd nr) nr)
+  (for ([base (in-list nrs)])
+    (for ([make-exponent (in-list (list neg-even neg-odd pos-even pos-odd))])
+      (define L
+        (for/list ([i (in-list '(14 150 350))])
+          (expt base (make-exponent (string->number (build-string i (λ (i) #\1)))))))
+      (test #t `(,base ,L) (apply = L)))))
+
 (define (inf-non-real? x)
   (and (not (real? x))
        (= +inf.0 (abs (imag-part x)))

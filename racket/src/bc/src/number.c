@@ -3714,41 +3714,38 @@ scheme_expt(int argc, Scheme_Object *argv[])
           }
 	}
       }
-    } else if (SCHEME_BIGNUMP(e) && SCHEME_BIGPOS(e)) {
-      /* If `e` is a positive bignum, then the result should be zero,
-         but we won't get that result if conversion produces infinity */
-      double e_dbl;
+    }
+
+    if (SCHEME_FLOATP(n) && (SCHEME_INTP(e) || SCHEME_BIGNUMP(e))) {
+      /* We want to preserve evenness and oddness of `e`, so don't
+         necessarily convert directly to a flonum */
+      mzlonglong v;
+      if (!scheme_get_long_long_val(e, &v)
+          || (v < -((mzlonglong)1 << 53))
+          || (v > ((mzlonglong)1 << 53))) {
+        /* `e` loses precision as a flonum */
 #ifdef MZ_USE_SINGLE_FLOATS
-      int sgl = !SCHEME_DBLP(n);
+        int sgl = !SCHEME_DBLP(n);
 #endif
-      if ((d < 0.0) && (d > -1.0)) {
-        if (SCHEME_FALSEP(scheme_odd_p(1, &e)))
-          return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
-        else
-          return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
-      }
-      /* If d is negative, and `e` is a large enough bignum which would
-         be converted to infinity, this would return a complex NaN.
-         Instead, we want to return (positive of negative) infinity.
-         See discussion in Github issue 1148. */
-#ifdef MZ_USE_SINGLE_FLOATS
-      if (sgl) {
-        /* Need to go through singles to get right overflow behavior. */
-        e_dbl = (double)(scheme_bignum_to_float(e));
-      } else {
-        e_dbl = scheme_bignum_to_double(e);
-      }
-#else
-      e_dbl = scheme_bignum_to_double(e);
-#endif
-      if ((d < 0.0) && MZ_IS_POS_INFINITY(e_dbl)) {
-        if (SCHEME_TRUEP(scheme_odd_p(1, &e))) {
-          return SELECT_EXPT_PRECISION(scheme_single_minus_inf_object,
-                                       scheme_minus_inf_object);
-        } else {
-          return SELECT_EXPT_PRECISION(scheme_single_inf_object,
-                                       scheme_inf_object);
+        double d = SCHEME_FLOAT_VAL(n), a = 1.0;
+        intptr_t i;
+        int invert = 0;
+        if (scheme_is_negative(e)) {
+          invert = 1;
+          e = scheme_bin_minus(scheme_make_integer(0), e);
         }
+        i = scheme_integer_length(e);
+        while (i >= 0) {
+          a = a * a;
+          if (scheme_bin_bitwise_bit_set_p(e, scheme_make_integer(i)))
+            a *= d;
+          i--;
+        }
+        if (invert) a = 1.0 / a;
+#ifdef MZ_USE_SINGLE_FLOATS
+        if (sgl) return scheme_make_float(a);
+#endif
+        return scheme_make_double(a);
       }
     }
 
