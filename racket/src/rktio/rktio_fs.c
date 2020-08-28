@@ -1914,6 +1914,20 @@ static char *append_paths(char *a, char *b, int free_a, int free_b)
   return s;
 }
 
+#ifdef RKTIO_SYSTEM_UNIX
+static int directory_or_file_exists(rktio_t *rktio, char *dir, char *maybe_file)
+{
+  if (maybe_file) {
+    int r;
+    char *path = append_paths(dir, maybe_file, 0, 0);
+    r = rktio_file_exists(rktio, path);
+    free(path);
+    return r;
+  } else
+    return rktio_directory_exists(rktio, dir);
+}
+#endif
+
 char *rktio_system_path(rktio_t *rktio, int which)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -1943,10 +1957,13 @@ char *rktio_system_path(rktio_t *rktio, int which)
     return rktio_get_current_directory(rktio);
   }
   
-#define USE_XDG_BASEDIR 1
   {
     /* Everything else is in ~: */
-    char *home_str, *alt_home, *home;
+    char *home_str, *alt_home, *home, *prefer_home_str = NULL, *prefer_home;
+    char *home_file = NULL, *prefer_home_file = NULL;
+    int free_prefer_home_str = 0;
+
+    alt_home = rktio_getenv(rktio, "PLTUSERHOME");
 
     if ((which == RKTIO_PATH_PREF_DIR) 
         || (which == RKTIO_PATH_PREF_FILE)
@@ -1954,53 +1971,52 @@ char *rktio_system_path(rktio_t *rktio, int which)
         || (which == RKTIO_PATH_CACHE_DIR)
         || (which == RKTIO_PATH_INIT_DIR)
         || (which == RKTIO_PATH_INIT_FILE)) {
-#if defined(OS_X) && !defined(XONX)
-      if ((which == RKTIO_PATH_ADDON_DIR)
-          || (which == RKTIO_PATH_CACHE_DIR))
+#if defined(OS_X) && !defined(RACKET_XONX) && !defined(XONX)
+      if (which == RKTIO_PATH_ADDON_DIR)
 	home_str = "~/Library/Racket/";
+      else if (which == RKTIO_PATH_CACHE_DIR)
+	home_str = "~/Library/Caches/Racket/";
       else if ((which == RKTIO_PATH_INIT_DIR)
-               || (which == RKTIO_PATH_INIT_FILE))
+               || (which == RKTIO_PATH_INIT_FILE)) {
+        prefer_home_str = "~/Library/Racket/";
+        prefer_home_file = "racketrc.rktl";
         home_str = "~/";
-      else
+        home_file = ".racketrc";
+      } else
 	home_str = "~/Library/Preferences/";
-#elif USE_XDG_BASEDIR
-      char *envvar, *xdg_dir, *suffix;
+#else
+      char *envvar, *xdg_dir;
       if (which == RKTIO_PATH_ADDON_DIR) {
-        home_str = "~/.local/share/racket/";
+        prefer_home_str = "~/.local/share/racket/";
         envvar = "XDG_DATA_HOME";
-        suffix = "racket/";
       } else if (which == RKTIO_PATH_CACHE_DIR) {
-        home_str = "~/.cache/racket/";
+        prefer_home_str = "~/.cache/racket/";
         envvar = "XDG_CACHE_HOME";
-        suffix = "racket/";
       } else {
-        home_str = "~/.config/racket/";
+        prefer_home_str = "~/.config/racket/";
         envvar = "XDG_CONFIG_HOME";
-        if ((which == RKTIO_PATH_PREF_DIR)
-            || (which == RKTIO_PATH_INIT_DIR)) {
-          suffix = "racket/";
-        } else if (which == RKTIO_PATH_PREF_FILE) {
-          suffix = "racket/racket-prefs.rktd";
-        } else { /* (which == RKTIO_PATH_INIT_FILE) */
-          suffix = "racket/racketrc.rktl";
-        }
       }
-      xdg_dir = rktio_getenv(rktio, envvar);
+      if (alt_home)
+        xdg_dir = NULL;
+      else
+        xdg_dir = rktio_getenv(rktio, envvar);
       /* xdg_dir is invalid if it is not an absolute path */
       if (xdg_dir && (strlen(xdg_dir) > 0) && (xdg_dir[0] == '/')) {
-        return append_paths(xdg_dir, suffix, 1, 0);
+        prefer_home_str = append_paths(xdg_dir, "racket/", 1, 0);
+        free_prefer_home_str = 1;
       } else {
-        free(xdg_dir);
+        if (xdg_dir) free(xdg_dir);
       }
-#else
-      if ((which == RKTIO_PATH_INIT_DIR) || (which == RKTIO_INIT_FILE)) {
+
+      if ((which == RKTIO_PATH_INIT_DIR) || (which == RKTIO_PATH_INIT_FILE)) {
         home_str = "~/";
-      } else { /* RKTIO_PATH_{ADDON_DIR,PREF_DIR,PREF_FILE} */
+        home_file = ".racketrc";
+      } else { /* RKTIO_PATH_{ADDON_DIR,PREF_DIR,PREF_FILE,CACHE_DIR} */
         home_str = "~/.racket/";
       }
-#endif 
+#endif
     } else {
-#if defined(OS_X) && !defined(XONX)
+#if defined(OS_X) && !defined(RACKET_XONX) && !defined(XONX)
       if (which == RKTIO_PATH_DESK_DIR)
 	home_str = "~/Desktop/";
       else if (which == RKTIO_PATH_DOC_DIR)
@@ -2010,20 +2026,43 @@ char *rktio_system_path(rktio_t *rktio, int which)
         home_str = "~/";
     }
 
-    alt_home = rktio_getenv(rktio, "PLTUSERHOME");
-    if (alt_home)
-      home = append_paths(alt_home, home_str + 2, 1, 0);
-    else {
-      home = rktio_expand_user_tilde(rktio, home_str);
-      
-      if (!home) {
-        /* Something went wrong with the user lookup. Just drop "~'. */
-        int h_len = strlen(home_str);
-        home = (char *)malloc(h_len - 2 + 1);
-        strcpy(home, home_str+2);
+    /* If `prefer_home_str` is non-NULL, it must be `malloc`ed */
+
+    if (prefer_home_str) {
+      if (alt_home)
+        prefer_home = append_paths(alt_home, prefer_home_str + 2, 0, 0);
+      else
+        prefer_home = rktio_expand_user_tilde(rktio, prefer_home_str);
+      if (free_prefer_home_str)
+        free(prefer_home_str);
+
+      if (directory_or_file_exists(rktio, prefer_home, prefer_home_file))
+        home_str = NULL;
+    } else
+      prefer_home = NULL;
+
+    if (home_str) {
+      if (alt_home)
+        home = append_paths(alt_home, home_str + 2, 1, 0);
+      else
+        home = rktio_expand_user_tilde(rktio, home_str);
+
+      if (prefer_home) {
+        if (!directory_or_file_exists(rktio, home, home_file)) {
+          free(home);
+          home = prefer_home;
+        } else {
+          free(prefer_home);
+          prefer_home = NULL;
+        }
       }
-    }
-    
+    } else
+      home = prefer_home;
+
+    /* At this point, we're using `home`, but `prefer_home` can still
+       be non-NULL and equal to `home` to mean that we should use
+       XDG-style file names. */
+
     if ((which == RKTIO_PATH_PREF_DIR) || (which == RKTIO_PATH_INIT_DIR) 
 	|| (which == RKTIO_PATH_HOME_DIR) || (which == RKTIO_PATH_ADDON_DIR)
 	|| (which == RKTIO_PATH_DESK_DIR) || (which == RKTIO_PATH_DOC_DIR)
@@ -2031,18 +2070,16 @@ char *rktio_system_path(rktio_t *rktio, int which)
       return home;
 
     if (which == RKTIO_PATH_INIT_FILE) {
-#if defined(OS_X) && !defined(XONX)
-      return append_paths(home, ".racketrc", 1, 0);
-#elif USE_XDG_BASEDIR
-      return append_paths(home, "racketrc.rktl", 1, 0);
-#else
-      return append_paths(home, ".racketrc", 1, 0);
-#endif
+      if (prefer_home)
+        return append_paths(prefer_home, "racketrc.rktl", 1, 0);
+      else
+        return append_paths(home, ".racketrc", 1, 0);
     }
+
     if (which == RKTIO_PATH_PREF_FILE) {
-#if defined(OS_X) && !defined(XONX)
+#if defined(OS_X) && !defined(RACKET_XONX) && !defined(XONX)
       return append_paths(home, "org.racket-lang.prefs.rktd", 1, 0);
-#else      
+#else
       return append_paths(home, "racket-prefs.rktd", 1, 0);
 #endif
     } else {

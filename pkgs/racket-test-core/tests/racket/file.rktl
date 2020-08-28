@@ -1842,6 +1842,123 @@
 
 (current-directory original-dir)
 
+;; ----------------------------------------
+
+(let ([home-dir (path->directory-path (make-temporary-file "test-home~a" 'directory))]
+      [env (environment-variables-copy (current-environment-variables))]
+      [racket (find-exe)])
+  (environment-variables-set! env
+                              #"PLTUSERHOME"
+                              (path->bytes home-dir))
+  (define (get-dirs)
+    (parameterize ([current-environment-variables env])
+      (define-values (s i o e) (subprocess #f #f #f racket "-I" "racket/base" "-e"
+                                           (string-append
+                                            "(map path->bytes "
+                                            "     (list (find-system-path 'home-dir)"
+                                            "           (find-system-path 'pref-dir)"
+                                            "           (find-system-path 'pref-file)"
+                                            "           (find-system-path 'init-dir)"
+                                            "           (find-system-path 'init-file)"
+                                            "           (find-system-path 'addon-dir)"
+                                            "           (find-system-path 'cache-dir)))")))
+      (begin0
+        (cadr (read i))
+        (subprocess-wait s))))
+  (define (touch f) (close-output-port (open-output-file f #:exists 'truncate)))
+
+  (define dir-syms '(home-dir pref-dir pref-file init-dir init-file addon-dir cache-dir))
+  (define expected-default-dirs
+    (case (system-type)
+      [(unix) (list home-dir
+                    (build-path home-dir ".config" "racket/")
+                    (build-path home-dir ".config" "racket" "racket-prefs.rktd")
+                    (build-path home-dir ".config" "racket/")
+                    (build-path home-dir ".config" "racket" "racketrc.rktl")
+                    (build-path home-dir ".local" "share" "racket/")
+                    (build-path home-dir ".cache" "racket/"))]
+      [(macosx) (list home-dir
+                      (build-path home-dir "Library" "Preferences/")
+                      (build-path home-dir "Library" "Preferences" "org.racket-lang.prefs.rktd")
+                      (build-path home-dir "Library" "Racket/")
+                      (build-path home-dir "Library" "Racket" "racketrc.rktl")
+                      (build-path home-dir "Library" "Racket/")
+                      (build-path home-dir "Library" "Caches" "Racket/"))]
+      [(windows) (list home-dir
+                       (build-path home-dir "Racket\\")
+                       (build-path home-dir "Racket" "racket-prefs.rktd")
+                       home-dir
+                       (build-path home-dir "racketrc.rktl")
+                       (build-path home-dir "Racket\\")
+                       (build-path home-dir "Racket\\"))]
+      [else (error "unexpected system type")]))
+
+  (define default-dirs (get-dirs))
+  (for-each (lambda (name expect got)
+              (test got `(,name default) expect))
+            dir-syms
+            (map bytes->path default-dirs)
+            expected-default-dirs)
+
+  ;; Create files/directories that trigger legacy paths:
+  (case (system-type)
+    [(unix)
+     (touch (build-path home-dir ".racketrc"))
+     (make-directory (build-path home-dir ".racket"))]
+    [(macosx)
+     (touch (build-path home-dir ".racketrc"))
+     ;; Make sure just the existence of the would-be init dir doesn't override legacy:
+     (make-directory (build-path home-dir "Library"))
+     (make-directory (build-path home-dir "Library" "Racket"))])
+
+  (define legacy-dirs (get-dirs))
+  (for-each (lambda (name expect got)
+              (test got `(,name legacy) expect))
+            dir-syms
+            (map bytes->path legacy-dirs)
+            (case (system-type)
+              [(unix) (list home-dir
+                            (build-path home-dir ".racket/")
+                            (build-path home-dir ".racket/" "racket-prefs.rktd")
+                            home-dir
+                            (build-path home-dir ".racketrc")
+                            (build-path home-dir ".racket/")
+                            (build-path home-dir ".racket/"))]
+              [(macosx) (list home-dir
+                              (build-path home-dir "Library" "Preferences/")
+                              (build-path home-dir "Library" "Preferences" "org.racket-lang.prefs.rktd")
+                              home-dir
+                              (build-path home-dir ".racketrc")
+                              (build-path home-dir "Library" "Racket/")
+                              (build-path home-dir "Library" "Caches" "Racket/"))]
+              [(windows) expected-default-dirs]
+              [else (error "unexpected system type")]))
+
+  ;; Create files/directories that cause legacy paths to be ignored:
+  (case (system-type)
+    [(unix)
+     (make-directory (build-path home-dir ".config"))
+     (make-directory (build-path home-dir ".config" "racket"))
+     (touch (build-path home-dir ".config" "racket" "racketrc.rktl"))
+     (make-directory (build-path home-dir ".local"))
+     (make-directory (build-path home-dir ".local" "share"))
+     (make-directory (build-path home-dir ".local" "share" "racket"))
+     (make-directory (build-path home-dir ".cache"))
+     (make-directory (build-path home-dir ".cache" "racket"))]
+    [(macosx)
+     (touch (build-path (build-path home-dir "Library" "Racket" "racketrc.rktl")))])
+
+  (define back-to-default-dirs (get-dirs))
+  (for-each (lambda (name expect got)
+              (test got `(,name back-to-default) expect))
+            dir-syms
+            (map bytes->path back-to-default-dirs)
+            expected-default-dirs)
+
+  (delete-directory/files home-dir))
+
+;; ----------------------------------------
+
 (unless (eq? 'windows (system-type))
   (define can-open-nonblocking-fifo?
     ;; The general implementation of fifo-write ports requires

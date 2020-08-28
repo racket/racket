@@ -7,7 +7,8 @@
 
 (define exe-id
   (delay
-    (if (equal? (path->bytes (cross-system-library-subpath #f)) #"x86_64-macosx")
+    (if (member (path->bytes (cross-system-library-subpath #f))
+                (list #"x86_64-macosx" #"x86_64-darwin"))
         #xFeedFacf
         #xFeedFace)))
 
