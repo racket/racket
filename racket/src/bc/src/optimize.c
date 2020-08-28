@@ -4265,7 +4265,7 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   rator_flags = get_rator_flags(rator, app->num_args, info);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
-  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
+  if ((rator_flags & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE) {
     info->preserves_marks = -info->preserves_marks;
     info->single_result = -info->single_result;
   }
@@ -4790,7 +4790,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   rator_flags = get_rator_flags(rator, 1, info);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
-  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
+  if ((rator_flags & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE) {
     info->preserves_marks = -info->preserves_marks;
     info->single_result = -info->single_result;
   }
@@ -4946,9 +4946,9 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         /* Convert to apply-values form: */
         return optimize_apply_values(app->rand2, lam->body, info,
                                      ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_SINGLE_RESULT)
-                                       ? ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_RESULT_TENTATIVE)
-                                          ? -1
-                                          : 1)
+                                      ? (((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE)
+                                         ? -1
+                                         : 1)
                                        : 0),
                                      context);
       }
@@ -5298,7 +5298,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
   rator_flags = get_rator_flags(app->rator, 2, info);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
-  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
+  if ((rator_flags & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE) {
     info->preserves_marks = -info->preserves_marks;
     info->single_result = -info->single_result;
   }
@@ -5334,7 +5334,7 @@ Scheme_Object *optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
       int flags = SCHEME_LAMBDA_FLAGS(lam);
       info->preserves_marks = !!(flags & LAMBDA_PRESERVES_MARKS);
       info->single_result = !!(flags & LAMBDA_SINGLE_RESULT);
-      if (flags & LAMBDA_RESULT_TENTATIVE) {
+      if ((flags & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE) {
         info->preserves_marks = -info->preserves_marks;
         info->single_result = -info->single_result;
       }
@@ -7256,7 +7256,7 @@ static int set_one_code_flags(Scheme_Object *value, int flags,
       merge_lambda_arg_types(lam, lam2);
     }
 
-    if (!just_tentative || (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_RESULT_TENTATIVE)) {
+    if (!just_tentative || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE)) {
       flags = (flags & SCHEME_LAMBDA_FLAGS(lam));
       SCHEME_LAMBDA_FLAGS(lam2) = set_flags | (SCHEME_LAMBDA_FLAGS(lam2) & mask_flags);
       SCHEME_LAMBDA_FLAGS(lam3) = set_flags | (SCHEME_LAMBDA_FLAGS(lam3) & mask_flags);
@@ -8070,7 +8070,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
         /* Set-flags loop: */
         clones = make_clones(retry_start, pre_body, rhs_info);
         (void)set_code_flags(retry_start, pre_body, clones,
-                             LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_RESULT_TENTATIVE,
+                             LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_STATUS_RESULT_TENTATIVE,
                              0xFFFF,
                              0,
                              0);
@@ -8172,7 +8172,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
         /* Reset-flags loop: */
         (void)set_code_flags(retry_start, pre_body, clones,
                              (flags & (LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS)),
-                             ~(LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_RESULT_TENTATIVE),
+                             ~(LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_STATUS_MASK),
                              1,
                              1);
       }
@@ -8579,8 +8579,8 @@ optimize_lambda(Scheme_Object *_lam, Optimize_Info *info, int context)
     SCHEME_LAMBDA_FLAGS(lam) -= LAMBDA_PRESERVES_MARKS;
 
   if ((info->single_result > 0) && (info->preserves_marks > 0)
-      && (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_RESULT_TENTATIVE))
-    SCHEME_LAMBDA_FLAGS(lam) -= LAMBDA_RESULT_TENTATIVE;
+      && ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_RESULT_TENTATIVE))
+    SCHEME_LAMBDA_FLAGS(lam) -= LAMBDA_STATUS_RESULT_TENTATIVE;
 
   lam->body = code;
 
@@ -9352,7 +9352,7 @@ Scheme_Linklet *scheme_optimize_linklet(Scheme_Linklet *linklet,
            LAMBDA_PRESERVES_MARKS for all, but then assume not for all
            if any turn out not (i.e., approximate fix point). */
         (void)set_code_closure_flags(cl_first,
-                                     LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_RESULT_TENTATIVE,
+                                     LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_STATUS_RESULT_TENTATIVE,
                                      0xFFFF,
                                      0);
 
@@ -9430,7 +9430,7 @@ Scheme_Linklet *scheme_optimize_linklet(Scheme_Linklet *linklet,
         flags = set_code_closure_flags(cl_first, 0, 0xFFFF, 0);
         (void)set_code_closure_flags(cl_first,
                                      (flags & (LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS)),
-                                     ~(LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_RESULT_TENTATIVE),
+                                     ~(LAMBDA_SINGLE_RESULT | LAMBDA_PRESERVES_MARKS | LAMBDA_STATUS_MASK),
                                      1);
       }
 

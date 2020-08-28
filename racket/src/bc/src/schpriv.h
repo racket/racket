@@ -501,6 +501,8 @@ Scheme_Object *scheme_get_startup_export(const char *s);
 
 extern int scheme_init_load_on_demand;
 
+extern int scheme_keep_builtin_context;
+
 /*========================================================================*/
 /*                                constants                               */
 /*========================================================================*/
@@ -2708,10 +2710,15 @@ Scheme_Comp_Env *scheme_set_comp_env_name(Scheme_Comp_Env *env, Scheme_Object *n
 #define LAMBDA_NEED_REST_CLEAR 8
 #define LAMBDA_IS_METHOD 16
 #define LAMBDA_SINGLE_RESULT 32
-#define LAMBDA_RESULT_TENTATIVE 64
-#define LAMBDA_VALIDATED 128
+#define LAMBDA_STATUS_MASK (64 | 128)
 #define LAMBDA_SFS 256
 /* BITS 8-15 (overlaps LAMBDA_SFS) used by write_lambda() */
+
+/* These modes correspond to different times for a given `lambda`,
+   assuming that builtin functions are not validated: */
+#define LAMBDA_STATUS_RESULT_TENTATIVE   64
+#define LAMBDA_STATUS_VALIDATED         128
+#define LAMBDA_STATUS_BUILTIN           (128 | 64)
 
 #define COMP_ALLOW_SET_UNDEFINED  0x1
 #define COMP_CAN_INLINE           0x2

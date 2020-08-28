@@ -210,6 +210,7 @@ Scheme_Object *scheme_read_lambda(int flags, int closure_size, int num_params, i
   data  = (Scheme_Lambda *)scheme_malloc_tagged(sizeof(Scheme_Lambda));
   data->iso.so.type = scheme_lambda_type;
 
+  if (scheme_starting_up) flags |= LAMBDA_STATUS_BUILTIN;
   SCHEME_LAMBDA_FLAGS(data) = (short)flags;
 
   data->num_params = num_params;

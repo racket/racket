@@ -20,7 +20,6 @@ static int lambda_has_been_jitted(Scheme_Native_Lambda *nlam);
 
 void scheme_jit_fill_threadlocal_table();
 
-
 typedef struct {
   Scheme_Native_Lambda nc;
   Scheme_Native_Lambda *case_lam;
@@ -4029,7 +4028,8 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, Scheme_Native_L
   start_code = gdata.start_code;
   tail_code = gdata.tail_code;
   
-  if (lam->name) {
+  if (lam->name && (scheme_keep_builtin_context
+                    || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_STATUS_MASK) != LAMBDA_STATUS_BUILTIN))) {
     scheme_jit_add_symbol((uintptr_t)jit_unadjust_ip(start_code),
                           (uintptr_t)jit_unadjust_ip(gdata.code_end) - 1,
                           lam->name, 1);

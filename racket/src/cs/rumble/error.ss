@@ -534,6 +534,10 @@
 ;; uses even more memory.
 (define trace-length-limit 65535)
 
+(define suppress-generation-in-trace (if (getenv "PLT_SHOW_BUILTIN_CONTEXT")
+                                         -1
+                                         255))
+
 ;; Convert a continuation to a list of function-name and
 ;; source information. Cache the result half-way up the
 ;; traversal, so that it's amortized constant time.
@@ -553,17 +557,18 @@
        (let* ([name (or (and (not offset)
                              (let ([attachments (continuation-next-attachments k)])
                                (and (pair? attachments)
-                                    (not (eq? attachments (continuation-next-attachments (#%$continuation-link k))))
+                                    (not (fx= attachments (continuation-next-attachments (#%$continuation-link k))))
                                     (let ([n (extract-mark-from-frame (car attachments) linklet-instantiate-key #f)])
                                       (and n
                                            (string->symbol (format "body of ~a" n)))))))
-                        (let* ([c (if offset
-                                      (#%$continuation-stack-return-code k offset)
-                                      (#%$continuation-return-code k))]
-                               [n (#%$code-name c)])
-                          (if (path-or-empty-procedure-name-string? n)
-                              #f
-                              n)))]
+                        (let ([c (if offset
+                                     (#%$continuation-stack-return-code k offset)
+                                     (#%$continuation-return-code k))])
+                          (and (not (eq? (#%$generation c) suppress-generation-in-trace))
+                               (let ([n (#%$code-name c)])
+                                 (if (path-or-empty-procedure-name-string? n)
+                                     #f
+                                     n)))))]
               [desc
                (let* ([ci (#%$code-info (if offset
                                             (#%$continuation-stack-return-code k offset)
@@ -683,13 +688,16 @@
   (when (or (continuation-condition? v)
             (and (exn? v)
                  (not (exn:fail:user? v))))
-    (let ([n (|#%app| error-print-context-length)])
-      (unless (zero? n)
+    (let* ([n (|#%app| error-print-context-length)]
+           [l (if (zero? n)
+                  '()
+                  (traces->context
+                   (if (exn? v)
+                       (continuation-mark-set-traces (exn-continuation-marks v))
+                       (list (continuation->trace (condition-continuation v))))))])
+      (unless (null? l)
         (eprintf "\n  context...:")
-        (let loop ([l (traces->context
-                       (if (exn? v)
-                           (continuation-mark-set-traces (exn-continuation-marks v))
-                           (list (continuation->trace (condition-continuation v)))))]
+        (let loop ([l l]
                    [prev #f]
                    [repeats 0]
                    [n n])

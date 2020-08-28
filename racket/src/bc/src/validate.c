@@ -1839,10 +1839,10 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       no_typed(need_local_type, port);
       expr = (Scheme_Object *)SCHEME_CLOSURE_CODE(expr);
       data = (Scheme_Lambda *)expr;
-      if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_VALIDATED) {
+      if ((SCHEME_LAMBDA_FLAGS(data) & LAMBDA_STATUS_MASK) == LAMBDA_STATUS_VALIDATED) {
         /* Done with this one. */
       } else {
-        SCHEME_LAMBDA_FLAGS(data) |= LAMBDA_VALIDATED;
+        SCHEME_LAMBDA_FLAGS(data) = (SCHEME_LAMBDA_FLAGS(data) & ~LAMBDA_STATUS_MASK) | LAMBDA_STATUS_VALIDATED;
         did_one = 0;
         goto top;
       }

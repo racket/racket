@@ -2099,7 +2099,10 @@ static int sch_bool_getenv(const char* name);
 void scheme_init_getenv(void)
 {
   if (sch_bool_getenv("PLTNOMZJIT")) {
-      scheme_set_startup_use_jit(0);
+    scheme_set_startup_use_jit(0);
+  }
+  if (sch_bool_getenv("PLT_SHOW_BUILTIN_CONTEXT")) {
+    scheme_keep_builtin_context = 1;
   }
 }
 

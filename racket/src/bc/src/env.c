@@ -16,6 +16,8 @@ void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
 int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
 THREAD_LOCAL_DECL(int scheme_starting_up);
 
+int scheme_keep_builtin_context;
+
 /* globals READ-ONLY SHARED */
 
 READ_ONLY static Scheme_Object *kernel_symbol;
@@ -178,7 +180,7 @@ Scheme_Env *scheme_basic_env()
   scheme_init_hash_key_procs();
 #endif
 
-  scheme_init_getenv(); /* checks PLTNOJIT */
+  scheme_init_getenv(); /* checks PLTNOJIT and PLT_SHOW_BUILTIN_CONTEXT */
 
 #ifdef WINDOWS_PROCESSES
   /* Must be called before first scheme_make_thread() */
