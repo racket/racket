@@ -89,6 +89,7 @@
 (define-constant RKTIO_PATH_DOC_DIR 7)
 (define-constant RKTIO_PATH_INIT_DIR 8)
 (define-constant RKTIO_PATH_INIT_FILE 9)
+(define-constant RKTIO_PATH_CACHE_DIR 10)
 (define-constant RKTIO_OS_SIGNAL_NONE -1)
 (define-constant RKTIO_OS_SIGNAL_INT 0)
 (define-constant RKTIO_OS_SIGNAL_TERM 1)

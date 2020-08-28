@@ -123,7 +123,7 @@ READ_ONLY static Scheme_Object *doc_dir_symbol, *desk_dir_symbol;
 READ_ONLY static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_symbol;
 READ_ONLY static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
 READ_ONLY static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
-READ_ONLY static Scheme_Object *config_dir_symbol;
+READ_ONLY static Scheme_Object *config_dir_symbol, *cache_dir_symbol;
 READ_ONLY static Scheme_Object *host_collects_dir_symbol, *host_config_dir_symbol;
 
 SHARED_OK static Scheme_Object *exec_cmd;
@@ -165,6 +165,7 @@ void scheme_init_file(Scheme_Startup_Env *env)
   REGISTER_SO(host_config_dir_symbol);
   REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
+  REGISTER_SO(cache_dir_symbol);
 
   REGISTER_SO(windows_symbol);
   REGISTER_SO(unix_symbol);
@@ -199,6 +200,7 @@ void scheme_init_file(Scheme_Startup_Env *env)
   host_config_dir_symbol = scheme_intern_symbol("host-config-dir");
   orig_dir_symbol = scheme_intern_symbol("orig-dir");
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
+  cache_dir_symbol = scheme_intern_symbol("cache-dir");
 
   windows_symbol = scheme_intern_symbol("windows");
   unix_symbol = scheme_intern_symbol("unix");
@@ -5022,10 +5024,12 @@ find_system_path(int argc, Scheme_Object **argv)
   } else if (argv[0] == addon_dir_symbol) {
     if (addon_dir) return addon_dir;
     which = RKTIO_PATH_ADDON_DIR;
+  } else if (argv[0] == cache_dir_symbol) {
+    which = RKTIO_PATH_CACHE_DIR;
   } else {
     scheme_wrong_contract("find-system-path", 
                           "(or/c 'home-dir 'pref-dir 'pref-file 'temp-dir\n"
-                          "      'init-dir 'init-file 'addon-dir\n"
+                          "      'init-dir 'init-file 'addon-dir 'cache-dir\n"
                           "      'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                           "      'collects-dir 'config-dir 'orig-dir\n"
                           "      'host-collects-dir 'host-config-dir)",

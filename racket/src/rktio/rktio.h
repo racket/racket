@@ -963,7 +963,8 @@ enum {
   RKTIO_PATH_DESK_DIR,
   RKTIO_PATH_DOC_DIR,
   RKTIO_PATH_INIT_DIR,
-  RKTIO_PATH_INIT_FILE
+  RKTIO_PATH_INIT_FILE,
+  RKTIO_PATH_CACHE_DIR
 };
 
 RKTIO_EXTERN char *rktio_expand_user_tilde(rktio_t *rktio, rktio_const_string_t filename);

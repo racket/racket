@@ -52,8 +52,11 @@ by @racket[kind], which must be one of the following:
  the current executable is used as the home directory.}
 
  @item{@indexed-racket['pref-dir] --- the standard directory for
- storing the current user's preferences. On Unix, the directory is
- @filepath{.racket} in the @tech{user's home directory}.  On Windows,
+ storing the current user's preferences. On Unix, the directory is the
+ @filepath{racket} subdirectory of the path specified by
+ @indexed-envvar{XDG_CONFIG_HOME}, or @filepath{.config/racket} in the
+ @tech{user's home directory} if @envvar{XDG_CONFIG_HOME} is not set to
+ an absolute path. On Windows,
  it is @filepath{Racket} in the @tech{user's home directory} if
  determined by @envvar{PLTUSERHOME}, otherwise in the user's
  application-data folder as specified by the Windows registry; the
@@ -79,8 +82,9 @@ by @racket[kind], which must be one of the following:
  if it is defined, otherwise it is the current directory.}
 
  @item{@indexed-racket['init-dir] --- the directory containing the
- initialization file used by the Racket executable.
- It is the same as the @tech{user's home directory}.}
+ initialization file used by the Racket executable.  On Unix, it is
+ the same as the result returned for @racket['pref-dir]; on Mac OS and
+ Windows, it is the same as the @tech{user's home directory}.}
 
  @item{@indexed-racket['init-file] --- the file loaded at start-up by
  the Racket executable. The directory part of the
@@ -89,9 +93,9 @@ by @racket[kind], which must be one of the following:
 
   @itemize[
 
-  @item{@|AllUnix|: @indexed-file{.racketrc}}
+  @item{Unix and Windows: @indexed-file{racketrc.rktl}}
 
-  @item{Windows: @indexed-file{racketrc.rktl}}
+  @item{Mac OS: @indexed-file{.racketrc}}
 
   ]}
 
@@ -121,8 +125,19 @@ by @racket[kind], which must be one of the following:
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
  @filepath{Library/Racket} in the @tech{user's home directory} on Mac
- OS and @racket['pref-dir] otherwise.  The directory might not
- exist.}
+ OS and @racket['pref-dir] on Windows. On Unix, it is the
+ @filepath{racket} subdirectory of the path specified by
+ @indexed-envvar{XDG_DATA_HOME}, or @filepath{.local/share/racket} in
+ the @tech{user's home directory} if @envvar{XDG_CONFIG_HOME} is not
+ set to an absolute path.  The directory might not exist.}
+
+ @item{@indexed-racket['cache-dir] --- a directory for storing
+ user-specific caches. On Unix, it is the @filepath{racket}
+ subdirectory of the path specified by @indexed-envvar{XDG_CACHE_HOME},
+ or @filepath{.cache/racket} in the @tech{user's home directory} if
+ @envvar{XDG_CACHE_HOME} is not set to an absolute path. On Mac OS and
+ Windows, it is the same as the result returned for @racket['addon-dir].
+ The directory might not exists.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for
  storing the current user's documents. On Unix, it's
