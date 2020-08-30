@@ -557,14 +557,14 @@
        (let* ([name (or (and (not offset)
                              (let ([attachments (continuation-next-attachments k)])
                                (and (pair? attachments)
-                                    (not (fx= attachments (continuation-next-attachments (#%$continuation-link k))))
+                                    (not (eq? attachments (continuation-next-attachments (#%$continuation-link k))))
                                     (let ([n (extract-mark-from-frame (car attachments) linklet-instantiate-key #f)])
                                       (and n
                                            (string->symbol (format "body of ~a" n)))))))
                         (let ([c (if offset
                                      (#%$continuation-stack-return-code k offset)
                                      (#%$continuation-return-code k))])
-                          (and (not (eq? (#%$generation c) suppress-generation-in-trace))
+                          (and (not (fx= (#%$generation c) suppress-generation-in-trace))
                                (let ([n (#%$code-name c)])
                                  (if (path-or-empty-procedure-name-string? n)
                                      #f
