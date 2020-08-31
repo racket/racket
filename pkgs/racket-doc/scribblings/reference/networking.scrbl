@@ -257,13 +257,13 @@ port returned by @racket[tcp-accept], @racket[tcp-connect],
 @racket[tcp-connect/enable-break]---@racket[#f] otherwise.}
 
 @defthing[port-number? contract?]{
-Equivalent to @racket[(between/c 1 65535)].
+Equivalent to @racket[(integer-in 1 65535)].
 
 @history[#:added "6.3"]{}
 }
 
 @defthing[listen-port-number? contract?]{
-Equivalent to @racket[(between/c 0 65535)].
+Equivalent to @racket[(integer-in 0 65535)].
 
 @history[#:added "6.3"]{}
 }
