@@ -364,6 +364,7 @@ plain-install-upcased:
 	$(STRIP_DEBUG) $(libpltdir)/MzStart.exe
 	$(STRIP_DEBUG) $(libpltdir)/MrStart.exe
 	$(MAKE) system-install
+	$(MAKE) include-install
 	$(MAKE) install-cross
 
 # ----------------------------------------
@@ -475,13 +476,16 @@ common-install:
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) system-install
-	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"
-	$(ICP) $(srcdir)/boot.h "$(DESTDIR)$(includepltdir)/racketcsboot.h"
-	$(ICP) $(SCHEME_INC)/scheme.h "$(DESTDIR)$(includepltdir)/chezscheme.h"
+	$(MAKE) include-install
 	$(MAKE) common-@INSTALL_LIBS_ENABLE@-libs
 
 system-install:
 	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd $(TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@
+
+include-install:
+	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"
+	$(ICP) $(srcdir)/boot.h "$(DESTDIR)$(includepltdir)/racketcsboot.h"
+	$(ICP) $(SCHEME_INC)/scheme.h "$(DESTDIR)$(includepltdir)/chezscheme.h"
 
 common-install-libs:
 	$(ICP_LIB) libracketcs.a "$(DESTDIR)$(libdir)/libracketcs.a"
