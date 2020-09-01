@@ -2278,7 +2278,9 @@
           'in-dir/no-arg
           (parameterize ([current-directory tmp-dir])
             (for/hash ([f (in-directory)])
-              (values f #t))))
+              (let ([real-f f])
+                (set! f 'trying-to-break-in-directory)
+                (values real-f #t)))))
     (define (mk) (in-directory))
     (test ht
           'in-dir/no-arg/outline

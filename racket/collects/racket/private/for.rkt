@@ -2377,7 +2377,7 @@
 	      ([(d) (car l)])
 	      #true
 	      #true
-	      [(next-body l d init-dir use-dir?)])]]
+	      [(next-body l (car l) init-dir use-dir?)])]]
 	 [_ #f])))
 
   )

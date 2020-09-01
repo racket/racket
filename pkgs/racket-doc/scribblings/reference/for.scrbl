@@ -268,12 +268,17 @@ is accumulated into a result with @racket[*].
 Similar to @racket[for/list], but the last @racket[body] expression
 should produce as many values as given @racket[id]s.
 The @racket[id]s are bound to
-the lists accumulated so far in the @racket[for-clause]s and
+the reversed lists accumulated so far in the @racket[for-clause]s and
 @racket[body]s.
 
 If a @racket[result-expr] is provided, it is used as with @racket[for/fold]
 when iteration terminates;
-otherwise, the result is as many lists as supplied @racket[id]s
+otherwise, the result is as many lists as supplied @racket[id]s.
+
+The scope of @racket[id] bindings is the same as for accumulator
+identifiers in @racket[for/fold]. Mutating a @racket[id] affects the
+accumulated lists, and mutating it in a way that produces a non-list
+can cause a final @racket[reverse] for each @racket[id] to fail.
 
 @examples[
 (for/lists (l1 l2 l3)
@@ -343,12 +348,6 @@ terminates, if a @racket[result-expr] is provided then the result of the
  otherwise the results of the @racket[for/fold] expression are the
  accumulator values.
 
-An @racket[accum-id] and a binding from a @racket[for-clause] can be
-the same identifier. In that case, the @racket[accum-id] binding
-shadows the one in a @racket[for-clause] within the
-@racket[body-or-break] and @racket[body] forms (even though,
-syntactically, a @racket[for-clause] is closer to the body).
-
 @examples[
 (for/fold ([sum 0]
            [rev-roots null])
@@ -365,6 +364,24 @@ syntactically, a @racket[for-clause] is closer to the body).
     [else (values (cons x acc)
                   (hash-set seen x #t))]))
 ]
+
+The binding and evaluation order of @racket[accum-id]s and
+@racket[init-expr]s does not follow the textual, left-to-right order
+relative to the @racket[for-clause]s . Instead, the sequence
+expressions in @racket[for-clause]s that determine the outermost
+iteration are evaluated first, the associated identifiers are bound,
+and then the @racket[init-expr]s are evaluated and the
+@racket[accum-id]s are bound. One consequence is that the
+@racket[accum-id]s are not bound in @racket[for-clause]s for the
+outermost initialization. Another consequence is that when a
+@racket[accum-id] is used as a @racket[for-clause] binding for the
+outermost iteration, the @racket[for-clause] binding is shadowed in
+the loop body (even though, syntactically, a @racket[for-clause] is
+closer to the body). A fresh variable for each @racket[accum-id] (at a
+fresh location) is bound to in each nested iteration created by a
+later group for @racket[for-clause]s (after a @racket[#:when] or
+@racket[#:unless], for example).
+
 @history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]
 }
 
@@ -765,6 +782,12 @@ where @racket[_body-bindings] and @racket[_done-expr] are from the
 context of the @racket[:do-in] use. The identifiers bound by the
 @racket[for] clause are typically part of the @racket[([(inner-id ...)
 inner-expr] ...)] section.
+
+Beware that @racket[_body-bindings] and @racket[_done-expr] can
+contain arbitrary expressions, potentially including @racket[set!] on
+@racket[outer-id] or @racket[inner-id] identifiers if they are visible
+in the original @racket[for] form, so beware of depending on such
+identifiers in @racket[post-guard] and @racket[loop-arg].
 
 The actual @racket[loop] binding and call has additional loop
 arguments to support iterations in parallel with the @racket[:do-in]

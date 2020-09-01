@@ -643,6 +643,14 @@
         (define-syntax (m stx) #'0)
         m))
 
+(test '(bad 1)
+      'for/lists-weird-set!
+      (for/lists (acc)
+          ([v (in-range 2)])
+        (unless (zero? v)
+          (set! acc '(bad)))
+        v))
+
 ;; for should discard any results and return void
 (test (void) 'for-0-values (for ([x '(1 2 3)] [y '(a b c)]) (values)))
 (test (void) 'for*-0-values (for* ([x '(1 2 3)] [y '(a b c)]) (values)))

@@ -274,7 +274,8 @@
            "../../include/racketcsboot.h"
            #t)
 (copy-file (build-path scheme-dir machine "boot" machine "scheme.h")
-           "../../include//chezscheme.h")
+           "../../include/chezscheme.h"
+           #t)
 
 (parameterize ([current-directory "mzstart"])
   (system*! "msbuild"
