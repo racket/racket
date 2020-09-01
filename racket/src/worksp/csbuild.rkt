@@ -249,6 +249,7 @@
 (make-directory* "../../etc")
 (make-directory* "../../doc")
 (make-directory* "../../share")
+(make-directory* "../../include")
 
 (copy-file "../LICENSE-libscheme.txt"
            "../../share/LICENSE-libscheme.txt"
@@ -265,6 +266,15 @@
 (copy-file "../LICENSE-GPL.txt"
            "../../share/LICENSE-GPL.txt"
            #t)
+
+(copy-file "../cs/c/api.h"
+           "../../include/racketcs.h"
+           #t)
+(copy-file "../cs/c/boot.h"
+           "../../include/racketcsboot.h"
+           #t)
+(copy-file (build-path scheme-dir machine "boot" machine "scheme.h")
+           "../../include//chezscheme.h")
 
 (parameterize ([current-directory "mzstart"])
   (system*! "msbuild"

@@ -63,6 +63,8 @@ cd ..
 if "%BUILD_LEVEL%"=="3m" goto doneBuilding
 if "%BUILD_LEVEL%"=="bc" goto doneBuilding
 
+..\..\racketcgc -cu ..\bc\mkincludes.rkt ..\..\include ..\bc .
+
 cd mzstart
 msbuild mzstart%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 if errorlevel 1 exit /B 1

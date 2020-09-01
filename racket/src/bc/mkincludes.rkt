@@ -54,6 +54,9 @@
   
   (if (directory-exists? incdir) (void) (make-directory incdir))
   (copy-if-newer mzconfdir "mzconfig.h")
+  (if (file-exists? (build-path mzconfdir "bc_suffix.h"))
+      (copy-if-newer mzconfdir "bc_suffix.h")
+      (void))
   (copy-if-newer mzsrcdir "sconfig.h")
   (copy-if-newer mzsrcdir "uconfig.h")
   (copy-if-newer mzsrcdir "include/escheme.h")

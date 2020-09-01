@@ -72,12 +72,6 @@
     </Link>
     <PostBuildEvent>
       <Command>
-if exist "$(TargetPath)" goto :MzOK
-echo Error: did not find $(TargetPath)
-exit 1
-:MzOK
-"$(TargetPath)" -cu ..\..\bc\mkincludes.rkt "$(TargetDir)/include/" ..\..\bc ..
-if errorlevel 1 exit 1
 cd ..\..\bc\dynsrc
 call mkmzdyn.bat $(Configuration) $(Platform)
 cd ..\..\worksp\racket
