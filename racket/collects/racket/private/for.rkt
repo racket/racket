@@ -1953,12 +1953,12 @@
                   ids)
         (with-syntax ([(id2 ...) (generate-temporaries ids)]
                       [for/fold for/fold-id]
-                      [orig-stx stx])
+                      [orig-stx stx]
+                      [((middle-body ...) (body ...)) (split-for-body stx #'(expr1 expr ...))])
           #'(let-values ([(id ...)
                           (for/fold orig-stx ([id null] ...) bindings
-                            (let-values ([(id2 ...) (let ()
-                                                      expr1
-                                                      expr ...)])
+                            middle-body ...
+                            (let-values ([(id2 ...) (let () body ...)])
                               (values* (cons id2 id) ...)))])
               (values* (alt-reverse id) ...)))))
     (syntax-case stx ()

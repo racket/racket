@@ -622,6 +622,27 @@
                       (values (car pr) (cdr pr)))])
         (list firsts seconds other)))
 
+(test '()
+      'for/lists-split-body
+      (for/lists (lst) ([x '()])
+        #:break #f
+        x))
+(test '()
+      'for/lists-split-body
+      (for/lists (lst) ([x '()])
+        (define-syntax (m stx) #'0)
+        m))
+(test '()
+      'for*/lists-split-body
+      (for*/lists (lst) ([x '()])
+        #:break #f
+        x))
+(test '()
+      'for*/lists-split-body
+      (for*/lists (lst) ([x '()])
+        (define-syntax (m stx) #'0)
+        m))
+
 ;; for should discard any results and return void
 (test (void) 'for-0-values (for ([x '(1 2 3)] [y '(a b c)]) (values)))
 (test (void) 'for*-0-values (for* ([x '(1 2 3)] [y '(a b c)]) (values)))
