@@ -11329,7 +11329,7 @@ static const char *startup_source =
 "(let-values(((val_0)(ref_0 t_0 v_0)))(if(identifier? val_0) val_0(datum->syntax$1 #f '?)))))"
 "(let-values()"
 "(lambda(t_0)"
-"(let-values(((id_0)(call-with-continuation-prompt(lambda()(v_0 t_0)))))"
+"(let-values(((id_0)(call-with-continuation-barrier(lambda()(v_0 t_0)))))"
 "(begin"
 "(if(identifier? id_0)"
 "(void)"

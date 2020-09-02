@@ -39,7 +39,7 @@
                                        val
                                        (datum->syntax #f '?)))]
                                 [else (lambda (t)
-                                        (define id (call-with-continuation-prompt
+                                        (define id (call-with-continuation-barrier
                                                     (lambda ()
                                                       (v t))))
                                         (unless (identifier? id)
