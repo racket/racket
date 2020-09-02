@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/generic))
+@(require "mz.rkt" (for-label racket/generic racket/dict/contract))
 
 @(define dict-eval (make-base-eval))
-@examples[#:hidden #:eval dict-eval (require racket/dict racket/generic racket/contract)]
+@examples[#:hidden #:eval dict-eval (require racket/dict racket/generic racket/contract racket/dict/contract)]
 
 @title[#:tag "dicts"]{Dictionaries}
 
@@ -1013,5 +1013,101 @@ See also @racket[define-custom-hash-types].
 
 
 }
+
+@section{Dictionary Contracts with Wrapping}
+
+@note-lib-only[racket/dict/contract]
+
+@defproc[(dict/c
+          [key/c chaperone-contract?]
+          [value/c contract?]
+          [iter/c contract? any/c]
+          [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
+          [#:flat? flat? boolean? #f])
+         contract?]{
+Produces a contract that recognizes @tech{dictionary}s with
+keys and values as specified by the @racket[key/c] and
+@racket[value/c] arguments. The iteration positions for
+@racket[dict-iterate-first] etc. are constrained by the
+@racket[iter/c] argument.
+
+When a non-flat @racket[dict/c] contract is applied to a
+dict, the resulting dict is not @racket[eq?] to the input.
+
+@examples[
+#:eval dict-eval
+(define/contract good-dict
+  (dict/c integer? boolean?)
+  '((1 . #t) (2 . #f) (3 . #t)))
+(eval:error
+ (define/contract bad-dict
+   (dict/c integer? boolean?)
+   '((1 . "elephant") (2 . "monkey") (3 . "manatee"))))]
+
+@itemlist[
+ @item{
+  If the @racket[flat?] argument is @racket[#t], then the
+  resulting contract is a @tech{flat contract}, and the
+  @racket[key/c] and @racket[value/c] arguments must also be
+  @tech{flat contracts}.
+
+  @examples[#:eval dict-eval
+            (flat-contract? (dict/c integer? boolean?))
+            (flat-contract? (dict/c integer? boolean? #:flat? #t))
+            (eval:error (dict/c integer? (-> integer? integer?) #:flat? #t))]
+ 
+  Such @tech{flat contracts} will be unsound if applied to
+  mutable dicts, as they will not check future mutations.
+ }
+ @item{
+  If the @racket[immutable] argument is @racket[#t] and the
+  @racket[key/c], @racket[value/c], and @racket[iter/c]
+  arguments are @tech{flat contract}s, the result will be a
+  @racket[flat-contract?].
+
+  @examples[#:eval dict-eval
+            (flat-contract? (dict/c integer? boolean? #:immutable #t))]
+ }
+ @item{
+  Otherwise the result cannot be a flat contract and
+  @racket[dict/c] produces an impersonator contract which is
+  not a chaperone contract. While the @racket[key/c] must be
+  a chaperone contract, so non-flat @racket[dict/c]
+  contracts cannot be nested as keys for other
+  @racket[dict/c] contracts.
+
+  On immutable built-in dicts, immutable @tech{hash tables}
+  and @tech{association lists}, the contract produces a copy
+  with keys and values replaced with their projections.
+
+  On mutable built-in dicts, mutable @tech{hash tables}
+  and @tech{vectors}, the contract produces an impersonator
+  that guards access and mutation operations.
+
+  On both mutable and immutable struct-based
+  @tech{dictionaries} when the contract isn't flat, the
+  contract produces an impersonator that guards dictionary
+  methods. On immutable struct-based dicts, this means the
+  contract applies even to new keys and values added by
+  @racket[dict-set] after the contract has been applied.
+
+  @examples[
+  #:eval dict-eval
+  (struct delegate [dict]
+    #:methods gen:dict
+    [(define-syntax-rule (deleg out op ...) (begin (deleg1 out op) ...))
+     (define-syntax-rule (deleg1 out op)
+       (begin (define/generic gen op)
+              (define (op d . as) (out (apply gen (delegate-dict d) as)))))
+     (deleg values dict-ref dict-count dict-iterate-first dict-iterate-next
+            dict-iterate-key dict-iterate-value)
+     (deleg delegate dict-set dict-remove)])
+  (define/contract guarded-dict
+    (dict/c integer? boolean?)
+    (delegate '((1 . #t) (2 . #f) (3 . #t))))
+  (eval:error
+   (dict-set guarded-dict 1 "dolphin"))]
+ }
+]}
 
 @close-eval[dict-eval]
