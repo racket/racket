@@ -257,10 +257,10 @@
   (initialize-catalogs/git))
 
 (define (initialize-catalogs/git)
-  (define pkg-git.git (make-temporary-file "pkg-git-~a.git"))
-  (delete-file pkg-git.git)
+  (define pkg-git.git (make-temporary-file "pkg-git-~a.git" 'directory))
   (parameterize ([current-directory (build-path test-source-directory "test-pkgs")])
-    (copy-directory/files (build-path test-source-directory "test-pkgs" "pkg-git") pkg-git.git))
+    (for ([f (directory-list "pkg-git")])
+      (copy-directory/files (build-path "pkg-git" f) (build-path pkg-git.git f))))
   (define checksum
     (parameterize ([current-directory pkg-git.git])
       (system "git init")

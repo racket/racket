@@ -5,7 +5,7 @@
 (this-test-is-run-by-the-main-test)
 
 (pkg-tests
- (define dir (getenv "PLTADDONDIR"))
+ (define dir (find-system-path 'addon-dir))
  (define pkg-dir (build-path dir "pkgs"))
  (define (try-now)
    (shelly-case
