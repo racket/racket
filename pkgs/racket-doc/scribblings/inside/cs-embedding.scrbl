@@ -72,11 +72,14 @@ To embed Racket CS in a program, follow these steps:
 
   The @filepath{petite.boot}, @filepath{scheme.boot}, and
   @filepath{racket.boot} files are distributed with the Racket
-  software in the installation's @filepath{lib} directory. These files
-  can be combined into a single file---or even embedded into the
-  executable---as long as the @cpp{boot1_offset}, @cpp{boot2_offset},
-  and @cpp{boot3_offset} fields of @cpp{racket_boot_arguments_t} are
-  set to identify the starting offset of each boot image in the file.
+  software in the installation's @filepath{lib} directory for Windows,
+  and they are distributed within the @filepath{Racket} framework on
+  Mac OS X; they must be @seclink["src-build"]{built} from source on Unix.
+  These files can be combined into a single file---or even
+  embedded into the executable---as long as the @cpp{boot1_offset},
+  @cpp{boot2_offset}, and @cpp{boot3_offset} fields of
+  @cpp{racket_boot_arguments_t} are set to identify the starting
+  offset of each boot image in the file.
 
   See @secref["segment-ideas"] for advice on embedding files like
   @filepath{petite.boot} in an executable.}

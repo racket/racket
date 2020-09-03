@@ -13,6 +13,7 @@
 (define scheme-dir (build-path 'up "ChezScheme"))
 (define pull? #f)
 (define static-libs? #t)
+(define install-boot? #t) ; currently always enabled
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
@@ -34,7 +35,7 @@
  [("--extra-repos-base") url "Clone repos from <url>ChezScheme/.git, etc."
                          (unless (equal? url "")
                            (set! extra-repos-base url))]
- [("--disable-libs") "Disable installaton of non-embedded boot files"
+ [("--disable-libs") "Disable installaton of static libraries (currently ignored)"
                      (set! static-libs? #f)]
  #:args
  clone-arg
@@ -295,7 +296,7 @@
           machine
           "machine")
 
-(when static-libs?
+(when install-boot?
   (bootstrap-racket! "../cs/c/add-terminator.rkt"
                      "../build/petite-v.boot"
                      "../../lib/petite.boot")
