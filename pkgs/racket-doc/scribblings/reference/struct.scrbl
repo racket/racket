@@ -661,6 +661,27 @@ The function also cooperates with @racket[pretty-print]:
   (pretty-write (point #e3e6 #e4e6)))
 ]
 
+Note that the printer uses a separate property,
+@racket[prop:custom-print-quotable], to determine whether a struct
+instance is quotable. If so, the printer may print it in
+@racket[write] mode it in certain contexts, such as within a list. For
+example:
+@examples[#:eval struct-eval #:label #f
+(print (list (point 1 2) (point 3 4)))
+]
+Use @racket[#:property prop:custom-print-quotable 'never] to prevent a
+struct instance from being considered quotable. For example:
+@examples[#:eval struct-eval #:label #f
+(struct point2 (x y)
+  #:property prop:custom-print-quotable 'never
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'point)
+      (lambda (obj) (list (point2-x obj) (point2-y obj)))))])
+(print (list (point2 1 2) (point2 3 4)))
+]
+
 Keyword arguments can be simulated with @racket[unquoted-printing-string]:
 
 @examples[#:eval struct-eval #:label #f
