@@ -49,7 +49,6 @@
   (define tmp-dir
     (make-temporary-file ".racket.fake-installation~a" 'directory
                          (find-system-path 'temp-dir)))
-  (make-directory* tmp-dir)
   (dynamic-wind
       void
       (λ ()
@@ -105,7 +104,6 @@
   (define tmp-dir
     (make-temporary-file ".racket.fake-root~a" 'directory
                          (find-system-path 'home-dir)))
-  (make-directory* tmp-dir)
   (dynamic-wind
       void
       (λ ()
