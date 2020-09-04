@@ -115,7 +115,22 @@
     (define (join-ids ids sep) ; joins ids with sep; ids = stx-pair
       (syntax-case ids ()
        [(id) #'id]
-       [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))])))
+       [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))]))
+    (define (make-variable-like-transformer orig-id)
+      (make-set!-transformer
+       (λ (stx)
+         (syntax-case stx (set!)
+           [id
+            (identifier? #'id)
+            orig-id]
+           [(set! id val)
+            (raise-syntax-error
+             #f "cannot mutate identifier" stx #'id)]
+           [(id . args)
+            (datum->syntax
+             stx
+             (cons #'(#%expression id) (cdr (syntax-e stx)))
+             stx)])))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
@@ -1952,11 +1967,15 @@
                                           id)))
                   ids)
         (with-syntax ([(id2 ...) (generate-temporaries ids)]
+                      [(id-raw ...) (generate-temporaries ids)]
                       [for/fold for/fold-id]
                       [orig-stx stx]
                       [((middle-body ...) (body ...)) (split-for-body stx #'(expr1 expr ...))])
           #'(let-values ([(id ...)
-                          (for/fold orig-stx ([id null] ...) bindings
+                          (for/fold orig-stx ([id-raw null] ...) bindings
+                            (define-syntax id
+                              (make-variable-like-transformer #'id-raw))
+                            ...
                             middle-body ...
                             (let-values ([(id2 ...) (let () body ...)])
                               (values* (cons id2 id) ...)))])
