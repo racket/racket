@@ -2279,7 +2279,8 @@
           (parameterize ([current-directory tmp-dir])
             (for/hash ([f (in-directory)])
               (let ([real-f f])
-                (set! f 'trying-to-break-in-directory)
+                ;; FIXME: add test that this would be an error:
+                ;; (set! f 'trying-to-break-in-directory)
                 (values real-f #t)))))
     (define (mk) (in-directory))
     (test ht
