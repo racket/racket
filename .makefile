@@ -335,7 +335,7 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH == circa-7.8.0.10-1
+PB_BRANCH == circa-7.8.0.10-2
 PB_REPO == https://github.com/racket/pb
 
 # Alternative source for Chez Scheme boot files, normally set by
