@@ -750,15 +750,17 @@
                         (syntax-property
                          result
                          'disappeared-use
-                         (list (syntax-local-introduce
-                                (syntax-property
-                                 ;; this syntax object is potentially tainted but
-                                 ;; it's ok as a part of syntax property
-                                 (datum->syntax local-id
-                                                (syntax-e local-id)
-                                                (export-orig-stx export)
-                                                local-id)
-                                 'original-for-check-syntax #t))))]
+                         (combine-disappeared-use
+                          (syntax-local-introduce
+                           (syntax-property
+                            ;; this syntax object is potentially tainted but
+                            ;; it's ok as a part of syntax property
+                            (datum->syntax local-id
+                                           (syntax-e local-id)
+                                           (export-orig-stx export)
+                                           local-id)
+                            'original-for-check-syntax #t))
+                          (syntax-property result 'disappeared-use)))]
                        [else result]))))))
            exports)))
   
@@ -772,6 +774,13 @@
             (syntax/loc stx
               (begin new-out ...)))))]))
 
+  (define-for-syntax (combine-disappeared-use b a)
+    (if a
+        (if b
+            (cons a b)
+            a)
+        b))
+
   (define-for-syntax (copy-disappeared-uses outs r)
     (cond
      [(null? outs) r]
@@ -779,18 +788,13 @@
       (let ([p (syntax-property (car outs) 'disappeared-use)]
             [name (if (identifier? (car outs))
                       #f
-                      (syntax-local-introduce (car (syntax-e (car outs)))))]
-            [combine (lambda (b a)
-                       (if a
-                           (if b
-                               (cons a b)
-                               a)
-                           b))])
+                      (syntax-local-introduce (car (syntax-e (car outs)))))])
         (syntax-property r 'disappeared-use
-                         (combine p
-                                  (combine
-                                   name
-                                   (syntax-property r 'disappeared-use)))))]))
+                         (combine-disappeared-use
+                          p
+                          (combine-disappeared-use
+                           name
+                           (syntax-property r 'disappeared-use)))))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; provide transformers
