@@ -725,38 +725,52 @@
        (raise-syntax-error #f
                            "not at module level"
                            stx)]))
+
+  (define-for-syntax (transform-simple out)
+    (let ([exports (expand-export out null)])
+      (map (lambda (export)
+             (let ([local-id (export-local-id export)])
+               (let ([base
+                      (if (eq? (syntax-e local-id)
+                               (export-out-sym export))
+                          (export-local-id export)
+                          (quasisyntax/loc out
+                            (rename #,local-id
+                                    #,(export-out-sym export))))]
+                     [mode (export-mode export)])
+                 (let ([phased
+                        (cond
+                          [(eq? mode 0) base]
+                          [else #`(for-meta #,mode #,base)])])
+                   (let ([result (if (export-protect? export)
+                                     #`(protect #,phased)
+                                     phased)])
+                     (cond
+                       [(syntax-original? local-id)
+                        (syntax-property
+                         result
+                         'disappeared-use
+                         (list (syntax-local-introduce
+                                (syntax-property
+                                 ;; this syntax object is potentially tainted but
+                                 ;; it's ok as a part of syntax property
+                                 (datum->syntax local-id
+                                                (syntax-e local-id)
+                                                (export-orig-stx export)
+                                                local-id)
+                                 'original-for-check-syntax #t))))]
+                       [else result]))))))
+           exports)))
   
   (define-syntax (provide-trampoline stx)
     (syntax-case stx ()
       [(_ out ...)
-       (letrec ([transform-simple
-                 (lambda (out)
-                   (let ([exports (expand-export out null)])
-                     (map (lambda (export)
-                            (let ([base
-                                   (if (eq? (syntax-e (export-local-id export))
-                                            (export-out-sym export))
-                                       (export-local-id export)
-                                       (quasisyntax/loc out
-                                         (rename #,(export-local-id export)
-                                                 #,(export-out-sym export))))]
-                                  [mode (export-mode export)])
-                              (let ([phased
-                                     (cond
-                                      [(eq? mode 0) base]
-                                      [else #`(for-meta #,mode #,base)])])
-                                (if (export-protect? export)
-                                    #`(protect #,phased)
-                                    phased))))
-                          exports)))])
-         (syntax-case stx ()
-           [(_ out ...)
-            (let ([outs (syntax->list #'(out ...))])
-              (with-syntax ([(new-out ...) (apply append (map transform-simple outs))])
-                (copy-disappeared-uses
-                 outs
-                 (syntax/loc stx
-                   (begin new-out ...)))))]))]))
+       (let ([outs (syntax->list #'(out ...))])
+         (with-syntax ([(new-out ...) (apply append (map transform-simple outs))])
+           (copy-disappeared-uses
+            outs
+            (syntax/loc stx
+              (begin new-out ...)))))]))
 
   (define-for-syntax (copy-disappeared-uses outs r)
     (cond
