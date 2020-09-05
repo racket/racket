@@ -725,7 +725,7 @@
        (raise-syntax-error #f
                            "not at module level"
                            stx)]))
-  
+
   (define-syntax (provide-trampoline stx)
     (syntax-case stx ()
       [(_ out ...)
@@ -758,25 +758,30 @@
                  (syntax/loc stx
                    (begin new-out ...)))))]))]))
 
+  (define-for-syntax (combine-prop b a)
+    (if a (if b (cons a b) a) b))
+
   (define-for-syntax (copy-disappeared-uses outs r)
     (cond
-     [(null? outs) r]
-     [else
-      (let ([p (syntax-property (car outs) 'disappeared-use)]
-            [name (if (identifier? (car outs))
-                      #f
-                      (syntax-local-introduce (car (syntax-e (car outs)))))]
-            [combine (lambda (b a)
-                       (if a
-                           (if b
-                               (cons a b)
-                               a)
-                           b))])
-        (syntax-property r 'disappeared-use
-                         (combine p
-                                  (combine
-                                   name
-                                   (syntax-property r 'disappeared-use)))))]))
+      [(null? outs) r]
+      [else
+       (syntax-property
+        r
+        'disappeared-use
+        (let loop ([outs outs]
+                   [disappeared-uses (syntax-property r 'disappeared-use)])
+          (cond
+            [(null? outs) disappeared-uses]
+            [else
+             (let ([p (syntax-property (car outs) 'disappeared-use)]
+                   [name (if (identifier? (car outs))
+                             #f
+                             (syntax-local-introduce (car (syntax-e (car outs)))))])
+               (loop
+                (cdr outs)
+                (combine-prop p (combine-prop name disappeared-uses))))])))]))
+
+
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; provide transformers
@@ -794,7 +799,7 @@
     (make-provide-transformer
      (lambda (stx modes)
        (syntax-case stx ()
-         [(_) 
+         [(self-all-defined-out)
           (let* ([ht (syntax-local-module-defined-identifiers)]
                  [same-ctx? (lambda (free-identifier=?)
                               (lambda (id)
@@ -817,7 +822,26 @@
                               [else (lambda (a b)
                                       (free-identifier=? a b phase))]))])
                       (map (lambda (id)
-                             (make-export id (syntax-e id) mode #f stx))
+                             (make-export
+                              (cond
+                                [(syntax-original? id)
+                                 (syntax-property
+                                  id
+                                  'disappeared-use
+                                  (combine-prop
+                                   (syntax-local-introduce
+                                    (syntax-property
+                                     (datum->syntax id
+                                                    (syntax-e id)
+                                                    #'self-all-defined-out
+                                                    id)
+                                     'original-for-check-syntax #t))
+                                   (syntax-property id 'disappeared-use)))]
+                                [else id])
+                              (syntax-e id)
+                              mode
+                              #f
+                              stx))
                            (filter (lambda (id)
                                      (and (same-ctx-in-phase? id)
                                           (let-values ([(v id) (syntax-local-value/immediate
@@ -986,7 +1010,8 @@
           stx))
        (syntax-case stx ()
          [(_ id)
-          (let ([id #'id])
+          (let ([id #'id]
+                [s-id #'id])
             (unless (identifier? id)
               (raise-syntax-error
                #f
@@ -1056,7 +1081,14 @@
                      (map (lambda (id)
                             (and id
                                  (let ([id (find-imported/defined id)])
-                                   (make-export id
+                                   (make-export (syntax-property
+                                                 id
+                                                 'disappeared-use
+                                                 (combine-prop
+                                                  (syntax-local-introduce s-id)
+                                                  (syntax-property
+                                                   id
+                                                   'disappeared-use)))
                                                 (syntax-e id)
                                                 0
                                                 #f
@@ -1076,18 +1108,7 @@
                    #f
                    "identifier is not bound to struct type information"
                    stx
-                   id))))]))
-     (λ (stx modes)
-       (syntax-case stx ()
-         [(_ id)
-          (and (identifier? #'id)
-               (struct-info? (syntax-local-value #'id (lambda () #f))))
-          (syntax-local-lift-expression
-           (syntax-property #'(void)
-                            'disappeared-use
-                            (syntax-local-introduce #'id)))]
-         [whatevs (void)])
-       stx)))
+                   id))))]))))
 
   (define-syntax combine-out
     (make-provide-transformer
