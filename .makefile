@@ -72,6 +72,9 @@ VM = cs
 # Target selector: `minimal` or `skip`
 INITIAL_SETUP_MODE = minimal
 
+# Target selector: `` or `-as-is`
+AS_IS=
+
 in-place:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-in-place ; \
@@ -118,8 +121,8 @@ plain-in-place-setup:
 
 as-is:
 	if [ "$(CPUS)" = "" ] ; \
-         then $(MAKE) plain-as-is ; \
-         else $(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" ; fi
+         then $(MAKE) plain-as-is AS_IS="-as-is" ; \
+         else $(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" AS_IS="-as-is" ; fi
 
 plain-as-is:
 	$(MAKE) plain-base
@@ -335,7 +338,7 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH == circa-7.8.0.10-2
+PB_BRANCH == circa-7.8.0.10-6
 PB_REPO == https://github.com/racket/pb
 
 # Alternative source for Chez Scheme boot files, normally set by
@@ -392,7 +395,7 @@ win-cs-in-place-setup:
 	$(MAKE) plain-in-place-setup PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX)
 
 cs-base:
-	$(MAKE) maybe-fetch-pb
+	$(MAKE) maybe-fetch-pb$(AS_IS)
 	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
 	  then $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" ; \
 	  else $(MAKE) cs-configure MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --disable-csdefault" ; fi
@@ -418,9 +421,6 @@ cs-minimal-in-place-after-base-cross:
 	$(MAKE) plain-minimal-in-place-after-base PLAIN_RACKET="$(RACKET_FOR_BUILD)" PLT_SETUP_OPTIONS="--no-pkg-deps $(PLT_SETUP_OPTIONS)"
 
 
-no-fetch-pb:
-	echo done
-
 fetch-pb:
 	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
           then $(MAKE) fetch-pb-from ; \
@@ -429,6 +429,9 @@ fetch-pb:
 maybe-fetch-pb:
 	if [ "$(RACKET_FOR_BOOTFILES)" = "" ] ; \
           then $(MAKE) fetch-pb ; fi
+
+maybe-fetch-pb-as-is:
+	echo done
 
 PB_DIR == racket/src/ChezScheme/boot/pb
 
