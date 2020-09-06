@@ -28,7 +28,7 @@ For information on building Racket from this repository, see the
 [Build Guide](build.md).
 
 Contributing
-____________
+------------
 
 Contribute to Racket by [submitting a pull request](https://github.com/racket/racket), joining the
 [development mailing list](https://lists.racket-lang.org), or visiting
