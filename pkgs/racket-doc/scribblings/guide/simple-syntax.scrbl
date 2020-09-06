@@ -192,9 +192,9 @@ more examples:
 
 @racketblock[
 @#,racketid[+]
-@#,racketid[Hfuhruhurr]
 @#,racketid[integer?]
 @#,racketid[pass/fail]
+@#,racketid[Hfuhruhurr&Uumellmahaye]
 @#,racketid[john-jacob-jingleheimer-schmidt]
 @#,racketid[a-b-c+1-2-3]
 ]
