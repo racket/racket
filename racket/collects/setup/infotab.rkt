@@ -8,20 +8,20 @@
   (define-syntax info-module-begin
     (lambda (stx)
       (syntax-case stx ()
-        [(mod-beg defn ...)
+        [(_ defn ...)
          (let ([names (let loop ([defns (syntax->list (syntax (defn ...)))]
                                  [r '()])
                         (if (null? defns)
                             (reverse r)
                             (loop (cdr defns)
-                                  (syntax-case (car defns) (define)
-                                    [(define var val)
+                                  (syntax-case (car defns) (define define-values limited-require)
+                                    [(define var _val)
                                      (identifier? #'var)
                                      (cons (syntax var) r)]
                                     ;; In case it gets expanded:
-                                    [(define-values (var) val)
+                                    [(define-values (var) _val)
                                      (cons (syntax var) r)]
-                                    [(require lib) r] ; ignore these (see below)
+                                    [(limited-require _lib) r] ; ignore these (see below)
                                     [_else (raise-syntax-error
                                             'infotab-module
                                             "not a well-formed definition"
