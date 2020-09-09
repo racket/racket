@@ -799,7 +799,7 @@
     (make-provide-transformer
      (lambda (stx modes)
        (syntax-case stx ()
-         [(self-all-defined-out)
+         [(_)
           (let* ([ht (syntax-local-module-defined-identifiers)]
                  [same-ctx? (lambda (free-identifier=?)
                               (lambda (id)
@@ -822,26 +822,7 @@
                               [else (lambda (a b)
                                       (free-identifier=? a b phase))]))])
                       (map (lambda (id)
-                             (make-export
-                              (cond
-                                [(syntax-original? id)
-                                 (syntax-property
-                                  id
-                                  'disappeared-use
-                                  (combine-prop
-                                   (syntax-local-introduce
-                                    (syntax-property
-                                     (datum->syntax id
-                                                    (syntax-e id)
-                                                    #'self-all-defined-out
-                                                    id)
-                                     'original-for-check-syntax #t))
-                                   (syntax-property id 'disappeared-use)))]
-                                [else id])
-                              (syntax-e id)
-                              mode
-                              #f
-                              stx))
+                             (make-export id (syntax-e id) mode #f stx))
                            (filter (lambda (id)
                                      (and (same-ctx-in-phase? id)
                                           (let-values ([(v id) (syntax-local-value/immediate

@@ -1678,10 +1678,6 @@ case of module-leve bindings; it doesn't cover local bindings.
                           (define a 1)))])
     (test #t find-disappeared form (id=? #'struct-out))
     (test #t find-disappeared form (λ (id) (eq? (syntax-e id) 'abc))))
-  (let ([form (expand #'(module m racket/base
-                          (provide (all-defined-out))
-                          (define abc 1)))])
-    (test #t find-disappeared form (λ (id) (eq? (syntax-e id) 'abc))))
   (let ([form (expand `(module m racket/base
                         (require (only-in racket/base car))))])
     (test #t find-disappeared form (id=? #'only-in)))
