@@ -1521,7 +1521,7 @@ Returns @racket[#t] if @racket[v] has the
                    [protect? any/c]
                    [orig-stx syntax?])]{
 
-A structure representing a single imported identifier:
+A structure representing a single exported identifier:
 
 @itemize[
 
