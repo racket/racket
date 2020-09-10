@@ -1154,6 +1154,18 @@
   (test (void) 'for/foldr-result-delay-2 (force result))
   (test #t 'for/foldr-result-delay-3 evaluated?))
 
+;; same expansion (from @soegaard)
+(let ()
+  (test #t values
+        (equal? (syntax->datum (expand #'(for ([j 100]) j)))
+                (syntax->datum (expand #'(for ([j (in-range 100)]) j))))))
+
+;; #%datum is picked up (from @gus-massa)
+(let ()
+  (local-require (only-in racket (#%datum #%old-datum)))
+  (define-syntax-rule (#%datum . x) (#%old-datum . 3))
+  (test-sequence [(0 1 2)] 5))
+
 ;; ----------------------------------------
 
 (report-errs)
