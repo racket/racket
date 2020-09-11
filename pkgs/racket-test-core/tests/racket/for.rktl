@@ -1156,7 +1156,7 @@
 
 ;; same expansion (from @soegaard)
 (let ()
-  (test #t values
+  (test #t 'same-expansion-for-integer-clause
         (equal? (syntax->datum (expand #'(for ([j 100]) j)))
                 (syntax->datum (expand #'(for ([j (in-range 100)]) j))))))
 
@@ -1165,6 +1165,19 @@
   (local-require (only-in racket (#%datum #%old-datum)))
   (define-syntax-rule (#%datum . x) (#%old-datum . 3))
   (test-sequence [(0 1 2)] 5))
+
+;; for expanded in expression context
+(let ()
+  (define foo%
+    (class object%
+      (super-new)
+      (define/public (abc) '(1 2 3))))
+
+  (test #t class?
+        (class foo%
+          (super-new)
+          (inherit abc)
+          (for ([x (abc)]) #t))))
 
 (err/rt-test (for/list ([x -1]) x))
 (err/rt-test (for/list ([x 1.5]) x))
