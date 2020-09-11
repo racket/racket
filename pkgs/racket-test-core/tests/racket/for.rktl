@@ -1168,21 +1168,16 @@
 
 ;; for expanded in expression context
 (module test-for-expansion racket
-  (provide bar%)
+  (provide foo%)
   (define foo%
     (class object%
       (super-new)
-      (define/public (abc) '(1 2 3))))
-
-  (define bar%
-    (class foo%
-      (super-new)
-      (inherit abc)
-      (for ([x (abc)]) #t))))
+      (define/public (bar) 1)
+      (for ([x (bar)]) #t))))
 
 (let ()
   (local-require 'test-for-expansion)
-  (test #t object? (new bar%)))
+  (test #t object? (new foo%)))
 
 (err/rt-test (for/list ([x -1]) x))
 (err/rt-test (for/list ([x 1.5]) x))
