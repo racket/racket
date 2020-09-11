@@ -351,14 +351,14 @@
                                        (syntax-line   #'rhs)
                                        (syntax-column #'rhs))
                                #'rhs))
-                (define clause #'[(id ...) rhs*])
-                (with-syntax ([[(id ...) rhs] (introducer (syntax-local-introduce clause))])
+                (with-syntax ([[(id ...) rhs**]
+                               (introducer (syntax-local-introduce #'[(id ...) rhs*]))])
                   (arm-for-clause
                    (syntax-local-introduce
                     (introducer
                      #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
                           #,(syntax-property
-                             (syntax/loc #'rhs (make-sequence '(id ...) rhs))
+                             (syntax/loc #'rhs (make-sequence '(id ...) rhs**))
                              'feature-profile:generic-sequence #t)])
                         (void)
                         ([pos init])
