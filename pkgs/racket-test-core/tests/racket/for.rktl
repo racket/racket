@@ -1166,6 +1166,9 @@
   (define-syntax-rule (#%datum . x) (#%old-datum . 3))
   (test-sequence [(0 1 2)] 5))
 
+(err/rt-test (for/list ([x -1]) x))
+(err/rt-test (for/list ([x 1.5]) x))
+
 ;; ----------------------------------------
 
 (report-errs)

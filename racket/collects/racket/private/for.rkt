@@ -336,7 +336,7 @@
            #t
            (syntax-case (syntax-disarm (local-expand #'rhs 'expression '()) orig-insp) (quote)
              [(quote n)
-              (number? (syntax-e #'n))
+              (exact-nonnegative-integer? (syntax-e #'n))
               (expand-clause orig-stx (arm-for-clause
                                        #'[(id ...) (*in-range n)]
                                        (make-rearm)))]
