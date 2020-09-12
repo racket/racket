@@ -347,42 +347,43 @@
                             #'rhs))
              (with-syntax ([[(id ...) rhs*]
                             (introducer (syntax-local-introduce #`[(id ...) #,expanded-rhs]))])
-               (arm-for-clause
-                (syntax-local-introduce
-                 (introducer
-                  #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
+               (with-syntax ([(post-id ...) (generate-temporaries #'(id ...))])
+                 (arm-for-clause
+                  (syntax-local-introduce
+                   (introducer
+                    #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
+                         #,(syntax-property
+                            (syntax/loc #'rhs (make-sequence '(id ...) rhs*))
+                            'feature-profile:generic-sequence #t)])
+                       (void)
+                       ([pos init])
                        #,(syntax-property
-                          (syntax/loc #'rhs (make-sequence '(id ...) rhs*))
-                          'feature-profile:generic-sequence #t)])
-                     (void)
-                     ([pos init])
-                     #,(syntax-property
-                        (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
-                        'feature-profile:generic-sequence #t)
-                     ([(id ... all-cont?/pos)
-                       (let-values ([(id ...) #,(syntax-property
-                                                 (syntax/loc #'rhs (pos->vals pos))
-                                                 'feature-profile:generic-sequence #t)])
-                         (values id ...
-                                 ;; If we need to call `all-cont?`, close over
-                                 ;; `id`s here, so `id`s are not implicitly
-                                 ;; retained while the body runs:
-                                 (and all-cont?
-                                      (lambda (pos)
-                                        (all-cont? pos id ...)))))]
-                      [(pos) #,(syntax-property
-                                (syntax/loc #'rhs (if pos-pre-inc (pos-pre-inc pos) pos))
-                                'feature-profile:generic-sequence #t)])
-                     #,(syntax-property
-                        (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
-                        'feature-profile:generic-sequence #t)
-                     #,(syntax-property
-                        (syntax/loc #'rhs (if all-cont?/pos (all-cont?/pos pos) #t))
-                        'feature-profile:generic-sequence #t)
-                     #,(syntax-property
-                        (syntax/loc #'rhs ((pos-next pos)))
-                        'feature-profile:generic-sequence #t))))
-                (make-rearm))))]
+                          (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
+                          'feature-profile:generic-sequence #t)
+                       ([(id ... all-cont?/pos)
+                         (let-values ([(id ...) #,(syntax-property
+                                                   (syntax/loc #'rhs (pos->vals pos))
+                                                   'feature-profile:generic-sequence #t)])
+                           (values id ...
+                                   ;; If we need to call `all-cont?`, close over
+                                   ;; `id`s here, so `id`s are not implicitly
+                                   ;; retained while the body runs:
+                                   (and all-cont?
+                                        (lambda (pos)
+                                          (all-cont? pos id ...)))))]
+                        [(pos) #,(syntax-property
+                                  (syntax/loc #'rhs (if pos-pre-inc (pos-pre-inc pos) pos))
+                                  'feature-profile:generic-sequence #t)])
+                       #,(syntax-property
+                          (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
+                          'feature-profile:generic-sequence #t)
+                       #,(syntax-property
+                          (syntax/loc #'rhs (if all-cont?/pos (all-cont?/pos pos) #t))
+                          'feature-profile:generic-sequence #t)
+                       #,(syntax-property
+                          (syntax/loc #'rhs ((pos-next pos)))
+                          'feature-profile:generic-sequence #t))))
+                  (make-rearm)))))]
           [[(id ...) rhs]
            (with-syntax ([expanded-rhs (syntax-disarm (local-expand #'rhs 'expression (list #'quote)) orig-insp)])
              (syntax-case #'expanded-rhs (quote)
