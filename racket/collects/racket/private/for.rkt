@@ -234,7 +234,8 @@
           [(_ rhs)
            (lambda (stx)
              (syntax-rearm stx #'rhs))]))
-      (let eloop ([use-transformer? #t])
+      ;; expanded-rhs :: (or/c #f syntax?)
+      (let eloop ([use-transformer? #t] [expanded-rhs #f])
         (define unpacked-clause (unpack clause))
         (syntax-case unpacked-clause (values in-parallel stop-before stop-after :do-in)
           [[(id ...) rhs]
@@ -258,7 +259,7 @@
                                         (cons (syntax-local-introduce #'form)
                                               (or (syntax-property r 'disappeared-use)
                                                   null))))
-                     (eloop #f)))))]
+                     (eloop #f #f)))))]
           [[(id ...) (:do-in . body)]
            (syntax-case #'body ()
              [(([(outer-id ...) outer-rhs] ...)
@@ -333,62 +334,89 @@
                 (and post-guard (not (pred id ...)))
                 (loop-arg ...)))]
           [[(id ...) rhs]
-           #t
-           (syntax-case (syntax-disarm (local-expand #'rhs 'expression (list #'quote)) orig-insp) (quote)
-             [(quote n)
-              (exact-nonnegative-integer? (syntax-e #'n))
-              (expand-clause orig-stx (arm-for-clause
-                                       #'[(id ...) (*in-range n)]
-                                       (make-rearm)))]
-             [rhs*
-              (let ([introducer (make-syntax-introducer)])
-                ;; log non-specialized clauses, for performance tuning
-                (when (log-level? sequence-specialization-logger 'debug)
-                  (log-message sequence-specialization-logger
-                               'debug
-                               (format "non-specialized for clause: ~a:~a:~a"
-                                       (syntax-source #'rhs)
-                                       (syntax-line   #'rhs)
-                                       (syntax-column #'rhs))
-                               #'rhs))
-                (with-syntax ([[(id ...) rhs**]
-                               (introducer (syntax-local-introduce #'[(id ...) rhs*]))])
-                  (arm-for-clause
-                   (syntax-local-introduce
-                    (introducer
-                     #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
-                          #,(syntax-property
-                             (syntax/loc #'rhs (make-sequence '(id ...) rhs**))
-                             'feature-profile:generic-sequence #t)])
-                        (void)
-                        ([pos init])
-                        #,(syntax-property
-                           (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
-                           'feature-profile:generic-sequence #t)
-                        ([(id ... all-cont?/pos)
-                          (let-values ([(id ...) #,(syntax-property
-                                                    (syntax/loc #'rhs (pos->vals pos))
-                                                    'feature-profile:generic-sequence #t)])
-                            (values id ...
-                                    ;; If we need to call `all-cont?`, close over
-                                    ;; `id`s here, so `id`s are not implicitly
-                                    ;; retained while the body runs:
-                                    (and all-cont?
-                                         (lambda (pos)
-                                           (all-cont? pos id ...)))))]
-                         [(pos) #,(syntax-property
-                                   (syntax/loc #'rhs (if pos-pre-inc (pos-pre-inc pos) pos))
-                                   'feature-profile:generic-sequence #t)])
-                        #,(syntax-property
-                           (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
-                           'feature-profile:generic-sequence #t)
-                        #,(syntax-property
-                           (syntax/loc #'rhs (if all-cont?/pos (all-cont?/pos pos) #t))
-                           'feature-profile:generic-sequence #t)
-                        #,(syntax-property
-                           (syntax/loc #'rhs ((pos-next pos)))
-                           'feature-profile:generic-sequence #t))))
-                   (make-rearm))))])]
+           expanded-rhs
+           (let ([introducer (make-syntax-introducer)])
+             ;; log non-specialized clauses, for performance tuning
+             (when (log-level? sequence-specialization-logger 'debug)
+               (log-message sequence-specialization-logger
+                            'debug
+                            (format "non-specialized for clause: ~a:~a:~a"
+                                    (syntax-source #'rhs)
+                                    (syntax-line   #'rhs)
+                                    (syntax-column #'rhs))
+                            #'rhs))
+             (with-syntax ([[(id ...) rhs*]
+                            (introducer (syntax-local-introduce #`[(id ...) #,expanded-rhs]))])
+               (arm-for-clause
+                (syntax-local-introduce
+                 (introducer
+                  #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
+                       #,(syntax-property
+                          (syntax/loc #'rhs (make-sequence '(id ...) rhs*))
+                          'feature-profile:generic-sequence #t)])
+                     (void)
+                     ([pos init])
+                     #,(syntax-property
+                        (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
+                        'feature-profile:generic-sequence #t)
+                     ([(id ... all-cont?/pos)
+                       (let-values ([(id ...) #,(syntax-property
+                                                 (syntax/loc #'rhs (pos->vals pos))
+                                                 'feature-profile:generic-sequence #t)])
+                         (values id ...
+                                 ;; If we need to call `all-cont?`, close over
+                                 ;; `id`s here, so `id`s are not implicitly
+                                 ;; retained while the body runs:
+                                 (and all-cont?
+                                      (lambda (pos)
+                                        (all-cont? pos id ...)))))]
+                      [(pos) #,(syntax-property
+                                (syntax/loc #'rhs (if pos-pre-inc (pos-pre-inc pos) pos))
+                                'feature-profile:generic-sequence #t)])
+                     #,(syntax-property
+                        (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
+                        'feature-profile:generic-sequence #t)
+                     #,(syntax-property
+                        (syntax/loc #'rhs (if all-cont?/pos (all-cont?/pos pos) #t))
+                        'feature-profile:generic-sequence #t)
+                     #,(syntax-property
+                        (syntax/loc #'rhs ((pos-next pos)))
+                        'feature-profile:generic-sequence #t))))
+                (make-rearm))))]
+          [[(id ...) rhs]
+           (with-syntax ([expanded-rhs (syntax-disarm (local-expand #'rhs 'expression (list #'quote)) orig-insp)])
+             (syntax-case #'expanded-rhs (quote)
+               [(quote e)
+                (let ([content (syntax-e #'e)])
+                  (cond
+                    [(exact-nonnegative-integer? content)
+                     (expand-clause orig-stx (arm-for-clause
+                                              #'[(id ...) (*in-range e)]
+                                              (make-rearm)))]
+                    [(list? content)
+                     (expand-clause orig-stx (arm-for-clause
+                                              ;; list is the only case we need to specifically quote it
+                                              ;; because it would turn into a function application otherwise
+                                              #'[(id ...) (*in-list expanded-rhs)]
+                                              (make-rearm)))]
+                    [(vector? content)
+                     (expand-clause orig-stx (arm-for-clause
+                                              #'[(id ...) (*in-vector e)]
+                                              (make-rearm)))]
+                    [(and (hash? content) (immutable? content))
+                     (expand-clause orig-stx (arm-for-clause
+                                              #'[(id ...) (in-immutable-hash e)]
+                                              (make-rearm)))]
+                    [(string? content)
+                     (expand-clause orig-stx (arm-for-clause
+                                              #'[(id ...) (*in-string e)]
+                                              (make-rearm)))]
+                    [(bytes? content)
+                     (expand-clause orig-stx (arm-for-clause
+                                              #'[(id ...) (*in-bytes e)]
+                                              (make-rearm)))]
+                    [else (eloop #f #'expanded-rhs)]))]
+               [_ (eloop #f #'expanded-rhs)]))]
           [_
            (raise-syntax-error #f
                                "bad sequence binding clause" orig-stx clause)]))))

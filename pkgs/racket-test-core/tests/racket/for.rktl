@@ -1158,7 +1158,27 @@
 (let ()
   (test #t 'same-expansion-for-integer-clause
         (equal? (syntax->datum (expand #'(for ([j 100]) j)))
-                (syntax->datum (expand #'(for ([j (in-range 100)]) j))))))
+                (syntax->datum (expand #'(for ([j (in-range 100)]) j)))))
+
+  (test #t 'same-expansion-for-list-clause
+        (equal? (syntax->datum (expand #'(for ([j '(1 2 3)]) j)))
+                (syntax->datum (expand #'(for ([j (in-list '(1 2 3))]) j)))))
+
+  (test #t 'same-expansion-for-vector-clause
+        (equal? (syntax->datum (expand #'(for ([j #(1 2 3)]) j)))
+                (syntax->datum (expand #'(for ([j (in-vector #(1 2 3))]) j)))))
+
+  (test #t 'same-expansion-for-hash-clause
+        (equal? (syntax->datum (expand #'(for ([(i j) #hash((1 . 2) (3 . 4))]) j)))
+                (syntax->datum (expand #'(for ([(i j) (in-immutable-hash #hash((1 . 2) (3 . 4)))]) j)))))
+
+  (test #t 'same-expansion-for-string-clause
+        (equal? (syntax->datum (expand #'(for ([j "abc"]) j)))
+                (syntax->datum (expand #'(for ([j (in-string "abc")]) j)))))
+
+  (test #t 'same-expansion-for-bytes-clause
+        (equal? (syntax->datum (expand #'(for ([j #"abc"]) j)))
+                (syntax->datum (expand #'(for ([j (in-bytes #"abc")]) j))))))
 
 ;; #%datum is picked up (from @gus-massa)
 (let ()
