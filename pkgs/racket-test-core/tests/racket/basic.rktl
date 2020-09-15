@@ -475,6 +475,7 @@
 (test #f eq? (symbol->string 'apple) (symbol->string 'apple))
 (test "apple" symbol->immutable-string 'apple)
 (test #t immutable? (symbol->immutable-string 'apple))
+(test #t immutable? (symbol->immutable-string 'box))
 
 #ci(test #t eq? 'mISSISSIppi 'mississippi)
 #ci(test #f 'string->symbol (eq? 'bitBlt (string->symbol "bitBlt")))
