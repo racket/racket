@@ -661,7 +661,10 @@
      [else
       (let* ([p (car l)]
              [name (and (car p)
-                        (procedure-name-string->visible-name-string (car p)))]
+                        (let ([s (procedure-name-string->visible-name-string (car p))])
+                          (if (string? s)
+                              (string->symbol s)
+                              s)))]
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]

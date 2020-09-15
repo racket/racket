@@ -1103,5 +1103,19 @@
          (f))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check result of `continuation-mark-set->context`
+;; --- at least that it has the right kinds of elements
+
+(let ([go (lambda () ('no-a-function))])
+  (set! go (if (positive? (random 1)) #f go))
+  (define exn (with-handlers ([exn? values]) (go)))
+  (test #t andmap
+        (lambda (p)
+          (and p
+               (or (not (car p)) (symbol? (car p)))
+               (or (not (cdr p)) (srcloc? (cdr p)))))
+        (continuation-mark-set->context (exn-continuation-marks exn))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
