@@ -129,7 +129,7 @@ Do not use tab characters in your code.  Tabs make it hard to use textual
 @itemlist[
 @item{in DrRacket: you are all set. It doesn't insert tabs.}
 @item{in Emacs: add @tt{(setq indent-tabs-mode nil)} to your emacs initialization file.}
-@item{in vi: @tt{:set expandtab}1.}
+@item{in vi: @tt{:set expandtab}}
 ]
 
 @; -----------------------------------------------------------------------------
