@@ -535,8 +535,8 @@
 (define trace-length-limit 65535)
 
 (define suppress-generation-in-trace (if (getenv "PLT_SHOW_BUILTIN_CONTEXT")
-                                         -1
-                                         255))
+                                         255
+                                         (collect-maximum-generation)))
 
 ;; Convert a continuation to a list of function-name and
 ;; source information. Cache the result half-way up the
@@ -564,7 +564,7 @@
                         (let ([c (if offset
                                      (#%$continuation-stack-return-code k offset)
                                      (#%$continuation-return-code k))])
-                          (and (not (fx= (#%$generation c) suppress-generation-in-trace))
+                          (and (not (fx> (#%$generation c) suppress-generation-in-trace))
                                (let ([n (#%$code-name c)])
                                  (if (path-or-empty-procedure-name-string? n)
                                      #f
