@@ -102,7 +102,8 @@
 
   [byte-ready
    (lambda (work-done!)
-     ((in-buffer-pos) . < . (direct-end buffer)))]
+     ;; byte or EOF is always ready:
+     #t)]
   
   [get-progress-evt
    (lambda ()

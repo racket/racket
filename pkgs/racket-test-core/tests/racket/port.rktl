@@ -968,6 +968,12 @@
   (test #f file-position* p2)
   (err/rt-test (file-position p2) exn:fail:filesystem?))
 
+(let ([i (open-input-bytes #"")])
+  (test i sync/timeout 0 i)
+  (test i sync/timeout #f i)
+  (test #t byte-ready? i)
+  (test #t char-ready? i))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Text mode, file positions, and buffers
 
