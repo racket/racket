@@ -4,7 +4,8 @@
          make-path->relative-path-elements)
 
 (define (relative-path-elements->path elems)
-  (define wrt-dir (current-load-relative-directory))
+  (define wrt-dir (or (current-load-relative-directory)
+                      (current-directory)))
   (define rel-elems (for/list ([p (in-list elems)])
                       (if (bytes? p) (bytes->path-element p) p)))
   (cond

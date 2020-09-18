@@ -593,14 +593,14 @@ not normally printed in a way that can be read back in, path literals
 can be written and read as part of compiled code. The
 @racket[current-write-relative-directory] parameter is used to convert
 the path to a relative path as is it written, and then
-@racket[current-load-relative-directory] parameter is used to convert
-any relative path back as it is read. The relative-path conversion
-applies on reading whether the path was originally relative or not.
+@racket[current-load-relative-directory] parameter (falling back to
+@racket[current-directory]) is used to convert
+any relative path back as it is read.
 
 For a path in a syntax object's source, if the
-@racket[current-load-relative-directory] parameter is not set of the
+@racket[current-write-relative-directory] parameter is not set or the
 path is not relative to the value of the
-@racket[current-load-relative-directory] parameter, then the path is
+@racket[current-write-relative-directory] parameter, then the path is
 coerced to a string that preserves only part of the path (an in effort
 to make it less tied to the build-time filesystem, which can be
 different than the run-time filesystem).

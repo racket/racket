@@ -48042,7 +48042,9 @@
     (lambda (e_0) (xify_0 e_0 hash2610))))
 (define relative-path-elements->path
   (lambda (elems_0)
-    (let ((wrt-dir_0 (current-load-relative-directory)))
+    (let ((wrt-dir_0
+           (let ((or-part_0 (current-load-relative-directory)))
+             (if or-part_0 or-part_0 (current-directory)))))
       (let ((rel-elems_0
              (reverse$1
               (begin

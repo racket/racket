@@ -717,7 +717,7 @@
    (deserialize (serialize root #:relative-directory (build-path root "a"))))
 
   (test
-   (build-path 'same)
+   (build-path (current-directory) 'same)
    'this-dir-path
    (parameterize ([current-load-relative-directory #f])
      (deserialize (serialize (build-path root 'same) #:relative-directory root)))))
