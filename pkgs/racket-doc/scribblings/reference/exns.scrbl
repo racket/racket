@@ -237,7 +237,7 @@ using the error value conversion handler (see
 @defproc[(raise-range-error [name symbol?] [type-description string?] [index-prefix string?]
                             [index exact-integer?] [in-value any/c]
                             [lower-bound exact-integer?] [upper-bound exact-integer?]
-                            [alt-lower-bound (or/c #f exact-integer?)])
+                            [alt-lower-bound (or/c #f exact-integer?) #f])
          any]{
 
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
