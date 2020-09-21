@@ -1246,13 +1246,13 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
 #define UNSAFE_DIV(r, x, y) r = x / y
 #define UNSAFE_REM(r, x, y) r = x % y
 #if (__GNUC__ >= 5) || defined(__clang__)
-  #define UNSAFE_PLUS(r, x, y) __builtin_add_overflow(x, y, &r)
+  #define UNSAFE_PLUS(r, x, y)  __builtin_add_overflow(x, y, &r)
   #define UNSAFE_MINUS(r, x, y) __builtin_sub_overflow(x, y, &r)
-  #define UNSAFE_MULT(r, x, y) __builtin_mul_overflow(x, y, &r)
+  #define UNSAFE_MULT(r, x, y)  __builtin_mul_overflow(x, y, &r)
 #else
-  #define UNSAFE_PLUS(x, y, r) r = x + y
-  #define UNSAFE_MINUS(x, y, r) r = x - y
-  #define UNSAFE_MULT(x, y, r) r = x * y
+  #define UNSAFE_PLUS(r, x, y)  r = x + y
+  #define UNSAFE_MINUS(r, x, y) r = x - y
+  #define UNSAFE_MULT(r, x, y)  r = x * y
 #endif
 
 UNSAFE_FX(unsafe_fx_plus, UNSAFE_PLUS, fx_plus, scheme_make_integer(0), )
