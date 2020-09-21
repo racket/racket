@@ -1243,11 +1243,45 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
    return scheme_make_integer(v);                                       \
  }
 
-UNSAFE_FX(unsafe_fx_plus, +, fx_plus, scheme_make_integer(0), )
-UNSAFE_FX(unsafe_fx_minus, -, fx_minus, scheme_false, if (argc == 1) v = -v;)
-UNSAFE_FX(unsafe_fx_mult, *, fx_mult, scheme_make_integer(1), )
 UNSAFE_FX(unsafe_fx_div, /, fx_div, scheme_false, )
 UNSAFE_FX(unsafe_fx_rem, %, fx_rem, scheme_false, )
+
+static Scheme_Object *unsafe_fx_plus(int argc, Scheme_Object *argv[]) {
+  intptr_t v;
+  int i;
+  if (scheme_current_thread->constant_folding) return fx_plus(argc, argv);
+  if (!argc) return scheme_make_integer(0);
+  v = SCHEME_INT_VAL(argv[0]);
+  for (i = 1; i < argc; i++) {
+    __builtin_add_overflow(v, SCHEME_INT_VAL(argv[i]), &v);
+  }
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *unsafe_fx_minus(int argc, Scheme_Object *argv[]) {
+  intptr_t v;
+  int i;
+  if (scheme_current_thread->constant_folding) return fx_minus(argc, argv);
+  if (!argc) return scheme_false;
+  v = SCHEME_INT_VAL(argv[0]);
+  if (argc == 1) v = -v;
+  for (i = 1; i < argc; i++) {
+    __builtin_sub_overflow(v, SCHEME_INT_VAL(argv[i]), &v);
+  }
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *unsafe_fx_mult(int argc, Scheme_Object *argv[]) {
+  intptr_t v;
+  int i;
+  if (scheme_current_thread->constant_folding) return fx_mult(argc, argv);
+  if (!argc) return scheme_make_integer(1);
+  v = SCHEME_INT_VAL(argv[0]);
+  for (i = 1; i < argc; i++) {
+    __builtin_mul_overflow(v, SCHEME_INT_VAL(argv[i]), &v);
+  }
+  return scheme_make_integer(v);
+}
 
 static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
 {
