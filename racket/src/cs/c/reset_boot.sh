@@ -22,4 +22,5 @@ ready_mach scheme.h
 ready_mach equates.h
 ready_mach gc-ocd.inc
 ready_mach gc-oce.inc
+ready_mach gc-par.inc
 ready_mach vfasl.inc

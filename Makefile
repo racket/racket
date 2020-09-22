@@ -47,7 +47,7 @@ RACKETCS_SUFFIX =
 RACKET =
 RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
-PB_BRANCH = circa-7.8.0.10-7
+PB_BRANCH = circa-7.8.0.10-11
 PB_REPO = https://github.com/racket/pb
 EXTRA_REPOS_BASE =
 CS_CROSS_SUFFIX =
@@ -306,14 +306,14 @@ maybe-fetch-pb-as-is:
 	echo done
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
-	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q -b circa-7.8.0.10-7 https://github.com/racket/pb racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-7.8.0.10-7:remotes/origin/circa-7.8.0.10-7 ; fi
-	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-7.8.0.10-7
+	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q -b circa-7.8.0.10-11 https://github.com/racket/pb racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-7.8.0.10-11:remotes/origin/circa-7.8.0.10-11 ; fi
+	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-7.8.0.10-11
 pb-stage:
-	cd racket/src/ChezScheme/boot/pb && git branch circa-7.8.0.10-7
-	cd racket/src/ChezScheme/boot/pb && git checkout circa-7.8.0.10-7
+	cd racket/src/ChezScheme/boot/pb && git branch circa-7.8.0.10-11
+	cd racket/src/ChezScheme/boot/pb && git checkout circa-7.8.0.10-11
 	cd racket/src/ChezScheme/boot/pb && git add . && git commit --amend -m "new build"
 pb-push:
-	cd racket/src/ChezScheme/boot/pb && git push -u origin circa-7.8.0.10-7
+	cd racket/src/ChezScheme/boot/pb && git push -u origin circa-7.8.0.10-11
 win-cs-base:
 	IF "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-bc-then-cs-base SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=bc PLAIN_RACKET=racket\racketbc DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETBC_SUFFIX="$(RACKETBC_SUFFIX)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)"
 	IF not "$(RACKET_FOR_BUILD)" == "" $(MAKE) win-just-cs-base SETUP_BOOT_MODE=--chain DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" GIT_CLONE_ARGS_qq="$(GIT_CLONE_ARGS_qq)" JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" RACKET_FOR_BUILD="$(RACKET_FOR_BUILD)"
