@@ -1228,7 +1228,14 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
   return o;
 }
 
-#define UNSAFE_FX(name, op, fold, zero_args, PRE_CHECK)                \
+#if __GNUC__ >= 8 || __clang_major__ >= 4
+# define NO_SANITIZE_SIGNED_INTEGER_OVERFLOW \
+  __attribute__((no_sanitize("signed-integer-overflow")))
+#else
+# define NO_SANITIZE_SIGNED_INTEGER_OVERFLOW
+#endif
+#define UNSAFE_FX(name, op, fold, zero_args, PRE_CHECK)                 \
+ NO_SANITIZE_SIGNED_INTEGER_OVERFLOW                                    \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    intptr_t v;                                                          \

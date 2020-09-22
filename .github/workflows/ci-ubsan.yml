@@ -84,7 +84,9 @@ jobs:
       continue-on-error: true
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
-      run: grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log
+      run: |
+        grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
+        test ! -s runtime-errors_git${{ github.sha }}.log
     - uses: actions/upload-artifact@v2
       with:
         name: runtime-errors_git${{ github.sha }}
