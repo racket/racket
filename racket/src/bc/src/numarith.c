@@ -1228,7 +1228,11 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
   return o;
 }
 
-#define UNSAFE_FX(name, do_op, fold, zero_args, PRE_CHECK)              \
+#if !defined(__GNUC__) && !defined(__clang__)
+#  define __attribute__(x)
+#endif
+#define UNSAFE_FX(name, op, fold, zero_args, PRE_CHECK)                 \
+ __attribute__((no_sanitize("signed-integer-overflow")))                \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    intptr_t v;                                                          \
@@ -1238,33 +1242,16 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
    v = SCHEME_INT_VAL(argv[0]);                                         \
    PRE_CHECK                                                            \
    for (i = 1; i < argc; i++) {                                         \
-     do_op(v, v, SCHEME_INT_VAL(argv[i]));                              \
+     v = v op SCHEME_INT_VAL(argv[i]);                                  \
    }                                                                    \
    return scheme_make_integer(v);                                       \
  }
 
-#define UNSAFE_DIV(r, x, y) r = x / y
-#define UNSAFE_REM(r, x, y) r = x % y
-#if (__GNUC__ >= 5) || defined(__clang__)
-/*
- * using __builtin functions to avoid overflow runtime error
- * when compiled with --enable-ubsan
- * https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html
- */
-# define UNSAFE_PLUS(r, x, y)  __builtin_add_overflow(x, y, &r)
-# define UNSAFE_MINUS(r, x, y) __builtin_sub_overflow(x, y, &r)
-# define UNSAFE_MULT(r, x, y)  __builtin_mul_overflow(x, y, &r)
-#else
-# define UNSAFE_PLUS(r, x, y)  r = x + y
-# define UNSAFE_MINUS(r, x, y) r = x - y
-# define UNSAFE_MULT(r, x, y)  r = x * y
-#endif
-
-UNSAFE_FX(unsafe_fx_plus, UNSAFE_PLUS, fx_plus, scheme_make_integer(0), )
-UNSAFE_FX(unsafe_fx_minus, UNSAFE_MINUS, fx_minus, scheme_false, if (argc == 1) v = -v;)
-UNSAFE_FX(unsafe_fx_mult, UNSAFE_MULT, fx_mult, scheme_make_integer(1), )
-UNSAFE_FX(unsafe_fx_div, UNSAFE_DIV, fx_div, scheme_false, )
-UNSAFE_FX(unsafe_fx_rem, UNSAFE_REM, fx_rem, scheme_false, )
+UNSAFE_FX(unsafe_fx_plus, +, fx_plus, scheme_make_integer(0), )
+UNSAFE_FX(unsafe_fx_minus, -, fx_minus, scheme_false, if (argc == 1) v = -v;)
+UNSAFE_FX(unsafe_fx_mult, *, fx_mult, scheme_make_integer(1), )
+UNSAFE_FX(unsafe_fx_div, /, fx_div, scheme_false, )
+UNSAFE_FX(unsafe_fx_rem, %, fx_rem, scheme_false, )
 
 static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
 {
