@@ -1138,10 +1138,10 @@ makemake: .makefile racket/src/makemake.rkt
 # potential targets of the recursive `$(MAKE)`.
 #
 # When a variable is declared with `==` instead of `=`, then it is not
-# treated as a variable that must be propoagate, but instead as a
-# macro to bbe eagerly expanded. When a variable is defined with `:=`,
+# treated as a variable that must be propagated, but instead as a
+# macro to be eagerly expanded. When a variable is defined with `:=`,
 # then it is neither propagated nor expanded as a macro. Note that
-# variables arer propagated with the pattern VAR="$(VAR)", so it can
+# variables are propagated with the pattern VAR="$(VAR)", so it can
 # work for variables with spaces, but not for variables with quotes.
 #
 # If a `$(MAKE)` is preceeded by `cd <dir> &&`, then it is not treated
