@@ -216,7 +216,8 @@
   (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c")
   (rewrite-test rewrite-to-multi-wrap "rewrite-to-double-wrap"))
 
-(define (test/spec-passed/result name expression result [double-wrapped-result result])
+(define (test/spec-passed/result name expression result [double-wrapped-result result]
+                                 #:skip-opt/c? [skip-opt/c? #f])
   (parameterize ([compile-enforce-module-constants #f])
     (contract-eval #:test-case-name name `(,test #:test-case-name ',name ',result eval ',expression))
     (define (rewrite-test wrapper wrapper-name [result* result])
@@ -229,7 +230,7 @@
            ',result*
            eval
            ',(wrapper expression k)))))
-    (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c")
+    (unless skip-opt/c? (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c"))
     (unless (eq? double-wrapped-result do-not-double-wrap)
       (rewrite-test rewrite-to-multi-wrap "rewrite-to-double-wrap" double-wrapped-result))
 

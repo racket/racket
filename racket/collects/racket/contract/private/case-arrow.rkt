@@ -176,14 +176,14 @@
        f
        checker
        impersonator-prop:contracted ctc
-       impersonator-prop:blame (blame-add-missing-party blame neg-party)
+       impersonator-prop:blame blame+neg-party
        impersonator-prop:application-mark
        (cons tail-contract-key (list* neg-party blame-party-info same-rngs)))
       (wrapper
        f
        checker
        impersonator-prop:contracted ctc
-       impersonator-prop:blame (blame-add-missing-party blame neg-party))))
+       impersonator-prop:blame blame+neg-party)))
 
 (define (raise-no-keywords-error f blame neg-party)
   (λ (kwds kwd-args . args)

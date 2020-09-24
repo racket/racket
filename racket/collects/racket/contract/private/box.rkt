@@ -187,7 +187,7 @@
                         blame+neg-party
                       (neg-elem-w-proj v neg-party)))
                   impersonator-prop:contracted ctc
-                  impersonator-prop:blame (blame-add-missing-party blame neg-party)))])))
+                  impersonator-prop:blame blame+neg-party))])))
       (cond
         [filled?
          (make-val-np/proc maybe-pos-elem-r-proj maybe-neg-elem-w-proj)]

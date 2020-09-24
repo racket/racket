@@ -65,9 +65,7 @@
         (contract (-> integer? integer?) (λ (x) x) 'pos 'neg))
       ;; opt/c version doesn't yet have blame, so
       ;; we require only that when there is blame, that the blame is right.
-      (or (and (has-blame? f)
-               (blame-positive (value-blame f)))
-          'pos))
+      (blame-positive (value-blame f)))
    'pos)
 
   (test/spec-passed/result
@@ -75,11 +73,7 @@
    '(let ()
       (define f
         (contract (-> integer? integer?) (λ (x) x) 'pos 'neg))
-      ;; opt/c version doesn't yet have blame, so
-      ;; we require only that when there is blame, that the blame is right.
-      (or (and (has-blame? f)
-               (blame-negative (value-blame f)))
-          'neg))
+      (blame-negative (value-blame f)))
    'neg)
 
   (test/spec-passed/result
@@ -87,11 +81,7 @@
    '(let ()
       (define f
         (contract (set/c (-> integer? integer?) #:kind 'mutable) (mutable-set) 'pos 'neg))
-      ;; opt/c version doesn't yet have blame, so
-      ;; we require only that when there is blame, that the blame is right.
-      (or (and (has-blame? f)
-               (blame-positive (value-blame f)))
-          'pos))
+      (blame-positive (value-blame f)))
    'pos)
 
   (test/spec-passed/result
@@ -99,9 +89,34 @@
    '(let ()
       (define f
         (contract (set/c (-> integer? integer?) #:kind 'mutable) (mutable-set) 'pos 'neg))
-      ;; opt/c version doesn't yet have blame, so
-      ;; we require only that when there is blame, that the blame is right.
-      (or (and (has-blame? f)
-               (blame-negative (value-blame f)))
-          'neg))
-   'neg))
+      (blame-negative (value-blame f)))
+   'neg)
+
+  (test/spec-passed/result
+   'value-blame.5
+   '(let ()
+      (define f
+        (contract (->i () any) (λ () 1) 'pos 'neg))
+      (list (blame-negative (value-blame f))
+            (blame-positive (value-blame f))))
+   '(neg pos))
+
+  (test/spec-passed/result
+   'value-blame.6
+   '(let ()
+      (define f
+        (contract (box/c (-> integer? integer?)) (box (λ (x) 1)) 'pos 'neg))
+      (list (blame-negative (value-blame f))
+            (blame-positive (value-blame f))))
+   '(neg pos))
+
+  (test/spec-passed/result
+   'value-blame.7
+   '(let ()
+      (struct s (a b))
+      (define an-s
+        (contract (struct/c s integer? (-> integer? any)) (s 1 void) 'pos 'neg))
+      (list (blame-negative (value-blame an-s))
+            (blame-positive (value-blame an-s))))
+   '(neg pos))
+  )

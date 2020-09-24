@@ -319,7 +319,7 @@
                 (if (null? l)
                     v
                     (apply f v (append l (list impersonator-prop:contracted ctc
-                                               impersonator-prop:blame (blame-add-missing-party blame neg-party))))))
+                                               impersonator-prop:blame (cons blame neg-party))))))
               (app* chaperone-struct
                     (app* impersonate-struct
                           v

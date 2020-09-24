@@ -450,7 +450,7 @@
                                      (format "\n   ~e" v))))])
                         promise))))
            impersonator-prop:contracted ctc
-           impersonator-prop:blame blame)
+           impersonator-prop:blame blame+neg-party)
           (raise-blame-error
            blame #:missing-party neg-party
            val
@@ -732,8 +732,7 @@
     (define ho-pos-projs (for/list ([proj (in-list ho-projs)]) (proj blame)))
     (define cc-neg-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped)))
     (define cc-pos-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame)))
-    (define (make-proj projs neg-party)
-      (define blame+neg-party (cons blame neg-party))
+    (define (make-proj projs neg-party blame+neg-party)
       (λ vs
         (with-contract-continuation-mark
          blame+neg-party
@@ -742,25 +741,26 @@
                            [v (in-list vs)])
                   (proj v neg-party))))))
     (λ (val neg-party)
+      (define blame+neg-party (cons blame neg-party))
       ;; now do the actual wrapping
       (cond
         [(continuation-prompt-tag? val)
          ;; prompt/abort projections
-         (define proj1 (make-proj ho-pos-projs neg-party))
-         (define proj2 (make-proj ho-neg-projs neg-party))
+         (define proj1 (make-proj ho-pos-projs neg-party blame+neg-party))
+         (define proj2 (make-proj ho-neg-projs neg-party blame+neg-party))
          ;; call/cc projections
-         (define call/cc-guard (make-proj cc-pos-projs neg-party))
+         (define call/cc-guard (make-proj cc-pos-projs neg-party blame+neg-party))
          (define call/cc-proxy
            (λ (f)
              (proc-proxy
               f
               (λ args
-                (apply values (make-proj cc-neg-projs neg-party) args)))))
+                (apply values (make-proj cc-neg-projs neg-party blame+neg-party) args)))))
          (proxy val
                 proj1 proj2
                 call/cc-guard call/cc-proxy
                 impersonator-prop:contracted ctc
-                impersonator-prop:blame (blame-add-missing-party blame neg-party))]
+                impersonator-prop:blame blame+neg-party)]
         [else
          (raise-blame-error
           blame #:missing-party neg-party val
@@ -844,7 +844,7 @@
                         blame+neg-party
                         (proj2 v neg-party)))
                 impersonator-prop:contracted ctc
-                impersonator-prop:blame blame)]
+                impersonator-prop:blame blame+neg-party)]
         [else 
          (unless (contract-first-order-passes? ctc val)
            (raise-blame-error
@@ -933,10 +933,11 @@
          '(expected: "~s" given: "~e")
          (contract-name evt-ctc)
          val))
+      (define blame+neg-party (cons blame neg-party))
       (chaperone-evt val
-                     (generator (cons blame neg-party))
+                     (generator blame+neg-party)
                      impersonator-prop:contracted evt-ctc
-                     impersonator-prop:blame (blame-add-missing-party blame neg-party)))))
+                     impersonator-prop:blame blame+neg-party))))
 
 ;; evt/c-first-order : Contract -> Any -> Boolean
 ;; First order check for evt/c
@@ -1015,7 +1016,7 @@
                 (proj1 neg-party)
                 (proj2 neg-party)
                 impersonator-prop:contracted ctc
-                impersonator-prop:blame blame)]
+                impersonator-prop:blame (cons blame neg-party))]
         [else
          (raise-blame-error
           blame #:missing-party neg-party

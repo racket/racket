@@ -985,7 +985,7 @@ evaluted left-to-right.)
                   blame+neg-party
                   (apply arg-checker args)))))
             impersonator-prop:contracted ctc
-            impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))
+            impersonator-prop:blame blame+neg-party))))))
 
 (define-for-syntax (arg/res-to-indy-var indy-arg-vars ordered-args indy-res-vars ordered-ress var)
   (define (try vars ordered)
