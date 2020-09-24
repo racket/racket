@@ -1790,6 +1790,14 @@
                'pos
                'neg)
      1))
+
+  (test/neg-blame
+   '->i-neg-party-is-being-passed-properly
+   '((contract (-> (->i () any) any)
+               (λ (x) 1)
+               'pos
+               'neg)
+     0))
   
   ;; this used to cause a runtime error in the code that parses ->i
   (test/no-error '(->i ([x () any/c] [y (x) any/c]) any))
