@@ -278,7 +278,7 @@
        (hash-for-each (cdr table) (lambda (k v) (hash-set! primitives k v))))
      tables)
     (unsafe-hash-seal! primitives)
-    ;; prropagate table to the rumble layer
+    ;; propagate table to the rumble layer
     (install-primitives-table! primitives))
 
   ;; Runs the result of `interpretable-jitified-linklet`
@@ -1073,7 +1073,7 @@
 
   (define (check-constance who mode)
     (unless (or (not mode) (eq? mode 'constant) (eq? mode 'consistent))
-      (raise-argument-error who "(or/c #f 'constant 'consistant)" mode)))
+      (raise-argument-error who "(or/c #f 'constant 'consistent)" mode)))
 
   ;; --------------------------------------------------
 
@@ -1250,7 +1250,7 @@
   (fasl-compressed #f)
   (compile-omit-concatenate-support #t)
 
-  ;; Avoid gensyms for generated record-tyope UIDs. Otherwise,
+  ;; Avoid gensyms for generated record-type UIDs. Otherwise,
   ;; printing one of those gensyms --- perhaps when producing a trace
   ;; via `dump-memory-stats` --- causes the gensym to be permanent
   ;; (since it has properties).
