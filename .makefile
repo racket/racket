@@ -29,7 +29,7 @@
 #
 # Various configiration options can be provided as arguments to
 # `make`. For example, `PKGS` can be supplied with `make PKGS="..."`.
-# Not all varianbles in the makefile are intended as arguments,
+# Not all variables in the makefile are intended as arguments,
 # though.
 
 # Packages (separated by spaces) to link in development mode or
