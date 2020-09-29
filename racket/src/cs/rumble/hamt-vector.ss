@@ -129,10 +129,10 @@
   (hamt-fold h '() (lambda (_ v xs) (cons v xs))))
 
 (define (intmap-for-each h proc)
-  (hamt-fold h (void) (lambda (k v _) (proc k v) (void))))
+  (hamt-fold h (void) (lambda (k v _) (|#%app| proc k v) (void))))
 
 (define (intmap-map h proc)
-  (hamt-fold h '() (lambda (k v xs) (cons (proc k v) xs))))
+  (hamt-fold h '() (lambda (k v xs) (cons (|#%app| proc k v) xs))))
 
 ;; generatic iteration by counting
 (define (intmap-iterate-first h)

@@ -599,5 +599,19 @@
           v)))
 
 ;; ----------------------------------------
+;; Make sure hash-table iteration can call an applicable struct
+
+(let ()
+  (struct proc (f) #:property prop:procedure (struct-field-index f))
+
+  (test '(2) hash-map (hash 'one 1) (proc (lambda (k v) (add1 v))))
+  (test '(2) hash-map (hasheq 'one 1) (proc (lambda (k v) (add1 v))))
+  (test '(2) hash-map (hasheqv 'one 1) (proc (lambda (k v) (add1 v))))
+
+  (test (void) hash-for-each (hash 'one 1) (proc void))
+  (test (void) hash-for-each (hasheq 'one 1) (proc void))
+  (test (void) hash-for-each (hasheqv 'one 1) (proc void)))
+
+;; ----------------------------------------
 
 (report-errs)
