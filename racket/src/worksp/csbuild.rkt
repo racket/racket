@@ -129,10 +129,13 @@
 ;; ----------------------------------------
 
 (define scheme (build-path scheme-dir machine "bin" machine "scheme.exe"))
-(define rel-scheme (build-path 'up "worksp"
-			       (if (relative-path? scheme)
-				   scheme
-				   (find-relative-path (current-directory) scheme))))
+(define scheme-boot (build-path scheme-dir machine "boot" machine))
+(define (path->relative p)
+  (if (relative-path? p)
+      p
+      (find-relative-path (current-directory) p)))
+(define rel-scheme (build-path 'up "worksp" (path->relative scheme)))
+(define rel-scheme-boot (build-path 'up "worksp" (path->relative scheme-boot)))
 
 (parameterize ([current-directory (build-path 'up "cs")])
   (define convert.d (build-path build-dir "compiled" "convert.d"))
@@ -143,7 +146,8 @@
 	    (format "SCHEME=~a" rel-scheme)
 	    (format "BUILDDIR=../build/") ; need forward slashes
 	    (format "CONVERT_RACKET=~a" chain-racket)
-            (format "BOOTSTRAPPED=~a" "done")))
+            (format "BOOTSTRAPPED=~a" "done")
+            (format "EXTRA_COMPILE_DEPS=~a/petite.boot ~a/scheme.boot" rel-scheme-boot rel-scheme-boot)))
 
 ;; ----------------------------------------
 
