@@ -52,6 +52,7 @@
          context->transformer-context
          eval-for-syntaxes-binding
          eval-for-bindings
+         apply-rename-transformer
 
          keep-properties-only
          keep-properties-only~
