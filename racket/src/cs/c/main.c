@@ -53,6 +53,7 @@ static void scheme_set_dll_procs(scheme_dll_open_proc open,
 # define embedded_dll_close NULL
 #endif
 
+PRESERVE_IN_EXECUTABLE
 char *boot_file_data = "BooT FilE OffsetS:\0\0\0\0\0\0\0\0\0\0\0\0";
 static int boot_file_offset = 18;
 
