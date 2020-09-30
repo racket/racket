@@ -2447,19 +2447,40 @@
 
 (module rename-transformer-introduction-scope racket/base
   (require (for-syntax racket/base))
-  (provide sym free-id=? original?)
+  (provide sym free-id=? original? sameloc?
+           set-sym set-free-id=? set-original? set-sameloc?)
   (define x #f)
   (define-syntax y (make-rename-transformer #'x))
   (define-syntax (m stx)
-    (define expanded-y (syntax-local-introduce (local-expand #'y 'expression '())))
-    #`(values '#,(syntax-e expanded-y)
-              '#,(free-identifier=? expanded-y #'x)
-              '#,(syntax-original? expanded-y)))
-  (define-values (sym free-id=? original?) (m)))
+    (define orig-y #'y)
+    (define expanded-y (syntax-local-introduce (local-expand orig-y 'expression '())))
+    (define expanded-set-y (syntax-local-introduce (local-expand #`(set! #,orig-y 5) 'expression '())))
+    (define (same-srcloc? a b) (and (equal? (syntax-source a) (syntax-source b))
+                                    (equal? (syntax-line a) (syntax-line b))
+                                    (equal? (syntax-column a) (syntax-column b))))
+    (syntax-case expanded-set-y ()
+      [(_ set!ed-y _)
+       #`(values '#,(syntax-e expanded-y)
+                 '#,(free-identifier=? expanded-y #'x)
+                 '#,(syntax-original? expanded-y)
+                 '#,(same-srcloc? expanded-y orig-y)
+                 '#,(syntax-e #'set!ed-y)
+                 '#,(free-identifier=? #'set!ed-y #'x)
+                 '#,(syntax-original? #'set!ed-y)
+                 '#,(same-srcloc? #'set!ed-y orig-y))]))
+  (define-values (sym free-id=? original? sameloc?
+                      set-sym set-free-id=? set-original? set-sameloc?)
+    (m)))
 
 (test 'x dynamic-require ''rename-transformer-introduction-scope 'sym)
 (test #t dynamic-require ''rename-transformer-introduction-scope 'free-id=?)
 (test #f dynamic-require ''rename-transformer-introduction-scope 'original?)
+(test #t dynamic-require ''rename-transformer-introduction-scope 'sameloc?)
+
+(test 'x dynamic-require ''rename-transformer-introduction-scope 'set-sym)
+(test #t dynamic-require ''rename-transformer-introduction-scope 'set-free-id=?)
+(test #f dynamic-require ''rename-transformer-introduction-scope 'set-original?)
+(test #t dynamic-require ''rename-transformer-introduction-scope 'set-sameloc?)
 
 ;; ----------------------------------------
 ;; Make sure replacing scopes of binding on reference does not

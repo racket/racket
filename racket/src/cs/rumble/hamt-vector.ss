@@ -129,10 +129,10 @@
   (hamt-fold h '() (lambda (_ v xs) (cons v xs))))
 
 (define (intmap-for-each h proc)
-  (hamt-fold h (void) (lambda (k v _) (proc k v) (void))))
+  (hamt-fold h (void) (lambda (k v _) (|#%app| proc k v) (void))))
 
 (define (intmap-map h proc)
-  (hamt-fold h '() (lambda (k v xs) (cons (proc k v) xs))))
+  (hamt-fold h '() (lambda (k v xs) (cons (|#%app| proc k v) xs))))
 
 ;; generatic iteration by counting
 (define (intmap-iterate-first h)
@@ -394,7 +394,8 @@
              [v (val-ref node ki)])
         (cond
          [(key=? node key k)
-          (if (eq? val v)
+          (if (and (eq? val v)
+                   (eq? key k))
               node
               ;; for consistency, we're required to keep the new key:
               (bnode-replace-val node ki val key (not (eq? key k))))]
@@ -480,6 +481,7 @@
               (node=? ak bk eql? (down shift))]
              [else
               (and (key=? a ak bk)
+                   (eql? ak bk) ; needed for `equal?/recur`
                    (eql? (val-ref a i) (val-ref b i)))])
             (loop (fx1+ i))))])))))
 
@@ -857,9 +859,11 @@
              [(fx= i alen) #t]
              [else
               (let* ([akey (key-ref a i)]
-                     [bval (cnode-ref b akey none2)])
+                     [bi (cnode-index b akey)])
                 (and
-                 (eql? (val-ref a i) bval)
+                 bi
+                 (eql? akey (key-ref b bi)) ; needed for `equal?/recur`
+                 (eql? (val-ref a i) (val-ref b bi))
                  (loop (fx1+ i))))]))))))
 
 (define (cnode-keys-subset? a b shift)
