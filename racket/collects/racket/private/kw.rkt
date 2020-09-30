@@ -1578,7 +1578,7 @@
                                             (object-name p)
                                             p))])
                   (raise
-                   (exn:fail:contract
+                   ((if (or extra-kw missing-kw) exn:fail:contract exn:fail:contract:arity)
                     (if extra-kw
                         (if (keyword-procedure? p)
                             (format

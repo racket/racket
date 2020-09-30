@@ -774,5 +774,15 @@
   (test 0 procedure-arity the-b))
 
 ;; ----------------------------------------
+;; Make sure wrong number with keywords is an arity exception:
+
+(let ()
+  (define (hello a b #:key key) (display a))
+  (test #t
+        exn:fail:contract:arity?
+        (with-handlers ([values values])
+          (hello 1 #:key 'hi))))
+
+;; ----------------------------------------
 
 (report-errs)
