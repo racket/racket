@@ -128,7 +128,7 @@ function InitializeSearch() {
         +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
            +' &ldquo;<tt>M:<i>str</i></tt>&rdquo;, but'
            +' &ldquo;<tt><i>str</i></tt>&rdquo; should match the module name'
-           +' exactly; &ldquo;<tt>M:</tt>&rdquo; by'
+           +' exactly; &ldquo;<tt>L:</tt>&rdquo; by'
            +' itself will restrict results to module names only.</li>'
         +'<li>&ldquo;<tt>T:<i>str</i></tt>&rdquo; restricts results to ones in'
            +' the &ldquo;<tt><i>str</i></tt>&rdquo; manual (naming the'
