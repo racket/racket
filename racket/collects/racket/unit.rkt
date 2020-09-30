@@ -1071,13 +1071,14 @@
                               expand-context
                               stop-list
                               def-ctx)])
+                       (define (track e)
+                         (syntax-case defn-or-expr ()
+                           [(id . _) (syntax-track-origin e defn-or-expr #'id)]))
                        (syntax-case defn-or-expr (begin define-values define-syntaxes)
                          [(begin . l)
                           (let ([l (parameterize ((error-syntax defn-or-expr))
                                      (checked-syntax->list #'l))])
-                            (expand-all (map (lambda (s)
-                                               (syntax-track-origin s defn-or-expr #'begin))
-                                             l)))]
+                            (expand-all (map track l)))]
                          [(define-syntaxes (id ...) rhs)
                           (andmap identifier? (syntax->list #'(id ...)))
                           (with-syntax ([rhs (local-transformer-expand
@@ -1087,14 +1088,14 @@
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
                             (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                     (syntax->list #'(id ...)))])
-                              (list #'(define-syntaxes (id ...) rhs))))]
+                              (list (track #'(define-syntaxes (id ...) rhs)))))]
                          [(define-values (id ...) rhs)
                           (andmap identifier? (syntax->list #'(id ...)))
                           (begin
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #f def-ctx)
                             (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                          (syntax->list #'(id ...)))])
-                              (list #'(define-values (id ...) rhs))))]
+                              (list (track #'(define-values (id ...) rhs)))))]
                          [else (list defn-or-expr)])))
                    defns&exprs)))]
               [ends-in-defn?
@@ -1206,11 +1207,14 @@
                              ([id (in-list ids)]
                               [tmp (in-list tmps)])
                     (do-one id tmp)))
-                (list (cons (quasisyntax/loc defn-or-expr
-                              (define-values #,tmps
-                                #,(if (and (pair? ids) (null? (cdr ids)))
-                                      (syntax-property #'body 'inferred-name (car ids))
-                                      #'body)))
+                (list (cons (syntax-track-origin
+                             (quasisyntax/loc defn-or-expr
+                               (define-values #,tmps
+                                 #,(if (and (pair? ids) (null? (cdr ids)))
+                                       (syntax-property #'body 'inferred-name (car ids))
+                                       #'body)))
+                             defn-or-expr
+                             (syntax-case defn-or-expr () [(d-v . _) #'d-v]))
                             defns-and-exprs)
                       (filter values ctc-exprs)))]
              [else (list (list defn-or-expr) '())]))
