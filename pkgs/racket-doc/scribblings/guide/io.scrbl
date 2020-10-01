@@ -410,25 +410,21 @@ instead of the original byte stream.
   (interaction-eval #:eval port-eval (require racket/port racket/string)))
 
 For these examples, say you have two files in the same directory as
-your program.
+your program, @filepath{oneline.txt} and @filepath{manylines.txt}.
 
-@filepath{oneline.txt} contains
-
+@filebox["oneline.txt"]{
 @verbatim[#:indent 1]{
 I am one line, but there is an empty line after this one.
 
-}
+}}
 
-and
-
-@filepath{manylines.txt} contains
-
+@filebox["manylines.txt"]{
 @verbatim[#:indent 1]{
 I am
 a message
 split over a few lines.
 
-}
+}}
 
 If you have a file that is quite small, you can get
 away with reading in the file as a string:
@@ -439,12 +435,12 @@ away with reading in the file as a string:
  (define old-dir (current-directory))
  (current-directory (find-system-path 'temp-dir))
  (call-with-output-file
-     "oneline.txt"
+   "oneline.txt"
    #:exists 'truncate
    (lambda (out)
      (display "I am one line, but there is an empty line after this one.\n" out)))
  (call-with-output-file
-     "manylines.txt"
+   "manylines.txt"
    #:exists 'truncate
    (lambda (out)
      (display "I am\na message\nsplit over a few lines.\n" out)))]
@@ -466,9 +462,9 @@ any extraneous whitespace at the very beginning and very end of our file.
 (Lots of formatters out there insist that text files end with a single
 blank line).
 
-See also: @racket[read-line] if your file has one line of text.
+See also @racket[read-line] if your file has one line of text.
 
-If instead you want to process individual lines of a file, then you can
+If, instead, you want to process individual lines of a file, then you can
 use @racket[for] with @racket[in-lines]:
 
 @interaction[
