@@ -69,7 +69,7 @@ function MakeContextQueryItem(qry, desc) {
               +' onclick="return new_query(this,\''
                                    +encodeURIComponent(desc)
                                    +'\');">'
-              + desc.replace(/{{/g, "<tt><b>").replace(/}}/g, "</b></tt>")
+              + desc.replace(/{{/g, "<code><b>").replace(/}}/g, "</b></code>")
            + '</a></li>';
 }
 
@@ -110,34 +110,34 @@ function InitializeSearch() {
       +'</div>'
       +'<div id="help_panel" '+panelstyle+'>'
         +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
-        +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> or'
-           +' <tt>C+Enter</tt>/<tt>S+C+Enter</tt> to scroll through the'
-           +' results.</li>'
+        +'<li>Hit <kbd>PageUp</kbd>/<kbd>PageDown</kbd> or'
+           +' <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Ctrl</kbd>+<kbd>Enter</kbd>'
+           +' to scroll through the results.</li>'
         +'<li>Search terms are all required, use'
-           +' &ldquo;<tt>N:<i>str</i></tt>&rdquo; to negate a term.'
-        +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only'
+           +' &ldquo;<kbd>N:<i>str</i></kbd>&rdquo; to negate a term.'
+        +'<li>Use &ldquo;<kbd>M:<i>str</i></kbd>&rdquo; to match only'
            +' identifiers from modules that (partially) match'
-           +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
+           +' &ldquo;<kbd><i>str</i></kbd>&rdquo;; &ldquo;<kbd>M:</kbd>&rdquo; by'
            +' itself will restrict results to bound names only.</li>'
-        +'<li>Use &ldquo;<tt>H:<i>str</i></tt>&rdquo; to match only'
+        +'<li>Use &ldquo;<kbd>H:<i>str</i></kbd>&rdquo; to match only'
            +' modules that implement a language'
-           +' &ldquo;<tt>#lang <i>str</i></tt>&rdquo;.</li>'
-        +'<li>Use &ldquo;<tt>R:<i>str</i></tt>&rdquo; to match only'
+           +' &ldquo;<kbd>#lang <i>str</i></kbd>&rdquo;.</li>'
+        +'<li>Use &ldquo;<kbd>R:<i>str</i></kbd>&rdquo; to match only'
            +' modules that implement a reader module'
-           +' &ldquo;<tt>#reader <i>str</i></tt>&rdquo;.</li>'
-        +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
-           +' &ldquo;<tt>M:<i>str</i></tt>&rdquo;, but'
-           +' &ldquo;<tt><i>str</i></tt>&rdquo; should match the module name'
-           +' exactly; &ldquo;<tt>L:</tt>&rdquo; by'
+           +' &ldquo;<kbd>#reader <i>str</i></kbd>&rdquo;.</li>'
+        +'<li>&ldquo;<kbd>L:<i>str</i></kbd>&rdquo; is similar to'
+           +' &ldquo;<kbd>M:<i>str</i></kbd>&rdquo;, but'
+           +' &ldquo;<kbd><i>str</i></kbd>&rdquo; should match the module name'
+           +' exactly; &ldquo;<kbd>L:</kbd>&rdquo; by'
            +' itself will restrict results to module names only.</li>'
-        +'<li>&ldquo;<tt>T:<i>str</i></tt>&rdquo; restricts results to ones in'
-           +' the &ldquo;<tt><i>str</i></tt>&rdquo; manual (naming the'
+        +'<li>&ldquo;<kbd>T:<i>str</i></kbd>&rdquo; restricts results to ones in'
+           +' the &ldquo;<kbd><i>str</i></kbd>&rdquo; manual (naming the'
            +' directory where the manual is found).</li>'
         +'<li>Entries that correspond to bindings have module links that'
            +' create a query restricted to bindings in that module (using'
-           +' &ldquo;<tt>L:</tt>&rdquo;), other entries have similar links for'
+           +' &ldquo;<kbd>L:</kbd>&rdquo;), other entries have similar links for'
            +' restricting results to a specific manual (using'
-           +' &ldquo;<tt>T:</tt>&rdquo;); you can control whether manual links'
+           +' &ldquo;<kbd>T:</kbd>&rdquo;); you can control whether manual links'
            +' appear (and how) in the preferences.</li>'
         +'<li>Right-clicking these links refines the current query instead of'
            +' changing it (but some browsers don\'t support this).</li>'
@@ -385,8 +385,8 @@ function SanitizeHTML(str) {
             .replace(/>/g,   "&gt;")
             .replace(/</g,   "&lt;")
             .replace(/\"/g,  "&quot;")
-            .replace(/{{/g,  "<tt><b>")
-            .replace(/}}/g,  "</b></tt>");
+            .replace(/{{/g,  "<code><b>")
+            .replace(/}}/g,  "</b></code>");
 }
 
 function UrlToManual(url) {
@@ -524,7 +524,7 @@ var indicators =
            : (j==i) ? "&#9658;"
            : "&middot;";
       }
-      a.push("&nbsp;<tt>"+s+"</tt>");
+      a.push("&nbsp;<code>"+s+"</code>");
     }
     return a;
    }());
