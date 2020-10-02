@@ -4,6 +4,8 @@ var key_handler, toggle_panel, hide_prefs, new_query, refine_query,
     set_results_num, set_type_delay, set_highlight_color, status_line,
     saved_status = false, ctx_query_label_line;
 
+var descriptions = new Array();
+
 (function(){
 
 // Configuration options (use || in case a cookie exists but is empty)
@@ -32,7 +34,7 @@ function MakePref(label, input) {
   return '<tr><td align="right">' + label + ':&nbsp;&nbsp;</td>'
             +'<td>' + input + '</td></tr>';
 }
-var descriptions = new Array();
+
 function PrefInputArgs(name, desc) {
   // don't plant `desc' directly in the text -- it might have quotes
   descriptions[name] = desc;
