@@ -385,6 +385,7 @@
                           'feature-profile:generic-sequence #t))))
                   (make-rearm)))))]
           [[(id ...) rhs]
+           (not (syntax-property #'rhs 'for:no-implicit-optimization))
            (with-syntax ([expanded-rhs (syntax-disarm (local-expand #'rhs 'expression (list #'quote)) orig-insp)])
              (syntax-case #'expanded-rhs (quote)
                [(quote e)
@@ -418,6 +419,8 @@
                                               (make-rearm)))]
                     [else (eloop #f #'expanded-rhs)]))]
                [_ (eloop #f #'expanded-rhs)]))]
+          ;; when for:no-implicit-optimization is true
+          [[(id ...) rhs] (eloop #f #'rhs)]
           [_
            (raise-syntax-error #f
                                "bad sequence binding clause" orig-stx clause)]))))
