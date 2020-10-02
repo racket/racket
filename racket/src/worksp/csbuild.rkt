@@ -20,7 +20,6 @@
 (define cs-suffix "")
 (define boot-mode "--chain")
 (define extra-repos-base #f)
-(define git-clone-args '())
 
 (command-line
  #:once-each
@@ -38,8 +37,8 @@
  [("--disable-libs") "Disable installaton of static libraries (currently ignored)"
                      (set! static-libs? #f)]
  #:args
- clone-arg
- (set! git-clone-args clone-arg))
+ ()
+ (void))
 
 (current-directory here)
 

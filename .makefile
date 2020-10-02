@@ -473,8 +473,7 @@ win-bc-then-cs-base:
 CSBUILD_ARGUMENTS == --pull \
                      --racketcs-suffix "$(RACKETCS_SUFFIX)" $(DISABLE_STATIC_LIBS) \
                      --boot-mode "$(SETUP_BOOT_MODE)" \
-                     --extra-repos-base "$(EXTRA_REPOS_BASE)" \
-                     -- $(GIT_CLONE_ARGS_qq)
+                     --extra-repos-base "$(EXTRA_REPOS_BASE)"
 
 win-just-cs-base:
 	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
@@ -524,25 +523,6 @@ win-also-cs:
 
 win-also-bc:
 	$(MAKE) win-plain-also VM=bc
-
-# ------------------------------------------------------------
-# Get/update the "bootstrapped" Git submodule
-
-bootstrapped-repo:
-	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
-         then $(MAKE) update-bootstrapped-normal ; \
-         else $(MAKE) update-bootstrapped-as-extra GIT_CLONE_ARGS_qq="" ; fi
-
-update-bootstrapped-normal:
-	git submodule -q init && git submodule -q update $(GIT_UPDATE_ARGS_qq)
-
-# For this target, `EXTRA_REPOS_BASE` is likely to be a dumb transport
-# (that does not support shallow copies, for example)
-update-bootstrapped-as-extra:
-	if [ ! -d racket/src/bootstrapped ] ; \
-	 then cd racket/src && git clone -q $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)bootstrapped/.git ; \
-	fi
-	cd racket/src/bootstrapped && git pull -q $(GIT_PULL_ARGS_qq)
 
 # ------------------------------------------------------------
 # Clean (which just gives advice)
