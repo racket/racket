@@ -1196,15 +1196,19 @@ RKTIO_EXTERN char *rktio_locale_encoding(rktio_t *rktio);
 /* Returns the name of the current locale's encoding. */
 
 RKTIO_EXTERN void rktio_set_locale(rktio_t *rktio, rktio_const_string_t name);
-/* Sets the current locale, which affects string comparisons and
+/* Sets the current locale, which affects rktio string comparisons and
    conversions. It can also affect the C library's character-property
-   predicates and number printing/parsing. The empty string
-   corresponds to the OS's native locale. */
+   predicates and number printing/parsing by setting a thread-local or
+   process-wide locale, but that effect is not guaranteed. The empty
+   string corresponds to the OS's native locale, and a NULL string
+   pointer corresponds to the C locale. */
 
-RKTIO_EXTERN_NOERR char *rktio_push_c_numeric_locale(rktio_t *rktio);
-RKTIO_EXTERN void rktio_pop_c_numeric_locale(rktio_t *rktio, char *prev);
-/* Use this pair of functions to temporarily switch the locale to the C
-   locale for number parsing and printing. The result of the first
+RKTIO_EXTERN_NOERR void *rktio_push_c_numeric_locale(rktio_t *rktio);
+RKTIO_EXTERN void rktio_pop_c_numeric_locale(rktio_t *rktio, void *prev);
+/* Use this pair of functions to temporarily switch the locale to the
+   C locale for number parsing and printing. Unlike
+   rktio_set_locale(), these functions set and restore the
+   thread-local or even process-wide locale. The result of the first
    function is deallocated when passed to second function. */
 
 RKTIO_EXTERN char *rktio_system_language_country(rktio_t *rktio);
