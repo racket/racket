@@ -3,8 +3,10 @@
 
 (Section 'parameters)
 
+(require racket/file)
+
 (define temp-compiled-file
-  (path->string (build-path (find-system-path 'temp-dir) "param-temp-file")))
+  (path->string (make-temporary-file "param-temp-file~a")))
 
 (let ([p (open-output-file temp-compiled-file #:exists 'replace)])
   (display (compile '(cons 1 2)) p)

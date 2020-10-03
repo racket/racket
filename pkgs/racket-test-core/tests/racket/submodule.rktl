@@ -3,6 +3,8 @@
 
 (Section 'submodule)
 
+(require racket/file)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test #t module-path? '(submod "."))
@@ -634,10 +636,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Directory for testing
 
-(define temp-dir
-  (build-path (find-system-path 'temp-dir)
-              (format "submodule-tests-~s" (current-seconds))))
-(make-directory temp-dir)
+(define temp-dir (make-temporary-file "submodule-tests-~s" 'directory))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check submodule resolution of relative paths:
@@ -700,11 +699,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Delete the temp-dir
 
-(let loop ([x temp-dir])
-  (cond [(file-exists? x) (delete-file x)]
-        [(directory-exists? x) (parameterize ([current-directory x])
-                                 (for-each loop (directory-list)))
-                               (delete-directory x)]))
+(delete-directory/files temp-dir)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Module attach

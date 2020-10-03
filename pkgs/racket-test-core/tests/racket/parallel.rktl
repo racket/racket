@@ -3,6 +3,9 @@
 ;;  thread creates a directory sub<n> to run in, so that filesystem
 ;;  tests don't collide.
 
+;; Note that the newer "parallel.rktl" runs multiple places instead
+;; of multiple threads.
+
 (namespace-variable-value 'parallel-load #f
                           (lambda ()
                             (namespace-set-variable-value! 'parallel-load "quiet.rktl")))

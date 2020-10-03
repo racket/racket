@@ -1073,10 +1073,9 @@
   (define am-s (compile-m (a-expr #t) '()))
   (define b-s (compile-m b-expr (list a-s)))
 
-  (define temp-dir (find-system-path 'temp-dir))
+  (define temp-dir (make-temporary-file "comp~a" 'directory))
   (define dir (build-path temp-dir (car (use-compiled-file-paths))))
-  (define dir-existed? (directory-exists? dir))
-  (unless dir-existed? (make-directory* dir))
+  (make-directory* dir)
 
   (define (go a-s)
     (parameterize ([current-namespace (make-base-namespace)]
@@ -1091,8 +1090,7 @@
   ;; Check that we don't crash when trying to use a different `a':
   (err/rt-test (go am-s) exn:fail?)
   ;; Cleanup
-  (delete-file (build-path dir "check-gen_rkt.zo"))
-  (unless dir-existed? (delete-directory dir)))
+  (delete-directory/files temp-dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1425,7 +1423,7 @@ case of module-leve bindings; it doesn't cover local bindings.
     [else (error "unknown")]))
 
 (let ()
-  (define dir (find-system-path 'temp-dir))
+  (define dir (make-temporary-file "tmx~a" 'directory))
   (define tmx (build-path dir "tmx.rkt"))
   (define e (compile '(module tmx racket/base
                         (module s racket/base
@@ -1454,11 +1452,11 @@ case of module-leve bindings; it doesn't cover local bindings.
     (dynamic-require tmx #f)
     (test #f module-declared? `(submod ,tmx s) #f)
     (test 1 dynamic-require `(submod ,tmx s) 'x))
-  (delete-file zo-path))
+  (delete-directory/files dir))
 
 ;; Check that module-code caching works
 (let ()
-  (define dir (find-system-path 'temp-dir))
+  (define dir (make-temporary-file "tmx~a" 'directory))
   (define tmx (build-path dir "tmx2.rkt"))
   (define e (compile '(module tmx2 racket/kernel
                         (#%provide x)
@@ -1483,7 +1481,6 @@ case of module-leve bindings; it doesn't cover local bindings.
                  [current-load-relative-directory dir])
     (eval (parameterize ([read-accept-compiled #t])
             (read (open-input-bytes bstr)))))
-
   ;; Mangle the bytecode file; cached variant should be used:
   (call-with-output-file zo-path
     #:exists 'update
@@ -1492,12 +1489,15 @@ case of module-leve bindings; it doesn't cover local bindings.
       (write-bytes (make-bytes 100 (char->integer #\!)) o)))
 
   (test 2 add1
-        (parameterize ([current-namespace (make-base-namespace)])
+        (parameterize ([current-namespace (make-base-namespace)]
+                       [current-load-relative-directory dir])
           (dynamic-require tmx 'x)))
   (delete-file zo-path)
 
   ;; Need to retain the namespace until here
-  (ephemeron-value (make-ephemeron first-namespace 7) first-namespace))
+  (ephemeron-value (make-ephemeron first-namespace 7) first-namespace)
+
+  (delete-directory/files dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `provide` doesn't run enclosed expanders until within a

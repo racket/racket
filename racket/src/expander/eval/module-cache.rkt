@@ -28,7 +28,8 @@
   (and hash-code
        ;; Encode as a symbol so we can use an eq?-based hash table
        ;; (i.e., explot the low-level lock on the symbol table)
-       (string->symbol (format "~s" (list hash-code (current-load-relative-directory))))))
+       (string->symbol (format "~s" (list hash-code (path->directory-path
+                                                     (current-load-relative-directory)))))))
 
 (define (module-cache-set! key proc)
   (hash-set! module-cache key (make-ephemeron key proc)))

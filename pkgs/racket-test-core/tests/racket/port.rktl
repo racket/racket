@@ -978,7 +978,7 @@
 ;; Text mode, file positions, and buffers
 
 (let ()
-  (define path (build-path (find-system-path 'temp-dir) "test.txt"))
+  (define path (make-temporary-file "test~a.txt"))
 
   (define ofile (open-output-file path #:mode 'text #:exists 'replace))
   (fprintf ofile "abc\ndef\nghi\n")
