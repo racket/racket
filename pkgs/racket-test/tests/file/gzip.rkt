@@ -1,5 +1,6 @@
 #lang racket/base
-(require file/gzip file/gunzip racket/file tests/eli-tester)
+(require file/gzip file/gunzip racket/file tests/eli-tester racket/runtime-path
+         racket/port)
 
 (define ((io->str-op io) buf [check-ratio #f])
   (let* ([b? (bytes? buf)]
@@ -68,6 +69,15 @@
   (test (read-byte ip) => eof))
 
 
+(define-runtime-path broken.zip "broken.zip")
+(define (test-truncated-file)
+  (define p (open-input-file broken.zip))
+  (file-position p #x26)
+  (test (inflate p (open-output-nowhere))
+        =>
+        (error 'inflate "unexpected end of file")))
+
+
 
 
 
@@ -103,6 +113,7 @@
   (test-big-file)
   (test-degenerate-input-1)
   (test-degenerate-input-2)
+  (test-truncated-file)
   (for ([i (in-range 100)]) (id* (rand-bytes)))
   (regression-test)
   (test-hang-on-long-filename))
