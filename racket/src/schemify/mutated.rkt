@@ -42,7 +42,7 @@
                                             'not-ready
                                             ;; If constants should not be enforced, then
                                             ;; treat all variable as mutated:
-                                            'set!ed)))]
+                                            'set!ed-too-early)))]
       [`,_ (void)]))
   ;; Walk through the body:
   (for/fold ([prev-knowns knowns]) ([form (in-list l)])

@@ -1029,6 +1029,12 @@
     (err/rt-test (eval '(module m racket/base (define x 2) (provide x)))
                  exn:fail:contract:variable?)))
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (parameterize ([compile-enforce-module-constants #f])
+    (eval '(module m racket/base (eq? y y) (define y 2))))
+  (err/rt-test/once (eval '(dynamic-require ''m #f))
+                    exn:fail:contract:variable?))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check JIT treatement of seemingly constant imports
 
