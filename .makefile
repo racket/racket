@@ -339,7 +339,7 @@ RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
 PB_BRANCH == circa-7.8.0.10-13
-PB_REPO == https://github.com/racket/pb
+PB_REPO = https://github.com/racket/pb
 
 # Alternative source for Chez Scheme boot files, normally set by
 # the distro-build client driver
