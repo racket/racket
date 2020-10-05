@@ -56,5 +56,4 @@
             (path->complete-path "all.rktl"))
   (exit 0))
 
-(module+ test
-  (require (submod ".." main)))
+(module+ test)
