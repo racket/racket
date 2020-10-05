@@ -1658,7 +1658,7 @@ case of module-leve bindings; it doesn't cover local bindings.
 (require (rename-in racket/base [lib racket-base:lib]))
 
 (let ()
-  (define (find-disappeared stx id)
+  (define (find-disappeared stx pred)
     (let loop ([s stx])
       (cond
        [(syntax? s)
@@ -1666,8 +1666,7 @@ case of module-leve bindings; it doesn't cover local bindings.
                         (syntax-property s 'origin)))
         (or (let loop ([p p])
               (cond
-               [(identifier? p) (and (free-identifier=? p id)
-                                     (eq? (syntax-e p) (syntax-e id)))]
+               [(identifier? p) (pred p)]
                [(pair? p) (or (loop (car p))
                               (loop (cdr p)))]
                [else #f]))
@@ -1676,17 +1675,22 @@ case of module-leve bindings; it doesn't cover local bindings.
         (or (loop (car s))
             (loop (cdr s)))]
        [else #f])))
-  (let ([form (expand `(module m racket/base
-                        (provide (struct-out s))
-                        (struct s ())))])
-    (test #t find-disappeared form #'struct-out))
+  (define ((id=? a) b)
+    (and (free-identifier=? a b)
+         (eq? (syntax-e a) (syntax-e b))))
+  (let ([form (expand #'(module m racket/base
+                          (provide a (struct-out abc))
+                          (struct abc ())
+                          (define a 1)))])
+    (test #t find-disappeared form (id=? #'struct-out))
+    (test #t find-disappeared form (λ (id) (eq? (syntax-e id) 'abc))))
   (let ([form (expand `(module m racket/base
                         (require (only-in racket/base car))))])
-    (test #t find-disappeared form #'only-in))
+    (test #t find-disappeared form (id=? #'only-in)))
   (let ([form (expand `(module m racket/base
                         (require (rename-in racket/base [lib racket-base:lib])
                                  (racket-base:lib "racket/base"))))])
-    (test #t find-disappeared form #'racket-base:lib))
+    (test #t find-disappeared form (id=? #'racket-base:lib)))
   ;; Check case where the provide transformer also sets disappeared-use
   (let ([form (expand `(module m racket/base
                          (require (for-syntax racket/base racket/provide-transform))
@@ -1700,7 +1704,7 @@ case of module-leve bindings; it doesn't cover local bindings.
                                                      'disappeared-use
                                                      (syntax-local-introduce #'id))]))))
                            (provide (my-out map))))])
-    (test #t find-disappeared form #'map)))
+    (test #t find-disappeared form (id=? #'map))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
