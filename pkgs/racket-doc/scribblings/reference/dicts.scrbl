@@ -1060,7 +1060,7 @@ The given @racket[proc] must accept all of the keywords in
                           '#:syrup "chocolate")
                     '())
 ]
-}
+@history[#:added "7.9"]}
 
 
 @close-eval[dict-eval]
