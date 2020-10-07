@@ -474,7 +474,7 @@
               (raise-arguments-error who "bad 'every value" "given" every-n))
             (loop (cddr args) flags max-path-length every-n))]
          [else
-          (raise-arguments-error who "unreognized argument;\n try 'help for more information" "given" (car args))])))]))
+          (raise-arguments-error who "unrecognized argument;\n try 'help for more information" "given" (car args))])))]))
 
 (define (make-struct-name-predicate name)
   (lambda (o)
