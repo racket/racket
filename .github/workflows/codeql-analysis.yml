@@ -1,10 +1,6 @@
-name: "Code scanning - action"
+name: "LGTM Code Scanning"
 
-on:
-  push:
-  pull_request:
-  schedule:
-    - cron: '0 19 * * 3'
+on: [push, pull_request]
 
 jobs:
   CodeQL-Build:
