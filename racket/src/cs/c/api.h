@@ -24,4 +24,8 @@ RACKET_API_EXTERN void racket_embedded_load_bytes(const char *code, uptr len, in
 RACKET_API_EXTERN void racket_embedded_load_file(const char *path, int as_predefined);
 RACKET_API_EXTERN void racket_embedded_load_file_region(const char *path, uptr start, uptr end, int as_predefined);
 
+RACKET_API_EXTERN void *racket_cpointer_address(ptr cptr);
+RACKET_API_EXTERN void *racket_cpointer_base_address(ptr cptr);
+RACKET_API_EXTERN iptr racket_cpointer_offset(ptr cptr);
+
 #endif

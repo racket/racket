@@ -281,3 +281,37 @@ void racket_embedded_load_file_region(const char *path, uptr start, uptr end, in
 {
   embedded_load(Sbytevector((char *)path), Sfixnum(start), Sfixnum(end), Sfalse, as_predefined);
 }
+
+void *racket_cpointer_address(ptr cptr) {
+  void *p;
+  iptr offset;
+  p = racket_cpointer_base_address(cptr);
+  offset = racket_cpointer_offset(cptr);
+  return (char *)p + offset;
+}
+
+void *racket_cpointer_base_address(ptr cptr) {
+  if (Srecordp(cptr)) {
+    cptr = Srecord_uniform_ref(cptr, 0);
+
+    if (Sbytevectorp(cptr))
+      return &Sbytevector_u8_ref(cptr, 0);
+    else if (Svectorp(cptr))
+      return &Svector_ref(cptr, 0);
+    else if (Sfixnump(cptr) || Sbignump(cptr))
+      return TO_VOIDP(Sinteger_value(cptr));
+  }
+
+  return NULL;
+}
+
+iptr racket_cpointer_offset(ptr cptr) {
+  if (Srecordp(cptr)) {
+    if (Srecord_type_parent(Srecord_type(cptr)) != Sfalse) {
+      /* assume that it's a cpointer+offset */
+      return Sinteger_value(Srecord_uniform_ref(cptr, 1));
+    }
+  }
+
+  return 0;
+}

@@ -490,6 +490,15 @@ else
   exit 1
 fi
 
+case "$srcdir" in
+    /*)
+        upsrcdir=$srcdir
+        ;;
+    *)
+        upsrcdir=../$srcdir
+        ;;
+esac
+
 "$srcdir"/workarea $m $w $mpbhost
 
 sed -e 's/$(m)/'$m'/g'\
@@ -498,6 +507,7 @@ sed -e 's/$(m)/'$m'/g'\
 
 mkdir -p csug
 sed -e 's/$(m)/'$m'/g'\
+    -e "s;^srcdir = .*\$;srcdir = $upsrcdir/csug;"\
     "$srcdir"/makefiles//Makefile-csug.in > csug/Makefile
 
 mkdir -p release_notes
