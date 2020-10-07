@@ -1,11 +1,11 @@
-name: Test with Sanitizers
+name: Test with UBSan
 
 on: [push, pull_request]
 
 jobs:
 
 # Build jobs
-# These jobs build Racket using the sanitizers and gather the results into a final log
+# These jobs build Racket using undefined behaviour sanitizers and gathers the results into a final log
   racket3m-ubsan:
     runs-on: ubuntu-18.04
     container: racket/racket-ci:latest
@@ -178,3 +178,4 @@ jobs:
       with:
         name: runtime-errors-cs_git${{ github.sha }}
         path: runtime-errors_git${{ github.sha }}.log
+

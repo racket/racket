@@ -796,6 +796,7 @@ enable_mac64
 enable_libs
 enable_noopt
 enable_ubsan
+enable_asan
 enable_bcdefault
 enable_csonly
 enable_csdefault
@@ -1446,6 +1447,7 @@ Optional Features:
   --enable-libs           install static libraries (enabled by default for Unix)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-ubsan          compile with -fsanitize=undefined
+  --enable-asan          compile with -fsanitize=address
   --enable-bcdefault      install BC without suffix
   --enable-bconly         BC default, and skip CS build
   --enable-csdefault      install CS without suffix
@@ -2676,6 +2678,12 @@ strip_needs_dash_s=no
 # Check whether --enable-ubsan was given.
 if test "${enable_ubsan+set}" = set; then :
   enableval=$enable_ubsan;
+fi
+
+
+# Check whether --enable-asan was given.
+if test "${enable_asan+set}" = set; then :
+  enableval=$enable_asan;
 fi
 
 
@@ -4725,6 +4733,18 @@ if test "${enable_ubsan}" = "yes" ; then
    PREFLAGS="$PREFLAGS $UBSAN"
    LDFLAGS="$LDFLAGS $UBSAN"
 fi
+
+
+############## ubsan ################
+
+if test "${enable_asan}" = "yes" ; then
+   ASAN="-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer -fno-common"
+   CFLAGS="$CFLAGS $ASAN"
+   CPPFLAGS="$CPPFLAGS $ASAN"
+   PREFLAGS="$PREFLAGS $ASAN"
+   LDFLAGS="$LDFLAGS $ASAN"
+fi
+
 
 
 ############## Makefile includes ################

@@ -28,6 +28,7 @@ m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/instlib_arg.m4)
 m4_include(../ac/strip_arg.m4)
 m4_include(../ac/ubsan_arg.m4)
+m4_include(../ac/asan_arg.m4)
 m4_include(../ac/vm_arg.m4)
 m4_include(../ac/crossany_arg.m4)
 AC_ARG_ENABLE(libz,       [  --enable-libz           use installed libz if available])
@@ -469,6 +470,10 @@ fi
 ############## ubsan ################
 
 m4_include(../ac/ubsan.m4)
+
+############## ubsan ################
+
+m4_include(../ac/asan.m4)
 
 ############## Makefile includes ################
 
