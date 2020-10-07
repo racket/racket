@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          "private/dict.rkt"
+         "private/keyword-apply-dict.rkt"
          "private/custom-hash.rkt")
 
 (define (dict-implements/c . syms)
@@ -286,6 +287,8 @@
          in-dict-keys
          in-dict-values
          in-dict-pairs
+
+         keyword-apply/dict
 
          dict-key-contract
          dict-value-contract
