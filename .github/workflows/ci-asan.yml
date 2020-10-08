@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
 
-    racketcs-asan:
+  racketcs-asan:
     runs-on: ubuntu-18.04
     container: racket/racket-ci:latest
 
