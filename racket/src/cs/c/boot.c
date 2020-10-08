@@ -309,7 +309,7 @@ iptr racket_cpointer_offset(ptr cptr) {
   if (Srecordp(cptr)) {
     if (Srecord_type_parent(Srecord_type(cptr)) != Sfalse) {
       /* assume that it's a cpointer+offset */
-      return Sinteger_value(Srecord_uniform_ref(cptr, 1));
+      return Sinteger_value(Srecord_uniform_ref(cptr, 2));
     }
   }
 
