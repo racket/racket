@@ -17,11 +17,24 @@ jobs:
       fail-fast: false
       matrix:
         cify: [cify, nocify]      
-    
+        bitwidth: [32, 64]
+
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
+    - name: Setup 32bits
+      if: matrix.bitwidth == '32'
+      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::CFLAGS=-m32 LDFLAGS=-m32 $RACKET_EXTRA_CONFIGURE_ARGS"
+    - name: Install 32bits dependencies
+      if: matrix.bitwidth == '32'
+      run: |
+        dpkg --add-architecture i386
+        apt update
+        apt install -y libc6:i386 gcc-multilib make
     - name: Setup cify if enabled
       if: matrix.cify == 'cify'
       run: echo "::set-env name=CIFY_OPTION::--enable-cify"
@@ -33,6 +46,7 @@ jobs:
       run: >
         ./configure
         --prefix=/usr/local/racketcgc
+        $RACKET_EXTRA_CONFIGURE_ARGS
         --enable-werror
         --enable-cgcdefault
         --enable-jit
@@ -73,14 +87,27 @@ jobs:
         cc: [gcc, clang]
         jit: [jit, nojit]
         efp: [efp, noefp]
+        bitwidth: [32, 64]
         exclude:
           - jit: nojit
             efp: efp
-  
+
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
+    - name: Setup 32bits
+      if: matrix.bitwidth == '32'
+      run: echo "::set-env name=RACKET_EXTRA_CONFIGURE_ARGS::CFLAGS=-m32 CPPFLAGS=-m32 LDFLAGS=-m32 $RACKET_EXTRA_CONFIGURE_ARGS"
+    - name: Install 32bits dependencies
+      if: matrix.bitwidth == '32'
+      run: |
+        dpkg --add-architecture i386
+        apt update
+        apt install -y libc6:i386 gcc-multilib
     - name: Setup cify if enabled
       if: matrix.cify == 'cify'
       run: echo "::set-env name=CIFY_OPTION::--enable-cify"
@@ -113,6 +140,7 @@ jobs:
       run: >
         ./configure
         --prefix=/usr/local/racket3m
+        $RACKET_EXTRA_CONFIGURE_ARGS
         --enable-werror
         --enable-bcdefault
         --enable-racket=/usr/local/racketcgc/bin/racket
@@ -155,6 +183,10 @@ jobs:
       fail-fast: false
       matrix:
         cc: [gcc, clang]
+
+    env:
+      RACKET_EXTRA_CONFIGURE_ARGS: ""
+
     steps:
     - uses: actions/checkout@v2
       with:
@@ -213,6 +245,7 @@ jobs:
       fail-fast: false
       matrix:
         cify: [cify, nocify]
+        bitwidth: [32, 64]
 
     steps:
       - uses: actions/checkout@v2
@@ -227,6 +260,12 @@ jobs:
         run: echo "::set-env name=PATH::/usr/local/racketcgc/bin:$PATH"
       - name: Check for Racket
         run: racket --version
+      - name: Install 32bits dependencies
+        if: matrix.bitwidth == '32'
+        run: |
+          dpkg --add-architecture i386
+          apt update
+          apt install -y libc6:i386 gcc-multilib make openssl:i386 libsqlite3-0:i386
       - name: Install catalog
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
@@ -286,6 +325,7 @@ jobs:
         cify: [cify, nocify]
         jit: [jit, nojit]
         efp: [efp, noefp]
+        bitwidth: [32, 64]
         exclude:
           - jit: nojit
             efp: efp
@@ -303,6 +343,12 @@ jobs:
         run: echo "::set-env name=PATH::/usr/local/racket3m/bin:$PATH"
       - name: Check for Racket
         run: racket --version
+      - name: Install 32bits dependencies
+        if: matrix.bitwidth == '32'
+        run: |
+          dpkg --add-architecture i386
+          apt update
+          apt install -y libc6:i386 gcc-multilib make openssl:i386 libsqlite3-0:i386
       - name: Install catalog and required packages
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
