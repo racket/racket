@@ -115,17 +115,17 @@ the @rfc for more information about JSON.
 @; -----------------------------------------------------------------------------
 @section{Parsing JSON Text into JS-Expressions}
 
-The following parsing functions will read several JSON texts from
-ports, strings, and bytes as long as they are separated like regular
-S-expressions in ports, strinngs, and values.
-
-
 @defproc[(read-json [in input-port? (current-input-port)]
                     [#:null jsnull any/c (json-null)])
          (or/c jsexpr? eof-object?)]{
-  Reads a @tech{jsexpr} from a JSON-encoded input port @racket[in] as a
+  Reads a @tech{jsexpr} from a single JSON-encoded input port @racket[in] as a
   Racket (immutable) value, or produces @racket[eof] if only whitespace
-  remains.
+  remains. Like @racket[read], the function leaves all remaining
+  characters in the port so that a second call can retrieve the
+  remaining JSON input(s). If the JSON inputs aren't delimited per se
+  (true, false, null), they  must be separated by whitespace from the
+  following JSON input. 
+  
 
 @examples[#:eval ev
   (with-input-from-string
@@ -144,6 +144,14 @@ S-expressions in ports, strinngs, and values.
     "true[1,2,3]"
     (λ () (list (read-json) (read-json))))
 
+  (with-input-from-string
+    "true\"hello\""
+    (λ () (list (read-json) (read-json))))
+
+  (with-input-from-string
+    "\"world\"41"
+    (λ () (list (read-json) (read-json))))
+
   (eval:error
     (with-input-from-string
       "sandwich sandwich" (code:comment "invalid JSON")
@@ -158,7 +166,10 @@ S-expressions in ports, strinngs, and values.
 
 @defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
-  Parses the JSON string @racket[str] as an immutable @tech{jsexpr}.
+  Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
+  If the prefix isn't a delimited per se   (true, false, null), it
+  must be separated by whitespace from the remaining characters.
+
 
 @examples[#:eval ev
   (string->jsexpr "{\"pancake\" : 5, \"waffle\" : 7}")
@@ -167,7 +178,10 @@ S-expressions in ports, strinngs, and values.
 
 @defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
-  Parses the JSON bytes string @racket[str] as an immutable @tech{jsexpr}.
+  Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
+  If the prefix isn't a delimited per se (true, false, null), it
+  must be separated by whitespace from the remaining bytes.
+
 
 @examples[#:eval ev
   (bytes->jsexpr #"{\"pancake\" : 5, \"waffle\" : 7}")
