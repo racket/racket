@@ -112,7 +112,13 @@ the @rfc for more information about JSON.
 ]
 }
 
+@; -----------------------------------------------------------------------------
 @section{Parsing JSON Text into JS-Expressions}
+
+The following parsing functions will read several JSON texts from
+ports, strings, and bytes as long as they are separated like regular
+S-expressions in ports, strinngs, and values.
+
 
 @defproc[(read-json [in input-port? (current-input-port)]
                     [#:null jsnull any/c (json-null)])
@@ -125,9 +131,27 @@ the @rfc for more information about JSON.
   (with-input-from-string
     "{\"arr\" : [1, 2, 3, 4]}"
     (λ () (read-json)))
+
+  (with-input-from-string
+    "\"sandwich\""
+    (λ () (read-json)))
+
+  (with-input-from-string
+    "true false"
+    (λ () (list (read-json) (read-json))))
+
+  (with-input-from-string
+    "true[1,2,3]"
+    (λ () (list (read-json) (read-json))))
+
   (eval:error
     (with-input-from-string
       "sandwich sandwich" (code:comment "invalid JSON")
+      (λ () (read-json))))
+
+  (eval:error
+    (with-input-from-string
+      "false42" (code:comment "invalid JSON text sequence")
       (λ () (read-json))))
 ]
 }
