@@ -323,6 +323,13 @@
                   (eqv? (bytes-ref bstr (fx+ i 1)) (char->integer #\linefeed)))
              (finish i (fx+ i 2))]
             [cr?
-             (finish i (fx+ i 1))]
+             (cond
+               [(and crlf?
+                     ((fx+ i 1) . fx= . end))
+                ;; needs more input to decide
+                (end-atomic)
+                #f]
+               [else
+                (finish i (fx+ i 1))])]
             [else (loop (fx+ i 1))])]
          [else (loop (fx+ i 1))])])))
