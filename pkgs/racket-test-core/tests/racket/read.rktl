@@ -1478,6 +1478,16 @@
                                                     srcloc-line (lambda (s v) v)))
 (err/rt-test (srcloc->string 1))
 
+(let ([go (lambda (adjust)
+            (parameterize ([current-directory-for-user (adjust (build-path (car (filesystem-root-list)) "Users" "robby"))])
+              (test
+               "tmp.rkt:1:2"
+               srcloc->string
+               (srcloc (build-path (car (filesystem-root-list)) "Users" "robby" "tmp.rkt")
+                       1 2 3 4))))])
+  (go values)
+  (go path->directory-path))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that a module load triggered by `#lang` or `#reader` is in
 ;; a root namespace, including the call to the loaded function

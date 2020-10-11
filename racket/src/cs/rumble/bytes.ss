@@ -114,8 +114,8 @@
 (define-bytes-compare bytes=? bytevector=?)
 
 (define (do-bytes<? a b)
-  (let ([alen (bytes-length a)]
-        [blen (bytes-length b)])
+  (let ([alen (bytevector-length a)]
+        [blen (bytevector-length b)])
     (let loop ([i 0])
       (cond
        [(= i alen) (if (= i blen)
@@ -131,8 +131,8 @@
            [else #f]))]))))
 
 (define (do-bytes>? a b)
-  (let ([alen (bytes-length a)]
-        [blen (bytes-length b)])
+  (let ([alen (bytevector-length a)]
+        [blen (bytevector-length b)])
     (let loop ([i 0])
       (cond
        [(= i alen) #f]
@@ -193,4 +193,4 @@
       (bytevector-copy! bstr start c 0 len)
       c)]
    [(bstr start)
-    (subbytes bstr start (bytes-length bstr))]))
+    (subbytes bstr start (if (bytes? bstr) (bytevector-length bstr) 0))]))

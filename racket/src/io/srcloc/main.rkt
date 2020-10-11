@@ -1,7 +1,8 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../format/main.rkt"
-         "../path/parameter.rkt")
+         "../path/path.rkt"
+         "../path/user-relative.rkt")
 
 (provide srcloc->string)
 
@@ -21,6 +22,6 @@
                   (srcloc-position s))])))
 
 (define (adjust-path p)
-  (define dir (current-directory-for-user))
-  ;; FIXME
-  p)
+  (cond
+    [(is-path? p) (relative-to-user-directory p)]
+    [else p]))

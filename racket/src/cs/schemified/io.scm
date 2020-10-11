@@ -33157,6 +33157,61 @@
     (lambda () (error-value->string-handler procz1))))
 (define effect_2767
   (begin (void (install-error-value->string-handler!)) (void)))
+(define relative-to-user-directory
+  (lambda (p_0)
+    (let ((dir_0 (current-directory-for-user$1)))
+      (let ((dir-bs_0 (|#%app| path-bytes dir_0)))
+        (let ((p-bs_0 (|#%app| path-bytes p_0)))
+          (let ((dir-len_0 (unsafe-bytes-length dir-bs_0)))
+            (let ((p-len_0 (unsafe-bytes-length p-bs_0)))
+              (if (if (< dir-len_0 p-len_0)
+                    (begin
+                      (letrec*
+                       ((for-loop_0
+                         (|#%name|
+                          for-loop
+                          (lambda (result_0 pos_0)
+                            (begin
+                              (if (< pos_0 dir-len_0)
+                                (let ((result_1
+                                       (let ((result_1
+                                              (let ((app_0
+                                                     (unsafe-bytes-ref
+                                                      dir-bs_0
+                                                      pos_0)))
+                                                (eq?
+                                                 app_0
+                                                 (unsafe-bytes-ref
+                                                  p-bs_0
+                                                  pos_0)))))
+                                         (values result_1))))
+                                  (if (if (not
+                                           (let ((x_0 (list pos_0)))
+                                             (not result_1)))
+                                        #t
+                                        #f)
+                                    (for-loop_0 result_1 (+ pos_0 1))
+                                    result_1))
+                                result_0))))))
+                       (for-loop_0 #t 0)))
+                    #f)
+                (letrec*
+                 ((loop_0
+                   (|#%name|
+                    loop
+                    (lambda (i_0)
+                      (begin
+                        (if (if (< i_0 p-len_0)
+                              (let ((app_0 (unsafe-bytes-ref p-bs_0 i_0)))
+                                (is-sep? app_0 (|#%app| path-convention p_0)))
+                              #f)
+                          (loop_0 (fx+ i_0 1))
+                          (let ((app_0 (subbytes p-bs_0 i_0)))
+                            (path1.1
+                             app_0
+                             (|#%app| path-convention p_0)))))))))
+                 (loop_0 dir-len_0))
+                p_0))))))))
 (define 1/srcloc->string
   (|#%name|
    srcloc->string
@@ -33175,7 +33230,7 @@
                (1/format "~a::~s" app_0 (srcloc-position s_0))))
            #f))))))
 (define adjust-path
-  (lambda (p_0) (let ((dir_0 (current-directory-for-user$1))) p_0)))
+  (lambda (p_0) (if (is-path? p_0) (relative-to-user-directory p_0) p_0)))
 (define struct:logger
   (make-record-type-descriptor* 'logger #f #f #f #f 11 2047))
 (define effect_2192
@@ -35925,11 +35980,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3711 unsafe-undefined)
+               (let ((lr3723 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3711
+                 (set! lr3723
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -35984,9 +36039,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3711 0))
-                 (set! command_0 (unsafe-vector*-ref lr3711 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3711 2))
+                 (set! group_0 (unsafe-vector*-ref lr3723 0))
+                 (set! command_0 (unsafe-vector*-ref lr3723 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3723 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)
