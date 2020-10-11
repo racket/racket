@@ -189,6 +189,8 @@ disable_curses_arg=--disable-curses
 case "$host_os" in
   solaris2*)
     MACH_OS=s2
+    use_flag_pthread="no"
+    use_flag_posix_pthread="yes"
     ;;
   aix*)
     ;;
