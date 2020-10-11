@@ -766,7 +766,7 @@ h
                          [#:combine/key combine/key
                                      	(-> any/c any/c any/c any/c)
                                      	(lambda (k a b) (combine a b))])
-	 (and/c hash? immutable?)] {
+	 (and/c hash? immutable?)]{
 
 Constructs the hash table which is the intersection of @racket[h0]
 with every hash table @racket[h].  In the resulting hash table, a key
@@ -791,8 +791,7 @@ The comparison predicate of the first argument (@racket[eq?],
 		(lambda (k v1 v2) (if (eq? k 'a) (+ v1 v2) (- v1 v2))))
 ]
 
-}
+
+@history[#:added "7.8.0.11"]}
 
 @(close-eval the-eval)
-
-@history[#:added "7.8.0.11"]
