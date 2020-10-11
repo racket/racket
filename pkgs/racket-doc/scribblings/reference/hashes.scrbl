@@ -758,4 +758,41 @@ h
 
 }
 
+@defproc[(hash-intersect [h0 (and/c hash? (not/c immutable?))]
+			 [h hash?] ...
+                         [#:combine combine
+                                    (-> any/c any/c any/c)
+                                    (lambda _ (error 'hash-intersect ...))]
+                         [#:combine/key combine/key
+                                     	(-> any/c any/c any/c any/c)
+                                     	(lambda (k a b) (combine a b))])
+	 (and/c hash? immutable?)] {
+
+Constructs the hash table which is the intersection of @racket[h0]
+with every hash table @racket[h].  In the resulting hash table, a key
+@racket[k] is mapped to a combination of the values to which
+@racket[k] is mapped in each of the hash tables.  The final values are
+computed by stepwise combination of the values appearing in each of
+the hash tables by applying @racket[(combine/key k v vi)] or
+@racket[(combine v vi)], where @racket[vi] is the value to which
+@racket[k] is mapped in the i-th hash table @racket[h], and
+@racket[v] is the accumulation of the values from the previous steps.
+The comparison predicate of the first argument (@racket[eq?],
+@racket[eqv?], @racket[equal?]) determines the one for the result.
+
+@examples[
+#:eval the-eval
+(hash-intersect (make-immutable-hash '((a . 1) (b . 2) (c . 3)))
+		(make-immutable-hash '((a . 4) (b . 5)))
+		#:combine +)
+(hash-intersect (make-immutable-hash '((a . 1) (b . 2) (c . 3)))
+		(make-immutable-hash '((a . 4) (b . 5)))
+		#:combine/key
+		(lambda (k v1 v2) (if (eq? k 'a) (+ v1 v2) (- v1 v2))))
+]
+
+}
+
 @(close-eval the-eval)
+
+@history[#:added "7.8.0.11"]

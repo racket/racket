@@ -28,6 +28,31 @@
                          (combine/key k (hash-ref one k) v)
                          v))))
 
+(define (hash-intersect
+         #:combine [combine #f]
+         #:combine/key [combine/key
+                        (if combine
+                            (λ (_ x y) (combine x y))
+                            (hash-duplicate-error 'hash-intersect))]
+         . hashes)
+  (define one (car hashes))
+  (define rest (cdr hashes))
+  (define empty-h (hash-clear one)) ;; empty hash of same type as one
+  (define (argmin f lst) ;; avoid racket/list to improve loading time
+    (for/fold ([best (car lst)] [fbest (f (car lst))]
+               #:result best)
+              ([x lst])
+      (define fx (f x))
+      (if (< fx fbest) (values x fx) (values best fbest))))
+  (for/fold ([res empty-h])
+            ([k (in-hash-keys (argmin hash-count hashes))])
+    (if (for/and ([h (in-list hashes)]) (hash-has-key? h k))
+        (hash-set res k
+                  (for/fold ([v (hash-ref one k)])
+                            ([hm (in-list rest)])
+                    (combine/key k v (hash-ref hm k))))
+        res)))
+
 (provide/contract
  [hash-union (->* [(and/c hash? immutable?)]
                   [#:combine
@@ -42,4 +67,11 @@
                    #:combine/key
                    (-> any/c any/c any/c any/c)]
                    #:rest (listof hash?)
-                   void?)])
+                   void?)]
+ [hash-intersect  (->* [(and/c hash? immutable?)]
+                       [#:combine
+                        (-> any/c any/c any/c)
+                        #:combine/key
+                        (-> any/c any/c any/c any/c)]
+                       #:rest (listof hash?)
+                       (and/c hash? immutable?))])

@@ -65,6 +65,20 @@
       hash-union #hash([one . 1] [two . 1]) #hash([three . 3] [four . 4] [two . 1])
       #:combine +)
 
+(test #hash((a . 5) (b . 7))
+      hash-intersect #hash((a . 1) (b . 2) (c . 3)) #hash((a . 4) (b . 5))
+      #:combine +)
+(test #hash((a . 5) (b . -3))
+      hash-intersect #hash((a . 1) (b . 2) (c . 3)) #hash((a . 4) (b . 5))
+      #:combine/key
+      (lambda (k v1 v2) (if (eq? k 'a) (+ v1 v2) (- v1 v2))))
+
+;; Does hash-intersect preserve the kind of the hash?
+(test (hasheq "a" 11)
+      hash-intersect (hasheq "a" 1 (string #\a) 2 (string #\a) 3)
+      (hasheq "a" 10 (string #\a) 20)
+      #:combine +)
+
 (let ()
   (define h (make-hash))
   (hash-union! h #hash([1 . one] [2 . two]))
