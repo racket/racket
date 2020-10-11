@@ -1969,7 +1969,7 @@
          v_0
          2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
-(define map2
+(define map_2960
   (|#%name|
    map
    (letrec ((loop_0
@@ -2000,7 +2000,7 @@
       ((f_0 l_0) (begin (loop_1 f_0 l_0)))
       ((f_0 l1_0 l2_0) (loop_0 f_0 l1_0 l2_0))
       ((f_0 l_0 . args_0) (gen-map f_0 (cons l_0 args_0)))))))
-(define andmap2
+(define andmap_2344
   (|#%name|
    andmap
    (case-lambda
@@ -2174,8 +2174,8 @@
                (begin
                  (if (null? (car ls_0))
                    null
-                   (let ((next-ls_0 (map2 cdr ls_0)))
-                     (let ((app_0 (apply f_0 (map2 car ls_0))))
+                   (let ((next-ls_0 (map_2960 cdr ls_0)))
+                     (let ((app_0 (apply f_0 (map_2960 car ls_0))))
                        (cons app_0 (loop_0 f_0 next-ls_0))))))))))
     (lambda (f_0 ls_0) (begin #t (loop_0 f_0 ls_0)))))
 (define gen-andmap
@@ -2191,9 +2191,9 @@
               (if (null? (car ls_1))
                 #t
                 (if (null? (cdar ls_1))
-                  (apply f_0 (map2 car ls_1))
-                  (let ((next-ls_0 (map2 cdr ls_1)))
-                    (if (apply f_0 (map2 car ls_1))
+                  (apply f_0 (map_2960 car ls_1))
+                  (let ((next-ls_0 (map_2960 cdr ls_1)))
+                    (if (apply f_0 (map_2960 car ls_1))
                       (loop_0 next-ls_0)
                       #f)))))))))
        (loop_0 ls_0)))))
@@ -2333,7 +2333,7 @@
    #f
    0
    0))
-(define effect303
+(define effect_2431
   (struct-type-install-properties!
    struct:known-constant
    'known-constant
@@ -2351,19 +2351,19 @@
    known-constant
    (record-constructor
     (make-record-constructor-descriptor struct:known-constant #f #f))))
-(define known-constant?302
+(define known-constant?_2598
   (|#%name| known-constant? (record-predicate struct:known-constant)))
 (define known-constant?
   (|#%name|
    known-constant?
    (lambda (v)
-     (if (known-constant?302 v)
+     (if (known-constant?_2598 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-constant?302 (impersonator-val v))
+          (known-constant?_2598 (impersonator-val v))
           #f))))))
-(define effect304
+(define effect_2956
   (begin
     (register-struct-constructor! known-constant)
     (register-struct-predicate! known-constant?)
@@ -2387,7 +2387,7 @@
    #f
    0
    0))
-(define effect306
+(define effect_2525
   (struct-type-install-properties!
    struct:known-consistent
    'known-consistent
@@ -2407,19 +2407,19 @@
    known-consistent
    (record-constructor
     (make-record-constructor-descriptor struct:known-consistent #f #f))))
-(define known-consistent?305
+(define known-consistent?_3048
   (|#%name| known-consistent? (record-predicate struct:known-consistent)))
 (define known-consistent?
   (|#%name|
    known-consistent?
    (lambda (v)
-     (if (known-consistent?305 v)
+     (if (known-consistent?_3048 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-consistent?305 (impersonator-val v))
+          (known-consistent?_3048 (impersonator-val v))
           #f))))))
-(define effect307
+(define effect_3117
   (begin
     (register-struct-constructor! known-consistent)
     (register-struct-predicate! known-consistent?)
@@ -2443,7 +2443,7 @@
    #f
    0
    0))
-(define effect309
+(define effect_2733
   (struct-type-install-properties!
    struct:known-authentic
    'known-authentic
@@ -2463,19 +2463,19 @@
    known-authentic
    (record-constructor
     (make-record-constructor-descriptor struct:known-authentic #f #f))))
-(define known-authentic?308
+(define known-authentic?_3119
   (|#%name| known-authentic? (record-predicate struct:known-authentic)))
 (define known-authentic?
   (|#%name|
    known-authentic?
    (lambda (v)
-     (if (known-authentic?308 v)
+     (if (known-authentic?_3119 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-authentic?308 (impersonator-val v))
+          (known-authentic?_3119 (impersonator-val v))
           #f))))))
-(define effect310
+(define effect_2588
   (begin
     (register-struct-constructor! known-authentic)
     (register-struct-predicate! known-authentic?)
@@ -2499,7 +2499,7 @@
    #f
    1
    1))
-(define effect312
+(define effect_2848
   (struct-type-install-properties!
    struct:known-copy
    'known-copy
@@ -2519,33 +2519,33 @@
    known-copy
    (record-constructor
     (make-record-constructor-descriptor struct:known-copy #f #f))))
-(define known-copy?311
+(define known-copy?_2832
   (|#%name| known-copy? (record-predicate struct:known-copy)))
 (define known-copy?
   (|#%name|
    known-copy?
    (lambda (v)
-     (if (known-copy?311 v)
+     (if (known-copy?_2832 v)
        #t
        ($value
-        (if (impersonator? v) (known-copy?311 (impersonator-val v)) #f))))))
-(define known-copy-id313
+        (if (impersonator? v) (known-copy?_2832 (impersonator-val v)) #f))))))
+(define known-copy-id_2721
   (|#%name| known-copy-id (record-accessor struct:known-copy 0)))
 (define known-copy-id
   (|#%name|
    known-copy-id
    (lambda (s)
-     (if (known-copy?311 s)
-       (known-copy-id313 s)
+     (if (known-copy?_2832 s)
+       (known-copy-id_2721 s)
        ($value
         (impersonate-ref
-         known-copy-id313
+         known-copy-id_2721
          struct:known-copy
          0
          s
          'known-copy
          'id))))))
-(define effect314
+(define effect_2902
   (begin
     (register-struct-constructor! known-copy)
     (register-struct-predicate! known-copy?)
@@ -2570,7 +2570,7 @@
    #f
    1
    1))
-(define effect316
+(define effect_2418
   (struct-type-install-properties!
    struct:known-literal
    'known-literal
@@ -2590,33 +2590,35 @@
    known-literal
    (record-constructor
     (make-record-constructor-descriptor struct:known-literal #f #f))))
-(define known-literal?315
+(define known-literal?_2305
   (|#%name| known-literal? (record-predicate struct:known-literal)))
 (define known-literal?
   (|#%name|
    known-literal?
    (lambda (v)
-     (if (known-literal?315 v)
+     (if (known-literal?_2305 v)
        #t
        ($value
-        (if (impersonator? v) (known-literal?315 (impersonator-val v)) #f))))))
-(define known-literal-value317
+        (if (impersonator? v)
+          (known-literal?_2305 (impersonator-val v))
+          #f))))))
+(define known-literal-value_2398
   (|#%name| known-literal-value (record-accessor struct:known-literal 0)))
 (define known-literal-value
   (|#%name|
    known-literal-value
    (lambda (s)
-     (if (known-literal?315 s)
-       (known-literal-value317 s)
+     (if (known-literal?_2305 s)
+       (known-literal-value_2398 s)
        ($value
         (impersonate-ref
-         known-literal-value317
+         known-literal-value_2398
          struct:known-literal
          0
          s
          'known-literal
          'value))))))
-(define effect318
+(define effect_2398
   (begin
     (register-struct-constructor! known-literal)
     (register-struct-predicate! known-literal?)
@@ -2644,7 +2646,7 @@
    #f
    1
    1))
-(define effect320
+(define effect_2727
   (struct-type-install-properties!
    struct:known-procedure
    'known-procedure
@@ -2664,19 +2666,19 @@
    known-procedure
    (record-constructor
     (make-record-constructor-descriptor struct:known-procedure #f #f))))
-(define known-procedure?319
+(define known-procedure?_2612
   (|#%name| known-procedure? (record-predicate struct:known-procedure)))
 (define known-procedure?
   (|#%name|
    known-procedure?
    (lambda (v)
-     (if (known-procedure?319 v)
+     (if (known-procedure?_2612 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure?319 (impersonator-val v))
+          (known-procedure?_2612 (impersonator-val v))
           #f))))))
-(define known-procedure-arity-mask321
+(define known-procedure-arity-mask_2503
   (|#%name|
    known-procedure-arity-mask
    (record-accessor struct:known-procedure 0)))
@@ -2684,17 +2686,17 @@
   (|#%name|
    known-procedure-arity-mask
    (lambda (s)
-     (if (known-procedure?319 s)
-       (known-procedure-arity-mask321 s)
+     (if (known-procedure?_2612 s)
+       (known-procedure-arity-mask_2503 s)
        ($value
         (impersonate-ref
-         known-procedure-arity-mask321
+         known-procedure-arity-mask_2503
          struct:known-procedure
          0
          s
          'known-procedure
          'arity-mask))))))
-(define effect322
+(define effect_1399
   (begin
     (register-struct-constructor! known-procedure)
     (register-struct-predicate! known-procedure?)
@@ -2722,7 +2724,7 @@
    #f
    0
    0))
-(define effect324
+(define effect_2413
   (struct-type-install-properties!
    struct:known-procedure/no-prompt
    'known-procedure/no-prompt
@@ -2745,7 +2747,7 @@
      struct:known-procedure/no-prompt
      #f
      #f))))
-(define known-procedure/no-prompt?323
+(define known-procedure/no-prompt?_2036
   (|#%name|
    known-procedure/no-prompt?
    (record-predicate struct:known-procedure/no-prompt)))
@@ -2753,13 +2755,13 @@
   (|#%name|
    known-procedure/no-prompt?
    (lambda (v)
-     (if (known-procedure/no-prompt?323 v)
+     (if (known-procedure/no-prompt?_2036 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/no-prompt?323 (impersonator-val v))
+          (known-procedure/no-prompt?_2036 (impersonator-val v))
           #f))))))
-(define effect325
+(define effect_2150
   (begin
     (register-struct-constructor! known-procedure/no-prompt)
     (register-struct-predicate! known-procedure/no-prompt?)
@@ -2783,7 +2785,7 @@
    #f
    1
    1))
-(define effect327
+(define effect_2566
   (struct-type-install-properties!
    struct:known-procedure/can-inline
    'known-procedure/can-inline
@@ -2806,7 +2808,7 @@
      struct:known-procedure/can-inline
      #f
      #f))))
-(define known-procedure/can-inline?326
+(define known-procedure/can-inline?_2843
   (|#%name|
    known-procedure/can-inline?
    (record-predicate struct:known-procedure/can-inline)))
@@ -2814,13 +2816,13 @@
   (|#%name|
    known-procedure/can-inline?
    (lambda (v)
-     (if (known-procedure/can-inline?326 v)
+     (if (known-procedure/can-inline?_2843 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/can-inline?326 (impersonator-val v))
+          (known-procedure/can-inline?_2843 (impersonator-val v))
           #f))))))
-(define known-procedure/can-inline-expr328
+(define known-procedure/can-inline-expr_2497
   (|#%name|
    known-procedure/can-inline-expr
    (record-accessor struct:known-procedure/can-inline 0)))
@@ -2828,17 +2830,17 @@
   (|#%name|
    known-procedure/can-inline-expr
    (lambda (s)
-     (if (known-procedure/can-inline?326 s)
-       (known-procedure/can-inline-expr328 s)
+     (if (known-procedure/can-inline?_2843 s)
+       (known-procedure/can-inline-expr_2497 s)
        ($value
         (impersonate-ref
-         known-procedure/can-inline-expr328
+         known-procedure/can-inline-expr_2497
          struct:known-procedure/can-inline
          0
          s
          'known-procedure/can-inline
          'expr))))))
-(define effect329
+(define effect_2594
   (begin
     (register-struct-constructor! known-procedure/can-inline)
     (register-struct-predicate! known-procedure/can-inline?)
@@ -2866,7 +2868,7 @@
    #f
    1
    1))
-(define effect331
+(define effect_2249
   (struct-type-install-properties!
    struct:known-procedure/can-inline/need-imports
    'known-procedure/can-inline/need-imports
@@ -2889,7 +2891,7 @@
      struct:known-procedure/can-inline/need-imports
      #f
      #f))))
-(define known-procedure/can-inline/need-imports?330
+(define known-procedure/can-inline/need-imports?_2059
   (|#%name|
    known-procedure/can-inline/need-imports?
    (record-predicate struct:known-procedure/can-inline/need-imports)))
@@ -2897,13 +2899,13 @@
   (|#%name|
    known-procedure/can-inline/need-imports?
    (lambda (v)
-     (if (known-procedure/can-inline/need-imports?330 v)
+     (if (known-procedure/can-inline/need-imports?_2059 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/can-inline/need-imports?330 (impersonator-val v))
+          (known-procedure/can-inline/need-imports?_2059 (impersonator-val v))
           #f))))))
-(define known-procedure/can-inline/need-imports-needed332
+(define known-procedure/can-inline/need-imports-needed_2435
   (|#%name|
    known-procedure/can-inline/need-imports-needed
    (record-accessor struct:known-procedure/can-inline/need-imports 0)))
@@ -2911,17 +2913,17 @@
   (|#%name|
    known-procedure/can-inline/need-imports-needed
    (lambda (s)
-     (if (known-procedure/can-inline/need-imports?330 s)
-       (known-procedure/can-inline/need-imports-needed332 s)
+     (if (known-procedure/can-inline/need-imports?_2059 s)
+       (known-procedure/can-inline/need-imports-needed_2435 s)
        ($value
         (impersonate-ref
-         known-procedure/can-inline/need-imports-needed332
+         known-procedure/can-inline/need-imports-needed_2435
          struct:known-procedure/can-inline/need-imports
          0
          s
          'known-procedure/can-inline/need-imports
          'needed))))))
-(define effect333
+(define effect_2494
   (begin
     (register-struct-constructor! known-procedure/can-inline/need-imports)
     (register-struct-predicate! known-procedure/can-inline/need-imports?)
@@ -2949,7 +2951,7 @@
    #f
    0
    0))
-(define effect335
+(define effect_2382
   (struct-type-install-properties!
    struct:known-procedure/folding
    'known-procedure/folding
@@ -2972,7 +2974,7 @@
      struct:known-procedure/folding
      #f
      #f))))
-(define known-procedure/folding?334
+(define known-procedure/folding?_2882
   (|#%name|
    known-procedure/folding?
    (record-predicate struct:known-procedure/folding)))
@@ -2980,13 +2982,13 @@
   (|#%name|
    known-procedure/folding?
    (lambda (v)
-     (if (known-procedure/folding?334 v)
+     (if (known-procedure/folding?_2882 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/folding?334 (impersonator-val v))
+          (known-procedure/folding?_2882 (impersonator-val v))
           #f))))))
-(define effect336
+(define effect_2446
   (begin
     (register-struct-constructor! known-procedure/folding)
     (register-struct-predicate! known-procedure/folding?)
@@ -3010,7 +3012,7 @@
    #f
    1
    1))
-(define effect338
+(define effect_2255
   (struct-type-install-properties!
    struct:known-procedure/folding/limited
    'known-procedure/folding/limited
@@ -3033,7 +3035,7 @@
      struct:known-procedure/folding/limited
      #f
      #f))))
-(define known-procedure/folding/limited?337
+(define known-procedure/folding/limited?_2382
   (|#%name|
    known-procedure/folding/limited?
    (record-predicate struct:known-procedure/folding/limited)))
@@ -3041,13 +3043,13 @@
   (|#%name|
    known-procedure/folding/limited?
    (lambda (v)
-     (if (known-procedure/folding/limited?337 v)
+     (if (known-procedure/folding/limited?_2382 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/folding/limited?337 (impersonator-val v))
+          (known-procedure/folding/limited?_2382 (impersonator-val v))
           #f))))))
-(define known-procedure/folding/limited-kind339
+(define known-procedure/folding/limited-kind_2789
   (|#%name|
    known-procedure/folding/limited-kind
    (record-accessor struct:known-procedure/folding/limited 0)))
@@ -3055,17 +3057,17 @@
   (|#%name|
    known-procedure/folding/limited-kind
    (lambda (s)
-     (if (known-procedure/folding/limited?337 s)
-       (known-procedure/folding/limited-kind339 s)
+     (if (known-procedure/folding/limited?_2382 s)
+       (known-procedure/folding/limited-kind_2789 s)
        ($value
         (impersonate-ref
-         known-procedure/folding/limited-kind339
+         known-procedure/folding/limited-kind_2789
          struct:known-procedure/folding/limited
          0
          s
          'known-procedure/folding/limited
          'kind))))))
-(define effect340
+(define effect_2817
   (begin
     (register-struct-constructor! known-procedure/folding/limited)
     (register-struct-predicate! known-procedure/folding/limited?)
@@ -3093,7 +3095,7 @@
    #f
    0
    0))
-(define effect342
+(define effect_2403
   (struct-type-install-properties!
    struct:known-procedure/succeeds
    'known-procedure/succeeds
@@ -3116,7 +3118,7 @@
      struct:known-procedure/succeeds
      #f
      #f))))
-(define known-procedure/succeeds?341
+(define known-procedure/succeeds?_3041
   (|#%name|
    known-procedure/succeeds?
    (record-predicate struct:known-procedure/succeeds)))
@@ -3124,13 +3126,13 @@
   (|#%name|
    known-procedure/succeeds?
    (lambda (v)
-     (if (known-procedure/succeeds?341 v)
+     (if (known-procedure/succeeds?_3041 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/succeeds?341 (impersonator-val v))
+          (known-procedure/succeeds?_3041 (impersonator-val v))
           #f))))))
-(define effect343
+(define effect_2473
   (begin
     (register-struct-constructor! known-procedure/succeeds)
     (register-struct-predicate! known-procedure/succeeds?)
@@ -3154,7 +3156,7 @@
    #f
    0
    0))
-(define effect345
+(define effect_2377
   (struct-type-install-properties!
    struct:known-procedure/pure
    'known-procedure/pure
@@ -3174,7 +3176,7 @@
    known-procedure/pure
    (record-constructor
     (make-record-constructor-descriptor struct:known-procedure/pure #f #f))))
-(define known-procedure/pure?344
+(define known-procedure/pure?_2240
   (|#%name|
    known-procedure/pure?
    (record-predicate struct:known-procedure/pure)))
@@ -3182,13 +3184,13 @@
   (|#%name|
    known-procedure/pure?
    (lambda (v)
-     (if (known-procedure/pure?344 v)
+     (if (known-procedure/pure?_2240 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/pure?344 (impersonator-val v))
+          (known-procedure/pure?_2240 (impersonator-val v))
           #f))))))
-(define effect346
+(define effect_2621
   (begin
     (register-struct-constructor! known-procedure/pure)
     (register-struct-predicate! known-procedure/pure?)
@@ -3212,7 +3214,7 @@
    #f
    0
    0))
-(define effect348
+(define effect_2204
   (struct-type-install-properties!
    struct:known-procedure/pure/folding
    'known-procedure/pure/folding
@@ -3235,7 +3237,7 @@
      struct:known-procedure/pure/folding
      #f
      #f))))
-(define known-procedure/pure/folding?347
+(define known-procedure/pure/folding?_2719
   (|#%name|
    known-procedure/pure/folding?
    (record-predicate struct:known-procedure/pure/folding)))
@@ -3243,13 +3245,13 @@
   (|#%name|
    known-procedure/pure/folding?
    (lambda (v)
-     (if (known-procedure/pure/folding?347 v)
+     (if (known-procedure/pure/folding?_2719 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/pure/folding?347 (impersonator-val v))
+          (known-procedure/pure/folding?_2719 (impersonator-val v))
           #f))))))
-(define effect349
+(define effect_2449
   (begin
     (register-struct-constructor! known-procedure/pure/folding)
     (register-struct-predicate! known-procedure/pure/folding?)
@@ -3273,7 +3275,7 @@
    #f
    1
    1))
-(define effect351
+(define effect_2430
   (struct-type-install-properties!
    struct:known-procedure/pure/folding-unsafe
    'known-procedure/pure/folding-unsafe
@@ -3296,7 +3298,7 @@
      struct:known-procedure/pure/folding-unsafe
      #f
      #f))))
-(define known-procedure/pure/folding-unsafe?350
+(define known-procedure/pure/folding-unsafe?_2471
   (|#%name|
    known-procedure/pure/folding-unsafe?
    (record-predicate struct:known-procedure/pure/folding-unsafe)))
@@ -3304,13 +3306,13 @@
   (|#%name|
    known-procedure/pure/folding-unsafe?
    (lambda (v)
-     (if (known-procedure/pure/folding-unsafe?350 v)
+     (if (known-procedure/pure/folding-unsafe?_2471 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/pure/folding-unsafe?350 (impersonator-val v))
+          (known-procedure/pure/folding-unsafe?_2471 (impersonator-val v))
           #f))))))
-(define known-procedure/pure/folding-unsafe-safe352
+(define known-procedure/pure/folding-unsafe-safe_2536
   (|#%name|
    known-procedure/pure/folding-unsafe-safe
    (record-accessor struct:known-procedure/pure/folding-unsafe 0)))
@@ -3318,17 +3320,17 @@
   (|#%name|
    known-procedure/pure/folding-unsafe-safe
    (lambda (s)
-     (if (known-procedure/pure/folding-unsafe?350 s)
-       (known-procedure/pure/folding-unsafe-safe352 s)
+     (if (known-procedure/pure/folding-unsafe?_2471 s)
+       (known-procedure/pure/folding-unsafe-safe_2536 s)
        ($value
         (impersonate-ref
-         known-procedure/pure/folding-unsafe-safe352
+         known-procedure/pure/folding-unsafe-safe_2536
          struct:known-procedure/pure/folding-unsafe
          0
          s
          'known-procedure/pure/folding-unsafe
          'safe))))))
-(define effect353
+(define effect_2336
   (begin
     (register-struct-constructor! known-procedure/pure/folding-unsafe)
     (register-struct-predicate! known-procedure/pure/folding-unsafe?)
@@ -3356,7 +3358,7 @@
    #f
    1
    1))
-(define effect355
+(define effect_2420
   (struct-type-install-properties!
    struct:known-procedure/has-unsafe
    'known-procedure/has-unsafe
@@ -3379,7 +3381,7 @@
      struct:known-procedure/has-unsafe
      #f
      #f))))
-(define known-procedure/has-unsafe?354
+(define known-procedure/has-unsafe?_2703
   (|#%name|
    known-procedure/has-unsafe?
    (record-predicate struct:known-procedure/has-unsafe)))
@@ -3387,13 +3389,13 @@
   (|#%name|
    known-procedure/has-unsafe?
    (lambda (v)
-     (if (known-procedure/has-unsafe?354 v)
+     (if (known-procedure/has-unsafe?_2703 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/has-unsafe?354 (impersonator-val v))
+          (known-procedure/has-unsafe?_2703 (impersonator-val v))
           #f))))))
-(define known-procedure/has-unsafe-alternate356
+(define known-procedure/has-unsafe-alternate_2847
   (|#%name|
    known-procedure/has-unsafe-alternate
    (record-accessor struct:known-procedure/has-unsafe 0)))
@@ -3401,17 +3403,17 @@
   (|#%name|
    known-procedure/has-unsafe-alternate
    (lambda (s)
-     (if (known-procedure/has-unsafe?354 s)
-       (known-procedure/has-unsafe-alternate356 s)
+     (if (known-procedure/has-unsafe?_2703 s)
+       (known-procedure/has-unsafe-alternate_2847 s)
        ($value
         (impersonate-ref
-         known-procedure/has-unsafe-alternate356
+         known-procedure/has-unsafe-alternate_2847
          struct:known-procedure/has-unsafe
          0
          s
          'known-procedure/has-unsafe
          'alternate))))))
-(define effect357
+(define effect_1976
   (begin
     (register-struct-constructor! known-procedure/has-unsafe)
     (register-struct-predicate! known-procedure/has-unsafe?)
@@ -3439,7 +3441,7 @@
    #f
    0
    0))
-(define effect359
+(define effect_1752
   (struct-type-install-properties!
    struct:known-procedure/has-unsafe/folding
    'known-procedure/has-unsafe/folding
@@ -3462,7 +3464,7 @@
      struct:known-procedure/has-unsafe/folding
      #f
      #f))))
-(define known-procedure/has-unsafe/folding?358
+(define known-procedure/has-unsafe/folding?_2169
   (|#%name|
    known-procedure/has-unsafe/folding?
    (record-predicate struct:known-procedure/has-unsafe/folding)))
@@ -3470,13 +3472,13 @@
   (|#%name|
    known-procedure/has-unsafe/folding?
    (lambda (v)
-     (if (known-procedure/has-unsafe/folding?358 v)
+     (if (known-procedure/has-unsafe/folding?_2169 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/has-unsafe/folding?358 (impersonator-val v))
+          (known-procedure/has-unsafe/folding?_2169 (impersonator-val v))
           #f))))))
-(define effect360
+(define effect_2832
   (begin
     (register-struct-constructor! known-procedure/has-unsafe/folding)
     (register-struct-predicate! known-procedure/has-unsafe/folding?)
@@ -3500,7 +3502,7 @@
    #f
    1
    1))
-(define effect362
+(define effect_2526
   (struct-type-install-properties!
    struct:known-procedure/has-unsafe/folding/limited
    'known-procedure/has-unsafe/folding/limited
@@ -3523,7 +3525,7 @@
      struct:known-procedure/has-unsafe/folding/limited
      #f
      #f))))
-(define known-procedure/has-unsafe/folding/limited?361
+(define known-procedure/has-unsafe/folding/limited?_2926
   (|#%name|
    known-procedure/has-unsafe/folding/limited?
    (record-predicate struct:known-procedure/has-unsafe/folding/limited)))
@@ -3531,13 +3533,14 @@
   (|#%name|
    known-procedure/has-unsafe/folding/limited?
    (lambda (v)
-     (if (known-procedure/has-unsafe/folding/limited?361 v)
+     (if (known-procedure/has-unsafe/folding/limited?_2926 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-procedure/has-unsafe/folding/limited?361 (impersonator-val v))
+          (known-procedure/has-unsafe/folding/limited?_2926
+           (impersonator-val v))
           #f))))))
-(define known-procedure/has-unsafe/folding/limited-kind363
+(define known-procedure/has-unsafe/folding/limited-kind_1942
   (|#%name|
    known-procedure/has-unsafe/folding/limited-kind
    (record-accessor struct:known-procedure/has-unsafe/folding/limited 0)))
@@ -3545,17 +3548,17 @@
   (|#%name|
    known-procedure/has-unsafe/folding/limited-kind
    (lambda (s)
-     (if (known-procedure/has-unsafe/folding/limited?361 s)
-       (known-procedure/has-unsafe/folding/limited-kind363 s)
+     (if (known-procedure/has-unsafe/folding/limited?_2926 s)
+       (known-procedure/has-unsafe/folding/limited-kind_1942 s)
        ($value
         (impersonate-ref
-         known-procedure/has-unsafe/folding/limited-kind363
+         known-procedure/has-unsafe/folding/limited-kind_1942
          struct:known-procedure/has-unsafe/folding/limited
          0
          s
          'known-procedure/has-unsafe/folding/limited
          'kind))))))
-(define effect364
+(define effect_2061
   (begin
     (register-struct-constructor! known-procedure/has-unsafe/folding/limited)
     (register-struct-predicate! known-procedure/has-unsafe/folding/limited?)
@@ -3583,7 +3586,7 @@
    #f
    3
    7))
-(define effect366
+(define effect_2722
   (struct-type-install-properties!
    struct:known-struct-type
    'known-struct-type
@@ -3603,19 +3606,19 @@
    known-struct-type
    (record-constructor
     (make-record-constructor-descriptor struct:known-struct-type #f #f))))
-(define known-struct-type?365
+(define known-struct-type?_2572
   (|#%name| known-struct-type? (record-predicate struct:known-struct-type)))
 (define known-struct-type?
   (|#%name|
    known-struct-type?
    (lambda (v)
-     (if (known-struct-type?365 v)
+     (if (known-struct-type?_2572 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-struct-type?365 (impersonator-val v))
+          (known-struct-type?_2572 (impersonator-val v))
           #f))))))
-(define known-struct-type-type367
+(define known-struct-type-type_1931
   (|#%name|
    known-struct-type-type
    (record-accessor struct:known-struct-type 0)))
@@ -3623,17 +3626,17 @@
   (|#%name|
    known-struct-type-type
    (lambda (s)
-     (if (known-struct-type?365 s)
-       (known-struct-type-type367 s)
+     (if (known-struct-type?_2572 s)
+       (known-struct-type-type_1931 s)
        ($value
         (impersonate-ref
-         known-struct-type-type367
+         known-struct-type-type_1931
          struct:known-struct-type
          0
          s
          'known-struct-type
          'type))))))
-(define known-struct-type-field-count368
+(define known-struct-type-field-count_2903
   (|#%name|
    known-struct-type-field-count
    (record-accessor struct:known-struct-type 1)))
@@ -3641,17 +3644,17 @@
   (|#%name|
    known-struct-type-field-count
    (lambda (s)
-     (if (known-struct-type?365 s)
-       (known-struct-type-field-count368 s)
+     (if (known-struct-type?_2572 s)
+       (known-struct-type-field-count_2903 s)
        ($value
         (impersonate-ref
-         known-struct-type-field-count368
+         known-struct-type-field-count_2903
          struct:known-struct-type
          1
          s
          'known-struct-type
          'field-count))))))
-(define known-struct-type-pure-constructor?369
+(define known-struct-type-pure-constructor?_2541
   (|#%name|
    known-struct-type-pure-constructor?
    (record-accessor struct:known-struct-type 2)))
@@ -3659,17 +3662,17 @@
   (|#%name|
    known-struct-type-pure-constructor?
    (lambda (s)
-     (if (known-struct-type?365 s)
-       (known-struct-type-pure-constructor?369 s)
+     (if (known-struct-type?_2572 s)
+       (known-struct-type-pure-constructor?_2541 s)
        ($value
         (impersonate-ref
-         known-struct-type-pure-constructor?369
+         known-struct-type-pure-constructor?_2541
          struct:known-struct-type
          2
          s
          'known-struct-type
          'pure-constructor?))))))
-(define effect370
+(define effect_2460
   (begin
     (register-struct-constructor! known-struct-type)
     (register-struct-predicate! known-struct-type?)
@@ -3705,7 +3708,7 @@
    #f
    1
    1))
-(define effect372
+(define effect_2019
   (struct-type-install-properties!
    struct:known-constructor
    'known-constructor
@@ -3725,19 +3728,19 @@
    known-constructor
    (record-constructor
     (make-record-constructor-descriptor struct:known-constructor #f #f))))
-(define known-constructor?371
+(define known-constructor?_2802
   (|#%name| known-constructor? (record-predicate struct:known-constructor)))
 (define known-constructor?
   (|#%name|
    known-constructor?
    (lambda (v)
-     (if (known-constructor?371 v)
+     (if (known-constructor?_2802 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-constructor?371 (impersonator-val v))
+          (known-constructor?_2802 (impersonator-val v))
           #f))))))
-(define known-constructor-type373
+(define known-constructor-type_2993
   (|#%name|
    known-constructor-type
    (record-accessor struct:known-constructor 0)))
@@ -3745,17 +3748,17 @@
   (|#%name|
    known-constructor-type
    (lambda (s)
-     (if (known-constructor?371 s)
-       (known-constructor-type373 s)
+     (if (known-constructor?_2802 s)
+       (known-constructor-type_2993 s)
        ($value
         (impersonate-ref
-         known-constructor-type373
+         known-constructor-type_2993
          struct:known-constructor
          0
          s
          'known-constructor
          'type))))))
-(define effect374
+(define effect_2610
   (begin
     (register-struct-constructor! known-constructor)
     (register-struct-predicate! known-constructor?)
@@ -3783,7 +3786,7 @@
    #f
    1
    1))
-(define effect376
+(define effect_2630
   (struct-type-install-properties!
    struct:known-predicate
    'known-predicate
@@ -3803,35 +3806,35 @@
    known-predicate
    (record-constructor
     (make-record-constructor-descriptor struct:known-predicate #f #f))))
-(define known-predicate?375
+(define known-predicate?_2903
   (|#%name| known-predicate? (record-predicate struct:known-predicate)))
 (define known-predicate?
   (|#%name|
    known-predicate?
    (lambda (v)
-     (if (known-predicate?375 v)
+     (if (known-predicate?_2903 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-predicate?375 (impersonator-val v))
+          (known-predicate?_2903 (impersonator-val v))
           #f))))))
-(define known-predicate-type377
+(define known-predicate-type_2853
   (|#%name| known-predicate-type (record-accessor struct:known-predicate 0)))
 (define known-predicate-type
   (|#%name|
    known-predicate-type
    (lambda (s)
-     (if (known-predicate?375 s)
-       (known-predicate-type377 s)
+     (if (known-predicate?_2903 s)
+       (known-predicate-type_2853 s)
        ($value
         (impersonate-ref
-         known-predicate-type377
+         known-predicate-type_2853
          struct:known-predicate
          0
          s
          'known-predicate
          'type))))))
-(define effect378
+(define effect_2622
   (begin
     (register-struct-constructor! known-predicate)
     (register-struct-predicate! known-predicate?)
@@ -3859,7 +3862,7 @@
    #f
    1
    1))
-(define effect380
+(define effect_2151
   (struct-type-install-properties!
    struct:known-accessor
    'known-accessor
@@ -3879,35 +3882,35 @@
    known-accessor
    (record-constructor
     (make-record-constructor-descriptor struct:known-accessor #f #f))))
-(define known-accessor?379
+(define known-accessor?_2710
   (|#%name| known-accessor? (record-predicate struct:known-accessor)))
 (define known-accessor?
   (|#%name|
    known-accessor?
    (lambda (v)
-     (if (known-accessor?379 v)
+     (if (known-accessor?_2710 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-accessor?379 (impersonator-val v))
+          (known-accessor?_2710 (impersonator-val v))
           #f))))))
-(define known-accessor-type381
+(define known-accessor-type_2147
   (|#%name| known-accessor-type (record-accessor struct:known-accessor 0)))
 (define known-accessor-type
   (|#%name|
    known-accessor-type
    (lambda (s)
-     (if (known-accessor?379 s)
-       (known-accessor-type381 s)
+     (if (known-accessor?_2710 s)
+       (known-accessor-type_2147 s)
        ($value
         (impersonate-ref
-         known-accessor-type381
+         known-accessor-type_2147
          struct:known-accessor
          0
          s
          'known-accessor
          'type))))))
-(define effect382
+(define effect_3078
   (begin
     (register-struct-constructor! known-accessor)
     (register-struct-predicate! known-accessor?)
@@ -3935,7 +3938,7 @@
    #f
    1
    1))
-(define effect384
+(define effect_2575
   (struct-type-install-properties!
    struct:known-mutator
    'known-mutator
@@ -3955,33 +3958,35 @@
    known-mutator
    (record-constructor
     (make-record-constructor-descriptor struct:known-mutator #f #f))))
-(define known-mutator?383
+(define known-mutator?_2993
   (|#%name| known-mutator? (record-predicate struct:known-mutator)))
 (define known-mutator?
   (|#%name|
    known-mutator?
    (lambda (v)
-     (if (known-mutator?383 v)
+     (if (known-mutator?_2993 v)
        #t
        ($value
-        (if (impersonator? v) (known-mutator?383 (impersonator-val v)) #f))))))
-(define known-mutator-type385
+        (if (impersonator? v)
+          (known-mutator?_2993 (impersonator-val v))
+          #f))))))
+(define known-mutator-type_2618
   (|#%name| known-mutator-type (record-accessor struct:known-mutator 0)))
 (define known-mutator-type
   (|#%name|
    known-mutator-type
    (lambda (s)
-     (if (known-mutator?383 s)
-       (known-mutator-type385 s)
+     (if (known-mutator?_2993 s)
+       (known-mutator-type_2618 s)
        ($value
         (impersonate-ref
-         known-mutator-type385
+         known-mutator-type_2618
          struct:known-mutator
          0
          s
          'known-mutator
          'type))))))
-(define effect386
+(define effect_2451
   (begin
     (register-struct-constructor! known-mutator)
     (register-struct-predicate! known-mutator?)
@@ -4006,7 +4011,7 @@
    #f
    2
    3))
-(define effect388
+(define effect_2929
   (struct-type-install-properties!
    struct:known-struct-predicate
    'known-struct-predicate
@@ -4026,7 +4031,7 @@
    known-struct-predicate
    (record-constructor
     (make-record-constructor-descriptor struct:known-struct-predicate #f #f))))
-(define known-struct-predicate?387
+(define known-struct-predicate?_2418
   (|#%name|
    known-struct-predicate?
    (record-predicate struct:known-struct-predicate)))
@@ -4034,13 +4039,13 @@
   (|#%name|
    known-struct-predicate?
    (lambda (v)
-     (if (known-struct-predicate?387 v)
+     (if (known-struct-predicate?_2418 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-struct-predicate?387 (impersonator-val v))
+          (known-struct-predicate?_2418 (impersonator-val v))
           #f))))))
-(define known-struct-predicate-type-id389
+(define known-struct-predicate-type-id_2101
   (|#%name|
    known-struct-predicate-type-id
    (record-accessor struct:known-struct-predicate 0)))
@@ -4048,17 +4053,17 @@
   (|#%name|
    known-struct-predicate-type-id
    (lambda (s)
-     (if (known-struct-predicate?387 s)
-       (known-struct-predicate-type-id389 s)
+     (if (known-struct-predicate?_2418 s)
+       (known-struct-predicate-type-id_2101 s)
        ($value
         (impersonate-ref
-         known-struct-predicate-type-id389
+         known-struct-predicate-type-id_2101
          struct:known-struct-predicate
          0
          s
          'known-struct-predicate
          'type-id))))))
-(define known-struct-predicate-authentic?390
+(define known-struct-predicate-authentic?_2155
   (|#%name|
    known-struct-predicate-authentic?
    (record-accessor struct:known-struct-predicate 1)))
@@ -4066,17 +4071,17 @@
   (|#%name|
    known-struct-predicate-authentic?
    (lambda (s)
-     (if (known-struct-predicate?387 s)
-       (known-struct-predicate-authentic?390 s)
+     (if (known-struct-predicate?_2418 s)
+       (known-struct-predicate-authentic?_2155 s)
        ($value
         (impersonate-ref
-         known-struct-predicate-authentic?390
+         known-struct-predicate-authentic?_2155
          struct:known-struct-predicate
          1
          s
          'known-struct-predicate
          'authentic?))))))
-(define effect391
+(define effect_2415
   (begin
     (register-struct-constructor! known-struct-predicate)
     (register-struct-predicate! known-struct-predicate?)
@@ -4108,7 +4113,7 @@
    #f
    2
    3))
-(define effect393
+(define effect_1804
   (struct-type-install-properties!
    struct:known-field-accessor
    'known-field-accessor
@@ -4128,7 +4133,7 @@
    known-field-accessor
    (record-constructor
     (make-record-constructor-descriptor struct:known-field-accessor #f #f))))
-(define known-field-accessor?392
+(define known-field-accessor?_2878
   (|#%name|
    known-field-accessor?
    (record-predicate struct:known-field-accessor)))
@@ -4136,13 +4141,13 @@
   (|#%name|
    known-field-accessor?
    (lambda (v)
-     (if (known-field-accessor?392 v)
+     (if (known-field-accessor?_2878 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-field-accessor?392 (impersonator-val v))
+          (known-field-accessor?_2878 (impersonator-val v))
           #f))))))
-(define known-field-accessor-type-id394
+(define known-field-accessor-type-id_2744
   (|#%name|
    known-field-accessor-type-id
    (record-accessor struct:known-field-accessor 0)))
@@ -4150,17 +4155,17 @@
   (|#%name|
    known-field-accessor-type-id
    (lambda (s)
-     (if (known-field-accessor?392 s)
-       (known-field-accessor-type-id394 s)
+     (if (known-field-accessor?_2878 s)
+       (known-field-accessor-type-id_2744 s)
        ($value
         (impersonate-ref
-         known-field-accessor-type-id394
+         known-field-accessor-type-id_2744
          struct:known-field-accessor
          0
          s
          'known-field-accessor
          'type-id))))))
-(define known-field-accessor-pos395
+(define known-field-accessor-pos_2286
   (|#%name|
    known-field-accessor-pos
    (record-accessor struct:known-field-accessor 1)))
@@ -4168,17 +4173,17 @@
   (|#%name|
    known-field-accessor-pos
    (lambda (s)
-     (if (known-field-accessor?392 s)
-       (known-field-accessor-pos395 s)
+     (if (known-field-accessor?_2878 s)
+       (known-field-accessor-pos_2286 s)
        ($value
         (impersonate-ref
-         known-field-accessor-pos395
+         known-field-accessor-pos_2286
          struct:known-field-accessor
          1
          s
          'known-field-accessor
          'pos))))))
-(define effect396
+(define effect_2652
   (begin
     (register-struct-constructor! known-field-accessor)
     (register-struct-predicate! known-field-accessor?)
@@ -4210,7 +4215,7 @@
    #f
    2
    3))
-(define effect398
+(define effect_2511
   (struct-type-install-properties!
    struct:known-field-mutator
    'known-field-mutator
@@ -4230,7 +4235,7 @@
    known-field-mutator
    (record-constructor
     (make-record-constructor-descriptor struct:known-field-mutator #f #f))))
-(define known-field-mutator?397
+(define known-field-mutator?_2222
   (|#%name|
    known-field-mutator?
    (record-predicate struct:known-field-mutator)))
@@ -4238,13 +4243,13 @@
   (|#%name|
    known-field-mutator?
    (lambda (v)
-     (if (known-field-mutator?397 v)
+     (if (known-field-mutator?_2222 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-field-mutator?397 (impersonator-val v))
+          (known-field-mutator?_2222 (impersonator-val v))
           #f))))))
-(define known-field-mutator-type-id399
+(define known-field-mutator-type-id_2433
   (|#%name|
    known-field-mutator-type-id
    (record-accessor struct:known-field-mutator 0)))
@@ -4252,17 +4257,17 @@
   (|#%name|
    known-field-mutator-type-id
    (lambda (s)
-     (if (known-field-mutator?397 s)
-       (known-field-mutator-type-id399 s)
+     (if (known-field-mutator?_2222 s)
+       (known-field-mutator-type-id_2433 s)
        ($value
         (impersonate-ref
-         known-field-mutator-type-id399
+         known-field-mutator-type-id_2433
          struct:known-field-mutator
          0
          s
          'known-field-mutator
          'type-id))))))
-(define known-field-mutator-pos400
+(define known-field-mutator-pos_2735
   (|#%name|
    known-field-mutator-pos
    (record-accessor struct:known-field-mutator 1)))
@@ -4270,17 +4275,17 @@
   (|#%name|
    known-field-mutator-pos
    (lambda (s)
-     (if (known-field-mutator?397 s)
-       (known-field-mutator-pos400 s)
+     (if (known-field-mutator?_2222 s)
+       (known-field-mutator-pos_2735 s)
        ($value
         (impersonate-ref
-         known-field-mutator-pos400
+         known-field-mutator-pos_2735
          struct:known-field-mutator
          1
          s
          'known-field-mutator
          'pos))))))
-(define effect401
+(define effect_2676
   (begin
     (register-struct-constructor! known-field-mutator)
     (register-struct-predicate! known-field-mutator?)
@@ -4312,7 +4317,7 @@
    #f
    1
    1))
-(define effect403
+(define effect_2432
   (struct-type-install-properties!
    struct:known-struct-predicate/need-imports
    'known-struct-predicate/need-imports
@@ -4335,7 +4340,7 @@
      struct:known-struct-predicate/need-imports
      #f
      #f))))
-(define known-struct-predicate/need-imports?402
+(define known-struct-predicate/need-imports?_2911
   (|#%name|
    known-struct-predicate/need-imports?
    (record-predicate struct:known-struct-predicate/need-imports)))
@@ -4343,13 +4348,13 @@
   (|#%name|
    known-struct-predicate/need-imports?
    (lambda (v)
-     (if (known-struct-predicate/need-imports?402 v)
+     (if (known-struct-predicate/need-imports?_2911 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-struct-predicate/need-imports?402 (impersonator-val v))
+          (known-struct-predicate/need-imports?_2911 (impersonator-val v))
           #f))))))
-(define known-struct-predicate/need-imports-needed404
+(define known-struct-predicate/need-imports-needed_2072
   (|#%name|
    known-struct-predicate/need-imports-needed
    (record-accessor struct:known-struct-predicate/need-imports 0)))
@@ -4357,17 +4362,17 @@
   (|#%name|
    known-struct-predicate/need-imports-needed
    (lambda (s)
-     (if (known-struct-predicate/need-imports?402 s)
-       (known-struct-predicate/need-imports-needed404 s)
+     (if (known-struct-predicate/need-imports?_2911 s)
+       (known-struct-predicate/need-imports-needed_2072 s)
        ($value
         (impersonate-ref
-         known-struct-predicate/need-imports-needed404
+         known-struct-predicate/need-imports-needed_2072
          struct:known-struct-predicate/need-imports
          0
          s
          'known-struct-predicate/need-imports
          'needed))))))
-(define effect405
+(define effect_1651
   (begin
     (register-struct-constructor! known-struct-predicate/need-imports)
     (register-struct-predicate! known-struct-predicate/need-imports?)
@@ -4395,7 +4400,7 @@
    #f
    1
    1))
-(define effect407
+(define effect_2891
   (struct-type-install-properties!
    struct:known-field-accessor/need-imports
    'known-field-accessor/need-imports
@@ -4418,7 +4423,7 @@
      struct:known-field-accessor/need-imports
      #f
      #f))))
-(define known-field-accessor/need-imports?406
+(define known-field-accessor/need-imports?_2679
   (|#%name|
    known-field-accessor/need-imports?
    (record-predicate struct:known-field-accessor/need-imports)))
@@ -4426,13 +4431,13 @@
   (|#%name|
    known-field-accessor/need-imports?
    (lambda (v)
-     (if (known-field-accessor/need-imports?406 v)
+     (if (known-field-accessor/need-imports?_2679 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-field-accessor/need-imports?406 (impersonator-val v))
+          (known-field-accessor/need-imports?_2679 (impersonator-val v))
           #f))))))
-(define known-field-accessor/need-imports-needed408
+(define known-field-accessor/need-imports-needed_2087
   (|#%name|
    known-field-accessor/need-imports-needed
    (record-accessor struct:known-field-accessor/need-imports 0)))
@@ -4440,17 +4445,17 @@
   (|#%name|
    known-field-accessor/need-imports-needed
    (lambda (s)
-     (if (known-field-accessor/need-imports?406 s)
-       (known-field-accessor/need-imports-needed408 s)
+     (if (known-field-accessor/need-imports?_2679 s)
+       (known-field-accessor/need-imports-needed_2087 s)
        ($value
         (impersonate-ref
-         known-field-accessor/need-imports-needed408
+         known-field-accessor/need-imports-needed_2087
          struct:known-field-accessor/need-imports
          0
          s
          'known-field-accessor/need-imports
          'needed))))))
-(define effect409
+(define effect_2889
   (begin
     (register-struct-constructor! known-field-accessor/need-imports)
     (register-struct-predicate! known-field-accessor/need-imports?)
@@ -4478,7 +4483,7 @@
    #f
    1
    1))
-(define effect411
+(define effect_2824
   (struct-type-install-properties!
    struct:known-field-mutator/need-imports
    'known-field-mutator/need-imports
@@ -4501,7 +4506,7 @@
      struct:known-field-mutator/need-imports
      #f
      #f))))
-(define known-field-mutator/need-imports?410
+(define known-field-mutator/need-imports?_2495
   (|#%name|
    known-field-mutator/need-imports?
    (record-predicate struct:known-field-mutator/need-imports)))
@@ -4509,13 +4514,13 @@
   (|#%name|
    known-field-mutator/need-imports?
    (lambda (v)
-     (if (known-field-mutator/need-imports?410 v)
+     (if (known-field-mutator/need-imports?_2495 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-field-mutator/need-imports?410 (impersonator-val v))
+          (known-field-mutator/need-imports?_2495 (impersonator-val v))
           #f))))))
-(define known-field-mutator/need-imports-needed412
+(define known-field-mutator/need-imports-needed_2344
   (|#%name|
    known-field-mutator/need-imports-needed
    (record-accessor struct:known-field-mutator/need-imports 0)))
@@ -4523,17 +4528,17 @@
   (|#%name|
    known-field-mutator/need-imports-needed
    (lambda (s)
-     (if (known-field-mutator/need-imports?410 s)
-       (known-field-mutator/need-imports-needed412 s)
+     (if (known-field-mutator/need-imports?_2495 s)
+       (known-field-mutator/need-imports-needed_2344 s)
        ($value
         (impersonate-ref
-         known-field-mutator/need-imports-needed412
+         known-field-mutator/need-imports-needed_2344
          struct:known-field-mutator/need-imports
          0
          s
          'known-field-mutator/need-imports
          'needed))))))
-(define effect413
+(define effect_2411
   (begin
     (register-struct-constructor! known-field-mutator/need-imports)
     (register-struct-predicate! known-field-mutator/need-imports?)
@@ -4557,7 +4562,7 @@
    #f
    0
    0))
-(define effect415
+(define effect_2752
   (struct-type-install-properties!
    struct:known-struct-type-property/immediate-guard
    'known-struct-type-property/immediate-guard
@@ -4578,7 +4583,7 @@
      struct:known-struct-type-property/immediate-guard
      #f
      #f))))
-(define known-struct-type-property/immediate-guard?414
+(define known-struct-type-property/immediate-guard?_2536
   (|#%name|
    known-struct-type-property/immediate-guard?
    (record-predicate struct:known-struct-type-property/immediate-guard)))
@@ -4586,13 +4591,14 @@
   (|#%name|
    known-struct-type-property/immediate-guard?
    (lambda (v)
-     (if (known-struct-type-property/immediate-guard?414 v)
+     (if (known-struct-type-property/immediate-guard?_2536 v)
        #t
        ($value
         (if (impersonator? v)
-          (known-struct-type-property/immediate-guard?414 (impersonator-val v))
+          (known-struct-type-property/immediate-guard?_2536
+           (impersonator-val v))
           #f))))))
-(define effect416
+(define effect_1742
   (begin
     (register-struct-constructor! known-struct-type-property/immediate-guard)
     (register-struct-predicate! known-struct-type-property/immediate-guard?)
@@ -4615,7 +4621,7 @@
                 (if (string? prefix_0) prefix_0 (symbol->string prefix_0))))
            (string-append app_0 (number->string (unbox b_0)))))))))
 (define struct:import (make-record-type-descriptor* 'import #f #f #f #f 4 15))
-(define effect424
+(define effect_2897
   (struct-type-install-properties!
    struct:import
    'import
@@ -4633,65 +4639,67 @@
    import
    (record-constructor
     (make-record-constructor-descriptor struct:import #f #f))))
-(define import?423 (|#%name| import? (record-predicate struct:import)))
+(define import?_2699 (|#%name| import? (record-predicate struct:import)))
 (define import?
   (|#%name|
    import?
    (lambda (v)
-     (if (import?423 v)
+     (if (import?_2699 v)
        #t
-       ($value (if (impersonator? v) (import?423 (impersonator-val v)) #f))))))
-(define import-grp425 (|#%name| import-grp (record-accessor struct:import 0)))
+       ($value
+        (if (impersonator? v) (import?_2699 (impersonator-val v)) #f))))))
+(define import-grp_3110
+  (|#%name| import-grp (record-accessor struct:import 0)))
 (define import-grp
   (|#%name|
    import-grp
    (lambda (s)
-     (if (import?423 s)
-       (import-grp425 s)
+     (if (import?_2699 s)
+       (import-grp_3110 s)
        ($value
-        (impersonate-ref import-grp425 struct:import 0 s 'import 'grp))))))
-(define import-id426 (|#%name| import-id (record-accessor struct:import 1)))
+        (impersonate-ref import-grp_3110 struct:import 0 s 'import 'grp))))))
+(define import-id_2226 (|#%name| import-id (record-accessor struct:import 1)))
 (define import-id
   (|#%name|
    import-id
    (lambda (s)
-     (if (import?423 s)
-       (import-id426 s)
+     (if (import?_2699 s)
+       (import-id_2226 s)
        ($value
-        (impersonate-ref import-id426 struct:import 1 s 'import 'id))))))
-(define import-int-id427
+        (impersonate-ref import-id_2226 struct:import 1 s 'import 'id))))))
+(define import-int-id_2707
   (|#%name| import-int-id (record-accessor struct:import 2)))
 (define import-int-id
   (|#%name|
    import-int-id
    (lambda (s)
-     (if (import?423 s)
-       (import-int-id427 s)
+     (if (import?_2699 s)
+       (import-int-id_2707 s)
        ($value
         (impersonate-ref
-         import-int-id427
+         import-int-id_2707
          struct:import
          2
          s
          'import
          'int-id))))))
-(define import-ext-id428
+(define import-ext-id_2460
   (|#%name| import-ext-id (record-accessor struct:import 3)))
 (define import-ext-id
   (|#%name|
    import-ext-id
    (lambda (s)
-     (if (import?423 s)
-       (import-ext-id428 s)
+     (if (import?_2699 s)
+       (import-ext-id_2460 s)
        ($value
         (impersonate-ref
-         import-ext-id428
+         import-ext-id_2460
          struct:import
          3
          s
          'import
          'ext-id))))))
-(define effect429
+(define effect_2322
   (begin
     (register-struct-constructor! import1.1)
     (register-struct-predicate! import?)
@@ -4702,7 +4710,7 @@
     (void)))
 (define struct:import-group
   (make-record-type-descriptor* 'import-group #f #f #f #f 6 63))
-(define effect431
+(define effect_2514
   (struct-type-install-properties!
    struct:import-group
    'import-group
@@ -4720,113 +4728,115 @@
    import-group
    (record-constructor
     (make-record-constructor-descriptor struct:import-group #f #f))))
-(define import-group?430
+(define import-group?_1821
   (|#%name| import-group? (record-predicate struct:import-group)))
 (define import-group?
   (|#%name|
    import-group?
    (lambda (v)
-     (if (import-group?430 v)
+     (if (import-group?_1821 v)
        #t
        ($value
-        (if (impersonator? v) (import-group?430 (impersonator-val v)) #f))))))
-(define import-group-index432
+        (if (impersonator? v)
+          (import-group?_1821 (impersonator-val v))
+          #f))))))
+(define import-group-index_2302
   (|#%name| import-group-index (record-accessor struct:import-group 0)))
 (define import-group-index
   (|#%name|
    import-group-index
    (lambda (s)
-     (if (import-group?430 s)
-       (import-group-index432 s)
+     (if (import-group?_1821 s)
+       (import-group-index_2302 s)
        ($value
         (impersonate-ref
-         import-group-index432
+         import-group-index_2302
          struct:import-group
          0
          s
          'import-group
          'index))))))
-(define import-group-key433
+(define import-group-key_2439
   (|#%name| import-group-key (record-accessor struct:import-group 1)))
 (define import-group-key
   (|#%name|
    import-group-key
    (lambda (s)
-     (if (import-group?430 s)
-       (import-group-key433 s)
+     (if (import-group?_1821 s)
+       (import-group-key_2439 s)
        ($value
         (impersonate-ref
-         import-group-key433
+         import-group-key_2439
          struct:import-group
          1
          s
          'import-group
          'key))))))
-(define import-group-knowns/proc434
+(define import-group-knowns/proc_2775
   (|#%name| import-group-knowns/proc (record-accessor struct:import-group 2)))
 (define import-group-knowns/proc
   (|#%name|
    import-group-knowns/proc
    (lambda (s)
-     (if (import-group?430 s)
-       (import-group-knowns/proc434 s)
+     (if (import-group?_1821 s)
+       (import-group-knowns/proc_2775 s)
        ($value
         (impersonate-ref
-         import-group-knowns/proc434
+         import-group-knowns/proc_2775
          struct:import-group
          2
          s
          'import-group
          'knowns/proc))))))
-(define import-group-converter435
+(define import-group-converter_2731
   (|#%name| import-group-converter (record-accessor struct:import-group 3)))
 (define import-group-converter
   (|#%name|
    import-group-converter
    (lambda (s)
-     (if (import-group?430 s)
-       (import-group-converter435 s)
+     (if (import-group?_1821 s)
+       (import-group-converter_2731 s)
        ($value
         (impersonate-ref
-         import-group-converter435
+         import-group-converter_2731
          struct:import-group
          3
          s
          'import-group
          'converter))))))
-(define import-group-import-keys436
+(define import-group-import-keys_2577
   (|#%name| import-group-import-keys (record-accessor struct:import-group 4)))
 (define import-group-import-keys
   (|#%name|
    import-group-import-keys
    (lambda (s)
-     (if (import-group?430 s)
-       (import-group-import-keys436 s)
+     (if (import-group?_1821 s)
+       (import-group-import-keys_2577 s)
        ($value
         (impersonate-ref
-         import-group-import-keys436
+         import-group-import-keys_2577
          struct:import-group
          4
          s
          'import-group
          'import-keys))))))
-(define import-group-imports437
+(define import-group-imports_2122
   (|#%name| import-group-imports (record-accessor struct:import-group 5)))
 (define import-group-imports
   (|#%name|
    import-group-imports
    (lambda (s)
-     (if (import-group?430 s)
-       (import-group-imports437 s)
+     (if (import-group?_1821 s)
+       (import-group-imports_2122 s)
        ($value
         (impersonate-ref
-         import-group-imports437
+         import-group-imports_2122
          struct:import-group
          5
          s
          'import-group
          'imports))))))
-(define set-import-group-knowns/proc!438
+(define set-import-group-knowns/proc!_2971
   (|#%name|
    set-import-group-knowns/proc!
    (record-mutator struct:import-group 2)))
@@ -4834,11 +4844,11 @@
   (|#%name|
    set-import-group-knowns/proc!
    (lambda (s v)
-     (if (import-group?430 s)
-       (set-import-group-knowns/proc!438 s v)
+     (if (import-group?_1821 s)
+       (set-import-group-knowns/proc!_2971 s v)
        ($value
         (impersonate-set!
-         set-import-group-knowns/proc!438
+         set-import-group-knowns/proc!_2971
          struct:import-group
          2
          2
@@ -4846,7 +4856,7 @@
          v
          'import-group
          'knowns/proc))))))
-(define set-import-group-converter!439
+(define set-import-group-converter!_2381
   (|#%name|
    set-import-group-converter!
    (record-mutator struct:import-group 3)))
@@ -4854,11 +4864,11 @@
   (|#%name|
    set-import-group-converter!
    (lambda (s v)
-     (if (import-group?430 s)
-       (set-import-group-converter!439 s v)
+     (if (import-group?_1821 s)
+       (set-import-group-converter!_2381 s v)
        ($value
         (impersonate-set!
-         set-import-group-converter!439
+         set-import-group-converter!_2381
          struct:import-group
          3
          3
@@ -4866,7 +4876,7 @@
          v
          'import-group
          'converter))))))
-(define set-import-group-import-keys!440
+(define set-import-group-import-keys!_2611
   (|#%name|
    set-import-group-import-keys!
    (record-mutator struct:import-group 4)))
@@ -4874,11 +4884,11 @@
   (|#%name|
    set-import-group-import-keys!
    (lambda (s v)
-     (if (import-group?430 s)
-       (set-import-group-import-keys!440 s v)
+     (if (import-group?_1821 s)
+       (set-import-group-import-keys!_2611 s v)
        ($value
         (impersonate-set!
-         set-import-group-import-keys!440
+         set-import-group-import-keys!_2611
          struct:import-group
          4
          4
@@ -4886,17 +4896,17 @@
          v
          'import-group
          'import-keys))))))
-(define set-import-group-imports!441
+(define set-import-group-imports!_2489
   (|#%name| set-import-group-imports! (record-mutator struct:import-group 5)))
 (define set-import-group-imports!
   (|#%name|
    set-import-group-imports!
    (lambda (s v)
-     (if (import-group?430 s)
-       (set-import-group-imports!441 s v)
+     (if (import-group?_1821 s)
+       (set-import-group-imports!_2489 s v)
        ($value
         (impersonate-set!
-         set-import-group-imports!441
+         set-import-group-imports!_2489
          struct:import-group
          5
          5
@@ -4904,7 +4914,7 @@
          v
          'import-group
          'imports))))))
-(define effect442
+(define effect_2905
   (begin
     (register-struct-constructor! import-group2.1)
     (register-struct-predicate! import-group?)
@@ -5101,7 +5111,7 @@
             (|#%app| add-group!_0 grp_0)
             grp_0))))))
 (define struct:export (make-record-type-descriptor* 'export #f #f #f #f 2 3))
-(define effect454
+(define effect_2166
   (struct-type-install-properties!
    struct:export
    'export
@@ -5119,40 +5129,41 @@
    export
    (record-constructor
     (make-record-constructor-descriptor struct:export #f #f))))
-(define export?453 (|#%name| export? (record-predicate struct:export)))
+(define export?_2921 (|#%name| export? (record-predicate struct:export)))
 (define export?
   (|#%name|
    export?
    (lambda (v)
-     (if (export?453 v)
+     (if (export?_2921 v)
        #t
-       ($value (if (impersonator? v) (export?453 (impersonator-val v)) #f))))))
-(define export-id455 (|#%name| export-id (record-accessor struct:export 0)))
+       ($value
+        (if (impersonator? v) (export?_2921 (impersonator-val v)) #f))))))
+(define export-id_2664 (|#%name| export-id (record-accessor struct:export 0)))
 (define export-id
   (|#%name|
    export-id
    (lambda (s)
-     (if (export?453 s)
-       (export-id455 s)
+     (if (export?_2921 s)
+       (export-id_2664 s)
        ($value
-        (impersonate-ref export-id455 struct:export 0 s 'export 'id))))))
-(define export-ext-id456
+        (impersonate-ref export-id_2664 struct:export 0 s 'export 'id))))))
+(define export-ext-id_2745
   (|#%name| export-ext-id (record-accessor struct:export 1)))
 (define export-ext-id
   (|#%name|
    export-ext-id
    (lambda (s)
-     (if (export?453 s)
-       (export-ext-id456 s)
+     (if (export?_2921 s)
+       (export-ext-id_2745 s)
        ($value
         (impersonate-ref
-         export-ext-id456
+         export-ext-id_2745
          struct:export
          1
          s
          'export
          'ext-id))))))
-(define effect457
+(define effect_2433
   (begin
     (register-struct-constructor! export1.1)
     (register-struct-predicate! export?)
@@ -5161,7 +5172,7 @@
     (void)))
 (define struct:too-early
   (make-record-type-descriptor* 'too-early #f #f #f #f 2 3))
-(define effect459
+(define effect_2681
   (struct-type-install-properties!
    struct:too-early
    'too-early
@@ -5179,49 +5190,49 @@
    too-early
    (record-constructor
     (make-record-constructor-descriptor struct:too-early #f #f))))
-(define too-early?458
+(define too-early?_1816
   (|#%name| too-early? (record-predicate struct:too-early)))
 (define too-early?
   (|#%name|
    too-early?
    (lambda (v)
-     (if (too-early?458 v)
+     (if (too-early?_1816 v)
        #t
        ($value
-        (if (impersonator? v) (too-early?458 (impersonator-val v)) #f))))))
-(define too-early-name460
+        (if (impersonator? v) (too-early?_1816 (impersonator-val v)) #f))))))
+(define too-early-name_2356
   (|#%name| too-early-name (record-accessor struct:too-early 0)))
 (define too-early-name
   (|#%name|
    too-early-name
    (lambda (s)
-     (if (too-early?458 s)
-       (too-early-name460 s)
+     (if (too-early?_1816 s)
+       (too-early-name_2356 s)
        ($value
         (impersonate-ref
-         too-early-name460
+         too-early-name_2356
          struct:too-early
          0
          s
          'too-early
          'name))))))
-(define too-early-set!ed?461
+(define too-early-set!ed?_2625
   (|#%name| too-early-set!ed? (record-accessor struct:too-early 1)))
 (define too-early-set!ed?
   (|#%name|
    too-early-set!ed?
    (lambda (s)
-     (if (too-early?458 s)
-       (too-early-set!ed?461 s)
+     (if (too-early?_1816 s)
+       (too-early-set!ed?_2625 s)
        ($value
         (impersonate-ref
-         too-early-set!ed?461
+         too-early-set!ed?_2625
          struct:too-early
          1
          s
          'too-early
          'set!ed?))))))
-(define effect462
+(define effect_2623
   (begin
     (register-struct-constructor! too-early1.1)
     (register-struct-predicate! too-early?)
@@ -7183,7 +7194,7 @@
       (args (raise-binding-result-arity-error 2 args))))))
 (define struct:struct-type-info
   (make-record-type-descriptor* 'struct-type-info #f #f #f #f 9 511))
-(define effect657
+(define effect_2978
   (struct-type-install-properties!
    struct:struct-type-info
    'struct-type-info
@@ -7201,35 +7212,35 @@
    struct-type-info
    (record-constructor
     (make-record-constructor-descriptor struct:struct-type-info #f #f))))
-(define struct-type-info?656
+(define struct-type-info?_2591
   (|#%name| struct-type-info? (record-predicate struct:struct-type-info)))
 (define struct-type-info?
   (|#%name|
    struct-type-info?
    (lambda (v)
-     (if (struct-type-info?656 v)
+     (if (struct-type-info?_2591 v)
        #t
        ($value
         (if (impersonator? v)
-          (struct-type-info?656 (impersonator-val v))
+          (struct-type-info?_2591 (impersonator-val v))
           #f))))))
-(define struct-type-info-name658
+(define struct-type-info-name_2272
   (|#%name| struct-type-info-name (record-accessor struct:struct-type-info 0)))
 (define struct-type-info-name
   (|#%name|
    struct-type-info-name
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-name658 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-name_2272 s)
        ($value
         (impersonate-ref
-         struct-type-info-name658
+         struct-type-info-name_2272
          struct:struct-type-info
          0
          s
          'struct-type-info
          'name))))))
-(define struct-type-info-parent659
+(define struct-type-info-parent_2983
   (|#%name|
    struct-type-info-parent
    (record-accessor struct:struct-type-info 1)))
@@ -7237,17 +7248,17 @@
   (|#%name|
    struct-type-info-parent
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-parent659 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-parent_2983 s)
        ($value
         (impersonate-ref
-         struct-type-info-parent659
+         struct-type-info-parent_2983
          struct:struct-type-info
          1
          s
          'struct-type-info
          'parent))))))
-(define struct-type-info-immediate-field-count660
+(define struct-type-info-immediate-field-count_2698
   (|#%name|
    struct-type-info-immediate-field-count
    (record-accessor struct:struct-type-info 2)))
@@ -7255,17 +7266,17 @@
   (|#%name|
    struct-type-info-immediate-field-count
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-immediate-field-count660 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-immediate-field-count_2698 s)
        ($value
         (impersonate-ref
-         struct-type-info-immediate-field-count660
+         struct-type-info-immediate-field-count_2698
          struct:struct-type-info
          2
          s
          'struct-type-info
          'immediate-field-count))))))
-(define struct-type-info-field-count661
+(define struct-type-info-field-count_2405
   (|#%name|
    struct-type-info-field-count
    (record-accessor struct:struct-type-info 3)))
@@ -7273,17 +7284,17 @@
   (|#%name|
    struct-type-info-field-count
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-field-count661 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-field-count_2405 s)
        ($value
         (impersonate-ref
-         struct-type-info-field-count661
+         struct-type-info-field-count_2405
          struct:struct-type-info
          3
          s
          'struct-type-info
          'field-count))))))
-(define struct-type-info-pure-constructor?662
+(define struct-type-info-pure-constructor?_2558
   (|#%name|
    struct-type-info-pure-constructor?
    (record-accessor struct:struct-type-info 4)))
@@ -7291,17 +7302,17 @@
   (|#%name|
    struct-type-info-pure-constructor?
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-pure-constructor?662 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-pure-constructor?_2558 s)
        ($value
         (impersonate-ref
-         struct-type-info-pure-constructor?662
+         struct-type-info-pure-constructor?_2558
          struct:struct-type-info
          4
          s
          'struct-type-info
          'pure-constructor?))))))
-(define struct-type-info-authentic?663
+(define struct-type-info-authentic?_2530
   (|#%name|
    struct-type-info-authentic?
    (record-accessor struct:struct-type-info 5)))
@@ -7309,17 +7320,17 @@
   (|#%name|
    struct-type-info-authentic?
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-authentic?663 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-authentic?_2530 s)
        ($value
         (impersonate-ref
-         struct-type-info-authentic?663
+         struct-type-info-authentic?_2530
          struct:struct-type-info
          5
          s
          'struct-type-info
          'authentic?))))))
-(define struct-type-info-prefab-immutables664
+(define struct-type-info-prefab-immutables_2632
   (|#%name|
    struct-type-info-prefab-immutables
    (record-accessor struct:struct-type-info 6)))
@@ -7327,17 +7338,17 @@
   (|#%name|
    struct-type-info-prefab-immutables
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-prefab-immutables664 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-prefab-immutables_2632 s)
        ($value
         (impersonate-ref
-         struct-type-info-prefab-immutables664
+         struct-type-info-prefab-immutables_2632
          struct:struct-type-info
          6
          s
          'struct-type-info
          'prefab-immutables))))))
-(define struct-type-info-constructor-name-expr665
+(define struct-type-info-constructor-name-expr_2507
   (|#%name|
    struct-type-info-constructor-name-expr
    (record-accessor struct:struct-type-info 7)))
@@ -7345,33 +7356,33 @@
   (|#%name|
    struct-type-info-constructor-name-expr
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-constructor-name-expr665 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-constructor-name-expr_2507 s)
        ($value
         (impersonate-ref
-         struct-type-info-constructor-name-expr665
+         struct-type-info-constructor-name-expr_2507
          struct:struct-type-info
          7
          s
          'struct-type-info
          'constructor-name-expr))))))
-(define struct-type-info-rest666
+(define struct-type-info-rest_2796
   (|#%name| struct-type-info-rest (record-accessor struct:struct-type-info 8)))
 (define struct-type-info-rest
   (|#%name|
    struct-type-info-rest
    (lambda (s)
-     (if (struct-type-info?656 s)
-       (struct-type-info-rest666 s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-rest_2796 s)
        ($value
         (impersonate-ref
-         struct-type-info-rest666
+         struct-type-info-rest_2796
          struct:struct-type-info
          8
          s
          'struct-type-info
          'rest))))))
-(define effect667
+(define effect_2648
   (begin
     (register-struct-constructor! struct-type-info1.1)
     (register-struct-predicate! struct-type-info?)
@@ -19675,7 +19686,7 @@
                     (all-fields-immutable? rk_2)))))))))))
 (define struct:path-for-srcloc
   (make-record-type-descriptor* 'path-for-srcloc #f #f #f #f 1 1))
-(define effect2680
+(define effect_2329
   (struct-type-install-properties!
    struct:path-for-srcloc
    'path-for-srcloc
@@ -19693,35 +19704,35 @@
    path-for-srcloc
    (record-constructor
     (make-record-constructor-descriptor struct:path-for-srcloc #f #f))))
-(define path-for-srcloc?2679
+(define path-for-srcloc?_2121
   (|#%name| path-for-srcloc? (record-predicate struct:path-for-srcloc)))
 (define path-for-srcloc?
   (|#%name|
    path-for-srcloc?
    (lambda (v)
-     (if (path-for-srcloc?2679 v)
+     (if (path-for-srcloc?_2121 v)
        #t
        ($value
         (if (impersonator? v)
-          (path-for-srcloc?2679 (impersonator-val v))
+          (path-for-srcloc?_2121 (impersonator-val v))
           #f))))))
-(define path-for-srcloc-path2681
+(define path-for-srcloc-path_2277
   (|#%name| path-for-srcloc-path (record-accessor struct:path-for-srcloc 0)))
 (define path-for-srcloc-path
   (|#%name|
    path-for-srcloc-path
    (lambda (s)
-     (if (path-for-srcloc?2679 s)
-       (path-for-srcloc-path2681 s)
+     (if (path-for-srcloc?_2121 s)
+       (path-for-srcloc-path_2277 s)
        ($value
         (impersonate-ref
-         path-for-srcloc-path2681
+         path-for-srcloc-path_2277
          struct:path-for-srcloc
          0
          s
          'path-for-srcloc
          'path))))))
-(define effect2682
+(define effect_2881
   (begin
     (register-struct-constructor! path-for-srcloc1.1)
     (register-struct-predicate! path-for-srcloc?)
@@ -19731,7 +19742,7 @@
      0)
     (void)))
 (define struct:to-fasl (make-record-type-descriptor* 'to-fasl #f #f #f #f 3 7))
-(define effect2684
+(define effect_2637
   (struct-type-install-properties!
    struct:to-fasl
    'to-fasl
@@ -19749,62 +19760,68 @@
    to-fasl
    (record-constructor
     (make-record-constructor-descriptor struct:to-fasl #f #f))))
-(define to-fasl?2683 (|#%name| to-fasl? (record-predicate struct:to-fasl)))
+(define to-fasl?_2514 (|#%name| to-fasl? (record-predicate struct:to-fasl)))
 (define to-fasl?
   (|#%name|
    to-fasl?
    (lambda (v)
-     (if (to-fasl?2683 v)
+     (if (to-fasl?_2514 v)
        #t
        ($value
-        (if (impersonator? v) (to-fasl?2683 (impersonator-val v)) #f))))))
-(define to-fasl-vb2685
+        (if (impersonator? v) (to-fasl?_2514 (impersonator-val v)) #f))))))
+(define to-fasl-vb_2843
   (|#%name| to-fasl-vb (record-accessor struct:to-fasl 0)))
 (define to-fasl-vb
   (|#%name|
    to-fasl-vb
    (lambda (s)
-     (if (to-fasl?2683 s)
-       (to-fasl-vb2685 s)
+     (if (to-fasl?_2514 s)
+       (to-fasl-vb_2843 s)
        ($value
-        (impersonate-ref to-fasl-vb2685 struct:to-fasl 0 s 'to-fasl 'vb))))))
-(define to-fasl-lifts2686
+        (impersonate-ref to-fasl-vb_2843 struct:to-fasl 0 s 'to-fasl 'vb))))))
+(define to-fasl-lifts_2493
   (|#%name| to-fasl-lifts (record-accessor struct:to-fasl 1)))
 (define to-fasl-lifts
   (|#%name|
    to-fasl-lifts
    (lambda (s)
-     (if (to-fasl?2683 s)
-       (to-fasl-lifts2686 s)
+     (if (to-fasl?_2514 s)
+       (to-fasl-lifts_2493 s)
        ($value
         (impersonate-ref
-         to-fasl-lifts2686
+         to-fasl-lifts_2493
          struct:to-fasl
          1
          s
          'to-fasl
          'lifts))))))
-(define to-fasl-wrt2687
+(define to-fasl-wrt_2217
   (|#%name| to-fasl-wrt (record-accessor struct:to-fasl 2)))
 (define to-fasl-wrt
   (|#%name|
    to-fasl-wrt
    (lambda (s)
-     (if (to-fasl?2683 s)
-       (to-fasl-wrt2687 s)
+     (if (to-fasl?_2514 s)
+       (to-fasl-wrt_2217 s)
        ($value
-        (impersonate-ref to-fasl-wrt2687 struct:to-fasl 2 s 'to-fasl 'wrt))))))
-(define set-to-fasl-vb!2688
+        (impersonate-ref
+         to-fasl-wrt_2217
+         struct:to-fasl
+         2
+         s
+         'to-fasl
+         'wrt))))))
+(define set-to-fasl-vb!_2396
   (|#%name| set-to-fasl-vb! (record-mutator struct:to-fasl 0)))
 (define set-to-fasl-vb!
   (|#%name|
    set-to-fasl-vb!
    (lambda (s v)
-     (if (to-fasl?2683 s)
-       (set-to-fasl-vb!2688 s v)
+     (if (to-fasl?_2514 s)
+       (set-to-fasl-vb!_2396 s v)
        ($value
         (impersonate-set!
-         set-to-fasl-vb!2688
+         set-to-fasl-vb!_2396
          struct:to-fasl
          0
          0
@@ -19812,17 +19829,17 @@
          v
          'to-fasl
          'vb))))))
-(define set-to-fasl-lifts!2689
+(define set-to-fasl-lifts!_2166
   (|#%name| set-to-fasl-lifts! (record-mutator struct:to-fasl 1)))
 (define set-to-fasl-lifts!
   (|#%name|
    set-to-fasl-lifts!
    (lambda (s v)
-     (if (to-fasl?2683 s)
-       (set-to-fasl-lifts!2689 s v)
+     (if (to-fasl?_2514 s)
+       (set-to-fasl-lifts!_2166 s v)
        ($value
         (impersonate-set!
-         set-to-fasl-lifts!2689
+         set-to-fasl-lifts!_2166
          struct:to-fasl
          1
          1
@@ -19830,17 +19847,17 @@
          v
          'to-fasl
          'lifts))))))
-(define set-to-fasl-wrt!2690
+(define set-to-fasl-wrt!_2448
   (|#%name| set-to-fasl-wrt! (record-mutator struct:to-fasl 2)))
 (define set-to-fasl-wrt!
   (|#%name|
    set-to-fasl-wrt!
    (lambda (s v)
-     (if (to-fasl?2683 s)
-       (set-to-fasl-wrt!2690 s v)
+     (if (to-fasl?_2514 s)
+       (set-to-fasl-wrt!_2448 s v)
        ($value
         (impersonate-set!
-         set-to-fasl-wrt!2690
+         set-to-fasl-wrt!_2448
          struct:to-fasl
          2
          2
@@ -19848,7 +19865,7 @@
          v
          'to-fasl
          'wrt))))))
-(define effect2691
+(define effect_1966
   (begin
     (register-struct-constructor! to-fasl1.1)
     (register-struct-predicate! to-fasl?)
@@ -22671,16 +22688,16 @@
                                                    (if (pair? q_1)
                                                      (if (list? q_1)
                                                        (let ((args_0
-                                                              (map2
+                                                              (map_2960
                                                                make-construct_0
                                                                q_1)))
-                                                         (if (andmap2
+                                                         (if (andmap_2344
                                                               quote?_0
                                                               args_0)
                                                            (list 'quote q_1)
                                                            (list*
                                                             'list
-                                                            (map2
+                                                            (map_2960
                                                              make-construct_0
                                                              q_1))))
                                                        (let ((a_0
@@ -22704,13 +22721,13 @@
                                                                 d_0))))))
                                                      (if (vector? q_1)
                                                        (let ((args_0
-                                                              (map2
+                                                              (map_2960
                                                                make-construct_0
                                                                (vector->list
                                                                 q_1))))
                                                          (list
                                                           'vector->immutable-vector
-                                                          (if (if (andmap2
+                                                          (if (if (andmap_2344
                                                                    quote?_0
                                                                    args_0)
                                                                 (not
@@ -22749,7 +22766,7 @@
                                                                          (list
                                                                           'quote
                                                                           c2_0)
-                                                                         (map2
+                                                                         (map_2960
                                                                           make-construct_0
                                                                           (cdr
                                                                            (vector->list
@@ -32779,7 +32796,7 @@
        v_0))))
 (define struct:liftable
   (make-record-type-descriptor* 'liftable #f #f #f #f 3 7))
-(define effect3996
+(define effect_2347
   (struct-type-install-properties!
    struct:liftable
    'liftable
@@ -32797,74 +32814,74 @@
    liftable
    (record-constructor
     (make-record-constructor-descriptor struct:liftable #f #f))))
-(define liftable?3995 (|#%name| liftable? (record-predicate struct:liftable)))
+(define liftable?_2874 (|#%name| liftable? (record-predicate struct:liftable)))
 (define liftable?
   (|#%name|
    liftable?
    (lambda (v)
-     (if (liftable?3995 v)
+     (if (liftable?_2874 v)
        #t
        ($value
-        (if (impersonator? v) (liftable?3995 (impersonator-val v)) #f))))))
-(define liftable-expr3997
+        (if (impersonator? v) (liftable?_2874 (impersonator-val v)) #f))))))
+(define liftable-expr_2683
   (|#%name| liftable-expr (record-accessor struct:liftable 0)))
 (define liftable-expr
   (|#%name|
    liftable-expr
    (lambda (s)
-     (if (liftable?3995 s)
-       (liftable-expr3997 s)
+     (if (liftable?_2874 s)
+       (liftable-expr_2683 s)
        ($value
         (impersonate-ref
-         liftable-expr3997
+         liftable-expr_2683
          struct:liftable
          0
          s
          'liftable
          'expr))))))
-(define liftable-frees3998
+(define liftable-frees_2250
   (|#%name| liftable-frees (record-accessor struct:liftable 1)))
 (define liftable-frees
   (|#%name|
    liftable-frees
    (lambda (s)
-     (if (liftable?3995 s)
-       (liftable-frees3998 s)
+     (if (liftable?_2874 s)
+       (liftable-frees_2250 s)
        ($value
         (impersonate-ref
-         liftable-frees3998
+         liftable-frees_2250
          struct:liftable
          1
          s
          'liftable
          'frees))))))
-(define liftable-binds3999
+(define liftable-binds_2405
   (|#%name| liftable-binds (record-accessor struct:liftable 2)))
 (define liftable-binds
   (|#%name|
    liftable-binds
    (lambda (s)
-     (if (liftable?3995 s)
-       (liftable-binds3999 s)
+     (if (liftable?_2874 s)
+       (liftable-binds_2405 s)
        ($value
         (impersonate-ref
-         liftable-binds3999
+         liftable-binds_2405
          struct:liftable
          2
          s
          'liftable
          'binds))))))
-(define set-liftable-frees!4000
+(define set-liftable-frees!_2551
   (|#%name| set-liftable-frees! (record-mutator struct:liftable 1)))
 (define set-liftable-frees!
   (|#%name|
    set-liftable-frees!
    (lambda (s v)
-     (if (liftable?3995 s)
-       (set-liftable-frees!4000 s v)
+     (if (liftable?_2874 s)
+       (set-liftable-frees!_2551 s v)
        ($value
         (impersonate-set!
-         set-liftable-frees!4000
+         set-liftable-frees!_2551
          struct:liftable
          1
          1
@@ -32872,17 +32889,17 @@
          v
          'liftable
          'frees))))))
-(define set-liftable-binds!4001
+(define set-liftable-binds!_3068
   (|#%name| set-liftable-binds! (record-mutator struct:liftable 2)))
 (define set-liftable-binds!
   (|#%name|
    set-liftable-binds!
    (lambda (s v)
-     (if (liftable?3995 s)
-       (set-liftable-binds!4001 s v)
+     (if (liftable?_2874 s)
+       (set-liftable-binds!_3068 s v)
        ($value
         (impersonate-set!
-         set-liftable-binds!4001
+         set-liftable-binds!_3068
          struct:liftable
          2
          2
@@ -32890,7 +32907,7 @@
          v
          'liftable
          'binds))))))
-(define effect4002
+(define effect_2141
   (begin
     (register-struct-constructor! liftable1.1)
     (register-struct-predicate! liftable?)
@@ -32902,7 +32919,7 @@
     (void)))
 (define struct:indirected
   (make-record-type-descriptor* 'indirected #f #f #f #f 1 1))
-(define effect4004
+(define effect_2558
   (struct-type-install-properties!
    struct:indirected
    'indirected
@@ -32920,43 +32937,43 @@
    indirected
    (record-constructor
     (make-record-constructor-descriptor struct:indirected #f #f))))
-(define indirected?4003
+(define indirected?_2323
   (|#%name| indirected? (record-predicate struct:indirected)))
 (define indirected?
   (|#%name|
    indirected?
    (lambda (v)
-     (if (indirected?4003 v)
+     (if (indirected?_2323 v)
        #t
        ($value
-        (if (impersonator? v) (indirected?4003 (impersonator-val v)) #f))))))
-(define indirected-check?4005
+        (if (impersonator? v) (indirected?_2323 (impersonator-val v)) #f))))))
+(define indirected-check?_2858
   (|#%name| indirected-check? (record-accessor struct:indirected 0)))
 (define indirected-check?
   (|#%name|
    indirected-check?
    (lambda (s)
-     (if (indirected?4003 s)
-       (indirected-check?4005 s)
+     (if (indirected?_2323 s)
+       (indirected-check?_2858 s)
        ($value
         (impersonate-ref
-         indirected-check?4005
+         indirected-check?_2858
          struct:indirected
          0
          s
          'indirected
          'check?))))))
-(define set-indirected-check?!4006
+(define set-indirected-check?!_2663
   (|#%name| set-indirected-check?! (record-mutator struct:indirected 0)))
 (define set-indirected-check?!
   (|#%name|
    set-indirected-check?!
    (lambda (s v)
-     (if (indirected?4003 s)
-       (set-indirected-check?!4006 s v)
+     (if (indirected?_2323 s)
+       (set-indirected-check?!_2663 s v)
        ($value
         (impersonate-set!
-         set-indirected-check?!4006
+         set-indirected-check?!_2663
          struct:indirected
          0
          0
@@ -32964,7 +32981,7 @@
          v
          'indirected
          'check?))))))
-(define effect4007
+(define effect_2189
   (begin
     (register-struct-constructor! indirected2.1)
     (register-struct-predicate! indirected?)
@@ -41513,7 +41530,7 @@
          v_0)))))
 (define struct:convert-mode
   (make-record-type-descriptor* 'convert-mode #f #f #f #f 4 15))
-(define effect5044
+(define effect_2645
   (struct-type-install-properties!
    struct:convert-mode
    'convert-mode
@@ -41531,65 +41548,67 @@
    convert-mode
    (record-constructor
     (make-record-constructor-descriptor struct:convert-mode #f #f))))
-(define convert-mode?5043
+(define convert-mode?_2433
   (|#%name| convert-mode? (record-predicate struct:convert-mode)))
 (define convert-mode?
   (|#%name|
    convert-mode?
    (lambda (v)
-     (if (convert-mode?5043 v)
+     (if (convert-mode?_2433 v)
        #t
        ($value
-        (if (impersonator? v) (convert-mode?5043 (impersonator-val v)) #f))))))
-(define convert-mode-sizes5045
+        (if (impersonator? v)
+          (convert-mode?_2433 (impersonator-val v))
+          #f))))))
+(define convert-mode-sizes_3279
   (|#%name| convert-mode-sizes (record-accessor struct:convert-mode 0)))
 (define convert-mode-sizes
   (|#%name|
    convert-mode-sizes
    (lambda (s)
-     (if (convert-mode?5043 s)
-       (convert-mode-sizes5045 s)
+     (if (convert-mode?_2433 s)
+       (convert-mode-sizes_3279 s)
        ($value
         (impersonate-ref
-         convert-mode-sizes5045
+         convert-mode-sizes_3279
          struct:convert-mode
          0
          s
          'convert-mode
          'sizes))))))
-(define convert-mode-called?5046
+(define convert-mode-called?_2733
   (|#%name| convert-mode-called? (record-accessor struct:convert-mode 1)))
 (define convert-mode-called?
   (|#%name|
    convert-mode-called?
    (lambda (s)
-     (if (convert-mode?5043 s)
-       (convert-mode-called?5046 s)
+     (if (convert-mode?_2433 s)
+       (convert-mode-called?_2733 s)
        ($value
         (impersonate-ref
-         convert-mode-called?5046
+         convert-mode-called?_2733
          struct:convert-mode
          1
          s
          'convert-mode
          'called?))))))
-(define convert-mode-lift?5047
+(define convert-mode-lift?_2529
   (|#%name| convert-mode-lift? (record-accessor struct:convert-mode 2)))
 (define convert-mode-lift?
   (|#%name|
    convert-mode-lift?
    (lambda (s)
-     (if (convert-mode?5043 s)
-       (convert-mode-lift?5047 s)
+     (if (convert-mode?_2433 s)
+       (convert-mode-lift?_2529 s)
        ($value
         (impersonate-ref
-         convert-mode-lift?5047
+         convert-mode-lift?_2529
          struct:convert-mode
          2
          s
          'convert-mode
          'lift?))))))
-(define convert-mode-no-more-conversions?5048
+(define convert-mode-no-more-conversions?_2511
   (|#%name|
    convert-mode-no-more-conversions?
    (record-accessor struct:convert-mode 3)))
@@ -41597,17 +41616,17 @@
   (|#%name|
    convert-mode-no-more-conversions?
    (lambda (s)
-     (if (convert-mode?5043 s)
-       (convert-mode-no-more-conversions?5048 s)
+     (if (convert-mode?_2433 s)
+       (convert-mode-no-more-conversions?_2511 s)
        ($value
         (impersonate-ref
-         convert-mode-no-more-conversions?5048
+         convert-mode-no-more-conversions?_2511
          struct:convert-mode
          3
          s
          'convert-mode
          'no-more-conversions?))))))
-(define effect5049
+(define effect_2406
   (begin
     (register-struct-constructor! convert-mode1.1)
     (register-struct-predicate! convert-mode?)
@@ -50674,7 +50693,7 @@
      "cannot marshal value that is embedded in compiled code\n  value: ~v"
      v_0)))
 (define struct:node (make-record-type-descriptor* 'node #f #f #f #f 5 31))
-(define effect6234
+(define effect_2498
   (struct-type-install-properties!
    struct:node
    'node
@@ -50698,7 +50717,7 @@
 (define node-height (|#%name| node-height (record-accessor struct:node 2)))
 (define node-left (|#%name| node-left (record-accessor struct:node 3)))
 (define node-right (|#%name| node-right (record-accessor struct:node 4)))
-(define effect6235
+(define effect_2611
   (begin
     (register-struct-constructor! node1.1)
     (register-struct-predicate! node?)
@@ -50991,7 +51010,7 @@
          (loop_0 pos_0 vals_0 count_0 stack_0))))))
 (define struct:stack-info
   (make-record-type-descriptor* 'stack-info #f #f #f #f 5 31))
-(define effect6343
+(define effect_2396
   (struct-type-install-properties!
    struct:stack-info
    'stack-info
@@ -51009,81 +51028,81 @@
    stack-info
    (record-constructor
     (make-record-constructor-descriptor struct:stack-info #f #f))))
-(define stack-info?6342
+(define stack-info?_2054
   (|#%name| stack-info? (record-predicate struct:stack-info)))
 (define stack-info?
   (|#%name|
    stack-info?
    (lambda (v)
-     (if (stack-info?6342 v)
+     (if (stack-info?_2054 v)
        #t
        ($value
-        (if (impersonator? v) (stack-info?6342 (impersonator-val v)) #f))))))
-(define stack-info-capture-depth6344
+        (if (impersonator? v) (stack-info?_2054 (impersonator-val v)) #f))))))
+(define stack-info-capture-depth_2245
   (|#%name| stack-info-capture-depth (record-accessor struct:stack-info 0)))
 (define stack-info-capture-depth
   (|#%name|
    stack-info-capture-depth
    (lambda (s)
-     (if (stack-info?6342 s)
-       (stack-info-capture-depth6344 s)
+     (if (stack-info?_2054 s)
+       (stack-info-capture-depth_2245 s)
        ($value
         (impersonate-ref
-         stack-info-capture-depth6344
+         stack-info-capture-depth_2245
          struct:stack-info
          0
          s
          'stack-info
          'capture-depth))))))
-(define stack-info-closure-map6345
+(define stack-info-closure-map_2860
   (|#%name| stack-info-closure-map (record-accessor struct:stack-info 1)))
 (define stack-info-closure-map
   (|#%name|
    stack-info-closure-map
    (lambda (s)
-     (if (stack-info?6342 s)
-       (stack-info-closure-map6345 s)
+     (if (stack-info?_2054 s)
+       (stack-info-closure-map_2860 s)
        ($value
         (impersonate-ref
-         stack-info-closure-map6345
+         stack-info-closure-map_2860
          struct:stack-info
          1
          s
          'stack-info
          'closure-map))))))
-(define stack-info-use-map6346
+(define stack-info-use-map_2830
   (|#%name| stack-info-use-map (record-accessor struct:stack-info 2)))
 (define stack-info-use-map
   (|#%name|
    stack-info-use-map
    (lambda (s)
-     (if (stack-info?6342 s)
-       (stack-info-use-map6346 s)
+     (if (stack-info?_2054 s)
+       (stack-info-use-map_2830 s)
        ($value
         (impersonate-ref
-         stack-info-use-map6346
+         stack-info-use-map_2830
          struct:stack-info
          2
          s
          'stack-info
          'use-map))))))
-(define stack-info-local-use-map6347
+(define stack-info-local-use-map_2796
   (|#%name| stack-info-local-use-map (record-accessor struct:stack-info 3)))
 (define stack-info-local-use-map
   (|#%name|
    stack-info-local-use-map
    (lambda (s)
-     (if (stack-info?6342 s)
-       (stack-info-local-use-map6347 s)
+     (if (stack-info?_2054 s)
+       (stack-info-local-use-map_2796 s)
        ($value
         (impersonate-ref
-         stack-info-local-use-map6347
+         stack-info-local-use-map_2796
          struct:stack-info
          3
          s
          'stack-info
          'local-use-map))))))
-(define stack-info-non-tail-call-later?6348
+(define stack-info-non-tail-call-later?_2901
   (|#%name|
    stack-info-non-tail-call-later?
    (record-accessor struct:stack-info 4)))
@@ -51091,27 +51110,27 @@
   (|#%name|
    stack-info-non-tail-call-later?
    (lambda (s)
-     (if (stack-info?6342 s)
-       (stack-info-non-tail-call-later?6348 s)
+     (if (stack-info?_2054 s)
+       (stack-info-non-tail-call-later?_2901 s)
        ($value
         (impersonate-ref
-         stack-info-non-tail-call-later?6348
+         stack-info-non-tail-call-later?_2901
          struct:stack-info
          4
          s
          'stack-info
          'non-tail-call-later?))))))
-(define set-stack-info-use-map!6349
+(define set-stack-info-use-map!_2735
   (|#%name| set-stack-info-use-map! (record-mutator struct:stack-info 2)))
 (define set-stack-info-use-map!
   (|#%name|
    set-stack-info-use-map!
    (lambda (s v)
-     (if (stack-info?6342 s)
-       (set-stack-info-use-map!6349 s v)
+     (if (stack-info?_2054 s)
+       (set-stack-info-use-map!_2735 s v)
        ($value
         (impersonate-set!
-         set-stack-info-use-map!6349
+         set-stack-info-use-map!_2735
          struct:stack-info
          2
          2
@@ -51119,7 +51138,7 @@
          v
          'stack-info
          'use-map))))))
-(define set-stack-info-local-use-map!6350
+(define set-stack-info-local-use-map!_2852
   (|#%name|
    set-stack-info-local-use-map!
    (record-mutator struct:stack-info 3)))
@@ -51127,11 +51146,11 @@
   (|#%name|
    set-stack-info-local-use-map!
    (lambda (s v)
-     (if (stack-info?6342 s)
-       (set-stack-info-local-use-map!6350 s v)
+     (if (stack-info?_2054 s)
+       (set-stack-info-local-use-map!_2852 s v)
        ($value
         (impersonate-set!
-         set-stack-info-local-use-map!6350
+         set-stack-info-local-use-map!_2852
          struct:stack-info
          3
          3
@@ -51139,7 +51158,7 @@
          v
          'stack-info
          'local-use-map))))))
-(define set-stack-info-non-tail-call-later?!6351
+(define set-stack-info-non-tail-call-later?!_2871
   (|#%name|
    set-stack-info-non-tail-call-later?!
    (record-mutator struct:stack-info 4)))
@@ -51147,11 +51166,11 @@
   (|#%name|
    set-stack-info-non-tail-call-later?!
    (lambda (s v)
-     (if (stack-info?6342 s)
-       (set-stack-info-non-tail-call-later?!6351 s v)
+     (if (stack-info?_2054 s)
+       (set-stack-info-non-tail-call-later?!_2871 s v)
        ($value
         (impersonate-set!
-         set-stack-info-non-tail-call-later?!6351
+         set-stack-info-non-tail-call-later?!_2871
          struct:stack-info
          4
          4
@@ -51159,7 +51178,7 @@
          v
          'stack-info
          'non-tail-call-later?))))))
-(define effect6352
+(define effect_2497
   (begin
     (register-struct-constructor! stack-info4.1)
     (register-struct-predicate! stack-info?)
@@ -51376,7 +51395,7 @@
     (set-stack-info-non-tail-call-later?! stk-i_0 #t)))
 (define struct:indirect
   (make-record-type-descriptor* 'indirect #f #f #f #f 2 3))
-(define effect6371
+(define effect_2066
   (struct-type-install-properties!
    struct:indirect
    'indirect
@@ -51394,48 +51413,48 @@
    indirect
    (record-constructor
     (make-record-constructor-descriptor struct:indirect #f #f))))
-(define indirect?6370 (|#%name| indirect? (record-predicate struct:indirect)))
+(define indirect?_2680 (|#%name| indirect? (record-predicate struct:indirect)))
 (define indirect?
   (|#%name|
    indirect?
    (lambda (v)
-     (if (indirect?6370 v)
+     (if (indirect?_2680 v)
        #t
        ($value
-        (if (impersonator? v) (indirect?6370 (impersonator-val v)) #f))))))
-(define indirect-pos6372
+        (if (impersonator? v) (indirect?_2680 (impersonator-val v)) #f))))))
+(define indirect-pos_2819
   (|#%name| indirect-pos (record-accessor struct:indirect 0)))
 (define indirect-pos
   (|#%name|
    indirect-pos
    (lambda (s)
-     (if (indirect?6370 s)
-       (indirect-pos6372 s)
+     (if (indirect?_2680 s)
+       (indirect-pos_2819 s)
        ($value
         (impersonate-ref
-         indirect-pos6372
+         indirect-pos_2819
          struct:indirect
          0
          s
          'indirect
          'pos))))))
-(define indirect-element6373
+(define indirect-element_2353
   (|#%name| indirect-element (record-accessor struct:indirect 1)))
 (define indirect-element
   (|#%name|
    indirect-element
    (lambda (s)
-     (if (indirect?6370 s)
-       (indirect-element6373 s)
+     (if (indirect?_2680 s)
+       (indirect-element_2353 s)
        ($value
         (impersonate-ref
-         indirect-element6373
+         indirect-element_2353
          struct:indirect
          1
          s
          'indirect
          'element))))))
-(define effect6374
+(define effect_2955
   (begin
     (register-struct-constructor! indirect1.1)
     (register-struct-predicate! indirect?)
@@ -51443,7 +51462,7 @@
     (register-struct-field-accessor! indirect-element struct:indirect 1)
     (void)))
 (define struct:boxed (make-record-type-descriptor* 'boxed #f #f #f #f 1 1))
-(define effect6376
+(define effect_2559
   (struct-type-install-properties!
    struct:boxed
    'boxed
@@ -51461,24 +51480,25 @@
    boxed
    (record-constructor
     (make-record-constructor-descriptor struct:boxed #f #f))))
-(define boxed?6375 (|#%name| boxed? (record-predicate struct:boxed)))
+(define boxed?_2226 (|#%name| boxed? (record-predicate struct:boxed)))
 (define boxed?
   (|#%name|
    boxed?
    (lambda (v)
-     (if (boxed?6375 v)
+     (if (boxed?_2226 v)
        #t
-       ($value (if (impersonator? v) (boxed?6375 (impersonator-val v)) #f))))))
-(define boxed-pos6377 (|#%name| boxed-pos (record-accessor struct:boxed 0)))
+       ($value
+        (if (impersonator? v) (boxed?_2226 (impersonator-val v)) #f))))))
+(define boxed-pos_2515 (|#%name| boxed-pos (record-accessor struct:boxed 0)))
 (define boxed-pos
   (|#%name|
    boxed-pos
    (lambda (s)
-     (if (boxed?6375 s)
-       (boxed-pos6377 s)
+     (if (boxed?_2226 s)
+       (boxed-pos_2515 s)
        ($value
-        (impersonate-ref boxed-pos6377 struct:boxed 0 s 'boxed 'pos))))))
-(define effect6378
+        (impersonate-ref boxed-pos_2515 struct:boxed 0 s 'boxed 'pos))))))
+(define effect_2251
   (begin
     (register-struct-constructor! boxed2.1)
     (register-struct-predicate! boxed?)
@@ -51486,7 +51506,7 @@
     (void)))
 (define struct:boxed/check
   (make-record-type-descriptor* 'boxed/check struct:boxed #f #f #f 0 0))
-(define effect6380
+(define effect_2563
   (struct-type-install-properties!
    struct:boxed/check
    'boxed/check
@@ -51504,17 +51524,17 @@
    boxed/check
    (record-constructor
     (make-record-constructor-descriptor struct:boxed/check #f #f))))
-(define boxed/check?6379
+(define boxed/check?_2060
   (|#%name| boxed/check? (record-predicate struct:boxed/check)))
 (define boxed/check?
   (|#%name|
    boxed/check?
    (lambda (v)
-     (if (boxed/check?6379 v)
+     (if (boxed/check?_2060 v)
        #t
        ($value
-        (if (impersonator? v) (boxed/check?6379 (impersonator-val v)) #f))))))
-(define effect6381
+        (if (impersonator? v) (boxed/check?_2060 (impersonator-val v)) #f))))))
+(define effect_2076
   (begin
     (register-struct-constructor! boxed/check3.1)
     (register-struct-predicate! boxed/check?)

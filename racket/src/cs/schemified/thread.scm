@@ -682,7 +682,7 @@
          v_0
          2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
-(define map2
+(define map_2960
   (|#%name|
    map
    (letrec ((loop_0
@@ -713,7 +713,7 @@
       ((f_0 l_0) (begin (loop_1 f_0 l_0)))
       ((f_0 l1_0 l2_0) (loop_0 f_0 l1_0 l2_0))
       ((f_0 l_0 . args_0) (gen-map f_0 (cons l_0 args_0)))))))
-(define for-each2
+(define for-each_2380
   (|#%name|
    for-each
    (case-lambda
@@ -883,8 +883,8 @@
                (begin
                  (if (null? (car ls_0))
                    null
-                   (let ((next-ls_0 (map2 cdr ls_0)))
-                     (let ((app_0 (apply f_0 (map2 car ls_0))))
+                   (let ((next-ls_0 (map_2960 cdr ls_0)))
+                     (let ((app_0 (apply f_0 (map_2960 car ls_0))))
                        (cons app_0 (loop_0 f_0 next-ls_0))))))))))
     (lambda (f_0 ls_0) (begin #t (loop_0 f_0 ls_0)))))
 (define gen-for-each
@@ -899,8 +899,10 @@
             (begin
               (if (null? (car ls_1))
                 (void)
-                (let ((next-ls_0 (map2 cdr ls_1)))
-                  (begin (apply f_0 (map2 car ls_1)) (loop_0 next-ls_0)))))))))
+                (let ((next-ls_0 (map_2960 cdr ls_1)))
+                  (begin
+                    (apply f_0 (map_2960 car ls_1))
+                    (loop_0 next-ls_0)))))))))
        (loop_0 ls_0)))))
 (define -random
   (|#%name|
@@ -1014,7 +1016,7 @@
         (raise-argument-error 'hash-empty? "hash?" table_0))
       (zero? (hash-count table_0)))))
 (define struct:queue (make-record-type-descriptor* 'queue #f #f #f #f 2 3))
-(define effect145
+(define effect_2520
   (struct-type-install-properties!
    struct:queue
    'queue
@@ -1039,7 +1041,7 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define effect146
+(define effect_2779
   (begin
     (register-struct-constructor! queue1.1)
     (register-struct-predicate! queue?)
@@ -1049,7 +1051,7 @@
     (register-struct-field-mutator! set-queue-end! struct:queue 1)
     (void)))
 (define struct:node$2 (make-record-type-descriptor* 'node #f #f #f #f 3 7))
-(define effect147
+(define effect_2809
   (struct-type-install-properties!
    struct:node$2
    'node
@@ -1075,7 +1077,7 @@
   (|#%name| set-node-prev! (record-mutator struct:node$2 1)))
 (define set-node-next!$1
   (|#%name| set-node-next! (record-mutator struct:node$2 2)))
-(define effect148
+(define effect_2726
   (begin
     (register-struct-constructor! node2.1)
     (register-struct-predicate! node?$2)
@@ -1162,14 +1164,14 @@
     (raise
      (let ((app_0 (string-append "internal error: " s_0)))
        (|#%app| exn:fail app_0 (current-continuation-marks))))))
-(define effect166
+(define effect_3485
   (begin
     (void
      (if (primitive-table '|#%engine|)
        (void)
        (internal-error "engines not provided by host")))
     (void)))
-(define effect167
+(define effect_2501
   (begin
     (void
      (if (primitive-table '|#%pthread|)
@@ -1285,7 +1287,7 @@
 (define host:prop:unsafe-authentic-override
   (hash-ref (primitive-table '|#%engine|) 'prop:unsafe-authentic-override #f))
 (define struct:node$1 (make-record-type-descriptor* 'node #f #f #f #f 5 31))
-(define effect217
+(define effect_2451
   (struct-type-install-properties!
    struct:node$1
    'node
@@ -1303,59 +1305,63 @@
    node
    (record-constructor
     (make-record-constructor-descriptor struct:node$1 #f #f))))
-(define node?$1216 (|#%name| node? (record-predicate struct:node$1)))
+(define node?$1_2258 (|#%name| node? (record-predicate struct:node$1)))
 (define node?$1
   (|#%name|
    node?
    (lambda (v)
-     (if (node?$1216 v)
+     (if (node?$1_2258 v)
        #t
-       ($value (if (impersonator? v) (node?$1216 (impersonator-val v)) #f))))))
-(define node-key218 (|#%name| node-key (record-accessor struct:node$1 0)))
+       ($value
+        (if (impersonator? v) (node?$1_2258 (impersonator-val v)) #f))))))
+(define node-key_2296 (|#%name| node-key (record-accessor struct:node$1 0)))
 (define node-key
   (|#%name|
    node-key
    (lambda (s)
-     (if (node?$1216 s)
-       (node-key218 s)
-       ($value (impersonate-ref node-key218 struct:node$1 0 s 'node 'key))))))
-(define node-val219 (|#%name| node-val (record-accessor struct:node$1 1)))
+     (if (node?$1_2258 s)
+       (node-key_2296 s)
+       ($value
+        (impersonate-ref node-key_2296 struct:node$1 0 s 'node 'key))))))
+(define node-val_2531 (|#%name| node-val (record-accessor struct:node$1 1)))
 (define node-val
   (|#%name|
    node-val
    (lambda (s)
-     (if (node?$1216 s)
-       (node-val219 s)
-       ($value (impersonate-ref node-val219 struct:node$1 1 s 'node 'val))))))
-(define node-height220
+     (if (node?$1_2258 s)
+       (node-val_2531 s)
+       ($value
+        (impersonate-ref node-val_2531 struct:node$1 1 s 'node 'val))))))
+(define node-height_2814
   (|#%name| node-height (record-accessor struct:node$1 2)))
 (define node-height
   (|#%name|
    node-height
    (lambda (s)
-     (if (node?$1216 s)
-       (node-height220 s)
+     (if (node?$1_2258 s)
+       (node-height_2814 s)
        ($value
-        (impersonate-ref node-height220 struct:node$1 2 s 'node 'height))))))
-(define node-left221 (|#%name| node-left (record-accessor struct:node$1 3)))
+        (impersonate-ref node-height_2814 struct:node$1 2 s 'node 'height))))))
+(define node-left_2332 (|#%name| node-left (record-accessor struct:node$1 3)))
 (define node-left
   (|#%name|
    node-left
    (lambda (s)
-     (if (node?$1216 s)
-       (node-left221 s)
+     (if (node?$1_2258 s)
+       (node-left_2332 s)
        ($value
-        (impersonate-ref node-left221 struct:node$1 3 s 'node 'left))))))
-(define node-right222 (|#%name| node-right (record-accessor struct:node$1 4)))
+        (impersonate-ref node-left_2332 struct:node$1 3 s 'node 'left))))))
+(define node-right_2584
+  (|#%name| node-right (record-accessor struct:node$1 4)))
 (define node-right
   (|#%name|
    node-right
    (lambda (s)
-     (if (node?$1216 s)
-       (node-right222 s)
+     (if (node?$1_2258 s)
+       (node-right_2584 s)
        ($value
-        (impersonate-ref node-right222 struct:node$1 4 s 'node 'right))))))
-(define effect223
+        (impersonate-ref node-right_2584 struct:node$1 4 s 'node 'right))))))
+(define effect_2174
   (begin
     (register-struct-constructor! node1.1$1)
     (register-struct-predicate! node?$1)
@@ -1570,7 +1576,7 @@
    #f
    11
    2047))
-(define effect289
+(define effect_2883
   (struct-type-install-properties!
    struct:sandman
    'sandman
@@ -1588,96 +1594,96 @@
    sandman
    (record-constructor
     (make-record-constructor-descriptor struct:sandman #f #f))))
-(define sandman?288 (|#%name| sandman? (record-predicate struct:sandman)))
+(define sandman?_2599 (|#%name| sandman? (record-predicate struct:sandman)))
 (define sandman?
   (|#%name|
    sandman?
    (lambda (v)
-     (if (sandman?288 v)
+     (if (sandman?_2599 v)
        #t
        ($value
-        (if (impersonator? v) (sandman?288 (impersonator-val v)) #f))))))
-(define sandman-do-sleep290
+        (if (impersonator? v) (sandman?_2599 (impersonator-val v)) #f))))))
+(define sandman-do-sleep_2487
   (|#%name| sandman-do-sleep (record-accessor struct:sandman 0)))
 (define sandman-do-sleep
   (|#%name|
    sandman-do-sleep
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-sleep290 s)
+     (if (sandman?_2599 s)
+       (sandman-do-sleep_2487 s)
        ($value
         (impersonate-ref
-         sandman-do-sleep290
+         sandman-do-sleep_2487
          struct:sandman
          0
          s
          'sandman
          'do-sleep))))))
-(define sandman-do-poll291
+(define sandman-do-poll_2411
   (|#%name| sandman-do-poll (record-accessor struct:sandman 1)))
 (define sandman-do-poll
   (|#%name|
    sandman-do-poll
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-poll291 s)
+     (if (sandman?_2599 s)
+       (sandman-do-poll_2411 s)
        ($value
         (impersonate-ref
-         sandman-do-poll291
+         sandman-do-poll_2411
          struct:sandman
          1
          s
          'sandman
          'do-poll))))))
-(define sandman-do-get-wakeup292
+(define sandman-do-get-wakeup_3028
   (|#%name| sandman-do-get-wakeup (record-accessor struct:sandman 2)))
 (define sandman-do-get-wakeup
   (|#%name|
    sandman-do-get-wakeup
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-get-wakeup292 s)
+     (if (sandman?_2599 s)
+       (sandman-do-get-wakeup_3028 s)
        ($value
         (impersonate-ref
-         sandman-do-get-wakeup292
+         sandman-do-get-wakeup_3028
          struct:sandman
          2
          s
          'sandman
          'do-get-wakeup))))))
-(define sandman-do-wakeup293
+(define sandman-do-wakeup_2562
   (|#%name| sandman-do-wakeup (record-accessor struct:sandman 3)))
 (define sandman-do-wakeup
   (|#%name|
    sandman-do-wakeup
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-wakeup293 s)
+     (if (sandman?_2599 s)
+       (sandman-do-wakeup_2562 s)
        ($value
         (impersonate-ref
-         sandman-do-wakeup293
+         sandman-do-wakeup_2562
          struct:sandman
          3
          s
          'sandman
          'do-wakeup))))))
-(define sandman-do-any-sleepers?294
+(define sandman-do-any-sleepers?_2376
   (|#%name| sandman-do-any-sleepers? (record-accessor struct:sandman 4)))
 (define sandman-do-any-sleepers?
   (|#%name|
    sandman-do-any-sleepers?
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-any-sleepers?294 s)
+     (if (sandman?_2599 s)
+       (sandman-do-any-sleepers?_2376 s)
        ($value
         (impersonate-ref
-         sandman-do-any-sleepers?294
+         sandman-do-any-sleepers?_2376
          struct:sandman
          4
          s
          'sandman
          'do-any-sleepers?))))))
-(define sandman-do-sleepers-external-events295
+(define sandman-do-sleepers-external-events_2747
   (|#%name|
    sandman-do-sleepers-external-events
    (record-accessor struct:sandman 5)))
@@ -1685,49 +1691,49 @@
   (|#%name|
    sandman-do-sleepers-external-events
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-sleepers-external-events295 s)
+     (if (sandman?_2599 s)
+       (sandman-do-sleepers-external-events_2747 s)
        ($value
         (impersonate-ref
-         sandman-do-sleepers-external-events295
+         sandman-do-sleepers-external-events_2747
          struct:sandman
          5
          s
          'sandman
          'do-sleepers-external-events))))))
-(define sandman-do-add-thread!296
+(define sandman-do-add-thread!_3210
   (|#%name| sandman-do-add-thread! (record-accessor struct:sandman 6)))
 (define sandman-do-add-thread!
   (|#%name|
    sandman-do-add-thread!
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-add-thread!296 s)
+     (if (sandman?_2599 s)
+       (sandman-do-add-thread!_3210 s)
        ($value
         (impersonate-ref
-         sandman-do-add-thread!296
+         sandman-do-add-thread!_3210
          struct:sandman
          6
          s
          'sandman
          'do-add-thread!))))))
-(define sandman-do-remove-thread!297
+(define sandman-do-remove-thread!_2183
   (|#%name| sandman-do-remove-thread! (record-accessor struct:sandman 7)))
 (define sandman-do-remove-thread!
   (|#%name|
    sandman-do-remove-thread!
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-remove-thread!297 s)
+     (if (sandman?_2599 s)
+       (sandman-do-remove-thread!_2183 s)
        ($value
         (impersonate-ref
-         sandman-do-remove-thread!297
+         sandman-do-remove-thread!_2183
          struct:sandman
          7
          s
          'sandman
          'do-remove-thread!))))))
-(define sandman-do-merge-external-event-sets298
+(define sandman-do-merge-external-event-sets_2575
   (|#%name|
    sandman-do-merge-external-event-sets
    (record-accessor struct:sandman 8)))
@@ -1735,49 +1741,49 @@
   (|#%name|
    sandman-do-merge-external-event-sets
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-merge-external-event-sets298 s)
+     (if (sandman?_2599 s)
+       (sandman-do-merge-external-event-sets_2575 s)
        ($value
         (impersonate-ref
-         sandman-do-merge-external-event-sets298
+         sandman-do-merge-external-event-sets_2575
          struct:sandman
          8
          s
          'sandman
          'do-merge-external-event-sets))))))
-(define sandman-do-merge-timeout299
+(define sandman-do-merge-timeout_2100
   (|#%name| sandman-do-merge-timeout (record-accessor struct:sandman 9)))
 (define sandman-do-merge-timeout
   (|#%name|
    sandman-do-merge-timeout
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-merge-timeout299 s)
+     (if (sandman?_2599 s)
+       (sandman-do-merge-timeout_2100 s)
        ($value
         (impersonate-ref
-         sandman-do-merge-timeout299
+         sandman-do-merge-timeout_2100
          struct:sandman
          9
          s
          'sandman
          'do-merge-timeout))))))
-(define sandman-do-extract-timeout300
+(define sandman-do-extract-timeout_2311
   (|#%name| sandman-do-extract-timeout (record-accessor struct:sandman 10)))
 (define sandman-do-extract-timeout
   (|#%name|
    sandman-do-extract-timeout
    (lambda (s)
-     (if (sandman?288 s)
-       (sandman-do-extract-timeout300 s)
+     (if (sandman?_2599 s)
+       (sandman-do-extract-timeout_2311 s)
        ($value
         (impersonate-ref
-         sandman-do-extract-timeout300
+         sandman-do-extract-timeout_2311
          struct:sandman
          10
          s
          'sandman
          'do-extract-timeout))))))
-(define effect301
+(define effect_1848
   (begin
     (register-struct-constructor! sandman1.1)
     (register-struct-predicate! sandman?)
@@ -1939,7 +1945,8 @@
    (lambda (sleep-until_0 timeout-at_0)
      (if sleep-until_0 (min sleep-until_0 timeout-at_0) timeout-at_0))
    (lambda (sleep-until_0) sleep-until_0)))
-(define effect341 (begin (void (current-sandman the-default-sandman)) (void)))
+(define effect_2775
+  (begin (void (current-sandman the-default-sandman)) (void)))
 (define distant-future
   (lambda () (+ (current-inexact-milliseconds) 31536000000.0)))
 (define current-atomic (make-pthread-parameter 0))
@@ -2044,7 +2051,7 @@
              v_0))))))))
 (define struct:selector-prop-evt-value
   (make-record-type-descriptor* 'selector-prop-evt-value #f #f #f #f 1 1))
-(define effect358
+(define effect_2090
   (struct-type-install-properties!
    struct:selector-prop-evt-value
    'selector-prop-evt-value
@@ -2073,7 +2080,7 @@
   (|#%name|
    selector-prop-evt-value-selector
    (record-accessor struct:selector-prop-evt-value 0)))
-(define effect359
+(define effect_3138
   (begin
     (register-struct-constructor! selector-prop-evt-value1.1)
     (register-struct-predicate! selector-prop-evt-value?)
@@ -2093,7 +2100,7 @@
        (let ((or-part_0 (primary-evt? v_0)))
          (if or-part_0 or-part_0 (secondary-evt? v_0)))))))
 (define struct:poller (make-record-type-descriptor* 'poller #f #f #f #f 1 1))
-(define effect360
+(define effect_2384
   (struct-type-install-properties!
    struct:poller
    'poller
@@ -2113,7 +2120,7 @@
     (make-record-constructor-descriptor struct:poller #f #f))))
 (define poller? (|#%name| poller? (record-predicate struct:poller)))
 (define poller-proc (|#%name| poller-proc (record-accessor struct:poller 0)))
-(define effect361
+(define effect_2566
   (begin
     (register-struct-constructor! poller2.1)
     (register-struct-predicate! poller?)
@@ -2121,7 +2128,7 @@
     (void)))
 (define struct:poll-ctx
   (make-record-type-descriptor* 'poll-ctx #f #f #f #f 4 15))
-(define effect362
+(define effect_3060
   (struct-type-install-properties!
    struct:poll-ctx
    'poll-ctx
@@ -2150,7 +2157,7 @@
   (|#%name| poll-ctx-incomplete? (record-accessor struct:poll-ctx 3)))
 (define set-poll-ctx-incomplete?!
   (|#%name| set-poll-ctx-incomplete?! (record-mutator struct:poll-ctx 3)))
-(define effect363
+(define effect_2494
   (begin
     (register-struct-constructor! poll-ctx3.1)
     (register-struct-predicate! poll-ctx?)
@@ -2165,7 +2172,7 @@
     (void)))
 (define struct:never-evt
   (make-record-type-descriptor* 'never-evt #f #f #f #f 0 0))
-(define effect365
+(define effect_2812
   (struct-type-install-properties!
    struct:never-evt
    'never-evt
@@ -2186,17 +2193,17 @@
    never-evt
    (record-constructor
     (make-record-constructor-descriptor struct:never-evt #f #f))))
-(define never-evt?364
+(define never-evt?_1958
   (|#%name| never-evt? (record-predicate struct:never-evt)))
 (define never-evt?
   (|#%name|
    never-evt?
    (lambda (v)
-     (if (never-evt?364 v)
+     (if (never-evt?_1958 v)
        #t
        ($value
-        (if (impersonator? v) (never-evt?364 (impersonator-val v)) #f))))))
-(define effect366
+        (if (impersonator? v) (never-evt?_1958 (impersonator-val v)) #f))))))
+(define effect_2441
   (begin
     (register-struct-constructor! never-evt4.1)
     (register-struct-predicate! never-evt?)
@@ -2204,7 +2211,7 @@
 (define the-never-evt (never-evt4.1))
 (define struct:always-evt
   (make-record-type-descriptor* 'always-evt #f #f #f #f 0 0))
-(define effect368
+(define effect_2453
   (struct-type-install-properties!
    struct:always-evt
    'always-evt
@@ -2225,17 +2232,17 @@
    always-evt
    (record-constructor
     (make-record-constructor-descriptor struct:always-evt #f #f))))
-(define always-evt?367
+(define always-evt?_2466
   (|#%name| always-evt? (record-predicate struct:always-evt)))
 (define always-evt?
   (|#%name|
    always-evt?
    (lambda (v)
-     (if (always-evt?367 v)
+     (if (always-evt?_2466 v)
        #t
        ($value
-        (if (impersonator? v) (always-evt?367 (impersonator-val v)) #f))))))
-(define effect369
+        (if (impersonator? v) (always-evt?_2466 (impersonator-val v)) #f))))))
+(define effect_2609
   (begin
     (register-struct-constructor! always-evt5.1)
     (register-struct-predicate! always-evt?)
@@ -2243,7 +2250,7 @@
 (define the-always-evt (always-evt5.1))
 (define struct:async-evt
   (make-record-type-descriptor* 'async-evt #f #f #f #f 0 0))
-(define effect371
+(define effect_2629
   (struct-type-install-properties!
    struct:async-evt
    'async-evt
@@ -2264,24 +2271,24 @@
    async-evt
    (record-constructor
     (make-record-constructor-descriptor struct:async-evt #f #f))))
-(define async-evt?370
+(define async-evt?_2619
   (|#%name| async-evt? (record-predicate struct:async-evt)))
 (define async-evt?
   (|#%name|
    async-evt?
    (lambda (v)
-     (if (async-evt?370 v)
+     (if (async-evt?_2619 v)
        #t
        ($value
-        (if (impersonator? v) (async-evt?370 (impersonator-val v)) #f))))))
-(define effect372
+        (if (impersonator? v) (async-evt?_2619 (impersonator-val v)) #f))))))
+(define effect_1849
   (begin
     (register-struct-constructor! async-evt6.1)
     (register-struct-predicate! async-evt?)
     (void)))
 (define the-async-evt (async-evt6.1))
 (define struct:wrap-evt (make-record-type-descriptor* 'evt #f #f #f #f 2 3))
-(define effect374
+(define effect_2319
   (struct-type-install-properties!
    struct:wrap-evt
    'evt
@@ -2302,35 +2309,42 @@
    wrap-evt
    (record-constructor
     (make-record-constructor-descriptor struct:wrap-evt #f #f))))
-(define wrap-evt?373 (|#%name| evt? (record-predicate struct:wrap-evt)))
+(define wrap-evt?_2747 (|#%name| evt? (record-predicate struct:wrap-evt)))
 (define wrap-evt?
   (|#%name|
    evt?
    (lambda (v)
-     (if (wrap-evt?373 v)
+     (if (wrap-evt?_2747 v)
        #t
        ($value
-        (if (impersonator? v) (wrap-evt?373 (impersonator-val v)) #f))))))
-(define wrap-evt-evt375 (|#%name| evt-evt (record-accessor struct:wrap-evt 0)))
+        (if (impersonator? v) (wrap-evt?_2747 (impersonator-val v)) #f))))))
+(define wrap-evt-evt_2872
+  (|#%name| evt-evt (record-accessor struct:wrap-evt 0)))
 (define wrap-evt-evt
   (|#%name|
    evt-evt
    (lambda (s)
-     (if (wrap-evt?373 s)
-       (wrap-evt-evt375 s)
+     (if (wrap-evt?_2747 s)
+       (wrap-evt-evt_2872 s)
        ($value
-        (impersonate-ref wrap-evt-evt375 struct:wrap-evt 0 s 'evt 'evt))))))
-(define wrap-evt-wrap376
+        (impersonate-ref wrap-evt-evt_2872 struct:wrap-evt 0 s 'evt 'evt))))))
+(define wrap-evt-wrap_3005
   (|#%name| evt-wrap (record-accessor struct:wrap-evt 1)))
 (define wrap-evt-wrap
   (|#%name|
    evt-wrap
    (lambda (s)
-     (if (wrap-evt?373 s)
-       (wrap-evt-wrap376 s)
+     (if (wrap-evt?_2747 s)
+       (wrap-evt-wrap_3005 s)
        ($value
-        (impersonate-ref wrap-evt-wrap376 struct:wrap-evt 1 s 'evt 'wrap))))))
-(define effect377
+        (impersonate-ref
+         wrap-evt-wrap_3005
+         struct:wrap-evt
+         1
+         s
+         'evt
+         'wrap))))))
+(define effect_2610
   (begin
     (register-struct-constructor! wrap-evt7.1)
     (register-struct-predicate! wrap-evt?)
@@ -2339,7 +2353,7 @@
     (void)))
 (define struct:handle-evt
   (make-record-type-descriptor* 'handle-evt struct:wrap-evt #f #f #f 0 0))
-(define effect379
+(define effect_2329
   (struct-type-install-properties!
    struct:handle-evt
    'handle-evt
@@ -2357,24 +2371,26 @@
    handle-evt
    (record-constructor
     (make-record-constructor-descriptor struct:handle-evt #f #f))))
-(define handle-evt?$1378
+(define handle-evt?$1_2894
   (|#%name| handle-evt? (record-predicate struct:handle-evt)))
 (define handle-evt?$1
   (|#%name|
    handle-evt?
    (lambda (v)
-     (if (handle-evt?$1378 v)
+     (if (handle-evt?$1_2894 v)
        #t
        ($value
-        (if (impersonator? v) (handle-evt?$1378 (impersonator-val v)) #f))))))
-(define effect380
+        (if (impersonator? v)
+          (handle-evt?$1_2894 (impersonator-val v))
+          #f))))))
+(define effect_3044
   (begin
     (register-struct-constructor! handle-evt8.1)
     (register-struct-predicate! handle-evt?$1)
     (void)))
 (define struct:control-state-evt
   (make-record-type-descriptor* 'control-state-evt #f #f #f #f 5 31))
-(define effect382
+(define effect_2665
   (struct-type-install-properties!
    struct:control-state-evt
    'control-state-evt
@@ -2395,19 +2411,19 @@
    control-state-evt
    (record-constructor
     (make-record-constructor-descriptor struct:control-state-evt #f #f))))
-(define control-state-evt?381
+(define control-state-evt?_2384
   (|#%name| control-state-evt? (record-predicate struct:control-state-evt)))
 (define control-state-evt?
   (|#%name|
    control-state-evt?
    (lambda (v)
-     (if (control-state-evt?381 v)
+     (if (control-state-evt?_2384 v)
        #t
        ($value
         (if (impersonator? v)
-          (control-state-evt?381 (impersonator-val v))
+          (control-state-evt?_2384 (impersonator-val v))
           #f))))))
-(define control-state-evt-evt383
+(define control-state-evt-evt_2775
   (|#%name|
    control-state-evt-evt
    (record-accessor struct:control-state-evt 0)))
@@ -2415,17 +2431,17 @@
   (|#%name|
    control-state-evt-evt
    (lambda (s)
-     (if (control-state-evt?381 s)
-       (control-state-evt-evt383 s)
+     (if (control-state-evt?_2384 s)
+       (control-state-evt-evt_2775 s)
        ($value
         (impersonate-ref
-         control-state-evt-evt383
+         control-state-evt-evt_2775
          struct:control-state-evt
          0
          s
          'control-state-evt
          'evt))))))
-(define control-state-evt-wrap-proc384
+(define control-state-evt-wrap-proc_2332
   (|#%name|
    control-state-evt-wrap-proc
    (record-accessor struct:control-state-evt 1)))
@@ -2433,17 +2449,17 @@
   (|#%name|
    control-state-evt-wrap-proc
    (lambda (s)
-     (if (control-state-evt?381 s)
-       (control-state-evt-wrap-proc384 s)
+     (if (control-state-evt?_2384 s)
+       (control-state-evt-wrap-proc_2332 s)
        ($value
         (impersonate-ref
-         control-state-evt-wrap-proc384
+         control-state-evt-wrap-proc_2332
          struct:control-state-evt
          1
          s
          'control-state-evt
          'wrap-proc))))))
-(define control-state-evt-interrupt-proc385
+(define control-state-evt-interrupt-proc_2271
   (|#%name|
    control-state-evt-interrupt-proc
    (record-accessor struct:control-state-evt 2)))
@@ -2451,17 +2467,17 @@
   (|#%name|
    control-state-evt-interrupt-proc
    (lambda (s)
-     (if (control-state-evt?381 s)
-       (control-state-evt-interrupt-proc385 s)
+     (if (control-state-evt?_2384 s)
+       (control-state-evt-interrupt-proc_2271 s)
        ($value
         (impersonate-ref
-         control-state-evt-interrupt-proc385
+         control-state-evt-interrupt-proc_2271
          struct:control-state-evt
          2
          s
          'control-state-evt
          'interrupt-proc))))))
-(define control-state-evt-abandon-proc386
+(define control-state-evt-abandon-proc_2780
   (|#%name|
    control-state-evt-abandon-proc
    (record-accessor struct:control-state-evt 3)))
@@ -2469,17 +2485,17 @@
   (|#%name|
    control-state-evt-abandon-proc
    (lambda (s)
-     (if (control-state-evt?381 s)
-       (control-state-evt-abandon-proc386 s)
+     (if (control-state-evt?_2384 s)
+       (control-state-evt-abandon-proc_2780 s)
        ($value
         (impersonate-ref
-         control-state-evt-abandon-proc386
+         control-state-evt-abandon-proc_2780
          struct:control-state-evt
          3
          s
          'control-state-evt
          'abandon-proc))))))
-(define control-state-evt-retry-proc387
+(define control-state-evt-retry-proc_2119
   (|#%name|
    control-state-evt-retry-proc
    (record-accessor struct:control-state-evt 4)))
@@ -2487,17 +2503,17 @@
   (|#%name|
    control-state-evt-retry-proc
    (lambda (s)
-     (if (control-state-evt?381 s)
-       (control-state-evt-retry-proc387 s)
+     (if (control-state-evt?_2384 s)
+       (control-state-evt-retry-proc_2119 s)
        ($value
         (impersonate-ref
-         control-state-evt-retry-proc387
+         control-state-evt-retry-proc_2119
          struct:control-state-evt
          4
          s
          'control-state-evt
          'retry-proc))))))
-(define effect388
+(define effect_2957
   (begin
     (register-struct-constructor! control-state-evt9.1)
     (register-struct-predicate! control-state-evt?)
@@ -2524,7 +2540,7 @@
     (void)))
 (define struct:poll-guard-evt
   (make-record-type-descriptor* 'evt #f #f #f #f 1 1))
-(define effect390
+(define effect_2393
   (struct-type-install-properties!
    struct:poll-guard-evt
    'evt
@@ -2545,35 +2561,35 @@
    poll-guard-evt
    (record-constructor
     (make-record-constructor-descriptor struct:poll-guard-evt #f #f))))
-(define poll-guard-evt?389
+(define poll-guard-evt?_2462
   (|#%name| evt? (record-predicate struct:poll-guard-evt)))
 (define poll-guard-evt?
   (|#%name|
    evt?
    (lambda (v)
-     (if (poll-guard-evt?389 v)
+     (if (poll-guard-evt?_2462 v)
        #t
        ($value
         (if (impersonator? v)
-          (poll-guard-evt?389 (impersonator-val v))
+          (poll-guard-evt?_2462 (impersonator-val v))
           #f))))))
-(define poll-guard-evt-proc391
+(define poll-guard-evt-proc_2498
   (|#%name| evt-proc (record-accessor struct:poll-guard-evt 0)))
 (define poll-guard-evt-proc
   (|#%name|
    evt-proc
    (lambda (s)
-     (if (poll-guard-evt?389 s)
-       (poll-guard-evt-proc391 s)
+     (if (poll-guard-evt?_2462 s)
+       (poll-guard-evt-proc_2498 s)
        ($value
         (impersonate-ref
-         poll-guard-evt-proc391
+         poll-guard-evt-proc_2498
          struct:poll-guard-evt
          0
          s
          'evt
          'proc))))))
-(define effect392
+(define effect_2289
   (begin
     (register-struct-constructor! poll-guard-evt10.1)
     (register-struct-predicate! poll-guard-evt?)
@@ -2583,7 +2599,7 @@
      0)
     (void)))
 (define struct:choice-evt (make-record-type-descriptor* 'evt #f #f #f #f 1 1))
-(define effect394
+(define effect_2512
   (struct-type-install-properties!
    struct:choice-evt
    'evt
@@ -2604,32 +2620,32 @@
    choice-evt
    (record-constructor
     (make-record-constructor-descriptor struct:choice-evt #f #f))))
-(define choice-evt?393 (|#%name| evt? (record-predicate struct:choice-evt)))
+(define choice-evt?_3069 (|#%name| evt? (record-predicate struct:choice-evt)))
 (define choice-evt?
   (|#%name|
    evt?
    (lambda (v)
-     (if (choice-evt?393 v)
+     (if (choice-evt?_3069 v)
        #t
        ($value
-        (if (impersonator? v) (choice-evt?393 (impersonator-val v)) #f))))))
-(define choice-evt-evts395
+        (if (impersonator? v) (choice-evt?_3069 (impersonator-val v)) #f))))))
+(define choice-evt-evts_2883
   (|#%name| evt-evts (record-accessor struct:choice-evt 0)))
 (define choice-evt-evts
   (|#%name|
    evt-evts
    (lambda (s)
-     (if (choice-evt?393 s)
-       (choice-evt-evts395 s)
+     (if (choice-evt?_3069 s)
+       (choice-evt-evts_2883 s)
        ($value
         (impersonate-ref
-         choice-evt-evts395
+         choice-evt-evts_2883
          struct:choice-evt
          0
          s
          'evt
          'evts))))))
-(define effect396
+(define effect_2513
   (begin
     (register-struct-constructor! choice-evt11.1)
     (register-struct-predicate! choice-evt?)
@@ -2668,7 +2684,7 @@
             (if (1/evt? v_1) (values #f v_1) (values #f the-never-evt))))))))
 (define struct:delayed-poll
   (make-record-type-descriptor* 'delayed-poll #f #f #f #f 1 1))
-(define effect401
+(define effect_3144
   (struct-type-install-properties!
    struct:delayed-poll
    'delayed-poll
@@ -2690,7 +2706,7 @@
   (|#%name| delayed-poll? (record-predicate struct:delayed-poll)))
 (define delayed-poll-resume
   (|#%name| delayed-poll-resume (record-accessor struct:delayed-poll 0)))
-(define effect402
+(define effect_2511
   (begin
     (register-struct-constructor! delayed-poll12.1)
     (register-struct-predicate! delayed-poll?)
@@ -2698,7 +2714,7 @@
     (void)))
 (define struct:poller-evt
   (make-record-type-descriptor* 'poller-evt #f #f #f #f 1 1))
-(define effect404
+(define effect_2558
   (struct-type-install-properties!
    struct:poller-evt
    'poller-evt
@@ -2716,33 +2732,33 @@
    poller-evt
    (record-constructor
     (make-record-constructor-descriptor struct:poller-evt #f #f))))
-(define poller-evt?403
+(define poller-evt?_2710
   (|#%name| poller-evt? (record-predicate struct:poller-evt)))
 (define poller-evt?
   (|#%name|
    poller-evt?
    (lambda (v)
-     (if (poller-evt?403 v)
+     (if (poller-evt?_2710 v)
        #t
        ($value
-        (if (impersonator? v) (poller-evt?403 (impersonator-val v)) #f))))))
-(define poller-evt-poller405
+        (if (impersonator? v) (poller-evt?_2710 (impersonator-val v)) #f))))))
+(define poller-evt-poller_2477
   (|#%name| poller-evt-poller (record-accessor struct:poller-evt 0)))
 (define poller-evt-poller
   (|#%name|
    poller-evt-poller
    (lambda (s)
-     (if (poller-evt?403 s)
-       (poller-evt-poller405 s)
+     (if (poller-evt?_2710 s)
+       (poller-evt-poller_2477 s)
        ($value
         (impersonate-ref
-         poller-evt-poller405
+         poller-evt-poller_2477
          struct:poller-evt
          0
          s
          'poller-evt
          'poller))))))
-(define effect406
+(define effect_2383
   (begin
     (register-struct-constructor! poller-evt13.1)
     (register-struct-predicate! poller-evt?)
@@ -2753,7 +2769,7 @@
  (make-struct-type-property 'waiter))
 (define struct:waiter-methods
   (make-record-type-descriptor* 'waiter-methods #f #f #f #f 2 3))
-(define effect407
+(define effect_3162
   (struct-type-install-properties!
    struct:waiter-methods
    'waiter-methods
@@ -2777,7 +2793,7 @@
   (|#%name| waiter-methods-suspend (record-accessor struct:waiter-methods 0)))
 (define waiter-methods-resume
   (|#%name| waiter-methods-resume (record-accessor struct:waiter-methods 1)))
-(define effect408
+(define effect_2559
   (begin
     (register-struct-constructor! waiter-methods1.1)
     (register-struct-predicate! waiter-methods?)
@@ -2803,7 +2819,7 @@
     (|#%app| (waiter-methods-suspend (waiter-ref w_0)) w_0 interrupt-cb_0)))
 (define struct:select-waiter
   (make-record-type-descriptor* 'select-waiter #f #f #f #f 1 1))
-(define effect414
+(define effect_2458
   (struct-type-install-properties!
    struct:select-waiter
    'select-waiter
@@ -2829,33 +2845,35 @@
    select-waiter
    (record-constructor
     (make-record-constructor-descriptor struct:select-waiter #f #f))))
-(define select-waiter?413
+(define select-waiter?_2648
   (|#%name| select-waiter? (record-predicate struct:select-waiter)))
 (define select-waiter?
   (|#%name|
    select-waiter?
    (lambda (v)
-     (if (select-waiter?413 v)
+     (if (select-waiter?_2648 v)
        #t
        ($value
-        (if (impersonator? v) (select-waiter?413 (impersonator-val v)) #f))))))
-(define select-waiter-proc419
+        (if (impersonator? v)
+          (select-waiter?_2648 (impersonator-val v))
+          #f))))))
+(define select-waiter-proc_2543
   (|#%name| select-waiter-proc (record-accessor struct:select-waiter 0)))
 (define select-waiter-proc
   (|#%name|
    select-waiter-proc
    (lambda (s)
-     (if (select-waiter?413 s)
-       (select-waiter-proc419 s)
+     (if (select-waiter?_2648 s)
+       (select-waiter-proc_2543 s)
        ($value
         (impersonate-ref
-         select-waiter-proc419
+         select-waiter-proc_2543
          struct:select-waiter
          0
          s
          'select-waiter
          'proc))))))
-(define effect420
+(define effect_2971
   (begin
     (register-struct-constructor! select-waiter7.1)
     (register-struct-predicate! select-waiter?)
@@ -2863,7 +2881,7 @@
     (void)))
 (define struct:custodian
   (make-record-type-descriptor* 'custodian #f #f #f #f 13 8191))
-(define effect421
+(define effect_2364
   (struct-type-install-properties!
    struct:custodian
    'custodian
@@ -2934,7 +2952,7 @@
   (|#%name| set-custodian-sync-futures?! (record-mutator struct:custodian 11)))
 (define set-custodian-post-shutdown!
   (|#%name| set-custodian-post-shutdown! (record-mutator struct:custodian 12)))
-(define effect422
+(define effect_2160
   (begin
     (register-struct-constructor! custodian1.1)
     (register-struct-predicate! 1/custodian?)
@@ -3084,7 +3102,7 @@
  (make-struct-type-property 'place-message))
 (define struct:message-ized
   (make-record-type-descriptor* 'message-ized #f #f #f #f 1 1))
-(define effect436
+(define effect_2650
   (struct-type-install-properties!
    struct:message-ized
    'message-ized
@@ -3106,7 +3124,7 @@
   (|#%name| message-ized? (record-predicate struct:message-ized)))
 (define message-ized-unmessage
   (|#%name| message-ized-unmessage (record-accessor struct:message-ized 0)))
-(define effect437
+(define effect_2445
   (begin
     (register-struct-constructor! message-ized1.1)
     (register-struct-predicate! message-ized?)
@@ -4242,7 +4260,7 @@
     (lambda (v_0) (let ((graph_0 (box #f))) (loop_0 graph_0 v_0)))))
 (define struct:place
   (make-record-type-descriptor* 'place #f #f #f #f 19 524287))
-(define effect507
+(define effect_3017
   (struct-type-install-properties!
    struct:place
    'place
@@ -4325,7 +4343,7 @@
   (|#%name| set-place-dequeue-semas! (record-mutator struct:place 17)))
 (define set-place-future-scheduler!
   (|#%name| set-place-future-scheduler! (record-mutator struct:place 18)))
-(define effect509
+(define effect_1859
   (begin
     (register-struct-constructor! place1.1)
     (register-struct-predicate! 1/place?)
@@ -4396,11 +4414,11 @@
       (let ((temp10_1 temp10_0))
         (make-place.1 #f #f temp10_1 root-custodian11_0)))))
 (define cell.1$2 (unsafe-make-place-local initial-place))
-(define effect514
+(define effect_2788
   (begin
     (void (set-custodian-place! initial-place-root-custodian initial-place))
     (void)))
-(define effect515
+(define effect_2183
   (begin
     (void
      (set-place-host-thread! initial-place (|#%app| host:get-initial-place)))
@@ -4437,7 +4455,7 @@
       (void))))
 (define struct:semaphore
   (make-record-type-descriptor* 'semaphore struct:queue #f #f #f 1 1))
-(define effect518
+(define effect_2473
   (struct-type-install-properties!
    struct:semaphore
    'semaphore
@@ -4473,7 +4491,7 @@
   (|#%name| semaphore-count (record-accessor struct:semaphore 0)))
 (define set-semaphore-count!
   (|#%name| set-semaphore-count! (record-mutator struct:semaphore 0)))
-(define effect520
+(define effect_2880
   (begin
     (register-struct-constructor! semaphore1.1)
     (register-struct-predicate! 1/semaphore?)
@@ -4483,7 +4501,7 @@
 (define count-field-pos 2)
 (define struct:semaphore-peek-evt
   (make-record-type-descriptor* 'semaphore-peek-evt #f #f #f #f 1 1))
-(define effect522
+(define effect_2819
   (struct-type-install-properties!
    struct:semaphore-peek-evt
    'semaphore-peek-evt
@@ -4507,19 +4525,19 @@
    semaphore-peek-evt
    (record-constructor
     (make-record-constructor-descriptor struct:semaphore-peek-evt #f #f))))
-(define 1/semaphore-peek-evt?521
+(define 1/semaphore-peek-evt?_2396
   (|#%name| semaphore-peek-evt? (record-predicate struct:semaphore-peek-evt)))
 (define 1/semaphore-peek-evt?
   (|#%name|
    semaphore-peek-evt?
    (lambda (v)
-     (if (1/semaphore-peek-evt?521 v)
+     (if (1/semaphore-peek-evt?_2396 v)
        #t
        ($value
         (if (impersonator? v)
-          (1/semaphore-peek-evt?521 (impersonator-val v))
+          (1/semaphore-peek-evt?_2396 (impersonator-val v))
           #f))))))
-(define semaphore-peek-evt-sema525
+(define semaphore-peek-evt-sema_2184
   (|#%name|
    semaphore-peek-evt-sema
    (record-accessor struct:semaphore-peek-evt 0)))
@@ -4527,17 +4545,17 @@
   (|#%name|
    semaphore-peek-evt-sema
    (lambda (s)
-     (if (1/semaphore-peek-evt?521 s)
-       (semaphore-peek-evt-sema525 s)
+     (if (1/semaphore-peek-evt?_2396 s)
+       (semaphore-peek-evt-sema_2184 s)
        ($value
         (impersonate-ref
-         semaphore-peek-evt-sema525
+         semaphore-peek-evt-sema_2184
          struct:semaphore-peek-evt
          0
          s
          'semaphore-peek-evt
          'sema))))))
-(define effect526
+(define effect_2072
   (begin
     (register-struct-constructor! semaphore-peek-evt2.1)
     (register-struct-predicate! 1/semaphore-peek-evt?)
@@ -4555,7 +4573,7 @@
    #f
    0
    0))
-(define effect528
+(define effect_2734
   (struct-type-install-properties!
    struct:semaphore-peek-select-waiter
    'semaphore-peek-select-waiter
@@ -4576,7 +4594,7 @@
      struct:semaphore-peek-select-waiter
      #f
      #f))))
-(define semaphore-peek-select-waiter?527
+(define semaphore-peek-select-waiter?_2529
   (|#%name|
    semaphore-peek-select-waiter?
    (record-predicate struct:semaphore-peek-select-waiter)))
@@ -4584,13 +4602,13 @@
   (|#%name|
    semaphore-peek-select-waiter?
    (lambda (v)
-     (if (semaphore-peek-select-waiter?527 v)
+     (if (semaphore-peek-select-waiter?_2529 v)
        #t
        ($value
         (if (impersonator? v)
-          (semaphore-peek-select-waiter?527 (impersonator-val v))
+          (semaphore-peek-select-waiter?_2529 (impersonator-val v))
           #f))))))
-(define effect529
+(define effect_2627
   (begin
     (register-struct-constructor! semaphore-peek-select-waiter3.1)
     (register-struct-predicate! semaphore-peek-select-waiter?)
@@ -4782,7 +4800,7 @@
         (internal-error
          "semaphore-wait/atomic: cannot decrement semaphore")))))
 (define struct:node (make-record-type-descriptor* 'node #f #f #f #f 2 3))
-(define effect569
+(define effect_2755
   (struct-type-install-properties!
    struct:node
    'node
@@ -4807,7 +4825,7 @@
   (|#%name| set-node-prev! (record-mutator struct:node 0)))
 (define set-node-next!
   (|#%name| set-node-next! (record-mutator struct:node 1)))
-(define effect570
+(define effect_3032
   (begin
     (register-struct-constructor! node1.1)
     (register-struct-predicate! node?)
@@ -4820,7 +4838,7 @@
 (define node-child (lambda (n_0) n_0))
 (define struct:thread-group
   (make-record-type-descriptor* 'thread-group struct:node #f #f #f 4 15))
-(define effect571
+(define effect_2111
   (struct-type-install-properties!
    struct:thread-group
    'thread-group
@@ -4858,7 +4876,7 @@
   (|#%name|
    set-thread-group-chain-end!
    (record-mutator struct:thread-group 3)))
-(define effect572
+(define effect_3011
   (begin
     (register-struct-constructor! thread-group2.1)
     (register-struct-predicate! 1/thread-group?)
@@ -5005,7 +5023,7 @@
        (loop_0 (thread-group-chain-start parent_0) accum_0)))))
 (define struct:schedule-info
   (make-record-type-descriptor* 'schedule-info #f #f #f #f 2 3))
-(define effect603
+(define effect_2459
   (struct-type-install-properties!
    struct:schedule-info
    'schedule-info
@@ -5023,49 +5041,51 @@
    schedule-info
    (record-constructor
     (make-record-constructor-descriptor struct:schedule-info #f #f))))
-(define schedule-info?602
+(define schedule-info?_2650
   (|#%name| schedule-info? (record-predicate struct:schedule-info)))
 (define schedule-info?
   (|#%name|
    schedule-info?
    (lambda (v)
-     (if (schedule-info?602 v)
+     (if (schedule-info?_2650 v)
        #t
        ($value
-        (if (impersonator? v) (schedule-info?602 (impersonator-val v)) #f))))))
-(define schedule-info-did-work?604
+        (if (impersonator? v)
+          (schedule-info?_2650 (impersonator-val v))
+          #f))))))
+(define schedule-info-did-work?_2393
   (|#%name| schedule-info-did-work? (record-accessor struct:schedule-info 0)))
 (define schedule-info-did-work?
   (|#%name|
    schedule-info-did-work?
    (lambda (s)
-     (if (schedule-info?602 s)
-       (schedule-info-did-work?604 s)
+     (if (schedule-info?_2650 s)
+       (schedule-info-did-work?_2393 s)
        ($value
         (impersonate-ref
-         schedule-info-did-work?604
+         schedule-info-did-work?_2393
          struct:schedule-info
          0
          s
          'schedule-info
          'did-work?))))))
-(define schedule-info-exts605
+(define schedule-info-exts_2787
   (|#%name| schedule-info-exts (record-accessor struct:schedule-info 1)))
 (define schedule-info-exts
   (|#%name|
    schedule-info-exts
    (lambda (s)
-     (if (schedule-info?602 s)
-       (schedule-info-exts605 s)
+     (if (schedule-info?_2650 s)
+       (schedule-info-exts_2787 s)
        ($value
         (impersonate-ref
-         schedule-info-exts605
+         schedule-info-exts_2787
          struct:schedule-info
          1
          s
          'schedule-info
          'exts))))))
-(define set-schedule-info-did-work?!606
+(define set-schedule-info-did-work?!_2489
   (|#%name|
    set-schedule-info-did-work?!
    (record-mutator struct:schedule-info 0)))
@@ -5073,11 +5093,11 @@
   (|#%name|
    set-schedule-info-did-work?!
    (lambda (s v)
-     (if (schedule-info?602 s)
-       (set-schedule-info-did-work?!606 s v)
+     (if (schedule-info?_2650 s)
+       (set-schedule-info-did-work?!_2489 s v)
        ($value
         (impersonate-set!
-         set-schedule-info-did-work?!606
+         set-schedule-info-did-work?!_2489
          struct:schedule-info
          0
          0
@@ -5085,17 +5105,17 @@
          v
          'schedule-info
          'did-work?))))))
-(define set-schedule-info-exts!607
+(define set-schedule-info-exts!_2592
   (|#%name| set-schedule-info-exts! (record-mutator struct:schedule-info 1)))
 (define set-schedule-info-exts!
   (|#%name|
    set-schedule-info-exts!
    (lambda (s v)
-     (if (schedule-info?602 s)
-       (set-schedule-info-exts!607 s v)
+     (if (schedule-info?_2650 s)
+       (set-schedule-info-exts!_2592 s v)
        ($value
         (impersonate-set!
-         set-schedule-info-exts!607
+         set-schedule-info-exts!_2592
          struct:schedule-info
          1
          1
@@ -5103,7 +5123,7 @@
          v
          'schedule-info
          'exts))))))
-(define effect608
+(define effect_2287
   (begin
     (register-struct-constructor! schedule-info1.1)
     (register-struct-predicate! schedule-info?)
@@ -5140,7 +5160,7 @@
 (define reference-sink
   (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
 (define struct:plumber (make-record-type-descriptor* 'plumber #f #f #f #f 2 3))
-(define effect614
+(define effect_2525
   (struct-type-install-properties!
    struct:plumber
    'plumber
@@ -5163,7 +5183,7 @@
   (|#%name| plumber-callbacks (record-accessor struct:plumber 0)))
 (define plumber-weak-callbacks
   (|#%name| plumber-weak-callbacks (record-accessor struct:plumber 1)))
-(define effect615
+(define effect_2372
   (begin
     (register-struct-constructor! plumber1.1)
     (register-struct-predicate! 1/plumber?)
@@ -5188,7 +5208,7 @@
    'current-plumber))
 (define struct:plumber-flush-handle
   (make-record-type-descriptor* 'plumber-flush-handle #f #f #f #f 2 3))
-(define effect620
+(define effect_2524
   (struct-type-install-properties!
    struct:plumber-flush-handle
    'plumber-flush-handle
@@ -5206,7 +5226,7 @@
    plumber-flush-handle
    (record-constructor
     (make-record-constructor-descriptor struct:plumber-flush-handle #f #f))))
-(define 1/plumber-flush-handle?619
+(define 1/plumber-flush-handle?_2816
   (|#%name|
    plumber-flush-handle?
    (record-predicate struct:plumber-flush-handle)))
@@ -5214,13 +5234,13 @@
   (|#%name|
    plumber-flush-handle?
    (lambda (v)
-     (if (1/plumber-flush-handle?619 v)
+     (if (1/plumber-flush-handle?_2816 v)
        #t
        ($value
         (if (impersonator? v)
-          (1/plumber-flush-handle?619 (impersonator-val v))
+          (1/plumber-flush-handle?_2816 (impersonator-val v))
           #f))))))
-(define plumber-flush-handle-plumber621
+(define plumber-flush-handle-plumber_2929
   (|#%name|
    plumber-flush-handle-plumber
    (record-accessor struct:plumber-flush-handle 0)))
@@ -5228,17 +5248,17 @@
   (|#%name|
    plumber-flush-handle-plumber
    (lambda (s)
-     (if (1/plumber-flush-handle?619 s)
-       (plumber-flush-handle-plumber621 s)
+     (if (1/plumber-flush-handle?_2816 s)
+       (plumber-flush-handle-plumber_2929 s)
        ($value
         (impersonate-ref
-         plumber-flush-handle-plumber621
+         plumber-flush-handle-plumber_2929
          struct:plumber-flush-handle
          0
          s
          'plumber-flush-handle
          'plumber))))))
-(define plumber-flush-handle-proc622
+(define plumber-flush-handle-proc_2551
   (|#%name|
    plumber-flush-handle-proc
    (record-accessor struct:plumber-flush-handle 1)))
@@ -5246,17 +5266,17 @@
   (|#%name|
    plumber-flush-handle-proc
    (lambda (s)
-     (if (1/plumber-flush-handle?619 s)
-       (plumber-flush-handle-proc622 s)
+     (if (1/plumber-flush-handle?_2816 s)
+       (plumber-flush-handle-proc_2551 s)
        ($value
         (impersonate-ref
-         plumber-flush-handle-proc622
+         plumber-flush-handle-proc_2551
          struct:plumber-flush-handle
          1
          s
          'plumber-flush-handle
          'proc))))))
-(define effect623
+(define effect_2567
   (begin
     (register-struct-constructor! plumber-flush-handle2.1)
     (register-struct-predicate! 1/plumber-flush-handle?)
@@ -5424,7 +5444,7 @@
      (case-lambda (() (begin (exit_0 #t))) ((v1_0) (exit_0 v1_0))))))
 (define struct:custodian-box
   (make-record-type-descriptor* 'custodian-box #f #f #f #f 2 3))
-(define effect636
+(define effect_3118
   (struct-type-install-properties!
    struct:custodian-box
    'custodian-box
@@ -5455,7 +5475,7 @@
   (|#%name| custodian-box-sema (record-accessor struct:custodian-box 1)))
 (define set-custodian-box-v!
   (|#%name| set-custodian-box-v! (record-mutator struct:custodian-box 0)))
-(define effect639
+(define effect_2560
   (begin
     (register-struct-constructor! custodian-box1.1)
     (register-struct-predicate! 1/custodian-box?)
@@ -5468,7 +5488,7 @@
     (void)))
 (define struct:willed-callback
   (make-record-type-descriptor* 'willed-callback #f #f #f #f 2 3))
-(define effect640
+(define effect_2810
   (struct-type-install-properties!
    struct:willed-callback
    'willed-callback
@@ -5492,7 +5512,7 @@
   (|#%name| willed-callback-proc (record-accessor struct:willed-callback 0)))
 (define willed-callback-will
   (|#%name| willed-callback-will (record-accessor struct:willed-callback 1)))
-(define effect641
+(define effect_2644
   (begin
     (register-struct-constructor! willed-callback2.1)
     (register-struct-predicate! willed-callback?)
@@ -5514,7 +5534,7 @@
    #f
    0
    0))
-(define effect642
+(define effect_2345
   (struct-type-install-properties!
    struct:at-exit-callback
    'at-exit-callback
@@ -5534,14 +5554,14 @@
     (make-record-constructor-descriptor struct:at-exit-callback #f #f))))
 (define at-exit-callback?
   (|#%name| at-exit-callback? (record-predicate struct:at-exit-callback)))
-(define effect643
+(define effect_2470
   (begin
     (register-struct-constructor! at-exit-callback3.1)
     (register-struct-predicate! at-exit-callback?)
     (void)))
 (define struct:custodian-reference
   (make-record-type-descriptor* 'custodian-reference #f #f #f #f 1 1))
-(define effect644
+(define effect_2616
   (struct-type-install-properties!
    struct:custodian-reference
    'custodian-reference
@@ -5571,7 +5591,7 @@
   (|#%name|
    set-custodian-reference-weak-c!
    (record-mutator struct:custodian-reference 0)))
-(define effect645
+(define effect_2569
   (begin
     (register-struct-constructor! custodian-reference4.1)
     (register-struct-predicate! custodian-reference?)
@@ -6416,7 +6436,7 @@
 (define memory-limit-lock (|#%app| host:make-mutex))
 (define compute-memory-sizes 0)
 (define computed-memory-sizes? #f)
-(define effect743
+(define effect_2552
   (begin
     (void
      (|#%app|
@@ -6797,7 +6817,7 @@
                      (args
                       (raise-binding-result-arity-error 2 args)))))))))))))
     (void)))
-(define effect744
+(define effect_3119
   (begin
     (void
      (|#%app|
@@ -6859,7 +6879,7 @@
      (loop_0 mref_0))))
 (define struct:thread
   (make-record-type-descriptor* 'thread struct:node #f #f #f 24 16777215))
-(define effect745
+(define effect_3120
   (struct-type-install-properties!
    struct:thread
    'thread
@@ -6983,7 +7003,7 @@
   (|#%name| set-thread-cpu-time! (record-mutator struct:thread 22)))
 (define set-thread-future!
   (|#%name| set-thread-future! (record-mutator struct:thread 23)))
-(define effect752
+(define effect_2975
   (begin
     (register-struct-constructor! thread1.1)
     (register-struct-predicate! 1/thread?)
@@ -7404,7 +7424,7 @@
       (void)
       (set-thread-kill-callbacks! t_0 null))))
 (define check-for-break-after-kill (lambda () (|#%app| 1/check-for-break)))
-(define effect785
+(define effect_1887
   (begin
     (void
      (let ((proc_0
@@ -7434,7 +7454,7 @@
          (1/semaphore-wait (|#%app| get-thread-dead-sema t_0)))))))
 (define struct:dead-evt
   (make-record-type-descriptor* 'thread-dead-evt #f #f #f #f 1 1))
-(define effect787
+(define effect_2381
   (struct-type-install-properties!
    struct:dead-evt
    'thread-dead-evt
@@ -7456,33 +7476,33 @@
    dead-evt
    (record-constructor
     (make-record-constructor-descriptor struct:dead-evt #f #f))))
-(define dead-evt?786
+(define dead-evt?_2047
   (|#%name| thread-dead-evt? (record-predicate struct:dead-evt)))
 (define dead-evt?
   (|#%name|
    thread-dead-evt?
    (lambda (v)
-     (if (dead-evt?786 v)
+     (if (dead-evt?_2047 v)
        #t
        ($value
-        (if (impersonator? v) (dead-evt?786 (impersonator-val v)) #f))))))
-(define dead-evt-sema790
+        (if (impersonator? v) (dead-evt?_2047 (impersonator-val v)) #f))))))
+(define dead-evt-sema_2516
   (|#%name| thread-dead-evt-sema (record-accessor struct:dead-evt 0)))
 (define dead-evt-sema
   (|#%name|
    thread-dead-evt-sema
    (lambda (s)
-     (if (dead-evt?786 s)
-       (dead-evt-sema790 s)
+     (if (dead-evt?_2047 s)
+       (dead-evt-sema_2516 s)
        ($value
         (impersonate-ref
-         dead-evt-sema790
+         dead-evt-sema_2516
          struct:dead-evt
          0
          s
          'thread-dead-evt
          'sema))))))
-(define effect791
+(define effect_2531
   (begin
     (register-struct-constructor! dead-evt13.1)
     (register-struct-predicate! dead-evt?)
@@ -7761,7 +7781,7 @@
      (loop_0 (thread-custodian-references t_0) null))))
 (define struct:transitive-resume
   (make-record-type-descriptor* 'transitive-resume #f #f #f #f 2 3))
-(define effect837
+(define effect_2586
   (struct-type-install-properties!
    struct:transitive-resume
    'transitive-resume
@@ -7789,7 +7809,7 @@
   (|#%name|
    transitive-resume-box
    (record-accessor struct:transitive-resume 1)))
-(define effect838
+(define effect_2460
   (begin
     (register-struct-constructor! transitive-resume16.1)
     (register-struct-predicate! transitive-resume?)
@@ -7894,7 +7914,7 @@
         (void)))))
 (define struct:suspend-resume-evt
   (make-record-type-descriptor* 'suspend-resume-evt #f #f #f #f 2 3))
-(define effect857
+(define effect_2576
   (struct-type-install-properties!
    struct:suspend-resume-evt
    'suspend-resume-evt
@@ -7918,19 +7938,19 @@
    suspend-resume-evt
    (record-constructor
     (make-record-constructor-descriptor struct:suspend-resume-evt #f #f))))
-(define suspend-resume-evt?856
+(define suspend-resume-evt?_2231
   (|#%name| suspend-resume-evt? (record-predicate struct:suspend-resume-evt)))
 (define suspend-resume-evt?
   (|#%name|
    suspend-resume-evt?
    (lambda (v)
-     (if (suspend-resume-evt?856 v)
+     (if (suspend-resume-evt?_2231 v)
        #t
        ($value
         (if (impersonator? v)
-          (suspend-resume-evt?856 (impersonator-val v))
+          (suspend-resume-evt?_2231 (impersonator-val v))
           #f))))))
-(define suspend-resume-evt-sema861
+(define suspend-resume-evt-sema_2220
   (|#%name|
    suspend-resume-evt-sema
    (record-accessor struct:suspend-resume-evt 0)))
@@ -7938,17 +7958,17 @@
   (|#%name|
    suspend-resume-evt-sema
    (lambda (s)
-     (if (suspend-resume-evt?856 s)
-       (suspend-resume-evt-sema861 s)
+     (if (suspend-resume-evt?_2231 s)
+       (suspend-resume-evt-sema_2220 s)
        ($value
         (impersonate-ref
-         suspend-resume-evt-sema861
+         suspend-resume-evt-sema_2220
          struct:suspend-resume-evt
          0
          s
          'suspend-resume-evt
          'sema))))))
-(define suspend-resume-evt-thread862
+(define suspend-resume-evt-thread_2163
   (|#%name|
    suspend-resume-evt-thread
    (record-accessor struct:suspend-resume-evt 1)))
@@ -7956,17 +7976,17 @@
   (|#%name|
    suspend-resume-evt-thread
    (lambda (s)
-     (if (suspend-resume-evt?856 s)
-       (suspend-resume-evt-thread862 s)
+     (if (suspend-resume-evt?_2231 s)
+       (suspend-resume-evt-thread_2163 s)
        ($value
         (impersonate-ref
-         suspend-resume-evt-thread862
+         suspend-resume-evt-thread_2163
          struct:suspend-resume-evt
          1
          s
          'suspend-resume-evt
          'thread))))))
-(define set-suspend-resume-evt-thread!863
+(define set-suspend-resume-evt-thread!_3086
   (|#%name|
    set-suspend-resume-evt-thread!
    (record-mutator struct:suspend-resume-evt 1)))
@@ -7974,11 +7994,11 @@
   (|#%name|
    set-suspend-resume-evt-thread!
    (lambda (s v)
-     (if (suspend-resume-evt?856 s)
-       (set-suspend-resume-evt-thread!863 s v)
+     (if (suspend-resume-evt?_2231 s)
+       (set-suspend-resume-evt-thread!_3086 s v)
        ($value
         (impersonate-set!
-         set-suspend-resume-evt-thread!863
+         set-suspend-resume-evt-thread!_3086
          struct:suspend-resume-evt
          1
          1
@@ -7986,7 +8006,7 @@
          v
          'suspend-resume-evt
          'thread))))))
-(define effect864
+(define effect_2999
   (begin
     (register-struct-constructor! suspend-resume-evt17.1)
     (register-struct-predicate! suspend-resume-evt?)
@@ -8012,7 +8032,7 @@
    #f
    0
    0))
-(define effect866
+(define effect_3145
   (struct-type-install-properties!
    struct:suspend-evt
    'thread-suspend-evt
@@ -8030,17 +8050,17 @@
    suspend-evt
    (record-constructor
     (make-record-constructor-descriptor struct:suspend-evt #f #f))))
-(define suspend-evt?865
+(define suspend-evt?_3224
   (|#%name| thread-suspend-evt? (record-predicate struct:suspend-evt)))
 (define suspend-evt?
   (|#%name|
    thread-suspend-evt?
    (lambda (v)
-     (if (suspend-evt?865 v)
+     (if (suspend-evt?_3224 v)
        #t
        ($value
-        (if (impersonator? v) (suspend-evt?865 (impersonator-val v)) #f))))))
-(define effect867
+        (if (impersonator? v) (suspend-evt?_3224 (impersonator-val v)) #f))))))
+(define effect_2668
   (begin
     (register-struct-constructor! suspend-evt18.1)
     (register-struct-predicate! suspend-evt?)
@@ -8054,7 +8074,7 @@
    #f
    0
    0))
-(define effect869
+(define effect_2454
   (struct-type-install-properties!
    struct:resume-evt
    'thread-resume-evt
@@ -8072,17 +8092,17 @@
    resume-evt
    (record-constructor
     (make-record-constructor-descriptor struct:resume-evt #f #f))))
-(define resume-evt?868
+(define resume-evt?_2037
   (|#%name| thread-resume-evt? (record-predicate struct:resume-evt)))
 (define resume-evt?
   (|#%name|
    thread-resume-evt?
    (lambda (v)
-     (if (resume-evt?868 v)
+     (if (resume-evt?_2037 v)
        #t
        ($value
-        (if (impersonator? v) (resume-evt?868 (impersonator-val v)) #f))))))
-(define effect870
+        (if (impersonator? v) (resume-evt?_2037 (impersonator-val v)) #f))))))
+(define effect_1814
   (begin
     (register-struct-constructor! resume-evt19.1)
     (register-struct-predicate! resume-evt?)
@@ -8251,7 +8271,7 @@
                     void)
                   (end-atomic))))
              (void))))))))
-(define effect897
+(define effect_2492
   (begin
     (void (|#%app| set-break-enabled-transition-hook! 1/check-for-break))
     (void)))
@@ -8329,7 +8349,7 @@
     (if (not (if k1_0 k2_0 #f))
       (if k1_0 k1_0 k2_0)
       (if (break>? k1_0 k2_0) k1_0 k2_0))))
-(define effect902
+(define effect_2939
   (begin
     (void
      (|#%app|
@@ -8478,13 +8498,13 @@
          (start-atomic)
          (begin0
            (let ((t_0 (current-thread/in-atomic)))
-             (for-each2
+             (for-each_2380
               (lambda (msg_0) (queue-add-front! (thread-mailbox t_0) msg_0))
               lst_0))
            (end-atomic)))))))
 (define struct:thread-receiver-evt
   (make-record-type-descriptor* 'thread-receive-evt #f #f #f #f 0 0))
-(define effect922
+(define effect_2530
   (struct-type-install-properties!
    struct:thread-receiver-evt
    'thread-receive-evt
@@ -8545,26 +8565,26 @@
    thread-receiver-evt
    (record-constructor
     (make-record-constructor-descriptor struct:thread-receiver-evt #f #f))))
-(define thread-receiver-evt?921
+(define thread-receiver-evt?_2591
   (|#%name| thread-receive-evt? (record-predicate struct:thread-receiver-evt)))
 (define thread-receiver-evt?
   (|#%name|
    thread-receive-evt?
    (lambda (v)
-     (if (thread-receiver-evt?921 v)
+     (if (thread-receiver-evt?_2591 v)
        #t
        ($value
         (if (impersonator? v)
-          (thread-receiver-evt?921 (impersonator-val v))
+          (thread-receiver-evt?_2591 (impersonator-val v))
           #f))))))
-(define effect924
+(define effect_2732
   (begin
     (register-struct-constructor! thread-receiver-evt26.1)
     (register-struct-predicate! thread-receiver-evt?)
     (void)))
 (define 1/thread-receive-evt
   (|#%name| thread-receive-evt (lambda () (begin (thread-receiver-evt26.1)))))
-(define effect935
+(define effect_2328
   (begin
     (void
      (|#%app|
@@ -8578,7 +8598,7 @@
                 (custodian-check-immediate-limit (car mrefs_0) n_0)))
             (void))))))
     (void)))
-(define effect936
+(define effect_2553
   (begin
     (void
      (let ((thread-engine_0
@@ -8592,7 +8612,7 @@
        (set! thread-engine-for-roots thread-engine_0)))
     (void)))
 (define struct:channel (make-record-type-descriptor* 'channel #f #f #f #f 2 3))
-(define effect930
+(define effect_1902
   (struct-type-install-properties!
    struct:channel
    'channel
@@ -8614,48 +8634,48 @@
    channel
    (record-constructor
     (make-record-constructor-descriptor struct:channel #f #f))))
-(define 1/channel?929 (|#%name| channel? (record-predicate struct:channel)))
+(define 1/channel?_2784 (|#%name| channel? (record-predicate struct:channel)))
 (define 1/channel?
   (|#%name|
    channel?
    (lambda (v)
-     (if (1/channel?929 v)
+     (if (1/channel?_2784 v)
        #t
        ($value
-        (if (impersonator? v) (1/channel?929 (impersonator-val v)) #f))))))
-(define channel-get-queue932
+        (if (impersonator? v) (1/channel?_2784 (impersonator-val v)) #f))))))
+(define channel-get-queue_2731
   (|#%name| channel-get-queue (record-accessor struct:channel 0)))
 (define channel-get-queue
   (|#%name|
    channel-get-queue
    (lambda (s)
-     (if (1/channel?929 s)
-       (channel-get-queue932 s)
+     (if (1/channel?_2784 s)
+       (channel-get-queue_2731 s)
        ($value
         (impersonate-ref
-         channel-get-queue932
+         channel-get-queue_2731
          struct:channel
          0
          s
          'channel
          'get-queue))))))
-(define channel-put-queue933
+(define channel-put-queue_2027
   (|#%name| channel-put-queue (record-accessor struct:channel 1)))
 (define channel-put-queue
   (|#%name|
    channel-put-queue
    (lambda (s)
-     (if (1/channel?929 s)
-       (channel-put-queue933 s)
+     (if (1/channel?_2784 s)
+       (channel-put-queue_2027 s)
        ($value
         (impersonate-ref
-         channel-put-queue933
+         channel-put-queue_2027
          struct:channel
          1
          s
          'channel
          'put-queue))))))
-(define effect934
+(define effect_2912
   (begin
     (register-struct-constructor! channel1.1)
     (register-struct-predicate! 1/channel?)
@@ -8664,7 +8684,7 @@
     (void)))
 (define struct:channel-put-evt*
   (make-record-type-descriptor* 'channel-put-evt #f #f #f #f 2 3))
-(define effect938
+(define effect_2960
   (struct-type-install-properties!
    struct:channel-put-evt*
    'channel-put-evt
@@ -8694,51 +8714,51 @@
    channel-put-evt*
    (record-constructor
     (make-record-constructor-descriptor struct:channel-put-evt* #f #f))))
-(define channel-put-evt*?937
+(define channel-put-evt*?_2795
   (|#%name| channel-put-evt? (record-predicate struct:channel-put-evt*)))
 (define channel-put-evt*?
   (|#%name|
    channel-put-evt?
    (lambda (v)
-     (if (channel-put-evt*?937 v)
+     (if (channel-put-evt*?_2795 v)
        #t
        ($value
         (if (impersonator? v)
-          (channel-put-evt*?937 (impersonator-val v))
+          (channel-put-evt*?_2795 (impersonator-val v))
           #f))))))
-(define channel-put-evt*-ch944
+(define channel-put-evt*-ch_2175
   (|#%name| channel-put-evt-ch (record-accessor struct:channel-put-evt* 0)))
 (define channel-put-evt*-ch
   (|#%name|
    channel-put-evt-ch
    (lambda (s)
-     (if (channel-put-evt*?937 s)
-       (channel-put-evt*-ch944 s)
+     (if (channel-put-evt*?_2795 s)
+       (channel-put-evt*-ch_2175 s)
        ($value
         (impersonate-ref
-         channel-put-evt*-ch944
+         channel-put-evt*-ch_2175
          struct:channel-put-evt*
          0
          s
          'channel-put-evt
          'ch))))))
-(define channel-put-evt*-v945
+(define channel-put-evt*-v_2260
   (|#%name| channel-put-evt-v (record-accessor struct:channel-put-evt* 1)))
 (define channel-put-evt*-v
   (|#%name|
    channel-put-evt-v
    (lambda (s)
-     (if (channel-put-evt*?937 s)
-       (channel-put-evt*-v945 s)
+     (if (channel-put-evt*?_2795 s)
+       (channel-put-evt*-v_2260 s)
        ($value
         (impersonate-ref
-         channel-put-evt*-v945
+         channel-put-evt*-v_2260
          struct:channel-put-evt*
          1
          s
          'channel-put-evt
          'v))))))
-(define effect946
+(define effect_2493
   (begin
     (register-struct-constructor! channel-put-evt*2.1)
     (register-struct-predicate! channel-put-evt*?)
@@ -8760,7 +8780,7 @@
    #f
    1
    1))
-(define effect948
+(define effect_3243
   (struct-type-install-properties!
    struct:channel-select-waiter
    'channel-select-waiter
@@ -8778,7 +8798,7 @@
    channel-select-waiter
    (record-constructor
     (make-record-constructor-descriptor struct:channel-select-waiter #f #f))))
-(define channel-select-waiter?947
+(define channel-select-waiter?_2334
   (|#%name|
    channel-select-waiter?
    (record-predicate struct:channel-select-waiter)))
@@ -8786,13 +8806,13 @@
   (|#%name|
    channel-select-waiter?
    (lambda (v)
-     (if (channel-select-waiter?947 v)
+     (if (channel-select-waiter?_2334 v)
        #t
        ($value
         (if (impersonator? v)
-          (channel-select-waiter?947 (impersonator-val v))
+          (channel-select-waiter?_2334 (impersonator-val v))
           #f))))))
-(define channel-select-waiter-thread949
+(define channel-select-waiter-thread_2342
   (|#%name|
    channel-select-waiter-thread
    (record-accessor struct:channel-select-waiter 0)))
@@ -8800,17 +8820,17 @@
   (|#%name|
    channel-select-waiter-thread
    (lambda (s)
-     (if (channel-select-waiter?947 s)
-       (channel-select-waiter-thread949 s)
+     (if (channel-select-waiter?_2334 s)
+       (channel-select-waiter-thread_2342 s)
        ($value
         (impersonate-ref
-         channel-select-waiter-thread949
+         channel-select-waiter-thread_2342
          struct:channel-select-waiter
          0
          s
          'channel-select-waiter
          'thread))))))
-(define effect950
+(define effect_2663
   (begin
     (register-struct-constructor! channel-select-waiter3.1)
     (register-struct-predicate! channel-select-waiter?)
@@ -9272,7 +9292,7 @@
      (loop_0 args_0))))
 (define struct:syncing
   (make-record-type-descriptor* 'syncing #f #f #f #f 5 31))
-(define effect1036
+(define effect_2377
   (struct-type-install-properties!
    struct:syncing
    'syncing
@@ -9290,106 +9310,106 @@
    syncing
    (record-constructor
     (make-record-constructor-descriptor struct:syncing #f #f))))
-(define syncing?1035 (|#%name| syncing? (record-predicate struct:syncing)))
+(define syncing?_2448 (|#%name| syncing? (record-predicate struct:syncing)))
 (define syncing?
   (|#%name|
    syncing?
    (lambda (v)
-     (if (syncing?1035 v)
+     (if (syncing?_2448 v)
        #t
        ($value
-        (if (impersonator? v) (syncing?1035 (impersonator-val v)) #f))))))
-(define syncing-selected1037
+        (if (impersonator? v) (syncing?_2448 (impersonator-val v)) #f))))))
+(define syncing-selected_2375
   (|#%name| syncing-selected (record-accessor struct:syncing 0)))
 (define syncing-selected
   (|#%name|
    syncing-selected
    (lambda (s)
-     (if (syncing?1035 s)
-       (syncing-selected1037 s)
+     (if (syncing?_2448 s)
+       (syncing-selected_2375 s)
        ($value
         (impersonate-ref
-         syncing-selected1037
+         syncing-selected_2375
          struct:syncing
          0
          s
          'syncing
          'selected))))))
-(define syncing-syncers1038
+(define syncing-syncers_2564
   (|#%name| syncing-syncers (record-accessor struct:syncing 1)))
 (define syncing-syncers
   (|#%name|
    syncing-syncers
    (lambda (s)
-     (if (syncing?1035 s)
-       (syncing-syncers1038 s)
+     (if (syncing?_2448 s)
+       (syncing-syncers_2564 s)
        ($value
         (impersonate-ref
-         syncing-syncers1038
+         syncing-syncers_2564
          struct:syncing
          1
          s
          'syncing
          'syncers))))))
-(define syncing-wakeup1039
+(define syncing-wakeup_2421
   (|#%name| syncing-wakeup (record-accessor struct:syncing 2)))
 (define syncing-wakeup
   (|#%name|
    syncing-wakeup
    (lambda (s)
-     (if (syncing?1035 s)
-       (syncing-wakeup1039 s)
+     (if (syncing?_2448 s)
+       (syncing-wakeup_2421 s)
        ($value
         (impersonate-ref
-         syncing-wakeup1039
+         syncing-wakeup_2421
          struct:syncing
          2
          s
          'syncing
          'wakeup))))))
-(define syncing-disable-break1040
+(define syncing-disable-break_2747
   (|#%name| syncing-disable-break (record-accessor struct:syncing 3)))
 (define syncing-disable-break
   (|#%name|
    syncing-disable-break
    (lambda (s)
-     (if (syncing?1035 s)
-       (syncing-disable-break1040 s)
+     (if (syncing?_2448 s)
+       (syncing-disable-break_2747 s)
        ($value
         (impersonate-ref
-         syncing-disable-break1040
+         syncing-disable-break_2747
          struct:syncing
          3
          s
          'syncing
          'disable-break))))))
-(define syncing-need-retry?1041
+(define syncing-need-retry?_2343
   (|#%name| syncing-need-retry? (record-accessor struct:syncing 4)))
 (define syncing-need-retry?
   (|#%name|
    syncing-need-retry?
    (lambda (s)
-     (if (syncing?1035 s)
-       (syncing-need-retry?1041 s)
+     (if (syncing?_2448 s)
+       (syncing-need-retry?_2343 s)
        ($value
         (impersonate-ref
-         syncing-need-retry?1041
+         syncing-need-retry?_2343
          struct:syncing
          4
          s
          'syncing
          'need-retry?))))))
-(define set-syncing-selected!1042
+(define set-syncing-selected!_2425
   (|#%name| set-syncing-selected! (record-mutator struct:syncing 0)))
 (define set-syncing-selected!
   (|#%name|
    set-syncing-selected!
    (lambda (s v)
-     (if (syncing?1035 s)
-       (set-syncing-selected!1042 s v)
+     (if (syncing?_2448 s)
+       (set-syncing-selected!_2425 s v)
        ($value
         (impersonate-set!
-         set-syncing-selected!1042
+         set-syncing-selected!_2425
          struct:syncing
          0
          0
@@ -9397,17 +9417,17 @@
          v
          'syncing
          'selected))))))
-(define set-syncing-syncers!1043
+(define set-syncing-syncers!_2653
   (|#%name| set-syncing-syncers! (record-mutator struct:syncing 1)))
 (define set-syncing-syncers!
   (|#%name|
    set-syncing-syncers!
    (lambda (s v)
-     (if (syncing?1035 s)
-       (set-syncing-syncers!1043 s v)
+     (if (syncing?_2448 s)
+       (set-syncing-syncers!_2653 s v)
        ($value
         (impersonate-set!
-         set-syncing-syncers!1043
+         set-syncing-syncers!_2653
          struct:syncing
          1
          1
@@ -9415,17 +9435,17 @@
          v
          'syncing
          'syncers))))))
-(define set-syncing-wakeup!1044
+(define set-syncing-wakeup!_2835
   (|#%name| set-syncing-wakeup! (record-mutator struct:syncing 2)))
 (define set-syncing-wakeup!
   (|#%name|
    set-syncing-wakeup!
    (lambda (s v)
-     (if (syncing?1035 s)
-       (set-syncing-wakeup!1044 s v)
+     (if (syncing?_2448 s)
+       (set-syncing-wakeup!_2835 s v)
        ($value
         (impersonate-set!
-         set-syncing-wakeup!1044
+         set-syncing-wakeup!_2835
          struct:syncing
          2
          2
@@ -9433,17 +9453,17 @@
          v
          'syncing
          'wakeup))))))
-(define set-syncing-disable-break!1045
+(define set-syncing-disable-break!_2672
   (|#%name| set-syncing-disable-break! (record-mutator struct:syncing 3)))
 (define set-syncing-disable-break!
   (|#%name|
    set-syncing-disable-break!
    (lambda (s v)
-     (if (syncing?1035 s)
-       (set-syncing-disable-break!1045 s v)
+     (if (syncing?_2448 s)
+       (set-syncing-disable-break!_2672 s v)
        ($value
         (impersonate-set!
-         set-syncing-disable-break!1045
+         set-syncing-disable-break!_2672
          struct:syncing
          3
          3
@@ -9451,17 +9471,17 @@
          v
          'syncing
          'disable-break))))))
-(define set-syncing-need-retry?!1046
+(define set-syncing-need-retry?!_2470
   (|#%name| set-syncing-need-retry?! (record-mutator struct:syncing 4)))
 (define set-syncing-need-retry?!
   (|#%name|
    set-syncing-need-retry?!
    (lambda (s v)
-     (if (syncing?1035 s)
-       (set-syncing-need-retry?!1046 s v)
+     (if (syncing?_2448 s)
+       (set-syncing-need-retry?!_2470 s v)
        ($value
         (impersonate-set!
-         set-syncing-need-retry?!1046
+         set-syncing-need-retry?!_2470
          struct:syncing
          4
          4
@@ -9469,7 +9489,7 @@
          v
          'syncing
          'need-retry?))))))
-(define effect1047
+(define effect_2486
   (begin
     (register-struct-constructor! syncing1.1)
     (register-struct-predicate! syncing?)
@@ -9488,7 +9508,7 @@
     (register-struct-field-mutator! set-syncing-need-retry?! struct:syncing 4)
     (void)))
 (define struct:syncer (make-record-type-descriptor* 'syncer #f #f #f #f 9 511))
-(define effect1049
+(define effect_2549
   (struct-type-install-properties!
    struct:syncer
    'syncer
@@ -9506,151 +9526,152 @@
    syncer
    (record-constructor
     (make-record-constructor-descriptor struct:syncer #f #f))))
-(define syncer?1048 (|#%name| syncer? (record-predicate struct:syncer)))
+(define syncer?_2220 (|#%name| syncer? (record-predicate struct:syncer)))
 (define syncer?
   (|#%name|
    syncer?
    (lambda (v)
-     (if (syncer?1048 v)
+     (if (syncer?_2220 v)
        #t
        ($value
-        (if (impersonator? v) (syncer?1048 (impersonator-val v)) #f))))))
-(define syncer-evt1050 (|#%name| syncer-evt (record-accessor struct:syncer 0)))
+        (if (impersonator? v) (syncer?_2220 (impersonator-val v)) #f))))))
+(define syncer-evt_2678
+  (|#%name| syncer-evt (record-accessor struct:syncer 0)))
 (define syncer-evt
   (|#%name|
    syncer-evt
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-evt1050 s)
+     (if (syncer?_2220 s)
+       (syncer-evt_2678 s)
        ($value
-        (impersonate-ref syncer-evt1050 struct:syncer 0 s 'syncer 'evt))))))
-(define syncer-wraps1051
+        (impersonate-ref syncer-evt_2678 struct:syncer 0 s 'syncer 'evt))))))
+(define syncer-wraps_2709
   (|#%name| syncer-wraps (record-accessor struct:syncer 1)))
 (define syncer-wraps
   (|#%name|
    syncer-wraps
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-wraps1051 s)
+     (if (syncer?_2220 s)
+       (syncer-wraps_2709 s)
        ($value
         (impersonate-ref
-         syncer-wraps1051
+         syncer-wraps_2709
          struct:syncer
          1
          s
          'syncer
          'wraps))))))
-(define syncer-commits1052
+(define syncer-commits_2120
   (|#%name| syncer-commits (record-accessor struct:syncer 2)))
 (define syncer-commits
   (|#%name|
    syncer-commits
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-commits1052 s)
+     (if (syncer?_2220 s)
+       (syncer-commits_2120 s)
        ($value
         (impersonate-ref
-         syncer-commits1052
+         syncer-commits_2120
          struct:syncer
          2
          s
          'syncer
          'commits))))))
-(define syncer-interrupted?1053
+(define syncer-interrupted?_2265
   (|#%name| syncer-interrupted? (record-accessor struct:syncer 3)))
 (define syncer-interrupted?
   (|#%name|
    syncer-interrupted?
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-interrupted?1053 s)
+     (if (syncer?_2220 s)
+       (syncer-interrupted?_2265 s)
        ($value
         (impersonate-ref
-         syncer-interrupted?1053
+         syncer-interrupted?_2265
          struct:syncer
          3
          s
          'syncer
          'interrupted?))))))
-(define syncer-interrupt1054
+(define syncer-interrupt_2546
   (|#%name| syncer-interrupt (record-accessor struct:syncer 4)))
 (define syncer-interrupt
   (|#%name|
    syncer-interrupt
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-interrupt1054 s)
+     (if (syncer?_2220 s)
+       (syncer-interrupt_2546 s)
        ($value
         (impersonate-ref
-         syncer-interrupt1054
+         syncer-interrupt_2546
          struct:syncer
          4
          s
          'syncer
          'interrupt))))))
-(define syncer-abandons1055
+(define syncer-abandons_1792
   (|#%name| syncer-abandons (record-accessor struct:syncer 5)))
 (define syncer-abandons
   (|#%name|
    syncer-abandons
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-abandons1055 s)
+     (if (syncer?_2220 s)
+       (syncer-abandons_1792 s)
        ($value
         (impersonate-ref
-         syncer-abandons1055
+         syncer-abandons_1792
          struct:syncer
          5
          s
          'syncer
          'abandons))))))
-(define syncer-retry1056
+(define syncer-retry_2570
   (|#%name| syncer-retry (record-accessor struct:syncer 6)))
 (define syncer-retry
   (|#%name|
    syncer-retry
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-retry1056 s)
+     (if (syncer?_2220 s)
+       (syncer-retry_2570 s)
        ($value
         (impersonate-ref
-         syncer-retry1056
+         syncer-retry_2570
          struct:syncer
          6
          s
          'syncer
          'retry))))))
-(define syncer-prev1057
+(define syncer-prev_3082
   (|#%name| syncer-prev (record-accessor struct:syncer 7)))
 (define syncer-prev
   (|#%name|
    syncer-prev
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-prev1057 s)
+     (if (syncer?_2220 s)
+       (syncer-prev_3082 s)
        ($value
-        (impersonate-ref syncer-prev1057 struct:syncer 7 s 'syncer 'prev))))))
-(define syncer-next1058
+        (impersonate-ref syncer-prev_3082 struct:syncer 7 s 'syncer 'prev))))))
+(define syncer-next_2299
   (|#%name| syncer-next (record-accessor struct:syncer 8)))
 (define syncer-next
   (|#%name|
    syncer-next
    (lambda (s)
-     (if (syncer?1048 s)
-       (syncer-next1058 s)
+     (if (syncer?_2220 s)
+       (syncer-next_2299 s)
        ($value
-        (impersonate-ref syncer-next1058 struct:syncer 8 s 'syncer 'next))))))
-(define set-syncer-evt!1059
+        (impersonate-ref syncer-next_2299 struct:syncer 8 s 'syncer 'next))))))
+(define set-syncer-evt!_2722
   (|#%name| set-syncer-evt! (record-mutator struct:syncer 0)))
 (define set-syncer-evt!
   (|#%name|
    set-syncer-evt!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-evt!1059 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-evt!_2722 s v)
        ($value
         (impersonate-set!
-         set-syncer-evt!1059
+         set-syncer-evt!_2722
          struct:syncer
          0
          0
@@ -9658,17 +9679,17 @@
          v
          'syncer
          'evt))))))
-(define set-syncer-wraps!1060
+(define set-syncer-wraps!_2694
   (|#%name| set-syncer-wraps! (record-mutator struct:syncer 1)))
 (define set-syncer-wraps!
   (|#%name|
    set-syncer-wraps!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-wraps!1060 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-wraps!_2694 s v)
        ($value
         (impersonate-set!
-         set-syncer-wraps!1060
+         set-syncer-wraps!_2694
          struct:syncer
          1
          1
@@ -9676,17 +9697,17 @@
          v
          'syncer
          'wraps))))))
-(define set-syncer-commits!1061
+(define set-syncer-commits!_2064
   (|#%name| set-syncer-commits! (record-mutator struct:syncer 2)))
 (define set-syncer-commits!
   (|#%name|
    set-syncer-commits!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-commits!1061 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-commits!_2064 s v)
        ($value
         (impersonate-set!
-         set-syncer-commits!1061
+         set-syncer-commits!_2064
          struct:syncer
          2
          2
@@ -9694,17 +9715,17 @@
          v
          'syncer
          'commits))))))
-(define set-syncer-interrupted?!1062
+(define set-syncer-interrupted?!_1948
   (|#%name| set-syncer-interrupted?! (record-mutator struct:syncer 3)))
 (define set-syncer-interrupted?!
   (|#%name|
    set-syncer-interrupted?!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-interrupted?!1062 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-interrupted?!_1948 s v)
        ($value
         (impersonate-set!
-         set-syncer-interrupted?!1062
+         set-syncer-interrupted?!_1948
          struct:syncer
          3
          3
@@ -9712,17 +9733,17 @@
          v
          'syncer
          'interrupted?))))))
-(define set-syncer-interrupt!1063
+(define set-syncer-interrupt!_2374
   (|#%name| set-syncer-interrupt! (record-mutator struct:syncer 4)))
 (define set-syncer-interrupt!
   (|#%name|
    set-syncer-interrupt!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-interrupt!1063 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-interrupt!_2374 s v)
        ($value
         (impersonate-set!
-         set-syncer-interrupt!1063
+         set-syncer-interrupt!_2374
          struct:syncer
          4
          4
@@ -9730,17 +9751,17 @@
          v
          'syncer
          'interrupt))))))
-(define set-syncer-abandons!1064
+(define set-syncer-abandons!_1983
   (|#%name| set-syncer-abandons! (record-mutator struct:syncer 5)))
 (define set-syncer-abandons!
   (|#%name|
    set-syncer-abandons!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-abandons!1064 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-abandons!_1983 s v)
        ($value
         (impersonate-set!
-         set-syncer-abandons!1064
+         set-syncer-abandons!_1983
          struct:syncer
          5
          5
@@ -9748,17 +9769,17 @@
          v
          'syncer
          'abandons))))))
-(define set-syncer-retry!1065
+(define set-syncer-retry!_2583
   (|#%name| set-syncer-retry! (record-mutator struct:syncer 6)))
 (define set-syncer-retry!
   (|#%name|
    set-syncer-retry!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-retry!1065 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-retry!_2583 s v)
        ($value
         (impersonate-set!
-         set-syncer-retry!1065
+         set-syncer-retry!_2583
          struct:syncer
          6
          6
@@ -9766,17 +9787,17 @@
          v
          'syncer
          'retry))))))
-(define set-syncer-prev!1066
+(define set-syncer-prev!_2849
   (|#%name| set-syncer-prev! (record-mutator struct:syncer 7)))
 (define set-syncer-prev!
   (|#%name|
    set-syncer-prev!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-prev!1066 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-prev!_2849 s v)
        ($value
         (impersonate-set!
-         set-syncer-prev!1066
+         set-syncer-prev!_2849
          struct:syncer
          7
          7
@@ -9784,17 +9805,17 @@
          v
          'syncer
          'prev))))))
-(define set-syncer-next!1067
+(define set-syncer-next!_2406
   (|#%name| set-syncer-next! (record-mutator struct:syncer 8)))
 (define set-syncer-next!
   (|#%name|
    set-syncer-next!
    (lambda (s v)
-     (if (syncer?1048 s)
-       (set-syncer-next!1067 s v)
+     (if (syncer?_2220 s)
+       (set-syncer-next!_2406 s v)
        ($value
         (impersonate-set!
-         set-syncer-next!1067
+         set-syncer-next!_2406
          struct:syncer
          8
          8
@@ -9802,7 +9823,7 @@
          v
          'syncer
          'next))))))
-(define effect1068
+(define effect_2487
   (begin
     (register-struct-constructor! syncer2.1)
     (register-struct-predicate! syncer?)
@@ -10187,7 +10208,7 @@
    sync/timeout/enable-break
    (lambda (timeout_0 . args_0)
      (begin (do-sync.1 #t 'sync/timeout/enable-break timeout_0 args_0)))))
-(define effect1120 (begin (void (set! sync-on-channel 1/sync)) (void)))
+(define effect_2330 (begin (void (set! sync-on-channel 1/sync)) (void)))
 (define evts->syncers
   (let ((evts->syncers_0
          (|#%name|
@@ -10987,7 +11008,7 @@
          (begin0 (retry_0 s_0 timeout-at_0) (end-atomic)))))))
 (define struct:replacing-evt
   (make-record-type-descriptor* 'evt #f #f #f #f 1 1))
-(define effect1201
+(define effect_2056
   (struct-type-install-properties!
    struct:replacing-evt
    'evt
@@ -11010,35 +11031,35 @@
    replacing-evt
    (record-constructor
     (make-record-constructor-descriptor struct:replacing-evt #f #f))))
-(define replacing-evt?1200
+(define replacing-evt?_2294
   (|#%name| evt? (record-predicate struct:replacing-evt)))
 (define replacing-evt?
   (|#%name|
    evt?
    (lambda (v)
-     (if (replacing-evt?1200 v)
+     (if (replacing-evt?_2294 v)
        #t
        ($value
         (if (impersonator? v)
-          (replacing-evt?1200 (impersonator-val v))
+          (replacing-evt?_2294 (impersonator-val v))
           #f))))))
-(define replacing-evt-guard1204
+(define replacing-evt-guard_2603
   (|#%name| evt-guard (record-accessor struct:replacing-evt 0)))
 (define replacing-evt-guard
   (|#%name|
    evt-guard
    (lambda (s)
-     (if (replacing-evt?1200 s)
-       (replacing-evt-guard1204 s)
+     (if (replacing-evt?_2294 s)
+       (replacing-evt-guard_2603 s)
        ($value
         (impersonate-ref
-         replacing-evt-guard1204
+         replacing-evt-guard_2603
          struct:replacing-evt
          0
          s
          'evt
          'guard))))))
-(define effect1205
+(define effect_3103
   (begin
     (register-struct-constructor! replacing-evt34.1)
     (register-struct-predicate! replacing-evt?)
@@ -11049,7 +11070,7 @@
     (void)))
 (define struct:nested-sync-evt
   (make-record-type-descriptor* 'evt #f #f #f #f 3 7))
-(define effect1207
+(define effect_2073
   (struct-type-install-properties!
    struct:nested-sync-evt
    'evt
@@ -11072,67 +11093,67 @@
    nested-sync-evt
    (record-constructor
     (make-record-constructor-descriptor struct:nested-sync-evt #f #f))))
-(define nested-sync-evt?1206
+(define nested-sync-evt?_2757
   (|#%name| evt? (record-predicate struct:nested-sync-evt)))
 (define nested-sync-evt?
   (|#%name|
    evt?
    (lambda (v)
-     (if (nested-sync-evt?1206 v)
+     (if (nested-sync-evt?_2757 v)
        #t
        ($value
         (if (impersonator? v)
-          (nested-sync-evt?1206 (impersonator-val v))
+          (nested-sync-evt?_2757 (impersonator-val v))
           #f))))))
-(define nested-sync-evt-s1209
+(define nested-sync-evt-s_2315
   (|#%name| evt-s (record-accessor struct:nested-sync-evt 0)))
 (define nested-sync-evt-s
   (|#%name|
    evt-s
    (lambda (s)
-     (if (nested-sync-evt?1206 s)
-       (nested-sync-evt-s1209 s)
+     (if (nested-sync-evt?_2757 s)
+       (nested-sync-evt-s_2315 s)
        ($value
         (impersonate-ref
-         nested-sync-evt-s1209
+         nested-sync-evt-s_2315
          struct:nested-sync-evt
          0
          s
          'evt
          's))))))
-(define nested-sync-evt-next1210
+(define nested-sync-evt-next_2802
   (|#%name| evt-next (record-accessor struct:nested-sync-evt 1)))
 (define nested-sync-evt-next
   (|#%name|
    evt-next
    (lambda (s)
-     (if (nested-sync-evt?1206 s)
-       (nested-sync-evt-next1210 s)
+     (if (nested-sync-evt?_2757 s)
+       (nested-sync-evt-next_2802 s)
        ($value
         (impersonate-ref
-         nested-sync-evt-next1210
+         nested-sync-evt-next_2802
          struct:nested-sync-evt
          1
          s
          'evt
          'next))))))
-(define nested-sync-evt-orig-evt1211
+(define nested-sync-evt-orig-evt_2620
   (|#%name| evt-orig-evt (record-accessor struct:nested-sync-evt 2)))
 (define nested-sync-evt-orig-evt
   (|#%name|
    evt-orig-evt
    (lambda (s)
-     (if (nested-sync-evt?1206 s)
-       (nested-sync-evt-orig-evt1211 s)
+     (if (nested-sync-evt?_2757 s)
+       (nested-sync-evt-orig-evt_2620 s)
        ($value
         (impersonate-ref
-         nested-sync-evt-orig-evt1211
+         nested-sync-evt-orig-evt_2620
          struct:nested-sync-evt
          2
          s
          'evt
          'orig-evt))))))
-(define effect1212
+(define effect_2506
   (begin
     (register-struct-constructor! nested-sync-evt35.1)
     (register-struct-predicate! nested-sync-evt?)
@@ -11296,7 +11317,7 @@
    (wrap-evt7.1 (unsafe-place-local-ref cell.1$5) void)))
 (define struct:system-idle-evt
   (make-record-type-descriptor* 'system-idle-evt #f #f #f #f 0 0))
-(define effect1228
+(define effect_2282
   (struct-type-install-properties!
    struct:system-idle-evt
    'system-idle-evt
@@ -11314,19 +11335,19 @@
    system-idle-evt
    (record-constructor
     (make-record-constructor-descriptor struct:system-idle-evt #f #f))))
-(define system-idle-evt?1227
+(define system-idle-evt?_2250
   (|#%name| system-idle-evt? (record-predicate struct:system-idle-evt)))
 (define system-idle-evt?
   (|#%name|
    system-idle-evt?
    (lambda (v)
-     (if (system-idle-evt?1227 v)
+     (if (system-idle-evt?_2250 v)
        #t
        ($value
         (if (impersonator? v)
-          (system-idle-evt?1227 (impersonator-val v))
+          (system-idle-evt?_2250 (impersonator-val v))
           #f))))))
-(define effect1229
+(define effect_2692
   (begin
     (register-struct-constructor! system-idle-evt1.1)
     (register-struct-predicate! system-idle-evt?)
@@ -11354,7 +11375,7 @@
 (define TICKS 100000)
 (define struct:future*
   (make-record-type-descriptor* 'future #f #f #f #f 10 1023))
-(define effect1239
+(define effect_2884
   (struct-type-install-properties!
    struct:future*
    'future
@@ -11403,7 +11424,7 @@
   (|#%name| set-future-state! (record-mutator struct:future* 8)))
 (define set-future*-dependents!
   (|#%name| set-future-dependents! (record-mutator struct:future* 9)))
-(define effect1240
+(define effect_3156
   (begin
     (register-struct-constructor! future*1.1)
     (register-struct-predicate! future*?)
@@ -11479,7 +11500,7 @@
    #f
    6
    63))
-(define effect1248
+(define effect_2666
   (struct-type-install-properties!
    struct:future-event
    'future-event
@@ -11497,113 +11518,115 @@
    future-event
    (record-constructor
     (make-record-constructor-descriptor struct:future-event #f #f))))
-(define future-event?1247
+(define future-event?_2528
   (|#%name| future-event? (record-predicate struct:future-event)))
 (define future-event?
   (|#%name|
    future-event?
    (lambda (v)
-     (if (future-event?1247 v)
+     (if (future-event?_2528 v)
        #t
        ($value
-        (if (impersonator? v) (future-event?1247 (impersonator-val v)) #f))))))
-(define future-event-future-id1249
+        (if (impersonator? v)
+          (future-event?_2528 (impersonator-val v))
+          #f))))))
+(define future-event-future-id_2042
   (|#%name| future-event-future-id (record-accessor struct:future-event 0)))
 (define future-event-future-id
   (|#%name|
    future-event-future-id
    (lambda (s)
-     (if (future-event?1247 s)
-       (future-event-future-id1249 s)
+     (if (future-event?_2528 s)
+       (future-event-future-id_2042 s)
        ($value
         (impersonate-ref
-         future-event-future-id1249
+         future-event-future-id_2042
          struct:future-event
          0
          s
          'future-event
          'future-id))))))
-(define future-event-proc-id1250
+(define future-event-proc-id_3059
   (|#%name| future-event-proc-id (record-accessor struct:future-event 1)))
 (define future-event-proc-id
   (|#%name|
    future-event-proc-id
    (lambda (s)
-     (if (future-event?1247 s)
-       (future-event-proc-id1250 s)
+     (if (future-event?_2528 s)
+       (future-event-proc-id_3059 s)
        ($value
         (impersonate-ref
-         future-event-proc-id1250
+         future-event-proc-id_3059
          struct:future-event
          1
          s
          'future-event
          'proc-id))))))
-(define future-event-action1251
+(define future-event-action_1972
   (|#%name| future-event-action (record-accessor struct:future-event 2)))
 (define future-event-action
   (|#%name|
    future-event-action
    (lambda (s)
-     (if (future-event?1247 s)
-       (future-event-action1251 s)
+     (if (future-event?_2528 s)
+       (future-event-action_1972 s)
        ($value
         (impersonate-ref
-         future-event-action1251
+         future-event-action_1972
          struct:future-event
          2
          s
          'future-event
          'action))))))
-(define future-event-time1252
+(define future-event-time_3029
   (|#%name| future-event-time (record-accessor struct:future-event 3)))
 (define future-event-time
   (|#%name|
    future-event-time
    (lambda (s)
-     (if (future-event?1247 s)
-       (future-event-time1252 s)
+     (if (future-event?_2528 s)
+       (future-event-time_3029 s)
        ($value
         (impersonate-ref
-         future-event-time1252
+         future-event-time_3029
          struct:future-event
          3
          s
          'future-event
          'time))))))
-(define future-event-prim-name1253
+(define future-event-prim-name_2605
   (|#%name| future-event-prim-name (record-accessor struct:future-event 4)))
 (define future-event-prim-name
   (|#%name|
    future-event-prim-name
    (lambda (s)
-     (if (future-event?1247 s)
-       (future-event-prim-name1253 s)
+     (if (future-event?_2528 s)
+       (future-event-prim-name_2605 s)
        ($value
         (impersonate-ref
-         future-event-prim-name1253
+         future-event-prim-name_2605
          struct:future-event
          4
          s
          'future-event
          'prim-name))))))
-(define future-event-user-data1254
+(define future-event-user-data_2504
   (|#%name| future-event-user-data (record-accessor struct:future-event 5)))
 (define future-event-user-data
   (|#%name|
    future-event-user-data
    (lambda (s)
-     (if (future-event?1247 s)
-       (future-event-user-data1254 s)
+     (if (future-event?_2528 s)
+       (future-event-user-data_2504 s)
        ($value
         (impersonate-ref
-         future-event-user-data1254
+         future-event-user-data_2504
          struct:future-event
          5
          s
          'future-event
          'user-data))))))
-(define effect1255
+(define effect_2671
   (begin
     (register-struct-constructor! future-event1.1)
     (register-struct-predicate! future-event?)
@@ -11785,7 +11808,7 @@
   (|#%name| futures-enabled? (lambda () (begin (|#%app| threaded?)))))
 (define struct:future-evt
   (make-record-type-descriptor* 'future-evt #f #f #f #f 1 1))
-(define effect1275
+(define effect_2234
   (struct-type-install-properties!
    struct:future-evt
    'future-evt
@@ -11817,33 +11840,33 @@
    future-evt
    (record-constructor
     (make-record-constructor-descriptor struct:future-evt #f #f))))
-(define future-evt?1274
+(define future-evt?_2974
   (|#%name| future-evt? (record-predicate struct:future-evt)))
 (define future-evt?
   (|#%name|
    future-evt?
    (lambda (v)
-     (if (future-evt?1274 v)
+     (if (future-evt?_2974 v)
        #t
        ($value
-        (if (impersonator? v) (future-evt?1274 (impersonator-val v)) #f))))))
-(define future-evt-future1279
+        (if (impersonator? v) (future-evt?_2974 (impersonator-val v)) #f))))))
+(define future-evt-future_3037
   (|#%name| future-evt-future (record-accessor struct:future-evt 0)))
 (define future-evt-future
   (|#%name|
    future-evt-future
    (lambda (s)
-     (if (future-evt?1274 s)
-       (future-evt-future1279 s)
+     (if (future-evt?_2974 s)
+       (future-evt-future_3037 s)
        ($value
         (impersonate-ref
-         future-evt-future1279
+         future-evt-future_3037
          struct:future-evt
          0
          s
          'future-evt
          'future))))))
-(define effect1280
+(define effect_2956
   (begin
     (register-struct-constructor! future-evt1.1)
     (register-struct-predicate! future-evt?)
@@ -12228,7 +12251,7 @@
 (define set-processor-count! (lambda (n_0) (set! pthread-count n_0)))
 (define struct:scheduler
   (make-record-type-descriptor* 'scheduler #f #f #f #f 6 63))
-(define effect1325
+(define effect_2611
   (struct-type-install-properties!
    struct:scheduler
    'scheduler
@@ -12265,7 +12288,7 @@
   (|#%name| set-scheduler-futures-head! (record-mutator struct:scheduler 1)))
 (define set-scheduler-futures-tail!
   (|#%name| set-scheduler-futures-tail! (record-mutator struct:scheduler 2)))
-(define effect1326
+(define effect_2249
   (begin
     (register-struct-constructor! scheduler7.1)
     (register-struct-predicate! scheduler?)
@@ -12286,7 +12309,7 @@
      2)
     (void)))
 (define struct:worker (make-record-type-descriptor* 'worker #f #f #f #f 5 31))
-(define effect1327
+(define effect_2322
   (struct-type-install-properties!
    struct:worker
    'worker
@@ -12318,7 +12341,7 @@
   (|#%name| set-worker-die?! (record-mutator struct:worker 3)))
 (define set-worker-ping!
   (|#%name| set-worker-ping! (record-mutator struct:worker 4)))
-(define effect1328
+(define effect_2526
   (begin
     (register-struct-constructor! worker8.1)
     (register-struct-predicate! worker?)
@@ -12788,9 +12811,9 @@
     (begin
       (set! wakeup-this-place wakeup_0)
       (set! ensure-place-wakeup-handle ensure_0))))
-(define effect1405
+(define effect_2150
   (begin (void (set! future-block-for-atomic future-block)) (void)))
-(define effect1406
+(define effect_2841
   (begin
     (void
      (set-custodian-future-callbacks!
@@ -13128,7 +13151,7 @@
     (begin0
       (unsafe-place-local-ref cell.4)
       (unsafe-place-local-set! cell.4 cb_0))))
-(define effect1441
+(define effect_2555
   (begin
     (void
      (let ((proc_0
@@ -13143,7 +13166,7 @@
   (lambda (proc_0) (set! check-place-activity proc_0)))
 (define struct:alarm-evt
   (make-record-type-descriptor* 'alarm-evt #f #f #f #f 1 1))
-(define effect1443
+(define effect_2693
   (struct-type-install-properties!
    struct:alarm-evt
    'alarm-evt
@@ -13173,33 +13196,33 @@
    alarm-evt
    (record-constructor
     (make-record-constructor-descriptor struct:alarm-evt #f #f))))
-(define alarm-evt?1442
+(define alarm-evt?_2440
   (|#%name| alarm-evt? (record-predicate struct:alarm-evt)))
 (define alarm-evt?
   (|#%name|
    alarm-evt?
    (lambda (v)
-     (if (alarm-evt?1442 v)
+     (if (alarm-evt?_2440 v)
        #t
        ($value
-        (if (impersonator? v) (alarm-evt?1442 (impersonator-val v)) #f))))))
-(define alarm-evt-msecs1447
+        (if (impersonator? v) (alarm-evt?_2440 (impersonator-val v)) #f))))))
+(define alarm-evt-msecs_2883
   (|#%name| alarm-evt-msecs (record-accessor struct:alarm-evt 0)))
 (define alarm-evt-msecs
   (|#%name|
    alarm-evt-msecs
    (lambda (s)
-     (if (alarm-evt?1442 s)
-       (alarm-evt-msecs1447 s)
+     (if (alarm-evt?_2440 s)
+       (alarm-evt-msecs_2883 s)
        ($value
         (impersonate-ref
-         alarm-evt-msecs1447
+         alarm-evt-msecs_2883
          struct:alarm-evt
          0
          s
          'alarm-evt
          'msecs))))))
-(define effect1448
+(define effect_2706
   (begin
     (register-struct-constructor! alarm-evt1.1)
     (register-struct-predicate! alarm-evt?)
@@ -13710,7 +13733,7 @@
        (call-with-semaphore/enable-break_0 s_0 proc_0 try-fail12_0 args_0))))))
 (define struct:will-executor
   (make-record-type-descriptor* 'will-executor #f #f #f #f 2 3))
-(define effect1465
+(define effect_2934
   (struct-type-install-properties!
    struct:will-executor
    'will-executor
@@ -13742,7 +13765,7 @@
   (|#%name| will-executor-host-we (record-accessor struct:will-executor 0)))
 (define will-executor-sema
   (|#%name| will-executor-sema (record-accessor struct:will-executor 1)))
-(define effect1469
+(define effect_2727
   (begin
     (register-struct-constructor! will-executor1.1)
     (register-struct-predicate! 1/will-executor?)
@@ -14069,7 +14092,7 @@
    #f
    4
    15))
-(define effect1491
+(define effect_2267
   (struct-type-install-properties!
    struct:place-event
    'place-event
@@ -14087,81 +14110,81 @@
    place-event
    (record-constructor
     (make-record-constructor-descriptor struct:place-event #f #f))))
-(define place-event?1490
+(define place-event?_2380
   (|#%name| place-event? (record-predicate struct:place-event)))
 (define place-event?
   (|#%name|
    place-event?
    (lambda (v)
-     (if (place-event?1490 v)
+     (if (place-event?_2380 v)
        #t
        ($value
-        (if (impersonator? v) (place-event?1490 (impersonator-val v)) #f))))))
-(define place-event-id1492
+        (if (impersonator? v) (place-event?_2380 (impersonator-val v)) #f))))))
+(define place-event-id_2098
   (|#%name| place-event-id (record-accessor struct:place-event 0)))
 (define place-event-id
   (|#%name|
    place-event-id
    (lambda (s)
-     (if (place-event?1490 s)
-       (place-event-id1492 s)
+     (if (place-event?_2380 s)
+       (place-event-id_2098 s)
        ($value
         (impersonate-ref
-         place-event-id1492
+         place-event-id_2098
          struct:place-event
          0
          s
          'place-event
          'id))))))
-(define place-event-action1493
+(define place-event-action_2875
   (|#%name| place-event-action (record-accessor struct:place-event 1)))
 (define place-event-action
   (|#%name|
    place-event-action
    (lambda (s)
-     (if (place-event?1490 s)
-       (place-event-action1493 s)
+     (if (place-event?_2380 s)
+       (place-event-action_2875 s)
        ($value
         (impersonate-ref
-         place-event-action1493
+         place-event-action_2875
          struct:place-event
          1
          s
          'place-event
          'action))))))
-(define place-event-data1494
+(define place-event-data_2440
   (|#%name| place-event-data (record-accessor struct:place-event 2)))
 (define place-event-data
   (|#%name|
    place-event-data
    (lambda (s)
-     (if (place-event?1490 s)
-       (place-event-data1494 s)
+     (if (place-event?_2380 s)
+       (place-event-data_2440 s)
        ($value
         (impersonate-ref
-         place-event-data1494
+         place-event-data_2440
          struct:place-event
          2
          s
          'place-event
          'data))))))
-(define place-event-time1495
+(define place-event-time_2569
   (|#%name| place-event-time (record-accessor struct:place-event 3)))
 (define place-event-time
   (|#%name|
    place-event-time
    (lambda (s)
-     (if (place-event?1490 s)
-       (place-event-time1495 s)
+     (if (place-event?_2380 s)
+       (place-event-time_2569 s)
        ($value
         (impersonate-ref
-         place-event-time1495
+         place-event-time_2569
          struct:place-event
          3
          s
          'place-event
          'time))))))
-(define effect1496
+(define effect_2648
   (begin
     (register-struct-constructor! place-event1.1)
     (register-struct-predicate! place-event?)
@@ -14555,7 +14578,7 @@
       (set-box! (place-activity-canary p_0) #t)
       (let ((h_0 (place-wakeup-handle p_0)))
         (|#%app| (sandman-do-wakeup the-sandman) h_0)))))
-(define effect1534
+(define effect_2845
   (begin
     (void
      (let ((proc_0
@@ -14750,7 +14773,7 @@
        (loop_0)))))
 (define struct:place-done-evt
   (make-record-type-descriptor* 'place-dead-evt #f #f #f #f 2 3))
-(define effect1542
+(define effect_3079
   (struct-type-install-properties!
    struct:place-done-evt
    'place-dead-evt
@@ -14791,35 +14814,35 @@
    place-done-evt
    (record-constructor
     (make-record-constructor-descriptor struct:place-done-evt #f #f))))
-(define place-done-evt?1541
+(define place-done-evt?_2138
   (|#%name| place-dead-evt? (record-predicate struct:place-done-evt)))
 (define place-done-evt?
   (|#%name|
    place-dead-evt?
    (lambda (v)
-     (if (place-done-evt?1541 v)
+     (if (place-done-evt?_2138 v)
        #t
        ($value
         (if (impersonator? v)
-          (place-done-evt?1541 (impersonator-val v))
+          (place-done-evt?_2138 (impersonator-val v))
           #f))))))
-(define place-done-evt-p1549
+(define place-done-evt-p_2323
   (|#%name| place-dead-evt-p (record-accessor struct:place-done-evt 0)))
 (define place-done-evt-p
   (|#%name|
    place-dead-evt-p
    (lambda (s)
-     (if (place-done-evt?1541 s)
-       (place-done-evt-p1549 s)
+     (if (place-done-evt?_2138 s)
+       (place-done-evt-p_2323 s)
        ($value
         (impersonate-ref
-         place-done-evt-p1549
+         place-done-evt-p_2323
          struct:place-done-evt
          0
          s
          'place-dead-evt
          'p))))))
-(define place-done-evt-get-result?1550
+(define place-done-evt-get-result?_2601
   (|#%name|
    place-dead-evt-get-result?
    (record-accessor struct:place-done-evt 1)))
@@ -14827,17 +14850,17 @@
   (|#%name|
    place-dead-evt-get-result?
    (lambda (s)
-     (if (place-done-evt?1541 s)
-       (place-done-evt-get-result?1550 s)
+     (if (place-done-evt?_2138 s)
+       (place-done-evt-get-result?_2601 s)
        ($value
         (impersonate-ref
-         place-done-evt-get-result?1550
+         place-done-evt-get-result?_2601
          struct:place-done-evt
          1
          s
          'place-dead-evt
          'get-result?))))))
-(define effect1551
+(define effect_2476
   (begin
     (register-struct-constructor! place-done-evt3.1)
     (register-struct-predicate! place-done-evt?)
@@ -14859,7 +14882,7 @@
          (place-done-evt3.1 p_0 #f))))))
 (define struct:message-queue
   (make-record-type-descriptor* 'message-queue #f #f #f #f 6 63))
-(define effect1552
+(define effect_2821
   (struct-type-install-properties!
    struct:message-queue
    'message-queue
@@ -14901,7 +14924,7 @@
   (|#%name|
    set-message-queue-waiters!
    (record-mutator struct:message-queue 4)))
-(define effect1553
+(define effect_2130
   (begin
     (register-struct-constructor! message-queue4.1)
     (register-struct-predicate! message-queue?)
@@ -15047,7 +15070,7 @@
                     (|#%app| success-k_0 (car q_0))))))))))))
 (define struct:pchannel
   (make-record-type-descriptor* 'place-channel #f #f #f #f 6 63))
-(define effect1576
+(define effect_2691
   (struct-type-install-properties!
    struct:pchannel
    'place-channel
@@ -15086,113 +15109,113 @@
    pchannel
    (record-constructor
     (make-record-constructor-descriptor struct:pchannel #f #f))))
-(define pchannel?1575
+(define pchannel?_3032
   (|#%name| place-channel? (record-predicate struct:pchannel)))
 (define pchannel?
   (|#%name|
    place-channel?
    (lambda (v)
-     (if (pchannel?1575 v)
+     (if (pchannel?_3032 v)
        #t
        ($value
-        (if (impersonator? v) (pchannel?1575 (impersonator-val v)) #f))))))
-(define pchannel-in-mq-e1582
+        (if (impersonator? v) (pchannel?_3032 (impersonator-val v)) #f))))))
+(define pchannel-in-mq-e_2571
   (|#%name| place-channel-in-mq-e (record-accessor struct:pchannel 0)))
 (define pchannel-in-mq-e
   (|#%name|
    place-channel-in-mq-e
    (lambda (s)
-     (if (pchannel?1575 s)
-       (pchannel-in-mq-e1582 s)
+     (if (pchannel?_3032 s)
+       (pchannel-in-mq-e_2571 s)
        ($value
         (impersonate-ref
-         pchannel-in-mq-e1582
+         pchannel-in-mq-e_2571
          struct:pchannel
          0
          s
          'place-channel
          'in-mq-e))))))
-(define pchannel-out-mq-e1583
+(define pchannel-out-mq-e_2865
   (|#%name| place-channel-out-mq-e (record-accessor struct:pchannel 1)))
 (define pchannel-out-mq-e
   (|#%name|
    place-channel-out-mq-e
    (lambda (s)
-     (if (pchannel?1575 s)
-       (pchannel-out-mq-e1583 s)
+     (if (pchannel?_3032 s)
+       (pchannel-out-mq-e_2865 s)
        ($value
         (impersonate-ref
-         pchannel-out-mq-e1583
+         pchannel-out-mq-e_2865
          struct:pchannel
          1
          s
          'place-channel
          'out-mq-e))))))
-(define pchannel-reader-key1584
+(define pchannel-reader-key_2908
   (|#%name| place-channel-reader-key (record-accessor struct:pchannel 2)))
 (define pchannel-reader-key
   (|#%name|
    place-channel-reader-key
    (lambda (s)
-     (if (pchannel?1575 s)
-       (pchannel-reader-key1584 s)
+     (if (pchannel?_3032 s)
+       (pchannel-reader-key_2908 s)
        ($value
         (impersonate-ref
-         pchannel-reader-key1584
+         pchannel-reader-key_2908
          struct:pchannel
          2
          s
          'place-channel
          'reader-key))))))
-(define pchannel-writer-key1585
+(define pchannel-writer-key_2620
   (|#%name| place-channel-writer-key (record-accessor struct:pchannel 3)))
 (define pchannel-writer-key
   (|#%name|
    place-channel-writer-key
    (lambda (s)
-     (if (pchannel?1575 s)
-       (pchannel-writer-key1585 s)
+     (if (pchannel?_3032 s)
+       (pchannel-writer-key_2620 s)
        ($value
         (impersonate-ref
-         pchannel-writer-key1585
+         pchannel-writer-key_2620
          struct:pchannel
          3
          s
          'place-channel
          'writer-key))))))
-(define pchannel-in-key-box1586
+(define pchannel-in-key-box_2626
   (|#%name| place-channel-in-key-box (record-accessor struct:pchannel 4)))
 (define pchannel-in-key-box
   (|#%name|
    place-channel-in-key-box
    (lambda (s)
-     (if (pchannel?1575 s)
-       (pchannel-in-key-box1586 s)
+     (if (pchannel?_3032 s)
+       (pchannel-in-key-box_2626 s)
        ($value
         (impersonate-ref
-         pchannel-in-key-box1586
+         pchannel-in-key-box_2626
          struct:pchannel
          4
          s
          'place-channel
          'in-key-box))))))
-(define pchannel-out-key-box1587
+(define pchannel-out-key-box_2914
   (|#%name| place-channel-out-key-box (record-accessor struct:pchannel 5)))
 (define pchannel-out-key-box
   (|#%name|
    place-channel-out-key-box
    (lambda (s)
-     (if (pchannel?1575 s)
-       (pchannel-out-key-box1587 s)
+     (if (pchannel?_3032 s)
+       (pchannel-out-key-box_2914 s)
        ($value
         (impersonate-ref
-         pchannel-out-key-box1587
+         pchannel-out-key-box_2914
          struct:pchannel
          5
          s
          'place-channel
          'out-key-box))))))
-(define effect1588
+(define effect_2649
   (begin
     (register-struct-constructor! pchannel5.1)
     (register-struct-predicate! pchannel?)
@@ -15331,7 +15354,7 @@
   (|#%name|
    place-pumper-threads
    (lambda (p_0 vec_0) (begin (set-place-pumpers! p_0 vec_0)))))
-(define effect1615
+(define effect_2262
   (begin
     (void
      (set-place-custodian-procs!
@@ -15343,7 +15366,7 @@
       (lambda () (wakeup-initial-place))
       (lambda (pl_0) (wakeup-waiting pl_0))))
     (void)))
-(define effect1616
+(define effect_2833
   (begin
     (void
      (set-place-future-procs!
@@ -15352,7 +15375,7 @@
     (void)))
 (define struct:fsemaphore
   (make-record-type-descriptor* 'fsemaphore #f #f #f #f 4 15))
-(define effect1613
+(define effect_2870
   (struct-type-install-properties!
    struct:fsemaphore
    'fsemaphore
@@ -15386,7 +15409,7 @@
   (|#%name| set-fsemaphore-dependents! (record-mutator struct:fsemaphore 2)))
 (define set-fsemaphore-dep-box!
   (|#%name| set-fsemaphore-dep-box! (record-mutator struct:fsemaphore 3)))
-(define effect1614
+(define effect_2759
   (begin
     (register-struct-constructor! fsemaphore1.1)
     (register-struct-predicate! 1/fsemaphore?)
@@ -15406,7 +15429,7 @@
     (void)))
 (define struct:fsemaphore-box-evt
   (make-record-type-descriptor* 'fsemaphore-box-evt #f #f #f #f 1 1))
-(define effect1618
+(define effect_2505
   (struct-type-install-properties!
    struct:fsemaphore-box-evt
    'fsemaphore-box-evt
@@ -15430,19 +15453,19 @@
    fsemaphore-box-evt
    (record-constructor
     (make-record-constructor-descriptor struct:fsemaphore-box-evt #f #f))))
-(define fsemaphore-box-evt?1617
+(define fsemaphore-box-evt?_2344
   (|#%name| fsemaphore-box-evt? (record-predicate struct:fsemaphore-box-evt)))
 (define fsemaphore-box-evt?
   (|#%name|
    fsemaphore-box-evt?
    (lambda (v)
-     (if (fsemaphore-box-evt?1617 v)
+     (if (fsemaphore-box-evt?_2344 v)
        #t
        ($value
         (if (impersonator? v)
-          (fsemaphore-box-evt?1617 (impersonator-val v))
+          (fsemaphore-box-evt?_2344 (impersonator-val v))
           #f))))))
-(define fsemaphore-box-evt-b1620
+(define fsemaphore-box-evt-b_2517
   (|#%name|
    fsemaphore-box-evt-b
    (record-accessor struct:fsemaphore-box-evt 0)))
@@ -15450,17 +15473,17 @@
   (|#%name|
    fsemaphore-box-evt-b
    (lambda (s)
-     (if (fsemaphore-box-evt?1617 s)
-       (fsemaphore-box-evt-b1620 s)
+     (if (fsemaphore-box-evt?_2344 s)
+       (fsemaphore-box-evt-b_2517 s)
        ($value
         (impersonate-ref
-         fsemaphore-box-evt-b1620
+         fsemaphore-box-evt-b_2517
          struct:fsemaphore-box-evt
          0
          s
          'fsemaphore-box-evt
          'b))))))
-(define effect1621
+(define effect_2342
   (begin
     (register-struct-constructor! fsemaphore-box-evt2.1)
     (register-struct-predicate! fsemaphore-box-evt?)
@@ -15610,7 +15633,7 @@
          (void))))))
 (define struct:os-semaphore
   (make-record-type-descriptor* 'os-semaphore #f #f #f #f 3 7))
-(define effect1638
+(define effect_2794
   (struct-type-install-properties!
    struct:os-semaphore
    'os-semaphore
@@ -15628,75 +15651,77 @@
    os-semaphore
    (record-constructor
     (make-record-constructor-descriptor struct:os-semaphore #f #f))))
-(define os-semaphore?1637
+(define os-semaphore?_1935
   (|#%name| os-semaphore? (record-predicate struct:os-semaphore)))
 (define os-semaphore?
   (|#%name|
    os-semaphore?
    (lambda (v)
-     (if (os-semaphore?1637 v)
+     (if (os-semaphore?_1935 v)
        #t
        ($value
-        (if (impersonator? v) (os-semaphore?1637 (impersonator-val v)) #f))))))
-(define os-semaphore-count1639
+        (if (impersonator? v)
+          (os-semaphore?_1935 (impersonator-val v))
+          #f))))))
+(define os-semaphore-count_2300
   (|#%name| os-semaphore-count (record-accessor struct:os-semaphore 0)))
 (define os-semaphore-count
   (|#%name|
    os-semaphore-count
    (lambda (s)
-     (if (os-semaphore?1637 s)
-       (os-semaphore-count1639 s)
+     (if (os-semaphore?_1935 s)
+       (os-semaphore-count_2300 s)
        ($value
         (impersonate-ref
-         os-semaphore-count1639
+         os-semaphore-count_2300
          struct:os-semaphore
          0
          s
          'os-semaphore
          'count))))))
-(define os-semaphore-mutex1640
+(define os-semaphore-mutex_3012
   (|#%name| os-semaphore-mutex (record-accessor struct:os-semaphore 1)))
 (define os-semaphore-mutex
   (|#%name|
    os-semaphore-mutex
    (lambda (s)
-     (if (os-semaphore?1637 s)
-       (os-semaphore-mutex1640 s)
+     (if (os-semaphore?_1935 s)
+       (os-semaphore-mutex_3012 s)
        ($value
         (impersonate-ref
-         os-semaphore-mutex1640
+         os-semaphore-mutex_3012
          struct:os-semaphore
          1
          s
          'os-semaphore
          'mutex))))))
-(define os-semaphore-condition1641
+(define os-semaphore-condition_1733
   (|#%name| os-semaphore-condition (record-accessor struct:os-semaphore 2)))
 (define os-semaphore-condition
   (|#%name|
    os-semaphore-condition
    (lambda (s)
-     (if (os-semaphore?1637 s)
-       (os-semaphore-condition1641 s)
+     (if (os-semaphore?_1935 s)
+       (os-semaphore-condition_1733 s)
        ($value
         (impersonate-ref
-         os-semaphore-condition1641
+         os-semaphore-condition_1733
          struct:os-semaphore
          2
          s
          'os-semaphore
          'condition))))))
-(define set-os-semaphore-count!1642
+(define set-os-semaphore-count!_2394
   (|#%name| set-os-semaphore-count! (record-mutator struct:os-semaphore 0)))
 (define set-os-semaphore-count!
   (|#%name|
    set-os-semaphore-count!
    (lambda (s v)
-     (if (os-semaphore?1637 s)
-       (set-os-semaphore-count!1642 s v)
+     (if (os-semaphore?_1935 s)
+       (set-os-semaphore-count!_2394 s v)
        ($value
         (impersonate-set!
-         set-os-semaphore-count!1642
+         set-os-semaphore-count!_2394
          struct:os-semaphore
          0
          0
@@ -15704,7 +15729,7 @@
          v
          'os-semaphore
          'count))))))
-(define effect1643
+(define effect_2303
   (begin
     (register-struct-constructor! os-semaphore1.1)
     (register-struct-predicate! os-semaphore?)
