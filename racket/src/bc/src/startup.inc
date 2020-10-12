@@ -31623,7 +31623,7 @@ static const char *startup_source =
 "(compile-quote-syntax"
 "(parsed-quote-syntax-datum p_0)"
 " cctx_0)"
-"(correlate~ s_0(list 'quote(syntax->datum$1 s_0)))))"
+"(correlate~ s_0 ''syntax)))"
 "(if(parsed-#%variable-reference? p_0)"
 "(let-values()"
 "(let-values(((id_0)"

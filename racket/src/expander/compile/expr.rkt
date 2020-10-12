@@ -106,7 +106,9 @@
      [(parsed-quote-syntax? p)
       (if result-used?
           (compile-quote-syntax (parsed-quote-syntax-datum p) cctx)
-          (correlate~ s `(quote ,(syntax->datum s))))]
+          ;; Note: the datum form of `s` has probably been pruned away,
+          ;; so don't try to use it here:
+          (correlate~ s `(quote syntax)))]
      [(parsed-#%variable-reference? p)
       (define id (parsed-#%variable-reference-id p))
       (correlate~ s 
