@@ -82,6 +82,9 @@
 (syntax-test #'(+ 3 . 4))
 (syntax-test #'(apply + 1 . 2))
 
+(test 'ok 'check-literal-quote-syntax-as-test (if (quote-syntax yes) 'ok 'bug!))
+(test 'ok2 'check-literal-quote-syntax-as-test (if (quote-syntax #f) 'ok2 'bug!))
+
 (test 8 (lambda (x) (+ x x)) 4)
 (define reverse-subtract
   (lambda (x y) (- y x)))
