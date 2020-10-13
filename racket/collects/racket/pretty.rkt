@@ -300,7 +300,7 @@
                                                    content)))
                              (lambda (use-line? offset width)
                                (when (and (number? width)
-                                          (not first-line?))
+                                         < (not first-line?))
                                  (newline p))
                                (set! first-line? #f)
                                0)
@@ -980,13 +980,15 @@
       (let-values ([(l col p) (port-next-location pport)])
         col))
 
-    (define (indent to)
+    (define (indent to #:need-space? [need-space? #t])
       (let ([col (ccol)])
-        (if (< to col)
+        (if (if need-space?
+                (<= to col)
+                (< to col))
             (begin
               (let ([col ((printing-port-print-line pport) #t col width)])
                 (spaces (- to col))))
-            (spaces (max 0 (- to col))))))
+            (spaces (- to col)))))
 
     (define (pr obj extra pp-pair depth qd)
       ;; may have to split on multiple lines
@@ -1255,12 +1257,15 @@
       (let ([col (ccol)])
         (pp-down close l col col extra pp-item #f check? depth
                  apair? acar acdr open close
-                 qd)))
+                 qd
+                 ;; No extra space needed before the first thing:
+                 #:need-space? #f)))
 
     (define (pp-down closer l col1 col2 extra pp-item check-first? check-rest? depth
                      apair? acar acdr open close 
-                     qd)
-      (let loop ([l l] [icol col1] [check? check-first?])
+                     qd
+                     #:need-space? [need-space? #t])
+      (let loop ([l l] [icol col1] [check? check-first?] [need-space? need-space?])
         (check-expr-found
          l pport (and check? (apair? l))
          (lambda (s) 
@@ -1280,9 +1285,9 @@
             [(apair? l)
              (let ([rest (acdr l)])
                (let ([extra (if (null? rest) (+ extra 1) 0)])
-                 (indent icol)
+                 (indent icol #:need-space? need-space?)
                  (pr (acar l) extra pp-item (dsub1 depth) qd)
-                 (loop rest col2 check-rest?)))]
+                 (loop rest col2 check-rest? #t)))]
             [(null? l)
              (out closer)]
             [else
@@ -1618,7 +1623,3 @@
          [else (raise-argument-error 'pretty-format "(or/c 'print 'write 'display)" mode)])
        t op #:newline? #f)
       (get-output-string op))))
-
-
-
-

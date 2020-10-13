@@ -533,5 +533,12 @@
   (test "\n" get-output-string o))
 
 ;; ----------------------------------------
+;; check that a symbol with a newline doesn't prevent space from being
+;; includined between symbols
+
+(test "'(12345678\n  |\na|\n  b)"
+      pretty-format (list 12345678 (string->symbol "\na") 'b) 10)
+
+;; ----------------------------------------
 
 (report-errs)
