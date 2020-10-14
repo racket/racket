@@ -105,7 +105,13 @@
 
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p (string-append name-str ": " task s "\n") args)
+      (apply fprintf p
+             (string-append name-str ": " task s
+                            (if timestamp-output?
+                                (format " @ ~a" (current-process-milliseconds))
+                                "")
+                            "\n")
+             args)
       (flush-output p)))
 
   (define (setup-printf task s . args)
@@ -159,6 +165,16 @@
   ;; avoid caching compile-file information across different collections:
   (define limit-cross-collection-cache?
     (getenv "PLT_SETUP_LIMIT_CACHE"))
+
+  ;; In non-parallel mode, forcing a GC after each collection or
+  ;; document is a relatively good time-to-space tradeoff, so do that
+  ;; unless `PLT_SETUP_NO_FORCE_GC` is set:
+  (define gc-after-each-sequential?
+    (not (getenv "PLT_SETUP_NO_FORCE_GC")))
+
+  ;; Option to show CPU time since startup on each status line:
+  (define timestamp-output?
+    (and (getenv "PLT_SETUP_SHOW_TIMESTAMPS") #t))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
@@ -1086,7 +1102,9 @@
         (setup-printf "making" "~a" (cc-name cc))
         (control-io
          (lambda (p where)
-            (set! gcs 2)
+            (when gc-after-each-sequential?
+              ;; trigger `(collect-garbage)` afterward, and again after next collection:
+              (set! gcs 2))
             (setup-fprintf p #f " in ~a"
                            (path->relative-string/setup
                             (path->complete-path where (cc-path cc))
@@ -1416,7 +1434,8 @@
               latex-dest auto-start-doc? (make-user) (force-user-docs)
               (make-tidy) (avoid-main-installation)
               (lambda (what go alt) (record-error what "building docs" go alt))
-              setup-printf))
+              setup-printf
+              gc-after-each-sequential?))
 
   (define (make-docs-step)
     (setup-printf #f (add-time "--- building documentation ---"))

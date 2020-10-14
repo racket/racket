@@ -350,8 +350,8 @@
     (define/public (jobs-cnt) (length queue))
     (super-new)))
 
-(define (list-queue list-of-work create-job-thunk job-success-thunk job-failure-thunk)
-  (make-object list-queue% list-of-work create-job-thunk job-success-thunk job-failure-thunk))
+(define (list-queue list-of-work create-job-thunk job-success-thunk job-failure-thunk [report-proc display])
+  (make-object list-queue% list-of-work create-job-thunk job-success-thunk job-failure-thunk report-proc))
 
 (define-syntax-rule (define-parallel-keyword-error d x)
   (d x (lambda (stx) (raise-syntax-error 'x "only allowed inside parallel worker definition" stx))))
