@@ -1282,6 +1282,7 @@
          [else
           (accept-or-reason (blame-add-missing-party b neg-party))
           (error 'flat-contract-with-explanation
-                 "expected that result of the first argument, when it"
-                 " is a procedure, to always escape when called"
-                 " (by calling raise-blame-error with the arguments it was given")])))))
+                 (string-append
+                   "expected that result of the first argument, when it"
+                   " is a procedure, to always escape when called"
+                   " (by calling raise-blame-error with the arguments it was given"))])))))
