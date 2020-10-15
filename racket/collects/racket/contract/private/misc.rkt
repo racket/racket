@@ -1285,4 +1285,4 @@
                  (string-append
                    "expected that result of the first argument, when it"
                    " is a procedure, to always escape when called"
-                   " (by calling raise-blame-error with the arguments it was given"))])))))
+                   " (by calling raise-blame-error with the arguments it was given)"))])))))
