@@ -201,4 +201,10 @@
                                                    (datum->syntax #'here '(lambda args #f)))])
                              (object-name (make-keyword-procedure (no-name)))))
 
+;; Test some primitives that have different names compared to Chez Scheme
+(test 'bytes? object-name bytes?)
+(test 'bytes-ref object-name bytes-ref)
+(test 'bytes-set! object-name bytes-set!)
+(test 'bytes-length object-name bytes-length)
+
 (report-errs)

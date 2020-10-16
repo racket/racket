@@ -12,9 +12,9 @@
             args)
   (register-place-shared (apply #2%bytevector args)))
 
-(define bytes? #2%bytevector?)
+(define (bytes? x) (#2%bytevector? x))
 
-(define bytes-length #2%bytevector-length)
+(define (bytes-length bstr) (#2%bytevector-length bstr))
 
 (define/who make-bytes
   (case-lambda
@@ -42,11 +42,11 @@
          lst)
   (u8-list->bytevector lst))
 
-(define bytes->list #2%bytevector->u8-list)
+(define (bytes->list bstr) (#2%bytevector->u8-list bstr))
 
-(define bytes-ref #2%bytevector-u8-ref)
-(define bytes-set! #2%bytevector-u8-set!)
-(define bytes->immutable-bytes #2%bytevector->immutable-bytevector)
+(define (bytes-ref bstr i) (#2%bytevector-u8-ref bstr i))
+(define (bytes-set! bstr i b) (#2%bytevector-u8-set! bstr i b))
+(define (bytes->immutable-bytes bstr) (#2%bytevector->immutable-bytevector bstr))
 
 (define/who bytes-copy!
   (case-lambda
