@@ -2736,6 +2736,10 @@
   (test '#(1062645402 3593208522 3838676319 2291995347 179540564 3081399108)
         pseudo-random-generator->vector (current-pseudo-random-generator)))
 
+(test 1110944503
+      random 4294967087 (vector->pseudo-random-generator
+                         '#(2182378604 1199273501 1921976687 2184096762 3398188531 1221198170)))
+
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))
 (test #f = (expt 2 32) 0)
