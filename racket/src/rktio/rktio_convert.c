@@ -356,10 +356,12 @@ static char *nl_langinfo_dup(rktio_t *rktio)
 {
   char *s;
 # if HAVE_CODESET
-#  ifdef RKTIO_USE_XLOCALE
-  s = nl_langinfo_l(CODESET, rktio->locale);
-#  else
+#  if defined(RKTIO_USE_XLOCALE)
+  locale_t old_l = uselocale(rktio->locale);
+#  endif
   s = nl_langinfo(CODESET);
+#  if defined(RKTIO_USE_XLOCALE)
+  uselocale(old_l);
 #  endif
 # else
   /* nl_langinfo doesn't work, so just make up something */
