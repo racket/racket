@@ -4188,6 +4188,62 @@ $as_echo "#define HAVE_DIRENT_NAMLEN 1" >>confdefs.h
 fi
 
 
+ msg="for xlocale.h"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+   # include <xlocale.h>
+   int main() {
+      return 0;
+   }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+$as_echo "#define RKTIO_USE_XLOCALE_HEADER 1" >>confdefs.h
+
+  xlocalehon=yes
+else
+  xlocalehon=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $xlocalehon" >&5
+$as_echo "$xlocalehon" >&6; }
+
+SAVE_CFLAGS="$CFLAGS"
+if test "${xlocalehon}" = "yes" ; then
+  CFLAGS="$CFLAGS -DRKTIO_USE_XLOCALE_HEADER"
+fi
+ msg="for xlocale functions"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+   #ifdef RKTIO_USE_XLOCALE_HEADER
+   # include <xlocale.h>
+   #endif
+   #include <locale.h>
+   int main() {
+      locale_t l = newlocale(LC_COLLATE_MASK | LC_CTYPE_MASK, "C", NULL);
+      freelocale(l);
+      return 0;
+   }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+$as_echo "#define RKTIO_USE_XLOCALE 1" >>confdefs.h
+
+  xlocaleon=yes
+else
+  xlocaleon=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $xlocaleon" >&5
+$as_echo "$xlocaleon" >&6; }
+CFLAGS="$SAVE_CFLAGS"
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo" >&5
 $as_echo_n "checking for getaddrinfo... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext

@@ -65,3 +65,6 @@ typedef unsigned long long rktio_uint64_t;
 #undef HAVE_DIRENT_NAMLEN
 #undef HAVE_DIRENT_NAMELEN
 
+/* In case xlocale is not available: */
+#undef RKTIO_USE_XLOCALE
+#undef RKTIO_USE_XLOCALE_HEADER

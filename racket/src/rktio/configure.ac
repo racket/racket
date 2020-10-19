@@ -158,6 +158,38 @@ AC_CHECK_MEMBER([struct dirent.d_namlen],
                 [AC_DEFINE(HAVE_DIRENT_NAMLEN, 1, [struct dirent has field namlen])],,
 		[#include <dirent.h>])
 
+[ msg="for xlocale.h" ]
+AC_MSG_CHECKING($msg)
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+   # include <xlocale.h>
+   int main() {
+      return 0;
+   }])],
+   AC_DEFINE(RKTIO_USE_XLOCALE_HEADER,1,[Use xlocale.h])
+  xlocalehon=yes, xlocalehon=no)
+AC_MSG_RESULT($xlocalehon)
+
+SAVE_CFLAGS="$CFLAGS"
+if test "${xlocalehon}" = "yes" ; then
+  CFLAGS="$CFLAGS -DRKTIO_USE_XLOCALE_HEADER"
+fi
+[ msg="for xlocale functions" ]
+AC_MSG_CHECKING($msg)
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+   #ifdef RKTIO_USE_XLOCALE_HEADER
+   # include <xlocale.h>
+   #endif
+   #include <locale.h>
+   int main() {
+      locale_t l = newlocale(LC_COLLATE_MASK | LC_CTYPE_MASK, "C", NULL);
+      freelocale(l);
+      return 0;
+   }])],
+   AC_DEFINE(RKTIO_USE_XLOCALE,1,[Use xlocale])
+  xlocaleon=yes, xlocaleon=no)
+AC_MSG_RESULT($xlocaleon)
+CFLAGS="$SAVE_CFLAGS"
+
 AC_MSG_CHECKING([for getaddrinfo])
 AC_TRY_LINK([#include <sys/types.h>
 #include <sys/socket.h>

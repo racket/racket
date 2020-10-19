@@ -595,14 +595,12 @@ char *rktio_locale_recase(rktio_t *rktio,
   wchar_t *wc, *ws, wcbuf[RKTIO_WC_BUF_SIZE], cwc;
   const char *s;
   unsigned int j;
-# ifdef RKTIO_USE_XLOCALE
-#  define mz_mbsnrtowcs(t, f, fl, tl, s) mbsrtowcs_l(t, f, tl, s, rktio->locale)
-#  define mz_wcsnrtombs(t, f, fl, tl, s) wcsrtombs_l(t, f, tl, s, rktio->locale)
-# else
-  /* The "n" versions are apparently not too standard: */
-#  define mz_mbsnrtowcs(t, f, fl, tl, s) mbsrtowcs(t, f, tl, s)
-#  define mz_wcsnrtombs(t, f, fl, tl, s) wcsrtombs(t, f, tl, s)
+# if defined(RKTIO_USE_XLOCALE)
+  locale_t old_l = uselocale(rktio->locale);
 # endif
+  /* The "n" versions are apparently not too standard: */
+# define mz_mbsnrtowcs(t, f, fl, tl, s) mbsrtowcs(t, f, tl, s)
+# define mz_wcsnrtombs(t, f, fl, tl, s) wcsrtombs(t, f, tl, s)
 
   /* ----- to wide char ---- */
 
@@ -669,6 +667,10 @@ char *rktio_locale_recase(rktio_t *rktio,
   out[ml] = 0;
 
   if (wc != wcbuf) free(wc);
+
+# if defined(RKTIO_USE_XLOCALE)
+  (void)uselocale(old_l);
+# endif
 
   return out;
 #endif

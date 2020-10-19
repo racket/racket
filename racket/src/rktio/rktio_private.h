@@ -12,7 +12,9 @@
 # include <pthread.h>
 #endif
 #ifdef RKTIO_USE_XLOCALE
-# include <xlocale.h>
+# ifdef RKTIO_USE_XLOCALE_HEADER
+#  include <xlocale.h>
+# endif
 #endif
 
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(RKTIO_STATIC_FDSET_SIZE)
