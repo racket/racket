@@ -103,12 +103,8 @@ jobs:
         export cpus=$(grep -c ^processor /proc/cpuinfo)
         make CPUS="${cpus}" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' cs-in-place 2>&1 | tee logs/build.log
     - name: Add new racket to PATH
-      # This should be:
-      # run: echo "::add-path::${{ github.workspace }}/racket/bin"
-      # but due to a github bug, the variable ${{ github.workspace }} value inside a container is broken
-      # so we hard code the real value
       run: |
-        echo "::add-path::/__w/racket/racket/racket/bin"
+        echo "${GITHUB_WORKSPACE}/racket/bin" >> $GITHUB_PATH
         find /__w/racket/racket/racket/bin -type f
     - name: Racket version
       run: |
