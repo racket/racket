@@ -33,6 +33,8 @@
              (char=? ch #\\)
              (char=? ch #\')
              (char=? ch #\,)
+             (char=? ch #\;)
+             (char=? ch #\`)
              (and (char=? ch #\|)
                   (or (not config) (config-get config read-accept-bar-quote)))
              (and for-type?

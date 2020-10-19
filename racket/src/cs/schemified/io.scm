@@ -20931,94 +20931,106 @@
                                                         (if or-part_9
                                                           or-part_9
                                                           (let ((or-part_10
-                                                                 (if (char=?
-                                                                      ch_0
-                                                                      '#\x7c)
-                                                                   (let ((or-part_10
-                                                                          (not
-                                                                           config8_0)))
-                                                                     (if or-part_10
-                                                                       or-part_10
-                                                                       (config-get
-                                                                        config8_0
-                                                                        1/read-accept-bar-quote)))
-                                                                   #f)))
+                                                                 (char=?
+                                                                  ch_0
+                                                                  '#\x3b)))
                                                             (if or-part_10
                                                               or-part_10
                                                               (let ((or-part_11
-                                                                     (if for-type?9_0
-                                                                       (let ((or-part_11
-                                                                              (char=?
-                                                                               ch_0
-                                                                               '#\x3c)))
-                                                                         (if or-part_11
-                                                                           or-part_11
-                                                                           (char=?
-                                                                            ch_0
-                                                                            '#\x3e)))
-                                                                       #f)))
+                                                                     (char=?
+                                                                      ch_0
+                                                                      '#\x60)))
                                                                 (if or-part_11
                                                                   or-part_11
                                                                   (let ((or-part_12
-                                                                         (if (char-whitespace?
-                                                                              ch_0)
+                                                                         (if (char=?
+                                                                              ch_0
+                                                                              '#\x7c)
                                                                            (let ((or-part_12
                                                                                   (not
-                                                                                   for-type?9_0)))
+                                                                                   config8_0)))
                                                                              (if or-part_12
                                                                                or-part_12
-                                                                               (not
-                                                                                (char=?
-                                                                                 ch_0
-                                                                                 '#\x20))))
+                                                                               (config-get
+                                                                                config8_0
+                                                                                1/read-accept-bar-quote)))
                                                                            #f)))
                                                                     (if or-part_12
                                                                       or-part_12
                                                                       (let ((or-part_13
-                                                                             (if (char=?
-                                                                                  ch_0
-                                                                                  '#\x23)
-                                                                               (if (zero?
-                                                                                    i_0)
-                                                                                 (let ((or-part_13
-                                                                                        (<
-                                                                                         (string-length
-                                                                                          str_0)
-                                                                                         2)))
-                                                                                   (if or-part_13
-                                                                                     or-part_13
-                                                                                     (not
+                                                                             (if for-type?9_0
+                                                                               (let ((or-part_13
                                                                                       (char=?
-                                                                                       (string-ref
-                                                                                        str_0
-                                                                                        1)
-                                                                                       '#\x25))))
-                                                                                 #f)
+                                                                                       ch_0
+                                                                                       '#\x3c)))
+                                                                                 (if or-part_13
+                                                                                   or-part_13
+                                                                                   (char=?
+                                                                                    ch_0
+                                                                                    '#\x3e)))
                                                                                #f)))
                                                                         (if or-part_13
                                                                           or-part_13
                                                                           (let ((or-part_14
-                                                                                 (if (char=?
-                                                                                      ch_0
-                                                                                      '#\x2e)
-                                                                                   (if (zero?
-                                                                                        i_0)
-                                                                                     (=
-                                                                                      (string-length
-                                                                                       str_0)
-                                                                                      1)
-                                                                                     #f)
+                                                                                 (if (char-whitespace?
+                                                                                      ch_0)
+                                                                                   (let ((or-part_14
+                                                                                          (not
+                                                                                           for-type?9_0)))
+                                                                                     (if or-part_14
+                                                                                       or-part_14
+                                                                                       (not
+                                                                                        (char=?
+                                                                                         ch_0
+                                                                                         '#\x20))))
                                                                                    #f)))
                                                                             (if or-part_14
                                                                               or-part_14
-                                                                              (if (not
-                                                                                   case-sensitive?_0)
-                                                                                (not
-                                                                                 (char=?
-                                                                                  ch_0
-                                                                                  (char-foldcase
-                                                                                   ch_0)))
-                                                                                #f))))))))))))))))))))))))))))))))))))
+                                                                              (let ((or-part_15
+                                                                                     (if (char=?
+                                                                                          ch_0
+                                                                                          '#\x23)
+                                                                                       (if (zero?
+                                                                                            i_0)
+                                                                                         (let ((or-part_15
+                                                                                                (<
+                                                                                                 (string-length
+                                                                                                  str_0)
+                                                                                                 2)))
+                                                                                           (if or-part_15
+                                                                                             or-part_15
+                                                                                             (not
+                                                                                              (char=?
+                                                                                               (string-ref
+                                                                                                str_0
+                                                                                                1)
+                                                                                               '#\x25))))
+                                                                                         #f)
+                                                                                       #f)))
+                                                                                (if or-part_15
+                                                                                  or-part_15
+                                                                                  (let ((or-part_16
+                                                                                         (if (char=?
+                                                                                              ch_0
+                                                                                              '#\x2e)
+                                                                                           (if (zero?
+                                                                                                i_0)
+                                                                                             (=
+                                                                                              (string-length
+                                                                                               str_0)
+                                                                                              1)
+                                                                                             #f)
+                                                                                           #f)))
+                                                                                    (if or-part_16
+                                                                                      or-part_16
+                                                                                      (if (not
+                                                                                           case-sensitive?_0)
+                                                                                        (not
+                                                                                         (char=?
+                                                                                          ch_0
+                                                                                          (char-foldcase
+                                                                                           ch_0)))
+                                                                                        #f))))))))))))))))))))))))))))))))))))))))
            (loop_0
             (|#%name|
              loop
