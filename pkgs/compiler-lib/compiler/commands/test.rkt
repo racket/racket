@@ -43,6 +43,8 @@
 
 (define default-timeout #f) ; #f means "none"
 (define default-mode #f) ; #f => depends on how many files are provided
+(define default-output-port (current-output-port))
+(define default-error-port (current-error-port))
 
 (define single-file? #t)
 
@@ -150,7 +152,6 @@
       (define stdin (if empty-input?
                         (open-input-bytes #"")
                         (current-input-port)))
-
       (unless quiet?
         (when responsible
           (fprintf stdout "raco test:~a @(test-responsible '~s)\n"
@@ -1092,41 +1093,48 @@
  [("--table" "-t")
   "Print a summary table"
   (set! table? #t)]
+ #:once-each
+ [("--output" "-o") filename
+  "Save stdout and stderr to file"
+  (set! default-output-port (open-output-file (string->path filename) #:exists 'truncate))
+  (set! default-error-port default-output-port)]
  #:args file-or-directory-or-collects-or-pkgs
  (let ()
-   (define file-or-directory
-     (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
-   (unless (= 1 (length file-or-directory))
-     (set! single-file? #f))
-   (when (and (eq? configure-runtime 'default)
-              (or (and (not single-file?)
-                       (not (memq default-mode '(process place))))
-                  (not (null? submodules))))
-     (set! configure-runtime #f))
-   (define sum
-     ;; The #:sema argument everywhre makes tests start
-     ;; in a deterministic order:
-     (map/parallel (lambda (f #:sema s)
-                     (test-top f
-                               #:check-suffix? check-top-suffix?
-                               #:sema s))
-                   file-or-directory
-                   #:sema (make-semaphore)))
-   (when table?
-     (display-summary sum))
-   (unless (or (eq? default-mode 'direct)
-               (and (not default-mode) single-file?))
-     ;; Re-log failures and successes, and then report using `test-log`.
-     ;; (This is awkward; is it better to not try to use `test-log`?)
-     (for ([s (in-list sum)])
-       (for ([i (in-range (summary-failed s))])
-         (test-log! #f))
-       (for ([i (in-range (- (summary-total s)
-                             (summary-failed s)))])
-         (test-log! #t))))
-   (test-log #:display? #t #:exit? #f)
-   (define sum1 (call-with-summary #f (lambda () sum)))
-   (exit (cond
-           [(positive? (summary-timeout sum1)) 2]
-           [(positive? (summary-failed sum1)) 1]
-           [else 0]))))
+   (parameterize ([current-output-port default-output-port]
+                  [current-error-port default-error-port])
+     (define file-or-directory
+       (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
+     (unless (= 1 (length file-or-directory))
+       (set! single-file? #f))
+     (when (and (eq? configure-runtime 'default)
+                (or (and (not single-file?)
+                         (not (memq default-mode '(process place))))
+                    (not (null? submodules))))
+       (set! configure-runtime #f))
+     (define sum
+       ;; The #:sema argument everywhre makes tests start
+       ;; in a deterministic order:
+       (map/parallel (lambda (f #:sema s)
+                       (test-top f
+                                 #:check-suffix? check-top-suffix?
+                                 #:sema s))
+                     file-or-directory
+                     #:sema (make-semaphore)))
+     (when table?
+       (display-summary sum))
+     (unless (or (eq? default-mode 'direct)
+                 (and (not default-mode) single-file?))
+       ;; Re-log failures and successes, and then report using `test-log`.
+       ;; (This is awkward; is it better to not try to use `test-log`?)
+       (for ([s (in-list sum)])
+         (for ([i (in-range (summary-failed s))])
+           (test-log! #f))
+         (for ([i (in-range (- (summary-total s)
+                               (summary-failed s)))])
+           (test-log! #t))))
+     (test-log #:display? #t #:exit? #f)
+     (define sum1 (call-with-summary #f (lambda () sum)))
+     (exit (cond
+             [(positive? (summary-timeout sum1)) 2]
+             [(positive? (summary-failed sum1)) 1]
+             [else 0])))))
