@@ -1,7 +1,8 @@
 #lang racket/base
 (require "command-name.rkt"
          "all-tools.rkt"
-         racket/string)
+         racket/string
+         racket/list)
 
 (module test racket/base)
 
@@ -38,13 +39,48 @@
   ((executable-yield-handler) result) ; to enable GUI commands
   (exit result))
 
+(define (parse-cmd-output-option cmdline)
+  (let* ([tout-idx (index-of cmdline "--cmd-output")]
+         [cmd-is-not-help (not (and (pair? cmdline)
+                                    (equal? "help" (car cmdline))))])
+    (if (and tout-idx
+             (< tout-idx (sub1 (length cmdline)))
+             cmd-is-not-help)
+        (string->path (list-ref cmdline (add1 tout-idx)))
+        #f)))
+
+(define (remove-cmd-output-option cmdline cmd-output-file)
+  (if (not (path? cmd-output-file))
+      cmdline
+      (let ([tout-idx (index-of cmdline "--cmd-output")]
+            [tout-file-idx (index-of cmdline (path->string cmd-output-file))])
+        (append (take cmdline tout-idx)
+                (drop cmdline (add1 tout-file-idx))))))
+
+(define (open-cmd-output-port cmd-output-file)
+  (if (path? cmd-output-file)
+      (with-handlers ([exn:fail:filesystem:errno?
+                       (lambda (e)
+                         (displayln e)
+                         (displayln "Failed to open output file, fallback to standard output")
+                         (current-output-port))])
+        (open-output-file cmd-output-file
+                          #:exists 'truncate))
+      (current-output-port)))
+
 (let* ([cmdline (vector->list (current-command-line-arguments))]
+       ; Convert: raco help xyz a b c -> raco xynz --help a b c
        [cmdline (if (and (pair? cmdline)
                          (equal? "help" (car cmdline))
                          (pair? (cdr cmdline))
                          (not (regexp-match? #rx"^-" (cadr cmdline))))
                     (list* (cadr cmdline) "--help" (cddr cmdline))
                     cmdline)]
+       ; Output to file, --cmd-output <file-name>
+       [cmd-output-file (parse-cmd-output-option cmdline)]
+       [cmd-output-port (open-cmd-output-port cmd-output-file)]
+       [cmdline (remove-cmd-output-option cmdline cmd-output-file)]
+
        [tools (all-tools)]
        [prefix-tools (if (pair? cmdline)
                          (filter-by-prefix tools (car cmdline))
@@ -67,9 +103,12 @@
           #f]
          [tool
           (parameterize ([current-command-line-arguments (list->vector (cdr cmdline))]
-                         [current-command-name (car tool)])
-             (dynamic-require (cadr tool) #f)
-             (done))]
+                         [current-command-name (car tool)]
+                         [current-output-port cmd-output-port])
+            (dynamic-require (cadr tool) #f)
+            (when (file-stream-port? cmd-output-port)
+              (close-output-port cmd-output-port))
+            (done))]
          [ambiguous?
           (eprintf "~a: Ambiguous command prefix: ~a\n\n"
                    (find-system-path 'run-file)
