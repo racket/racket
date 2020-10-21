@@ -127,9 +127,9 @@
                                    (lambda ()
                                      (begin
                                        (vector-cas! ,syntax-literals-id pos #f stx)
-                                       (let-values ([(stx) (unsafe-vector*-ref ,syntax-literals-id pos)])
-                                         (if stx
-                                             stx
+                                       (let-values ([(new-stx) (unsafe-vector*-ref ,syntax-literals-id pos)])
+                                         (if new-stx
+                                             new-stx
                                              (loop)))))])
                     (loop))))))))))
 
