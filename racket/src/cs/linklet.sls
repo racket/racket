@@ -180,6 +180,7 @@
   (define post-lambda-on? (getenv "PLT_LINKLET_SHOW_POST_LAMBDA"))
   (define post-interp-on? (getenv "PLT_LINKLET_SHOW_POST_INTERP"))
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
+  (define paths-on? (getenv "PLT_LINKLET_SHOW_PATHS"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
@@ -189,6 +190,7 @@
                        post-lambda-on?
                        post-interp-on?
                        jit-demand-on?
+                       paths-on?
                        known-on?
                        cp0-on?
                        assembly-on?
@@ -466,7 +468,7 @@
   (define (linklet-pack-exports-info! l)
     (let ([info (linklet-exports-info l)])
       (when (hash? info)
-        (let ([new-info (->fasl info)])
+        (let ([new-info (->fasl info fixup-correlated-srclocs)])
           (linklet-exports-info-set! l new-info)))))
 
   (define (linklet-unpack-exports-info! l)
@@ -588,6 +590,8 @@
            (if (eq? format 'interpret)
                (interpretable-jitified-linklet impl-lam serializable?)
                (correlated->annotation impl-lam serializable? sfd-cache))))
+       (when paths-on?
+         (show "paths" paths))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (when (and cp0-on? (eq? format 'compile))
@@ -602,6 +606,8 @@
                                 (cross-compile-to-bytevector cross-machine impl format)
                                 (compile-to-bytevector impl format))
                             (values (compile-to-proc impl paths format) '#()))])
+            (when paths-on?
+              (show "source paths" sfd-paths))
             (let ([lk (make-linklet code
                                     paths
                                     sfd-paths

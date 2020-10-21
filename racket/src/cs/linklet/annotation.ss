@@ -92,3 +92,20 @@
           s
           (cons a d)))]
    [else s]))
+
+;; --------------------------------------------------
+
+;; A correlated might have a srcloc that has a source that cannot be
+;; marshaled; handle that at the last minute by discarding the source
+(define (fixup-correlated-srclocs v)
+  (cond
+    [(srcloc? v)
+     (srcloc #f
+             (srcloc-line v)
+             (srcloc-column v)
+             (srcloc-position v)
+             (srcloc-span v))]
+    [else
+     (raise-arguments-error 'fixup-correlated-srclocs
+                            "cannot fixup value"
+                            "value" v)]))

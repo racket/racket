@@ -5,5 +5,5 @@
          fasl->)
 
 ;; Variants without keyword arguments:
-(define (->fasl v) (s-exp->fasl v))
+(define (->fasl v [handle-fail #f]) (s-exp->fasl v #:handle-fail handle-fail))
 (define (fasl-> f) (fasl->s-exp f))

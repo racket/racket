@@ -60141,5 +60141,13 @@
                      (let ((d_2 (cdr (unwrap d_1)))) d_2)))))
             (<= (body-leftover-size_0 serializable?_0 body_0 size_0) 0))
           (error 'match "failed ~e" e_0))))))
-(define ->fasl (lambda (v_0) (s-exp->fasl.1 #f #f #f v_0 #f)))
+(define ->fasl
+  (let ((->fasl_0
+         (|#%name|
+          ->fasl
+          (lambda (v2_0 handle-fail1_0)
+            (begin (s-exp->fasl.1 #f handle-fail1_0 #f v2_0 #f))))))
+    (case-lambda
+     ((v_0) (->fasl_0 v_0 #f))
+     ((v_0 handle-fail1_0) (->fasl_0 v_0 handle-fail1_0)))))
 (define fasl-> (lambda (f_0) (fasl->s-exp.1 #t unsafe-undefined f_0)))

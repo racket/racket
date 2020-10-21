@@ -112,6 +112,9 @@ forms or adjust the way forms are displayed:
          compilation of form that were previously prepared by
          compilation with @envvar{PLT_CS_JIT} set}
 
+   @item{@envvar-indexed{PLT_LINKLET_SHOW_PATHS} --- show lifted
+         path and serialization information alongside a schemified form}
+
    @item{@envvar-indexed{PLT_LINKLET_SHOW_KNOWN} --- show recorded
          known-binding information alongside a schemified form}
 

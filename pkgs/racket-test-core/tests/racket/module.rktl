@@ -3369,4 +3369,20 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([m '(module cross-inline-function-with-strange-srcloc racket/base
+            (require (for-syntax racket/base))
+            (define-syntax (m stx)
+              (struct opaque ())
+              #`(begin
+                  (provide f)
+                  (define f
+                    #,(datum->syntax #'here
+                                     '(lambda (x) x)
+                                     (vector (opaque) 1 2 3 4)))))
+            (m))])
+  ;; Make sure this doesn't error:
+  (write (compile m) (open-output-bytes)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
