@@ -43,8 +43,7 @@
 
 (define default-timeout #f) ; #f means "none"
 (define default-mode #f) ; #f => depends on how many files are provided
-(define default-output-port (current-output-port))
-(define default-error-port (current-error-port))
+(define default-output-file #f) ; #f means no --output option specified
 
 (define single-file? #t)
 
@@ -1096,11 +1095,9 @@
  #:once-each
  [("--output" "-o") filename
   "Save stdout and stderr to file"
-  (set! default-output-port (open-output-file (string->path filename) #:exists 'truncate))
-  (set! default-error-port default-output-port)]
+  (set! default-output-file filename)]
  #:args file-or-directory-or-collects-or-pkgs
- (parameterize ([current-output-port default-output-port]
-                [current-error-port default-error-port])
+ (define (test-main)
    (define file-or-directory
      (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
    (unless (= 1 (length file-or-directory))
@@ -1136,4 +1133,14 @@
    (exit (cond
            [(positive? (summary-timeout sum1)) 2]
            [(positive? (summary-failed sum1)) 1]
-           [else 0]))))
+           [else 0])))
+
+ (if (string? default-output-file)
+     (call-with-output-file*
+      (string->path default-output-file)
+      (lambda (o)
+        (parameterize ([current-output-port o]
+                       [current-error-port o])
+          (test-main)))
+       #:exists 'truncate)
+     (test-main)))
