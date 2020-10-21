@@ -519,8 +519,14 @@
               [else
                (define new-loop-if-tail
                  (hash-set (for/hasheq ([(id bx) (in-hash loop-if-tail)])
-                             (values id (box #f)))
-                           u-id (box #f)))
+                             ;; If box is set, create a new one to find out if it's
+                             ;; specifically set here. Otherwise, use existing box
+                             ;; to propagate from here to elsewhere
+                             (if (unbox bx)
+                                 (values id (box #f))
+                                 (values id bx)))
+                           u-id
+                           (box #f)))
                (define new-loops
                  (find-loops-in-tail-called rhs lifts new-loop-if-tail loops))
                (cond
@@ -528,7 +534,7 @@
                   new-loops]
                  [else
                   ;; Not a loop, so any reference added in `new-loop-if-tail`
-                  ;; is also to a non-loop
+                  ;; is also a non-loop
                   (for/fold ([loops new-loops]) ([(id bx) (in-hash new-loop-if-tail)])
                     (if (unbox bx)
                         (hash-remove loops id)

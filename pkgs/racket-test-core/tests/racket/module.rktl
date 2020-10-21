@@ -3414,4 +3414,34 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module regression-test-for-loop-detection racket/base
+  (provide go)
+  
+  (define (f pick)
+    (let would-be-loop ([v #f])
+      (if (pick)
+          (let not-a-loop ()
+            (if (pick)
+                (let also-would-be-loop ()
+                  (if (pick)
+                      (if (pick)
+                          (also-would-be-loop)
+                          (would-be-loop #t))
+                      null))
+                (if (pick)
+                    (list (not-a-loop))
+                    null)))
+          (would-be-loop v))))
+
+  (define (go)
+    (f (let ([l '(#t #t #t #f #t #f #f)])
+         (lambda ()
+           (begin0
+             (car l)
+             (set! l (cdr l))))))))
+
+(test '() (dynamic-require ''regression-test-for-loop-detection 'go))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

@@ -37652,10 +37652,15 @@
                                                               (let ((table_1
                                                                      (call-with-values
                                                                       (lambda ()
-                                                                        (values
-                                                                         id_1
-                                                                         (box
-                                                                          #f)))
+                                                                        (if (unbox
+                                                                             bx_0)
+                                                                          (values
+                                                                           id_1
+                                                                           (box
+                                                                            #f))
+                                                                          (values
+                                                                           id_1
+                                                                           bx_0)))
                                                                       (case-lambda
                                                                        ((key_0
                                                                          val_0)
