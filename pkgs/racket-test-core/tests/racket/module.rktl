@@ -3397,4 +3397,21 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module regression-test-for-delayed-set!-after-direct-use racket/base
+  (define align
+    (lambda ()
+      'ok))
+  
+  (define strings-are-numbers
+    (let-values ([(real-align) align])
+      (lambda ()
+        (set! align 7)
+        real-align)))
+  
+  (void (strings-are-numbers)))
+
+(dynamic-require ''regression-test-for-delayed-set!-after-direct-use #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

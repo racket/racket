@@ -221,7 +221,8 @@
                 [ids
                  ;; Chain delays
                  (delay! ids (lambda ()
-                               (hash-remove! mutated v)
+                               (when (eq? (hash-ref mutated v #f) state)
+                                 (hash-remove! mutated v))
                                (state)))]
                 [else
                  (hash-remove! mutated v)

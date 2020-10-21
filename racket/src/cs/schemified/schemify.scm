@@ -19213,9 +19213,16 @@
                                                         ids_0
                                                         (lambda ()
                                                           (begin
-                                                            (hash-remove!
-                                                             mutated_0
-                                                             v_1)
+                                                            (if (eq?
+                                                                 (hash-ref
+                                                                  mutated_0
+                                                                  v_1
+                                                                  #f)
+                                                                 state_0)
+                                                              (hash-remove!
+                                                               mutated_0
+                                                               v_1)
+                                                              (void))
                                                             (|#%app|
                                                              state_0))))
                                                        (begin
