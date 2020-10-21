@@ -1100,7 +1100,7 @@
   (set! default-error-port default-output-port)]
  #:args file-or-directory-or-collects-or-pkgs
  (parameterize ([current-output-port default-output-port]
-                  [current-error-port default-error-port])
+                [current-error-port default-error-port])
    (define file-or-directory
      (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
    (unless (= 1 (length file-or-directory))
