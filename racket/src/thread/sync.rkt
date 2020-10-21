@@ -399,6 +399,27 @@
        (schedule-info-did-work! sched-info)
        (end-atomic)
        (loop (syncer-next sr) 0 #f #f)]
+      [(nested-sync-evt? (syncer-evt sr))
+       ;; Have to go out of atomic mode to continue:
+       (end-atomic)
+       (define-values (same? new-evt) (poll-nested-sync (syncer-evt sr) just-poll? fast-only? sched-info))
+       (cond
+         [same?
+          (loop (syncer-next sr) 0 polled-all-so-far? no-wrappers?)]
+         [else
+          ;; Since we left atomic mode, double-check that we're
+          ;; still syncing before installing the replacement event:
+          (atomically
+           (unless (syncing-selected s)
+             (set-syncer-evt! sr new-evt))
+           (void))
+          (cond
+            [fast-only?
+             ;; Conservative, because we don't know whether `same?` was #f
+             ;; because the nested sync had non-fast elements
+             (none-k sched-info #f #f)]
+            [else
+             (loop sr (add1 retries) polled-all-so-far? no-wrappers?)])])]
       [else
        (define ctx (poll-ctx just-poll?
                              ;; Call back for asynchronous selection,
@@ -729,7 +750,7 @@
   #:reflection-name 'evt)
 
 (struct nested-sync-evt (s next orig-evt)
-  #:property prop:evt (poller (lambda (self poll-ctx) (poll-nested-sync self poll-ctx)))
+  #:property prop:evt (poller (lambda (self poll-ctx) (values #f self)))
   #:reflection-name 'evt)
 
 (define/who (replace-evt evt next)
@@ -754,12 +775,10 @@
          (lambda () (syncing-retry! s)))))))
   orig-evt)
 
-(define (poll-nested-sync ns poll-ctx)
+(define (poll-nested-sync ns just-poll? fast-only? sched-info)
   (sync-poll (nested-sync-evt-s ns)
              #:fail-k (lambda (sched-info polled-all? no-wrappers?)
-                        (unless polled-all?
-                          (set-poll-ctx-incomplete?! poll-ctx #f))
-                        (values #f ns))
+                        (values polled-all? ns))
              #:success-k (lambda (thunk)
                            ;; `thunk` produces the values of the evt
                            ;; that was provided to `replace-evt`:
@@ -778,9 +797,10 @@
                                     'reset
                                     void
                                     'reset)))
-             #:just-poll? (poll-ctx-poll? poll-ctx)
+             #:just-poll? just-poll?
              #:done-after-poll? #f
-             #:schedule-info (poll-ctx-sched-info poll-ctx)))
+             #:fast-only? fast-only?
+             #:schedule-info sched-info))
 
 ;; ----------------------------------------
 

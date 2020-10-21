@@ -712,6 +712,19 @@
     (thread (lambda () (semaphore-post s) (sleep) (semaphore-post s)))
     (test s chain-evts s s)))
 
+;; indirectly check that a `guard-evt` callabck in a `replace-evt`
+;; is not called in atomic mode; if it is, then the thread won't
+;; escape and terminate right
+(test #t thread? (sync
+                  (thread
+                   (lambda ()
+                     (let/cc esc
+                       (sync (replace-evt
+                              (guard-evt
+                               (lambda ()
+                                 (esc 'done)))
+                              void)))))))
+
 ;; ----------------------------------------
 ;; Structures as waitables
 
