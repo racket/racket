@@ -31550,10 +31550,15 @@
                                                                                             'set!
                                                                                             id_0
                                                                                             tmp_0)))
-                                                                                        (list
-                                                                                         'set!
-                                                                                         id_0
-                                                                                         new-rhs_0))))))))
+                                                                                        (if (not
+                                                                                             state_0)
+                                                                                          (list
+                                                                                           'void
+                                                                                           new-rhs_0)
+                                                                                          (list
+                                                                                           'set!
+                                                                                           id_0
+                                                                                           new-rhs_0)))))))))
                                                                            (args
                                                                             (raise-binding-result-arity-error
                                                                              2

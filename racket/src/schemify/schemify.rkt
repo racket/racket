@@ -688,6 +688,12 @@
                   `(let ([,tmp ,new-rhs])
                      (check-not-unsafe-undefined/assign ,id ',(too-early-mutated-state-name state int-id))
                      (set! ,id ,tmp))]
+                 [(not state)
+                  ;; It's worrying that `id` is not marked as mutable, but this is
+                  ;; possible when mutability inference determines that the `set!` is
+                  ;; dead code. Since the variable is not mutated, it might even be
+                  ;; optimized away by schemify; so, just in case, discard the `set!`.
+                  `(void ,new-rhs)]
                  [else
                   `(set! ,id ,new-rhs)])])]
            [`(variable-reference-constant? (#%variable-reference ,id))

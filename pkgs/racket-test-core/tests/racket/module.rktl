@@ -3385,4 +3385,16 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module regression-test-for-set!-in-dead-compile-time-code '#%kernel
+  (#%require (for-syntax '#%kernel))
+  
+  (begin-for-syntax
+    (let-values ([(fresh)
+                  (let-values ([(weird-next) 0])
+                    (lambda ()
+                      (set! weird-next (add1 weird-next))))])
+      10)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
