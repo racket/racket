@@ -39,7 +39,6 @@
                                    (if a "#true" "#false")
                                    (if a "#t" "#f")))]
     [(number? a) (number->string a)]
-    [(keyword? a) (string-append "#:" (keyword->string a))]
     [else #f]))
 
 (define format
@@ -52,6 +51,7 @@
               [(bytes? a) (bytes->string/utf-8 a #\?)]
               [(string? a) (string-copy a)]
               [(symbol? a) (symbol->string a)]
+              [(keyword? a) (string-append "#:" (keyword->string a))]
               [else (general-format fmt (list a))]))]
        [(or (equal? fmt "~s") (equal? fmt "~S"))
         (or (simple-format a)

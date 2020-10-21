@@ -24340,9 +24340,7 @@
        (if (1/print-boolean-long-form)
          (if a_0 "#true" "#false")
          (if a_0 "#t" "#f")))
-      (if (number? a_0)
-        (number->string a_0)
-        (if (keyword? a_0) (string-append "#:" (keyword->string a_0)) #f)))))
+      (if (number? a_0) (number->string a_0) #f))))
 (define 1/format
   (|#%name|
    format
@@ -24360,7 +24358,9 @@
                  (string-copy a_0)
                  (if (symbol? a_0)
                    (symbol->string a_0)
-                   (general-format fmt_0 (list a_0)))))))
+                   (if (keyword? a_0)
+                     (string-append "#:" (keyword->string a_0))
+                     (general-format fmt_0 (list a_0))))))))
          (if (let ((or-part_0 (equal? fmt_0 "~s")))
                (if or-part_0 or-part_0 (equal? fmt_0 "~S")))
            (let ((or-part_0 (simple-format a_0)))

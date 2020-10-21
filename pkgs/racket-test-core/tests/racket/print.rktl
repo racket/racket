@@ -68,6 +68,7 @@
   (ptest "'|;|" '|;|)
   (ptest "'|`|" '|`|)
   (ptest "'#:apple" '#:apple)
+  (ptest "'#:|apple pie|" '#:|apple pie|)
   (ptest "'#%apple" '#%apple)
   (ptest "\"apple\"" "apple")
   (ptest "#\"apple\"" #"apple")
