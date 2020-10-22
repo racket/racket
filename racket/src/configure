@@ -54,8 +54,8 @@ done
 # Select default build if none specified:
 if test "$use_bc" = maybe ; then
     if test "$use_cs" = maybe ; then
-        use_cs=yes
-        use_bc=no
+        use_bc=yes
+        use_cs=no
     elif test "$use_cs" = no ; then
         use_bc=yes
     elif test -d "$pb_dir" -o $supplied_racket = yes ; then
