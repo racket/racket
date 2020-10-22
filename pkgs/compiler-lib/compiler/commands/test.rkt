@@ -151,6 +151,7 @@
       (define stdin (if empty-input?
                         (open-input-bytes #"")
                         (current-input-port)))
+
       (unless quiet?
         (when responsible
           (fprintf stdout "raco test:~a @(test-responsible '~s)\n"
@@ -1135,12 +1136,16 @@
            [(positive? (summary-failed sum1)) 1]
            [else 0])))
 
- (if (string? default-output-file)
-     (call-with-output-file*
-      (string->path default-output-file)
-      (lambda (o)
-        (parameterize ([current-output-port o]
-                       [current-error-port o])
+ ;; Save the stdout/stderr into a file.
+ (define (test-main-with-output file-name)
+   (call-with-output-file*
+      (string->path file-name)
+      (lambda (out)
+        (parameterize ([current-output-port out]
+                       [current-error-port  out])
           (test-main)))
-       #:exists 'truncate)
+       #:exists 'truncate))
+
+ (if (string? default-output-file)
+     (test-main-with-output default-output-file)
      (test-main)))
