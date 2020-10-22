@@ -1098,7 +1098,7 @@
   "Save stdout and stderr to file"
   (set! default-output-file filename)]
  #:args file-or-directory-or-collects-or-pkgs
- (define (test-main)
+ (define (test)
    (define file-or-directory
      (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
    (unless (= 1 (length file-or-directory))
@@ -1137,15 +1137,15 @@
            [else 0])))
 
  ;; Save the stdout/stderr into a file.
- (define (test-main-with-output file-name)
+ (define (test-with-output-file file-name)
    (call-with-output-file*
       (string->path file-name)
       (lambda (out)
         (parameterize ([current-output-port out]
                        [current-error-port  out])
-          (test-main)))
+          (test)))
        #:exists 'truncate))
 
  (if (string? default-output-file)
-     (test-main-with-output default-output-file)
-     (test-main)))
+     (test-with-output-file default-output-file)
+     (test)))

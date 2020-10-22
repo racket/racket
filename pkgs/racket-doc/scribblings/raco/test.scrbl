@@ -191,7 +191,7 @@ The @exec{raco test} command accepts several flags:
                                which implies recognizing @filepath{.ss} and @filepath{.rkt}.}
          #:changed "1.5" @elem{Added @DPFlag{ignore-stderr}.}
          #:changed "1.6" @elem{Added @DPFlag{arg} and @DPFlag{args}.}
-         #:changed "1.7" @elem{Added @DFlag{output} or @Flag{o}.}]
+         #:changed "1.7" @elem{Added @DFlag{output} and @Flag{o}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
