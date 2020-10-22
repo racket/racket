@@ -1,3 +1,10 @@
+Version 7.9, October 2020
+Improve Racket CS place-local allocation, add parallel GC,
+ and merge Chez Scheme GC support for incremental promotion
+Change stack traces to suppress built-in functions
+Use XDG filesystem conventions by default on Unix
+Bug repairs and other changes noted in the documentation
+
 Version 7.8, July 2020
 Add unboxed flonum arithmetic to Racket CS
 Add Racket CS improved GC accounting and 'incremental mode
