@@ -122,7 +122,7 @@
   (end-uninterrupted 'reset)
   (if (currently-in-engine?)
       (engine-return (void))
-      (chez:exit)))
+      (#%exit 1)))
 
 (define (engine-block-via-timer)
   (cond
