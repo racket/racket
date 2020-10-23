@@ -948,7 +948,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
                                mode, can_raise_exn, master_chain, invalid_object);
         d = shallow_types_copy(d, NULL, fd_accumulators, delayed_err, delayed_errno, delayed_errkind,
                                mode, can_raise_exn, master_chain, invalid_object);
-        new_so = scheme_make_rational(n, d);
+        new_so = scheme_make_rational_pre_normalized(n, d);
       }
       break;
     case scheme_float_type:

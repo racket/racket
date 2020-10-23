@@ -146,7 +146,7 @@ void scheme_clear_bignum_cache(void)
 # define SCHEME_BIGDIG_SAFE(b, s) SCHEME_BIGDIG(b)
 
 # define PROTECT(digarray, len) /* no-op */
-#define RELEASE(digarray) /* no-op */
+# define RELEASE(digarray) /* no-op */
 
 # define PROTECT_RESULT(len) allocate_bigdig_array(len)
 # define FINISH_RESULT(digarray, len) /* no-op */

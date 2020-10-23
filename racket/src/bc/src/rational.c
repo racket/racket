@@ -26,6 +26,11 @@ Scheme_Object *scheme_make_rational(const Scheme_Object *n, const Scheme_Object 
 		       scheme_bignum_normalize(d), 1);
 }
 
+Scheme_Object *scheme_make_rational_pre_normalized(const Scheme_Object *n, const Scheme_Object *d)
+{
+  return make_rational(n, d, 0);
+}
+
 Scheme_Object *scheme_integer_to_rational(const Scheme_Object *n)
 {
   return make_rational(n, one, 0);
