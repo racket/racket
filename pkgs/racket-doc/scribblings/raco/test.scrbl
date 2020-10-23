@@ -183,7 +183,7 @@ The @exec{raco test} command accepts several flags:
 
  @item{@DFlag{output} or @Flag{o} @nonterm{file}
        --- Save all stdout and stderr output into @nonterm{file}.
-       The target @nonterm{file} will be overwrote if it exists already.
+       The target @nonterm{file} will be overwritten if it exists already.
  }
 ]
 
