@@ -14,6 +14,8 @@
 #ifdef RKTIO_USE_XLOCALE
 # ifdef RKTIO_USE_XLOCALE_HEADER
 #  include <xlocale.h>
+# else
+#  include <locale.h>
 # endif
 #endif
 
