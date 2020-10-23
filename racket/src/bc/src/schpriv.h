@@ -2264,6 +2264,7 @@ typedef Scheme_Rational Small_Rational;
 
 XFORM_NONGCING Scheme_Object *scheme_make_small_rational(intptr_t n, Small_Rational *space);
 XFORM_NONGCING Scheme_Object *scheme_make_small_bn_rational(Scheme_Object *n, Small_Rational *space);
+Scheme_Object *scheme_make_rational_pre_normalized(const Scheme_Object *n, const Scheme_Object *d);
 Scheme_Object *scheme_integer_to_rational(const Scheme_Object *n);
 Scheme_Object *scheme_make_fixnum_rational(intptr_t n, intptr_t d);
 XFORM_NONGCING int scheme_rational_eq(const Scheme_Object *a, const Scheme_Object *b);
