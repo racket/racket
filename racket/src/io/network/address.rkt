@@ -3,11 +3,13 @@
          "../string/convert.rkt"
          "../host/rktio.rkt"
          "../host/thread.rkt"
+         "../host/place-local.rkt"
          "evt.rkt"
          "error.rkt")
 
 (provide call-with-resolved-address
-         register-address-finalizer)
+         register-address-finalizer
+         address-init!)
 
 ;; in atomic mode
 (define (call-with-resolved-address hostname port-no proc
@@ -79,7 +81,7 @@
 
 ;; ----------------------------------------
 
-(define address-will-executor (make-will-executor))
+(define-place-local address-will-executor (make-will-executor))
 
 (define (register-address-finalizer addr)
   (will-register address-will-executor
@@ -91,3 +93,6 @@
 (define (poll-address-finalizations)
   (when (will-try-execute address-will-executor)
     (poll-address-finalizations)))
+
+(define (address-init!)
+  (set! address-will-executor (make-will-executor)))

@@ -139,6 +139,11 @@
              (loop target))
          (loop key-rhs)
          (loop val-rhs)]
+        [`(will-register ,target ,es ...)
+         (if (symbol? target)
+             (found-state! target e)
+             (loop target))
+         (for-each loop es)]
         [`(,es ...)
          (for ([e (in-list es)])
            (loop e))]

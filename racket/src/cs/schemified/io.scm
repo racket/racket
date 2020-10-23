@@ -3482,20 +3482,20 @@
              #f
              #f))
           (if (vector? ltps_0) rktio_NULL ltps_0))))))
-(define cell.1$3 (unsafe-make-place-local (make-ltps)))
+(define cell.1$5 (unsafe-make-place-local (make-ltps)))
 (define shared-ltps-place-init!
-  (lambda () (unsafe-place-local-set! cell.1$3 (make-ltps))))
+  (lambda () (unsafe-place-local-set! cell.1$5 (make-ltps))))
 (define shared-ltps-reset!
-  (lambda () (unsafe-place-local-set! cell.1$3 rktio_NULL)))
+  (lambda () (unsafe-place-local-set! cell.1$5 rktio_NULL)))
 (define fd-semaphore-update!
   (lambda (fd_0 mode_0)
-    (if (eq? (unsafe-place-local-ref cell.1$3) rktio_NULL)
+    (if (eq? (unsafe-place-local-ref cell.1$5) rktio_NULL)
       #f
       (let ((h_0
              (|#%app|
               rktio_ltps_add
               (unsafe-place-local-ref cell.1)
-              (unsafe-place-local-ref cell.1$3)
+              (unsafe-place-local-ref cell.1$5)
               fd_0
               (if (eq? mode_0 'read)
                 1
@@ -3524,13 +3524,13 @@
                     s_0))))))))))
 (define fd-semaphore-poll-ready?
   (lambda ()
-    (if (eq? (unsafe-place-local-ref cell.1$3) rktio_NULL)
+    (if (eq? (unsafe-place-local-ref cell.1$5) rktio_NULL)
       #f
       (begin
         (|#%app|
          rktio_ltps_poll
          (unsafe-place-local-ref cell.1)
-         (unsafe-place-local-ref cell.1$3))
+         (unsafe-place-local-ref cell.1$5))
         (letrec*
          ((loop_0
            (|#%name|
@@ -3541,7 +3541,7 @@
                        (|#%app|
                         rktio_ltps_get_signaled_handle
                         (unsafe-place-local-ref cell.1)
-                        (unsafe-place-local-ref cell.1$3))))
+                        (unsafe-place-local-ref cell.1$5))))
                   (if (vector? h_0)
                     did?_0
                     (let ((ib_0
@@ -3657,12 +3657,12 @@
         (void)))))
 (define sandman-poll-ctx-poll?
   (lambda (poll-ctx_0) (|#%app| poll-ctx-poll? poll-ctx_0)))
-(define cell.1$8 (unsafe-make-place-local #f))
+(define cell.1$10 (unsafe-make-place-local #f))
 (define cell.2$3 (unsafe-make-place-local #f))
 (define sandman-set-background-sleep!
   (lambda (sleep_0 fd_0)
     (begin
-      (unsafe-place-local-set! cell.1$8 sleep_0)
+      (unsafe-place-local-set! cell.1$10 sleep_0)
       (unsafe-place-local-set! cell.2$3 fd_0))))
 (define effect_2049
   (begin
@@ -3701,16 +3701,16 @@
                        (begin
                          (if (if sleep-secs_0 (<= sleep-secs_0 0.0) #f)
                            (void)
-                           (if (unsafe-place-local-ref cell.1$8)
+                           (if (unsafe-place-local-ref cell.1$10)
                              (begin
                                (|#%app|
                                 rktio_start_sleep
                                 (unsafe-place-local-ref cell.1)
                                 (if sleep-secs_0 sleep-secs_0 0.0)
                                 ps_0
-                                (unsafe-place-local-ref cell.1$3)
+                                (unsafe-place-local-ref cell.1$5)
                                 (unsafe-place-local-ref cell.2$3))
-                               (|#%app| (unsafe-place-local-ref cell.1$8))
+                               (|#%app| (unsafe-place-local-ref cell.1$10))
                                (|#%app|
                                 rktio_end_sleep
                                 (unsafe-place-local-ref cell.1)))
@@ -3719,7 +3719,7 @@
                               (unsafe-place-local-ref cell.1)
                               (if sleep-secs_0 sleep-secs_0 0.0)
                               ps_0
-                              (unsafe-place-local-ref cell.1$3))))
+                              (unsafe-place-local-ref cell.1$5))))
                          (|#%app|
                           rktio_poll_set_forget
                           (unsafe-place-local-ref cell.1)
@@ -11824,12 +11824,12 @@
        unsafe-undefined
        temp6_0
        'stderr))))
-(define cell.1$7 (unsafe-make-place-local (make-stdin)))
+(define cell.1$9 (unsafe-make-place-local (make-stdin)))
 (define cell.2$2 (unsafe-make-place-local (make-stdout)))
 (define cell.3 (unsafe-make-place-local (make-stderr)))
 (define 1/current-input-port
   (make-parameter
-   (unsafe-place-local-ref cell.1$7)
+   (unsafe-place-local-ref cell.1$9)
    (lambda (v_0)
      (begin
        (if (1/input-port? v_0)
@@ -11861,10 +11861,10 @@
   (lambda (in-fd_0 out-fd_0 err-fd_0 cust_0 plumber_0)
     (begin
       (unsafe-place-local-set!
-       cell.1$7
+       cell.1$9
        (let ((temp10_0 "stdin"))
          (open-input-fd.1 cust_0 unsafe-undefined in-fd_0 temp10_0)))
-      (1/current-input-port (unsafe-place-local-ref cell.1$7))
+      (1/current-input-port (unsafe-place-local-ref cell.1$9))
       (unsafe-place-local-set!
        cell.2$2
        (let ((temp13_0 "stdout"))
@@ -12698,7 +12698,7 @@
       ((p1_0) (flush-output_0 p1_0))))))
 (define maybe-flush-stdout
   (lambda (in_0)
-    (if (eq? in_0 (unsafe-place-local-ref cell.1$7))
+    (if (eq? in_0 (unsafe-place-local-ref cell.1$9))
       (begin
         (1/flush-output (unsafe-place-local-ref cell.2$2))
         (1/flush-output (unsafe-place-local-ref cell.3)))
@@ -15619,21 +15619,21 @@
          (raise-argument-error 'current-locale "(or/c #f string?)" v_0))
        (if v_0 (string->immutable-string v_0) #f)))
    'current-locale))
-(define cell.1$6 (unsafe-make-place-local #f))
+(define cell.1$8 (unsafe-make-place-local #f))
 (define sync-locale!
   (lambda ()
     (let ((loc_0 (1/current-locale)))
       (if (let ((or-part_0 (not loc_0)))
             (if or-part_0
               or-part_0
-              (equal? (unsafe-place-local-ref cell.1$6) loc_0)))
+              (equal? (unsafe-place-local-ref cell.1$8) loc_0)))
         (void)
         (begin
-          (unsafe-place-local-set! cell.1$6 (1/current-locale))
+          (unsafe-place-local-set! cell.1$8 (1/current-locale))
           (|#%app|
            rktio_set_locale
            (unsafe-place-local-ref cell.1)
-           (1/string->bytes/utf-8 (unsafe-place-local-ref cell.1$6))))))))
+           (1/string->bytes/utf-8 (unsafe-place-local-ref cell.1$8))))))))
 (define effect_2454 (begin (void (sync-locale!)) (void)))
 (define locale-encoding-is-utf-8?
   (lambda ()
@@ -17724,32 +17724,32 @@
     (register-struct-field-mutator! set-cache-from! struct:cache 3)
     (void)))
 (define new-cache (lambda () (cache1.1 #f #f #f #f)))
-(define cell.1$5 (unsafe-make-place-local (new-cache)))
+(define cell.1$7 (unsafe-make-place-local (new-cache)))
 (define cell.2$1
   (unsafe-make-place-local (|#%app| 1/unsafe-make-custodian-at-root)))
 (define convert-cache-init!
   (lambda ()
     (begin
-      (unsafe-place-local-set! cell.1$5 (new-cache))
+      (unsafe-place-local-set! cell.1$7 (new-cache))
       (unsafe-place-local-set!
        cell.2$1
        (|#%app| 1/unsafe-make-custodian-at-root)))))
 (define cache-clear!
   (lambda (get_0 update!_0)
-    (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$5))))
+    (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$7))))
       (begin
-        (|#%app| update!_0 (unsafe-place-local-ref cell.1$5) #f)
+        (|#%app| update!_0 (unsafe-place-local-ref cell.1$7) #f)
         (if c_0 (1/bytes-close-converter c_0) (void))))))
 (define cache-lookup!
   (lambda (enc_0 get_0 update!_0)
     (begin
       (unsafe-start-atomic)
       (begin0
-        (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$5)))
-          (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$5))))
+        (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$7)))
+          (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$7))))
             (begin
               (if c_0
-                (|#%app| update!_0 (unsafe-place-local-ref cell.1$5) #f)
+                (|#%app| update!_0 (unsafe-place-local-ref cell.1$7) #f)
                 (void))
               c_0))
           #f)
@@ -17761,18 +17761,18 @@
         (unsafe-start-atomic)
         (begin0
           (begin
-            (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$5)))
+            (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$7)))
               (void)
               (begin
                 (cache-clear! cache-to set-cache-to!)
                 (cache-clear! cache-to_3068 set-cache-to2!)
                 (cache-clear! cache-from set-cache-from!)
-                (set-cache-enc! (unsafe-place-local-ref cell.1$5) enc_0)))
-            (if (|#%app| get_0 (unsafe-place-local-ref cell.1$5))
+                (set-cache-enc! (unsafe-place-local-ref cell.1$7) enc_0)))
+            (if (|#%app| get_0 (unsafe-place-local-ref cell.1$7))
               (1/bytes-close-converter c_0)
               (begin
                 (bytes-reset-converter c_0)
-                (|#%app| update!_0 (unsafe-place-local-ref cell.1$5) c_0))))
+                (|#%app| update!_0 (unsafe-place-local-ref cell.1$7) c_0))))
           (unsafe-end-atomic)))
       (void))))
 (define bytes-open-converter/cached-to
@@ -34896,11 +34896,11 @@
                (for-loop_0 null (hash-iterate-first topics_0)))))))))
       (args (raise-binding-result-arity-error 2 args))))))
 (define make-root-logger (lambda () (create-logger.1 #f 'none #f)))
-(define cell.1$4 (unsafe-make-place-local (make-root-logger)))
-(define unsafe-root-logger (lambda () (unsafe-place-local-ref cell.1$4)))
+(define cell.1$6 (unsafe-make-place-local (make-root-logger)))
+(define unsafe-root-logger (lambda () (unsafe-place-local-ref cell.1$6)))
 (define 1/current-logger
   (make-parameter
-   (unsafe-place-local-ref cell.1$4)
+   (unsafe-place-local-ref cell.1$6)
    (lambda (l_0)
      (begin
        (if (1/logger? l_0)
@@ -34911,8 +34911,8 @@
 (define logger-init!
   (lambda ()
     (begin
-      (unsafe-place-local-set! cell.1$4 (make-root-logger))
-      (1/current-logger (unsafe-place-local-ref cell.1$4)))))
+      (unsafe-place-local-set! cell.1$6 (make-root-logger))
+      (1/current-logger (unsafe-place-local-ref cell.1$6)))))
 (define 1/make-logger
   (let ((make-logger_0
          (|#%name|
@@ -34977,14 +34977,14 @@
     (begin
       (|#%app| start-atomic/no-interrupts)
       (begin0
-        (log-level?* (unsafe-place-local-ref cell.1$4) 'debug 'future)
+        (log-level?* (unsafe-place-local-ref cell.1$6) 'debug 'future)
         (|#%app| end-atomic/no-interrupts)))))
 (define logging-place-events?
   (lambda ()
     (begin
       (|#%app| start-atomic/no-interrupts)
       (begin0
-        (log-level?* (unsafe-place-local-ref cell.1$4) 'debug 'place)
+        (log-level?* (unsafe-place-local-ref cell.1$6) 'debug 'place)
         (|#%app| end-atomic/no-interrupts)))))
 (define log-level?*
   (lambda (logger_0 level_0 topic_0)
@@ -35158,7 +35158,7 @@
       (|#%app| start-atomic/no-interrupts)
       (begin0
         (log-message*
-         (unsafe-place-local-ref cell.1$4)
+         (unsafe-place-local-ref cell.1$6)
          'debug
          'future
          message_0
@@ -35172,7 +35172,7 @@
       (|#%app| start-atomic/no-interrupts)
       (begin0
         (log-message*
-         (unsafe-place-local-ref cell.1$4)
+         (unsafe-place-local-ref cell.1$6)
          'debug
          'place
          message_0
@@ -35448,7 +35448,7 @@
                                 rktio_fs_change
                                 (unsafe-place-local-ref cell.1)
                                 fn_0
-                                (unsafe-place-local-ref cell.1$3))))
+                                (unsafe-place-local-ref cell.1$5))))
                           (let ((rfc_0
                                  (if (vector? file-rfc_0)
                                    (begin
@@ -35482,7 +35482,7 @@
                                                (unsafe-place-local-ref cell.1)
                                                base-fn_0
                                                (unsafe-place-local-ref
-                                                cell.1$3)))))
+                                                cell.1$5)))))
                                          (args
                                           (raise-binding-result-arity-error
                                            3
@@ -35577,7 +35577,7 @@
                 (lambda (a_0 b_0)
                   (begin (not (eqv? 0 (bitwise-and a_0 b_0))))))))
           (if (if (set?_0 props_0 16)
-                (eq? (unsafe-place-local-ref cell.1$3) rktio_NULL)
+                (eq? (unsafe-place-local-ref cell.1$5) rktio_NULL)
                 #f)
             '#(#f #f #f #f)
             (let ((app_0 (if (set?_0 props_0 1) 'supported #f)))
@@ -36480,7 +36480,9 @@
         (|#%app| 1/unsafe-custodian-unregister sp_0 (subprocess-cust-ref sp_0))
         (set-subprocess-cust-ref! sp_0 #f))
       (void))))
-(define subprocess-will-executor (make-will-executor))
+(define cell.1$4 (unsafe-make-place-local (make-will-executor)))
+(define subprocess-init!
+  (lambda () (unsafe-place-local-set! cell.1$4 (make-will-executor))))
 (define register-subprocess-finalizer
   (letrec ((procz1
             (lambda (sp_0)
@@ -36495,10 +36497,11 @@
                   (void))
                 (no-custodian! sp_0)
                 #t))))
-    (lambda (sp_0) (will-register subprocess-will-executor sp_0 procz1))))
+    (lambda (sp_0)
+      (will-register (unsafe-place-local-ref cell.1$4) sp_0 procz1))))
 (define poll-subprocess-finalizations
   (lambda ()
-    (if (will-try-execute subprocess-will-executor)
+    (if (will-try-execute (unsafe-place-local-ref cell.1$4))
       (poll-subprocess-finalizations)
       (void))))
 (define 1/current-subprocess-custodian-mode
@@ -37251,7 +37254,7 @@
                                           (unsafe-place-local-ref cell.1)
                                           addr_0)))))))))))))
                      (loop_0)))))))))))))
-(define address-will-executor (make-will-executor))
+(define cell.1$3 (unsafe-make-place-local (make-will-executor)))
 (define register-address-finalizer
   (letrec ((procz1
             (lambda (addr_0)
@@ -37261,12 +37264,15 @@
                  (unsafe-place-local-ref cell.1)
                  addr_0)
                 #t))))
-    (lambda (addr_0) (will-register address-will-executor addr_0 procz1))))
+    (lambda (addr_0)
+      (will-register (unsafe-place-local-ref cell.1$3) addr_0 procz1))))
 (define poll-address-finalizations
   (lambda ()
-    (if (will-try-execute address-will-executor)
+    (if (will-try-execute (unsafe-place-local-ref cell.1$3))
       (poll-address-finalizations)
       (void))))
+(define address-init!
+  (lambda () (unsafe-place-local-set! cell.1$3 (make-will-executor))))
 (define struct:connect-progress
   (make-record-type-descriptor* 'connect-progress #f #f #f #f 2 3))
 (define effect_2403
@@ -41169,5 +41175,7 @@
       (install-error-value->string-handler!)
       (init-current-directory!)
       (init-current-ports! in-fd_0 out-fd_0 err-fd_0 cust_0 plumber_0)
+      (subprocess-init!)
+      (address-init!)
       (sync-locale!))))
 (define io-place-destroy! (lambda () (rktio-place-destroy!)))

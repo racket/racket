@@ -4,6 +4,7 @@
          "../host/rktio.rkt"
          "../host/error.rkt"
          "../host/thread.rkt"
+         "../host/place-local.rkt"
          "../path/path.rkt"
          "../path/parameter.rkt"
          "../port/output-port.rkt"
@@ -242,7 +243,11 @@
     (unsafe-custodian-unregister sp (subprocess-cust-ref sp))
     (set-subprocess-cust-ref! sp #f)))
 
-(define subprocess-will-executor (make-will-executor))
+(define-place-local subprocess-will-executor (make-will-executor))
+
+(define (subprocess-init!)
+  (set! subprocess-will-executor (make-will-executor)))
+(module+ init (provide subprocess-init!))
 
 (define (register-subprocess-finalizer sp)
   (will-register subprocess-will-executor

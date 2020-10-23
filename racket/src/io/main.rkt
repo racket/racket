@@ -33,6 +33,9 @@
                   shared-ltps-place-init!)
          (only-in "locale/cache.rkt"
                   convert-cache-init!)
+         (only-in "network/address.rkt"
+                  address-init!)
+         (submod "subprocess/main.rkt" init)
          (only-in "locale/parameter.rkt"
                   sync-locale!)
          "port/place.rkt")
@@ -72,6 +75,8 @@
   (install-error-value->string-handler!)
   (init-current-directory!)
   (init-current-ports! in-fd out-fd err-fd cust plumber)
+  (subprocess-init!)
+  (address-init!)
   (sync-locale!))
 
 (define (io-place-destroy!)
