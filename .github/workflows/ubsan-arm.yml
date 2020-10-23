@@ -1,4 +1,4 @@
-name: Test with UBSan
+name: Test with UBSan on ARM
 
 on: [push, pull_request]
 
@@ -7,7 +7,12 @@ jobs:
 # Build jobs
 # These jobs build Racket using undefined behaviour sanitizers and gathers the results into a final log
   racket3m-ubsan:
-    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ARM64]
+
+    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
     container: racket/racket-ci:latest
 
     steps:
@@ -81,15 +86,20 @@ jobs:
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
       run: |
-        grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
-        test ! -s runtime-errors_git${{ github.sha }}.log
+        grep 'runtime error' logs/*.log > runtime-errors-${{ matrix.arch }}_git${{ github.sha }}.log || true
+        test ! -s runtime-errors-${{ matrix.arch }}_git${{ github.sha }}.log
     - uses: actions/upload-artifact@v2
       with:
-        name: runtime-errors_git${{ github.sha }}
-        path: runtime-errors_git${{ github.sha }}.log
+        name: runtime-errors-${{ matrix.arch }}_git${{ github.sha }}
+        path: runtime-errors-${{ matrix.arch }}_git${{ github.sha }}.log
 
   racketcs-ubsan:
-    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ARM64]
+
+    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
     container: racket/racket-ci:latest
 
     steps:
@@ -163,11 +173,11 @@ jobs:
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
       run: |
-        grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
-        test ! -s runtime-errors_git${{ github.sha }}.log
+        grep 'runtime error' logs/*.log > runtime-errors-${{ matrix.arch }}_git${{ github.sha }}.log || true
+        test ! -s runtime-errors-${{ matrix.arch }}_git${{ github.sha }}.log
     - uses: actions/upload-artifact@v2
       if: failure()
       with:
-        name: runtime-errors-cs_git${{ github.sha }}
-        path: runtime-errors_git${{ github.sha }}.log
+        name: runtime-errors-${{ matrix.arch }}-cs_git${{ github.sha }}
+        path: runtime-errors-${{ matrix.arch }}_git${{ github.sha }}.log
 
