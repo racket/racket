@@ -1094,9 +1094,9 @@
   "Print a summary table"
   (set! table? #t)]
  #:once-each
- [("--output" "-o") filename
-  "Save stdout and stderr to file"
-  (set! default-output-file filename)]
+ [("--output" "-o") file
+  "Save stdout and stderr to file, overwrite if it exists."
+  (set! default-output-file file)]
  #:args file-or-directory-or-collects-or-pkgs
  (define (test)
    (define file-or-directory

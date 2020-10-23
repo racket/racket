@@ -181,8 +181,9 @@ The @exec{raco test} command accepts several flags:
         @nonterm{arguments} must be
         enclosed in quotation marks.}
 
- @item{@DFlag{output} or @Flag{o} @nonterm{filename}
-       --- Save all stdout and stderr output into @nonterm{filename}.
+ @item{@DFlag{output} or @Flag{o} @nonterm{file}
+       --- Save all stdout and stderr output into @nonterm{file}.
+       The target @nonterm{file} will be overwrote if it exists already.
  }
 ]
 
@@ -191,7 +192,7 @@ The @exec{raco test} command accepts several flags:
                                which implies recognizing @filepath{.ss} and @filepath{.rkt}.}
          #:changed "1.5" @elem{Added @DPFlag{ignore-stderr}.}
          #:changed "1.6" @elem{Added @DPFlag{arg} and @DPFlag{args}.}
-         #:changed "1.7" @elem{Added @DFlag{output} and @Flag{o}.}]
+         #:changed "1.8" @elem{Added @DFlag{output} and @Flag{o}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
