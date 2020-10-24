@@ -1,6 +1,6 @@
 name: CI Linux ARM
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
 

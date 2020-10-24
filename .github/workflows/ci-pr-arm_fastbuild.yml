@@ -1,0 +1,40 @@
+name: ARM Linux Fast Build
+
+on: [pull_request]
+
+jobs:
+  build-racket3m:
+    container:
+      image: racket/racket-ci:latest
+                
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ARM64]
+
+    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - name: Build Racket 3m
+      run: make CPUS=$(nproc) PKGS="" bc-in-place
+
+  build-racketcs:
+    container:
+      image: racket/racket-ci:latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ARM64]
+
+    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100
+    - name: Build Racket CS
+      run: make CPUS=$(nproc) PKGS="" cs-in-place
