@@ -244,8 +244,8 @@ URLs is:
 @optional{@exec{#}@nonterm{rev}}}
 
 where @nonterm{scheme} is @litchar{git}, @litchar{http}, or
-@litchar{https}, and where @nonterm{host} is any address other than
-@litchar{github.com} (which is treated more specifically as a GitHub
+@litchar{https}, except when @nonterm{scheme} is @litchar{git} and
+@nonterm{host} is @litchar{github.com} (which is treated more specifically as a GitHub
 reference). The @nonterm{path} can contain multiple
 @litchar{/}-separated elements to form a path within the repository,
 and it defaults to the empty path. The @nonterm{rev} can be a branch,
