@@ -20,6 +20,8 @@ jobs:
       image: racket/racket-ci:latest
     
     steps:
+    - name: Clean racket pkg folder
+      run: rm -rf $HOME/.racket
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -82,6 +84,8 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
+    - name: Clean racket pkg folder
+      run: rm -rf $HOME/.racket
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -156,6 +160,8 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
+    - name: Clean racket pkg folder
+      run: rm -rf $HOME/.racket
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
