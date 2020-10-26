@@ -186,6 +186,13 @@ The @racketmodname[racket] library combines
              #:location "Principles of Programming Languages"
              #:date "1991")
 
+  (bib-entry #:key "Reppy99"
+             #:author "John H. Reppy"
+             #:title "Concurrent Programming in ML"
+             #:is-book? #t
+             #:location "Cambridge University Press"
+             #:date "1999")
+
   (bib-entry #:key "Shan04"
              #:author "Ken Shan"
              #:title "Shift to Control"

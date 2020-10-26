@@ -15,7 +15,7 @@ A @deftech{synchronizable event} (or just @defterm{event} for short)
 works with the @racket[sync] procedure to coordinate synchronization
 among threads. Certain kinds of objects double as events, including
 ports and threads. Other kinds of objects exist only for their use as
-events.
+events. Racket's event system is based on Concurrent ML @cite{Reppy99}.
 
 At any point in time, an event is either @deftech{ready for
 synchronization}, or it is not; depending on the kind of event and how
