@@ -36594,10 +36594,13 @@
                                  show_mode_0))))))
                      (begin
                        (if (vector? r_0)
-                         (let ((err_0 "failed"))
+                         (let ((base-msg_0 "failed"))
                            (raise
                             (let ((app_0
-                                   (format-rktio-message 'who err_0 r_0)))
+                                   (format-rktio-message
+                                    'shell-execute
+                                    r_0
+                                    base-msg_0)))
                               (|#%app|
                                exn:fail
                                app_0

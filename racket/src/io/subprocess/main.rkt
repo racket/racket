@@ -303,7 +303,7 @@
                                  (string->bytes/utf-8 parameters)
                                  (->host (->path dir) who '(exists))
                                  show_mode))
-  (when (rktio-error? r) (raise-rktio-error 'who "failed" r))
+  (when (rktio-error? r) (raise-rktio-error who r "failed"))
   #f)
 
 ;; ----------------------------------------
