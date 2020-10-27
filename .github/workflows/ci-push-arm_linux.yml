@@ -155,6 +155,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: [ARM64]
         cc: [gcc, clang]
 
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
@@ -226,6 +227,8 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
+      - name: Clean racket pkg folder
+        run: rm -rf $HOME/.racket
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -293,12 +296,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: [ARM64]
         cify: [cify, nocify]
         ep: [ep, noep]
 
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
+      - name: Clean racket pkg folder
+        run: rm -rf $HOME/.racket
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -368,6 +374,8 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
         
     steps:
+      - name: Clean racket pkg folder
+        run: rm -rf $HOME/.racket
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
