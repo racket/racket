@@ -1110,6 +1110,19 @@
 (err/rt-test (modulo 6 -0.0) exn:fail:contract:divide-by-zero?)
 (err/rt-test (remainder 6 -0.0) exn:fail:contract:divide-by-zero?)
 
+(let ()
+  (define (check-rem-mod a b rem mod)
+    (test rem remainder a b)
+    (test rem remainder (inexact->exact a) b)
+    (test rem remainder a (inexact->exact b))
+    (test mod modulo a b)
+    (test mod modulo (inexact->exact a) b)
+    (test mod modulo a (inexact->exact b)))
+  (check-rem-mod 5.842423430828094e+60 10.0 4.0 4.0)
+  (check-rem-mod 5.842423430828094e+60 -10.0 4.0 -6.0)
+  (check-rem-mod -5.842423430828094e+60 10.0 -4.0 6.0)
+  (check-rem-mod -5.842423430828094e+60 -10.0 -4.0 -4.0))
+
 (define (test-qrm-inf v)
   (define iv (exact->inexact v))
 
