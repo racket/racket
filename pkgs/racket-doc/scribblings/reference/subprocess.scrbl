@@ -111,6 +111,19 @@ The @racket[subprocess] procedure returns four values:
 explicitly closed, usually with @racket[close-input-port] or
 @racket[close-output-port].
 
+Example:
+
+@racketblock[
+(define-values (k out in err)
+  (subprocess #f #f #f "/bin/ls" "-l"))
+(displayln (format "stdout:\n~a" (port->string out)))
+(displayln (format "stderr:\n~a" (port->string err)))
+(close-input-port out)
+(close-output-port in)
+(close-input-port err)
+(subprocess-wait k)
+]
+
 @margin-note{A @tech{file-stream port} for communicating with a
 subprocess is normally a pipe with a limited capacity. Beware of
 creating deadlock by serializing a write to a subprocess followed by a
