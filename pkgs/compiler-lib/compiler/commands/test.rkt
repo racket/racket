@@ -43,6 +43,7 @@
 
 (define default-timeout #f) ; #f means "none"
 (define default-mode #f) ; #f => depends on how many files are provided
+(define default-output-file #f) ; #f means no --output option specified
 
 (define single-file? #t)
 
@@ -1092,8 +1093,12 @@
  [("--table" "-t")
   "Print a summary table"
   (set! table? #t)]
+ #:once-each
+ [("--output" "-o") file
+  "Save stdout and stderr to file, overwrite if it exists."
+  (set! default-output-file file)]
  #:args file-or-directory-or-collects-or-pkgs
- (let ()
+ (define (test)
    (define file-or-directory
      (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
    (unless (= 1 (length file-or-directory))
@@ -1129,4 +1134,18 @@
    (exit (cond
            [(positive? (summary-timeout sum1)) 2]
            [(positive? (summary-failed sum1)) 1]
-           [else 0]))))
+           [else 0])))
+
+ ;; Save the stdout/stderr into a file.
+ (define (test-with-output-file file-name)
+   (call-with-output-file*
+      (string->path file-name)
+      (lambda (out)
+        (parameterize ([current-output-port out]
+                       [current-error-port  out])
+          (test)))
+       #:exists 'truncate))
+
+ (if (string? default-output-file)
+     (test-with-output-file default-output-file)
+     (test)))

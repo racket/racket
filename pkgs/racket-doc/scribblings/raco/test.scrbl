@@ -179,7 +179,11 @@ The @exec{raco test} command accepts several flags:
         as a whitespace-delimited list of arguments to add. To specify
         multiple arguments using this flag within a typical shell,
         @nonterm{arguments} must be
-        enclosed in quotation marks.
+        enclosed in quotation marks.}
+
+ @item{@DFlag{output} or @Flag{o} @nonterm{file}
+       --- Save all stdout and stderr output into @nonterm{file}.
+       The target @nonterm{file} will be overwritten if it exists already.
  }
 ]
 
@@ -187,7 +191,8 @@ The @exec{raco test} command accepts several flags:
          #:changed "1.4" @elem{Changed recognition of module suffixes to use @racket[get-module-suffixes],
                                which implies recognizing @filepath{.ss} and @filepath{.rkt}.}
          #:changed "1.5" @elem{Added @DPFlag{ignore-stderr}.}
-         #:changed "1.6" @elem{Added @DPFlag{arg} and @DPFlag{args}.}]
+         #:changed "1.6" @elem{Added @DPFlag{arg} and @DPFlag{args}.}
+         #:changed "1.8" @elem{Added @DFlag{output} and @Flag{o}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
