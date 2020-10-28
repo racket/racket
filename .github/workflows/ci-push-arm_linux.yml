@@ -9,19 +9,19 @@ jobs:
 # component finishes building.
 
   build-racketcgc:
+    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
+    container:
+      image: racket/racket-ci:latest
+
     strategy:
       fail-fast: false
       matrix:
         cify: [cify, nocify]
         arch: [ARM64]
-    
-    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
-    container:
-      image: racket/racket-ci:latest
+
     
     steps:
-    - name: Clean racket pkg folder
-      run: rm -rf $HOME/.racket
+    - uses: AutoModality/action-clean@v1
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -84,8 +84,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-    - name: Clean racket pkg folder
-      run: rm -rf $HOME/.racket
+    - uses: AutoModality/action-clean@v1
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -161,8 +160,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-    - name: Clean racket pkg folder
-      run: rm -rf $HOME/.racket
+    - uses: AutoModality/action-clean@v1
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -173,9 +171,6 @@ jobs:
     - name: Untar
       working-directory: /usr/local
       run: tar -xvjf /tmp/racketcgc-debian10-nocify-${{ matrix.arch }}_git${{ github.sha}}.tar.bz2
-    - name: Checking out ChezScheme
-      working-directory: ./racket/src
-      run: git clone --depth=1 --recurse-submodules -j3 https://github.com/racket/ChezScheme
     - name: Configuring Racket CS
       working-directory: ./racket/src
       env:
@@ -227,8 +222,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-      - name: Clean racket pkg folder
-        run: rm -rf $HOME/.racket
+      - uses: AutoModality/action-clean@v1
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -303,8 +297,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-      - name: Clean racket pkg folder
-        run: rm -rf $HOME/.racket
+      - uses: AutoModality/action-clean@v1
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -374,8 +367,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
         
     steps:
-      - name: Clean racket pkg folder
-        run: rm -rf $HOME/.racket
+      - uses: AutoModality/action-clean@v1
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
