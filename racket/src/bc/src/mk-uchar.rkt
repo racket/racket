@@ -317,6 +317,8 @@
 	      (hash-set! k-decomp-ht code seq)
 	      #t)))))
 
+(define default-casing (make-hash))
+
 (call-with-input-file "Unicode/UnicodeData.txt"
   (lambda (i)
     (let loop ([prev-code 0])
@@ -335,6 +337,7 @@
 		  [up (string->number (cadddr (cddddr m)) 16)]
 		  [down (string->number (cadddr (cddddr (cdr m))) 16)]
 		  [title (string->number (cadddr (cddddr (cddr m))) 16)])
+              (hash-set! default-casing code (list down up title))
               (let ([alphabetic? (hash-ref alphabetic code #f)]
                     [numeric? (not (string=? numeric ""))]
                     [symbolic? (member cat sym-cats)]
@@ -504,10 +507,11 @@
 (hash-for-each special-case-foldings
                (lambda (k v)
                  (let ([sc (hash-ref special-casings k (lambda ()
+                                                         (define d (hash-ref default-casing k))
                                                          (let ([sc (make-special-casing
-                                                                    (list k)
-                                                                    (list k)
-                                                                    (list k)
+                                                                    (list (or (car d) k))
+                                                                    (list (or (cadr d) k))
+                                                                    (list (or (caddr d) k))
                                                                     (list k)
                                                                     #f)])
                                                            (hash-set! special-casings k sc)
@@ -784,7 +788,9 @@
                                       (set! long-counter (add1 long-counter))
                                       (set! longs (cons (cdr v) (cons (car v) longs)))
                                       (- long-counter)))])
-                           (hash-set! decomp-pos-ht k pos)))))
+                           (hash-set! decomp-pos-ht k pos))))
+                     ;; sort:
+                     #t)
       (values
        (list->vector (append (vector->list canon-composes)
 			     (reverse extra)))

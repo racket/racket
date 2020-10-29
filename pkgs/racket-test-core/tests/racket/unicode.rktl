@@ -1694,6 +1694,8 @@
 (test "\u039A\u03b1\u03BF\u03C3\u03C2" string-titlecase "\u039A\u0391\u039F\u03A3\u03A3")
 (test "\u039A\u03b1\u03BF\u03C2 X" string-titlecase "\u039A\u0391\u039F\u03A3 x")
 
+(test "\xDF\xDF" string-downcase  "\u1E9E\xDF")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Bytes converters and custodians - check that built-in conversions are
 ;; not registered
