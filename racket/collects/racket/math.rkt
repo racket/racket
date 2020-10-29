@@ -58,6 +58,7 @@
           [(real? z)
            (let loop ([z z])
              (cond [(z . < . 0) (- (loop (- z)))]
+                   [(< z 1e-8) (exact->inexact z)]
                    [(< z .13)
                     ;; Taylor expansion near 0 to avoid cancellation
                     ;~ z+z^3/3!+z^5/5!+...
