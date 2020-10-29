@@ -2002,6 +2002,8 @@ MZ_EXTERN Scheme_Object *scheme_param_config2(char *name, Scheme_Object *pos,
                                               int isbool);
 MZ_EXTERN Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *name, int which);
 
+MZ_EXTERN void scheme_set_default_locale(void);
+
 #endif /* SCHEME_DIRECT_EMBEDDED */
 
 /*========================================================================*/

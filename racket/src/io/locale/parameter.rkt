@@ -34,6 +34,7 @@
     (set! installed-locale (current-locale))
     (rktio_set_locale rktio (string->bytes/utf-8 installed-locale))))
 
+(void (rktio_set_default_locale #""))
 (void (sync-locale!))
 
 (define (locale-encoding-is-utf-8?)

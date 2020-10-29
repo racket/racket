@@ -3374,6 +3374,8 @@
 (define rktio_strcoll_utf16 (hash-ref rktio-table 'rktio_strcoll_utf16))
 (define rktio_locale_encoding (hash-ref rktio-table 'rktio_locale_encoding))
 (define rktio_set_locale (hash-ref rktio-table 'rktio_set_locale))
+(define rktio_set_default_locale
+  (hash-ref rktio-table 'rktio_set_default_locale))
 (define rktio_push_c_numeric_locale
   (hash-ref rktio-table 'rktio_push_c_numeric_locale))
 (define rktio_pop_c_numeric_locale
@@ -15634,6 +15636,7 @@
            rktio_set_locale
            (unsafe-place-local-ref cell.1)
            (1/string->bytes/utf-8 (unsafe-place-local-ref cell.1$8))))))))
+(define effect_2455 (begin (void (|#%app| rktio_set_default_locale #vu8())) (void)))
 (define effect_2454 (begin (void (sync-locale!)) (void)))
 (define locale-encoding-is-utf-8?
   (lambda ()
@@ -35992,11 +35995,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3723 unsafe-undefined)
+               (let ((lr3726 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3723
+                 (set! lr3726
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -36051,9 +36054,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3723 0))
-                 (set! command_0 (unsafe-vector*-ref lr3723 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3723 2))
+                 (set! group_0 (unsafe-vector*-ref lr3726 0))
+                 (set! command_0 (unsafe-vector*-ref lr3726 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3726 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)

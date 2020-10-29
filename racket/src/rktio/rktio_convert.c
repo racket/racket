@@ -266,6 +266,11 @@ void rktio_set_locale(rktio_t *rktio, const char *name)
 #endif
 }
 
+void rktio_set_default_locale(const char *name)
+{
+  setlocale(LC_ALL, name);
+}
+
 void *rktio_push_c_numeric_locale(rktio_t *rktio)
 {
 #ifdef RKTIO_USE_XLOCALE

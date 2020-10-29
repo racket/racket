@@ -726,6 +726,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
 
+  scheme_set_default_locale();
+
   prog = argv[0];
   argv++;
   --argc;

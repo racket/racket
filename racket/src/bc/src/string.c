@@ -3448,6 +3448,11 @@ void scheme_pop_c_numeric_locale(char *prev)
   rktio_pop_c_numeric_locale(scheme_rktio, prev);
 }
 
+void scheme_set_default_locale(void)
+{
+  rktio_set_default_locale("");
+}
+
 static int find_special_casing(int ch)
 {
   /* Binary search */

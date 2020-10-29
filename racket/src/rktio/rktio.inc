@@ -187,6 +187,7 @@ Sforeign_symbol("rktio_locale_strcoll", (void *)rktio_locale_strcoll);
 Sforeign_symbol("rktio_strcoll_utf16", (void *)rktio_strcoll_utf16);
 Sforeign_symbol("rktio_locale_encoding", (void *)rktio_locale_encoding);
 Sforeign_symbol("rktio_set_locale", (void *)rktio_set_locale);
+Sforeign_symbol("rktio_set_default_locale", (void *)rktio_set_default_locale);
 Sforeign_symbol("rktio_push_c_numeric_locale", (void *)rktio_push_c_numeric_locale);
 Sforeign_symbol("rktio_pop_c_numeric_locale", (void *)rktio_pop_c_numeric_locale);
 Sforeign_symbol("rktio_system_language_country", (void *)rktio_system_language_country);

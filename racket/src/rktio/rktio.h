@@ -1203,6 +1203,9 @@ RKTIO_EXTERN void rktio_set_locale(rktio_t *rktio, rktio_const_string_t name);
    string corresponds to the OS's native locale, and a NULL string
    pointer corresponds to the C locale. */
 
+RKTIO_EXTERN void rktio_set_default_locale(rktio_const_string_t name);
+/* Similar to rktio_set_locale(), but sets the locale process-wide. */
+
 RKTIO_EXTERN_NOERR void *rktio_push_c_numeric_locale(rktio_t *rktio);
 RKTIO_EXTERN void rktio_pop_c_numeric_locale(rktio_t *rktio, void *prev);
 /* Use this pair of functions to temporarily switch the locale to the

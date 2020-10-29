@@ -187,6 +187,7 @@ rktio_locale_strcoll
 rktio_strcoll_utf16
 rktio_locale_encoding
 rktio_set_locale
+rktio_set_default_locale
 rktio_push_c_numeric_locale
 rktio_pop_c_numeric_locale
 rktio_system_language_country
