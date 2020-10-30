@@ -378,7 +378,14 @@ using a parameter-determined conversion.
 Expands to a use of the @racket[default-_string-type] parameter.  The
 parameter's value is consulted when @racket[_string] is evaluated, so
 the parameter should be set before any interface definition that uses
-@racket[_string].}
+@racket[_string].
+
+Don't use @racket[_string] when you should use @racket[_path].
+Although C APIs typically represent paths as strings, and although
+the default @racket[_string] (via @racket[default-_string-type]) even
+implicitly converts Racket paths to strings, using @racket[_path]
+ensures the proper encoding of strings as paths, which is not always
+UTF-8. See also @racket[_path] for a caveat about relative paths.}
 
 @defparam[default-_string-type type ctype?]{
 
