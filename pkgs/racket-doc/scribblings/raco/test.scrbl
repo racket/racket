@@ -43,16 +43,22 @@ The @exec{raco test} command accepts several flags:
 
  @item{@Flag{c} or @DFlag{collection}
        --- Interprets the arguments as collections whose content
-       should be tested (in the same way as directory content).}
+       should be tested (in the same way as directory content),
+       and makes @DFlag{process} the default testing mode.}
 
  @item{@Flag{p} or @DFlag{package}
        --- Interprets the arguments as packages whose contents should
        be tested (in the same way as directory content). All package
        scopes are searched for the first, most specific @tech[#:doc
-       '(lib "pkg/scribblings/pkg.scrbl")]{package scope}.}
+       '(lib "pkg/scribblings/pkg.scrbl")]{package scope}. This flag also
+       makes @DFlag{process} the default testing mode.}
  
  @item{@Flag{l} or @DFlag{lib}
-       --- Interprets the arguments as libraries that should be tested.}
+       --- Interprets the arguments as libraries that should be tested.
+       Each argument @nonterm{arg} is treated as a module path
+       @racket[(lib "@nonterm{arg}")].
+       The default testing mode is @DFlag{direct} if a single module is specified,
+       @DFlag{process} if multiple modules are specified.}
 
  @item{@Flag{m} or @DFlag{modules}
        --- Not only interprets the arguments as paths (which is the
@@ -62,7 +68,9 @@ The @exec{raco test} command accepts several flags:
        @racket[test-command-line-arguments] or @racket[test-include-paths]
        in an @filepath{info.rkt} file; meanwhile, paths that are otherwise
        enabled can be disabled via @racket[test-omit-paths] in an
-       @filepath{info.rkt} file.}
+       @filepath{info.rkt} file.
+       The default testing mode is @DFlag{direct} if a single path is specified,
+       @DFlag{process} if multiple paths are specified.}
 
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
