@@ -21,7 +21,7 @@ jobs:
 
     
     steps:
-    - uses: AutoModality/action-clean@v1
+    - uses: pmatos/action-home-clean@v2
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -84,7 +84,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-    - uses: AutoModality/action-clean@v1
+    - uses: pmatos/action-home-clean@v2
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -160,7 +160,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-    - uses: AutoModality/action-clean@v1
+    - uses: pmatos/action-home-clean@v2
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100
@@ -222,7 +222,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-      - uses: AutoModality/action-clean@v1
+      - uses: pmatos/action-home-clean@v2
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -297,7 +297,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
     steps:
-      - uses: AutoModality/action-clean@v1
+      - uses: pmatos/action-home-clean@v2
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -367,7 +367,7 @@ jobs:
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
         
     steps:
-      - uses: AutoModality/action-clean@v1
+      - uses: pmatos/action-home-clean@v2
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
