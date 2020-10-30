@@ -58,6 +58,12 @@
           [(real? z)
            (let loop ([z z])
              (cond [(z . < . 0) (- (loop (- z)))]
+                   [(< z 1e-8) (exact->inexact z)]
+                   [(< z .13)
+                    ;; Taylor expansion near 0 to avoid cancellation
+                    ;~ z+z^3/3!+z^5/5!+...
+                    (define z^2 (* z z))
+                    (+ z (* z z^2 (+ #i1/6 (* z^2 (+ #i1/120 (* z^2 (+ #i1/5040 (* z^2 #i1/362880))))))))]
                    [else        (/ (- (exp z) (exp (- z))) 2)]))]
           [else (/ (- (exp z) (exp (- z))) 2)]))
 
