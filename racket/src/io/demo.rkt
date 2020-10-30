@@ -15,8 +15,6 @@
 (path->string (current-directory))
 (set-string->number?! string->number)
 
-(split-path (bytes->path #"c:" 'windows))
-
 (let ()
   (define-values (i o) (make-pipe 4096))
 

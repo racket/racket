@@ -28,13 +28,16 @@
 (define-syntax-rule (define-constant n v) (define n v))
 
 (define-syntax (define-type stx)
-  (syntax-case stx (rktio_bool_t rktio_ok_t)
+  (syntax-case stx (rktio_bool_t rktio_ok_t rktio_const_string_t)
     [(_ rktio_bool_t _)
      (with-syntax ([(_ rktio_bool_t _) stx])
        #'(define rktio_bool_t _bool))]
     [(_ rktio_ok_t _)
      (with-syntax ([(_ rktio_ok_t _) stx])
        #'(define rktio_ok_t _bool))]
+    [(_ rktio_const_string_t t)
+     (with-syntax ([(_ rktio_const_string_t _) stx])
+     #'(define rktio_const_string_t _bytes/nul-terminated))]
     [(_ n t) #'(define n t)]))
 
 (define-syntax (define-struct-type stx)
@@ -48,8 +51,8 @@
            (define-cstruct _n ([name type] ...))
            (define n _n-pointer)))]))
 
-(define-syntax-rule (ref t) _pointer)
 (define-syntax-rule (*ref t) _pointer)
+(define-syntax-rule (ref t) _pointer)
 (define-syntax-rule (array n t) (_array t n))
 
 (define-syntax-rule (define-function flags ret-type name ([arg-type arg-name] ...))
@@ -138,10 +141,10 @@
         [(and len (= i len))
          null]
         [else
-         (define bs (ptr-ref lls _bytes i))
+         (define bs (ptr-ref lls _pointer i))
          (if bs
              (cons (begin0
-                     (bytes-copy bs)
+                     (cast bs _pointer _bytes)
                      (rktio_free bs))
                    (loop (add1 i)))
              null)]))

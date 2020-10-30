@@ -32065,7 +32065,11 @@
              (if or-part_0 or-part_0 (path-string? p_0)))
          (void)
          (raise-argument-error '_path "(or/c path-string? #f)" p_0))
-       (if p_0 (bytes-append (->host p_0 #f '()) #vu8(0)) #f)))
+       (if p_0
+         (bytes-append
+          (let ((app_0 path-bytes)) (|#%app| app_0 (->path p_0)))
+          #vu8(0))
+         #f)))
    (lambda (bstr_0)
      (if (check-not-unsafe-undefined bstr_0 'bstr_119)
        (path1.1
@@ -35995,11 +35999,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3726 unsafe-undefined)
+               (let ((lr3728 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3726
+                 (set! lr3728
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -36054,9 +36058,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3726 0))
-                 (set! command_0 (unsafe-vector*-ref lr3726 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3726 2))
+                 (set! group_0 (unsafe-vector*-ref lr3728 0))
+                 (set! command_0 (unsafe-vector*-ref lr3728 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3728 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)
