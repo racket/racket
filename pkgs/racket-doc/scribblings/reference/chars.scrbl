@@ -187,8 +187,8 @@ Returns @racket[#t] if @racket[char]'s Unicode general category is
 
 @defproc[(char-numeric? [char char?]) boolean?]{
 
-Returns @racket[#t] if @racket[char] has the Unicode ``Numeric''
-property.}
+Returns @racket[#t] if @racket[char] has a Unicode ``Numeric_Type''
+property value that is not @litchar{None}.}
 
 @defproc[(char-symbolic? [char char?]) boolean?]{
 
