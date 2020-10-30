@@ -43,7 +43,7 @@
 
 #if defined(__linux__)
 
-# define USE_TIMEZONE_VAR_W_DLS
+# define USE_TM_GMTOFF_FIELD
 # define USE_TZNAME_VAR
 
 # define RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
