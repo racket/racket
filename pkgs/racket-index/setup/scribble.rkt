@@ -146,6 +146,7 @@
          always-user?       ; make user-specific even if otherwise unneeded
          tidy?              ; clean up, even beyond `only-dirs'
          avoid-main?        ; avoid main collection, even for `tidy?'
+         only-fast?         ; move/sync docs, but don't run/render
          with-record-error  ; catch & record exceptions
          setup-printf
          gc-after-each-sequential?)
@@ -331,9 +332,10 @@
     (and (ormap can-build**? docs)
          (filter 
           values
-          (if ((min worker-count (length docs)) . < . 2)
+          (if (or ((min worker-count (length docs)) . < . 2)
+                  only-fast?)
               ;; non-parallel version:
-              (map (make-sequential-get-info #f) docs)
+              (map (make-sequential-get-info only-fast?) docs)
               ;; maybe parallel...
               (or
                (let ([infos (map (make-sequential-get-info #t)
@@ -629,7 +631,7 @@
           (write-in/info latex-dest info no-lock main-doc-exists?)
           (set-info-need-in-write?! info #f)))
       ;; Iterate, if any need to run:
-      (when (and (ormap info-need-run? infos) (iter . < . 30))
+      (when (and (ormap info-need-run? infos) (iter . < . 30) (not only-fast?))
         (log-setup-info "building")
         ;; Build again, using dependencies
         (let ([need-rerun (sort (filter-map (lambda (i) 

@@ -1432,7 +1432,7 @@
               name-str
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
               latex-dest auto-start-doc? (make-user) (force-user-docs)
-              (make-tidy) (avoid-main-installation)
+              (make-tidy) (avoid-main-installation) (sync-docs-only)
               (lambda (what go alt) (record-error what "building docs" go alt))
               setup-printf
               gc-after-each-sequential?))

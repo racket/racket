@@ -167,6 +167,10 @@ flags:
   recompiled from an existing @filepath{.zo} in machine-independent
   format (when compiling to a machine-dependent format).}
 
+ @item{@DFlag{sync-docs-only} --- synchronize or move documentation
+   into place to ``build'' it, but do not run or render documentation
+   sources.}
+
  @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
    executables or installing @tt{man} pages (as specified in
    @filepath{info.rkt}; see @secref["setup-info"]).}
@@ -385,8 +389,9 @@ debugging:
          #:changed "7.0.0.19" @elem{Added @DFlag{places} and  @DFlag{processes}.}
          #:changed "7.2.0.7" @elem{Added @DFlag{error-in} and  @DFlag{error-out}.}
          #:changed "7.2.0.8" @elem{Added @DFlag{recompile-only}.}
-         #:changed "7.9.0.3" @elem{Added @envvar{PLT_SETUP_NO_FORCE_GC} and
-                                   @envvar{PLT_SETUP_SHOW_TIMESTAMPS}.}]
+         #:changed "7.9.0.3" @elem{Added @envvar{PLT_SETUP_NO_FORCE_GC},
+                                   @envvar{PLT_SETUP_SHOW_TIMESTAMPS},
+                                   and @DFlag{sync-docs-only}.}]
 
 @; ------------------------------------------------------------------------
 

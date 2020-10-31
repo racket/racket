@@ -82,6 +82,8 @@
       (add-flags '((trust-existing-zos #t)))]
      [("--recompile-only") "Fail if compilation must start from source"
       (add-flags '((recompile-only #t)))]
+     [("--sync-docs-only") "Sync/move documentation, but do not run or render"
+      (add-flags '((sync-docs-only #t)))]
      [("-x" "--no-launcher") "Do not produce launcher programs"
       (add-flags '((make-launchers #f)))]
      [("-F" "--no-foreign-libs") "Do not install foreign libraries"
