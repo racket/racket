@@ -441,10 +441,10 @@
        (define/with-syntax (opt-name ...) opt)
        (define/with-syntax ((optkw-key optkw-val) ...) opt-kw)
        (define/with-syntax arg-labels/restargs ; labels for args
-         #'((symbol->string 'req-name) ... 
-            (string-append (symbol->string 'opt-name) " (optional)") ...
-            (string-append "#:" (keyword->string 'reqkw-key)) ...
-            (string-append "#:" (keyword->string 'optkw-key) " (optional)")  ...
+         #'((string-append (symbol->string 'req-name) " argument...") ... 
+            (string-append (symbol->string 'opt-name) " (optional) argument...") ...
+            (string-append "#:" (keyword->string 'reqkw-key) " argument...") ...
+            (string-append "#:" (keyword->string 'optkw-key) " (optional) argument...")  ...
             "rest args"))
        (define/with-syntax arg-labels ; drop restargs if none
          (if rest #'arg-labels/restargs (stx-drop-last #'arg-labels/restargs)))
@@ -462,12 +462,9 @@
          (apply append (stx-map list #'other-arg-labels #'other-args)))
        (define/with-syntax err-fmt-str
          (string-append "contract violation:\n"
-                        "expected: ~a\n"
-                        "given: ~v\n"
-                        (if (null? (syntax->list #'other-arg-labels))
-                            "argument position: ~a"
-                            (string-append "argument position: ~a\n"
-                                           "other arguments...:"))))
+                        "  expected: ~a\n"
+                        "  given: ~e\n"
+                        "  argument position: ~a"))
        (define/with-syntax contract-str
          (format "~s?" (syntax-e #'self-name)))
        (define/with-syntax self-i-stx self-i)
