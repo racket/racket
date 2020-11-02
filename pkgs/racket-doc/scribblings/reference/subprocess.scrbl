@@ -136,6 +136,19 @@ A subprocess can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A subprocess value is @tech{ready for synchronization} when
 @racket[subprocess-wait] would not block; @resultItself{subprocess value}.
 
+Example:
+
+@racketblock[
+(define-values (sp out in err)
+  (subprocess #f #f #f "/bin/ls" "-l"))
+(printf "stdout:\n~a" (port->string out))
+(printf "stderr:\n~a" (port->string err))
+(close-input-port out)
+(close-output-port in)
+(close-input-port err)
+(subprocess-wait sp)
+]
+
 @history[#:changed "6.11.0.1" @elem{Added the @racket[group] argument.}
          #:changed "7.4.0.5" @elem{Added waiting for a fifo without a reader
                                    as @racket[stdout] and/or @racket[stderr].}]}
