@@ -151,13 +151,18 @@ LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
 
 enable_pthread_by_default=yes
 
+cs_auto_flags=--disable-auto-flags
+
 ###### Autoconfigure #######
 
 AC_PROG_CC
 
+m4_include(../ac/is_gcc.m4)
+
 # If using gcc, we want all warnings:
-if test "$CC" = "gcc" ; then 
+if test "$is_gcc" != "" ; then 
   CFLAGS="$CFLAGS -Wall"
+  cs_auto_flags="${cs_auto_flags} --enable-warning-flags"
 fi
 
 AC_CHECK_LIB(m, fmod)
@@ -240,6 +245,7 @@ case "$host_os" in
     skip_iconv_check=yes
     use_flag_pthread=no
     MACH_OS=nt
+    LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW=""
     NOT_MINGW="mingw"
     if `which ${host}-windres > /dev/null` ; then
@@ -686,8 +692,8 @@ fi
 
 m4_include(../ac/rktio_keep.m4)
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
-SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
+SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
 
 AC_SUBST(upsrcdir)
 AC_SUBST(CC)

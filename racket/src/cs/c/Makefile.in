@@ -146,7 +146,7 @@ mach-make:
 	$(MAKE) config-scheme
 	cd $(SCHEME_WORKAREA) && $(MAKE)
 
-SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)" \
+SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)" \
                      AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
                      WINDRES="$(WINDRES)"
 CONFIG_SCHEME_MODE =
@@ -313,10 +313,8 @@ raw_racketcs.exe: main.o MemoryModule.o rres.o
 raw_gracketcs.exe: grmain.o MemoryModule.o grres.o
 	$(CC) $(CFLAGS) -mwindows -o raw_gracketcs.exe grmain.o MemoryModule.o grres.o $(LDFLAGS)
 
-MINGW_LIBS = -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm
-
 raw_libracketcs.dll: boot.o $(BOOT_OBJ_DEPS) libres.o
-	$(CC) $(CFLAGS) --shared -o raw_libracketcs.dll $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a $(MINGW_LIBS) -static-libgcc $(LIBS)
+	$(CC) $(CFLAGS) --shared -o raw_libracketcs.dll $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a -static-libgcc $(LIBS)
 
 MemoryModule.o: $(srcdir)/../../start/MemoryModule.c
 	$(CC) -c $(CFLAGS) -o MemoryModule.o $(srcdir)/../../start/MemoryModule.c
