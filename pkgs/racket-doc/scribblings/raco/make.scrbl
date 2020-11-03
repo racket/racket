@@ -353,6 +353,11 @@ required modules are also compiled), and creating a @filepath{.dep} file
 to record the timestamps of immediate files used to compile the source
 (i.e., files @racket[require]d in the source).
 
+Compilation is triggered by loading a module into the current
+namespace, so if a module that is a dependency of @racket[file] has
+already been loaded into the current namespace, then that module will
+not necessarily be (re-)compiled.
+
 If @racket[file] is compiled from source, then
 @racket[read-src-syntax] is used in the same way as
 @racket[read-syntax] to read the source module. The normal
