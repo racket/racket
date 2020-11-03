@@ -423,17 +423,32 @@
                                                    (base-hash/dc-here ctc))))
     (define pos-value-blame (blame-add-value-context blame #f))
     (define neg-value-blame (blame-add-value-context blame #t))
-    (λ (val neg-party)
-      (cond
-        [(check-hash/c dom-ctc immutable flat? val blame neg-party) val]
-        [else
+    (cond
+      [chaperone-or-impersonate-hash
+       (λ (val neg-party)
+         (cond
+           [(check-hash/c dom-ctc immutable flat? val blame neg-party) val]
+           [else
+            (define ((mk-rng-proj x-value-blame) key)
+              ((get/build-late-neg-projection (dep-rng-proc (indy-dom-proj key neg-party)))
+               x-value-blame))
+            (handle-the-hash val neg-party
+                             pos-dom-proj neg-dom-proj
+                             (mk-rng-proj pos-value-blame) (mk-rng-proj neg-value-blame)
+                             chaperone-or-impersonate-hash ctc blame)]))]
+      [else
+       (λ (val neg-party)
+         (check-hash/c dom-ctc immutable flat? val blame neg-party)
          (define ((mk-rng-proj x-value-blame) key)
            ((get/build-late-neg-projection (dep-rng-proc (indy-dom-proj key neg-party)))
             x-value-blame))
-         (handle-the-hash val neg-party
-                          pos-dom-proj neg-dom-proj 
-                          (mk-rng-proj pos-value-blame) (mk-rng-proj neg-value-blame)
-                          chaperone-or-impersonate-hash ctc blame)]))))
+         (define mk-pos-rng-proj (mk-rng-proj pos-value-blame))
+         (define mk-neg-rng-proj (mk-rng-proj neg-value-blame))
+         (with-contract-continuation-mark (cons blame neg-party)
+           (for ([(k v) (in-hash val)])
+             (pos-dom-proj k neg-party)
+             ((mk-pos-rng-proj k) v neg-party)))
+         val)])))
         
 (struct base-hash/dc (dom dep-rng here name-info immutable))
 (struct flat-hash/dc base-hash/dc ()
@@ -444,7 +459,8 @@
    #:name hash/dc-name
    #:first-order hash/dc-first-order
    #:equivalent hash/dc-equivalent
-   #:stronger hash/dc-stronger))
+   #:stronger hash/dc-stronger
+   #:late-neg-projection (hash/dc-late-neg-projection #f)))
 
 (struct chaperone-hash/dc base-hash/dc ()
   #:property prop:custom-write custom-write-property-proc
@@ -522,7 +538,7 @@
               (loop #'more))]
            [(x . y)
             (raise-syntax-error 'hash/dc
-                                "expected either the keyword #:flat? or #:immutable"
+                                "expected either the keyword #:kind or #:immutable"
                                 stx
                                 #'x)]))
        #`(build-hash/dc dom-ctc-expr

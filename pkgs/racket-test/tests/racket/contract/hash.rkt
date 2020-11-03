@@ -288,7 +288,54 @@
    '(contract (hash/dc [d integer?] [r (d) string?] #:immutable #t)
               (hash 3 "x")
               'pos 'neg))
+
+  (test/pos-blame
+   'hash/dc-flat1
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)] #:kind 'flat)
+              1
+              'pos 'neg))
+  (test/pos-blame
+   'hash/dc-flat2
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)] #:kind 'flat)
+              (hash #f #f)
+              'pos 'neg))
+
+  (test/pos-blame
+   'hash/dc-flat3
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)] #:kind 'flat)
+              (hash 0 #f)
+              'pos 'neg))
   
+  (test/pos-blame
+   'hash/dc-flat4
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)] #:kind 'flat)
+              (hash 1 "x")
+              'pos 'neg))
+  (test/pos-blame
+   'hash/dc-flat5
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)] #:kind 'flat)
+              (hash 3 "x")
+              'pos 'neg))
+  (test/pos-blame
+   'hash/dc-flat6
+   '(contract (hash/dc [d integer?] [r (d) string?] #:immutable #f #:kind 'flat)
+              (hash 3 "x")
+              'pos 'neg))
+  (test/spec-passed
+   'hash/dc-flat7
+   '(contract (hash/dc [d integer?] [r (d) string?] #:immutable #t #:kind 'flat)
+              (hash 3 "x")
+              'pos 'neg))
+  (test/spec-passed/result
+   'hash/dc-flat8
+   '(regexp-match?
+     #rx"\n *in: the values of\n"
+     (with-handlers ([exn:fail? exn-message])
+       (contract (hash/dc [d integer?] [r (d) string?] #:immutable #t #:kind 'flat)
+                 (hash 3 'not-a-string)
+                 'pos 'neg)))
+   #t)
+
   (test/no-error
    '(let ([v (chaperone-hash (make-immutable-hash (list (cons 1 2)))
                              (λ (hash k) (values k (λ (h k v) v)))
