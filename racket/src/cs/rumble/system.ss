@@ -11,6 +11,11 @@
    [(getenv "PLT_CS_MAKE_UNIX_STYLE_MACOS") #t]
    [else #f]))
 
+(define unix-link-shared?
+  (meta-cond
+   [(getenv "PLT_CS_MAKE_LINK_SHARED") #t]
+   [else #f]))
+
 (define cross-mode 'infer)
 (define (set-cross-mode! m) (set! cross-mode m))
 
@@ -27,7 +32,13 @@
             [else 'unix])]
     [(word) (if (> (fixnum-width) 32) 64 32)]
     [(gc) 'cs]
-    [(link) 'framework]
+    [(link) (case (and (not unix-style-macos?)
+                       (machine-type))
+              [(a6osx ta6osx i3osx ti3osx) 'framework]
+              [(a6nt ta6nt i3nt ti3nt) 'windows]
+              [else (if unix-link-shared?
+                        'shared
+                        'static)])]
     [(machine) (get-machine-info)]
     [(so-suffix) (case (machine-type)
                    [(a6osx ta6osx i3osx ti3osx) (string->utf8 ".dylib")]

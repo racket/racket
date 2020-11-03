@@ -679,6 +679,8 @@ if test "${enable_shared}" = "yes" ; then
   STRIP_LIB_DEBUG=":"
   LIBSFX=la
   ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+
+  CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
 else
   ICP=cp
   LTO="o"

@@ -46,7 +46,7 @@
                                 (system-type 'word))
           'gc 'cs
           'vm 'chez-scheme
-          'link 'static
+          'link (if windows? 'windows (system-type 'link))
           'machine lib-subpath
           'library-subpath (string->bytes/utf-8 lib-subpath)
           'library-subpath-convention (if windows? 'windows 'unix)
