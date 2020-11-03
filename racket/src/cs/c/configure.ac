@@ -16,6 +16,7 @@ AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (no
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
+AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
 AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
@@ -106,6 +107,13 @@ if test "${enable_csdefault}" = "yes" ; then
 else
   CS_INSTALLED=cs
   AC_DEFINE(CS_COMPILED_SUBDIR,1,[Use a subdirectory of "compiled"])
+fi
+
+show_explicitly_disabled "${enable_wpo}" "Agressive core optimization"
+if test "${enable_wpo}" = "no" ; then
+  ENABLE_OR_DISABLE_WPO="WHEN_WPO=no_ UNLESS_WPO="
+else  
+  ENABLE_OR_DISABLE_WPO=""
 fi
 
 ############## Install targets ################
@@ -748,6 +756,7 @@ AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(CS_INSTALLED)
 AC_SUBST(CS_COMPILED_SUBDIR)
+AC_SUBST(ENABLE_OR_DISABLE_WPO)
 AC_SUBST(COMP_SUBDIR_CONFIGURE_ARGS)
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 AC_SUBST(RUN_RACKET)

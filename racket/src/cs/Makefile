@@ -17,6 +17,11 @@ COMPRESS_COMP = # --compress
 # "--srcloc" for procedure-level source locations:
 DEBUG_COMP = # --debug
 
+# To disable whole-program optimization for "main.sps", set
+# `WHEN_WPO=no_` and `UNLESS_WPO=`.
+WHEN_WPO =
+UNLESS_WPO = no_
+
 # For cross-compiling, set `CROSS_COMP` to `-m <machine>`, where
 # the Chez Scheme directory must have "<machine>/s/xpatch":
 CROSS_COMP =
@@ -92,8 +97,11 @@ setup-v:
 run-wpo: $(BUILDDIR)racket.so ../../bin/racket
 	$(SCHEME) --script $(BUILDDIR)racket.so $(RACKET_SETUP_ARGS) $(ARGS)
 
-$(BUILDDIR)racket.so: $(BUILDDIR)main.so $(COMPILE_FILE_DEPS)
+$(WHEN_WPO)$(BUILDDIR)racket.so: $(BUILDDIR)main.so $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) --whole-program $(BUILDDIR)racket.so $(BUILDDIR)main.wpo
+
+$(UNLESS_WPO)$(BUILDDIR)racket.so: $(BUILDDIR)main.so $(COMPILE_FILE_DEPS)
+	cat $(MAIN_DEPS) $(BUILDDIR)main.so > $(BUILDDIR)racket.so
 
 MAIN_SRCS = main/help.ss
 

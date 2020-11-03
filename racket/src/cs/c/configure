@@ -628,6 +628,7 @@ INSTALL_SETUP_FLAGS
 RUN_RACKET
 CROSS_COMPILE_TARGET_KIND
 COMP_SUBDIR_CONFIGURE_ARGS
+ENABLE_OR_DISABLE_WPO
 CS_COMPILED_SUBDIR
 CS_INSTALLED
 FRAMEWORK_REL_INSTALL
@@ -774,6 +775,7 @@ enable_shared
 enable_standalone
 enable_pthread
 enable_iconv
+enable_wpo
 enable_compress
 enable_compressboot
 enable_origtree
@@ -1420,6 +1422,7 @@ Optional Features:
   --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
+  --enable-wpo            agressively optimize Racket core (enabled by default)
   --enable-compress       compress compiled code (enabled by default)
   --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
@@ -2528,6 +2531,11 @@ if test "${enable_iconv+set}" = set; then :
   enableval=$enable_iconv;
 fi
 
+# Check whether --enable-wpo was given.
+if test "${enable_wpo+set}" = set; then :
+  enableval=$enable_wpo;
+fi
+
 # Check whether --enable-compress was given.
 if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
@@ -2969,6 +2977,13 @@ else
 
 $as_echo "#define CS_COMPILED_SUBDIR 1" >>confdefs.h
 
+fi
+
+show_explicitly_disabled "${enable_wpo}" "Agressive core optimization"
+if test "${enable_wpo}" = "no" ; then
+  ENABLE_OR_DISABLE_WPO="WHEN_WPO=no_ UNLESS_WPO="
+else
+  ENABLE_OR_DISABLE_WPO=""
 fi
 
 ############## Install targets ################
@@ -5562,6 +5577,7 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
 
 
 
