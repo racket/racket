@@ -6,14 +6,16 @@
 typedef struct racket_boot_arguments_t {
   /* Boot files --- potentially the same path with different offsets.
      If a boot image is embedded in a larger file, it must be
-     terminated with "\0 if the boot image is compressed or "\177" if
-     the boot image is uncompressed. */
+     terminated with "\177". */
   const char *boot1_path; /* REQUIRED; path to "petite.boot" */
   long boot1_offset;
+  long boot1_len; /* 0 => unknown length */
   const char *boot2_path; /* REQUIRED; path to "scheme.boot" */
   long boot2_offset;
+  long boot2_len; /* 0 => unknown length */
   const char *boot3_path; /* REQUIRED; path to "racket.boot" */
   long boot3_offset;
+  long boot3_len; /* 0 => unknown length */
 
   /* Command-line arguments are handled in the same way as the
      `racket` exectuable. The `argv` array should *not* include the

@@ -120,8 +120,12 @@
 
      (file-position o (cdar m))
      (void (write-bytes (integer->integer-bytes pos 4 #t big-endian?) o))
-     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) terminator-len) 4 #t big-endian?) o))
-     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) (* 2 terminator-len)) 4 #t big-endian?) o)))
+     (let ([pos (+ pos (bytes-length bstr1) terminator-len)])
+       (void (write-bytes (integer->integer-bytes pos 4 #t big-endian?) o))
+       (let ([pos (+ pos (bytes-length bstr2) terminator-len)])
+         (void (write-bytes (integer->integer-bytes pos 4 #t big-endian?) o))
+         (let ([pos (+ pos (bytes-length bstr3) terminator-len)])
+           (void (write-bytes (integer->integer-bytes pos 4 #t big-endian?) o))))))
 
    (cond
     [(null? alt-dests)

@@ -40,19 +40,31 @@ Fields in @cppdef{racket_boot_arguments_t}:
        The image as distributed is self-terminating, so no size or
        ending offset is needed.}
 
+ @item{@cpp{long} @cppdef{boot1_len} --- an optional length in bytes
+       for the first boot image, which is used as a hint for loading
+       the boot file if non-zero. If this hint is provided, it must be
+       at least as large as the boot image bytes, and it must be no
+       longer than the file size after the boot image offset.}
+
  @item{@cpp{const char *} @cppdef{boot2_path} --- like
        @cpp{boot1_path}, but for the image that contains compiler
        functionality, normally called @filepath{scheme.boot}.}
 
  @item{@cpp{long} @cppdef{boot2_offset} --- an offset into
        @cpp{boot2_path} to read for the second boot image.}
-       
+
+ @item{@cpp{long} @cppdef{boot2_len} --- @cpp{boot1_len}, an optional
+       length in bytes for the second boot image.}
+
  @item{@cpp{const char *} @cppdef{boot3_path} --- like
        @cpp{boot1_path}, but for the image that contains Racket
        functionality, normally called @filepath{racket.boot}.}
 
- @item{@cpp{long} @cppdef{boot3_offset} --- an offset into
-       @cpp{boot2_path} to read for the thirf boot image.}
+ @item{@cpp{long} @cppdef{boot3_offset} --- @cpp{boot1_len}, an offset
+       into @cpp{boot2_path} to read for the third boot image.}
+
+ @item{@cpp{long} @cppdef{boot3_len} --- an optional length in bytes
+       for the third boot image.}
 
  @item{@cpp{int} @cpp{argc} and @cpp{char **} @cpp{argv} ---
        command-line arguments to be processed the same as for a

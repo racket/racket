@@ -54,7 +54,7 @@ static void scheme_set_dll_procs(scheme_dll_open_proc open,
 #endif
 
 PRESERVE_IN_EXECUTABLE
-char *boot_file_data = "BooT FilE OffsetS:\0\0\0\0\0\0\0\0\0\0\0\0";
+char *boot_file_data = "BooT FilE OffsetS:\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 static int boot_file_offset = 18;
 
 #define USE_GENERIC_GET_SELF_PATH
@@ -433,7 +433,7 @@ static int bytes_main(int argc, char **argv,
   char *boot_exe;
   char *exec_file = argv[0], *run_file = NULL;
   char *boot1_path, *boot2_path, *boot3_path;
-  int boot1_offset, boot2_offset, boot3_offset;
+  int boot1_offset, boot2_offset, boot3_offset, boot_end_offset;
 #ifdef OS_X
   int boot_images_in_exe = 1;
 #endif
@@ -459,6 +459,7 @@ static int bytes_main(int argc, char **argv,
   memcpy(&boot1_offset, boot_file_data + boot_file_offset, sizeof(boot1_offset));
   memcpy(&boot2_offset, boot_file_data + boot_file_offset + 4, sizeof(boot2_offset));
   memcpy(&boot3_offset, boot_file_data + boot_file_offset + 8, sizeof(boot3_offset));
+  memcpy(&boot_end_offset, boot_file_data + boot_file_offset + 12, sizeof(boot_end_offset));
 
 #ifdef WIN32
   parse_embedded_dlls();
@@ -494,6 +495,7 @@ static int bytes_main(int argc, char **argv,
   boot1_offset += boot_offset;
   boot2_offset += boot_offset;
   boot3_offset += boot_offset;
+  boot_end_offset += boot_offset;
 
   boot1_path = boot2_path = boot3_path = boot_exe;
 
@@ -504,7 +506,7 @@ static int bytes_main(int argc, char **argv,
       boot1_path = path_append(fw_path, "petite.boot");
       boot2_path = path_append(fw_path, "scheme.boot");
       boot3_path = path_append(fw_path, "racket.boot");
-      boot1_offset = boot2_offset = boot3_offset = 0;
+      boot1_offset = boot2_offset = boot3_offset = boot_end_offset = 0;
     }
   }
 #endif
@@ -529,11 +531,14 @@ static int bytes_main(int argc, char **argv,
     
     ba.boot1_path = boot1_path;
     ba.boot1_offset = boot1_offset;
+    ba.boot1_len = boot2_offset - boot1_offset;
     ba.boot2_path = boot2_path;
     ba.boot2_offset = boot2_offset;
+    ba.boot2_len = boot3_offset - boot2_offset;
     ba.boot3_path = boot3_path;
     ba.boot3_offset = boot3_offset;
-                
+    ba.boot3_len = boot_end_offset - boot3_offset;
+
     ba.argc = argc;
     ba.argv = argv;
     ba.exec_file = exec_file;
