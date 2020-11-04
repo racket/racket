@@ -1658,7 +1658,6 @@
              (not blocking?)
              (not orig-place?)
              (not save-errno)
-             (not lock)
              (#%andmap (lambda (in-type)
                          (case (ctype-host-rep in-type)
                            [(scheme-object struct union) #f]
@@ -1686,15 +1685,22 @@
                                         [(_ id ...)
                                          (with-syntax ([(type ...) (generate-temporaries #'(id ...))]
                                                        [(orig ...) (generate-temporaries #'(id ...))])
-                                           #'(let*-values ([(type in-types) (values (car in-types) (cdr in-types))]
-                                                           ...)
-                                               (lambda (orig ...)
-                                                 (let ([id (unwrap orig type)] ...)
-                                                   (c->s out-type
-                                                         (retain
-                                                          orig ...
-                                                          (with-interrupts-disabled*
-                                                           (proc (unpack id type) ...))))))))]))])
+                                           (let ([make-proc
+                                                  (lambda (lock)
+                                                    #`(lambda (orig ...)
+                                                        (let ([id (unwrap orig type)] ...)
+                                                          (when #,lock (mutex-acquire #,lock))
+                                                          (let ([r (retain
+                                                                    orig ...
+                                                                    (with-interrupts-disabled*
+                                                                     (proc (unpack id type) ...)))])
+                                                            (when #,lock (mutex-release #,lock))
+                                                            (c->s out-type r)))))])
+                                             #`(let*-values ([(type in-types) (values (car in-types) (cdr in-types))]
+                                                             ...)
+                                                 (if lock
+                                                     #,(make-proc #'lock)
+                                                     #,(make-proc #'#f)))))]))])
                     (case arity-mask
                       [(1) (gen)]
                       [(2) (gen a)]
@@ -1715,11 +1721,14 @@
                  [else
                   (lambda orig-args
                     (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
-                      (c->s out-type (with-interrupts-disabled*
-                                      (retain
-                                       orig-args
-                                       (#%apply (gen-proc (cpointer-address proc-p))
-                                                (map (lambda (a t) (unpack a t)) args in-types)))))))])
+                      (when lock (mutex-acquire lock))
+                      (let ([r (with-interrupts-disabled*
+                                (retain
+                                 orig-args
+                                 (#%apply (gen-proc (cpointer-address proc-p))
+                                          (map (lambda (a t) (unpack a t)) args in-types))))])
+                        (when lock (mutex-release lock))
+                        (c->s out-type r))))])
                arity-mask
                (cpointer->name proc-p)))))]
        [else
