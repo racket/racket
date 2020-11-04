@@ -14,4 +14,4 @@
 
 (define/who (path->string p)
   (check who is-path? #:contract "path?" p)
-  (bytes->string/locale (path-bytes p) #\?))
+  (bytes->string/locale (path-bytes p) #\uFFFD))

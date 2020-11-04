@@ -25,21 +25,45 @@
        [(if (path-for-some-system? s)
             (eq? (path-convention-type s) 'windows)
             (eq? (system-type) 'windows))
-        (let ([str (if (string? s) s (bytes->string/locale (path->bytes s)))])
-          (if (regexp-match? #rx"^[\u5C][\u5C][?][\u5C]" str)
-              (if (string? s)
-                  (string->path s)
-                  s)
-              (let ([s (string-locale-downcase str)])
-                (bytes->path 
-                 (string->bytes/locale
-                  (regexp-replace* #rx"/" 
-                                   (if (regexp-match? #rx"[/\u5C][. ]+[/\u5C]*$" s)
-                                       ;; Just "." or ".." in last path element - don't remove
-                                       s
-                                       (regexp-replace* #rx"\u5B .\u5D+([/\u5C]*)$" s "\u005C1"))
-                                   bsbs))
-                 'windows))))]
+        (let ([bstr (if (string? s) #f (path->bytes s))])
+          (cond
+            [(and (string? s)
+                  (regexp-match? #rx"^[\u5C][\u5C][?][\u5C]" s))
+             (string->path s)]
+            [(and bstr
+                  (regexp-match? #rx#"^[\x5C][\x5C][?][\x5C]" bstr))
+             s]
+            [else
+             ;; There's no guarantee that `bstr` can be encoded, so
+             ;; deal with parts that can be encoded in chunks
+             (let ([norm (lambda (s)
+                           (string-locale-downcase (regexp-replace* #rx"/" s bsbs)))]
+                   [norm-tail (lambda (s)
+                                (if (regexp-match? #rx"[/\u5C][. ]+[/\u5C]*$" s)
+                                    ;; Just "." or ".." in last path element - don't remove
+                                    s
+                                    (regexp-replace* #rx"(?<=\u5B^ ./\u5C\u5D)\u5B .\u5D+([/\u5C]*)$" s "\u005C1")))]
+                   [finish (lambda (bstr) (bytes->path bstr 'windows))])
+               (cond
+                 [(string? s)
+                  (finish (string->bytes/locale (norm (norm-tail s))))]
+                 [else
+                  (let ([c (bytes-open-converter "" "UTF-8")])
+                    (finish
+                     (let loop ([offset 0])
+                       (let-values ([(new-bstr used status) (bytes-convert c bstr offset (bytes-length bstr))])
+                         (let* ([s (bytes->string/locale new-bstr)]
+                                [tail-s (if (eq? status 'complete) (norm-tail s) s)]
+                                [done (string->bytes/locale (norm tail-s))])
+                           (cond
+                             [(eq? status 'complete)
+                              done]
+                             [(eq? status 'aborts)
+                              (bytes-append done (subbytes bstr (+ offset used)))]
+                             [else
+                              (bytes-append done
+                                            (subbytes bstr (+ offset used) (+ offset used 1))
+                                            (loop (+ offset used 1)))]))))))]))]))]
        [(string? s) (string->path s)]
        [else s])))
   

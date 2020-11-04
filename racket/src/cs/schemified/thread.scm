@@ -582,7 +582,7 @@
       (void)
       (raise-argument-error 'in-hash-keys "hash?" ht_0))))
 (define check-ranges
-  (lambda (who_0 vec_0 start_0 stop_0 step_0 len_0)
+  (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
       (if (if (exact-nonnegative-integer? start_0)
             (let ((or-part_0 (< start_0 len_0)))
@@ -591,7 +591,7 @@
         (void)
         (raise-range-error
          who_0
-         "vector"
+         type-name_0
          "starting "
          start_0
          vec_0
@@ -601,7 +601,14 @@
             (if (<= -1 stop_0) (<= stop_0 len_0) #f)
             #f)
         (void)
-        (raise-range-error who_0 "vector" "stopping " stop_0 vec_0 -1 len_0))
+        (raise-range-error
+         who_0
+         type-name_0
+         "stopping "
+         stop_0
+         vec_0
+         -1
+         len_0))
       (if (if (exact-integer? step_0) (not (zero? step_0)) #f)
         (void)
         (raise-argument-error
@@ -646,7 +653,7 @@
       (let ((len_0 (|#%app| unsafe-vector-length_0 vec_0)))
         (let ((stop*_0 (if stop_0 stop_0 len_0)))
           (begin
-            (check-ranges who_0 vec_0 start_0 stop*_0 step_0 len_0)
+            (check-ranges who_0 type-name_0 vec_0 start_0 stop*_0 step_0 len_0)
             (values vec_0 start_0 stop*_0 step_0)))))))
 (define check-vector
   (lambda (v_0)

@@ -8,10 +8,12 @@
 (define (utf-16-decode bstr)
   (define len (bytes-length bstr))
   (define surrogate-count
-    (for/fold ([n 0]) ([b (in-bytes bstr (if big-endian? 0 1) len 2)])
-      (if (= (bitwise-and b #xDC) #xD8)
-          (add1 n)
-          n)))
+    (if (= len 0)
+        0
+        (for/fold ([n 0]) ([b (in-bytes bstr (if big-endian? 0 1) len 2)])
+          (if (= (bitwise-and b #xDC) #xD8)
+              (add1 n)
+              n))))
   (define str (make-string (- (arithmetic-shift len -1) surrogate-count)))
   (let loop ([i 0] [pos 0])
     (unless (= i len)

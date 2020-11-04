@@ -2255,7 +2255,7 @@
       (void)
       (raise-argument-error 'in-hash-keys "hash?" ht_0))))
 (define check-ranges
-  (lambda (who_0 vec_0 start_0 stop_0 step_0 len_0)
+  (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
       (if (if (exact-nonnegative-integer? start_0)
             (let ((or-part_0 (< start_0 len_0)))
@@ -2264,7 +2264,7 @@
         (void)
         (raise-range-error
          who_0
-         "vector"
+         type-name_0
          "starting "
          start_0
          vec_0
@@ -2274,7 +2274,14 @@
             (if (<= -1 stop_0) (<= stop_0 len_0) #f)
             #f)
         (void)
-        (raise-range-error who_0 "vector" "stopping " stop_0 vec_0 -1 len_0))
+        (raise-range-error
+         who_0
+         type-name_0
+         "stopping "
+         stop_0
+         vec_0
+         -1
+         len_0))
       (if (if (exact-integer? step_0) (not (zero? step_0)) #f)
         (void)
         (raise-argument-error
@@ -2319,7 +2326,7 @@
       (let ((len_0 (|#%app| unsafe-vector-length_0 vec_0)))
         (let ((stop*_0 (if stop_0 stop_0 len_0)))
           (begin
-            (check-ranges who_0 vec_0 start_0 stop*_0 step_0 len_0)
+            (check-ranges who_0 type-name_0 vec_0 start_0 stop*_0 step_0 len_0)
             (values vec_0 start_0 stop*_0 step_0)))))))
 (define check-vector
   (lambda (v_0)
@@ -11269,7 +11276,7 @@
             (lambda ()
               (normalise-inputs
                'in-bytes
-               "bytes"
+               "byte string"
                procz1
                procz2
                src-bstr630_0
@@ -18509,7 +18516,7 @@
                                                                   (lambda ()
                                                                     (normalise-inputs
                                                                      'in-bytes
-                                                                     "bytes"
+                                                                     "byte string"
                                                                      procz1
                                                                      procz2
                                                                      (unsafe-unbox*
@@ -18974,7 +18981,7 @@
                                                                         (lambda ()
                                                                           (normalise-inputs
                                                                            'in-bytes
-                                                                           "bytes"
+                                                                           "byte string"
                                                                            procz1
                                                                            procz2
                                                                            bstr9_0
@@ -22688,7 +22695,7 @@
          (if (is-path? p_0)
            (void)
            (raise-argument-error 'path->string "path?" p_0))
-         (1/bytes->string/locale (|#%app| path-bytes p_0) '#\x3f))))))
+         (1/bytes->string/locale (|#%app| path-bytes p_0) '#\xfffd))))))
 (define print-named
   (lambda (what_0 v_0 mode_0 o_0 max-length_0)
     (let ((name_0 (object-name v_0)))
@@ -24827,7 +24834,7 @@
        (lambda ()
          (normalise-inputs
           'in-bytes
-          "bytes"
+          "byte string"
           procz1
           procz2
           bstr_0
@@ -24865,7 +24872,7 @@
        (lambda ()
          (normalise-inputs
           'in-bytes
-          "bytes"
+          "byte string"
           procz1
           procz2
           bstr_0
@@ -25853,7 +25860,7 @@
                        (lambda ()
                          (normalise-inputs
                           'in-bytes
-                          "bytes"
+                          "byte string"
                           procz1
                           procz2
                           bstr5_0
@@ -32175,7 +32182,7 @@
                              (lambda ()
                                (normalise-inputs
                                 'in-bytes
-                                "bytes"
+                                "byte string"
                                 procz1
                                 procz2
                                 bstr_0
@@ -32521,39 +32528,43 @@
     (lambda (bstr_0)
       (let ((len_0 (unsafe-bytes-length bstr_0)))
         (let ((surrogate-count_0
-               (call-with-values
-                (lambda ()
-                  (normalise-inputs
-                   'in-bytes
-                   "bytes"
-                   procz1
-                   procz2
-                   bstr_0
-                   (if big-endian? 0 1)
-                   len_0
-                   2))
-                (case-lambda
-                 ((v*_0 start*_0 stop*_0 step*_0)
-                  (begin
-                    #t
-                    (letrec*
-                     ((for-loop_0
-                       (|#%name|
-                        for-loop
-                        (lambda (n_0 idx_0)
-                          (begin
-                            (if (< idx_0 stop*_0)
-                              (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
-                                (let ((n_1
-                                       (let ((n_1
-                                              (if (= (bitwise-and b_0 220) 216)
-                                                (add1 n_0)
-                                                n_0)))
-                                         (values n_1))))
-                                  (for-loop_0 n_1 (+ idx_0 2))))
-                              n_0))))))
-                     (for-loop_0 0 start*_0))))
-                 (args (raise-binding-result-arity-error 4 args))))))
+               (if (= len_0 0)
+                 0
+                 (call-with-values
+                  (lambda ()
+                    (normalise-inputs
+                     'in-bytes
+                     "byte string"
+                     procz1
+                     procz2
+                     bstr_0
+                     (if big-endian? 0 1)
+                     len_0
+                     2))
+                  (case-lambda
+                   ((v*_0 start*_0 stop*_0 step*_0)
+                    (begin
+                      #t
+                      (letrec*
+                       ((for-loop_0
+                         (|#%name|
+                          for-loop
+                          (lambda (n_0 idx_0)
+                            (begin
+                              (if (< idx_0 stop*_0)
+                                (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
+                                  (let ((n_1
+                                         (let ((n_1
+                                                (if (=
+                                                     (bitwise-and b_0 220)
+                                                     216)
+                                                  (add1 n_0)
+                                                  n_0)))
+                                           (values n_1))))
+                                    (for-loop_0 n_1 (+ idx_0 2))))
+                                n_0))))))
+                       (for-loop_0 0 start*_0))))
+                   (args (raise-binding-result-arity-error 4 args)))))))
           (let ((str_0
                  (make-string
                   (- (arithmetic-shift len_0 -1) surrogate-count_0))))

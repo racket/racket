@@ -497,6 +497,21 @@
   (check-cleanse cleanse-path)
   (check-cleanse resolve-path))
 
+(test (bytes->path #" .  " 'windows) normal-case-path (bytes->path #" .  " 'windows))
+(test (bytes->path #"\\ .  " 'windows) normal-case-path (bytes->path #"/ .  " 'windows))
+(test (bytes->path #"\\ .  " 'windows) normal-case-path (bytes->path #"\\ .  " 'windows))
+(test (bytes->path #"x" 'windows) normal-case-path (bytes->path #"x .  " 'windows))
+(test (bytes->path #"\\x" 'windows) normal-case-path (bytes->path #"/x .  " 'windows))
+(test (bytes->path #"\\x" 'windows) normal-case-path (bytes->path #"\\x .  " 'windows))
+
+;; Make sure `normal-case-bytes` leaves unencodable bytes alone;
+(test #"\340x" path->bytes (normal-case-path (bytes->path #"\340x" 'windows)))
+(test #"\340\340x" path->bytes (normal-case-path (bytes->path #"\340\340x" 'windows)))
+(test #"\340x" path->bytes (normal-case-path (bytes->path #"\340X" 'windows)))
+(test #"\340x" path->bytes (normal-case-path (bytes->path #"\340X . " 'windows)))
+(test #"\340x\340x\340" path->bytes (normal-case-path (bytes->path #"\340x\340x\340" 'windows)))
+(test #"x . \340x" path->bytes (normal-case-path (bytes->path #"X . \340X . " 'windows)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; \\?\ paths in Windows
 
