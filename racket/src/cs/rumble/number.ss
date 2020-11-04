@@ -108,12 +108,12 @@
   (let ([m (integer-sqrt n)])
     (values m (- n (* m m)))))
 
-(define fx->fl #2%fixnum->flonum)
-(define fxrshift #2%fxarithmetic-shift-right)
-(define fxlshift #2%fxarithmetic-shift-left)
+(define (fx->fl x) (#2%fixnum->flonum x))
+(define (fxrshift x y) (#2%fxarithmetic-shift-right x y))
+(define (fxlshift x y) (#2%fxarithmetic-shift-left x y))
 
-(define fl->fx #2%flonum->fixnum)
-(define ->fl #2%real->flonum)
+(define (fl->fx x) (#2%flonum->fixnum x))
+(define (->fl x) (#2%real->flonum x))
 (define/who (fl->exact-integer fl)
   (check who flonum? fl)
   (inexact->exact (flfloor fl)))
