@@ -1942,6 +1942,13 @@
           (begin
             (check-ranges who_0 type-name_0 vec_0 start_0 stop*_0 step_0 len_0)
             (values vec_0 start_0 stop*_0 step_0)))))))
+(define unsafe-normalise-inputs
+  (lambda (unsafe-vector-length_0 vec_0 start_0 stop_0 step_0)
+    (values
+     vec_0
+     start_0
+     (if stop_0 stop_0 (|#%app| unsafe-vector-length_0 vec_0))
+     step_0)))
 (define check-vector
   (lambda (v_0)
     (if (vector? v_0) (void) (raise-argument-error 'in-vector "vector" v_0))))
@@ -48521,11 +48528,7 @@
 (define fasl-hash-equal-variant 1)
 (define fasl-hash-eqv-variant 2)
 (define s-exp->fasl.1
-  (letrec ((procz4 (lambda (x_0) (unsafe-vector-length x_0)))
-           (procz3 (lambda (x_0) (vector? x_0)))
-           (procz2 (lambda (x_0) (unsafe-vector-length x_0)))
-           (procz1 (lambda (x_0) (vector? x_0)))
-           (loop_0
+  (letrec ((loop_0
             (|#%name|
              loop
              (lambda (external-lift?7_0
@@ -48655,11 +48658,8 @@
                                       c1_0)
                                      (call-with-values
                                       (lambda ()
-                                        (normalise-inputs
-                                         'in-vector
-                                         "vector"
-                                         procz1
-                                         procz2
+                                        (unsafe-normalise-inputs
+                                         unsafe-vector-length
                                          (struct->vector v_0)
                                          1
                                          #f
@@ -49269,11 +49269,8 @@
                                                                           o_0)
                                                                          (call-with-values
                                                                           (lambda ()
-                                                                            (normalise-inputs
-                                                                             'in-vector
-                                                                             "vector"
-                                                                             procz3
-                                                                             procz4
+                                                                            (unsafe-normalise-inputs
+                                                                             unsafe-vector-length
                                                                              vec_0
                                                                              1
                                                                              #f
@@ -57422,9 +57419,7 @@
                                 (for-loop_0 args-stack_0 0)))))
                         (interpret-expr b_1 stack_0)))))))))))))
 (define interpret-expr
-  (letrec ((procz2 (lambda (x_0) (unsafe-vector-length x_0)))
-           (procz1 (lambda (x_0) (vector? x_0)))
-           (apply-function_0
+  (letrec ((apply-function_0
             (|#%name|
              apply-function
              (lambda (b_0 captured_0 args_0)
@@ -57736,11 +57731,8 @@
                                            (lambda ()
                                              (call-with-values
                                               (lambda ()
-                                                (normalise-inputs
-                                                 'in-vector
-                                                 "vector"
-                                                 procz1
-                                                 procz2
+                                                (unsafe-normalise-inputs
+                                                 unsafe-vector-length
                                                  b64_0
                                                  2
                                                  #f

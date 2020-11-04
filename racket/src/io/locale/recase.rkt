@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/fixnum
+         "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
          "../host/error.rkt"
@@ -30,16 +31,16 @@
   ;; those directly
   (define len (string-length s))
   (let loop ([pos 0])
-    (define i-len (+ pos (string-length-up-to-nul s pos len)))
+    (define i-len (fx+ pos (string-length-up-to-nul s pos len)))
     (cond
-      [(= i-len len)
+      [(fx= i-len len)
        (define new-s (recase/no-nul (maybe-substring s pos len) up?))
        (if (eqv? pos 0)
            new-s
            (list new-s))]
       [else
        (define new-s (recase/no-nul (substring s pos i-len) up?))
-       (define r (loop (+ i-len 1)))
+       (define r (loop (fx+ i-len 1)))
        (if (eqv? pos 0)
            (apply string-append new-s (string #\nul) r)
            (cons new-s (cons (string #\nul) r)))])))
@@ -47,13 +48,13 @@
 (define (recase/no-nul s up?)
   (cond
     [(and (equal? (current-locale) "")
-          (not (zero? (bitwise-and (rktio_convert_properties rktio) RKTIO_CONVERT_RECASE_UTF16))))
+          (not (fx= 0 (fxand (rktio_convert_properties rktio) RKTIO_CONVERT_RECASE_UTF16))))
      ;; The OS provides a UTF-16-based function, so use that
      (define s-16 (utf-16-encode s))
      (start-atomic)
      (define r (rktio_recase_utf16 rktio
                                    up?
-                                   s-16 (arithmetic-shift (bytes-length s-16) -1)
+                                   s-16 (fxrshift (bytes-length s-16) 1)
                                    #f))
      (define sr (rktio_to_shorts r))
      (rktio_free r)
@@ -72,7 +73,7 @@
       (lambda ()
         (let loop ([pos 0])
           (cond
-            [(= pos (bytes-length in-bstr))
+            [(fx= pos (bytes-length in-bstr))
              (if (eqv? pos 0)
                  ""
                  '(""))]
@@ -90,8 +91,8 @@
                     ls
                     (list ls))]
                [else
-                (define r (loop (+ pos in-used 4)))
-                (define err-s (string (string-ref s (arithmetic-shift (+ pos in-used) -2))))
+                (define r (loop (fx+ pos in-used 4)))
+                (define err-s (string (string-ref s (fxrshift (+ pos in-used) 2))))
                 (if (eqv? pos 0)
                     (apply string-append ls err-s r)
                     (list* ls err-s r))])])))

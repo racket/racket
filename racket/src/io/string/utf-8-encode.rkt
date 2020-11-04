@@ -27,21 +27,21 @@
                                            out-bstr out-start out-end j
                                            continue)
   (cond
-    [(b . <= . #x7F)
+    [(b . fx<= . #x7F)
      (cond
-       [(and out-end (= j out-end))
+       [(and out-end (fx= j out-end))
         (values (fx- i in-start) (fx- j out-start) 'continues)]
        [else
         (when out-bstr (bytes-set! out-bstr j b))
         (continue (fx+ j 1))])]
-    [(b . <= . #x7FF)
+    [(b . fx<= . #x7FF)
      (cond
        [(and out-end ((fx+ j 1) . fx>= . out-end))
         (values (fx- i in-start) (fx- j out-start) 'continues)]
        [else
         (when out-bstr
-          (bytes-set! out-bstr j (bitwise-ior #b11000000 (arithmetic-shift b -6)))
-          (bytes-set! out-bstr (add1 j) (bitwise-ior #b10000000 (bitwise-and b #b111111))))
+          (bytes-set! out-bstr j (fxior #b11000000 (fxrshift b 6)))
+          (bytes-set! out-bstr (fx+ j 1) (fxior #b10000000 (fxand b #b111111))))
         (continue (+ j 2))])]
     [(b . fx<= . #xFFFF)
      (cond
@@ -49,10 +49,10 @@
         (values (fx- i in-start) (fx- j out-start) 'continues)]
        [else
         (when out-bstr
-          (bytes-set! out-bstr j (bitwise-ior #b11100000 (arithmetic-shift b -12)))
-          (bytes-set! out-bstr (fx+ j 1) (bitwise-ior #b10000000 (bitwise-and (arithmetic-shift b -6)
-                                                                            #b111111)))
-          (bytes-set! out-bstr (fx+ j 2) (bitwise-ior #b10000000 (bitwise-and b #b111111))))
+          (bytes-set! out-bstr j (fxior #b11100000 (fxrshift b 12)))
+          (bytes-set! out-bstr (fx+ j 1) (fxior #b10000000 (fxand (fxrshift b 6)
+                                                                  #b111111)))
+          (bytes-set! out-bstr (fx+ j 2) (fxior #b10000000 (fxand b #b111111))))
         (continue (fx+ j 3))])]
     [else
      (cond
@@ -60,10 +60,10 @@
         (values (fx- i in-start) (fx- j out-start) 'continues)]
        [else
         (when out-bstr
-          (bytes-set! out-bstr j (bitwise-ior #b11110000 (arithmetic-shift b -18)))
-          (bytes-set! out-bstr (fx+ j 1) (bitwise-ior #b10000000 (bitwise-and (arithmetic-shift b -12)
-                                                                              #b111111)))
-          (bytes-set! out-bstr (fx+ j 2) (bitwise-ior #b10000000 (bitwise-and (arithmetic-shift b -6)
-                                                                              #b111111)))
-          (bytes-set! out-bstr (fx+ j 3) (bitwise-ior #b10000000 (bitwise-and b #b111111))))
+          (bytes-set! out-bstr j (fxior #b11110000 (fxrshift b 18)))
+          (bytes-set! out-bstr (fx+ j 1) (fxior #b10000000 (fxand (fxrshift b 12)
+                                                                  #b111111)))
+          (bytes-set! out-bstr (fx+ j 2) (fxior #b10000000 (fxand (fxrshift b 6)
+                                                                  #b111111)))
+          (bytes-set! out-bstr (fx+ j 3) (fxior #b10000000 (fxand b #b111111))))
         (continue (fx+ j 4))])]))

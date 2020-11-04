@@ -942,6 +942,9 @@
       (check-ranges who type-name vec start stop* step len)
       (values vec start stop* step)))
 
+  (define (unsafe-normalise-inputs unsafe-vector-length vec start stop step)
+    (values vec start (or stop (unsafe-vector-length vec)) step))
+
   (define-syntax define-in-vector-like
     (syntax-rules ()
       [(define-in-vector-like (in-vector-name check-vector-name)
@@ -1034,12 +1037,15 @@
                   ;; Outer bindings
                   ;; start*, stop*, and step* are guaranteed to be exact integers
                   ([(v* start* stop* step*)
-                    (normalise-inputs (quote in-vector-name) type-name
-                                      ;; reverse-eta triggers JIT inlining of
-                                      ;; primitives, which is good for futures:
-                                      (lambda (x) (vector? x))
-                                      (lambda (x) (unsafe-vector-length x))
-                                      vec-expr start stop step)])
+                    (if (variable-reference-from-unsafe? (#%variable-reference))
+                        (unsafe-normalise-inputs unsafe-vector-length
+                                                 vec-expr start stop step)
+                        (normalise-inputs (quote in-vector-name) type-name
+                                          ;; reverse-eta triggers JIT inlining of
+                                          ;; primitives, which is good for futures:
+                                          (lambda (x) (vector? x))
+                                          (lambda (x) (unsafe-vector-length x))
+                                          vec-expr start stop step))])
                   ;; Outer check is done by normalise-inputs
                   #t
                   ;; Loop bindings

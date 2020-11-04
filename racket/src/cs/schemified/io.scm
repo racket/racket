@@ -2328,6 +2328,13 @@
           (begin
             (check-ranges who_0 type-name_0 vec_0 start_0 stop*_0 step_0 len_0)
             (values vec_0 start_0 stop*_0 step_0)))))))
+(define unsafe-normalise-inputs
+  (lambda (unsafe-vector-length_0 vec_0 start_0 stop_0 step_0)
+    (values
+     vec_0
+     start_0
+     (if stop_0 stop_0 (|#%app| unsafe-vector-length_0 vec_0))
+     step_0)))
 (define check-vector
   (lambda (v_0)
     (if (vector? v_0) (void) (raise-argument-error 'in-vector "vector" v_0))))
@@ -5613,8 +5620,8 @@
                    (let ((app_0 (fx- in-end_0 in-start_0)))
                      (values app_0 (fx- j_0 out-start_0) 'complete))
                    (let ((b_0 (char->integer (string-ref in-str_0 i_0))))
-                     (if (<= b_0 127)
-                       (if (if out-end_0 (= j_0 out-end_0) #f)
+                     (if (fx<= b_0 127)
+                       (if (if out-end_0 (fx= j_0 out-end_0) #f)
                          (let ((app_0 (fx- i_0 in-start_0)))
                            (values app_0 (fx- j_0 out-start_0) 'continues))
                          (begin
@@ -5630,7 +5637,7 @@
                             out-end_0
                             out-start_0
                             (fx+ j_0 1))))
-                       (if (<= b_0 2047)
+                       (if (fx<= b_0 2047)
                          (if (if out-end_0 (fx>= (fx+ j_0 1) out-end_0) #f)
                            (let ((app_0 (fx- i_0 in-start_0)))
                              (values app_0 (fx- j_0 out-start_0) 'continues))
@@ -5640,12 +5647,12 @@
                                  (unsafe-bytes-set!
                                   out-bstr_0
                                   j_0
-                                  (bitwise-ior 192 (arithmetic-shift b_0 -6)))
-                                 (let ((app_0 (add1 j_0)))
+                                  (fxior 192 (fxrshift b_0 6)))
+                                 (let ((app_0 (fx+ j_0 1)))
                                    (unsafe-bytes-set!
                                     out-bstr_0
                                     app_0
-                                    (bitwise-ior 128 (bitwise-and b_0 63)))))
+                                    (fxior 128 (fxand b_0 63)))))
                                (void))
                              (continue_0
                               i_0
@@ -5666,23 +5673,17 @@
                                    (unsafe-bytes-set!
                                     out-bstr_0
                                     j_0
-                                    (bitwise-ior
-                                     224
-                                     (arithmetic-shift b_0 -12)))
+                                    (fxior 224 (fxrshift b_0 12)))
                                    (let ((app_0 (fx+ j_0 1)))
                                      (unsafe-bytes-set!
                                       out-bstr_0
                                       app_0
-                                      (bitwise-ior
-                                       128
-                                       (bitwise-and
-                                        (arithmetic-shift b_0 -6)
-                                        63))))
+                                      (fxior 128 (fxand (fxrshift b_0 6) 63))))
                                    (let ((app_0 (fx+ j_0 2)))
                                      (unsafe-bytes-set!
                                       out-bstr_0
                                       app_0
-                                      (bitwise-ior 128 (bitwise-and b_0 63)))))
+                                      (fxior 128 (fxand b_0 63)))))
                                  (void))
                                (continue_0
                                 i_0
@@ -5702,32 +5703,24 @@
                                    (unsafe-bytes-set!
                                     out-bstr_0
                                     j_0
-                                    (bitwise-ior
-                                     240
-                                     (arithmetic-shift b_0 -18)))
+                                    (fxior 240 (fxrshift b_0 18)))
                                    (let ((app_0 (fx+ j_0 1)))
                                      (unsafe-bytes-set!
                                       out-bstr_0
                                       app_0
-                                      (bitwise-ior
+                                      (fxior
                                        128
-                                       (bitwise-and
-                                        (arithmetic-shift b_0 -12)
-                                        63))))
+                                       (fxand (fxrshift b_0 12) 63))))
                                    (let ((app_0 (fx+ j_0 2)))
                                      (unsafe-bytes-set!
                                       out-bstr_0
                                       app_0
-                                      (bitwise-ior
-                                       128
-                                       (bitwise-and
-                                        (arithmetic-shift b_0 -6)
-                                        63))))
+                                      (fxior 128 (fxand (fxrshift b_0 6) 63))))
                                    (let ((app_0 (fx+ j_0 3)))
                                      (unsafe-bytes-set!
                                       out-bstr_0
                                       app_0
-                                      (bitwise-ior 128 (bitwise-and b_0 63)))))
+                                      (fxior 128 (fxand b_0 63)))))
                                  (void))
                                (continue_0
                                 i_0
@@ -11227,9 +11220,7 @@
                    (if (fd-output-port-bstr this-id_0) (loop_0) (void)))))))))
         (loop_0))))))
 (define temp20.1
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0)))
-           (for-loop_0
+  (letrec ((for-loop_0
             (|#%name|
              for-loop
              (lambda (enable-break?633_0 stop*_0 this-id_0 v*_0 idx_0)
@@ -11274,11 +11265,8 @@
          (begin
            (call-with-values
             (lambda ()
-              (normalise-inputs
-               'in-bytes
-               "byte string"
-               procz1
-               procz2
+              (unsafe-normalise-inputs
+               unsafe-bytes-length
                src-bstr630_0
                src-start631_0
                src-end632_0
@@ -16449,8 +16437,8 @@
                       v_0
                       next-i_0)
                (begin
-                 (if (<= v_0 127)
-                   (if (if out-end24_0 (= j_0 out-end24_0) #f)
+                 (if (fx<= v_0 127)
+                   (if (if out-end24_0 (fx= j_0 out-end24_0) #f)
                      (let ((app_0 (fx- i_0 in-start20_0)))
                        (values app_0 (fx- j_0 out-start23_0) 'continues))
                      (begin
@@ -16470,7 +16458,7 @@
                             out-start23_0
                             next-i_0
                             next-j_0)))))
-                   (if (<= v_0 2047)
+                   (if (fx<= v_0 2047)
                      (if (if out-end24_0 (fx>= (fx+ j_0 1) out-end24_0) #f)
                        (let ((app_0 (fx- i_0 in-start20_0)))
                          (values app_0 (fx- j_0 out-start23_0) 'continues))
@@ -16480,12 +16468,12 @@
                              (unsafe-bytes-set!
                               out-bstr22_0
                               j_0
-                              (bitwise-ior 192 (arithmetic-shift v_0 -6)))
-                             (let ((app_0 (add1 j_0)))
+                              (fxior 192 (fxrshift v_0 6)))
+                             (let ((app_0 (fx+ j_0 1)))
                                (unsafe-bytes-set!
                                 out-bstr22_0
                                 app_0
-                                (bitwise-ior 128 (bitwise-and v_0 63)))))
+                                (fxior 128 (fxand v_0 63)))))
                            (void))
                          (let ((next-j_0 (+ j_0 2)))
                            (begin
@@ -16510,21 +16498,17 @@
                                (unsafe-bytes-set!
                                 out-bstr22_0
                                 j_0
-                                (bitwise-ior 224 (arithmetic-shift v_0 -12)))
+                                (fxior 224 (fxrshift v_0 12)))
                                (let ((app_0 (fx+ j_0 1)))
                                  (unsafe-bytes-set!
                                   out-bstr22_0
                                   app_0
-                                  (bitwise-ior
-                                   128
-                                   (bitwise-and
-                                    (arithmetic-shift v_0 -6)
-                                    63))))
+                                  (fxior 128 (fxand (fxrshift v_0 6) 63))))
                                (let ((app_0 (fx+ j_0 2)))
                                  (unsafe-bytes-set!
                                   out-bstr22_0
                                   app_0
-                                  (bitwise-ior 128 (bitwise-and v_0 63)))))
+                                  (fxior 128 (fxand v_0 63)))))
                              (void))
                            (let ((next-j_0 (fx+ j_0 3)))
                              (begin
@@ -16548,30 +16532,22 @@
                                (unsafe-bytes-set!
                                 out-bstr22_0
                                 j_0
-                                (bitwise-ior 240 (arithmetic-shift v_0 -18)))
+                                (fxior 240 (fxrshift v_0 18)))
                                (let ((app_0 (fx+ j_0 1)))
                                  (unsafe-bytes-set!
                                   out-bstr22_0
                                   app_0
-                                  (bitwise-ior
-                                   128
-                                   (bitwise-and
-                                    (arithmetic-shift v_0 -12)
-                                    63))))
+                                  (fxior 128 (fxand (fxrshift v_0 12) 63))))
                                (let ((app_0 (fx+ j_0 2)))
                                  (unsafe-bytes-set!
                                   out-bstr22_0
                                   app_0
-                                  (bitwise-ior
-                                   128
-                                   (bitwise-and
-                                    (arithmetic-shift v_0 -6)
-                                    63))))
+                                  (fxior 128 (fxand (fxrshift v_0 6) 63))))
                                (let ((app_0 (fx+ j_0 3)))
                                  (unsafe-bytes-set!
                                   out-bstr22_0
                                   app_0
-                                  (bitwise-ior 128 (bitwise-and v_0 63)))))
+                                  (fxior 128 (fxand v_0 63)))))
                              (void))
                            (let ((next-j_0 (fx+ j_0 4)))
                              (begin
@@ -17499,196 +17475,184 @@
         (|#%app| rktio_convert_reset (unsafe-place-local-ref cell.1) c_0)))))
 (define ucs-4-encoding (if (system-big-endian?) "UCS-4BE" "UCS-4LE"))
 (define string->bytes/ucs-4
-  (letrec ((procz4 (lambda (x_0) (unsafe-string-length x_0)))
-           (procz3 (lambda (x_0) (string? x_0)))
-           (procz2 (lambda (x_0) (unsafe-string-length x_0)))
-           (procz1 (lambda (x_0) (string? x_0))))
-    (lambda (str_0 start_0 end_0)
-      (let ((len_0 (* 4 (- end_0 start_0))))
-        (let ((bstr_0 (make-bytes len_0)))
-          (begin
-            (if (system-big-endian?)
-              (begin
-                (call-with-values
-                 (lambda ()
-                   (normalise-inputs
-                    'in-string
-                    "string"
-                    procz1
-                    procz2
-                    str_0
-                    start_0
-                    end_0
-                    1))
-                 (case-lambda
-                  ((v*_0 start*_0 stop*_0 step*_0)
-                   (let ((start_1 0))
-                     (let ((end_1 len_0))
-                       (let ((inc_0 4))
-                         (let ((end_2 end_1)
-                               (start_2 start_1)
-                               (v*_1 v*_0)
-                               (start*_1 start*_0)
-                               (stop*_1 stop*_0)
-                               (step*_1 step*_0))
-                           (begin
-                             #t
-                             (void)
-                             (letrec*
-                              ((for-loop_0
-                                (|#%name|
-                                 for-loop
-                                 (lambda (idx_0 pos_0)
-                                   (begin
-                                     (if (if (unsafe-fx< idx_0 stop*_1)
-                                           (< pos_0 end_2)
-                                           #f)
-                                       (let ((c_0 (string-ref v*_1 idx_0)))
-                                         (begin
-                                           (let ((n_0 (char->integer c_0)))
-                                             (begin
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
+  (lambda (str_0 start_0 end_0)
+    (let ((len_0 (* 4 (- end_0 start_0))))
+      (let ((bstr_0 (make-bytes len_0)))
+        (begin
+          (if (system-big-endian?)
+            (begin
+              (call-with-values
+               (lambda ()
+                 (unsafe-normalise-inputs
+                  unsafe-string-length
+                  str_0
+                  start_0
+                  end_0
+                  1))
+               (case-lambda
+                ((v*_0 start*_0 stop*_0 step*_0)
+                 (let ((start_1 0))
+                   (let ((end_1 len_0))
+                     (let ((inc_0 4))
+                       (let ((end_2 end_1)
+                             (start_2 start_1)
+                             (v*_1 v*_0)
+                             (start*_1 start*_0)
+                             (stop*_1 stop*_0)
+                             (step*_1 step*_0))
+                         (begin
+                           #t
+                           (void)
+                           (letrec*
+                            ((for-loop_0
+                              (|#%name|
+                               for-loop
+                               (lambda (idx_0 pos_0)
+                                 (begin
+                                   (if (if (unsafe-fx< idx_0 stop*_1)
+                                         (< pos_0 end_2)
+                                         #f)
+                                     (let ((c_0 (string-ref v*_1 idx_0)))
+                                       (begin
+                                         (let ((n_0 (char->integer c_0)))
+                                           (begin
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (unsafe-bytes-set!
+                                                app_0
+                                                pos_0
+                                                (arithmetic-shift n_0 -24)))
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (let ((app_1 (+ pos_0 1)))
                                                  (unsafe-bytes-set!
                                                   app_0
-                                                  pos_0
-                                                  (arithmetic-shift n_0 -24)))
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
-                                                 (let ((app_1 (+ pos_0 1)))
-                                                   (unsafe-bytes-set!
-                                                    app_0
-                                                    app_1
-                                                    (bitwise-and
-                                                     255
-                                                     (arithmetic-shift
-                                                      n_0
-                                                      -16)))))
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
-                                                 (let ((app_1 (+ pos_0 2)))
-                                                   (unsafe-bytes-set!
-                                                    app_0
-                                                    app_1
-                                                    (bitwise-and
-                                                     255
-                                                     (arithmetic-shift
-                                                      n_0
-                                                      -8)))))
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
-                                                 (let ((app_1 (+ pos_0 3)))
-                                                   (unsafe-bytes-set!
-                                                    app_0
-                                                    app_1
-                                                    (bitwise-and 255 n_0))))))
-                                           (for-loop_0
-                                            (unsafe-fx+ idx_0 1)
-                                            (+ pos_0 inc_0))))
-                                       (values)))))))
-                              (for-loop_0 start*_1 start_2))))))))
-                  (args (raise-binding-result-arity-error 4 args))))
-                (void))
-              (begin
-                (call-with-values
-                 (lambda ()
-                   (normalise-inputs
-                    'in-string
-                    "string"
-                    procz3
-                    procz4
-                    str_0
-                    start_0
-                    end_0
-                    1))
-                 (case-lambda
-                  ((v*_0 start*_0 stop*_0 step*_0)
-                   (let ((start_1 0))
-                     (let ((end_1 len_0))
-                       (let ((inc_0 4))
-                         (let ((end_2 end_1)
-                               (start_2 start_1)
-                               (v*_1 v*_0)
-                               (start*_1 start*_0)
-                               (stop*_1 stop*_0)
-                               (step*_1 step*_0))
-                           (begin
-                             #t
-                             (void)
-                             (letrec*
-                              ((for-loop_0
-                                (|#%name|
-                                 for-loop
-                                 (lambda (idx_0 pos_0)
-                                   (begin
-                                     (if (if (unsafe-fx< idx_0 stop*_1)
-                                           (< pos_0 end_2)
-                                           #f)
-                                       (let ((c_0 (string-ref v*_1 idx_0)))
-                                         (begin
-                                           (let ((n_0 (char->integer c_0)))
-                                             (begin
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
-                                                 (let ((app_1 (+ pos_0 3)))
-                                                   (unsafe-bytes-set!
-                                                    app_0
-                                                    app_1
-                                                    (arithmetic-shift
-                                                     n_0
-                                                     -24))))
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
-                                                 (let ((app_1 (+ pos_0 2)))
-                                                   (unsafe-bytes-set!
-                                                    app_0
-                                                    app_1
-                                                    (bitwise-and
-                                                     255
-                                                     (arithmetic-shift
-                                                      n_0
-                                                      -16)))))
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
-                                                 (let ((app_1 (+ pos_0 1)))
-                                                   (unsafe-bytes-set!
-                                                    app_0
-                                                    app_1
-                                                    (bitwise-and
-                                                     255
-                                                     (arithmetic-shift
-                                                      n_0
-                                                      -8)))))
-                                               (let ((app_0
-                                                      (check-not-unsafe-undefined
-                                                       bstr_0
-                                                       'bstr_119)))
+                                                  app_1
+                                                  (bitwise-and
+                                                   255
+                                                   (arithmetic-shift
+                                                    n_0
+                                                    -16)))))
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (let ((app_1 (+ pos_0 2)))
                                                  (unsafe-bytes-set!
                                                   app_0
-                                                  pos_0
-                                                  (bitwise-and 255 n_0)))))
-                                           (for-loop_0
-                                            (unsafe-fx+ idx_0 1)
-                                            (+ pos_0 inc_0))))
-                                       (values)))))))
-                              (for-loop_0 start*_1 start_2))))))))
-                  (args (raise-binding-result-arity-error 4 args))))
-                (void)))
-            (check-not-unsafe-undefined bstr_0 'bstr_119)))))))
+                                                  app_1
+                                                  (bitwise-and
+                                                   255
+                                                   (arithmetic-shift
+                                                    n_0
+                                                    -8)))))
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (let ((app_1 (+ pos_0 3)))
+                                                 (unsafe-bytes-set!
+                                                  app_0
+                                                  app_1
+                                                  (bitwise-and 255 n_0))))))
+                                         (for-loop_0
+                                          (unsafe-fx+ idx_0 1)
+                                          (+ pos_0 inc_0))))
+                                     (values)))))))
+                            (for-loop_0 start*_1 start_2))))))))
+                (args (raise-binding-result-arity-error 4 args))))
+              (void))
+            (begin
+              (call-with-values
+               (lambda ()
+                 (unsafe-normalise-inputs
+                  unsafe-string-length
+                  str_0
+                  start_0
+                  end_0
+                  1))
+               (case-lambda
+                ((v*_0 start*_0 stop*_0 step*_0)
+                 (let ((start_1 0))
+                   (let ((end_1 len_0))
+                     (let ((inc_0 4))
+                       (let ((end_2 end_1)
+                             (start_2 start_1)
+                             (v*_1 v*_0)
+                             (start*_1 start*_0)
+                             (stop*_1 stop*_0)
+                             (step*_1 step*_0))
+                         (begin
+                           #t
+                           (void)
+                           (letrec*
+                            ((for-loop_0
+                              (|#%name|
+                               for-loop
+                               (lambda (idx_0 pos_0)
+                                 (begin
+                                   (if (if (unsafe-fx< idx_0 stop*_1)
+                                         (< pos_0 end_2)
+                                         #f)
+                                     (let ((c_0 (string-ref v*_1 idx_0)))
+                                       (begin
+                                         (let ((n_0 (char->integer c_0)))
+                                           (begin
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (let ((app_1 (+ pos_0 3)))
+                                                 (unsafe-bytes-set!
+                                                  app_0
+                                                  app_1
+                                                  (arithmetic-shift n_0 -24))))
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (let ((app_1 (+ pos_0 2)))
+                                                 (unsafe-bytes-set!
+                                                  app_0
+                                                  app_1
+                                                  (bitwise-and
+                                                   255
+                                                   (arithmetic-shift
+                                                    n_0
+                                                    -16)))))
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (let ((app_1 (+ pos_0 1)))
+                                                 (unsafe-bytes-set!
+                                                  app_0
+                                                  app_1
+                                                  (bitwise-and
+                                                   255
+                                                   (arithmetic-shift
+                                                    n_0
+                                                    -8)))))
+                                             (let ((app_0
+                                                    (check-not-unsafe-undefined
+                                                     bstr_0
+                                                     'bstr_119)))
+                                               (unsafe-bytes-set!
+                                                app_0
+                                                pos_0
+                                                (bitwise-and 255 n_0)))))
+                                         (for-loop_0
+                                          (unsafe-fx+ idx_0 1)
+                                          (+ pos_0 inc_0))))
+                                     (values)))))))
+                            (for-loop_0 start*_1 start_2))))))))
+                (args (raise-binding-result-arity-error 4 args))))
+              (void)))
+          (check-not-unsafe-undefined bstr_0 'bstr_119))))))
 (define struct:cache (make-record-type-descriptor* 'cache #f #f #f #f 4 15))
 (define effect_2666
   (struct-type-install-properties!
@@ -18324,8 +18288,7 @@
     "LPT8"
     "LPT9"))
 (define special-filename?.1
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0))))
+  (letrec ()
     (|#%name|
      special-filename?
      (lambda (immediate?1_0 in-bstr3_0)
@@ -18514,11 +18477,8 @@
                                                                  or-part_2
                                                                  (call-with-values
                                                                   (lambda ()
-                                                                    (normalise-inputs
-                                                                     'in-bytes
-                                                                     "byte string"
-                                                                     procz1
-                                                                     procz2
+                                                                    (unsafe-normalise-inputs
+                                                                     unsafe-bytes-length
                                                                      (unsafe-unbox*
                                                                       bstr_0)
                                                                      fn-len_0
@@ -18862,9 +18822,7 @@
                                  clean-start-pos_0
                                  #vu8(92 92))))))))))))))))))
 (define parse-unc.1
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0)))
-           (is-a-sep?_0
+  (letrec ((is-a-sep?_0
             (|#%name|
              is-a-sep?
              (lambda (no-forward-slash?6_0 c_0)
@@ -18979,11 +18937,8 @@
                                                                        or-part_0
                                                                        (call-with-values
                                                                         (lambda ()
-                                                                          (normalise-inputs
-                                                                           'in-bytes
-                                                                           "byte string"
-                                                                           procz1
-                                                                           procz2
+                                                                          (unsafe-normalise-inputs
+                                                                           unsafe-bytes-length
                                                                            bstr9_0
                                                                            (add1
                                                                             j_5)
@@ -24827,81 +24782,60 @@
           (|#%app| path-bytes p_0)
           (1/string->bytes/locale p_0 63))))))
 (define just-separators-after?
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0))))
-    (lambda (bstr_0 drive-len_0)
-      (call-with-values
-       (lambda ()
-         (normalise-inputs
-          'in-bytes
-          "byte string"
-          procz1
-          procz2
-          bstr_0
-          drive-len_0
-          #f
-          1))
-       (case-lambda
-        ((v*_0 start*_0 stop*_0 step*_0)
-         (begin
-           #t
-           (letrec*
-            ((for-loop_0
-              (|#%name|
-               for-loop
-               (lambda (result_0 idx_0)
-                 (begin
-                   (if (unsafe-fx< idx_0 stop*_0)
-                     (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
-                       (let ((result_1
-                              (let ((result_1 (is-sep? b_0 'windows)))
-                                (values result_1))))
-                         (if (if (not (let ((x_0 (list b_0))) (not result_1)))
+  (lambda (bstr_0 drive-len_0)
+    (call-with-values
+     (lambda ()
+       (unsafe-normalise-inputs unsafe-bytes-length bstr_0 drive-len_0 #f 1))
+     (case-lambda
+      ((v*_0 start*_0 stop*_0 step*_0)
+       (begin
+         #t
+         (letrec*
+          ((for-loop_0
+            (|#%name|
+             for-loop
+             (lambda (result_0 idx_0)
+               (begin
+                 (if (unsafe-fx< idx_0 stop*_0)
+                   (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
+                     (let ((result_1
+                            (let ((result_1 (is-sep? b_0 'windows)))
+                              (values result_1))))
+                       (if (if (not (let ((x_0 (list b_0))) (not result_1)))
+                             #t
+                             #f)
+                         (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
+                         result_1)))
+                   result_0))))))
+          (for-loop_0 #t start*_0))))
+      (args (raise-binding-result-arity-error 4 args))))))
+(define just-backslashes-after?
+  (lambda (bstr_0 drive-len_0)
+    (call-with-values
+     (lambda ()
+       (unsafe-normalise-inputs unsafe-bytes-length bstr_0 drive-len_0 #f 1))
+     (case-lambda
+      ((v*_0 start*_0 stop*_0 step*_0)
+       (begin
+         #t
+         (letrec*
+          ((for-loop_0
+            (|#%name|
+             for-loop
+             (lambda (result_0 idx_0)
+               (begin
+                 (if (unsafe-fx< idx_0 stop*_0)
+                   (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
+                     (let ((result_1 (eqv? b_0 92)))
+                       (let ((result_2 (values result_1)))
+                         (if (if (not (let ((x_0 (list b_0))) (not result_2)))
                                #t
                                #f)
-                           (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
-                           result_1)))
-                     result_0))))))
-            (for-loop_0 #t start*_0))))
-        (args (raise-binding-result-arity-error 4 args)))))))
-(define just-backslashes-after?
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0))))
-    (lambda (bstr_0 drive-len_0)
-      (call-with-values
-       (lambda ()
-         (normalise-inputs
-          'in-bytes
-          "byte string"
-          procz1
-          procz2
-          bstr_0
-          drive-len_0
-          #f
-          1))
-       (case-lambda
-        ((v*_0 start*_0 stop*_0 step*_0)
-         (begin
-           #t
-           (letrec*
-            ((for-loop_0
-              (|#%name|
-               for-loop
-               (lambda (result_0 idx_0)
-                 (begin
-                   (if (unsafe-fx< idx_0 stop*_0)
-                     (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
-                       (let ((result_1 (eqv? b_0 92)))
-                         (let ((result_2 (values result_1)))
-                           (if (if (not
-                                    (let ((x_0 (list b_0))) (not result_2)))
-                                 #t
-                                 #f)
-                             (for-loop_0 result_2 (unsafe-fx+ idx_0 1))
-                             result_2))))
-                     result_0))))))
-            (for-loop_0 #t start*_0))))
-        (args (raise-binding-result-arity-error 4 args)))))))
+                           (for-loop_0 result_2 (unsafe-fx+ idx_0 1))
+                           result_2))))
+                   result_0))))))
+          (for-loop_0 #t start*_0))))
+      (args (raise-binding-result-arity-error 4 args))))))
 (define drive?
   (lambda (s_0)
     (if (starting-point? s_0)
@@ -25730,9 +25664,7 @@
                           0)))))))
               (void))))))))
 (define clean-double-slashes.1
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0)))
-           (is-a-sep?_0
+  (letrec ((is-a-sep?_0
             (|#%name|
              is-a-sep?
              (lambda (convention6_0 only-backslash?1_0 b_0)
@@ -25858,11 +25790,8 @@
                      (not
                       (call-with-values
                        (lambda ()
-                         (normalise-inputs
-                          'in-bytes
-                          "byte string"
-                          procz1
-                          procz2
+                         (unsafe-normalise-inputs
+                          unsafe-bytes-length
                           bstr5_0
                           to-backslash-from2_0
                           #f
@@ -32162,110 +32091,103 @@
       ((bstr_0) (begin (bytes->path-element_0 bstr_0 unsafe-undefined)))
       ((bstr_0 convention3_0) (bytes->path-element_0 bstr_0 convention3_0))))))
 (define path-element-clean.1
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0))))
-    (|#%name|
-     path-element-clean
-     (lambda (try-quick?5_0 p7_0)
-       (begin
-         (if (1/path? p7_0)
-           (let ((bstr_0 (|#%app| path-bytes p7_0)))
-             (let ((convention_0 (|#%app| path-convention p7_0)))
-               (if (let ((or-part_0 (not try-quick?5_0)))
-                     (if or-part_0
-                       or-part_0
-                       (let ((or-part_1 (not (eq? convention_0 'unix))))
-                         (if or-part_1
-                           or-part_1
-                           (not
-                            (call-with-values
-                             (lambda ()
-                               (normalise-inputs
-                                'in-bytes
-                                "byte string"
-                                procz1
-                                procz2
-                                bstr_0
-                                0
-                                (letrec*
-                                 ((loop_0
-                                   (|#%name|
-                                    loop
-                                    (lambda (end_0)
-                                      (begin
-                                        (if (zero? end_0)
-                                          0
-                                          (if (is-sep?
-                                               (unsafe-bytes-ref
-                                                bstr_0
-                                                (sub1 end_0))
-                                               convention_0)
-                                            (loop_0 (sub1 end_0))
-                                            end_0)))))))
-                                 (loop_0 (unsafe-bytes-length bstr_0)))
-                                1))
-                             (case-lambda
-                              ((v*_0 start*_0 stop*_0 step*_0)
-                               (let ((start_0 0))
-                                 (let ((v*_1 v*_0)
-                                       (start*_1 start*_0)
-                                       (stop*_1 stop*_0)
-                                       (step*_1 step*_0))
-                                   (begin
-                                     #t
-                                     (void)
-                                     (letrec*
-                                      ((for-loop_0
-                                        (|#%name|
-                                         for-loop
-                                         (lambda (result_0 idx_0 pos_0)
-                                           (begin
-                                             (if (if (unsafe-fx< idx_0 stop*_1)
-                                                   #t
-                                                   #f)
-                                               (let ((c_0
-                                                      (unsafe-bytes-ref
-                                                       v*_1
-                                                       idx_0)))
-                                                 (let ((result_1
-                                                        (let ((result_1
-                                                               (if (is-sep?
-                                                                    c_0
-                                                                    convention_0)
-                                                                 pos_0
-                                                                 #f)))
-                                                          (values result_1))))
-                                                   (if (if (not
+  (|#%name|
+   path-element-clean
+   (lambda (try-quick?5_0 p7_0)
+     (begin
+       (if (1/path? p7_0)
+         (let ((bstr_0 (|#%app| path-bytes p7_0)))
+           (let ((convention_0 (|#%app| path-convention p7_0)))
+             (if (let ((or-part_0 (not try-quick?5_0)))
+                   (if or-part_0
+                     or-part_0
+                     (let ((or-part_1 (not (eq? convention_0 'unix))))
+                       (if or-part_1
+                         or-part_1
+                         (not
+                          (call-with-values
+                           (lambda ()
+                             (unsafe-normalise-inputs
+                              unsafe-bytes-length
+                              bstr_0
+                              0
+                              (letrec*
+                               ((loop_0
+                                 (|#%name|
+                                  loop
+                                  (lambda (end_0)
+                                    (begin
+                                      (if (zero? end_0)
+                                        0
+                                        (if (is-sep?
+                                             (unsafe-bytes-ref
+                                              bstr_0
+                                              (sub1 end_0))
+                                             convention_0)
+                                          (loop_0 (sub1 end_0))
+                                          end_0)))))))
+                               (loop_0 (unsafe-bytes-length bstr_0)))
+                              1))
+                           (case-lambda
+                            ((v*_0 start*_0 stop*_0 step*_0)
+                             (let ((start_0 0))
+                               (let ((v*_1 v*_0)
+                                     (start*_1 start*_0)
+                                     (stop*_1 stop*_0)
+                                     (step*_1 step*_0))
+                                 (begin
+                                   #t
+                                   (void)
+                                   (letrec*
+                                    ((for-loop_0
+                                      (|#%name|
+                                       for-loop
+                                       (lambda (result_0 idx_0 pos_0)
+                                         (begin
+                                           (if (if (unsafe-fx< idx_0 stop*_1)
+                                                 #t
+                                                 #f)
+                                             (let ((c_0
+                                                    (unsafe-bytes-ref
+                                                     v*_1
+                                                     idx_0)))
+                                               (let ((result_1
+                                                      (let ((result_1
+                                                             (if (is-sep?
+                                                                  c_0
+                                                                  convention_0)
+                                                               pos_0
+                                                               #f)))
+                                                        (values result_1))))
+                                                 (if (if (not
+                                                          (let ((x_0
+                                                                 (list c_0)))
+                                                            result_1))
+                                                       (if (not
                                                             (let ((x_0
-                                                                   (list c_0)))
+                                                                   (list
+                                                                    pos_0)))
                                                               result_1))
-                                                         (if (not
-                                                              (let ((x_0
-                                                                     (list
-                                                                      pos_0)))
-                                                                result_1))
-                                                           #t
-                                                           #f)
+                                                         #t
                                                          #f)
-                                                     (for-loop_0
-                                                      result_1
-                                                      (unsafe-fx+ idx_0 1)
-                                                      (+ pos_0 1))
-                                                     result_1)))
-                                               result_0))))))
-                                      (for-loop_0 #f start*_1 start_0))))))
-                              (args
-                               (raise-binding-result-arity-error
-                                4
-                                args)))))))))
-                 (call-with-values
-                  (lambda () (1/split-path p7_0))
-                  (case-lambda
-                   ((base_0 name_0 dir?_0)
-                    (if (symbol? base_0) (if (1/path? name_0) name_0 #f) #f))
-                   (args (raise-binding-result-arity-error 3 args))))
-                 #f)))
-           #f))))))
+                                                       #f)
+                                                   (for-loop_0
+                                                    result_1
+                                                    (unsafe-fx+ idx_0 1)
+                                                    (+ pos_0 1))
+                                                   result_1)))
+                                             result_0))))))
+                                    (for-loop_0 #f start*_1 start_0))))))
+                            (args
+                             (raise-binding-result-arity-error 4 args)))))))))
+               (call-with-values
+                (lambda () (1/split-path p7_0))
+                (case-lambda
+                 ((base_0 name_0 dir?_0)
+                  (if (symbol? base_0) (if (1/path? name_0) name_0 #f) #f))
+                 (args (raise-binding-result-arity-error 3 args))))
+               #f)))
+         #f)))))
 (define path-element? (lambda (p_0) (if (path-element-clean.1 #t p_0) #t #f)))
 (define do-bytes->path-element
   (letrec ((bad-element_0
@@ -32433,8 +32355,8 @@
                           (let ((c_0 (string-ref vec_0 pos_0)))
                             (let ((n_1
                                    (let ((n_1
-                                          (if (>= (char->integer c_0) 65536)
-                                            (add1 n_0)
+                                          (if (fx>= (char->integer c_0) 65536)
+                                            (fx+ n_0 1)
                                             n_0)))
                                      (values n_1))))
                               (for-loop_0 n_1 (unsafe-fx+ 1 pos_0))))
@@ -32442,7 +32364,7 @@
                  (for-loop_0 0 0))))
              (args (raise-binding-result-arity-error 2 args))))))
       (let ((bstr_0
-             (make-bytes (* 2 (+ (string-length s_0) surrogate-count_0)))))
+             (make-bytes (fx* 2 (fx+ (string-length s_0) surrogate-count_0)))))
         (begin
           (call-with-values
            (lambda ()
@@ -32464,57 +32386,42 @@
                            (let ((pos_2
                                   (let ((pos_2
                                          (let ((v_0 (char->integer c_0)))
-                                           (if (>= v_0 65536)
-                                             (let ((av_0 (- v_0 65536)))
+                                           (if (fx>= v_0 65536)
+                                             (let ((av_0 (fx- v_0 65536)))
                                                (let ((hi_0
-                                                      (bitwise-ior
+                                                      (fxior
                                                        55296
-                                                       (bitwise-and
-                                                        (arithmetic-shift
-                                                         av_0
-                                                         -10)
+                                                       (fxand
+                                                        (fxrshift av_0 10)
                                                         1023))))
                                                  (let ((lo_0
-                                                        (bitwise-ior
+                                                        (fxior
                                                          56320
-                                                         (bitwise-and
-                                                          av_0
-                                                          1023))))
+                                                         (fxand av_0 1023))))
                                                    (begin
                                                      (let ((app_0
-                                                            (arithmetic-shift
-                                                             hi_0
-                                                             -8)))
+                                                            (fxrshift hi_0 8)))
                                                        (bytes-set-two!
                                                         bstr_0
                                                         pos_0
                                                         app_0
-                                                        (bitwise-and
-                                                         hi_0
-                                                         255)))
+                                                        (fxand hi_0 255)))
                                                      (let ((app_0
-                                                            (arithmetic-shift
-                                                             lo_0
-                                                             -8)))
+                                                            (fxrshift lo_0 8)))
                                                        (bytes-set-two!
                                                         bstr_0
                                                         pos_0
                                                         app_0
-                                                        (bitwise-and
-                                                         lo_0
-                                                         255)))
-                                                     (+ pos_0 4)))))
+                                                        (fxand lo_0 255)))
+                                                     (fx+ pos_0 4)))))
                                              (begin
-                                               (let ((app_0
-                                                      (arithmetic-shift
-                                                       v_0
-                                                       -8)))
+                                               (let ((app_0 (fxrshift v_0 8)))
                                                  (bytes-set-two!
                                                   bstr_0
                                                   pos_0
                                                   app_0
-                                                  (bitwise-and v_0 255)))
-                                               (+ pos_0 2))))))
+                                                  (fxand v_0 255)))
+                                               (fx+ pos_0 2))))))
                                     (values pos_2))))
                              (for-loop_0 pos_2 (unsafe-fx+ 1 pos_1))))
                          pos_0))))))
@@ -32523,104 +32430,89 @@
           bstr_0)))))
 (define big-endian? (system-big-endian?))
 (define utf-16-decode
-  (letrec ((procz2 (lambda (x_0) (unsafe-bytes-length x_0)))
-           (procz1 (lambda (x_0) (bytes? x_0))))
-    (lambda (bstr_0)
-      (let ((len_0 (unsafe-bytes-length bstr_0)))
-        (let ((surrogate-count_0
-               (if (= len_0 0)
-                 0
-                 (call-with-values
-                  (lambda ()
-                    (normalise-inputs
-                     'in-bytes
-                     "byte string"
-                     procz1
-                     procz2
-                     bstr_0
-                     (if big-endian? 0 1)
-                     len_0
-                     2))
-                  (case-lambda
-                   ((v*_0 start*_0 stop*_0 step*_0)
-                    (begin
-                      #t
-                      (letrec*
-                       ((for-loop_0
-                         (|#%name|
-                          for-loop
-                          (lambda (n_0 idx_0)
-                            (begin
-                              (if (< idx_0 stop*_0)
-                                (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
-                                  (let ((n_1
-                                         (let ((n_1
-                                                (if (=
-                                                     (bitwise-and b_0 220)
-                                                     216)
-                                                  (add1 n_0)
-                                                  n_0)))
-                                           (values n_1))))
-                                    (for-loop_0 n_1 (+ idx_0 2))))
-                                n_0))))))
-                       (for-loop_0 0 start*_0))))
-                   (args (raise-binding-result-arity-error 4 args)))))))
-          (let ((str_0
-                 (make-string
-                  (- (arithmetic-shift len_0 -1) surrogate-count_0))))
-            (begin
-              (letrec*
-               ((loop_0
-                 (|#%name|
-                  loop
-                  (lambda (i_0 pos_0)
-                    (begin
-                      (if (= i_0 len_0)
-                        (void)
-                        (let ((a_0 (unsafe-bytes-ref bstr_0 i_0)))
-                          (let ((b_0 (unsafe-bytes-ref bstr_0 (add1 i_0))))
-                            (let ((v_0
-                                   (if big-endian?
-                                     (bitwise-ior (arithmetic-shift a_0 8) b_0)
-                                     (bitwise-ior
-                                      (arithmetic-shift b_0 8)
-                                      a_0))))
-                              (if (= (bitwise-and v_0 56320) 56320)
-                                (let ((a_1
-                                       (unsafe-bytes-ref bstr_0 (+ i_0 2))))
-                                  (let ((b_1
-                                         (unsafe-bytes-ref bstr_0 (+ i_0 3))))
-                                    (let ((v2_0
-                                           (if big-endian?
-                                             (bitwise-ior
-                                              (arithmetic-shift a_1 8)
-                                              b_1)
-                                             (bitwise-ior
-                                              (arithmetic-shift b_1 8)
-                                              a_1))))
-                                      (let ((all-v_0
-                                             (+
-                                              65536
-                                              (let ((app_0
-                                                     (arithmetic-shift
-                                                      (bitwise-and v_0 1023)
-                                                      10)))
-                                                (bitwise-ior
-                                                 app_0
-                                                 (bitwise-and v2_0 1023))))))
-                                        (begin
-                                          (string-set!
-                                           str_0
-                                           pos_0
-                                           (integer->char all-v_0))
-                                          (let ((app_0 (+ i_0 4)))
-                                            (loop_0 app_0 (add1 pos_0))))))))
-                                (begin
-                                  (string-set! str_0 pos_0 (integer->char v_0))
-                                  (let ((app_0 (+ i_0 2)))
-                                    (loop_0 app_0 (add1 pos_0))))))))))))))
-               (loop_0 0 0))
-              str_0)))))))
+  (lambda (bstr_0)
+    (let ((len_0 (unsafe-bytes-length bstr_0)))
+      (let ((surrogate-count_0
+             (if (fx= len_0 0)
+               0
+               (call-with-values
+                (lambda ()
+                  (unsafe-normalise-inputs
+                   unsafe-bytes-length
+                   bstr_0
+                   (if big-endian? 0 1)
+                   len_0
+                   2))
+                (case-lambda
+                 ((v*_0 start*_0 stop*_0 step*_0)
+                  (begin
+                    #t
+                    (letrec*
+                     ((for-loop_0
+                       (|#%name|
+                        for-loop
+                        (lambda (n_0 idx_0)
+                          (begin
+                            (if (< idx_0 stop*_0)
+                              (let ((b_0 (unsafe-bytes-ref v*_0 idx_0)))
+                                (let ((n_1
+                                       (let ((n_1
+                                              (if (fx= (fxand b_0 220) 216)
+                                                (fx+ n_0 1)
+                                                n_0)))
+                                         (values n_1))))
+                                  (for-loop_0 n_1 (+ idx_0 2))))
+                              n_0))))))
+                     (for-loop_0 0 start*_0))))
+                 (args (raise-binding-result-arity-error 4 args)))))))
+        (let ((str_0 (make-string (fx- (fxrshift len_0 1) surrogate-count_0))))
+          (begin
+            (letrec*
+             ((loop_0
+               (|#%name|
+                loop
+                (lambda (i_0 pos_0)
+                  (begin
+                    (if (fx= i_0 len_0)
+                      (void)
+                      (let ((a_0 (unsafe-bytes-ref bstr_0 i_0)))
+                        (let ((b_0 (unsafe-bytes-ref bstr_0 (fx+ i_0 1))))
+                          (let ((v_0
+                                 (if big-endian?
+                                   (fxior (fxlshift a_0 8) b_0)
+                                   (fxior (fxlshift b_0 8) a_0))))
+                            (if (fx= (fxand v_0 56320) 56320)
+                              (let ((a_1
+                                     (unsafe-bytes-ref bstr_0 (fx+ i_0 2))))
+                                (let ((b_1
+                                       (unsafe-bytes-ref bstr_0 (fx+ i_0 3))))
+                                  (let ((v2_0
+                                         (if big-endian?
+                                           (fxior (fxlshift a_1 8) b_1)
+                                           (fxior (fxlshift b_1 8) a_1))))
+                                    (let ((all-v_0
+                                           (fx+
+                                            65536
+                                            (let ((app_0
+                                                   (fxlshift
+                                                    (fxand v_0 1023)
+                                                    10)))
+                                              (fxior
+                                               app_0
+                                               (fxand v2_0 1023))))))
+                                      (begin
+                                        (string-set!
+                                         str_0
+                                         pos_0
+                                         (integer->char all-v_0))
+                                        (let ((app_0 (fx+ i_0 4)))
+                                          (loop_0 app_0 (fx+ pos_0 1))))))))
+                              (begin
+                                (string-set! str_0 pos_0 (integer->char v_0))
+                                (let ((app_0 (fx+ i_0 2)))
+                                  (loop_0 app_0 (fx+ pos_0 1))))))))))))))
+             (loop_0 0 0))
+            str_0))))))
 (define string-length-up-to-nul
   (lambda (s_0 i_0 l_0)
     (letrec*
@@ -32664,8 +32556,10 @@
              (lambda (len_0 s3_0 up?1_0 pos_0)
                (begin
                  (let ((i-len_0
-                        (+ pos_0 (string-length-up-to-nul s3_0 pos_0 len_0))))
-                   (if (= i-len_0 len_0)
+                        (fx+
+                         pos_0
+                         (string-length-up-to-nul s3_0 pos_0 len_0))))
+                   (if (fx= i-len_0 len_0)
                      (let ((new-s_0
                             (recase/no-nul
                              (if (zero? pos_0)
@@ -32677,7 +32571,7 @@
                             (recase/no-nul
                              (substring s3_0 pos_0 i-len_0)
                              up?1_0)))
-                       (let ((r_0 (loop_0 len_0 s3_0 up?1_0 (+ i-len_0 1))))
+                       (let ((r_0 (loop_0 len_0 s3_0 up?1_0 (fx+ i-len_0 1))))
                          (if (eqv? pos_0 0)
                            (apply string-append new-s_0 (string '#\x0) r_0)
                            (cons new-s_0 (cons (string '#\x0) r_0))))))))))))
@@ -32692,7 +32586,7 @@
              loop
              (lambda (c_0 in-bstr_0 s_0 up?_0 pos_0)
                (begin
-                 (if (= pos_0 (unsafe-bytes-length in-bstr_0))
+                 (if (fx= pos_0 (unsafe-bytes-length in-bstr_0))
                    (if (eqv? pos_0 0) "" '(""))
                    (call-with-values
                     (lambda ()
@@ -32715,14 +32609,14 @@
                                           in-bstr_0
                                           s_0
                                           up?_0
-                                          (+ pos_0 in-used_0 4))))
+                                          (fx+ pos_0 in-used_0 4))))
                                     (let ((err-s_0
                                            (string
                                             (string-ref
                                              s_0
-                                             (arithmetic-shift
+                                             (fxrshift
                                               (+ pos_0 in-used_0)
-                                              -2)))))
+                                              2)))))
                                       (if (eqv? pos_0 0)
                                         (apply string-append ls_0 err-s_0 r_0)
                                         (list* ls_0 err-s_0 r_0)))))))))))
@@ -32731,7 +32625,7 @@
       (if (if (equal? (1/current-locale) "")
             (not
              (zero?
-              (bitwise-and
+              (fxand
                (|#%app|
                 rktio_convert_properties
                 (unsafe-place-local-ref cell.1))
@@ -32746,7 +32640,7 @@
                     (unsafe-place-local-ref cell.1)
                     up?_0
                     s-16_0
-                    (arithmetic-shift (unsafe-bytes-length s-16_0) -1)
+                    (fxrshift (unsafe-bytes-length s-16_0) 1)
                     #f)))
               (let ((sr_0 (|#%app| rktio_to_shorts r_0)))
                 (begin
@@ -36010,11 +35904,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3728 unsafe-undefined)
+               (let ((lr3736 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3728
+                 (set! lr3736
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -36069,9 +35963,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3728 0))
-                 (set! command_0 (unsafe-vector*-ref lr3728 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3728 2))
+                 (set! group_0 (unsafe-vector*-ref lr3736 0))
+                 (set! command_0 (unsafe-vector*-ref lr3736 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3736 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)

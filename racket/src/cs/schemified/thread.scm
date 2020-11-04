@@ -655,6 +655,13 @@
           (begin
             (check-ranges who_0 type-name_0 vec_0 start_0 stop*_0 step_0 len_0)
             (values vec_0 start_0 stop*_0 step_0)))))))
+(define unsafe-normalise-inputs
+  (lambda (unsafe-vector-length_0 vec_0 start_0 stop_0 step_0)
+    (values
+     vec_0
+     start_0
+     (if stop_0 stop_0 (|#%app| unsafe-vector-length_0 vec_0))
+     step_0)))
 (define check-vector
   (lambda (v_0)
     (if (vector? v_0) (void) (raise-argument-error 'in-vector "vector" v_0))))
@@ -3505,9 +3512,7 @@
 (define 1/place-message-allowed?
   (|#%name| place-message-allowed? (lambda (v_0) (begin (allowed?.1 #f v_0)))))
 (define message-ize
-  (letrec ((procz2 (lambda (x_0) (unsafe-vector-length x_0)))
-           (procz1 (lambda (x_0) (vector? x_0)))
-           (loop_0
+  (letrec ((loop_0
             (|#%name|
              loop
              (lambda (fail_0 graph_0 used_0 v_0)
@@ -3681,11 +3686,8 @@
                                            (reverse$1
                                             (call-with-values
                                              (lambda ()
-                                               (normalise-inputs
-                                                'in-vector
-                                                "vector"
-                                                procz1
-                                                procz2
+                                               (unsafe-normalise-inputs
+                                                unsafe-vector-length
                                                 (struct->vector v_0)
                                                 1
                                                 #f
@@ -3961,9 +3963,7 @@
       (make-reader-graph (do-un-message-ize (message-ized-unmessage v_0)))
       v_0)))
 (define do-un-message-ize
-  (letrec ((procz2 (lambda (x_0) (unsafe-vector-length x_0)))
-           (procz1 (lambda (x_0) (vector? x_0)))
-           (loop_0
+  (letrec ((loop_0
             (|#%name|
              loop
              (lambda (graph_0 v_0)
@@ -4063,11 +4063,8 @@
                             (reverse$1
                              (call-with-values
                               (lambda ()
-                                (normalise-inputs
-                                 'in-vector
-                                 "vector"
-                                 procz1
-                                 procz2
+                                (unsafe-normalise-inputs
+                                 unsafe-vector-length
                                  (struct->vector v_0)
                                  1
                                  #f

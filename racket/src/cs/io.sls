@@ -219,16 +219,32 @@
          (ftype-ref rktio_convert_result_t (in_consumed) p)
          (ftype-ref rktio_convert_result_t (out_produced) p)
          (ftype-ref rktio_convert_result_t (converted) p))))
-      (define (cast v from to)
-        (let ([p (malloc from)])
-          (ptr-set! p from v)
-          (ptr-ref p to)))
 
+    (define (copy-bytes x i)
+      (let ([bstr (make-bytevector i)])
+        (let loop ([j 0])
+          (unless (fx= j i)
+            (bytes-set! bstr j (foreign-ref 'unsigned-8 x j))
+            (loop (fx+ j 1))))
+        bstr))
+
+    (define (copy-terminated-bytes x)
+      (let loop ([i 0])
+        (if (fx= 0 (foreign-ref 'unsigned-8 x i))
+            (copy-bytes x i)
+            (loop (fx+ i 1)))))
+
+    (define (copy-terminated-shorts x)
+      (let loop ([i 0])
+        (if (fx= 0 (foreign-ref 'unsigned-16 x i))
+            (copy-bytes x i)
+            (loop (fx+ i 2)))))
+      
     (define (rktio_to_bytes fs)
-      (cast (ptr->address fs) _uintptr _bytes))
+      (copy-terminated-bytes (ptr->address fs)))
 
     (define (rktio_to_shorts fs)
-      (cast (ptr->address fs) _uintptr _short_bytes))
+      (copy-terminated-shorts (ptr->address fs)))
 
     ;; Unlike `rktio_to_bytes`, frees the array and strings
     (define rktio_to_bytes_list
@@ -244,7 +260,7 @@
              (let ([bs (foreign-ref 'uptr (ptr->address lls) (* i (foreign-sizeof 'uptr)))])
                (if (not (eqv? NULL bs))
                    (cons (begin0
-                          (cast bs _uintptr _bytes)
+                          (copy-terminated-bytes bs)
                           (rktio_free (make-ptr bs)))
                          (loop (add1 i)))
                    '()))]))
