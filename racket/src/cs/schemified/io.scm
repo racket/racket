@@ -32624,7 +32624,8 @@
     (lambda (s_0 up?_0)
       (if (if (equal? (1/current-locale) "")
             (not
-             (zero?
+             (fx=
+              0
               (fxand
                (|#%app|
                 rktio_convert_properties

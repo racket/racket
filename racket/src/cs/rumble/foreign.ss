@@ -1664,75 +1664,64 @@
                            [(scheme-object struct union) #f]
                            [else #t]))
                        in-types))
-        (lambda (to-wrap)
-          (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
-                 [proc (and (not (cpointer-needs-lock? proc-p))
-                            (gen-proc (cpointer-address proc-p)))]
-                 [unwrap (lambda (arg in-type)
-                           (let ([c (s->c in-type arg)])
-                             (if (cpointer? c)
-                                 (unwrap-cpointer 'ffi-call c)
-                                 c)))]
-                 [unpack (lambda (arg in-type)
-                           (case (array-rep-to-pointer-rep (ctype-host-rep in-type))
-                             [(void*) (cpointer-address arg)]
-                             [else arg]))])
-            (do-procedure-reduce-arity-mask
-             (cond
-              [proc
-               (case-lambda
-                [()
-                 (c->s out-type (with-interrupts-disabled* (proc)))]
-                [(orig-a)
-                 (let ([a (unwrap orig-a (car in-types))])
-                   (c->s out-type (retain
-                                   orig-a
-                                   (with-interrupts-disabled* (proc (unpack a (car in-types)))))))]
-                [(orig-a orig-b)
-                 (let ([a (unwrap orig-a (car in-types))]
-                       [b (unwrap orig-b (cadr in-types))])
-                   (c->s out-type (retain
-                                   orig-a orig-b
-                                   (with-interrupts-disabled*
-                                    (proc (unpack a (car in-types)) (unpack b (cadr in-types)))))))]
-                [(orig-a orig-b orig-c)
-                 (let ([a (unwrap orig-a (car in-types))]
-                       [b (unwrap orig-b (cadr in-types))]
-                       [c (unwrap orig-c (caddr in-types))])
-                   (c->s out-type (with-interrupts-disabled*
-                                   (retain
-                                    orig-a orig-b orig-c
-                                    (proc (unpack a (car in-types))
-                                          (unpack b (cadr in-types))
-                                          (unpack c (caddr in-types)))))))]
-                [(orig-a orig-b orig-c orig-d)
-                 (let ([a (unwrap orig-a (car in-types))]
-                       [b (unwrap orig-b (cadr in-types))]
-                       [c (unwrap orig-c (caddr in-types))]
-                       [d (unwrap orig-d (cadddr in-types))])
-                   (c->s out-type (retain
-                                   orig-a orig-b orig-c orig-d
-                                   (with-interrupts-disabled*
-                                    (proc (unpack a (car in-types))
-                                          (unpack b (cadr in-types))
-                                          (unpack c (caddr in-types))
-                                          (unpack d (cadddr in-types)))))))]
-                [orig-args
-                 (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
-                   (c->s out-type (with-interrupts-disabled*
-                                   (retain
-                                    orig-args
-                                    (#%apply proc (map (lambda (a t) (unpack a t)) args in-types))))))])]
-              [else
-               (lambda orig-args
-                 (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
-                   (c->s out-type (with-interrupts-disabled*
-                                   (retain
-                                    orig-args
-                                    (#%apply (gen-proc (cpointer-address proc-p))
-                                             (map (lambda (a t) (unpack a t)) args in-types)))))))])
-             (fxsll 1 (length in-types))
-             (cpointer->name proc-p))))]
+        (let ([arity-mask (bitwise-arithmetic-shift-left 1 (length in-types))])
+          (lambda (to-wrap)
+            (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
+                   [proc (and (not (cpointer-needs-lock? proc-p))
+                              (gen-proc (cpointer-address proc-p)))]
+                   [unwrap (lambda (arg in-type)
+                             (let ([c (s->c in-type arg)])
+                               (if (cpointer? c)
+                                   (unwrap-cpointer 'ffi-call c)
+                                   c)))]
+                   [unpack (lambda (arg in-type)
+                             (case (array-rep-to-pointer-rep (ctype-host-rep in-type))
+                               [(void*) (cpointer-address arg)]
+                               [else arg]))])
+              (do-procedure-reduce-arity-mask
+               (cond
+                 [proc
+                  (let-syntax ([gen (lambda (stx)
+                                      (syntax-case stx ()
+                                        [(_ id ...)
+                                         (with-syntax ([(type ...) (generate-temporaries #'(id ...))]
+                                                       [(orig ...) (generate-temporaries #'(id ...))])
+                                           #'(let*-values ([(type in-types) (values (car in-types) (cdr in-types))]
+                                                           ...)
+                                               (lambda (orig ...)
+                                                 (let ([id (unwrap orig type)] ...)
+                                                   (c->s out-type
+                                                         (retain
+                                                          orig ...
+                                                          (with-interrupts-disabled*
+                                                           (proc (unpack id type) ...))))))))]))])
+                    (case arity-mask
+                      [(1) (gen)]
+                      [(2) (gen a)]
+                      [(4) (gen a b)]
+                      [(8) (gen a b c)]
+                      [(16) (gen a b c d)]
+                      [(32) (gen a b c d e)]
+                      [(64) (gen a b c d e f)]
+                      [(128) (gen a b c d e f g)]
+                      [(256) (gen a b c d e f g h)]
+                      [else
+                       (lambda orig-args
+                         (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
+                           (c->s out-type (with-interrupts-disabled*
+                                           (retain
+                                            orig-args
+                                            (#%apply proc (map (lambda (a t) (unpack a t)) args in-types)))))))]))]
+                 [else
+                  (lambda orig-args
+                    (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
+                      (c->s out-type (with-interrupts-disabled*
+                                      (retain
+                                       orig-args
+                                       (#%apply (gen-proc (cpointer-address proc-p))
+                                                (map (lambda (a t) (unpack a t)) args in-types)))))))])
+               arity-mask
+               (cpointer->name proc-p)))))]
        [else
         (lambda (to-wrap)
           (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
