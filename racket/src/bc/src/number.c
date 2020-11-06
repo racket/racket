@@ -2350,7 +2350,7 @@ scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
       a = b;
       b = r;
     }
-    return (scheme_make_integer(a));
+    return (scheme_make_integer_value(a));
   } else if (!scheme_is_integer(n1) || !scheme_is_integer(n2)) {
     Scheme_Object *n1a, *n2a, *a[1], *num;
 
