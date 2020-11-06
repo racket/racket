@@ -659,7 +659,8 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
 	/* space is OK in type symbols */
       } else
 	has_space = 1;
-    } else if (isSpecial(ch))
+    } else if (isSpecial(ch)
+               || (ch == 0xFEFF)) /* BOM, treated as whitespace by the reader */
       has_special = 1;
     else if (ch == '|')
       has_pipe = 1;

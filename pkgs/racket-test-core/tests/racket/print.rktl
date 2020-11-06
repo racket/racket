@@ -67,6 +67,7 @@
   (ptest "'||" '||)
   (ptest "'|;|" '|;|)
   (ptest "'|`|" '|`|)
+  (ptest "'|\uFEFF_|" (string->symbol "\uFEFF_"))
   (ptest "'#:apple" '#:apple)
   (ptest "'#:|apple pie|" '#:|apple pie|)
   (ptest "'#:|.|" '#:|.|)
