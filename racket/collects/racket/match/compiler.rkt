@@ -74,7 +74,11 @@
                                             (Row-vars-seen row)))
                                 rows)
                            esc)])
-      #`[question (let ([tmps (accs #,x)] ...) body)]))
+      (define-values (used-tmps used-accs)
+        (remove-unused-tmps #'(tmps ...) #'(accs ...) #'body))
+      (with-syntax ([(used-tmps ...) used-tmps]
+                    [(used-accs ...) used-accs])
+        #`[question (let ([used-tmps (used-accs #,x)] ...) body)])))
   (cond
     [(eq? 'box k)
      (compile-con-pat (list #'unsafe-unbox*) #'box? (compose list Box-p))]
@@ -129,6 +133,23 @@
     [(syntax? k) (constant-pat k)]
     [(procedure? k) (constant-pat k)]
     [else (error 'match-compile "bad key: ~a" k)]))
+
+;; Remove any `tmps' (and their associated `accs') that are not
+;; present in `body'.
+(define (remove-unused-tmps tmps accs body)
+  (define seen (make-hasheq))
+  (let loop ([stx body])
+    (cond
+      [(identifier? stx)
+       (for/first ([tmp (in-list (syntax-e tmps))] #:when (free-identifier=? tmp stx))
+         (hash-set! seen tmp #t))]
+      [(list? (syntax-e stx))
+       (for-each loop (syntax-e stx))]))
+  (for/lists (tmps accs)
+             ([tmp (in-list (syntax-e tmps))]
+              [acc (in-list (syntax-e accs))]
+              #:when (hash-has-key? seen tmp))
+    (values tmp acc)))
 
 
 ;; produces the syntax for a let clause
