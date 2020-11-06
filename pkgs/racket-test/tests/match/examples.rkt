@@ -342,6 +342,30 @@
         [(struct tree (a (struct tree (b  _ _)) _)) (list a b)]
         [_ 'no])))
 
+   (comp
+    'ok
+    (let ()
+      (define-struct st ([x #:mutable])
+        #:transparent)
+      (define a (st 1))
+      (define b (impersonate-struct a st-x (lambda (_self _x)
+                                             (error "must not impersonate"))))
+      (match b
+        [(st _) 'ok])))
+
+   (comp
+    'ok
+    (let ()
+      (define impersonated? #f)
+      (define-struct st ([x #:mutable])
+        #:transparent)
+      (define a (st 1))
+      (define b (impersonate-struct a st-x (lambda (_self x)
+                                             (set! impersonated? #t)
+                                             x)))
+      (match b
+        [(st x) (if impersonated? 'ok 'fail)])))
+
    (comp 1
          (match #&1
            [(box a) a]
