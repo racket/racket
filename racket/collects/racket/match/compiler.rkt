@@ -149,8 +149,9 @@
        (for/first ([tmp (in-list (hash-keys todo))] #:when (free-identifier=? tmp stx))
          (hash-remove! todo tmp)
          (hash-set! seen tmp #t))]
-      [(list? (syntax-e stx))
-       (for-each loop (syntax-e stx))]))
+      [(syntax->list stx)
+       => (lambda (stxs)
+            (for-each loop stxs))]))
   (for/lists (tmps accs)
              ([tmp (in-list (syntax-e tmps))]
               [acc (in-list (syntax-e accs))]
