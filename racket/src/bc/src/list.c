@@ -916,8 +916,6 @@ scheme_init_unsafe_list (Scheme_Startup_Env *env)
   REGISTER_SO(scheme_unsafe_unbox_proc);
   p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE
-                                                            | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("unsafe-unbox", p, env);
   scheme_unsafe_unbox_proc = p;

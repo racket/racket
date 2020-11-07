@@ -3213,13 +3213,10 @@
      (displayln (list expr 3 '!))
   )
   (map check-omit-ok
-       '((unsafe-vector-ref x y)
-         (unsafe-vector*-ref x y)
-         (unsafe-struct-ref x y)
+       '((unsafe-vector*-ref x y)
          (unsafe-struct*-ref x y)
          (unsafe-mcar x)
          (unsafe-mcdr x)
-         (unsafe-unbox y)
          (unsafe-unbox* x)
          (unsafe-bytes-ref x y)
          (unsafe-string-ref x y)
@@ -3229,12 +3226,15 @@
          (unsafe-s16vector-ref x y)
          (unsafe-u16vector-ref x y)))
   (map (lambda (x) (check-omit-ok x #f))
-       '((unsafe-vector-set! x y z)
+       '((unsafe-vector-ref x y)
+         (unsafe-struct-ref x y)
+         (unsafe-vector-set! x y z)
          (unsafe-vector*-set! x y z)
          (unsafe-struct-set! x y z)
          (unsafe-struct*-set! x y z)
          (unsafe-set-mcar! x y)
          (unsafe-set-mcdr! x y)
+         (unsafe-unbox y)
          (unsafe-set-box! x y)
          (unsafe-set-box*! x y)
          (unsafe-bytes-set! x y z)
@@ -3680,12 +3680,49 @@
 
               (procedure? a-x)
               (lambda (x) (values (a-x x)))
-              (lambda (x) (when (a? x) (void (a-x x))))
 
               (procedure? set-a-x!)
               (lambda (x) (values (set-a-x! x 5))))
            '(module m racket/base
               (struct a (x) #:omit-define-syntaxes #:mutable)
+
+              #t
+              (lambda (x) (a x))
+              (lambda (x) a (void))
+
+              #t
+              (lambda (x) (a? x))
+              (lambda (x) a (void))
+              (lambda (x) a #t)
+              (lambda (x) (when (a? x) #t))
+
+              #t
+              (lambda (x) (a-x x))
+
+              #t
+              (lambda (x) (set-a-x! x 5))))
+
+(test-comp '(module m racket/base
+              (struct a (x) #:omit-define-syntaxes #:mutable #:authentic)
+
+              (procedure? a)
+              (lambda (x) (values (a x)))
+              (lambda (x) (void (a x)))
+
+              (procedure? a?)
+              (lambda (x) (values (a? x)))
+              (lambda (x) (void (a? x)))
+              (lambda (x) (boolean? (a? x)))
+              (lambda (x) (when (a? x) (a? x)))
+
+              (procedure? a-x)
+              (lambda (x) (values (a-x x)))
+              (lambda (x) (when (a? x) (void (a-x x))))
+
+              (procedure? set-a-x!)
+              (lambda (x) (values (set-a-x! x 5))))
+           '(module m racket/base
+              (struct a (x) #:omit-define-syntaxes #:mutable #:authentic)
 
               #t
               (lambda (x) (a x))
