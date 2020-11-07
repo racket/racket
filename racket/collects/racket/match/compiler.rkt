@@ -138,10 +138,16 @@
 ;; present in `body'.
 (define (remove-unused-tmps tmps accs body)
   (define seen (make-hasheq))
+  (define todo (make-hasheq
+                (for/list ([tmp (in-list (syntax-e tmps))])
+                  (cons tmp #t))))
   (let loop ([stx body])
     (cond
+      ;; stop the search early if all the tmps have already been found
+      [(hash-empty? todo)]
       [(identifier? stx)
-       (for/first ([tmp (in-list (syntax-e tmps))] #:when (free-identifier=? tmp stx))
+       (for/first ([tmp (in-list (hash-keys todo))] #:when (free-identifier=? tmp stx))
+         (hash-remove! todo tmp)
          (hash-set! seen tmp #t))]
       [(list? (syntax-e stx))
        (for-each loop (syntax-e stx))]))
