@@ -4,6 +4,7 @@
 (Section 'basic)
 
 (require racket/flonum
+         racket/fixnum
          racket/function
          racket/list
          racket/symbol
@@ -2386,6 +2387,7 @@
           [a (make-a 1 (make-a 2 3))]
           [b (box (list 1 2 3))]
           [fl (flvector 1.0 +nan.0 0.0)]
+          [fx (fxvector 1 -2 0)]
           [cyclic-list (read (open-input-string "#2=(#1=(#2#) #2#)"))])
 
       (test 0 hash-count h1)
@@ -2400,7 +2402,8 @@
                      (hash-set! h1 (save 3/45) 'rational)
                      (hash-set! h1 (save 3+45i) 'complex)
                      (hash-set! h1 (save (integer->char 955)) 'char)
-                     (hash-set! h1 (save fl) 'flvector))]
+                     (hash-set! h1 (save fl) 'flvector)
+                     (hash-set! h1 (save fx) 'fxvector))]
             [puts2 (lambda ()
                      (hash-set! h1 (save (list 5 7)) 'another-list)
                      (hash-set! h1 (save 3+0.0i) 'izi-complex)
@@ -2416,7 +2419,7 @@
             (puts1))
           (begin
             (puts1)
-            (test 8 hash-count h1)
+            (test 9 hash-count h1)
             (puts2))))
 
       (when reorder?
@@ -2428,7 +2431,7 @@
             (loop (add1 i))
             (hash-remove! h1 i))))
 
-      (test 15 hash-count h1)
+      (test 16 hash-count h1)
       (test 'list hash-ref h1 l)
       (test 'list hash-ref h1 (list 1 2 3))
       (test 'another-list hash-ref h1 (list 5 7))
@@ -2448,6 +2451,7 @@
       (test 'box hash-ref h1 #&(1 2 3))
       (test 'char hash-ref h1 (integer->char 955))
       (test 'flvector hash-ref h1 (flvector 1.0 +nan.0 0.0))
+      (test 'fxvector hash-ref h1 (fxvector 1 -2 0))
       (test 'cyclic-list hash-ref h1 cyclic-list)
       (test #t
             andmap
@@ -2468,14 +2472,15 @@
               (#\u3BB . char)
               (#&(1 2 3) . box)
               (,(flvector 1.0 +nan.0 0.0) . flvector)
+              (,(fxvector 1 -2 0) . fxvector)
               (,cyclic-list . cyclic-list)))
 
       (hash-remove! h1 (list 1 2 3))
-      (test 14 hash-count h1)
+      (test 15 hash-count h1)
       (test 'not-there hash-ref h1 l (lambda () 'not-there))
       (let ([c 0])
         (hash-for-each h1 (lambda (k v) (set! c (add1 c))))
-        (test 14 'count c))
+        (test 15 'count c))
       ;; return the hash table:
       h1))
 

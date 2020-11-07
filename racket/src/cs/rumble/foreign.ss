@@ -140,6 +140,9 @@
 (define (vector->addr bv) ; call with GC disabled or locked object
   (#%$object-address bv vector-content-offset))
 
+(define (flvector->addr bv) ; call with GC disabled or locked object
+  (#%$object-address bv flvector-content-offset))
+
 ;; Convert a raw foreign address to a Scheme value on the
 ;; assumption that the address is the payload of a byte
 ;; string:
@@ -187,7 +190,8 @@
   (cond
    [(integer? memory) memory]
    [(bytes? memory) (bytevector->addr memory)]
-   [(vector? memory) (vector->addr memory)] ; used for immobile cells
+   [(#%vector? memory) (vector->addr memory)] ; used for immobile cells
+   [(flvector? memory) (flvector->addr memory)]
    [else (object->addr memory)]))
 
 ;; ----------------------------------------
@@ -206,6 +210,7 @@
   (or (eqv? v 0)
       (bytes? v)
       (#%vector? v)
+      (flvector? v)
       (exact-nonnegative-integer? v)))
 
 ;; ----------------------------------------
@@ -729,7 +734,8 @@
         (and (authentic-cpointer? p)
              (let ([memory (cpointer-memory p)])
                (or (bytes? memory)
-                   (#%vector? memory)))))))
+                   (#%vector? memory)
+                   (flvector? memory)))))))
 
 ;; ----------------------------------------
 
@@ -1472,7 +1478,7 @@
   (make-cpointer vec #f))
 
 (define (flvector->cpointer flvec)
-  (make-cpointer (flvector-bstr flvec) #f))
+  (make-cpointer flvec #f))
 
 ;; ----------------------------------------
 

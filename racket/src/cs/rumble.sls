@@ -429,12 +429,7 @@
                   [inline:set-mcar! set-mcar!]
                   [inline:set-mcdr! set-mcdr!])
 
-          flvector?
-          (rename [new-flvector flvector])
           make-flvector
-          flvector-length
-          flvector-ref
-          flvector-set!
           flvector-copy
           shared-flvector
           make-shared-flvector
@@ -833,7 +828,6 @@
   (set-impersonator-applicables!)
   (set-mpair-hash!)
   (set-hash-hash!)
-  (set-flvector-hash!)
   (set-extflonum-print!)
   (set-impersonator-hash!)
   (set-procedure-impersonator-hash!)

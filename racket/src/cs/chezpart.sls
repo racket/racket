@@ -46,7 +46,8 @@
                            bitwise-and
                            bitwise-not
                            fllog flatan
-                           fxquotient)
+                           fxquotient
+                           make-flvector flvector-copy)
                    [make-parameter chez:make-parameter]
                    [date-second chez:date-second]
                    [date-minute chez:date-minute]

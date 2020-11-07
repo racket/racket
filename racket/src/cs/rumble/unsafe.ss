@@ -107,6 +107,10 @@
 (define unsafe-fxvector-ref (unsafe-primitive fxvector-ref))
 (define unsafe-fxvector-set! (unsafe-primitive fxvector-set!))
 
+(define unsafe-flvector-length (unsafe-primitive flvector-length))
+(define unsafe-flvector-ref (unsafe-primitive flvector-ref))
+(define unsafe-flvector-set! (unsafe-primitive flvector-set!))
+
 (define (unsafe-s16vector-ref s16 k)
   (let* ([cptr (unsafe-struct*-ref s16 0)]
          [mem (cpointer-memory cptr)]

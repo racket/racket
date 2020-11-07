@@ -132,6 +132,8 @@
      [(symbol? x) (values (+/fx hc (symbol-hash x)) burn)]
      [(string? x) (values (+/fx hc (string-hash x)) burn)]
      [(bytevector? x) (values (+/fx hc (equal-hash x)) burn)]
+     [(fxvector? x) (values (+/fx hc (equal-hash x)) burn)]
+     [(flvector? x) (values (+/fx hc (equal-hash x)) burn)]
      [(box? x) (equal-hash-loop (unbox x) (fx+ burn 1) (+/fx hc 1))]
      [(pair? x)
       (let-values ([(hc0 burn) (equal-hash-loop (car x) (fx+ burn 2) 0)])
