@@ -49,12 +49,13 @@
   (define name (code 'name))
   (define $generation (vm-eval '($primitive $generation)))
   (define $code? (vm-eval '($primitive $code?)))
+  (define max-gen (vm-eval '(collect-maximum-generation)))
   (append
    (apply
     append
     (for/list ([v (in-list ((code 'reloc) 'value))]
                #:unless (and ($code? v)
-                             (= 255 ($generation v))))
+                             (($generation v) . > . max-gen)))
       (decompile-value v seen)))
    (if unwrap-body?
        (decompile-code-body code)
