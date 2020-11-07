@@ -75,8 +75,11 @@
   (unless (and (check-parameter read-accept-reader config)
                (check-parameter read-accept-lang config))
     (reader-error in config
-                  "`~a` not enabled"
-                  extend-str))
+                  "`~a` not enabled\n  possible reason: ~a"
+                  extend-str
+                  (string-append
+                   "not allowed again inside a module that already starts `#lang`,"
+                   " or not enabled for interactive evaluation")))
 
   (define-values (line col pos) (port-next-location in))
   
