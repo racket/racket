@@ -128,4 +128,10 @@
     (err/rt-test (seconds->date (expt 2 50)) out-of-range)
     (err/rt-test (seconds->date (expt 2 60)) out-of-range)))
 
+;; Check inexact arithmetic
+(test (seconds->date 0 #f)
+      seconds->date 0.1e-16 #f)
+(test (date* 59 59 23 31 12 1969 3 364 #f 0 999999999 "UTC")
+      seconds->date -0.1e-16 #f)
+
 (report-errs)

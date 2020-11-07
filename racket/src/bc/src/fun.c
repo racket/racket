@@ -9790,6 +9790,8 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
   if (SCHEME_INTP(secs) || SCHEME_BIGNUMP(secs)) {
     nsecs = scheme_make_integer(0);
   } else {
+    p[0] = secs;
+    secs = scheme_inexact_to_exact(1, p);
     nsecs = secs;
     p[0] = secs;
     secs = scheme_floor(1, p);
