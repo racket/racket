@@ -425,10 +425,10 @@ Returns a procedure that behaves like @racket[managed-compile-zo]
 of timestamp information is preserved across calls to the procedure.
 
 A handler to support compilation is created with
-@racket[make-compilation-manager-load/use-compiled-handler] at the
-time that @racket[make-caching-managed-compile-zo] is called, so the
-current namespace and other parameter values are relevant at that
-time.}
+@racket[make-compilation-manager-load/use-compiled-handler] each time
+the result of @racket[make-caching-managed-compile-zo] is called, so
+the current namespace and other parameter values are relevant at that
+time, not when @racket[make-caching-managed-compile-zo] is called.}
 
 
 @defparam[manager-compile-notify-handler notify (path? . -> . any)]{
