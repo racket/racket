@@ -349,14 +349,17 @@ are @racket['locking], @racket['start-compile], @racket['finish-compile], and
 
 Compiles the given module source file to a @filepath{.zo}, installing
 a compilation-manager handler while the file is compiled (so that
-required modules are also compiled), and creating a @filepath{.dep} file
-to record the timestamps of immediate files used to compile the source
-(i.e., files @racket[require]d in the source).
+required modules are also compiled), and creating a @filepath{.dep}
+file to record the timestamps of immediate files used to compile the
+source (i.e., files @racket[require]d in the source).
 
 Compilation is triggered by loading a module into the current
 namespace, so if a module that is a dependency of @racket[file] has
 already been loaded into the current namespace, then that module will
-not necessarily be (re-)compiled.
+not necessarily be (re-)compiled. The handler used to trigger
+compilation is created with
+@racket[make-compilation-manager-load/use-compiled-handler], so all the
+rules and constraints there apply.
 
 If @racket[file] is compiled from source, then
 @racket[read-src-syntax] is used in the same way as
@@ -419,7 +422,14 @@ out-of-date @filepath{.zo} files instead of re-compiling from source.}
 
 Returns a procedure that behaves like @racket[managed-compile-zo]
 (providing the same @racket[read-src-syntax] each time), but a cache
-of timestamp information is preserved across calls to the procedure.}
+of timestamp information is preserved across calls to the procedure.
+
+A handler to support compilation is created with
+@racket[make-compilation-manager-load/use-compiled-handler] at the
+time that @racket[make-caching-managed-compile-zo] is called, so the
+current namespace and other parameter values are relevant at that
+time.}
+
 
 @defparam[manager-compile-notify-handler notify (path? . -> . any)]{
 
