@@ -1013,6 +1013,17 @@
      (goes (lambda () (sync (system-idle-evt))) (lambda () (sync (system-idle-evt))) kill-thread)))
  (list sleep void))
 
+;; Suspend and sleep
+(when (run-unreliable-tests? 'timing)
+  (let ([done? #f])
+    (define t (thread (lambda ()
+                        (sleep 0.1)
+                        (set! done? #t))))
+    (sync (system-idle-evt))
+    (thread-suspend t)
+    (sleep 0.1)
+    (test #f 'suspended-while-sleeping done?)))
+
 ;; ----------------------------------------
 ;;  Simple multi-custodian threads
 

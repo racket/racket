@@ -512,6 +512,7 @@
        [(not (thread-descheduled? t))
         (do-thread-deschedule! t #f)]
        [else
+        (remove-from-sleeping-threads! t)
         void])]))
 
 (define/who (thread-resume t [benefactor #f])

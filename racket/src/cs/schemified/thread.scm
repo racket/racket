@@ -7663,7 +7663,7 @@
                     (void)))))))
         (if (not (thread-descheduled? t_0))
           (do-thread-deschedule! t_0 #f)
-          void)))))
+          (begin (remove-from-sleeping-threads! t_0) void))))))
 (define 1/thread-resume
   (let ((thread-resume_0
          (|#%name|
