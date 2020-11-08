@@ -229,7 +229,8 @@ the value produced by @racket[(proc _i)].
 @defproc[(length [lst list?])
          exact-nonnegative-integer?]{
 
-Returns the number of elements in @racket[lst].
+Returns the number of elements in @racket[lst]. This function takes
+time proportional to that length.
 
 @mz-examples[
   (length (list 1 2 3 4))
@@ -245,6 +246,8 @@ list's first element is position @racket[0].  If the list has
 
 The @racket[lst] argument need not actually be a list; @racket[lst] must
 merely start with a chain of at least @racket[(add1 pos)] pairs.
+
+This function takes time proportional to @racket[pos].
 
 @mz-examples[
   (list-ref (list 'a 'b 'c) 0)
@@ -264,6 +267,8 @@ If the list has fewer than @racket[pos] elements, then the
 The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely start with a chain of at least @racket[pos] pairs.
 
+This function takes time proportional to @racket[pos].
+
 @mz-examples[
   (list-tail (list 1 2 3 4 5) 2)
   (list-tail (cons 1 2) 1)
@@ -281,6 +286,9 @@ directly in the tail of the result.
 The last argument need not be a list, in which case the result is an
 ``improper list.''
 
+This function takes time proportional to the length of all arguments
+(added together) except the last argument.
+
 @mz-examples[
   (append (list 1 2) (list 3 4))
   (append (list 1 2) (list 3 4) (list 5 6) (list 7 8))]}
@@ -290,6 +298,8 @@ The last argument need not be a list, in which case the result is an
 
 Returns a list that has the same elements as @racket[lst], but in
 reverse order.
+
+This function takes time proportional to the length of @racket[lst].
 
 @mz-examples[
   (reverse (list 1 2 3 4))]}
@@ -851,6 +861,8 @@ Returns the tenth element of the list.
 
 Returns the last element of the list.
 
+This function takes time proportional to the length of @racket[lst].
+
 @mz-examples[#:eval list-eval
   (last '(1 2 3 4 5 6 7 8 9 10))]}
 
@@ -859,6 +871,8 @@ Returns the last element of the list.
          pair?]{
 
 Returns the last pair of a (possibly improper) list.
+
+This function takes time proportional to the ``length'' of @racket[p].
 
 @mz-examples[#:eval list-eval
   (last-pair '(1 2 3 4))]}
@@ -881,6 +895,8 @@ Returns a newly constructed list of length @racket[k], holding
 Returns a list that is the same as @racket[lst] except at the specified index.
 The element at the specified index is @racket[(updater (list-ref lst pos))].
 
+This function takes time proportional to @racket[pos].
+
 @examples[#:eval list-eval
 (list-update '(zero one two) 1 symbol->string)]
 @history[#:added "6.3"]{}
@@ -893,6 +909,8 @@ The element at the specified index is @racket[(updater (list-ref lst pos))].
 
 Returns a list that is the same as @racket[lst] except at the specified index.
 The element at the specified index is @racket[value].
+
+This function takes time proportional to @racket[pos].
 
 @examples[#:eval list-eval
 (list-set '(zero one two) 2 "two")]
@@ -951,6 +969,8 @@ the @exnraise[exn:fail:contract].
 The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely start with a chain of at least @racket[pos] pairs.
 
+This function takes time proportional to @racket[pos].
+
 @mz-examples[#:eval list-eval
   (take '(1 2 3 4 5) 2)
   (take 'non-list 0)]}
@@ -969,7 +989,8 @@ Returns the same result as
 
 @racketblock[(values (take lst pos) (drop lst pos))]
 
-except that it can be faster.}
+except that it can be faster, but it will still take time
+proportional to @racket[pos].}
 
 
 @defproc[(takef [lst any/c] [pred procedure?])
@@ -1020,6 +1041,8 @@ has fewer than @racket[pos] elements, then the
 The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely end with a chain of at least @racket[pos] pairs.
 
+This function takes time proportional to the length of @racket[lst].
+
 @mz-examples[#:eval list-eval
   (take-right '(1 2 3 4 5) 2)
   (take-right 'non-list 0)]}
@@ -1035,6 +1058,8 @@ dropping its @racket[pos]-length tail.  If @racket[lst] has fewer than
 The @racket[lst] argument need not actually be a list; @racket[lst] must
 merely end with a chain of at least @racket[pos] pairs.
 
+This function takes time proportional to the length of @racket[lst].
+
 @mz-examples[#:eval list-eval
   (drop-right '(1 2 3 4 5) 2)
   (drop-right 'non-list 0)]}
@@ -1047,7 +1072,8 @@ Returns the same result as
 
 @racketblock[(values (drop-right lst pos) (take-right lst pos))]
 
-except that it can be faster.
+except that it can be faster, but it will still take time proportional
+to the length of @racket[lst].
 
 @mz-examples[#:eval list-eval
   (split-at-right '(1 2 3 4 5 6) 3)
