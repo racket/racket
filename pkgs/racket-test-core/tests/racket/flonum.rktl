@@ -384,5 +384,38 @@
   (test 10.0 'ref (unsafe-flvector-ref v 0)))
 
 ;; ----------------------------------------
+;; Regression test for a compiler bug that happened to be exposed
+;; by flvector combinations
+
+(let ()
+  (define l '(1 2 3 4 5))
+  (define expected (flvector 1.0 2.0 3.0 4.0 5.0))
+
+  (define xs (make-flvector (length l)))
+  (define slow (if (zero? (random 1))
+                   real->double-flonum
+                   values))
+
+  (define (list->flvector vs)
+    (let ([n 5])
+      (let/ec break
+        (let loop ([i 0] [vs vs])
+          (unless (null? vs)
+            (define v (car vs))
+            (unsafe-flvector-set! xs i (slow v))
+            (loop (+ i 1) (cdr vs)))))
+      xs))
+
+  (for ([i 1000000])
+    (flvector-set! xs 0 0.0)
+    (flvector-set! xs 1 0.0)
+    (flvector-set! xs 2 0.0)
+    (flvector-set! xs 3 0.0)
+    (flvector-set! xs 4 0.0)
+    (define v (list->flvector l))
+    (unless (equal? v expected)
+      (error 'regression "~a: bad flvector: ~s\n" i v))))
+
+;; ----------------------------------------
 
 (report-errs)
