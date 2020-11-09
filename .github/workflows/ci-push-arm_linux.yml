@@ -220,7 +220,7 @@ jobs:
         cify: [cify, nocify]
 
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
-    continue-on-failure: true
+    continue-on-error: true
     
     steps:
       - uses: pmatos/action-home-clean@v2
