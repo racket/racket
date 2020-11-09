@@ -662,6 +662,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Check for cleaning up a subprocess without waiting for it to complete:
+(for ([j 10])
+  (for-each
+   (lambda (f) (f))
+   (for/list ([i 10])
+     (define-values (sp o i e) (subprocess #f #f #f cat))
+     (subprocess-kill sp 'kill)
+     (lambda ()
+       (close-output-port i)
+       (close-input-port o)
+       (close-input-port e))))
+  (collect-garbage))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 
 

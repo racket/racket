@@ -602,7 +602,6 @@ static void init_sigchld(rktio_t *rktio)
 #endif
 }
 
-#if !defined(CENTRALIZED_SIGCHILD)
 static void remove_from_sigchld_chain(rktio_t *rktio)
 {
   if (rktio->in_sigchld_chain) {
@@ -620,7 +619,6 @@ static void remove_from_sigchld_chain(rktio_t *rktio)
     }
   }
 }
-#endif
 
 static void check_child_done(rktio_t *rktio, pid_t pid)
 {
@@ -948,14 +946,25 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
     centralized_ended_child();
   }
 # else
-  if (!((System_Child *)sp->handle)->done) {
+  System_Child *sc = (System_Child *)sp->handle, *sc2, *prev;
+  if (!sc->done) {
     void **unused_pid;
     unused_pid = malloc(sizeof(void *) * 2);
     unused_pid[0] = (void *)(intptr_t)sp->pid;
     unused_pid[1] = unused_pids;
     rktio->need_to_check_children = 1;
+
+    prev = NULL;
+    for (sc2 = rktio->system_children; sc2; prev = sc2, sc2 = sc2->next) {
+      if (sc2 == sc) {
+        if (prev)
+          prev->next = sc->next;
+        else
+          rktio->system_children = sc->next;
+      }
+    }
   }
-  free(sp->handle);
+  free(sc);
 # endif
 #endif
 
@@ -1457,6 +1466,9 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       if (env)
         free(env);
       free(new_argv);
+#if !defined(CENTRALIZED_SIGCHILD)
+      free(sc);
+#endif
 
       return NULL;
 
