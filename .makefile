@@ -628,7 +628,7 @@ DIST_DESC =
 # Package catalog URLs (individually quoted as needed, separated by
 # spaces) to install as the initial configuration in generated
 # installers, where "" is replaced by the default configuration:
-DIST_CATALOGS_q = ""
+DIST_CATALOGS_q := ""
 
 # An identifier for this build; if not specified, a build identifier
 # is inferred from the date and git repository
