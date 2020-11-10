@@ -77,7 +77,7 @@
    (define min-phase (hash-ref h 'min-phase 0))
    (define max-phase (hash-ref h 'max-phase 0))
    (define language-info (hash-ref h 'language-info #f))
-   
+
    ;; Evaluate linklets, so that they're JITted just once (on demand).
    ;; Also, filter the bundle hash to just the phase-specific linklets, so that
    ;; we don't retain other info --- especially the syntax-literals linklet.

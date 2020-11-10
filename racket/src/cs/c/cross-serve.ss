@@ -34,11 +34,14 @@
           (let-values ([(o get) (open-bytevector-output-port)])
             (let ([sfd-paths
                    (case (integer->char cmd)
-                     [(#\c)
+                     [(#\c #\u)
                       (call-with-fasled
                        in
                        (lambda (v pred)
-                         (compile-to-port (list `(lambda () ,v)) o #f #f #f (string->symbol target) #f pred)))]
+                         (parameterize ([optimize-level (if (fx= cmd (char->integer #\u))
+                                                            3
+                                                            (optimize-level))])
+                           (compile-to-port (list `(lambda () ,v)) o #f #f #f (string->symbol target) #f pred))))]
                      [(#\f)
                       ;; Reads host fasl format, then writes target fasl format
                       (call-with-fasled

@@ -116,6 +116,7 @@
                                   [lazy-syntax-literals? #t]))
    
    (define cross-phase-persistent? #f)
+   (define unsafe?-box (box #f))
    
    ;; Callback to track phases that have side effects
    (define side-effects (make-hasheqv))
@@ -163,7 +164,9 @@
                                                    (set! cross-phase-persistent? #t))
                                                  (when (eq? (syntax-e kw) '#:empty-namespace)
                                                    (set! empty-result-for-module->namespace? #t)
-                                                   (set-box! encoded-root-expand-ctx-box #f)))
+                                                   (set-box! encoded-root-expand-ctx-box #f))
+                                                 (when (eq? (syntax-e kw) '#:unsafe)
+                                                   (set-box! unsafe?-box #t)))
                                                #f]
                                               [else #f]))
                     #:get-module-linklet-info (lambda (mod-name phase)
@@ -172,8 +175,9 @@
                                                 (and ht (hash-ref ht phase #f)))
                     #:serializable? serializable?
                     #:module-prompt? #t
-                    #:to-correlated-linklet? to-correlated-linklet?))
-   
+                    #:to-correlated-linklet? to-correlated-linklet?
+                    #:unsafe?-box unsafe?-box))
+
    (when modules-being-compiled
      ;; Record this module's linklets for cross-module inlining among (sub)modules
      ;; that are compiled together
@@ -330,6 +334,9 @@
                         bundle)]
             [bundle (if empty-result-for-module->namespace?
                         (hash-set bundle 'module->namespace 'empty)
+                        bundle)]
+            [bundle (if (unbox unsafe?-box)
+                        (hash-set bundle 'unsafe? #t)
                         bundle)])
        (hash->linklet-bundle bundle)))
 

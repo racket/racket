@@ -63,8 +63,8 @@
       (cache-cross-compiler a)
       (values (car bv+paths) (cdr bv+paths)))))
 
-(define (cross-compile machine v)
-  (do-cross 'c machine v))
+(define (cross-compile machine v unsafe?)
+  (do-cross (if unsafe? 'u 'c) machine v))
 
 (define (cross-fasl-to-string machine v)
   (do-cross 'f machine v))

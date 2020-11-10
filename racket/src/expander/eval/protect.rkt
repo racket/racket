@@ -20,8 +20,11 @@
 ;; case, a `compiled-in-memory` record holds extra-inspector
 ;; information that is propagated to here.
 
-(provide check-require-access
+(provide initial-code-inspector
+         check-require-access
          check-single-require-access)
+
+(define initial-code-inspector (current-code-inspector))
 
 (define (check-require-access linklet #:skip-imports skip-num-imports
                               import-module-uses import-module-instances insp

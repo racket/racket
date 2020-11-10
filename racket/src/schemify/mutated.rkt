@@ -183,6 +183,8 @@
        (find-mutated! body ids)]
       [`(begin ,exps ...)
        (find-mutated!* exps ids)]
+      [`(begin-unsafe ,exps ...)
+       (find-mutated!* exps ids)]
       [`(begin0 ,exp ,exps ...)
        (find-mutated! exp ids)
        (find-mutated!* exps #f)]

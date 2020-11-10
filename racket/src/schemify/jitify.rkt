@@ -266,6 +266,8 @@
        (values (reannotate v `(begin . ,new-body))
                new-free
                new-lifts)]
+      [`(begin-unsafe . ,vs)
+       (jitify-expr `(begin . ,vs) env mutables free lifts convert-mode name in-name)]
       [`(begin0 ,v0 . ,vs)
        (define-values (new-v0 v0-free v0-lifts)
          (jitify-expr v0 env mutables free lifts (convert-mode-non-tail convert-mode) name in-name))
@@ -650,6 +652,7 @@
       [`(letrec* . ,_) (find-mutable-in-let env v accum)]
       [`(begin . ,vs) (body-find-mutable env vs accum)]
       [`(begin0 . ,vs) (body-find-mutable env vs accum)]
+      [`(begin-unsafe . ,vs) (body-find-mutable env vs accum)]
       [`(if ,tst ,thn ,els)
        (find-mutable env tst
                      (find-mutable env thn
@@ -795,6 +798,7 @@
       [`(letrec* . ,_) (record-sizes-in-let! v sizes)]
       [`(begin . ,vs) (add1 (body-record-sizes! vs sizes))]
       [`(begin0 . ,vs) (add1 (body-record-sizes! vs sizes))]
+      [`(begin-unsafe . ,vs) (add1 (body-record-sizes! vs sizes))]
       [`(if ,tst ,thn ,els)
        (+ 1
           (record-sizes! tst sizes)

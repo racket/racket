@@ -141,6 +141,7 @@
          (lift?/seq body))]
       [`(begin . ,vs) (lift?/seq vs)]
       [`(begin0 . ,vs) (lift?/seq vs)]
+      [`(begin-unsafe . ,vs) (lift?/seq vs)]
       [`(quote . ,_) #f]
       [`(if ,tst ,thn ,els)
        (or (lift? tst) (lift? thn) (lift? els))]
@@ -308,6 +309,8 @@
              (cdr new-frees+binds))]
       [`(begin . ,vs)
        (compute-seq-lifts! vs frees+binds lifts locals)]
+      [`(begin-unsafe . ,vs)
+       (compute-seq-lifts! vs frees+binds lifts locals)]
       [`(begin0 . ,vs)
        (compute-seq-lifts! vs frees+binds lifts locals)]
       [`(quote . ,_) frees+binds]
@@ -444,6 +447,8 @@
        (for/fold ([loops loops]) ([body (in-list bodys)])
          (find-seq-loops body lifts #hasheq() loops))]
       [`(begin . ,vs)
+       (find-seq-loops vs lifts loop-if-tail loops)]
+      [`(begin-unsafe . ,vs)
        (find-seq-loops vs lifts loop-if-tail loops)]
       [`(begin0 ,v . ,vs)
        (define new-loops (find-loops v lifts #hasheq() loops))
@@ -653,6 +658,8 @@
                                `[,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)]))))]
         [`(begin . ,vs)
          (reannotate v `(begin . ,(convert-lifted-calls-in-seq vs lifts frees empties)))]
+        [`(begin-unsafe . ,vs)
+         (reannotate v `(begin-unsafe . ,(convert-lifted-calls-in-seq vs lifts frees empties)))]
         [`(begin0 . ,vs)
          (reannotate v `(begin0 . ,(convert-lifted-calls-in-seq vs lifts frees empties)))]
         [`(quote . ,_) v]

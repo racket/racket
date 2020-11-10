@@ -222,17 +222,17 @@
   ;; engines/threads.
   (define compile*
     (case-lambda
-     [(e safe?)
+     [(e unsafe?)
       (call-with-system-wind (lambda ()
-                               (parameterize ([optimize-level (if safe?
-                                                                  (optimize-level)
-                                                                  3)])
+                               (parameterize ([optimize-level (if unsafe?
+                                                                  3
+                                                                  (optimize-level))])
                                  (if assembly-on?
                                      (parameterize ([#%$assembly-output (#%current-output-port)])
                                        (printf ";; assembly ---------------------\n")
                                        (compile e))
                                      (compile e)))))]
-     [(e) (compile* e #t)]))
+     [(e) (compile* e #f)]))
   (define (interpret* e) ; result is not safe for space
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
@@ -248,12 +248,21 @@
                                (call-getting-sfd-paths
                                 (lambda (pred)
                                   (fasl-write s o pred 'omit-rtds)))))))
-  (define (compile-to-port* s o)
+  (define (compile-to-port* s o unsafe?)
     (call-with-system-wind (lambda ()
-                             (parameterize ([fasl-compressed compress-code?])
+                             (parameterize ([fasl-compressed compress-code?]
+                                            [optimize-level (if unsafe?
+                                                                3
+                                                                (optimize-level))])
                                (call-getting-sfd-paths
                                 (lambda (pred)
                                   (compile-to-port s o #f #f #f (machine-type) #f pred 'omit-rtds)))))))
+  (define (expand/optimize* e unsafe?)
+    (call-with-system-wind (lambda ()
+                             (parameterize ([optimize-level (if unsafe?
+                                                                3
+                                                                (optimize-level))])
+                               (#%expand/optimize e)))))
 
   (define (call-getting-sfd-paths proc)
     (let ([sfd-paths '()])
@@ -267,7 +276,7 @@
   (define (eval/foreign e mode)
     (performance-region
      mode
-     (compile* e #f)))
+     (compile* e #t)))
 
   (define primitives (make-hasheq)) ; hash of sym -> known
   (define primitive-tables '())     ; list of (cons sym hash)
@@ -287,34 +296,34 @@
   (define (run-interpret s paths)
     (interpret-linklet s paths))
 
-  (define (compile-to-proc s paths format)
+  (define (compile-to-proc s paths format unsafe?)
     (if (eq? format 'interpret)
         (run-interpret s paths)
-        (let ([proc (compile* s)])
+        (let ([proc (compile* s unsafe?)])
           (if (null? paths)
               proc
               (#%apply proc paths)))))
 
   ;; returns code bytevector and sfd-paths vector
-  (define (compile*-to-bytevector s)
+  (define (compile*-to-bytevector s unsafe?)
     (let-values ([(o get) (open-bytevector-output-port)])
-      (let ([sfd-paths (compile-to-port* (list `(lambda () ,s)) o)])
+      (let ([sfd-paths (compile-to-port* (list `(lambda () ,s)) o unsafe?)])
         (values (get) sfd-paths))))
 
   ;; returns code bytevector and sfd-paths vector
-  (define (compile-to-bytevector s format)
+  (define (compile-to-bytevector s format unsafe?)
     (cond
       [(eq? format 'interpret)
        (let-values ([(o get) (open-bytevector-output-port)])
          (let ([sfd-paths (fasl-write-code* s o)])
            (values (get) sfd-paths)))]
-      [else (compile*-to-bytevector s)]))
+      [else (compile*-to-bytevector s unsafe?)]))
 
   ;; returns code bytevector and sfd-paths vector
-  (define (cross-compile-to-bytevector machine s format)
+  (define (cross-compile-to-bytevector machine s format unsafe?)
     (cond
       [(eq? format 'interpret) (cross-fasl-to-string machine s)]
-      [else (cross-compile machine s)]))
+      [else (cross-compile machine s unsafe?)]))
 
   (define (eval-from-bytevector bv paths sfd-paths format)
     (add-performance-memory! 'faslin-code (bytevector-length bv))
@@ -490,6 +499,7 @@
       (define check-result (check-compile-args 'compile-linklet import-keys get-import options))
       (define serializable? (#%memq 'serializable options))
       (define use-prompt? (#%memq 'use-prompt options))
+      (define unsafe? (and (#%memq 'unsafe options) #t))
       (define cross-machine (and serializable?
                                  (let ([m  (|#%app| current-compile-target-machine)])
                                    (and (not (eq? m (machine-type)))
@@ -524,7 +534,7 @@
                            (not (#%memq 'uninterned-literal options))
                            (eq? format 'interpret)
                            (|#%app| compile-allow-set!-undefined)
-                           #f ;; safe mode
+                           unsafe?
                            enforce-constant?
                            inline?
                            (not use-prompt?)
@@ -574,10 +584,10 @@
                                               (let ([expr (show lambda-on? "lambda" (correlated->annotation expr serializable? sfd-cache))])
                                                 (if serializable?
                                                     (let-values ([(code sfd-paths) (if cross-machine
-                                                                                       (cross-compile cross-machine expr)
-                                                                                       (compile*-to-bytevector expr))])
+                                                                                       (cross-compile cross-machine expr unsafe?)
+                                                                                       (compile*-to-bytevector expr unsafe?))])
                                                       (make-wrapped-code code sfd-paths arity-mask (extract-inferred-name expr name)))
-                                                    (compile* expr)))))])))]))
+                                                    (compile* expr unsafe?)))))])))]))
        (define-values (paths impl-lam/paths)
          (if serializable?
              (extract-paths-and-fasls-from-schemified-linklet impl-lam/jitified (eq? format 'compile))
@@ -595,7 +605,7 @@
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (when (and cp0-on? (eq? format 'compile))
-         (show "cp0" (#%expand/optimize (correlated->annotation impl-lam/paths))))
+         (show "cp0" (expand/optimize* (correlated->annotation impl-lam/paths) unsafe?)))
        (performance-region
         'compile-linklet
         ;; Create the linklet:
@@ -603,9 +613,9 @@
           (let-values ([(code sfd-paths)
                         (if serializable?
                             (if cross-machine
-                                (cross-compile-to-bytevector cross-machine impl format)
-                                (compile-to-bytevector impl format))
-                            (values (compile-to-proc impl paths format) '#()))])
+                                (cross-compile-to-bytevector cross-machine impl format unsafe?)
+                                (compile-to-bytevector impl format unsafe?))
+                            (values (compile-to-proc impl paths format unsafe?) '#()))])
             (when paths-on?
               (show "source paths" sfd-paths))
             (let ([lk (make-linklet code

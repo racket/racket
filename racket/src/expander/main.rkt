@@ -171,8 +171,10 @@
                          'variable-reference-constant?)])
        (declare-hash-based-module! '#%linklet-primitive linklet-primitives #:namespace ns
                                    #:primitive? #t
-                                   #:register-builtin? #t)
-       (declare-hash-based-module! '#%linklet-expander linklet-expander-primitives #:namespace ns)
+                                   #:register-builtin? #t
+                                   #:protected? #t)
+       (declare-hash-based-module! '#%linklet-expander linklet-expander-primitives #:namespace ns
+                                   #:protected? #t)
        (declare-reexporting-module! '#%linklet (list '#%linklet-primitive
                                                      '#%linklet-expander)
                                     #:namespace ns))

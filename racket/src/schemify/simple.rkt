@@ -34,6 +34,15 @@
     (define (returns n)
       (or (not result-arity)
           (eqv? n result-arity)))
+    (define (simple-begin? es)
+      (cached
+       (let loop ([es es])
+         (cond
+           [(null? (cdr es))
+            (simple? (car es) result-arity)]
+           [else
+            (and (simple? (car es) #f)
+                 (loop (cdr es)))]))))
     (match e
       [`(lambda . ,_) (returns 1)]
       [`(case-lambda . ,_) (returns 1)]
@@ -63,14 +72,9 @@
              (simple? body result-arity)))]
       [`(begin ,es ...)
        #:guard (not pure?)
-       (cached
-        (let loop ([es es])
-          (cond
-            [(null? (cdr es))
-             (simple? (car es) result-arity)]
-            [else
-             (and (simple? (car es) #f)
-                  (loop (cdr es)))])))]
+       (simple-begin? es)]
+      [`(begin-unsafe ,es ...)
+       (simple-begin? es)]
       [`(begin0 ,e0 ,es ...)
        (cached
         (and (simple? e0 result-arity)

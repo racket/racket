@@ -271,6 +271,8 @@
       [`(letrec* . ,_) (compile-letrec e env stack-depth stk-i tail? mutated)]
       [`(begin . ,vs)
        (compile-body vs env stack-depth stk-i tail? mutated)]
+      [`(begin-unsafe . ,vs)
+       (compile-body vs env stack-depth stk-i tail? mutated)]
       [`(begin0 ,e)
        (compile-expr e env stack-depth stk-i tail? mutated)]
       [`(begin0 ,e . ,vs)
@@ -476,6 +478,8 @@
       [`(begin . ,vs)
        (extract-list-mutated vs mutated)]
       [`(begin0 ,vs)
+       (extract-list-mutated vs mutated)]
+      [`(begin-unsafe ,vs)
        (extract-list-mutated vs mutated)]
       [`($value ,e)
        (extract-expr-mutated e mutated)]

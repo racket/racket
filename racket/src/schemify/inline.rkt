@@ -198,6 +198,8 @@
       `(begin . ,(clone-body exps env mutated))]
      [`(begin0 ,exps ...)
       `(begin0 . ,(clone-body exps env mutated))]
+     [`(begin-unsafe ,exps ...)
+      `(begin-unsafe . ,(clone-body exps env mutated))]
      [`(set! ,id ,rhs)
       `(set! ,id ,(clone-expr rhs env mutated))]
      [`(#%variable-reference) v]
@@ -303,6 +305,8 @@
      [`(begin ,exps ...)
       (body-needed-imports exps prim-knowns imports exports env needed)]
      [`(begin0 ,exps ...)
+      (body-needed-imports exps prim-knowns imports exports env needed)]
+     [`(begin-unsafe ,exps ...)
       (body-needed-imports exps prim-knowns imports exports env needed)]
      [`(set! ,id ,rhs)
       (define u (unwrap id))

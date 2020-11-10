@@ -74,6 +74,8 @@
                `(with-continuation-mark* ,mode ,(convert key) ,(convert val) ,(convert body))]
               [`(begin ,exps ...)
                `(begin . ,(convert-body exps))]
+              [`(begin-unsafe ,exps ...)
+               `(begin-unsafe . ,(convert-body exps))]
               [`(begin0 ,exps ...)
                `(begin0 . ,(convert-body exps))]
               [`(set! ,id ,rhs)
@@ -131,6 +133,8 @@
            (convert-any? val)
            (convert-any? body))]
       [`(begin ,exps ...)
+       (convert-any? exps)]
+      [`(begin-unsafe ,exps ...)
        (convert-any? exps)]
       [`(begin0 ,exps ...)
        (convert-any? exps)]

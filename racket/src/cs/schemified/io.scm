@@ -467,7 +467,11 @@
                (if (null? ls_0)
                  #f
                  (if (not (pair? ls_0))
-                   (raise-mismatch-error 'memq "not a proper list: " orig-l_0)
+                   (begin-unsafe
+                    (raise-mismatch-error
+                     'memq
+                     "not a proper list: "
+                     orig-l_0))
                    (if (eq? v_0 (car ls_0)) ls_0 (loop_0 (cdr ls_0))))))))))
         (loop_0 orig-l_0))))))
 (define memv
@@ -484,7 +488,11 @@
                (if (null? ls_0)
                  #f
                  (if (not (pair? ls_0))
-                   (raise-mismatch-error 'memv "not a proper list: " orig-l_0)
+                   (begin-unsafe
+                    (raise-mismatch-error
+                     'memv
+                     "not a proper list: "
+                     orig-l_0))
                    (if (eqv? v_0 (car ls_0)) ls_0 (loop_0 (cdr ls_0))))))))))
         (loop_0 orig-l_0))))))
 (define member
@@ -502,10 +510,11 @@
                       (if (null? ls_0)
                         #f
                         (if (not (pair? ls_0))
-                          (raise-mismatch-error
-                           'member
-                           "not a proper list: "
-                           orig-l_0)
+                          (begin-unsafe
+                           (raise-mismatch-error
+                            'member
+                            "not a proper list: "
+                            orig-l_0))
                           (if (equal? v_0 (car ls_0))
                             ls_0
                             (loop_0 (cdr ls_0))))))))))
@@ -535,10 +544,11 @@
                        (if (null? ls_0)
                          #f
                          (if (not (pair? ls_0))
-                           (raise-mismatch-error
-                            'member
-                            "not a proper list: "
-                            orig-l_1)
+                           (begin-unsafe
+                            (raise-mismatch-error
+                             'member
+                             "not a proper list: "
+                             orig-l_1))
                            (if (|#%app| eq?_0 v_1 (car ls_0))
                              ls_0
                              (loop_0 (cdr ls_0))))))))))
@@ -3136,327 +3146,442 @@
 (define RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE 28)
 (define RKTIO_ERROR_CONVERT_BAD_SEQUENCE 29)
 (define RKTIO_ERROR_CONVERT_PREMATURE_END 30)
-(define rktio_init (hash-ref rktio-table 'rktio_init))
-(define rktio_destroy (hash-ref rktio-table 'rktio_destroy))
-(define rktio_free (hash-ref rktio-table 'rktio_free))
-(define rktio_set_dll_path (hash-ref rktio-table 'rktio_set_dll_path))
-(define rktio_get_dll_path (hash-ref rktio-table 'rktio_get_dll_path))
-(define rktio_system_fd (hash-ref rktio-table 'rktio_system_fd))
-(define rktio_fd_system_fd (hash-ref rktio-table 'rktio_fd_system_fd))
+(define rktio_init (begin-unsafe (hash-ref rktio-table 'rktio_init)))
+(define rktio_destroy (begin-unsafe (hash-ref rktio-table 'rktio_destroy)))
+(define rktio_free (begin-unsafe (hash-ref rktio-table 'rktio_free)))
+(define rktio_set_dll_path
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_dll_path)))
+(define rktio_get_dll_path
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_dll_path)))
+(define rktio_system_fd (begin-unsafe (hash-ref rktio-table 'rktio_system_fd)))
+(define rktio_fd_system_fd
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_system_fd)))
 (define rktio_fd_is_regular_file
-  (hash-ref rktio-table 'rktio_fd_is_regular_file))
-(define rktio_fd_is_directory (hash-ref rktio-table 'rktio_fd_is_directory))
-(define rktio_fd_is_socket (hash-ref rktio-table 'rktio_fd_is_socket))
-(define rktio_fd_is_udp (hash-ref rktio-table 'rktio_fd_is_udp))
-(define rktio_fd_is_terminal (hash-ref rktio-table 'rktio_fd_is_terminal))
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_regular_file)))
+(define rktio_fd_is_directory
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_directory)))
+(define rktio_fd_is_socket
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_socket)))
+(define rktio_fd_is_udp (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_udp)))
+(define rktio_fd_is_terminal
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_terminal)))
 (define rktio_fd_is_text_converted
-  (hash-ref rktio-table 'rktio_fd_is_text_converted))
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_text_converted)))
 (define rktio_fd_is_pending_open
-  (hash-ref rktio-table 'rktio_fd_is_pending_open))
-(define rktio_fd_modes (hash-ref rktio-table 'rktio_fd_modes))
-(define rktio_open (hash-ref rktio-table 'rktio_open))
-(define rktio_close (hash-ref rktio-table 'rktio_close))
-(define rktio_close_noerr (hash-ref rktio-table 'rktio_close_noerr))
-(define rktio_dup (hash-ref rktio-table 'rktio_dup))
-(define rktio_forget (hash-ref rktio-table 'rktio_forget))
-(define rktio_std_fd (hash-ref rktio-table 'rktio_std_fd))
-(define rktio_create_console (hash-ref rktio-table 'rktio_create_console))
-(define rktio_read (hash-ref rktio-table 'rktio_read))
-(define rktio_write (hash-ref rktio-table 'rktio_write))
-(define rktio_read_converted (hash-ref rktio-table 'rktio_read_converted))
-(define rktio_read_in (hash-ref rktio-table 'rktio_read_in))
-(define rktio_write_in (hash-ref rktio-table 'rktio_write_in))
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_is_pending_open)))
+(define rktio_fd_modes (begin-unsafe (hash-ref rktio-table 'rktio_fd_modes)))
+(define rktio_open (begin-unsafe (hash-ref rktio-table 'rktio_open)))
+(define rktio_close (begin-unsafe (hash-ref rktio-table 'rktio_close)))
+(define rktio_close_noerr
+  (begin-unsafe (hash-ref rktio-table 'rktio_close_noerr)))
+(define rktio_dup (begin-unsafe (hash-ref rktio-table 'rktio_dup)))
+(define rktio_forget (begin-unsafe (hash-ref rktio-table 'rktio_forget)))
+(define rktio_std_fd (begin-unsafe (hash-ref rktio-table 'rktio_std_fd)))
+(define rktio_create_console
+  (begin-unsafe (hash-ref rktio-table 'rktio_create_console)))
+(define rktio_read (begin-unsafe (hash-ref rktio-table 'rktio_read)))
+(define rktio_write (begin-unsafe (hash-ref rktio-table 'rktio_write)))
+(define rktio_read_converted
+  (begin-unsafe (hash-ref rktio-table 'rktio_read_converted)))
+(define rktio_read_in (begin-unsafe (hash-ref rktio-table 'rktio_read_in)))
+(define rktio_write_in (begin-unsafe (hash-ref rktio-table 'rktio_write_in)))
 (define rktio_buffered_byte_count
-  (hash-ref rktio-table 'rktio_buffered_byte_count))
-(define rktio_poll_read_ready (hash-ref rktio-table 'rktio_poll_read_ready))
-(define rktio_poll_write_ready (hash-ref rktio-table 'rktio_poll_write_ready))
+  (begin-unsafe (hash-ref rktio-table 'rktio_buffered_byte_count)))
+(define rktio_poll_read_ready
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_read_ready)))
+(define rktio_poll_write_ready
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_write_ready)))
 (define rktio_poll_write_flushed
-  (hash-ref rktio-table 'rktio_poll_write_flushed))
-(define rktio_file_lock_try (hash-ref rktio-table 'rktio_file_lock_try))
-(define rktio_file_unlock (hash-ref rktio-table 'rktio_file_unlock))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_write_flushed)))
+(define rktio_file_lock_try
+  (begin-unsafe (hash-ref rktio-table 'rktio_file_lock_try)))
+(define rktio_file_unlock
+  (begin-unsafe (hash-ref rktio-table 'rktio_file_unlock)))
 (define rktio_set_file_position
-  (hash-ref rktio-table 'rktio_set_file_position))
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_file_position)))
 (define rktio_get_file_position
-  (hash-ref rktio-table 'rktio_get_file_position))
-(define rktio_set_file_size (hash-ref rktio-table 'rktio_set_file_size))
-(define rktio_fd_detach (hash-ref rktio-table 'rktio_fd_detach))
-(define rktio_fd_attach (hash-ref rktio-table 'rktio_fd_attach))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_file_position)))
+(define rktio_set_file_size
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_file_size)))
+(define rktio_fd_detach (begin-unsafe (hash-ref rktio-table 'rktio_fd_detach)))
+(define rktio_fd_attach (begin-unsafe (hash-ref rktio-table 'rktio_fd_attach)))
 (define rktio_fd_close_transfer
-  (hash-ref rktio-table 'rktio_fd_close_transfer))
-(define rktio_make_pipe (hash-ref rktio-table 'rktio_make_pipe))
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_close_transfer)))
+(define rktio_make_pipe (begin-unsafe (hash-ref rktio-table 'rktio_make_pipe)))
 (define rktio_start_addrinfo_lookup
-  (hash-ref rktio-table 'rktio_start_addrinfo_lookup))
-(define rktio_get_ipv4_family (hash-ref rktio-table 'rktio_get_ipv4_family))
+  (begin-unsafe (hash-ref rktio-table 'rktio_start_addrinfo_lookup)))
+(define rktio_get_ipv4_family
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_ipv4_family)))
 (define rktio_poll_addrinfo_lookup_ready
-  (hash-ref rktio-table 'rktio_poll_addrinfo_lookup_ready))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_addrinfo_lookup_ready)))
 (define rktio_addrinfo_lookup_get
-  (hash-ref rktio-table 'rktio_addrinfo_lookup_get))
+  (begin-unsafe (hash-ref rktio-table 'rktio_addrinfo_lookup_get)))
 (define rktio_addrinfo_lookup_stop
-  (hash-ref rktio-table 'rktio_addrinfo_lookup_stop))
-(define rktio_addrinfo_free (hash-ref rktio-table 'rktio_addrinfo_free))
-(define rktio_listen (hash-ref rktio-table 'rktio_listen))
-(define rktio_listen_stop (hash-ref rktio-table 'rktio_listen_stop))
+  (begin-unsafe (hash-ref rktio-table 'rktio_addrinfo_lookup_stop)))
+(define rktio_addrinfo_free
+  (begin-unsafe (hash-ref rktio-table 'rktio_addrinfo_free)))
+(define rktio_listen (begin-unsafe (hash-ref rktio-table 'rktio_listen)))
+(define rktio_listen_stop
+  (begin-unsafe (hash-ref rktio-table 'rktio_listen_stop)))
 (define rktio_poll_accept_ready
-  (hash-ref rktio-table 'rktio_poll_accept_ready))
-(define rktio_accept (hash-ref rktio-table 'rktio_accept))
-(define rktio_start_connect (hash-ref rktio-table 'rktio_start_connect))
-(define rktio_connect_finish (hash-ref rktio-table 'rktio_connect_finish))
-(define rktio_connect_stop (hash-ref rktio-table 'rktio_connect_stop))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_accept_ready)))
+(define rktio_accept (begin-unsafe (hash-ref rktio-table 'rktio_accept)))
+(define rktio_start_connect
+  (begin-unsafe (hash-ref rktio-table 'rktio_start_connect)))
+(define rktio_connect_finish
+  (begin-unsafe (hash-ref rktio-table 'rktio_connect_finish)))
+(define rktio_connect_stop
+  (begin-unsafe (hash-ref rktio-table 'rktio_connect_stop)))
 (define rktio_poll_connect_ready
-  (hash-ref rktio-table 'rktio_poll_connect_ready))
-(define rktio_connect_trying (hash-ref rktio-table 'rktio_connect_trying))
-(define rktio_socket_shutdown (hash-ref rktio-table 'rktio_socket_shutdown))
-(define rktio_udp_open (hash-ref rktio-table 'rktio_udp_open))
-(define rktio_udp_disconnect (hash-ref rktio-table 'rktio_udp_disconnect))
-(define rktio_udp_bind (hash-ref rktio-table 'rktio_udp_bind))
-(define rktio_udp_connect (hash-ref rktio-table 'rktio_udp_connect))
-(define rktio_udp_sendto (hash-ref rktio-table 'rktio_udp_sendto))
-(define rktio_udp_sendto_in (hash-ref rktio-table 'rktio_udp_sendto_in))
-(define rktio_udp_recvfrom (hash-ref rktio-table 'rktio_udp_recvfrom))
-(define rktio_udp_recvfrom_in (hash-ref rktio-table 'rktio_udp_recvfrom_in))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_connect_ready)))
+(define rktio_connect_trying
+  (begin-unsafe (hash-ref rktio-table 'rktio_connect_trying)))
+(define rktio_socket_shutdown
+  (begin-unsafe (hash-ref rktio-table 'rktio_socket_shutdown)))
+(define rktio_udp_open (begin-unsafe (hash-ref rktio-table 'rktio_udp_open)))
+(define rktio_udp_disconnect
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_disconnect)))
+(define rktio_udp_bind (begin-unsafe (hash-ref rktio-table 'rktio_udp_bind)))
+(define rktio_udp_connect
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_connect)))
+(define rktio_udp_sendto
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_sendto)))
+(define rktio_udp_sendto_in
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_sendto_in)))
+(define rktio_udp_recvfrom
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_recvfrom)))
+(define rktio_udp_recvfrom_in
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_recvfrom_in)))
 (define rktio_udp_set_receive_buffer_size
-  (hash-ref rktio-table 'rktio_udp_set_receive_buffer_size))
-(define rktio_udp_set_ttl (hash-ref rktio-table 'rktio_udp_set_ttl))
-(define rktio_udp_get_ttl (hash-ref rktio-table 'rktio_udp_get_ttl))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_set_receive_buffer_size)))
+(define rktio_udp_set_ttl
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_set_ttl)))
+(define rktio_udp_get_ttl
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_get_ttl)))
 (define rktio_udp_get_multicast_loopback
-  (hash-ref rktio-table 'rktio_udp_get_multicast_loopback))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_get_multicast_loopback)))
 (define rktio_udp_set_multicast_loopback
-  (hash-ref rktio-table 'rktio_udp_set_multicast_loopback))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_set_multicast_loopback)))
 (define rktio_udp_get_multicast_ttl
-  (hash-ref rktio-table 'rktio_udp_get_multicast_ttl))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_get_multicast_ttl)))
 (define rktio_udp_set_multicast_ttl
-  (hash-ref rktio-table 'rktio_udp_set_multicast_ttl))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_set_multicast_ttl)))
 (define rktio_udp_multicast_interface
-  (hash-ref rktio-table 'rktio_udp_multicast_interface))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_multicast_interface)))
 (define rktio_udp_set_multicast_interface
-  (hash-ref rktio-table 'rktio_udp_set_multicast_interface))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_set_multicast_interface)))
 (define rktio_udp_change_multicast_group
-  (hash-ref rktio-table 'rktio_udp_change_multicast_group))
-(define rktio_socket_address (hash-ref rktio-table 'rktio_socket_address))
+  (begin-unsafe (hash-ref rktio-table 'rktio_udp_change_multicast_group)))
+(define rktio_socket_address
+  (begin-unsafe (hash-ref rktio-table 'rktio_socket_address)))
 (define rktio_socket_peer_address
-  (hash-ref rktio-table 'rktio_socket_peer_address))
-(define rktio_listener_address (hash-ref rktio-table 'rktio_listener_address))
+  (begin-unsafe (hash-ref rktio-table 'rktio_socket_peer_address)))
+(define rktio_listener_address
+  (begin-unsafe (hash-ref rktio-table 'rktio_listener_address)))
 (define rktio_is_ok_envvar_name
-  (hash-ref rktio-table 'rktio_is_ok_envvar_name))
+  (begin-unsafe (hash-ref rktio-table 'rktio_is_ok_envvar_name)))
 (define rktio_are_envvar_names_case_insensitive
-  (hash-ref rktio-table 'rktio_are_envvar_names_case_insensitive))
-(define rktio_getenv (hash-ref rktio-table 'rktio_getenv))
-(define rktio_setenv (hash-ref rktio-table 'rktio_setenv))
-(define rktio_envvars (hash-ref rktio-table 'rktio_envvars))
-(define rktio_empty_envvars (hash-ref rktio-table 'rktio_empty_envvars))
-(define rktio_envvars_copy (hash-ref rktio-table 'rktio_envvars_copy))
-(define rktio_envvars_free (hash-ref rktio-table 'rktio_envvars_free))
-(define rktio_envvars_get (hash-ref rktio-table 'rktio_envvars_get))
-(define rktio_envvars_set (hash-ref rktio-table 'rktio_envvars_set))
-(define rktio_envvars_count (hash-ref rktio-table 'rktio_envvars_count))
-(define rktio_envvars_name_ref (hash-ref rktio-table 'rktio_envvars_name_ref))
+  (begin-unsafe
+   (hash-ref rktio-table 'rktio_are_envvar_names_case_insensitive)))
+(define rktio_getenv (begin-unsafe (hash-ref rktio-table 'rktio_getenv)))
+(define rktio_setenv (begin-unsafe (hash-ref rktio-table 'rktio_setenv)))
+(define rktio_envvars (begin-unsafe (hash-ref rktio-table 'rktio_envvars)))
+(define rktio_empty_envvars
+  (begin-unsafe (hash-ref rktio-table 'rktio_empty_envvars)))
+(define rktio_envvars_copy
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_copy)))
+(define rktio_envvars_free
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_free)))
+(define rktio_envvars_get
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_get)))
+(define rktio_envvars_set
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_set)))
+(define rktio_envvars_count
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_count)))
+(define rktio_envvars_name_ref
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_name_ref)))
 (define rktio_envvars_value_ref
-  (hash-ref rktio-table 'rktio_envvars_value_ref))
-(define rktio_process (hash-ref rktio-table 'rktio_process))
+  (begin-unsafe (hash-ref rktio-table 'rktio_envvars_value_ref)))
+(define rktio_process (begin-unsafe (hash-ref rktio-table 'rktio_process)))
 (define rktio_process_allowed_flags
-  (hash-ref rktio-table 'rktio_process_allowed_flags))
-(define rktio_process_pid (hash-ref rktio-table 'rktio_process_pid))
-(define rktio_process_kill (hash-ref rktio-table 'rktio_process_kill))
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_allowed_flags)))
+(define rktio_process_pid
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_pid)))
+(define rktio_process_kill
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_kill)))
 (define rktio_process_interrupt
-  (hash-ref rktio-table 'rktio_process_interrupt))
-(define rktio_process_forget (hash-ref rktio-table 'rktio_process_forget))
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_interrupt)))
+(define rktio_process_forget
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_forget)))
 (define rktio_poll_process_done
-  (hash-ref rktio-table 'rktio_poll_process_done))
-(define rktio_process_status (hash-ref rktio-table 'rktio_process_status))
-(define rktio_reap_processes (hash-ref rktio-table 'rktio_reap_processes))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_process_done)))
+(define rktio_process_status
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_status)))
+(define rktio_reap_processes
+  (begin-unsafe (hash-ref rktio-table 'rktio_reap_processes)))
 (define rktio_fs_change_properties
-  (hash-ref rktio-table 'rktio_fs_change_properties))
-(define rktio_fs_change (hash-ref rktio-table 'rktio_fs_change))
-(define rktio_fs_change_forget (hash-ref rktio-table 'rktio_fs_change_forget))
+  (begin-unsafe (hash-ref rktio-table 'rktio_fs_change_properties)))
+(define rktio_fs_change (begin-unsafe (hash-ref rktio-table 'rktio_fs_change)))
+(define rktio_fs_change_forget
+  (begin-unsafe (hash-ref rktio-table 'rktio_fs_change_forget)))
 (define rktio_poll_fs_change_ready
-  (hash-ref rktio-table 'rktio_poll_fs_change_ready))
-(define rktio_make_poll_set (hash-ref rktio-table 'rktio_make_poll_set))
-(define rktio_poll_set_forget (hash-ref rktio-table 'rktio_poll_set_forget))
-(define rktio_poll_add (hash-ref rktio-table 'rktio_poll_add))
-(define rktio_poll_add_accept (hash-ref rktio-table 'rktio_poll_add_accept))
-(define rktio_poll_add_connect (hash-ref rktio-table 'rktio_poll_add_connect))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_fs_change_ready)))
+(define rktio_make_poll_set
+  (begin-unsafe (hash-ref rktio-table 'rktio_make_poll_set)))
+(define rktio_poll_set_forget
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_set_forget)))
+(define rktio_poll_add (begin-unsafe (hash-ref rktio-table 'rktio_poll_add)))
+(define rktio_poll_add_accept
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_add_accept)))
+(define rktio_poll_add_connect
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_add_connect)))
 (define rktio_poll_add_addrinfo_lookup
-  (hash-ref rktio-table 'rktio_poll_add_addrinfo_lookup))
-(define rktio_poll_add_process (hash-ref rktio-table 'rktio_poll_add_process))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_add_addrinfo_lookup)))
+(define rktio_poll_add_process
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_add_process)))
 (define rktio_poll_add_fs_change
-  (hash-ref rktio-table 'rktio_poll_add_fs_change))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_add_fs_change)))
 (define rktio_poll_set_add_nosleep
-  (hash-ref rktio-table 'rktio_poll_set_add_nosleep))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_set_add_nosleep)))
 (define rktio_poll_set_add_handle
-  (hash-ref rktio-table 'rktio_poll_set_add_handle))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_set_add_handle)))
 (define rktio_poll_set_add_eventmask
-  (hash-ref rktio-table 'rktio_poll_set_add_eventmask))
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_set_add_eventmask)))
 (define rkio_reset_sleep_backoff
-  (hash-ref rktio-table 'rkio_reset_sleep_backoff))
-(define rktio_ltps_open (hash-ref rktio-table 'rktio_ltps_open))
-(define rktio_ltps_close (hash-ref rktio-table 'rktio_ltps_close))
-(define rktio_ltps_add (hash-ref rktio-table 'rktio_ltps_add))
+  (begin-unsafe (hash-ref rktio-table 'rkio_reset_sleep_backoff)))
+(define rktio_ltps_open (begin-unsafe (hash-ref rktio-table 'rktio_ltps_open)))
+(define rktio_ltps_close
+  (begin-unsafe (hash-ref rktio-table 'rktio_ltps_close)))
+(define rktio_ltps_add (begin-unsafe (hash-ref rktio-table 'rktio_ltps_add)))
 (define rktio_ltps_handle_set_data
-  (hash-ref rktio-table 'rktio_ltps_handle_set_data))
+  (begin-unsafe (hash-ref rktio-table 'rktio_ltps_handle_set_data)))
 (define rktio_ltps_handle_get_data
-  (hash-ref rktio-table 'rktio_ltps_handle_get_data))
-(define rktio_ltps_remove_all (hash-ref rktio-table 'rktio_ltps_remove_all))
-(define rktio_ltps_poll (hash-ref rktio-table 'rktio_ltps_poll))
+  (begin-unsafe (hash-ref rktio-table 'rktio_ltps_handle_get_data)))
+(define rktio_ltps_remove_all
+  (begin-unsafe (hash-ref rktio-table 'rktio_ltps_remove_all)))
+(define rktio_ltps_poll (begin-unsafe (hash-ref rktio-table 'rktio_ltps_poll)))
 (define rktio_ltps_get_signaled_handle
-  (hash-ref rktio-table 'rktio_ltps_get_signaled_handle))
+  (begin-unsafe (hash-ref rktio-table 'rktio_ltps_get_signaled_handle)))
 (define rktio_ltps_handle_set_auto
-  (hash-ref rktio-table 'rktio_ltps_handle_set_auto))
-(define rktio_sleep (hash-ref rktio-table 'rktio_sleep))
-(define rktio_start_sleep (hash-ref rktio-table 'rktio_start_sleep))
-(define rktio_end_sleep (hash-ref rktio-table 'rktio_end_sleep))
-(define rktio_file_exists (hash-ref rktio-table 'rktio_file_exists))
-(define rktio_directory_exists (hash-ref rktio-table 'rktio_directory_exists))
-(define rktio_link_exists (hash-ref rktio-table 'rktio_link_exists))
-(define rktio_is_regular_file (hash-ref rktio-table 'rktio_is_regular_file))
-(define rktio_file_type (hash-ref rktio-table 'rktio_file_type))
-(define rktio_delete_file (hash-ref rktio-table 'rktio_delete_file))
-(define rktio_rename_file (hash-ref rktio-table 'rktio_rename_file))
+  (begin-unsafe (hash-ref rktio-table 'rktio_ltps_handle_set_auto)))
+(define rktio_sleep (begin-unsafe (hash-ref rktio-table 'rktio_sleep)))
+(define rktio_start_sleep
+  (begin-unsafe (hash-ref rktio-table 'rktio_start_sleep)))
+(define rktio_end_sleep (begin-unsafe (hash-ref rktio-table 'rktio_end_sleep)))
+(define rktio_file_exists
+  (begin-unsafe (hash-ref rktio-table 'rktio_file_exists)))
+(define rktio_directory_exists
+  (begin-unsafe (hash-ref rktio-table 'rktio_directory_exists)))
+(define rktio_link_exists
+  (begin-unsafe (hash-ref rktio-table 'rktio_link_exists)))
+(define rktio_is_regular_file
+  (begin-unsafe (hash-ref rktio-table 'rktio_is_regular_file)))
+(define rktio_file_type (begin-unsafe (hash-ref rktio-table 'rktio_file_type)))
+(define rktio_delete_file
+  (begin-unsafe (hash-ref rktio-table 'rktio_delete_file)))
+(define rktio_rename_file
+  (begin-unsafe (hash-ref rktio-table 'rktio_rename_file)))
 (define rktio_get_current_directory
-  (hash-ref rktio-table 'rktio_get_current_directory))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_current_directory)))
 (define rktio_set_current_directory
-  (hash-ref rktio-table 'rktio_set_current_directory))
-(define rktio_make_directory (hash-ref rktio-table 'rktio_make_directory))
-(define rktio_delete_directory (hash-ref rktio-table 'rktio_delete_directory))
-(define rktio_readlink (hash-ref rktio-table 'rktio_readlink))
-(define rktio_make_link (hash-ref rktio-table 'rktio_make_link))
-(define rktio_file_size (hash-ref rktio-table 'rktio_file_size))
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_current_directory)))
+(define rktio_make_directory
+  (begin-unsafe (hash-ref rktio-table 'rktio_make_directory)))
+(define rktio_delete_directory
+  (begin-unsafe (hash-ref rktio-table 'rktio_delete_directory)))
+(define rktio_readlink (begin-unsafe (hash-ref rktio-table 'rktio_readlink)))
+(define rktio_make_link (begin-unsafe (hash-ref rktio-table 'rktio_make_link)))
+(define rktio_file_size (begin-unsafe (hash-ref rktio-table 'rktio_file_size)))
 (define rktio_get_file_modify_seconds
-  (hash-ref rktio-table 'rktio_get_file_modify_seconds))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_file_modify_seconds)))
 (define rktio_set_file_modify_seconds
-  (hash-ref rktio-table 'rktio_set_file_modify_seconds))
-(define rktio_fd_identity (hash-ref rktio-table 'rktio_fd_identity))
-(define rktio_path_identity (hash-ref rktio-table 'rktio_path_identity))
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_file_modify_seconds)))
+(define rktio_fd_identity
+  (begin-unsafe (hash-ref rktio-table 'rktio_fd_identity)))
+(define rktio_path_identity
+  (begin-unsafe (hash-ref rktio-table 'rktio_path_identity)))
 (define rktio_get_file_or_directory_permissions
-  (hash-ref rktio-table 'rktio_get_file_or_directory_permissions))
+  (begin-unsafe
+   (hash-ref rktio-table 'rktio_get_file_or_directory_permissions)))
 (define rktio_set_file_or_directory_permissions
-  (hash-ref rktio-table 'rktio_set_file_or_directory_permissions))
+  (begin-unsafe
+   (hash-ref rktio-table 'rktio_set_file_or_directory_permissions)))
 (define rktio_directory_list_start
-  (hash-ref rktio-table 'rktio_directory_list_start))
+  (begin-unsafe (hash-ref rktio-table 'rktio_directory_list_start)))
 (define rktio_directory_list_step
-  (hash-ref rktio-table 'rktio_directory_list_step))
+  (begin-unsafe (hash-ref rktio-table 'rktio_directory_list_step)))
 (define rktio_directory_list_stop
-  (hash-ref rktio-table 'rktio_directory_list_stop))
-(define rktio_filesystem_roots (hash-ref rktio-table 'rktio_filesystem_roots))
-(define rktio_copy_file_start (hash-ref rktio-table 'rktio_copy_file_start))
+  (begin-unsafe (hash-ref rktio-table 'rktio_directory_list_stop)))
+(define rktio_filesystem_roots
+  (begin-unsafe (hash-ref rktio-table 'rktio_filesystem_roots)))
+(define rktio_copy_file_start
+  (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_start)))
 (define rktio_copy_file_is_done
-  (hash-ref rktio-table 'rktio_copy_file_is_done))
-(define rktio_copy_file_step (hash-ref rktio-table 'rktio_copy_file_step))
+  (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_is_done)))
+(define rktio_copy_file_step
+  (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_step)))
 (define rktio_copy_file_finish_permissions
-  (hash-ref rktio-table 'rktio_copy_file_finish_permissions))
-(define rktio_copy_file_stop (hash-ref rktio-table 'rktio_copy_file_stop))
-(define rktio_system_path (hash-ref rktio-table 'rktio_system_path))
+  (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_finish_permissions)))
+(define rktio_copy_file_stop
+  (begin-unsafe (hash-ref rktio-table 'rktio_copy_file_stop)))
+(define rktio_system_path
+  (begin-unsafe (hash-ref rktio-table 'rktio_system_path)))
 (define rktio_expand_user_tilde
-  (hash-ref rktio-table 'rktio_expand_user_tilde))
+  (begin-unsafe (hash-ref rktio-table 'rktio_expand_user_tilde)))
 (define rktio_get_signal_handle
-  (hash-ref rktio-table 'rktio_get_signal_handle))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_signal_handle)))
 (define rktio_signal_received_at
-  (hash-ref rktio-table 'rktio_signal_received_at))
-(define rktio_signal_received (hash-ref rktio-table 'rktio_signal_received))
+  (begin-unsafe (hash-ref rktio-table 'rktio_signal_received_at)))
+(define rktio_signal_received
+  (begin-unsafe (hash-ref rktio-table 'rktio_signal_received)))
 (define rktio_wait_until_signal_received
-  (hash-ref rktio-table 'rktio_wait_until_signal_received))
+  (begin-unsafe (hash-ref rktio-table 'rktio_wait_until_signal_received)))
 (define rktio_flush_signals_received
-  (hash-ref rktio-table 'rktio_flush_signals_received))
+  (begin-unsafe (hash-ref rktio-table 'rktio_flush_signals_received)))
 (define rktio_install_os_signal_handler
-  (hash-ref rktio-table 'rktio_install_os_signal_handler))
-(define rktio_poll_os_signal (hash-ref rktio-table 'rktio_poll_os_signal))
-(define rktio_get_milliseconds (hash-ref rktio-table 'rktio_get_milliseconds))
+  (begin-unsafe (hash-ref rktio-table 'rktio_install_os_signal_handler)))
+(define rktio_poll_os_signal
+  (begin-unsafe (hash-ref rktio-table 'rktio_poll_os_signal)))
+(define rktio_get_milliseconds
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_milliseconds)))
 (define rktio_get_inexact_milliseconds
-  (hash-ref rktio-table 'rktio_get_inexact_milliseconds))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_inexact_milliseconds)))
 (define rktio_get_process_milliseconds
-  (hash-ref rktio-table 'rktio_get_process_milliseconds))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_process_milliseconds)))
 (define rktio_get_process_children_milliseconds
-  (hash-ref rktio-table 'rktio_get_process_children_milliseconds))
-(define rktio_get_seconds (hash-ref rktio-table 'rktio_get_seconds))
-(define rktio_seconds_to_date (hash-ref rktio-table 'rktio_seconds_to_date))
-(define rktio_shell_execute (hash-ref rktio-table 'rktio_shell_execute))
+  (begin-unsafe
+   (hash-ref rktio-table 'rktio_get_process_children_milliseconds)))
+(define rktio_get_seconds
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_seconds)))
+(define rktio_seconds_to_date
+  (begin-unsafe (hash-ref rktio-table 'rktio_seconds_to_date)))
+(define rktio_shell_execute
+  (begin-unsafe (hash-ref rktio-table 'rktio_shell_execute)))
 (define rktio_path_to_wide_path
-  (hash-ref rktio-table 'rktio_path_to_wide_path))
+  (begin-unsafe (hash-ref rktio-table 'rktio_path_to_wide_path)))
 (define rktio_wide_path_to_path
-  (hash-ref rktio-table 'rktio_wide_path_to_path))
-(define rktio_processor_count (hash-ref rktio-table 'rktio_processor_count))
-(define rktio_syslog (hash-ref rktio-table 'rktio_syslog))
+  (begin-unsafe (hash-ref rktio-table 'rktio_wide_path_to_path)))
+(define rktio_processor_count
+  (begin-unsafe (hash-ref rktio-table 'rktio_processor_count)))
+(define rktio_syslog (begin-unsafe (hash-ref rktio-table 'rktio_syslog)))
 (define rktio_convert_properties
-  (hash-ref rktio-table 'rktio_convert_properties))
-(define rktio_converter_open (hash-ref rktio-table 'rktio_converter_open))
-(define rktio_converter_close (hash-ref rktio-table 'rktio_converter_close))
-(define rktio_convert (hash-ref rktio-table 'rktio_convert))
-(define rktio_convert_in (hash-ref rktio-table 'rktio_convert_in))
-(define rktio_convert_reset (hash-ref rktio-table 'rktio_convert_reset))
-(define rktio_locale_recase (hash-ref rktio-table 'rktio_locale_recase))
-(define rktio_recase_utf16 (hash-ref rktio-table 'rktio_recase_utf16))
-(define rktio_locale_strcoll (hash-ref rktio-table 'rktio_locale_strcoll))
-(define rktio_strcoll_utf16 (hash-ref rktio-table 'rktio_strcoll_utf16))
-(define rktio_locale_encoding (hash-ref rktio-table 'rktio_locale_encoding))
-(define rktio_set_locale (hash-ref rktio-table 'rktio_set_locale))
+  (begin-unsafe (hash-ref rktio-table 'rktio_convert_properties)))
+(define rktio_converter_open
+  (begin-unsafe (hash-ref rktio-table 'rktio_converter_open)))
+(define rktio_converter_close
+  (begin-unsafe (hash-ref rktio-table 'rktio_converter_close)))
+(define rktio_convert (begin-unsafe (hash-ref rktio-table 'rktio_convert)))
+(define rktio_convert_in
+  (begin-unsafe (hash-ref rktio-table 'rktio_convert_in)))
+(define rktio_convert_reset
+  (begin-unsafe (hash-ref rktio-table 'rktio_convert_reset)))
+(define rktio_locale_recase
+  (begin-unsafe (hash-ref rktio-table 'rktio_locale_recase)))
+(define rktio_recase_utf16
+  (begin-unsafe (hash-ref rktio-table 'rktio_recase_utf16)))
+(define rktio_locale_strcoll
+  (begin-unsafe (hash-ref rktio-table 'rktio_locale_strcoll)))
+(define rktio_strcoll_utf16
+  (begin-unsafe (hash-ref rktio-table 'rktio_strcoll_utf16)))
+(define rktio_locale_encoding
+  (begin-unsafe (hash-ref rktio-table 'rktio_locale_encoding)))
+(define rktio_set_locale
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_locale)))
 (define rktio_set_default_locale
-  (hash-ref rktio-table 'rktio_set_default_locale))
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_default_locale)))
 (define rktio_push_c_numeric_locale
-  (hash-ref rktio-table 'rktio_push_c_numeric_locale))
+  (begin-unsafe (hash-ref rktio-table 'rktio_push_c_numeric_locale)))
 (define rktio_pop_c_numeric_locale
-  (hash-ref rktio-table 'rktio_pop_c_numeric_locale))
+  (begin-unsafe (hash-ref rktio-table 'rktio_pop_c_numeric_locale)))
 (define rktio_system_language_country
-  (hash-ref rktio-table 'rktio_system_language_country))
-(define rktio_sha1_init (hash-ref rktio-table 'rktio_sha1_init))
-(define rktio_sha1_update (hash-ref rktio-table 'rktio_sha1_update))
-(define rktio_sha1_final (hash-ref rktio-table 'rktio_sha1_final))
-(define rktio_sha2_init (hash-ref rktio-table 'rktio_sha2_init))
-(define rktio_sha2_update (hash-ref rktio-table 'rktio_sha2_update))
-(define rktio_sha2_final (hash-ref rktio-table 'rktio_sha2_final))
-(define rktio_dll_open (hash-ref rktio-table 'rktio_dll_open))
-(define rktio_dll_find_object (hash-ref rktio-table 'rktio_dll_find_object))
-(define rktio_dll_close (hash-ref rktio-table 'rktio_dll_close))
-(define rktio_dll_get_error (hash-ref rktio-table 'rktio_dll_get_error))
-(define rktio_set_dll_procs (hash-ref rktio-table 'rktio_set_dll_procs))
+  (begin-unsafe (hash-ref rktio-table 'rktio_system_language_country)))
+(define rktio_sha1_init (begin-unsafe (hash-ref rktio-table 'rktio_sha1_init)))
+(define rktio_sha1_update
+  (begin-unsafe (hash-ref rktio-table 'rktio_sha1_update)))
+(define rktio_sha1_final
+  (begin-unsafe (hash-ref rktio-table 'rktio_sha1_final)))
+(define rktio_sha2_init (begin-unsafe (hash-ref rktio-table 'rktio_sha2_init)))
+(define rktio_sha2_update
+  (begin-unsafe (hash-ref rktio-table 'rktio_sha2_update)))
+(define rktio_sha2_final
+  (begin-unsafe (hash-ref rktio-table 'rktio_sha2_final)))
+(define rktio_dll_open (begin-unsafe (hash-ref rktio-table 'rktio_dll_open)))
+(define rktio_dll_find_object
+  (begin-unsafe (hash-ref rktio-table 'rktio_dll_find_object)))
+(define rktio_dll_close (begin-unsafe (hash-ref rktio-table 'rktio_dll_close)))
+(define rktio_dll_get_error
+  (begin-unsafe (hash-ref rktio-table 'rktio_dll_get_error)))
+(define rktio_set_dll_procs
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_dll_procs)))
 (define rktio_get_last_error_kind
-  (hash-ref rktio-table 'rktio_get_last_error_kind))
-(define rktio_get_last_error (hash-ref rktio-table 'rktio_get_last_error))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_last_error_kind)))
+(define rktio_get_last_error
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_last_error)))
 (define rktio_get_last_error_step
-  (hash-ref rktio-table 'rktio_get_last_error_step))
-(define rktio_set_last_error (hash-ref rktio-table 'rktio_set_last_error))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_last_error_step)))
+(define rktio_set_last_error
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_last_error)))
 (define rktio_set_last_error_step
-  (hash-ref rktio-table 'rktio_set_last_error_step))
-(define rktio_remap_last_error (hash-ref rktio-table 'rktio_remap_last_error))
+  (begin-unsafe (hash-ref rktio-table 'rktio_set_last_error_step)))
+(define rktio_remap_last_error
+  (begin-unsafe (hash-ref rktio-table 'rktio_remap_last_error)))
 (define rktio_get_last_error_string
-  (hash-ref rktio-table 'rktio_get_last_error_string))
-(define rktio_get_error_string (hash-ref rktio-table 'rktio_get_error_string))
-(define rktio_filesize_ref (hash-ref rktio-table 'rktio_filesize_ref))
-(define rktio_timestamp_ref (hash-ref rktio-table 'rktio_timestamp_ref))
-(define rktio_is_timestamp (hash-ref rktio-table 'rktio_is_timestamp))
-(define rktio_recv_length_ref (hash-ref rktio-table 'rktio_recv_length_ref))
-(define rktio_recv_address_ref (hash-ref rktio-table 'rktio_recv_address_ref))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_last_error_string)))
+(define rktio_get_error_string
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_error_string)))
+(define rktio_filesize_ref
+  (begin-unsafe (hash-ref rktio-table 'rktio_filesize_ref)))
+(define rktio_timestamp_ref
+  (begin-unsafe (hash-ref rktio-table 'rktio_timestamp_ref)))
+(define rktio_is_timestamp
+  (begin-unsafe (hash-ref rktio-table 'rktio_is_timestamp)))
+(define rktio_recv_length_ref
+  (begin-unsafe (hash-ref rktio-table 'rktio_recv_length_ref)))
+(define rktio_recv_address_ref
+  (begin-unsafe (hash-ref rktio-table 'rktio_recv_address_ref)))
 (define rktio_identity_to_vector
-  (hash-ref rktio-table 'rktio_identity_to_vector))
+  (begin-unsafe (hash-ref rktio-table 'rktio_identity_to_vector)))
 (define rktio_convert_result_to_vector
-  (hash-ref rktio-table 'rktio_convert_result_to_vector))
-(define rktio_to_bytes (hash-ref rktio-table 'rktio_to_bytes))
-(define rktio_to_bytes_list (hash-ref rktio-table 'rktio_to_bytes_list))
-(define rktio_to_shorts (hash-ref rktio-table 'rktio_to_shorts))
-(define rktio_NULL (hash-ref rktio-table 'rktio_NULL))
+  (begin-unsafe (hash-ref rktio-table 'rktio_convert_result_to_vector)))
+(define rktio_to_bytes (begin-unsafe (hash-ref rktio-table 'rktio_to_bytes)))
+(define rktio_to_bytes_list
+  (begin-unsafe (hash-ref rktio-table 'rktio_to_bytes_list)))
+(define rktio_to_shorts (begin-unsafe (hash-ref rktio-table 'rktio_to_shorts)))
+(define rktio_NULL (begin-unsafe (hash-ref rktio-table 'rktio_NULL)))
 (define rktio_do_install_os_signal_handler
-  (hash-ref rktio-table 'rktio_do_install_os_signal_handler))
+  (begin-unsafe (hash-ref rktio-table 'rktio_do_install_os_signal_handler)))
 (define rktio_get_ctl_c_handler
-  (hash-ref rktio-table 'rktio_get_ctl_c_handler))
-(define rktio_from_bytes_list (hash-ref rktio-table 'rktio_from_bytes_list))
-(define rktio_free_bytes_list (hash-ref rktio-table 'rktio_free_bytes_list))
-(define rktio_make_sha1_ctx (hash-ref rktio-table 'rktio_make_sha1_ctx))
-(define rktio_make_sha2_ctx (hash-ref rktio-table 'rktio_make_sha2_ctx))
+  (begin-unsafe (hash-ref rktio-table 'rktio_get_ctl_c_handler)))
+(define rktio_from_bytes_list
+  (begin-unsafe (hash-ref rktio-table 'rktio_from_bytes_list)))
+(define rktio_free_bytes_list
+  (begin-unsafe (hash-ref rktio-table 'rktio_free_bytes_list)))
+(define rktio_make_sha1_ctx
+  (begin-unsafe (hash-ref rktio-table 'rktio_make_sha1_ctx)))
+(define rktio_make_sha2_ctx
+  (begin-unsafe (hash-ref rktio-table 'rktio_make_sha2_ctx)))
 (define rktio_process_result_stdin_fd
-  (hash-ref rktio-table 'rktio_process_result_stdin_fd))
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_result_stdin_fd)))
 (define rktio_process_result_stdout_fd
-  (hash-ref rktio-table 'rktio_process_result_stdout_fd))
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_result_stdout_fd)))
 (define rktio_process_result_stderr_fd
-  (hash-ref rktio-table 'rktio_process_result_stderr_fd))
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_result_stderr_fd)))
 (define rktio_process_result_process
-  (hash-ref rktio-table 'rktio_process_result_process))
-(define rktio_status_running (hash-ref rktio-table 'rktio_status_running))
-(define rktio_status_result (hash-ref rktio-table 'rktio_status_result))
-(define rktio_pipe_results (hash-ref rktio-table 'rktio_pipe_results))
+  (begin-unsafe (hash-ref rktio-table 'rktio_process_result_process)))
+(define rktio_status_running
+  (begin-unsafe (hash-ref rktio-table 'rktio_status_running)))
+(define rktio_status_result
+  (begin-unsafe (hash-ref rktio-table 'rktio_status_result)))
+(define rktio_pipe_results
+  (begin-unsafe (hash-ref rktio-table 'rktio_pipe_results)))
 (define rktio-error? vector?)
 (define rktio-errkind (lambda (v_0) (vector-ref v_0 0)))
 (define rktio-errno (lambda (v_0) (vector-ref v_0 1)))
 (define racket-error?
   (lambda (v_0 errno_0)
-    (if (eqv? (vector-ref v_0 0) 3) (eqv? (vector-ref v_0 1) errno_0) #f)))
+    (if (eqv? (begin-unsafe (vector-ref v_0 0)) 3)
+      (eqv? (begin-unsafe (vector-ref v_0 1)) errno_0)
+      #f)))
 (define cell.1 (unsafe-make-place-local (|#%app| rktio_init)))
 (define rktio-place-init!
   (lambda () (unsafe-place-local-set! cell.1 (|#%app| rktio_init))))
@@ -5859,11 +5984,12 @@
              or-part_0
              (if just-length?5_0
                #f
-               (raise-arguments-error
-                who7_0
-                "byte string is not a well-formed UTF-8 encoding"
-                "byte string"
-                (subbytes bstr8_0 start10_0 end11_0))))))))))
+               (begin-unsafe
+                (raise-arguments-error
+                 who7_0
+                 "byte string is not a well-formed UTF-8 encoding"
+                 "byte string"
+                 (subbytes bstr8_0 start10_0 end11_0)))))))))))
 (define 1/bytes->string/utf-8
   (let ((bytes->string/utf-8_0
          (|#%name|
@@ -6307,12 +6433,12 @@
     (begin
       (unsafe-start-atomic)
       (begin
-        (let ((app_0 (vector-ref err_0 0)))
+        (let ((app_0 (begin-unsafe (vector-ref err_0 0))))
           (|#%app|
            rktio_set_last_error
            (unsafe-place-local-ref cell.1)
            app_0
-           (vector-ref err_0 1)))
+           (begin-unsafe (vector-ref err_0 1))))
         (begin
           (|#%app| rktio_remap_last_error (unsafe-place-local-ref cell.1))
           (let ((errno_0
@@ -6339,18 +6465,18 @@
     (begin
       (unsafe-start-atomic)
       (let ((p_0
-             (let ((app_0 (vector-ref err_0 0)))
+             (let ((app_0 (begin-unsafe (vector-ref err_0 0))))
                (|#%app|
                 rktio_get_error_string
                 (unsafe-place-local-ref cell.1)
                 app_0
-                (vector-ref err_0 1)))))
+                (begin-unsafe (vector-ref err_0 1))))))
         (let ((system-msg_0 (|#%app| rktio_to_bytes p_0)))
           (begin
             (unsafe-end-atomic)
             (let ((app_0 (1/bytes->string/utf-8 system-msg_0 '#\x3f)))
               (let ((app_1
-                     (let ((kind_0 (vector-ref err_0 0)))
+                     (let ((kind_0 (begin-unsafe (vector-ref err_0 0))))
                        (if (eqv? kind_0 0)
                          "errno"
                          (if (eqv? kind_0 1)
@@ -6361,7 +6487,7 @@
                  "; "
                  app_1
                  "="
-                 (number->string (vector-ref err_0 1)))))))))))
+                 (number->string (begin-unsafe (vector-ref err_0 1))))))))))))
 (define raise-rktio-error
   (lambda (who_0 err_0 base-msg_0)
     (raise
@@ -6371,9 +6497,10 @@
   (lambda (v_0 base-msg_0)
     (begin
       (if (vector? v_0)
-        (raise
-         (let ((app_0 (format-rktio-message #f v_0 base-msg_0)))
-           (|#%app| exn:fail app_0 (current-continuation-marks))))
+        (begin-unsafe
+         (raise
+          (let ((app_0 (format-rktio-message #f v_0 base-msg_0)))
+            (|#%app| exn:fail app_0 (current-continuation-marks)))))
         (void))
       v_0)))
 (define raise-filesystem-error
@@ -6394,16 +6521,16 @@
             exn:fail:filesystem:exists
             msg_0
             (current-continuation-marks))
-           (if (not (eq? (vector-ref err_0 0) 3))
+           (if (not (eq? (begin-unsafe (vector-ref err_0 0)) 3))
              (let ((app_0 (current-continuation-marks)))
                (|#%app|
                 exn:fail:filesystem:errno
                 msg_0
                 app_0
-                (let ((app_1 (vector-ref err_0 1)))
+                (let ((app_1 (begin-unsafe (vector-ref err_0 1))))
                   (cons
                    app_1
-                   (let ((kind_0 (vector-ref err_0 0)))
+                   (let ((kind_0 (begin-unsafe (vector-ref err_0 0))))
                      (if (eqv? kind_0 0)
                        'posix
                        (if (eqv? kind_0 1)
@@ -7531,11 +7658,12 @@
                                                                            req_0))
                                                                          (unsafe-end-atomic))
                                                                        (let ((app_2
-                                                                              (do-remove
-                                                                               'remq
-                                                                               req_0
-                                                                               live-reqs_0
-                                                                               eq?)))
+                                                                              (begin-unsafe
+                                                                               (do-remove
+                                                                                'remq
+                                                                                req_0
+                                                                                live-reqs_0
+                                                                                eq?))))
                                                                          (loop_0
                                                                           commit-ch_0
                                                                           pause-ch_0
@@ -7583,11 +7711,12 @@
                                                                   commit-ch_0
                                                                   pause-ch_0
                                                                   live-reqs_0
-                                                                  (do-remove
-                                                                   'remq
-                                                                   resp_0
-                                                                   live-resps_0
-                                                                   eq?))))
+                                                                  (begin-unsafe
+                                                                   (do-remove
+                                                                    'remq
+                                                                    resp_0
+                                                                    live-resps_0
+                                                                    eq?)))))
                                                               fold-var_0)))
                                                         (values fold-var_1))))
                                                  (for-loop_0
@@ -8402,6 +8531,7 @@
                  copy?399_0)
           (begin
             (begin
+              (begin-unsafe (void))
               (|#%app| temp12.1 this-id_0)
               (let ((o_0 (pipe-input-port-d this-id_0)))
                 (if (temp5.1$2 o_0)
@@ -8499,7 +8629,7 @@
                                  (make-semaphore))
                                 (let ((out_0
                                        (let ((r_0 (pipe-data-output-ref o_0)))
-                                         (weak-box-value r_0))))
+                                         (begin-unsafe (weak-box-value r_0)))))
                                   (if out_0
                                     (|#%app| temp19.1$1 out_0)
                                     (void)))))
@@ -8557,6 +8687,7 @@
         (lambda (this-id_0 work-done!504_0)
           (begin
             (begin
+              (begin-unsafe (void))
               (let ((o_0 (pipe-input-port-d this-id_0)))
                 (let ((or-part_0 (not (pipe-data-output-ref o_0))))
                   (if or-part_0
@@ -8581,6 +8712,7 @@
         (lambda (this-id_0 amt594_0 progress-evt595_0 ext-evt596_0 finish597_0)
           (begin
             (begin
+              (begin-unsafe (void))
               (if (zero? amt594_0)
                 (temp1.1 this-id_0)
                 (temp3.1
@@ -8857,7 +8989,7 @@
                                          (fx- (pipe-data-len o_0) 1)))))
                                 (let ((in_0
                                        (let ((r_0 (pipe-data-input-ref o_0)))
-                                         (weak-box-value r_0))))
+                                         (begin-unsafe (weak-box-value r_0)))))
                                   (begin
                                     (if in_0 (temp13.1 in_0) (void))
                                     (let ((new-bstr_0
@@ -9093,6 +9225,7 @@
                            copy?823_0)
                     (begin
                       (begin
+                        (begin-unsafe (void))
                         (|#%app| temp17.1 this-id_0)
                         (let ((o_0 (pipe-output-port-d this-id_0)))
                           (try-again_0
@@ -9236,10 +9369,10 @@
                              (core-port-buffer output_0))
                             (set-pipe-data-input-ref!
                              d_0
-                             (make-weak-box input_0))
+                             (begin-unsafe (make-weak-box input_0)))
                             (set-pipe-data-output-ref!
                              d_0
-                             (make-weak-box output_0))
+                             (begin-unsafe (make-weak-box output_0)))
                             (set-pipe-data-write-ready-evt!
                              d_0
                              write-ready-evt_0)
@@ -9287,7 +9420,7 @@
       ((limit24_0) (make-pipe_0 limit24_0 'pipe 'pipe))))))
 (define struct:pipe-write-poller
   (make-record-type-descriptor* 'pipe-write-poller #f #f #f #f 1 1))
-(define effect_2427
+(define effect_2371
   (struct-type-install-properties!
    struct:pipe-write-poller
    'pipe-write-poller
@@ -9317,7 +9450,7 @@
                   (set-pipe-data-write-ready-sema! o_0 (make-semaphore)))
                 (let ((in_0
                        (let ((r_0 (pipe-data-input-ref o_0)))
-                         (weak-box-value r_0))))
+                         (begin-unsafe (weak-box-value r_0)))))
                   (begin
                     (if in_0 (temp14.1 in_0) (void))
                     (values
@@ -9374,7 +9507,7 @@
     (void)))
 (define struct:pipe-read-poller
   (make-record-type-descriptor* 'pipe-read-poller #f #f #f #f 1 1))
-(define effect_2764
+(define effect_2394
   (struct-type-install-properties!
    struct:pipe-read-poller
    'pipe-read-poller
@@ -9405,7 +9538,7 @@
                     (set-pipe-data-read-ready-sema! o_0 (make-semaphore)))
                   (let ((out_0
                          (let ((r_0 (pipe-data-output-ref o_0)))
-                           (weak-box-value r_0))))
+                           (begin-unsafe (weak-box-value r_0)))))
                     (begin
                       (if out_0 (temp18.1$1 out_0) (void))
                       (values
@@ -10287,12 +10420,13 @@
                  (begin
                    (unsafe-end-atomic)
                    (let ((base-msg_0 "error closing stream port"))
-                     (raise
-                      (let ((app_0 (format-rktio-message #f v_0 base-msg_0)))
-                        (|#%app|
-                         exn:fail
-                         app_0
-                         (current-continuation-marks))))))
+                     (begin-unsafe
+                      (raise
+                       (let ((app_0 (format-rktio-message #f v_0 base-msg_0)))
+                         (|#%app|
+                          exn:fail
+                          app_0
+                          (current-continuation-marks)))))))
                  (void))))
            (void)))))))
 (define struct:fd-input-port
@@ -10650,7 +10784,7 @@
    #f
    8
    255))
-(define effect_2726
+(define effect_2781
   (struct-type-install-properties!
    struct:fd-output-port
    'fd-output-port
@@ -10677,13 +10811,14 @@
              (begin
                (unsafe-end-atomic)
                (let ((base-msg_0 "error setting file size"))
-                 (raise
-                  (let ((app_0
-                         (format-rktio-message
-                          'file-truncate
-                          result_0
-                          base-msg_0)))
-                    (|#%app| exn:fail app_0 (current-continuation-marks))))))
+                 (begin-unsafe
+                  (raise
+                   (let ((app_0
+                          (format-rktio-message
+                           'file-truncate
+                           result_0
+                           base-msg_0)))
+                     (|#%app| exn:fail app_0 (current-continuation-marks)))))))
              (void))))))
     (cons prop:file-stream (lambda (p_0) (|#%app| fd-output-port-fd p_0))))
    (current-inspector)
@@ -11445,13 +11580,14 @@
         (begin
           (unsafe-end-atomic)
           (let ((base-msg_0 "error setting stream position"))
-            (raise
-             (let ((app_0
-                    (format-rktio-message 'file-position r_0 base-msg_0)))
-               (|#%app| exn:fail app_0 (current-continuation-marks))))))
+            (begin-unsafe
+             (raise
+              (let ((app_0
+                     (format-rktio-message 'file-position r_0 base-msg_0)))
+                (|#%app| exn:fail app_0 (current-continuation-marks)))))))
         (void)))))
 (define struct:fd-evt (make-record-type-descriptor* 'fd-evt #f #f #f #f 3 7))
-(define effect_2550
+(define effect_2590
   (struct-type-install-properties!
    struct:fd-evt
    'fd-evt
@@ -11491,7 +11627,8 @@
                 (if ready?_0
                   (values '(0) #f)
                   (let ((c1_0
-                         (if (not (|#%app| poll-ctx-poll? ctx_0))
+                         (if (not
+                              (begin-unsafe (|#%app| poll-ctx-poll? ctx_0)))
                            (let ((app_0 (|#%app| fd-evt-fd fde_0)))
                              (fd-semaphore-update!
                               app_0
@@ -11761,13 +11898,14 @@
             (begin
               (unsafe-end-atomic)
               (let ((base-msg_0 "error during dup of file descriptor"))
-                (raise
-                 (let ((app_0
-                        (format-rktio-message
-                         'place-channel-put
-                         new-fd_0
-                         base-msg_0)))
-                   (|#%app| exn:fail app_0 (current-continuation-marks))))))
+                (begin-unsafe
+                 (raise
+                  (let ((app_0
+                         (format-rktio-message
+                          'place-channel-put
+                          new-fd_0
+                          base-msg_0)))
+                    (|#%app| exn:fail app_0 (current-continuation-marks)))))))
             (void))
           (let ((fd-dup_0
                  (box
@@ -15663,13 +15801,14 @@
           (begin
             (unsafe-end-atomic)
             (let ((base-msg_0 "error getting locale encoding"))
-              (raise
-               (let ((app_0
-                      (format-rktio-message
-                       'locale-string-encoding
-                       e_0
-                       base-msg_0)))
-                 (|#%app| exn:fail app_0 (current-continuation-marks))))))
+              (begin-unsafe
+               (raise
+                (let ((app_0
+                       (format-rktio-message
+                        'locale-string-encoding
+                        e_0
+                        base-msg_0)))
+                  (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (begin0 (|#%app| rktio_to_bytes e_0) (|#%app| rktio_free e_0)))))))
 (define 1/locale-string-encoding
   (|#%name|
@@ -15697,13 +15836,14 @@
                (unsafe-end-atomic)
                (let ((base-msg_0
                       "error getting language and country information"))
-                 (raise
-                  (let ((app_0
-                         (format-rktio-message
-                          'system-language+country
-                          c_0
-                          base-msg_0)))
-                    (|#%app| exn:fail app_0 (current-continuation-marks))))))
+                 (begin-unsafe
+                  (raise
+                   (let ((app_0
+                          (format-rktio-message
+                           'system-language+country
+                           c_0
+                           base-msg_0)))
+                     (|#%app| exn:fail app_0 (current-continuation-marks)))))))
              (begin0
                (|#%app| rktio_to_bytes c_0)
                (|#%app| rktio_free c_0)
@@ -16446,18 +16586,19 @@
                          (unsafe-bytes-set! out-bstr22_0 j_0 v_0)
                          (void))
                        (let ((next-j_0 (fx+ j_0 1)))
-                         (begin
-                           (loop_0
-                            assume-paired-surrogates?16_0
-                            from-utf-16-ish?15_0
-                            in-bstr19_0
-                            in-end21_0
-                            in-start20_0
-                            out-bstr22_0
-                            out-end24_0
-                            out-start23_0
-                            next-i_0
-                            next-j_0)))))
+                         (begin-unsafe
+                          (begin
+                            (loop_0
+                             assume-paired-surrogates?16_0
+                             from-utf-16-ish?15_0
+                             in-bstr19_0
+                             in-end21_0
+                             in-start20_0
+                             out-bstr22_0
+                             out-end24_0
+                             out-start23_0
+                             next-i_0
+                             next-j_0))))))
                    (if (fx<= v_0 2047)
                      (if (if out-end24_0 (fx>= (fx+ j_0 1) out-end24_0) #f)
                        (let ((app_0 (fx- i_0 in-start20_0)))
@@ -16476,18 +16617,19 @@
                                 (fxior 128 (fxand v_0 63)))))
                            (void))
                          (let ((next-j_0 (+ j_0 2)))
-                           (begin
-                             (loop_0
-                              assume-paired-surrogates?16_0
-                              from-utf-16-ish?15_0
-                              in-bstr19_0
-                              in-end21_0
-                              in-start20_0
-                              out-bstr22_0
-                              out-end24_0
-                              out-start23_0
-                              next-i_0
-                              next-j_0)))))
+                           (begin-unsafe
+                            (begin
+                              (loop_0
+                               assume-paired-surrogates?16_0
+                               from-utf-16-ish?15_0
+                               in-bstr19_0
+                               in-end21_0
+                               in-start20_0
+                               out-bstr22_0
+                               out-end24_0
+                               out-start23_0
+                               next-i_0
+                               next-j_0))))))
                      (if (fx<= v_0 65535)
                        (if (if out-end24_0 (fx>= (fx+ j_0 2) out-end24_0) #f)
                          (let ((app_0 (fx- i_0 in-start20_0)))
@@ -16511,18 +16653,19 @@
                                   (fxior 128 (fxand v_0 63)))))
                              (void))
                            (let ((next-j_0 (fx+ j_0 3)))
-                             (begin
-                               (loop_0
-                                assume-paired-surrogates?16_0
-                                from-utf-16-ish?15_0
-                                in-bstr19_0
-                                in-end21_0
-                                in-start20_0
-                                out-bstr22_0
-                                out-end24_0
-                                out-start23_0
-                                next-i_0
-                                next-j_0)))))
+                             (begin-unsafe
+                              (begin
+                                (loop_0
+                                 assume-paired-surrogates?16_0
+                                 from-utf-16-ish?15_0
+                                 in-bstr19_0
+                                 in-end21_0
+                                 in-start20_0
+                                 out-bstr22_0
+                                 out-end24_0
+                                 out-start23_0
+                                 next-i_0
+                                 next-j_0))))))
                        (if (if out-end24_0 (fx>= (fx+ j_0 3) out-end24_0) #f)
                          (let ((app_0 (fx- i_0 in-start20_0)))
                            (values app_0 (fx- j_0 out-start23_0) 'continues))
@@ -16550,18 +16693,19 @@
                                   (fxior 128 (fxand v_0 63)))))
                              (void))
                            (let ((next-j_0 (fx+ j_0 4)))
-                             (begin
-                               (loop_0
-                                assume-paired-surrogates?16_0
-                                from-utf-16-ish?15_0
-                                in-bstr19_0
-                                in-end21_0
-                                in-start20_0
-                                out-bstr22_0
-                                out-end24_0
-                                out-start23_0
-                                next-i_0
-                                next-j_0))))))))))))
+                             (begin-unsafe
+                              (begin
+                                (loop_0
+                                 assume-paired-surrogates?16_0
+                                 from-utf-16-ish?15_0
+                                 in-bstr19_0
+                                 in-end21_0
+                                 in-start20_0
+                                 out-bstr22_0
+                                 out-end24_0
+                                 out-start23_0
+                                 next-i_0
+                                 next-j_0)))))))))))))
            (continue_1
             (|#%name|
              continue
@@ -17887,11 +18031,12 @@
                                (loop_0 c_0 err-byte1_0 in-bstr_0 str4_0 0)))
                            (lambda ()
                              (let ((c_1 (unsafe-unbox* c_0)))
-                               (cache-save!
-                                c_1
-                                enc_0
-                                cache-to
-                                set-cache-to!)))))))))))))))
+                               (begin-unsafe
+                                (cache-save!
+                                 c_1
+                                 enc_0
+                                 cache-to
+                                 set-cache-to!))))))))))))))))
     (|#%name|
      string->bytes/locale
      (case-lambda
@@ -18009,11 +18154,12 @@
                            (lambda () (loop_0 c_0 err-char5_0 in-bstr8_0 0))
                            (lambda ()
                              (let ((c_1 (unsafe-unbox* c_0)))
-                               (cache-save!
-                                c_1
-                                enc_0
-                                cache-from
-                                set-cache-from!)))))))))))))))
+                               (begin-unsafe
+                                (cache-save!
+                                 c_1
+                                 enc_0
+                                 cache-from
+                                 set-cache-from!))))))))))))))))
     (|#%name|
      bytes->string/locale
      (case-lambda
@@ -18252,7 +18398,7 @@
 (define check-path-argument
   (lambda (who_0 p_0)
     (if (let ((or-part_0 (path-string? p_0)))
-          (if or-part_0 or-part_0 (1/path? p_0)))
+          (if or-part_0 or-part_0 (begin-unsafe (1/path? p_0))))
       (void)
       (raise-argument-error
        who_0
@@ -19122,7 +19268,7 @@
           (if or-part_0
             or-part_0
             (let ((or-part_1 (string? p_0)))
-              (if or-part_1 or-part_1 (1/path? p_0)))))
+              (if or-part_1 or-part_1 (begin-unsafe (1/path? p_0))))))
       (void)
       (raise-argument-error
        who_0
@@ -22710,16 +22856,17 @@
             (begin
               (if (if (bytes? v5_0) (not max-length3_0) #f)
                 (begin
-                  (do-write-bytes
-                   who4_0
-                   o6_0
-                   v5_0
-                   0
-                   (unsafe-bytes-length v5_0))
+                  (begin-unsafe
+                   (do-write-bytes
+                    who4_0
+                    o6_0
+                    v5_0
+                    0
+                    (unsafe-bytes-length v5_0)))
                   (void))
                 (if (if (string? v5_0) (not max-length3_0) #f)
                   (begin (1/write-string v5_0 o6_0) (void))
-                  (let ((config_0 (make-hasheq)))
+                  (let ((config_0 (begin-unsafe (make-hasheq))))
                     (begin
                       (dots
                        (let ((app_0 (sub3 max-length3_0)))
@@ -22768,7 +22915,7 @@
           do-write
           (lambda (who10_0 v11_0 o12_0 max-length9_0)
             (begin
-              (let ((config_0 (make-hasheq)))
+              (let ((config_0 (begin-unsafe (make-hasheq))))
                 (begin
                   (dots
                    (let ((app_0 (sub3 max-length9_0)))
@@ -22830,7 +22977,7 @@
                      (if (eq? quote-depth16_0 unsafe-undefined)
                        0
                        quote-depth16_0)))
-                (let ((config_0 (make-hasheq)))
+                (let ((config_0 (begin-unsafe (make-hasheq))))
                   (begin
                     (dots
                      (let ((app_0 (sub3 max-length17_0)))
@@ -22897,31 +23044,34 @@
                                  (if (<=
                                       (unsafe-bytes-length bstr_0)
                                       max-length33_0)
-                                   (do-write-bytes
-                                    who34_0
-                                    o36_0
-                                    bstr_0
-                                    0
-                                    (unsafe-bytes-length bstr_0))
+                                   (begin-unsafe
+                                    (do-write-bytes
+                                     who34_0
+                                     o36_0
+                                     bstr_0
+                                     0
+                                     (unsafe-bytes-length bstr_0)))
                                    (begin
                                      (let ((bstr_1
                                             (subbytes
                                              bstr_0
                                              0
                                              (sub3 max-length33_0))))
-                                       (do-write-bytes
-                                        who34_0
-                                        o36_0
-                                        bstr_1
-                                        0
-                                        (unsafe-bytes-length bstr_1)))
+                                       (begin-unsafe
+                                        (do-write-bytes
+                                         who34_0
+                                         o36_0
+                                         bstr_1
+                                         0
+                                         (unsafe-bytes-length bstr_1))))
                                      (let ((bstr_1 #vu8(46 46 46)))
-                                       (do-write-bytes
-                                        who34_0
-                                        o36_0
-                                        bstr_1
-                                        0
-                                        (unsafe-bytes-length bstr_1))))))))))
+                                       (begin-unsafe
+                                        (do-write-bytes
+                                         who34_0
+                                         o36_0
+                                         bstr_1
+                                         0
+                                         (unsafe-bytes-length bstr_1)))))))))))
                        (void)))))))))
     (lambda (param_0 default-value_0)
       (set! do-global-print
@@ -22974,12 +23124,13 @@
                             o_0
                             'newline)))
                       (let ((bstr_1 bstr_0))
-                        (do-write-bytes
-                         'newline
-                         o_1
-                         bstr_1
-                         0
-                         (unsafe-bytes-length bstr_1)))))
+                        (begin-unsafe
+                         (do-write-bytes
+                          'newline
+                          o_1
+                          bstr_1
+                          0
+                          (unsafe-bytes-length bstr_1))))))
                   (void))))))))
     (|#%name|
      newline
@@ -23312,9 +23463,10 @@
                                               (1/custom-write? v_0)
                                               #f)
                                           (let ((o/m_0
-                                                 (make-max-output-port
-                                                  o_0
-                                                  max-length_0)))
+                                                 (begin-unsafe
+                                                  (make-max-output-port
+                                                   o_0
+                                                   max-length_0))))
                                             (begin
                                               (set-port-handlers-to-recur!
                                                o/m_0
@@ -23324,10 +23476,11 @@
                                                   v_1
                                                   mode_1
                                                   o_1
-                                                  (if max-length_0
-                                                    (max-output-port-max-length
-                                                     o/m_0)
-                                                    #f)
+                                                  (begin-unsafe
+                                                   (if max-length_0
+                                                     (max-output-port-max-length
+                                                      o/m_0)
+                                                     #f))
                                                   graph_0
                                                   config_0)))
                                               (|#%app|
@@ -23335,10 +23488,11 @@
                                                v_0
                                                o/m_0
                                                mode_0)
-                                              (if max-length_0
-                                                (max-output-port-max-length
-                                                 o/m_0)
-                                                #f)))
+                                              (begin-unsafe
+                                               (if max-length_0
+                                                 (max-output-port-max-length
+                                                  o/m_0)
+                                                 #f))))
                                           (if (if (struct? v_0)
                                                 (config-get
                                                  config_0
@@ -24383,7 +24537,7 @@
     (if (let ((or-part_0 (path-string? p_0)))
           (if or-part_0
             or-part_0
-            (let ((or-part_1 (1/path? p_0)))
+            (let ((or-part_1 (begin-unsafe (1/path? p_0))))
               (if or-part_1
                 or-part_1
                 (let ((or-part_2 (eq? p_0 'up)))
@@ -25427,7 +25581,9 @@
          (begin
            (if wrt-given?1_0
              (if (if (let ((or-part_0 (path-string? wrt4_0)))
-                       (if or-part_0 or-part_0 (1/path? wrt4_0)))
+                       (if or-part_0
+                         or-part_0
+                         (begin-unsafe (1/path? wrt4_0))))
                    (1/complete-path? wrt4_0)
                    #f)
                (void)
@@ -26386,7 +26542,7 @@
           (|#%app|
            app_0
            (let ((p_2 (path->complete-path.1 #f p_1 current-directory$1)))
-             (do-cleanse-path p_2 #t))))))))
+             (begin-unsafe (do-cleanse-path p_2 #t)))))))))
 (define ->host/as-is
   (lambda (p_0 who_0 src_0)
     (let ((p_1 (->path p_0)))
@@ -27028,16 +27184,17 @@
                                        "error getting file "
                                        (if exclusive?_0 "exclusive" "shared")
                                        " lock")))
-                                 (raise
-                                  (let ((app_0
-                                         (format-rktio-message
-                                          'port-try-file-lock?
-                                          r_0
-                                          base-msg_0)))
-                                    (|#%app|
-                                     exn:fail
-                                     app_0
-                                     (current-continuation-marks)))))
+                                 (begin-unsafe
+                                  (raise
+                                   (let ((app_0
+                                          (format-rktio-message
+                                           'port-try-file-lock?
+                                           r_0
+                                           base-msg_0)))
+                                     (|#%app|
+                                      exn:fail
+                                      app_0
+                                      (current-continuation-marks))))))
                                (void))
                              (eqv? r_0 1))))))))))))))))
 (define 1/port-file-unlock
@@ -27067,16 +27224,17 @@
                      (unsafe-end-atomic)
                      (if (vector? r_0)
                        (let ((base-msg_0 "error unlocking file"))
-                         (raise
-                          (let ((app_0
-                                 (format-rktio-message
-                                  'port-file-unlock
-                                  r_0
-                                  base-msg_0)))
-                            (|#%app|
-                             exn:fail
-                             app_0
-                             (current-continuation-marks)))))
+                         (begin-unsafe
+                          (raise
+                           (let ((app_0
+                                  (format-rktio-message
+                                   'port-file-unlock
+                                   r_0
+                                   base-msg_0)))
+                             (|#%app|
+                              exn:fail
+                              app_0
+                              (current-continuation-marks))))))
                        (void)))))))))))))
 (define make-get-location
   (lambda (user-get-location_0)
@@ -30824,9 +30982,10 @@
                             (if (eq? 'up (car l_0))
                               (let ((new-base_0 (combine_0 base_0 accum_0)))
                                 (let ((target_0
-                                       (do-resolve-path
-                                        new-base_0
-                                        'simplify-path)))
+                                       (begin-unsafe
+                                        (do-resolve-path
+                                         new-base_0
+                                         'simplify-path))))
                                   (call-with-values
                                    (lambda ()
                                      (if (eq? target_0 new-base_0)
@@ -30922,7 +31081,8 @@
                           (void))
                         (if (|#%app| simple? p_0 convention_0)
                           p_0
-                          (let ((clean-p_0 (do-cleanse-path p_0 #t)))
+                          (let ((clean-p_0
+                                 (begin-unsafe (do-cleanse-path p_0 #t))))
                             (if (|#%app| simple? clean-p_0 convention_0)
                               (if (let ((or-part_0 (not use-filesystem?1_0)))
                                     (if or-part_0
@@ -30990,8 +31150,8 @@
       ((p-in_0) (begin (simplify-path_0 p-in_0 #t)))
       ((p-in_0 use-filesystem?1_0)
        (simplify-path_0 p-in_0 use-filesystem?1_0))))))
-(define effect_2475
-  (begin (void (set! simplify-path/dl 1/simplify-path)) (void)))
+(define effect_2315
+  (begin (void (begin-unsafe (set! simplify-path/dl 1/simplify-path))) (void)))
 (define simple?
   (letrec ((is-a-sep?_0
             (|#%name|
@@ -31597,16 +31757,17 @@
                                   (if (vector? r_0)
                                     (if (eq? fail_0 none)
                                       (let ((base-msg_0 "change failed"))
-                                        (raise
-                                         (let ((app_0
-                                                (format-rktio-message
-                                                 'environment-variables-set!
-                                                 r_0
-                                                 base-msg_0)))
-                                           (|#%app|
-                                            exn:fail
-                                            app_0
-                                            (current-continuation-marks)))))
+                                        (begin-unsafe
+                                         (raise
+                                          (let ((app_0
+                                                 (format-rktio-message
+                                                  'environment-variables-set!
+                                                  r_0
+                                                  base-msg_0)))
+                                            (|#%app|
+                                             exn:fail
+                                             app_0
+                                             (current-continuation-marks))))))
                                       (|#%app| fail_0))
                                     (void)))
                                 (let ((nk_0 (normalize-key k_0)))
@@ -31777,7 +31938,8 @@
                                 (if or-part_0
                                   or-part_0
                                   (string->path$1 "../etc")))))
-                         (begin (1/path->directory-path p_0))))))
+                         (begin-unsafe
+                          (begin (1/path->directory-path p_0)))))))
                  (if (unsafe-fx< index_0 6)
                    (if (unsafe-fx< index_0 5)
                      (let ((p_0
@@ -31785,7 +31947,7 @@
                               (if or-part_0
                                 or-part_0
                                 (string->path$1 "../collects")))))
-                       (begin (1/path->directory-path p_0)))
+                       (begin-unsafe (begin (1/path->directory-path p_0))))
                      (let ((p_0
                             (let ((or-part_0 host-config-dir))
                               (if or-part_0
@@ -31794,7 +31956,7 @@
                                   (if or-part_1
                                     or-part_1
                                     (string->path$1 "../etc")))))))
-                       (begin (1/path->directory-path p_0))))
+                       (begin-unsafe (begin (1/path->directory-path p_0)))))
                    (if (unsafe-fx< index_0 7)
                      (let ((p_0
                             (let ((or-part_0 host-collects-dir))
@@ -31804,18 +31966,19 @@
                                   (if or-part_1
                                     or-part_1
                                     (string->path$1 "../collects")))))))
-                       (begin (1/path->directory-path p_0)))
+                       (begin-unsafe (begin (1/path->directory-path p_0))))
                      (if (unsafe-fx< index_0 8)
-                       (begin (1/path->directory-path orig-dir))
+                       (begin-unsafe (begin (1/path->directory-path orig-dir)))
                        (let ((p_0 (rktio-system-path 'find-system-path 1)))
-                         (begin (1/path->directory-path p_0)))))))
+                         (begin-unsafe
+                          (begin (1/path->directory-path p_0))))))))
                (if (unsafe-fx< index_0 13)
                  (if (unsafe-fx< index_0 10)
                    (let ((p_0 (rktio-system-path 'find-system-path 0)))
-                     (begin (1/path->directory-path p_0)))
+                     (begin-unsafe (begin (1/path->directory-path p_0))))
                    (if (unsafe-fx< index_0 11)
                      (let ((p_0 (rktio-system-path 'find-system-path 2)))
-                       (begin (1/path->directory-path p_0)))
+                       (begin-unsafe (begin (1/path->directory-path p_0))))
                      (if (unsafe-fx< index_0 12)
                        (rktio-system-path 'find-system-path 3)
                        (let ((p_0
@@ -31823,22 +31986,23 @@
                                 (if or-part_0
                                   or-part_0
                                   (rktio-system-path 'find-system-path 4)))))
-                         (begin (1/path->directory-path p_0))))))
+                         (begin-unsafe
+                          (begin (1/path->directory-path p_0)))))))
                  (if (unsafe-fx< index_0 15)
                    (if (unsafe-fx< index_0 14)
                      (let ((p_0 (rktio-system-path 'find-system-path 10)))
-                       (begin (1/path->directory-path p_0)))
+                       (begin-unsafe (begin (1/path->directory-path p_0))))
                      (let ((p_0 (rktio-system-path 'find-system-path 5)))
-                       (begin (1/path->directory-path p_0))))
+                       (begin-unsafe (begin (1/path->directory-path p_0)))))
                    (if (unsafe-fx< index_0 16)
                      (let ((p_0 (rktio-system-path 'find-system-path 6)))
-                       (begin (1/path->directory-path p_0)))
+                       (begin-unsafe (begin (1/path->directory-path p_0))))
                      (if (unsafe-fx< index_0 17)
                        (let ((p_0 (rktio-system-path 'find-system-path 7)))
-                         (begin (1/path->directory-path p_0)))
+                         (begin-unsafe (begin (1/path->directory-path p_0))))
                        (if (unsafe-fx< index_0 18)
                          (let ((p_0 (rktio-system-path 'find-system-path 8)))
-                           (begin (1/path->directory-path p_0)))
+                           (begin-unsafe (begin (1/path->directory-path p_0))))
                          (rktio-system-path 'find-system-path 9))))))))
            (1/security-guard-check-file 'find-system-path #f '(exists))))))))
 (define exec-file #f)
@@ -31908,9 +32072,10 @@
           (begin
             (unsafe-end-atomic)
             (let ((base-msg_0 "path lookup failed"))
-              (raise
-               (let ((app_0 (format-rktio-message who_0 s_0 base-msg_0)))
-                 (|#%app| exn:fail app_0 (current-continuation-marks))))))
+              (begin-unsafe
+               (raise
+                (let ((app_0 (format-rktio-message who_0 s_0 base-msg_0)))
+                  (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (let ((bstr_0 (|#%app| rktio_to_bytes s_0)))
             (begin
               (|#%app| rktio_free s_0)
@@ -32332,7 +32497,7 @@
    (lambda (p_0)
      (begin
        (begin
-         (if (1/path? p_0)
+         (if (begin-unsafe (1/path? p_0))
            (void)
            (raise-argument-error
             'path-convention-type
@@ -32568,9 +32733,10 @@
                    (if (fx= i-len_0 len_0)
                      (let ((new-s_0
                             (recase/no-nul
-                             (if (zero? pos_0)
-                               s3_0
-                               (substring s3_0 pos_0 len_0))
+                             (begin-unsafe
+                              (if (zero? pos_0)
+                                s3_0
+                                (substring s3_0 pos_0 len_0)))
                              up?1_0)))
                        (if (eqv? pos_0 0) new-s_0 (list new-s_0)))
                      (let ((new-s_0
@@ -32663,7 +32829,8 @@
                (lambda () (loop_0 c_0 in-bstr_0 s_0 up?_0 0))
                (lambda ()
                  (let ((c_1 (unsafe-unbox* c_0)))
-                   (cache-save! c_1 enc_0 cache-to set-cache-to!)))))))))))
+                   (begin-unsafe
+                    (cache-save! c_1 enc_0 cache-to set-cache-to!))))))))))))
 (define locale-recase.1
   (|#%name|
    locale-recase
@@ -32750,12 +32917,14 @@
                          (+ i2_0 (string-length-up-to-nul s2_0 i2_0 l2_0))))
                     (if (if (= l1_0 t-l1_0) (= l2_0 t-l2_0) #f)
                       (let ((app_0
-                             (if (zero? i1_0)
-                               s1_0
-                               (substring s1_0 i1_0 l1_0))))
+                             (begin-unsafe
+                              (if (zero? i1_0)
+                                s1_0
+                                (substring s1_0 i1_0 l1_0)))))
                         (collate/no-nul
                          app_0
-                         (if (zero? i2_0) s2_0 (substring s2_0 i2_0 l2_0))
+                         (begin-unsafe
+                          (if (zero? i2_0) s2_0 (substring s2_0 i2_0 l2_0)))
                          ci?_0))
                       (let ((v_0
                              (let ((app_0 (substring s1_0 i1_0 t-l1_0)))
@@ -32985,13 +33154,15 @@
                    (lambda ()
                      (begin
                        (let ((c_0 (unsafe-unbox* c1_0)))
-                         (cache-save! c_0 enc_0 cache-to set-cache-to!))
+                         (begin-unsafe
+                          (cache-save! c_0 enc_0 cache-to set-cache-to!)))
                        (let ((c_0 (unsafe-unbox* c2_0)))
-                         (cache-save!
-                          c_0
-                          enc_0
-                          cache-to_3068
-                          set-cache-to2!))))))))))))))
+                         (begin-unsafe
+                          (cache-save!
+                           c_0
+                           enc_0
+                           cache-to_3068
+                           set-cache-to2!)))))))))))))))
 (define 1/error
   (|#%name|
    error
@@ -34016,13 +34187,13 @@
 (define decrement-receiever-waiters!
   (lambda (lr_0)
     (if (let ((q_0 (|#%app| queue-log-receiver-waiters lr_0)))
-          (not (queue-start q_0)))
+          (begin-unsafe (not (queue-start q_0))))
       (set-box! (queue-log-receiver-backref lr_0) #f)
       (void))))
 (define increment-receiever-waiters!
   (lambda (lr_0)
     (if (let ((q_0 (|#%app| queue-log-receiver-waiters lr_0)))
-          (not (queue-start q_0)))
+          (begin-unsafe (not (queue-start q_0))))
       (set-box! (queue-log-receiver-backref lr_0) lr_0)
       (void))))
 (define struct:stdio-log-receiver
@@ -34465,14 +34636,18 @@
                  (if (pair? lst_0)
                    (let ((r_0 (unsafe-car lst_0)))
                      (let ((rest_0 (unsafe-cdr lst_0)))
-                       (if (if (let ((app_0 (level->value max-level_0)))
-                                 (>= app_0 (level->value ceiling-level_0)))
+                       (if (if (begin-unsafe
+                                (let ((app_0 (level->value max-level_0)))
+                                  (>= app_0 (level->value ceiling-level_0))))
                              (let ((or-part_0 (not topic_0)))
                                (if or-part_0
                                  or-part_0
-                                 (let ((app_0
-                                        (level->value topic-max-level_0)))
-                                   (>= app_0 (level->value ceiling-level_0)))))
+                                 (begin-unsafe
+                                  (let ((app_0
+                                         (level->value topic-max-level_0)))
+                                    (>=
+                                     app_0
+                                     (level->value ceiling-level_0))))))
                              #f)
                          (values max-level_0 topic-max-level_0)
                          (call-with-values
@@ -34497,14 +34672,15 @@
                                  #f))))
                           (case-lambda
                            ((max-level_1 topic-max-level_1)
-                            (begin
-                              (for-loop_0
-                               ceiling-level_0
-                               topic-ceiling-level_0
-                               topic_0
-                               max-level_1
-                               topic-max-level_1
-                               rest_0)))
+                            (begin-unsafe
+                             (begin
+                               (for-loop_0
+                                ceiling-level_0
+                                topic-ceiling-level_0
+                                topic_0
+                                max-level_1
+                                topic-max-level_1
+                                rest_0))))
                            (args
                             (raise-binding-result-arity-error 2 args)))))))
                    (values max-level_0 topic-max-level_0))))))
@@ -34575,17 +34751,21 @@
                   ((max-level_0 topic-max-level_0)
                    (let ((c1_0
                           (if (let ((or-part_0
-                                     (let ((app_0
-                                            (level->value ceiling-level_0)))
-                                       (>= app_0 (level->value max-level_0)))))
+                                     (begin-unsafe
+                                      (let ((app_0
+                                             (level->value ceiling-level_0)))
+                                        (>=
+                                         app_0
+                                         (level->value max-level_0))))))
                                 (if or-part_0
                                   or-part_0
                                   (if topic_0
-                                    (let ((app_0
-                                           (level->value ceiling-level_0)))
-                                      (>=
-                                       app_0
-                                       (level->value topic-max-level_0)))
+                                    (begin-unsafe
+                                     (let ((app_0
+                                            (level->value ceiling-level_0)))
+                                       (>=
+                                        app_0
+                                        (level->value topic-max-level_0))))
                                     #f)))
                             (logger-parent parent_0)
                             #f)))
@@ -34908,7 +35088,8 @@
 (define log-level?*
   (lambda (logger_0 level_0 topic_0)
     (let ((a_0 (logger-wanted-level logger_0 topic_0)))
-      (let ((app_0 (level->value a_0))) (>= app_0 (level->value level_0))))))
+      (begin-unsafe
+       (let ((app_0 (level->value a_0))) (>= app_0 (level->value level_0)))))))
 (define 1/log-max-level
   (let ((log-max-level_0
          (|#%name|
@@ -35110,8 +35291,9 @@
              in-interrupt?_0)
       (let ((msg_0 (box #f)))
         (if (let ((a_0 (logger-max-wanted-level* logger_0)))
-              (let ((app_0 (level->value a_0)))
-                (>= app_0 (level->value level_0))))
+              (begin-unsafe
+               (let ((app_0 (level->value a_0)))
+                 (>= app_0 (level->value level_0)))))
           (letrec*
            ((loop_0
              (|#%name|
@@ -35135,10 +35317,12 @@
                                                    (filters-level-for-topic
                                                     (log-receiver-filters r_0)
                                                     topic_0)))
-                                              (let ((app_0 (level->value a_0)))
-                                                (>=
-                                                 app_0
-                                                 (level->value level_0))))
+                                              (begin-unsafe
+                                               (let ((app_0
+                                                      (level->value a_0)))
+                                                 (>=
+                                                  app_0
+                                                  (level->value level_0)))))
                                           (begin
                                             (if (unsafe-unbox* msg_0)
                                               (void)
@@ -35170,8 +35354,9 @@
                                    (filters-level-for-topic
                                     (logger-propagate-filters logger_1)
                                     topic_0)))
-                              (let ((app_0 (level->value a_0)))
-                                (>= app_0 (level->value level_0))))
+                              (begin-unsafe
+                               (let ((app_0 (level->value a_0)))
+                                 (>= app_0 (level->value level_0)))))
                             #f)
                         (loop_0 parent_0)
                         (void)))))))))
@@ -35456,7 +35641,7 @@
    (lambda (fc_0)
      (begin
        (begin
-         (if (fs-change-evt? fc_0)
+         (if (begin-unsafe (fs-change-evt? fc_0))
            (void)
            (raise-argument-error
             'filesystem-change-evt-cancel
@@ -36215,16 +36400,17 @@
                                                                 (unsafe-end-atomic)
                                                                 (let ((base-msg_0
                                                                        "process creation failed"))
-                                                                  (raise
-                                                                   (let ((app_0
-                                                                          (format-rktio-message
-                                                                           'subprocess
-                                                                           r_0
-                                                                           base-msg_0)))
-                                                                     (|#%app|
-                                                                      exn:fail
-                                                                      app_0
-                                                                      (current-continuation-marks))))))
+                                                                  (begin-unsafe
+                                                                   (raise
+                                                                    (let ((app_0
+                                                                           (format-rktio-message
+                                                                            'subprocess
+                                                                            r_0
+                                                                            base-msg_0)))
+                                                                      (|#%app|
+                                                                       exn:fail
+                                                                       app_0
+                                                                       (current-continuation-marks)))))))
                                                               (void))
                                                             (let ((in_0
                                                                    (let ((fd_0
@@ -36335,13 +36521,17 @@
                (begin
                  (unsafe-end-atomic)
                  (let ((base-msg_0 "status access failed"))
-                   (raise
-                    (let ((app_0
-                           (format-rktio-message
-                            'subprocess-status
-                            r_0
-                            base-msg_0)))
-                      (|#%app| exn:fail app_0 (current-continuation-marks))))))
+                   (begin-unsafe
+                    (raise
+                     (let ((app_0
+                            (format-rktio-message
+                             'subprocess-status
+                             r_0
+                             base-msg_0)))
+                       (|#%app|
+                        exn:fail
+                        app_0
+                        (current-continuation-marks)))))))
                (if (|#%app| rktio_status_running r_0)
                  (begin (|#%app| rktio_free r_0) (unsafe-end-atomic) 'running)
                  (begin
@@ -36514,16 +36704,17 @@
                      (begin
                        (if (vector? r_0)
                          (let ((base-msg_0 "failed"))
-                           (raise
-                            (let ((app_0
-                                   (format-rktio-message
-                                    'shell-execute
-                                    r_0
-                                    base-msg_0)))
-                              (|#%app|
-                               exn:fail
-                               app_0
-                               (current-continuation-marks)))))
+                           (begin-unsafe
+                            (raise
+                             (let ((app_0
+                                    (format-rktio-message
+                                     'shell-execute
+                                     r_0
+                                     base-msg_0)))
+                               (|#%app|
+                                exn:fail
+                                app_0
+                                (current-continuation-marks))))))
                          (void))
                        #f))))))))))))
 (define effect_3140
@@ -36546,16 +36737,16 @@
     (let ((err_0 (remap-rktio-error orig-err_0)))
       (let ((msg_0 (format-rktio-message who_0 err_0 base-msg_0)))
         (raise
-         (if (not (eq? (vector-ref err_0 0) 3))
+         (if (not (eq? (begin-unsafe (vector-ref err_0 0)) 3))
            (let ((app_0 (current-continuation-marks)))
              (|#%app|
               exn:fail:network:errno
               msg_0
               app_0
-              (let ((app_1 (vector-ref err_0 1)))
+              (let ((app_1 (begin-unsafe (vector-ref err_0 1))))
                 (cons
                  app_1
-                 (let ((kind_0 (vector-ref err_0 0)))
+                 (let ((kind_0 (begin-unsafe (vector-ref err_0 0))))
                    (if (eqv? kind_0 0)
                      'posix
                      (if (eqv? kind_0 1)
@@ -37950,7 +38141,7 @@
                (begin
                  (begin
                    (unsafe-start-atomic)
-                   (if (unbox (tcp-listener-closed listener4_0))
+                   (if (begin-unsafe (unbox (tcp-listener-closed listener4_0)))
                      (|#%app| closed-error who3_0 listener4_0)
                      (if (|#%app| accept-ready? listener4_0)
                        (begin
@@ -37976,7 +38167,9 @@
                           (rktio-evt1.1
                            (lambda ()
                              (let ((or-part_0
-                                    (unbox (tcp-listener-closed listener4_0))))
+                                    (begin-unsafe
+                                     (unbox
+                                      (tcp-listener-closed listener4_0)))))
                                (if or-part_0
                                  or-part_0
                                  (|#%app| accept-ready? listener4_0))))
@@ -38001,7 +38194,7 @@
             "tcp-listener?"
             listener_0))
          (unsafe-start-atomic)
-         (if (unbox (tcp-listener-closed listener_0))
+         (if (begin-unsafe (unbox (tcp-listener-closed listener_0)))
            (|#%app| closed-error 'tcp-accept-ready? listener_0)
            (|#%app| accept-ready? listener_0)))))))
 (define 1/tcp-accept-evt
@@ -38016,7 +38209,7 @@
          (accept-evt6.1 listener_0))))))
 (define struct:accept-evt
   (make-record-type-descriptor* 'tcp-accept-evt #f #f #f #f 1 1))
-(define effect_2060
+(define effect_2325
   (struct-type-install-properties!
    struct:accept-evt
    'tcp-accept-evt
@@ -38030,7 +38223,7 @@
       poller
       (lambda (self_0 poll-ctx_0)
         (let ((listener_0 (|#%app| accept-evt-listener self_0)))
-          (if (unbox (tcp-listener-closed listener_0))
+          (if (begin-unsafe (unbox (tcp-listener-closed listener_0)))
             (|#%app|
              error-result
              (lambda ()
@@ -38582,10 +38775,11 @@
                  (begin
                    (unsafe-end-atomic)
                    (let ((mode_0 "get"))
-                     (raise-network-error
-                      'udp-ttl
-                      v_0
-                      (string-append mode_0 "sockopt failed"))))
+                     (begin-unsafe
+                      (raise-network-error
+                       'udp-ttl
+                       v_0
+                       (string-append mode_0 "sockopt failed")))))
                  v_0)))
            (unsafe-end-atomic)))))))
 (define 1/udp-set-ttl!
@@ -38614,10 +38808,11 @@
                  (begin
                    (unsafe-end-atomic)
                    (let ((mode_0 "set"))
-                     (raise-network-error
-                      'udp-set-ttl!
-                      r_0
-                      (string-append mode_0 "sockopt failed"))))
+                     (begin-unsafe
+                      (raise-network-error
+                       'udp-set-ttl!
+                       r_0
+                       (string-append mode_0 "sockopt failed")))))
                  (void))))
            (unsafe-end-atomic)))))))
 (define 1/tcp-addresses
@@ -38647,7 +38842,7 @@
                     (call-with-values
                      (lambda ()
                        (if (1/tcp-listener? p2_0)
-                         (if (unbox (tcp-listener-closed p2_0))
+                         (if (begin-unsafe (unbox (tcp-listener-closed p2_0)))
                            (begin
                              (unsafe-end-atomic)
                              (raise-arguments-error
@@ -40047,14 +40242,16 @@
                                                     action_0)))
                                               (if (vector? v_0)
                                                 (let ((mode_0 "set"))
-                                                  (begin
-                                                    (unsafe-end-atomic)
-                                                    (raise-network-error
-                                                     who_0
-                                                     v_0
-                                                     (string-append
-                                                      mode_0
-                                                      "sockopt failed"))))
+                                                  (begin-unsafe
+                                                   (begin
+                                                     (unsafe-end-atomic)
+                                                     (begin-unsafe
+                                                      (raise-network-error
+                                                       who_0
+                                                       v_0
+                                                       (string-append
+                                                        mode_0
+                                                        "sockopt failed"))))))
                                                 (void)))))))))
                                 (let ((temp16_1 temp16_0)
                                       (temp15_1 temp15_0)
@@ -40089,10 +40286,11 @@
   (lambda (who_0 mode_0 v_0)
     (begin
       (unsafe-end-atomic)
-      (raise-network-error
-       who_0
-       v_0
-       (string-append mode_0 "sockopt failed")))))
+      (begin-unsafe
+       (raise-network-error
+        who_0
+        v_0
+        (string-append mode_0 "sockopt failed"))))))
 (define 1/udp-multicast-interface
   (|#%name|
    udp-multicast-interface
@@ -40117,12 +40315,14 @@
                      (udp-s u_0))))
                (if (vector? v_0)
                  (let ((mode_0 "get"))
-                   (begin
-                     (unsafe-end-atomic)
-                     (raise-network-error
-                      'udp-multicast-interface
-                      v_0
-                      (string-append mode_0 "sockopt failed"))))
+                   (begin-unsafe
+                    (begin
+                      (unsafe-end-atomic)
+                      (begin-unsafe
+                       (raise-network-error
+                        'udp-multicast-interface
+                        v_0
+                        (string-append mode_0 "sockopt failed"))))))
                  (let ((bstr_0 (|#%app| rktio_to_bytes v_0)))
                    (begin
                      (|#%app| rktio_free v_0)
@@ -40167,14 +40367,16 @@
                                      addr_0)))
                                (if (vector? r_0)
                                  (let ((mode_0 "set"))
-                                   (begin
-                                     (unsafe-end-atomic)
-                                     (raise-network-error
-                                      'udp-multicast-set-interface!
-                                      r_0
-                                      (string-append
-                                       mode_0
-                                       "sockopt failed"))))
+                                   (begin-unsafe
+                                    (begin
+                                      (unsafe-end-atomic)
+                                      (begin-unsafe
+                                       (raise-network-error
+                                        'udp-multicast-set-interface!
+                                        r_0
+                                        (string-append
+                                         mode_0
+                                         "sockopt failed"))))))
                                  (void)))))))))
                  (let ((temp29_1 temp29_0) (temp28_1 temp28_0))
                    (call-with-resolved-address.1
@@ -40214,12 +40416,14 @@
                      (udp-s u_0))))
                (if (vector? v_0)
                  (let ((mode_0 "get"))
-                   (begin
-                     (unsafe-end-atomic)
-                     (raise-network-error
-                      'udp-multicast-loopback?
-                      v_0
-                      (string-append mode_0 "sockopt failed"))))
+                   (begin-unsafe
+                    (begin
+                      (unsafe-end-atomic)
+                      (begin-unsafe
+                       (raise-network-error
+                        'udp-multicast-loopback?
+                        v_0
+                        (string-append mode_0 "sockopt failed"))))))
                  (not (zero? v_0)))))
            (unsafe-end-atomic)))))))
 (define 1/udp-multicast-set-loopback!
@@ -40247,12 +40451,14 @@
                      loopback?_0)))
                (if (vector? r_0)
                  (let ((mode_0 "set"))
-                   (begin
-                     (unsafe-end-atomic)
-                     (raise-network-error
-                      'udp-multicast-set-loopback!
-                      r_0
-                      (string-append mode_0 "sockopt failed"))))
+                   (begin-unsafe
+                    (begin
+                      (unsafe-end-atomic)
+                      (begin-unsafe
+                       (raise-network-error
+                        'udp-multicast-set-loopback!
+                        r_0
+                        (string-append mode_0 "sockopt failed"))))))
                  (void))))
            (unsafe-end-atomic)))))))
 (define 1/udp-multicast-ttl
@@ -40275,12 +40481,14 @@
                      (udp-s u_0))))
                (if (vector? v_0)
                  (let ((mode_0 "get"))
-                   (begin
-                     (unsafe-end-atomic)
-                     (raise-network-error
-                      'udp-multicast-ttl
-                      v_0
-                      (string-append mode_0 "sockopt failed"))))
+                   (begin-unsafe
+                    (begin
+                      (unsafe-end-atomic)
+                      (begin-unsafe
+                       (raise-network-error
+                        'udp-multicast-ttl
+                        v_0
+                        (string-append mode_0 "sockopt failed"))))))
                  v_0)))
            (unsafe-end-atomic)))))))
 (define 1/udp-multicast-set-ttl!
@@ -40311,12 +40519,14 @@
                      ttl_0)))
                (if (vector? r_0)
                  (let ((mode_0 "set"))
-                   (begin
-                     (unsafe-end-atomic)
-                     (raise-network-error
-                      'udp-multicast-set-ttl!
-                      r_0
-                      (string-append mode_0 "sockopt failed"))))
+                   (begin-unsafe
+                    (begin
+                      (unsafe-end-atomic)
+                      (begin-unsafe
+                       (raise-network-error
+                        'udp-multicast-set-ttl!
+                        r_0
+                        (string-append mode_0 "sockopt failed"))))))
                  (void))))
            (unsafe-end-atomic)))))))
 (define ffi-get-lib
@@ -41052,13 +41262,14 @@
             (|#%app| cleanup_0)
             (unsafe-end-atomic)
             (let ((base-msg_0 (string-append "error during " during_0)))
-              (raise
-               (let ((app_0
-                      (format-rktio-message
-                       'dynamic-place
-                       new-fd_0
-                       base-msg_0)))
-                 (|#%app| exn:fail app_0 (current-continuation-marks))))))
+              (begin-unsafe
+               (raise
+                (let ((app_0
+                       (format-rktio-message
+                        'dynamic-place
+                        new-fd_0
+                        base-msg_0)))
+                  (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (void))
         new-fd_0))))
 (define pipe
@@ -41070,10 +41281,11 @@
             (|#%app| cleanup_0)
             (unsafe-end-atomic)
             (let ((base-msg_0 (string-append "error during " during_0)))
-              (raise
-               (let ((app_0
-                      (format-rktio-message 'dynamic-place p_0 base-msg_0)))
-                 (|#%app| exn:fail app_0 (current-continuation-marks))))))
+              (begin-unsafe
+               (raise
+                (let ((app_0
+                       (format-rktio-message 'dynamic-place p_0 base-msg_0)))
+                  (|#%app| exn:fail app_0 (current-continuation-marks)))))))
           (void))
         (call-with-values
          (lambda () (|#%app| rktio_pipe_results p_0))

@@ -103,6 +103,8 @@
           `(with-continuation-mark ,(optimize* key) ,(optimize* val) ,(optimize* body))]
          [`(begin ,body ...)
           `(begin ,@(optimize*-body body))]
+         [`(begin-unsafe ,body ...)
+          `(begin-unsafe ,@(optimize*-body body))]
          [`(begin0 ,e ,body ...)
           `(begin0 ,(optimize* e) ,@(optimize*-body body))]
          [`(set! ,id ,rhs)

@@ -663,6 +663,8 @@
             (schemify exp wcm-state)]
            [`(begin ,exps ...)
             `(begin . ,(schemify-body exps wcm-state))]
+           [`(begin-unsafe ,exps ...)
+            `(begin-unsafe . ,(schemify-body exps wcm-state))]
            [`(begin0 ,exp)
             (schemify exp wcm-state)]
            [`(begin0 ,exp ,exps ...)

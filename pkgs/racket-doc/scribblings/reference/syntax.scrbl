@@ -17,6 +17,7 @@
                      (only-in compiler/cm-accomplice
                               register-external-module)
                      racket/performance-hint
+                     racket/unsafe/ops
                      syntax/parse))
 
 @(define require-eval (make-base-eval))
@@ -388,7 +389,8 @@ Legal only in a @tech{module begin context}, and handled by the
 @defform[(#%declare declaration-keyword ...)
          #:grammar
          ([declaration-keyword #:cross-phase-persistent
-                               #:empty-namespace])]{
+                               #:empty-namespace
+                               #:unsafe])]{
 
 Declarations that affect run-time or reflective properties of the
 module:
@@ -406,6 +408,21 @@ module:
        way can reduce the @tech{lexical information} that
        otherwise must be preserved for the module.}
 
+@item{@indexed-racket[#:unsafe] --- declares that the module can be
+       compiled without checks that could trigger
+       @racket[exn:fail:contract], and the resulting behavior is
+       unspecified for an evaluation where @racket[exn:fail:contract]
+       should have been raised; see also @secref["unsafe"]. For
+       example, a use of @racket[car] can be compiled as a use of
+       @racket[unsafe-car], and the behavior is unspecified is
+       @racket[unsafe-car] is applied to a non-pair. The
+       @racket[#:unsafe] declaration keyword is allowed only when the
+       current @tech{code inspector} is the initial one. Macros can
+       generate conditionally unsafe code, depending on the expansion
+       context, by expanding to a use of
+       @racket[(variable-reference-from-unsafe?
+       (#%variable-reference))].}
+
 ]
 
 A @racket[#%declare] form must appear in a @tech{module
@@ -413,7 +430,8 @@ context} or a @tech{module-begin context}. Each
 @racket[declaration-keyword] can be declared at most once within a
 @racket[module] body.
 
-@history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}]}           
+@history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}
+         #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}]}
 
 
 @;------------------------------------------------------------------------

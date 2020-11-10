@@ -59,6 +59,7 @@
                $value
                with-continuation-mark*
                pariah
+               begin-unsafe
                variable-set!
                variable-ref
                variable-ref/no-check

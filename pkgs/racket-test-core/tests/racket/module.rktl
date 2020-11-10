@@ -2717,6 +2717,17 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (namespace-attach-module-declaration (current-namespace) ''please-attach-me-successfully (make-base-namespace))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `#:unsafe` is allowed
+
+(module unsafe-module-so-call-provided-carefully racket/base
+  (#%declare #:unsafe)
+  (provide unsafe-first)
+  (define (unsafe-first l) (car l)))
+
+(require 'unsafe-module-so-call-provided-carefully)
+(test 3 unsafe-first '(3 4 5))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that a module with an attached instance
 ;; cannot be redeclared in the target namespace

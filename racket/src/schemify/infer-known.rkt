@@ -34,7 +34,7 @@
            (let ([lam (if optimize-inline?
                           (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
                           lam)])
-             (known-procedure/can-inline arity-mask lam))
+             (known-procedure/can-inline arity-mask (if unsafe-mode? (add-begin-unsafe lam) lam)))
            (known-procedure arity-mask))]
       [(and (literal? rhs)
             (not (hash-ref mutated (unwrap id) #f)))
@@ -154,3 +154,15 @@
     [(wrap-pair? args)
      (arithmetic-shift (args-arity-mask (wrap-cdr args)) 1)]
     [else -1]))
+
+(define (add-begin-unsafe lam)
+  (reannotate
+   lam
+   (match lam
+     [`(lambda ,args . ,body)
+      `(lambda ,args (begin-unsafe . ,body))]
+     [`(case-lambda [,argss . ,bodys] ...)
+      `(case-lambda ,@(for/list ([args (in-list argss)]
+                                 [body (in-list bodys)])
+                        `[,args (begin-unsafe . ,body)]))]
+     [`,_ lam])))

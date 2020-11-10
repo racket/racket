@@ -68,7 +68,8 @@
    (make-module #:cross-phase-persistent? #t
                 #:primitive? primitive?
                 #:predefined? #t
-                #:no-protected? (not protected?)
+                #:no-protected? (and (not protected?)
+                                     (null? protected-syms))
                 #:self mpi
                 #:provides
                 (hasheqv 0 (for/hash ([sym (in-hash-keys ht)])
