@@ -108,7 +108,7 @@ static void raise_null_error(const char *name, Scheme_Object *path, const char *
 
 static char *do_path_to_complete_path(char *filename, intptr_t ilen, const char *wrt, intptr_t wlen, int kind);
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, int use_filesystem,
-				       int force_rel_up, int kind, int guards);
+				       int force_rel_up, int already_cleansed, int kind, int guards);
 static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail, int kind, int *_did);
 static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded, int kind);
 static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr_t len, Scheme_Object *p, int just_check, int kind);
@@ -1719,17 +1719,21 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
     if (kind == SCHEME_WINDOWS_PATH_KIND) {
       if (ilen > ((fullpath > 1) ? fullpath : 259)) {
         if (!check_dos_slashslash_qm(filename, ilen, NULL, NULL, NULL)) {
-          /* Convert to \\?\ to avoid length limit. */
+          /* Convert to \\?\ to avoid length limit. Collapse any
+             ".." and "." indicators first syntactically (which is not ideal,
+             but only so much effort is worthwhile here). */
           int l = ilen, a = ilen + 1;
           Scheme_Object *p;
 
           p = scheme_make_sized_path(filename, ilen, 0);
-          p = do_simplify_path(p, scheme_null, 0, 0, 0, SCHEME_WINDOWS_PATH_KIND, 0);
+          p = do_simplify_path(p, scheme_null, 0, 0, 0, 1, SCHEME_WINDOWS_PATH_KIND, 0);
           filename = SCHEME_PATH_VAL(p);
           ilen = SCHEME_PATH_LEN(p);
 
-          filename = convert_to_backslashbackslash_qm(filename, &l, filename, &a, 0);
-          filename[l] = 0;
+          if (ilen > ((fullpath > 1) ? fullpath : 259)) { /* still too long after simplification? */
+            filename = convert_to_backslashbackslash_qm(filename, &l, filename, &a, 0);
+            filename[l] = 0;
+          }
         }
       }
     }
@@ -2244,7 +2248,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 		  str[pos] = 0;
 		  simp = do_simplify_path(scheme_make_sized_offset_kind_path(str, 0, pos, 0,
                                                                              SCHEME_WINDOWS_PATH_KIND),
-					  scheme_null, first_len, 0, 0,
+					  scheme_null, first_len, 0, 0, 0,
                                           SCHEME_WINDOWS_PATH_KIND, 0);
 		  if (SCHEME_FALSEP(simp)) {
 		    /* Base path is just relative "here". We can ignore it. */
@@ -2307,7 +2311,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 
 		    simp = do_simplify_path(scheme_make_sized_offset_kind_path(str, 0, pos, 0,
                                                                                SCHEME_WINDOWS_PATH_KIND),
-					    scheme_null, first_len, 0, 1,
+					    scheme_null, first_len, 0, 1, 0,
                                             SCHEME_WINDOWS_PATH_KIND, 0);
 		    if (SCHEME_FALSEP(simp)) {
                       /* Note: if root turns out to be relative, then we couldn't
@@ -2600,7 +2604,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
       str = do_normal_path_seps(str, &p, first_len, 1, SCHEME_WINDOWS_PATH_KIND, NULL);
       str = remove_redundant_slashes(str, &p, first_len, NULL, SCHEME_WINDOWS_PATH_KIND);
       simp = do_simplify_path(scheme_make_sized_offset_kind_path(str, 0, p, 0, SCHEME_WINDOWS_PATH_KIND),
-                              scheme_null, first_len, 0, 1, SCHEME_WINDOWS_PATH_KIND, 0);
+                              scheme_null, first_len, 0, 1, 0, SCHEME_WINDOWS_PATH_KIND, 0);
       if (SCHEME_FALSEP(simp))
         return scheme_make_sized_offset_kind_path(".\\", 0, 1, 0, SCHEME_WINDOWS_PATH_KIND);
       else
@@ -3733,7 +3737,7 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path, int *has_rel)
 
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, 
 				       int use_filesystem, 
-                                       int force_rel_up,
+                                       int force_rel_up, int already_cleansed,
                                        int kind, int guards)
      /* When !use_filesystem, the result can be #f for an empty relative
 	path, and it can contain leading ".."s, or ".."s after an initial
@@ -3746,7 +3750,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 
   /* cleanse-path doesn't touch the filesystem. On Windows, always
      start with that, to get things basically tidy. */
-  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+  if ((kind == SCHEME_WINDOWS_PATH_KIND) && !already_cleansed) {
     char *s;
     int expanded, add_sep = 0;
     s = do_expand_filename(path, SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path),
@@ -4041,7 +4045,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	      if (new_result) {
 		/* Simplify the new result */
 		result = do_simplify_path(new_result, cycle_check, skip,
-					  use_filesystem, force_rel_up, kind,
+					  use_filesystem, force_rel_up, 0, kind,
 					  guards);
 		cycle_check = scheme_make_pair(new_result, cycle_check);
 	      } else
@@ -4148,7 +4152,7 @@ Scheme_Object *scheme_simplify_path(int argc, Scheme_Object *argv[])
                           NULL);
   }
   
-  r = do_simplify_path(bs, scheme_null, 0, use_fs, 0, kind, 1);
+  r = do_simplify_path(bs, scheme_null, 0, use_fs, 0, 0, kind, 1);
 
   if (SCHEME_FALSEP(r)) {
     /* Input was just 'same: */
@@ -4259,7 +4263,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
       if (SAME_OBJ(path, argv[0])) {
 	Scheme_Object *old;
 	old = scheme_make_path(filename);
-	path = do_simplify_path(old, scheme_null, 0, 1, 0, SCHEME_WINDOWS_PATH_KIND, break_ok);
+	path = do_simplify_path(old, scheme_null, 0, 1, 0, 0, SCHEME_WINDOWS_PATH_KIND, break_ok);
 	if (SAME_OBJ(path, old))
 	  break;
       } else
@@ -4923,7 +4927,7 @@ static Scheme_Object *cwd_check(int argc, Scheme_Object **argv)
     expanded = scheme_expand_string_filename(argv[0], "current-directory", NULL, SCHEME_GUARD_FILE_EXISTS);
     ed = scheme_make_sized_path(expanded, strlen(expanded), 1);
 
-    ed = do_simplify_path(ed, scheme_null, 0, 1, 0, SCHEME_PLATFORM_PATH_KIND, 1);
+    ed = do_simplify_path(ed, scheme_null, 0, 1, 0, 0, SCHEME_PLATFORM_PATH_KIND, 1);
 
     ed = scheme_path_to_directory_path(ed);
 

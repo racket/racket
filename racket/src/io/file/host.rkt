@@ -1,9 +1,11 @@
 #lang racket/base
-(require "../path/path.rkt"
+(require racket/fixnum
+         "../path/path.rkt"
          "../path/complete.rkt"
          "../path/parameter.rkt"
          "../path/cleanse.rkt"
          "../path/protect.rkt"
+         "../path/simplify-nofs.rkt"
          "../host/rktio.rkt"
          "../security/main.rkt")
 
@@ -20,7 +22,10 @@
   (let ([p (->path p)])
     (when who
       (security-guard-check-file who p guards))
-    (path-bytes (cleanse-path/convert-slashes (path->complete-path p current-directory #:wrt-given? #f)))))
+    (path-bytes
+     (handle-long-path
+      who
+      (cleanse-path/convert-slashes (path->complete-path p current-directory #:wrt-given? #f))))))
 
 (define (->host/as-is p who src)
   (let ([p (->path p)])
@@ -39,3 +44,35 @@
       (path (protect-path-element (bytes->immutable-bytes s) 'windows)
             'windows)
       (host-> s)))
+
+;; If we end up with a Windows path that is longer than 260 bytes,
+;; then add "\\?\" or "\\?\UNC" to the front. The path needs to be
+;; abbsolute and otherwise fully normalized so that just adding to the
+;; front is possible.
+(define (handle-long-path who p)
+  (cond
+    [(eq? (system-type) 'windows)
+     (define bstr (path-bytes p))
+     (cond
+       [(and ((bytes-length bstr) . > . 259)
+             (not (and (fx= (bytes-ref bstr 0) (char->integer #\\))
+                       (fx= (bytes-ref bstr 1) (char->integer #\\))
+                       (fx= (bytes-ref bstr 2) (char->integer #\?))
+                       (fx= (bytes-ref bstr 3) (char->integer #\\)))))
+        ;; First, simplify to get rid of directory indicators:
+        (define simple-p (simplify-path-syntactically who p #f))
+        (define simple-bstr (path-bytes simple-p))
+        (cond
+          [((bytes-length simple-bstr) . <= . 260)
+           ;; Simplified path is short enough
+           simple-p]
+          [(fx= (bytes-ref simple-bstr 0) (char->integer #\\))
+           ;; Must be UNC
+           (path (bytes-append #"\\\\?\\UNC" (subbytes simple-bstr 0)) 'windows)]
+          [else
+           ;; Must be drive letter
+           (path (bytes-append #"\\\\?\\" simple-bstr) 'windows)])]
+       [else
+        ;; Short enough or already a "\\?\" path
+        p])]
+    [else p]))

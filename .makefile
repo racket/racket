@@ -516,7 +516,7 @@ win-both:
 	$(MAKE) win-also-bc
 
 win-plain-also:
-	$(MAKE) $(VM) INITIAL_SETUP_MODE=skip PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
+	$(MAKE) win-$(VM) INITIAL_SETUP_MODE=skip PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 win-also-cs:
 	$(MAKE) win-plain-also VM=cs

@@ -26095,6 +26095,1015 @@
                               #t
                               (loop_0 i_0 #f)))))))))))
              (loop_0 len_0 #t))))))))
+(define 1/split-path
+  (|#%name|
+   split-path
+   (lambda (p_0)
+     (begin
+       (begin
+         (check-path-argument 'split-path p_0)
+         (let ((temp35_0 (->path p_0))) (split.1 #f temp35_0)))))))
+(define 1/explode-path
+  (|#%name|
+   explode-path
+   (lambda (p_0)
+     (begin
+       (begin
+         (check-path-argument 'explode-path p_0)
+         (1/reverse (let ((temp37_0 (->path p_0))) (split.1 #t temp37_0))))))))
+(define split.1
+  (|#%name|
+   split
+   (lambda (explode?1_0 p3_0)
+     (begin
+       (if (not (eq? (|#%app| path-convention p3_0) 'windows))
+         (split-after-drive.1 0 0 explode?1_0 unsafe-undefined #f #f #f p3_0)
+         (let ((bstr_0 (|#%app| path-bytes p3_0)))
+           (if (if (> (unsafe-bytes-length bstr_0) 2)
+                 (if (is-sep? (unsafe-bytes-ref bstr_0 0) 'windows)
+                   (is-sep? (unsafe-bytes-ref bstr_0 1) 'windows)
+                   #f)
+                 #f)
+             (call-with-values
+              (lambda () (parse-//?-drive bstr_0))
+              (case-lambda
+               ((//?-kind_0 //?-drive-end_0 //?-orig-drive-end_0)
+                (if //?-kind_0
+                  (if (let ((or-part_0 (eq? //?-kind_0 'rel)))
+                        (if or-part_0 or-part_0 (eq? //?-kind_0 'red)))
+                    (split-reld.1 explode?1_0 bstr_0)
+                    (let ((temp45_0
+                           (if (eq? //?-kind_0 'unc)
+                             //?-orig-drive-end_0
+                             //?-drive-end_0)))
+                      (split-after-drive.1
+                       //?-orig-drive-end_0
+                       //?-orig-drive-end_0
+                       explode?1_0
+                       temp45_0
+                       #f
+                       #t
+                       #t
+                       p3_0)))
+                  (let ((//-drive-end_0 (parse-//-drive bstr_0)))
+                    (if //-drive-end_0
+                      (let ((temp51_0
+                             (if (if (<
+                                      //-drive-end_0
+                                      (unsafe-bytes-length bstr_0))
+                                   (is-sep?
+                                    (unsafe-bytes-ref bstr_0 //-drive-end_0)
+                                    'windows)
+                                   #f)
+                               (add1 //-drive-end_0)
+                               //-drive-end_0)))
+                        (split-after-drive.1
+                         1
+                         temp51_0
+                         explode?1_0
+                         unsafe-undefined
+                         #f
+                         #f
+                         #f
+                         p3_0))
+                      (split-after-drive.1
+                       0
+                       0
+                       explode?1_0
+                       unsafe-undefined
+                       #f
+                       #f
+                       #f
+                       p3_0)))))
+               (args (raise-binding-result-arity-error 3 args))))
+             (if (if (>= (unsafe-bytes-length bstr_0) 2)
+                   (if (drive-letter? (unsafe-bytes-ref bstr_0 0))
+                     (eq? (unsafe-bytes-ref bstr_0 1) 58)
+                     #f)
+                   #f)
+               (let ((temp57_0
+                      (if (if (< 2 (unsafe-bytes-length bstr_0))
+                            (is-sep? (unsafe-bytes-ref bstr_0 2) 'windows)
+                            #f)
+                        3
+                        2)))
+                 (split-after-drive.1
+                  0
+                  temp57_0
+                  explode?1_0
+                  unsafe-undefined
+                  #f
+                  #f
+                  #f
+                  p3_0))
+               (split-after-drive.1
+                0
+                0
+                explode?1_0
+                unsafe-undefined
+                #f
+                #f
+                #f
+                p3_0)))))))))
+(define split-after-drive.1
+  (|#%name|
+   split-after-drive
+   (lambda (allow-double-before10_0
+            drive-end6_0
+            explode?11_0
+            keep-drive-end7_0
+            len5_0
+            no-slash-sep?8_0
+            no-up?9_0
+            p19_0)
+     (begin
+       (let ((keep-drive-end_0
+              (if (eq? keep-drive-end7_0 unsafe-undefined)
+                drive-end6_0
+                keep-drive-end7_0)))
+         (let ((convention_0 (|#%app| path-convention p19_0)))
+           (let ((bstr_0
+                  (if len5_0
+                    (|#%app| path-bytes p19_0)
+                    (let ((temp61_0 (|#%app| path-bytes p19_0)))
+                      (clean-double-slashes.1
+                       #f
+                       #f
+                       temp61_0
+                       convention_0
+                       allow-double-before10_0)))))
+             (let ((len_0 (if len5_0 len5_0 (unsafe-bytes-length bstr_0))))
+               (call-with-values
+                (lambda ()
+                  (letrec*
+                   ((loop_0
+                     (|#%name|
+                      loop
+                      (lambda (i_0 ends-sep?_0)
+                        (begin
+                          (if (< i_0 drive-end6_0)
+                            (if (if (positive? i_0) (< i_0 (sub1 len_0)) #f)
+                              (values i_0 ends-sep?_0)
+                              (values #f ends-sep?_0))
+                            (let ((sep?_0
+                                   (if no-slash-sep?8_0
+                                     (eq? (unsafe-bytes-ref bstr_0 i_0) 92)
+                                     (is-sep?
+                                      (unsafe-bytes-ref bstr_0 i_0)
+                                      convention_0))))
+                              (if sep?_0
+                                (if (< i_0 (sub1 len_0))
+                                  (values i_0 ends-sep?_0)
+                                  (loop_0 (sub1 i_0) #t))
+                                (loop_0 (sub1 i_0) ends-sep?_0)))))))))
+                   (loop_0 (sub1 len_0) #f)))
+                (case-lambda
+                 ((split-pos_0 ends-sep?_0)
+                  (if (not split-pos_0)
+                    (if (let ((or-part_0
+                               (is-sep?
+                                (unsafe-bytes-ref bstr_0 0)
+                                convention_0)))
+                          (if or-part_0 or-part_0 (positive? drive-end6_0)))
+                      (let ((new-p_0
+                             (path1.1 (subbytes bstr_0 0 len_0) convention_0)))
+                        (if explode?11_0
+                          (list new-p_0)
+                          (values #f new-p_0 #t)))
+                      (call-with-values
+                       (lambda ()
+                         (split-tail.1
+                          ends-sep?_0
+                          no-up?9_0
+                          bstr_0
+                          len_0
+                          0
+                          convention_0))
+                       (case-lambda
+                        ((name_0 is-dir?_0)
+                         (if explode?11_0
+                           (list name_0)
+                           (values 'relative name_0 is-dir?_0)))
+                        (args (raise-binding-result-arity-error 2 args)))))
+                    (call-with-values
+                     (lambda ()
+                       (let ((temp72_0 (add1 split-pos_0)))
+                         (split-tail.1
+                          ends-sep?_0
+                          no-up?9_0
+                          bstr_0
+                          len_0
+                          temp72_0
+                          convention_0)))
+                     (case-lambda
+                      ((name_0 is-dir?_0)
+                       (if (zero? split-pos_0)
+                         (let ((base_0
+                                (if (eq? (unsafe-bytes-ref bstr_0 0) '#\x2f)
+                                  (path1.1 #vu8(47) convention_0)
+                                  (path1.1
+                                   (subbytes bstr_0 0 1)
+                                   convention_0))))
+                           (if explode?11_0
+                             (list name_0 base_0)
+                             (values base_0 name_0 is-dir?_0)))
+                         (call-with-values
+                          (lambda ()
+                            (values
+                             bstr_0
+                             (let ((len_1 (add1 split-pos_0)))
+                               (if (= len_1 drive-end6_0)
+                                 keep-drive-end_0
+                                 len_1))))
+                          (case-lambda
+                           ((exposed-bstr_0 exposed-len_0)
+                            (if explode?11_0
+                              (cons
+                               name_0
+                               (let ((temp76_0
+                                      (path1.1 exposed-bstr_0 convention_0)))
+                                 (split-after-drive.1
+                                  allow-double-before10_0
+                                  drive-end6_0
+                                  #t
+                                  keep-drive-end_0
+                                  exposed-len_0
+                                  no-slash-sep?8_0
+                                  no-up?9_0
+                                  temp76_0)))
+                              (let ((base_0
+                                     (path1.1
+                                      (subbytes exposed-bstr_0 0 exposed-len_0)
+                                      convention_0)))
+                                (values base_0 name_0 is-dir?_0))))
+                           (args (raise-binding-result-arity-error 2 args))))))
+                      (args (raise-binding-result-arity-error 2 args))))))
+                 (args (raise-binding-result-arity-error 2 args))))))))))))
+(define split-tail.1
+  (|#%name|
+   split-tail
+   (lambda (ends-sep?21_0
+            no-up?22_0
+            bstr25_0
+            len26_0
+            start-pos27_0
+            convention28_0)
+     (begin
+       (if (if (not no-up?22_0)
+             (if (<= (+ start-pos27_0 2) len26_0)
+               (if (eq? (unsafe-bytes-ref bstr25_0 start-pos27_0) 46)
+                 (if (eq? (unsafe-bytes-ref bstr25_0 (+ start-pos27_0 1)) 46)
+                   (let ((or-part_0 (= (+ start-pos27_0 2) len26_0)))
+                     (if or-part_0
+                       or-part_0
+                       (if (= (+ start-pos27_0 3) len26_0) ends-sep?21_0 #f)))
+                   #f)
+                 #f)
+               #f)
+             #f)
+         (values 'up #t)
+         (if (if (not no-up?22_0)
+               (if (<= (+ start-pos27_0 1) len26_0)
+                 (if (eq? (unsafe-bytes-ref bstr25_0 start-pos27_0) 46)
+                   (let ((or-part_0 (= (+ start-pos27_0 1) len26_0)))
+                     (if or-part_0
+                       or-part_0
+                       (if (= (+ start-pos27_0 2) len26_0) ends-sep?21_0 #f)))
+                   #f)
+                 #f)
+               #f)
+           (values 'same #t)
+           (let ((new-bstr_0
+                  (if ends-sep?21_0
+                    (subbytes bstr25_0 start-pos27_0 (sub1 len26_0))
+                    (if (zero? start-pos27_0)
+                      (bytes->immutable-bytes bstr25_0)
+                      (subbytes bstr25_0 start-pos27_0)))))
+             (let ((prot-bstr_0
+                    (if (if no-up?22_0 no-up?22_0 ends-sep?21_0)
+                      (protect-path-element new-bstr_0 convention28_0)
+                      new-bstr_0)))
+               (values
+                (path1.1 prot-bstr_0 convention28_0)
+                ends-sep?21_0)))))))))
+(define parse-//?-drive
+  (lambda (bstr_0)
+    (call-with-values
+     (lambda () (parse-backslash-backslash-questionmark bstr_0))
+     (case-lambda
+      ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 add-sep-pos_0)
+       (values kind_0 drive-len_0 orig-drive-len_0))
+      (args (raise-binding-result-arity-error 5 args))))))
+(define parse-//-drive (lambda (bstr_0) (parse-unc.1 #f #f bstr_0 0)))
+(define split-reld.1
+  (letrec ((explode-loop_0
+            (|#%name|
+             explode-loop
+             (lambda (explode?30_0 bstr_0)
+               (begin
+                 (call-with-values
+                  (lambda ()
+                    (let ((len_0 (unsafe-bytes-length bstr_0)))
+                      (if (eqv? (unsafe-bytes-ref bstr_0 (sub1 len_0)) 92)
+                        (values (sub1 len_0) #t)
+                        (values len_0 #f))))
+                  (case-lambda
+                   ((len_0 is-dir?_0)
+                    (call-with-values
+                     (lambda ()
+                       (backslash-backslash-questionmark-dot-ups-end
+                        bstr_0
+                        len_0))
+                     (case-lambda
+                      ((dots-end_0 literal-start_0)
+                       (if (< literal-start_0 len_0)
+                         (letrec*
+                          ((loop_1
+                            (|#%name|
+                             loop
+                             (lambda (p_0)
+                               (begin
+                                 (if (<
+                                      p_0
+                                      (if dots-end_0
+                                        (sub1 literal-start_0)
+                                        literal-start_0))
+                                   (if (eqv? (unsafe-bytes-ref bstr_0 6) 76)
+                                     (let ((elem_0
+                                            (path1.1
+                                             (if is-dir?_0
+                                               (subbytes bstr_0 0 len_0)
+                                               bstr_0)
+                                             'windows)))
+                                       (if explode?30_0
+                                         (list elem_0)
+                                         (values 'relative elem_0 is-dir?_0)))
+                                     (let ((base_0 (path1.1 #vu8(92) 'windows)))
+                                       (let ((elem_0
+                                              (path1.1
+                                               (let ((app_0
+                                                      (if (eqv?
+                                                           (unsafe-bytes-ref
+                                                            bstr_0
+                                                            8)
+                                                           92)
+                                                        #vu8()
+                                                        #vu8(92))))
+                                                 (bytes-append
+                                                  #vu8(92 92 63 92 82 69 76 92)
+                                                  app_0
+                                                  (subbytes
+                                                   bstr_0
+                                                   8
+                                                   (let ((len_1
+                                                          (unsafe-bytes-length
+                                                           bstr_0)))
+                                                     (if is-dir?_0
+                                                       (sub1 len_1)
+                                                       len_1)))))
+                                               'windows)))
+                                         (if explode?30_0
+                                           (list elem_0 base_0)
+                                           (values base_0 elem_0 is-dir?_0)))))
+                                   (if (eqv? (unsafe-bytes-ref bstr_0 p_0) 92)
+                                     (let ((elem-bstr_0
+                                            (bytes-append
+                                             #vu8(92 92 63 92 82 69 76 92 92)
+                                             (subbytes
+                                              bstr_0
+                                              (add1 p_0)
+                                              len_0))))
+                                       (let ((nsep_0
+                                              (if (let ((or-part_0
+                                                         (eqv?
+                                                          dots-end_0
+                                                          p_0)))
+                                                    (if or-part_0
+                                                      or-part_0
+                                                      (eqv?
+                                                       dots-end_0
+                                                       (sub1 p_0))))
+                                                (if (eqv? dots-end_0 p_0) 0 -1)
+                                                (if (eqv?
+                                                     (unsafe-bytes-ref
+                                                      bstr_0
+                                                      6)
+                                                     76)
+                                                  1
+                                                  (if (eqv?
+                                                       (unsafe-bytes-ref
+                                                        bstr_0
+                                                        (sub1 p_0))
+                                                       92)
+                                                    0
+                                                    1)))))
+                                         (let ((base-bstr_0
+                                                (subbytes
+                                                 bstr_0
+                                                 0
+                                                 (+ p_0 nsep_0))))
+                                           (let ((elem_0
+                                                  (path1.1
+                                                   elem-bstr_0
+                                                   'windows)))
+                                             (if explode?30_0
+                                               (cons
+                                                elem_0
+                                                (explode-loop_0
+                                                 explode?30_0
+                                                 base-bstr_0))
+                                               (values
+                                                (path1.1 base-bstr_0 'windows)
+                                                elem_0
+                                                is-dir?_0))))))
+                                     (loop_1 (sub1 p_0)))))))))
+                          (loop_1 (sub1 len_0)))
+                         (if explode?30_0
+                           (loop_0 dots-end_0)
+                           (if (> (- dots-end_0 3) 8)
+                             (values
+                              (path1.1
+                               (subbytes bstr_0 0 (- dots-end_0 3))
+                               'windows)
+                              'up
+                              #t)
+                             (values 'relative 'up #t)))))
+                      (args (raise-binding-result-arity-error 2 args)))))
+                   (args (raise-binding-result-arity-error 2 args))))))))
+           (loop_0
+            (|#%name|
+             loop
+             (lambda (dots-end_0)
+               (begin
+                 (if (> dots-end_0 9)
+                   (cons 'up (loop_0 (- dots-end_0 3)))
+                   '()))))))
+    (|#%name|
+     split-reld
+     (lambda (explode?30_0 bstr32_0)
+       (begin (explode-loop_0 explode?30_0 bstr32_0))))))
+(define 1/path->directory-path
+  (|#%name|
+   path->directory-path
+   (lambda (p-in_0)
+     (begin
+       (begin
+         (check-path-argument 'path->directory-path p-in_0)
+         (let ((p_0 (->path p-in_0)))
+           (if (directory-path?.1 #t p_0)
+             p_0
+             (let ((tmp_0 (|#%app| path-convention p_0)))
+               (if (eq? tmp_0 'unix)
+                 (path1.1 (bytes-append (|#%app| path-bytes p_0) #vu8(47)) 'unix)
+                 (if (eq? tmp_0 'windows)
+                   (path1.1
+                    (bytes-append (|#%app| path-bytes p_0) #vu8(92))
+                    'windows)
+                   (void)))))))))))
+(define directory-path?.1
+  (letrec ((unixish-path-directory-path?_0
+            (|#%name|
+             unixish-path-directory-path?
+             (lambda (bstr_0 convention_0 len_0 require-sep?1_0)
+               (begin
+                 (let ((or-part_0
+                        (is-sep?
+                         (unsafe-bytes-ref bstr_0 (sub1 len_0))
+                         convention_0)))
+                   (if or-part_0
+                     or-part_0
+                     (if (not require-sep?1_0)
+                       (let ((or-part_1
+                              (if (>= len_0 2)
+                                (if (eq?
+                                     (unsafe-bytes-ref bstr_0 (sub1 len_0))
+                                     46)
+                                  (if (eq?
+                                       (unsafe-bytes-ref bstr_0 (- len_0 2))
+                                       46)
+                                    (let ((or-part_1 (= len_0 2)))
+                                      (if or-part_1
+                                        or-part_1
+                                        (is-sep?
+                                         (unsafe-bytes-ref bstr_0 (- len_0 3))
+                                         convention_0)))
+                                    #f)
+                                  #f)
+                                #f)))
+                         (if or-part_1
+                           or-part_1
+                           (if (>= len_0 1)
+                             (if (eq?
+                                  (unsafe-bytes-ref bstr_0 (sub1 len_0))
+                                  46)
+                               (let ((or-part_2 (= len_0 1)))
+                                 (if or-part_2
+                                   or-part_2
+                                   (is-sep?
+                                    (unsafe-bytes-ref bstr_0 (- len_0 2))
+                                    convention_0)))
+                               #f)
+                             #f)))
+                       #f))))))))
+    (|#%name|
+     directory-path?
+     (lambda (require-sep?1_0 p3_0)
+       (begin
+         (let ((bstr_0 (|#%app| path-bytes p3_0)))
+           (let ((len_0 (unsafe-bytes-length bstr_0)))
+             (let ((convention_0 (|#%app| path-convention p3_0)))
+               (if (eq? convention_0 'unix)
+                 (unixish-path-directory-path?_0
+                  bstr_0
+                  convention_0
+                  len_0
+                  require-sep?1_0)
+                 (if (eq? convention_0 'windows)
+                   (if (backslash-backslash-questionmark? bstr_0)
+                     (let ((or-part_0
+                            (eqv? (unsafe-bytes-ref bstr_0 (sub1 len_0)) 92)))
+                       (if or-part_0
+                         or-part_0
+                         (if (not require-sep?1_0)
+                           (if (eq?
+                                'rel
+                                (backslash-backslash-questionmark-kind bstr_0))
+                             (eqv?
+                              len_0
+                              (call-with-values
+                               (lambda ()
+                                 (backslash-backslash-questionmark-dot-ups-end
+                                  bstr_0
+                                  len_0))
+                               (case-lambda
+                                ((dots-end_0 literal-start_0) dots-end_0)
+                                (args
+                                 (raise-binding-result-arity-error 2 args)))))
+                             #f)
+                           #f)))
+                     (unixish-path-directory-path?_0
+                      bstr_0
+                      convention_0
+                      len_0
+                      require-sep?1_0))
+                   (void)))))))))))
+(define host-path->host-path-without-trailing-separator
+  (lambda (bstr_0)
+    (let ((orig-len_0 (unsafe-bytes-length bstr_0)))
+      (if (= orig-len_0 1)
+        bstr_0
+        (if (if (eq? (system-path-convention-type) 'windows)
+              (backslash-backslash-questionmark? bstr_0)
+              #f)
+          bstr_0
+          (let ((len_0
+                 (letrec*
+                  ((loop_0
+                    (|#%name|
+                     loop
+                     (lambda (len_0)
+                       (begin
+                         (if (zero? len_0)
+                           0
+                           (let ((c_0 (unsafe-bytes-ref bstr_0 (sub1 len_0))))
+                             (if (is-sep? c_0 (system-path-convention-type))
+                               (loop_0 (sub1 len_0))
+                               len_0))))))))
+                  (loop_0 orig-len_0))))
+            (if (< len_0 orig-len_0) (subbytes bstr_0 0 len_0) bstr_0)))))))
+(define simplify-path-syntactically
+  (let ((simplify-path-syntactically_0
+         (letrec ((loop_0
+                   (|#%name|
+                    loop
+                    (lambda (l_0 accum_0)
+                      (begin
+                        (if (null? l_0)
+                          (1/reverse accum_0)
+                          (if (eq? 'same (car l_0))
+                            (loop_0 (cdr l_0) accum_0)
+                            (if (eq? 'up (car l_0))
+                              (if (pair? accum_0)
+                                (let ((app_0 (cdr l_0)))
+                                  (loop_0 app_0 (cdr accum_0)))
+                                (cons 'up (loop_0 (cdr l_0) null)))
+                              (let ((app_0 (cdr l_0)))
+                                (loop_0
+                                 app_0
+                                 (cons (car l_0) accum_0)))))))))))
+           (|#%name|
+            simplify-path-syntactically
+            (lambda (who2_0 p3_0 use-filesystem1_0)
+              (begin
+                (let ((convention_0 (|#%app| path-convention p3_0)))
+                  (begin
+                    (if use-filesystem1_0
+                      (if (eq? convention_0 (system-path-convention-type))
+                        (void)
+                        (raise-arguments-error
+                         who2_0
+                         "in use-filesystem mode, path is not for the current platform"
+                         "path"
+                         p3_0))
+                      (void))
+                    (if (simple? p3_0 convention_0)
+                      p3_0
+                      (let ((clean-p_0
+                             (begin-unsafe (do-cleanse-path p3_0 #t))))
+                        (if (simple? clean-p_0 convention_0)
+                          (if (let ((or-part_0 (not use-filesystem1_0)))
+                                (if or-part_0
+                                  or-part_0
+                                  (if (eq? 'windows (system-type))
+                                    (same-modulo-slashes? p3_0 clean-p_0)
+                                    #f)))
+                            clean-p_0
+                            (let ((temp5_0 (current-directory$1)))
+                              (path->complete-path.1 #t clean-p_0 temp5_0)))
+                          (let ((l_0 (1/explode-path clean-p_0)))
+                            (let ((simple-p_0
+                                   (if use-filesystem1_0
+                                     (|#%app| use-filesystem1_0 who2_0 l_0)
+                                     (let ((simpler-l_0 (loop_0 l_0 null)))
+                                       (apply
+                                        1/build-path/convention-type
+                                        convention_0
+                                        (if (null? simpler-l_0)
+                                          '(same)
+                                          simpler-l_0))))))
+                              (let ((simpler-p_0
+                                     (if (eq? convention_0 'windows)
+                                       (simplify-backslash-backslash-questionmark
+                                        simple-p_0)
+                                       simple-p_0)))
+                                (if (let ((or-part_0
+                                           (directory-path?.1 #f p3_0)))
+                                      (if or-part_0
+                                        or-part_0
+                                        (if (eq? convention_0 'windows)
+                                          (unc-without-trailing-separator?
+                                           simpler-p_0)
+                                          #f)))
+                                  (1/path->directory-path simpler-p_0)
+                                  simpler-p_0)))))))))))))))
+    (case-lambda
+     ((who_0 p_0) (simplify-path-syntactically_0 who_0 p_0 #f))
+     ((who_0 p_0 use-filesystem1_0)
+      (simplify-path-syntactically_0 who_0 p_0 use-filesystem1_0)))))
+(define simple?
+  (letrec ((is-a-sep?_0
+            (|#%name|
+             is-a-sep?
+             (lambda (convention_0 b_0)
+               (begin
+                 (if (eq? convention_0 'windows)
+                   (eqv? b_0 92)
+                   (is-sep? b_0 convention_0)))))))
+    (lambda (p_0 convention_0)
+      (let ((bstr_0 (|#%app| path-bytes p_0)))
+        (let ((len_0 (unsafe-bytes-length bstr_0)))
+          (if (if (eq? convention_0 'windows)
+                (if (= len_0 2) (letter-drive-start? bstr_0 2) #f)
+                #f)
+            #f
+            (let ((c1_0
+                   (if (eq? convention_0 'windows)
+                     (backslash-backslash-questionmark-simple-status bstr_0)
+                     #f)))
+              (if c1_0
+                (eq? c1_0 'simple)
+                (letrec*
+                 ((loop_0
+                   (|#%name|
+                    loop
+                    (lambda (i_0)
+                      (begin
+                        (if (= i_0 len_0)
+                          #t
+                          (if (is-a-sep?_0
+                               convention_0
+                               (unsafe-bytes-ref bstr_0 i_0))
+                            (if (= (add1 i_0) len_0)
+                              #t
+                              (if (is-a-sep?_0
+                                   convention_0
+                                   (unsafe-bytes-ref bstr_0 (add1 i_0)))
+                                #f
+                                (if (if (eqv?
+                                         (unsafe-bytes-ref bstr_0 (add1 i_0))
+                                         46)
+                                      (let ((or-part_0 (= (+ i_0 2) len_0)))
+                                        (if or-part_0
+                                          or-part_0
+                                          (let ((or-part_1
+                                                 (is-a-sep?_0
+                                                  convention_0
+                                                  (unsafe-bytes-ref
+                                                   bstr_0
+                                                   (+ i_0 2)))))
+                                            (if or-part_1
+                                              or-part_1
+                                              (if (eqv?
+                                                   (unsafe-bytes-ref
+                                                    bstr_0
+                                                    (+ i_0 2))
+                                                   46)
+                                                (let ((or-part_2
+                                                       (= (+ i_0 3) len_0)))
+                                                  (if or-part_2
+                                                    or-part_2
+                                                    (is-a-sep?_0
+                                                     convention_0
+                                                     (unsafe-bytes-ref
+                                                      bstr_0
+                                                      (+ i_0 3)))))
+                                                #f)))))
+                                      #f)
+                                  #f
+                                  (loop_0 (add1 i_0)))))
+                            (if (if (zero? i_0)
+                                  (if (eqv? (unsafe-bytes-ref bstr_0 0) 46)
+                                    (let ((or-part_0 (= 1 len_0)))
+                                      (if or-part_0
+                                        or-part_0
+                                        (let ((or-part_1
+                                               (is-sep?
+                                                (unsafe-bytes-ref bstr_0 1)
+                                                convention_0)))
+                                          (if or-part_1
+                                            or-part_1
+                                            (if (eqv?
+                                                 (unsafe-bytes-ref bstr_0 1)
+                                                 46)
+                                              (let ((or-part_2 (= 2 len_0)))
+                                                (if or-part_2
+                                                  or-part_2
+                                                  (is-sep?
+                                                   (unsafe-bytes-ref bstr_0 2)
+                                                   convention_0)))
+                                              #f)))))
+                                    #f)
+                                  #f)
+                              #f
+                              (if (if (eq? convention_0 'windows)
+                                    (eqv? (unsafe-bytes-ref bstr_0 i_0) 47)
+                                    #f)
+                                #f
+                                (loop_0 (add1 i_0)))))))))))
+                 (loop_0 0))))))))))
+(define backslash-backslash-questionmark-simple-status
+  (lambda (bstr_0)
+    (call-with-values
+     (lambda () (parse-backslash-backslash-questionmark bstr_0))
+     (case-lambda
+      ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 sep-bstr_0)
+       (if (not kind_0)
+         #f
+         (if (if (fx= (unsafe-bytes-ref bstr_0 4) 82)
+               (fx= (unsafe-bytes-ref bstr_0 5) 69)
+               #f)
+           (letrec*
+            ((loop_0
+              (|#%name|
+               loop
+               (lambda (p_0 accum_0 as-dir?_0)
+                 (begin
+                   (call-with-values
+                    (lambda () (1/split-path p_0))
+                    (case-lambda
+                     ((base-dir_0 name_0 dir?_0)
+                      (if (symbol? name_0)
+                        'non-simple
+                        (let ((new-accum_0 (cons name_0 accum_0)))
+                          (let ((new-as-dir?_0
+                                 (if (null? accum_0) dir?_0 as-dir?_0)))
+                            (if (1/path? base-dir_0)
+                              (loop_0 base-dir_0 new-accum_0 new-as-dir?_0)
+                              (let ((rebuilt0-p_0
+                                     (apply
+                                      1/build-path/convention-type
+                                      'windows
+                                      new-accum_0)))
+                                (let ((rebuilt-p_0
+                                       (if new-as-dir?_0
+                                         (path1.1
+                                          (bytes-append
+                                           (|#%app| path-bytes rebuilt0-p_0)
+                                           #vu8(92))
+                                          'windows)
+                                         rebuilt0-p_0)))
+                                  (let ((rebuilt-bstr_0
+                                         (let ((app_0 path-bytes))
+                                           (|#%app|
+                                            app_0
+                                            (simplify-backslash-backslash-questionmark
+                                             rebuilt-p_0)))))
+                                    (if (bytes=? bstr_0 rebuilt-bstr_0)
+                                      'simple
+                                      'non-simple)))))))))
+                     (args (raise-binding-result-arity-error 3 args)))))))))
+            (loop_0 (path1.1 bstr_0 'windows) '() #f))
+           'non-simple)))
+      (args (raise-binding-result-arity-error 5 args))))))
+(define unc-without-trailing-separator?
+  (lambda (p_0)
+    (let ((bstr_0 (|#%app| path-bytes p_0)))
+      (eqv? (parse-unc.1 #f #f bstr_0 0) (unsafe-bytes-length bstr_0)))))
+(define simplify-backslash-backslash-questionmark
+  (letrec ((no-special-in-content?_0
+            (|#%name|
+             no-special-in-content?
+             (lambda (bstr_0 len_0 len9_0 start-pos11_0)
+               (begin
+                 (let ((len_1 (if (eq? len9_0 unsafe-undefined) len_0 len9_0)))
+                   (letrec*
+                    ((loop_0
+                      (|#%name|
+                       loop
+                       (lambda (i_0 elem-start_0)
+                         (begin
+                           (if (= i_0 len_1)
+                             (not
+                              (special-element?_0 bstr_0 elem-start_0 i_0 #t))
+                             (let ((b_0 (unsafe-bytes-ref bstr_0 i_0)))
+                               (if (eqv? b_0 92)
+                                 (if (special-element?_0
+                                      bstr_0
+                                      elem-start_0
+                                      i_0
+                                      #f)
+                                   #f
+                                   (let ((app_0 (add1 i_0)))
+                                     (loop_0 app_0 (add1 i_0))))
+                                 (if (let ((or-part_0 (eqv? b_0 47)))
+                                       (if or-part_0
+                                         or-part_0
+                                         (let ((or-part_1 (eqv? b_0 58)))
+                                           (if or-part_1
+                                             or-part_1
+                                             (let ((or-part_2 (eqv? b_0 34)))
+                                               (if or-part_2
+                                                 or-part_2
+                                                 (let ((or-part_3
+                                                        (eqv? b_0 124)))
+                                                   (if or-part_3
+                                                     or-part_3
+                                                     (let ((or-part_4
+                                                            (eqv? b_0 60)))
+                                                       (if or-part_4
+                                                         or-part_4
+                                                         (eqv?
+                                                          b_0
+                                                          62)))))))))))
+                                   #f
+                                   (loop_0 (add1 i_0) elem-start_0))))))))))
+                    (loop_0 start-pos11_0 start-pos11_0)))))))
+           (special-element?_0
+            (|#%name|
+             special-element?
+             (lambda (bstr_0 elem-start_0 i_0 at-end?_0)
+               (begin
+                 (if (< elem-start_0 i_0)
+                   (let ((or-part_0
+                          (let ((b_0 (unsafe-bytes-ref bstr_0 (sub1 i_0))))
+                            (let ((or-part_0
+                                   (if (eqv? b_0 46)
+                                     (if at-end?_0
+                                       at-end?_0
+                                       (let ((or-part_0
+                                              (= elem-start_0 (- i_0 1))))
+                                         (if or-part_0
+                                           or-part_0
+                                           (if (= elem-start_0 (- i_0 2))
+                                             (eqv?
+                                              (unsafe-bytes-ref
+                                               bstr_0
+                                               elem-start_0)
+                                              46)
+                                             #f))))
+                                     #f)))
+                              (if or-part_0
+                                or-part_0
+                                (if at-end?_0 (eqv? b_0 32) #f))))))
+                     (if or-part_0
+                       or-part_0
+                       (let ((temp13_0 (subbytes bstr_0 elem-start_0 i_0)))
+                         (special-filename?.1 #t temp13_0))))
+                   #f))))))
+    (lambda (p_0)
+      (let ((bstr_0 (|#%app| path-bytes p_0)))
+        (let ((len_0 (unsafe-bytes-length bstr_0)))
+          (call-with-values
+           (lambda () (parse-backslash-backslash-questionmark bstr_0))
+           (case-lambda
+            ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 sep-bstr_0)
+             (if (eq? kind_0 'abs)
+               (if (if (= drive-len_0 7)
+                     (if (drive-letter? (unsafe-bytes-ref bstr_0 4))
+                       (if (eqv? (unsafe-bytes-ref bstr_0 5) 58)
+                         (no-special-in-content?_0
+                          bstr_0
+                          len_0
+                          unsafe-undefined
+                          orig-drive-len_0)
+                         #f)
+                       #f)
+                     #f)
+                 (path1.1 (subbytes bstr_0 4) 'windows)
+                 p_0)
+               (if (eq? kind_0 'unc)
+                 (let ((norm-bstr_0
+                        (normalize-backslash-backslash-unc bstr_0)))
+                   (if (let ((temp16_0
+                              (if (= orig-drive-len_0 len_0)
+                                (sub1 len_0)
+                                len_0)))
+                         (no-special-in-content?_0 bstr_0 len_0 temp16_0 4))
+                     (path1.1
+                      (bytes-append #vu8(92) (subbytes norm-bstr_0 7))
+                      'windows)
+                     (if (eq? norm-bstr_0 bstr_0)
+                       p_0
+                       (path1.1 norm-bstr_0 'windows))))
+                 (if (eq? kind_0 'red)
+                   (if (no-special-in-content?_0
+                        bstr_0
+                        len_0
+                        unsafe-undefined
+                        9)
+                     (path1.1 (subbytes bstr_0 8) 'windows)
+                     p_0)
+                   (if (eq? kind_0 'rel)
+                     (call-with-values
+                      (lambda ()
+                        (backslash-backslash-questionmark-dot-ups-end
+                         bstr_0
+                         len_0))
+                      (case-lambda
+                       ((dots-end_0 literal-start_0)
+                        (if (no-special-in-content?_0
+                             bstr_0
+                             len_0
+                             unsafe-undefined
+                             literal-start_0)
+                          (path1.1
+                           (let ((app_0
+                                  (if dots-end_0
+                                    (subbytes bstr_0 8 (add1 dots-end_0))
+                                    #vu8())))
+                             (bytes-append
+                              app_0
+                              (subbytes bstr_0 literal-start_0)))
+                           'windows)
+                          p_0))
+                       (args (raise-binding-result-arity-error 2 args))))
+                     p_0)))))
+            (args (raise-binding-result-arity-error 5 args)))))))))
+(define normalize-backslash-backslash-unc
+  (lambda (bstr_0)
+    (if (if (eqv? (unsafe-bytes-ref bstr_0 4) 85)
+          (if (eqv? (unsafe-bytes-ref bstr_0 5) 78)
+            (eqv? (unsafe-bytes-ref bstr_0 6) 67)
+            #f)
+          #f)
+      bstr_0
+      (if (eqv? (unsafe-bytes-ref bstr_0 4) 92)
+        (bytes-append #vu8(92 92 63 92 85 78 67) (subbytes bstr_0 8))
+        (bytes-append #vu8(92 92 63 92 85 78 67) (subbytes bstr_0 7))))))
+(define same-modulo-slashes?
+  (lambda (p1_0 p2_0)
+    (let ((bstr1_0 (|#%app| path-bytes p1_0)))
+      (let ((bstr2_0 (|#%app| path-bytes p2_0)))
+        (let ((len_0 (unsafe-bytes-length bstr1_0)))
+          (if (fx= len_0 (unsafe-bytes-length bstr2_0))
+            (letrec*
+             ((loop_0
+               (|#%name|
+                loop
+                (lambda (i_0)
+                  (begin
+                    (let ((or-part_0 (fx= i_0 len_0)))
+                      (if or-part_0
+                        or-part_0
+                        (if (let ((b1_0 (unsafe-bytes-ref bstr1_0 i_0)))
+                              (let ((b2_0 (unsafe-bytes-ref bstr2_0 i_0)))
+                                (let ((b1_1 b1_0))
+                                  (let ((or-part_1 (fx= b1_1 b2_0)))
+                                    (if or-part_1
+                                      or-part_1
+                                      (let ((or-part_2
+                                             (if (fx= b1_1 92)
+                                               (fx= b2_0 47)
+                                               #f)))
+                                        (if or-part_2
+                                          or-part_2
+                                          (if (fx= b1_1 47)
+                                            (fx= b2_0 92)
+                                            #f))))))))
+                          (loop_0 (fx+ i_0 1))
+                          #f))))))))
+             (loop_0 0))
+            #f))))))
 (define port-number? (lambda (v_0) (if (fixnum? v_0) (<= 1 v_0 65535) #f)))
 (define listen-port-number?
   (lambda (v_0) (if (fixnum? v_0) (<= 0 v_0 65535) #f)))
@@ -26541,8 +27550,10 @@
         (let ((app_0 path-bytes))
           (|#%app|
            app_0
-           (let ((p_2 (path->complete-path.1 #f p_1 current-directory$1)))
-             (begin-unsafe (do-cleanse-path p_2 #t)))))))))
+           (handle-long-path
+            who_0
+            (let ((p_2 (path->complete-path.1 #f p_1 current-directory$1)))
+              (begin-unsafe (do-cleanse-path p_2 #t))))))))))
 (define ->host/as-is
   (lambda (p_0 who_0 src_0)
     (let ((p_1 (->path p_0)))
@@ -26563,6 +27574,35 @@
        (protect-path-element (bytes->immutable-bytes s_0) 'windows)
        'windows)
       (host-> s_0))))
+(define handle-long-path
+  (lambda (who_0 p_0)
+    (if (eq? (system-type) 'windows)
+      (let ((bstr_0 (|#%app| path-bytes p_0)))
+        (if (if (> (unsafe-bytes-length bstr_0) 259)
+              (not
+               (if (fx= (unsafe-bytes-ref bstr_0 0) 92)
+                 (if (fx= (unsafe-bytes-ref bstr_0 1) 92)
+                   (if (fx= (unsafe-bytes-ref bstr_0 2) 63)
+                     (fx= (unsafe-bytes-ref bstr_0 3) 92)
+                     #f)
+                   #f)
+                 #f))
+              #f)
+          (let ((simple-p_0 (simplify-path-syntactically who_0 p_0 #f)))
+            (let ((simple-bstr_0 (|#%app| path-bytes simple-p_0)))
+              (if (<= (unsafe-bytes-length simple-bstr_0) 260)
+                simple-p_0
+                (if (fx= (unsafe-bytes-ref simple-bstr_0 0) 92)
+                  (path1.1
+                   (bytes-append
+                    #vu8(92 92 63 92 85 78 67)
+                    (subbytes simple-bstr_0 0))
+                   'windows)
+                  (path1.1
+                   (bytes-append #vu8(92 92 63 92) simple-bstr_0)
+                   'windows)))))
+          p_0))
+      p_0)))
 (define none$1 (gensym))
 (define 1/open-input-file
   (let ((open-input-file_0
@@ -29450,453 +30490,6 @@
      (case-lambda
       (() (begin (char-ready?_0 unsafe-undefined)))
       ((in2_0) (char-ready?_0 in2_0))))))
-(define 1/split-path
-  (|#%name|
-   split-path
-   (lambda (p_0)
-     (begin
-       (begin
-         (check-path-argument 'split-path p_0)
-         (let ((temp35_0 (->path p_0))) (split.1 #f temp35_0)))))))
-(define 1/explode-path
-  (|#%name|
-   explode-path
-   (lambda (p_0)
-     (begin
-       (begin
-         (check-path-argument 'explode-path p_0)
-         (1/reverse (let ((temp37_0 (->path p_0))) (split.1 #t temp37_0))))))))
-(define split.1
-  (|#%name|
-   split
-   (lambda (explode?1_0 p3_0)
-     (begin
-       (if (not (eq? (|#%app| path-convention p3_0) 'windows))
-         (split-after-drive.1 0 0 explode?1_0 unsafe-undefined #f #f #f p3_0)
-         (let ((bstr_0 (|#%app| path-bytes p3_0)))
-           (if (if (> (unsafe-bytes-length bstr_0) 2)
-                 (if (is-sep? (unsafe-bytes-ref bstr_0 0) 'windows)
-                   (is-sep? (unsafe-bytes-ref bstr_0 1) 'windows)
-                   #f)
-                 #f)
-             (call-with-values
-              (lambda () (parse-//?-drive bstr_0))
-              (case-lambda
-               ((//?-kind_0 //?-drive-end_0 //?-orig-drive-end_0)
-                (if //?-kind_0
-                  (if (let ((or-part_0 (eq? //?-kind_0 'rel)))
-                        (if or-part_0 or-part_0 (eq? //?-kind_0 'red)))
-                    (split-reld.1 explode?1_0 bstr_0)
-                    (let ((temp45_0
-                           (if (eq? //?-kind_0 'unc)
-                             //?-orig-drive-end_0
-                             //?-drive-end_0)))
-                      (split-after-drive.1
-                       //?-orig-drive-end_0
-                       //?-orig-drive-end_0
-                       explode?1_0
-                       temp45_0
-                       #f
-                       #t
-                       #t
-                       p3_0)))
-                  (let ((//-drive-end_0 (parse-//-drive bstr_0)))
-                    (if //-drive-end_0
-                      (let ((temp51_0
-                             (if (if (<
-                                      //-drive-end_0
-                                      (unsafe-bytes-length bstr_0))
-                                   (is-sep?
-                                    (unsafe-bytes-ref bstr_0 //-drive-end_0)
-                                    'windows)
-                                   #f)
-                               (add1 //-drive-end_0)
-                               //-drive-end_0)))
-                        (split-after-drive.1
-                         1
-                         temp51_0
-                         explode?1_0
-                         unsafe-undefined
-                         #f
-                         #f
-                         #f
-                         p3_0))
-                      (split-after-drive.1
-                       0
-                       0
-                       explode?1_0
-                       unsafe-undefined
-                       #f
-                       #f
-                       #f
-                       p3_0)))))
-               (args (raise-binding-result-arity-error 3 args))))
-             (if (if (>= (unsafe-bytes-length bstr_0) 2)
-                   (if (drive-letter? (unsafe-bytes-ref bstr_0 0))
-                     (eq? (unsafe-bytes-ref bstr_0 1) 58)
-                     #f)
-                   #f)
-               (let ((temp57_0
-                      (if (if (< 2 (unsafe-bytes-length bstr_0))
-                            (is-sep? (unsafe-bytes-ref bstr_0 2) 'windows)
-                            #f)
-                        3
-                        2)))
-                 (split-after-drive.1
-                  0
-                  temp57_0
-                  explode?1_0
-                  unsafe-undefined
-                  #f
-                  #f
-                  #f
-                  p3_0))
-               (split-after-drive.1
-                0
-                0
-                explode?1_0
-                unsafe-undefined
-                #f
-                #f
-                #f
-                p3_0)))))))))
-(define split-after-drive.1
-  (|#%name|
-   split-after-drive
-   (lambda (allow-double-before10_0
-            drive-end6_0
-            explode?11_0
-            keep-drive-end7_0
-            len5_0
-            no-slash-sep?8_0
-            no-up?9_0
-            p19_0)
-     (begin
-       (let ((keep-drive-end_0
-              (if (eq? keep-drive-end7_0 unsafe-undefined)
-                drive-end6_0
-                keep-drive-end7_0)))
-         (let ((convention_0 (|#%app| path-convention p19_0)))
-           (let ((bstr_0
-                  (if len5_0
-                    (|#%app| path-bytes p19_0)
-                    (let ((temp61_0 (|#%app| path-bytes p19_0)))
-                      (clean-double-slashes.1
-                       #f
-                       #f
-                       temp61_0
-                       convention_0
-                       allow-double-before10_0)))))
-             (let ((len_0 (if len5_0 len5_0 (unsafe-bytes-length bstr_0))))
-               (call-with-values
-                (lambda ()
-                  (letrec*
-                   ((loop_0
-                     (|#%name|
-                      loop
-                      (lambda (i_0 ends-sep?_0)
-                        (begin
-                          (if (< i_0 drive-end6_0)
-                            (if (if (positive? i_0) (< i_0 (sub1 len_0)) #f)
-                              (values i_0 ends-sep?_0)
-                              (values #f ends-sep?_0))
-                            (let ((sep?_0
-                                   (if no-slash-sep?8_0
-                                     (eq? (unsafe-bytes-ref bstr_0 i_0) 92)
-                                     (is-sep?
-                                      (unsafe-bytes-ref bstr_0 i_0)
-                                      convention_0))))
-                              (if sep?_0
-                                (if (< i_0 (sub1 len_0))
-                                  (values i_0 ends-sep?_0)
-                                  (loop_0 (sub1 i_0) #t))
-                                (loop_0 (sub1 i_0) ends-sep?_0)))))))))
-                   (loop_0 (sub1 len_0) #f)))
-                (case-lambda
-                 ((split-pos_0 ends-sep?_0)
-                  (if (not split-pos_0)
-                    (if (let ((or-part_0
-                               (is-sep?
-                                (unsafe-bytes-ref bstr_0 0)
-                                convention_0)))
-                          (if or-part_0 or-part_0 (positive? drive-end6_0)))
-                      (let ((new-p_0
-                             (path1.1 (subbytes bstr_0 0 len_0) convention_0)))
-                        (if explode?11_0
-                          (list new-p_0)
-                          (values #f new-p_0 #t)))
-                      (call-with-values
-                       (lambda ()
-                         (split-tail.1
-                          ends-sep?_0
-                          no-up?9_0
-                          bstr_0
-                          len_0
-                          0
-                          convention_0))
-                       (case-lambda
-                        ((name_0 is-dir?_0)
-                         (if explode?11_0
-                           (list name_0)
-                           (values 'relative name_0 is-dir?_0)))
-                        (args (raise-binding-result-arity-error 2 args)))))
-                    (call-with-values
-                     (lambda ()
-                       (let ((temp72_0 (add1 split-pos_0)))
-                         (split-tail.1
-                          ends-sep?_0
-                          no-up?9_0
-                          bstr_0
-                          len_0
-                          temp72_0
-                          convention_0)))
-                     (case-lambda
-                      ((name_0 is-dir?_0)
-                       (if (zero? split-pos_0)
-                         (let ((base_0
-                                (if (eq? (unsafe-bytes-ref bstr_0 0) '#\x2f)
-                                  (path1.1 #vu8(47) convention_0)
-                                  (path1.1
-                                   (subbytes bstr_0 0 1)
-                                   convention_0))))
-                           (if explode?11_0
-                             (list name_0 base_0)
-                             (values base_0 name_0 is-dir?_0)))
-                         (call-with-values
-                          (lambda ()
-                            (values
-                             bstr_0
-                             (let ((len_1 (add1 split-pos_0)))
-                               (if (= len_1 drive-end6_0)
-                                 keep-drive-end_0
-                                 len_1))))
-                          (case-lambda
-                           ((exposed-bstr_0 exposed-len_0)
-                            (if explode?11_0
-                              (cons
-                               name_0
-                               (let ((temp76_0
-                                      (path1.1 exposed-bstr_0 convention_0)))
-                                 (split-after-drive.1
-                                  allow-double-before10_0
-                                  drive-end6_0
-                                  #t
-                                  keep-drive-end_0
-                                  exposed-len_0
-                                  no-slash-sep?8_0
-                                  no-up?9_0
-                                  temp76_0)))
-                              (let ((base_0
-                                     (path1.1
-                                      (subbytes exposed-bstr_0 0 exposed-len_0)
-                                      convention_0)))
-                                (values base_0 name_0 is-dir?_0))))
-                           (args (raise-binding-result-arity-error 2 args))))))
-                      (args (raise-binding-result-arity-error 2 args))))))
-                 (args (raise-binding-result-arity-error 2 args))))))))))))
-(define split-tail.1
-  (|#%name|
-   split-tail
-   (lambda (ends-sep?21_0
-            no-up?22_0
-            bstr25_0
-            len26_0
-            start-pos27_0
-            convention28_0)
-     (begin
-       (if (if (not no-up?22_0)
-             (if (<= (+ start-pos27_0 2) len26_0)
-               (if (eq? (unsafe-bytes-ref bstr25_0 start-pos27_0) 46)
-                 (if (eq? (unsafe-bytes-ref bstr25_0 (+ start-pos27_0 1)) 46)
-                   (let ((or-part_0 (= (+ start-pos27_0 2) len26_0)))
-                     (if or-part_0
-                       or-part_0
-                       (if (= (+ start-pos27_0 3) len26_0) ends-sep?21_0 #f)))
-                   #f)
-                 #f)
-               #f)
-             #f)
-         (values 'up #t)
-         (if (if (not no-up?22_0)
-               (if (<= (+ start-pos27_0 1) len26_0)
-                 (if (eq? (unsafe-bytes-ref bstr25_0 start-pos27_0) 46)
-                   (let ((or-part_0 (= (+ start-pos27_0 1) len26_0)))
-                     (if or-part_0
-                       or-part_0
-                       (if (= (+ start-pos27_0 2) len26_0) ends-sep?21_0 #f)))
-                   #f)
-                 #f)
-               #f)
-           (values 'same #t)
-           (let ((new-bstr_0
-                  (if ends-sep?21_0
-                    (subbytes bstr25_0 start-pos27_0 (sub1 len26_0))
-                    (if (zero? start-pos27_0)
-                      (bytes->immutable-bytes bstr25_0)
-                      (subbytes bstr25_0 start-pos27_0)))))
-             (let ((prot-bstr_0
-                    (if (if no-up?22_0 no-up?22_0 ends-sep?21_0)
-                      (protect-path-element new-bstr_0 convention28_0)
-                      new-bstr_0)))
-               (values
-                (path1.1 prot-bstr_0 convention28_0)
-                ends-sep?21_0)))))))))
-(define parse-//?-drive
-  (lambda (bstr_0)
-    (call-with-values
-     (lambda () (parse-backslash-backslash-questionmark bstr_0))
-     (case-lambda
-      ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 add-sep-pos_0)
-       (values kind_0 drive-len_0 orig-drive-len_0))
-      (args (raise-binding-result-arity-error 5 args))))))
-(define parse-//-drive (lambda (bstr_0) (parse-unc.1 #f #f bstr_0 0)))
-(define split-reld.1
-  (letrec ((explode-loop_0
-            (|#%name|
-             explode-loop
-             (lambda (explode?30_0 bstr_0)
-               (begin
-                 (call-with-values
-                  (lambda ()
-                    (let ((len_0 (unsafe-bytes-length bstr_0)))
-                      (if (eqv? (unsafe-bytes-ref bstr_0 (sub1 len_0)) 92)
-                        (values (sub1 len_0) #t)
-                        (values len_0 #f))))
-                  (case-lambda
-                   ((len_0 is-dir?_0)
-                    (call-with-values
-                     (lambda ()
-                       (backslash-backslash-questionmark-dot-ups-end
-                        bstr_0
-                        len_0))
-                     (case-lambda
-                      ((dots-end_0 literal-start_0)
-                       (if (< literal-start_0 len_0)
-                         (letrec*
-                          ((loop_1
-                            (|#%name|
-                             loop
-                             (lambda (p_0)
-                               (begin
-                                 (if (<
-                                      p_0
-                                      (if dots-end_0
-                                        (sub1 literal-start_0)
-                                        literal-start_0))
-                                   (if (eqv? (unsafe-bytes-ref bstr_0 6) 76)
-                                     (let ((elem_0
-                                            (path1.1
-                                             (if is-dir?_0
-                                               (subbytes bstr_0 0 len_0)
-                                               bstr_0)
-                                             'windows)))
-                                       (if explode?30_0
-                                         (list elem_0)
-                                         (values 'relative elem_0 is-dir?_0)))
-                                     (let ((base_0 (path1.1 #vu8(92) 'windows)))
-                                       (let ((elem_0
-                                              (path1.1
-                                               (let ((app_0
-                                                      (if (eqv?
-                                                           (unsafe-bytes-ref
-                                                            bstr_0
-                                                            8)
-                                                           92)
-                                                        #vu8()
-                                                        #vu8(92))))
-                                                 (bytes-append
-                                                  #vu8(92 92 63 92 82 69 76 92)
-                                                  app_0
-                                                  (subbytes
-                                                   bstr_0
-                                                   8
-                                                   (let ((len_1
-                                                          (unsafe-bytes-length
-                                                           bstr_0)))
-                                                     (if is-dir?_0
-                                                       (sub1 len_1)
-                                                       len_1)))))
-                                               'windows)))
-                                         (if explode?30_0
-                                           (list elem_0 base_0)
-                                           (values base_0 elem_0 is-dir?_0)))))
-                                   (if (eqv? (unsafe-bytes-ref bstr_0 p_0) 92)
-                                     (let ((elem-bstr_0
-                                            (bytes-append
-                                             #vu8(92 92 63 92 82 69 76 92 92)
-                                             (subbytes
-                                              bstr_0
-                                              (add1 p_0)
-                                              len_0))))
-                                       (let ((nsep_0
-                                              (if (let ((or-part_0
-                                                         (eqv?
-                                                          dots-end_0
-                                                          p_0)))
-                                                    (if or-part_0
-                                                      or-part_0
-                                                      (eqv?
-                                                       dots-end_0
-                                                       (sub1 p_0))))
-                                                (if (eqv? dots-end_0 p_0) 0 -1)
-                                                (if (eqv?
-                                                     (unsafe-bytes-ref
-                                                      bstr_0
-                                                      6)
-                                                     76)
-                                                  1
-                                                  (if (eqv?
-                                                       (unsafe-bytes-ref
-                                                        bstr_0
-                                                        (sub1 p_0))
-                                                       92)
-                                                    0
-                                                    1)))))
-                                         (let ((base-bstr_0
-                                                (subbytes
-                                                 bstr_0
-                                                 0
-                                                 (+ p_0 nsep_0))))
-                                           (let ((elem_0
-                                                  (path1.1
-                                                   elem-bstr_0
-                                                   'windows)))
-                                             (if explode?30_0
-                                               (cons
-                                                elem_0
-                                                (explode-loop_0
-                                                 explode?30_0
-                                                 base-bstr_0))
-                                               (values
-                                                (path1.1 base-bstr_0 'windows)
-                                                elem_0
-                                                is-dir?_0))))))
-                                     (loop_1 (sub1 p_0)))))))))
-                          (loop_1 (sub1 len_0)))
-                         (if explode?30_0
-                           (loop_0 dots-end_0)
-                           (if (> (- dots-end_0 3) 8)
-                             (values
-                              (path1.1
-                               (subbytes bstr_0 0 (- dots-end_0 3))
-                               'windows)
-                              'up
-                              #t)
-                             (values 'relative 'up #t)))))
-                      (args (raise-binding-result-arity-error 2 args)))))
-                   (args (raise-binding-result-arity-error 2 args))))))))
-           (loop_0
-            (|#%name|
-             loop
-             (lambda (dots-end_0)
-               (begin
-                 (if (> dots-end_0 9)
-                   (cons 'up (loop_0 (- dots-end_0 3)))
-                   '()))))))
-    (|#%name|
-     split-reld
-     (lambda (explode?30_0 bstr32_0)
-       (begin (explode-loop_0 explode?30_0 bstr32_0))))))
 (define call-with-resource
   (lambda (r_0 destroy_0 handle_0)
     (if (let ((or-part_0 (vector? r_0)))
@@ -29919,135 +30512,6 @@
                  (|#%app| thread-pop-kill-callback!)
                  (do-destroy_0)
                  (unsafe-end-atomic))))))))))
-(define 1/path->directory-path
-  (|#%name|
-   path->directory-path
-   (lambda (p-in_0)
-     (begin
-       (begin
-         (check-path-argument 'path->directory-path p-in_0)
-         (let ((p_0 (->path p-in_0)))
-           (if (directory-path?.1 #t p_0)
-             p_0
-             (let ((tmp_0 (|#%app| path-convention p_0)))
-               (if (eq? tmp_0 'unix)
-                 (path1.1 (bytes-append (|#%app| path-bytes p_0) #vu8(47)) 'unix)
-                 (if (eq? tmp_0 'windows)
-                   (path1.1
-                    (bytes-append (|#%app| path-bytes p_0) #vu8(92))
-                    'windows)
-                   (void)))))))))))
-(define directory-path?.1
-  (letrec ((unixish-path-directory-path?_0
-            (|#%name|
-             unixish-path-directory-path?
-             (lambda (bstr_0 convention_0 len_0 require-sep?1_0)
-               (begin
-                 (let ((or-part_0
-                        (is-sep?
-                         (unsafe-bytes-ref bstr_0 (sub1 len_0))
-                         convention_0)))
-                   (if or-part_0
-                     or-part_0
-                     (if (not require-sep?1_0)
-                       (let ((or-part_1
-                              (if (>= len_0 2)
-                                (if (eq?
-                                     (unsafe-bytes-ref bstr_0 (sub1 len_0))
-                                     46)
-                                  (if (eq?
-                                       (unsafe-bytes-ref bstr_0 (- len_0 2))
-                                       46)
-                                    (let ((or-part_1 (= len_0 2)))
-                                      (if or-part_1
-                                        or-part_1
-                                        (is-sep?
-                                         (unsafe-bytes-ref bstr_0 (- len_0 3))
-                                         convention_0)))
-                                    #f)
-                                  #f)
-                                #f)))
-                         (if or-part_1
-                           or-part_1
-                           (if (>= len_0 1)
-                             (if (eq?
-                                  (unsafe-bytes-ref bstr_0 (sub1 len_0))
-                                  46)
-                               (let ((or-part_2 (= len_0 1)))
-                                 (if or-part_2
-                                   or-part_2
-                                   (is-sep?
-                                    (unsafe-bytes-ref bstr_0 (- len_0 2))
-                                    convention_0)))
-                               #f)
-                             #f)))
-                       #f))))))))
-    (|#%name|
-     directory-path?
-     (lambda (require-sep?1_0 p3_0)
-       (begin
-         (let ((bstr_0 (|#%app| path-bytes p3_0)))
-           (let ((len_0 (unsafe-bytes-length bstr_0)))
-             (let ((convention_0 (|#%app| path-convention p3_0)))
-               (if (eq? convention_0 'unix)
-                 (unixish-path-directory-path?_0
-                  bstr_0
-                  convention_0
-                  len_0
-                  require-sep?1_0)
-                 (if (eq? convention_0 'windows)
-                   (if (backslash-backslash-questionmark? bstr_0)
-                     (let ((or-part_0
-                            (eqv? (unsafe-bytes-ref bstr_0 (sub1 len_0)) 92)))
-                       (if or-part_0
-                         or-part_0
-                         (if (not require-sep?1_0)
-                           (if (eq?
-                                'rel
-                                (backslash-backslash-questionmark-kind bstr_0))
-                             (eqv?
-                              len_0
-                              (call-with-values
-                               (lambda ()
-                                 (backslash-backslash-questionmark-dot-ups-end
-                                  bstr_0
-                                  len_0))
-                               (case-lambda
-                                ((dots-end_0 literal-start_0) dots-end_0)
-                                (args
-                                 (raise-binding-result-arity-error 2 args)))))
-                             #f)
-                           #f)))
-                     (unixish-path-directory-path?_0
-                      bstr_0
-                      convention_0
-                      len_0
-                      require-sep?1_0))
-                   (void)))))))))))
-(define host-path->host-path-without-trailing-separator
-  (lambda (bstr_0)
-    (let ((orig-len_0 (unsafe-bytes-length bstr_0)))
-      (if (= orig-len_0 1)
-        bstr_0
-        (if (if (eq? (system-path-convention-type) 'windows)
-              (backslash-backslash-questionmark? bstr_0)
-              #f)
-          bstr_0
-          (let ((len_0
-                 (letrec*
-                  ((loop_0
-                    (|#%name|
-                     loop
-                     (lambda (len_0)
-                       (begin
-                         (if (zero? len_0)
-                           0
-                           (let ((c_0 (unsafe-bytes-ref bstr_0 (sub1 len_0))))
-                             (if (is-sep? c_0 (system-path-convention-type))
-                               (loop_0 (sub1 len_0))
-                               len_0))))))))
-                  (loop_0 orig-len_0))))
-            (if (< len_0 orig-len_0) (subbytes bstr_0 0 len_0) bstr_0)))))))
 (define 1/directory-exists?
   (|#%name|
    directory-exists?
@@ -30946,567 +31410,129 @@
   (lambda (p_0) (do-resolve-path p_0 'simplify-path)))
 (define 1/simplify-path
   (let ((simplify-path_0
-         (letrec ((combine_0
-                   (|#%name|
-                    combine
-                    (lambda (base_0 accum_0)
-                      (begin
-                        (if (null? accum_0)
-                          base_0
-                          (apply 1/build-path base_0 (1/reverse accum_0)))))))
-                  (loop_0
-                   (|#%name|
-                    loop
-                    (lambda (l_0 accum_0)
-                      (begin
-                        (if (null? l_0)
-                          (1/reverse accum_0)
-                          (if (eq? 'same (car l_0))
-                            (loop_0 (cdr l_0) accum_0)
-                            (if (eq? 'up (car l_0))
-                              (if (pair? accum_0)
-                                (let ((app_0 (cdr l_0)))
-                                  (loop_0 app_0 (cdr accum_0)))
-                                (cons 'up (loop_0 (cdr l_0) null)))
-                              (let ((app_0 (cdr l_0)))
-                                (loop_0 app_0 (cons (car l_0) accum_0))))))))))
-                  (loop_1
-                   (|#%name|
-                    loop
-                    (lambda (l_0 base_0 accum_0 seen_0)
-                      (begin
-                        (if (null? l_0)
-                          (combine_0 base_0 accum_0)
-                          (if (eq? 'same (car l_0))
-                            (loop_1 (cdr l_0) base_0 accum_0 seen_0)
-                            (if (eq? 'up (car l_0))
-                              (let ((new-base_0 (combine_0 base_0 accum_0)))
-                                (let ((target_0
-                                       (begin-unsafe
-                                        (do-resolve-path
-                                         new-base_0
-                                         'simplify-path))))
-                                  (call-with-values
-                                   (lambda ()
-                                     (if (eq? target_0 new-base_0)
-                                       (values new-base_0 seen_0)
-                                       (let ((from-base_0
-                                              (if (1/complete-path? target_0)
-                                                target_0
-                                                (call-with-values
-                                                 (lambda ()
-                                                   (1/split-path new-base_0))
-                                                 (case-lambda
-                                                  ((base-dir_0 name_0 dir?_0)
-                                                   (path->complete-path.1
-                                                    #t
-                                                    target_0
-                                                    base-dir_0))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    3
-                                                    args)))))))
-                                         (begin
-                                           (if (hash-ref seen_0 from-base_0 #f)
-                                             (raise
-                                              (let ((app_0
-                                                     (let ((app_0
-                                                            (symbol->string
-                                                             'simplify-path)))
-                                                       (string-append
-                                                        app_0
-                                                        ": cycle detected at link"
-                                                        "\n  link path: "
-                                                        (path->string
-                                                         new-base_0)))))
-                                                (|#%app|
-                                                 exn:fail:filesystem
-                                                 app_0
-                                                 (current-continuation-marks))))
-                                             (void))
-                                           (values
-                                            from-base_0
-                                            (hash-set
-                                             seen_0
-                                             from-base_0
-                                             #t))))))
-                                   (case-lambda
-                                    ((from-base_0 new-seen_0)
-                                     (call-with-values
-                                      (lambda () (1/split-path from-base_0))
-                                      (case-lambda
-                                       ((next-base_0 name_0 dir?_0)
-                                        (if (not next-base_0)
-                                          (loop_1
-                                           (cdr l_0)
-                                           from-base_0
-                                           '()
-                                           new-seen_0)
-                                          (loop_1
-                                           (cdr l_0)
-                                           next-base_0
-                                           '()
-                                           new-seen_0)))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         3
-                                         args)))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args))))))
-                              (let ((app_0 (cdr l_0)))
-                                (loop_1
-                                 app_0
-                                 base_0
-                                 (cons (car l_0) accum_0)
-                                 seen_0))))))))))
-           (|#%name|
-            simplify-path
-            (lambda (p-in2_0 use-filesystem?1_0)
+         (|#%name|
+          simplify-path
+          (lambda (p-in2_0 use-filesystem?1_0)
+            (begin
               (begin
-                (begin
-                  (check-path-argument 'simplify-path p-in2_0)
-                  (let ((p_0 (->path p-in2_0)))
-                    (let ((convention_0 (|#%app| path-convention p_0)))
-                      (begin
-                        (if use-filesystem?1_0
-                          (if (eq? convention_0 (system-path-convention-type))
-                            (void)
-                            (raise-arguments-error
-                             'simplify-path
-                             "in use-filesystem mode, path is not for the current platform"
-                             "path"
-                             p_0))
-                          (void))
-                        (if (|#%app| simple? p_0 convention_0)
-                          p_0
-                          (let ((clean-p_0
-                                 (begin-unsafe (do-cleanse-path p_0 #t))))
-                            (if (|#%app| simple? clean-p_0 convention_0)
-                              (if (let ((or-part_0 (not use-filesystem?1_0)))
-                                    (if or-part_0
-                                      or-part_0
-                                      (if (eq? 'windows (system-type))
-                                        (|#%app|
-                                         same-modulo-slashes?
-                                         p_0
-                                         clean-p_0)
-                                        #f)))
-                                clean-p_0
-                                (let ((temp5_0 (current-directory$1)))
-                                  (path->complete-path.1
-                                   #t
-                                   clean-p_0
-                                   temp5_0)))
-                              (let ((l_0 (1/explode-path clean-p_0)))
-                                (let ((simple-p_0
-                                       (if use-filesystem?1_0
-                                         (let ((app_0
-                                                (if (1/path? (car l_0))
-                                                  (cdr l_0)
-                                                  l_0)))
-                                           (loop_1
-                                            app_0
-                                            (if (1/path? (car l_0))
-                                              (let ((temp8_0 (car l_0)))
-                                                (let ((temp9_0
-                                                       (current-directory$1)))
-                                                  (let ((temp8_1 temp8_0))
-                                                    (path->complete-path.1
-                                                     #t
-                                                     temp8_1
-                                                     temp9_0))))
-                                              (current-directory$1))
-                                            '()
-                                            hash2725))
-                                         (let ((simpler-l_0 (loop_0 l_0 null)))
-                                           (apply
-                                            1/build-path/convention-type
-                                            convention_0
-                                            (if (null? simpler-l_0)
-                                              '(same)
-                                              simpler-l_0))))))
-                                  (let ((simpler-p_0
-                                         (if (eq? convention_0 'windows)
-                                           (|#%app|
-                                            simplify-backslash-backslash-questionmark
-                                            simple-p_0)
-                                           simple-p_0)))
-                                    (if (let ((or-part_0
-                                               (directory-path?.1 #f p_0)))
-                                          (if or-part_0
-                                            or-part_0
-                                            (if (eq? convention_0 'windows)
-                                              (|#%app|
-                                               unc-without-trailing-separator?
-                                               simpler-p_0)
-                                              #f)))
-                                      (1/path->directory-path simpler-p_0)
-                                      simpler-p_0)))))))))))))))))
+                (check-path-argument 'simplify-path p-in2_0)
+                (let ((p_0 (->path p-in2_0)))
+                  (simplify-path-syntactically
+                   'simplify-path
+                   p_0
+                   (if use-filesystem?1_0 use-filesystem #f)))))))))
     (|#%name|
      simplify-path
      (case-lambda
       ((p-in_0) (begin (simplify-path_0 p-in_0 #t)))
       ((p-in_0 use-filesystem?1_0)
        (simplify-path_0 p-in_0 use-filesystem?1_0))))))
+(define use-filesystem
+  (letrec ((combine_0
+            (|#%name|
+             combine
+             (lambda (base_0 accum_0)
+               (begin
+                 (if (null? accum_0)
+                   base_0
+                   (apply 1/build-path base_0 (1/reverse accum_0)))))))
+           (loop_0
+            (|#%name|
+             loop
+             (lambda (who_0 l_0 base_0 accum_0 seen_0)
+               (begin
+                 (if (null? l_0)
+                   (combine_0 base_0 accum_0)
+                   (if (eq? 'same (car l_0))
+                     (loop_0 who_0 (cdr l_0) base_0 accum_0 seen_0)
+                     (if (eq? 'up (car l_0))
+                       (let ((new-base_0 (combine_0 base_0 accum_0)))
+                         (let ((target_0
+                                (begin-unsafe
+                                 (do-resolve-path new-base_0 'simplify-path))))
+                           (call-with-values
+                            (lambda ()
+                              (if (eq? target_0 new-base_0)
+                                (values new-base_0 seen_0)
+                                (let ((from-base_0
+                                       (if (1/complete-path? target_0)
+                                         target_0
+                                         (call-with-values
+                                          (lambda () (1/split-path new-base_0))
+                                          (case-lambda
+                                           ((base-dir_0 name_0 dir?_0)
+                                            (path->complete-path.1
+                                             #t
+                                             target_0
+                                             base-dir_0))
+                                           (args
+                                            (raise-binding-result-arity-error
+                                             3
+                                             args)))))))
+                                  (begin
+                                    (if (hash-ref seen_0 from-base_0 #f)
+                                      (raise
+                                       (let ((app_0
+                                              (let ((app_0
+                                                     (symbol->string who_0)))
+                                                (string-append
+                                                 app_0
+                                                 ": cycle detected at link"
+                                                 "\n  link path: "
+                                                 (path->string new-base_0)))))
+                                         (|#%app|
+                                          exn:fail:filesystem
+                                          app_0
+                                          (current-continuation-marks))))
+                                      (void))
+                                    (values
+                                     from-base_0
+                                     (hash-set seen_0 from-base_0 #t))))))
+                            (case-lambda
+                             ((from-base_0 new-seen_0)
+                              (call-with-values
+                               (lambda () (1/split-path from-base_0))
+                               (case-lambda
+                                ((next-base_0 name_0 dir?_0)
+                                 (if (not next-base_0)
+                                   (loop_0
+                                    who_0
+                                    (cdr l_0)
+                                    from-base_0
+                                    '()
+                                    new-seen_0)
+                                   (loop_0
+                                    who_0
+                                    (cdr l_0)
+                                    next-base_0
+                                    '()
+                                    new-seen_0)))
+                                (args
+                                 (raise-binding-result-arity-error 3 args)))))
+                             (args
+                              (raise-binding-result-arity-error 2 args))))))
+                       (let ((app_0 (cdr l_0)))
+                         (loop_0
+                          who_0
+                          app_0
+                          base_0
+                          (cons (car l_0) accum_0)
+                          seen_0))))))))))
+    (lambda (who_0 l_0)
+      (let ((app_0 (if (1/path? (car l_0)) (cdr l_0) l_0)))
+        (loop_0
+         who_0
+         app_0
+         (if (1/path? (car l_0))
+           (let ((temp6_0 (car l_0)))
+             (let ((temp7_0 (current-directory$1)))
+               (let ((temp6_1 temp6_0))
+                 (path->complete-path.1 #t temp6_1 temp7_0))))
+           (current-directory$1))
+         '()
+         hash2725)))))
 (define effect_2315
   (begin (void (begin-unsafe (set! simplify-path/dl 1/simplify-path))) (void)))
-(define simple?
-  (letrec ((is-a-sep?_0
-            (|#%name|
-             is-a-sep?
-             (lambda (convention_0 b_0)
-               (begin
-                 (if (eq? convention_0 'windows)
-                   (eqv? b_0 92)
-                   (is-sep? b_0 convention_0)))))))
-    (lambda (p_0 convention_0)
-      (let ((bstr_0 (|#%app| path-bytes p_0)))
-        (let ((len_0 (unsafe-bytes-length bstr_0)))
-          (if (if (eq? convention_0 'windows)
-                (if (= len_0 2) (letter-drive-start? bstr_0 2) #f)
-                #f)
-            #f
-            (let ((c1_0
-                   (if (eq? convention_0 'windows)
-                     (backslash-backslash-questionmark-simple-status bstr_0)
-                     #f)))
-              (if c1_0
-                (eq? c1_0 'simple)
-                (letrec*
-                 ((loop_0
-                   (|#%name|
-                    loop
-                    (lambda (i_0)
-                      (begin
-                        (if (= i_0 len_0)
-                          #t
-                          (if (is-a-sep?_0
-                               convention_0
-                               (unsafe-bytes-ref bstr_0 i_0))
-                            (if (= (add1 i_0) len_0)
-                              #t
-                              (if (is-a-sep?_0
-                                   convention_0
-                                   (unsafe-bytes-ref bstr_0 (add1 i_0)))
-                                #f
-                                (if (if (eqv?
-                                         (unsafe-bytes-ref bstr_0 (add1 i_0))
-                                         46)
-                                      (let ((or-part_0 (= (+ i_0 2) len_0)))
-                                        (if or-part_0
-                                          or-part_0
-                                          (let ((or-part_1
-                                                 (is-a-sep?_0
-                                                  convention_0
-                                                  (unsafe-bytes-ref
-                                                   bstr_0
-                                                   (+ i_0 2)))))
-                                            (if or-part_1
-                                              or-part_1
-                                              (if (eqv?
-                                                   (unsafe-bytes-ref
-                                                    bstr_0
-                                                    (+ i_0 2))
-                                                   46)
-                                                (let ((or-part_2
-                                                       (= (+ i_0 3) len_0)))
-                                                  (if or-part_2
-                                                    or-part_2
-                                                    (is-a-sep?_0
-                                                     convention_0
-                                                     (unsafe-bytes-ref
-                                                      bstr_0
-                                                      (+ i_0 3)))))
-                                                #f)))))
-                                      #f)
-                                  #f
-                                  (loop_0 (add1 i_0)))))
-                            (if (if (zero? i_0)
-                                  (if (eqv? (unsafe-bytes-ref bstr_0 0) 46)
-                                    (let ((or-part_0 (= 1 len_0)))
-                                      (if or-part_0
-                                        or-part_0
-                                        (let ((or-part_1
-                                               (is-sep?
-                                                (unsafe-bytes-ref bstr_0 1)
-                                                convention_0)))
-                                          (if or-part_1
-                                            or-part_1
-                                            (if (eqv?
-                                                 (unsafe-bytes-ref bstr_0 1)
-                                                 46)
-                                              (let ((or-part_2 (= 2 len_0)))
-                                                (if or-part_2
-                                                  or-part_2
-                                                  (is-sep?
-                                                   (unsafe-bytes-ref bstr_0 2)
-                                                   convention_0)))
-                                              #f)))))
-                                    #f)
-                                  #f)
-                              #f
-                              (if (if (eq? convention_0 'windows)
-                                    (eqv? (unsafe-bytes-ref bstr_0 i_0) 47)
-                                    #f)
-                                #f
-                                (loop_0 (add1 i_0)))))))))))
-                 (loop_0 0))))))))))
-(define backslash-backslash-questionmark-simple-status
-  (lambda (bstr_0)
-    (call-with-values
-     (lambda () (parse-backslash-backslash-questionmark bstr_0))
-     (case-lambda
-      ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 sep-bstr_0)
-       (if (not kind_0)
-         #f
-         (if (if (fx= (unsafe-bytes-ref bstr_0 4) 82)
-               (fx= (unsafe-bytes-ref bstr_0 5) 69)
-               #f)
-           (letrec*
-            ((loop_0
-              (|#%name|
-               loop
-               (lambda (p_0 accum_0 as-dir?_0)
-                 (begin
-                   (call-with-values
-                    (lambda () (1/split-path p_0))
-                    (case-lambda
-                     ((base-dir_0 name_0 dir?_0)
-                      (if (symbol? name_0)
-                        'non-simple
-                        (let ((new-accum_0 (cons name_0 accum_0)))
-                          (let ((new-as-dir?_0
-                                 (if (null? accum_0) dir?_0 as-dir?_0)))
-                            (if (1/path? base-dir_0)
-                              (loop_0 base-dir_0 new-accum_0 new-as-dir?_0)
-                              (let ((rebuilt0-p_0
-                                     (apply
-                                      1/build-path/convention-type
-                                      'windows
-                                      new-accum_0)))
-                                (let ((rebuilt-p_0
-                                       (if new-as-dir?_0
-                                         (path1.1
-                                          (bytes-append
-                                           (|#%app| path-bytes rebuilt0-p_0)
-                                           #vu8(92))
-                                          'windows)
-                                         rebuilt0-p_0)))
-                                  (let ((rebuilt-bstr_0
-                                         (let ((app_0 path-bytes))
-                                           (|#%app|
-                                            app_0
-                                            (simplify-backslash-backslash-questionmark
-                                             rebuilt-p_0)))))
-                                    (if (bytes=? bstr_0 rebuilt-bstr_0)
-                                      'simple
-                                      'non-simple)))))))))
-                     (args (raise-binding-result-arity-error 3 args)))))))))
-            (loop_0 (path1.1 bstr_0 'windows) '() #f))
-           'non-simple)))
-      (args (raise-binding-result-arity-error 5 args))))))
-(define unc-without-trailing-separator?
-  (lambda (p_0)
-    (let ((bstr_0 (|#%app| path-bytes p_0)))
-      (eqv? (parse-unc.1 #f #f bstr_0 0) (unsafe-bytes-length bstr_0)))))
-(define simplify-backslash-backslash-questionmark
-  (letrec ((no-special-in-content?_0
-            (|#%name|
-             no-special-in-content?
-             (lambda (bstr_0 len_0 len13_0 start-pos15_0)
-               (begin
-                 (let ((len_1
-                        (if (eq? len13_0 unsafe-undefined) len_0 len13_0)))
-                   (letrec*
-                    ((loop_0
-                      (|#%name|
-                       loop
-                       (lambda (i_0 elem-start_0)
-                         (begin
-                           (if (= i_0 len_1)
-                             (not
-                              (special-element?_0 bstr_0 elem-start_0 i_0 #t))
-                             (let ((b_0 (unsafe-bytes-ref bstr_0 i_0)))
-                               (if (eqv? b_0 92)
-                                 (if (special-element?_0
-                                      bstr_0
-                                      elem-start_0
-                                      i_0
-                                      #f)
-                                   #f
-                                   (let ((app_0 (add1 i_0)))
-                                     (loop_0 app_0 (add1 i_0))))
-                                 (if (let ((or-part_0 (eqv? b_0 47)))
-                                       (if or-part_0
-                                         or-part_0
-                                         (let ((or-part_1 (eqv? b_0 58)))
-                                           (if or-part_1
-                                             or-part_1
-                                             (let ((or-part_2 (eqv? b_0 34)))
-                                               (if or-part_2
-                                                 or-part_2
-                                                 (let ((or-part_3
-                                                        (eqv? b_0 124)))
-                                                   (if or-part_3
-                                                     or-part_3
-                                                     (let ((or-part_4
-                                                            (eqv? b_0 60)))
-                                                       (if or-part_4
-                                                         or-part_4
-                                                         (eqv?
-                                                          b_0
-                                                          62)))))))))))
-                                   #f
-                                   (loop_0 (add1 i_0) elem-start_0))))))))))
-                    (loop_0 start-pos15_0 start-pos15_0)))))))
-           (special-element?_0
-            (|#%name|
-             special-element?
-             (lambda (bstr_0 elem-start_0 i_0 at-end?_0)
-               (begin
-                 (if (< elem-start_0 i_0)
-                   (let ((or-part_0
-                          (let ((b_0 (unsafe-bytes-ref bstr_0 (sub1 i_0))))
-                            (let ((or-part_0
-                                   (if (eqv? b_0 46)
-                                     (if at-end?_0
-                                       at-end?_0
-                                       (let ((or-part_0
-                                              (= elem-start_0 (- i_0 1))))
-                                         (if or-part_0
-                                           or-part_0
-                                           (if (= elem-start_0 (- i_0 2))
-                                             (eqv?
-                                              (unsafe-bytes-ref
-                                               bstr_0
-                                               elem-start_0)
-                                              46)
-                                             #f))))
-                                     #f)))
-                              (if or-part_0
-                                or-part_0
-                                (if at-end?_0 (eqv? b_0 32) #f))))))
-                     (if or-part_0
-                       or-part_0
-                       (let ((temp17_0 (subbytes bstr_0 elem-start_0 i_0)))
-                         (special-filename?.1 #t temp17_0))))
-                   #f))))))
-    (lambda (p_0)
-      (let ((bstr_0 (|#%app| path-bytes p_0)))
-        (let ((len_0 (unsafe-bytes-length bstr_0)))
-          (call-with-values
-           (lambda () (parse-backslash-backslash-questionmark bstr_0))
-           (case-lambda
-            ((kind_0 drive-len_0 orig-drive-len_0 clean-start-pos_0 sep-bstr_0)
-             (if (eq? kind_0 'abs)
-               (if (if (= drive-len_0 7)
-                     (if (drive-letter? (unsafe-bytes-ref bstr_0 4))
-                       (if (eqv? (unsafe-bytes-ref bstr_0 5) 58)
-                         (no-special-in-content?_0
-                          bstr_0
-                          len_0
-                          unsafe-undefined
-                          orig-drive-len_0)
-                         #f)
-                       #f)
-                     #f)
-                 (path1.1 (subbytes bstr_0 4) 'windows)
-                 p_0)
-               (if (eq? kind_0 'unc)
-                 (let ((norm-bstr_0
-                        (normalize-backslash-backslash-unc bstr_0)))
-                   (if (let ((temp20_0
-                              (if (= orig-drive-len_0 len_0)
-                                (sub1 len_0)
-                                len_0)))
-                         (no-special-in-content?_0 bstr_0 len_0 temp20_0 4))
-                     (path1.1
-                      (bytes-append #vu8(92) (subbytes norm-bstr_0 7))
-                      'windows)
-                     (if (eq? norm-bstr_0 bstr_0)
-                       p_0
-                       (path1.1 norm-bstr_0 'windows))))
-                 (if (eq? kind_0 'red)
-                   (if (no-special-in-content?_0
-                        bstr_0
-                        len_0
-                        unsafe-undefined
-                        9)
-                     (path1.1 (subbytes bstr_0 8) 'windows)
-                     p_0)
-                   (if (eq? kind_0 'rel)
-                     (call-with-values
-                      (lambda ()
-                        (backslash-backslash-questionmark-dot-ups-end
-                         bstr_0
-                         len_0))
-                      (case-lambda
-                       ((dots-end_0 literal-start_0)
-                        (if (no-special-in-content?_0
-                             bstr_0
-                             len_0
-                             unsafe-undefined
-                             literal-start_0)
-                          (path1.1
-                           (let ((app_0
-                                  (if dots-end_0
-                                    (subbytes bstr_0 8 (add1 dots-end_0))
-                                    #vu8())))
-                             (bytes-append
-                              app_0
-                              (subbytes bstr_0 literal-start_0)))
-                           'windows)
-                          p_0))
-                       (args (raise-binding-result-arity-error 2 args))))
-                     p_0)))))
-            (args (raise-binding-result-arity-error 5 args)))))))))
-(define normalize-backslash-backslash-unc
-  (lambda (bstr_0)
-    (if (if (eqv? (unsafe-bytes-ref bstr_0 4) 85)
-          (if (eqv? (unsafe-bytes-ref bstr_0 5) 78)
-            (eqv? (unsafe-bytes-ref bstr_0 6) 67)
-            #f)
-          #f)
-      bstr_0
-      (if (eqv? (unsafe-bytes-ref bstr_0 4) 92)
-        (bytes-append #vu8(92 92 63 92 85 78 67) (subbytes bstr_0 8))
-        (bytes-append #vu8(92 92 63 92 85 78 67) (subbytes bstr_0 7))))))
-(define same-modulo-slashes?
-  (lambda (p1_0 p2_0)
-    (let ((bstr1_0 (|#%app| path-bytes p1_0)))
-      (let ((bstr2_0 (|#%app| path-bytes p2_0)))
-        (let ((len_0 (unsafe-bytes-length bstr1_0)))
-          (if (fx= len_0 (unsafe-bytes-length bstr2_0))
-            (letrec*
-             ((loop_0
-               (|#%name|
-                loop
-                (lambda (i_0)
-                  (begin
-                    (let ((or-part_0 (fx= i_0 len_0)))
-                      (if or-part_0
-                        or-part_0
-                        (if (let ((b1_0 (unsafe-bytes-ref bstr1_0 i_0)))
-                              (let ((b2_0 (unsafe-bytes-ref bstr2_0 i_0)))
-                                (let ((b1_1 b1_0))
-                                  (let ((or-part_1 (fx= b1_1 b2_0)))
-                                    (if or-part_1
-                                      or-part_1
-                                      (let ((or-part_2
-                                             (if (fx= b1_1 92)
-                                               (fx= b2_0 47)
-                                               #f)))
-                                        (if or-part_2
-                                          or-part_2
-                                          (if (fx= b1_1 47)
-                                            (fx= b2_0 92)
-                                            #f))))))))
-                          (loop_0 (fx+ i_0 1))
-                          #f))))))))
-             (loop_0 0))
-            #f))))))
 (define bytes-no-nuls?
   (lambda (s_0)
     (if (bytes? s_0)
@@ -36096,11 +36122,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3736 unsafe-undefined)
+               (let ((lr3745 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3736
+                 (set! lr3745
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -36155,9 +36181,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3736 0))
-                 (set! command_0 (unsafe-vector*-ref lr3736 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3736 2))
+                 (set! group_0 (unsafe-vector*-ref lr3745 0))
+                 (set! command_0 (unsafe-vector*-ref lr3745 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3745 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)
