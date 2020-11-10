@@ -217,9 +217,10 @@ sequences that are otherwise ill-formed as Windows paths:
 ]
 
 Outside of Racket, except for @litchar{\\?\} paths, pathnames are
- typically limited to 259 characters. Racket internally converts
- pathnames to @litchar{\\?\} form as needed to avoid this
- limit; in that case, the path is first simplified syntactically (in the
+ typically limited to 259 characters when used as a file path and 247 characters when
+ used as a directory path. Racket internally converts
+ pathnames longer than 247 characters to @litchar{\\?\} form to avoid the
+ limits; in that case, the path is first simplified syntactically (in the
  sense of @racket[simplify-path]). The operating system cannot access files through
  @litchar{\\?\} paths that are longer than 32,000 characters or
  so.

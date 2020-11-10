@@ -45,16 +45,18 @@
             'windows)
       (host-> s)))
 
-;; If we end up with a Windows path that is longer than 260 bytes,
+;; If we end up with a Windows path that is longer than 247 bytes
+;; (traditional file path limit: 259; directory path limit: 247)
 ;; then add "\\?\" or "\\?\UNC" to the front. The path needs to be
 ;; abbsolute and otherwise fully normalized so that just adding to the
 ;; front is possible.
+(define LONGEST-NON-BSBS-PATH 247)
 (define (handle-long-path who p)
   (cond
     [(eq? (system-type) 'windows)
      (define bstr (path-bytes p))
      (cond
-       [(and ((bytes-length bstr) . > . 259)
+       [(and ((bytes-length bstr) . > . LONGEST-NON-BSBS-PATH)
              (not (and (fx= (bytes-ref bstr 0) (char->integer #\\))
                        (fx= (bytes-ref bstr 1) (char->integer #\\))
                        (fx= (bytes-ref bstr 2) (char->integer #\?))
@@ -63,7 +65,7 @@
         (define simple-p (simplify-path-syntactically who p #f))
         (define simple-bstr (path-bytes simple-p))
         (cond
-          [((bytes-length simple-bstr) . <= . 260)
+          [((bytes-length simple-bstr) . <= . LONGEST-NON-BSBS-PATH)
            ;; Simplified path is short enough
            simple-p]
           [(fx= (bytes-ref simple-bstr 0) (char->integer #\\))

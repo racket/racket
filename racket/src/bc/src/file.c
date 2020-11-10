@@ -1717,7 +1717,12 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       ilen = strlen(filename);
     }
     if (kind == SCHEME_WINDOWS_PATH_KIND) {
-      if (ilen > ((fullpath > 1) ? fullpath : 259)) {
+      /* While the limit can be increased in Windows 10, the maximum
+         length of a file path without resroting to \\?\ is 259
+         characters, and the maximum length of a directory path is 247
+         characters. Guard against the lower limit. */
+#     define LONGEST_NON_BSBS_PATH 247
+      if (ilen > ((fullpath > 1) ? fullpath : LONGEST_NON_BSBS_PATH)) {
         if (!check_dos_slashslash_qm(filename, ilen, NULL, NULL, NULL)) {
           /* Convert to \\?\ to avoid length limit. Collapse any
              ".." and "." indicators first syntactically (which is not ideal,
@@ -1730,7 +1735,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
           filename = SCHEME_PATH_VAL(p);
           ilen = SCHEME_PATH_LEN(p);
 
-          if (ilen > ((fullpath > 1) ? fullpath : 259)) { /* still too long after simplification? */
+          if (ilen > ((fullpath > 1) ? fullpath : LONGEST_NON_BSBS_PATH)) { /* still too long after simplification? */
             filename = convert_to_backslashbackslash_qm(filename, &l, filename, &a, 0);
             filename[l] = 0;
           }

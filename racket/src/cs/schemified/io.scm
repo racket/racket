@@ -27574,11 +27574,12 @@
        (protect-path-element (bytes->immutable-bytes s_0) 'windows)
        'windows)
       (host-> s_0))))
+(define LONGEST-NON-BSBS-PATH 247)
 (define handle-long-path
   (lambda (who_0 p_0)
     (if (eq? (system-type) 'windows)
       (let ((bstr_0 (|#%app| path-bytes p_0)))
-        (if (if (> (unsafe-bytes-length bstr_0) 259)
+        (if (if (> (unsafe-bytes-length bstr_0) 247)
               (not
                (if (fx= (unsafe-bytes-ref bstr_0 0) 92)
                  (if (fx= (unsafe-bytes-ref bstr_0 1) 92)
@@ -27590,7 +27591,7 @@
               #f)
           (let ((simple-p_0 (simplify-path-syntactically who_0 p_0 #f)))
             (let ((simple-bstr_0 (|#%app| path-bytes simple-p_0)))
-              (if (<= (unsafe-bytes-length simple-bstr_0) 260)
+              (if (<= (unsafe-bytes-length simple-bstr_0) 247)
                 simple-p_0
                 (if (fx= (unsafe-bytes-ref simple-bstr_0 0) 92)
                   (path1.1
