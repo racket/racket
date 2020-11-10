@@ -163,7 +163,8 @@
 (define (struct-convert-local form #:letrec? [letrec? #f]
                               prim-knowns knowns imports mutated simples
                               schemify
-                              #:unsafe-mode? unsafe-mode?)
+                              #:unsafe-mode? unsafe-mode?
+                              #:for-cify? for-cify?)
   (match form
     [`(,_ ([,ids ,rhs]) ,bodys ...)
      (define defn `(define-values ,ids ,rhs))
@@ -175,7 +176,7 @@
           (match new-seq
             [`(begin . ,new-seq)
              (define-values (new-knowns info)
-               (find-definitions defn prim-knowns knowns imports mutated simples unsafe-mode?
+               (find-definitions defn prim-knowns knowns imports mutated simples unsafe-mode? for-cify?
                                  #:optimize? #f))
              (cond
                [letrec?

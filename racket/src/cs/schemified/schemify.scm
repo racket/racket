@@ -12481,7 +12481,8 @@
             imports12_0
             mutated13_0
             simples14_0
-            unsafe-mode?15_0)
+            unsafe-mode?15_0
+            for-cify?16_0)
      (begin
        (letrec*
         ((loop_0
@@ -12518,7 +12519,7 @@
                                  lam_0)))
                           (known-procedure/can-inline
                            arity-mask_0
-                           (if unsafe-mode?15_0
+                           (if (if unsafe-mode?15_0 (not for-cify?16_0) #f)
                              (add-begin-unsafe lam_1)
                              lam_1)))
                         (known-procedure arity-mask_0))))
@@ -12640,17 +12641,17 @@
 (define lambda?.1
   (|#%name|
    lambda?
-   (lambda (simple?17_0 v19_0)
+   (lambda (simple?18_0 v20_0)
      (begin
        (let ((hd_0
-              (let ((p_0 (unwrap v19_0)))
+              (let ((p_0 (unwrap v20_0)))
                 (if (pair? p_0) (unwrap (car p_0)) #f))))
          (if (if (eq? 'lambda hd_0) #t #f)
            #t
            (if (if (eq? 'case-lambda hd_0) #t #f)
              #t
              (if (if (eq? 'let-values hd_0)
-                   (let ((a_0 (cdr (unwrap v19_0))))
+                   (let ((a_0 (cdr (unwrap v20_0))))
                      (let ((p_0 (unwrap a_0)))
                        (if (pair? p_0)
                          (if (let ((a_1 (car p_0)))
@@ -12702,7 +12703,7 @@
                    #f)
                (call-with-values
                 (lambda ()
-                  (let ((d_0 (cdr (unwrap v19_0))))
+                  (let ((d_0 (cdr (unwrap v20_0))))
                     (let ((p_0 (unwrap d_0)))
                       (call-with-values
                        (lambda ()
@@ -12728,10 +12729,10 @@
                         (args (raise-binding-result-arity-error 2 args)))))))
                 (case-lambda
                  ((id_0 rhs_0 body_0)
-                  (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
+                  (let-lambda?.1 simple?18_0 id_0 rhs_0 body_0))
                  (args (raise-binding-result-arity-error 3 args))))
                (if (if (eq? 'letrec-values hd_0)
-                     (let ((a_0 (cdr (unwrap v19_0))))
+                     (let ((a_0 (cdr (unwrap v20_0))))
                        (let ((p_0 (unwrap a_0)))
                          (if (pair? p_0)
                            (if (let ((a_1 (car p_0)))
@@ -12784,7 +12785,7 @@
                      #f)
                  (call-with-values
                   (lambda ()
-                    (let ((d_0 (cdr (unwrap v19_0))))
+                    (let ((d_0 (cdr (unwrap v20_0))))
                       (let ((p_0 (unwrap d_0)))
                         (call-with-values
                          (lambda ()
@@ -12811,10 +12812,10 @@
                           (args (raise-binding-result-arity-error 2 args)))))))
                   (case-lambda
                    ((id_0 rhs_0 body_0)
-                    (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
+                    (let-lambda?.1 simple?18_0 id_0 rhs_0 body_0))
                    (args (raise-binding-result-arity-error 3 args))))
                  (if (if (eq? 'let hd_0)
-                       (let ((a_0 (cdr (unwrap v19_0))))
+                       (let ((a_0 (cdr (unwrap v20_0))))
                          (let ((p_0 (unwrap a_0)))
                            (if (pair? p_0)
                              (if (let ((a_1 (car p_0)))
@@ -12854,7 +12855,7 @@
                        #f)
                    (call-with-values
                     (lambda ()
-                      (let ((d_0 (cdr (unwrap v19_0))))
+                      (let ((d_0 (cdr (unwrap v20_0))))
                         (let ((p_0 (unwrap d_0)))
                           (call-with-values
                            (lambda ()
@@ -12879,10 +12880,10 @@
                              (raise-binding-result-arity-error 2 args)))))))
                     (case-lambda
                      ((id_0 rhs_0 body_0)
-                      (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
+                      (let-lambda?.1 simple?18_0 id_0 rhs_0 body_0))
                      (args (raise-binding-result-arity-error 3 args))))
                    (if (if (eq? 'letrec* hd_0)
-                         (let ((a_0 (cdr (unwrap v19_0))))
+                         (let ((a_0 (cdr (unwrap v20_0))))
                            (let ((p_0 (unwrap a_0)))
                              (if (pair? p_0)
                                (if (let ((a_1 (car p_0)))
@@ -12923,7 +12924,7 @@
                          #f)
                      (call-with-values
                       (lambda ()
-                        (let ((d_0 (cdr (unwrap v19_0))))
+                        (let ((d_0 (cdr (unwrap v20_0))))
                           (let ((p_0 (unwrap d_0)))
                             (call-with-values
                              (lambda ()
@@ -12948,10 +12949,10 @@
                                (raise-binding-result-arity-error 2 args)))))))
                       (case-lambda
                        ((id_0 rhs_0 body_0)
-                        (let-lambda?.1 simple?17_0 id_0 rhs_0 body_0))
+                        (let-lambda?.1 simple?18_0 id_0 rhs_0 body_0))
                        (args (raise-binding-result-arity-error 3 args))))
                      (if (if (eq? 'let-values hd_0)
-                           (let ((a_0 (cdr (unwrap v19_0))))
+                           (let ((a_0 (cdr (unwrap v20_0))))
                              (let ((p_0 (unwrap a_0)))
                                (if (pair? p_0)
                                  (let ((a_1 (cdr p_0)))
@@ -12965,12 +12966,12 @@
                                  #f)))
                            #f)
                        (let ((body_0
-                              (let ((d_0 (cdr (unwrap v19_0))))
+                              (let ((d_0 (cdr (unwrap v20_0))))
                                 (let ((d_1 (cdr (unwrap d_0))))
                                   (let ((a_0 (car (unwrap d_1)))) a_0)))))
-                         (if (not simple?17_0) (lambda?.1 #f body_0) #f))
+                         (if (not simple?18_0) (lambda?.1 #f body_0) #f))
                        (if (if (eq? 'letrec-values hd_0)
-                             (let ((a_0 (cdr (unwrap v19_0))))
+                             (let ((a_0 (cdr (unwrap v20_0))))
                                (let ((p_0 (unwrap a_0)))
                                  (if (pair? p_0)
                                    (let ((a_1 (cdr p_0)))
@@ -12984,12 +12985,12 @@
                                    #f)))
                              #f)
                          (let ((body_0
-                                (let ((d_0 (cdr (unwrap v19_0))))
+                                (let ((d_0 (cdr (unwrap v20_0))))
                                   (let ((d_1 (cdr (unwrap d_0))))
                                     (let ((a_0 (car (unwrap d_1)))) a_0)))))
-                           (if (not simple?17_0) (lambda?.1 #f body_0) #f))
+                           (if (not simple?18_0) (lambda?.1 #f body_0) #f))
                          (if (if (eq? 'begin hd_0)
-                               (let ((a_0 (cdr (unwrap v19_0))))
+                               (let ((a_0 (cdr (unwrap v20_0))))
                                  (let ((p_0 (unwrap a_0)))
                                    (if (pair? p_0)
                                      (let ((a_1 (cdr p_0)))
@@ -12999,11 +13000,11 @@
                                      #f)))
                                #f)
                            (let ((body_0
-                                  (let ((d_0 (cdr (unwrap v19_0))))
+                                  (let ((d_0 (cdr (unwrap v20_0))))
                                     (let ((a_0 (car (unwrap d_0)))) a_0))))
-                             (lambda?.1 simple?17_0 body_0))
+                             (lambda?.1 simple?18_0 body_0))
                            (if (if (eq? 'values hd_0)
-                                 (let ((a_0 (cdr (unwrap v19_0))))
+                                 (let ((a_0 (cdr (unwrap v20_0))))
                                    (let ((p_0 (unwrap a_0)))
                                      (if (pair? p_0)
                                        (let ((a_1 (cdr p_0)))
@@ -13013,24 +13014,24 @@
                                        #f)))
                                  #f)
                              (let ((body_0
-                                    (let ((d_0 (cdr (unwrap v19_0))))
+                                    (let ((d_0 (cdr (unwrap v20_0))))
                                       (let ((a_0 (car (unwrap d_0)))) a_0))))
-                               (lambda?.1 simple?17_0 body_0))
+                               (lambda?.1 simple?18_0 body_0))
                              #f)))))))))))))))
 (define let-lambda?.1
   (|#%name|
    let-lambda?
-   (lambda (simple?21_0 id23_0 rhs24_0 body25_0)
+   (lambda (simple?22_0 id24_0 rhs25_0 body26_0)
      (begin
        (let ((or-part_0
               (if (begin-unsafe
-                   (let ((app_0 (unwrap id23_0)))
-                     (eq? app_0 (unwrap body25_0))))
-                (lambda?.1 simple?21_0 rhs24_0)
+                   (let ((app_0 (unwrap id24_0)))
+                     (eq? app_0 (unwrap body26_0))))
+                (lambda?.1 simple?22_0 rhs25_0)
                 #f)))
          (if or-part_0
            or-part_0
-           (if (not simple?21_0) (lambda?.1 simple?21_0 body25_0) #f)))))))
+           (if (not simple?22_0) (lambda?.1 simple?22_0 body26_0) #f)))))))
 (define extract-lambda
   (lambda (v_0)
     (let ((hd_0
@@ -13523,14 +13524,14 @@
                                           (let ((v_2 v_1))
                                             (let ((argss_1
                                                    (let ((argss_1
-                                                          (let ((argss60_0
+                                                          (let ((argss61_0
                                                                  (let ((a_0
                                                                         (car
                                                                          (unwrap
                                                                           v_2))))
                                                                    a_0)))
                                                             (cons
-                                                             argss60_0
+                                                             argss61_0
                                                              argss_0))))
                                                      (values argss_1))))
                                               (for-loop_0 argss_1 rest_0)))))
@@ -13663,10 +13664,10 @@
                                                        argss_2
                                                        bodys_1))))))
                                             (case-lambda
-                                             ((argss61_0 bodys62_0)
+                                             ((argss62_0 bodys63_0)
                                               (values
-                                               (cons argss61_0 argss_0)
-                                               (cons bodys62_0 bodys_0)))
+                                               (cons argss62_0 argss_0)
+                                               (cons bodys63_0 bodys_0)))
                                              (args
                                               (raise-binding-result-arity-error
                                                2
@@ -13735,7 +13736,8 @@
             imports8_0
             mutated9_0
             simples10_0
-            unsafe-mode?11_0)
+            unsafe-mode?11_0
+            for-cify?12_0)
      (begin
        (let ((hd_0
               (let ((p_0 (unwrap v5_0)))
@@ -13800,7 +13802,8 @@
                          imports8_0
                          mutated9_0
                          simples10_0
-                         unsafe-mode?11_0)))
+                         unsafe-mode?11_0
+                         for-cify?12_0)))
                    (if k_0 (hash-set knowns7_0 (unwrap id_0) k_0) knowns7_0))
                  #f)))
              (args (raise-binding-result-arity-error 2 args))))
@@ -15144,7 +15147,7 @@
                                                                     (let ((knowns_1
                                                                            (call-with-values
                                                                             (lambda ()
-                                                                              (let ((temp24_0
+                                                                              (let ((temp26_0
                                                                                      (list
                                                                                       'define-values
                                                                                       (list
@@ -15153,13 +15156,14 @@
                                                                                 (find-definitions.1
                                                                                  optimize?2_0
                                                                                  hash2610
-                                                                                 temp24_0
+                                                                                 temp26_0
                                                                                  prim-knowns6_0
                                                                                  knowns_0
                                                                                  imports8_0
                                                                                  mutated9_0
                                                                                  simples10_0
-                                                                                 unsafe-mode?11_0)))
+                                                                                 unsafe-mode?11_0
+                                                                                 for-cify?12_0)))
                                                                             (case-lambda
                                                                              ((new-knowns_0
                                                                                info_0)
@@ -17324,13 +17328,13 @@
            (loop_1
             (|#%name|
              loop
-             (lambda (bodys_0 new-knowns_0 schemify11_0 new-seq_0)
+             (lambda (bodys_0 new-knowns_0 schemify13_0 new-seq_0)
                (begin
                  (if (begin-unsafe
                       (let ((app_0 (unwrap '())))
                         (eq? app_0 (unwrap new-seq_0))))
                    (let ((exprs_0
-                          (schemify-body$1 schemify11_0 new-knowns_0 bodys_0)))
+                          (schemify-body$1 schemify13_0 new-knowns_0 bodys_0)))
                      (if (if (pair? exprs_0) (null? (cdr exprs_0)) #f)
                        (car exprs_0)
                        (list* 'begin exprs_0)))
@@ -17364,7 +17368,7 @@
                         (loop_1
                          bodys_0
                          new-knowns_0
-                         schemify11_0
+                         schemify13_0
                          (append forms_0 rest_0)))
                        (args (raise-binding-result-arity-error 2 args))))
                      (if (let ((p_0 (unwrap new-seq_0)))
@@ -17423,22 +17427,23 @@
                           (list
                            'let
                            (list (list id_0 rhs_0))
-                           (loop_1 bodys_0 new-knowns_0 schemify11_0 rest_0)))
+                           (loop_1 bodys_0 new-knowns_0 schemify13_0 rest_0)))
                          (args (raise-binding-result-arity-error 3 args))))
                        (error 'match "failed ~e" new-seq_0)))))))))
     (|#%name|
      struct-convert-local
-     (lambda (letrec?1_0
+     (lambda (for-cify?3_0
+              letrec?1_0
               unsafe-mode?2_0
-              form5_0
-              prim-knowns6_0
-              knowns7_0
-              imports8_0
-              mutated9_0
-              simples10_0
-              schemify11_0)
+              form7_0
+              prim-knowns8_0
+              knowns9_0
+              imports10_0
+              mutated11_0
+              simples12_0
+              schemify13_0)
        (begin
-         (if (let ((p_0 (unwrap form5_0)))
+         (if (let ((p_0 (unwrap form7_0)))
                (if (pair? p_0)
                  (let ((a_0 (cdr p_0)))
                    (let ((p_1 (unwrap a_0)))
@@ -17472,7 +17477,7 @@
                  #f))
            (call-with-values
             (lambda ()
-              (let ((d_0 (cdr (unwrap form5_0))))
+              (let ((d_0 (cdr (unwrap form7_0))))
                 (let ((p_0 (unwrap d_0)))
                   (call-with-values
                    (lambda ()
@@ -17496,11 +17501,11 @@
                 (let ((new-seq_0
                        (struct-convert
                         defn_0
-                        prim-knowns6_0
-                        knowns7_0
-                        imports8_0
-                        mutated9_0
-                        schemify11_0
+                        prim-knowns8_0
+                        knowns9_0
+                        imports10_0
+                        mutated11_0
+                        schemify13_0
                         #t)))
                   (if new-seq_0
                     (let ((hd_0
@@ -17515,12 +17520,13 @@
                               #f
                               hash2610
                               defn_0
-                              prim-knowns6_0
-                              knowns7_0
-                              imports8_0
-                              mutated9_0
-                              simples10_0
-                              unsafe-mode?2_0))
+                              prim-knowns8_0
+                              knowns9_0
+                              imports10_0
+                              mutated11_0
+                              simples12_0
+                              unsafe-mode?2_0
+                              for-cify?3_0))
                            (case-lambda
                             ((new-knowns_0 info_0)
                              (if letrec?1_0
@@ -17529,13 +17535,13 @@
                                   'letrec*
                                   app_0
                                   (schemify-body$1
-                                   schemify11_0
+                                   schemify13_0
                                    new-knowns_0
                                    bodys_0)))
                                (loop_1
                                 bodys_0
                                 new-knowns_0
-                                schemify11_0
+                                schemify13_0
                                 new-seq_1)))
                             (args (raise-binding-result-arity-error 2 args)))))
                         (error 'match "failed ~e" new-seq_0)))
@@ -18000,6 +18006,7 @@
            imports_0
            simples_0
            unsafe-mode?_0
+           for-cify?_0
            enforce-constant?_0)
     (let ((mutated_0 (make-hasheq)))
       (begin
@@ -18121,7 +18128,8 @@
                                           imports_0
                                           mutated_0
                                           simples_0
-                                          unsafe-mode?_0))
+                                          unsafe-mode?_0
+                                          for-cify?_0))
                                        (case-lambda
                                         ((knowns_1 info_0)
                                          (begin
@@ -18655,14 +18663,14 @@
                                                                    formalss_2
                                                                    bodys_1))))))
                                                         (case-lambda
-                                                         ((formalss9_0
-                                                           bodys10_0)
+                                                         ((formalss10_0
+                                                           bodys11_0)
                                                           (values
                                                            (cons
-                                                            formalss9_0
+                                                            formalss10_0
                                                             formalss_0)
                                                            (cons
-                                                            bodys10_0
+                                                            bodys11_0
                                                             bodys_0)))
                                                          (args
                                                           (raise-binding-result-arity-error
@@ -18911,14 +18919,14 @@
                                                                               idss_2
                                                                               rhss_1))))))
                                                                    (case-lambda
-                                                                    ((idss11_0
-                                                                      rhss12_0)
+                                                                    ((idss12_0
+                                                                      rhss13_0)
                                                                      (values
                                                                       (cons
-                                                                       idss11_0
+                                                                       idss12_0
                                                                        idss_0)
                                                                       (cons
-                                                                       rhss12_0
+                                                                       rhss13_0
                                                                        rhss_0)))
                                                                     (args
                                                                      (raise-binding-result-arity-error
@@ -19162,14 +19170,14 @@
                                                                                 idss_2
                                                                                 rhss_1))))))
                                                                      (case-lambda
-                                                                      ((idss13_0
-                                                                        rhss14_0)
+                                                                      ((idss14_0
+                                                                        rhss15_0)
                                                                        (values
                                                                         (cons
-                                                                         idss13_0
+                                                                         idss14_0
                                                                          idss_0)
                                                                         (cons
-                                                                         rhss14_0
+                                                                         rhss15_0
                                                                          rhss_0)))
                                                                       (args
                                                                        (raise-binding-result-arity-error
@@ -19336,12 +19344,12 @@
                                                                                (if maybe-cc?_0
                                                                                  maybe-cc?_0
                                                                                  (not
-                                                                                  (let ((temp22_0
+                                                                                  (let ((temp23_0
                                                                                          (length
                                                                                           ids_1)))
                                                                                     (simple?.1
                                                                                      #f
-                                                                                     temp22_0
+                                                                                     temp23_0
                                                                                      rhs_0
                                                                                      prim-knowns_0
                                                                                      knowns_0
@@ -25724,40 +25732,40 @@
                       schemified_0
                       simples_0
                       unsafe-mode?_0
-                      knowns15_0
-                      next-k17_0
-                      schemified16_0
-                      ids23_0
-                      accum-exprs21_0
-                      accum-ids22_0)
+                      knowns16_0
+                      next-k18_0
+                      schemified17_0
+                      ids24_0
+                      accum-exprs22_0
+                      accum-ids23_0)
                (begin
                  (let ((accum-exprs_1
-                        (if (eq? accum-exprs21_0 unsafe-undefined)
+                        (if (eq? accum-exprs22_0 unsafe-undefined)
                           accum-exprs_0
-                          accum-exprs21_0)))
+                          accum-exprs22_0)))
                    (let ((accum-ids_1
-                          (if (eq? accum-ids22_0 unsafe-undefined)
+                          (if (eq? accum-ids23_0 unsafe-undefined)
                             accum-ids_0
-                            accum-ids22_0)))
+                            accum-ids23_0)))
                      (let ((knowns_1
-                            (if (eq? knowns15_0 unsafe-undefined)
+                            (if (eq? knowns16_0 unsafe-undefined)
                               knowns_0
-                              knowns15_0)))
+                              knowns16_0)))
                        (let ((schemified_1
-                              (if (eq? schemified16_0 unsafe-undefined)
+                              (if (eq? schemified17_0 unsafe-undefined)
                                 schemified_0
-                                schemified16_0)))
+                                schemified17_0)))
                          (let ((next-knowns_0
-                                (if (if (pair? ids23_0)
-                                      (if (null? (cdr ids23_0))
+                                (if (if (pair? ids24_0)
+                                      (if (null? (cdr ids24_0))
                                         (can-improve-infer-known?
                                          (hash-ref
                                           knowns_1
-                                          (unwrap (car ids23_0))
+                                          (unwrap (car ids24_0))
                                           #f))
                                         #f)
                                       #f)
-                                  (let ((id_0 (car ids23_0)))
+                                  (let ((id_0 (car ids24_0)))
                                     (let ((k_0
                                            (let ((hd_0
                                                   (let ((p_0
@@ -25830,7 +25838,8 @@
                                                    imports_0
                                                    mutated_0
                                                    simples_0
-                                                   unsafe-mode?_0))
+                                                   unsafe-mode?_0
+                                                   for-cify?_0))
                                                  (args
                                                   (raise-binding-result-arity-error
                                                    2
@@ -25859,9 +25868,9 @@
                                    (lambda (ids_0 accum-exprs_2 accum-ids_2)
                                      (begin
                                        (if (null? ids_0)
-                                         (if next-k17_0
+                                         (if next-k18_0
                                            (|#%app|
-                                            next-k17_0
+                                            next-k18_0
                                             accum-exprs_2
                                             accum-ids_2
                                             next-knowns_0)
@@ -25923,7 +25932,7 @@
                                                (car ids_0)
                                                accum-ids_2))))))))))
                                 (id-loop_0
-                                 ids23_0
+                                 ids24_0
                                  null
                                  accum-ids_1))))))))))))))
            (finish-wrapped-definition_0
@@ -26232,7 +26241,7 @@
                                      imports_0
                                      mutated_0
                                      simples_0)
-                                  (let ((temp42_0 (list id_0)))
+                                  (let ((temp44_0 (list id_0)))
                                     (finish-definition_0
                                      accum-exprs_0
                                      accum-ids_0
@@ -26259,7 +26268,7 @@
                                      unsafe-undefined
                                      #f
                                      unsafe-undefined
-                                     temp42_0
+                                     temp44_0
                                      unsafe-undefined
                                      unsafe-undefined))
                                   (finish-wrapped-definition_0
@@ -26318,10 +26327,10 @@
                                             (values ids_1 rhs_0)))))))
                                 (case-lambda
                                  ((ids_0 rhs_0)
-                                  (if (let ((temp50_0 (length ids_0)))
+                                  (if (let ((temp52_0 (length ids_0)))
                                         (simple?.1
                                          #f
-                                         temp50_0
+                                         temp52_0
                                          rhs_0
                                          prim-knowns_0
                                          knowns_0
@@ -26571,7 +26580,7 @@
                                                for-interp?_0
                                                knowns_0
                                                mutated_0)))
-                                         (let ((temp66_0
+                                         (let ((temp68_0
                                                 (append
                                                  set-vars_0
                                                  accum-exprs_0)))
@@ -26602,7 +26611,7 @@
                                             #f
                                             unsafe-undefined
                                             ids_0
-                                            temp66_0
+                                            temp68_0
                                             null))))
                                      (if (simple?.1
                                           #f
@@ -26859,9 +26868,9 @@
                     knowns_1)
                    (let ((id_0 (car ids_0)))
                      (let ((rhs_0 (car rhss_0)))
-                       (let ((temp57_0 (list id_0)))
-                         (let ((temp61_0 (list 'define id_0 rhs_0)))
-                           (let ((temp62_0
+                       (let ((temp59_0 (list id_0)))
+                         (let ((temp63_0 (list 'define id_0 rhs_0)))
+                           (let ((temp64_0
                                   (lambda (accum-exprs_2 accum-ids_2 knowns_2)
                                     (let ((app_0 (cdr ids_0)))
                                       (values-loop_0
@@ -26916,9 +26925,9 @@
                               simples_0
                               unsafe-mode?_0
                               knowns_1
-                              temp62_0
-                              temp61_0
-                              temp57_0
+                              temp64_0
+                              temp63_0
+                              temp59_0
                               accum-exprs_1
                               accum-ids_1))))))))))))
     (lambda (l_0
@@ -26945,6 +26954,7 @@
                 imports_0
                 simples_0
                 unsafe-mode?_0
+                for-cify?_0
                 enforce-constant?_0)))
           (let ((knowns_0
                  (begin
@@ -26970,7 +26980,8 @@
                                                    imports_0
                                                    mutated_0
                                                    simples_0
-                                                   unsafe-mode?_0))
+                                                   unsafe-mode?_0
+                                                   for-cify?_0))
                                                 (case-lambda
                                                  ((new-knowns_0 info_0)
                                                   new-knowns_0)
@@ -27964,14 +27975,14 @@
                                                                            formalss_2
                                                                            bodys_1))))))
                                                                 (case-lambda
-                                                                 ((formalss76_0
-                                                                   bodys77_0)
+                                                                 ((formalss78_0
+                                                                   bodys79_0)
                                                                   (values
                                                                    (cons
-                                                                    formalss76_0
+                                                                    formalss78_0
                                                                     formalss_0)
                                                                    (cons
-                                                                    bodys77_0
+                                                                    bodys79_0
                                                                     bodys_0)))
                                                                  (args
                                                                   (raise-binding-result-arity-error
@@ -29286,14 +29297,14 @@
                                                                                                 ids_2
                                                                                                 rhss_1))))))
                                                                                      (case-lambda
-                                                                                      ((ids78_0
-                                                                                        rhss79_0)
+                                                                                      ((ids80_0
+                                                                                        rhss81_0)
                                                                                        (values
                                                                                         (cons
-                                                                                         ids78_0
+                                                                                         ids80_0
                                                                                          ids_0)
                                                                                         (cons
-                                                                                         rhss79_0
+                                                                                         rhss81_0
                                                                                          rhss_0)))
                                                                                       (args
                                                                                        (raise-binding-result-arity-error
@@ -29374,12 +29385,12 @@
                                                                    (unwrap
                                                                     (car
                                                                      bodys_0))))
-                                                              (let ((temp80_0
+                                                              (let ((temp82_0
                                                                      (car
                                                                       rhss_0)))
                                                                 (lambda?.1
                                                                  #f
-                                                                 temp80_0))
+                                                                 temp82_0))
                                                               #f)
                                                             #f)
                                                           #f)
@@ -29446,7 +29457,8 @@
                                                                                                    imports_0
                                                                                                    mutated_0
                                                                                                    simples_0
-                                                                                                   unsafe-mode?_0)))
+                                                                                                   unsafe-mode?_0
+                                                                                                   for-cify?_0)))
                                                                                              (if k_0
                                                                                                (hash-set
                                                                                                 knowns_1
@@ -30071,14 +30083,14 @@
                                                                                                     idss_2
                                                                                                     rhss_1))))))
                                                                                          (case-lambda
-                                                                                          ((idss90_0
-                                                                                            rhss91_0)
+                                                                                          ((idss93_0
+                                                                                            rhss94_0)
                                                                                            (values
                                                                                             (cons
-                                                                                             idss90_0
+                                                                                             idss93_0
                                                                                              idss_0)
                                                                                             (cons
-                                                                                             rhss91_0
+                                                                                             rhss94_0
                                                                                              rhss_0)))
                                                                                           (args
                                                                                            (raise-binding-result-arity-error
@@ -30152,9 +30164,9 @@
                                                                 (if for-interp?_0
                                                                   for-interp?_0
                                                                   for-cify?_0))
-                                                             (let ((temp98_0
+                                                             (let ((temp101_0
                                                                     (|#%name|
-                                                                     temp98
+                                                                     temp101
                                                                      (lambda (v_1
                                                                               knowns_1)
                                                                        (begin
@@ -30178,6 +30190,7 @@
                                                                           'fresh
                                                                           v_1))))))
                                                                (struct-convert-local.1
+                                                                for-cify?_0
                                                                 #f
                                                                 unsafe-mode?_0
                                                                 v_0
@@ -30186,7 +30199,7 @@
                                                                 imports_0
                                                                 mutated_0
                                                                 simples_0
-                                                                temp98_0))
+                                                                temp101_0))
                                                              #f)))
                                                       (if or-part_0
                                                         or-part_0
@@ -30916,14 +30929,14 @@
                                                                                                             ids_2
                                                                                                             rhss_1))))))
                                                                                                  (case-lambda
-                                                                                                  ((ids100_0
-                                                                                                    rhss101_0)
+                                                                                                  ((ids104_0
+                                                                                                    rhss105_0)
                                                                                                    (values
                                                                                                     (cons
-                                                                                                     ids100_0
+                                                                                                     ids104_0
                                                                                                      ids_0)
                                                                                                     (cons
-                                                                                                     rhss101_0
+                                                                                                     rhss105_0
                                                                                                      rhss_0)))
                                                                                                   (args
                                                                                                    (raise-binding-result-arity-error
@@ -31042,7 +31055,8 @@
                                                                                                  imports_0
                                                                                                  mutated_0
                                                                                                  simples_0
-                                                                                                 unsafe-mode?_0)))
+                                                                                                 unsafe-mode?_0
+                                                                                                 for-cify?_0)))
                                                                                            (let ((u-id_0
                                                                                                   (unwrap
                                                                                                    id_0)))
@@ -31421,14 +31435,14 @@
                                                                                                               idss_2
                                                                                                               rhss_1))))))
                                                                                                    (case-lambda
-                                                                                                    ((idss111_0
-                                                                                                      rhss112_0)
+                                                                                                    ((idss116_0
+                                                                                                      rhss117_0)
                                                                                                      (values
                                                                                                       (cons
-                                                                                                       idss111_0
+                                                                                                       idss116_0
                                                                                                        idss_0)
                                                                                                       (cons
-                                                                                                       rhss112_0
+                                                                                                       rhss117_0
                                                                                                        rhss_0)))
                                                                                                     (args
                                                                                                      (raise-binding-result-arity-error
@@ -31501,9 +31515,9 @@
                                                              ((idss_0
                                                                rhss_0
                                                                bodys_0)
-                                                              (let ((temp120_0
+                                                              (let ((temp125_0
                                                                      (|#%name|
-                                                                      temp120
+                                                                      temp125
                                                                       (lambda (v_1
                                                                                knowns_1)
                                                                         (begin
@@ -31528,6 +31542,7 @@
                                                                            v_1))))))
                                                                 (let ((c1_0
                                                                        (struct-convert-local.1
+                                                                        for-cify?_0
                                                                         #t
                                                                         unsafe-mode?_0
                                                                         v_0
@@ -31536,7 +31551,7 @@
                                                                         imports_0
                                                                         mutated_0
                                                                         simples_0
-                                                                        temp120_0)))
+                                                                        temp125_0)))
                                                                   (if c1_0
                                                                     c1_0
                                                                     (if (letrec-splitable-values-binding?
@@ -61159,20 +61174,8 @@
             (|#%name|
              body-leftover-size
              (lambda (serializable?_0 body_0 size_0)
-               (begin (begin (for-loop_2 serializable?_0 size_0 body_0))))))
+               (begin (begin (for-loop_1 serializable?_0 size_0 body_0))))))
            (for-loop_0
-            (|#%name|
-             for-loop
-             (lambda (len_0 vec_0 size_0 pos_0)
-               (begin
-                 (if (unsafe-fx< pos_0 len_0)
-                   (let ((v_0 (unsafe-vector-ref vec_0 pos_0)))
-                     (if (<= size_0 0)
-                       size_0
-                       (let ((size_1 (s-expr-leftover-size_0 v_0 size_0)))
-                         (next-k-proc_1 len_0 pos_0 vec_0 size_1))))
-                   size_0)))))
-           (for-loop_1
             (|#%name|
              for-loop
              (lambda (v_0 size_0 i_0)
@@ -61191,7 +61194,7 @@
                           (next-k-proc_2 i_0 v_0 size_1))))
                      (args (raise-binding-result-arity-error 2 args))))
                    size_0)))))
-           (for-loop_2
+           (for-loop_1
             (|#%name|
              for-loop
              (lambda (serializable?_0 size_0 lst_0)
@@ -61215,10 +61218,22 @@
                                    size_0)))
                              (begin-unsafe
                               (begin
-                                (for-loop_2
+                                (for-loop_1
                                  serializable?_0
                                  size_1
                                  rest_0))))))))
+                   size_0)))))
+           (for-loop_2
+            (|#%name|
+             for-loop
+             (lambda (len_0 vec_0 size_0 pos_0)
+               (begin
+                 (if (unsafe-fx< pos_0 len_0)
+                   (let ((v_0 (unsafe-vector-ref vec_0 pos_0)))
+                     (if (<= size_0 0)
+                       size_0
+                       (let ((size_1 (s-expr-leftover-size_0 v_0 size_0)))
+                         (next-k-proc_1 len_0 pos_0 vec_0 size_1))))
                    size_0)))))
            (leftover-size_0
             (|#%name|
@@ -61975,17 +61990,17 @@
             (|#%name|
              next-k-proc
              (lambda (rest_0 serializable?_0 size_0)
-               (begin (for-loop_2 serializable?_0 size_0 rest_0)))))
+               (begin (for-loop_1 serializable?_0 size_0 rest_0)))))
            (next-k-proc_1
             (|#%name|
              next-k-proc
              (lambda (len_0 pos_0 vec_0 size_0)
-               (begin (for-loop_0 len_0 vec_0 size_0 (unsafe-fx+ 1 pos_0))))))
+               (begin (for-loop_2 len_0 vec_0 size_0 (unsafe-fx+ 1 pos_0))))))
            (next-k-proc_2
             (|#%name|
              next-k-proc
              (lambda (i_0 v_0 size_0)
-               (begin (for-loop_1 v_0 size_0 (hash-iterate-next v_0 i_0))))))
+               (begin (for-loop_0 v_0 size_0 (hash-iterate-next v_0 i_0))))))
            (s-expr-leftover-size_0
             (|#%name|
              s-expr-leftover-size
@@ -62012,14 +62027,14 @@
                            ((vec_0 len_0)
                             (begin
                               #f
-                              (for-loop_0 len_0 vec_0 (sub1 size_0) 0)))
+                              (for-loop_2 len_0 vec_0 (sub1 size_0) 0)))
                            (args (raise-binding-result-arity-error 2 args))))
                          (if (prefab-struct-key v_0)
                            (s-expr-leftover-size_0 (struct->vector v_0) size_0)
                            (if (hash? v_0)
                              (begin
                                (let ((app_0 (sub1 size_0)))
-                                 (for-loop_1
+                                 (for-loop_0
                                   v_0
                                   app_0
                                   (hash-iterate-first v_0))))

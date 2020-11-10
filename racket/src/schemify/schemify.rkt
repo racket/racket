@@ -209,12 +209,12 @@
   ;; Various conversion steps need information about mutated variables,
   ;; where "mutated" here includes visible implicit mutation, such as
   ;; a variable that might be used before it is defined:
-  (define mutated (mutated-in-body l exports prim-knowns (hasheq) imports simples unsafe-mode? enforce-constant?))
+  (define mutated (mutated-in-body l exports prim-knowns (hasheq) imports simples unsafe-mode? for-cify? enforce-constant?))
   ;; Make another pass to gather known-binding information:
   (define knowns
     (for/fold ([knowns (hasheq)]) ([form (in-list l)])
       (define-values (new-knowns info)
-        (find-definitions form prim-knowns knowns imports mutated simples unsafe-mode?
+        (find-definitions form prim-knowns knowns imports mutated simples unsafe-mode? for-cify?
                           #:primitives primitives
                           #:optimize? #t))
       new-knowns))
@@ -304,7 +304,7 @@
                (define id (car ids))
                (define k (match schemified
                            [`(define ,id ,rhs)
-                            (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?
+                            (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?
                                          #:post-schemify? #t)]))
                (if k
                    (hash-set knowns (unwrap id) k)
@@ -535,7 +535,7 @@
                (define new-knowns
                  (for/fold ([knowns knowns]) ([id (in-list ids)]
                                               [rhs (in-list rhss)])
-                   (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?))
+                   (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?))
                    (if k
                        (hash-set knowns (unwrap id) k)
                        knowns)))
@@ -563,7 +563,8 @@
             (or (and (not (or for-interp? for-cify?))
                      (struct-convert-local v prim-knowns knowns imports mutated simples
                                            (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
-                                           #:unsafe-mode? unsafe-mode?))
+                                           #:unsafe-mode? unsafe-mode?
+                                           #:for-cify? for-cify?))
                 (unnest-let
                  (left-to-right/let-values idss
                                            (for/list ([rhs (in-list rhss)])
@@ -583,7 +584,7 @@
             (define-values (rhs-knowns body-knowns)
               (for/fold ([rhs-knowns knowns] [body-knowns knowns]) ([id (in-list ids)]
                                                                     [rhs (in-list rhss)])
-                (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode?))
+                (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?))
                 (define u-id (unwrap id))
                 (cond
                   [(too-early-mutated-state? (hash-ref mutated u-id #f))
@@ -603,7 +604,8 @@
             (cond
               [(struct-convert-local v #:letrec? #t prim-knowns knowns imports mutated simples
                                      (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
-                                     #:unsafe-mode? unsafe-mode?)
+                                     #:unsafe-mode? unsafe-mode?
+                                     #:for-cify? for-cify?)
                => (lambda (form) form)]
               [(letrec-splitable-values-binding? idss rhss)
                (schemify

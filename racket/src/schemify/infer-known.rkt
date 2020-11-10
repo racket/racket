@@ -18,7 +18,7 @@
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early. If `post-schemify?`, then `rhs` has been schemified.
-(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode?
+(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?
                      #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
                      #:optimize-inline? [optimize-inline? #f]
                      #:post-schemify? [post-schemify? #f])
@@ -34,7 +34,9 @@
            (let ([lam (if optimize-inline?
                           (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
                           lam)])
-             (known-procedure/can-inline arity-mask (if unsafe-mode? (add-begin-unsafe lam) lam)))
+             (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not for-cify?))
+                                                        (add-begin-unsafe lam)
+                                                        lam)))
            (known-procedure arity-mask))]
       [(and (literal? rhs)
             (not (hash-ref mutated (unwrap id) #f)))
