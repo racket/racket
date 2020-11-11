@@ -45,7 +45,11 @@
 ;; escaping to esc
 (define (gen-clause k rows x xs esc)
   (define-syntax-rule (constant-pat predicate-stx)
-    (with-syntax ([rhs (compile* (cons x xs)
+    (with-syntax ([lhs (if (procedure? predicate-stx)
+                           (predicate-stx x)
+                           (quasisyntax/loc predicate-stx
+                             (#,predicate-stx #,x)))]
+                  [rhs (compile* (cons x xs)
                                  (map (lambda (row)
                                         (define-values (p ps)
                                           (Row-split-pats row))
@@ -55,9 +59,7 @@
                                                   (Row-vars-seen row)))
                                       rows)
                                  esc)])
-      (if (procedure? predicate-stx)
-          #`[#,(predicate-stx x) rhs]
-          #`[(#,predicate-stx #,x) rhs])))
+      #'[lhs rhs]))
   (define (compile-con-pat accs pred pat-acc)
     (with-syntax* ([(tmps ...) (generate-temporaries accs)]
                    [(accs ...) accs]
