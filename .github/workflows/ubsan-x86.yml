@@ -163,11 +163,11 @@ jobs:
       run: raco test -l tests/db/all-tests | tee logs/db-all-tests.log
     - name: Gather runtime errors
       run: |
-        grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
+        grep 'runtime error' logs/*.log > runtime-errors-cs_git${{ github.sha }}.log || true
         test ! -s runtime-errors_git${{ github.sha }}.log
     - uses: actions/upload-artifact@v2
       if: failure()
       with:
         name: runtime-errors-cs_git${{ github.sha }}
-        path: runtime-errors_git${{ github.sha }}.log
+        path: runtime-errors-cs_git${{ github.sha }}.log
 
