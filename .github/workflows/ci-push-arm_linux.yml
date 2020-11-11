@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cify: [cify, nocify]
+        cify: [cify]
         arch: [ARM64]
 
     
@@ -77,9 +77,9 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ARM64]
-        cify: [cify, nocify]
-        cc: [gcc, clang]
-        ep: [ep, noep]
+        cify: [cify]
+        cc: [gcc]
+        ep: [ep]
 
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
@@ -155,7 +155,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ARM64]
-        cc: [gcc, clang]
+        cc: [gcc]
 
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
@@ -201,104 +201,6 @@ jobs:
         name: racketcs-debian10-${{ matrix.arch }}_git${{ github.sha }}
         path: /tmp/racketcs-debian10-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
 
-  # Tests
-  # Unfortunately Actions does not support atm yaml anchors
-  # otherwise all the following jobs could be simplified
-  # Note: the reason we cannot transform this into a matrix
-  # build is because we cannot use variables in the needs keyword.
-  test-cgc:
-    container:
-      image: racket/racket-ci:latest
-      options: --init
-
-    needs: build-racketcgc
-
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [ARM64]
-        cify: [cify, nocify]
-
-    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
-    continue-on-error: true
-    
-    steps:
-      - uses: pmatos/action-home-clean@v2
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: racketcgc-debian10-${{ matrix.cify }}-${{ matrix.arch }}_git${{ github.sha }}
-          path: /tmp
-      - name: Untar
-        working-directory: /usr/local
-        run: tar -xvjf /tmp/racketcgc-debian10-${{ matrix.cify }}-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
-      - name: Extend PATH with Racket executable
-        run: echo "::set-env name=PATH::/usr/local/racketcgc/bin:$PATH"
-      - name: Check for Racket
-        run: racket --version
-      - name: Install catalog
-        run: |
-          racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
-          raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-      - name: Install racket-test dependency
-        run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        if: ${{ success() }}
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        if: ${{ always() }}
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        if: ${{ always() }}
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        if: ${{ always() }}
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        if: ${{ always() }}
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        if: ${{ always() }}
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        if: ${{ always() }}
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        if: ${{ always() }}
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        if: ${{ always() }}
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        if: ${{ always() }}
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        if: ${{ always() }}
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        if: ${{ always() }}
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        if: ${{ always() }}
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        if: ${{ always() }}
-        run: raco test -c tests/xml
-      - name: Run tests/future
-        if: ${{ always() }}
-        run: raco test -c tests/future
-      - name: Run tests/stxparse
-        if: ${{ always() }}
-        run: raco test -c tests/stxparse
-      - name: Install db tests dependency
-        run: raco pkg install --auto db-test
-      - name: Run db tests
-        if: ${{ success() }}
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        if: ${{ always() }}
-        run: raco test -c tests/syntax
-
   test-3m:
     container:
       image: racket/racket-ci:latest
@@ -310,8 +212,8 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ARM64]
-        cify: [cify, nocify]
-        ep: [ep, noep]
+        cify: [cify]
+        ep: [ep]
 
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
 
