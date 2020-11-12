@@ -100,7 +100,7 @@
                            (define-generics AA [meth a b AA [d] #:reqkw reqkw])
                            (meth 1 2 3 "optarg"))))
              "omitted required kw arg")
-    (check-exn #rx"#:reqkw: \"requiredkw"
+    (check-exn #rx"#:reqkw argument[.][.][.]: \"requiredkw"
              (lambda () (convert-compile-time-error
                          (let ()
                            (define-generics AA [meth a b AA [d] #:reqkw reqkw])
