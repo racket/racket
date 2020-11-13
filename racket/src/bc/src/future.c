@@ -864,11 +864,11 @@ void scheme_future_block_until_gc()
 #  endif
       int _eax, _ebx, _ecx, _edx, op = 0;
       /* we can't always use EBX, so save and restore it: */
-      asm (MZ_PUSH_EBX "\n\t"
-           "cpuid \n\t" 
-           "movl %%ebx, %1 \n\t"
-           MZ_POP_EBX
-           : "=a" (_eax), "=r" (_ebx), "=c" (_ecx), "=d" (_edx) : "a" (op));
+      __asm__ (MZ_PUSH_EBX "\n\t"
+               "cpuid \n\t"
+               "movl %%ebx, %1 \n\t"
+               MZ_POP_EBX
+               : "=a" (_eax), "=r" (_ebx), "=c" (_ecx), "=d" (_edx) : "a" (op));
     }
 #  undef MZ_PUSH_EBX
 #  undef MZ_POP_EBX

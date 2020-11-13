@@ -265,14 +265,14 @@ READ_ONLY Scheme_Object *scheme_zerol, *scheme_nzerol, *scheme_long_pi,
 XFORM_NONGCING static void to_double_prec(void)
 {
   int _dblprec = 0x27F;
-  asm ("fldcw %0" : : "m" (_dblprec));
+  __asm__ ("fldcw %0" : : "m" (_dblprec));
 }
 #endif
 #if defined(ASM_DBLPREC_CONTROL_87) || defined(ASM_EXTPREC_CONTROL_87)
 XFORM_NONGCING static void to_extended_prec(void)
 {
   int _extprec = 0x37F;
-  asm ("fldcw %0" : : "m" (_extprec));
+  __asm__ ("fldcw %0" : : "m" (_extprec));
 }
 #endif
 
