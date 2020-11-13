@@ -102,11 +102,11 @@ jobs:
       run: echo "::set-env name=EP_OPTIONS::--disable-extflonums --disable-places"
     - uses: actions/download-artifact@v2
       with:
-        name: racketcgc-debian10-nocify-${{ matrix.arch }}_git${{ github.sha }}
+        name: racketcgc-debian10-cify-${{ matrix.arch }}_git${{ github.sha }}
         path: /tmp
     - name: Untar
       working-directory: /usr/local
-      run: tar -xvjf /tmp/racketcgc-debian10-nocify-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
+      run: tar -xvjf /tmp/racketcgc-debian10-cify-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket 3m
       working-directory: ./racket/src
       env:
@@ -166,11 +166,11 @@ jobs:
         fetch-depth: 100
     - uses: actions/download-artifact@v2
       with:
-        name: racketcgc-debian10-nocify-${{ matrix.arch }}_git${{ github.sha }}
+        name: racketcgc-debian10-cify-${{ matrix.arch }}_git${{ github.sha }}
         path: /tmp
     - name: Untar
       working-directory: /usr/local
-      run: tar -xvjf /tmp/racketcgc-debian10-nocify-${{ matrix.arch }}_git${{ github.sha}}.tar.bz2
+      run: tar -xvjf /tmp/racketcgc-debian10-cify-${{ matrix.arch }}_git${{ github.sha}}.tar.bz2
     - name: Configuring Racket CS
       working-directory: ./racket/src
       env:
