@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Force all workare boot files back to links to immediate "boot"
+# Force all workarea boot files back to links to immediate "boot"
 
 MACH=$1
 SCHEME_WORKAREA=$2
@@ -10,7 +10,10 @@ ready_mach()
     INIT=$SCHEME_WORKAREA/boot/$MACH/$1
     RELINIT=../../../boot/$MACH/$1
     DEST=$SCHEME_WORKAREA/$MACH/boot/$MACH/$1
-    if [ "`/usr/bin/find "$INIT" -newer "$DEST"`" != "" ] ; then
+    if [ ! -f "$DEST" ]; then
+        mkdir -p `dirname $DEST`
+        ln -s "$RELINIT" "$DEST"
+    elif [ "`/usr/bin/find "$INIT" -newer "$DEST"`" != "" ] ; then
         rm "$DEST"
         ln -s "$RELINIT" "$DEST"
     fi
