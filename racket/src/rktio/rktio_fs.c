@@ -12,6 +12,7 @@
 # include <pwd.h>
 # include <grp.h>
 # include <dirent.h>
+# include <sys/time.h>
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <shlobj.h>

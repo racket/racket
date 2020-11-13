@@ -182,6 +182,13 @@ make that process faster by keeping a few guidelines in mind:
        will only be detected by a full @exec{raco setup}.
        @italic{Really:} run @exec{raco setup}.}
 
+ @item{For changes to the C code, ensure your code follows the C99 standard.
+
+       On *nix systems, extensions that are part of the @exec{_DEFAULT_SOURCE}
+       pre-processor flag are also allowed. See the
+       @hyperlink[https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html#index-_005fDEFAULT_005fSOURCE]{glibc}
+       manual for more details.}
+
 ]
 
 @; ------------------------------------------------------------
