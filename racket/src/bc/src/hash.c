@@ -223,7 +223,7 @@ static int equal_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Scheme_Ob
 }
 
 /*========================================================================*/
-/*                         normal hash table                              */
+/*                      normal mutable hash table                         */
 /*========================================================================*/
 
 #ifdef REVERSE_HASH_TABLE_ORDER
@@ -231,6 +231,20 @@ static int equal_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Scheme_Ob
 #else
 # define HASH_TO_ARRAY_INDEX(h, mask) (h)
 #endif
+
+/* Since mutable hash tables tend to use the low bits of a hash code,
+   make sure higher bits of a fixnum are represented there: */
+XFORM_NONGCING static uintptr_t fixmix(uintptr_t x) {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  uintptr_t x1 = x ^ ((x & (uintptr_t)0xFFFFFFFF00000000) >> 32);
+#else
+  uintptr_t x1 = x;
+#endif
+  uintptr_t x2 = x1 ^ ((x1 & (uintptr_t)0xFFFF0000) >> 16);
+  uintptr_t x3 = x2 ^ ((x2 & (uintptr_t)0xFF00) >> 8);
+
+  return x3;
+}
 
 Scheme_Hash_Table *scheme_make_hash_table(int type)
 {
@@ -280,7 +294,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
         ekey = key;
       h2 = 0;
       hx = scheme_equal_hash_key(ekey);
-      h = to_unsigned_hash(hx) & mask;
+      h = fixmix(to_unsigned_hash(hx)) & mask;
     } else {
       GC_CAN_IGNORE intptr_t *_h2x;
       if (table->compare) {
@@ -289,14 +303,14 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
       } else
         _h2x = &h2x;
       table->make_hash_indices((void *)key, &hx, _h2x);
-      h = to_unsigned_hash(hx) & mask;
+      h = fixmix(to_unsigned_hash(hx)) & mask;
       if (_h2x)
-        h2 = (to_unsigned_hash(h2x) & mask) | 1;
+        h2 = (fixmix(to_unsigned_hash(h2x)) & mask) | 1;
       ekey = NULL;
     }
   } else {
     uintptr_t lkey;
-    lkey = PTR_TO_LONG((Scheme_Object *)key);
+    lkey = fixmix(PTR_TO_LONG((Scheme_Object *)key));
     h = lkey & mask;
     h2 = ((lkey >> 1) & mask) | 1;
     ekey = NULL;
@@ -329,7 +343,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
         scheme_hash_iteration_count++;
         if (!h2) {
           h2x = scheme_equal_hash_key2(ekey);
-          h2 = (to_unsigned_hash(h2x) & (table->size - 1)) | 1;
+          h2 = (fixmix(to_unsigned_hash(h2x)) & (table->size - 1)) | 1;
         }
         h = (h + h2) & mask;
       }
@@ -356,7 +370,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
         scheme_hash_iteration_count++;
         if (!h2) {
           table->make_hash_indices((void *)key, NULL, &h2x);
-          h2 = (to_unsigned_hash(h2x) & (table->size - 1)) | 1;
+          h2 = (fixmix(to_unsigned_hash(h2x)) & (table->size - 1)) | 1;
         }
         h = (h + h2) & mask;
       }
@@ -441,7 +455,7 @@ static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, 
 
   mask = table->size - 1;
 
-  lkey = PTR_TO_LONG((Scheme_Object *)key);
+  lkey = fixmix(PTR_TO_LONG((Scheme_Object *)key));
   h = lkey & mask;
   h2 = (lkey >> 1) & mask;
 
@@ -497,7 +511,7 @@ XFORM_NONGCING static Scheme_Object *do_hash_get(Scheme_Hash_Table *table, Schem
 
   mask = table->size - 1;
 
-  lkey = PTR_TO_LONG((Scheme_Object *)key);
+  lkey = fixmix(PTR_TO_LONG((Scheme_Object *)key));
   h = lkey & mask;
   h2 = (lkey >> 1) & mask;
 
@@ -839,11 +853,11 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     else
       ekey = (void *)key;
     table->make_hash_indices(ekey, &hx, &h2x);
-    h = to_unsigned_hash(hx) & mask;
-    h2 = to_unsigned_hash(h2x) & mask;
+    h = fixmix(to_unsigned_hash(hx)) & mask;
+    h2 = fixmix(to_unsigned_hash(h2x)) & mask;
   } else {
     uintptr_t lkey;
-    lkey = PTR_TO_LONG((Scheme_Object *)key);
+    lkey = fixmix(PTR_TO_LONG((Scheme_Object *)key));
     h = lkey & mask;
     h2 = (lkey >> 1) & mask;
     ekey = NULL;
@@ -1408,7 +1422,6 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
   case scheme_integer_type:
     {
       uintptr_t iv = to_unsigned_hash(SCHEME_INT_VAL(o));
-      MZ_MIX(iv);
       return k + iv;
     }
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -1430,14 +1443,15 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
   case scheme_bignum_type:
     {
       int i = SCHEME_BIGLEN(o);
-      bigdig *d = SCHEME_BIGDIG(o), k2;
+      bigdig *d = SCHEME_BIGDIG(o);
+      uintptr_t k2;
       
       k2 = k;
       while (i--) {
-	k2 = (k2 << 3) + k2 + d[i];
+	k2 = (k2 << 3) + k2 + (uintptr_t)d[i];
       }
     
-      return (uintptr_t)k2;
+      return k2;
     }
     break;
   case scheme_rational_type:
@@ -1931,7 +1945,7 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key2(Scheme_Object *o, int *_don
   case scheme_false_type:
     return 2;
   case scheme_integer_type:
-    return t - SCHEME_INT_VAL(o);
+    return (uintptr_t)t - SCHEME_INT_VAL(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   case scheme_float_type:
     {
@@ -1949,7 +1963,8 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key2(Scheme_Object *o, int *_don
     }
 #endif
   case scheme_bignum_type:
-    return SCHEME_BIGDIG(o)[0];
+    return ((uintptr_t)SCHEME_BIGDIG(o)[0]
+            + (uintptr_t)SCHEME_BIGDIG(o)[SCHEME_BIGLEN(o)-1]);
   case scheme_rational_type:
     return fast_equal_hash_key2(scheme_rational_numerator(o), _done);
   case scheme_complex_type:

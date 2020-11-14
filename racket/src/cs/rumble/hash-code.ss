@@ -55,13 +55,31 @@
 ;; Mostly copied from Chez Scheme's "newhash.ss":
 (define number-hash
   (lambda (z)
-    (cond
-     [(fixnum? z) (if (fx< z 0) (fxand z (most-positive-fixnum)) z)]
-     [(flonum? z) (#3%$flhash z)]
-     [(bignum? z) (modulo z (most-positive-fixnum))]
-     [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
-     [else (logand (logxor (lognot (number-hash (real-part z))) (number-hash (imag-part z)))
-                   (most-positive-fixnum))])))
+    (let* ([+/fx
+            (lambda (hc k)
+              (#3%fx+ hc k))]
+           [sll/fx
+            (lambda (hc i)
+              (#3%fxsll hc i))]
+           [mix
+            (lambda (hc)
+              (let ([hc2 (+/fx hc (sll/fx hc 10))])
+                (fxlogxor hc2 (fxsrl hc2 6))))])
+      (cond
+        [(fixnum? z) (if (fx< z 0) (fxand z (most-positive-fixnum)) z)]
+        [(flonum? z) (#3%$flhash z)]
+        [(bignum? z) (let ([len (integer-length z)])
+                       (let loop ([i 0] [hc 0])
+                         (cond
+                           [(fx>= i len) hc]
+                           [else
+                            (let ([next-i (fx+ i (fx- (fixnum-width) 1))])
+                              (loop next-i
+                                    (+/fx (bitwise-bit-field z i next-i)
+                                          (mix hc))))])))]
+        [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
+        [else (logand (logxor (lognot (number-hash (real-part z))) (number-hash (imag-part z)))
+                      (most-positive-fixnum))]))))
 
 (define (eqv-hash-code x)
   (cond

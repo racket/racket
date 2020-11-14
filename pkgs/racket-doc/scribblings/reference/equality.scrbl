@@ -221,7 +221,18 @@ indexing and comparison operations, especially in the implementation of
 
    The second argument is an @racket[equal-hash-code]-like procedure to use for
    recursive hash-code computation; use the given procedure instead of
-   @racket[equal-hash-code] to ensure that data cycles are handled properly.}
+   @racket[equal-hash-code] to ensure that data cycles are handled properly.
+
+   Although the result of @racket[_hash-proc] can be any exact
+   integer, it will be truncated for most purposes to a @tech{fixnum}
+   (e.g., for the result of @racket[equal-hash-code]). Roughly,
+   truncation uses @racket[bitwise-and] to take the lower bits of the
+   number. Thus, variation in the hash-code computation should be
+   reflected in the fixnum-compatible bits of @racket[_hash-proc]'s
+   result. Consumers of a hash code are expected to use variation
+   within the fixnum range appropriately, and producers are @emph{not}
+   responsible to reflect variation in hash codes across the full
+   range of bits that fit within a fixnum.}
 
  @item{@racket[_hash2-proc :
                (any/c (any/c . -> . exact-integer?) . -> . exact-integer?)] ---
