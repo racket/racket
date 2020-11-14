@@ -47,6 +47,9 @@
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i k j))
         (test #t same-results (list-ref line 0) (list-ref line 1) (cons i more-flonums))))))
 
+(err/rt-test (flvector-ref (flvector 4.0 5.0 6.0) 4) exn:fail:contract? #rx"[[]0, 2[]]")
+(err/rt-test (flvector-set! (flvector 4.0 5.0 6.0) 4 0.0) exn:fail:contract? #rx"[[]0, 2[]]")
+
 (define (flonum-close? fl1 fl2)
   (<= (flabs (fl- fl1 fl2))
       1e-8))

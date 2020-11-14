@@ -24,6 +24,7 @@
 (err/rt-test (vector-ref #(4 5 6) -1))
 (err/rt-test (vector-ref #(4 5 6) 2.0))
 (err/rt-test (vector-ref #(4 5 6) "2"))
+(err/rt-test (vector-ref #(4 5 6) 4) exn:fail:contract? #rx"[[]0, 2[]]")
 (test '#(0 ("Sue" "Sue") "Anna") 'vector-set!
 	(let ((vec (vector 0 '(2 2 2 2) "Anna")))
 	  (vector-set! vec 1 '("Sue" "Sue"))
@@ -54,6 +55,7 @@
 (err/rt-test (vector-set! #(1 2 3) (expt 2 100) 'x) exn:application:mismatch?)
 (err/rt-test (vector-set! '(1 2 3) 2 'x))
 (err/rt-test (vector-set! #(1 2 3) "2" 'x))
+(err/rt-test (vector-set! (vector 4 5 6) 4 0) exn:fail:contract? #rx"[[]0, 2[]]")
 (define v (vector 1 2 3))
 (vector-fill! v 0)
 (test (quote #(0 0 0)) 'vector-fill! v)
@@ -146,7 +148,8 @@
   (let ([v (vector 1 2 3)])
     (test #f eq? v (vector-copy v))))
 
-
+(err/rt-test (vector-copy #(4 5 6) 4) exn:fail:contract? #rx"[[]0, 3[]]")
+(err/rt-test (vector-copy #(4 5 6) 1 4) exn:fail:contract? #rx"[[]0, 3[]]")
 
 ;; ---------- vector-arg{min,max} ----------
 

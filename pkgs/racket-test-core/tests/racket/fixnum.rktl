@@ -167,6 +167,9 @@
 
 ;; ----------------------------------------
 
+(err/rt-test (fxvector-ref (fxvector 4 5 6) 4) exn:fail:contract? #rx"[[]0, 2[]]")
+(err/rt-test (fxvector-set! (fxvector 4 5 6) 4 0) exn:fail:contract? #rx"[[]0, 2[]]")
+
 ;; in-fxvector tests.
 (let ((flv (fxvector 1 2 3)))
   (let ((flv-seq (in-fxvector flv)))

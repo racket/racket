@@ -92,10 +92,11 @@
                        [(bytes? v) (values "byte string" (bytes-length v))]
                        [(string? v) (values "string" (string-length v))]
                        [(fxvector? v) (values "fxvector" (fxvector-length v))]
+                       [(flvector? v) (values "flvector" (flvector-length v))]
                        [else (values "value" #f)]))])
         (format-error-values (string-append "index is out of range\n"
                                             "  index: ~s\n"
-                                            "  valid range: [0, " (if len (number->string len) "...") "]\n"
+                                            "  valid range: [0, " (if len (number->string (sub1 len)) "...") "]\n"
                                             "  " what ": ~s")
                              irritants))]
      [else
