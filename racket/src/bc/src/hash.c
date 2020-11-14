@@ -236,12 +236,12 @@ static int equal_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Scheme_Ob
    make sure higher bits of a fixnum are represented there: */
 XFORM_NONGCING static uintptr_t fixmix(uintptr_t x) {
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-  uintptr_t x1 = x ^ ((x & (uintptr_t)0xFFFFFFFF00000000) >> 32);
+  uintptr_t x1 = x ^ ((x >> 32) & (uintptr_t)0xFFFFFFFF);
 #else
   uintptr_t x1 = x;
 #endif
-  uintptr_t x2 = x1 ^ ((x1 & (uintptr_t)0xFFFF0000) >> 16);
-  uintptr_t x3 = x2 ^ ((x2 & (uintptr_t)0xFF00) >> 8);
+  uintptr_t x2 = x1 ^ ((x1 >> 16) & (uintptr_t)0xFFFF);
+  uintptr_t x3 = x2 ^ ((x2 >> 8) & (uintptr_t)0xFF);
 
   return x3;
 }

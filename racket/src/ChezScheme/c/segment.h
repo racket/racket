@@ -91,12 +91,12 @@ FORCEINLINE uptr eq_hash(ptr key) {
   if (Sfixnump(key)) {
     uptr x = UNFIX(key);
 #if (ptr_bits == 64)
-    uptr x1 = x ^ ((x & (uptr)0xFFFFFFFF00000000) >> 32);
+    uptr x1 = x ^ ((x >> 32) & (uptr)0xFFFFFFFF);
 #else
     uptr x1 = x;
 #endif
-    uptr x2 = x1 ^ ((x1 & (uptr)0xFFFF0000) >> 16);
-    uptr x3 = x2 ^ ((x2 & (uptr)0xFF00) >> 8);
+    uptr x2 = x1 ^ ((x1 >> 16) & (uptr)0xFFFF);
+    uptr x3 = x2 ^ ((x2 >> 8) & (uptr)0xFF);
     return x3;
   } else
     return (uptr)key >> primary_type_bits;
