@@ -4,12 +4,12 @@ on:
   push:
     paths:
       - "build.md"
-      - ".github/workflow/scribble_build-guide.yml"
+      - ".github/workflows/scribble_build-guide.yml"
       - "pkgs/racket-build-guide/**"
   pull_request:
     paths:
       - "build.md"
-      - ".github/workflow/scribble_build-guide.yml"
+      - ".github/workflows/scribble_build-guide.yml"
       - "pkgs/racket-build-guide/**"
 
 jobs:
