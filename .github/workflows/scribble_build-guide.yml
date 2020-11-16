@@ -16,8 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
     - uses: Bogdanp/setup-racket@v0.10
       with:
         architecture: 'x64'
