@@ -1,0 +1,29 @@
+name: Scribble Racket Build Guide
+
+on:
+  push:
+    paths:
+      - ".github/workflow/scribble_build-guide.yaml"
+      - "pkgs/racket-build-guide/**"
+  pull_request:
+    paths:
+      - ".github/workflow/scribble_build-guide.yaml"
+      - "pkgs/racket-build-guide/**"
+
+jobs:
+  scribble:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: Bogdanp/setup-racket@v0.10
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: 'current'
+    - name: Scribble Build Guide
+      run: raco pkg install --auto -j $(nproc) pkgs/racket-build-guide
+
