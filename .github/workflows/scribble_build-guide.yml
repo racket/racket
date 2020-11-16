@@ -3,11 +3,13 @@ name: Scribble Racket Build Guide
 on:
   push:
     paths:
-      - ".github/workflow/scribble_build-guide.yaml"
+      - "build.md"
+      - ".github/workflow/scribble_build-guide.yml"
       - "pkgs/racket-build-guide/**"
   pull_request:
     paths:
-      - ".github/workflow/scribble_build-guide.yaml"
+      - "build.md"
+      - ".github/workflow/scribble_build-guide.yml"
       - "pkgs/racket-build-guide/**"
 
 jobs:
@@ -24,4 +26,23 @@ jobs:
         version: 'current'
     - name: Scribble Build Guide
       run: raco pkg install --auto -j $(nproc) pkgs/racket-build-guide
+
+  generation-check:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: Bogdanp/setup-racket@v0.10
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: 'current'
+    - name: Move original build.md
+      run: mv build.md build.md.orig
+    - name: Generate new build.md
+      working-directory: pkgs/racket-build-guide
+      run: make
+    - name: Check differences
+      run: diff build.md build.md.orig
 
