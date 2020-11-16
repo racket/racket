@@ -841,6 +841,13 @@ that process faster by keeping a few guidelines in mind:
   where a change creates a new package dependency that will only be
   detected by a full `raco setup`. _Really:_ run `raco setup`.
 
+* For changes to the C code, ensure your code follows the C99 standard.
+
+  On Unix systems, extensions that are part of the `_DEFAULT_SOURCE`
+  pre-processor flag are also allowed. See the
+  [glibc](https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html#index-_005fDEFAULT_005fSOURCE)
+  manual for more details.
+
 ### 3.4. More Resources
 
 For additional pointers on how to contribute to Racket, see
