@@ -289,12 +289,14 @@
        (error 'compile-one "App block with multiple rows: ~a" block))
      (let* ([row (car block)]
             [pats (Row-pats row)]
-            [app-pats (App-ps first)])
+            [app-pats (App-ps first)]
+            [app-expr (App-expr first)])
        (with-syntax ([(t ...) (generate-temporaries app-pats)])
          #`(let-values ([(t ...)
-                         #,(if (procedure? (App-expr first))
-                             ((App-expr first) x)
-                             #`(#,(App-expr first) #,x))])
+                         #,(if (procedure? app-expr)
+                               (app-expr x)
+                               (quasisyntax/loc app-expr
+                                 (#,app-expr #,x)))])
              #,(compile* (append (syntax->list #'(t ...)) xs)
                          (list (make-Row (append app-pats (cdr pats))
                                          (Row-rhs row)
