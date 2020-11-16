@@ -1478,6 +1478,15 @@
 ;; ----------------------------------------
 
 (let ()
+  (struct bar (a [b #:mutable] [c #:mutable] [d #:auto] [e #:auto] [f #:auto #:mutable]))
+  (define-syntax (get-bar-auto-field-accessors+mutators stx)
+    #`'#,(struct-auto-info-lists (syntax-local-value #'bar)))
+  (define (get-bar-auto-field-accessors+mutators*) (get-bar-auto-field-accessors+mutators))
+  (test '((bar-d bar-e bar-f) (set-bar-f!)) get-bar-auto-field-accessors+mutators*))
+
+;; ----------------------------------------
+
+(let ()
   (struct exn:foo exn () #:constructor-name make-exn:foo)
   (test "foo" exn-message (make-exn:foo "foo" (current-continuation-marks))))
 

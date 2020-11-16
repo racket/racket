@@ -593,15 +593,18 @@
                              0
                              fld-size))
                    
-                   (define-values (sets field-to-mutator-directives)
+                   (define-values (sets field-to-mutator-directives sets-auto-count)
                      (let loop ([fields fields])
                        (cond
-                         [(null? fields) (values null null)]
+                         [(null? fields) (values null null 0)]
                          [(not (or mutable? (field-mutable? (car fields))))
                           (loop (cdr fields))]
                          [else
-                          (define-values (other-sets other-directives)
+                          (define-values (other-sets other-directives count)
                             (loop (cdr fields)))
+                          (define count* (if (field-auto? (car fields))
+                                             (+ count 1)
+                                             count))
                           (define this-set
                             (build-name id ; (field-id (car fields))
                                         "set-"
@@ -613,7 +616,8 @@
                                   (cons (field-to-selector/mutator-directive (car fields)
                                                                              this-set
                                                                              #f)
-                                        other-directives))])))
+                                        other-directives)
+                                  count*)])))
                    
                    (define all-directives
                      (append 
@@ -746,7 +750,7 @@
                                                                           (map protect (car super-autos))
                                                                           null))
                                                              (list #,@(map protect
-                                                                           (list-tail sets (max 0 (- (length sets) auto-count))))
+                                                                           (list-tail sets (max 0 (- (length sets) sets-auto-count))))
                                                                    #,@(if super-autos
                                                                           (map protect (cadr super-autos))
                                                                           null))))
