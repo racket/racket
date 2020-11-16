@@ -1,4 +1,4 @@
-name: ARM Linux Fast Build
+name: ARM64 Linux Fast Build
 
 on: [pull_request]
 
@@ -7,12 +7,7 @@ jobs:
     container:
       image: racket/racket-ci:latest
                 
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [ARM64]
-
-    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
+    runs-on: [self-hosted, Linux, ARM64]
 
     steps:
     - uses: actions/checkout@v2
@@ -25,12 +20,7 @@ jobs:
     container:
       image: racket/racket-ci:latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [ARM64]
-
-    runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
+    runs-on: [self-hosted, Linux, ARM64]
 
     steps:
     - uses: actions/checkout@v2
