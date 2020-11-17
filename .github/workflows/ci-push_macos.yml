@@ -24,10 +24,10 @@ jobs:
         fetch-depth: 100
     - name: Setup cify if enabled1
       if: matrix.cify == 'cify'
-      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+      run: echo "CIFY_OPTION=--enable-cify" >> $GITHUB_ENV
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
-      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+      run: echo "CIFY_OPTION=--disable-cify" >> $GITHUB_ENV
     - name: Configuring Racket CGC
       working-directory: ./racket/src
       run: >
@@ -79,10 +79,10 @@ jobs:
         fetch-depth: 100
     - name: Setup cify if enabled
       if: matrix.cify == 'cify'
-      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+      run: echo "CIFY_OPTION=--enable-cify" >> $GITHUB_ENV
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
-      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+      run: echo "CIFY_OPTION=--disable-cify" >> $GITHUB_ENV
     - uses: actions/download-artifact@v2
       with:
         name: racketcgc-macos-nocify-x64_git${{ github.sha }}
@@ -196,7 +196,7 @@ jobs:
         run: tar -xvjf racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         working-directory: ${{ github.workspace }}
-        run: echo "::set-env name=PATH::$PWD/racketcgc/bin:$PATH"
+        run: echo "$PWD/racketcgc/bin" >> $GITHUB_PATH
       - name: Check for Racket
         run: racket --version
       - name: Install catalog
@@ -261,7 +261,7 @@ jobs:
         run: tar -xvjf racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         working-directory: ${{ github.workspace }}
-        run: echo "::set-env name=PATH::$PWD/racket3m/bin:$PATH"
+        run: echo "$PWD/racket3m/bin" >> $GITHUB_PATH
       - name: Check for Racket
         run: racket --version
       - name: Install catalog and required packages
@@ -321,7 +321,7 @@ jobs:
         run: tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         working-directory: ${{ github.workspace }}
-        run: echo "::set-env name=PATH::$PWD/racketcs/bin:$PATH"
+        run: echo "$PWD/racketcs/bin" >> $GITHUB_PATH
       - name: Check for Racket
         run: racket --version
       - name: Install catalog and required packages

@@ -27,16 +27,16 @@ jobs:
         fetch-depth: 100
     - name: Setup jit if ARM
       if: matrix.arch == 'ARM'
-      run: echo "::set-env name=JIT_OPTION::--enable-jit --enable-futures"
+      run: echo "JIT_OPTION=--enable-jit --enable-futures" >> $GITHUB_ENV
     - name: Setup jit if ARM64
       if: matrix.arch == 'ARM64'
-      run: echo "::set-env name=JIT_OPTION::--disable-jit --disable-futures"
+      run: echo "JIT_OPTION=--disable-jit --disable-futures" >> $GITHUB_ENV
     - name: Setup cify if enabled
       if: matrix.cify == 'cify'
-      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+      run: echo "CIFY_OPTION=--enable-cify" >> $GITHUB_ENV
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
-      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+      run: echo "CIFY_OPTION=--disable-cify" >> $GITHUB_ENV
     - name: Configuring Racket CGC
       working-directory: ./racket/src
       run: >
@@ -90,16 +90,16 @@ jobs:
         fetch-depth: 100
     - name: Setup cify if enabled
       if: matrix.cify == 'cify'
-      run: echo "::set-env name=CIFY_OPTION::--enable-cify"
+      run: echo "CIFY_OPTION=--enable-cify" >> $GITHUB_ENV
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
-      run: echo "::set-env name=CIFY_OPTION::--disable-cify"
+      run: echo "CIFY_OPTION=--disable-cify" >> $GITHUB_ENV
     - name: Setup ep if enabled
       if: matrix.ep == 'ep'
-      run: echo "::set-env name=EP_OPTIONS::--enable-extflonums --enable-places"
+      run: echo "EP_OPTIONS=--enable-extflonums --enable-places" >> $GITHUB_ENV
     - name: Setup efp if disabled
       if: matrix.efp == 'noep'
-      run: echo "::set-env name=EP_OPTIONS::--disable-extflonums --disable-places"
+      run: echo "EP_OPTIONS=--disable-extflonums --disable-places" >> $GITHUB_ENV
     - uses: actions/download-artifact@v2
       with:
         name: racketcgc-debian10-cify-${{ matrix.arch }}_git${{ github.sha }}
@@ -228,7 +228,7 @@ jobs:
         working-directory: /usr/local
         run: tar -xvjf /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.ep }}-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        run: echo "::set-env name=PATH::/usr/local/racket3m/bin:$PATH"
+        run: echo "/usr/local/racket3m/bin" >> $GITHUB_PATH
       - name: Check for Racket
         run: racket --version
       - name: Install catalog and required packages
@@ -298,7 +298,7 @@ jobs:
         working-directory: /usr/local
         run: tar -xvjf /tmp/racketcs-debian10-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
-        run: echo "::set-env name=PATH::/usr/local/racketcs/bin:$PATH"
+        run: echo "/usr/local/racketcs/bin" >> $GITHUB_PATH
       - name: Check for Racket
         run: racket --version
       - name: Install catalog and required packages
