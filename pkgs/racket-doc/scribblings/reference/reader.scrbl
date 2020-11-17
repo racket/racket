@@ -804,15 +804,18 @@ one of the following forms:
        4]{@nonterm{digit@sub{16}}}, as in string escapes (see
        @secref["parse-string"]).}
 
- @item{@litchar{#\U}@kleenerange[1 6]{@nonterm{digit@sub{16}}}:
-       like @litchar{#\u}, but with up to six hexadecimal digits.}
+ @item{@litchar{#\U}@kleenerange[1 8]{@nonterm{digit@sub{16}}}:
+       like @litchar{#\u}, but with up to eight hexadecimal digits (although
+       only six digits are actually useful).}
 
  @item{@litchar{#\}@nonterm{c}: the character @nonterm{c}, as long
        as @litchar{#\}@nonterm{c} and the characters following it
-       do not match any of the previous cases, and as long as
+       do not match any of the previous cases, as long as
        @nonterm{c} or the
        character after @nonterm{c} is not
-       @racketlink[char-alphabetic?]{alphabetic}.}
+       @racketlink[char-alphabetic?]{alphabetic}, and as long as
+       @nonterm{c} is not an octal digit or is not followed by an
+       octal digit (i.e., two octal digits commit to a third).}
 
 ]
 
