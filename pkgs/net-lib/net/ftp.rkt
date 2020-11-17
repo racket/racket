@@ -197,22 +197,29 @@
     (define r `(,(car m) ,@(cddr m)))
     (if size `(,@r ,size) r)))
 
-(define (ftp-download-file ftp-ports folder filename
+(define (ftp-download-file ftp-ports folder-or-port filename
                            #:progress [progress-proc #f])
   ;; Save the file under a temporary name, rename it once download is
   ;; complete this assures we don't over write any existing file without
   ;; having a good file down
-  (let* ([tmpfile (make-temporary-file "~a.download" #f folder)]
-         [new-file (open-output-file tmpfile #:exists 'truncate)]
-         [tcp-data (establish-data-connection ftp-ports 'in)])
+  (if (output-port? folder-or-port)
+      (let ([tcp-data (establish-data-connection ftp-ports 'in)])
 
-    (transfer-data ftp-ports 'download tcp-data new-file filename progress-proc)
+        (transfer-data ftp-ports 'download tcp-data folder-or-port filename progress-proc))
 
-    (rename-file-or-directory tmpfile (build-path folder filename) #t)))
+      (let* ([tmpfile (make-temporary-file "~a.download" #f folder)]
+             [new-file (open-output-file tmpfile #:exists 'truncate)]
+             [tcp-data (establish-data-connection ftp-ports 'in)])
 
-(define (ftp-upload-file ftp-ports filepath
+        (transfer-data ftp-ports 'download tcp-data new-file filename progress-proc)
+
+        (rename-file-or-directory tmpfile (build-path folder filename) #t))))
+
+(define (ftp-upload-file ftp-ports filepath-or-port
                          #:progress [progress-proc #f])
-  (let ([upload-file (open-input-file filepath)]
+  (let ([upload-file (if (input-port? filepath-or-port)
+                         filepath-or-port
+                         (open-input-file filepath-or-port))]
         [tcp-data (establish-data-connection ftp-ports 'out)])
 
     (let ([system-type (system-path-convention-type)]
