@@ -207,19 +207,19 @@
 
         (transfer-data ftp-ports 'download tcp-data folder-or-port filename progress-proc))
 
-      (let* ([tmpfile (make-temporary-file "~a.download" #f folder)]
+      (let* ([tmpfile (make-temporary-file "~a.download" #f folder-or-port)]
              [new-file (open-output-file tmpfile #:exists 'truncate)]
              [tcp-data (establish-data-connection ftp-ports 'in)])
 
         (transfer-data ftp-ports 'download tcp-data new-file filename progress-proc)
 
-        (rename-file-or-directory tmpfile (build-path folder filename) #t))))
+        (rename-file-or-directory tmpfile (build-path folder-or-port filename) #t))))
 
-(define (ftp-upload-file ftp-ports filepath-or-port
+(define (ftp-upload-file ftp-ports filepath [port #f]
                          #:progress [progress-proc #f])
-  (let ([upload-file (if (input-port? filepath-or-port)
-                         filepath-or-port
-                         (open-input-file filepath-or-port))]
+  (let ([upload-file (if port
+                         port
+                         (open-input-file filepath))]
         [tcp-data (establish-data-connection ftp-ports 'out)])
 
     (let ([system-type (system-path-convention-type)]
