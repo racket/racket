@@ -22,6 +22,20 @@
 (test #f fixnum-for-every-system? (sub1 (- (expt 2 29))))
 (test #f fixnum-for-every-system? (expt 2 29))
 
+(define (wraparound op)
+  (lambda (x y)
+    (unless (fixnum? x) (raise-argument-error 'wraparound "fixnum?" x))
+    (unless (fixnum? y) (raise-argument-error 'wraparound "fixnum?" y))
+    (define v (op x y))
+    (if (zero? (bitwise-and v (add1 (greatext-fixnum))))
+        (bitwise-ior v (- -1 (greatest-fixnum)))
+        (bitwise-and v (greatest-fixnum)))))
+
+(define (lshift x y)
+  (unless (<= 0 y (integer-length (greatest-fixnum)))
+    (error 'lshift "bad shift"))
+  (arithmetic-shift x y))
+
 (define unary-table 
   (list (list fxnot unsafe-fxnot)
         (list fxabs unsafe-fxabs)
@@ -51,7 +65,15 @@
 (define binary-table
   (list (list fxquotient unsafe-fxquotient)
         (list fxremainder unsafe-fxremainder)
-        (list fxmodulo unsafe-fxmodulo)))
+        (list fxmodulo unsafe-fxmodulo)
+        (list (wraparound +) fx+/wraparound)
+        (list (wraparound -) fx-/wraparound)
+        (list (wraparound *) fx*/wraparound)
+        (list (wraparound lshift) fxlshift/wraparound)
+        (list fx+/wraparound unsafe-fx+/wraparound)
+        (list fx-/wraparound unsafe-fx-/wraparound)
+        (list fx*/wraparound unsafe-fx*/wraparound)
+        (list fxlshift/wraparound unsafe-fxlshift/wraparound)))
 
 (define binary/small-second-arg-table
   (list (list fxlshift unsafe-fxlshift)
@@ -164,6 +186,10 @@
 
 ;; check a small range
 (same-results/range/table)
+
+;; ----------------------------------------
+
+
 
 ;; ----------------------------------------
 

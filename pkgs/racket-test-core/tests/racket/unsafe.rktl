@@ -151,6 +151,9 @@
   (err/rt-test (unsafe-fxmodulo (error "bad") 1) exn:fail?) ; not 0
   (err/rt-test (unsafe-fxmodulo 0 (error "bad")) exn:fail?) ; not 0
 
+  (test-bin 60 'unsafe-fxlshift 15 2)  
+  (test-bin 3 'unsafe-fxrshift 15 2)
+
   (test-zero 0.0 'unsafe-fl+)
   (test-un 6.7 'unsafe-fl+ 6.7)
   (test-bin 3.4 'unsafe-fl+ 1.4 2.0)

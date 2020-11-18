@@ -57,6 +57,7 @@
                 flonum->fixnum fl->fx
                 fxarithmetic-shift-right fxrshift
                 fxarithmetic-shift-left fxlshift
+                fxsll/wraparound fxlshift/wraparound
                 real->flonum ->fl
                 time-utc->date seconds->date)
         (set! rewrites-added? #t)))

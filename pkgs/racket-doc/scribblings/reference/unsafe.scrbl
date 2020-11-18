@@ -51,13 +51,10 @@ operations can be prevented by adjusting the code inspector (see
 @defproc[(unsafe-fxabs       [a fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @racket[+], @racket[-], @racket[*],
-@racket[quotient], @racket[remainder], @racket[modulo], and
-@racket[abs], but constrained to consume @tech{fixnums} and produce a
-@tech{fixnum} result. The mathematical operation on @racket[a] and
-@racket[b] must be representable as a @tech{fixnum}. In the case of
-@racket[unsafe-fxquotient], @racket[unsafe-fxremainder], and
-@racket[unsafe-fxmodulo], @racket[b] must not be @racket[0].
+For @tech{fixnums}: Unchecked versions of @racket[fx+], @racket[fx-],
+@racket[fx*], @racket[fxquotient],
+@racket[fxremainder], @racket[fxmodulo], and
+@racket[fxabs]. 
 
 @history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[unsafe-fx+] and @racket[unsafe-fx*]
                                     and allow one or more arguments for @racket[unsafe-fx-].}]}
@@ -72,22 +69,26 @@ For @tech{fixnums}: Like @racket[+], @racket[-], @racket[*],
 @defproc[(unsafe-fxrshift [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @racket[bitwise-and], @racket[bitwise-ior],
-@racket[bitwise-xor], @racket[bitwise-not], and
-@racket[arithmetic-shift], but constrained to consume @tech{fixnums};
-the result is always a @tech{fixnum}. The @racket[unsafe-fxlshift] and
-@racket[unsafe-fxrshift] operations correspond to
-@racket[arithmetic-shift], but require non-negative arguments;
-@racket[unsafe-fxlshift] is a positive (i.e., left) shift, and
-@racket[unsafe-fxrshift] is a negative (i.e., right) shift, where the
-number of bits to shift must be no more than the number of bits used to
-represent a @tech{fixnum}. In the case of @racket[unsafe-fxlshift],
-bits in the result beyond the number of bits used to represent a
-@tech{fixnum} are effectively replaced with a copy of the high bit.
+For @tech{fixnums}: Unchecked versions of @racket[fxand], @racket[fxior], @racket[fxxor],
+@racket[fxnot], @racket[fxlshift], and @racket[fxrshift].
 
 @history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for
                                     @racket[unsafe-fxand], @racket[unsafe-fxior],
                                     and @racket[unsafe-fxxor].}]}
+
+
+@deftogether[(
+@defproc[(unsafe-fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx-/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx*/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxlshift/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+)]{
+
+For @tech{fixnums}: Unchecked versions of @racket[fx+/wraparound],
+@racket[fx-/wraparound], @racket[fx*/wraparound], and
+@racket[fxlshift/wraparound].
+
+@history[#:added "7.9.0.6"]}
 
 
 @deftogether[(
@@ -100,9 +101,9 @@ bits in the result beyond the number of bits used to represent a
 @defproc[(unsafe-fxmax [a fixnum?] [b fixnum?] ...) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @racket[=], @racket[<], @racket[>],
-@racket[<=], @racket[>=], @racket[min], and @racket[max], but
-constrained to consume @tech{fixnums}.
+For @tech{fixnums}: Unchecked versions of @racket[fx=], @racket[fx<],
+ @racket[fx>], @racket[fx<=], @racket[fx>=],
+ @racket[fxmin], and @racket[fxmax].
 
 @history[#:changed "7.0.0.13" @elem{Allow one or more argument,
                                     instead of allowing just two.}]}

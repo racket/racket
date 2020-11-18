@@ -17,8 +17,11 @@
 (define unsafe-char->integer (unsafe-primitive char->integer))
 
 (define unsafe-fx+ (unsafe-primitive fx+))
+(define unsafe-fx+/wraparound (unsafe-primitive fx+/wraparound))
 (define unsafe-fx- (unsafe-primitive fx-))
+(define unsafe-fx-/wraparound (unsafe-primitive fx-/wraparound))
 (define unsafe-fx* (unsafe-primitive fx*))
+(define unsafe-fx*/wraparound (unsafe-primitive fx*/wraparound))
 (define (unsafe-fxquotient n d) (#3%fxquotient n d))
 (define unsafe-fxremainder (unsafe-primitive fxremainder))
 (define unsafe-fxmodulo (unsafe-primitive fxmodulo))
@@ -29,6 +32,7 @@
 (define unsafe-fxnot (unsafe-primitive fxnot))
 (define unsafe-fxrshift (unsafe-primitive fxarithmetic-shift-right))
 (define unsafe-fxlshift (unsafe-primitive fxarithmetic-shift-left))
+(define unsafe-fxlshift/wraparound (unsafe-primitive fxsll/wraparound))
 
 (define unsafe-fx= (unsafe-primitive fx=))
 (define unsafe-fx< (unsafe-primitive fx<))

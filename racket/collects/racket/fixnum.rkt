@@ -9,9 +9,10 @@
 (provide fx->fl fl->fx
          fxabs
          fx+ fx- fx*
+         fx+/wraparound fx-/wraparound fx*/wraparound
          fxquotient fxremainder fxmodulo 
          fxand fxior fxxor
-         fxnot fxrshift fxlshift
+         fxnot fxrshift fxlshift fxlshift/wraparound
          fx>= fx> fx= fx< fx<=
          fxmin fxmax
          fixnum-for-every-system?

@@ -3552,7 +3552,7 @@
                 extra-p))
     (define n3 (inexact->exact (exact->inexact n2)))
     (unless (= n3 (arithmetic-shift 53-bit-number (+ num-zeros 1 extra-p)))
-      (error 'random-exact->inexact "truncating round failed ~s" n2)))
+      (error 'random-exact->inexact "truncating round failed ~s ~s ~s" n2 53-bit-number (+ num-zeros 1 extra-p))))
   (check-random-pairs check-shift-plus-bits-to-truncate)
   
   ;; If we add a one bit and then a non-zero bit anywhere later,

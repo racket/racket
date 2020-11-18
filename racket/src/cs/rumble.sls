@@ -406,6 +406,7 @@
           fx->fl
           fxrshift
           fxlshift
+          fxlshift/wraparound
           fl->fx
           ->fl
           fl->exact-integer
@@ -529,6 +530,10 @@
           unsafe-fxnot
           unsafe-fxrshift
           unsafe-fxlshift
+          unsafe-fx+/wraparound
+          unsafe-fx-/wraparound
+          unsafe-fx*/wraparound
+          unsafe-fxlshift/wraparound
 
           unsafe-fx=
           unsafe-fx<
