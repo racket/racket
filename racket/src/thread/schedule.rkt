@@ -132,11 +132,11 @@
   (set-thread-engine! (current-thread/in-atomic) 'running))
 
 (define (swap-in-engine e t leftover-ticks)
-  (let loop ([e e])
+  (let loop ([e e] [prefix check-break-prefix])
     (end-implicit-atomic-mode)
     (e
      TICKS
-     check-break-prefix
+     prefix
      (lambda (e results remaining-ticks)
        (start-implicit-atomic-mode)
        (cond
@@ -174,7 +174,7 @@
              ;; where host-system interrupts are not disabled (i.e.,
              ;; don't use `engine-block` instead of `engine-timeout`):
              (add-end-atomic-callback! engine-timeout)
-             (loop e)])])))))
+             (loop e void)])])))))
 
 (define (check-break-prefix)
   (current-thread-now-running!)

@@ -107,6 +107,7 @@
                 (1/semaphore? semaphore?)
                 (set-make-place-ports+fds! set-make-place-ports+fds!)
                 (set-processor-count! set-processor-count!)
+                (set-schedule-quantum! set-schedule-quantum!)
                 (1/sleep sleep)
                 (1/sync sync)
                 (1/sync/enable-break sync/enable-break)
@@ -11470,6 +11471,7 @@
        cell.2$3
        (wrap-evt7.1 (unsafe-place-local-ref cell.1$5) void)))))
 (define TICKS 100000)
+(define set-schedule-quantum! (lambda (n_0) (set! TICKS n_0)))
 (define struct:future*
   (make-record-type-descriptor* 'future #f #f #f #f 10 1023))
 (define effect_2884
@@ -12689,7 +12691,7 @@
                (begin
                  (|#%app|
                   e_0
-                  100000
+                  TICKS
                   (lambda ()
                     (begin
                       (if (if (zero? (current-atomic)) (worker-pinged? w_0) #f)
@@ -12988,16 +12990,16 @@
                                #f
                                'callbacks
                                temp4_0))
-                            (poll-and-select-thread! 100000 callbacks_0))
+                            (poll-and-select-thread! TICKS callbacks_0))
                           (if (if (not poll-now?_0) (check-external-events) #f)
-                            (poll-and-select-thread! 100000 callbacks_0)
+                            (poll-and-select-thread! TICKS callbacks_0)
                             (if (try-post-idle)
                               (select-thread! leftover-ticks2_0 callbacks_0)
                               (begin
                                 (process-sleep)
                                 (poll-and-select-thread! 0 callbacks_0)))))
                         (select-thread!
-                         (if poll-now?_0 100000 leftover-ticks2_0)
+                         (if poll-now?_0 TICKS leftover-ticks2_0)
                          callbacks_0)))))))))))
     (case-lambda
      ((leftover-ticks_0) (poll-and-select-thread!_0 leftover-ticks_0 null))
@@ -13049,12 +13051,12 @@
   (letrec ((loop_0
             (|#%name|
              loop
-             (lambda (leftover-ticks_0 t_0 e_0)
+             (lambda (leftover-ticks_0 t_0 e_0 prefix_0)
                (begin
                  (|#%app|
                   e_0
-                  100000
-                  check-break-prefix
+                  TICKS
+                  prefix_0
                   (lambda (e_1 results_0 remaining-ticks_0)
                     (if (not e_1)
                       (begin
@@ -13074,7 +13076,7 @@
                           (void))
                         (thread-did-work!)
                         (poll-and-select-thread!
-                         (- leftover-ticks_0 (- 100000 remaining-ticks_0))))
+                         (- leftover-ticks_0 (- TICKS remaining-ticks_0))))
                       (if (zero? (current-atomic))
                         (begin
                           (if (1/thread-dead?
@@ -13084,7 +13086,7 @@
                           (let ((new-leftover-ticks_0
                                  (-
                                   leftover-ticks_0
-                                  (- 100000 remaining-ticks_0))))
+                                  (- TICKS remaining-ticks_0))))
                             (begin
                               (accum-cpu-time! t_0 (<= new-leftover-ticks_0 0))
                               (set-thread-future! t_0 (current-future$1))
@@ -13099,8 +13101,9 @@
                               (poll-and-select-thread! new-leftover-ticks_0))))
                         (begin
                           (add-end-atomic-callback! engine-timeout)
-                          (loop_0 leftover-ticks_0 t_0 e_1)))))))))))
-    (lambda (e_0 t_0 leftover-ticks_0) (loop_0 leftover-ticks_0 t_0 e_0))))
+                          (loop_0 leftover-ticks_0 t_0 e_1 void)))))))))))
+    (lambda (e_0 t_0 leftover-ticks_0)
+      (loop_0 leftover-ticks_0 t_0 e_0 check-break-prefix))))
 (define check-break-prefix
   (lambda ()
     (begin
@@ -13141,26 +13144,32 @@
              loop
              (lambda (done?_0 leftover-ticks_0 t_0 e_0 callbacks_0)
                (begin
-                 (|#%app|
-                  e_0
-                  100000
-                  (if (pair? callbacks_0)
-                    (lambda ()
+                 (let ((app_0 TICKS))
+                   (|#%app|
+                    e_0
+                    app_0
+                    (if (pair? callbacks_0)
+                      (lambda ()
+                        (begin
+                          (current-thread-now-running!)
+                          (run-callbacks callbacks_0)
+                          (unsafe-set-box*! done?_0 #t)
+                          (engine-block)))
+                      void)
+                    (lambda (e_1 result_0 remaining_0)
                       (begin
-                        (current-thread-now-running!)
-                        (run-callbacks callbacks_0)
-                        (unsafe-set-box*! done?_0 #t)
-                        (engine-block)))
-                    void)
-                  (lambda (e_1 result_0 remaining_0)
-                    (begin
-                      (if e_1
-                        (void)
-                        (internal-error
-                         "thread ended while it should run callbacks atomically"))
-                      (if (unsafe-unbox* done?_0)
-                        (swap-in-engine e_1 t_0 leftover-ticks_0)
-                        (loop_0 done?_0 leftover-ticks_0 t_0 e_1 null))))))))))
+                        (if e_1
+                          (void)
+                          (internal-error
+                           "thread ended while it should run callbacks atomically"))
+                        (if (unsafe-unbox* done?_0)
+                          (swap-in-engine e_1 t_0 leftover-ticks_0)
+                          (loop_0
+                           done?_0
+                           leftover-ticks_0
+                           t_0
+                           e_1
+                           null)))))))))))
     (lambda (e_0 callbacks_0 t_0 leftover-ticks_0)
       (if (null? callbacks_0)
         (swap-in-engine e_0 t_0 leftover-ticks_0)
@@ -13440,7 +13449,7 @@
                                                                    (thread-dead!
                                                                     (check-not-unsafe-undefined
                                                                      t_0
-                                                                     't_78)))
+                                                                     't_79)))
                                                                  (end-atomic)))
                                                              (engine-block))))))))))))))
                                      (do-make-thread.1
