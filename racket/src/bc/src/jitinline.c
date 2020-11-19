@@ -2415,8 +2415,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_movr_p(dest, JIT_R0);
       refdone = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
-      (void)jit_blti_l(refslow, JIT_R0, scheme_make_integer(0));
-      (void)jit_bgti_l(refslow, JIT_R0, scheme_make_integer(255));
+      (void)jit_blti_l(refslow, JIT_R0, (intptr_t)scheme_make_integer(0));
+      (void)jit_bgti_l(refslow, JIT_R0, (intptr_t)scheme_make_integer(255));
 
       jit_rshi_l(JIT_R0, JIT_R0, 1);
       jit_lshi_l(JIT_R2, JIT_R0, JIT_LOG_WORD_SIZE);

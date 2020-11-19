@@ -1755,7 +1755,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
             else {
               refi = NULL;
               if (!unsafe_fx || overflow_refslow)
-                (void)jit_blti_l(refslow, v2, scheme_make_integer(0));
+                (void)jit_blti_l(refslow, v2, (intptr_t)scheme_make_integer(0));
             }
 
             if ((arith == ARITH_SH) || (arith == ARITH_RSH)) {
@@ -1763,9 +1763,9 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               if (!unsafe_fx || overflow_refslow) {
                 /* check for a small enough shift */
                 if (arith == ARITH_RSH) {
-                  (void)jit_bgti_l(refslow, v2, scheme_make_integer(MAX_TRY_SHIFT));
+                  (void)jit_bgti_l(refslow, v2, (intptr_t)scheme_make_integer(MAX_TRY_SHIFT));
                 } else {
-                  (void)jit_blti_l(refslow, v2, scheme_make_integer(-MAX_TRY_SHIFT));
+                  (void)jit_blti_l(refslow, v2, (intptr_t)scheme_make_integer(-MAX_TRY_SHIFT));
                 }
               }
               if (arith == ARITH_RSH)
