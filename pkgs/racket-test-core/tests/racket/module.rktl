@@ -3455,4 +3455,24 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (define (syntax-size stx)
+    (syntax-case stx ()
+      [(a . b) (+ (syntax-size #'a)
+                  (syntax-size #'b))]
+      [_ 1]))
+  (test #t 'simple-rename-in-size-is-linear-to-renamed-ids
+        (equal?
+         (syntax-size
+          (expand #'(module a racket/base
+                      (require (rename-in racket/base
+                                          [call/cc callcc])))))
+         (syntax-size
+          (expand #'(module a racket/base
+                      (require (rename-in racket
+                                          [call/cc callcc])))))))
+  )
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
