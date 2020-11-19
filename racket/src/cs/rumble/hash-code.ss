@@ -55,15 +55,9 @@
 ;; Mostly copied from Chez Scheme's "newhash.ss":
 (define number-hash
   (lambda (z)
-    (let* ([+/fx
-            (lambda (hc k)
-              (#3%fx+ hc k))]
-           [sll/fx
-            (lambda (hc i)
-              (#3%fxsll hc i))]
-           [mix
+    (let* ([mix
             (lambda (hc)
-              (let ([hc2 (+/fx hc (sll/fx hc 10))])
+              (let ([hc2 (fx+/wraparound hc (fxsll/wraparound hc 10))])
                 (fxlogxor hc2 (fxsrl hc2 6))))])
       (cond
         [(fixnum? z) (if (fx< z 0) (fxand z (most-positive-fixnum)) z)]
@@ -75,8 +69,8 @@
                            [else
                             (let ([next-i (fx+ i (fx- (fixnum-width) 1))])
                               (loop next-i
-                                    (+/fx (bitwise-bit-field z i next-i)
-                                          (mix hc))))])))]
+                                    (fx+/wraparound (bitwise-bit-field z i next-i)
+                                                    (mix hc))))])))]
         [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
         [else (logand (logxor (lognot (number-hash (real-part z))) (number-hash (imag-part z)))
                       (most-positive-fixnum))]))))
@@ -123,39 +117,33 @@
 (define MAX-HASH-BURN 128)
 
 (define (equal-hash-loop x burn hc)
-  (let* ([+/fx
-          (lambda (hc k)
-            (#3%fx+ hc k))]
-         [sll/fx
-          (lambda (hc i)
-            (#3%fxsll hc i))]
-         [->fx
+  (let* ([->fx
           (lambda (v)
             (if (fixnum? v)
                 v
                 (modulo v (greatest-fixnum))))]
          [mix1
           (lambda (hc)
-            (let ([hc2 (+/fx hc (sll/fx hc 10))])
+            (let ([hc2 (fx+/wraparound hc (fxsll/wraparound hc 10))])
               (fxlogxor hc2 (fxsrl hc2 6))))]
          [mix2
           (lambda (hc)
             (mix1 hc))])
     (cond
      [(fx> burn MAX-HASH-BURN) (values hc burn)]
-     [(boolean? x) (values (+/fx hc (if x #x0ace0120 #x0cafe121)) burn)]
-     [(null? x) (values (+/fx hc #x0cabd122) burn)]
-     [(number? x) (values (+/fx hc (number-hash x)) burn)]
-     [(char? x) (values (+/fx hc (char->integer x)) burn)]
-     [(symbol? x) (values (+/fx hc (symbol-hash x)) burn)]
-     [(string? x) (values (+/fx hc (string-hash x)) burn)]
-     [(bytevector? x) (values (+/fx hc (equal-hash x)) burn)]
-     [(fxvector? x) (values (+/fx hc (equal-hash x)) burn)]
-     [(flvector? x) (values (+/fx hc (equal-hash x)) burn)]
-     [(box? x) (equal-hash-loop (unbox x) (fx+ burn 1) (+/fx hc 1))]
+     [(boolean? x) (values (fx+/wraparound hc (if x #x0ace0120 #x0cafe121)) burn)]
+     [(null? x) (values (fx+/wraparound hc #x0cabd122) burn)]
+     [(number? x) (values (fx+/wraparound hc (number-hash x)) burn)]
+     [(char? x) (values (fx+/wraparound hc (char->integer x)) burn)]
+     [(symbol? x) (values (fx+/wraparound hc (symbol-hash x)) burn)]
+     [(string? x) (values (fx+/wraparound hc (string-hash x)) burn)]
+     [(bytevector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
+     [(fxvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
+     [(flvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
+     [(box? x) (equal-hash-loop (unbox x) (fx+ burn 1) (fx+/wraparound hc 1))]
      [(pair? x)
       (let-values ([(hc0 burn) (equal-hash-loop (car x) (fx+ burn 2) 0)])
-        (let ([hc (+/fx (mix1 hc) hc0)]
+        (let ([hc (fx+/wraparound (mix1 hc) hc0)]
               [r (cdr x)])
           (if (and (pair? r) (list? r))
               ;; If it continues as a list, don't count cdr direction as burn:
@@ -164,7 +152,7 @@
      [(vector? x)
       (let ([len (vector-length x)])
         (cond
-         [(fx= len 0) (values (+/fx hc 1) burn)]
+         [(fx= len 0) (values (fx+/wraparound hc 1) burn)]
          [else
           (let vec-loop ([i 0] [burn burn] [hc hc])
             (cond
@@ -173,30 +161,31 @@
               (let-values ([(hc0 burn) (equal-hash-loop (vector-ref x i) (fx+ burn 2) 0)])
                 (vec-loop (fx+ i 1)
                           burn
-                          (+/fx (mix2 hc) hc0)))]))]))]
+                          (fx+/wraparound (mix2 hc) hc0)))]))]))]
      [(hash? x)
       ;; Treat hash-table hashing specially, so it can be order-insensitive
       (let ([burn (fx* (fxmax burn 1) 2)])
-        (let ([hc (+/fx hc (->fx (hash-hash-code
-                                  x
-                                  (lambda (x)
-                                    (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
-                                      hc0)))))])
+        (let ([hc (fx+/wraparound hc (->fx (hash-hash-code
+                                            x
+                                            (lambda (x)
+                                              (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
+                                                hc0)))))])
           (values hc burn)))]
      [(and (#%$record? x) (#%$record-hash-procedure x))
       => (lambda (rec-hash)
            (let ([burn (fx+ burn 2)])
-             (let ([hc (+/fx hc (->fx (rec-hash x (lambda (x)
-                                                    (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
-                                                      (set! burn burn0)
-                                                      hc0)))))])
+             (let ([hc (fx+/wraparound hc (->fx
+                                           (rec-hash x (lambda (x)
+                                                         (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
+                                                           (set! burn burn0)
+                                                           hc0)))))])
                (values hc burn))))]
      [(impersonator? x)
       ;; If an impersonator wraps a value where `equal?` hashing is
       ;; `eq?` hashing, such as for a procedure, then make sure
       ;; we discard the impersonator wrapper.
       (equal-hash-loop (impersonator-val x) burn hc)]
-     [else (values (+/fx hc (eq-hash-code x)) burn)])))
+     [else (values (fx+/wraparound hc (eq-hash-code x)) burn)])))
 
 (define (hash-code-combine hc v)
   (bitwise-and (+ (bitwise-arithmetic-shift-left hc 10)

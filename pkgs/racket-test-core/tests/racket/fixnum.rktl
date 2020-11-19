@@ -6,11 +6,16 @@
 
 (define 64-bit? (= (system-type 'word) 64))
 
-(define (fixnum-width) (if (eq? 'racket (system-type))
+(define (fixnum-width) (if (eq? 'racket (system-type 'vm))
                            (if 64-bit? 63 31)
                            (if 64-bit? 61 30)))
-(define (least-fixnum) (- (expt 2 (fixnum-width))))
-(define (greatest-fixnum) (sub1 (expt 2 (fixnum-width))))
+(define (least-fixnum) (- (expt 2 (sub1 (fixnum-width)))))
+(define (greatest-fixnum) (sub1 (expt 2 (sub1 (fixnum-width)))))
+
+(test #t fixnum? (least-fixnum))
+(test #t fixnum? (greatest-fixnum))
+(test #f fixnum? (sub1 (least-fixnum)))
+(test #f fixnum? (add1 (greatest-fixnum)))
 
 (test #t fixnum-for-every-system? 0)
 (test #t fixnum-for-every-system? -100)
