@@ -1420,7 +1420,7 @@
                                      (let ([bstr (make-bytes (- (cdr p) (car p)))])
                                        (unless (= (car p) (cdr p))
                                          (let loop ([offset 0])
-                                           (let ([v (peek-bytes-avail! bstr (car p) progress-evt input-port offset)])
+                                           (let ([v (peek-bytes-avail! bstr (+ (car p) offset) progress-evt input-port offset)])
                                              (unless (zero? v)
                                                (when ((+ offset v) . < . (bytes-length bstr))
                                                  (loop (+ offset v)))))))
