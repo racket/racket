@@ -99,7 +99,7 @@ When @racket[local-dir-or-port] is an @racket[output-port?], it downloads
 @racket[file] from the server's current directory and writes its content to
 provided @racket[output-port?]. The data is written to the port as it is being
 received from the server and if the download is interrupted, incomplete data is
-written to the port.
+written to the port. The port is closed after finishing the transfer.
 
 If @racket[progress-proc] is not @racket[#f], then it is called with a
 function @racket[_get-count] that returns two values: the number of bytes
@@ -137,14 +137,14 @@ is intended to limit polling.
          void?]{
 
 When @racket[port] is @racket[#f], upload @racket[file-path] to the server's
-current directory using the same name.  If the file already exists in the local
+current directory using the same name.  If the file already exists in the remote
 directory, it is replaced.  The @racket[progress-proc] argument is used in the
 same way as in @racket[ftp-download-file], but to report uploaded bytes instead
 of downloaded bytes.
 
 If @racket[port] is an @racket[input-port?], the content of that port is
 streamed as upload to the server and stored under given @racket[file-path]
-name.}
+name. The port is closed after finishing the transfer.}
 
 @defproc[(ftp-delete-file [ftp-conn ftp-connection?]
                           [file-path path-string?]) void?]{
