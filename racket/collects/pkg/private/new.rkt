@@ -124,58 +124,33 @@ compiled/
 EOS
 )))
 
-      ;; .travis.yml
-      (with-output-to-file ".travis.yml"
+      ;; .github/workflows/ci.yml
+      (make-directory ".github")
+      (make-directory ".github/workflows")
+      (with-output-to-file ".github/workflows/ci.yml"
         (lambda () (expand/display #<<EOS
-language: c
-
-# Based on: https://github.com/greghendershott/travis-racket
-
-env:
-  global:
-    # Supply a global RACKET_DIR environment variable. This is where
-    # Racket will be installed. A good idea is to use ~/racket because
-    # that doesn't require sudo to install.
-    - RACKET_DIR=~/racket
-  matrix:
-    # Supply at least one RACKET_VERSION environment variable. This is
-    # used by the install-racket.sh script (run at before_install,
-    # below) to select the version of Racket to download and install.
-    #
-    # Supply more than one RACKET_VERSION (as in the example below) to
-    # create a Travis-CI build matrix to test against multiple Racket
-    # versions.
-    - RACKET_VERSION=6.12
-    - RACKET_VERSION=7.0
-    - RACKET_VERSION=7.1
-    - RACKET_VERSION=7.2
-    - RACKET_VERSION=HEAD
-
-matrix:
-  allow_failures:
-#   - env: RACKET_VERSION=HEAD
-  fast_finish: true
-
-before_install:
-- git clone https://github.com/greghendershott/travis-racket.git ~/travis-racket
-- cat ~/travis-racket/install-racket.sh | bash # pipe to bash not sh!
-- export PATH="${RACKET_DIR}/bin:${PATH}" #install-racket.sh can't set for us
-
-install:
- - raco pkg install --auto --name <<name>>
-
-before_script:
-
-# Here supply steps such as raco make, raco test, etc.  You can run
-# `raco pkg install --deps search-auto` to install any required
-# packages without it getting stuck on a confirmation prompt.
-script:
- - raco test -x -p <<name>>
-
-after_success:
- - raco setup --check-pkg-deps --pkgs <<name>>
- - raco pkg install --auto cover cover-coveralls
- - raco cover -b -f coveralls -d $TRAVIS_BUILD_DIR/coverage .
+on: [push, pull_request]
+name: CI
+jobs:
+  build:
+    name: "Build on Racket '${{ matrix.racket-version }}' (${{ matrix.racket-variant }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        racket-version: ["7.9", "current"]
+        racket-variant: ["regular", "CS"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: Bogdanp/setup-racket@v0.10
+        with:
+          architecture: x64
+          distribution: full
+          variant: ${{ matrix.racket-variant }}
+          version: ${{ matrix.racket-version }}
+      - run: |
+          raco pkg install --auto --name <<name>>
+          raco test -x -p <<name>>
 
 EOS
 )))
