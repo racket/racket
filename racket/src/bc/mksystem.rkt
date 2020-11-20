@@ -15,6 +15,8 @@
                     (vector-ref args (- (vector-length args) 2))))
         ;; Not cross-compiling
         (hash 'os (system-type 'os)
+              'os* (system-type 'os*)
+              'arch (system-type 'arch)
               'word (system-type 'word)
               'gc (if (= (vector-length args) 1)
                       '3m ; GC mode for suffixless executables
@@ -58,8 +60,12 @@
                                 (lambda (var) (string->number (get-string var)))])
                     (let-values ([(library-subpath)
                                   (get-string "system_library_subpath")]
-                                 [(os) (get-symbol "system_type_os")])
+                                 [(os) (get-symbol "system_type_os")]
+                                 [(os*) (get-symbol "system_type_os_star")]
+                                 [(arch) (get-symbol "system_type_arch")])
                       (hash 'os os
+                            'os* os*
+                            'arch arch
                             'word (* 8 (get-int "system_pointer_size"))
                             'gc (if (string=? "" (vector-ref args 2))
                                     '3m

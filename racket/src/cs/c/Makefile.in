@@ -478,7 +478,7 @@ common-install:
 	$(MAKE) common-@INSTALL_LIBS_ENABLE@-libs
 
 system-install:
-	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd $(TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@
+	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd $(TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@ "$(srcdir)"
 
 include-install:
 	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"

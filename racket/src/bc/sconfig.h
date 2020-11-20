@@ -30,18 +30,20 @@
 # include <errno.h>
 # ifdef ECHRNG
 /* Solaris */
+#  define SCHEME_OS "solaris"
 #  if  defined(__i386__)
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-solaris"
+#   define SCHEME_ARCH "i386"
 #  elif defined(__x86_64)
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-solaris"
+#   define SCHEME_ARCH "x86_64"
 #  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-solaris"
+#   define SCHEME_ARCH "sparc"
 #  endif
 # else
 /* SunOS4 */
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-sunos4"
-# define NO_STRERROR_AVAILABLE
-# define USE_ON_EXIT_FOR_ATEXIT
+#  define SCHEME_OS "sunos4"
+#  define SCHEME_ARCH "sparc"
+#  define NO_STRERROR_AVAILABLE
+#  define USE_ON_EXIT_FOR_ATEXIT
 # endif
 
 # define PREFER_MMAP_LARGE_BLOCKS
@@ -66,7 +68,8 @@
 
 # if defined(_IBMR2)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "rs6k-aix"
+# define SCHEME_OS "rs6k"
+# define SCHEME_ARCH "aix"
 
 # include "uconfig.h"
 
@@ -81,58 +84,58 @@
 #if defined(__linux__)
 
 # ifdef __ANDROID__
-#  define SPLS_LINUX "android"
+#  define SCHEME_OS "android"
 # else
-#  define SPLS_LINUX "linux"
+#  define SCHEME_OS "linux"
 # endif
 
 # if defined(__i386__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-" SPLS_LINUX
+#  define SCHEME_ARCH "i386"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_TRY_EXTFLONUMS
 #  define ASM_DBLPREC_CONTROL_87
 # endif
 # if defined(__powerpc__) && !defined(__powerpc64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-" SPLS_LINUX
+#  define SCHEME_ARCH "ppc"
 # endif
 # if defined(__powerpc64__)
 #  if defined(__LITTLE_ENDIAN__)
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc64le-" SPLS_LINUX
+#   define SCHEME_ARCH "ppc64le"
 #  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc64-" SPLS_LINUX
+#   define SCHEME_ARCH "ppc64"
 #  endif
 # endif
 # if defined(__mc68000__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "m68k-" SPLS_LINUX
+#  define SCHEME_ARCH "m68k"
 # endif
 # if defined(mips)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-" SPLS_LINUX
+#  define SCHEME_ARCH "mips"
 # endif
 # if defined(__alpha__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-" SPLS_LINUX
+#  define SCHEME_ARCH "alpha"
 # endif
 # if defined(__hppa__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-" SPLS_LINUX
+#  define SCHEME_ARCH "hppa"
 # endif
 # if defined(__sparc__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-" SPLS_LINUX
+#  define SCHEME_ARCH "sparc"
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # endif
 # if defined(__arm__) || defined(__thumb__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-" SPLS_LINUX
+#  define SCHEME_ARCH "arm"
 #  define FFI_CALLBACK_NEED_INT_CLEAR
 # endif
 # if defined(__aarch64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "aarch64-" SPLS_LINUX
+#  define SCHEME_ARCH "aarch64"
 # endif
 # if defined(__x86_64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-" SPLS_LINUX
+#  define SCHEME_ARCH "x86_64"
 #  define REGISTER_POOR_MACHINE
 #  define ASM_DBLPREC_CONTROL_87
 #  define MZ_TRY_EXTFLONUMS
 # endif
 # ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-" SPLS_LINUX
+#  define SCHEME_ARCH "unknown"
 # endif
 
 # include "uconfig.h"
@@ -174,14 +177,16 @@
 
 #if defined(__NetBSD__)
 
+#define SCHEME_OS "netbsd"
+
 #if defined(__i386__)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-netbsd"
+# define SCHEME_ARCH "i386"
 #elif defined(__powerpc__)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-netbsd"
+# define SCHEME_ARCH "ppc"
 #elif defined(__x86_64__)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-netbsd"
+# define SCHEME_ARCH "x86_64"
 #else
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "netbsd"
+# define SCHEME_ARCH "unknown"
 #endif
 
 # include "uconfig.h"
@@ -480,10 +485,13 @@
 
 # ifdef _WIN64
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\x86_64"
+#  define SCHEME_ARCH "x86_64"
 # else
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\i386"
+#  define SCHEME_ARCH "i386"
 # endif
 
+# define SCHEME_OS "windows"
 # define SYSTEM_TYPE_NAME "windows"
 # define DOS_FILE_SYSTEM
 
@@ -592,7 +600,8 @@
 
 #if defined(__CYGWIN32__)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-cygwin"
+# define SCHEME_OS "cygwin"
+# define SCHEME_ARCH "i386"
 
 # include "uconfig.h"
 
@@ -621,23 +630,23 @@
 # if defined(OS_X) || defined(XONX)
 
 # if defined(XONX)
-#  define SPLS_MAC "darwin"
+#  define SCHEME_OS "darwin"
 # elif TARGET_OS_IPHONE
-#  define SPLS_MAC "ios"
+#  define SCHEME_OS "ios"
 # else
-#  define SPLS_MAC "macosx"
+#  define SCHEME_OS "macosx"
 # endif
 
 # if defined(__POWERPC__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-" SPLS_MAC
+#  define SCHEME_ARCH "ppc"
 # elif defined(__arm__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-" SPLS_MAC
+#  define SCHEME_ARCH "arm"
 # elif defined(__arm64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm64-" SPLS_MAC
+#  define SCHEME_ARCH "aarch64"
 # elif defined(__x86_64__)
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-" SPLS_MAC
+#   define SCHEME_ARCH "x86_64"
 # else
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-" SPLS_MAC
+#  define SCHEME_ARCH "i386"
 # endif
 
 # include "uconfig.h"
@@ -696,7 +705,8 @@
 
 # if defined(__APPLE__) && defined(__MACH__) && defined(__i386__) && !defined(OS_X)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-darwin"
+# define SCHEME_OS "darwin"
+# define SCHEME_ARCH "i386"
 
 # include "uconfig.h"
 
@@ -714,8 +724,12 @@
 
 #if defined(__QNX__)
 
+# define SCHEME_OS "qnx"
+
 #if defined(__i386__)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-qnx"
+# define SCHEME_ARCH "i386"
+#else
+# define SCHEME_ARCH "unknown"
 #endif
 # define ASSUME_FIXED_STACK_SIZE
 
@@ -741,14 +755,16 @@
 
 #if defined(__DragonFly__)
 
+# define SCHEME_OS "dragonfly"
+
 # if defined(__i386__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-dragonfly"
+#  define SCHEME_ARCH "i386"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_I386
 #  define ASM_DBLPREC_CONTROL_87
 #  define MZ_TRY_EXTFLONUMS
 # elif defined(__amd64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-dragonfly"
+#  define SCHEME_ARCH "aarch64"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
 #  define ASM_DBLPREC_CONTROL_87
@@ -779,6 +795,9 @@
 
 /************** (END KNOWN ARCHITECTURE/SYSTEMS) ****************/
 
+#ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH SCHEME_ARCH "-" SCHEME_OS
+#endif
 
 /***** (BEGIN CONFIGURATION FLAG DESCRPTIONS AND DEFAULTS) ******/
 
@@ -793,6 +812,12 @@
 
   /* SYSTEM_TYPE_NAME must be a string; this will be converted into
      a symbol for the result of (system-type) */
+
+  /* SCHEME_OS must be a string; this converted into a symbol for the
+     result of (system-type 'os*) */
+
+  /* SCHEME_ARCH must be a string; this converted into a symbol for the
+     result of (system-type 'arch) */
 
   /* SCHEME_PLATFORM_LIBRARY_SUBPATH must be a string; if it is
      undefined, it is automatically generated into a file named

@@ -3037,7 +3037,10 @@
 (test (system-type) system-type 'os)
 (test #t string? (system-type 'machine))
 (test #t symbol? (system-type 'link))
+(test #t symbol? (system-type 'os*))
+(test #t symbol? (system-type 'arch))
 (test #t relative-path? (system-library-subpath))
+(test #t relative-path? (system-library-subpath #f))
 
 (test #t pair? (memv (system-type 'word) '(32 64)))
 (test (fixnum? (expt 2 32)) = (system-type 'word) 64)

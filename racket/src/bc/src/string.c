@@ -171,10 +171,11 @@ static void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le)
 
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
-ROSYM static Scheme_Object *sys_symbol;
+ROSYM static Scheme_Object *sys_symbol, *sys_os_symbol, *sys_arch_symbol;
 ROSYM static Scheme_Object *link_symbol, *machine_symbol, *vm_symbol, *gc_symbol;
 ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol;
-ROSYM static Scheme_Object *os_symbol, *fs_change_symbol, *target_machine_symbol, *cross_symbol;
+ROSYM static Scheme_Object *os_symbol, *os_star_symbol, *arch_symbol;
+ROSYM static Scheme_Object *fs_change_symbol, *target_machine_symbol, *cross_symbol;
 ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol, *cs_symbol;
 ROSYM static Scheme_Object *force_symbol, *infer_symbol;
 ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path, *platform_cs_path;
@@ -218,7 +219,11 @@ scheme_init_string (Scheme_Startup_Env *env)
   Scheme_Object *p;
 
   REGISTER_SO(sys_symbol);
+  REGISTER_SO(sys_os_symbol);
+  REGISTER_SO(sys_arch_symbol);
   sys_symbol = scheme_intern_symbol(SYSTEM_TYPE_NAME);
+  sys_os_symbol = scheme_intern_symbol(SCHEME_OS);
+  sys_arch_symbol = scheme_intern_symbol(SCHEME_ARCH);
 
   REGISTER_SO(link_symbol);
   REGISTER_SO(machine_symbol);
@@ -228,6 +233,8 @@ scheme_init_string (Scheme_Startup_Env *env)
   REGISTER_SO(so_mode_symbol);
   REGISTER_SO(word_symbol);
   REGISTER_SO(os_symbol);
+  REGISTER_SO(os_star_symbol);
+  REGISTER_SO(arch_symbol);
   REGISTER_SO(fs_change_symbol);
   REGISTER_SO(target_machine_symbol);
   REGISTER_SO(cross_symbol);
@@ -239,6 +246,8 @@ scheme_init_string (Scheme_Startup_Env *env)
   so_mode_symbol = scheme_intern_symbol("so-mode");
   word_symbol = scheme_intern_symbol("word");
   os_symbol = scheme_intern_symbol("os");
+  os_star_symbol = scheme_intern_symbol("os*");
+  arch_symbol = scheme_intern_symbol("arch");
   fs_change_symbol = scheme_intern_symbol("fs-change");
   target_machine_symbol = scheme_intern_symbol("target-machine");
   cross_symbol = scheme_intern_symbol("cross");
@@ -2441,10 +2450,18 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
       return (cross_compile_mode ? force_symbol : infer_symbol);
     }
 
+    if (SAME_OBJ(argv[0], os_star_symbol)) {
+      return sys_os_symbol;
+    }
+
+    if (SAME_OBJ(argv[0], arch_symbol)) {
+      return sys_arch_symbol;
+    }
+
     if (!SAME_OBJ(argv[0], os_symbol)) {
       scheme_wrong_contract("system-type",
-                            ("(or/c 'os 'word 'link 'machine 'target-machine\n"
-                             " 'vm 'gc 'so-suffix 'so-mode 'word 'fs-change 'cross)"),
+                            ("(or/c 'os 'os* 'arch 'word 'link 'machine 'target-machine\n"
+                             "      'vm 'gc 'so-suffix 'so-mode 'word 'fs-change 'cross)"),
                             0, argc, argv);
       return NULL;
     }
