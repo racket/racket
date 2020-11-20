@@ -134,7 +134,7 @@
 #  define ASM_DBLPREC_CONTROL_87
 #  define MZ_TRY_EXTFLONUMS
 # endif
-# ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
+# ifndef SCHEME_ARCH
 #  define SCHEME_ARCH "unknown"
 # endif
 
@@ -222,27 +222,29 @@
 
 #if defined(__OpenBSD__) && !defined(__Bitrig__)
 
+# define SCHEME_OS "openbsd"
+
 # if defined(__x86_64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-openbsd"
+#  define SCHEME_ARCH "x86_64"
 #  define IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
 # elif defined(__i386__) || defined(i386)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
+#  define SCHEME_ARCH "i386"
 # elif defined(__mips64__)
 #  if defined(__MIPSEL__)
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64el-openbsd"
+#   define SCHEME_ARCH "mips64el"
 #  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64-openbsd"
+#   define SCHEME_ARCH "mips64"
 #  endif
 # elif defined(__powerpc__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-openbsd"
+#  define SCHEME_ARCH "ppc"
 # elif defined(__sparc64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-openbsd"
+#  define SCHEME_ARCH "sparc64"
 # elif defined(__arm__) || defined(__thumb__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-openbsd"
+#  define SCHEME_ARCH "arm"
 # elif defined(__aarch64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "aarch64-openbsd"
+#  define SCHEME_ARCH "aarch64"
 # elif defined(__hppa__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-openbsd"
+#  define SCHEME_ARCH "hppa"
 # else
 #  error Unported platform.
 # endif
@@ -294,10 +296,12 @@
 
 #if defined(__Bitrig__)
 
+# define SCHEME_OS "bitrig"
+
 # if defined(__x86_64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-bitrig"
+#  define SCHEME_ARCH "x86_64"
 # elif defined(__arm__) || defined(__thumb__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-bitrig"
+#  define SCHEME_ARCH "arm"
 # else
 #  error Unported platform.
 # endif
@@ -335,8 +339,10 @@
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 
+# define SCHEME_OS "freebsd"
+
 # if defined(__i386__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
+#  define SCHEME_ARCH "i386"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_I386
 #  define MZ_TRY_EXTFLONUMS
@@ -346,7 +352,7 @@
 #   define FREEBSD_CONTROL_387
 #  endif
 # elif defined(__amd64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-freebsd"
+#  define SCHEME_ARCH "amd64"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
 #  define MZ_TRY_EXTFLONUMS
@@ -354,14 +360,14 @@
 #   define ASM_DBLPREC_CONTROL_87
 #  endif
 # elif defined(__sparc64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-freebsd"
+#  define SCHEME_ARCH "sparc64"
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # elif defined(__arm__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-freebsd"
+#  define SCHEME_ARCH "arm"
 # elif defined(__aarch64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "aarch64-freebsd"
+#  define SCHEME_ARCH "aarch64"
 # elif defined(__powerpc__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-freebsd"
+#  define SCHEME_ARCH "ppc"
 #  define MZ_USE_JIT_PPC
 # else
 #  error Unported platform.
@@ -393,7 +399,8 @@
 #if  (defined(mips) || defined(__mips)) \
      && !(defined(ultrix) || defined(__ultrix) || defined(__linux__) || defined(__OpenBSD__))
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-irix"
+# define SCHEME_OS "irix"
+# define SCHEME_ARCH "mips"
 
 # include "uconfig.h"
 
@@ -410,7 +417,8 @@
 
 #if defined(ultrix) || defined(__ultrix)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-ultrix"
+# define SCHEME_OS "ultrix"
+# define SCHEME_ARCH "mips"
 
 # include "uconfig.h"
 # undef UNIX_DYNAMIC_LOAD
@@ -424,7 +432,8 @@
 # if (defined(__alpha) || defined(__alpha__)) \
     && !defined(__linux__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-osf1"
+# define SCHEME_OS "osf1"
+# define SCHEME_ARCH "alpha"
 
 # include "uconfig.h"
 
@@ -441,7 +450,8 @@
 
 #if defined(__hpux)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "parisc-hpux"
+# define SCHEME_OS "hpux"
+# define SCHEME_ARCH "parisc"
 
 # include "uconfig.h"
 
@@ -460,7 +470,8 @@
 
 #if defined(_M_XENIX) && defined(_M_SYSV)
 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "sco-i386"
+# define SCHEME_OS "sco"
+# define SCHEME_ARCH "i386"
 
 # include "uconfig.h"
 #ifndef __ELF__
