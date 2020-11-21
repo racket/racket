@@ -2,6 +2,7 @@
 (require '#%extfl
          racket/linklet
          racket/unsafe/undefined
+         racket/fixnum
          (for-syntax racket/base)
          "private/truncate-path.rkt"
          "private/relative-path.rkt"
@@ -121,7 +122,8 @@
                      [orig-o #f]
                      #:keep-mutable? [keep-mutable? #f]
                      #:handle-fail [handle-fail #f]
-                     #:external-lift? [external-lift? #f])
+                     #:external-lift? [external-lift? #f]
+                     #:skip-prefix? [skip-prefix? #f])
   (when orig-o
     (unless (output-port? orig-o)
       (raise-argument-error 's-exp->fasl "(or/c output-port? #f)" orig-o)))
@@ -184,7 +186,8 @@
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   (define path->relative-path-elements (make-path->relative-path-elements))
   ;; The fasl formal prefix:
-  (write-bytes fasl-prefix o)
+  (unless skip-prefix?
+    (write-bytes fasl-prefix o))
   ;; Write content to a string, so we can measure it
   (define bstr
     (let ([o (open-output-bytes)])
@@ -394,14 +397,16 @@
 
 (define (fasl->s-exp orig-i
                      #:datum-intern? [intern? #t]
-                     #:external-lifts [external-lifts '#()])
+                     #:external-lifts [external-lifts '#()]
+                     #:skip-prefix? [skip-prefix? #f])
   (define init-i (cond
                    [(bytes? orig-i) (mcons orig-i 0)]
                    [(input-port? orig-i) orig-i]
                    [else (raise-argument-error 'fasl->s-exp "(or/c bytes? input-port?)" orig-i)]))
-  (unless (bytes=? (read-bytes/exactly fasl-prefix-length init-i) fasl-prefix)
-    (read-error "unrecognized prefix"))
-  (define shared-count (read-fasl-integer init-i))
+  (unless skip-prefix?
+    (unless (bytes=? (read-bytes/exactly* fasl-prefix-length init-i) fasl-prefix)
+      (read-error "unrecognized prefix")))
+  (define shared-count (read-fasl-integer* init-i))
   (define shared (make-vector shared-count))
 
   (unless (and (vector? external-lifts)
@@ -411,11 +416,11 @@
         [pos (in-naturals)])
     (vector-set! shared pos (vector-ref external-lifts pos)))
 
-  (define len (read-fasl-integer init-i))
+  (define len (read-fasl-integer* init-i))
   (define i (if (mpair? init-i)
                 init-i
                 ;; Faster to work with a byte string:
-                (let ([bstr (read-bytes/exactly len init-i)])
+                (let ([bstr (read-bytes/exactly* len init-i)])
                   (mcons bstr 0))))
 
   (define (intern v) (if intern? (datum-intern-literal v) v))
@@ -588,13 +593,16 @@
          args))
 
 (define (read-byte/no-eof i)
+  (define pos (mcdr i))
+  (unless (pos . < . (bytes-length (mcar i)))
+    (read-error "truncated stream"))
+  (set-mcdr! i (fx+ pos 1))
+  (bytes-ref (mcar i) pos))
+
+(define (read-byte/no-eof* i)
   (cond
     [(mpair? i)
-     (define pos (mcdr i))
-     (unless (pos . < . (bytes-length (mcar i)))
-       (read-error "truncated stream"))
-     (set-mcdr! i (add1 pos))
-     (bytes-ref (mcar i) pos)]
+     (read-byte/no-eof i)]
     [else
      (define b (read-byte i))
      (when (eof-object? b)
@@ -602,42 +610,93 @@
      b]))
 
 (define (read-bytes/exactly n i)
+  (define pos (mcdr i))
+  (unless ((+ pos n) . <= . (bytes-length (mcar i)))
+    (read-error "truncated stream"))
+  (set-mcdr! i (fx+ pos n))
+  (subbytes (mcar i) pos (fx+ pos n)))
+
+(define (read-bytes/exactly* n i)
   (cond
     [(mpair? i)
-     (define pos (mcdr i))
-     (unless ((+ pos n) . <= . (bytes-length (mcar i)))
-       (read-error "truncated stream"))
-     (set-mcdr! i (+ pos n))
-     (subbytes (mcar i) pos (+ pos n))]
+     (read-bytes/exactly n i)]
     [else
      (define bstr (read-bytes n i))
      (unless (and (bytes? bstr) (= n (bytes-length bstr)))
        (read-error "truncated stream"))
      bstr]))
 
-(define (read-fasl-integer i)
-  (define b (read-byte/no-eof i))
-  (cond
-    [(<= b 127) b]
-    [(>= b 132) (- b 256)]
-    [(eqv? b 128)
-     (integer-bytes->integer (read-bytes/exactly 2 i) #t #f)]
-    [(eqv? b 129)
-     (integer-bytes->integer (read-bytes/exactly 4 i) #t #f)]
-    [(eqv? b 130)
-     (integer-bytes->integer (read-bytes/exactly 8 i) #t #f)]
-    [(eqv? b 131)
-     (define len (read-fasl-integer i))
-     (define str (read-fasl-string i len))
-     (unless (and (string? str) (= len (string-length str)))
-       (read-error "truncated stream at number"))
-     (string->number str 16)]
-    [else
-     (read-error "internal error on integer mode")]))
+(define-values (read-fasl-integer read-fasl-integer*)
+  (let-syntax ([gen
+                (syntax-rules ()
+                  [(_ read-byte/no-eof read-bytes/exactly)
+                   (lambda (i)
+                     (define b (read-byte/no-eof i))
+                     (cond
+                       [(fx<= b 127) b]
+                       [(fx>= b 132) (fx- b 256)]
+                       [(eqv? b 128)
+                        (define lo (read-byte/no-eof i))
+                        (define hi (read-byte/no-eof i))
+                        (if (hi . fx> . 127)
+                            (fxior (fxlshift (fx+ -256 hi) 8) lo)
+                            (fxior (fxlshift hi 8) lo))]
+                       [(eqv? b 129)
+                        (define a (read-byte/no-eof i))
+                        (define b (read-byte/no-eof i))
+                        (define c (read-byte/no-eof i))
+                        (define d (read-byte/no-eof i))
+                        (bitwise-ior a
+                                     (arithmetic-shift
+                                      ;; 24 bits always fit in a fixnum:
+                                      (if (d . fx> . 127)
+                                          (fxior (fxlshift (fx+ -256 d) 16)
+                                                 (fxlshift c 8)
+                                                 b)
+                                          (fxior (fxlshift d 16)
+                                                 (fxlshift c 8)
+                                                 b))
+                                      8))]
+                       [(eqv? b 130)
+                        (integer-bytes->integer (read-bytes/exactly 8 i) #t #f)]
+                       [(eqv? b 131)
+                        (define len (read-fasl-integer i))
+                        (define str (read-fasl-string i len))
+                        (unless (and (string? str) (= len (string-length str)))
+                          (read-error "truncated stream at number"))
+                        (string->number str 16)]
+                       [else
+                        (read-error "internal error on integer mode")]))])])
+    (values (gen read-byte/no-eof read-bytes/exactly)
+            (gen read-byte/no-eof* read-bytes/exactly*))))
 
 (define (read-fasl-string i [len (read-fasl-integer i)])
-  (define bstr (read-bytes/exactly len i))
-  (bytes->string/utf-8 bstr))
+  (define pos (mcdr i))
+  (define bstr (mcar i))
+  (cond
+    [((+ pos len) . <= . (bytes-length bstr))
+     (set-mcdr! i (fx+ pos len))
+     ;; optimistically assume ASCII:
+     (define s (make-string len))
+     (let loop ([i 0])
+       (cond
+         [(fx= i len)
+          ;; success: all ASCII
+          s]
+         [else
+          (define c (bytes-ref bstr (fx+ i pos)))
+          (cond
+            [(c . fx<= . 128)
+             (string-set! s i (integer->char c))
+             (loop (fx+ i 1))]
+            [else
+             ;; not ASCII, so abandon fast-path string
+             (bytes->string/utf-8 bstr #f pos (fx+ pos len))])]))]
+    [else
+     ;; let read-bytes/exactly complain
+     (define bstr (read-bytes/exactly len i))
+     ;; don't expect to get here!
+     (bytes->string/utf-8 bstr)]))
 
 (define (read-fasl-bytes i)
   (define len (read-fasl-integer i))

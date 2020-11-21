@@ -21691,13 +21691,13 @@
                            (if (mpair? v_0)
                              (if (not print-graph?_0)
                                (if (not (eq? mode_0 0))
-                                 (let ((app_0 (mcdr v_0)))
+                                 (let ((app_0 (unsafe-mcdr v_0)))
                                    (quick-no-graph?_0
                                     config_0
                                     mode_0
                                     print-graph?_0
                                     app_0
-                                    (let ((app_1 (mcar v_0)))
+                                    (let ((app_1 (unsafe-mcar v_0)))
                                       (quick-no-graph?_0
                                        config_0
                                        mode_0
@@ -22005,7 +22005,7 @@
                                     counter_0
                                     cycle?_0
                                     ht_0
-                                    (mcar v_0)
+                                    (unsafe-mcar v_0)
                                     mode_0)
                                    (build-graph_0
                                     checking-port_0
@@ -22014,7 +22014,7 @@
                                     counter_0
                                     cycle?_0
                                     ht_0
-                                    (mcdr v_0)
+                                    (unsafe-mcdr v_0)
                                     mode_0)
                                    (done!_0
                                     constructor?_0
@@ -22547,12 +22547,12 @@
                 (begin
                   (if (eq? max-length_2 'full)
                     'full
-                    (if (if (null? (mcdr v_1)) (not unquoted?_0) #f)
+                    (if (if (null? (unsafe-mcdr v_1)) (not unquoted?_0) #f)
                       (let ((max-length_3
                              (|#%app|
                               p_0
                               who_0
-                              (mcar v_1)
+                              (unsafe-mcar v_1)
                               mode_0
                               o_0
                               max-length_2
@@ -22562,11 +22562,12 @@
                          (if curly?_0 "}" ")")
                          o_0
                          max-length_3))
-                      (if (if (mpair? (mcdr v_1))
+                      (if (if (mpair? (unsafe-mcdr v_1))
                             (if (let ((or-part_0 (not graph_0)))
                                   (if or-part_0
                                     or-part_0
-                                    (not (hash-ref graph_0 (mcdr v_1) #f))))
+                                    (not
+                                     (hash-ref graph_0 (unsafe-mcdr v_1) #f))))
                               (not unquoted?_0)
                               #f)
                             #f)
@@ -22574,13 +22575,13 @@
                                (|#%app|
                                 p_0
                                 who_0
-                                (mcar v_1)
+                                (unsafe-mcar v_1)
                                 mode_0
                                 o_0
                                 max-length_2
                                 graph_0
                                 config_0)))
-                          (let ((app_0 (mcdr v_1)))
+                          (let ((app_0 (unsafe-mcdr v_1)))
                             (loop_0
                              app_0
                              (write-string/max " " o_0 max-length_3))))
@@ -22588,7 +22589,7 @@
                                (|#%app|
                                 p_0
                                 who_0
-                                (mcar v_1)
+                                (unsafe-mcar v_1)
                                 mode_0
                                 o_0
                                 max-length_2
@@ -22602,7 +22603,7 @@
                                    (|#%app|
                                     p_0
                                     who_0
-                                    (mcdr v_1)
+                                    (unsafe-mcdr v_1)
                                     mode_0
                                     o_0
                                     max-length_4

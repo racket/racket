@@ -14,6 +14,4 @@
            (thread)
            (io)
            (regexp)
-           (linklet)
-           (only (schemify)
-                 force-unfasl)))
+           (linklet)))

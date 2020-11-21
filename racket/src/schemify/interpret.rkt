@@ -4,8 +4,6 @@
          racket/symbol
          "match.rkt"
          "wrap.rkt"
-         "path-for-srcloc.rkt"
-         "to-fasl.rkt"
          "interp-match.rkt"
          "interp-stack.rkt"
          "gensym.rkt")
@@ -56,8 +54,7 @@
   (set! make-interp-procedure* make-proc))
 
 (define (interpretable-jitified-linklet linklet-e serializable?)
-  ;; Return a compiled linklet in two parts: a vector expression for
-  ;; constants to be run once, and a expression for the linklet body.
+  ;; Return a compiled linklet as an expression for the linklet body.
   
   ;; Conceptually, the run-time environment is implemented as a list,
   ;; and identifiers are mapped to positions in that list, where 0
@@ -83,41 +80,10 @@
   ;; the list, for example.
 
   (define (start linklet-e)
-    (match linklet-e
-      [`(lambda . ,_)
-       ;; No constants:
-       (define-values (compiled-body num-body-vars)
-         (compile-linklet-body linklet-e '#hasheq() 0))
-       (vector #f
-               num-body-vars
-               compiled-body)]
-      [`(let* ,bindings ,body)
-       (define bindings-stk-i (make-stack-info))
-       (let loop ([bindings bindings] [elem 0] [env '#hasheq()] [accum '()])
-         (cond
-           [(null? bindings)
-            (define-values (compiled-body num-body-vars)
-              (compile-linklet-body body env 1))
-            (vector (list->vector (reverse accum))
-                    num-body-vars
-                    compiled-body)]
-           [else
-            (let ([binding (car bindings)])
-              (loop (cdr bindings)
-                    (fx+ elem 1)
-                    (hash-set env (car binding) (indirect 0 elem))
-                    (let ([rhs (cadr binding)])
-                      (cons (cond
-                              [(or (path? rhs)
-                                   (path-for-srcloc? rhs)
-                                   (to-fasl? rhs))
-                               ;; The caller must extract all the paths from the bindings
-                               ;; and pass them back in at interp time; assume '#%path is
-                               ;; not a primitive
-                               '#%path]
-                              [else
-                               (compile-expr rhs env 1 bindings-stk-i #t '#hasheq())])
-                            accum))))]))]))
+    (define-values (compiled-body num-body-vars)
+      (compile-linklet-body linklet-e '#hasheq() 0))
+    (vector num-body-vars
+            compiled-body))
 
   (define (compile-linklet-body v env stack-depth)
     (match v
@@ -627,35 +593,19 @@
 
 ;; ----------------------------------------
 
-(define (interpret-linklet b             ; compiled form
-                           paths)        ; unmarshaled paths
+(define (interpret-linklet b)
   (interp-match
    b
-   [#(,consts ,num-body-vars ,b)
-    (let ([consts (and consts
-                       (let ([vec (make-vector (vector*-length consts))])
-                         (define stack (stack-set empty-stack 0 vec))
-                         (for/fold ([paths paths]) ([b (in-vector consts)]
-                                                    [i (in-naturals)])
-                           (cond
-                             [(eq? b '#%path)
-                              (vector-set! vec i (car paths))
-                              (cdr paths)]
-                             [else
-                              (vector-set! vec i (interpret-expr b stack))
-                              paths]))
-                         vec))])
-      (lambda args
-        (define start-stack (if consts
-                                (stack-set empty-stack 0 consts)
-                                empty-stack))
-        (define args-stack (for/fold ([stack start-stack]) ([arg (in-list args)]
-                                                            [i (in-naturals (if consts 1 0))])
-                             (stack-set stack i arg)))
-        (define post-args-pos (stack-count args-stack))
-        (define stack (for/fold ([stack args-stack]) ([i (in-range num-body-vars)])
-                        (stack-set stack (+ i post-args-pos) (box unsafe-undefined))))
-        (interpret-expr b stack)))]))
+   [#(,num-body-vars ,b)
+    (lambda args
+      (define start-stack empty-stack)
+      (define args-stack (for/fold ([stack start-stack]) ([arg (in-list args)]
+                                                          [i (in-naturals 0)])
+                           (stack-set stack i arg)))
+      (define post-args-pos (stack-count args-stack))
+      (define stack (for/fold ([stack args-stack]) ([i (in-range num-body-vars)])
+                      (stack-set stack (+ i post-args-pos) (box unsafe-undefined))))
+      (interpret-expr b stack))]))
 
 (define (interpret-expr b stack)
 

@@ -668,7 +668,12 @@
              [loc (and (cdr p)
                        (call-with-values (lambda ()
                                            (let* ([src (cdr p)]
-                                                  [path (source-file-descriptor-path (source-object-sfd src))])
+                                                  [path (source-file-descriptor-path (source-object-sfd src))]
+                                                  [path (if (srcloc? path)
+                                                            ;; The linklet layer wraps paths in `srcloc` to trigger specific
+                                                            ;; marshaling behavior
+                                                            (srcloc-source path)
+                                                            path)])
                                              (if (source-object-line src)
                                                  (values path
                                                          (source-object-line src)

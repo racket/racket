@@ -206,6 +206,13 @@
      (#%$string-set-immutable! s)
      s]))
 (define (unsafe-vector*->immutable-vector! v)
+  (vector->immutable-vector v)
+  ;; The implementation below is not right, because the vector
+  ;; may contain elements allocated after the vector itself, and
+  ;; wrong-way pointers are not supposed to show up in mutable
+  ;; vectors. Maybe the GC should treat immutable vectors like
+  ;; mutable ones, and then morphing to immutable would be ok.
+  #;
   (cond
     [(= (vector-length v) 0)  (immutable-constant #())]
     [else

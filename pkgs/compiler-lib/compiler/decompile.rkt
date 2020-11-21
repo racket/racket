@@ -248,31 +248,23 @@
     [(? linklet?)
      (case (system-type 'vm)
        [(chez-scheme)
-        (define-values (fmt code sfd-paths args) ((vm-primitive 'linklet-fasled-code+arguments) l))
+        (define-values (fmt code literals) ((vm-primitive 'linklet-fasled-code+arguments) l))
         (cond
           [code
            (case fmt
              [(compile)
               (cond
                 [(not (current-partial-fasl))
-                 ;; Note that applying the result of `vm-eval` no longer shows the setup of
-                 ;; Racket level constants (like keywords):
-                 (define make-proc (vm-eval `(load-compiled-from-port (open-bytevector-input-port ,code) ',sfd-paths)))
-                 (define proc (make-proc))
-                 (let ([proc (decompile-chez-procedure (if (null? args) proc (apply proc args)) make-proc)])
-                   (if (null? args)
-                       proc
-                       (cons proc (map (vm-primitive 'force-unfasl) args))))]
+                 (define proc (vm-eval `(load-compiled-from-port (open-bytevector-input-port ,code) ',literals)))
+                 (decompile-chez-procedure proc)]
                 [else
-                 (define desc (disassemble-in-description
-                               `(#(FASL
-                                   #:length ,(bytes-length code)
-                                   ,(vm-eval `(($primitive $describe-fasl-from-port) (open-bytevector-input-port ,code) ',sfd-paths))))))
-                 (if (null? args)
-                     desc
-                     (cons desc (map (vm-primitive 'force-unfasl) args)))])]
+                 (disassemble-in-description
+                  `(#(FASL
+                      #:length ,(bytes-length code)
+                      #:literals ,literals
+                      ,(vm-eval `(($primitive $describe-fasl-from-port) (open-bytevector-input-port ,code) ',literals)))))])]
              [(interpret)
-              (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,code) 'load ',sfd-paths)))
+              (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,code) 'load ',literals)))
               (list `(#%interpret ,(unwrap-chez-interpret-jitified bytecode)))]
              [else
               '(....)])]

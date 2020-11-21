@@ -5,7 +5,6 @@
          racket/file
          racket/extflonum
          "../schemify/schemify.rkt"
-         "../schemify/serialize.rkt"
          "../schemify/known.rkt"
          "../schemify/lift.rkt"
          "../schemify/reinfer-name.rkt"
@@ -13,7 +12,6 @@
          "known.rkt")
 
 (define skip-export? #f)
-(define for-cify? #f)
 (define unsafe-mode? #f)
 
 (define-values (in-file out-file)
@@ -21,8 +19,6 @@
    #:once-each
    [("--skip-export") "Don't generate an `export` form"
     (set! skip-export? #t)]
-   [("--for-cify") "Keep `make-struct-type` as-is, etc."
-    (set! for-cify? #t)]
    [("--unsafe") "Compile for unsafe mode"
     (set! unsafe-mode? #t)]
    #:args
@@ -111,8 +107,7 @@
     (lift (car v))
     (lift (cdr v))]))
 
-(unless for-cify?
-  (lift l))
+(lift l)
 
 (define prim-knowns (get-prim-knowns))
 (define primitives (get-primitives))
@@ -121,97 +116,86 @@
 ;; Convert:
 (define schemified-body
   (let ()
-    (define-values (bodys/constants-lifted lifted-constants)
-      (if for-cify?
-          (begin
-            (printf "Serializable...\n")
-            (time (convert-for-serialize l for-cify?)))
-          (values (recognize-inferred-names l) null)))
+    (define bodys (recognize-inferred-names l))
     (printf "Schemify...\n")
     (define body
       (time
-       (schemify-body bodys/constants-lifted prim-knowns primitives #hasheq() #hasheq() for-cify? unsafe-mode?
+       (schemify-body bodys prim-knowns primitives #hasheq() #hasheq() #f unsafe-mode?
                       #t    ; no-prompt?
                       #f))) ; explicit-unnamed?
     (printf "Lift...\n")
     ;; Lift functions to avoid closure creation:
-    (define lifted-body
-      (time
-       (lift-in-schemified-body body #t)))
-    (append (for/list ([p (in-list lifted-constants)])
-              (cons 'define p))
-            lifted-body)))
+    (time
+     (lift-in-schemified-body body #t))))
 
 ;; ----------------------------------------
 
-(unless for-cify?
-  
-  ;; Set a hook to redirect literal regexps and
-  ;; hash tables to lifted bindings
-  (pretty-print-size-hook
-   (lambda (v display? out)
-     (cond
-       [(and (pair? v)
-             (pair? (cdr v))
-             (eq? 'quote (car v))
-             (or (regexp? (cadr v))
-                 (byte-regexp? (cadr v))
-                 (pregexp? (cadr v))
-                 (byte-pregexp? (cadr v))
-                 (hash? (cadr v))
-                 (nested-hash? (cadr v))
-                 (keyword? (cadr v))
-                 (list-of-keywords? (cadr v))
-                 (extflonum? (cadr v))))
-        10]
-       [(and (pair? v)
-             (pair? (cdr v))
-             (eq? 'quote (car v))
-             (void? (cadr v)))
-        6]
-       [(bytes? v) (* 3 (bytes-length v))]
-       [(and (symbol? v) (regexp-match? #rx"#" (symbol->string v)))
-        (+ 2 (string-length (symbol->string v)))]
-       [(char? v) 5]
-       [(single-flonum? v) 5]
-       [(or (keyword? v)
-            (regexp? v)
-            (pregexp? v)
-            (hash? v))
-        (error 'lift "value that needs lifting is in an unrecognized context: ~v" v)]
-       [else #f])))
+;; Set a hook to redirect literal regexps and
+;; hash tables to lifted bindings
+(pretty-print-size-hook
+ (lambda (v display? out)
+   (cond
+     [(and (pair? v)
+           (pair? (cdr v))
+           (eq? 'quote (car v))
+           (or (regexp? (cadr v))
+               (byte-regexp? (cadr v))
+               (pregexp? (cadr v))
+               (byte-pregexp? (cadr v))
+               (hash? (cadr v))
+               (nested-hash? (cadr v))
+               (keyword? (cadr v))
+               (list-of-keywords? (cadr v))
+               (extflonum? (cadr v))))
+      10]
+     [(and (pair? v)
+           (pair? (cdr v))
+           (eq? 'quote (car v))
+           (void? (cadr v)))
+      6]
+     [(bytes? v) (* 3 (bytes-length v))]
+     [(and (symbol? v) (regexp-match? #rx"#" (symbol->string v)))
+      (+ 2 (string-length (symbol->string v)))]
+     [(char? v) 5]
+     [(single-flonum? v) 5]
+     [(or (keyword? v)
+          (regexp? v)
+          (pregexp? v)
+          (hash? v))
+      (error 'lift "value that needs lifting is in an unrecognized context: ~v" v)]
+     [else #f])))
 
-  ;; This hook goes with `pretty-print-size-hook`
-  (pretty-print-print-hook
-   (lambda (v display? out)
-     (cond
-       [(and (pair? v)
-             (eq? 'quote (car v))
-             (or (regexp? (cadr v))
-                 (byte-regexp? (cadr v))
-                 (pregexp? (cadr v))
-                 (byte-pregexp? (cadr v))
-                 (hash? (cadr v))
-                 (nested-hash? (cadr v))
-                 (keyword? (cadr v))
-                 (list-of-keywords? (cadr v))
-                 (extflonum? (cadr v))))
-        (write (hash-ref lifts (cadr v)) out)]
-       [(and (pair? v)
-             (pair? (cdr v))
-             (eq? 'quote (car v))
-             (void? (cadr v)))
-        (write '(void) out)]
-       [(bytes? v)
-        (display "#vu8")
-        (write (bytes->list v) out)]
-       [(symbol? v)
-        (write-string (format "|~a|" v) out)]
-       [(char? v)
-        (write-string (format "#\\x~x" (char->integer v)) out)]
-       [(single-flonum? v)
-        (write (real->double-flonum v) out)]
-       [else #f]))))
+;; This hook goes with `pretty-print-size-hook`
+(pretty-print-print-hook
+ (lambda (v display? out)
+   (cond
+     [(and (pair? v)
+           (eq? 'quote (car v))
+           (or (regexp? (cadr v))
+               (byte-regexp? (cadr v))
+               (pregexp? (cadr v))
+               (byte-pregexp? (cadr v))
+               (hash? (cadr v))
+               (nested-hash? (cadr v))
+               (keyword? (cadr v))
+               (list-of-keywords? (cadr v))
+               (extflonum? (cadr v))))
+      (write (hash-ref lifts (cadr v)) out)]
+     [(and (pair? v)
+           (pair? (cdr v))
+           (eq? 'quote (car v))
+           (void? (cadr v)))
+      (write '(void) out)]
+     [(bytes? v)
+      (display "#vu8")
+      (write (bytes->list v) out)]
+     [(symbol? v)
+      (write-string (format "|~a|" v) out)]
+     [(char? v)
+      (write-string (format "#\\x~x" (char->integer v)) out)]
+     [(single-flonum? v)
+      (write (real->double-flonum v) out)]
+     [else #f])))
 
 ;; ----------------------------------------
 

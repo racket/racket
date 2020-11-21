@@ -180,7 +180,7 @@
   (define post-lambda-on? (getenv "PLT_LINKLET_SHOW_POST_LAMBDA"))
   (define post-interp-on? (getenv "PLT_LINKLET_SHOW_POST_INTERP"))
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
-  (define paths-on? (getenv "PLT_LINKLET_SHOW_PATHS"))
+  (define literals-on? (getenv "PLT_LINKLET_SHOW_LITERALS"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
@@ -190,7 +190,7 @@
                        post-lambda-on?
                        post-interp-on?
                        jit-demand-on?
-                       paths-on?
+                       literals-on?
                        known-on?
                        cp0-on?
                        assembly-on?
@@ -237,24 +237,27 @@
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
     (call-with-system-wind (lambda () (fasl-write s o))))
-  (define (fasl-write/paths* s o)
+  (define (fasl-write/literals* s quoteds o)
     (call-with-system-wind (lambda ()
-                             (call-getting-sfd-paths
+                             (call-getting-literals
+                              quoteds
                               (lambda (pred)
                                 (fasl-write s o pred))))))
-  (define (fasl-write-code* s o)
+  (define (fasl-write-code* s quoteds o)
     (call-with-system-wind (lambda ()
                              (parameterize ([fasl-compressed compress-code?])
-                               (call-getting-sfd-paths
+                               (call-getting-literals
+                                quoteds
                                 (lambda (pred)
                                   (fasl-write s o pred 'omit-rtds)))))))
-  (define (compile-to-port* s o unsafe?)
+  (define (compile-to-port* s quoteds o unsafe?)
     (call-with-system-wind (lambda ()
                              (parameterize ([fasl-compressed compress-code?]
                                             [optimize-level (if unsafe?
                                                                 3
                                                                 (optimize-level))])
-                               (call-getting-sfd-paths
+                               (call-getting-literals
+                                quoteds
                                 (lambda (pred)
                                   (compile-to-port s o #f #f #f (machine-type) #f pred 'omit-rtds)))))))
   (define (expand/optimize* e unsafe?)
@@ -264,14 +267,18 @@
                                                                 (optimize-level))])
                                (#%expand/optimize e)))))
 
-  (define (call-getting-sfd-paths proc)
-    (let ([sfd-paths '()])
+  (define (call-getting-literals quoteds proc)
+    ;; `quoteds` is a list of literal values detected by schemify,
+    ;; but we may discover srclocs attached as procedure names
+    (let ([literals '()])
       (proc (lambda (v)
-              (and (path? v)
+              (and (or (srcloc? v)
+                       (and quoteds
+                            (hash-ref quoteds v #f)))
                    (begin
-                     (set! sfd-paths (cons v sfd-paths))
+                     (set! literals (cons v literals))
                      #t))))
-      (list->vector (reverse sfd-paths))))
+      (list->vector (reverse literals))))
 
   (define (eval/foreign e mode)
     (performance-region
@@ -293,66 +300,60 @@
     (install-primitives-table! primitives))
 
   ;; Runs the result of `interpretable-jitified-linklet`
-  (define (run-interpret s paths)
-    (interpret-linklet s paths))
+  (define (run-interpret s)
+    (interpret-linklet s))
 
-  (define (compile-to-proc s paths format unsafe?)
+  (define (compile-to-proc s format unsafe?)
     (if (eq? format 'interpret)
-        (run-interpret s paths)
-        (let ([proc (compile* s unsafe?)])
-          (if (null? paths)
-              proc
-              (#%apply proc paths)))))
+        (run-interpret s)
+        (compile* s unsafe?)))
 
-  ;; returns code bytevector and sfd-paths vector
-  (define (compile*-to-bytevector s unsafe?)
+  ;; returns code bytevector and literals vector
+  (define (compile*-to-bytevector s quoteds unsafe?)
     (let-values ([(o get) (open-bytevector-output-port)])
-      (let ([sfd-paths (compile-to-port* (list `(lambda () ,s)) o unsafe?)])
-        (values (get) sfd-paths))))
+      (let ([literals (compile-to-port* (list s) quoteds o unsafe?)])
+        (values (get) literals))))
 
-  ;; returns code bytevector and sfd-paths vector
-  (define (compile-to-bytevector s format unsafe?)
+  ;; returns code bytevector and literals vector
+  (define (compile-to-bytevector s quoteds format unsafe?)
     (cond
       [(eq? format 'interpret)
        (let-values ([(o get) (open-bytevector-output-port)])
-         (let ([sfd-paths (fasl-write-code* s o)])
-           (values (get) sfd-paths)))]
-      [else (compile*-to-bytevector s unsafe?)]))
+         (let ([literals (fasl-write-code* s quoteds o)])
+           (values (get) literals)))]
+      [else (compile*-to-bytevector s quoteds unsafe?)]))
 
-  ;; returns code bytevector and sfd-paths vector
-  (define (cross-compile-to-bytevector machine s format unsafe?)
+  ;; returns code bytevector and literals vector
+  (define (cross-compile-to-bytevector machine s quoteds format unsafe?)
     (cond
-      [(eq? format 'interpret) (cross-fasl-to-string machine s)]
-      [else (cross-compile machine s unsafe?)]))
+      [(eq? format 'interpret) (cross-fasl-to-string machine s quoteds)]
+      [else (cross-compile machine s quoteds unsafe?)]))
 
-  (define (eval-from-bytevector bv paths sfd-paths format)
+  (define (eval-from-bytevector bv literals format)
     (add-performance-memory! 'faslin-code (bytevector-length bv))
     (cond
       [(eq? format 'interpret)
        (let ([r (performance-region
                  'faslin-code
-                 (fasl-read (open-bytevector-input-port bv) 'load sfd-paths))])
-         (performance-region
-          'outer
-          (run-interpret r paths)))]
+                 (fasl-read (open-bytevector-input-port bv) 'load literals))])
+         (run-interpret r))]
       [else
-       (let ([proc (performance-region
-                    'faslin-code
-                    (code-from-bytevector bv sfd-paths))])
-         (if (null? paths)
-             proc
-             (#%apply proc paths)))]))
+       (performance-region
+        'faslin-code
+        (code-from-bytevector bv literals))]))
 
-  (define (code-from-bytevector bv sfd-paths)
+  (define (code-from-bytevector bv literals)
     (let ([i (open-bytevector-input-port bv)])
-      (let ([r (load-compiled-from-port i sfd-paths)])
-        (performance-region
-         'outer
-         (r)))))
+      (load-compiled-from-port i literals)))
+
+  (define (extract-literals v)
+    (performance-region
+     'faslin-literals
+     (force-unfasl-literals v)))
 
   (define-record-type wrapped-code
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
-            sfd-paths
+            literals
             arity-mask
             name)
     (nongenerative #{wrapped-code p6o2m72rgmi36pm8vy559b-1}))
@@ -365,7 +366,7 @@
            'on-demand
            (cond
              [(bytevector? f)
-              (let* ([f (code-from-bytevector f (wrapped-code-sfd-paths wc))])
+              (let* ([f (code-from-bytevector f (wrapped-code-literals wc))])
                 (wrapped-code-content-set! wc f)
                 f)]
              [else
@@ -427,8 +428,7 @@
 
   (define-record-type linklet
     (fields (mutable code) ; the procedure or interpretable form
-            paths          ; list of paths and other fasled; if non-empty, `code` expects them as arguments
-            sfd-paths      ; vector of additional source-location paths intercepted during fasl
+            literals       ; vector of literals, including paths, that have to be serialized by racket/fasl
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
             (mutable preparation) ; 'faslable, 'faslable-strict, 'faslable-unsafe, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
@@ -440,8 +440,7 @@
 
   (define (set-linklet-code linklet code preparation)
     (make-linklet code
-                  (linklet-paths linklet)
-                  (linklet-sfd-paths linklet)
+                  (linklet-literals linklet)
                   (linklet-format linklet)
                   preparation
                   (linklet-importss-abi linklet)
@@ -450,10 +449,9 @@
                   (linklet-importss linklet)
                   (linklet-exports linklet)))
 
-  (define (set-linklet-paths linklet paths sfd-paths)
+  (define (set-linklet-literals linklet literals)
     (make-linklet (linklet-code linklet)
-                  paths
-                  sfd-paths
+                  literals
                   (linklet-format linklet)
                   (linklet-preparation linklet)
                   (linklet-importss-abi linklet)
@@ -464,8 +462,7 @@
 
   (define (set-linklet-preparation linklet preparation)
     (make-linklet (linklet-code linklet)
-                  (linklet-paths linklet)
-                  (linklet-sfd-paths linklet)
+                  (linklet-literals linklet)
                   (linklet-format linklet)
                   preparation
                   (linklet-importss-abi linklet)
@@ -509,6 +506,7 @@
       (define quick-mode? (or default-compile-quick?
                               (and (not serializable?)
                                    (#%memq 'quick options))))
+      (define serializable?-box (and serializable? (box #f)))
       (define sfd-cache (if serializable?
                             ;; For determinism: a fresh, non-weak cache per linklet
                             (make-hash)
@@ -530,7 +528,7 @@
        ;; Convert the linklet S-expression to a `lambda` S-expression:
        (define-values (impl-lam importss exports new-import-keys importss-abi exports-info)
          (schemify-linklet (show "linklet" c)
-                           serializable?
+                           serializable?-box
                            (not (#%memq 'uninterned-literal options))
                            (eq? format 'interpret)
                            (|#%app| compile-allow-set!-undefined)
@@ -583,44 +581,39 @@
                                               'compile-nested
                                               (let ([expr (show lambda-on? "lambda" (correlated->annotation expr serializable? sfd-cache))])
                                                 (if serializable?
-                                                    (let-values ([(code sfd-paths) (if cross-machine
-                                                                                       (cross-compile cross-machine expr unsafe?)
-                                                                                       (compile*-to-bytevector expr unsafe?))])
-                                                      (make-wrapped-code code sfd-paths arity-mask (extract-inferred-name expr name)))
+                                                    (let ([quoteds (unbox serializable?-box)])
+                                                      (let-values ([(code literals) (if cross-machine
+                                                                                        (cross-compile cross-machine expr quoteds unsafe?)
+                                                                                        (compile*-to-bytevector expr quoteds unsafe?))])
+                                                        (make-wrapped-code code literals arity-mask (extract-inferred-name expr name))))
                                                     (compile* expr unsafe?)))))])))]))
-       (define-values (paths impl-lam/paths)
-         (if serializable?
-             (extract-paths-and-fasls-from-schemified-linklet impl-lam/jitified (eq? format 'compile))
-             (values '() impl-lam/jitified)))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?
                                     linklet-compilation-mode)
-                           [(mach) (show post-lambda-on? "post-lambda" impl-lam/paths)]
-                           [else (show "schemified" impl-lam/paths)])])
+                           [(mach) (show post-lambda-on? "post-lambda" impl-lam/jitified)]
+                           [else (show "schemified" impl-lam/jitified)])])
            (if (eq? format 'interpret)
                (interpretable-jitified-linklet impl-lam serializable?)
                (correlated->annotation impl-lam serializable? sfd-cache))))
-       (when paths-on?
-         (show "paths" paths))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (when (and cp0-on? (eq? format 'compile))
-         (show "cp0" (expand/optimize* (correlated->annotation impl-lam/paths) unsafe?)))
+         (show "cp0" (expand/optimize* (correlated->annotation impl-lam/jitified) unsafe?)))
        (performance-region
         'compile-linklet
         ;; Create the linklet:
         (let ([impl (show (and (eq? format 'interpret) post-interp-on?) "post-interp" impl-lam/interpable)])
-          (let-values ([(code sfd-paths)
+          (let-values ([(code literals)
                         (if serializable?
-                            (if cross-machine
-                                (cross-compile-to-bytevector cross-machine impl format unsafe?)
-                                (compile-to-bytevector impl format unsafe?))
-                            (values (compile-to-proc impl paths format unsafe?) '#()))])
-            (when paths-on?
-              (show "source paths" sfd-paths))
+                            (let ([quoteds (unbox serializable?-box)])
+                              (if cross-machine
+                                  (cross-compile-to-bytevector cross-machine impl quoteds format unsafe?)
+                                  (compile-to-bytevector impl quoteds format unsafe?)))
+                            (values (compile-to-proc impl format unsafe?) '#()))])
+            (when literals-on?
+              (show "literals" literals))
             (let ([lk (make-linklet code
-                                    paths
-                                    sfd-paths
+                                    literals
                                     format
                                     (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
                                     importss-abi
@@ -680,8 +673,7 @@
       [(faslable-strict)
        (set-linklet-code linklet
                          (eval-from-bytevector (linklet-code linklet)
-                                               (linklet-paths linklet)
-                                               (linklet-sfd-paths linklet)
+                                               (extract-literals (linklet-literals linklet))
                                                (linklet-format linklet))
                          'callable)]
       [(faslable-unsafe)
@@ -719,8 +711,7 @@
            (when (eq? 'lazy (linklet-preparation linklet))
              ;; Trigger lazy conversion of code from bytevector
              (let ([code (eval-from-bytevector (linklet-code linklet)
-                                               (linklet-paths linklet)
-                                               (linklet-sfd-paths linklet)
+                                               (extract-literals (linklet-literals linklet))
                                                (linklet-format linklet))])
                (with-interrupts-disabled
                 (when (eq? 'lazy (linklet-preparation linklet))
@@ -740,8 +731,7 @@
                 (if (eq? 'callable (linklet-preparation linklet))
                     (linklet-code linklet)
                     (eval-from-bytevector (linklet-code linklet)
-                                          (linklet-paths linklet)
-                                          (linklet-sfd-paths linklet)
+                                          (extract-literals (linklet-literals linklet))
                                           (linklet-format linklet)))
                 (make-variable-reference target-instance #f)
                 (extract-imported-variabless target-instance
@@ -771,7 +761,7 @@
       (raise-argument-error 'linklet-fasled-code+arguments "linklet?" linklet))
     (case (linklet-preparation linklet)
       [(faslable faslable-strict faslable-unsafe lazy)
-       (values (linklet-format linklet) (linklet-code linklet) (linklet-sfd-paths linklet) (linklet-paths linklet))]
+       (values (linklet-format linklet) (linklet-code linklet) (extract-literals (linklet-literals linklet)))]
       [else (values #f #f #f #f)]))
 
   (define (linklet-interpret-jitified? v)

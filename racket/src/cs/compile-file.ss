@@ -113,8 +113,8 @@
    [whole-program?
     (unless (= 1 (length deps))
       (error 'compile-file "expected a single dependency for whole-program compilation"))
-    (printf "Whole-program optimizaton for Racket core...\n")
-    (printf " [If this runs out of memory, try configuring with `--disable-wpo`]\n")
+    (printf "Whole-program optimization for Racket core...\n")
+    (printf "[If this step runs out of memory, try configuring with `--disable-wpo`]\n")
     (unless (equal? build-dir "")
       (library-directories (list (cons "." build-dir))))
     (compile-whole-program (car deps) src #t)]

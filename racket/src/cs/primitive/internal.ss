@@ -34,8 +34,6 @@
   [make-pthread-parameter (known-procedure 2)]
   [engine-block (known-procedure 1)]
 
-  [force-unfasl (known-procedure 2)]
-
   [ptr-ref/int8 (known-procedure 8)]
   [ptr-ref/uint8 (known-procedure 8)]
   [ptr-ref/int16 (known-procedure 8)]

@@ -11,7 +11,6 @@
          "mutated.rkt"
          "mutated-state.rkt"
          "left-to-right.rkt"
-         "serialize.rkt"
          "let.rkt"
          "equal.rkt"
          "optimize.rkt"
@@ -77,7 +76,9 @@
 ;; An import ABI is a list of list of booleans, parallel to the
 ;; linklet imports, where #t to means that a value is expected, and #f
 ;; means that a variable (which boxes a value) is expected.
-(define (schemify-linklet lk serializable? datum-intern? for-interp? allow-set!-undefined?
+;; If `serializable?-box` is not #f, it is filled with a
+;; hash table of objects that need to be handled by `racket/fasl`.
+(define (schemify-linklet lk serializable?-box datum-intern? for-interp? allow-set!-undefined?
                           unsafe-mode? enforce-constant? allow-inline? no-prompt?
                           prim-knowns primitives get-import-knowns import-keys)
   (with-deterministic-gensym
@@ -127,31 +128,24 @@
          (for/fold ([exports (hasheq)]) ([ex-id (in-list ex-ids)])
            (define id (ex-int-id ex-id))
            (hash-set exports id (export (deterministic-gensym id) (ex-ext-id ex-id)))))
-       ;; Lift any quoted constants that can't be serialized
-       (define-values (bodys/constants-lifted lifted-constants)
-         (if serializable?
-             (convert-for-serialize bodys #f datum-intern?)
-             (values bodys null)))
        ;; Collect source names for defined identifiers, to the degree that the
        ;; original source name differs from the current name
        (define src-syms (get-definition-source-syms bodys))
        ;; Schemify the body, collecting information about defined names:
        (define-values (new-body defn-info mutated)
-         (schemify-body* bodys/constants-lifted prim-knowns primitives imports exports
-                         for-interp? allow-set!-undefined? add-import! #f
+         (schemify-body* bodys prim-knowns primitives imports exports
+                         serializable?-box datum-intern? for-interp? allow-set!-undefined? add-import! #f
                          unsafe-mode? enforce-constant? allow-inline? no-prompt? #t))
        (define all-grps (append grps (reverse new-grps)))
        (values
         ;; Build `lambda` with schemified body:
-        (make-let*
-         lifted-constants
-         `(lambda (instance-variable-reference
-                   ,@(for*/list ([grp (in-list all-grps)]
-                                 [im (in-list (import-group-imports grp))])
-                       (import-id im))
-                   ,@(for/list ([ex-id (in-list ex-ids)])
-                       (export-id (hash-ref exports (ex-int-id ex-id)))))
-            ,@new-body))
+        `(lambda (instance-variable-reference
+                  ,@(for*/list ([grp (in-list all-grps)]
+                                [im (in-list (import-group-imports grp))])
+                      (import-id im))
+                  ,@(for/list ([ex-id (in-list ex-ids)])
+                      (export-id (hash-ref exports (ex-int-id ex-id)))))
+           ,@new-body)
         ;; Imports (external names), possibly extended via inlining:
         (for/list ([grp (in-list all-grps)])
           (for/list ([im (in-list (import-group-imports grp))])
@@ -184,7 +178,7 @@
           (define id (ex-int-id ex-id))
           (define v (known-inline->export-known (hash-ref defn-info id #f)
                                                 prim-knowns imports exports
-                                                serializable?))
+                                                serializable?-box))
           (cond
             [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
              (define ext-id (ex-ext-id ex-id))
@@ -193,16 +187,17 @@
 
 ;; ----------------------------------------
 
-(define (schemify-body l prim-knowns primitives imports exports for-cify? unsafe-mode? no-prompt? explicit-unnamed?)
+(define (schemify-body l prim-knowns primitives imports exports
+                       for-cify? unsafe-mode? no-prompt? explicit-unnamed?)
   (with-deterministic-gensym
     (define-values (new-body defn-info mutated)
       (schemify-body* l prim-knowns primitives imports exports
-                      #f #f (lambda (im ext-id index) #f)
+                      #f #f #f #f (lambda (im ext-id index) #f)
                       for-cify? unsafe-mode? #t #t no-prompt? explicit-unnamed?))
     new-body))
 
 (define (schemify-body* l prim-knowns primitives imports exports
-                        for-interp? allow-set!-undefined? add-import!
+                        serializable?-box datum-intern? for-interp? allow-set!-undefined? add-import!
                         for-cify? unsafe-mode? enforce-constant? allow-inline? no-prompt? explicit-unnamed?)
   ;; Keep simple checking efficient by caching results
   (define simples (make-hasheq))
@@ -283,7 +278,7 @@
                                      prim-knowns primitives knowns mutated imports exports simples
                                      allow-set!-undefined?
                                      add-import!
-                                     for-cify? for-interp?
+                                     serializable?-box datum-intern? for-cify? for-interp?
                                      unsafe-mode? allow-inline? no-prompt? explicit-unnamed?
                                      (if (and no-prompt? (null? (cdr l)))
                                          'tail
@@ -479,7 +474,8 @@
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
 (define (schemify v prim-knowns primitives knowns mutated imports exports simples allow-set!-undefined? add-import!
-                  for-cify? for-interp? unsafe-mode? allow-inline? no-prompt? explicit-unnamed? wcm-state)
+                  serializable?-box datum-intern? for-cify? for-interp? unsafe-mode? allow-inline? no-prompt? explicit-unnamed?
+                  wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [v v])
     (define (schemify v wcm-state)
@@ -517,7 +513,10 @@
             `(define ,id ,(schemify rhs 'fresh))]
            [`(define-values ,ids ,rhs)
             `(define-values ,ids ,(schemify rhs 'fresh))]
-           [`(quote ,_) v]
+           [`(quote ,q)
+            (when serializable?-box
+              (register-literal-serialization q serializable?-box datum-intern?))
+            v]
            [`(let-values () ,body)
             (schemify body wcm-state)]
            [`(let-values () ,bodys ...)
@@ -904,8 +903,7 @@
            [`,_
             (let ([u-v (unwrap v)])
               (cond
-                [(not (symbol? u-v))
-                 v]
+                [(not (symbol? u-v)) v]
                 [(eq? u-v 'call-with-values)
                  '#%call-with-values]
                 [else

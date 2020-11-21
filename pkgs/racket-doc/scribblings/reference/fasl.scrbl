@@ -13,11 +13,13 @@
                       [out (or/c output-port? #f) #f]
                       [#:keep-mutable? keep-mutable? any/c #f]
                       [#:handle-fail handle-fail (or/c #f (any/c . -> . any/c)) #f]
-                      [#:external-lift? external-lift? (or/c #f (any/c . -> . any/c)) #f])
+                      [#:external-lift? external-lift? (or/c #f (any/c . -> . any/c)) #f]
+                      [#:skip-prefix? skip-prefix? any/c #f])
          (or/c (void) bytes?)]
 @defproc[(fasl->s-exp [in (or/c input-port? bytes?)]
                       [#:datum-intern? datum-intern? any/c #t]
-                      [#:external-lifts external-lifts vector? '#()])
+                      [#:external-lifts external-lifts vector? '#()]
+                      [#:skip-prefix? skip-prefix? any/c #f])
          any/c]
 )]{
 
@@ -74,11 +76,19 @@ is filtered by @racket[datum-intern-literal]. The defaults make the
 composition of @racket[s-exp->fasl] and @racket[fasl->s-exp] behave
 like the composition of @racket[write] and @racket[read].
 
+If @racket[skip-prefix?] is not @racket[#f], then a prefix that
+identifies the stream as a serialization is not written by
+@racket[s-exp->fasl] or read by @racket[fasl->s-exp]. Omitting a
+prefix can save a small amount of space, which can useful when
+serializing small values, but it gives up a sanity check on the 
+@racket[fasl->s-exp] that is often useful.
+
 The byte-string encoding produced by @racket[s-exp->fasl] is
 independent of the Racket version, except as future Racket versions
 introduce extensions that are not currently recognized. In particular,
 the result of @racket[s-exp->fasl] will be valid as input to any
-future version of @racket[fasl->s-exp].
+future version of @racket[fasl->s-exp] (as long as the
+@racket[skip-prefix?] arguments are consistent).
 
 @mz-examples[
 #:eval fasl-eval

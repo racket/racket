@@ -76,7 +76,6 @@
                call-with-module-prompt
                make-pthread-parameter
                engine-block
-               force-unfasl
                make-record-type-descriptor
                make-record-type-descriptor*
                make-record-constructor-descriptor

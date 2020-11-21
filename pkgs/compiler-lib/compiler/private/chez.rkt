@@ -12,19 +12,15 @@
 (define current-can-disassemble (make-parameter #t))
 (define current-partial-fasl (make-parameter #f))
 
-(define (decompile-chez-procedure p make-p)
+(define (decompile-chez-procedure p)
   (unless (procedure? p)
     (error 'decompile-chez-procedure "not a procedure"))
   (define seen (make-hasheq))
   ((vm-primitive 'call-with-system-wind)
    (lambda ()
-     (define make-proc ((vm-primitive 'inspect/object) make-p))
-     (define make-code (make-proc 'code))
      (define proc ((vm-primitive 'inspect/object) p))
      (define code (proc 'code))
-     (append
-      (decompile-code make-code #f seen #:name "body-maker-that-creates-lifted-constants")
-      (decompile-code code proc seen #:unwrap-body? #t)))))
+     (decompile-code code seen #:unwrap-body? #t))))
 
 (define (decompile obj closure seen)
   (define type (obj 'type))
@@ -36,7 +32,7 @@
     [else
      (hash-set! seen (obj 'value) #t)
      (case type
-       [(code) (decompile-code obj closure seen)]
+       [(code) (decompile-code obj seen)]
        [(variable)
         (decompile (obj 'ref) #f seen)]
        [(procedure)
@@ -46,20 +42,11 @@
 (define (decompile-value v seen)
   (decompile ((vm-primitive 'inspect/object) v) #f seen))
 
-(define (decompile-code code closure seen
-                        #:unwrap-body? [unwrap-body? #f]
-                        #:name [name #f])
+(define (decompile-code code seen
+                        #:unwrap-body? [unwrap-body? #f])
   (define $generation (vm-eval '($primitive $generation)))
   (define $code? (vm-eval '($primitive $code?)))
   (define max-gen (vm-eval '(collect-maximum-generation)))
-  (define captures (if (and closure (positive? (code 'free-count)))
-                       `('(captures: ,@(for/list ([i (in-range (code 'free-count))])
-                                         (define v (closure 'ref i))
-                                         (let loop ([v v])
-                                           (case (v 'type)
-                                             [(variable) (loop (v 'ref))]
-                                             [else (v 'value)])))))
-                       '()))
   (append
    (apply
     append
@@ -68,11 +55,9 @@
                              (($generation v) . > . max-gen)))
       (decompile-value v seen)))
    (if unwrap-body?
-       (append
-        captures
-        (decompile-code-body code))
+       (decompile-code-body code)
        (list
-        `(define ,(let ([name (or name (code 'name))])
+        `(define ,(let* ([name (code 'name)])
                     (if name
                         (string->symbol
                          (if (and ((string-length name) . > . 0)
@@ -81,7 +66,6 @@
                              name))
                         '....))
            (lambda ,(arity-mask->args (code 'arity-mask))
-             ,@captures
              ,@(decompile-code-body code)))))))
 
 (define (decompile-code-body code-obj)
@@ -110,16 +94,20 @@
      (if s
          (let-values ([(path line col pos)
                        (vm-eval `(let ([s ',s])
-                                   (values (let ([sfd (source-object-sfd s)])
+                                   (values (let* ([sfd (source-object-sfd s)])
                                              (and sfd (source-file-descriptor-path sfd)))
                                            (source-object-line s)
                                            (source-object-column s)
                                            (source-object-bfp s))))])
-           (cond
-             [(not path) null]
-             [(and line col) (list (format "~a:~a:~a" path line col))]
-             [pos (list (format "~a:~a" path pos))]
-             [else (list path)]))
+           (let ([path (if (srcloc? path)
+                           ;; the linklet layer wraps paths as srclocs
+                           (srcloc-source path)
+                           path)])
+             (cond
+               [(not path) null]
+               [(and line col) (list (format "~a:~a:~a" path line col))]
+               [pos (list (format "~a:~a" path pos))]
+               [else (list path)])))
          null))
    ;; Show machine/assembly code:
    (cond
