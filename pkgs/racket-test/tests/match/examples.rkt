@@ -345,13 +345,15 @@
    (comp
     'ok
     (let ()
+      (define impersonated? #f)
       (define-struct st ([x #:mutable])
         #:transparent)
       (define a (st 1))
-      (define b (impersonate-struct a st-x (lambda (_self _x)
-                                             (error "must not impersonate"))))
+      (define b (impersonate-struct a st-x (lambda (_self x)
+                                             (set! impersonated? #t)
+                                             x)))
       (match b
-        [(st _) 'ok])))
+        [(st _) (if impersonated? 'fail 'ok)])))
 
    (comp
     'ok
@@ -365,6 +367,32 @@
                                              x)))
       (match b
         [(st x) (if impersonated? 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define impersonated? #f)
+      (define v (vector 1 2 3))
+      (define b (impersonate-vector v
+                                    (lambda (self idx _)
+                                      (set! impersonated? #t)
+                                      (vector-ref self idx))
+                                    vector-set!))
+      (match b
+        [(vector _ _ _) (if impersonated? 'fail 'ok)])))
+
+   (comp
+    'ok
+    (let ()
+      (define impersonated? #f)
+      (define v (vector 1 2 3))
+      (define b (impersonate-vector v
+                                    (lambda (self idx _)
+                                      (set! impersonated? #t)
+                                      (vector-ref self idx))
+                                    vector-set!))
+      (match b
+        [(vector a _ _) (if impersonated? 'ok 'fail)])))
 
    (comp 1
          (match #&1
