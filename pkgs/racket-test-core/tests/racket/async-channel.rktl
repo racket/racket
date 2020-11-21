@@ -89,5 +89,38 @@
 (check-limited 1)
 (check-limited 3)
 
-(report-errs)
+;; async channel chaperone and impersonator
 
+(let ()
+  (define (record ch c-or-i go)
+    (define trace '())
+    (define (add-to-trace ele) (set! trace (cons ele trace)))
+    (go (c-or-i ch
+                (λ (ele) (add-to-trace (list 'get ele)) ele)
+                (λ (ele) (add-to-trace (list 'put ele)) ele)))
+    (reverse trace))
+
+  (define (test-chaperone/impersonator c-or-i)
+    (test '((put 1) (put 2) (get 1) (get 2))
+          record
+          (make-async-channel)
+          c-or-i
+          (λ (ch)
+            (async-channel-put ch 1)
+            (async-channel-put ch 2)
+            (async-channel-get ch)
+            (async-channel-get ch)))
+    (test '((put 1) (get 1) (put 2) (get 2))
+          record
+          (make-async-channel)
+          c-or-i
+          (λ (ch)
+            (async-channel-put ch 1)
+            (async-channel-get ch)
+            (async-channel-put ch 2)
+            (async-channel-get ch))))
+
+  (test-chaperone/impersonator chaperone-async-channel)
+  (test-chaperone/impersonator impersonate-async-channel))
+
+(report-errs)
