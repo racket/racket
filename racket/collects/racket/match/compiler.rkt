@@ -41,12 +41,7 @@
   (map (lambda (p) (f (car p) (cdr p))) ht-l))
 
 (define (and* . vs)
-  (let loop ([r  #t]
-             [vs vs])
-    (cond
-      [(not r) r]
-      [(null? vs) r]
-      [else (loop (and r (car vs)) (cdr vs))])))
+  (andmap values vs))
 
 ;; Produce a bool for every column in a set of rows, where #t means
 ;; that every pat in that column is a Dummy.
