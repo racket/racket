@@ -40,6 +40,20 @@
 (define (hash-on-map ht-l f)
   (map (lambda (p) (f (car p) (cdr p))) ht-l))
 
+(define (and* . vs)
+  (let loop ([r  #t]
+             [vs vs])
+    (cond
+      [(not r) r]
+      [(null? vs) r]
+      [else (loop (and r (car vs)) (cdr vs))])))
+
+;; Produce a bool for every column in a set of rows, where #t means
+;; that every pat in that column is a Dummy.
+(define (dummy?-columns rows pat-acc)
+  (apply map and* (for/list ([r (in-list rows)])
+                    (map Dummy? (pat-acc (Row-first-pat r))))))
+
 ;; generate a clause of kind k
 ;; for rows rows, with matched variable x and rest variable xs
 ;; escaping to esc
@@ -61,26 +75,33 @@
                                  esc)])
       #'[lhs rhs]))
   (define (compile-con-pat accs pred pat-acc)
-    (with-syntax* ([(tmps ...) (generate-temporaries accs)]
-                   [(accs ...) accs]
-                   [question (if (procedure? pred)
-                                 (pred x)
-                                 #`(#,pred #,x))]
-                   [body (compile*
-                          (append (syntax->list #'(tmps ...)) xs)
-                          (map (lambda (row)
-                                  (define-values (p1 ps) (Row-split-pats row))
-                                  (make-Row (append (pat-acc p1) ps)
-                                            (Row-rhs row)
-                                            (Row-unmatch row)
-                                            (Row-vars-seen row)))
-                                rows)
-                           esc)])
-      (define-values (used-tmps used-accs)
-        (remove-unused-tmps #'(tmps ...) #'(accs ...) #'body))
-      (with-syntax ([(used-tmps ...) used-tmps]
-                    [(used-accs ...) used-accs])
-        #`[question (let ([used-tmps (used-accs #,x)] ...) body)])))
+    ;; eliminate accessors for columns where every pat is a Dummy
+    (let* ([dummy?s (dummy?-columns rows pat-acc)]
+           [accs (for/list ([acc (in-list accs)]
+                            [dummy? (in-list dummy?s)]
+                            #:unless dummy?)
+                   acc)]
+           [filtered-acc (lambda (v)
+                           (for/list ([pat (in-list (pat-acc v))]
+                                      [dummy? (in-list dummy?s)]
+                                      #:unless dummy?)
+                             pat))])
+      (with-syntax* ([(tmps ...) (generate-temporaries accs)]
+                     [(accs ...) accs]
+                     [question (if (procedure? pred)
+                                   (pred x)
+                                   #`(#,pred #,x))]
+                     [body (compile*
+                            (append (syntax->list #'(tmps ...)) xs)
+                            (map (lambda (row)
+                                   (define-values (p1 ps) (Row-split-pats row))
+                                   (make-Row (append (filtered-acc p1) ps)
+                                             (Row-rhs row)
+                                             (Row-unmatch row)
+                                             (Row-vars-seen row)))
+                                 rows)
+                            esc)])
+        #`[question (let ([tmps (accs #,x)] ...) body)])))
   (cond
     [(eq? 'box k)
      (compile-con-pat (list #'unsafe-unbox*) #'box? (compose list Box-p))]
@@ -100,7 +121,17 @@
                       (hash-on-map
                        ht
                        (lambda (arity rows)
-                         (define ns (build-list arity values))
+                         (define dummy?s (dummy?-columns rows Vector-ps))
+                         (define ns
+                           (for/list ([n (in-range arity)]
+                                      [dummy? (in-list dummy?s)]
+                                      #:unless dummy?)
+                             n))
+                         (define (filtered-acc v)
+                           (for/list ([pat (in-list (Vector-ps v))]
+                                      [dummy? (in-list dummy?s)]
+                                      #:unless dummy?)
+                             pat))
                          (with-syntax ([(tmps ...) (generate-temporaries ns)])
                            (with-syntax ([body
                                           (compile*
@@ -108,7 +139,7 @@
                                            (map (lambda (row)
                                                   (define-values (p1 ps)
                                                     (Row-split-pats row))
-                                                  (make-Row (append (Vector-ps p1) ps)
+                                                  (make-Row (append (filtered-acc p1) ps)
                                                             (Row-rhs row)
                                                             (Row-unmatch row)
                                                             (Row-vars-seen row)))
@@ -135,31 +166,6 @@
     [(syntax? k) (constant-pat k)]
     [(procedure? k) (constant-pat k)]
     [else (error 'match-compile "bad key: ~a" k)]))
-
-;; Remove any `tmps' (and their associated `accs') that are not
-;; present in `body'.
-(define (remove-unused-tmps tmps accs body)
-  (define seen (make-hasheq))
-  (define todo (make-hasheq
-                (for/list ([tmp (in-list (syntax-e tmps))])
-                  (cons tmp #t))))
-  (let loop ([stx body])
-    (cond
-      ;; stop the search early if all the tmps have already been found
-      [(hash-empty? todo)]
-      [(identifier? stx)
-       (for/first ([tmp (in-list (hash-keys todo))] #:when (free-identifier=? tmp stx))
-         (hash-remove! todo tmp)
-         (hash-set! seen tmp #t))]
-      [(syntax->list stx)
-       => (lambda (stxs)
-            (for-each loop stxs))]))
-  (for/lists (tmps accs)
-             ([tmp (in-list (syntax-e tmps))]
-              [acc (in-list (syntax-e accs))]
-              #:when (hash-has-key? seen tmp))
-    (values tmp acc)))
-
 
 ;; produces the syntax for a let clause
 (define (compile-one vars block esc)
