@@ -13,7 +13,8 @@
          racket/set
          racket/extflonum
          racket/private/truncate-path
-         racket/fasl)
+         racket/fasl
+         "private/opaque.rkt")
 
 (provide/contract
  [zo-marshal ((or/c linkl-directory? linkl-bundle?) . -> . bytes?)]
@@ -157,9 +158,10 @@
      (s-exp->fasl (hash-remove top 'vm) outp)]
     [(#"chez-scheme")
      (write-bundle-header #"chez-scheme" outp)
-     (define bstr (hash-ref top 'opaque
-                            (lambda ()
-                              (error 'zo-marshal "missing 'opaque for chez-scheme virtual-machine format"))))
+     (define opqaue (hash-ref top 'opaque
+                              (lambda ()
+                                (error 'zo-marshal "missing 'opaque for chez-scheme virtual-machine format"))))
+     (define bstr (opaque-bstr opaque))
      (write-bytes (integer->integer-bytes (bytes-length bstr) 4 #f #f) outp)
      (write-bytes bstr outp)]
     [else

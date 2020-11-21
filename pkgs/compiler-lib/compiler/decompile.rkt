@@ -253,11 +253,24 @@
           [code
            (case fmt
              [(compile)
-              (define proc ((vm-eval `(load-compiled-from-port (open-bytevector-input-port ,code) ',sfd-paths))))
-              (let ([proc (decompile-chez-procedure (if (null? args) proc (apply proc args)))])
-                (if (null? args)
-                    proc
-                    (cons proc (map (vm-primitive 'force-unfasl) args))))]
+              (cond
+                [(not (current-partial-fasl))
+                 ;; Note that applying the result of `vm-eval` no longer shows the setup of
+                 ;; Racket level constants (like keywords):
+                 (define make-proc (vm-eval `(load-compiled-from-port (open-bytevector-input-port ,code) ',sfd-paths)))
+                 (define proc (make-proc))
+                 (let ([proc (decompile-chez-procedure (if (null? args) proc (apply proc args)) make-proc)])
+                   (if (null? args)
+                       proc
+                       (cons proc (map (vm-primitive 'force-unfasl) args))))]
+                [else
+                 (define desc (disassemble-in-description
+                               `(#(FASL
+                                   #:length ,(bytes-length code)
+                                   ,(vm-eval `(($primitive $describe-fasl-from-port) (open-bytevector-input-port ,code) ',sfd-paths))))))
+                 (if (null? args)
+                     desc
+                     (cons desc (map (vm-primitive 'force-unfasl) args)))])]
              [(interpret)
               (define bytecode (vm-eval `(fasl-read (open-bytevector-input-port ,code) 'load ',sfd-paths)))
               (list `(#%interpret ,(unwrap-chez-interpret-jitified bytecode)))]

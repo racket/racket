@@ -5,26 +5,28 @@
 
 (provide decompile-chez-procedure
          unwrap-chez-interpret-jitified
-         current-can-disassemble)
+         current-can-disassemble
+         current-partial-fasl
+         disassemble-in-description)
 
 (define current-can-disassemble (make-parameter #t))
+(define current-partial-fasl (make-parameter #f))
 
-(define (decompile-chez-procedure p)
+(define (decompile-chez-procedure p make-p)
   (unless (procedure? p)
     (error 'decompile-chez-procedure "not a procedure"))
   (define seen (make-hasheq))
   ((vm-primitive 'call-with-system-wind)
    (lambda ()
+     (define make-proc ((vm-primitive 'inspect/object) make-p))
+     (define make-code (make-proc 'code))
      (define proc ((vm-primitive 'inspect/object) p))
      (define code (proc 'code))
      (append
-      (apply
-       append
-       (for/list ([i (in-range (code 'free-count))])
-         (decompile (proc 'ref i) seen)))
-      (decompile-code code seen #:unwrap-body? #t)))))
+      (decompile-code make-code #f seen #:name "body-maker-that-creates-lifted-constants")
+      (decompile-code code proc seen #:unwrap-body? #t)))))
 
-(define (decompile obj seen)
+(define (decompile obj closure seen)
   (define type (obj 'type))
   (cond
     [(eq? type 'variable)
@@ -34,22 +36,30 @@
     [else
      (hash-set! seen (obj 'value) #t)
      (case type
-       [(code) (decompile-code obj seen)]
+       [(code) (decompile-code obj closure seen)]
        [(variable)
-        (decompile (obj 'ref) seen)]
+        (decompile (obj 'ref) #f seen)]
        [(procedure)
-        (decompile (obj 'code) seen)]
+        (decompile (obj 'code) obj seen)]
        [else null])]))
 
 (define (decompile-value v seen)
-  (decompile ((vm-primitive 'inspect/object) v) seen))
+  (decompile ((vm-primitive 'inspect/object) v) #f seen))
 
-(define (decompile-code code seen
-                        #:unwrap-body? [unwrap-body? #f])
-  (define name (code 'name))
+(define (decompile-code code closure seen
+                        #:unwrap-body? [unwrap-body? #f]
+                        #:name [name #f])
   (define $generation (vm-eval '($primitive $generation)))
   (define $code? (vm-eval '($primitive $code?)))
   (define max-gen (vm-eval '(collect-maximum-generation)))
+  (define captures (if (and closure (positive? (code 'free-count)))
+                       `('(captures: ,@(for/list ([i (in-range (code 'free-count))])
+                                         (define v (closure 'ref i))
+                                         (let loop ([v v])
+                                           (case (v 'type)
+                                             [(variable) (loop (v 'ref))]
+                                             [else (v 'value)])))))
+                       '()))
   (append
    (apply
     append
@@ -58,9 +68,11 @@
                              (($generation v) . > . max-gen)))
       (decompile-value v seen)))
    (if unwrap-body?
-       (decompile-code-body code)
+       (append
+        captures
+        (decompile-code-body code))
        (list
-        `(define ,(let ([name (code 'name)])
+        `(define ,(let ([name (or name (code 'name))])
                     (if name
                         (string->symbol
                          (if (and ((string-length name) . > . 0)
@@ -69,6 +81,7 @@
                              name))
                         '....))
            (lambda ,(arity-mask->args (code 'arity-mask))
+             ,@captures
              ,@(decompile-code-body code)))))))
 
 (define (decompile-code-body code-obj)
@@ -112,12 +125,7 @@
    (cond
      [(and (current-can-disassemble)
            (force disassemble-bytes))
-      => (lambda (disassemble-bytes)
-           (define o (open-output-bytes))
-           (parameterize ([current-output-port o])
-             (disassemble-bytes bstr #:relocations ((code-obj 'reloc+offset) 'value)))
-           (define strs (regexp-split #rx"\n" (get-output-string o)))
-           (list (cons '#%assembly-code strs)))]
+      (disassemble-bytes-to-assembly bstr #:relocations ((code-obj 'reloc+offset) 'value))]
      [else
       (list (list '#%machine-code bstr))])))
 
@@ -126,6 +134,13 @@
     (with-handlers ([exn:fail? (lambda (exn) #f)])
       (dynamic-require 'disassemble 'disassemble-bytes))))
 
+(define (disassemble-bytes-to-assembly bstr #:relocations [relocations '()])
+  (define o (open-output-bytes))
+  (parameterize ([current-output-port o])
+    ((force disassemble-bytes) bstr #:relocations relocations))
+  (define strs (regexp-split #rx"\n" (get-output-string o)))
+  (list (cons '#%assembly-code strs)))
+           
 (define (arity-mask->args mask)
   (cond
     [(zero? (bitwise-and mask (sub1 mask)))
@@ -135,6 +150,33 @@
     [else
      ;; multiple bits set
      'args]))
+
+;; ----------------------------------------
+
+;; Look for 'CODE descriptions that have bytestrings and convert to disassembled.
+;; This function mutates the description.
+(define (disassemble-in-description v)
+  (when (and (current-can-disassemble)
+             (force disassemble-bytes))
+    (define ht (make-hasheq))
+    (let loop ([v v])
+      (cond
+        [(hash-ref ht v #f)
+         (void)]
+        [else
+         (hash-set! ht v #t)
+         (cond
+           [(pair? v)
+            (loop (car v))
+            (loop (cdr v))]
+           [(vector? v)
+            (when (and ((vector-length v) . >= . 8)
+                       (eq? 'CODE (vector-ref v 0))
+                       (bytes? (vector-ref v 7)))
+              (vector-set! v 7 (disassemble-bytes-to-assembly (vector-ref v 7))))
+            (for ([e (in-vector v)])
+              (loop e))])])))
+  v)
 
 ;; ----------------------------------------
 ;; The schemify interpreter's "bytecode" is fairly readable as-is, so
