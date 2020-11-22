@@ -167,7 +167,11 @@
                                          #,exp))]
                           [exp (if (null? (consts-fixnum ks))
                                    exp
-                                   #`(if (fixnum-for-every-system? v)
+                                   #`(if #,(if (null? (consts-other ks))
+                                               ;; can check for fixnum
+                                               #'(fixnum? v)
+                                               ;; maybe could-be-fixnum numbers are in `others`
+                                               #'(fixnum-for-every-system? v))
                                          #,(dispatch-fixnum #'v (consts-fixnum ks))
                                          #,exp))])
                      exp)])

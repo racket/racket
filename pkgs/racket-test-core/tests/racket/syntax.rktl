@@ -572,6 +572,33 @@
   (test 1 f #s(o n e))
   (test (void) f #f))
 
+;; Make sure a mixture of fixnums and non-fixnums works:
+(let ()
+  (define (f x)
+    (case x
+      [(1) 'one]
+      [(1000) 'onek]
+      [(1001) 'onek+]
+      [(1002) 'onek+]
+      [(1003) 'onek+]
+      [(1000000) 'onem]
+      [(1000000000) 'onet]
+      [(1000000000000) 'oneqd]
+      [(1000000000001) 'oneqd+]
+      [(1000000000002) 'oneqd+]
+      [(1000000000003) 'oneqd+]
+      [(1000000000000000) 'oneqt]
+      [(1000000000000000000) 'ones]
+      [(1000000000000000001) 'ones+]
+      [(1000000000000000002) 'ones+]))
+  (test 'one f 1)
+  (test 'onek f 1000)
+  (test 'onem f 1000000)
+  (test 'onet f 1000000000)
+  (test 'oneqd f 1000000000000)
+  (test 'oneqt f 1000000000000000)
+  (test 'ones f 1000000000000000000))
+
 (test #t 'and (and (= 2 2) (> 2 1)))
 (test #f 'and (and (= 2 2) (< 2 1)))
 (test '(f g) 'and (and 1 2 'c '(f g)))

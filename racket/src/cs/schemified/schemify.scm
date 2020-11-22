@@ -47963,7 +47963,7 @@
                (begin
                  (let ((type_0 (read-byte/no-eof i_0)))
                    (let ((index_0
-                          (if (fixnum-for-every-system? type_0)
+                          (if (fixnum? type_0)
                             (if (if (unsafe-fx>= type_0 1)
                                   (unsafe-fx< type_0 42)
                                   #f)
