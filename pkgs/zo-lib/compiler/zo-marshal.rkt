@@ -158,7 +158,7 @@
      (s-exp->fasl (hash-remove top 'vm) outp)]
     [(#"chez-scheme")
      (write-bundle-header #"chez-scheme" outp)
-     (define opqaue (hash-ref top 'opaque
+     (define opaque (hash-ref top 'opaque
                               (lambda ()
                                 (error 'zo-marshal "missing 'opaque for chez-scheme virtual-machine format"))))
      (define bstr (opaque-bstr opaque))
