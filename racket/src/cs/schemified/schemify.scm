@@ -48702,7 +48702,7 @@
   (lambda (i_0)
     (let ((pos_0 (unsafe-mcdr i_0)))
       (begin
-        (if (< pos_0 (unsafe-bytes-length (unsafe-mcar i_0)))
+        (if (fx< pos_0 (unsafe-bytes-length (unsafe-mcar i_0)))
           (void)
           (read-error "truncated stream"))
         (unsafe-set-mcdr! i_0 (fx+ pos_0 1))

@@ -594,7 +594,7 @@
 
 (define (read-byte/no-eof i)
   (define pos (mcdr i))
-  (unless (pos . < . (bytes-length (mcar i)))
+  (unless (pos . fx< . (bytes-length (mcar i)))
     (read-error "truncated stream"))
   (set-mcdr! i (fx+ pos 1))
   (bytes-ref (mcar i) pos))
