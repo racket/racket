@@ -1,9 +1,10 @@
 (module gen-system '#%kernel
   
-  ;; Command-line argument: <dest-file> <target-machine> <cross-target-machine> <srcdir>
+  ;; Command-line argument: <dest-file> <target-machine> <cross-target-machine> <srcdir> <slsp-suffix>
 
   (define-values (machine) (string->symbol (vector-ref (current-command-line-arguments) 1)))
   (define-values (srcdir) (vector-ref (current-command-line-arguments) 3))
+  (define-values (slsp-suffix) (vector-ref (current-command-line-arguments) 4))
 
   (define-values (definitions)
     (call-with-input-file
@@ -93,15 +94,17 @@
   (define-values (so-suffix) (lookup 'so-suffix-bytes))
 
   (define-values (lib-subpath)
-    (if (eq? machine 'ta6nt)
-        "win32\\x86_64"
-        (if (eq? machine 'a6nt)
-            "win32\\x86_64"
-            (if (eq? machine 'ti3nt)
-                "win32\\i386"
-                (if (eq? machine 'ti3nt)
-                    "win32\\i386"
-                    (format "~a-~a" arch os*))))))
+    (string-append
+     (if (eq? machine 'ta6nt)
+         "win32\\x86_64"
+         (if (eq? machine 'a6nt)
+             "win32\\x86_64"
+             (if (eq? machine 'ti3nt)
+                 "win32\\i386"
+                 (if (eq? machine 'ti3nt)
+                     "win32\\i386"
+                     (format "~a-~a" arch os*)))))
+     slsp-suffix))
 
   (define-values (ht)
     (hash 'os os

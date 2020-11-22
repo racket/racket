@@ -157,6 +157,8 @@ LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
 LZ4_LIB='$(OWN_LZ4_LIB)'
 LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
 
+PLT_CS_SLSP_SUFFIX=
+
 enable_pthread_by_default=yes
 
 cs_auto_flags=--disable-auto-flags
@@ -483,6 +485,7 @@ m4_include(../ac/strip.m4)
 
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+  PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
 
 ############## ubsan ################
@@ -765,6 +768,7 @@ AC_SUBST(RUN_RACKET)
 AC_SUBST(INSTALL_SETUP_FLAGS)
 AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 AC_SUBST(INSTALL_LIBS_ENABLE)
+AC_SUBST(PLT_CS_SLSP_SUFFIX)
 
 makefiles="Makefile"
 

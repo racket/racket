@@ -622,6 +622,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
@@ -3198,6 +3199,8 @@ LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
 LZ4_LIB='$(OWN_LZ4_LIB)'
 LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
 
+PLT_CS_SLSP_SUFFIX=
+
 enable_pthread_by_default=yes
 
 cs_auto_flags=--disable-auto-flags
@@ -4756,6 +4759,7 @@ fi
 
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+  PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
 
 ############## ubsan ################
@@ -5536,6 +5540,8 @@ if test "${enable_shared}" = "yes" ; then
   STRIP_LIB_DEBUG=":"
   LIBSFX=la
   ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+
+  CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
 else
   ICP=cp
   LTO="o"
@@ -5577,6 +5583,7 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
 
 
 
