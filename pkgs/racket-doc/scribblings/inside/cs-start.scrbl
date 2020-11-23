@@ -125,4 +125,8 @@ functions, and @DFlag{c-mods} mode generates C code that calls
 If @var{as_predefined} is true, then the code is loaded during the
 creation of any new Racket @tech[#:doc reference-doc]{place} in the
 new place, so that modules declared by the code are loaded in the new
-place, too.}
+place, too.
+
+These functions are not meant to be called in C code that was called
+from Racket. See also @secref["cs-procs"] for a discussion of
+@emph{entry} points versus @emph{re-entry} points.}

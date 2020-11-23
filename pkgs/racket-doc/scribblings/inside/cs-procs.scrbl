@@ -3,13 +3,21 @@
 
 @title[#:tag "cs-procs"]{Calling Procedures}
 
-Normally, C programs should call Racket procedures by using
-@cppi{racket_apply}, which calls the procedure in the initial Racket
-thread of the main Racket place. Chez Scheme entry points such as
-@cppi{Scall0} and @cppi{Scall} directly call a procedure outside of
-any Racket thread, which will not work correctly with Racket
-facilities such as threads, parameters, continuations, or continuation
-marks.
+As an entry point into Racket, C programs should normally call Racket
+procedures by using @cppi{racket_apply}, which calls the procedure in
+the initial Racket thread of the main Racket place. Chez Scheme entry
+points such as @cppi{Scall0} and @cppi{Scall} directly call a
+procedure outside of any Racket thread, which will not work correctly
+with Racket facilities such as threads, parameters, continuations, or
+continuation marks.
+
+The functions in this section are meant to be used as an entry point
+to Racket, but not as a @emph{re-entry} point. When Racket calls a C
+function that in turn calls back into Racket, the best approach is to
+use the FFI (see @other-doc['(lib
+"scribblings/foreign/foreign.scrbl")]) so that the C call recieves a
+Racket callback that is wrapped as a plain C callback. That way, the
+FFI can handle the details of boundary crossings between Racket and C.
 
 @; ----------------------------------------------------------------------
 

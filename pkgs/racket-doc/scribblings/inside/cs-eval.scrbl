@@ -7,7 +7,7 @@
 The @cppi{racket_apply} function provides basic evaluation support,
 but @cppi{racket_eval}, @cppi{racket_dynamic_require}, and
 @cppi{racket_namespace_require} provide higher-level support for the
-most common evaluation tasks.
+most common evaluation tasks to initialize a Racket instance.
 
 @function[(ptr racket_eval [ptr s_expr])]{
 
@@ -21,7 +21,11 @@ Use @cppi{racket_namespace_require} to initialize a namespace, or use
 @cppi{racket_dynamic_require} to access functionality without going
 through a top-level namespace. Although those functions are the same
 as using @racket[namespace-require] and @racket[dynamic-require], they
-work without having those identifiers bound in a namespace already.}
+work without having those identifiers bound in a namespace already.
+
+This function and others in this section are not meant to be called
+in C code that was called from Racket. See also @secref["cs-procs"]
+for a discussion of @emph{entry} points versus @emph{re-entry} points.}
 
 @function[(ptr racket_dynamic_require [ptr module_path] [ptr sym_or_false])]{
 
