@@ -647,7 +647,8 @@ mz-gdbinit: $(srcdir)/mk-gdbinit.rkt $(srcdir)/src/stypes.h
 SRC_MAKEFILES = $(srcdir)/Makefile.in \
                 $(srcdir)/src/Makefile.in $(srcdir)/gracket/Makefile.in \
                 $(srcdir)/gc2/Makefile.in $(srcdir)/gracket/gc2/Makefile.in \
-                $(srcdir)/../rktio/Makefile.in $(srcdir)/dynsrc/Makefile.in
+                $(srcdir)/../rktio/Makefile.in $(srcdir)/dynsrc/Makefile.in \
+                $(srcdir)/foreign/Makefile.in $(srcdir)/foreign/libffi/Makefile.in
 
 # Only fire the `Makefile` rule explicitly via `reconfigure`
 NO_RECONFIG =

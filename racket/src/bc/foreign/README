@@ -1,14 +1,2 @@
-The "libffi" directory holds a copy of libffi version 3.1.
+The "libffi" directory holds a copy of libffi version 3.3.
 The libffi code is distributed under an LGPL-compatible license.
-
-Our copy of libffi for Racket has been changed in a few small:
-
- * Test ftruncate() result in "closures.c" to avoid a compiler
-   warning.
-
- * In "x86/darwin.S", added ".long 0" after ".LFE3:" to avoid
-   problems compiling with gcc-4.0.
-
- * In "x86/win32.S", added ".long 0" after ".LFE5:" and ".LEFDE5", and
-   also included `.section .eh_frame,"w"` for X86_DARWIN --- again,
-   all to avoid problems compiling with gcc-4.0.

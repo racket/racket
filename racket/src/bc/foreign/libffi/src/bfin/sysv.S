@@ -72,7 +72,7 @@ _ffi_call_SYSV:
 	[FP+16] = R2;
 
 .allocate_stack:
-	//allocate cif->bytes into the stack
+	//alocate cif->bytes into the stack
 	R1 = [FP+8];
 	R0 = SP;
 	R0 = R0 - R1;
@@ -92,7 +92,7 @@ _ffi_call_SYSV:
 	call (P1);
 
 .call_user_function:
-	//adjust SP so as to allow the user function access the parameters on the stack
+	//ajust SP so as to allow the user function access the parameters on the stack
 	SP = [FP-16]; //point to function parameters
 	R0 = [SP];
 	R1 = [SP+4];

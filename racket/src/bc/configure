@@ -7233,6 +7233,10 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 subdirs="$subdirs foreign/libffi"
 
+    # Smooth transition from libffi v3.1 to v3.3:
+    if test -h foreign/libffi/include/ffitarget.h ; then
+       rm foreign/libffi/include/ffitarget.h
+    fi
   fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"

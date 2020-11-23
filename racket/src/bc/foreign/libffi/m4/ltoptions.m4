@@ -1,6 +1,6 @@
 # Helper functions for option handling.                    -*- Autoconf -*-
 #
-#   Copyright (C) 2004-2005, 2007-2009, 2011-2013 Free Software
+#   Copyright (C) 2004-2005, 2007-2009, 2011-2015 Free Software
 #   Foundation, Inc.
 #   Written by Gary V. Vaughan, 2004
 #
@@ -82,6 +82,8 @@ m4_if([$1],[LT_INIT],[
   _LT_UNLESS_OPTIONS([LT_INIT], [pic-only no-pic], [_LT_WITH_PIC])
   _LT_UNLESS_OPTIONS([LT_INIT], [fast-install disable-fast-install],
 		   [_LT_ENABLE_FAST_INSTALL])
+  _LT_UNLESS_OPTIONS([LT_INIT], [aix-soname=aix aix-soname=both aix-soname=svr4],
+		   [_LT_WITH_AIX_SONAME([aix])])
   ])
 ])# _LT_SET_OPTIONS
 
@@ -317,6 +319,59 @@ the 'disable-fast-install' option into LT_INIT's first parameter.])
 dnl aclocal-1.4 backwards compatibility:
 dnl AC_DEFUN([AC_ENABLE_FAST_INSTALL], [])
 dnl AC_DEFUN([AM_DISABLE_FAST_INSTALL], [])
+
+
+# _LT_WITH_AIX_SONAME([DEFAULT])
+# ----------------------------------
+# implement the --with-aix-soname flag, and support the `aix-soname=aix'
+# and `aix-soname=both' and `aix-soname=svr4' LT_INIT options. DEFAULT
+# is either `aix', `both' or `svr4'.  If omitted, it defaults to `aix'.
+m4_define([_LT_WITH_AIX_SONAME],
+[m4_define([_LT_WITH_AIX_SONAME_DEFAULT], [m4_if($1, svr4, svr4, m4_if($1, both, both, aix))])dnl
+shared_archive_member_spec=
+case $host,$enable_shared in
+power*-*-aix[[5-9]]*,yes)
+  AC_MSG_CHECKING([which variant of shared library versioning to provide])
+  AC_ARG_WITH([aix-soname],
+    [AS_HELP_STRING([--with-aix-soname=aix|svr4|both],
+      [shared library versioning (aka "SONAME") variant to provide on AIX, @<:@default=]_LT_WITH_AIX_SONAME_DEFAULT[@:>@.])],
+    [case $withval in
+    aix|svr4|both)
+      ;;
+    *)
+      AC_MSG_ERROR([Unknown argument to --with-aix-soname])
+      ;;
+    esac
+    lt_cv_with_aix_soname=$with_aix_soname],
+    [AC_CACHE_VAL([lt_cv_with_aix_soname],
+      [lt_cv_with_aix_soname=]_LT_WITH_AIX_SONAME_DEFAULT)
+    with_aix_soname=$lt_cv_with_aix_soname])
+  AC_MSG_RESULT([$with_aix_soname])
+  if test aix != "$with_aix_soname"; then
+    # For the AIX way of multilib, we name the shared archive member
+    # based on the bitwidth used, traditionally 'shr.o' or 'shr_64.o',
+    # and 'shr.imp' or 'shr_64.imp', respectively, for the Import File.
+    # Even when GNU compilers ignore OBJECT_MODE but need '-maix64' flag,
+    # the AIX toolchain works better with OBJECT_MODE set (default 32).
+    if test 64 = "${OBJECT_MODE-32}"; then
+      shared_archive_member_spec=shr_64
+    else
+      shared_archive_member_spec=shr
+    fi
+  fi
+  ;;
+*)
+  with_aix_soname=aix
+  ;;
+esac
+
+_LT_DECL([], [shared_archive_member_spec], [0],
+    [Shared archive member basename, for filename based shared library versioning on AIX])dnl
+])# _LT_WITH_AIX_SONAME
+
+LT_OPTION_DEFINE([LT_INIT], [aix-soname=aix], [_LT_WITH_AIX_SONAME([aix])])
+LT_OPTION_DEFINE([LT_INIT], [aix-soname=both], [_LT_WITH_AIX_SONAME([both])])
+LT_OPTION_DEFINE([LT_INIT], [aix-soname=svr4], [_LT_WITH_AIX_SONAME([svr4])])
 
 
 # _LT_WITH_PIC([MODE])
