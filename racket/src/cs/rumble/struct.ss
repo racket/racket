@@ -639,10 +639,7 @@
 ;; Call with lock:
 (define (prefab-ref prefab-key+count code)
   (and prefabs
-       (let ([e (weak-hash-ref prefabs prefab-key+count #f code equal?)])
-         (and e
-              (not (eq? (car e) #!bwp))
-              (cdr e)))))
+       (hashtable-ref prefabs (cons code prefab-key+count) #f)))
 
 (define (prefab-key+count->rtd prefab-key+count)
   (let ([code (equal-hash-code prefab-key+count)])
@@ -677,15 +674,17 @@
            ;; rtd was created concurrently
            => (lambda (rtd) rtd)]
           [else
-           (putprop uid 'prefab-key+count prefab-key+count)
-           (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
-           (weak-hash-set! prefabs prefab-key+count (ephemeron-cons prefab-key+count rtd) code equal?)
-           (unless parent-rtd
-             (record-type-equal-procedure rtd default-struct-equal?)
-             (record-type-hash-procedure rtd default-struct-hash))
-           (register-mutables! mutables rtd parent-rtd)
-           (inspector-set! rtd 'prefab)
-           rtd])))])))
+           (let ([pr (cons code prefab-key+count)])
+             (putprop uid 'prefab-key+count prefab-key+count)
+             (putprop uid 'prefab-pr pr) ; retain
+             (unless prefabs (set! prefabs (make-ephemeron-hashtable car equal?)))
+             (hashtable-set! prefabs pr rtd)
+             (unless parent-rtd
+               (record-type-equal-procedure rtd default-struct-equal?)
+               (record-type-hash-procedure rtd default-struct-hash))
+             (register-mutables! mutables rtd parent-rtd)
+             (inspector-set! rtd 'prefab)
+             rtd)])))])))
 
 (define (register-mutables! mutables rtd parent-rtd)
   (unless (and (equal? '#() mutables)

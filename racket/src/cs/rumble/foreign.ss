@@ -1638,13 +1638,13 @@
                                      ids)
                                 '())))])
             (let* ([wb (with-interrupts-disabled*
-                        (weak-hash-ref ffi-expr->code expr #f))]
+                        (hash-ref ffi-expr->code expr #f))]
                    [code (if wb (car wb) #!bwp)])
               (if (eq? code #!bwp)
                   (let ([code (eval/foreign expr (if call? 'comp-ffi-call 'comp-ffi-back))])
                     (hashtable-set! ffi-code->expr (car code) expr)
                     (with-interrupts-disabled*
-                     (weak-hash-set! ffi-expr->code expr (weak-cons code #f)))
+                     (hash-set! ffi-expr->code expr (weak-cons code #f)))
                     code)
                   code)))]
          [gen-proc (car gen-proc+ret-maker+arg-makers)]
