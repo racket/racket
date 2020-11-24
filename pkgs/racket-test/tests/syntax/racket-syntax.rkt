@@ -7,7 +7,6 @@
 ;; Missing tests for
 ;;  - generate-temporary
 ;;  - internal-definition-context-apply
-;;  - syntax-local-eval
 
 (check free-identifier=?
        (format-id #'here "~a?" 'null)
@@ -105,3 +104,35 @@
 
 (check-equal? (with-syntax* ([x #'1] [y #'x]) (syntax->datum #'y))
               '1)
+
+;; ----
+
+(require (for-syntax racket/syntax))
+
+; syntax-local-eval
+(let ()
+  (define-syntax x '5)
+  (define-syntax (m stx)
+    (define ctx1 (syntax-local-make-definition-context))
+    (syntax-local-bind-syntaxes
+      (list #'y)
+      #''6
+      ctx1)
+
+    (define ctx2 (syntax-local-make-definition-context))
+    (syntax-local-bind-syntaxes
+      (list #'z)
+      #''7
+      ctx2)
+
+    #`(list
+       ; single intdef case
+       '#,(syntax-local-eval #'(map syntax-local-value (list #'x #'y))
+                             ctx1)
+       ; list of intdefs case
+       '#,(syntax-local-eval #'(map syntax-local-value (list #'y #'z))
+                             (list ctx1 ctx2))))
+  (check-equal?
+    (m)
+    '((5 6) (6 7))))
+
