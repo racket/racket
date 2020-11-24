@@ -233,14 +233,19 @@
 
 (define (syntax-local-eval stx [intdefs '()])
   (let* ([name (generate-temporary)]
-         [intdef (syntax-local-make-definition-context)])
+         [intdef (syntax-local-make-definition-context)]
+         [all-intdefs (if (list? intdefs)
+                        (cons intdef intdefs)
+                        (list intdef intdefs))])
     (syntax-local-bind-syntaxes (list name)
                                 #`(call-with-values (lambda () #,stx) list)
                                 intdef
                                 intdefs)
     (apply values
-           (syntax-local-value (internal-definition-context-introduce intdef name)
-                               #f intdef))))
+           (syntax-local-value (for/fold ([name name]) ([intdef all-intdefs])
+                                 (internal-definition-context-introduce intdef name 'add))
+                               #f
+                               intdef))))
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()
