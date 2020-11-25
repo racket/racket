@@ -421,14 +421,14 @@ FFI_API ffi_status
 ffi_prep_java_raw_closure (ffi_java_raw_closure*,
 		           ffi_cif *cif,
 		           void (*fun)(ffi_cif*,void*,ffi_java_raw*,void*),
-		           void *user_data) __attribute__((deprecated));
+		           void *user_data) /* __attribute__((deprecated)) */;
 
 FFI_API ffi_status
 ffi_prep_java_raw_closure_loc (ffi_java_raw_closure*,
 			       ffi_cif *cif,
 			       void (*fun)(ffi_cif*,void*,ffi_java_raw*,void*),
 			       void *user_data,
-			       void *codeloc) __attribute__((deprecated));
+			       void *codeloc) /* __attribute__((deprecated)) */;
 #endif
 
 #endif /* FFI_CLOSURES */
