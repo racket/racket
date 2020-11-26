@@ -115,7 +115,7 @@ case "${host}" in
 	      ;;
 	    *)
 	      echo 'int foo (void) { return __x86_64__; }' > conftest.c
-	      if $CC $CFLAGS -Werror -S conftest.c -o conftest.s > /dev/null 2>&1; then
+	      if $CC $CFLAGS $CPPFLAGS -Werror -S conftest.c -o conftest.s > /dev/null 2>&1; then
 		TARGET_X32=yes
 		TARGET=X86_64
 	      else
