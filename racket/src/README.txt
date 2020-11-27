@@ -353,7 +353,13 @@ Cross-compilation requires at least two flags to `configure`:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
-Some less commonly needed `configure` flags for Racket BC:
+An additional flag is needed for building Racket CS, unless the flag
+`--enable-racket=auto` is used:
+
+ * `--enable-scheme=DIR`, where DIR is a path that has a "ChezScheme"
+   directory where Chez Scheme is built for the host system.
+
+Some less commonly needed `configure` flags are for Racket BC:
 
  * `--enable-stackup`, if the target platform`s stack grows up.
 

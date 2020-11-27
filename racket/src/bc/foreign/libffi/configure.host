@@ -11,7 +11,7 @@ case "${host}" in
 	MSVC=1
 	;;
 
-  aarch64*-*-*)
+  aarch64*-*-* | arm64*-*-*)
 	TARGET=AARCH64; TARGETDIR=aarch64
 	SOURCES="ffi.c sysv.S"
 	;;

@@ -26,9 +26,12 @@
 
 (define os*-symbol
   (case (machine-type)
-    [(a6osx ta6osx i3osx ti3osx) (if unix-style-macos?
-                                     'darwin
-                                     'macosx)]
+    [(a6osx ta6osx
+            i3osx ti3osx
+            arm64osx tarm64osx)
+     (if unix-style-macos?
+         'darwin
+         'macosx)]
     [(a6nt ta6nt i3nt ti3nt) 'windows]
     [(a6le ta6le i3le ti3le
            arm32le tarm32le arm64le tarm64le

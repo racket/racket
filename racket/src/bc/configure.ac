@@ -1277,6 +1277,7 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "auto" ; then
+  # See also "configure-parent.ac"
   enable_racket="`pwd`/../local/bc/racket3m"
 fi
 
