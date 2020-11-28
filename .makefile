@@ -641,7 +641,13 @@ INSTALL_NAME =
 
 # For Mac OS, a signing identity (spaces allowed) for binaries in an
 # installer:
-SIGN_IDENTITY = 
+SIGN_IDENTITY =
+
+# For Mac OS, set to a notarization configuration as a base64-encoded
+# hash table <config> in `--notarization-config <config>`, where the
+# distro-build documentation for `#:notarization-config` describes the
+# keys and values:
+NOTARIZATION_CONFIG =
 
 # For Windows, `osslsigncode' arguments other than `-n', `-t', `-in',
 # and `-out' as a Base64-encoded, S-expression, list of strings:
@@ -919,6 +925,7 @@ DIST_ARGS_q == $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
                $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)" \
                --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" \
                --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
+               $(NOTARIZATION_CONFIG) \
                "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
                "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 
