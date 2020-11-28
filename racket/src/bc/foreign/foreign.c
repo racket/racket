@@ -4258,6 +4258,7 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
   ffi_abi abi;
   int is_atomic;
   int nargs, i;
+  ffi_status ffi_ok;
   /* ffi_closure objects are problematic when used with a moving GC.  The
    * problem is that memory that is GC-visible can move at any time.  The
    * solution is to use an immobile-box, which an immobile pointer (in a simple
@@ -4361,20 +4362,25 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
   } else
     do_callback = ffi_do_callback;
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args =
-    scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  scheme_thread_code_start_write();
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
-    if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
+    if (NULL == (base = get_ctype_base(SCHEME_CAR(p)))) {
+      scheme_thread_code_end_write();
       scheme_wrong_contract(who, "(listof ctype?)", ARGPOS(1), argc, argv);
-    if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
+    }
+    if (CTYPE_PRIMLABEL(base) == FOREIGN_void) {
+      scheme_thread_code_end_write();
       wrong_void(who, SCHEME_CAR(p), 1, ARGPOS(1), argc, argv);
+    }
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
   if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  scheme_thread_code_end_write();
   data = (ffi_callback_struct*)scheme_malloc_tagged(sizeof(ffi_callback_struct));
   data->so.type = ffi_callback_tag;
   data->callback = (cl_cif_args);
@@ -4411,9 +4417,11 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     callback_data = (void *)tmp;
   }
 # endif /* MZ_USE_MZRT */
+  scheme_thread_code_start_write();
   cl_cif_args->data = callback_data;
-  if (ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl)
-      != FFI_OK)
+  ffi_ok = ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl);
+  scheme_thread_code_end_write();
+  if (ffi_ok != FFI_OK)
     scheme_signal_error
       ("internal error: ffi_prep_closure did not return FFI_OK");
 # ifdef MZ_USE_MZRT
@@ -5361,8 +5369,8 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
 int scheme_is_cpointer(Scheme_Object *cp)
 {
   return (SCHEME_FALSEP(cp)
-          || SCHEME_CPTRP(cp)
-          || SCHEME_BYTE_STRINGP(cp)
+          || SCHEME_CPTRP(x)
+          || SCHEME_BYTE_STRINGP(x)
           || (SCHEME_CHAPERONE_STRUCTP(cp)
               && scheme_struct_type_property_ref(scheme_cpointer_property, cp)));
 }

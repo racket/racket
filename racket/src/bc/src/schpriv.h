@@ -285,6 +285,13 @@ void scheme_clear_ephemerons(void);
 
 #define SCHEME_PAIR_COPY_FLAGS(dest, src) (SCHEME_PAIR_FLAGS((dest)) |= (SCHEME_PAIR_FLAGS((src)) & PAIR_FLAG_MASK))
 
+#ifdef MZ_USE_MAP_JIT
+XFORM_NONGCING void scheme_thread_code_start_write(void);
+XFORM_NONGCING void scheme_thread_code_end_write(void);
+#else
+# define scheme_thread_code_start_write() do { } while (0)
+# define scheme_thread_code_end_write()   do { } while (0)
+#endif
 
 /*========================================================================*/
 /*                             initialization                             */

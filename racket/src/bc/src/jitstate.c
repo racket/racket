@@ -255,6 +255,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       } else {
         buffer = scheme_malloc_permanent_code(size);
       }
+      scheme_thread_code_start_write();
       RECORD_CODE_SIZE(size);
     } else if (old_jitter) {
       /* this is a recursive generate, so use leftover space in
@@ -299,6 +300,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
          then switch over to long-jump mode. */
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
+        scheme_thread_code_end_write();
         scheme_performance_record_end("jit", &perf_state);
         return scheme_generate_one(old_jitter, generate, data, gcable,
                                    save_ptr, ndata);
@@ -352,6 +354,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     if (!use_long_jumps) {
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
+        scheme_thread_code_end_write();
         scheme_performance_record_end("jit", &perf_state);
         return scheme_generate_one(old_jitter, generate, data, gcable,
                                    save_ptr, ndata);
@@ -417,6 +420,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 	/* That was in the permanent area, so return: */
 	jit_flush_code(buffer, jit_get_raw_ip());
         scheme_performance_record_end("jit", &perf_state);
+        scheme_thread_code_end_write();
 	return buffer;
       } else {
 	/* Allocate permanent area and jit again: */

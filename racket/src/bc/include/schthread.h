@@ -159,6 +159,9 @@ typedef struct Thread_Local_Variables {
   void *jit_buffer_cache_;
   intptr_t jit_buffer_cache_size_;
   int jit_buffer_cache_registered_;
+#ifdef MZ_USE_MAP_JIT
+  int jit_code_write_enabled_;
+#endif
   int scheme_continuation_application_count_;
   int scheme_cont_capture_count_;
   int scheme_prompt_capture_count_;
@@ -544,6 +547,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define jit_buffer_cache XOA (scheme_get_thread_local_variables()->jit_buffer_cache_)
 #define jit_buffer_cache_size XOA (scheme_get_thread_local_variables()->jit_buffer_cache_size_)
 #define jit_buffer_cache_registered XOA (scheme_get_thread_local_variables()->jit_buffer_cache_registered_)
+#define jit_code_write_enabled XOA (scheme_get_thread_local_variables()->jit_code_write_enabled_)
 #define scheme_continuation_application_count XOA (scheme_get_thread_local_variables()->scheme_continuation_application_count_)
 #define scheme_cont_capture_count XOA (scheme_get_thread_local_variables()->scheme_cont_capture_count_)
 #define scheme_prompt_capture_count XOA (scheme_get_thread_local_variables()->scheme_prompt_capture_count_)

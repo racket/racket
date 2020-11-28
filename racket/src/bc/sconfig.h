@@ -654,6 +654,7 @@
 #  define SCHEME_ARCH "arm"
 # elif defined(__arm64__)
 #  define SCHEME_ARCH "aarch64"
+#  define MZ_USE_MAP_JIT
 # elif defined(__x86_64__)
 #   define SCHEME_ARCH "x86_64"
 # else

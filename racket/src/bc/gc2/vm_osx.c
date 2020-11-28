@@ -232,8 +232,7 @@ static void os_protect_pages(void *p, size_t len, int writeable)
   }
 
   retval = vm_protect(task_self, (vm_address_t)p, len, FALSE,
-		      writeable ? VM_PROT_ALL 
-		      : (VM_PROT_READ | VM_PROT_EXECUTE));
+		      (VM_PROT_READ | (writeable ? VM_PROT_WRITE : 0)));
   if(retval != KERN_SUCCESS) {
     GCPRINT(GCOUTF, "WARNING: couldn't protect %li bytes of page %p%s\n",
 	   len, p, mach_error_string(retval));
