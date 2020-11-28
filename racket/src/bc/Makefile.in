@@ -50,6 +50,7 @@ RUN_THIS_RACKET_CGC = ./racket@CGC@
 RUN_THIS_RACKET_MMM = ./racket@MMM@
 
 SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d  "$(srcdir)/../start/collects-path.rkt" 
 
 MZSRC = $(srcdir)/src
 
@@ -479,7 +480,7 @@ unix-install:
 	cp $(srcdir)/../start/starter-sh .
 	cd ..; cp bc/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=$(CFLAGS) $(CPPFLAGS)' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -492,7 +493,7 @@ unix-install-cgc:
 	cd ..; $(ICP) bc/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp bc/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-cgc:
 	cd ..; $(ICP_LIB) bc/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
@@ -512,7 +513,7 @@ unix-install-3m:
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-3m
 	cd ..; $(ICP) bc/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-3m:
 	cd ..; $(ICP_LIB) bc/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
@@ -555,7 +556,7 @@ mingw-install-cgc:
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-cgc-final:
 	$(NOOP)
@@ -573,7 +574,7 @@ mingw-install-3m:
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-3m-final:
 	$(NOOP)

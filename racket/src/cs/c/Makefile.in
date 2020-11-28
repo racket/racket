@@ -472,7 +472,7 @@ common-install:
 	$(ICP) starter "$(DESTDIR)$(libpltdir)/starter"
 	$(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
-	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(BOOTSTRAP_RACKET) "$(srcdir)/../../start/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) system-install
 	$(MAKE) include-install
 	$(MAKE) common-@INSTALL_LIBS_ENABLE@-libs
@@ -498,8 +498,8 @@ unix-install:
 	$(MAKE) common-install
 	rm -f "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
-	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(BOOTSTRAP_RACKET) "$(srcdir)/../../start/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(BOOTSTRAP_RACKET) "$(srcdir)/../../start/collects-path.rkt" "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs
 
 unix-install-cross:
@@ -535,7 +535,7 @@ macos-install:
 	cp $(RKTFWDIR)/boot/petite.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/scheme.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
-	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(BOOTSTRAP_RACKET) "$(srcdir)/../../start/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
 	$(MAKE) macos-@INSTALL_LIBS_ENABLE@-libs
 
@@ -545,7 +545,7 @@ macos-install-gracket:
 	$(ICP) -r "GRacketCS.app" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
 	$(BOOTSTRAP_RACKET) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app" "GRacketCS" "GRacket$(CS_GR_INSTALLED)" no-up
 	/usr/bin/install_name_tool -change "@executable_path/../../../../bc/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
-	$(RACKET) -cu "$(srcdir)/../../bc/collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)" ../../../../collects ../../../../etc
+	$(BOOTSTRAP_RACKET) "$(srcdir)/../../start/collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)" ../../../../collects ../../../../etc
 	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
 	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
