@@ -136,10 +136,12 @@
     (or (add-to-cache
          pkg cache
          (for/or ([i (in-list (pkg-catalogs))])
-           (define (consulting-catalog suffix)
+           (define (consulting-catalog suffix #:url [url #f])
              (if download-printf
-                 (download-printf "Resolv~a ~s via ~a\n" suffix pkg (url->string i))
-                 (log-pkg-debug "consult~a catalog ~a" suffix (url->string i))))
+                 (download-printf "Resolv~a ~s via ~a\n"
+                                  suffix pkg (url->string (or url i)))
+                 (log-pkg-debug "consult~a catalog ~a"
+                                suffix (url->string (or url i)))))
            (source->absolute-source
             i
             (select-info-version
@@ -147,9 +149,9 @@
               i
               ;; Server:
               (lambda (i)
-                (consulting-catalog "ing")
                 (define addr (add-version-query
                               (combine-url/relative i (format "pkg/~a" pkg))))
+                (consulting-catalog "ing" #:url addr)
                 (log-pkg-debug "resolving via ~a" (url->string addr))
                 (read-from-server
                  'package-catalog-lookup
