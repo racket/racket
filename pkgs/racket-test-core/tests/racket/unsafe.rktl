@@ -1021,5 +1021,24 @@
     (test #f immutable? (make-vector 0))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `bitwise-{and,ior,xor}` are not converted to
+;; unsafe fixnum operations in `#:unsafe` mode
+
+(module unsafe-but-not-restricted-to-fixnum racket/base
+  (#%declare #:unsafe)
+  (provide band bior bxor)
+  (define (band x)
+    (bitwise-and #xFF x))
+  (define (bior x)
+    (bitwise-ior #xFF x))
+  (define (bxor x)
+    (bitwise-xor #xFF x)))
+
+(require 'unsafe-but-not-restricted-to-fixnum)
+(test #x55 band (+ #x5555 (expt 2 100)))
+(test (+ (expt 2 100) #x55FF) bior (+ #x5555 (expt 2 100)))
+(test (+ (expt 2 100) #x55AA) bxor (+ #x5555 (expt 2 100)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

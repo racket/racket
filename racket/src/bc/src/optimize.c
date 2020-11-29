@@ -5150,11 +5150,11 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_AD_HOC_OPT) {
       check_known_both_variant(info, app_o, rator, rand1, rand2, "bitwise-and", scheme_fixnum_p_proc,
-                               scheme_unsafe_fxand_proc, info->unsafe_mode, scheme_real_p_proc);
+                               scheme_unsafe_fxand_proc, 0, scheme_real_p_proc);
       check_known_both_variant(info, app_o, rator, rand1, rand2, "bitwise-ior", scheme_fixnum_p_proc,
-                               scheme_unsafe_fxior_proc, info->unsafe_mode, scheme_real_p_proc);
+                               scheme_unsafe_fxior_proc, 0, scheme_real_p_proc);
       check_known_both_variant(info, app_o, rator, rand1, rand2, "bitwise-xor", scheme_fixnum_p_proc,
-                               scheme_unsafe_fxxor_proc, info->unsafe_mode, scheme_real_p_proc);
+                               scheme_unsafe_fxxor_proc, 0, scheme_real_p_proc);
 
       check_known_both_variant(info, app_o, rator, rand1, rand2, "fxand", scheme_fixnum_p_proc,
                                scheme_unsafe_fxand_proc, info->unsafe_mode, scheme_real_p_proc);
