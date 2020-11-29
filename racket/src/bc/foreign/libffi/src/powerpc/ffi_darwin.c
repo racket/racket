@@ -909,9 +909,10 @@ ffi_prep_cif_machdep (ffi_cif *cif)
 extern void ffi_call_AIX(extended_cif *, long, unsigned, unsigned *,
 			 void (*fn)(void), void (*fn2)(void));
 
+#if FFI_GO_CLOSURES
 extern void ffi_call_go_AIX(extended_cif *, long, unsigned, unsigned *,
 			    void (*fn)(void), void (*fn2)(void), void *closure);
-
+#endif
 extern void ffi_call_DARWIN(extended_cif *, long, unsigned, unsigned *,
 			    void (*fn)(void), void (*fn2)(void), ffi_type*);
 
@@ -950,6 +951,8 @@ ffi_call (ffi_cif *cif, void (*fn)(void), void *rvalue, void **avalue)
     }
 }
 
+#if FFI_GO_CLOSURES
+
 void
 ffi_call_go (ffi_cif *cif, void (*fn) (void), void *rvalue, void **avalue,
 	     void *closure)
@@ -981,6 +984,8 @@ ffi_call_go (ffi_cif *cif, void (*fn) (void), void *rvalue, void **avalue,
       break;
     }
 }
+
+#endif
 
 static void flush_icache(char *);
 static void flush_range(char *, int);
@@ -1110,6 +1115,8 @@ ffi_prep_closure_loc (ffi_closure* closure,
   return FFI_OK;
 }
 
+#if FFI_GO_CLOSURES
+
 ffi_status
 ffi_prep_go_closure (ffi_go_closure* closure,
 		     ffi_cif* cif,
@@ -1133,6 +1140,8 @@ ffi_prep_go_closure (ffi_go_closure* closure,
     }
   return FFI_OK;
 }
+
+#endif
 
 static void
 flush_icache(char *addr)
@@ -1167,10 +1176,11 @@ typedef union
 ffi_type *
 ffi_closure_helper_DARWIN (ffi_closure *, void *,
 			   unsigned long *, ffi_dblfl *);
-
+#if FFI_GO_CLOSURES
 ffi_type *
 ffi_go_closure_helper_DARWIN (ffi_go_closure*, void *,
 			      unsigned long *, ffi_dblfl *);
+#endif
 
 /* Basically the trampoline invokes ffi_closure_ASM, and on
    entry, r11 holds the address of the closure.
@@ -1430,6 +1440,8 @@ ffi_closure_helper_DARWIN (ffi_closure *closure, void *rvalue,
 				    closure->user_data, rvalue, pgr, pfr);
 }
 
+#if FFI_GO_CLOSURES
+
 ffi_type *
 ffi_go_closure_helper_DARWIN (ffi_go_closure *closure, void *rvalue,
 			      unsigned long *pgr, ffi_dblfl *pfr)
@@ -1438,3 +1450,4 @@ ffi_go_closure_helper_DARWIN (ffi_go_closure *closure, void *rvalue,
 				    closure, rvalue, pgr, pfr);
 }
 
+#endif

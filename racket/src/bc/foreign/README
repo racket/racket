@@ -4,6 +4,8 @@ The libffi code is distributed under an LGPL-compatible license.
 Changes to the source in this copy:
 
  * Commented out `__attribute__((deprecated))` for `ffi_java_...` to
-   avoid warnings when compiling libffi itself.
+   avoid warnings when compiling libffi itself
 
  * Added $CPPFLAGS to use of $CC in "configure.host"
+
+ * Added preprocessor conditionals for Go closures in "ffi_darwin.c"
