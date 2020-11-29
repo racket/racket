@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require racket/match
+         (prefix-in s: racket/set)
          scheme/mpair
          scheme/control scheme/foreign
          (only-in racket/list split-at)
@@ -384,15 +385,92 @@
    (comp
     'ok
     (let ()
-      (define impersonated? #f)
+      (define touched-indices (s:mutable-set))
       (define v (vector 1 2 3))
       (define b (impersonate-vector v
-                                    (lambda (self idx _)
-                                      (set! impersonated? #t)
-                                      (vector-ref self idx))
+                                    (λ (_ idx v)
+                                      (s:set-add! touched-indices idx)
+                                      v)
                                     vector-set!))
       (match b
-        [(vector a _ _) (if impersonated? 'ok 'fail)])))
+        [(vector a _ _) (if (equal? (s:mutable-set 0) touched-indices) 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define touched-indices (s:mutable-set))
+      (define vec (impersonate-vector (vector 12 14 16 18 20 22 24 26)
+                                      (λ (_ idx v)
+                                        (s:set-add! touched-indices idx)
+                                        v)
+                                      vector-set!))
+      (match vec
+        [(vector _ ...) (if (equal? (s:mutable-set) touched-indices) 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define touched-indices (s:mutable-set))
+      (define vec (impersonate-vector (vector 12 14 16 18 20 22 24 26)
+                                      (λ (_ idx v)
+                                        (s:set-add! touched-indices idx)
+                                        v)
+                                      vector-set!))
+      (match vec
+        [(vector xs ...)
+         (if (equal? (s:mutable-set 0 1 2 3 4 5 6 7) touched-indices) 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define touched-indices (s:mutable-set))
+      (define vec (impersonate-vector (vector 12 14 16 18 20 22 24 26)
+                                      (λ (_ idx v)
+                                        (s:set-add! touched-indices idx)
+                                        v)
+                                      vector-set!))
+      ;; further optimization could potentionally elide the access of 1 and 6
+      (match vec
+        [(vector a _ b _ ... c _ e)
+         (if (equal? (s:mutable-set 0 1 2 5 6 7) touched-indices) 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define touched-indices (s:mutable-set))
+      (define vec (impersonate-vector (vector 12 14 16 18 20 22 24 26)
+                                      (λ (_ idx v)
+                                        (s:set-add! touched-indices idx)
+                                        v)
+                                      vector-set!))
+      (match vec
+        [(vector a _ ... b _ ... c)
+         (if (equal? (s:mutable-set 0 1 2 3 4 5 6 7) touched-indices) 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define touched-indices (s:mutable-set))
+      (define vec (impersonate-vector (vector 12 14 16 18 20 22 24 26)
+                                      (λ (_ idx v)
+                                        (s:set-add! touched-indices idx)
+                                        v)
+                                      vector-set!))
+      (match vec
+        [(vector a _ ..8) 'fail]
+        [_ (if (equal? (s:mutable-set) touched-indices) 'ok 'fail)])))
+
+   (comp
+    'ok
+    (let ()
+      (define touched-indices (s:mutable-set))
+      (define vec (impersonate-vector (vector 12 14 16 18 20 22 24 26)
+                                      (λ (_ idx v)
+                                        (s:set-add! touched-indices idx)
+                                        v)
+                                      vector-set!))
+      (match vec
+        [(vector a _ ..7) (if (equal? (s:mutable-set 0) touched-indices) 'ok 'fail)])))
 
    (comp 1
          (match #&1
