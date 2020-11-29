@@ -7,6 +7,7 @@
          "parse-helper.rkt"
          "parse-quasi.rkt"
          (for-template (only-in "runtime.rkt" matchable? mlist? mlist->list)
+                       (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
 (provide parse)
@@ -112,7 +113,7 @@
             (define vec-len (vector-length e))
             (for/list ([idx (in-sequences (in-range #,prefix-len)
                                           (in-range (- vec-len #,suffix-len) vec-len))])
-              (vector-ref e idx)))
+              (unsafe-vector-ref e idx)))
         (rearm+parse (quasisyntax/loc stx (list #,@prefix #,@suffix)))))]
     [(vector es ...)
      (ormap ddk? (syntax->list #'(es ...)))
