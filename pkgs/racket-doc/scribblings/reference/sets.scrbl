@@ -109,6 +109,27 @@ replaced by a later element that is @racket[equal?] or @racket[eqv?] but not
 
 }
 
+@defproc[(sequence->set [sequence (sequence/c any/c)]) set?]{
+ Converts @racket[sequence] into an immutable @tech{hash set}. The returned set uses @racket[equal?]
+ to compare elements. Duplicate elements in the sequence are ignored. The sequence must produce
+ elements one at a time; attempting to convert a multivalued sequence such as a @tech{hash table}
+ raises a contract error.
+
+ This function makes an effort to avoid unnecessary copying: if given an immutable hash set, the set
+ is returned unchanged. For some types of sequences, fast type-specific conversion functions are used
+ rather than going through the generic sequence interface. No guarantees about specific fast paths are
+ provided, but users may generally assume that there is no performance benefit to using a specialized
+ set-copying function such as @racket[list->set] instead of using @racket[sequence->set].
+
+ @(examples
+   #:eval set-eval
+   (sequence->set (list 1 2 3))
+   (sequence->set (set 1 2 3))
+   (sequence->set "hello"))
+ 
+ @history[#:added "7.9.0.10"]
+}
+
 @deftogether[(
 @defproc[(list->set [lst list?]) (and/c generic-set? set-equal? set?)]
 @defproc[(list->seteqv [lst list?]) (and/c generic-set? set-eqv? set?)]
@@ -705,6 +726,9 @@ Produces a list containing the elements of @racket[st].
 
 Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
+Prefer using @racket[sequence->list], which accepts all kinds of sequences.
+
+@history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->list].}]
 }
 
 @defproc[(set-map [st generic-set?]

@@ -9,10 +9,15 @@
          non-empty-string?
          string-prefix?
          string-suffix?
-         string-contains?)
+         string-contains?
+         sequence->string)
 
 (module+ private
   (provide build-kmp-table))
+
+(require (only-in racket/list add-between)
+         racket/sequence
+         (only-in racket/unsafe/undefined [unsafe-undefined none]))
            
 
 (define string-append*
@@ -22,9 +27,6 @@
                [(s1 s2 s3 strs) (apply string-append s1 s2 s3 strs)]
                [(s1 s2 s3 s4 strs) (apply string-append s1 s2 s3 s4 strs)]
                [(str . strss) (apply apply string-append str strss)]))
-
-(require (only-in racket/list add-between)
-         (only-in racket/unsafe/undefined [unsafe-undefined none]))
 
 (define (string-join strs [sep " "]
                      #:before-first [before-first none]
@@ -307,3 +309,20 @@
                          (loop (- start+offset skip) skip t tL)]
                         [else
                          (loop (add1 start+offset) 0 t tL)]))]))))))
+
+(define (sequence->string sequence)
+  (unless (sequence? sequence)
+    (raise-argument-error 'sequence->string "(sequence/c char?)" sequence))
+  ;; This is a common enough case that we should give a better error message for it.
+  (when (bytes? sequence)
+    (raise-arguments-error
+     'sequence->string
+     "byte strings are sequences of bytes, not characters;
+ use bytes->string/utf-8 or a similar function instead"
+     "expected" (unquoted-printing-string "(sequence/c char?)")
+     "given" sequence))
+  ;; TODO(jackfirth): Is there a way to reduce the number of copies we create here?
+  (cond
+    [(string? sequence) (string->immutable-string sequence)]
+    [(list? sequence) (string->immutable-string (list->string sequence))]
+    [else (string->immutable-string (list->string (sequence->list sequence)))]))

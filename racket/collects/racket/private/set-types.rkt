@@ -13,6 +13,7 @@
 (provide set seteq seteqv
          weak-set weak-seteq weak-seteqv
          mutable-set mutable-seteq mutable-seteqv
+         sequence->set
          list->set list->seteq list->seteqv
          list->weak-set list->weak-seteq list->weak-seteqv
          list->mutable-set list->mutable-seteq list->mutable-seteqv
@@ -1105,3 +1106,10 @@
   (mutable-fors #'make-hasheq))
 (define-syntaxes (for/mutable-seteqv for*/mutable-seteqv)
   (mutable-fors #'make-hasheqv))
+
+(define (sequence->set sequence)
+  (unless (sequence? sequence)
+    (raise-argument-error 'sequence->set "(sequence/c any/c)" sequence))
+  (cond
+    [(list? sequence) (list->set sequence)]
+    [else (for/set ([element sequence]) element)]))

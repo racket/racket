@@ -111,27 +111,42 @@ Compare and set operation for vectors. See @racket[box-cas!].
 
 @defproc[(vector->list [vec vector?]) list?]{
 
-Returns a list with the same length and elements as @racket[vec].
+ Returns a list with the same length and elements as @racket[vec].
 
-This function takes time proportional to the size of @racket[vec].}
+ This function takes time proportional to the size of @racket[vec].
+
+ Prefer using @racket[sequence->list], which accepts all kinds of sequences.
+
+ @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->vector].}]}
 
 
 @defproc[(list->vector [lst list?]) vector?]{
 
-Returns a mutable vector with the same length and elements as
-@racket[lst].
-
-This function takes time proportional to the length of @racket[lst].}
+ Returns a mutable vector with the same length and elements as
+ @racket[lst].
+ 
+ This function takes time proportional to the length of @racket[lst].
+ 
+ Prefer using @racket[sequence->vector], which accepts all kinds of sequences and returns immutable
+ vectors.
+ 
+ @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->vector].}]}
 
 
 @defproc[(vector->immutable-vector [vec vector?])
          (and/c vector? immutable?)]{
 
-Returns an immutable vector with the same length and elements as @racket[vec].
-If @racket[vec] is itself immutable, then it is returned as the result.
+ Returns an immutable vector with the same length and elements as @racket[vec].
+ If @racket[vec] is itself immutable, then it is returned as the result.
 
-This function takes time proportional to the size of @racket[vec] when
-@racket[vec] is mutable.}
+ This function takes time proportional to the size of @racket[vec] when
+ @racket[vec] is mutable.
+
+ Prefer using @racket[sequence->vector], which accepts all kinds of sequences and returns immutable
+ vectors. When given mutable vectors, @racket[sequence->vector] is just as fast as
+ @racket[vector->immutable-vector].
+ 
+ @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->vector].}]}
 
 
 @defproc[(vector-fill! [vec (and/c vector? (not/c immutable?))]
@@ -474,5 +489,24 @@ v2]
 @history[#:added "6.6.0.5"]{}
 }
 
+@defproc[(sequence->vector [sequence (sequence/c any/c)]) (and/c vector? immutable?)]{
+
+ Copies @racket[sequence] into an immutable vector. This function makes an effort to avoid unnecessary
+ copying: if given an immutable vector, the vector is returned unchanged. For some types of sequences,
+ fast type-specific conversion functions are used rather than going through the generic sequence
+ interface. No guarantees about specific fast paths are provided, but users may generally assume that
+ there is no performance benefit to using a specialized vector-copying function such as
+ @racket[list->vector] or @racket[vector->immutable-vector] instead of using
+ @racket[sequence->vector].
+
+ @(mz-examples
+   #:eval vec-eval
+   (sequence->vector (list 1 2 3))
+   (sequence->vector (vector 1 2 3))
+   (sequence->vector "hello")
+   (sequence->vector (in-range 5)))
+
+ @history[#:added "7.9.0.10"]
+}
 
 @close-eval[vec-eval]
