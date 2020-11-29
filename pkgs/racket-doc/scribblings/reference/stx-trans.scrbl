@@ -531,11 +531,15 @@ being expanded.
 Binds each identifier in @racket[id-list] within the
 @tech{internal-definition context} represented by @racket[intdef-ctx], where
 @racket[intdef-ctx] is the result of
-@racket[syntax-local-make-definition-context]. Supply @racket[#f] for
+@racket[syntax-local-make-definition-context].
+The @tech{lexical information} of each element of @racket[extra-intdef-ctxs]
+is also added to each identifier in @racket[id-list] before binding.
+
+Supply @racket[#f] for
 @racket[expr] when the identifiers correspond to
 @racket[define-values] bindings, and supply a compile-time expression
-when the identifiers correspond to @racket[define-syntaxes] bindings;
-in the latter case, the number of values produced by the expression should
+when the identifiers correspond to @racket[define-syntaxes] bindings.
+In the latter case, the number of values produced by the expression should
 match the number of identifiers, otherwise the
 @exnraise[exn:fail:contract:arity].
 
