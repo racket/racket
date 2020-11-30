@@ -16397,31 +16397,34 @@
                                     (let ((n_0
                                            (struct-type-info-immediate-field-count
                                             sti_0)))
-                                      (let ((c1_0
-                                             (struct-type-info-non-prefab-immutables
-                                              sti_0)))
-                                        (if c1_0
-                                          (letrec*
-                                           ((loop_0
-                                             (|#%name|
-                                              loop
-                                              (lambda (i_0 mask_0)
-                                                (begin
-                                                  (if (= i_0 n_0)
-                                                    mask_0
-                                                    (if (memq i_0 c1_0)
-                                                      (loop_0 (+ i_0 1) mask_0)
-                                                      (let ((app_4 (+ i_0 1)))
-                                                        (loop_0
-                                                         app_4
-                                                         (bitwise-ior
-                                                          mask_0
-                                                          (arithmetic-shift
-                                                           1
-                                                           i_0)))))))))))
-                                           (loop_0 0 0))
-                                          (sub1
-                                           (arithmetic-shift 1 n_0)))))))))))))
+                                      (let ((mask_0
+                                             (sub1 (arithmetic-shift 1 n_0))))
+                                        (let ((c1_0
+                                               (struct-type-info-non-prefab-immutables
+                                                sti_0)))
+                                          (if c1_0
+                                            (letrec*
+                                             ((loop_0
+                                               (|#%name|
+                                                loop
+                                                (lambda (imms_0 mask_1)
+                                                  (begin
+                                                    (if (null? imms_0)
+                                                      mask_1
+                                                      (let ((m_0
+                                                             (bitwise-not
+                                                              (arithmetic-shift
+                                                               1
+                                                               (car imms_0)))))
+                                                        (let ((app_4
+                                                               (cdr imms_0)))
+                                                          (loop_0
+                                                           app_4
+                                                           (bitwise-and
+                                                            mask_1
+                                                            m_0))))))))))
+                                             (loop_0 c1_0 mask_0))
+                                            mask_0))))))))))))
                      (list*
                       'begin
                       app_0

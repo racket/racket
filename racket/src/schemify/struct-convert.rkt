@@ -69,20 +69,20 @@
                                                            #f
                                                            #f
                                                            ,(struct-type-info-immediate-field-count sti)
-                                                           ,(let ([n (struct-type-info-immediate-field-count sti)])
+                                                           ,(let* ([n (struct-type-info-immediate-field-count sti)]
+                                                                   [mask (sub1 (arithmetic-shift 1 n))])
                                                               (cond
                                                                 [(struct-type-info-non-prefab-immutables sti)
                                                                  =>
                                                                  (lambda (immutables)
-                                                                   (let loop ([i 0] [mask 0])
+                                                                   (let loop ([imms immutables] [mask mask])
                                                                      (cond
-                                                                       [(= i n) mask]
-                                                                       [(memq i immutables) (loop (+ i 1) mask)]
-                                                                       [else
-                                                                        (loop (+ i 1)
-                                                                              (bitwise-ior mask (arithmetic-shift 1 i)))])))]
+                                                                      [(null? imms) mask]
+                                                                      [else
+                                                                       (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
+                                                                         (loop (cdr imms) (bitwise-and mask m)))])))]
                                                                 [else
-                                                                 (sub1 (arithmetic-shift 1 n))]))))
+                                                                 mask]))))
            ,@(if (null? (struct-type-info-rest sti))
                  null
                  `((define ,(deterministic-gensym "effect")

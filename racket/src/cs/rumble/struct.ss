@@ -501,21 +501,15 @@
                                                parent-rtd*
                                                prefab-uid #f #f
                                                (+ init-count auto-count)
-					       (if (eq? insp 'prefab)
-						   (sub1 (general-arithmetic-shift 1 (+ init-count auto-count)))
-						   (let loop ([i 0] [mask 0])
-						     (cond
-						      [(fx= i init-count)
-						       (let loop ([i 0] [mask mask])
-							 (cond
-							  [(fx= i auto-count) mask]
-							  [else
-							   (loop (fx+ i 1)
-								 (bitwise-ior mask (arithmetic-shift 1 (fx+ i init-count))))]))]
-						      [(#%memq i immutables) (loop (fx+ i 1) mask)]
-						      [else
-						       (loop (fx+ i 1)
-							     (bitwise-ior mask (arithmetic-shift 1 i)))]))))]
+                                               (let ([mask (sub1 (general-arithmetic-shift 1 (+ init-count auto-count)))])
+                                                 (if (eq? insp 'prefab)
+                                                     mask
+                                                     (let loop ([imms immutables] [mask mask])
+                                                       (cond
+                                                        [(null? imms) mask]
+                                                        [else
+                                                         (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
+                                                           (loop (cdr imms) (bitwise-and mask m)))])))))]
             [parent-auto*-count (get-field-info-auto*-count parent-fi)]
             [parent-init*-count (get-field-info-init*-count parent-fi)]
             [parent-total*-count (get-field-info-total*-count parent-fi)]
