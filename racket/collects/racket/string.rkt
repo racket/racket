@@ -317,8 +317,8 @@
   (when (bytes? sequence)
     (raise-arguments-error
      'sequence->string
-     "byte strings are sequences of bytes, not characters;
- use bytes->string/utf-8 or a similar function instead"
+     "contract violation;
+ byte strings are sequences of bytes, not characters use bytes->string/utf-8 or a similar function instead"
      "expected" (unquoted-printing-string "(sequence/c char?)")
      "given" sequence))
   ;; TODO(jackfirth): Is there a way to reduce the number of copies we create here?
