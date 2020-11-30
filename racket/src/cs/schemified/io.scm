@@ -3700,7 +3700,7 @@
                         (|#%app| rktio_free h_0)
                         (loop_0 #t))))))))))
          (loop_0 #f))))))
-(define struct:exts (make-record-type-descriptor* 'exts #f #f #f #f 2 3))
+(define struct:exts (make-record-type-descriptor* 'exts #f #f #f #f 2 0))
 (define effect_2383
   (struct-type-install-properties!
    struct:exts
@@ -3992,7 +3992,7 @@
       (wrap-evt (|#%app| (input-port-evt-ref p_0) p_0) (lambda (v_0) p_0))
       (wrap-evt (|#%app| (output-port-evt-ref p_0) p_0) (lambda (v_0) p_0)))))
 (define struct:core-port
-  (make-record-type-descriptor* 'core-port #f #f #f #f 7 127))
+  (make-record-type-descriptor* 'core-port #f #f #f #f 7 124))
 (define effect_2716
   (struct-type-install-properties!
    struct:core-port
@@ -4061,7 +4061,7 @@
     (register-struct-field-mutator! set-core-port-count! struct:core-port 6)
     (void)))
 (define struct:core-port-methods.1
-  (make-record-type-descriptor* 'core-port-methods #f #f #f #f 5 31))
+  (make-record-type-descriptor* 'core-port-methods #f #f #f #f 5 0))
 (define effect_2750
   (struct-type-install-properties!
    struct:core-port-methods.1
@@ -4474,7 +4474,7 @@
    #f
    #f
    6
-   63))
+   0))
 (define effect_3216
   (struct-type-install-properties!
    struct:core-input-port-methods.1
@@ -4861,7 +4861,7 @@
    #f
    #f
    4
-   15))
+   0))
 (define effect_2581
   (struct-type-install-properties!
    struct:core-output-port-methods.1
@@ -5046,7 +5046,7 @@
                (values #f (replace-evt v_0 self-evt_0))
                (values (list v_0) #f)))))))))
 (define struct:write-evt
-  (make-record-type-descriptor* 'write-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'write-evt #f #f #f #f 1 0))
 (define effect_2681
   (struct-type-install-properties!
    struct:write-evt
@@ -5117,7 +5117,7 @@
    #f
    #f))
 (define struct:utf-8-state
-  (make-record-type-descriptor* 'utf-8-state #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'utf-8-state #f #f #f #f 3 0))
 (define effect_2417
   (struct-type-install-properties!
    struct:utf-8-state
@@ -7270,7 +7270,7 @@
           (set-core-port-offset! in_0 (+ amt_0 old-offset_0))
           (void))))))
 (define struct:commit-manager
-  (make-record-type-descriptor* 'commit-manager #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'commit-manager #f #f #f #f 3 0))
 (define effect_3024
   (struct-type-install-properties!
    struct:commit-manager
@@ -7371,7 +7371,7 @@
      2)
     (void)))
 (define struct:commit-request
-  (make-record-type-descriptor* 'commit-request #f #f #f #f 5 31))
+  (make-record-type-descriptor* 'commit-request #f #f #f #f 5 0))
 (define effect_2327
   (struct-type-install-properties!
    struct:commit-request
@@ -7514,7 +7514,7 @@
      4)
     (void)))
 (define struct:commit-response
-  (make-record-type-descriptor* 'commit-response #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'commit-response #f #f #f #f 2 0))
 (define effect_2424
   (struct-type-install-properties!
    struct:commit-response
@@ -8088,7 +8088,7 @@
              (begin (temp3.1$3 d_0) (temp4.1$2 d_0))
              (unsafe-end-atomic))))))))
 (define struct:pipe-data
-  (make-record-type-descriptor* 'pipe-data #f #f #f #f 16 65535))
+  (make-record-type-descriptor* 'pipe-data #f #f #f #f 16 65534))
 (define effect_3136
   (struct-type-install-properties!
    struct:pipe-data
@@ -9419,7 +9419,7 @@
       ((limit_0 input-name25_0) (make-pipe_0 limit_0 input-name25_0 'pipe))
       ((limit24_0) (make-pipe_0 limit24_0 'pipe 'pipe))))))
 (define struct:pipe-write-poller
-  (make-record-type-descriptor* 'pipe-write-poller #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'pipe-write-poller #f #f #f #f 1 0))
 (define effect_2371
   (struct-type-install-properties!
    struct:pipe-write-poller
@@ -9506,7 +9506,7 @@
      0)
     (void)))
 (define struct:pipe-read-poller
-  (make-record-type-descriptor* 'pipe-read-poller #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'pipe-read-poller #f #f #f #f 1 0))
 (define effect_2394
   (struct-type-install-properties!
    struct:pipe-read-poller
@@ -9720,7 +9720,7 @@
    #f
    #f
    1
-   1))
+   0))
 (define effect_2651
   (struct-type-install-properties!
    struct:peek-via-read-input-port-methods.1
@@ -10517,7 +10517,7 @@
    #f
    #f
    2
-   3))
+   0))
 (define effect_2334
   (struct-type-install-properties!
    struct:fd-input-port-methods.1
@@ -10961,7 +10961,7 @@
    #f
    #f
    2
-   3))
+   0))
 (define effect_2413
   (struct-type-install-properties!
    struct:fd-output-port-methods.1
@@ -11586,7 +11586,7 @@
                      (format-rktio-message 'file-position r_0 base-msg_0)))
                 (|#%app| exn:fail app_0 (current-continuation-marks)))))))
         (void)))))
-(define struct:fd-evt (make-record-type-descriptor* 'fd-evt #f #f #f #f 3 7))
+(define struct:fd-evt (make-record-type-descriptor* 'fd-evt #f #f #f #f 3 4))
 (define effect_2590
   (struct-type-install-properties!
    struct:fd-evt
@@ -11731,7 +11731,7 @@
     (register-struct-field-mutator! set-fd-evt-closed! struct:fd-evt 2)
     (void)))
 (define struct:rktio-fd-flushed-evt
-  (make-record-type-descriptor* 'rktio-fd-flushed-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'rktio-fd-flushed-evt #f #f #f #f 1 0))
 (define effect_2959
   (struct-type-install-properties!
    struct:rktio-fd-flushed-evt
@@ -12546,7 +12546,7 @@
                                 (loop_0 (fx+ i_0 1)))))))))))
                  (loop_0 pos_0))))))))))
 (define struct:progress-evt
-  (make-record-type-descriptor* 'progress-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'progress-evt #f #f #f #f 2 0))
 (define effect_2604
   (struct-type-install-properties!
    struct:progress-evt
@@ -15864,7 +15864,7 @@
         (unsafe-bytes-set! out-bstr_0 j_0 lo_0)
         (unsafe-bytes-set! out-bstr_0 (+ j_0 1) hi_0)))))
 (define struct:utf-8-converter
-  (make-record-type-descriptor* 'utf-8-converter #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'utf-8-converter #f #f #f #f 2 0))
 (define effect_2723
   (struct-type-install-properties!
    struct:utf-8-converter
@@ -18171,7 +18171,7 @@
        (bytes->string/locale_0 in-bstr_0 err-char_0 start6_0 unsafe-undefined))
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
-(define struct:path (make-record-type-descriptor* 'path #f #f #f #f 2 3))
+(define struct:path (make-record-type-descriptor* 'path #f #f #f #f 2 0))
 (define effect_2407
   (struct-type-install-properties!
    struct:path
@@ -19901,7 +19901,7 @@
    #f
    #f
    2
-   3))
+   0))
 (define effect_2372
   (struct-type-install-properties!
    struct:bytes-output-port-methods.1
@@ -21728,7 +21728,7 @@
     (lambda (v_0 fuel_0 mode_0 print-graph?_0 config_0)
       (quick-no-graph?_0 config_0 mode_0 print-graph?_0 v_0 fuel_0))))
 (define struct:as-constructor
-  (make-record-type-descriptor* 'as-constructor #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'as-constructor #f #f #f #f 1 0))
 (define effect_2971
   (struct-type-install-properties!
    struct:as-constructor
@@ -25008,7 +25008,7 @@
             (just-separators-after? s_0 2)
             #f))))))
 (define struct:starting-point
-  (make-record-type-descriptor* 'starting-point #f #f #f #f 7 127))
+  (make-record-type-descriptor* 'starting-point #f #f #f #f 7 0))
 (define effect_2720
   (struct-type-install-properties!
    struct:starting-point
@@ -27109,7 +27109,7 @@
 (define listen-port-number?
   (lambda (v_0) (if (fixnum? v_0) (<= 0 v_0 65535) #f)))
 (define struct:security-guard
-  (make-record-type-descriptor* 'security-guard #f #f #f #f 4 15))
+  (make-record-type-descriptor* 'security-guard #f #f #f #f 4 0))
 (define effect_2690
   (struct-type-install-properties!
    struct:security-guard
@@ -33362,7 +33362,7 @@
 (define adjust-path
   (lambda (p_0) (if (is-path? p_0) (relative-to-user-directory p_0) p_0)))
 (define struct:logger
-  (make-record-type-descriptor* 'logger #f #f #f #f 11 2047))
+  (make-record-type-descriptor* 'logger #f #f #f #f 11 376))
 (define effect_2192
   (struct-type-install-properties!
    struct:logger
@@ -33904,7 +33904,7 @@
     (register-struct-field-mutator! set-queue-start! struct:queue 0)
     (register-struct-field-mutator! set-queue-end! struct:queue 1)
     (void)))
-(define struct:node (make-record-type-descriptor* 'node #f #f #f #f 3 7))
+(define struct:node (make-record-type-descriptor* 'node #f #f #f #f 3 6))
 (define effect_2547
   (struct-type-install-properties!
    struct:node
@@ -33971,7 +33971,7 @@
         (let ((app_0 (node-next n_0))) (set-node-prev! app_0 (node-prev n_0)))
         (set-queue-end! q_0 (node-prev n_0))))))
 (define struct:log-receiver
-  (make-record-type-descriptor* 'log-receiver #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'log-receiver #f #f #f #f 1 0))
 (define effect_2708
   (struct-type-install-properties!
    struct:log-receiver
@@ -34038,7 +34038,7 @@
    #f
    #f
    3
-   7))
+   0))
 (define effect_2757
   (struct-type-install-properties!
    struct:queue-log-receiver
@@ -34232,7 +34232,7 @@
    #f
    #f
    2
-   3))
+   0))
 (define effect_2592
   (struct-type-install-properties!
    struct:stdio-log-receiver
@@ -34391,7 +34391,7 @@
    #f
    #f
    2
-   3))
+   0))
 (define effect_2241
   (struct-type-install-properties!
    struct:syslog-log-receiver
@@ -35914,7 +35914,7 @@
                 (let ((bstr_0 (make-bytes sz_0)))
                   (begin (|#%app| final_0 p_0 bstr_0) bstr_0))))))))))
 (define struct:subprocess
-  (make-record-type-descriptor* 'subprocess #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'subprocess #f #f #f #f 3 3))
 (define effect_2272
   (struct-type-install-properties!
    struct:subprocess
@@ -37220,7 +37220,7 @@
              (begin (set-tcp-output-port-abandon?! cp_0 #t) (close-port p_0))
              (void))))))))
 (define struct:rktio-evt
-  (make-record-type-descriptor* 'rktio-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'rktio-evt #f #f #f #f 2 0))
 (define effect_3001
   (struct-type-install-properties!
    struct:rktio-evt
@@ -37838,7 +37838,7 @@
           (set-connect-progress-trying-fd! conn-prog_0 #f))
         (void)))))
 (define struct:tcp-listener
-  (make-record-type-descriptor* 'tcp-listener #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'tcp-listener #f #f #f #f 3 0))
 (define effect_2611
   (struct-type-install-properties!
    struct:tcp-listener
@@ -38236,7 +38236,7 @@
            (raise-argument-error 'tcp-accept-evt "tcp-listener?" listener_0))
          (accept-evt6.1 listener_0))))))
 (define struct:accept-evt
-  (make-record-type-descriptor* 'tcp-accept-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'tcp-accept-evt #f #f #f #f 1 0))
 (define effect_2325
   (struct-type-install-properties!
    struct:accept-evt
@@ -39614,7 +39614,7 @@
             wait?53_0
             who59_0)))))))
 (define struct:udp-sending-evt
-  (make-record-type-descriptor* 'udp-send-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'udp-send-evt #f #f #f #f 2 0))
 (define effect_2358
   (struct-type-install-properties!
    struct:udp-sending-evt
@@ -40036,7 +40036,7 @@
 (define cell.1$2 (unsafe-make-place-local #vu8()))
 (define cell.2 (unsafe-make-place-local ""))
 (define struct:udp-receiving-evt
-  (make-record-type-descriptor* 'udp-receive-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'udp-receive-evt #f #f #f #f 2 0))
 (define effect_2355
   (struct-type-install-properties!
    struct:udp-receiving-evt

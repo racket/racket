@@ -4378,7 +4378,7 @@
          (let ((app_0
                 (if (string? prefix_0) prefix_0 (symbol->string prefix_0))))
            (string-append app_0 (number->string (unbox b_0)))))))))
-(define struct:import (make-record-type-descriptor* 'import #f #f #f #f 4 15))
+(define struct:import (make-record-type-descriptor* 'import #f #f #f #f 4 0))
 (define effect_2897
   (struct-type-install-properties!
    struct:import
@@ -4467,7 +4467,7 @@
     (register-struct-field-accessor! import-ext-id struct:import 3)
     (void)))
 (define struct:import-group
-  (make-record-type-descriptor* 'import-group #f #f #f #f 6 63))
+  (make-record-type-descriptor* 'import-group #f #f #f #f 6 60))
 (define effect_2514
   (struct-type-install-properties!
    struct:import-group
@@ -4868,7 +4868,7 @@
             (|#%app| inc-index!_0)
             (|#%app| add-group!_0 grp_0)
             grp_0))))))
-(define struct:export (make-record-type-descriptor* 'export #f #f #f #f 2 3))
+(define struct:export (make-record-type-descriptor* 'export #f #f #f #f 2 0))
 (define effect_2166
   (struct-type-install-properties!
    struct:export
@@ -4929,7 +4929,7 @@
     (register-struct-field-accessor! export-ext-id struct:export 1)
     (void)))
 (define struct:too-early
-  (make-record-type-descriptor* 'too-early #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'too-early #f #f #f #f 2 0))
 (define effect_2681
   (struct-type-install-properties!
    struct:too-early
@@ -7034,18 +7034,18 @@
       ((k_0 im_0) k_0)
       (args (raise-binding-result-arity-error 2 args))))))
 (define struct:struct-type-info
-  (make-record-type-descriptor* 'struct-type-info #f #f #f #f 9 511))
-(define effect_2978
+  (make-record-type-descriptor* 'struct-type-info #f #f #f #f 10 0))
+(define effect_3042
   (struct-type-install-properties!
    struct:struct-type-info
    'struct-type-info
-   9
+   10
    0
    #f
    null
    (current-inspector)
    #f
-   '(0 1 2 3 4 5 6 7 8)
+   '(0 1 2 3 4 5 6 7 8 9)
    #f
    'struct-type-info))
 (define struct-type-info1.1
@@ -7189,41 +7189,59 @@
          s
          'struct-type-info
          'prefab-immutables))))))
-(define struct-type-info-constructor-name-expr_2507
+(define struct-type-info-non-prefab-immutables_2507
+  (|#%name|
+   struct-type-info-non-prefab-immutables
+   (record-accessor struct:struct-type-info 7)))
+(define struct-type-info-non-prefab-immutables
+  (|#%name|
+   struct-type-info-non-prefab-immutables
+   (lambda (s)
+     (if (struct-type-info?_2591 s)
+       (struct-type-info-non-prefab-immutables_2507 s)
+       ($value
+        (impersonate-ref
+         struct-type-info-non-prefab-immutables_2507
+         struct:struct-type-info
+         7
+         s
+         'struct-type-info
+         'non-prefab-immutables))))))
+(define struct-type-info-constructor-name-expr_2796
   (|#%name|
    struct-type-info-constructor-name-expr
-   (record-accessor struct:struct-type-info 7)))
+   (record-accessor struct:struct-type-info 8)))
 (define struct-type-info-constructor-name-expr
   (|#%name|
    struct-type-info-constructor-name-expr
    (lambda (s)
      (if (struct-type-info?_2591 s)
-       (struct-type-info-constructor-name-expr_2507 s)
+       (struct-type-info-constructor-name-expr_2796 s)
        ($value
         (impersonate-ref
-         struct-type-info-constructor-name-expr_2507
+         struct-type-info-constructor-name-expr_2796
          struct:struct-type-info
-         7
+         8
          s
          'struct-type-info
          'constructor-name-expr))))))
-(define struct-type-info-rest_2796
-  (|#%name| struct-type-info-rest (record-accessor struct:struct-type-info 8)))
+(define struct-type-info-rest_2430
+  (|#%name| struct-type-info-rest (record-accessor struct:struct-type-info 9)))
 (define struct-type-info-rest
   (|#%name|
    struct-type-info-rest
    (lambda (s)
      (if (struct-type-info?_2591 s)
-       (struct-type-info-rest_2796 s)
+       (struct-type-info-rest_2430 s)
        ($value
         (impersonate-ref
-         struct-type-info-rest_2796
+         struct-type-info-rest_2430
          struct:struct-type-info
-         8
+         9
          s
          'struct-type-info
          'rest))))))
-(define effect_2648
+(define effect_1914
   (begin
     (register-struct-constructor! struct-type-info1.1)
     (register-struct-predicate! struct-type-info?)
@@ -7256,13 +7274,17 @@
      struct:struct-type-info
      6)
     (register-struct-field-accessor!
-     struct-type-info-constructor-name-expr
+     struct-type-info-non-prefab-immutables
      struct:struct-type-info
      7)
     (register-struct-field-accessor!
-     struct-type-info-rest
+     struct-type-info-constructor-name-expr
      struct:struct-type-info
      8)
+    (register-struct-field-accessor!
+     struct-type-info-rest
+     struct:struct-type-info
+     9)
     (void)))
 (define struct-type-info-rest-properties-list-pos 0)
 (define make-struct-type-info
@@ -8002,53 +8024,225 @@
                                       (if (> (length rest_0) 5)
                                         (list-ref rest_0 5)
                                         #f)))
-                                 (if prefab-imms_1
-                                   (let ((app_0
-                                          (+
-                                           fields_0
-                                           (if u-parent_0
-                                             (known-struct-type-field-count
-                                              parent-sti_0)
-                                             0))))
-                                     (let ((app_1
-                                            (if (let ((or-part_0
-                                                       (not u-parent_0)))
-                                                  (if or-part_0
-                                                    or-part_0
-                                                    (known-struct-type-pure-constructor?
-                                                     parent-sti_0)))
+                                 (let ((non-prefab-imms_0
+                                        (if (eq? prefab-imms_1 'non-prefab)
+                                          (if (begin-unsafe
+                                               (let ((app_0 (unwrap '())))
+                                                 (eq? app_0 (unwrap rest_0))))
+                                            '()
+                                            (if (let ((p_0 (unwrap rest_0)))
+                                                  (if (pair? p_0)
+                                                    (let ((a_0 (cdr p_0)))
+                                                      (begin-unsafe
+                                                       (let ((app_0
+                                                              (unwrap '())))
+                                                         (eq?
+                                                          app_0
+                                                          (unwrap a_0)))))
+                                                    #f))
+                                              '()
+                                              (if (let ((p_0 (unwrap rest_0)))
+                                                    (if (pair? p_0)
+                                                      (let ((a_0 (cdr p_0)))
+                                                        (let ((p_1
+                                                               (unwrap a_0)))
+                                                          (if (pair? p_1)
+                                                            (let ((a_1
+                                                                   (cdr p_1)))
+                                                              (begin-unsafe
+                                                               (let ((app_0
+                                                                      (unwrap
+                                                                       '())))
+                                                                 (eq?
+                                                                  app_0
+                                                                  (unwrap
+                                                                   a_1)))))
+                                                            #f)))
+                                                      #f))
+                                                '()
+                                                (if (let ((p_0
+                                                           (unwrap rest_0)))
+                                                      (if (pair? p_0)
+                                                        (let ((a_0 (cdr p_0)))
+                                                          (let ((p_1
+                                                                 (unwrap a_0)))
+                                                            (if (pair? p_1)
+                                                              (let ((a_1
+                                                                     (cdr
+                                                                      p_1)))
+                                                                (let ((p_2
+                                                                       (unwrap
+                                                                        a_1)))
+                                                                  (if (pair?
+                                                                       p_2)
+                                                                    (let ((a_2
+                                                                           (cdr
+                                                                            p_2)))
+                                                                      (begin-unsafe
+                                                                       (let ((app_0
+                                                                              (unwrap
+                                                                               '())))
+                                                                         (eq?
+                                                                          app_0
+                                                                          (unwrap
+                                                                           a_2)))))
+                                                                    #f)))
+                                                              #f)))
+                                                        #f))
+                                                  '()
+                                                  (if (let ((p_0
+                                                             (unwrap rest_0)))
+                                                        (if (pair? p_0)
+                                                          (let ((a_0
+                                                                 (cdr p_0)))
+                                                            (let ((p_1
+                                                                   (unwrap
+                                                                    a_0)))
+                                                              (if (pair? p_1)
+                                                                (let ((a_1
+                                                                       (cdr
+                                                                        p_1)))
+                                                                  (let ((p_2
+                                                                         (unwrap
+                                                                          a_1)))
+                                                                    (if (pair?
+                                                                         p_2)
+                                                                      (let ((a_2
+                                                                             (cdr
+                                                                              p_2)))
+                                                                        (let ((p_3
+                                                                               (unwrap
+                                                                                a_2)))
+                                                                          (if (pair?
+                                                                               p_3)
+                                                                            (if (let ((a_3
+                                                                                       (car
+                                                                                        p_3)))
+                                                                                  (let ((p_4
+                                                                                         (unwrap
+                                                                                          a_3)))
+                                                                                    (if (pair?
+                                                                                         p_4)
+                                                                                      (if (let ((a_4
+                                                                                                 (car
+                                                                                                  p_4)))
+                                                                                            (begin-unsafe
+                                                                                             (let ((app_0
+                                                                                                    (unwrap
+                                                                                                     'quote)))
+                                                                                               (eq?
+                                                                                                app_0
+                                                                                                (unwrap
+                                                                                                 a_4)))))
+                                                                                        (let ((a_4
+                                                                                               (cdr
+                                                                                                p_4)))
+                                                                                          (let ((p_5
+                                                                                                 (unwrap
+                                                                                                  a_4)))
+                                                                                            (if (pair?
+                                                                                                 p_5)
+                                                                                              (let ((a_5
+                                                                                                     (cdr
+                                                                                                      p_5)))
+                                                                                                (begin-unsafe
+                                                                                                 (let ((app_0
+                                                                                                        (unwrap
+                                                                                                         '())))
+                                                                                                   (eq?
+                                                                                                    app_0
+                                                                                                    (unwrap
+                                                                                                     a_5)))))
+                                                                                              #f)))
+                                                                                        #f)
+                                                                                      #f)))
+                                                                              #t
+                                                                              #f)
+                                                                            #f)))
+                                                                      #f)))
+                                                                #f)))
+                                                          #f))
+                                                    (let ((immutables_0
+                                                           (let ((d_0
+                                                                  (cdr
+                                                                   (unwrap
+                                                                    rest_0))))
+                                                             (let ((d_1
+                                                                    (cdr
+                                                                     (unwrap
+                                                                      d_0))))
+                                                               (let ((d_2
+                                                                      (cdr
+                                                                       (unwrap
+                                                                        d_1))))
+                                                                 (let ((a_0
+                                                                        (car
+                                                                         (unwrap
+                                                                          d_2))))
+                                                                   (let ((d_3
+                                                                          (cdr
+                                                                           (unwrap
+                                                                            a_0))))
+                                                                     (let ((a_1
+                                                                            (car
+                                                                             (unwrap
+                                                                              d_3))))
+                                                                       a_1))))))))
+                                                      immutables_0)
+                                                    #f)))))
+                                          #f)))
+                                   (if (if (eq? prefab-imms_1 'non-prefab)
+                                         non-prefab-imms_0
+                                         prefab-imms_1)
+                                     (let ((app_0
+                                            (+
+                                             fields_0
+                                             (if u-parent_0
+                                               (known-struct-type-field-count
+                                                parent-sti_0)
+                                               0))))
+                                       (let ((app_1
                                               (if (let ((or-part_0
-                                                         (<
-                                                          (length rest_0)
-                                                          5)))
+                                                         (not u-parent_0)))
                                                     (if or-part_0
                                                       or-part_0
-                                                      (not
-                                                       (unwrap
-                                                        (list-ref rest_0 4)))))
-                                                (not
-                                                 (includes-property?_0
-                                                  rest_0
-                                                  'prop:chaperone-unsafe-undefined))
-                                                #f)
-                                              #f)))
-                                       (let ((app_2
-                                              (includes-property?_0
-                                               rest_0
-                                               'prop:authentic)))
-                                         (struct-type-info1.1
-                                          name_0
-                                          parent_0
-                                          fields_0
-                                          app_0
-                                          app_1
-                                          app_2
-                                          (if (eq? prefab-imms_1 'non-prefab)
-                                            #f
-                                            prefab-imms_1)
-                                          constructor-name-expr_0
-                                          rest_0))))
-                                   #f)))))
+                                                      (known-struct-type-pure-constructor?
+                                                       parent-sti_0)))
+                                                (if (let ((or-part_0
+                                                           (<
+                                                            (length rest_0)
+                                                            5)))
+                                                      (if or-part_0
+                                                        or-part_0
+                                                        (not
+                                                         (unwrap
+                                                          (list-ref
+                                                           rest_0
+                                                           4)))))
+                                                  (not
+                                                   (includes-property?_0
+                                                    rest_0
+                                                    'prop:chaperone-unsafe-undefined))
+                                                  #f)
+                                                #f)))
+                                         (let ((app_2
+                                                (includes-property?_0
+                                                 rest_0
+                                                 'prop:authentic)))
+                                           (struct-type-info1.1
+                                            name_0
+                                            parent_0
+                                            fields_0
+                                            app_0
+                                            app_1
+                                            app_2
+                                            (if (eq? prefab-imms_1 'non-prefab)
+                                              #f
+                                              prefab-imms_1)
+                                            non-prefab-imms_0
+                                            constructor-name-expr_0
+                                            rest_0))))
+                                     #f))))))
                          #f)
                        #f)
                      #f)))))
@@ -16203,7 +16397,34 @@
                                     (let ((n_0
                                            (struct-type-info-immediate-field-count
                                             sti_0)))
-                                      (sub1 (arithmetic-shift 1 n_0)))))))))))
+                                      (let ((mask_0
+                                             (sub1 (arithmetic-shift 1 n_0))))
+                                        (let ((c1_0
+                                               (struct-type-info-non-prefab-immutables
+                                                sti_0)))
+                                          (if c1_0
+                                            (letrec*
+                                             ((loop_0
+                                               (|#%name|
+                                                loop
+                                                (lambda (imms_0 mask_1)
+                                                  (begin
+                                                    (if (null? imms_0)
+                                                      mask_1
+                                                      (let ((m_0
+                                                             (bitwise-not
+                                                              (arithmetic-shift
+                                                               1
+                                                               (car imms_0)))))
+                                                        (let ((app_4
+                                                               (cdr imms_0)))
+                                                          (loop_0
+                                                           app_4
+                                                           (bitwise-and
+                                                            mask_1
+                                                            m_0))))))))))
+                                             (loop_0 c1_0 mask_0))
+                                            mask_0))))))))))))
                      (list*
                       'begin
                       app_0
@@ -30592,7 +30813,7 @@
        wcm-state_0
        v_0))))
 (define struct:liftable
-  (make-record-type-descriptor* 'liftable #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'liftable #f #f #f #f 3 6))
 (define effect_2347
   (struct-type-install-properties!
    struct:liftable
@@ -39664,7 +39885,7 @@
           (lift-in_0 find-loops_0 leave-loops-intact?_0 v_0))
          v_0)))))
 (define struct:convert-mode
-  (make-record-type-descriptor* 'convert-mode #f #f #f #f 4 15))
+  (make-record-type-descriptor* 'convert-mode #f #f #f #f 4 0))
 (define effect_2645
   (struct-type-install-properties!
    struct:convert-mode
@@ -48892,7 +49113,7 @@
                           #t
                           (if (extflonum? q_0) #t #f))))))))))))))
 (define struct:to-unfasl
-  (make-record-type-descriptor* 'to-unfasl #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'to-unfasl #f #f #f #f 3 0))
 (define effect_3053
   (struct-type-install-properties!
    struct:to-unfasl
@@ -49043,7 +49264,7 @@
      'write
      "cannot marshal value that is embedded in compiled code\n  value: ~v"
      v_0)))
-(define struct:node (make-record-type-descriptor* 'node #f #f #f #f 5 31))
+(define struct:node (make-record-type-descriptor* 'node #f #f #f #f 5 0))
 (define effect_2498
   (struct-type-install-properties!
    struct:node
@@ -49373,7 +49594,7 @@
                          (stack-set stack_1 pos_1 (car vals_1))))))))))))
          (loop_0 pos_0 vals_0 count_0 stack_0))))))
 (define struct:stack-info
-  (make-record-type-descriptor* 'stack-info #f #f #f #f 5 31))
+  (make-record-type-descriptor* 'stack-info #f #f #f #f 5 28))
 (define effect_2396
   (struct-type-install-properties!
    struct:stack-info
@@ -49758,7 +49979,7 @@
   (lambda (stk-i_0 stack-depth_0)
     (set-stack-info-non-tail-call-later?! stk-i_0 #t)))
 (define struct:indirect
-  (make-record-type-descriptor* 'indirect #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'indirect #f #f #f #f 2 0))
 (define effect_2066
   (struct-type-install-properties!
    struct:indirect
@@ -49825,7 +50046,7 @@
     (register-struct-field-accessor! indirect-pos struct:indirect 0)
     (register-struct-field-accessor! indirect-element struct:indirect 1)
     (void)))
-(define struct:boxed (make-record-type-descriptor* 'boxed #f #f #f #f 1 1))
+(define struct:boxed (make-record-type-descriptor* 'boxed #f #f #f #f 1 0))
 (define effect_2559
   (struct-type-install-properties!
    struct:boxed

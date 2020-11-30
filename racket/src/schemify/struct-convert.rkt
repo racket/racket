@@ -69,9 +69,20 @@
                                                            #f
                                                            #f
                                                            ,(struct-type-info-immediate-field-count sti)
-                                                           ;; Reporting all as mutable, for now:
-                                                           ,(let ([n (struct-type-info-immediate-field-count sti)])
-                                                              (sub1 (arithmetic-shift 1 n)))))
+                                                           ,(let* ([n (struct-type-info-immediate-field-count sti)]
+                                                                   [mask (sub1 (arithmetic-shift 1 n))])
+                                                              (cond
+                                                                [(struct-type-info-non-prefab-immutables sti)
+                                                                 =>
+                                                                 (lambda (immutables)
+                                                                   (let loop ([imms immutables] [mask mask])
+                                                                     (cond
+                                                                      [(null? imms) mask]
+                                                                      [else
+                                                                       (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
+                                                                         (loop (cdr imms) (bitwise-and mask m)))])))]
+                                                                [else
+                                                                 mask]))))
            ,@(if (null? (struct-type-info-rest sti))
                  null
                  `((define ,(deterministic-gensym "effect")
