@@ -19,7 +19,7 @@
 
 (define os-symbol
   (case (machine-type)
-    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx)
+    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
      (if unix-style-macos? 'unix 'macosx)]
     [(a6nt ta6nt i3nt ti3nt) 'windows]
     [else 'unix]))
@@ -28,7 +28,8 @@
   (case (machine-type)
     [(a6osx ta6osx
             i3osx ti3osx
-            arm64osx tarm64osx)
+            arm64osx tarm64osx
+            ppc32osx tppc32osx)
      (if unix-style-macos?
          'darwin
          'macosx)]
@@ -63,7 +64,9 @@
      'i386]
     [(arm32le tarm32le) 'arm]
     [(arm64le tarm64le arm64osx tarm64osx) 'aarch64]
-    [(ppc32le tppc32le) 'ppc]
+    [(ppc32le tppc32le
+              ppc32osx tppc32osx)
+     'ppc]
     [else (error 'system-type "internal error: unknown architecture")]))
 
 (define link-symbol
