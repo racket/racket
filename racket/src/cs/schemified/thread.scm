@@ -1075,7 +1075,7 @@
     (register-struct-field-mutator! set-queue-start! struct:queue 0)
     (register-struct-field-mutator! set-queue-end! struct:queue 1)
     (void)))
-(define struct:node$2 (make-record-type-descriptor* 'node #f #f #f #f 3 7))
+(define struct:node$2 (make-record-type-descriptor* 'node #f #f #f #f 3 6))
 (define effect_2809
   (struct-type-install-properties!
    struct:node$2
@@ -1311,7 +1311,7 @@
   (hash-ref (primitive-table '|#%engine|) 'continuation-current-primitive #f))
 (define host:prop:unsafe-authentic-override
   (hash-ref (primitive-table '|#%engine|) 'prop:unsafe-authentic-override #f))
-(define struct:node$1 (make-record-type-descriptor* 'node #f #f #f #f 5 31))
+(define struct:node$1 (make-record-type-descriptor* 'node #f #f #f #f 5 0))
 (define effect_2451
   (struct-type-install-properties!
    struct:node$1
@@ -2081,7 +2081,7 @@
              "(or/c evt? (procedure-arity-includes/c 1) exact-nonnegative-integer?)"
              v_0))))))))
 (define struct:selector-prop-evt-value
-  (make-record-type-descriptor* 'selector-prop-evt-value #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'selector-prop-evt-value #f #f #f #f 1 0))
 (define effect_2090
   (struct-type-install-properties!
    struct:selector-prop-evt-value
@@ -2130,7 +2130,7 @@
      (begin
        (let ((or-part_0 (primary-evt? v_0)))
          (if or-part_0 or-part_0 (secondary-evt? v_0)))))))
-(define struct:poller (make-record-type-descriptor* 'poller #f #f #f #f 1 1))
+(define struct:poller (make-record-type-descriptor* 'poller #f #f #f #f 1 0))
 (define effect_2384
   (struct-type-install-properties!
    struct:poller
@@ -2158,7 +2158,7 @@
     (register-struct-field-accessor! poller-proc struct:poller 0)
     (void)))
 (define struct:poll-ctx
-  (make-record-type-descriptor* 'poll-ctx #f #f #f #f 4 15))
+  (make-record-type-descriptor* 'poll-ctx #f #f #f #f 4 8))
 (define effect_3060
   (struct-type-install-properties!
    struct:poll-ctx
@@ -2318,7 +2318,7 @@
     (register-struct-predicate! async-evt?)
     (void)))
 (define the-async-evt (async-evt6.1))
-(define struct:wrap-evt (make-record-type-descriptor* 'evt #f #f #f #f 2 3))
+(define struct:wrap-evt (make-record-type-descriptor* 'evt #f #f #f #f 2 0))
 (define effect_2319
   (struct-type-install-properties!
    struct:wrap-evt
@@ -2420,7 +2420,7 @@
     (register-struct-predicate! handle-evt?$1)
     (void)))
 (define struct:control-state-evt
-  (make-record-type-descriptor* 'control-state-evt #f #f #f #f 5 31))
+  (make-record-type-descriptor* 'control-state-evt #f #f #f #f 5 0))
 (define effect_2665
   (struct-type-install-properties!
    struct:control-state-evt
@@ -2570,7 +2570,7 @@
      4)
     (void)))
 (define struct:poll-guard-evt
-  (make-record-type-descriptor* 'evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'evt #f #f #f #f 1 0))
 (define effect_2393
   (struct-type-install-properties!
    struct:poll-guard-evt
@@ -2629,7 +2629,7 @@
      struct:poll-guard-evt
      0)
     (void)))
-(define struct:choice-evt (make-record-type-descriptor* 'evt #f #f #f #f 1 1))
+(define struct:choice-evt (make-record-type-descriptor* 'evt #f #f #f #f 1 0))
 (define effect_2512
   (struct-type-install-properties!
    struct:choice-evt
@@ -2714,7 +2714,7 @@
             (|#%app| (poller-proc v_1) evt_0 poll-ctx_0)
             (if (1/evt? v_1) (values #f v_1) (values #f the-never-evt))))))))
 (define struct:delayed-poll
-  (make-record-type-descriptor* 'delayed-poll #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'delayed-poll #f #f #f #f 1 0))
 (define effect_3144
   (struct-type-install-properties!
    struct:delayed-poll
@@ -2744,7 +2744,7 @@
     (register-struct-field-accessor! delayed-poll-resume struct:delayed-poll 0)
     (void)))
 (define struct:poller-evt
-  (make-record-type-descriptor* 'poller-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'poller-evt #f #f #f #f 1 0))
 (define effect_2558
   (struct-type-install-properties!
    struct:poller-evt
@@ -2799,7 +2799,7 @@
  (prop:waiter waiter? waiter-ref)
  (make-struct-type-property 'waiter))
 (define struct:waiter-methods
-  (make-record-type-descriptor* 'waiter-methods #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'waiter-methods #f #f #f #f 2 0))
 (define effect_3162
   (struct-type-install-properties!
    struct:waiter-methods
@@ -2849,7 +2849,7 @@
   (lambda (w_0 interrupt-cb_0)
     (|#%app| (waiter-methods-suspend (waiter-ref w_0)) w_0 interrupt-cb_0)))
 (define struct:select-waiter
-  (make-record-type-descriptor* 'select-waiter #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'select-waiter #f #f #f #f 1 0))
 (define effect_2458
   (struct-type-install-properties!
    struct:select-waiter
@@ -2911,7 +2911,7 @@
     (register-struct-field-accessor! select-waiter-proc struct:select-waiter 0)
     (void)))
 (define struct:custodian
-  (make-record-type-descriptor* 'custodian #f #f #f #f 13 8191))
+  (make-record-type-descriptor* 'custodian #f #f #f #f 13 8188))
 (define effect_2364
   (struct-type-install-properties!
    struct:custodian
@@ -3132,7 +3132,7 @@
  (prop:place-message place-message? place-message-ref)
  (make-struct-type-property 'place-message))
 (define struct:message-ized
-  (make-record-type-descriptor* 'message-ized #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'message-ized #f #f #f #f 1 0))
 (define effect_2650
   (struct-type-install-properties!
    struct:message-ized
@@ -4280,7 +4280,7 @@
                                  v_0)))))))))))))
     (lambda (v_0) (let ((graph_0 (box #f))) (loop_0 graph_0 v_0)))))
 (define struct:place
-  (make-record-type-descriptor* 'place #f #f #f #f 19 524287))
+  (make-record-type-descriptor* 'place #f #f #f #f 19 491440))
 (define effect_3017
   (struct-type-install-properties!
    struct:place
@@ -4521,7 +4521,7 @@
     (void)))
 (define count-field-pos 2)
 (define struct:semaphore-peek-evt
-  (make-record-type-descriptor* 'semaphore-peek-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'semaphore-peek-evt #f #f #f #f 1 0))
 (define effect_2819
   (struct-type-install-properties!
    struct:semaphore-peek-evt
@@ -4862,7 +4862,7 @@
 (define child-node (lambda (child_0) child_0))
 (define node-child (lambda (n_0) n_0))
 (define struct:thread-group
-  (make-record-type-descriptor* 'thread-group struct:node #f #f #f 4 15))
+  (make-record-type-descriptor* 'thread-group struct:node #f #f #f 4 14))
 (define effect_2111
   (struct-type-install-properties!
    struct:thread-group
@@ -5195,7 +5195,7 @@
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
 (define reference-sink
   (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
-(define struct:plumber (make-record-type-descriptor* 'plumber #f #f #f #f 2 3))
+(define struct:plumber (make-record-type-descriptor* 'plumber #f #f #f #f 2 0))
 (define effect_2525
   (struct-type-install-properties!
    struct:plumber
@@ -5243,7 +5243,7 @@
        v_0))
    'current-plumber))
 (define struct:plumber-flush-handle
-  (make-record-type-descriptor* 'plumber-flush-handle #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'plumber-flush-handle #f #f #f #f 2 0))
 (define effect_2524
   (struct-type-install-properties!
    struct:plumber-flush-handle
@@ -5479,7 +5479,7 @@
      exit
      (case-lambda (() (begin (exit_0 #t))) ((v1_0) (exit_0 v1_0))))))
 (define struct:custodian-box
-  (make-record-type-descriptor* 'custodian-box #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'custodian-box #f #f #f #f 2 1))
 (define effect_3118
   (struct-type-install-properties!
    struct:custodian-box
@@ -5523,7 +5523,7 @@
      0)
     (void)))
 (define struct:willed-callback
-  (make-record-type-descriptor* 'willed-callback #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'willed-callback #f #f #f #f 2 0))
 (define effect_2810
   (struct-type-install-properties!
    struct:willed-callback
@@ -6916,7 +6916,7 @@
               (void)))))))
      (loop_0 mref_0))))
 (define struct:thread
-  (make-record-type-descriptor* 'thread struct:node #f #f #f 24 16777215))
+  (make-record-type-descriptor* 'thread struct:node #f #f #f 24 16777082))
 (define effect_3120
   (struct-type-install-properties!
    struct:thread
@@ -7492,7 +7492,7 @@
            (raise-argument-error 'thread-wait "thread?" t_0))
          (1/semaphore-wait (|#%app| get-thread-dead-sema t_0)))))))
 (define struct:dead-evt
-  (make-record-type-descriptor* 'thread-dead-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'thread-dead-evt #f #f #f #f 1 0))
 (define effect_2381
   (struct-type-install-properties!
    struct:dead-evt
@@ -7823,7 +7823,7 @@
                       (loop_0 app_0 (cons (car crs_0) accum_0))))))))))))
      (loop_0 (thread-custodian-references t_0) null))))
 (define struct:transitive-resume
-  (make-record-type-descriptor* 'transitive-resume #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'transitive-resume #f #f #f #f 2 0))
 (define effect_2586
   (struct-type-install-properties!
    struct:transitive-resume
@@ -7956,7 +7956,7 @@
           (|#%app| interrupt-callback_0))
         (void)))))
 (define struct:suspend-resume-evt
-  (make-record-type-descriptor* 'suspend-resume-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'suspend-resume-evt #f #f #f #f 2 2))
 (define effect_2576
   (struct-type-install-properties!
    struct:suspend-resume-evt
@@ -8658,7 +8658,7 @@
                 #f))))
        (begin-unsafe (set! thread-engine-for-roots thread-engine_0))))
     (void)))
-(define struct:channel (make-record-type-descriptor* 'channel #f #f #f #f 2 3))
+(define struct:channel (make-record-type-descriptor* 'channel #f #f #f #f 2 0))
 (define effect_1902
   (struct-type-install-properties!
    struct:channel
@@ -8730,7 +8730,7 @@
     (register-struct-field-accessor! channel-put-queue struct:channel 1)
     (void)))
 (define struct:channel-put-evt*
-  (make-record-type-descriptor* 'channel-put-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'channel-put-evt #f #f #f #f 2 0))
 (define effect_2960
   (struct-type-install-properties!
    struct:channel-put-evt*
@@ -8826,7 +8826,7 @@
    #f
    #f
    1
-   1))
+   0))
 (define effect_3243
   (struct-type-install-properties!
    struct:channel-select-waiter
@@ -11116,7 +11116,7 @@
          (start-atomic)
          (begin0 (retry_0 s_0 timeout-at_0) (end-atomic)))))))
 (define struct:replacing-evt
-  (make-record-type-descriptor* 'evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'evt #f #f #f #f 1 0))
 (define effect_2056
   (struct-type-install-properties!
    struct:replacing-evt
@@ -11178,7 +11178,7 @@
      0)
     (void)))
 (define struct:nested-sync-evt
-  (make-record-type-descriptor* 'evt #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'evt #f #f #f #f 3 0))
 (define effect_2232
   (struct-type-install-properties!
    struct:nested-sync-evt
@@ -11473,7 +11473,7 @@
 (define TICKS 100000)
 (define set-schedule-quantum! (lambda (n_0) (set! TICKS n_0)))
 (define struct:future*
-  (make-record-type-descriptor* 'future #f #f #f #f 10 1023))
+  (make-record-type-descriptor* 'future #f #f #f #f 10 1016))
 (define effect_2884
   (struct-type-install-properties!
    struct:future*
@@ -11906,7 +11906,7 @@
 (define 1/futures-enabled?
   (|#%name| futures-enabled? (lambda () (begin (|#%app| threaded?)))))
 (define struct:future-evt
-  (make-record-type-descriptor* 'future-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'future-evt #f #f #f #f 1 0))
 (define effect_2234
   (struct-type-install-properties!
    struct:future-evt
@@ -12349,7 +12349,7 @@
 (define pthread-count 1)
 (define set-processor-count! (lambda (n_0) (set! pthread-count n_0)))
 (define struct:scheduler
-  (make-record-type-descriptor* 'scheduler #f #f #f #f 6 63))
+  (make-record-type-descriptor* 'scheduler #f #f #f #f 6 7))
 (define effect_2611
   (struct-type-install-properties!
    struct:scheduler
@@ -12407,7 +12407,7 @@
      struct:scheduler
      2)
     (void)))
-(define struct:worker (make-record-type-descriptor* 'worker #f #f #f #f 5 31))
+(define struct:worker (make-record-type-descriptor* 'worker #f #f #f #f 5 26))
 (define effect_2322
   (struct-type-install-properties!
    struct:worker
@@ -13275,7 +13275,7 @@
 (define set-check-place-activity!
   (lambda (proc_0) (set! check-place-activity proc_0)))
 (define struct:alarm-evt
-  (make-record-type-descriptor* 'alarm-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'alarm-evt #f #f #f #f 1 0))
 (define effect_2693
   (struct-type-install-properties!
    struct:alarm-evt
@@ -13842,7 +13842,7 @@
       ((s_0 proc_0 try-fail12_0 . args_0)
        (call-with-semaphore/enable-break_0 s_0 proc_0 try-fail12_0 args_0))))))
 (define struct:will-executor
-  (make-record-type-descriptor* 'will-executor #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'will-executor #f #f #f #f 2 0))
 (define effect_2934
   (struct-type-install-properties!
    struct:will-executor
@@ -14884,7 +14884,7 @@
                         (loop_0)))))))))))
        (loop_0)))))
 (define struct:place-done-evt
-  (make-record-type-descriptor* 'place-dead-evt #f #f #f #f 2 3))
+  (make-record-type-descriptor* 'place-dead-evt #f #f #f #f 2 0))
 (define effect_3079
   (struct-type-install-properties!
    struct:place-done-evt
@@ -14993,7 +14993,7 @@
            (raise-argument-error 'place-dead-evt "place?" p_0))
          (place-done-evt3.1 p_0 #f))))))
 (define struct:message-queue
-  (make-record-type-descriptor* 'message-queue #f #f #f #f 6 63))
+  (make-record-type-descriptor* 'message-queue #f #f #f #f 6 22))
 (define effect_2821
   (struct-type-install-properties!
    struct:message-queue
@@ -15181,7 +15181,7 @@
                     (|#%app| host:mutex-release lock_0)
                     (|#%app| success-k_0 (car q_0))))))))))))
 (define struct:pchannel
-  (make-record-type-descriptor* 'place-channel #f #f #f #f 6 63))
+  (make-record-type-descriptor* 'place-channel #f #f #f #f 6 0))
 (define effect_2691
   (struct-type-install-properties!
    struct:pchannel
@@ -15486,7 +15486,7 @@
       (lambda () (ensure-wakeup-handle!))))
     (void)))
 (define struct:fsemaphore
-  (make-record-type-descriptor* 'fsemaphore #f #f #f #f 4 15))
+  (make-record-type-descriptor* 'fsemaphore #f #f #f #f 4 13))
 (define effect_2870
   (struct-type-install-properties!
    struct:fsemaphore
@@ -15540,7 +15540,7 @@
      3)
     (void)))
 (define struct:fsemaphore-box-evt
-  (make-record-type-descriptor* 'fsemaphore-box-evt #f #f #f #f 1 1))
+  (make-record-type-descriptor* 'fsemaphore-box-evt #f #f #f #f 1 0))
 (define effect_2505
   (struct-type-install-properties!
    struct:fsemaphore-box-evt
@@ -15744,7 +15744,7 @@
           (lambda () (begin (start-atomic) (|#%app| proc_0))))
          (void))))))
 (define struct:os-semaphore
-  (make-record-type-descriptor* 'os-semaphore #f #f #f #f 3 7))
+  (make-record-type-descriptor* 'os-semaphore #f #f #f #f 3 1))
 (define effect_2794
   (struct-type-install-properties!
    struct:os-semaphore

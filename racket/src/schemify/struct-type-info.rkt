@@ -18,6 +18,7 @@
                                pure-constructor?
                                authentic?
                                prefab-immutables ; #f or immutable expression to be quoted
+                               non-prefab-immutables ; #f or immutable expression to be quoted
                                constructor-name-expr  ; an expression
                                rest)) ; argument expressions after auto-field value
 (define struct-type-info-rest-properties-list-pos 0)
@@ -61,7 +62,18 @@
                        [`,_ #f])))
               (define constructor-name-expr (and ((length rest) . > . 5)
                                                  (list-ref rest 5)))
-              (and prefab-imms
+              (define non-prefab-imms
+                (and (eq? prefab-imms 'non-prefab)
+                     (match rest
+                       [`() '()]
+                       [`(,_) '()]
+                       [`(,_ ,_) '()]
+                       [`(,_ ,_ ,_) '()]
+                       [`(,_ ,_ ,_ ',immutables . ,_) immutables]
+                       [`,_ #f])))
+              (and (if (eq? prefab-imms 'non-prefab)
+                       non-prefab-imms
+                       prefab-imms)
                    (struct-type-info name
                                      parent
                                      fields
@@ -78,6 +90,7 @@
                                      (if (eq? prefab-imms 'non-prefab)
                                          #f
                                          prefab-imms)
+                                     non-prefab-imms
                                      constructor-name-expr
                                      rest)))))]
     [`(let-values () ,body)

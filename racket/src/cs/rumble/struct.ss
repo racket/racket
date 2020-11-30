@@ -501,8 +501,21 @@
                                                parent-rtd*
                                                prefab-uid #f #f
                                                (+ init-count auto-count)
-                                               ;; Reporting all as mutable, for now:
-                                               (sub1 (general-arithmetic-shift 1 (+ init-count auto-count))))]
+					       (if (eq? insp 'prefab)
+						   (sub1 (general-arithmetic-shift 1 (+ init-count auto-count)))
+						   (let loop ([i 0] [mask 0])
+						     (cond
+						      [(fx= i init-count)
+						       (let loop ([i 0] [mask mask])
+							 (cond
+							  [(fx= i auto-count) mask]
+							  [else
+							   (loop (fx+ i 1)
+								 (bitwise-ior mask (arithmetic-shift 1 (fx+ i init-count))))]))]
+						      [(#%memq i immutables) (loop (fx+ i 1) mask)]
+						      [else
+						       (loop (fx+ i 1)
+							     (bitwise-ior mask (arithmetic-shift 1 i)))]))))]
             [parent-auto*-count (get-field-info-auto*-count parent-fi)]
             [parent-init*-count (get-field-info-init*-count parent-fi)]
             [parent-total*-count (get-field-info-total*-count parent-fi)]
@@ -747,7 +760,6 @@
     (let ([rtd (position-based-mutator-rtd pbm)])
       (check-accessor-or-mutator-index who rtd pos)
       (let* ([abs-pos (+ pos (position-based-mutator-offset pbm))]
-             [p (record-field-mutator rtd abs-pos)]
              [rec-name (record-type-name rtd)]
              [mut-name (string->symbol
                         (string-append "set-"
@@ -760,10 +772,11 @@
              [wrap-p
               (procedure-rename
                (if (struct-type-field-mutable? rtd pos)
-                   (lambda (v a)
-                     (if (record? v rtd)
-                         (p v a)
-                         (impersonate-set! p rtd pos abs-pos v a rec-name name)))
+		   (let ([p (record-field-mutator rtd abs-pos)])
+		     (lambda (v a)
+		       (if (record? v rtd)
+			   (p v a)
+			   (impersonate-set! p rtd pos abs-pos v a rec-name name))))
                    (lambda (v a)
                      (cannot-modify-by-pos-error mut-name v pos)))
                mut-name)])
