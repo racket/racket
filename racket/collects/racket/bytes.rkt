@@ -3,8 +3,6 @@
 (provide bytes-append* bytes-join
          sequence->bytes)
 
-(require racket/sequence)
-
 (define bytes-append*
   (case-lambda [(strs) (apply bytes-append strs)] ; optimize common case
                [(str . strss) (apply bytes-append (apply list* str strss))]))
@@ -35,4 +33,4 @@
   (cond
     [(bytes? sequence) (bytes->immutable-bytes sequence)]
     [(list? sequence) (bytes->immutable-bytes (list->bytes sequence))]
-    [else (bytes->immutable-bytes (list->bytes (sequence->list sequence)))]))
+    [else (bytes->immutable-bytes (list->bytes (for/list ([element sequence]) element)))]))

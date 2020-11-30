@@ -16,7 +16,6 @@
   (provide build-kmp-table))
 
 (require (only-in racket/list add-between)
-         racket/sequence
          (only-in racket/unsafe/undefined [unsafe-undefined none]))
            
 
@@ -325,4 +324,4 @@
   (cond
     [(string? sequence) (string->immutable-string sequence)]
     [(list? sequence) (string->immutable-string (list->string sequence))]
-    [else (string->immutable-string (list->string (sequence->list sequence)))]))
+    [else (string->immutable-string (list->string (for/list ([element sequence]) element)))]))
