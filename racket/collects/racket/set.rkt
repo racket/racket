@@ -29,6 +29,7 @@
          set seteq seteqv
          weak-set weak-seteq weak-seteqv
          mutable-set mutable-seteq mutable-seteqv
+         sequence->set
          list->set list->seteq list->seteqv
          list->weak-set list->weak-seteq list->weak-seteqv
          list->mutable-set list->mutable-seteq list->mutable-seteqv

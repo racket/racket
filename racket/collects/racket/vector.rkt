@@ -7,7 +7,9 @@
          vector-filter vector-filter-not
          vector-count vector-argmin vector-argmax
          vector-member vector-memq vector-memv
-         vector-sort vector-sort!)
+         vector-sort vector-sort!
+         sequence->vector)
+
 (require racket/unsafe/ops
          (for-syntax racket/base)
          (rename-in (except-in "private/sort.rkt" sort)
@@ -296,3 +298,12 @@
     (if getkey
         (raw-vector-sort! vec less? start end getkey cache-keys?)
         (raw-vector-sort! vec less? start end))))
+
+(define (sequence->vector sequence)
+  (unless (sequence? sequence)
+    (raise-argument-error 'sequence->vector "(sequence/c any/c)" sequence))
+  ;; TODO(jackfirth): Is there a way to reduce the number of copies we create here?
+  (cond
+    [(vector? sequence) (vector->immutable-vector sequence)]
+    [(list? sequence) (vector->immutable-vector (list->vector sequence))]
+    [else (vector->immutable-vector (for/vector ([element sequence]) element))]))

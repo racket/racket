@@ -53,9 +53,14 @@ whose positions are initialized with the given @racket[char]s.
 
 
 @defproc[(string->immutable-string [str string?]) (and/c string? immutable?)]{
-Returns an immutable string with the same content as
- @racket[str], returning @racket[str] itself if @racket[str] is
- immutable.}
+ Returns an immutable string with the same content as @racket[str], returning @racket[str] itself if
+ @racket[str] is immutable.
+
+ Prefer using @racket[sequence->string], which accepts all kinds of sequences and returns immutable
+ strings. When given mutable strings, @racket[sequence->string] is just as fast as
+ @racket[string->immutable-string].
+ 
+ @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->string].}]}
 
 
 @defproc[(string-length [str string?]) exact-nonnegative-integer?]{
@@ -166,22 +171,31 @@ string.
 @history[#:added "7.5.0.14"]}
 
 
-@defproc[(string->list [str string?]) (listof char?)]{ Returns a new
- list of characters corresponding to the content of @racket[str]. That is,
- the length of the list is @racket[(string-length str)], and the
- sequence of characters in @racket[str] is the same sequence in the
- result list.
+@defproc[(string->list [str string?]) (listof char?)]{
 
-@mz-examples[(string->list "Apple")]}
+ Returns a new list of characters corresponding to the content of @racket[str]. That is, the length of
+ the list is @racket[(string-length str)], and the sequence of characters in @racket[str] is the same
+ sequence in the result list.
+
+ Prefer using @racket[sequence->list], which accepts all kinds of sequences.
+
+ @mz-examples[(string->list "Apple")]
+
+ @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->list].}]}
 
 
-@defproc[(list->string [lst (listof char?)]) string?]{ Returns a new
- mutable string whose content is the list of characters in @racket[lst].
- That is, the length of the string is @racket[(length lst)], and
- the sequence of characters in @racket[lst] is the same sequence in
- the result string.
+@defproc[(list->string [lst (listof char?)]) string?]{
 
-@mz-examples[(list->string (list #\A #\p #\p #\l #\e))]}
+ Returns a new mutable string whose content is the list of characters in @racket[lst]. That is, the
+ length of the string is @racket[(length lst)], and the sequence of characters in @racket[lst] is the
+ same sequence in the result string.
+
+ Prefer using @racket[sequence->string], which accepts all kinds of sequences and returns immutable
+ strings.
+
+ @mz-examples[(list->string (list #\A #\p #\p #\l #\e))]
+
+ @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->string].}]}
 
 
 @defproc[(build-string [n exact-nonnegative-integer?]
@@ -575,6 +589,28 @@ the second argument, respectively.
 @history[#:added "6.3"]{}
 }
 
+@defproc[(sequence->string [chars (sequence/c char?)]) (and/c string? immutable?)]{
+
+ Copies @racket[chars] into an immutable string. This function makes an effort to avoid unnecessary
+ copying: if given an immutable string, the string is returned unchanged. For some types of sequences,
+ fast type-specific conversion functions are used rather than going through the generic sequence
+ interface. No guarantees about specific fast paths are provided, but users may generally assume that
+ there is no performance benefit to using a specialized string-copying function such as
+ @racket[list->string] or @racket[string->immutable-string] instead of using
+ @racket[sequence->string].
+
+ Note that @racket[sequence->string] does @bold{not} accept @tech{byte strings}. A byte string is a
+ sequence of bytes, not a sequence of characters. To convert byte strings into strings, use
+ @racket[bytes->string/utf-8] or a similar function.
+
+ @(mz-examples
+   #:eval string-eval
+   (sequence->string (list #\a #\p #\p #\l #\e))
+   (sequence->string (vector #\r #\e #\d))
+   (sequence->string "hello"))
+
+ @history[#:added "7.9.0.10"]
+}
 
 @; ----------------------------------------
 @include-section["format.scrbl"]
