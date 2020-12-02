@@ -1,7 +1,9 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt")
+@(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt"
+          (for-label racket/string))
 
 @(define ex-eval (make-base-eval))
+@(ex-eval '(require racket/string))
 
 @title[#:tag "syntax-overview"]{Simple Definitions and Expressions}
 
@@ -224,9 +226,11 @@ pre-defined names are hyperlinked to the reference manual. So, you can
 click on an identifier to get full details about its use.
 
 @interaction[
+#:eval ex-eval
 (code:line (string-append "rope" "twine" "yarn")  (code:comment @#,t{append strings}))
 (code:line (substring "corduroys" 0 4)            (code:comment @#,t{extract a substring}))
-(code:line (string-length "shoelace")             (code:comment @#,t{get a string's length}))
+(code:line (string-prefix? "shoelace" "shoe")     (code:comment @#,t{recognize string prefix/suffix}))
+(string-suffix? "shoelace" "shoe")
 (code:line (string? "Ceci n'est pas une string.") (code:comment @#,t{recognize strings}))
 (string? 1)
 (code:line (sqrt 16)                              (code:comment @#,t{find a square root}))
@@ -260,13 +264,14 @@ the third @nonterm{expr} is evaluated for the result.
 
 @examples[
 (if (> 2 3)
-    "bigger"
-    "smaller")
+    "2 is bigger than 3"
+    "2 is smaller than 3")
 ]
 
 @def+int[
+#:eval ex-eval
 (define (reply s)
-  (if (equal? "hello" (substring s 0 5))
+  (if (string-prefix? s "hello ")
       "hi!"
       "huh?"))
 (reply "hello racket")
@@ -274,13 +279,15 @@ the third @nonterm{expr} is evaluated for the result.
 ]
 
 Complex conditionals can be formed by nesting @racket[if]
-expressions. For example, you could make the @racket[reply] function
-work when given non-strings:
+expressions. For example, in the previous @racket[reply] example,
+the input must be a string because @racket[string-prefix?]
+would error when given non-strings. You can remove this restriction
+by adding another @racket[if] to check first if the input is a string:
 
 @racketblock[
-(define (reply s)
+(define (reply-non-string s)
   (if (string? s)
-      (if (equal? "hello" (substring s 0 5))
+      (if (string-prefix? s "hello ")
           "hi!"
           "huh?")
       "huh?"))
@@ -290,9 +297,9 @@ Instead of duplicating the @racket["huh?"] case, this function is
 better written as
 
 @racketblock[
-(define (reply s)
+(define (reply-non-string s)
   (if (if (string? s)
-          (equal? "hello" (substring s 0 5))
+          (string-prefix? s "hello ")
           #f)
       "hi!"
       "huh?"))
@@ -300,7 +307,7 @@ better written as
 
 but these kinds of nested @racket[if]s are difficult to read.  Racket
 provides more readable shortcuts through the @racket[and] and
-@racket[or] forms, which work with any number of expressions:
+@racket[or] forms:
 
 @moreguide["and+or"]{@racket[and] and @racket[or]}
 
@@ -315,14 +322,28 @@ going. The @racket[or] form similarly short-circuits when it
 encounters a true result.
 
 @defexamples[
-(define (reply s)
-  (if (and (string? s)
-           (>= (string-length s) 5)
-           (equal? "hello" (substring s 0 5)))
+#:eval ex-eval
+(define (reply-non-string s)
+  (if (and (string? s) (string-prefix? s "hello "))
       "hi!"
       "huh?"))
-(reply "hello racket")
-(reply 17)
+(reply-non-string "hello racket")
+(reply-non-string 17)
+]
+
+Note that in the above grammar, the @racket[and] and @racket[or] forms
+work with any number of expressions.
+
+@defexamples[
+#:eval ex-eval
+(define (reply-only-enthusiastic s)
+  (if (and (string? s)
+           (string-prefix? s "hello ")
+           (string-suffix? s "!"))
+      "hi!"
+      "huh?"))
+(reply-only-enthusiastic "hello racket!")
+(reply-only-enthusiastic "hello racket")
 ]
 
 Another common pattern of nested @racket[if]s involves a sequence of
@@ -330,11 +351,11 @@ tests, each with its own result:
 
 @racketblock[
 (define (reply-more s)
-  (if (equal? "hello" (substring s 0 5))
+  (if (string-prefix? s "hello ")
       "hi!"
-      (if (equal? "goodbye" (substring s 0 7))
+      (if (string-prefix? s "goodbye ")
           "bye!"
-          (if (equal? "?" (substring s (- (string-length s) 1)))
+          (if (string-suffix? s "?")
               "I don't know"
               "huh?"))))
 ]
@@ -361,13 +382,14 @@ Using @racket[cond], the @racket[reply-more] function can be more
 clearly written as follows:
 
 @def+int[
+#:eval ex-eval
 (define (reply-more s)
   (cond
-   [(equal? "hello" (substring s 0 5))
+   [(string-prefix? s "hello ")
     "hi!"]
-   [(equal? "goodbye" (substring s 0 7))
+   [(string-prefix? s "goodbye ")
     "bye!"]
-   [(equal? "?" (substring s (- (string-length s) 1)))
+   [(string-suffix? s "?")
     "I don't know"]
    [else "huh?"]))
 (reply-more "hello racket")
@@ -548,16 +570,18 @@ Definitions at the start of a function body are local to the
 function body.
 
 @defexamples[
+#:eval ex-eval
 (define (converse s)
   (define (starts? s2) (code:comment @#,t{local to @racket[converse]})
-    (define len2 (string-length s2))  (code:comment @#,t{local to @racket[starts?]})
-    (and (>= (string-length s) len2)
-         (equal? s2 (substring s 0 len2))))
+    (define spaced-s2 (string-append s2 " ")) (code:comment @#,t{local to @racket[starts?]})
+    (string-prefix? s spaced-s2))
   (cond
    [(starts? "hello") "hi!"]
    [(starts? "goodbye") "bye!"]
    [else "huh?"]))
-(converse "hello!")
+(converse "hello world")
+(converse "hellonearth")
+(converse "goodbye friends")
 (converse "urp")
 (eval:alts (code:line starts? (code:comment @#,t{outside of @racket[converse], so...}))
            (parameterize ([current-namespace (make-base-namespace)]) (eval 'starts?)))
