@@ -43,10 +43,13 @@ numbers produced by the reader in @racket[read-syntax] mode are
 @deftech{interned}, which means that such values in the result of
 @racket[read-syntax] are always @racket[eq?] when they are
 @racket[equal?] (whether from the same call or different calls to
-@racket[read-syntax]). Symbols and keywords are @tech{interned} in
-both @racket[read] and @racket[read-syntax] mode. Sending an
-@tech{interned} value across a @tech{place channel} does not
-necessarily produce an @tech{interned} value at the receiving
+@racket[read-syntax]). Symbols and keywords are interned in
+both @racket[read] and @racket[read-syntax] mode. When a quoted value
+is in compiled code that written and then read back in (see
+@secref["print-compiled"]), only strings and byte strings are
+interned when reading the code. Sending an
+interned value across a @tech{place channel} does not
+necessarily produce an interned value at the receiving
 @tech{place}. See also @racket[datum-intern-literal] and
 @racket[datum->syntax].
 
