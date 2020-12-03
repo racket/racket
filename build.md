@@ -272,11 +272,12 @@ under Windows, encoding-conversion, extflonum, and SSL functionality is
 hobbled until native libraries from the `"racket-win32-i386"` or
 `"racket-win32-x86_64"` package are installed.
 
-On all platforms, from the top-level makefile, `JOB_OPTIONS` as a
-makefile variable and `PLT_SETUP_OPTIONS` as an environment variable are
-passed on to the `raco setup` that is used to build minimal-Racket
-libraries. See the documentation for `raco setup` for information on the
-options.
+On all platforms, from the top-level makefile, the `PLT_SETUP_OPTIONS`
+makefile variable is passed on to the `raco setup` that is used to build
+minimal-Racket libraries. See the documentation for `raco setup` for
+information on the options. (The `JOB_OPTIONS` makefile variable is also
+passed on, but it is meant to be set by some makefile targets when
+`CPUS` is non-empty.)
 
 For cross compilation, add configuration options to
 `CONFIGURE_ARGS="<options>"` as described in the `"README.txt"` of
