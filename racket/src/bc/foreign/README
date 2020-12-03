@@ -9,3 +9,5 @@ Changes to the source in this copy:
  * Added $CPPFLAGS to use of $CC in "configure.host"
 
  * Added preprocessor conditionals for Go closures in "ffi_darwin.c"
+
+ * Adjusted "config.guess" to detect Mac OS AArch64

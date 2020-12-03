@@ -2,7 +2,7 @@
 # Attempt to guess a canonical system name.
 #   Copyright 1992-2014 Free Software Foundation, Inc.
 
-timestamp='2014-11-04'
+timestamp='2020-12-03'
 
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -1281,6 +1281,8 @@ EOF
 	    # processor. This is not true of the ARM version of Darwin
 	    # that Apple uses in portable devices.
 	    UNAME_PROCESSOR=x86_64
+	elif test "$UNAME_PROCESSOR" = arm ; then
+	    UNAME_PROCESSOR=aarch64
 	fi
 	echo ${UNAME_PROCESSOR}-apple-darwin${UNAME_RELEASE}
 	exit ;;

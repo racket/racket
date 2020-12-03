@@ -695,6 +695,8 @@ PLAIN_CC
 POST_LINKER
 MZLINKER
 REZ
+RESTORE_SIGNATURE
+STRIP_SIGNATURE
 STRIP_LIB_DEBUG
 STRIP_DEBUG
 ARFLAGS
@@ -2906,6 +2908,9 @@ STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
+
+STRIP_SIGNATURE=":"
+RESTORE_SIGNATURE=":"
 
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
@@ -5379,6 +5384,24 @@ $as_echo "$set_strip_lib" >&6; }
   fi
 fi
 
+case "$host_os" in
+  darwin*)
+    case "$host_cpu" in
+       aarch64)
+         STRIP_SIGNATURE="codesign --remove-signature"
+         RESTORE_SIGNATURE="codesign -s - --entitlements"
+       ;;
+       *)
+        # Check whether `codesign` can remove signatures
+        touch sig-test-file
+        if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
+           STRIP_SIGNATURE="codesign --remove-signature"
+        fi
+        rm sig-test-file
+        ;;
+    esac
+esac
+
 
 ############## C flags ################
 
@@ -7064,6 +7087,8 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
 
 
 

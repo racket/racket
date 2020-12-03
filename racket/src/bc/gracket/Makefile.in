@@ -90,7 +90,7 @@ LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
 SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
-SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d "$(srcdir)/../../start/collects-path.rkt"
+SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d "$(srcdir)/../../start/collects-path.rkt" "${srcdir}/../.."
 
 # Incremented each time the binaries change:
 DOWNLOAD_BIN_VERSION = 1

@@ -668,6 +668,8 @@ RKTL_PRE
 INCLUDEDEP
 POST_LINKER
 RKTLINKER
+RESTORE_SIGNATURE
+STRIP_SIGNATURE
 STRIP_LIB_DEBUG
 STRIP_DEBUG
 ICP_LIB
@@ -2684,6 +2686,9 @@ STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
+
+STRIP_SIGNATURE=":"
+RESTORE_SIGNATURE=":"
 
 # Check whether --enable-ubsan was given.
 if test "${enable_ubsan+set}" = set; then :
@@ -4762,6 +4767,24 @@ $as_echo "$set_strip_lib" >&6; }
   fi
 fi
 
+case "$host_os" in
+  darwin*)
+    case "$host_cpu" in
+       aarch64)
+         STRIP_SIGNATURE="codesign --remove-signature"
+         RESTORE_SIGNATURE="codesign -s - --entitlements"
+       ;;
+       *)
+        # Check whether `codesign` can remove signatures
+        touch sig-test-file
+        if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
+           STRIP_SIGNATURE="codesign --remove-signature"
+        fi
+        rm sig-test-file
+        ;;
+    esac
+esac
+
 
 ############## natipkg ################
 
@@ -5591,6 +5614,8 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
+
 
 
 
