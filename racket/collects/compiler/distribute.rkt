@@ -138,7 +138,8 @@
         (let ([relative->binary-relative
                (lambda (sub-dir type relative-dir)
                  (cond
-                  [relative-base relative-base]
+                  [relative-base
+                   (if (string? relative-base) (string->path relative-base) relative-base)]
                   [(not executables?)
                    (build-path dest-dir relative-dir)]
                   [sub-dir
