@@ -28,7 +28,9 @@
     (error 'check-same "not: ~e ~e" a b)))
 
 (define (round-up-page v)
-  (bitwise-and #xFFFFF000 (+ v #xFFF)))
+  (if (eq? 'aarch64 (system-type 'arch))
+      (bitwise-and #xFFFFC000 (+ v #x3FFF))
+      (bitwise-and #xFFFFF000 (+ v #xFFF))))
 
 (define (mult-of-8 n)
   (let ([m (modulo n 8)])
@@ -285,8 +287,8 @@
               ((if link-edit-64? write-xulong write-ulong) outlen out)
               ((if link-edit-64? write-xulong write-ulong) out-offset out)
               ((if link-edit-64? write-xulong write-ulong) outlen out)
-              (write-ulong 0 out)
-              (write-ulong 0 out)
+              (write-ulong 0 out) ; maxprot
+              (write-ulong 0 out) ; minprot
               (write-ulong 0 out)
               (write-ulong 4 out) ; 4 means SG_NORELOC
               ;; Shift command positions

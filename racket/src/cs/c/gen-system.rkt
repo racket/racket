@@ -92,6 +92,7 @@
   (define-values (arch) (lookup 'arch-symbol))
   (define-values (link) (lookup 'link-symbol))
   (define-values (so-suffix) (lookup 'so-suffix-bytes))
+  (define-values (so-mode) (lookup 'so-mode))
 
   (define-values (lib-subpath)
     (string-append
@@ -124,7 +125,7 @@
           'library-subpath (string->bytes/utf-8 lib-subpath)
           'library-subpath-convention (if (eq? os 'windows) 'windows 'unix)
           'so-suffix so-suffix
-          'so-mode 'local
+          'so-mode so-mode
           'fs-change (if (eq? os 'windows)
                          '#(supported scalable low-latency #f)
                          ;; Warning: not necessarily right for cross compilation:

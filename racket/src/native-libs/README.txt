@@ -22,7 +22,7 @@ Currently, we use the following external packages and versions:
  openssl-1.1.1g
  libiconv-1.15 (Windows only)
  zlib-1.2.11 (Windows and Linux only)
- libffi-3.2.1
+ libffi-3.2.1 (AArch64 Mac OS: libffi-3.3)
  expat-2.2.5
  gettext-0.19.8
  glib-2.56.0
@@ -37,7 +37,7 @@ Currently, we use the following external packages and versions:
  pango-1.42.0
  poppler-0.24.5
  mpfr-3.1.6
- gmp-6.1.2
+ gmp-6.1.2 (AArch64 Mac OS: gmp-6.2.1)
  atk-2.28.1
 
 (Linux only:)

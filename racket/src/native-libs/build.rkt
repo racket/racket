@@ -189,12 +189,18 @@
 (define-runtime-path fcdirs-patch "patches/fcdirs.patch")
 (define-runtime-path fonts-conf "patches/fonts.conf")
 
+;; Skip `fc-config` on install:
+(define-runtime-path fc-config-patch "patches/fc-config.patch")
+
 ;; Avoid problems compiling with an old version of g++
 (define-runtime-path harfbuzz-oldcompiler-patch "patches/harfbuzz-oldcompiler.patch")
 
 ;; Adapt inline-function handling for an old gcc
 (define-runtime-path gmp-inline-patch "patches/gmp-inline.patch")
 
+;; Configure for AArch64
+(define-runtime-path openssl-aarch64osx-patch "patches/openssl-aarch64osx.patch")
+  
 ;; --------------------------------------------------
 
 (define (replace-in-file file orig new)
@@ -239,6 +245,11 @@
         (list "CC" (~a win-prefix "-gcc -static-libgcc")))])]
    [mac?
     (cond
+     [aarch64?
+      (define flags "-arch arm64 -mmacosx-version-min=11")
+      (list
+       (list "CPPFLAGS" (~a flags))
+       (list "LDFLAGS" (~a flags)))]
      [m32?
       (define sdk-flags (sdk mac32-sdk))
       (list
@@ -327,6 +338,7 @@
                 #:setup [setup null]
                 #:patches [patches null]
                 #:post-patches [post-patches null]
+                #:install-patches [install-patches null]
                 #:fixup [fixup #f]
                 #:fixup-proc [fixup-proc #f])
   (for ([d (in-list (append (if (or (equal? package-name "pkg-config")
@@ -338,7 +350,7 @@
                             deps))])
     (unless (file-exists? (build-path dest "stamps" d))
       (error 'build "prerequisite needed: ~a" d)))
-  (values env exe args make make-install setup patches post-patches fixup fixup-proc))
+  (values env exe args make make-install setup patches post-patches install-patches fixup fixup-proc))
 
 (define path-flags
   (list (list "CPPFLAGS" (~a "-I" dest "/include"))
@@ -357,7 +369,7 @@
     (error (format "build ~a only for Linux" package-name))))
 
 (define-values (extra-env configure-exe extra-args make-command make-install-command 
-                          setup patches post-patches fixup fixup-proc)
+                          setup patches post-patches install-patches fixup fixup-proc)
   (case package-name
     [("pkg-config") (config #:configure (list "--with-internal-glib"))]
     [("sed") (config)]
@@ -388,15 +400,20 @@
                                  (~a "mingw" (if m32? "" "64"))
                                  "shared")]
                           [mac?
-                           (list "./Configure"
-                                 #f
-                                 "shared"
-                                 (cond
-                                  [ppc? "darwin-ppc-cc"]
-                                  [m32? "darwin-i386-cc"]
-                                  [else "darwin64-x86_64-cc"])
-                                 (car (regexp-match #rx"-mmacosx-version-min=[0-9.]*"
-                                                    (cadr (assoc "CPPFLAGS" all-env)))))]
+			   (append
+                            (list "./Configure"
+                                  #f
+                                  "shared"
+                                  (cond
+                                   [ppc? "darwin-ppc-cc"]
+                                   [m32? "darwin-i386-cc"]
+                                   [aarch64? "darwin64-aarch64-cc"]
+                                   [else "darwin64-x86_64-cc"])
+                                  (car (regexp-match #rx"-mmacosx-version-min=[0-9.]*"
+                                                     (cadr (assoc "CPPFLAGS" all-env)))))
+			    (if aarch64?
+				'("no-asm")
+				null))]
                           [else
                            (list "./Configure"
                                  #f
@@ -404,6 +421,7 @@
                                  "linux-x86_64")])
 	     #:make make
              #:make-install (~a make " install_sw")
+	     #:patches (list openssl-aarch64osx-patch)
              #:fixup (and win?
                           (~a "cd " (build-path dest "bin")
                               " && mv libssl-1_1" (if m32? "" "-x64") ".dll ssleay32.dll"
@@ -463,7 +481,10 @@
                                 " FreeSans.ttf" 
                                 " FreeSerif.ttf" 
                                 " " dest "/lib/fonts"))]
-    [("libffi") (config)]
+    [("libffi")
+     (if (and mac? aarch64?)
+	 (config #:configure '("-host=aarch64-apple-darwin"))
+	 (config))]
     [("zlib")
      (nonmac-only)
      (config #:make (if win?
@@ -511,7 +532,10 @@
                                                     `("--without-libiconv-prefix"
                                                       "--without-libintl-prefix")
                                                     '()))
-                            #:patches (list fcdirs-patch))]
+                            #:patches (list fcdirs-patch)
+			    #:install-patches (cond
+					       [(and mac? aarch64?) (list fc-config-patch)]
+					       [else null]))]
     [("pixman") (config #:patches (append
                                    (cond
                                      [(and win? (not m32?)) (list noforceinline-patch)]
@@ -582,6 +606,9 @@
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append
                                   '("--enable-shared" "--disable-static")
+				  (if (and mac? aarch64?)
+				      '("-host=aarch64-apple-darwin")
+				      null)
                                   (if (and mac? (not ppc?))
                                       '("--build=corei-apple-darwin")
                                       null)
@@ -648,6 +675,8 @@
     (for ([p (in-list post-patches)])
       (system/show (~a "patch -p2 < " p))))
   (system/show make-command)
+  (for ([p (in-list install-patches)])
+    (system/show (~a "patch -p2 < " p)))
   (system/show make-install-command)
   (when fixup
     (system/show fixup))

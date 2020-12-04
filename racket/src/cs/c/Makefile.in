@@ -239,18 +239,15 @@ GRAPPSKEL = GRacketCS.app/Contents/Info.plist
 MACLIBRKT_LINK_fw = -F. -framework Racket $(LDFLAGS)
 MACLIBRKT_LINK_static = $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
 
-racketcs@OSX@: main.o $(RKTFW)
-	$(CC) $(CFLAGS) -o racketcs main.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
+racketcs@OSX@: raw_racketcs
 	$(MAKE) link-fw-bootfiles-@MACLIBRKT_LINK_MODE@
-	$(MAKE) raw_racketcs
 	$(MAKE) adjust-framework-boot-compress
-	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_DEST=racketcs
-	$(STRIP_SIGNATURE) racketcs
+	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=raw_racketcs EMBED_DEST=racketcs
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
 	$(RESTORE_SIGNATURE) racketcs
 
-raw_racketcs@OSX@:
-	ln -s racketcs raw_racketcs
+raw_racketcs@OSX@: main.o $(RKTFW)
+	$(CC) $(CFLAGS) -o raw_racketcs main.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
 
 GRACKET_BIN = GRacketCS.app/Contents/MacOS/GRacketCS
 
@@ -258,9 +255,8 @@ gracketcs@OSX@:
 	$(MAKE) $(GRACKET_BIN)
 
 $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
-	$(CC) $(CFLAGS) -o $(GRACKET_BIN) grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
-	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_DEST=$(GRACKET_BIN)
-	$(STRIP_SIGNATURE) $(GRACKET_BIN)
+	$(CC) $(CFLAGS) -o $(GRACKET_BIN)_raw grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
+	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=$(GRACKET_BIN)_raw EMBED_DEST=$(GRACKET_BIN)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
 	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
 
@@ -284,10 +280,15 @@ adjust-framework-boot-compress:
 	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 mac-embed-boot-fw:
-	$(NOOP)
+	cp $(EMBED_SRC) $(EMBED_DEST)
+	$(STRIP_SIGNATURE) $(EMBED_DEST)
+
+FW_BOOT_DESTS = $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 mac-embed-boot-static:
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ "" $(EMBED_DEST) $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
+	cp $(EMBED_SRC) $(EMBED_DEST)
+	$(STRIP_SIGNATURE) $(EMBED_DEST)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ $(EMBED_SRC) $(EMBED_DEST) $(FW_BOOT_DESTS)
 
 link-fw-bootfiles-fw:
 	$(NOOP)

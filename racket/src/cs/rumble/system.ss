@@ -86,6 +86,11 @@
     [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
     [else (string->utf8 ".so")]))
 
+(define so-mode
+  (case (machine-type)
+    [(arm64osx tarm64osx) 'global]
+    [else 'local]))
+
 ;; Force inline of some common cases, so optimization can use
 ;; the resulting constant:
 (define-syntax system-type
@@ -118,7 +123,7 @@
        [(link) link-symbol]
        [(machine) (get-machine-info)]
        [(so-suffix) so-suffix-bytes]
-       [(so-mode) 'local]
+       [(so-mode) so-mode]
        [(fs-change) fs-change-properties]
        [(target-machine) (machine-type)]
        [(cross) cross-mode]

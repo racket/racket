@@ -60,6 +60,10 @@
      "atk"
      "poppler")
    (cond
+    [mac?
+     '("libedit")]
+    [else null])
+   (cond
     [linux?
      '("gdk-pixbuf"
        "gtk+")]
