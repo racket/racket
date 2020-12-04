@@ -7,7 +7,7 @@
 
 (define cross-system-table #f)
 
-(define system-type-symbols '(os word gc vm link machine so-suffix so-mode fs-change target-machine))
+(define system-type-symbols '(os os* arch word gc vm link machine so-suffix so-mode fs-change target-machine))
 
 (define (compute-cross!)
   (unless cross-system-table
