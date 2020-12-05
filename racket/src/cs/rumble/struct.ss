@@ -371,7 +371,7 @@
 
 ;; ----------------------------------------
 
-;; Records which fields of an rtd are mutable, where an rtd that is
+;; Records which fields of an prefab rtd are mutable, where an rtd that is
 ;; not in the table has no mutable fields, and the field list can be
 ;; empty if a parent type is mutable; this table is used without
 ;; a lock
@@ -504,7 +504,10 @@
                                                (let ([mask (sub1 (general-arithmetic-shift 1 (+ init-count auto-count)))])
                                                  (if (eq? insp 'prefab)
                                                      mask
-                                                     (let loop ([imms immutables] [mask mask])
+                                                     (let loop ([imms (if (exact-nonnegative-integer? proc-spec)
+                                                                          (cons proc-spec immutables)
+                                                                          immutables)]
+                                                                [mask mask])
                                                        (cond
                                                         [(null? imms) mask]
                                                         [else
@@ -583,8 +586,7 @@
                     '())]
                [all-immutables (if (integer? proc-spec)
                                    (cons proc-spec immutables)
-                                   immutables)]
-               [mutables (immutables->mutables all-immutables init-count auto-count)])
+                                   immutables)])
           (when (not parent-rtd*)
             (record-type-equal-procedure rtd default-struct-equal?)
             (record-type-hash-procedure rtd default-struct-hash))
@@ -594,7 +596,6 @@
                              (cons prop:procedure props)
                              props))])
             (add-to-table! rtd-props rtd props))
-          (register-mutables! mutables rtd parent-rtd*)
           ;; Copy parent properties for this type:
           (for-each (lambda (prop)
                       (let loop ([prop prop])
@@ -854,7 +855,17 @@
                             auto-count
                             (make-position-based-accessor rtd* parent-total*-count (+ init-count auto-count))
                             (make-position-based-mutator rtd* parent-total*-count (+ init-count auto-count))
-                            (mutables->immutables (eq-hashtable-ref rtd-mutables rtd* '#()) init-count)
+                            (if (struct-type-prefab? rtd*)
+                                (mutables->immutables (eq-hashtable-ref rtd-mutables rtd* '#()) init-count)
+                                (let ([end (record-type-field-count rtd*)]
+                                      [offset (fx+ 1 (struct-type-parent-total*-count rtd*))]
+                                      [mpm (struct-type-mpm rtd*)])
+                                  (let loop ([i 0])
+                                    (cond
+                                     [(fx= i end) '()]
+                                     [(bitwise-bit-set? mpm (fx+ offset i))
+                                      (loop (fx+ i 1))]
+                                     [else (cons i (loop (fx+ i 1)))]))))
                             next-rtd*
                             skipped?))])
           (cond
@@ -1020,16 +1031,25 @@
         0)))
 
 ;; ----------------------------------------
+(define struct-type-mpm
+  (let ([mpm (csv7:record-field-accessor #!base-rtd 'mpm)])
+    (lambda (rtd) (mpm rtd))))
+
+(define (struct-type-prefab? rtd)
+  (and (getprop (record-type-uid rtd) 'prefab-key+count #f) #t))
 
 (define (struct-type-field-mutable? rtd pos)
-  (let ([mutables (eq-hashtable-ref rtd-mutables rtd '#())])
-    (let loop ([j (#%vector-length mutables)])
-      (cond
-       [(fx= j 0) #f]
-       [else
-        (let ([j (fx1- j)])
-          (or (eqv? pos (#%vector-ref mutables j))
-              (loop j)))]))))
+  (and (record-field-mutable? rtd pos)
+       (if (struct-type-prefab? rtd)
+           (let ([mutables (eq-hashtable-ref rtd-mutables rtd '#())])
+             (let loop ([j (#%vector-length mutables)])
+               (cond
+                [(fx= j 0) #f]
+                [else
+                 (let ([j (fx1- j)])
+                   (or (eqv? pos (#%vector-ref mutables j))
+                       (loop j)))])))
+           #t)))
 
 ;; Returns a list of (cons guard-proc field-count)
 (define (struct-type-guards rtd)

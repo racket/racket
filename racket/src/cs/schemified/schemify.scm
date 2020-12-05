@@ -7288,7 +7288,57 @@
     (void)))
 (define struct-type-info-rest-properties-list-pos 0)
 (define make-struct-type-info
-  (letrec ((includes-property?_0
+  (letrec ((handle-proc-spec_0
+            (|#%name|
+             handle-proc-spec
+             (lambda (imports_0
+                      knowns_0
+                      mutated_0
+                      prim-knowns_0
+                      proc-spec_0
+                      imms_0)
+               (begin
+                 (if (not proc-spec_0)
+                   imms_0
+                   (if (exact-nonnegative-integer? proc-spec_0)
+                     (cons proc-spec_0 imms_0)
+                     (let ((proc-spec_1 (unwrap proc-spec_0)))
+                       (if (symbol? proc-spec_1)
+                         (let ((k_0
+                                (begin-unsafe
+                                 (call-with-values
+                                  (lambda ()
+                                    (find-known+import
+                                     proc-spec_1
+                                     prim-knowns_0
+                                     knowns_0
+                                     imports_0
+                                     mutated_0))
+                                  (case-lambda
+                                   ((k_0 im_0) k_0)
+                                   (args
+                                    (raise-binding-result-arity-error
+                                     2
+                                     args)))))))
+                           (if (not k_0)
+                             #f
+                             (if (known-literal? k_0)
+                               (let ((v_0 (known-literal-value k_0)))
+                                 (if (let ((or-part_0 (not v_0)))
+                                       (if or-part_0
+                                         or-part_0
+                                         (exact-nonnegative-integer? v_0)))
+                                   (handle-proc-spec_0
+                                    imports_0
+                                    knowns_0
+                                    mutated_0
+                                    prim-knowns_0
+                                    v_0
+                                    imms_0)
+                                   #f))
+                               (if (known-procedure? k_0) imms_0 #f))))
+                         #f))))))))
+           (includes-property?_0
             (|#%name|
              includes-property?
              (lambda (rest_0 name_0)
@@ -8089,7 +8139,27 @@
                                                                     #f)))
                                                               #f)))
                                                         #f))
-                                                  '()
+                                                  (let ((proc-spec_0
+                                                         (let ((d_0
+                                                                (cdr
+                                                                 (unwrap
+                                                                  rest_0))))
+                                                           (let ((d_1
+                                                                  (cdr
+                                                                   (unwrap
+                                                                    d_0))))
+                                                             (let ((a_0
+                                                                    (car
+                                                                     (unwrap
+                                                                      d_1))))
+                                                               a_0)))))
+                                                    (handle-proc-spec_0
+                                                     imports_0
+                                                     knowns_0
+                                                     mutated_0
+                                                     prim-knowns_0
+                                                     proc-spec_0
+                                                     '()))
                                                   (if (let ((p_0
                                                              (unwrap rest_0)))
                                                         (if (pair? p_0)
@@ -8162,33 +8232,60 @@
                                                                       #f)))
                                                                 #f)))
                                                           #f))
-                                                    (let ((immutables_0
-                                                           (let ((d_0
-                                                                  (cdr
-                                                                   (unwrap
-                                                                    rest_0))))
-                                                             (let ((d_1
-                                                                    (cdr
-                                                                     (unwrap
-                                                                      d_0))))
-                                                               (let ((d_2
-                                                                      (cdr
-                                                                       (unwrap
-                                                                        d_1))))
-                                                                 (let ((a_0
-                                                                        (car
-                                                                         (unwrap
-                                                                          d_2))))
-                                                                   (let ((d_3
-                                                                          (cdr
-                                                                           (unwrap
-                                                                            a_0))))
-                                                                     (let ((a_1
-                                                                            (car
-                                                                             (unwrap
-                                                                              d_3))))
-                                                                       a_1))))))))
-                                                      immutables_0)
+                                                    (call-with-values
+                                                     (lambda ()
+                                                       (let ((d_0
+                                                              (cdr
+                                                               (unwrap
+                                                                rest_0))))
+                                                         (let ((d_1
+                                                                (cdr
+                                                                 (unwrap
+                                                                  d_0))))
+                                                           (let ((p_0
+                                                                  (unwrap
+                                                                   d_1)))
+                                                             (let ((proc-spec_0
+                                                                    (let ((a_0
+                                                                           (car
+                                                                            p_0)))
+                                                                      a_0)))
+                                                               (let ((immutables_0
+                                                                      (let ((d_2
+                                                                             (cdr
+                                                                              p_0)))
+                                                                        (let ((a_0
+                                                                               (car
+                                                                                (unwrap
+                                                                                 d_2))))
+                                                                          (let ((d_3
+                                                                                 (cdr
+                                                                                  (unwrap
+                                                                                   a_0))))
+                                                                            (let ((a_1
+                                                                                   (car
+                                                                                    (unwrap
+                                                                                     d_3))))
+                                                                              a_1))))))
+                                                                 (let ((proc-spec_1
+                                                                        proc-spec_0))
+                                                                   (values
+                                                                    proc-spec_1
+                                                                    immutables_0))))))))
+                                                     (case-lambda
+                                                      ((proc-spec_0
+                                                        immutables_0)
+                                                       (handle-proc-spec_0
+                                                        imports_0
+                                                        knowns_0
+                                                        mutated_0
+                                                        prim-knowns_0
+                                                        proc-spec_0
+                                                        immutables_0))
+                                                      (args
+                                                       (raise-binding-result-arity-error
+                                                        2
+                                                        args))))
                                                     #f)))))
                                           #f)))
                                    (if (if (eq? prefab-imms_1 'non-prefab)
