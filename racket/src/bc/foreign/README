@@ -11,3 +11,6 @@ Changes to the source in this copy:
  * Added preprocessor conditionals for Go closures in "ffi_darwin.c"
 
  * Adjusted "config.guess" to detect Mac OS AArch64
+
+ * Disable FFI_EXEC_TRAMPOLINE_TABLE for Mac OS AArch64, since
+   we use pthread_jit_write_protect_np() in the Racket wrapper

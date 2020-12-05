@@ -18477,7 +18477,7 @@ fi
 
 FFI_EXEC_TRAMPOLINE_TABLE=0
 case "$target" in
-     *arm*-apple-* | aarch64-apple-*)
+     DISABLED*arm*-apple-* | DISABLEDaarch64-apple-*)
        FFI_EXEC_TRAMPOLINE_TABLE=1
 
 $as_echo "#define FFI_EXEC_TRAMPOLINE_TABLE 1" >>confdefs.h
