@@ -60,6 +60,23 @@
                         (for/or ([prop (in-list props)])
                           (eq? (unwrap prop) name))]
                        [`,_ #f])))
+              (define (handle-proc-spec proc-spec imms)
+                (cond
+                  [(not proc-spec) imms]
+                  [(exact-nonnegative-integer? proc-spec) (cons proc-spec imms)]
+                  [else
+                   (let ([proc-spec (unwrap proc-spec)])
+                     (and
+                      (symbol? proc-spec)
+                      (let ([k (find-known proc-spec prim-knowns knowns imports mutated)])
+                        (cond
+                          [(not k) #f]
+                          [(known-literal? k)
+                           (let ([v (known-literal-value k)])
+                             (and (or (not v) (exact-nonnegative-integer? v))
+                                  (handle-proc-spec v imms)))]
+                          [(known-procedure? k) imms]
+                          [else #f]))))]))
               (define constructor-name-expr (and ((length rest) . > . 5)
                                                  (list-ref rest 5)))
               (define non-prefab-imms
@@ -68,8 +85,10 @@
                        [`() '()]
                        [`(,_) '()]
                        [`(,_ ,_) '()]
-                       [`(,_ ,_ ,_) '()]
-                       [`(,_ ,_ ,_ ',immutables . ,_) immutables]
+                       [`(,_ ,_ ,proc-spec)
+                        (handle-proc-spec proc-spec '())]
+                       [`(,_ ,_ ,proc-spec ',immutables . ,_)
+                        (handle-proc-spec proc-spec immutables)]
                        [`,_ #f])))
               (and (if (eq? prefab-imms 'non-prefab)
                        non-prefab-imms
