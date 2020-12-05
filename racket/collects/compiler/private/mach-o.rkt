@@ -38,10 +38,10 @@
       (bitwise-and #xFFFFF000 (+ v #xFFF))))
 
 (define (mult-of-8 n)
-  (let ([m (modulo n 8)])
-    (if (zero? m)
-        n
-        (+ n (- 8 m)))))
+  (bitwise-and (+ n 7) (bitwise-not #x7)))
+
+(define (mult-of-16 n)
+  (bitwise-and (+ n 15) (bitwise-not #xF)))
 
 (define move-link-edit? #t)
 
@@ -431,14 +431,45 @@
           (check-same #x2 (read-ulong p))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
-                 [min-used (round-up-page cmdssz)])
+                 [min-used (round-up-page cmdssz)]
+                 [link-edit-64? #f]
+                 [link-edit-pos #f]
+                 [link-edit-len 0])
+            (read-ulong p) ; flags
+            (when (equal? (force exe-id) #xFeedFacf)
+              (read-ulong p)) ; extra reserved word for 64-bit header
+            (let loop ([cnt total-cnt])
+              (unless (zero? cnt)
+                (let ([pos (file-position p)]
+                      [cmd (read-ulong p)]
+                      [sz (read-ulong p)])
+                  (case cmd
+                    [(1 #x19) ; #x19 is 64-bit variant
+                     ;; Segment
+                     (let ([64? (equal? cmd #x19)])
+                       (let ([segname (read-bytes 16 p)]
+                             [vmaddr ((if 64? read-xulong read-ulong) p)]
+                             [vmlen ((if 64? read-xulong read-ulong) p)]
+                             [offset ((if 64? read-xulong read-ulong) p)]
+                             [len ((if 64? read-xulong read-ulong) p)])
+                         ;; (printf "~s\n" segname)
+                         (when (equal? segname #"__LINKEDIT\0\0\0\0\0\0")
+                           (set! link-edit-64? 64?)
+                           (set! link-edit-pos pos)
+                           (set! link-edit-len len))))]
+                    [(#x1D)
+                     ;; LC_CODE_SIGNATURE
+                     (error 'add-ad-hoc-signature "file already has a signature")])
+                  (file-position p (+ pos sz))
+                  (loop (sub1 cnt)))))
             (let* ([end-cmd (+ cmdssz 
                                (if (equal? (force exe-id) #xFeedFacf) 32 28))]
                    [new-cmd-sz 16]
                    [log-page-size 12]
                    [page-size (expt 2 log-page-size)]
                    [hash-code-size 32]
-                   [num-slots (quotient (+ orig-size (sub1 page-size)) page-size)]
+                   [padded-size (mult-of-16 orig-size)]
+                   [num-slots (quotient (+ padded-size (sub1 page-size)) page-size)]
                    [data-size (+ 20
                                  88
                                  (bytes-length file-identity)
@@ -447,6 +478,9 @@
                 (error 'check-header 
                        "no room for a new section load command (current end is ~a; min used is ~a; need ~a)"
                        end-cmd min-used new-cmd-sz))
+              (unless link-edit-pos
+                (error 'add-ad-hoc-signature
+                       "did not find linkedit section"))
               (file-position out 16)
               ;; Adjust the number of load commands:
               (write-ulong (+ total-cnt 1) out)
@@ -455,19 +489,28 @@
               (file-position out end-cmd)
               (write-ulong #x1D out) ;; LC_CODE_SIGNATURE
               (write-ulong new-cmd-sz out)
-              (write-ulong orig-size out) ; data offset
+              (write-ulong padded-size out) ; data offset
               (write-ulong data-size out)
+              ;; Update LINKEDIT length:
+              (file-position out (+ link-edit-pos 8 16 (* 3 (if link-edit-64? 8 4))))
+              ((if link-edit-64? write-xulong write-ulong) (+ link-edit-len data-size (- padded-size orig-size)) out)
+              ;; Add padding:
+              (file-position out orig-size)
+              (write-bytes (make-bytes (- padded-size orig-size) 0) out)
 
+              ;; Hash file content
               (flush-output out)
               (file-position p 0)
               (define hash-codes
                 (let loop ([pos 0])
-                  (if (pos . >= . orig-size)
+                  (if (pos . >= . padded-size)
                       '()
-                      (cons (sha256-bytes (read-bytes (min page-size (- orig-size pos)) p))
+                      (cons (sha256-bytes (read-bytes (min page-size (- padded-size pos)) p))
                             (loop (+ pos page-size))))))
 
-              (file-position out orig-size)
+              ;; Write signature at end
+
+              (file-position out padded-size)
               (write-be-ulong #xfade0cc0 out) ; CSMAGIC_EMBEDDED_SIGNATURE
               (write-be-ulong data-size out)
               (write-be-ulong 1 out) ; count
@@ -482,7 +525,7 @@
               (write-be-ulong 88 out) ; identity offset
               (write-be-ulong 0 out) ; special slots
               (write-be-ulong num-slots out) ; special slots
-              (write-be-ulong orig-size out) ; limit (i.e., original file size)
+              (write-be-ulong padded-size out) ; limit (i.e., original file size plus padding)
               (write-byte hash-code-size out)
               (write-byte 2 out) ; SHA-256
               (write-byte 0 out) ; spare
