@@ -471,7 +471,7 @@ plain-install@NOT_OSX@@NOT_MINGW@:
 	$(MAKE) unix-install@T_CROSS_MODE@
 
 plain-install@OSX@:
-	$(MAKE) macos-install
+	$(MAKE) macos-install@T_CROSS_MODE@
 
 common-install:
 	mkdir -p $(ALLDIRINFO)
@@ -560,6 +560,10 @@ macos-install:
 	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
 	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
 	$(MAKE) macos-@INSTALL_LIBS_ENABLE@-libs
+
+macos-install-cross:
+	$(MAKE) macos-install
+	$(MAKE) install-cross
 
 GRACKET_INSTALLED = $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 
