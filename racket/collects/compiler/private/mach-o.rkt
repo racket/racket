@@ -33,7 +33,7 @@
     (error 'check-same "not: ~e ~e" a b)))
 
 (define (round-up-page v)
-  (if (eq? 'aarch64 (system-type 'arch))
+  (if (eq? 'aarch64 (cross-system-type 'arch))
       (bitwise-and #xFFFFC000 (+ v #x3FFF))
       (bitwise-and #xFFFFF000 (+ v #xFFF))))
 
