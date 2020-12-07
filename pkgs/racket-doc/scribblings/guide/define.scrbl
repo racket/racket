@@ -88,7 +88,7 @@ called directly, like this:
 ((make-add-suffix "!") "hello")
 ]
 
-In a sense, @racket[make-add-suffix] is a function takes two
+In a sense, @racket[make-add-suffix] is a function that takes two
 arguments, but it takes them one at a time. A function that takes some
 of its arguments and returns a function to consume more is sometimes
 called a @defterm{curried function}.
