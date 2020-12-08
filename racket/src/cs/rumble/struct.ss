@@ -356,7 +356,8 @@
       (record-type-hash-procedure rtd (let ([p (caddr guarded-val)])
                                         (if (#%procedure? p)
                                             p
-                                            (lambda (v h) (|#%app| p v h))))))
+                                            (lambda (v h) (|#%app| p v h)))))
+      (struct-property-set! 'secondary-hash rtd (cadddr guarded-val)))
     (struct-property-set! prop rtd guarded-val)
     (values (hash-set ht prop check-val)
             (append

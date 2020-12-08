@@ -281,12 +281,14 @@ adjust-framework-boot-compress:
 	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 mac-embed-boot-fw:
+	rm -f $(EMBED_DEST)
 	cp $(EMBED_SRC) $(EMBED_DEST)
 	$(STRIP_SIGNATURE) $(EMBED_DEST)
 
 FW_BOOT_DESTS = $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 mac-embed-boot-static:
+	rm -f $(EMBED_DEST)
 	cp $(EMBED_SRC) $(EMBED_DEST)
 	$(STRIP_SIGNATURE) $(EMBED_DEST)
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ $(EMBED_SRC) $(EMBED_DEST) $(FW_BOOT_DESTS)

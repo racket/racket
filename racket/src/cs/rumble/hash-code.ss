@@ -61,6 +61,14 @@
       v
       (bitwise-and v (greatest-fixnum))))
 
+(define (->fx/checked who v)
+  (cond
+    [(fixnum? v) v]
+    [(bignum? v) (bitwise-and v (greatest-fixnum))]
+    [else (raise-arguments-error who
+                                 "hash procedure returned a value other than an exact integer"
+                                 "result" v)]))
+
 ;; Mostly copied from Chez Scheme's "newhash.ss":
 (define number-hash
   (lambda (z)
@@ -89,8 +97,8 @@
 ;; We don't use `equal-hash` because we need impersonators to be able
 ;; to generate the same hash code as the unwrapped value.
 (define (equal-hash-code x)
-  (call-with-values (lambda () (equal-hash-loop x 0 0))
-    (lambda (hc burn) (logand hc (most-positive-fixnum)))))
+  (let-values ([(hc burn) (equal-hash-loop x 0 0)])
+    hc))
 
 ;; A #t result implies that `equal-hash-code` and equality checking is
 ;; pretty fast
@@ -104,20 +112,8 @@
            (not (#%$record-hash-procedure x)))))
 
 (define (equal-secondary-hash-code x)
-  (cond
-   [(boolean? x) 1]
-   [(null? x) 2]
-   [(number? x) 3]
-   [(char? x) 4]
-   [(symbol? x) 5]
-   [(string? x) 6]
-   [(bytevector? x) 7]
-   [(box? x) 8]
-   [(pair? x) 9]
-   [(vector? x) (vector-length x)]
-   [(#%$record? x) (eq-hash-code (record-rtd x))]
-   [(impersonator? x) (equal-secondary-hash-code (impersonator-val x))]
-   [else 100]))
+  (let-values ([(hc burn) (equal-secondary-hash-loop x 0 0)])
+    hc))
 
 (define MAX-HASH-BURN 128)
 
@@ -167,7 +163,8 @@
     [(and (#%$record? x) (#%$record-hash-procedure x))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
-            (let ([hc (fx+/wraparound hc (->fx
+            (let ([hc (fx+/wraparound hc (->fx/checked
+                                          'equal-hash-code
                                           (rec-hash x (lambda (x)
                                                         (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
                                                           (set! burn burn0)
@@ -179,6 +176,71 @@
      ;; we discard the impersonator wrapper.
      (equal-hash-loop (impersonator-val x) burn hc)]
     [else (values (fx+/wraparound hc (eq-hash-code x)) burn)]))
+
+(define (equal-secondary-hash-loop x burn hc)
+  (cond
+    [(fx> burn MAX-HASH-BURN) (values hc burn)]
+    [(boolean? x) (values (fx+/wraparound hc 1) burn)]
+    [(null? x) (values (fx+/wraparound hc 2) burn)]
+    [(number? x) (values (fx+/wraparound hc (number-secondary-hash x)) burn)]
+    [(char? x) (values (fx+/wraparound hc (fxnot (char->integer x))) burn)]
+    [(symbol? x) (values (fx+/wraparound hc (fxnot (symbol-hash x))) burn)]
+    [(string? x) (values (fx+/wraparound hc (fxnot (string-hash x))) burn)]
+    [(bytevector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
+    [(fxvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
+    [(flvector? x) (values (fx+/wraparound hc (equal-hash x)) burn)]
+    [(box? x) (equal-secondary-hash-loop (unbox x) (fx+ burn 1) (fx+/wraparound hc 10))]
+    [(pair? x)
+     (let-values ([(hc0 burn) (equal-secondary-hash-loop (car x) (fx+ burn 2) 0)])
+       (let ([hc (fx+/wraparound (mix-hash-code hc) hc0)])
+         (equal-secondary-hash-loop (cdr x) burn hc)))]
+    [(vector? x)
+     (let ([len (vector-length x)])
+       (let vec-loop ([i 0] [burn burn] [hc (mix-hash-code hc)])
+         (cond
+           [(fx= i len) (values hc burn)]
+           [else
+            (let-values ([(hc0 burn) (equal-secondary-hash-loop (vector-ref x i) (fx+ burn 2) 0)])
+              (vec-loop (fx+ i 1)
+                        burn
+                        (fx+/wraparound (mix-hash-code hc) hc0)))])))]
+    [(hash? x)
+     ;; Treat hash-table hashing specially, so it can be order-insensitive
+     (let ([burn (fx* (fxmax burn 1) 2)])
+       (let ([hc (fx+/wraparound hc (->fx (hash-hash-code
+                                           x
+                                           (lambda (x)
+                                             (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
+                                               hc0)))))])
+         (values hc burn)))]
+    [(and (#%$record? x)
+          (or (struct-property-ref 'secondary-hash (#%$record-type-descriptor x) #f)
+              ;; to use default hash proc as default secondary hash proc:
+              (#%$record-hash-procedure x)))
+     => (lambda (rec-hash)
+          (let ([burn (fx+ burn 2)])
+            (let ([hc (fx+/wraparound hc (->fx/checked
+                                          'equal-secondary-hash-code
+                                          (rec-hash x (lambda (x)
+                                                        (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
+                                                          (set! burn burn0)
+                                                          hc0)))))])
+              (values hc burn))))]
+    [(impersonator? x)
+     (equal-secondary-hash-loop (impersonator-val x) burn hc)]
+    [else (values (fx+/wraparound hc (fxnot (eq-hash-code x))) burn)]))
+
+(define number-secondary-hash
+  (lambda (z)
+    (cond
+      [(fixnum? z) (fxnot z)]
+      [(flonum? z) (fxsll (#3%$flhash z) 2)]
+      [(bignum? z) (fx+/wraparound (integer-length z)
+                                   (bitwise-bit-field z 0 (fx- (fixnum-width) 1)))]
+      [(ratnum? z) (hash-code-combine (number-secondary-hash (numerator z))
+                                      (number-secondary-hash (denominator z)))]
+      [else (hash-code-combine (number-secondary-hash (real-part z))
+                               (number-secondary-hash (imag-part z)))])))
 
 (define (hash-code-combine hc v)
   (fx+/wraparound (mix-hash-code (->fx hc))

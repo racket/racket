@@ -1139,12 +1139,13 @@
                       ;; rare.
                       (hash-code-combine hc (cnode-hash c))])))]
            [else
-            (let loop ([i 0] [hc hc])
-              (cond
-               [(fx< i val-count)
-                (loop (fx1+ i)
-                      (hash-code-combine hc (hash (stencil-vector-ref n (fx+ i child-count key-count)))))]
-               [else hc]))]))))
+            (let ([offset (fx+ HAMT-STATIC-FIELD-COUNT child-count key-count)])
+              (let loop ([i 0] [hc hc])
+                (cond
+                  [(fx< i val-count)
+                   (loop (fx1+ i)
+                         (hash-code-combine hc (hash (stencil-vector-ref n offset))))]
+                  [else hc])))]))))
 
     (define (bnode-fold n f nil)
       (let* ([mask (stencil-vector-mask n)]
