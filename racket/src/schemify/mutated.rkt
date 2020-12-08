@@ -24,7 +24,7 @@
 ;; This pass is also responsible for recording when a letrec binding
 ;; must be mutated implicitly via `call/cc`.
 
-(define (mutated-in-body l exports prim-knowns knowns imports simples unsafe-mode? for-cify? enforce-constant?)
+(define (mutated-in-body l exports prim-knowns knowns imports simples unsafe-mode? target enforce-constant?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -53,7 +53,7 @@
     ;; that information is correct, because it dynamically precedes
     ;; the `set!`
     (define-values (knowns info)
-      (find-definitions form prim-knowns prev-knowns imports mutated simples unsafe-mode? for-cify?
+      (find-definitions form prim-knowns prev-knowns imports mutated simples unsafe-mode? target
                         #:optimize? #f))
     (match form
       [`(define-values (,ids ...) ,rhs)

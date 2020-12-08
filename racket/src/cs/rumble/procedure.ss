@@ -338,6 +338,10 @@
 ;;  - (vector <symbol-or-#f> <proc> 'method) => is a method
 ;;  - (box <symbol>) => JIT function generated, name is <symbol>, not a method
 ;;  - <parameter-data> => parameter
+;;  - 'constructor => struct constructor
+;;  - 'predicate => struct predicate
+;;  - (cons rtd pos) => struct accessor
+;;  - (cons pos rtd) => struct mutator
 
 ;; ----------------------------------------
 
@@ -580,7 +584,7 @@
      [(#%vector? name) (or (#%vector-ref name 0)
                            (object-name (#%vector-ref name 1)))]
      [(parameter-data? name) (parameter-data-name name)]
-     [else name])))
+     [else (object-name (wrapper-procedure-procedure p))])))
 
 ;; ----------------------------------------
 

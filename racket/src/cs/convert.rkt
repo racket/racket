@@ -120,7 +120,16 @@
     (printf "Schemify...\n")
     (define body
       (time
-       (schemify-body bodys prim-knowns primitives #hasheq() #hasheq() #f unsafe-mode?
+       (schemify-body bodys prim-knowns primitives
+                      #hasheq()
+                      ;; map exports to #f to indicate which are exported
+                      ;; without triggering most export machinery:
+                      (for/hasheq ([ex exports])
+                        (if (pair? ex)
+                            (values (car ex) #f)
+                            (values ex #f)))
+                      'system ; target
+                      unsafe-mode?
                       #t    ; no-prompt?
                       #f))) ; explicit-unnamed?
     (printf "Lift...\n")

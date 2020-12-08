@@ -47,7 +47,7 @@
                                    (struct-type-property? (car p))
                                    (procedure? (cdr p))
                                    (procedure-arity-includes? (cdr p) 1)))
-                            supers))
+                            supers))<
        (raise-argument-error who "(listof (cons/c struct-type-property? (procedure-arity-includes/c 1)))" supers))
      (let* ([can-impersonate? (and (or can-impersonate? (eq? guard 'can-impersonate)) #t)]
             [st (make-struct-type-prop name (and (not (eq? guard 'can-impersonate)) guard) supers)]
@@ -378,6 +378,8 @@
 ;; a lock
 (define rtd-mutables (make-ephemeron-eq-hashtable))
 
+(define struct-proc-tables-need-resize? #f)
+
 ;; Accessors and mutators that need a position are wrapped in these records:
 (define-record position-based-accessor (rtd offset field-count))
 (define-record position-based-mutator (rtd offset field-count))
@@ -388,15 +390,6 @@
 (define (position-based-mutator-name f)
   (let ([rtd (position-based-mutator-rtd f)])
     (string->symbol (string-append (symbol->string (record-type-name rtd)) "-set!"))))
-
-;; Register other procedures in hash tables; avoid wrapping to
-;; avoid making the procedures slower. These tables are accessed
-;; without a lock, so son't use `hashtable-set!` on them.
-(define struct-constructors (make-ephemeron-eq-hashtable))
-(define struct-predicates (make-ephemeron-eq-hashtable))
-(define struct-field-accessors (make-ephemeron-eq-hashtable))
-(define struct-field-mutators (make-ephemeron-eq-hashtable))
-(define struct-proc-tables-need-resize? #f)
 
 (define (add-to-table! table key val)
   (if (eq-hashtable-try-atomic-cell table key val)
@@ -413,60 +406,60 @@
                      (let ([p (cons #f #f)])
                        (eq-hashtable-set! ht p #t)
                        (eq-hashtable-delete! ht p)))])
-      (resize! struct-constructors)
-      (resize! struct-predicates)
-      (resize! struct-field-accessors)
-      (resize! struct-field-mutators)
       (resize! property-accessors)
       (resize! property-predicates)
       (resize! rtd-mutables)
       (resize! rtd-props))))
 
-(define (register-struct-constructor! p)
-  (#%$app/no-inline add-to-table! struct-constructors p #t))
+(define (|#%struct-constructor| p arity-mask)
+  (make-wrapper-procedure p arity-mask 'constructor))
 
-(define (register-struct-predicate! p)
-  (#%$app/no-inline add-to-table! struct-predicates p #t))
+(define (|#%struct-predicate| p)
+  (make-wrapper-procedure p 2 'predicate))
 
-(define (register-struct-field-accessor! p rtd pos)
-  (#%$app/no-inline add-to-table! struct-field-accessors p (cons rtd pos)))
+(define (|#%struct-field-accessor| p rtd pos)
+  (make-wrapper-procedure p 2 (cons rtd pos)))
 
-(define (register-struct-field-mutator! p rtd pos)
-  (#%$app/no-inline add-to-table! struct-field-mutators p (cons rtd pos)))
+(define (|#%struct-field-mutator| p rtd pos)
+  (make-wrapper-procedure p 4 (cons pos rtd)))
 
 (define (struct-constructor-procedure? v)
-  (and (procedure? v)
-       (let ([v (strip-impersonator v)])
-         (eq-hashtable-contains? struct-constructors v))))
+  (let ([v (strip-impersonator v)])
+    (and (wrapper-procedure? v)
+         (eq? 'constructor (wrapper-procedure-data v)))))
 
 (define (struct-predicate-procedure? v)
-  (and (procedure? v)
-       (let ([v (strip-impersonator v)])
-         (eq-hashtable-contains? struct-predicates v))))
+  (let ([v (strip-impersonator v)])
+    (and (wrapper-procedure? v)
+         (eq? 'predicate (wrapper-procedure-data v)))))
 
 (define (struct-accessor-procedure? v)
-  (and (procedure? v)
-       (let ([v (strip-impersonator v)])
-         (or (position-based-accessor? v)
-             (eq-hashtable-contains? struct-field-accessors v)))))
+  (let ([v (strip-impersonator v)])
+    (or (position-based-accessor? v)
+        (and (wrapper-procedure? v)
+             (let ([d (wrapper-procedure-data v)])
+               (and (pair? d)
+                    (record-type-descriptor? (car d))))))))
 
 (define (struct-mutator-procedure? v)
-  (and (procedure? v)
-       (let ([v (strip-impersonator v)])
-         (or (position-based-mutator? v)
-             (eq-hashtable-contains? struct-field-mutators v)))))
+  (let ([v (strip-impersonator v)])
+    (or (position-based-mutator? v)
+        (and (wrapper-procedure? v)
+             (let ([d (wrapper-procedure-data v)])
+             <  (and (pair? d)
+                    (record-type-descriptor? (cdr d))))))))
 
 (define (struct-accessor-procedure-rtd+pos v)
   (if (position-based-accessor? v)
       (cons (position-based-accessor-rtd v)
             (position-based-accessor-offset v))
-      (eq-hashtable-ref struct-field-accessors v #f)))
+      (wrapper-procedure-data v)))
 
-(define (struct-mutator-procedure-rtd+pos v)
+(define (struct-mutator-procedure-pos+rtd v)
   (if (position-based-mutator? v)
-      (cons (position-based-mutator-rtd v)
-            (position-based-mutator-offset v))
-      (eq-hashtable-ref struct-field-mutators v #f)))
+      (cons (position-based-mutator-offset v)
+            (position-based-mutator-rtd v))
+      (wrapper-procedure-data v)))
 
 ;; ----------------------------------------
 
@@ -549,11 +542,9 @@
                           (and (impersonator? v)
                                (record? (impersonator-val v) rtd))))
                     (string->symbol (string-append (symbol->string name) "?")))])
-         (register-struct-constructor! ctr)
-         (register-struct-predicate! pred)
          (values rtd
-                 ctr
-                 pred
+                 (|#%struct-constructor| ctr (procedure-arity-mask ctr))
+                 (|#%struct-predicate| pred)
                  (make-position-based-accessor rtd parent-total*-count (+ init-count auto-count))
                  (make-position-based-mutator rtd parent-total*-count (+ init-count auto-count)))))]))
 
@@ -740,8 +731,7 @@
                                                (if name
                                                    (symbol->string name)
                                                    (string-append "field" (number->string pos))))))])
-        (register-struct-field-accessor! wrap-p rtd pos)
-        wrap-p))]
+        (|#%struct-field-accessor| wrap-p rtd pos)))]
    [(pba pos)
     (make-struct-field-accessor pba pos #f)]))
 
@@ -776,8 +766,7 @@
                    (lambda (v a)
                      (cannot-modify-by-pos-error mut-name v pos)))
                mut-name)])
-        (register-struct-field-mutator! wrap-p rtd pos)
-        wrap-p))]
+        (|#%struct-field-mutator| wrap-p rtd pos)))]
    [(pbm pos)
     (make-struct-field-mutator pbm pos #f)]))
 
@@ -889,24 +878,27 @@
     (check who symbol? :or-false name)
     (let ([rtd* (strip-impersonator rtd)])
       (check-inspector-access who rtd*)
-      (let ([ctr (struct-type-constructor-add-guards
-                  (let* ([c (record-constructor rtd*)]
-                         [fi (struct-type-field-info rtd*)]
-                         [auto-field-adder (get-field-info-auto-adder fi)]
-                         [name (or name
-                                   (string->symbol (format "make-~a" (record-type-name rtd*))))])
-                    (cond
-                     [auto-field-adder
-                      (procedure-rename
-                       (procedure-reduce-arity
-                        (lambda args
-                          (apply c (reverse (auto-field-adder (reverse args)))))
-                        (get-field-info-init*-count fi))
-                       name)]
-                     [else (procedure-rename c name)]))
-                  rtd*
-                  #f)])
-        (register-struct-constructor! ctr)
+      (let ([ctr (let* ([c (record-constructor rtd*)]
+                        [fi (struct-type-field-info rtd*)]
+                        [init*-count (get-field-info-init*-count fi)]
+                        [init*-count-mask (bitwise-arithmetic-shift-left 1 init*-count)]
+                        [auto-field-adder (get-field-info-auto-adder fi)]
+                        [name (or name
+                                  (string->symbol (format "make-~a" (record-type-name rtd*))))])
+                   (|#%struct-constructor|
+                    (struct-type-constructor-add-guards
+                     (cond
+                       [auto-field-adder
+                        (procedure-rename
+                         (procedure-reduce-arity-mask
+                          (lambda args
+                            (apply c (reverse (auto-field-adder (reverse args)))))
+                          init*-count-mask)
+                         name)]
+                       [else (procedure-rename c name)])
+                     rtd*
+                     #f)
+                    init*-count-mask))])
         (cond
          [(struct-type-chaperone? rtd)
           (chaperone-constructor rtd ctr)]
@@ -958,13 +950,12 @@
   (check who struct-type? rtd)
   (let ([rtd* (strip-impersonator rtd)])
     (check-inspector-access who rtd*)
-    (let ([pred (escapes-ok
-                  (lambda (v)
-                    (or (record? v rtd*)
-                        (and (impersonator? v)
-                             (record? (impersonator-val v) rtd*)))))])
-      (register-struct-predicate! pred)
-      pred)))
+    (|#%struct-predicate|
+     (escapes-ok
+      (lambda (v)
+        (or (record? v rtd*)
+            (and (impersonator? v)
+                 (record? (impersonator-val v) rtd*))))))))
 
 ;; ----------------------------------------
 
@@ -1087,6 +1078,9 @@
   (#%$record-set! s i v))
 (define (unsafe-struct? v r)
   (#3%record? v r))
+
+(define (unsafe-struct r . args)
+  (#%apply #%$record r args))
 
 (define (unsafe-struct-ref s i)
   (if (impersonator? s)
@@ -1289,21 +1283,23 @@
                  (define unsafe-make-name (record-constructor (make-record-constructor-descriptor struct:name #f #f)))
                  (define name ctr-expr)
                  (define authentic-name? (record-predicate struct:name))
-                 (define name? (lambda (v) (or (authentic-name? v)
-                                               (and (impersonator? v)
-                                                    (authentic-name? (impersonator-val v))))))
+                 (define name? (|#%struct-predicate|
+                                (lambda (v) (or (authentic-name? v)
+                                                (and (impersonator? v)
+                                                     (authentic-name? (impersonator-val v)))))))
                  (define name-field
                    (let ([name-field (record-accessor struct:name field-index)])
-                     (lambda (v)
-                       (if (authentic-name? v)
-                           (name-field v)
-                           (pariah (impersonate-ref name-field struct:name field-index v 'name 'field))))))
+                     (|#%struct-field-accessor|
+                      (lambda (v)
+                        (if (authentic-name? v)
+                            (name-field v)
+                            (pariah (impersonate-ref name-field struct:name field-index v 'name 'field))))
+                      struct:name
+                      field-index)))
                  ...
                  (define dummy
                    (begin
                      (register-struct-named! struct:name)
-                     (register-struct-constructor! name)
-                     (register-struct-field-accessor! name-field struct:name field-index) ...
                      (record-type-equal-procedure struct:name default-struct-equal?)
                      (record-type-hash-procedure struct:name default-struct-hash)
                      (inspector-set! struct:name #f)))))))])))

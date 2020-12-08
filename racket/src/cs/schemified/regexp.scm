@@ -886,13 +886,6 @@
        (rx:alts-rx_2917 s)
        ($value
         (impersonate-ref rx:alts-rx_2917 struct:rx:alts 1 s 'rx:alts 'rx2))))))
-(define effect_2536
-  (begin
-    (register-struct-constructor! rx:alts1.1)
-    (register-struct-predicate! rx:alts?)
-    (register-struct-field-accessor! rx:alts-rx_1874 struct:rx:alts 0)
-    (register-struct-field-accessor! rx:alts-rx_2761 struct:rx:alts 1)
-    (void)))
 (define struct:rx:sequence
   (make-record-type-descriptor* 'rx:sequence #f #f #f #f 2 0))
 (define effect_2137
@@ -957,16 +950,6 @@
          s
          'rx:sequence
          'needs-backtrack?))))))
-(define effect_2844
-  (begin
-    (register-struct-constructor! rx:sequence2.1)
-    (register-struct-predicate! rx:sequence?)
-    (register-struct-field-accessor! rx:sequence-rxs struct:rx:sequence 0)
-    (register-struct-field-accessor!
-     rx:sequence-needs-backtrack?
-     struct:rx:sequence
-     1)
-    (void)))
 (define struct:rx:group
   (make-record-type-descriptor* 'rx:group #f #f #f #f 2 0))
 (define effect_2340
@@ -1028,13 +1011,6 @@
          s
          'rx:group
          'number))))))
-(define effect_2814
-  (begin
-    (register-struct-constructor! rx:group3.1)
-    (register-struct-predicate! rx:group?)
-    (register-struct-field-accessor! rx:group-rx struct:rx:group 0)
-    (register-struct-field-accessor! rx:group-number struct:rx:group 1)
-    (void)))
 (define struct:rx:repeat
   (make-record-type-descriptor* 'rx:repeat #f #f #f #f 4 0))
 (define effect_2551
@@ -1129,15 +1105,6 @@
          s
          'rx:repeat
          'non-greedy?))))))
-(define effect_2847
-  (begin
-    (register-struct-constructor! rx:repeat4.1)
-    (register-struct-predicate! rx:repeat?)
-    (register-struct-field-accessor! rx:repeat-rx struct:rx:repeat 0)
-    (register-struct-field-accessor! rx:repeat-min struct:rx:repeat 1)
-    (register-struct-field-accessor! rx:repeat-max struct:rx:repeat 2)
-    (register-struct-field-accessor! rx:repeat-non-greedy? struct:rx:repeat 3)
-    (void)))
 (define struct:rx:maybe
   (make-record-type-descriptor* 'rx:maybe #f #f #f #f 2 0))
 (define effect_2619
@@ -1199,13 +1166,6 @@
          s
          'rx:maybe
          'non-greedy?))))))
-(define effect_2791
-  (begin
-    (register-struct-constructor! rx:maybe5.1)
-    (register-struct-predicate! rx:maybe?)
-    (register-struct-field-accessor! rx:maybe-rx struct:rx:maybe 0)
-    (register-struct-field-accessor! rx:maybe-non-greedy? struct:rx:maybe 1)
-    (void)))
 (define struct:rx:conditional
   (make-record-type-descriptor* 'rx:conditional #f #f #f #f 6 0))
 (define effect_2459
@@ -1336,35 +1296,6 @@
          s
          'rx:conditional
          'needs-backtrack?))))))
-(define effect_2522
-  (begin
-    (register-struct-constructor! rx:conditional6.1)
-    (register-struct-predicate! rx:conditional?)
-    (register-struct-field-accessor!
-     rx:conditional-tst
-     struct:rx:conditional
-     0)
-    (register-struct-field-accessor!
-     rx:conditional-rx_2013
-     struct:rx:conditional
-     1)
-    (register-struct-field-accessor!
-     rx:conditional-rx_2094
-     struct:rx:conditional
-     2)
-    (register-struct-field-accessor!
-     rx:conditional-n-start
-     struct:rx:conditional
-     3)
-    (register-struct-field-accessor!
-     rx:conditional-num-n
-     struct:rx:conditional
-     4)
-    (register-struct-field-accessor!
-     rx:conditional-needs-backtrack?
-     struct:rx:conditional
-     5)
-    (void)))
 (define struct:rx:lookahead
   (make-record-type-descriptor* 'rx:lookahead #f #f #f #f 4 0))
 (define effect_2324
@@ -1461,18 +1392,6 @@
          s
          'rx:lookahead
          'num-n))))))
-(define effect_2423
-  (begin
-    (register-struct-constructor! rx:lookahead7.1)
-    (register-struct-predicate! rx:lookahead?)
-    (register-struct-field-accessor! rx:lookahead-rx struct:rx:lookahead 0)
-    (register-struct-field-accessor! rx:lookahead-match? struct:rx:lookahead 1)
-    (register-struct-field-accessor!
-     rx:lookahead-n-start
-     struct:rx:lookahead
-     2)
-    (register-struct-field-accessor! rx:lookahead-num-n struct:rx:lookahead 3)
-    (void)))
 (define struct:rx:lookbehind
   (make-record-type-descriptor* 'rx:lookbehind #f #f #f #f 6 12))
 (define effect_2263
@@ -1637,40 +1556,6 @@
          v
          'rx:lookbehind
          'lb-max))))))
-(define effect_2163
-  (begin
-    (register-struct-constructor! rx:lookbehind8.1)
-    (register-struct-predicate! rx:lookbehind?)
-    (register-struct-field-accessor! rx:lookbehind-rx struct:rx:lookbehind 0)
-    (register-struct-field-accessor!
-     rx:lookbehind-match?
-     struct:rx:lookbehind
-     1)
-    (register-struct-field-accessor!
-     rx:lookbehind-lb-min
-     struct:rx:lookbehind
-     2)
-    (register-struct-field-accessor!
-     rx:lookbehind-lb-max
-     struct:rx:lookbehind
-     3)
-    (register-struct-field-accessor!
-     rx:lookbehind-n-start
-     struct:rx:lookbehind
-     4)
-    (register-struct-field-accessor!
-     rx:lookbehind-num-n
-     struct:rx:lookbehind
-     5)
-    (register-struct-field-mutator!
-     set-rx:lookbehind-lb-min!
-     struct:rx:lookbehind
-     2)
-    (register-struct-field-mutator!
-     set-rx:lookbehind-lb-max!
-     struct:rx:lookbehind
-     3)
-    (void)))
 (define struct:rx:cut (make-record-type-descriptor* 'rx:cut #f #f #f #f 4 0))
 (define effect_2942
   (struct-type-install-properties!
@@ -1756,15 +1641,6 @@
          s
          'rx:cut
          'needs-backtrack?))))))
-(define effect_2360
-  (begin
-    (register-struct-constructor! rx:cut9.1)
-    (register-struct-predicate! rx:cut?)
-    (register-struct-field-accessor! rx:cut-rx struct:rx:cut 0)
-    (register-struct-field-accessor! rx:cut-n-start struct:rx:cut 1)
-    (register-struct-field-accessor! rx:cut-num-n struct:rx:cut 2)
-    (register-struct-field-accessor! rx:cut-needs-backtrack? struct:rx:cut 3)
-    (void)))
 (define struct:rx:reference
   (make-record-type-descriptor* 'rx:reference #f #f #f #f 2 0))
 (define effect_2344
@@ -1831,16 +1707,6 @@
          s
          'rx:reference
          'case-sensitive?))))))
-(define effect_2703
-  (begin
-    (register-struct-constructor! rx:reference10.1)
-    (register-struct-predicate! rx:reference?)
-    (register-struct-field-accessor! rx:reference-n struct:rx:reference 0)
-    (register-struct-field-accessor!
-     rx:reference-case-sensitive?
-     struct:rx:reference
-     1)
-    (void)))
 (define struct:rx:range
   (make-record-type-descriptor* 'rx:range #f #f #f #f 1 0))
 (define effect_2702
@@ -1886,12 +1752,6 @@
          s
          'rx:range
          'range))))))
-(define effect_2869
-  (begin
-    (register-struct-constructor! rx:range11.1)
-    (register-struct-predicate! rx:range?)
-    (register-struct-field-accessor! rx:range-range struct:rx:range 0)
-    (void)))
 (define struct:rx:unicode-categories
   (make-record-type-descriptor* 'rx:unicode-categories #f #f #f #f 2 0))
 (define effect_2129
@@ -1962,19 +1822,6 @@
          s
          'rx:unicode-categories
          'match?))))))
-(define effect_2012
-  (begin
-    (register-struct-constructor! rx:unicode-categories12.1)
-    (register-struct-predicate! rx:unicode-categories?)
-    (register-struct-field-accessor!
-     rx:unicode-categories-symlist
-     struct:rx:unicode-categories
-     0)
-    (register-struct-field-accessor!
-     rx:unicode-categories-match?
-     struct:rx:unicode-categories
-     1)
-    (void)))
 (define needs-backtrack?
   (lambda (rx_0)
     (if (rx:alts? rx_0)
@@ -2328,33 +2175,6 @@
          s
          'parse-config
          'error-handler?))))))
-(define effect_2865
-  (begin
-    (register-struct-constructor! parse-config1.1)
-    (register-struct-predicate! parse-config?)
-    (register-struct-field-accessor! parse-config-who struct:parse-config 0)
-    (register-struct-field-accessor! parse-config-px? struct:parse-config 1)
-    (register-struct-field-accessor!
-     parse-config-case-sensitive?
-     struct:parse-config
-     2)
-    (register-struct-field-accessor!
-     parse-config-multi-line?
-     struct:parse-config
-     3)
-    (register-struct-field-accessor!
-     parse-config-group-number-box
-     struct:parse-config
-     4)
-    (register-struct-field-accessor!
-     parse-config-references?-box
-     struct:parse-config
-     5)
-    (register-struct-field-accessor!
-     parse-config-error-handler?
-     struct:parse-config
-     6)
-    (void)))
 (define make-parse-config.1
   (|#%name|
    make-parse-config
@@ -5144,46 +4964,6 @@
          v
          'lazy-bytes
          'discarded-count))))))
-(define effect_3099
-  (begin
-    (register-struct-constructor! lazy-bytes1.1)
-    (register-struct-predicate! lazy-bytes?)
-    (register-struct-field-accessor! lazy-bytes-bstr struct:lazy-bytes 0)
-    (register-struct-field-accessor! lazy-bytes-end struct:lazy-bytes 1)
-    (register-struct-field-accessor! lazy-bytes-in struct:lazy-bytes 2)
-    (register-struct-field-accessor! lazy-bytes-skip-amt struct:lazy-bytes 3)
-    (register-struct-field-accessor! lazy-bytes-prefix-len struct:lazy-bytes 4)
-    (register-struct-field-accessor! lazy-bytes-peek? struct:lazy-bytes 5)
-    (register-struct-field-accessor!
-     lazy-bytes-immediate-only?
-     struct:lazy-bytes
-     6)
-    (register-struct-field-accessor!
-     lazy-bytes-progress-evt
-     struct:lazy-bytes
-     7)
-    (register-struct-field-accessor! lazy-bytes-out struct:lazy-bytes 8)
-    (register-struct-field-accessor!
-     lazy-bytes-max-lookbehind
-     struct:lazy-bytes
-     9)
-    (register-struct-field-accessor! lazy-bytes-failed? struct:lazy-bytes 10)
-    (register-struct-field-accessor!
-     lazy-bytes-discarded-count
-     struct:lazy-bytes
-     11)
-    (register-struct-field-accessor! lazy-bytes-max-peek struct:lazy-bytes 12)
-    (register-struct-field-mutator! set-lazy-bytes-bstr! struct:lazy-bytes 0)
-    (register-struct-field-mutator! set-lazy-bytes-end! struct:lazy-bytes 1)
-    (register-struct-field-mutator!
-     set-lazy-bytes-failed?!
-     struct:lazy-bytes
-     10)
-    (register-struct-field-mutator!
-     set-lazy-bytes-discarded-count!
-     struct:lazy-bytes
-     11)
-    (void)))
 (define make-lazy-bytes
   (lambda (in_0
            skip-amt_0
@@ -7690,24 +7470,6 @@
          s
          'regexp
          'start-range))))))
-(define effect_3291
-  (begin
-    (register-struct-constructor! rx:regexp1.1)
-    (register-struct-predicate! rx:regexp?)
-    (register-struct-field-accessor! rx:regexp-bytes? struct:rx:regexp 0)
-    (register-struct-field-accessor! rx:regexp-px? struct:rx:regexp 1)
-    (register-struct-field-accessor! rx:regexp-source struct:rx:regexp 2)
-    (register-struct-field-accessor! rx:regexp-matcher struct:rx:regexp 3)
-    (register-struct-field-accessor! rx:regexp-num-groups struct:rx:regexp 4)
-    (register-struct-field-accessor! rx:regexp-references? struct:rx:regexp 5)
-    (register-struct-field-accessor!
-     rx:regexp-max-lookbehind
-     struct:rx:regexp
-     6)
-    (register-struct-field-accessor! rx:regexp-anchored? struct:rx:regexp 7)
-    (register-struct-field-accessor! rx:regexp-must-string struct:rx:regexp 8)
-    (register-struct-field-accessor! rx:regexp-start-range struct:rx:regexp 9)
-    (void)))
 (define make-regexp
   (lambda (who_0 orig-p_0 px?_0 as-bytes?_0 handler_0)
     (call-with-continuation-prompt

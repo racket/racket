@@ -462,6 +462,18 @@ configuration:
    increases load time and memory use of Racket programs by as much as
    50%.
 
+Structure Types
+---------------
+
+See the note in "../expander/README.txt" about structure types. That
+applies for all of layers. So, for example,
+
+   (struct-predicate-procedure? thread?) ; => #f
+
+Beware, however, that if schemify is not able to optimize a
+structure-type creation, then the current implementation will end up
+exposing structure procedures as such.
+
 Inlining Expectations
 ---------------------
 

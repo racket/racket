@@ -3,6 +3,10 @@
 
 (Section 'macro)
 
+(test #f struct-predicate-procedure? syntax?)
+
+(test #t struct-predicate-procedure? exn:fail:syntax?)
+
 (error-test #'(define-syntaxes () (values 1)) exn:application:arity?)
 (error-test #'(define-syntaxes () (values 1 2)) exn:application:arity?)
 (error-test #'(define-syntaxes (x) (values 1 2)) exn:application:arity?)

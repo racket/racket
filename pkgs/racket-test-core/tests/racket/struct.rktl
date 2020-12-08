@@ -672,6 +672,19 @@
 (test #t inspector-superior? (current-inspector) (make-sibling-inspector (make-inspector)))
 
 ;; ------------------------------------------------------------
+;; Some built-in structure procedures
+
+(test #t struct-predicate-procedure? exn?)
+(test #t struct-predicate-procedure? exn:fail?)
+(test #t struct-predicate-procedure? exn:fail:contract?)
+(test #t struct-predicate-procedure? srcloc?)
+(test #t struct-predicate-procedure? date?)
+
+(test #t struct-accessor-procedure? exn-message)
+(test #t struct-accessor-procedure? srcloc-line)
+(test #t struct-accessor-procedure? date-month)
+
+;; ------------------------------------------------------------
 ;; Property accessor errors
 
 (let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop1 #f '() #t)])

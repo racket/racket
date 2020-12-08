@@ -530,7 +530,7 @@
          (schemify-linklet (show "linklet" c)
                            serializable?-box
                            (not (#%memq 'uninterned-literal options))
-                           (eq? format 'interpret)
+                           (if (eq? format 'interpret) 'interp 'compile) ; target
                            (|#%app| compile-allow-set!-undefined)
                            unsafe?
                            enforce-constant?

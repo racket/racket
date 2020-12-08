@@ -173,11 +173,6 @@
         (if (impersonator? v)
           (known-constant?_2598 (impersonator-val v))
           #f))))))
-(define effect_2956
-  (begin
-    (register-struct-constructor! known-constant)
-    (register-struct-predicate! known-constant?)
-    (void)))
 (define struct:known-consistent
   (make-record-type-descriptor*
    'known-consistent
@@ -229,11 +224,6 @@
         (if (impersonator? v)
           (known-consistent?_3048 (impersonator-val v))
           #f))))))
-(define effect_3117
-  (begin
-    (register-struct-constructor! known-consistent)
-    (register-struct-predicate! known-consistent?)
-    (void)))
 (define struct:known-authentic
   (make-record-type-descriptor*
    'known-authentic
@@ -285,11 +275,6 @@
         (if (impersonator? v)
           (known-authentic?_3119 (impersonator-val v))
           #f))))))
-(define effect_2588
-  (begin
-    (register-struct-constructor! known-authentic)
-    (register-struct-predicate! known-authentic?)
-    (void)))
 (define struct:known-copy
   (make-record-type-descriptor*
    'known-copy
@@ -355,12 +340,6 @@
          s
          'known-copy
          'id))))))
-(define effect_2902
-  (begin
-    (register-struct-constructor! known-copy)
-    (register-struct-predicate! known-copy?)
-    (register-struct-field-accessor! known-copy-id struct:known-copy 0)
-    (void)))
 (define struct:known-literal
   (make-record-type-descriptor*
    'known-literal
@@ -428,15 +407,6 @@
          s
          'known-literal
          'value))))))
-(define effect_2398
-  (begin
-    (register-struct-constructor! known-literal)
-    (register-struct-predicate! known-literal?)
-    (register-struct-field-accessor!
-     known-literal-value
-     struct:known-literal
-     0)
-    (void)))
 (define struct:known-procedure
   (make-record-type-descriptor*
    'known-procedure
@@ -506,15 +476,6 @@
          s
          'known-procedure
          'arity-mask))))))
-(define effect_1399
-  (begin
-    (register-struct-constructor! known-procedure)
-    (register-struct-predicate! known-procedure?)
-    (register-struct-field-accessor!
-     known-procedure-arity-mask
-     struct:known-procedure
-     0)
-    (void)))
 (define struct:known-procedure/no-prompt
   (make-record-type-descriptor*
    'known-procedure/no-prompt
@@ -571,11 +532,6 @@
         (if (impersonator? v)
           (known-procedure/no-prompt?_2036 (impersonator-val v))
           #f))))))
-(define effect_2150
-  (begin
-    (register-struct-constructor! known-procedure/no-prompt)
-    (register-struct-predicate! known-procedure/no-prompt?)
-    (void)))
 (define struct:known-procedure/can-inline
   (make-record-type-descriptor*
    'known-procedure/can-inline
@@ -650,15 +606,6 @@
          s
          'known-procedure/can-inline
          'expr))))))
-(define effect_2594
-  (begin
-    (register-struct-constructor! known-procedure/can-inline)
-    (register-struct-predicate! known-procedure/can-inline?)
-    (register-struct-field-accessor!
-     known-procedure/can-inline-expr
-     struct:known-procedure/can-inline
-     0)
-    (void)))
 (define struct:known-procedure/can-inline/need-imports
   (make-record-type-descriptor*
    'known-procedure/can-inline/need-imports
@@ -733,15 +680,6 @@
          s
          'known-procedure/can-inline/need-imports
          'needed))))))
-(define effect_2494
-  (begin
-    (register-struct-constructor! known-procedure/can-inline/need-imports)
-    (register-struct-predicate! known-procedure/can-inline/need-imports?)
-    (register-struct-field-accessor!
-     known-procedure/can-inline/need-imports-needed
-     struct:known-procedure/can-inline/need-imports
-     0)
-    (void)))
 (define struct:known-procedure/folding
   (make-record-type-descriptor*
    'known-procedure/folding
@@ -798,11 +736,6 @@
         (if (impersonator? v)
           (known-procedure/folding?_2882 (impersonator-val v))
           #f))))))
-(define effect_2446
-  (begin
-    (register-struct-constructor! known-procedure/folding)
-    (register-struct-predicate! known-procedure/folding?)
-    (void)))
 (define struct:known-procedure/folding/limited
   (make-record-type-descriptor*
    'known-procedure/folding/limited
@@ -877,15 +810,6 @@
          s
          'known-procedure/folding/limited
          'kind))))))
-(define effect_2817
-  (begin
-    (register-struct-constructor! known-procedure/folding/limited)
-    (register-struct-predicate! known-procedure/folding/limited?)
-    (register-struct-field-accessor!
-     known-procedure/folding/limited-kind
-     struct:known-procedure/folding/limited
-     0)
-    (void)))
 (define struct:known-procedure/succeeds
   (make-record-type-descriptor*
    'known-procedure/succeeds
@@ -942,11 +866,6 @@
         (if (impersonator? v)
           (known-procedure/succeeds?_3041 (impersonator-val v))
           #f))))))
-(define effect_2473
-  (begin
-    (register-struct-constructor! known-procedure/succeeds)
-    (register-struct-predicate! known-procedure/succeeds?)
-    (void)))
 (define struct:known-procedure/pure
   (make-record-type-descriptor*
    'known-procedure/pure
@@ -1000,11 +919,6 @@
         (if (impersonator? v)
           (known-procedure/pure?_2240 (impersonator-val v))
           #f))))))
-(define effect_2621
-  (begin
-    (register-struct-constructor! known-procedure/pure)
-    (register-struct-predicate! known-procedure/pure?)
-    (void)))
 (define struct:known-procedure/pure/folding
   (make-record-type-descriptor*
    'known-procedure/pure/folding
@@ -1061,11 +975,6 @@
         (if (impersonator? v)
           (known-procedure/pure/folding?_2719 (impersonator-val v))
           #f))))))
-(define effect_2449
-  (begin
-    (register-struct-constructor! known-procedure/pure/folding)
-    (register-struct-predicate! known-procedure/pure/folding?)
-    (void)))
 (define struct:known-procedure/pure/folding-unsafe
   (make-record-type-descriptor*
    'known-procedure/pure/folding-unsafe
@@ -1140,15 +1049,6 @@
          s
          'known-procedure/pure/folding-unsafe
          'safe))))))
-(define effect_2336
-  (begin
-    (register-struct-constructor! known-procedure/pure/folding-unsafe)
-    (register-struct-predicate! known-procedure/pure/folding-unsafe?)
-    (register-struct-field-accessor!
-     known-procedure/pure/folding-unsafe-safe
-     struct:known-procedure/pure/folding-unsafe
-     0)
-    (void)))
 (define struct:known-procedure/has-unsafe
   (make-record-type-descriptor*
    'known-procedure/has-unsafe
@@ -1223,15 +1123,6 @@
          s
          'known-procedure/has-unsafe
          'alternate))))))
-(define effect_1976
-  (begin
-    (register-struct-constructor! known-procedure/has-unsafe)
-    (register-struct-predicate! known-procedure/has-unsafe?)
-    (register-struct-field-accessor!
-     known-procedure/has-unsafe-alternate
-     struct:known-procedure/has-unsafe
-     0)
-    (void)))
 (define struct:known-procedure/has-unsafe/folding
   (make-record-type-descriptor*
    'known-procedure/has-unsafe/folding
@@ -1288,11 +1179,6 @@
         (if (impersonator? v)
           (known-procedure/has-unsafe/folding?_2169 (impersonator-val v))
           #f))))))
-(define effect_2832
-  (begin
-    (register-struct-constructor! known-procedure/has-unsafe/folding)
-    (register-struct-predicate! known-procedure/has-unsafe/folding?)
-    (void)))
 (define struct:known-procedure/has-unsafe/folding/limited
   (make-record-type-descriptor*
    'known-procedure/has-unsafe/folding/limited
@@ -1368,15 +1254,6 @@
          s
          'known-procedure/has-unsafe/folding/limited
          'kind))))))
-(define effect_2061
-  (begin
-    (register-struct-constructor! known-procedure/has-unsafe/folding/limited)
-    (register-struct-predicate! known-procedure/has-unsafe/folding/limited?)
-    (register-struct-field-accessor!
-     known-procedure/has-unsafe/folding/limited-kind
-     struct:known-procedure/has-unsafe/folding/limited
-     0)
-    (void)))
 (define struct:known-struct-type
   (make-record-type-descriptor*
    'known-struct-type
@@ -1482,23 +1359,6 @@
          s
          'known-struct-type
          'pure-constructor?))))))
-(define effect_2460
-  (begin
-    (register-struct-constructor! known-struct-type)
-    (register-struct-predicate! known-struct-type?)
-    (register-struct-field-accessor!
-     known-struct-type-type
-     struct:known-struct-type
-     0)
-    (register-struct-field-accessor!
-     known-struct-type-field-count
-     struct:known-struct-type
-     1)
-    (register-struct-field-accessor!
-     known-struct-type-pure-constructor?
-     struct:known-struct-type
-     2)
-    (void)))
 (define struct:known-constructor
   (make-record-type-descriptor*
    'known-constructor
@@ -1568,15 +1428,6 @@
          s
          'known-constructor
          'type))))))
-(define effect_2610
-  (begin
-    (register-struct-constructor! known-constructor)
-    (register-struct-predicate! known-constructor?)
-    (register-struct-field-accessor!
-     known-constructor-type
-     struct:known-constructor
-     0)
-    (void)))
 (define struct:known-predicate
   (make-record-type-descriptor*
    'known-predicate
@@ -1644,15 +1495,6 @@
          s
          'known-predicate
          'type))))))
-(define effect_2622
-  (begin
-    (register-struct-constructor! known-predicate)
-    (register-struct-predicate! known-predicate?)
-    (register-struct-field-accessor!
-     known-predicate-type
-     struct:known-predicate
-     0)
-    (void)))
 (define struct:known-accessor
   (make-record-type-descriptor*
    'known-accessor
@@ -1672,7 +1514,7 @@
    #f
    1
    1))
-(define effect_2151
+(define effect_2150
   (struct-type-install-properties!
    struct:known-accessor
    'known-accessor
@@ -1720,15 +1562,6 @@
          s
          'known-accessor
          'type))))))
-(define effect_3078
-  (begin
-    (register-struct-constructor! known-accessor)
-    (register-struct-predicate! known-accessor?)
-    (register-struct-field-accessor!
-     known-accessor-type
-     struct:known-accessor
-     0)
-    (void)))
 (define struct:known-mutator
   (make-record-type-descriptor*
    'known-mutator
@@ -1796,12 +1629,80 @@
          s
          'known-mutator
          'type))))))
-(define effect_2451
-  (begin
-    (register-struct-constructor! known-mutator)
-    (register-struct-predicate! known-mutator?)
-    (register-struct-field-accessor! known-mutator-type struct:known-mutator 0)
-    (void)))
+(define struct:known-struct-constructor
+  (make-record-type-descriptor*
+   'known-struct-constructor
+   (if (struct-type? struct:known-constructor)
+     struct:known-constructor
+     (check-struct-type 'struct struct:known-constructor))
+   (structure-type-lookup-prefab-uid
+    'known-struct-constructor
+    (if (struct-type? struct:known-constructor)
+      struct:known-constructor
+      (check-struct-type 'struct struct:known-constructor))
+    1
+    0
+    #f
+    '(0))
+   #f
+   #f
+   1
+   1))
+(define effect_3019
+  (struct-type-install-properties!
+   struct:known-struct-constructor
+   'known-struct-constructor
+   1
+   0
+   (if (struct-type? struct:known-constructor)
+     struct:known-constructor
+     (check-struct-type 'struct struct:known-constructor))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-struct-constructor))
+(define known-struct-constructor
+  (|#%name|
+   known-struct-constructor
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-struct-constructor
+     #f
+     #f))))
+(define known-struct-constructor?_2705
+  (|#%name|
+   known-struct-constructor?
+   (record-predicate struct:known-struct-constructor)))
+(define known-struct-constructor?
+  (|#%name|
+   known-struct-constructor?
+   (lambda (v)
+     (if (known-struct-constructor?_2705 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-struct-constructor?_2705 (impersonator-val v))
+          #f))))))
+(define known-struct-constructor-type-id_2882
+  (|#%name|
+   known-struct-constructor-type-id
+   (record-accessor struct:known-struct-constructor 0)))
+(define known-struct-constructor-type-id
+  (|#%name|
+   known-struct-constructor-type-id
+   (lambda (s)
+     (if (known-struct-constructor?_2705 s)
+       (known-struct-constructor-type-id_2882 s)
+       ($value
+        (impersonate-ref
+         known-struct-constructor-type-id_2882
+         struct:known-struct-constructor
+         0
+         s
+         'known-struct-constructor
+         'type-id))))))
 (define struct:known-struct-predicate
   (make-record-type-descriptor*
    'known-struct-predicate
@@ -1891,19 +1792,6 @@
          s
          'known-struct-predicate
          'authentic?))))))
-(define effect_2415
-  (begin
-    (register-struct-constructor! known-struct-predicate)
-    (register-struct-predicate! known-struct-predicate?)
-    (register-struct-field-accessor!
-     known-struct-predicate-type-id
-     struct:known-struct-predicate
-     0)
-    (register-struct-field-accessor!
-     known-struct-predicate-authentic?
-     struct:known-struct-predicate
-     1)
-    (void)))
 (define struct:known-field-accessor
   (make-record-type-descriptor*
    'known-field-accessor
@@ -1993,19 +1881,6 @@
          s
          'known-field-accessor
          'pos))))))
-(define effect_2652
-  (begin
-    (register-struct-constructor! known-field-accessor)
-    (register-struct-predicate! known-field-accessor?)
-    (register-struct-field-accessor!
-     known-field-accessor-type-id
-     struct:known-field-accessor
-     0)
-    (register-struct-field-accessor!
-     known-field-accessor-pos
-     struct:known-field-accessor
-     1)
-    (void)))
 (define struct:known-field-mutator
   (make-record-type-descriptor*
    'known-field-mutator
@@ -2095,19 +1970,80 @@
          s
          'known-field-mutator
          'pos))))))
-(define effect_2676
-  (begin
-    (register-struct-constructor! known-field-mutator)
-    (register-struct-predicate! known-field-mutator?)
-    (register-struct-field-accessor!
-     known-field-mutator-type-id
-     struct:known-field-mutator
-     0)
-    (register-struct-field-accessor!
-     known-field-mutator-pos
-     struct:known-field-mutator
-     1)
-    (void)))
+(define struct:known-struct-constructor/need-imports
+  (make-record-type-descriptor*
+   'known-struct-constructor/need-imports
+   (if (struct-type? struct:known-struct-constructor)
+     struct:known-struct-constructor
+     (check-struct-type 'struct struct:known-struct-constructor))
+   (structure-type-lookup-prefab-uid
+    'known-struct-constructor/need-imports
+    (if (struct-type? struct:known-struct-constructor)
+      struct:known-struct-constructor
+      (check-struct-type 'struct struct:known-struct-constructor))
+    1
+    0
+    #f
+    '(0))
+   #f
+   #f
+   1
+   1))
+(define effect_2765
+  (struct-type-install-properties!
+   struct:known-struct-constructor/need-imports
+   'known-struct-constructor/need-imports
+   1
+   0
+   (if (struct-type? struct:known-struct-constructor)
+     struct:known-struct-constructor
+     (check-struct-type 'struct struct:known-struct-constructor))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-struct-constructor/need-imports))
+(define known-struct-constructor/need-imports
+  (|#%name|
+   known-struct-constructor/need-imports
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-struct-constructor/need-imports
+     #f
+     #f))))
+(define known-struct-constructor/need-imports?_2300
+  (|#%name|
+   known-struct-constructor/need-imports?
+   (record-predicate struct:known-struct-constructor/need-imports)))
+(define known-struct-constructor/need-imports?
+  (|#%name|
+   known-struct-constructor/need-imports?
+   (lambda (v)
+     (if (known-struct-constructor/need-imports?_2300 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-struct-constructor/need-imports?_2300 (impersonator-val v))
+          #f))))))
+(define known-struct-constructor/need-imports-needed_2757
+  (|#%name|
+   known-struct-constructor/need-imports-needed
+   (record-accessor struct:known-struct-constructor/need-imports 0)))
+(define known-struct-constructor/need-imports-needed
+  (|#%name|
+   known-struct-constructor/need-imports-needed
+   (lambda (s)
+     (if (known-struct-constructor/need-imports?_2300 s)
+       (known-struct-constructor/need-imports-needed_2757 s)
+       ($value
+        (impersonate-ref
+         known-struct-constructor/need-imports-needed_2757
+         struct:known-struct-constructor/need-imports
+         0
+         s
+         'known-struct-constructor/need-imports
+         'needed))))))
 (define struct:known-struct-predicate/need-imports
   (make-record-type-descriptor*
    'known-struct-predicate/need-imports
@@ -2182,15 +2118,6 @@
          s
          'known-struct-predicate/need-imports
          'needed))))))
-(define effect_1651
-  (begin
-    (register-struct-constructor! known-struct-predicate/need-imports)
-    (register-struct-predicate! known-struct-predicate/need-imports?)
-    (register-struct-field-accessor!
-     known-struct-predicate/need-imports-needed
-     struct:known-struct-predicate/need-imports
-     0)
-    (void)))
 (define struct:known-field-accessor/need-imports
   (make-record-type-descriptor*
    'known-field-accessor/need-imports
@@ -2265,15 +2192,6 @@
          s
          'known-field-accessor/need-imports
          'needed))))))
-(define effect_2889
-  (begin
-    (register-struct-constructor! known-field-accessor/need-imports)
-    (register-struct-predicate! known-field-accessor/need-imports?)
-    (register-struct-field-accessor!
-     known-field-accessor/need-imports-needed
-     struct:known-field-accessor/need-imports
-     0)
-    (void)))
 (define struct:known-field-mutator/need-imports
   (make-record-type-descriptor*
    'known-field-mutator/need-imports
@@ -2348,15 +2266,6 @@
          s
          'known-field-mutator/need-imports
          'needed))))))
-(define effect_2411
-  (begin
-    (register-struct-constructor! known-field-mutator/need-imports)
-    (register-struct-predicate! known-field-mutator/need-imports?)
-    (register-struct-field-accessor!
-     known-field-mutator/need-imports-needed
-     struct:known-field-mutator/need-imports
-     0)
-    (void)))
 (define struct:known-struct-type-property/immediate-guard
   (make-record-type-descriptor*
    'known-struct-type-property/immediate-guard
@@ -2408,10 +2317,5 @@
           (known-struct-type-property/immediate-guard?_2536
            (impersonator-val v))
           #f))))))
-(define effect_1742
-  (begin
-    (register-struct-constructor! known-struct-type-property/immediate-guard)
-    (register-struct-predicate! known-struct-type-property/immediate-guard?)
-    (void)))
 (define a-known-constant (known-constant))
 (define a-known-consistent (known-consistent))

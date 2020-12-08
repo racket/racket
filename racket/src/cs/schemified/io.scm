@@ -2829,34 +2829,6 @@
          s
          'sandman
          'do-extract-timeout))))))
-(define effect_1848
-  (begin
-    (register-struct-constructor! sandman1.1)
-    (register-struct-predicate! sandman?)
-    (register-struct-field-accessor! sandman-do-sleep struct:sandman 0)
-    (register-struct-field-accessor! sandman-do-poll struct:sandman 1)
-    (register-struct-field-accessor! sandman-do-get-wakeup struct:sandman 2)
-    (register-struct-field-accessor! sandman-do-wakeup struct:sandman 3)
-    (register-struct-field-accessor! sandman-do-any-sleepers? struct:sandman 4)
-    (register-struct-field-accessor!
-     sandman-do-sleepers-external-events
-     struct:sandman
-     5)
-    (register-struct-field-accessor! sandman-do-add-thread! struct:sandman 6)
-    (register-struct-field-accessor!
-     sandman-do-remove-thread!
-     struct:sandman
-     7)
-    (register-struct-field-accessor!
-     sandman-do-merge-external-event-sets
-     struct:sandman
-     8)
-    (register-struct-field-accessor! sandman-do-merge-timeout struct:sandman 9)
-    (register-struct-field-accessor!
-     sandman-do-extract-timeout
-     struct:sandman
-     10)
-    (void)))
 (define table
   (let ((or-part_0 (primitive-table '|#%thread|)))
     (if or-part_0
@@ -3666,13 +3638,6 @@
          s
          'exts
          'fd-adders))))))
-(define effect_2449
-  (begin
-    (register-struct-constructor! exts1.1)
-    (register-struct-predicate! exts?)
-    (register-struct-field-accessor! exts-timeout-at struct:exts 0)
-    (register-struct-field-accessor! exts-fd-adders struct:exts 1)
-    (void)))
 (define sandman-add-poll-set-adder
   (lambda (old-exts_0 adder_0)
     (let ((app_0 (if old-exts_0 (exts-timeout-at old-exts_0) #f)))
@@ -3947,26 +3912,6 @@
   (|#%name| set-core-port-offset! (record-mutator struct:core-port 5)))
 (define set-core-port-count!
   (|#%name| set-core-port-count! (record-mutator struct:core-port 6)))
-(define effect_2516
-  (begin
-    (register-struct-constructor! create-core-port)
-    (register-struct-predicate! core-port?)
-    (register-struct-field-accessor! core-port-vtable struct:core-port 0)
-    (register-struct-field-accessor! core-port-name struct:core-port 1)
-    (register-struct-field-accessor! core-port-buffer struct:core-port 2)
-    (register-struct-field-accessor! core-port-closed? struct:core-port 3)
-    (register-struct-field-accessor! core-port-closed-sema struct:core-port 4)
-    (register-struct-field-accessor! core-port-offset struct:core-port 5)
-    (register-struct-field-accessor! core-port-count struct:core-port 6)
-    (register-struct-field-mutator! set-core-port-buffer! struct:core-port 2)
-    (register-struct-field-mutator! set-core-port-closed?! struct:core-port 3)
-    (register-struct-field-mutator!
-     set-core-port-closed-sema!
-     struct:core-port
-     4)
-    (register-struct-field-mutator! set-core-port-offset! struct:core-port 5)
-    (register-struct-field-mutator! set-core-port-count! struct:core-port 6)
-    (void)))
 (define struct:core-port-methods.1
   (make-record-type-descriptor* 'core-port-methods #f #f #f #f 5 0))
 (define effect_2750
@@ -4089,31 +4034,6 @@
          s
          'core-port-methods
          'buffer-mode))))))
-(define effect_2378
-  (begin
-    (register-struct-constructor! core-port-methods1.1)
-    (register-struct-predicate! core-port-methods?.1)
-    (register-struct-field-accessor!
-     core-port-methods-close.1
-     struct:core-port-methods.1
-     0)
-    (register-struct-field-accessor!
-     core-port-methods-count-lines!.1
-     struct:core-port-methods.1
-     1)
-    (register-struct-field-accessor!
-     core-port-methods-get-location.1
-     struct:core-port-methods.1
-     2)
-    (register-struct-field-accessor!
-     core-port-methods-file-position.1
-     struct:core-port-methods.1
-     3)
-    (register-struct-field-accessor!
-     core-port-methods-buffer-mode.1
-     struct:core-port-methods.1
-     4)
-    (void)))
 (define core-port-vtable.1
   (core-port-methods1.1
    (|#%name| close (lambda (this-id_0) (begin (void))))
@@ -4150,17 +4070,6 @@
   (|#%name| set-direct-pos! (record-mutator struct:direct 1)))
 (define set-direct-end!
   (|#%name| set-direct-end! (record-mutator struct:direct 2)))
-(define effect_3038
-  (begin
-    (register-struct-constructor! direct2.1)
-    (register-struct-predicate! direct?)
-    (register-struct-field-accessor! direct-bstr struct:direct 0)
-    (register-struct-field-accessor! direct-pos struct:direct 1)
-    (register-struct-field-accessor! direct-end struct:direct 2)
-    (register-struct-field-mutator! set-direct-bstr! struct:direct 0)
-    (register-struct-field-mutator! set-direct-pos! struct:direct 1)
-    (register-struct-field-mutator! set-direct-end! struct:direct 2)
-    (void)))
 (define struct:location
   (make-record-type-descriptor* 'location #f #f #f #f 5 31))
 (define effect_2872
@@ -4202,21 +4111,6 @@
   (|#%name| set-location-column! (record-mutator struct:location 3)))
 (define set-location-position!
   (|#%name| set-location-position! (record-mutator struct:location 4)))
-(define effect_2656
-  (begin
-    (register-struct-constructor! location3.1)
-    (register-struct-predicate! location?)
-    (register-struct-field-accessor! location-state struct:location 0)
-    (register-struct-field-accessor! location-cr-state struct:location 1)
-    (register-struct-field-accessor! location-line struct:location 2)
-    (register-struct-field-accessor! location-column struct:location 3)
-    (register-struct-field-accessor! location-position struct:location 4)
-    (register-struct-field-mutator! set-location-state! struct:location 0)
-    (register-struct-field-mutator! set-location-cr-state! struct:location 1)
-    (register-struct-field-mutator! set-location-line! struct:location 2)
-    (register-struct-field-mutator! set-location-column! struct:location 3)
-    (register-struct-field-mutator! set-location-position! struct:location 4)
-    (void)))
 (define get-core-port-offset
   (lambda (p_0)
     (let ((offset_0 (core-port-offset p_0)))
@@ -4351,27 +4245,6 @@
   (|#%name|
    set-core-input-port-read-handler!
    (record-mutator struct:core-input-port 1)))
-(define effect_2369
-  (begin
-    (register-struct-constructor! create-core-input-port)
-    (register-struct-predicate! core-input-port?)
-    (register-struct-field-accessor!
-     core-input-port-pending-eof?
-     struct:core-input-port
-     0)
-    (register-struct-field-accessor!
-     core-input-port-read-handler
-     struct:core-input-port
-     1)
-    (register-struct-field-mutator!
-     set-core-input-port-pending-eof?!
-     struct:core-input-port
-     0)
-    (register-struct-field-mutator!
-     set-core-input-port-read-handler!
-     struct:core-input-port
-     1)
-    (void)))
 (define struct:core-input-port-methods.1
   (make-record-type-descriptor*
    'core-input-port-methods
@@ -4524,35 +4397,6 @@
          s
          'core-input-port-methods
          'commit))))))
-(define effect_3072
-  (begin
-    (register-struct-constructor! core-input-port-methods6.1)
-    (register-struct-predicate! core-input-port-methods?.1)
-    (register-struct-field-accessor!
-     core-input-port-methods-prepare-change.1
-     struct:core-input-port-methods.1
-     0)
-    (register-struct-field-accessor!
-     core-input-port-methods-read-in.1
-     struct:core-input-port-methods.1
-     1)
-    (register-struct-field-accessor!
-     core-input-port-methods-peek-in.1
-     struct:core-input-port-methods.1
-     2)
-    (register-struct-field-accessor!
-     core-input-port-methods-byte-ready.1
-     struct:core-input-port-methods.1
-     3)
-    (register-struct-field-accessor!
-     core-input-port-methods-get-progress-evt.1
-     struct:core-input-port-methods.1
-     4)
-    (register-struct-field-accessor!
-     core-input-port-methods-commit.1
-     struct:core-input-port-methods.1
-     5)
-    (void)))
 (define core-input-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 core-port-vtable.1)))
@@ -4721,43 +4565,6 @@
   (|#%name|
    set-core-output-port-display-handler!
    (record-mutator struct:core-output-port 3)))
-(define effect_2276
-  (begin
-    (register-struct-constructor! create-core-output-port)
-    (register-struct-predicate! core-output-port?)
-    (register-struct-field-accessor!
-     core-output-port-evt
-     struct:core-output-port
-     0)
-    (register-struct-field-accessor!
-     core-output-port-write-handler
-     struct:core-output-port
-     1)
-    (register-struct-field-accessor!
-     core-output-port-print-handler
-     struct:core-output-port
-     2)
-    (register-struct-field-accessor!
-     core-output-port-display-handler
-     struct:core-output-port
-     3)
-    (register-struct-field-mutator!
-     set-core-output-port-evt!
-     struct:core-output-port
-     0)
-    (register-struct-field-mutator!
-     set-core-output-port-write-handler!
-     struct:core-output-port
-     1)
-    (register-struct-field-mutator!
-     set-core-output-port-print-handler!
-     struct:core-output-port
-     2)
-    (register-struct-field-mutator!
-     set-core-output-port-display-handler!
-     struct:core-output-port
-     3)
-    (void)))
 (define struct:core-output-port-methods.1
   (make-record-type-descriptor*
    'core-output-port-methods
@@ -4874,27 +4681,6 @@
          s
          'core-output-port-methods
          'get-write-special-evt))))))
-(define effect_2071
-  (begin
-    (register-struct-constructor! core-output-port-methods6.1)
-    (register-struct-predicate! core-output-port-methods?.1)
-    (register-struct-field-accessor!
-     core-output-port-methods-write-out.1
-     struct:core-output-port-methods.1
-     0)
-    (register-struct-field-accessor!
-     core-output-port-methods-write-out-special.1
-     struct:core-output-port-methods.1
-     1)
-    (register-struct-field-accessor!
-     core-output-port-methods-get-write-evt.1
-     struct:core-output-port-methods.1
-     2)
-    (register-struct-field-accessor!
-     core-output-port-methods-get-write-special-evt.1
-     struct:core-output-port-methods.1
-     3)
-    (void)))
 (define core-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 core-port-vtable.1)))
@@ -5002,12 +4788,6 @@
          s
          'write-evt
          'proc))))))
-(define effect_2615
-  (begin
-    (register-struct-constructor! write-evt7.1)
-    (register-struct-predicate! write-evt?)
-    (register-struct-field-accessor! write-evt-proc struct:write-evt 0)
-    (void)))
 (define empty-output-port
   (create-core-output-port
    core-output-port-vtable.1
@@ -5099,20 +4879,6 @@
          s
          'utf-8-state
          'pending-amt))))))
-(define effect_2313
-  (begin
-    (register-struct-constructor! utf-8-state1.1)
-    (register-struct-predicate! utf-8-state?)
-    (register-struct-field-accessor! utf-8-state-accum struct:utf-8-state 0)
-    (register-struct-field-accessor!
-     utf-8-state-remaining
-     struct:utf-8-state
-     1)
-    (register-struct-field-accessor!
-     utf-8-state-pending-amt
-     struct:utf-8-state
-     2)
-    (void)))
 (define utf-8-decode!.1
   (letrec ((complete_0
             (|#%name|
@@ -7258,23 +7024,6 @@
          s
          'commit-manager
          'thread))))))
-(define effect_2282
-  (begin
-    (register-struct-constructor! commit-manager1.1)
-    (register-struct-predicate! commit-manager?)
-    (register-struct-field-accessor!
-     commit-manager-pause-channel
-     struct:commit-manager
-     0)
-    (register-struct-field-accessor!
-     commit-manager-commit-channel
-     struct:commit-manager
-     1)
-    (register-struct-field-accessor!
-     commit-manager-thread
-     struct:commit-manager
-     2)
-    (void)))
 (define struct:commit-request
   (make-record-type-descriptor* 'commit-request #f #f #f #f 5 0))
 (define effect_2327
@@ -7393,31 +7142,6 @@
          s
          'commit-request
          'result-ch))))))
-(define effect_2642
-  (begin
-    (register-struct-constructor! commit-request2.1)
-    (register-struct-predicate! commit-request?)
-    (register-struct-field-accessor!
-     commit-request-ext-evt
-     struct:commit-request
-     0)
-    (register-struct-field-accessor!
-     commit-request-progress-evt
-     struct:commit-request
-     1)
-    (register-struct-field-accessor!
-     commit-request-abandon-evt
-     struct:commit-request
-     2)
-    (register-struct-field-accessor!
-     commit-request-finish
-     struct:commit-request
-     3)
-    (register-struct-field-accessor!
-     commit-request-result-ch
-     struct:commit-request
-     4)
-    (void)))
 (define struct:commit-response
   (make-record-type-descriptor* 'commit-response #f #f #f #f 2 0))
 (define effect_2424
@@ -7486,19 +7210,6 @@
          s
          'commit-response
          'result-put-evt))))))
-(define effect_2386
-  (begin
-    (register-struct-constructor! commit-response3.1)
-    (register-struct-predicate! commit-response?)
-    (register-struct-field-accessor!
-     commit-response-abandon-evt
-     struct:commit-response
-     0)
-    (register-struct-field-accessor!
-     commit-response-result-put-evt
-     struct:commit-response
-     1)
-    (void)))
 (define make-commit-manager
   (letrec ((loop_0
             (|#%name|
@@ -7791,27 +7502,6 @@
   (|#%name|
    set-commit-input-port-commit-manager!
    (record-mutator struct:commit-input-port 1)))
-(define effect_2710
-  (begin
-    (register-struct-constructor! create-commit-input-port)
-    (register-struct-predicate! commit-input-port?)
-    (register-struct-field-accessor!
-     commit-input-port-progress-sema
-     struct:commit-input-port
-     0)
-    (register-struct-field-accessor!
-     commit-input-port-commit-manager
-     struct:commit-input-port
-     1)
-    (register-struct-field-mutator!
-     set-commit-input-port-progress-sema!
-     struct:commit-input-port
-     0)
-    (register-struct-field-mutator!
-     set-commit-input-port-commit-manager!
-     struct:commit-input-port
-     1)
-    (void)))
 (define struct:commit-input-port-methods.1
   (make-record-type-descriptor*
    'commit-input-port-methods
@@ -7856,11 +7546,6 @@
         (if (impersonator? v)
           (commit-input-port-methods?.1_1864 (impersonator-val v))
           #f))))))
-(define effect_3263
-  (begin
-    (register-struct-constructor! commit-input-port-methods5.1)
-    (register-struct-predicate! commit-input-port-methods?.1)
-    (void)))
 (define commit-input-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-input-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 core-input-port-vtable.1)))
@@ -8087,90 +7772,6 @@
   (|#%name|
    set-pipe-data-write-ready-evt!
    (record-mutator struct:pipe-data 15)))
-(define effect_2347
-  (begin
-    (register-struct-constructor! create-pipe-data)
-    (register-struct-predicate! pipe-data?)
-    (register-struct-field-accessor! pipe-data-vtable struct:pipe-data 0)
-    (register-struct-field-accessor! pipe-data-bstr struct:pipe-data 1)
-    (register-struct-field-accessor! pipe-data-len struct:pipe-data 2)
-    (register-struct-field-accessor! pipe-data-limit struct:pipe-data 3)
-    (register-struct-field-accessor! pipe-data-peeked-amt struct:pipe-data 4)
-    (register-struct-field-accessor! pipe-data-start struct:pipe-data 5)
-    (register-struct-field-accessor! pipe-data-end struct:pipe-data 6)
-    (register-struct-field-accessor! pipe-data-input-ref struct:pipe-data 7)
-    (register-struct-field-accessor! pipe-data-output-ref struct:pipe-data 8)
-    (register-struct-field-accessor! pipe-data-input-buffer struct:pipe-data 9)
-    (register-struct-field-accessor!
-     pipe-data-output-buffer
-     struct:pipe-data
-     10)
-    (register-struct-field-accessor!
-     pipe-data-read-ready-sema
-     struct:pipe-data
-     11)
-    (register-struct-field-accessor!
-     pipe-data-write-ready-sema
-     struct:pipe-data
-     12)
-    (register-struct-field-accessor!
-     pipe-data-more-read-ready-sema
-     struct:pipe-data
-     13)
-    (register-struct-field-accessor!
-     pipe-data-read-ready-evt
-     struct:pipe-data
-     14)
-    (register-struct-field-accessor!
-     pipe-data-write-ready-evt
-     struct:pipe-data
-     15)
-    (register-struct-field-mutator! set-pipe-data-bstr! struct:pipe-data 1)
-    (register-struct-field-mutator! set-pipe-data-len! struct:pipe-data 2)
-    (register-struct-field-mutator! set-pipe-data-limit! struct:pipe-data 3)
-    (register-struct-field-mutator!
-     set-pipe-data-peeked-amt!
-     struct:pipe-data
-     4)
-    (register-struct-field-mutator! set-pipe-data-start! struct:pipe-data 5)
-    (register-struct-field-mutator! set-pipe-data-end! struct:pipe-data 6)
-    (register-struct-field-mutator!
-     set-pipe-data-input-ref!
-     struct:pipe-data
-     7)
-    (register-struct-field-mutator!
-     set-pipe-data-output-ref!
-     struct:pipe-data
-     8)
-    (register-struct-field-mutator!
-     set-pipe-data-input-buffer!
-     struct:pipe-data
-     9)
-    (register-struct-field-mutator!
-     set-pipe-data-output-buffer!
-     struct:pipe-data
-     10)
-    (register-struct-field-mutator!
-     set-pipe-data-read-ready-sema!
-     struct:pipe-data
-     11)
-    (register-struct-field-mutator!
-     set-pipe-data-write-ready-sema!
-     struct:pipe-data
-     12)
-    (register-struct-field-mutator!
-     set-pipe-data-more-read-ready-sema!
-     struct:pipe-data
-     13)
-    (register-struct-field-mutator!
-     set-pipe-data-read-ready-evt!
-     struct:pipe-data
-     14)
-    (register-struct-field-mutator!
-     set-pipe-data-write-ready-evt!
-     struct:pipe-data
-     15)
-    (void)))
 (define struct:pipe-data-methods.1
   (make-record-type-descriptor* 'pipe-data-methods #f #f #f #f 0 0))
 (define effect_2891
@@ -8203,11 +7804,6 @@
         (if (impersonator? v)
           (pipe-data-methods?.1_2563 (impersonator-val v))
           #f))))))
-(define effect_2053
-  (begin
-    (register-struct-constructor! pipe-data-methods10.1)
-    (register-struct-predicate! pipe-data-methods?.1)
-    (void)))
 (define pipe-data-vtable.1 (pipe-data-methods10.1))
 (define temp1.1$2
   (|#%name|
@@ -8336,19 +7932,6 @@
   (|#%name| pipe-input-port-d (record-accessor struct:pipe-input-port 0)))
 (define set-pipe-input-port-d!
   (|#%name| set-pipe-input-port-d! (record-mutator struct:pipe-input-port 0)))
-(define effect_3388
-  (begin
-    (register-struct-constructor! create-pipe-input-port)
-    (register-struct-predicate! pipe-input-port?)
-    (register-struct-field-accessor!
-     pipe-input-port-d
-     struct:pipe-input-port
-     0)
-    (register-struct-field-mutator!
-     set-pipe-input-port-d!
-     struct:pipe-input-port
-     0)
-    (void)))
 (define struct:pipe-input-port-methods.1
   (make-record-type-descriptor*
    'pipe-input-port-methods
@@ -8393,11 +7976,6 @@
         (if (impersonator? v)
           (pipe-input-port-methods?.1_2609 (impersonator-val v))
           #f))))))
-(define effect_2755
-  (begin
-    (register-struct-constructor! pipe-input-port-methods15.1)
-    (register-struct-predicate! pipe-input-port-methods?.1)
-    (void)))
 (define pipe-input-port-vtable.1
   (let ((app_0 (core-port-methods-get-location.1 commit-input-port-vtable.1)))
     (let ((app_1
@@ -8759,19 +8337,6 @@
   (|#%name|
    set-pipe-output-port-d!
    (record-mutator struct:pipe-output-port 0)))
-(define effect_2380
-  (begin
-    (register-struct-constructor! create-pipe-output-port)
-    (register-struct-predicate! pipe-output-port?)
-    (register-struct-field-accessor!
-     pipe-output-port-d
-     struct:pipe-output-port
-     0)
-    (register-struct-field-mutator!
-     set-pipe-output-port-d!
-     struct:pipe-output-port
-     0)
-    (void)))
 (define struct:pipe-output-port-methods.1
   (make-record-type-descriptor*
    'pipe-output-port-methods
@@ -8816,11 +8381,6 @@
         (if (impersonator? v)
           (pipe-output-port-methods?.1_2695 (impersonator-val v))
           #f))))))
-(define effect_2479
-  (begin
-    (register-struct-constructor! pipe-output-port-methods20.1)
-    (register-struct-predicate! pipe-output-port-methods?.1)
-    (void)))
 (define pipe-output-port-vtable.1
   (let ((app_0 (core-port-methods-count-lines!.1 core-output-port-vtable.1)))
     (let ((app_1 (core-port-methods-get-location.1 core-output-port-vtable.1)))
@@ -9401,15 +8961,6 @@
          s
          'pipe-write-poller
          'd))))))
-(define effect_2069
-  (begin
-    (register-struct-constructor! pipe-write-poller27.1)
-    (register-struct-predicate! pipe-write-poller?)
-    (register-struct-field-accessor!
-     pipe-write-poller-d
-     struct:pipe-write-poller
-     0)
-    (void)))
 (define struct:pipe-read-poller
   (make-record-type-descriptor* 'pipe-read-poller #f #f #f #f 1 0))
 (define effect_2394
@@ -9489,15 +9040,6 @@
          s
          'pipe-read-poller
          'd))))))
-(define effect_2353
-  (begin
-    (register-struct-constructor! pipe-read-poller28.1)
-    (register-struct-predicate! pipe-read-poller?)
-    (register-struct-field-accessor!
-     pipe-read-poller-d
-     struct:pipe-read-poller
-     0)
-    (void)))
 (define struct:peek-via-read-input-port
   (make-record-type-descriptor*
    'peek-via-read-input-port
@@ -9572,51 +9114,6 @@
   (|#%name|
    set-peek-via-read-input-port-buffer-mode!
    (record-mutator struct:peek-via-read-input-port 4)))
-(define effect_2761
-  (begin
-    (register-struct-constructor! create-peek-via-read-input-port)
-    (register-struct-predicate! peek-via-read-input-port?)
-    (register-struct-field-accessor!
-     peek-via-read-input-port-bstr
-     struct:peek-via-read-input-port
-     0)
-    (register-struct-field-accessor!
-     peek-via-read-input-port-pos
-     struct:peek-via-read-input-port
-     1)
-    (register-struct-field-accessor!
-     peek-via-read-input-port-end-pos
-     struct:peek-via-read-input-port
-     2)
-    (register-struct-field-accessor!
-     peek-via-read-input-port-peeked-eof?
-     struct:peek-via-read-input-port
-     3)
-    (register-struct-field-accessor!
-     peek-via-read-input-port-buffer-mode
-     struct:peek-via-read-input-port
-     4)
-    (register-struct-field-mutator!
-     set-peek-via-read-input-port-bstr!
-     struct:peek-via-read-input-port
-     0)
-    (register-struct-field-mutator!
-     set-peek-via-read-input-port-pos!
-     struct:peek-via-read-input-port
-     1)
-    (register-struct-field-mutator!
-     set-peek-via-read-input-port-end-pos!
-     struct:peek-via-read-input-port
-     2)
-    (register-struct-field-mutator!
-     set-peek-via-read-input-port-peeked-eof?!
-     struct:peek-via-read-input-port
-     3)
-    (register-struct-field-mutator!
-     set-peek-via-read-input-port-buffer-mode!
-     struct:peek-via-read-input-port
-     4)
-    (void)))
 (define struct:peek-via-read-input-port-methods.1
   (make-record-type-descriptor*
    'peek-via-read-input-port-methods
@@ -9679,15 +9176,6 @@
          s
          'peek-via-read-input-port-methods
          'read-in/inner))))))
-(define effect_3235
-  (begin
-    (register-struct-constructor! peek-via-read-input-port-methods10.1)
-    (register-struct-predicate! peek-via-read-input-port-methods?.1)
-    (register-struct-field-accessor!
-     peek-via-read-input-port-methods-read-in/inner.1
-     struct:peek-via-read-input-port-methods.1
-     0)
-    (void)))
 (define peek-via-read-input-port-vtable.1
   (let ((app_0 (core-port-methods-count-lines!.1 commit-input-port-vtable.1)))
     (let ((app_1
@@ -10388,32 +9876,6 @@
   (|#%name|
    set-fd-input-port-custodian-reference!
    (record-mutator struct:fd-input-port 2)))
-(define effect_2812
-  (begin
-    (register-struct-constructor! create-fd-input-port)
-    (register-struct-predicate! fd-input-port?)
-    (register-struct-field-accessor! fd-input-port-fd struct:fd-input-port 0)
-    (register-struct-field-accessor!
-     fd-input-port-fd-refcount
-     struct:fd-input-port
-     1)
-    (register-struct-field-accessor!
-     fd-input-port-custodian-reference
-     struct:fd-input-port
-     2)
-    (register-struct-field-mutator!
-     set-fd-input-port-fd!
-     struct:fd-input-port
-     0)
-    (register-struct-field-mutator!
-     set-fd-input-port-fd-refcount!
-     struct:fd-input-port
-     1)
-    (register-struct-field-mutator!
-     set-fd-input-port-custodian-reference!
-     struct:fd-input-port
-     2)
-    (void)))
 (define struct:fd-input-port-methods.1
   (make-record-type-descriptor*
    'fd-input-port-methods
@@ -10494,19 +9956,6 @@
          s
          'fd-input-port-methods
          'raise-read-error))))))
-(define effect_2230
-  (begin
-    (register-struct-constructor! fd-input-port-methods6.1)
-    (register-struct-predicate! fd-input-port-methods?.1)
-    (register-struct-field-accessor!
-     fd-input-port-methods-on-close.1
-     struct:fd-input-port-methods.1
-     0)
-    (register-struct-field-accessor!
-     fd-input-port-methods-raise-read-error.1
-     struct:fd-input-port-methods.1
-     1)
-    (void)))
 (define fd-input-port-vtable.1
   (let ((app_0
          (core-port-methods-count-lines!.1 peek-via-read-input-port-vtable.1)))
@@ -10792,72 +10241,6 @@
   (|#%name|
    set-fd-output-port-custodian-reference!
    (record-mutator struct:fd-output-port 7)))
-(define effect_2829
-  (begin
-    (register-struct-constructor! create-fd-output-port)
-    (register-struct-predicate! fd-output-port?)
-    (register-struct-field-accessor! fd-output-port-fd struct:fd-output-port 0)
-    (register-struct-field-accessor!
-     fd-output-port-fd-refcount
-     struct:fd-output-port
-     1)
-    (register-struct-field-accessor!
-     fd-output-port-bstr
-     struct:fd-output-port
-     2)
-    (register-struct-field-accessor!
-     fd-output-port-start-pos
-     struct:fd-output-port
-     3)
-    (register-struct-field-accessor!
-     fd-output-port-end-pos
-     struct:fd-output-port
-     4)
-    (register-struct-field-accessor!
-     fd-output-port-flush-handle
-     struct:fd-output-port
-     5)
-    (register-struct-field-accessor!
-     fd-output-port-buffer-mode
-     struct:fd-output-port
-     6)
-    (register-struct-field-accessor!
-     fd-output-port-custodian-reference
-     struct:fd-output-port
-     7)
-    (register-struct-field-mutator!
-     set-fd-output-port-fd!
-     struct:fd-output-port
-     0)
-    (register-struct-field-mutator!
-     set-fd-output-port-fd-refcount!
-     struct:fd-output-port
-     1)
-    (register-struct-field-mutator!
-     set-fd-output-port-bstr!
-     struct:fd-output-port
-     2)
-    (register-struct-field-mutator!
-     set-fd-output-port-start-pos!
-     struct:fd-output-port
-     3)
-    (register-struct-field-mutator!
-     set-fd-output-port-end-pos!
-     struct:fd-output-port
-     4)
-    (register-struct-field-mutator!
-     set-fd-output-port-flush-handle!
-     struct:fd-output-port
-     5)
-    (register-struct-field-mutator!
-     set-fd-output-port-buffer-mode!
-     struct:fd-output-port
-     6)
-    (register-struct-field-mutator!
-     set-fd-output-port-custodian-reference!
-     struct:fd-output-port
-     7)
-    (void)))
 (define struct:fd-output-port-methods.1
   (make-record-type-descriptor*
    'fd-output-port-methods
@@ -10938,19 +10321,6 @@
          s
          'fd-output-port-methods
          'raise-write-error))))))
-(define effect_2528
-  (begin
-    (register-struct-constructor! fd-output-port-methods26.1)
-    (register-struct-predicate! fd-output-port-methods?.1)
-    (register-struct-field-accessor!
-     fd-output-port-methods-on-close.1
-     struct:fd-output-port-methods.1
-     0)
-    (register-struct-field-accessor!
-     fd-output-port-methods-raise-write-error.1
-     struct:fd-output-port-methods.1
-     1)
-    (void)))
 (define fd-output-port-vtable.1
   (let ((app_0 (core-port-methods-count-lines!.1 core-output-port-vtable.1)))
     (let ((app_1 (core-port-methods-get-location.1 core-output-port-vtable.1)))
@@ -11621,15 +10991,6 @@
          v
          'fd-evt
          'closed))))))
-(define effect_1987
-  (begin
-    (register-struct-constructor! fd-evt44.1)
-    (register-struct-predicate! fd-evt?)
-    (register-struct-field-accessor! fd-evt-fd struct:fd-evt 0)
-    (register-struct-field-accessor! fd-evt-mode struct:fd-evt 1)
-    (register-struct-field-accessor! fd-evt-closed struct:fd-evt 2)
-    (register-struct-field-mutator! set-fd-evt-closed! struct:fd-evt 2)
-    (void)))
 (define struct:rktio-fd-flushed-evt
   (make-record-type-descriptor* 'rktio-fd-flushed-evt #f #f #f #f 1 0))
 (define effect_2495
@@ -11706,15 +11067,6 @@
          s
          'rktio-fd-flushed-evt
          'p))))))
-(define effect_2106
-  (begin
-    (register-struct-constructor! rktio-fd-flushed-evt45.1)
-    (register-struct-predicate! rktio-fd-flushed-evt?)
-    (register-struct-field-accessor!
-     rktio-fd-flushed-evt-p
-     struct:rktio-fd-flushed-evt
-     0)
-    (void)))
 (define register-fd-close
   (lambda (custodian_0 fd_0 fd-refcount_0 flush-handle_0 port_0)
     (|#%app|
@@ -12512,13 +11864,6 @@
          s
          'progress-evt
          'evt))))))
-(define effect_2780
-  (begin
-    (register-struct-constructor! progress-evt1.1)
-    (register-struct-predicate! 1/progress-evt?)
-    (register-struct-field-accessor! progress-evt-port struct:progress-evt 0)
-    (register-struct-field-accessor! progress-evt-evt struct:progress-evt 1)
-    (void)))
 (define progress-evt?*
   (|#%name|
    progress-evt?
@@ -15826,19 +15171,6 @@
          s
          'utf-8-converter
          'to))))))
-(define effect_2373
-  (begin
-    (register-struct-constructor! utf-8-converter1.1)
-    (register-struct-predicate! utf-8-converter?)
-    (register-struct-field-accessor!
-     utf-8-converter-from
-     struct:utf-8-converter
-     0)
-    (register-struct-field-accessor!
-     utf-8-converter-to
-     struct:utf-8-converter
-     1)
-    (void)))
 (define big-endian?$1 (system-big-endian?))
 (define utf-8-convert-in
   (lambda (c_0 src_0 src-start_0 src-end_0 dest_0 dest-start_0 dest-end_0)
@@ -16895,27 +16227,6 @@
          v
          'bytes-converter
          'custodian-reference))))))
-(define effect_1798
-  (begin
-    (register-struct-constructor! bytes-converter1.1)
-    (register-struct-predicate! 1/bytes-converter?)
-    (register-struct-field-accessor!
-     bytes-converter-c
-     struct:bytes-converter
-     0)
-    (register-struct-field-accessor!
-     bytes-converter-custodian-reference
-     struct:bytes-converter
-     1)
-    (register-struct-field-mutator!
-     set-bytes-converter-c!
-     struct:bytes-converter
-     0)
-    (register-struct-field-mutator!
-     set-bytes-converter-custodian-reference!
-     struct:bytes-converter
-     1)
-    (void)))
 (define windows? (eq? 'windows (system-type)))
 (define platform-utf-8 (if windows? 'utf-8-ish 'utf-8))
 (define platform-utf-8-permissive
@@ -17727,19 +17038,6 @@
   (|#%name| set-cache-to2! (record-mutator struct:cache 2)))
 (define set-cache-from!
   (|#%name| set-cache-from! (record-mutator struct:cache 3)))
-(define effect_2818
-  (begin
-    (register-struct-constructor! cache1.1)
-    (register-struct-predicate! cache?)
-    (register-struct-field-accessor! cache-enc struct:cache 0)
-    (register-struct-field-accessor! cache-to struct:cache 1)
-    (register-struct-field-accessor! cache-to_3068 struct:cache 2)
-    (register-struct-field-accessor! cache-from struct:cache 3)
-    (register-struct-field-mutator! set-cache-enc! struct:cache 0)
-    (register-struct-field-mutator! set-cache-to! struct:cache 1)
-    (register-struct-field-mutator! set-cache-to2! struct:cache 2)
-    (register-struct-field-mutator! set-cache-from! struct:cache 3)
-    (void)))
 (define new-cache (lambda () (cache1.1 #f #f #f #f)))
 (define cell.1$7 (unsafe-make-place-local (new-cache)))
 (define cell.2$1
@@ -18148,13 +17446,6 @@
          s
          'path
          'convention))))))
-(define effect_2122
-  (begin
-    (register-struct-constructor! path1.1)
-    (register-struct-predicate! 1/path?)
-    (register-struct-field-accessor! path-bytes struct:path 0)
-    (register-struct-field-accessor! path-convention struct:path 1)
-    (void)))
 (define is-path?
   (|#%name|
    path?
@@ -19441,35 +18732,6 @@
   (|#%name|
    set-bytes-input-port-alt-pos!
    (record-mutator struct:bytes-input-port 2)))
-(define effect_2418
-  (begin
-    (register-struct-constructor! create-bytes-input-port)
-    (register-struct-predicate! bytes-input-port?)
-    (register-struct-field-accessor!
-     bytes-input-port-bstr
-     struct:bytes-input-port
-     0)
-    (register-struct-field-accessor!
-     bytes-input-port-pos
-     struct:bytes-input-port
-     1)
-    (register-struct-field-accessor!
-     bytes-input-port-alt-pos
-     struct:bytes-input-port
-     2)
-    (register-struct-field-mutator!
-     set-bytes-input-port-bstr!
-     struct:bytes-input-port
-     0)
-    (register-struct-field-mutator!
-     set-bytes-input-port-pos!
-     struct:bytes-input-port
-     1)
-    (register-struct-field-mutator!
-     set-bytes-input-port-alt-pos!
-     struct:bytes-input-port
-     2)
-    (void)))
 (define struct:bytes-input-port-methods.1
   (make-record-type-descriptor*
    'bytes-input-port-methods
@@ -19514,11 +18776,6 @@
         (if (impersonator? v)
           (bytes-input-port-methods?.1_2316 (impersonator-val v))
           #f))))))
-(define effect_2597
-  (begin
-    (register-struct-constructor! bytes-input-port-methods4.1)
-    (register-struct-predicate! bytes-input-port-methods?.1)
-    (void)))
 (define bytes-input-port-vtable.1
   (let ((app_0 (core-port-methods-count-lines!.1 commit-input-port-vtable.1)))
     (let ((app_1
@@ -19759,35 +19016,6 @@
   (|#%name|
    set-bytes-output-port-max-pos!
    (record-mutator struct:bytes-output-port 2)))
-(define effect_2129
-  (begin
-    (register-struct-constructor! create-bytes-output-port)
-    (register-struct-predicate! bytes-output-port?)
-    (register-struct-field-accessor!
-     bytes-output-port-bstr
-     struct:bytes-output-port
-     0)
-    (register-struct-field-accessor!
-     bytes-output-port-pos
-     struct:bytes-output-port
-     1)
-    (register-struct-field-accessor!
-     bytes-output-port-max-pos
-     struct:bytes-output-port
-     2)
-    (register-struct-field-mutator!
-     set-bytes-output-port-bstr!
-     struct:bytes-output-port
-     0)
-    (register-struct-field-mutator!
-     set-bytes-output-port-pos!
-     struct:bytes-output-port
-     1)
-    (register-struct-field-mutator!
-     set-bytes-output-port-max-pos!
-     struct:bytes-output-port
-     2)
-    (void)))
 (define struct:bytes-output-port-methods.1
   (make-record-type-descriptor*
    'bytes-output-port-methods
@@ -19868,19 +19096,6 @@
          s
          'bytes-output-port-methods
          'get-bytes))))))
-(define effect_2733
-  (begin
-    (register-struct-constructor! bytes-output-port-methods8.1)
-    (register-struct-predicate! bytes-output-port-methods?.1)
-    (register-struct-field-accessor!
-     bytes-output-port-methods-get-length.1
-     struct:bytes-output-port-methods.1
-     0)
-    (register-struct-field-accessor!
-     bytes-output-port-methods-get-bytes.1
-     struct:bytes-output-port-methods.1
-     1)
-    (void)))
 (define bytes-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-output-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 core-output-port-vtable.1)))
@@ -20294,27 +19509,6 @@
   (|#%name|
    set-max-output-port-max-length!
    (record-mutator struct:max-output-port 1)))
-(define effect_3372
-  (begin
-    (register-struct-constructor! create-max-output-port)
-    (register-struct-predicate! max-output-port?)
-    (register-struct-field-accessor!
-     max-output-port-o
-     struct:max-output-port
-     0)
-    (register-struct-field-accessor!
-     max-output-port-max-length
-     struct:max-output-port
-     1)
-    (register-struct-field-mutator!
-     set-max-output-port-o!
-     struct:max-output-port
-     0)
-    (register-struct-field-mutator!
-     set-max-output-port-max-length!
-     struct:max-output-port
-     1)
-    (void)))
 (define struct:max-output-port-methods.1
   (make-record-type-descriptor*
    'max-output-port-methods
@@ -20359,11 +19553,6 @@
         (if (impersonator? v)
           (max-output-port-methods?.1_2811 (impersonator-val v))
           #f))))))
-(define effect_3192
-  (begin
-    (register-struct-constructor! max-output-port-methods1.1)
-    (register-struct-predicate! max-output-port-methods?.1)
-    (void)))
 (define max-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-output-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 core-output-port-vtable.1)))
@@ -21300,11 +20489,6 @@
   (|#%name|
    nowhere-output-port?
    (record-predicate struct:nowhere-output-port)))
-(define effect_2815
-  (begin
-    (register-struct-constructor! create-nowhere-output-port)
-    (register-struct-predicate! nowhere-output-port?)
-    (void)))
 (define struct:nowhere-output-port-methods.1
   (make-record-type-descriptor*
    'nowhere-output-port-methods
@@ -21349,11 +20533,6 @@
         (if (impersonator? v)
           (nowhere-output-port-methods?.1_2940 (impersonator-val v))
           #f))))))
-(define effect_2533
-  (begin
-    (register-struct-constructor! nowhere-output-port-methods1.1)
-    (register-struct-predicate! nowhere-output-port-methods?.1)
-    (void)))
 (define nowhere-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 core-output-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 core-output-port-vtable.1)))
@@ -21670,15 +20849,6 @@
          s
          'as-constructor
          'tag))))))
-(define effect_2364
-  (begin
-    (register-struct-constructor! as-constructor1.1)
-    (register-struct-predicate! as-constructor?)
-    (register-struct-field-accessor!
-     as-constructor-tag
-     struct:as-constructor
-     0)
-    (void)))
 (define build-graph
   (letrec ((build-graph_0
             (|#%name|
@@ -25042,39 +24212,6 @@
          s
          'starting-point
          'drive?))))))
-(define effect_2620
-  (begin
-    (register-struct-constructor! starting-point7.1)
-    (register-struct-predicate! starting-point?)
-    (register-struct-field-accessor!
-     starting-point-kind
-     struct:starting-point
-     0)
-    (register-struct-field-accessor!
-     starting-point-bstr
-     struct:starting-point
-     1)
-    (register-struct-field-accessor!
-     starting-point-len
-     struct:starting-point
-     2)
-    (register-struct-field-accessor!
-     starting-point-orig-len
-     struct:starting-point
-     3)
-    (register-struct-field-accessor!
-     starting-point-extra-sep
-     struct:starting-point
-     4)
-    (register-struct-field-accessor!
-     starting-point-add-ups?
-     struct:starting-point
-     5)
-    (register-struct-field-accessor!
-     starting-point-drive?
-     struct:starting-point
-     6)
-    (void)))
 (define make-starting-point.1
   (|#%name|
    make-starting-point
@@ -27091,27 +26228,6 @@
          s
          'security-guard
          'link-guard))))))
-(define effect_2474
-  (begin
-    (register-struct-constructor! security-guard1.1)
-    (register-struct-predicate! 1/security-guard?)
-    (register-struct-field-accessor!
-     security-guard-parent
-     struct:security-guard
-     0)
-    (register-struct-field-accessor!
-     security-guard-file-guard
-     struct:security-guard
-     1)
-    (register-struct-field-accessor!
-     security-guard-network-guard
-     struct:security-guard
-     2)
-    (register-struct-field-accessor!
-     security-guard-link-guard
-     struct:security-guard
-     3)
-    (void)))
 (define root-security-guard (security-guard1.1 #f void void void))
 (define 1/current-security-guard
   (make-parameter
@@ -31489,19 +30605,6 @@
   (|#%name|
    set-environment-variables-ht!
    (record-mutator struct:environment-variables 0)))
-(define effect_2661
-  (begin
-    (register-struct-constructor! environment-variables1.1)
-    (register-struct-predicate! 1/environment-variables?)
-    (register-struct-field-accessor!
-     environment-variables-ht
-     struct:environment-variables
-     0)
-    (register-struct-field-mutator!
-     set-environment-variables-ht!
-     struct:environment-variables
-     0)
-    (void)))
 (define 1/current-environment-variables
   (make-parameter
    (environment-variables1.1 #f)
@@ -33532,51 +32635,6 @@
          v
          'logger
          'local-level-timestamp))))))
-(define effect_1856
-  (begin
-    (register-struct-constructor! logger1.1)
-    (register-struct-predicate! 1/logger?)
-    (register-struct-field-accessor! logger-topic struct:logger 0)
-    (register-struct-field-accessor! logger-parent struct:logger 1)
-    (register-struct-field-accessor! logger-propagate-filters struct:logger 2)
-    (register-struct-field-accessor!
-     logger-receiver-box+backrefs
-     struct:logger
-     3)
-    (register-struct-field-accessor! logger-prune-counter struct:logger 4)
-    (register-struct-field-accessor!
-     logger-permanent-receivers
-     struct:logger
-     5)
-    (register-struct-field-accessor! logger-max-receiver-level struct:logger 6)
-    (register-struct-field-accessor! logger-topic-level-cache struct:logger 7)
-    (register-struct-field-accessor!
-     logger-local-level-timestamp
-     struct:logger
-     8)
-    (register-struct-field-accessor!
-     logger-root-level-timestamp-box
-     struct:logger
-     9)
-    (register-struct-field-accessor! logger-level-sema-box struct:logger 10)
-    (register-struct-field-mutator!
-     set-logger-receiver-box+backrefs!
-     struct:logger
-     3)
-    (register-struct-field-mutator! set-logger-prune-counter! struct:logger 4)
-    (register-struct-field-mutator!
-     set-logger-permanent-receivers!
-     struct:logger
-     5)
-    (register-struct-field-mutator!
-     set-logger-max-receiver-level!
-     struct:logger
-     6)
-    (register-struct-field-mutator!
-     set-logger-local-level-timestamp!
-     struct:logger
-     8)
-    (void)))
 (define 1/logger-name
   (|#%name|
    logger-name
@@ -33767,15 +32825,6 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define effect_2779
-  (begin
-    (register-struct-constructor! queue1.1)
-    (register-struct-predicate! queue?)
-    (register-struct-field-accessor! queue-start struct:queue 0)
-    (register-struct-field-accessor! queue-end struct:queue 1)
-    (register-struct-field-mutator! set-queue-start! struct:queue 0)
-    (register-struct-field-mutator! set-queue-end! struct:queue 1)
-    (void)))
 (define struct:node (make-record-type-descriptor* 'node #f #f #f #f 3 6))
 (define effect_2547
   (struct-type-install-properties!
@@ -33803,16 +32852,6 @@
   (|#%name| set-node-prev! (record-mutator struct:node 1)))
 (define set-node-next!
   (|#%name| set-node-next! (record-mutator struct:node 2)))
-(define effect_2935
-  (begin
-    (register-struct-constructor! node2.1)
-    (register-struct-predicate! node?)
-    (register-struct-field-accessor! node-elem struct:node 0)
-    (register-struct-field-accessor! node-prev struct:node 1)
-    (register-struct-field-accessor! node-next struct:node 2)
-    (register-struct-field-mutator! set-node-prev! struct:node 1)
-    (register-struct-field-mutator! set-node-next! struct:node 2)
-    (void)))
 (define make-queue (lambda () (queue1.1 #f #f)))
 (define queue-empty? (lambda (q_0) (not (queue-start q_0))))
 (define queue-remove!
@@ -33890,15 +32929,6 @@
          s
          'log-receiver
          'filters))))))
-(define effect_2843
-  (begin
-    (register-struct-constructor! log-receiver1.1)
-    (register-struct-predicate! 1/log-receiver?)
-    (register-struct-field-accessor!
-     log-receiver-filters
-     struct:log-receiver
-     0)
-    (void)))
 (define-values
  (prop:receiver-send receiver-send? receiver-send-ref)
  (make-struct-type-property 'receiver-send))
@@ -34043,23 +33073,6 @@
          s
          'log-receiver
          'backref))))))
-(define effect_2530
-  (begin
-    (register-struct-constructor! queue-log-receiver2.1)
-    (register-struct-predicate! queue-log-receiver?)
-    (register-struct-field-accessor!
-     queue-log-receiver-msgs
-     struct:queue-log-receiver
-     0)
-    (register-struct-field-accessor!
-     queue-log-receiver-waiters
-     struct:queue-log-receiver
-     1)
-    (register-struct-field-accessor!
-     queue-log-receiver-backref
-     struct:queue-log-receiver
-     2)
-    (void)))
 (define 1/make-log-receiver
   (|#%name|
    make-log-receiver
@@ -34206,19 +33219,6 @@
          s
          'stdio-log-receiver
          'which))))))
-(define effect_2429
-  (begin
-    (register-struct-constructor! stdio-log-receiver3.1)
-    (register-struct-predicate! stdio-log-receiver?)
-    (register-struct-field-accessor!
-     stdio-log-receiver-rktio
-     struct:stdio-log-receiver
-     0)
-    (register-struct-field-accessor!
-     stdio-log-receiver-which
-     struct:stdio-log-receiver
-     1)
-    (void)))
 (define add-stdio-log-receiver!
   (lambda (who_0 logger_0 args_0 parse-who_0 which_0)
     (begin
@@ -34356,19 +33356,6 @@
          s
          'syslog-log-receiver
          'cmd))))))
-(define effect_2303
-  (begin
-    (register-struct-constructor! syslog-log-receiver4.1)
-    (register-struct-predicate! syslog-log-receiver?)
-    (register-struct-field-accessor!
-     syslog-log-receiver-rktio
-     struct:syslog-log-receiver
-     0)
-    (register-struct-field-accessor!
-     syslog-log-receiver-cmd
-     struct:syslog-log-receiver
-     1)
-    (void)))
 (define add-syslog-log-receiver!
   (lambda (logger_0 . args_0)
     (let ((lr_0
@@ -35394,24 +34381,6 @@
          v
          'filesystem-change-evt
          'cust-ref))))))
-(define effect_2283
-  (begin
-    (register-struct-constructor! fs-change-evt1.1)
-    (register-struct-predicate! fs-change-evt?)
-    (register-struct-field-accessor! fs-change-evt-rfc struct:fs-change-evt 0)
-    (register-struct-field-accessor!
-     fs-change-evt-cust-ref
-     struct:fs-change-evt
-     1)
-    (register-struct-field-mutator!
-     set-fs-change-evt-rfc!
-     struct:fs-change-evt
-     0)
-    (register-struct-field-mutator!
-     set-fs-change-evt-cust-ref!
-     struct:fs-change-evt
-     1)
-    (void)))
 (define 1/filesystem-change-evt?
   (|#%name|
    filesystem-change-evt?
@@ -35922,22 +34891,6 @@
          v
          'subprocess
          'cust-ref))))))
-(define effect_2667
-  (begin
-    (register-struct-constructor! make-subprocess)
-    (register-struct-predicate! 1/subprocess?)
-    (register-struct-field-accessor! subprocess-process struct:subprocess 0)
-    (register-struct-field-accessor! subprocess-cust-ref struct:subprocess 1)
-    (register-struct-field-accessor! subprocess-is-group? struct:subprocess 2)
-    (register-struct-field-mutator!
-     set-subprocess-process!
-     struct:subprocess
-     0)
-    (register-struct-field-mutator!
-     set-subprocess-cust-ref!
-     struct:subprocess
-     1)
-    (void)))
 (define do-subprocess
   (letrec ((maybe-wait_0
             (|#%name|
@@ -35995,11 +34948,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3626 unsafe-undefined)
+               (let ((lr3567 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3626
+                 (set! lr3567
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -36054,9 +35007,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3626 0))
-                 (set! command_0 (unsafe-vector*-ref lr3626 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3626 2))
+                 (set! group_0 (unsafe-vector*-ref lr3567 0))
+                 (set! command_0 (unsafe-vector*-ref lr3567 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3567 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)
@@ -36719,19 +35672,6 @@
   (|#%name|
    set-tcp-input-port-abandon?!
    (record-mutator struct:tcp-input-port 0)))
-(define effect_2627
-  (begin
-    (register-struct-constructor! create-tcp-input-port)
-    (register-struct-predicate! tcp-input-port?)
-    (register-struct-field-accessor!
-     tcp-input-port-abandon?
-     struct:tcp-input-port
-     0)
-    (register-struct-field-mutator!
-     set-tcp-input-port-abandon?!
-     struct:tcp-input-port
-     0)
-    (void)))
 (define struct:tcp-input-port-methods.1
   (make-record-type-descriptor*
    'tcp-input-port-methods
@@ -36776,11 +35716,6 @@
         (if (impersonator? v)
           (tcp-input-port-methods?.1_2414 (impersonator-val v))
           #f))))))
-(define effect_2814
-  (begin
-    (register-struct-constructor! tcp-input-port-methods1.1)
-    (register-struct-predicate! tcp-input-port-methods?.1)
-    (void)))
 (define tcp-input-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 fd-input-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 fd-input-port-vtable.1)))
@@ -36915,19 +35850,6 @@
   (|#%name|
    set-tcp-output-port-abandon?!
    (record-mutator struct:tcp-output-port 0)))
-(define effect_2804
-  (begin
-    (register-struct-constructor! create-tcp-output-port)
-    (register-struct-predicate! tcp-output-port?)
-    (register-struct-field-accessor!
-     tcp-output-port-abandon?
-     struct:tcp-output-port
-     0)
-    (register-struct-field-mutator!
-     set-tcp-output-port-abandon?!
-     struct:tcp-output-port
-     0)
-    (void)))
 (define struct:tcp-output-port-methods.1
   (make-record-type-descriptor*
    'tcp-output-port-methods
@@ -36972,11 +35894,6 @@
         (if (impersonator? v)
           (tcp-output-port-methods?.1_2754 (impersonator-val v))
           #f))))))
-(define effect_2801
-  (begin
-    (register-struct-constructor! tcp-output-port-methods7.1)
-    (register-struct-predicate! tcp-output-port-methods?.1)
-    (void)))
 (define tcp-output-port-vtable.1
   (let ((app_0 (core-port-methods-close.1 fd-output-port-vtable.1)))
     (let ((app_1 (core-port-methods-count-lines!.1 fd-output-port-vtable.1)))
@@ -37127,16 +36044,6 @@
   (|#%name| rktio-evt-poll (record-accessor struct:rktio-evt 0)))
 (define rktio-evt-add-to-poll-set
   (|#%name| rktio-evt-add-to-poll-set (record-accessor struct:rktio-evt 1)))
-(define effect_2398
-  (begin
-    (register-struct-constructor! rktio-evt1.1)
-    (register-struct-predicate! rktio-evt?)
-    (register-struct-field-accessor! rktio-evt-poll struct:rktio-evt 0)
-    (register-struct-field-accessor!
-     rktio-evt-add-to-poll-set
-     struct:rktio-evt
-     1)
-    (void)))
 (define call-with-resolved-address.1
   (letrec ((procz2
             (lambda (addr_0)
@@ -37320,27 +36227,6 @@
   (|#%name|
    set-connect-progress-trying-fd!
    (record-mutator struct:connect-progress 1)))
-(define effect_2059
-  (begin
-    (register-struct-constructor! connect-progress1.1)
-    (register-struct-predicate! connect-progress?)
-    (register-struct-field-accessor!
-     connect-progress-conn
-     struct:connect-progress
-     0)
-    (register-struct-field-accessor!
-     connect-progress-trying-fd
-     struct:connect-progress
-     1)
-    (register-struct-field-mutator!
-     set-connect-progress-conn!
-     struct:connect-progress
-     0)
-    (register-struct-field-mutator!
-     set-connect-progress-trying-fd!
-     struct:connect-progress
-     1)
-    (void)))
 (define 1/tcp-connect
   (let ((tcp-connect_0
          (|#%name|
@@ -37792,17 +36678,6 @@
          s
          'tcp-listener
          'custodian-reference))))))
-(define effect_2084
-  (begin
-    (register-struct-constructor! tcp-listener1.1)
-    (register-struct-predicate! 1/tcp-listener?)
-    (register-struct-field-accessor! tcp-listener-lnr struct:tcp-listener 0)
-    (register-struct-field-accessor! tcp-listener-closed struct:tcp-listener 1)
-    (register-struct-field-accessor!
-     tcp-listener-custodian-reference
-     struct:tcp-listener
-     2)
-    (void)))
 (define 1/tcp-listen
   (let ((tcp-listen_0
          (letrec ((loop_0
@@ -38218,12 +37093,6 @@
          s
          'tcp-accept-evt
          'listener))))))
-(define effect_2643
-  (begin
-    (register-struct-constructor! accept-evt6.1)
-    (register-struct-predicate! accept-evt?)
-    (register-struct-field-accessor! accept-evt-listener struct:accept-evt 0)
-    (void)))
 (define error-result
   (lambda (thunk_0)
     (values #f (wrap-evt always-evt (lambda (v_0) (|#%app| thunk_0))))))
@@ -38303,17 +37172,6 @@
   (|#%name| set-udp-is-bound?! (record-mutator struct:udp 1)))
 (define set-udp-is-connected?!
   (|#%name| set-udp-is-connected?! (record-mutator struct:udp 2)))
-(define effect_2782
-  (begin
-    (register-struct-constructor! udp1.1)
-    (register-struct-predicate! 1/udp?)
-    (register-struct-field-accessor! udp-s struct:udp 0)
-    (register-struct-field-accessor! udp-is-bound? struct:udp 1)
-    (register-struct-field-accessor! udp-is-connected? struct:udp 2)
-    (register-struct-field-mutator! set-udp-s! struct:udp 0)
-    (register-struct-field-mutator! set-udp-is-bound?! struct:udp 1)
-    (register-struct-field-mutator! set-udp-is-connected?! struct:udp 2)
-    (void)))
 (define 1/udp-open-socket
   (let ((udp-open-socket_0
          (letrec ((procz1
@@ -39532,19 +38390,6 @@
   (|#%name| udp-send-evt-u (record-accessor struct:udp-sending-evt 0)))
 (define udp-sending-evt-try
   (|#%name| udp-send-evt-try (record-accessor struct:udp-sending-evt 1)))
-(define effect_2387
-  (begin
-    (register-struct-constructor! udp-sending-evt66.1)
-    (register-struct-predicate! udp-sending-evt?)
-    (register-struct-field-accessor!
-     udp-sending-evt-u
-     struct:udp-sending-evt
-     0)
-    (register-struct-field-accessor!
-     udp-sending-evt-try
-     struct:udp-sending-evt
-     1)
-    (void)))
 (define struct:udp-sending-ready-evt
   (make-record-type-descriptor*
    'udp-send-ready-evt
@@ -39554,7 +38399,7 @@
    #f
    0
    0))
-(define effect_3039
+(define effect_3038
   (struct-type-install-properties!
    struct:udp-sending-ready-evt
    'udp-send-ready-evt
@@ -39576,11 +38421,6 @@
   (|#%name|
    udp-send-ready-evt?
    (record-predicate struct:udp-sending-ready-evt)))
-(define effect_2593
-  (begin
-    (register-struct-constructor! udp-sending-ready-evt67.1)
-    (register-struct-predicate! udp-sending-ready-evt?)
-    (void)))
 (define 1/udp-receive!
   (let ((udp-receive!_0
          (|#%name|
@@ -39959,19 +38799,6 @@
   (|#%name| udp-receive-evt-u (record-accessor struct:udp-receiving-evt 0)))
 (define udp-receiving-evt-try
   (|#%name| udp-receive-evt-try (record-accessor struct:udp-receiving-evt 1)))
-(define effect_2659
-  (begin
-    (register-struct-constructor! udp-receiving-evt39.1)
-    (register-struct-predicate! udp-receiving-evt?)
-    (register-struct-field-accessor!
-     udp-receiving-evt-u
-     struct:udp-receiving-evt
-     0)
-    (register-struct-field-accessor!
-     udp-receiving-evt-try
-     struct:udp-receiving-evt
-     1)
-    (void)))
 (define struct:udp-receiving-ready-evt
   (make-record-type-descriptor*
    'udp-receive-ready-evt
@@ -40006,11 +38833,6 @@
   (|#%name|
    udp-receive-ready-evt?
    (record-predicate struct:udp-receiving-ready-evt)))
-(define effect_2999
-  (begin
-    (register-struct-constructor! udp-receiving-ready-evt40.1)
-    (register-struct-predicate! udp-receiving-ready-evt?)
-    (void)))
 (define 1/udp-set-receive-buffer-size!
   (|#%name|
    udp-set-receive-buffer-size!

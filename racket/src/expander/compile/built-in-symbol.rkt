@@ -84,11 +84,12 @@
                record-mutator
                record-predicate
                struct-type-install-properties!
-               register-struct-constructor!
-               register-struct-predicate!
-               register-struct-field-accessor!
-               register-struct-field-mutator!
+               #%struct-constructor
+               #%struct-predicate
+               #%struct-field-accessor
+               #%struct-field-mutator
                unsafe-struct?
+               unsafe-struct
                raise-binding-result-arity-error
                structure-type-lookup-prefab-uid
                struct-type-constructor-add-guards

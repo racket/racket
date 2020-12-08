@@ -88,6 +88,8 @@
 
 (define (inline-type-id k im add-import! mutated imports)
   (define type-id (cond
+                    [(known-struct-constructor? k)
+                     (known-struct-constructor-type-id k)]
                     [(known-struct-predicate? k)
                      (known-struct-predicate-type-id k)]
                     [(known-field-accessor? k)
@@ -101,6 +103,10 @@
     (cond
       [(not type-id) #f]
       [(not im) '()]
+      [(known-struct-constructor/need-imports? k)
+       (needed->env (known-struct-constructor/need-imports-needed k)
+                    add-import!
+                    im)]
       [(known-struct-predicate/need-imports? k)
        (needed->env (known-struct-predicate/need-imports-needed k)
                     add-import!
@@ -241,6 +247,17 @@
          (known-procedure-arity-mask k)
          (if serializable? (wrap-truncate-paths expr) expr)
          (needed->list needed))])]
+    [(known-struct-constructor? k)
+     (define needed (needed-imports (known-struct-constructor-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (cond
+       [needed
+        (known-struct-constructor/need-imports (known-procedure-arity-mask k)
+                                               (known-constructor-type k)
+                                               (known-struct-constructor-type-id k)
+                                               (needed->list needed))]
+       [else
+        (known-constructor (known-procedure-arity-mask k)
+                           (known-constructor-type k))])]
     [(known-struct-predicate? k)
      (define needed (needed-imports (known-struct-predicate-type-id k) prim-knowns imports exports '() '#hasheq()))
      (cond

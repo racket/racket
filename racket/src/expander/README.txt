@@ -226,6 +226,25 @@ reported by the expander.
 
 ----------------------------------------
 
+About structures:
+
+Constructors, predicates, accessors, etc., for a non-transparent
+structure type are defined in the implementation of the expander are
+compiled/loaded in a way that makes them claim not to be structure
+procedures when built into Racket. For example,
+
+   (struct-predicate-procedure? syntax?) ; => #f
+
+If a structure type's representation is exported, such as
+`exn:fail:syntax`, then operations do claim to be strcuture operations
+
+   (struct-predicate-procedure? exn:fail:syntax?) ; => #t
+
+As a consequence, it's ok to directly expose predicates, accessors,
+etc., without exposing an implementation detail.
+
+----------------------------------------
+
 Implementation guidelines:
 
  * Do not rely on more than `racket/base` for code that will be

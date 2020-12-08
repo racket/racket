@@ -1002,7 +1002,8 @@ int scheme_intern_prim_opt_flags(int flags)
     }
   }
 
-  scheme_signal_error("too many flag combinations");
+  scheme_log_abort("too many flag combinations");
+  abort();
 
   return 0;
 }

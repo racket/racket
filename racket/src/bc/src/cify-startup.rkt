@@ -78,8 +78,7 @@
 (define body
   (time
    (schemify-body (recognize-inferred-names bodys/re-uniqued) prim-knowns #hasheq() #hasheq() #hasheq()
-                  ;; for cify:
-                  #t
+                  'cify
                   ;; unsafe mode:
                   #t
                   ;; no prompts:

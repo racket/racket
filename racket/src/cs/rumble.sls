@@ -221,10 +221,10 @@
           make-struct-field-accessor
           make-struct-field-mutator
           struct-type-constructor-add-guards ; not exported to Racket
-          register-struct-constructor! ; not exported to Racket
-          register-struct-predicate! ; not exported to Racket
-          register-struct-field-accessor! ; not exported to Racket
-          register-struct-field-mutator! ; not exported to Racket
+          |#%struct-constructor| ; not exported to Racket
+          |#%struct-predicate| ; not exported to Racket
+          |#%struct-field-accessor| ; not exported to Racket
+          |#%struct-field-mutator| ; not exported to Racket
           struct-property-set!  ; not exported to Racket
           struct-constructor-procedure?
           struct-predicate-procedure?
@@ -693,6 +693,7 @@
           unsafe-struct*-set!
           unsafe-struct*-cas!
           unsafe-struct? ; not exported to racket
+          unsafe-struct  ; not exported to racket
 
           unsafe-s16vector-ref
           unsafe-s16vector-set!

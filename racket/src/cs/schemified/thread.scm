@@ -973,15 +973,6 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define effect_2779
-  (begin
-    (register-struct-constructor! queue1.1)
-    (register-struct-predicate! queue?)
-    (register-struct-field-accessor! queue-start struct:queue 0)
-    (register-struct-field-accessor! queue-end struct:queue 1)
-    (register-struct-field-mutator! set-queue-start! struct:queue 0)
-    (register-struct-field-mutator! set-queue-end! struct:queue 1)
-    (void)))
 (define struct:node$2 (make-record-type-descriptor* 'node #f #f #f #f 3 6))
 (define effect_2809
   (struct-type-install-properties!
@@ -1009,16 +1000,6 @@
   (|#%name| set-node-prev! (record-mutator struct:node$2 1)))
 (define set-node-next!$1
   (|#%name| set-node-next! (record-mutator struct:node$2 2)))
-(define effect_2726
-  (begin
-    (register-struct-constructor! node2.1)
-    (register-struct-predicate! node?$2)
-    (register-struct-field-accessor! node-elem struct:node$2 0)
-    (register-struct-field-accessor! node-prev$1 struct:node$2 1)
-    (register-struct-field-accessor! node-next$1 struct:node$2 2)
-    (register-struct-field-mutator! set-node-prev!$1 struct:node$2 1)
-    (register-struct-field-mutator! set-node-next!$1 struct:node$2 2)
-    (void)))
 (define make-queue (lambda () (queue1.1 #f #f)))
 (define queue-empty? (lambda (q_0) (not (queue-start q_0))))
 (define queue-remove!
@@ -1293,16 +1274,6 @@
        (node-right_2584 s)
        ($value
         (impersonate-ref node-right_2584 struct:node$1 4 s 'node 'right))))))
-(define effect_2174
-  (begin
-    (register-struct-constructor! node1.1$1)
-    (register-struct-predicate! node?$1)
-    (register-struct-field-accessor! node-key struct:node$1 0)
-    (register-struct-field-accessor! node-val struct:node$1 1)
-    (register-struct-field-accessor! node-height struct:node$1 2)
-    (register-struct-field-accessor! node-left struct:node$1 3)
-    (register-struct-field-accessor! node-right struct:node$1 4)
-    (void)))
 (define empty-tree #f)
 (define is-empty? (lambda (t_0) (not t_0)))
 (define tree-height (lambda (t_0) (if (not t_0) 0 (node-height t_0))))
@@ -1715,34 +1686,6 @@
          s
          'sandman
          'do-extract-timeout))))))
-(define effect_1848
-  (begin
-    (register-struct-constructor! sandman1.1)
-    (register-struct-predicate! sandman?)
-    (register-struct-field-accessor! sandman-do-sleep struct:sandman 0)
-    (register-struct-field-accessor! sandman-do-poll struct:sandman 1)
-    (register-struct-field-accessor! sandman-do-get-wakeup struct:sandman 2)
-    (register-struct-field-accessor! sandman-do-wakeup struct:sandman 3)
-    (register-struct-field-accessor! sandman-do-any-sleepers? struct:sandman 4)
-    (register-struct-field-accessor!
-     sandman-do-sleepers-external-events
-     struct:sandman
-     5)
-    (register-struct-field-accessor! sandman-do-add-thread! struct:sandman 6)
-    (register-struct-field-accessor!
-     sandman-do-remove-thread!
-     struct:sandman
-     7)
-    (register-struct-field-accessor!
-     sandman-do-merge-external-event-sets
-     struct:sandman
-     8)
-    (register-struct-field-accessor! sandman-do-merge-timeout struct:sandman 9)
-    (register-struct-field-accessor!
-     sandman-do-extract-timeout
-     struct:sandman
-     10)
-    (void)))
 (define the-sandman #f)
 (define current-sandman
   (case-lambda
@@ -2016,15 +1959,6 @@
   (|#%name|
    selector-prop-evt-value-selector
    (record-accessor struct:selector-prop-evt-value 0)))
-(define effect_3138
-  (begin
-    (register-struct-constructor! selector-prop-evt-value1.1)
-    (register-struct-predicate! selector-prop-evt-value?)
-    (register-struct-field-accessor!
-     selector-prop-evt-value-selector
-     struct:selector-prop-evt-value
-     0)
-    (void)))
 (define-values
  (prop:secondary-evt secondary-evt? secondary-evt-ref)
  (make-struct-type-property 'secondary-evt))
@@ -2056,12 +1990,6 @@
     (make-record-constructor-descriptor struct:poller #f #f))))
 (define poller? (|#%name| poller? (record-predicate struct:poller)))
 (define poller-proc (|#%name| poller-proc (record-accessor struct:poller 0)))
-(define effect_2566
-  (begin
-    (register-struct-constructor! poller2.1)
-    (register-struct-predicate! poller?)
-    (register-struct-field-accessor! poller-proc struct:poller 0)
-    (void)))
 (define struct:poll-ctx
   (make-record-type-descriptor* 'poll-ctx #f #f #f #f 4 8))
 (define effect_3060
@@ -2093,19 +2021,6 @@
   (|#%name| poll-ctx-incomplete? (record-accessor struct:poll-ctx 3)))
 (define set-poll-ctx-incomplete?!
   (|#%name| set-poll-ctx-incomplete?! (record-mutator struct:poll-ctx 3)))
-(define effect_2494
-  (begin
-    (register-struct-constructor! poll-ctx3.1)
-    (register-struct-predicate! poll-ctx?)
-    (register-struct-field-accessor! poll-ctx-poll? struct:poll-ctx 0)
-    (register-struct-field-accessor! poll-ctx-select-proc struct:poll-ctx 1)
-    (register-struct-field-accessor! poll-ctx-sched-info struct:poll-ctx 2)
-    (register-struct-field-accessor! poll-ctx-incomplete? struct:poll-ctx 3)
-    (register-struct-field-mutator!
-     set-poll-ctx-incomplete?!
-     struct:poll-ctx
-     3)
-    (void)))
 (define struct:never-evt
   (make-record-type-descriptor* 'never-evt #f #f #f #f 0 0))
 (define effect_2812
@@ -2139,11 +2054,6 @@
        #t
        ($value
         (if (impersonator? v) (never-evt?_1958 (impersonator-val v)) #f))))))
-(define effect_2441
-  (begin
-    (register-struct-constructor! never-evt4.1)
-    (register-struct-predicate! never-evt?)
-    (void)))
 (define the-never-evt (never-evt4.1))
 (define struct:always-evt
   (make-record-type-descriptor* 'always-evt #f #f #f #f 0 0))
@@ -2178,11 +2088,6 @@
        #t
        ($value
         (if (impersonator? v) (always-evt?_2466 (impersonator-val v)) #f))))))
-(define effect_2609
-  (begin
-    (register-struct-constructor! always-evt5.1)
-    (register-struct-predicate! always-evt?)
-    (void)))
 (define the-always-evt (always-evt5.1))
 (define struct:async-evt
   (make-record-type-descriptor* 'async-evt #f #f #f #f 0 0))
@@ -2217,11 +2122,6 @@
        #t
        ($value
         (if (impersonator? v) (async-evt?_2619 (impersonator-val v)) #f))))))
-(define effect_1849
-  (begin
-    (register-struct-constructor! async-evt6.1)
-    (register-struct-predicate! async-evt?)
-    (void)))
 (define the-async-evt (async-evt6.1))
 (define struct:wrap-evt (make-record-type-descriptor* 'evt #f #f #f #f 2 0))
 (define effect_2319
@@ -2280,13 +2180,6 @@
          s
          'evt
          'wrap))))))
-(define effect_2610
-  (begin
-    (register-struct-constructor! wrap-evt7.1)
-    (register-struct-predicate! wrap-evt?)
-    (register-struct-field-accessor! wrap-evt-evt struct:wrap-evt 0)
-    (register-struct-field-accessor! wrap-evt-wrap struct:wrap-evt 1)
-    (void)))
 (define struct:handle-evt
   (make-record-type-descriptor* 'handle-evt struct:wrap-evt #f #f #f 0 0))
 (define effect_2329
@@ -2319,11 +2212,6 @@
         (if (impersonator? v)
           (handle-evt?$1_2894 (impersonator-val v))
           #f))))))
-(define effect_3044
-  (begin
-    (register-struct-constructor! handle-evt8.1)
-    (register-struct-predicate! handle-evt?$1)
-    (void)))
 (define struct:control-state-evt
   (make-record-type-descriptor* 'control-state-evt #f #f #f #f 5 0))
 (define effect_2665
@@ -2449,31 +2337,6 @@
          s
          'control-state-evt
          'retry-proc))))))
-(define effect_2957
-  (begin
-    (register-struct-constructor! control-state-evt9.1)
-    (register-struct-predicate! control-state-evt?)
-    (register-struct-field-accessor!
-     control-state-evt-evt
-     struct:control-state-evt
-     0)
-    (register-struct-field-accessor!
-     control-state-evt-wrap-proc
-     struct:control-state-evt
-     1)
-    (register-struct-field-accessor!
-     control-state-evt-interrupt-proc
-     struct:control-state-evt
-     2)
-    (register-struct-field-accessor!
-     control-state-evt-abandon-proc
-     struct:control-state-evt
-     3)
-    (register-struct-field-accessor!
-     control-state-evt-retry-proc
-     struct:control-state-evt
-     4)
-    (void)))
 (define struct:poll-guard-evt
   (make-record-type-descriptor* 'evt #f #f #f #f 1 0))
 (define effect_2393
@@ -2525,15 +2388,6 @@
          s
          'evt
          'proc))))))
-(define effect_2289
-  (begin
-    (register-struct-constructor! poll-guard-evt10.1)
-    (register-struct-predicate! poll-guard-evt?)
-    (register-struct-field-accessor!
-     poll-guard-evt-proc
-     struct:poll-guard-evt
-     0)
-    (void)))
 (define struct:choice-evt (make-record-type-descriptor* 'evt #f #f #f #f 1 0))
 (define effect_2512
   (struct-type-install-properties!
@@ -2581,12 +2435,6 @@
          s
          'evt
          'evts))))))
-(define effect_2513
-  (begin
-    (register-struct-constructor! choice-evt11.1)
-    (register-struct-predicate! choice-evt?)
-    (register-struct-field-accessor! choice-evt-evts struct:choice-evt 0)
-    (void)))
 (define-values
  (impersonator-prop:evt evt-impersonator? evt-impersonator-ref)
  (make-impersonator-property 'evt-impersonator))
@@ -2642,12 +2490,6 @@
   (|#%name| delayed-poll? (record-predicate struct:delayed-poll)))
 (define delayed-poll-resume
   (|#%name| delayed-poll-resume (record-accessor struct:delayed-poll 0)))
-(define effect_2511
-  (begin
-    (register-struct-constructor! delayed-poll12.1)
-    (register-struct-predicate! delayed-poll?)
-    (register-struct-field-accessor! delayed-poll-resume struct:delayed-poll 0)
-    (void)))
 (define struct:poller-evt
   (make-record-type-descriptor* 'poller-evt #f #f #f #f 1 0))
 (define effect_2558
@@ -2694,12 +2536,6 @@
          s
          'poller-evt
          'poller))))))
-(define effect_2383
-  (begin
-    (register-struct-constructor! poller-evt13.1)
-    (register-struct-predicate! poller-evt?)
-    (register-struct-field-accessor! poller-evt-poller struct:poller-evt 0)
-    (void)))
 (define-values
  (prop:waiter waiter? waiter-ref)
  (make-struct-type-property 'waiter))
@@ -2729,19 +2565,6 @@
   (|#%name| waiter-methods-suspend (record-accessor struct:waiter-methods 0)))
 (define waiter-methods-resume
   (|#%name| waiter-methods-resume (record-accessor struct:waiter-methods 1)))
-(define effect_2559
-  (begin
-    (register-struct-constructor! waiter-methods1.1)
-    (register-struct-predicate! waiter-methods?)
-    (register-struct-field-accessor!
-     waiter-methods-suspend
-     struct:waiter-methods
-     0)
-    (register-struct-field-accessor!
-     waiter-methods-resume
-     struct:waiter-methods
-     1)
-    (void)))
 (define make-waiter-methods.1
   (|#%name|
    make-waiter-methods
@@ -2809,12 +2632,6 @@
          s
          'select-waiter
          'proc))))))
-(define effect_2971
-  (begin
-    (register-struct-constructor! select-waiter7.1)
-    (register-struct-predicate! select-waiter?)
-    (register-struct-field-accessor! select-waiter-proc struct:select-waiter 0)
-    (void)))
 (define struct:custodian
   (make-record-type-descriptor* 'custodian #f #f #f #f 13 8188))
 (define effect_2364
@@ -2888,89 +2705,6 @@
   (|#%name| set-custodian-sync-futures?! (record-mutator struct:custodian 11)))
 (define set-custodian-post-shutdown!
   (|#%name| set-custodian-post-shutdown! (record-mutator struct:custodian 12)))
-(define effect_2160
-  (begin
-    (register-struct-constructor! custodian1.1)
-    (register-struct-predicate! 1/custodian?)
-    (register-struct-field-accessor! custodian-children struct:custodian 0)
-    (register-struct-field-accessor!
-     custodian-shut-down?-box
-     struct:custodian
-     1)
-    (register-struct-field-accessor!
-     custodian-shutdown-sema
-     struct:custodian
-     2)
-    (register-struct-field-accessor!
-     custodian-need-shutdown
-     struct:custodian
-     3)
-    (register-struct-field-accessor!
-     custodian-parent-reference
-     struct:custodian
-     4)
-    (register-struct-field-accessor!
-     custodian-self-reference
-     struct:custodian
-     5)
-    (register-struct-field-accessor! custodian-place struct:custodian 6)
-    (register-struct-field-accessor! custodian-memory-use struct:custodian 7)
-    (register-struct-field-accessor! custodian-gc-roots struct:custodian 8)
-    (register-struct-field-accessor!
-     custodian-memory-limits
-     struct:custodian
-     9)
-    (register-struct-field-accessor!
-     custodian-immediate-limit
-     struct:custodian
-     10)
-    (register-struct-field-accessor!
-     custodian-sync-futures?
-     struct:custodian
-     11)
-    (register-struct-field-accessor!
-     custodian-post-shutdown
-     struct:custodian
-     12)
-    (register-struct-field-mutator!
-     set-custodian-shutdown-sema!
-     struct:custodian
-     2)
-    (register-struct-field-mutator!
-     set-custodian-need-shutdown!
-     struct:custodian
-     3)
-    (register-struct-field-mutator!
-     set-custodian-parent-reference!
-     struct:custodian
-     4)
-    (register-struct-field-mutator!
-     set-custodian-self-reference!
-     struct:custodian
-     5)
-    (register-struct-field-mutator! set-custodian-place! struct:custodian 6)
-    (register-struct-field-mutator!
-     set-custodian-memory-use!
-     struct:custodian
-     7)
-    (register-struct-field-mutator! set-custodian-gc-roots! struct:custodian 8)
-    (register-struct-field-mutator!
-     set-custodian-memory-limits!
-     struct:custodian
-     9)
-    (register-struct-field-mutator!
-     set-custodian-immediate-limit!
-     struct:custodian
-     10)
-    (register-struct-field-mutator!
-     set-custodian-sync-futures?!
-     struct:custodian
-     11)
-    (register-struct-field-mutator!
-     set-custodian-post-shutdown!
-     struct:custodian
-     12)
-    (void)))
 (define create-custodian
   (lambda (parent_0)
     (custodian1.1
@@ -3060,15 +2794,6 @@
   (|#%name| message-ized? (record-predicate struct:message-ized)))
 (define message-ized-unmessage
   (|#%name| message-ized-unmessage (record-accessor struct:message-ized 0)))
-(define effect_2445
-  (begin
-    (register-struct-constructor! message-ized1.1)
-    (register-struct-predicate! message-ized?)
-    (register-struct-field-accessor!
-     message-ized-unmessage
-     struct:message-ized
-     0)
-    (void)))
 (define allowed?.1
   (letrec ((loop_0
             (|#%name|
@@ -4269,46 +3994,6 @@
   (|#%name| set-place-dequeue-semas! (record-mutator struct:place 17)))
 (define set-place-future-scheduler!
   (|#%name| set-place-future-scheduler! (record-mutator struct:place 18)))
-(define effect_1859
-  (begin
-    (register-struct-constructor! place1.1)
-    (register-struct-predicate! 1/place?)
-    (register-struct-field-accessor! place-parent struct:place 0)
-    (register-struct-field-accessor! place-lock struct:place 1)
-    (register-struct-field-accessor! place-activity-canary struct:place 2)
-    (register-struct-field-accessor! place-pch struct:place 3)
-    (register-struct-field-accessor! place-result struct:place 4)
-    (register-struct-field-accessor! place-queued-result struct:place 5)
-    (register-struct-field-accessor! place-custodian struct:place 6)
-    (register-struct-field-accessor! place-custodian-ref struct:place 7)
-    (register-struct-field-accessor! place-host-thread struct:place 8)
-    (register-struct-field-accessor! place-id struct:place 9)
-    (register-struct-field-accessor! place-host-roots struct:place 10)
-    (register-struct-field-accessor! place-current-thread struct:place 11)
-    (register-struct-field-accessor! place-post-shutdown struct:place 12)
-    (register-struct-field-accessor! place-pumpers struct:place 13)
-    (register-struct-field-accessor! place-pending-break struct:place 14)
-    (register-struct-field-accessor! place-done-waiting struct:place 15)
-    (register-struct-field-accessor! place-wakeup-handle struct:place 16)
-    (register-struct-field-accessor! place-dequeue-semas struct:place 17)
-    (register-struct-field-accessor! place-future-scheduler struct:place 18)
-    (register-struct-field-mutator! set-place-result! struct:place 4)
-    (register-struct-field-mutator! set-place-queued-result! struct:place 5)
-    (register-struct-field-mutator! set-place-custodian-ref! struct:place 7)
-    (register-struct-field-mutator! set-place-host-thread! struct:place 8)
-    (register-struct-field-mutator! set-place-id! struct:place 9)
-    (register-struct-field-mutator! set-place-host-roots! struct:place 10)
-    (register-struct-field-mutator! set-place-current-thread! struct:place 11)
-    (register-struct-field-mutator! set-place-post-shutdown! struct:place 12)
-    (register-struct-field-mutator! set-place-pumpers! struct:place 13)
-    (register-struct-field-mutator! set-place-pending-break! struct:place 14)
-    (register-struct-field-mutator! set-place-wakeup-handle! struct:place 16)
-    (register-struct-field-mutator! set-place-dequeue-semas! struct:place 17)
-    (register-struct-field-mutator!
-     set-place-future-scheduler!
-     struct:place
-     18)
-    (void)))
 (define make-place.1
   (|#%name|
    make-place
@@ -4411,13 +4096,6 @@
   (|#%name| semaphore-count (record-accessor struct:semaphore 0)))
 (define set-semaphore-count!
   (|#%name| set-semaphore-count! (record-mutator struct:semaphore 0)))
-(define effect_2880
-  (begin
-    (register-struct-constructor! semaphore1.1)
-    (register-struct-predicate! 1/semaphore?)
-    (register-struct-field-accessor! semaphore-count struct:semaphore 0)
-    (register-struct-field-mutator! set-semaphore-count! struct:semaphore 0)
-    (void)))
 (define count-field-pos 2)
 (define struct:semaphore-peek-evt
   (make-record-type-descriptor* 'semaphore-peek-evt #f #f #f #f 1 0))
@@ -4475,15 +4153,6 @@
          s
          'semaphore-peek-evt
          'sema))))))
-(define effect_2072
-  (begin
-    (register-struct-constructor! semaphore-peek-evt2.1)
-    (register-struct-predicate! 1/semaphore-peek-evt?)
-    (register-struct-field-accessor!
-     semaphore-peek-evt-sema
-     struct:semaphore-peek-evt
-     0)
-    (void)))
 (define struct:semaphore-peek-select-waiter
   (make-record-type-descriptor*
    'semaphore-peek-select-waiter
@@ -4528,11 +4197,6 @@
         (if (impersonator? v)
           (semaphore-peek-select-waiter?_2529 (impersonator-val v))
           #f))))))
-(define effect_2627
-  (begin
-    (register-struct-constructor! semaphore-peek-select-waiter3.1)
-    (register-struct-predicate! semaphore-peek-select-waiter?)
-    (void)))
 (define 1/make-semaphore
   (let ((make-semaphore_0
          (|#%name|
@@ -4749,15 +4413,6 @@
   (|#%name| set-node-prev! (record-mutator struct:node 0)))
 (define set-node-next!
   (|#%name| set-node-next! (record-mutator struct:node 1)))
-(define effect_3032
-  (begin
-    (register-struct-constructor! node1.1)
-    (register-struct-predicate! node?)
-    (register-struct-field-accessor! node-prev struct:node 0)
-    (register-struct-field-accessor! node-next struct:node 1)
-    (register-struct-field-mutator! set-node-prev! struct:node 0)
-    (register-struct-field-mutator! set-node-next! struct:node 1)
-    (void)))
 (define child-node (lambda (child_0) child_0))
 (define node-child (lambda (n_0) n_0))
 (define struct:thread-group
@@ -4800,33 +4455,6 @@
   (|#%name|
    set-thread-group-chain-end!
    (record-mutator struct:thread-group 3)))
-(define effect_3011
-  (begin
-    (register-struct-constructor! thread-group2.1)
-    (register-struct-predicate! 1/thread-group?)
-    (register-struct-field-accessor! thread-group-parent struct:thread-group 0)
-    (register-struct-field-accessor!
-     thread-group-chain-start
-     struct:thread-group
-     1)
-    (register-struct-field-accessor! thread-group-chain struct:thread-group 2)
-    (register-struct-field-accessor!
-     thread-group-chain-end
-     struct:thread-group
-     3)
-    (register-struct-field-mutator!
-     set-thread-group-chain-start!
-     struct:thread-group
-     1)
-    (register-struct-field-mutator!
-     set-thread-group-chain!
-     struct:thread-group
-     2)
-    (register-struct-field-mutator!
-     set-thread-group-chain-end!
-     struct:thread-group
-     3)
-    (void)))
 (define not-added-key #f)
 (define assert-not-added (lambda (n_0) (void)))
 (define assert-added (lambda (n_0) (void)))
@@ -5054,24 +4682,6 @@
          v
          'schedule-info
          'exts))))))
-(define effect_2287
-  (begin
-    (register-struct-constructor! schedule-info1.1)
-    (register-struct-predicate! schedule-info?)
-    (register-struct-field-accessor!
-     schedule-info-did-work?
-     struct:schedule-info
-     0)
-    (register-struct-field-accessor! schedule-info-exts struct:schedule-info 1)
-    (register-struct-field-mutator!
-     set-schedule-info-did-work?!
-     struct:schedule-info
-     0)
-    (register-struct-field-mutator!
-     set-schedule-info-exts!
-     struct:schedule-info
-     1)
-    (void)))
 (define make-schedule-info.1
   (|#%name|
    make-schedule-info
@@ -5118,13 +4728,6 @@
   (|#%name| plumber-callbacks (record-accessor struct:plumber 0)))
 (define plumber-weak-callbacks
   (|#%name| plumber-weak-callbacks (record-accessor struct:plumber 1)))
-(define effect_2372
-  (begin
-    (register-struct-constructor! plumber1.1)
-    (register-struct-predicate! 1/plumber?)
-    (register-struct-field-accessor! plumber-callbacks struct:plumber 0)
-    (register-struct-field-accessor! plumber-weak-callbacks struct:plumber 1)
-    (void)))
 (define 1/make-plumber
   (|#%name|
    make-plumber
@@ -5211,19 +4814,6 @@
          s
          'plumber-flush-handle
          'proc))))))
-(define effect_2567
-  (begin
-    (register-struct-constructor! plumber-flush-handle2.1)
-    (register-struct-predicate! 1/plumber-flush-handle?)
-    (register-struct-field-accessor!
-     plumber-flush-handle-plumber
-     struct:plumber-flush-handle
-     0)
-    (register-struct-field-accessor!
-     plumber-flush-handle-proc
-     struct:plumber-flush-handle
-     1)
-    (void)))
 (define 1/plumber-add-flush!
   (let ((plumber-add-flush!_0
          (|#%name|
@@ -5410,17 +5000,6 @@
   (|#%name| custodian-box-sema (record-accessor struct:custodian-box 1)))
 (define set-custodian-box-v!
   (|#%name| set-custodian-box-v! (record-mutator struct:custodian-box 0)))
-(define effect_2560
-  (begin
-    (register-struct-constructor! custodian-box1.1)
-    (register-struct-predicate! 1/custodian-box?)
-    (register-struct-field-accessor! custodian-box-v struct:custodian-box 0)
-    (register-struct-field-accessor! custodian-box-sema struct:custodian-box 1)
-    (register-struct-field-mutator!
-     set-custodian-box-v!
-     struct:custodian-box
-     0)
-    (void)))
 (define struct:willed-callback
   (make-record-type-descriptor* 'willed-callback #f #f #f #f 2 0))
 (define effect_2810
@@ -5447,19 +5026,6 @@
   (|#%name| willed-callback-proc (record-accessor struct:willed-callback 0)))
 (define willed-callback-will
   (|#%name| willed-callback-will (record-accessor struct:willed-callback 1)))
-(define effect_2644
-  (begin
-    (register-struct-constructor! willed-callback2.1)
-    (register-struct-predicate! willed-callback?)
-    (register-struct-field-accessor!
-     willed-callback-proc
-     struct:willed-callback
-     0)
-    (register-struct-field-accessor!
-     willed-callback-will
-     struct:willed-callback
-     1)
-    (void)))
 (define struct:at-exit-callback
   (make-record-type-descriptor*
    'at-exit-callback
@@ -5489,11 +5055,6 @@
     (make-record-constructor-descriptor struct:at-exit-callback #f #f))))
 (define at-exit-callback?
   (|#%name| at-exit-callback? (record-predicate struct:at-exit-callback)))
-(define effect_2470
-  (begin
-    (register-struct-constructor! at-exit-callback3.1)
-    (register-struct-predicate! at-exit-callback?)
-    (void)))
 (define struct:custodian-reference
   (make-record-type-descriptor* 'custodian-reference #f #f #f #f 1 1))
 (define effect_2616
@@ -5526,19 +5087,6 @@
   (|#%name|
    set-custodian-reference-weak-c!
    (record-mutator struct:custodian-reference 0)))
-(define effect_2569
-  (begin
-    (register-struct-constructor! custodian-reference4.1)
-    (register-struct-predicate! custodian-reference?)
-    (register-struct-field-accessor!
-     custodian-reference-weak-c
-     struct:custodian-reference
-     0)
-    (register-struct-field-mutator!
-     set-custodian-reference-weak-c!
-     struct:custodian-reference
-     0)
-    (void)))
 (define cell.1$7
   (unsafe-make-place-local (|#%app| host:make-late-will-executor void #f)))
 (define 1/current-custodian
@@ -6940,89 +6488,6 @@
   (|#%name| set-thread-cpu-time! (record-mutator struct:thread 22)))
 (define set-thread-future!
   (|#%name| set-thread-future! (record-mutator struct:thread 23)))
-(define effect_2975
-  (begin
-    (register-struct-constructor! thread1.1)
-    (register-struct-predicate! 1/thread?)
-    (register-struct-field-accessor! thread-name struct:thread 0)
-    (register-struct-field-accessor! thread-engine struct:thread 1)
-    (register-struct-field-accessor! thread-parent struct:thread 2)
-    (register-struct-field-accessor! thread-sleeping struct:thread 3)
-    (register-struct-field-accessor! thread-sched-info struct:thread 4)
-    (register-struct-field-accessor!
-     thread-custodian-references
-     struct:thread
-     5)
-    (register-struct-field-accessor! thread-transitive-resumes struct:thread 6)
-    (register-struct-field-accessor! thread-suspend-to-kill? struct:thread 7)
-    (register-struct-field-accessor! thread-kill-callbacks struct:thread 8)
-    (register-struct-field-accessor!
-     thread-suspend+resume-callbacks
-     struct:thread
-     9)
-    (register-struct-field-accessor! thread-descheduled? struct:thread 10)
-    (register-struct-field-accessor!
-     thread-interrupt-callback
-     struct:thread
-     11)
-    (register-struct-field-accessor! thread-dead-sema struct:thread 12)
-    (register-struct-field-accessor! 1/thread-dead-evt struct:thread 13)
-    (register-struct-field-accessor! thread-suspended-box struct:thread 14)
-    (register-struct-field-accessor! thread-suspended-evt struct:thread 15)
-    (register-struct-field-accessor! thread-resumed-evt struct:thread 16)
-    (register-struct-field-accessor! thread-pending-break struct:thread 17)
-    (register-struct-field-accessor!
-     thread-ignore-break-cells
-     struct:thread
-     18)
-    (register-struct-field-accessor! thread-forward-break-to struct:thread 19)
-    (register-struct-field-accessor! thread-mailbox struct:thread 20)
-    (register-struct-field-accessor! thread-mailbox-wakeup struct:thread 21)
-    (register-struct-field-accessor! thread-cpu-time struct:thread 22)
-    (register-struct-field-accessor! thread-future struct:thread 23)
-    (register-struct-field-mutator! set-thread-engine! struct:thread 1)
-    (register-struct-field-mutator! set-thread-sleeping! struct:thread 3)
-    (register-struct-field-mutator! set-thread-sched-info! struct:thread 4)
-    (register-struct-field-mutator!
-     set-thread-custodian-references!
-     struct:thread
-     5)
-    (register-struct-field-mutator!
-     set-thread-transitive-resumes!
-     struct:thread
-     6)
-    (register-struct-field-mutator! set-thread-kill-callbacks! struct:thread 8)
-    (register-struct-field-mutator!
-     set-thread-suspend+resume-callbacks!
-     struct:thread
-     9)
-    (register-struct-field-mutator! set-thread-descheduled?! struct:thread 10)
-    (register-struct-field-mutator!
-     set-thread-interrupt-callback!
-     struct:thread
-     11)
-    (register-struct-field-mutator! set-thread-dead-sema! struct:thread 12)
-    (register-struct-field-mutator! set-thread-dead-evt! struct:thread 13)
-    (register-struct-field-mutator! set-thread-suspended-box! struct:thread 14)
-    (register-struct-field-mutator! set-thread-suspended-evt! struct:thread 15)
-    (register-struct-field-mutator! set-thread-resumed-evt! struct:thread 16)
-    (register-struct-field-mutator! set-thread-pending-break! struct:thread 17)
-    (register-struct-field-mutator!
-     set-thread-ignore-break-cells!
-     struct:thread
-     18)
-    (register-struct-field-mutator!
-     set-thread-forward-break-to!
-     struct:thread
-     19)
-    (register-struct-field-mutator! set-thread-mailbox! struct:thread 20)
-    (register-struct-field-mutator!
-     set-thread-mailbox-wakeup!
-     struct:thread
-     21)
-    (register-struct-field-mutator! set-thread-cpu-time! struct:thread 22)
-    (register-struct-field-mutator! set-thread-future! struct:thread 23)
-    (void)))
 (define cell.1$1 (unsafe-make-place-local #f))
 (define 1/current-thread
   (|#%name|
@@ -7440,12 +6905,6 @@
          s
          'thread-dead-evt
          'sema))))))
-(define effect_2531
-  (begin
-    (register-struct-constructor! dead-evt13.1)
-    (register-struct-predicate! dead-evt?)
-    (register-struct-field-accessor! dead-evt-sema struct:dead-evt 0)
-    (void)))
 (define thread-dead-evt? (lambda (v_0) (dead-evt? v_0)))
 (define get-thread-dead-evt
   (|#%name|
@@ -7750,19 +7209,6 @@
   (|#%name|
    transitive-resume-box
    (record-accessor struct:transitive-resume 1)))
-(define effect_2460
-  (begin
-    (register-struct-constructor! transitive-resume16.1)
-    (register-struct-predicate! transitive-resume?)
-    (register-struct-field-accessor!
-     transitive-resume-weak-box
-     struct:transitive-resume
-     0)
-    (register-struct-field-accessor!
-     transitive-resume-box
-     struct:transitive-resume
-     1)
-    (void)))
 (define add-transitive-resume-to-thread!
   (letrec ((loop_0
             (|#%name|
@@ -7947,23 +7393,6 @@
          v
          'suspend-resume-evt
          'thread))))))
-(define effect_2999
-  (begin
-    (register-struct-constructor! suspend-resume-evt17.1)
-    (register-struct-predicate! suspend-resume-evt?)
-    (register-struct-field-accessor!
-     suspend-resume-evt-sema
-     struct:suspend-resume-evt
-     0)
-    (register-struct-field-accessor!
-     suspend-resume-evt-thread
-     struct:suspend-resume-evt
-     1)
-    (register-struct-field-mutator!
-     set-suspend-resume-evt-thread!
-     struct:suspend-resume-evt
-     1)
-    (void)))
 (define struct:suspend-evt
   (make-record-type-descriptor*
    'thread-suspend-evt
@@ -8001,11 +7430,6 @@
        #t
        ($value
         (if (impersonator? v) (suspend-evt?_3224 (impersonator-val v)) #f))))))
-(define effect_2668
-  (begin
-    (register-struct-constructor! suspend-evt18.1)
-    (register-struct-predicate! suspend-evt?)
-    (void)))
 (define struct:resume-evt
   (make-record-type-descriptor*
    'thread-resume-evt
@@ -8043,11 +7467,6 @@
        #t
        ($value
         (if (impersonator? v) (resume-evt?_2037 (impersonator-val v)) #f))))))
-(define effect_1814
-  (begin
-    (register-struct-constructor! resume-evt19.1)
-    (register-struct-predicate! resume-evt?)
-    (void)))
 (define 1/thread-resume-evt
   (|#%name|
    thread-resume-evt
@@ -8522,11 +7941,6 @@
         (if (impersonator? v)
           (thread-receiver-evt?_2591 (impersonator-val v))
           #f))))))
-(define effect_2732
-  (begin
-    (register-struct-constructor! thread-receiver-evt26.1)
-    (register-struct-predicate! thread-receiver-evt?)
-    (void)))
 (define 1/thread-receive-evt
   (|#%name| thread-receive-evt (lambda () (begin (thread-receiver-evt26.1)))))
 (define effect_2328
@@ -8620,13 +8034,6 @@
          s
          'channel
          'put-queue))))))
-(define effect_2912
-  (begin
-    (register-struct-constructor! channel1.1)
-    (register-struct-predicate! 1/channel?)
-    (register-struct-field-accessor! channel-get-queue struct:channel 0)
-    (register-struct-field-accessor! channel-put-queue struct:channel 1)
-    (void)))
 (define struct:channel-put-evt*
   (make-record-type-descriptor* 'channel-put-evt #f #f #f #f 2 0))
 (define effect_2694
@@ -8701,19 +8108,6 @@
          s
          'channel-put-evt
          'v))))))
-(define effect_2493
-  (begin
-    (register-struct-constructor! channel-put-evt*2.1)
-    (register-struct-predicate! channel-put-evt*?)
-    (register-struct-field-accessor!
-     channel-put-evt*-ch
-     struct:channel-put-evt*
-     0)
-    (register-struct-field-accessor!
-     channel-put-evt*-v
-     struct:channel-put-evt*
-     1)
-    (void)))
 (define struct:channel-select-waiter
   (make-record-type-descriptor*
    'channel-select-waiter
@@ -8773,15 +8167,6 @@
          s
          'channel-select-waiter
          'thread))))))
-(define effect_2663
-  (begin
-    (register-struct-constructor! channel-select-waiter3.1)
-    (register-struct-predicate! channel-select-waiter?)
-    (register-struct-field-accessor!
-     channel-select-waiter-thread
-     struct:channel-select-waiter
-     0)
-    (void)))
 (define 1/make-channel
   (|#%name|
    make-channel
@@ -9440,24 +8825,6 @@
          v
          'syncing
          'need-retry?))))))
-(define effect_2486
-  (begin
-    (register-struct-constructor! syncing1.1)
-    (register-struct-predicate! syncing?)
-    (register-struct-field-accessor! syncing-selected struct:syncing 0)
-    (register-struct-field-accessor! syncing-syncers struct:syncing 1)
-    (register-struct-field-accessor! syncing-wakeup struct:syncing 2)
-    (register-struct-field-accessor! syncing-disable-break struct:syncing 3)
-    (register-struct-field-accessor! syncing-need-retry? struct:syncing 4)
-    (register-struct-field-mutator! set-syncing-selected! struct:syncing 0)
-    (register-struct-field-mutator! set-syncing-syncers! struct:syncing 1)
-    (register-struct-field-mutator! set-syncing-wakeup! struct:syncing 2)
-    (register-struct-field-mutator!
-     set-syncing-disable-break!
-     struct:syncing
-     3)
-    (register-struct-field-mutator! set-syncing-need-retry?! struct:syncing 4)
-    (void)))
 (define struct:syncer (make-record-type-descriptor* 'syncer #f #f #f #f 9 511))
 (define effect_2549
   (struct-type-install-properties!
@@ -9774,29 +9141,6 @@
          v
          'syncer
          'next))))))
-(define effect_2487
-  (begin
-    (register-struct-constructor! syncer2.1)
-    (register-struct-predicate! syncer?)
-    (register-struct-field-accessor! syncer-evt struct:syncer 0)
-    (register-struct-field-accessor! syncer-wraps struct:syncer 1)
-    (register-struct-field-accessor! syncer-commits struct:syncer 2)
-    (register-struct-field-accessor! syncer-interrupted? struct:syncer 3)
-    (register-struct-field-accessor! syncer-interrupt struct:syncer 4)
-    (register-struct-field-accessor! syncer-abandons struct:syncer 5)
-    (register-struct-field-accessor! syncer-retry struct:syncer 6)
-    (register-struct-field-accessor! syncer-prev struct:syncer 7)
-    (register-struct-field-accessor! syncer-next struct:syncer 8)
-    (register-struct-field-mutator! set-syncer-evt! struct:syncer 0)
-    (register-struct-field-mutator! set-syncer-wraps! struct:syncer 1)
-    (register-struct-field-mutator! set-syncer-commits! struct:syncer 2)
-    (register-struct-field-mutator! set-syncer-interrupted?! struct:syncer 3)
-    (register-struct-field-mutator! set-syncer-interrupt! struct:syncer 4)
-    (register-struct-field-mutator! set-syncer-abandons! struct:syncer 5)
-    (register-struct-field-mutator! set-syncer-retry! struct:syncer 6)
-    (register-struct-field-mutator! set-syncer-prev! struct:syncer 7)
-    (register-struct-field-mutator! set-syncer-next! struct:syncer 8)
-    (void)))
 (define make-syncer
   (lambda (evt_0 wraps_0 prev_0)
     (syncer2.1 evt_0 wraps_0 null #f #f null #f prev_0 #f)))
@@ -11063,15 +10407,6 @@
          s
          'evt
          'guard))))))
-(define effect_3103
-  (begin
-    (register-struct-constructor! replacing-evt34.1)
-    (register-struct-predicate! replacing-evt?)
-    (register-struct-field-accessor!
-     replacing-evt-guard
-     struct:replacing-evt
-     0)
-    (void)))
 (define struct:nested-sync-evt
   (make-record-type-descriptor* 'evt #f #f #f #f 3 0))
 (define effect_2232
@@ -11155,23 +10490,6 @@
          s
          'evt
          'orig-evt))))))
-(define effect_2506
-  (begin
-    (register-struct-constructor! nested-sync-evt35.1)
-    (register-struct-predicate! nested-sync-evt?)
-    (register-struct-field-accessor!
-     nested-sync-evt-s
-     struct:nested-sync-evt
-     0)
-    (register-struct-field-accessor!
-     nested-sync-evt-next
-     struct:nested-sync-evt
-     1)
-    (register-struct-field-accessor!
-     nested-sync-evt-orig-evt
-     struct:nested-sync-evt
-     2)
-    (void)))
 (define 1/replace-evt
   (|#%name|
    replace-evt
@@ -11340,11 +10658,6 @@
         (if (impersonator? v)
           (system-idle-evt?_2250 (impersonator-val v))
           #f))))))
-(define effect_2692
-  (begin
-    (register-struct-constructor! system-idle-evt1.1)
-    (register-struct-predicate! system-idle-evt?)
-    (void)))
 (define the-idle-evt (system-idle-evt1.1))
 (define get-system-idle-evt
   (|#%name| system-idle-evt (lambda () (begin the-idle-evt))))
@@ -11418,28 +10731,6 @@
   (|#%name| set-future-state! (record-mutator struct:future* 8)))
 (define set-future*-dependents!
   (|#%name| set-future-dependents! (record-mutator struct:future* 9)))
-(define effect_3156
-  (begin
-    (register-struct-constructor! future*1.1)
-    (register-struct-predicate! future*?)
-    (register-struct-field-accessor! future*-id struct:future* 0)
-    (register-struct-field-accessor! future*-lock struct:future* 1)
-    (register-struct-field-accessor! future*-custodian struct:future* 2)
-    (register-struct-field-accessor! future*-would-be? struct:future* 3)
-    (register-struct-field-accessor! future*-thunk struct:future* 4)
-    (register-struct-field-accessor! future*-prev struct:future* 5)
-    (register-struct-field-accessor! future*-next struct:future* 6)
-    (register-struct-field-accessor! future*-results struct:future* 7)
-    (register-struct-field-accessor! future*-state struct:future* 8)
-    (register-struct-field-accessor! future*-dependents struct:future* 9)
-    (register-struct-field-mutator! set-future*-would-be?! struct:future* 3)
-    (register-struct-field-mutator! set-future*-thunk! struct:future* 4)
-    (register-struct-field-mutator! set-future*-prev! struct:future* 5)
-    (register-struct-field-mutator! set-future*-next! struct:future* 6)
-    (register-struct-field-mutator! set-future*-results! struct:future* 7)
-    (register-struct-field-mutator! set-future*-state! struct:future* 8)
-    (register-struct-field-mutator! set-future*-dependents! struct:future* 9)
-    (void)))
 (define currently-running-future-key (gensym 'future))
 (define currently-running-future
   (lambda ()
@@ -11620,29 +10911,6 @@
          s
          'future-event
          'user-data))))))
-(define effect_2671
-  (begin
-    (register-struct-constructor! future-event1.1)
-    (register-struct-predicate! future-event?)
-    (register-struct-field-accessor!
-     future-event-future-id
-     struct:future-event
-     0)
-    (register-struct-field-accessor!
-     future-event-proc-id
-     struct:future-event
-     1)
-    (register-struct-field-accessor! future-event-action struct:future-event 2)
-    (register-struct-field-accessor! future-event-time struct:future-event 3)
-    (register-struct-field-accessor!
-     future-event-prim-name
-     struct:future-event
-     4)
-    (register-struct-field-accessor!
-     future-event-user-data
-     struct:future-event
-     5)
-    (void)))
 (define cell.1$4 (unsafe-make-place-local (box null)))
 (define init-future-logging-place!
   (lambda () (unsafe-place-local-set! cell.1$4 (box null))))
@@ -11802,7 +11070,7 @@
   (|#%name| futures-enabled? (lambda () (begin (|#%app| threaded?)))))
 (define struct:future-evt
   (make-record-type-descriptor* 'future-evt #f #f #f #f 1 0))
-(define effect_2446
+(define effect_2445
   (struct-type-install-properties!
    struct:future-evt
    'future-evt
@@ -11860,12 +11128,6 @@
          s
          'future-evt
          'future))))))
-(define effect_2956
-  (begin
-    (register-struct-constructor! future-evt1.1)
-    (register-struct-predicate! future-evt?)
-    (register-struct-field-accessor! future-evt-future struct:future-evt 0)
-    (void)))
 (define create-future
   (lambda (thunk_0 cust_0 would-be?_0)
     (let ((id_0 (get-next-id)))
@@ -12245,7 +11507,7 @@
 (define set-processor-count! (lambda (n_0) (set! pthread-count n_0)))
 (define struct:scheduler
   (make-record-type-descriptor* 'scheduler #f #f #f #f 6 7))
-(define effect_2611
+(define effect_2609
   (struct-type-install-properties!
    struct:scheduler
    'scheduler
@@ -12282,26 +11544,6 @@
   (|#%name| set-scheduler-futures-head! (record-mutator struct:scheduler 1)))
 (define set-scheduler-futures-tail!
   (|#%name| set-scheduler-futures-tail! (record-mutator struct:scheduler 2)))
-(define effect_2249
-  (begin
-    (register-struct-constructor! scheduler7.1)
-    (register-struct-predicate! scheduler?)
-    (register-struct-field-accessor! scheduler-workers struct:scheduler 0)
-    (register-struct-field-accessor! scheduler-futures-head struct:scheduler 1)
-    (register-struct-field-accessor! scheduler-futures-tail struct:scheduler 2)
-    (register-struct-field-accessor! scheduler-mutex struct:scheduler 3)
-    (register-struct-field-accessor! scheduler-cond struct:scheduler 4)
-    (register-struct-field-accessor! scheduler-ping-cond struct:scheduler 5)
-    (register-struct-field-mutator! set-scheduler-workers! struct:scheduler 0)
-    (register-struct-field-mutator!
-     set-scheduler-futures-head!
-     struct:scheduler
-     1)
-    (register-struct-field-mutator!
-     set-scheduler-futures-tail!
-     struct:scheduler
-     2)
-    (void)))
 (define struct:worker (make-record-type-descriptor* 'worker #f #f #f #f 5 26))
 (define effect_2322
   (struct-type-install-properties!
@@ -12335,19 +11577,6 @@
   (|#%name| set-worker-die?! (record-mutator struct:worker 3)))
 (define set-worker-ping!
   (|#%name| set-worker-ping! (record-mutator struct:worker 4)))
-(define effect_2526
-  (begin
-    (register-struct-constructor! worker8.1)
-    (register-struct-predicate! worker?)
-    (register-struct-field-accessor! worker-id struct:worker 0)
-    (register-struct-field-accessor! worker-pthread struct:worker 1)
-    (register-struct-field-accessor! worker-current-future-box struct:worker 2)
-    (register-struct-field-accessor! worker-die? struct:worker 3)
-    (register-struct-field-accessor! worker-ping struct:worker 4)
-    (register-struct-field-mutator! set-worker-pthread! struct:worker 1)
-    (register-struct-field-mutator! set-worker-die?! struct:worker 3)
-    (register-struct-field-mutator! set-worker-ping! struct:worker 4)
-    (void)))
 (define current-scheduler
   (case-lambda
    (() (place-future-scheduler (unsafe-place-local-ref cell.1$2)))
@@ -13227,12 +12456,6 @@
          s
          'alarm-evt
          'msecs))))))
-(define effect_2706
-  (begin
-    (register-struct-constructor! alarm-evt1.1)
-    (register-struct-predicate! alarm-evt?)
-    (register-struct-field-accessor! alarm-evt-msecs struct:alarm-evt 0)
-    (void)))
 (define create-alarm-evt
   (lambda (msecs_0)
     (begin
@@ -13770,16 +12993,6 @@
   (|#%name| will-executor-host-we (record-accessor struct:will-executor 0)))
 (define will-executor-sema
   (|#%name| will-executor-sema (record-accessor struct:will-executor 1)))
-(define effect_2727
-  (begin
-    (register-struct-constructor! will-executor1.1)
-    (register-struct-predicate! 1/will-executor?)
-    (register-struct-field-accessor!
-     will-executor-host-we
-     struct:will-executor
-     0)
-    (register-struct-field-accessor! will-executor-sema struct:will-executor 1)
-    (void)))
 (define do-make-will-executor
   (lambda (host:make-will-executor_0)
     (let ((sema_0 (1/make-semaphore)))
@@ -14189,15 +13402,6 @@
          s
          'place-event
          'time))))))
-(define effect_2648
-  (begin
-    (register-struct-constructor! place-event1.1)
-    (register-struct-predicate! place-event?)
-    (register-struct-field-accessor! place-event-id struct:place-event 0)
-    (register-struct-field-accessor! place-event-action struct:place-event 1)
-    (register-struct-field-accessor! place-event-data struct:place-event 2)
-    (register-struct-field-accessor! place-event-time struct:place-event 3)
-    (void)))
 (define log-place.1
   (|#%name|
    log-place
@@ -14867,16 +14071,6 @@
          s
          'place-dead-evt
          'get-result?))))))
-(define effect_2476
-  (begin
-    (register-struct-constructor! place-done-evt3.1)
-    (register-struct-predicate! place-done-evt?)
-    (register-struct-field-accessor! place-done-evt-p struct:place-done-evt 0)
-    (register-struct-field-accessor!
-     place-done-evt-get-result?
-     struct:place-done-evt
-     1)
-    (void)))
 (define 1/place-dead-evt
   (|#%name|
    place-dead-evt
@@ -14931,41 +14125,6 @@
   (|#%name|
    set-message-queue-waiters!
    (record-mutator struct:message-queue 4)))
-(define effect_2130
-  (begin
-    (register-struct-constructor! message-queue4.1)
-    (register-struct-predicate! message-queue?)
-    (register-struct-field-accessor! message-queue-lock struct:message-queue 0)
-    (register-struct-field-accessor! message-queue-q struct:message-queue 1)
-    (register-struct-field-accessor!
-     message-queue-rev-q
-     struct:message-queue
-     2)
-    (register-struct-field-accessor!
-     message-queue-out-key-box
-     struct:message-queue
-     3)
-    (register-struct-field-accessor!
-     message-queue-waiters
-     struct:message-queue
-     4)
-    (register-struct-field-accessor!
-     message-queue-in-key-box
-     struct:message-queue
-     5)
-    (register-struct-field-mutator!
-     set-message-queue-q!
-     struct:message-queue
-     1)
-    (register-struct-field-mutator!
-     set-message-queue-rev-q!
-     struct:message-queue
-     2)
-    (register-struct-field-mutator!
-     set-message-queue-waiters!
-     struct:message-queue
-     4)
-    (void)))
 (define make-message-queue
   (lambda ()
     (message-queue4.1
@@ -15222,17 +14381,6 @@
          s
          'place-channel
          'out-key-box))))))
-(define effect_2649
-  (begin
-    (register-struct-constructor! pchannel5.1)
-    (register-struct-predicate! pchannel?)
-    (register-struct-field-accessor! pchannel-in-mq-e struct:pchannel 0)
-    (register-struct-field-accessor! pchannel-out-mq-e struct:pchannel 1)
-    (register-struct-field-accessor! pchannel-reader-key struct:pchannel 2)
-    (register-struct-field-accessor! pchannel-writer-key struct:pchannel 3)
-    (register-struct-field-accessor! pchannel-in-key-box struct:pchannel 4)
-    (register-struct-field-accessor! pchannel-out-key-box struct:pchannel 5)
-    (void)))
 (define 1/place-channel?
   (|#%name|
    place-channel?
@@ -15414,24 +14562,6 @@
   (|#%name| set-fsemaphore-dependents! (record-mutator struct:fsemaphore 2)))
 (define set-fsemaphore-dep-box!
   (|#%name| set-fsemaphore-dep-box! (record-mutator struct:fsemaphore 3)))
-(define effect_2759
-  (begin
-    (register-struct-constructor! fsemaphore1.1)
-    (register-struct-predicate! 1/fsemaphore?)
-    (register-struct-field-accessor! fsemaphore-c struct:fsemaphore 0)
-    (register-struct-field-accessor! fsemaphore-lock struct:fsemaphore 1)
-    (register-struct-field-accessor! fsemaphore-dependents struct:fsemaphore 2)
-    (register-struct-field-accessor! fsemaphore-dep-box struct:fsemaphore 3)
-    (register-struct-field-mutator! set-fsemaphore-c! struct:fsemaphore 0)
-    (register-struct-field-mutator!
-     set-fsemaphore-dependents!
-     struct:fsemaphore
-     2)
-    (register-struct-field-mutator!
-     set-fsemaphore-dep-box!
-     struct:fsemaphore
-     3)
-    (void)))
 (define struct:fsemaphore-box-evt
   (make-record-type-descriptor* 'fsemaphore-box-evt #f #f #f #f 1 0))
 (define effect_2902
@@ -15488,15 +14618,6 @@
          s
          'fsemaphore-box-evt
          'b))))))
-(define effect_2342
-  (begin
-    (register-struct-constructor! fsemaphore-box-evt2.1)
-    (register-struct-predicate! fsemaphore-box-evt?)
-    (register-struct-field-accessor!
-     fsemaphore-box-evt-b
-     struct:fsemaphore-box-evt
-     0)
-    (void)))
 (define 1/make-fsemaphore
   (|#%name|
    make-fsemaphore
@@ -15734,21 +14855,6 @@
          v
          'os-semaphore
          'count))))))
-(define effect_2303
-  (begin
-    (register-struct-constructor! os-semaphore1.1)
-    (register-struct-predicate! os-semaphore?)
-    (register-struct-field-accessor! os-semaphore-count struct:os-semaphore 0)
-    (register-struct-field-accessor! os-semaphore-mutex struct:os-semaphore 1)
-    (register-struct-field-accessor!
-     os-semaphore-condition
-     struct:os-semaphore
-     2)
-    (register-struct-field-mutator!
-     set-os-semaphore-count!
-     struct:os-semaphore
-     0)
-    (void)))
 (define 1/unsafe-make-os-semaphore
   (|#%name|
    unsafe-make-os-semaphore

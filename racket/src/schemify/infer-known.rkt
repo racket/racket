@@ -9,7 +9,8 @@
          "literal.rkt"
          "inline.rkt"
          "mutated-state.rkt"
-         "optimize.rkt")
+         "optimize.rkt"
+         "aim.rkt")
 
 (provide infer-known
          can-improve-infer-known?
@@ -18,7 +19,7 @@
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early. If `post-schemify?`, then `rhs` has been schemified.
-(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?
+(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? target
                      #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
                      #:optimize-inline? [optimize-inline? #f]
                      #:post-schemify? [post-schemify? #f])
@@ -34,7 +35,7 @@
            (let ([lam (if optimize-inline?
                           (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
                           lam)])
-             (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not for-cify?))
+             (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
                                                         (add-begin-unsafe lam)
                                                         lam)))
            (known-procedure arity-mask))]
@@ -65,7 +66,11 @@
                  [(or (not defn)
                       ;; can't just return `known`; like `known-procedure/can-inline/need-imports`,
                       ;; we'd lose track of the need to potentially propagate imports
-                      (known-copy? known))
+                      (known-copy? known)
+                      (known-struct-constructor/need-imports? known)
+                      (known-struct-predicate/need-imports? known)
+                      (known-field-accessor/need-imports? known)
+                      (known-field-mutator/need-imports? known))
                   (known-copy rhs)]
                  [else known]))]
          [defn a-known-constant]

@@ -2102,6 +2102,7 @@ extern Scheme_Extension_Table *scheme_extension_table;
 #define SCHEME_STRUCT_EXPTIME 0x80
 #define SCHEME_STRUCT_NO_MAKE_PREFIX 0x100
 #define SCHEME_STRUCT_NAMES_ARE_STRINGS 0x200
+#define SCHEME_STRUCT_BUILTIN 0x400
 
 /*========================================================================*/
 /*                           file descriptors                             */

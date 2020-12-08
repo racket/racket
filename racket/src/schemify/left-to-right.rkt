@@ -2,7 +2,8 @@
 (require "wrap.rkt"
          "match.rkt"
          "simple.rkt"
-         "gensym.rkt")
+         "gensym.rkt"
+         "aim.rkt")
 
 (provide left-to-right/let
          left-to-right/let-values
@@ -47,13 +48,13 @@
 
 ;; Convert a `let-values` to nested `let-values`es to
 ;; enforce order
-(define (left-to-right/let-values idss rhss bodys mutated for-cify?)
+(define (left-to-right/let-values idss rhss bodys mutated target)
   (cond
     [(null? (cdr idss))
      (define e (if (null? (cdr bodys))
                    (car bodys)
                    `(begin . ,bodys)))
-     (make-let-values (car idss) (car rhss) e for-cify?)]
+     (make-let-values (car idss) (car rhss) e target)]
    [else
     (let loop ([idss idss] [rhss rhss] [binds null])
       (cond
@@ -62,7 +63,7 @@
          (car idss) (car rhss)
          `(let ,binds
             . ,bodys)
-         for-cify?)]
+         target)]
        [else
         (define ids (car idss))
         (make-let-values
@@ -71,14 +72,14 @@
          (loop (cdr idss) (cdr rhss) (append (for/list ([id (in-wrap-list ids)])
                                                `[,id ,id])
                                              binds))
-         for-cify?)]))]))
+         target)]))]))
 
 ;; Convert an application to enforce left-to-right
 ;; evaluation order
-(define (left-to-right/app rator rands plain-app? for-cify?
+(define (left-to-right/app rator rands plain-app? target
                            prim-knowns knowns imports mutated simples)
   (cond
-    [for-cify? (cons rator rands)]
+    [(aim? target 'cify) (cons rator rands)]
     [else
      (let loop ([l (cons rator rands)] [accum null] [pending-non-simple #f] [pending-id #f])
        (cond
@@ -110,7 +111,7 @@
 
 ;; ----------------------------------------
 
-(define (make-let-values ids rhs body for-cify?)
+(define (make-let-values ids rhs body target)
   (cond
    [(and (pair? ids) (null? (cdr ids)))
     `(let ([,(car ids) ,rhs]) ,body)]
@@ -120,7 +121,7 @@
        `(begin ,rhs ,body)]
       [`,_
        (cond
-         [for-cify?
+         [(aim? target 'cify)
           ;; No checking
           `(call-with-values (lambda () ,rhs)
              (lambda ,ids ,body))]
