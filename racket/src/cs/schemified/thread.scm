@@ -457,70 +457,21 @@
     prop:stream
     (vector
      (lambda (v_0)
-       (let ((cont?_0
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2)))
-         (if cont?_0
-           (not
-            (|#%app|
-             cont?_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              0)))
-           #f)))
+       (let ((cont?_0 (|#%app| range-ref v_0 2)))
+         (if cont?_0 (not (|#%app| cont?_0 (|#%app| range-ref v_0 0))) #f)))
+     (lambda (v_0) (|#%app| range-ref v_0 0))
      (lambda (v_0)
-       (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 0))
-     (lambda (v_0)
-       (let ((app_0 make-range))
-         (let ((app_1
-                (let ((app_1
-                       (|#%app|
-                        (check-not-unsafe-undefined range-ref 'range-ref)
-                        v_0
-                        1)))
-                  (|#%app|
-                   app_1
-                   (|#%app|
-                    (check-not-unsafe-undefined range-ref 'range-ref)
-                    v_0
-                    0)))))
-           (let ((app_2
-                  (|#%app|
-                   (check-not-unsafe-undefined range-ref 'range-ref)
-                   v_0
-                   1)))
-             (|#%app|
-              app_0
-              app_1
-              app_2
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2))))))))
+       (let ((app_0
+              (let ((app_0 (|#%app| range-ref v_0 1)))
+                (|#%app| app_0 (|#%app| range-ref v_0 0)))))
+         (let ((app_1 (|#%app| range-ref v_0 1)))
+           (make-range app_0 app_1 (|#%app| range-ref v_0 2)))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (let ((app_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              1)))
-        (let ((app_1
-               (|#%app|
-                (check-not-unsafe-undefined range-ref 'range-ref)
-                v_0
-                0)))
-          (values
-           values
-           #f
-           app_0
-           app_1
-           (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 2)
-           #f
-           #f))))))))
+      (let ((app_0 (|#%app| range-ref v_0 1)))
+        (let ((app_1 (|#%app| range-ref v_0 0)))
+          (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define check-range
   (lambda (a_0 b_0 step_0)
     (begin
@@ -545,42 +496,13 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (not
-        (pair?
-         (|#%app|
-          (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-          v_0
-          0))))
-     (lambda (v_0)
-       (car
-        (|#%app|
-         (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (let ((app_0 make-list-stream))
-         (|#%app|
-          app_0
-          (cdr
-           (|#%app|
-            (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-            v_0
-            0)))))))
+     (lambda (v_0) (not (pair? (|#%app| list-stream-ref v_0 0))))
+     (lambda (v_0) (car (|#%app| list-stream-ref v_0 0)))
+     (lambda (v_0) (make-list-stream (cdr (|#%app| list-stream-ref v_0 0))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (values
-       car
-       cdr
-       values
-       (|#%app|
-        (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-        v_0
-        0)
-       pair?
-       #f
-       #f))))))
+      (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define check-list
   (lambda (l_0)
     (if (list? l_0) (void) (raise-argument-error 'in-list "list?" l_0))))
@@ -688,24 +610,9 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         1)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         2))))))))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 0)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
 (define map_2960
   (|#%name|
@@ -2047,9 +1954,9 @@
  (make-struct-type-property
   'evt
   (lambda (v_0 info_0)
-    (if (|#%app| poller? v_0)
+    (if (poller? v_0)
       v_0
-      (if (|#%app| 1/evt? v_0)
+      (if (1/evt? v_0)
         v_0
         (if (if (procedure? v_0) (procedure-arity-includes? v_0 1) #f)
           v_0
@@ -2072,10 +1979,8 @@
                    "field index not declared immutable"
                    "field index"
                    v_0))
-                (let ((app_0 selector-prop-evt-value1.1))
-                  (|#%app|
-                   app_0
-                   (make-struct-field-accessor (list-ref info_0 3) v_0)))))
+                (selector-prop-evt-value1.1
+                 (make-struct-field-accessor (list-ref info_0 3) v_0))))
             (raise-argument-error
              'guard-for-prop:evt
              "(or/c evt? (procedure-arity-includes/c 1) exact-nonnegative-integer?)"
@@ -2707,10 +2612,10 @@
                       (lambda () (|#%app| v_1 evt_0)))))
                 (if (1/evt? v_2)
                   v_2
-                  (if (|#%app| poller? v_2)
+                  (if (poller? v_2)
                     (poller-evt13.1 v_2)
                     (wrap-evt7.1 the-always-evt (lambda (v_3) evt_0))))))))
-          (if (|#%app| poller? v_1)
+          (if (poller? v_1)
             (|#%app| (poller-proc v_1) evt_0 poll-ctx_0)
             (if (1/evt? v_1) (values #f v_1) (values #f the-never-evt))))))))
 (define struct:delayed-poll
@@ -4281,7 +4186,7 @@
     (lambda (v_0) (let ((graph_0 (box #f))) (loop_0 graph_0 v_0)))))
 (define struct:place
   (make-record-type-descriptor* 'place #f #f #f #f 19 491440))
-(define effect_3017
+(define effect_3085
   (struct-type-install-properties!
    struct:place
    'place
@@ -4292,7 +4197,7 @@
     (cons prop:authentic #t)
     (cons
      prop:place-message
-     (lambda (self_0) (lambda () (lambda () (|#%app| place-pch self_0)))))
+     (lambda (self_0) (lambda () (lambda () (place-pch self_0)))))
     (cons 1/prop:evt 3)
     (cons host:prop:unsafe-authentic-override #t))
    (current-inspector)
@@ -4476,7 +4381,7 @@
       (void))))
 (define struct:semaphore
   (make-record-type-descriptor* 'semaphore struct:queue #f #f #f 1 1))
-(define effect_2473
+(define effect_3126
   (struct-type-install-properties!
    struct:semaphore
    'semaphore
@@ -4489,13 +4394,7 @@
      1/prop:evt
      (poller2.1
       (lambda (s_0 poll-ctx_0)
-        (|#%app|
-         semaphore-wait/poll.1
-         #f
-         unsafe-undefined
-         s_0
-         s_0
-         poll-ctx_0))))
+        (semaphore-wait/poll.1 #f unsafe-undefined s_0 s_0 poll-ctx_0))))
     (cons host:prop:unsafe-authentic-override #t))
    (current-inspector)
    #f
@@ -4522,7 +4421,7 @@
 (define count-field-pos 2)
 (define struct:semaphore-peek-evt
   (make-record-type-descriptor* 'semaphore-peek-evt #f #f #f #f 1 0))
-(define effect_2819
+(define effect_2127
   (struct-type-install-properties!
    struct:semaphore-peek-evt
    'semaphore-peek-evt
@@ -4534,8 +4433,8 @@
      1/prop:evt
      (poller2.1
       (lambda (sp_0 poll-ctx_0)
-        (let ((temp18_0 (|#%app| semaphore-peek-evt-sema sp_0)))
-          (|#%app| semaphore-wait/poll.1 #t sp_0 temp18_0 sp_0 poll-ctx_0))))))
+        (let ((temp18_0 (semaphore-peek-evt-sema sp_0)))
+          (semaphore-wait/poll.1 #t sp_0 temp18_0 sp_0 poll-ctx_0))))))
    (current-inspector)
    #f
    '(0)
@@ -5480,7 +5379,7 @@
      (case-lambda (() (begin (exit_0 #t))) ((v1_0) (exit_0 v1_0))))))
 (define struct:custodian-box
   (make-record-type-descriptor* 'custodian-box #f #f #f #f 2 1))
-(define effect_3118
+(define effect_2780
   (struct-type-install-properties!
    struct:custodian-box
    'custodian-box
@@ -5492,7 +5391,7 @@
     (cons
      1/prop:evt
      (lambda (cb_0)
-       (wrap-evt7.1 (|#%app| custodian-box-sema cb_0) (lambda (v_0) cb_0)))))
+       (wrap-evt7.1 (custodian-box-sema cb_0) (lambda (v_0) cb_0)))))
    (current-inspector)
    #f
    '(1)
@@ -7493,7 +7392,7 @@
          (1/semaphore-wait (|#%app| get-thread-dead-sema t_0)))))))
 (define struct:dead-evt
   (make-record-type-descriptor* 'thread-dead-evt #f #f #f #f 1 0))
-(define effect_2381
+(define effect_2807
   (struct-type-install-properties!
    struct:dead-evt
    'thread-dead-evt
@@ -7504,7 +7403,7 @@
     (cons
      1/prop:evt
      (lambda (tde_0)
-       (wrap-evt7.1 (|#%app| dead-evt-sema tde_0) (lambda (s_0) tde_0)))))
+       (wrap-evt7.1 (dead-evt-sema tde_0) (lambda (s_0) tde_0)))))
    (current-inspector)
    #f
    '(0)
@@ -7696,7 +7595,7 @@
                     (begin
                       (set-suspend-resume-evt-thread! suspended-evt_0 t_0)
                       (semaphore-post-all
-                       (|#%app| suspend-resume-evt-sema suspended-evt_0))
+                       (suspend-resume-evt-sema suspended-evt_0))
                       (set-thread-suspended-evt! t_0 #f))
                     (void)))))))
         (if (not (thread-descheduled? t_0))
@@ -7781,8 +7680,7 @@
               (if resumed-evt_0
                 (begin
                   (set-suspend-resume-evt-thread! resumed-evt_0 t_0)
-                  (semaphore-post-all
-                   (|#%app| suspend-resume-evt-sema resumed-evt_0))
+                  (semaphore-post-all (suspend-resume-evt-sema resumed-evt_0))
                   (set-thread-resumed-evt! t_0 #f))
                 (void))
               (set-thread-suspended?! t_0 #f)
@@ -7957,7 +7855,7 @@
         (void)))))
 (define struct:suspend-resume-evt
   (make-record-type-descriptor* 'suspend-resume-evt #f #f #f #f 2 2))
-(define effect_2576
+(define effect_2400
   (struct-type-install-properties!
    struct:suspend-resume-evt
    'suspend-resume-evt
@@ -7969,8 +7867,8 @@
      1/prop:evt
      (lambda (se_0)
        (wrap-evt7.1
-        (|#%app| suspend-resume-evt-sema se_0)
-        (lambda (s_0) (|#%app| suspend-resume-evt-thread se_0))))))
+        (suspend-resume-evt-sema se_0)
+        (lambda (s_0) (suspend-resume-evt-thread se_0))))))
    (current-inspector)
    #f
    '(0)
@@ -8659,7 +8557,7 @@
        (begin-unsafe (set! thread-engine-for-roots thread-engine_0))))
     (void)))
 (define struct:channel (make-record-type-descriptor* 'channel #f #f #f #f 2 0))
-(define effect_1902
+(define effect_1795
   (struct-type-install-properties!
    struct:channel
    'channel
@@ -8670,7 +8568,7 @@
     (cons
      1/prop:evt
      (poller2.1
-      (lambda (ch_0 poll-ctx_0) (|#%app| channel-get/poll ch_0 poll-ctx_0)))))
+      (lambda (ch_0 poll-ctx_0) (channel-get/poll ch_0 poll-ctx_0)))))
    (current-inspector)
    #f
    '(0 1)
@@ -8731,7 +8629,7 @@
     (void)))
 (define struct:channel-put-evt*
   (make-record-type-descriptor* 'channel-put-evt #f #f #f #f 2 0))
-(define effect_2960
+(define effect_2694
   (struct-type-install-properties!
    struct:channel-put-evt*
    'channel-put-evt
@@ -8743,14 +8641,12 @@
      1/prop:evt
      (poller2.1
       (lambda (cp_0 poll-ctx_0)
-        (let ((app_0 channel-put/poll))
-          (let ((app_1 (|#%app| channel-put-evt*-ch cp_0)))
-            (|#%app|
-             app_0
-             app_1
-             (|#%app| channel-put-evt*-v cp_0)
-             cp_0
-             poll-ctx_0)))))))
+        (let ((app_0 (channel-put-evt*-ch cp_0)))
+          (channel-put/poll
+           app_0
+           (channel-put-evt*-v cp_0)
+           cp_0
+           poll-ctx_0))))))
    (current-inspector)
    #f
    '(0 1)
@@ -9081,8 +8977,8 @@
           (|#%app| channel-put_0 old-ch_0 new-v_0))))))
 (define channel-put-do
   (lambda (v_0)
-    (let ((app_0 (|#%app| channel-put-evt*-ch v_0)))
-      (channel-put app_0 (|#%app| channel-put-evt*-v v_0)))))
+    (let ((app_0 (channel-put-evt*-ch v_0)))
+      (channel-put app_0 (channel-put-evt*-v v_0)))))
 (define not-matching-select-waiter
   (lambda (w+b/v_0)
     (let ((w_0 (car w+b/v_0)))
@@ -11117,7 +11013,7 @@
          (begin0 (retry_0 s_0 timeout-at_0) (end-atomic)))))))
 (define struct:replacing-evt
   (make-record-type-descriptor* 'evt #f #f #f #f 1 0))
-(define effect_2056
+(define effect_2634
   (struct-type-install-properties!
    struct:replacing-evt
    'evt
@@ -11128,8 +11024,7 @@
     (cons
      1/prop:evt
      (poller2.1
-      (lambda (self_0 poll-ctx_0)
-        (|#%app| (|#%app| replacing-evt-guard self_0))))))
+      (lambda (self_0 poll-ctx_0) (|#%app| (replacing-evt-guard self_0))))))
    (current-inspector)
    #f
    '(0)
@@ -11907,7 +11802,7 @@
   (|#%name| futures-enabled? (lambda () (begin (|#%app| threaded?)))))
 (define struct:future-evt
   (make-record-type-descriptor* 'future-evt #f #f #f #f 1 0))
-(define effect_2234
+(define effect_2446
   (struct-type-install-properties!
    struct:future-evt
    'future-evt
@@ -11919,7 +11814,7 @@
      1/prop:evt
      (poller2.1
       (lambda (fe_0 poll-ctx_0)
-        (let ((f_0 (|#%app| future-evt-future fe_0)))
+        (let ((f_0 (future-evt-future fe_0)))
           (begin
             (lock-acquire (future*-lock f_0))
             (let ((s_0 (future*-state f_0)))
@@ -13276,7 +13171,7 @@
   (lambda (proc_0) (set! check-place-activity proc_0)))
 (define struct:alarm-evt
   (make-record-type-descriptor* 'alarm-evt #f #f #f #f 1 0))
-(define effect_2693
+(define effect_2291
   (struct-type-install-properties!
    struct:alarm-evt
    'alarm-evt
@@ -13288,7 +13183,7 @@
      1/prop:evt
      (poller2.1
       (lambda (e_0 ctx_0)
-        (let ((msecs_0 (|#%app| alarm-evt-msecs e_0)))
+        (let ((msecs_0 (alarm-evt-msecs e_0)))
           (if (>= (current-inexact-milliseconds) msecs_0)
             (values (list e_0) #f)
             (begin
@@ -13843,7 +13738,7 @@
        (call-with-semaphore/enable-break_0 s_0 proc_0 try-fail12_0 args_0))))))
 (define struct:will-executor
   (make-record-type-descriptor* 'will-executor #f #f #f #f 2 0))
-(define effect_2934
+(define effect_3021
   (struct-type-install-properties!
    struct:will-executor
    'will-executor
@@ -13856,7 +13751,7 @@
      1/prop:evt
      (lambda (we_0)
        (wrap-evt7.1
-        (semaphore-peek-evt2.1 (|#%app| will-executor-sema we_0))
+        (semaphore-peek-evt2.1 (will-executor-sema we_0))
         (lambda (v_0) we_0))))
     (cons host:prop:unsafe-authentic-override #t))
    (current-inspector)
@@ -13937,7 +13832,7 @@
                    (will-executor-host-we we_0))))
              (if c1_0
                (begin
-                 (semaphore-wait/atomic (|#%app| will-executor-sema we_0))
+                 (semaphore-wait/atomic (will-executor-sema we_0))
                  (lambda ()
                    (let ((app_0 (car c1_0))) (|#%app| app_0 (cdr c1_0)))))
                fail-k_0))
@@ -14382,7 +14277,7 @@
            (if (eq? initial-place (unsafe-place-local-ref cell.1$2))
              (begin
                (start-atomic)
-               (begin0 (|#%app| ensure-wakeup-handle!) (end-atomic)))
+               (begin0 (ensure-wakeup-handle!) (end-atomic)))
              (void))
            (let ((orig-cust_0 (create-custodian #f)))
              (let ((lock_0 (|#%app| host:make-mutex)))
@@ -14885,7 +14780,7 @@
        (loop_0)))))
 (define struct:place-done-evt
   (make-record-type-descriptor* 'place-dead-evt #f #f #f #f 2 0))
-(define effect_3079
+(define effect_2146
   (struct-type-install-properties!
    struct:place-done-evt
    'place-dead-evt
@@ -14898,8 +14793,8 @@
      (poller2.1
       (lambda (self_0 poll-ctx_0)
         (begin
-          (|#%app| ensure-wakeup-handle!)
-          (let ((p_0 (|#%app| place-done-evt-p self_0)))
+          (ensure-wakeup-handle!)
+          (let ((p_0 (place-done-evt-p self_0)))
             (begin
               (|#%app| host:mutex-acquire (place-lock p_0))
               (let ((result_0 (place-result p_0)))
@@ -14912,7 +14807,7 @@
                      #t))
                   (|#%app| host:mutex-release (place-lock p_0))
                   (if result_0
-                    (if (|#%app| place-done-evt-get-result? self_0)
+                    (if (place-done-evt-get-result? self_0)
                       (values (list result_0) #f)
                       (values (list self_0) #f))
                     (values #f self_0)))))))))))
@@ -15135,7 +15030,7 @@
 (define dequeue!
   (lambda (mq_0 rk_0 success-k_0 fail-k_0)
     (begin
-      (|#%app| ensure-wakeup-handle!)
+      (ensure-wakeup-handle!)
       (let ((lock_0 (message-queue-lock mq_0)))
         (begin
           (|#%app| host:mutex-acquire lock_0)
@@ -15182,7 +15077,7 @@
                     (|#%app| success-k_0 (car q_0))))))))))))
 (define struct:pchannel
   (make-record-type-descriptor* 'place-channel #f #f #f #f 6 0))
-(define effect_2691
+(define effect_3146
   (struct-type-install-properties!
    struct:pchannel
    'place-channel
@@ -15202,11 +15097,11 @@
                     the-always-evt
                     (lambda (a_0) (un-message-ize v_0)))))))
         (lambda (self_0 poll-ctx_0)
-          (let ((in-mq_0 (ephemeron-value (|#%app| pchannel-in-mq-e self_0))))
+          (let ((in-mq_0 (ephemeron-value (pchannel-in-mq-e self_0))))
             (if in-mq_0
               (dequeue!
                in-mq_0
-               (|#%app| pchannel-reader-key self_0)
+               (pchannel-reader-key self_0)
                procz1
                (lambda (sema_0)
                  (values #f (1/replace-evt sema_0 (lambda (s_0) self_0)))))
@@ -15346,8 +15241,7 @@
        (let ((or-part_0 (pchannel? v_0)))
          (if or-part_0 or-part_0 (1/place? v_0)))))))
 (define unwrap-place-channel
-  (lambda (in-pch_0)
-    (if (1/place? in-pch_0) (|#%app| place-pch in-pch_0) in-pch_0)))
+  (lambda (in-pch_0) (if (1/place? in-pch_0) (place-pch in-pch_0) in-pch_0)))
 (define 1/place-channel
   (|#%name|
    place-channel
@@ -15397,14 +15291,13 @@
               "place-channel?"
               in-pch_0))
            (let ((pch_0 (unwrap-place-channel in-pch_0)))
-             (let ((in-mq_0
-                    (ephemeron-value (|#%app| pchannel-in-mq-e pch_0))))
+             (let ((in-mq_0 (ephemeron-value (pchannel-in-mq-e pch_0))))
                (if in-mq_0
                  (begin
                    (start-atomic)
                    (dequeue!
                     in-mq_0
-                    (|#%app| pchannel-reader-key pch_0)
+                    (pchannel-reader-key pch_0)
                     procz1
                     (lambda (sema_0)
                       (begin
@@ -15541,7 +15434,7 @@
     (void)))
 (define struct:fsemaphore-box-evt
   (make-record-type-descriptor* 'fsemaphore-box-evt #f #f #f #f 1 0))
-(define effect_2505
+(define effect_2902
   (struct-type-install-properties!
    struct:fsemaphore-box-evt
    'fsemaphore-box-evt
@@ -15553,7 +15446,7 @@
      1/prop:evt
      (poller2.1
       (lambda (fsb_0 poll-ctx_0)
-        (let ((b_0 (|#%app| fsemaphore-box-evt-b fsb_0)))
+        (let ((b_0 (fsemaphore-box-evt-b fsb_0)))
           (if (unbox b_0) (values '(#t) #f) (values #f fsb_0)))))))
    (current-inspector)
    #f

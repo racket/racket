@@ -1695,70 +1695,21 @@
     prop:stream
     (vector
      (lambda (v_0)
-       (let ((cont?_0
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2)))
-         (if cont?_0
-           (not
-            (|#%app|
-             cont?_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              0)))
-           #f)))
+       (let ((cont?_0 (|#%app| range-ref v_0 2)))
+         (if cont?_0 (not (|#%app| cont?_0 (|#%app| range-ref v_0 0))) #f)))
+     (lambda (v_0) (|#%app| range-ref v_0 0))
      (lambda (v_0)
-       (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 0))
-     (lambda (v_0)
-       (let ((app_0 make-range))
-         (let ((app_1
-                (let ((app_1
-                       (|#%app|
-                        (check-not-unsafe-undefined range-ref 'range-ref)
-                        v_0
-                        1)))
-                  (|#%app|
-                   app_1
-                   (|#%app|
-                    (check-not-unsafe-undefined range-ref 'range-ref)
-                    v_0
-                    0)))))
-           (let ((app_2
-                  (|#%app|
-                   (check-not-unsafe-undefined range-ref 'range-ref)
-                   v_0
-                   1)))
-             (|#%app|
-              app_0
-              app_1
-              app_2
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2))))))))
+       (let ((app_0
+              (let ((app_0 (|#%app| range-ref v_0 1)))
+                (|#%app| app_0 (|#%app| range-ref v_0 0)))))
+         (let ((app_1 (|#%app| range-ref v_0 1)))
+           (make-range app_0 app_1 (|#%app| range-ref v_0 2)))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (let ((app_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              1)))
-        (let ((app_1
-               (|#%app|
-                (check-not-unsafe-undefined range-ref 'range-ref)
-                v_0
-                0)))
-          (values
-           values
-           #f
-           app_0
-           app_1
-           (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 2)
-           #f
-           #f))))))))
+      (let ((app_0 (|#%app| range-ref v_0 1)))
+        (let ((app_1 (|#%app| range-ref v_0 0)))
+          (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define check-range
   (lambda (a_0 b_0 step_0)
     (begin
@@ -1788,42 +1739,13 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (not
-        (pair?
-         (|#%app|
-          (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-          v_0
-          0))))
-     (lambda (v_0)
-       (car
-        (|#%app|
-         (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (let ((app_0 make-list-stream))
-         (|#%app|
-          app_0
-          (cdr
-           (|#%app|
-            (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-            v_0
-            0)))))))
+     (lambda (v_0) (not (pair? (|#%app| list-stream-ref v_0 0))))
+     (lambda (v_0) (car (|#%app| list-stream-ref v_0 0)))
+     (lambda (v_0) (make-list-stream (cdr (|#%app| list-stream-ref v_0 0))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (values
-       car
-       cdr
-       values
-       (|#%app|
-        (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-        v_0
-        0)
-       pair?
-       #f
-       #f))))))
+      (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define check-list
   (lambda (l_0)
     (if (list? l_0) (void) (raise-argument-error 'in-list "list?" l_0))))
@@ -1936,24 +1858,9 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         1)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         2))))))))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 0)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
 (define hash-keys
   (letrec ((loop_0
@@ -8374,7 +8281,7 @@
                imports_0
                mutated_0))
             #f))))))
-(define pure-properties-list?
+(define pure-properties-list
   (lambda (e_0 prim-knowns_0 knowns_0 imports_0 mutated_0 simples_0)
     (let ((hd_0
            (let ((p_0 (unwrap e_0))) (if (pair? p_0) (unwrap (car p_0)) #f))))
@@ -8523,67 +8430,70 @@
                (args (raise-binding-result-arity-error 2 args))))))
          (case-lambda
           ((props_0 vals_0)
-           (begin
-             (letrec*
-              ((for-loop_0
-                (|#%name|
-                 for-loop
-                 (lambda (result_0 lst_0 lst_1)
-                   (begin
-                     (if (if (pair? lst_0) (pair? lst_1) #f)
-                       (let ((prop_0 (unsafe-car lst_0)))
-                         (let ((rest_0 (unsafe-cdr lst_0)))
-                           (let ((val_0 (unsafe-car lst_1)))
-                             (let ((rest_1 (unsafe-cdr lst_1)))
-                               (let ((result_1
-                                      (let ((result_1
-                                             (let ((u-prop_0 (unwrap prop_0)))
-                                               (if (symbol? u-prop_0)
-                                                 (if (known-struct-type-property/immediate-guard?
-                                                      (begin-unsafe
-                                                       (call-with-values
-                                                        (lambda ()
-                                                          (find-known+import
-                                                           u-prop_0
-                                                           prim-knowns_0
-                                                           knowns_0
-                                                           imports_0
-                                                           mutated_0))
-                                                        (case-lambda
-                                                         ((k_0 im_0) k_0)
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args))))))
-                                                   (simple?.1
-                                                    #t
-                                                    1
-                                                    val_0
-                                                    prim-knowns_0
-                                                    knowns_0
-                                                    imports_0
-                                                    mutated_0
-                                                    simples_0)
-                                                   #f)
-                                                 #f))))
-                                        (values result_1))))
-                                 (if (if (not
-                                          (let ((x_0 (list prop_0)))
-                                            (not result_1)))
-                                       (if (not
-                                            (let ((x_0 (list val_0)))
-                                              (not result_1)))
-                                         #t
-                                         #f)
-                                       #f)
-                                   (for-loop_0 result_1 rest_0 rest_1)
-                                   result_1))))))
-                       result_0))))))
-              (for-loop_0 #t props_0 vals_0))))
+           (if (begin
+                 (letrec*
+                  ((for-loop_0
+                    (|#%name|
+                     for-loop
+                     (lambda (result_0 lst_0 lst_1)
+                       (begin
+                         (if (if (pair? lst_0) (pair? lst_1) #f)
+                           (let ((prop_0 (unsafe-car lst_0)))
+                             (let ((rest_0 (unsafe-cdr lst_0)))
+                               (let ((val_0 (unsafe-car lst_1)))
+                                 (let ((rest_1 (unsafe-cdr lst_1)))
+                                   (let ((result_1
+                                          (let ((result_1
+                                                 (let ((u-prop_0
+                                                        (unwrap prop_0)))
+                                                   (if (symbol? u-prop_0)
+                                                     (if (known-struct-type-property/immediate-guard?
+                                                          (begin-unsafe
+                                                           (call-with-values
+                                                            (lambda ()
+                                                              (find-known+import
+                                                               u-prop_0
+                                                               prim-knowns_0
+                                                               knowns_0
+                                                               imports_0
+                                                               mutated_0))
+                                                            (case-lambda
+                                                             ((k_0 im_0) k_0)
+                                                             (args
+                                                              (raise-binding-result-arity-error
+                                                               2
+                                                               args))))))
+                                                       (simple?.1
+                                                        #t
+                                                        1
+                                                        val_0
+                                                        prim-knowns_0
+                                                        knowns_0
+                                                        imports_0
+                                                        mutated_0
+                                                        simples_0)
+                                                       #f)
+                                                     #f))))
+                                            (values result_1))))
+                                     (if (if (not
+                                              (let ((x_0 (list prop_0)))
+                                                (not result_1)))
+                                           (if (not
+                                                (let ((x_0 (list val_0)))
+                                                  (not result_1)))
+                                             #t
+                                             #f)
+                                           #f)
+                                       (for-loop_0 result_1 rest_0 rest_1)
+                                       result_1))))))
+                           result_0))))))
+                  (for-loop_0 #t props_0 vals_0)))
+             vals_0
+             #f))
           (args (raise-binding-result-arity-error 2 args))))
         (if (begin-unsafe
              (let ((app_0 (unwrap 'null))) (eq? app_0 (unwrap e_0))))
-          #t
+          null
           (if (if (eq? 'quote hd_0)
                 (let ((a_0 (cdr (unwrap e_0))))
                   (let ((p_0 (unwrap a_0)))
@@ -8599,7 +8509,7 @@
                         #f)
                       #f)))
                 #f)
-            #t
+            null
             #f))))))
 (define extract-struct-typed-from-checked
   (lambda (e_0)
@@ -18461,26 +18371,58 @@
                                                                                (unsafe-cdr
                                                                                 lst_2)))
                                                                           (begin
-                                                                            (if (if (=
-                                                                                     pos_0
-                                                                                     0)
-                                                                                  (pure-properties-list?
-                                                                                   e_0
-                                                                                   prim-knowns_0
-                                                                                   knowns_1
-                                                                                   imports_0
-                                                                                   mutated_0
-                                                                                   simples_0)
-                                                                                  #f)
-                                                                              (void)
-                                                                              (find-mutated!
-                                                                               e_0
-                                                                               ids_0
-                                                                               prim-knowns_0
-                                                                               knowns_1
-                                                                               imports_0
-                                                                               mutated_0
-                                                                               simples_0))
+                                                                            (let ((prop-vals_0
+                                                                                   (if (=
+                                                                                        pos_0
+                                                                                        0)
+                                                                                     (pure-properties-list
+                                                                                      e_0
+                                                                                      prim-knowns_0
+                                                                                      knowns_1
+                                                                                      imports_0
+                                                                                      mutated_0
+                                                                                      simples_0)
+                                                                                     #f)))
+                                                                              (if prop-vals_0
+                                                                                (begin
+                                                                                  (begin
+                                                                                    (letrec*
+                                                                                     ((for-loop_2
+                                                                                       (|#%name|
+                                                                                        for-loop
+                                                                                        (lambda (lst_3)
+                                                                                          (begin
+                                                                                            (if (pair?
+                                                                                                 lst_3)
+                                                                                              (let ((e_1
+                                                                                                     (unsafe-car
+                                                                                                      lst_3)))
+                                                                                                (let ((rest_2
+                                                                                                       (unsafe-cdr
+                                                                                                        lst_3)))
+                                                                                                  (begin
+                                                                                                    (find-mutated!
+                                                                                                     e_1
+                                                                                                     ids_0
+                                                                                                     prim-knowns_0
+                                                                                                     knowns_1
+                                                                                                     imports_0
+                                                                                                     mutated_0
+                                                                                                     simples_0)
+                                                                                                    (for-loop_2
+                                                                                                     rest_2))))
+                                                                                              (values)))))))
+                                                                                     (for-loop_2
+                                                                                      prop-vals_0)))
+                                                                                  (void))
+                                                                                (find-mutated!
+                                                                                 e_0
+                                                                                 ids_0
+                                                                                 prim-knowns_0
+                                                                                 knowns_1
+                                                                                 imports_0
+                                                                                 mutated_0
+                                                                                 simples_0)))
                                                                             (for-loop_1
                                                                              rest_1
                                                                              (+
@@ -18700,7 +18642,15 @@
                                                 mutated_0
                                                 id_1
                                                 force_0)
-                                               (force_0))))
+                                               (if (procedure? m_0)
+                                                 (hash-set!
+                                                  mutated_0
+                                                  id_1
+                                                  (lambda ()
+                                                    (begin
+                                                      (|#%app| m_0)
+                                                      (force_0))))
+                                                 (force_0)))))
                                          (for-loop_0 rest_0))))
                                    (values)))))))
                           (for-loop_0 ids_0)))
@@ -20052,8 +20002,32 @@
                                                                          (raise-binding-result-arity-error
                                                                           2
                                                                           args)))))))
-                                                                (if (known-constructor?
-                                                                     v_1)
+                                                                (if (let ((or-part_0
+                                                                           (known-constructor?
+                                                                            v_1)))
+                                                                      (if or-part_0
+                                                                        or-part_0
+                                                                        (let ((or-part_1
+                                                                               (eq?
+                                                                                rator_1
+                                                                                'cons)))
+                                                                          (if or-part_1
+                                                                            or-part_1
+                                                                            (let ((or-part_2
+                                                                                   (eq?
+                                                                                    rator_1
+                                                                                    'list)))
+                                                                              (if or-part_2
+                                                                                or-part_2
+                                                                                (let ((or-part_3
+                                                                                       (eq?
+                                                                                        rator_1
+                                                                                        'vector)))
+                                                                                  (if or-part_3
+                                                                                    or-part_3
+                                                                                    (eq?
+                                                                                     rator_1
+                                                                                     'make-struct-type-property)))))))))
                                                                   (let ((app_0
                                                                          (known-procedure-arity-mask
                                                                           v_1)))
@@ -20185,14 +20159,20 @@
                                                            (|#%app| state_0)))
                                                        (void))))
                                                  (void))))))))))))))))))))))
-    (lambda (v_0 ids_0 prim-knowns_0 knowns_0 imports_0 mutated_0 simples_0)
+    (lambda (top-v_0
+             ids_0
+             prim-knowns_0
+             knowns_0
+             imports_0
+             mutated_0
+             simples_0)
       (find-mutated!_0
        imports_0
        knowns_0
        mutated_0
        prim-knowns_0
        simples_0
-       v_0
+       top-v_0
        ids_0))))
 (define update-mutated-state!
   (lambda (l_0 mut-l_0 mutated_0)
@@ -58038,8 +58018,20 @@
             (|#%name|
              body-leftover-size
              (lambda (body_0 size_0)
-               (begin (begin (for-loop_1 size_0 body_0))))))
+               (begin (begin (for-loop_2 size_0 body_0))))))
            (for-loop_0
+            (|#%name|
+             for-loop
+             (lambda (len_0 vec_0 size_0 pos_0)
+               (begin
+                 (if (unsafe-fx< pos_0 len_0)
+                   (let ((v_0 (unsafe-vector-ref vec_0 pos_0)))
+                     (if (<= size_0 0)
+                       size_0
+                       (let ((size_1 (s-expr-leftover-size_0 v_0 size_0)))
+                         (next-k-proc_1 len_0 pos_0 vec_0 size_1))))
+                   size_0)))))
+           (for-loop_1
             (|#%name|
              for-loop
              (lambda (v_0 size_0 i_0)
@@ -58058,7 +58050,7 @@
                           (next-k-proc_2 i_0 v_0 size_1))))
                      (args (raise-binding-result-arity-error 2 args))))
                    size_0)))))
-           (for-loop_1
+           (for-loop_2
             (|#%name|
              for-loop
              (lambda (size_0 lst_0)
@@ -58077,19 +58069,7 @@
                            size_0
                            (let ((size_1 (leftover-size_0 e_1 size_0)))
                              (begin-unsafe
-                              (begin (for-loop_1 size_1 rest_0))))))))
-                   size_0)))))
-           (for-loop_2
-            (|#%name|
-             for-loop
-             (lambda (len_0 vec_0 size_0 pos_0)
-               (begin
-                 (if (unsafe-fx< pos_0 len_0)
-                   (let ((v_0 (unsafe-vector-ref vec_0 pos_0)))
-                     (if (<= size_0 0)
-                       size_0
-                       (let ((size_1 (s-expr-leftover-size_0 v_0 size_0)))
-                         (next-k-proc_1 len_0 pos_0 vec_0 size_1))))
+                              (begin (for-loop_2 size_1 rest_0))))))))
                    size_0)))))
            (leftover-size_0
             (|#%name|
@@ -58815,17 +58795,17 @@
            (next-k-proc_0
             (|#%name|
              next-k-proc
-             (lambda (rest_0 size_0) (begin (for-loop_1 size_0 rest_0)))))
+             (lambda (rest_0 size_0) (begin (for-loop_2 size_0 rest_0)))))
            (next-k-proc_1
             (|#%name|
              next-k-proc
              (lambda (len_0 pos_0 vec_0 size_0)
-               (begin (for-loop_2 len_0 vec_0 size_0 (unsafe-fx+ 1 pos_0))))))
+               (begin (for-loop_0 len_0 vec_0 size_0 (unsafe-fx+ 1 pos_0))))))
            (next-k-proc_2
             (|#%name|
              next-k-proc
              (lambda (i_0 v_0 size_0)
-               (begin (for-loop_0 v_0 size_0 (hash-iterate-next v_0 i_0))))))
+               (begin (for-loop_1 v_0 size_0 (hash-iterate-next v_0 i_0))))))
            (s-expr-leftover-size_0
             (|#%name|
              s-expr-leftover-size
@@ -58852,14 +58832,14 @@
                            ((vec_0 len_0)
                             (begin
                               #f
-                              (for-loop_2 len_0 vec_0 (sub1 size_0) 0)))
+                              (for-loop_0 len_0 vec_0 (sub1 size_0) 0)))
                            (args (raise-binding-result-arity-error 2 args))))
                          (if (prefab-struct-key v_0)
                            (s-expr-leftover-size_0 (struct->vector v_0) size_0)
                            (if (hash? v_0)
                              (begin
                                (let ((app_0 (sub1 size_0)))
-                                 (for-loop_0
+                                 (for-loop_1
                                   v_0
                                   app_0
                                   (hash-iterate-first v_0))))

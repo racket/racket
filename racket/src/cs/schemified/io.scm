@@ -2127,70 +2127,21 @@
     prop:stream
     (vector
      (lambda (v_0)
-       (let ((cont?_0
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2)))
-         (if cont?_0
-           (not
-            (|#%app|
-             cont?_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              0)))
-           #f)))
+       (let ((cont?_0 (|#%app| range-ref v_0 2)))
+         (if cont?_0 (not (|#%app| cont?_0 (|#%app| range-ref v_0 0))) #f)))
+     (lambda (v_0) (|#%app| range-ref v_0 0))
      (lambda (v_0)
-       (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 0))
-     (lambda (v_0)
-       (let ((app_0 make-range))
-         (let ((app_1
-                (let ((app_1
-                       (|#%app|
-                        (check-not-unsafe-undefined range-ref 'range-ref)
-                        v_0
-                        1)))
-                  (|#%app|
-                   app_1
-                   (|#%app|
-                    (check-not-unsafe-undefined range-ref 'range-ref)
-                    v_0
-                    0)))))
-           (let ((app_2
-                  (|#%app|
-                   (check-not-unsafe-undefined range-ref 'range-ref)
-                   v_0
-                   1)))
-             (|#%app|
-              app_0
-              app_1
-              app_2
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2))))))))
+       (let ((app_0
+              (let ((app_0 (|#%app| range-ref v_0 1)))
+                (|#%app| app_0 (|#%app| range-ref v_0 0)))))
+         (let ((app_1 (|#%app| range-ref v_0 1)))
+           (make-range app_0 app_1 (|#%app| range-ref v_0 2)))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (let ((app_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              1)))
-        (let ((app_1
-               (|#%app|
-                (check-not-unsafe-undefined range-ref 'range-ref)
-                v_0
-                0)))
-          (values
-           values
-           #f
-           app_0
-           app_1
-           (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 2)
-           #f
-           #f))))))))
+      (let ((app_0 (|#%app| range-ref v_0 1)))
+        (let ((app_1 (|#%app| range-ref v_0 0)))
+          (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define check-range
   (lambda (a_0 b_0 step_0)
     (begin
@@ -2220,42 +2171,13 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (not
-        (pair?
-         (|#%app|
-          (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-          v_0
-          0))))
-     (lambda (v_0)
-       (car
-        (|#%app|
-         (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (let ((app_0 make-list-stream))
-         (|#%app|
-          app_0
-          (cdr
-           (|#%app|
-            (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-            v_0
-            0)))))))
+     (lambda (v_0) (not (pair? (|#%app| list-stream-ref v_0 0))))
+     (lambda (v_0) (car (|#%app| list-stream-ref v_0 0)))
+     (lambda (v_0) (make-list-stream (cdr (|#%app| list-stream-ref v_0 0))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (values
-       car
-       cdr
-       values
-       (|#%app|
-        (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-        v_0
-        0)
-       pair?
-       #f
-       #f))))))
+      (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define check-list
   (lambda (l_0)
     (if (list? l_0) (void) (raise-argument-error 'in-list "list?" l_0))))
@@ -2366,24 +2288,9 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         1)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         2))))))))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 0)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
 (define map_2960
   (|#%name|
@@ -4326,7 +4233,7 @@
   (lambda (v_0 sti_0)
     (begin
       (if (let ((or-part_0 (exact-nonnegative-integer? v_0)))
-            (if or-part_0 or-part_0 (|#%app| 1/input-port? v_0)))
+            (if or-part_0 or-part_0 (1/input-port? v_0)))
         (void)
         (raise-argument-error
          'prop:input-port
@@ -4341,14 +4248,13 @@
    (cons
     prop:input-port-evt
     (lambda (i_0)
-      (input-port-evt-ref
-       (|#%app| ->core-input-port.1 unsafe-undefined i_0 #f)))))))
+      (input-port-evt-ref (->core-input-port.1 unsafe-undefined i_0 #f)))))))
 (define 1/input-port?
   (|#%name|
    input-port?
    (lambda (p_0)
      (begin
-       (let ((or-part_0 (|#%app| core-input-port? p_0)))
+       (let ((or-part_0 (core-input-port? p_0)))
          (if or-part_0 or-part_0 (input-port-via-property? p_0)))))))
 (define ->core-input-port.1
   (|#%name|
@@ -4359,7 +4265,7 @@
               (if (eq? default1_0 unsafe-undefined)
                 empty-input-port
                 default1_0)))
-         (if (|#%app| core-input-port? v4_0)
+         (if (core-input-port? v4_0)
            v4_0
            (let ((c1_0 (input-port-ref v4_0 #f)))
              (if c1_0
@@ -4696,7 +4602,7 @@
   (lambda (v_0 sti_0)
     (begin
       (if (let ((or-part_0 (exact-nonnegative-integer? v_0)))
-            (if or-part_0 or-part_0 (|#%app| 1/output-port? v_0)))
+            (if or-part_0 or-part_0 (1/output-port? v_0)))
         (void)
         (raise-argument-error
          'prop:output-port
@@ -4711,14 +4617,13 @@
    (cons
     prop:output-port-evt
     (lambda (o_0)
-      (output-port-evt-ref
-       (|#%app| ->core-output-port.1 unsafe-undefined o_0 #f)))))))
+      (output-port-evt-ref (->core-output-port.1 unsafe-undefined o_0 #f)))))))
 (define 1/output-port?
   (|#%name|
    output-port?
    (lambda (p_0)
      (begin
-       (let ((or-part_0 (|#%app| core-output-port? p_0)))
+       (let ((or-part_0 (core-output-port? p_0)))
          (if or-part_0 or-part_0 (output-port-via-property? p_0)))))))
 (define ->core-output-port.1
   (|#%name|
@@ -4729,7 +4634,7 @@
               (if (eq? default1_0 unsafe-undefined)
                 empty-output-port
                 default1_0)))
-         (if (|#%app| core-output-port? v4_0)
+         (if (core-output-port? v4_0)
            v4_0
            (let ((c1_0 (output-port-ref v4_0 #f)))
              (if c1_0
@@ -6653,7 +6558,7 @@
     (if (core-port-closed? cp_0)
       (begin
         (unsafe-end-atomic)
-        (let ((input?_0 (|#%app| core-input-port? cp_0)))
+        (let ((input?_0 (core-input-port? cp_0)))
           (let ((app_0
                  (if input?_0 "input port is closed" "output port is closed")))
             (raise-arguments-error
@@ -10438,7 +10343,7 @@
    #f
    3
    7))
-(define effect_2504
+(define effect_2195
   (struct-type-install-properties!
    struct:fd-input-port
    'fd-input-port
@@ -10450,7 +10355,7 @@
     (cons
      prop:place-message
      (lambda (port_0) (lambda () (|#%app| fd-port->place-message port_0))))
-    (cons prop:file-stream (lambda (p_0) (|#%app| fd-input-port-fd p_0))))
+    (cons prop:file-stream (lambda (p_0) (fd-input-port-fd p_0))))
    (current-inspector)
    #f
    '()
@@ -10636,7 +10541,7 @@
                            (fd-input-port-methods-on-close.1
                             (core-port-vtable this-id_0))
                            this-id_0)
-                          (let ((fd75_0 (|#%app| fd-input-port-fd this-id_0)))
+                          (let ((fd75_0 (fd-input-port-fd this-id_0)))
                             (let ((fd-refcount76_0
                                    (fd-input-port-fd-refcount this-id_0)))
                               (let ((fd75_1 fd75_0))
@@ -10657,7 +10562,7 @@
                                (let ((app_8 get-file-position))
                                  (|#%app|
                                   app_8
-                                  (|#%app| fd-input-port-fd this-id_0)))))
+                                  (fd-input-port-fd this-id_0)))))
                           (if pos_0 (temp8.1 this-id_0 pos_0) #f))))
                      ((this-id_0 pos77_0)
                       (begin
@@ -10665,7 +10570,7 @@
                         (let ((app_8 set-file-position))
                           (|#%app|
                            app_8
-                           (|#%app| fd-input-port-fd this-id_0)
+                           (fd-input-port-fd this-id_0)
                            pos77_0))))))
                    app_2
                    app_3
@@ -10687,7 +10592,7 @@
                                (|#%app|
                                 rktio_read_in
                                 (unsafe-place-local-ref cell.1)
-                                (|#%app| fd-input-port-fd this-id_0)
+                                (fd-input-port-fd this-id_0)
                                 dest-bstr133_0
                                 start134_0
                                 end135_0)))
@@ -10704,14 +10609,14 @@
                               (if (eqv? n_0 0)
                                 (let ((or-part_0
                                        (fd-semaphore-update!
-                                        (|#%app| fd-input-port-fd this-id_0)
+                                        (fd-input-port-fd this-id_0)
                                         'read)))
                                   (if or-part_0
                                     or-part_0
                                     (let ((app_8 fd-evt44.1))
                                       (|#%app|
                                        app_8
-                                       (|#%app| fd-input-port-fd this-id_0)
+                                       (fd-input-port-fd this-id_0)
                                        1
                                        this-id_0))))
                                 n_0)))))))
@@ -10768,7 +10673,7 @@
               (if (eq? custodian14_0 unsafe-undefined)
                 (current-custodian)
                 custodian14_0)))
-         (let ((fd_0 (|#%app| fd-input-port-fd p16_0)))
+         (let ((fd_0 (fd-input-port-fd p16_0)))
            (let ((fd-refcount_0 (fd-input-port-fd-refcount p16_0)))
              (begin
                (set-fd-input-port-custodian-reference!
@@ -10784,7 +10689,7 @@
    #f
    8
    255))
-(define effect_2781
+(define effect_2068
   (struct-type-install-properties!
    struct:fd-output-port
    'fd-output-port
@@ -10805,7 +10710,7 @@
                 (|#%app|
                  rktio_set_file_size
                  (unsafe-place-local-ref cell.1)
-                 (|#%app| fd-output-port-fd p_0)
+                 (fd-output-port-fd p_0)
                  pos_0)))
            (if (vector? result_0)
              (begin
@@ -10820,7 +10725,7 @@
                            base-msg_0)))
                      (|#%app| exn:fail app_0 (current-continuation-marks)))))))
              (void))))))
-    (cons prop:file-stream (lambda (p_0) (|#%app| fd-output-port-fd p_0))))
+    (cons prop:file-stream (lambda (p_0) (fd-output-port-fd p_0))))
    (current-inspector)
    #f
    '()
@@ -11077,7 +10982,7 @@
                          (fd-output-port-flush-handle this-id_0))
                         (void))
                       (set-fd-output-port-bstr! this-id_0 #f)
-                      (let ((fd255_0 (|#%app| fd-output-port-fd this-id_0)))
+                      (let ((fd255_0 (fd-output-port-fd this-id_0)))
                         (let ((fd-refcount256_0
                                (fd-output-port-fd-refcount this-id_0)))
                           (let ((fd255_1 fd255_0))
@@ -11096,9 +11001,7 @@
               (begin
                 (let ((pos_0
                        (let ((app_4 get-file-position))
-                         (|#%app|
-                          app_4
-                          (|#%app| fd-output-port-fd this-id_0)))))
+                         (|#%app| app_4 (fd-output-port-fd this-id_0)))))
                   (let ((b_0 (core-port-buffer this-id_0)))
                     (if pos_0
                       (+
@@ -11116,10 +11019,7 @@
                   (void)
                   (check-not-closed 'file-position this-id_0))
                 (let ((app_4 set-file-position))
-                  (|#%app|
-                   app_4
-                   (|#%app| fd-output-port-fd this-id_0)
-                   pos257_0))))))
+                  (|#%app| app_4 (fd-output-port-fd this-id_0) pos257_0))))))
            (|#%name|
             buffer-mode
             (case-lambda
@@ -11199,7 +11099,7 @@
                                  (|#%app|
                                   rktio_write_in
                                   (unsafe-place-local-ref cell.1)
-                                  (|#%app| fd-output-port-fd this-id_0)
+                                  (fd-output-port-fd this-id_0)
                                   src-bstr369_0
                                   src-start370_0
                                   src-end371_0)))
@@ -11286,7 +11186,7 @@
            (|#%app|
             rktio_poll_write_flushed
             (unsafe-place-local-ref cell.1)
-            (|#%app| fd-output-port-fd this-id_0))))))))
+            (fd-output-port-fd this-id_0))))))))
 (define temp18.1
   (|#%name|
    flush-buffer
@@ -11298,7 +11198,7 @@
               (let ((app_0 (fd-output-port-start-pos this-id_0)))
                 (fx= app_0 (fd-output-port-end-pos this-id_0))))
            (let ((n_0
-                  (let ((app_0 (|#%app| fd-output-port-fd this-id_0)))
+                  (let ((app_0 (fd-output-port-fd this-id_0)))
                     (let ((app_1 (fd-output-port-bstr this-id_0)))
                       (let ((app_2 (fd-output-port-start-pos this-id_0)))
                         (|#%app|
@@ -11495,7 +11395,7 @@
                 (if (eq? custodian39_0 unsafe-undefined)
                   (current-custodian)
                   custodian39_0)))
-           (let ((fd_0 (|#%app| fd-output-port-fd p42_0)))
+           (let ((fd_0 (fd-output-port-fd p42_0)))
              (let ((fd-refcount_0 (fd-output-port-fd-refcount p42_0)))
                (let ((evt_0 (|#%app| fd-evt44.1 fd_0 2 p42_0)))
                  (let ((flush-handle_0
@@ -11536,8 +11436,8 @@
            (let ((or-part_0 (->core-input-port.1 #f p_0 #f)))
              (if or-part_0 or-part_0 (->core-output-port.1 #f p_0 #f)))))
       (if (fd-input-port? cp_0)
-        (|#%app| fd-input-port-fd cp_0)
-        (if (fd-output-port? cp_0) (|#%app| fd-output-port-fd cp_0) #f)))))
+        (fd-input-port-fd cp_0)
+        (if (fd-output-port? cp_0) (fd-output-port-fd cp_0) #f)))))
 (define 1/port-waiting-peer?
   (|#%name|
    port-waiting-peer?
@@ -11732,7 +11632,7 @@
     (void)))
 (define struct:rktio-fd-flushed-evt
   (make-record-type-descriptor* 'rktio-fd-flushed-evt #f #f #f #f 1 0))
-(define effect_2959
+(define effect_2495
   (struct-type-install-properties!
    struct:rktio-fd-flushed-evt
    'rktio-fd-flushed-evt
@@ -11760,7 +11660,7 @@
                    (|#%app|
                     rktio_poll_add
                     (unsafe-place-local-ref cell.1)
-                    (|#%app| fd-output-port-fd p_0)
+                    (fd-output-port-fd p_0)
                     ps_0
                     8))))
               (values #f (list ffe_0)))))))))
@@ -12547,7 +12447,7 @@
                  (loop_0 pos_0))))))))))
 (define struct:progress-evt
   (make-record-type-descriptor* 'progress-evt #f #f #f #f 2 0))
-(define effect_2604
+(define effect_2813
   (struct-type-install-properties!
    struct:progress-evt
    'progress-evt
@@ -12557,8 +12457,7 @@
    (list
     (cons
      prop:evt
-     (lambda (pe_0)
-       (wrap-evt (|#%app| progress-evt-evt pe_0) (lambda args_0 pe_0)))))
+     (lambda (pe_0) (wrap-evt (progress-evt-evt pe_0) (lambda args_0 pe_0)))))
    (current-inspector)
    #f
    '(0 1)
@@ -12727,7 +12626,7 @@
                            app_0
                            in_1
                            amt4_0
-                           (|#%app| progress-evt-evt progress-evt5_0)
+                           (progress-evt-evt progress-evt5_0)
                            evt6_0
                            (lambda (bstr_0)
                              (port-count!
@@ -12757,7 +12656,7 @@
        in_0))))
 (define unwrap-progress-evt
   (lambda (progress-evt_0)
-    (if progress-evt_0 (|#%app| progress-evt-evt progress-evt_0) #f)))
+    (if progress-evt_0 (progress-evt-evt progress-evt_0) #f)))
 (define 1/flush-output
   (let ((flush-output_0
          (|#%name|
@@ -18172,7 +18071,7 @@
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
 (define struct:path (make-record-type-descriptor* 'path #f #f #f #f 2 0))
-(define effect_2407
+(define effect_2481
   (struct-type-install-properties!
    struct:path
    'path
@@ -18185,28 +18084,24 @@
      prop:equal+hash
      (list
       (lambda (p1_0 p2_0 eql?_0)
-        (let ((app_0 (|#%app| path-bytes p1_0)))
-          (|#%app| eql?_0 app_0 (|#%app| path-bytes p2_0))))
-      (lambda (p_0 hc_0) (|#%app| hc_0 (|#%app| path-bytes p_0)))
-      (lambda (p_0 hc_0) (|#%app| hc_0 (|#%app| path-bytes p_0)))))
+        (let ((app_0 (path-bytes p1_0)))
+          (|#%app| eql?_0 app_0 (path-bytes p2_0))))
+      (lambda (p_0 hc_0) (|#%app| hc_0 (path-bytes p_0)))
+      (lambda (p_0 hc_0) (|#%app| hc_0 (path-bytes p_0)))))
     (cons
      1/prop:custom-write
      (lambda (p_0 port_0 mode_0)
        (begin
          (if mode_0
-           (if (eq?
-                (|#%app| path-convention p_0)
-                (system-path-convention-type))
+           (if (eq? (path-convention p_0) (system-path-convention-type))
              (1/write-string "#<path:" port_0)
              (begin
                (1/write-string "#<" port_0)
-               (1/write-string
-                (symbol->string (|#%app| path-convention p_0))
-                port_0)
+               (1/write-string (symbol->string (path-convention p_0)) port_0)
                (1/write-string "-path:" port_0)))
            (void))
          (1/write-string
-          (1/bytes->string/locale (|#%app| path-bytes p_0) '#\x3f)
+          (1/bytes->string/locale (path-bytes p_0) '#\x3f)
           port_0)
          (if mode_0 (1/write-string ">" port_0) (void))))))
    (current-inspector)
@@ -18266,7 +18161,7 @@
    (lambda (p_0)
      (begin
        (if (1/path? p_0)
-         (eq? (|#%app| path-convention p_0) (system-path-convention-type))
+         (eq? (path-convention p_0) (system-path-convention-type))
          #f)))))
 (define 1/path-for-some-system?
   (|#%name| path-for-some-system? (lambda (p_0) (begin (1/path? p_0)))))
@@ -19282,12 +19177,12 @@
        (begin
          (check-path-test-argument 'relative-path? p_0)
          (if (1/path? p_0)
-           (let ((tmp_0 (|#%app| path-convention p_0)))
+           (let ((tmp_0 (path-convention p_0)))
              (if (eq? tmp_0 'unix)
-               (let ((bstr_0 (|#%app| path-bytes p_0)))
+               (let ((bstr_0 (path-bytes p_0)))
                  (not (is-sep? (unsafe-bytes-ref bstr_0 0) 'unix)))
                (if (eq? tmp_0 'windows)
-                 (let ((p_1 (|#%app| path-bytes p_0)))
+                 (let ((p_1 (path-bytes p_0)))
                    (windows-relative-path-bytes? p_1))
                  (void))))
            (if (string? p_0)
@@ -19323,12 +19218,12 @@
        (begin
          (check-path-test-argument 'absolute-path? p_0)
          (if (1/path? p_0)
-           (let ((tmp_0 (|#%app| path-convention p_0)))
+           (let ((tmp_0 (path-convention p_0)))
              (if (eq? tmp_0 'unix)
-               (let ((bstr_0 (|#%app| path-bytes p_0)))
+               (let ((bstr_0 (path-bytes p_0)))
                  (is-sep? (unsafe-bytes-ref bstr_0 0) 'unix))
                (if (eq? tmp_0 'windows)
-                 (let ((p_1 (|#%app| path-bytes p_0)))
+                 (let ((p_1 (path-bytes p_0)))
                    (not (windows-relative-path-bytes? p_1)))
                  (void))))
            (if (string? p_0)
@@ -19352,12 +19247,12 @@
        (begin
          (check-path-test-argument 'complete-path? p_0)
          (if (1/path? p_0)
-           (let ((tmp_0 (|#%app| path-convention p_0)))
+           (let ((tmp_0 (path-convention p_0)))
              (if (eq? tmp_0 'unix)
-               (let ((bstr_0 (|#%app| path-bytes p_0)))
+               (let ((bstr_0 (path-bytes p_0)))
                  (is-sep? (unsafe-bytes-ref bstr_0 0) 'unix))
                (if (eq? tmp_0 'windows)
-                 (let ((p_1 (|#%app| path-bytes p_0)))
+                 (let ((p_1 (path-bytes p_0)))
                    (let ((bbq_0 (backslash-backslash-questionmark-kind p_1)))
                      (if bbq_0
                        (if (not (eq? bbq_0 'red)) (not (eq? bbq_0 'rel)) #f)
@@ -22806,7 +22701,7 @@
          (if (is-path? p_0)
            (void)
            (raise-argument-error 'path->string "path?" p_0))
-         (1/bytes->string/locale (|#%app| path-bytes p_0) '#\xfffd))))))
+         (1/bytes->string/locale (path-bytes p_0) '#\xfffd))))))
 (define print-named
   (lambda (what_0 v_0 mode_0 o_0 max-length_0)
     (let ((name_0 (object-name v_0)))
@@ -23588,8 +23483,7 @@
                                                        "#<eof>"
                                                        o_0
                                                        max-length_0)
-                                                      (if (|#%app|
-                                                           core-input-port?
+                                                      (if (core-input-port?
                                                            v_0)
                                                         (print-named
                                                          "input-port"
@@ -23597,8 +23491,7 @@
                                                          mode_0
                                                          o_0
                                                          max-length_0)
-                                                        (if (|#%app|
-                                                             core-output-port?
+                                                        (if (core-output-port?
                                                              v_0)
                                                           (print-named
                                                            "output-port"
@@ -24583,12 +24476,7 @@
      (lambda (first?1_0 p3_0 convention4_0 who5_0)
        (begin
          (if (1/path? p3_0)
-           (check_0
-            convention4_0
-            first?1_0
-            p3_0
-            who5_0
-            (|#%app| path-convention p3_0))
+           (check_0 convention4_0 first?1_0 p3_0 who5_0 (path-convention p3_0))
            (if (string? p3_0)
              (check_0
               convention4_0
@@ -24942,9 +24830,7 @@
       #vu8(46 46)
       (if (eq? p_0 'same)
         #vu8(46)
-        (if (1/path? p_0)
-          (|#%app| path-bytes p_0)
-          (1/string->bytes/locale p_0 63))))))
+        (if (1/path? p_0) (path-bytes p_0) (1/string->bytes/locale p_0 63))))))
 (define just-separators-after?
   (lambda (bstr_0 drive-len_0)
     (call-with-values
@@ -25627,16 +25513,13 @@
                    (let ((wrt-path_0
                           (->path
                            (if (procedure? wrt4_0) (|#%app| wrt4_0) wrt4_0))))
-                     (let ((drive_0
-                            (split-drive (|#%app| path-bytes wrt-path_0))))
+                     (let ((drive_0 (split-drive (path-bytes wrt-path_0))))
                        (1/build-path
                         (path1.1 drive_0 'windows)
                         p_0)))))))))))))
 (define convention-of-path
   (lambda (p_0)
-    (if (1/path? p_0)
-      (|#%app| path-convention p_0)
-      (system-path-convention-type))))
+    (if (1/path? p_0) (path-convention p_0) (system-path-convention-type))))
 (define current-directory$1
   (make-parameter
    (let ((tmp_0 (system-path-convention-type)))
@@ -25691,12 +25574,12 @@
              return
              (lambda (convention_0 p_0 bstr_0)
                (begin
-                 (if (eq? bstr_0 (|#%app| path-bytes p_0))
+                 (if (eq? bstr_0 (path-bytes p_0))
                    p_0
                    (path1.1 bstr_0 convention_0)))))))
     (lambda (p_0 convert-slashes?_0)
-      (let ((convention_0 (|#%app| path-convention p_0)))
-        (let ((bstr_0 (|#%app| path-bytes p_0)))
+      (let ((convention_0 (path-convention p_0)))
+        (let ((bstr_0 (path-bytes p_0)))
           (if (eq? convention_0 'unix)
             (return_0
              convention_0
@@ -25706,8 +25589,7 @@
               (if (backslash-backslash-questionmark? bstr_0)
                 (call-with-values
                  (lambda ()
-                   (parse-backslash-backslash-questionmark
-                    (|#%app| path-bytes p_0)))
+                   (parse-backslash-backslash-questionmark (path-bytes p_0)))
                  (case-lambda
                   ((kind_0
                     drive-len_0
@@ -26120,9 +26002,9 @@
    split
    (lambda (explode?1_0 p3_0)
      (begin
-       (if (not (eq? (|#%app| path-convention p3_0) 'windows))
+       (if (not (eq? (path-convention p3_0) 'windows))
          (split-after-drive.1 0 0 explode?1_0 unsafe-undefined #f #f #f p3_0)
-         (let ((bstr_0 (|#%app| path-bytes p3_0)))
+         (let ((bstr_0 (path-bytes p3_0)))
            (if (if (> (unsafe-bytes-length bstr_0) 2)
                  (if (is-sep? (unsafe-bytes-ref bstr_0 0) 'windows)
                    (is-sep? (unsafe-bytes-ref bstr_0 1) 'windows)
@@ -26225,11 +26107,11 @@
               (if (eq? keep-drive-end7_0 unsafe-undefined)
                 drive-end6_0
                 keep-drive-end7_0)))
-         (let ((convention_0 (|#%app| path-convention p19_0)))
+         (let ((convention_0 (path-convention p19_0)))
            (let ((bstr_0
                   (if len5_0
-                    (|#%app| path-bytes p19_0)
-                    (let ((temp61_0 (|#%app| path-bytes p19_0)))
+                    (path-bytes p19_0)
+                    (let ((temp61_0 (path-bytes p19_0)))
                       (clean-double-slashes.1
                        #f
                        #f
@@ -26556,13 +26438,11 @@
          (let ((p_0 (->path p-in_0)))
            (if (directory-path?.1 #t p_0)
              p_0
-             (let ((tmp_0 (|#%app| path-convention p_0)))
+             (let ((tmp_0 (path-convention p_0)))
                (if (eq? tmp_0 'unix)
-                 (path1.1 (bytes-append (|#%app| path-bytes p_0) #vu8(47)) 'unix)
+                 (path1.1 (bytes-append (path-bytes p_0) #vu8(47)) 'unix)
                  (if (eq? tmp_0 'windows)
-                   (path1.1
-                    (bytes-append (|#%app| path-bytes p_0) #vu8(92))
-                    'windows)
+                   (path1.1 (bytes-append (path-bytes p_0) #vu8(92)) 'windows)
                    (void)))))))))))
 (define directory-path?.1
   (letrec ((unixish-path-directory-path?_0
@@ -26613,9 +26493,9 @@
      directory-path?
      (lambda (require-sep?1_0 p3_0)
        (begin
-         (let ((bstr_0 (|#%app| path-bytes p3_0)))
+         (let ((bstr_0 (path-bytes p3_0)))
            (let ((len_0 (unsafe-bytes-length bstr_0)))
-             (let ((convention_0 (|#%app| path-convention p3_0)))
+             (let ((convention_0 (path-convention p3_0)))
                (if (eq? convention_0 'unix)
                  (unixish-path-directory-path?_0
                   bstr_0
@@ -26699,7 +26579,7 @@
             simplify-path-syntactically
             (lambda (who2_0 p3_0 use-filesystem1_0)
               (begin
-                (let ((convention_0 (|#%app| path-convention p3_0)))
+                (let ((convention_0 (path-convention p3_0)))
                   (begin
                     (if use-filesystem1_0
                       (if (eq? convention_0 (system-path-convention-type))
@@ -26764,7 +26644,7 @@
                    (eqv? b_0 92)
                    (is-sep? b_0 convention_0)))))))
     (lambda (p_0 convention_0)
-      (let ((bstr_0 (|#%app| path-bytes p_0)))
+      (let ((bstr_0 (path-bytes p_0)))
         (let ((len_0 (unsafe-bytes-length bstr_0)))
           (if (if (eq? convention_0 'windows)
                 (if (= len_0 2) (letter-drive-start? bstr_0 2) #f)
@@ -26892,16 +26772,14 @@
                                        (if new-as-dir?_0
                                          (path1.1
                                           (bytes-append
-                                           (|#%app| path-bytes rebuilt0-p_0)
+                                           (path-bytes rebuilt0-p_0)
                                            #vu8(92))
                                           'windows)
                                          rebuilt0-p_0)))
                                   (let ((rebuilt-bstr_0
-                                         (let ((app_0 path-bytes))
-                                           (|#%app|
-                                            app_0
-                                            (simplify-backslash-backslash-questionmark
-                                             rebuilt-p_0)))))
+                                         (path-bytes
+                                          (simplify-backslash-backslash-questionmark
+                                           rebuilt-p_0))))
                                     (if (bytes=? bstr_0 rebuilt-bstr_0)
                                       'simple
                                       'non-simple)))))))))
@@ -26911,7 +26789,7 @@
       (args (raise-binding-result-arity-error 5 args))))))
 (define unc-without-trailing-separator?
   (lambda (p_0)
-    (let ((bstr_0 (|#%app| path-bytes p_0)))
+    (let ((bstr_0 (path-bytes p_0)))
       (eqv? (parse-unc.1 #f #f bstr_0 0) (unsafe-bytes-length bstr_0)))))
 (define simplify-backslash-backslash-questionmark
   (letrec ((no-special-in-content?_0
@@ -26995,7 +26873,7 @@
                          (special-filename?.1 #t temp13_0))))
                    #f))))))
     (lambda (p_0)
-      (let ((bstr_0 (|#%app| path-bytes p_0)))
+      (let ((bstr_0 (path-bytes p_0)))
         (let ((len_0 (unsafe-bytes-length bstr_0)))
           (call-with-values
            (lambda () (parse-backslash-backslash-questionmark bstr_0))
@@ -27076,8 +26954,8 @@
         (bytes-append #vu8(92 92 63 92 85 78 67) (subbytes bstr_0 7))))))
 (define same-modulo-slashes?
   (lambda (p1_0 p2_0)
-    (let ((bstr1_0 (|#%app| path-bytes p1_0)))
-      (let ((bstr2_0 (|#%app| path-bytes p2_0)))
+    (let ((bstr1_0 (path-bytes p1_0)))
+      (let ((bstr2_0 (path-bytes p2_0)))
         (let ((len_0 (unsafe-bytes-length bstr1_0)))
           (if (fx= len_0 (unsafe-bytes-length bstr2_0))
             (letrec*
@@ -27551,13 +27429,11 @@
     (let ((p_1 (->path p_0)))
       (begin
         (if who_0 (1/security-guard-check-file who_0 p_1 guards_0) (void))
-        (let ((app_0 path-bytes))
-          (|#%app|
-           app_0
-           (handle-long-path
-            who_0
-            (let ((p_2 (path->complete-path.1 #f p_1 current-directory$1)))
-              (begin-unsafe (do-cleanse-path p_2 #t))))))))))
+        (path-bytes
+         (handle-long-path
+          who_0
+          (let ((p_2 (path->complete-path.1 #f p_1 current-directory$1)))
+            (begin-unsafe (do-cleanse-path p_2 #t)))))))))
 (define ->host/as-is
   (lambda (p_0 who_0 src_0)
     (let ((p_1 (->path p_0)))
@@ -27567,7 +27443,7 @@
             (1/security-guard-check-file-link who_0 src_0 p_1)
             (1/security-guard-check-file who_0 p_1 '(exists)))
           (void))
-        (|#%app| path-bytes p_1)))))
+        (path-bytes p_1)))))
 (define host->
   (lambda (s_0)
     (path1.1 (bytes->immutable-bytes s_0) (system-path-convention-type))))
@@ -27582,7 +27458,7 @@
 (define handle-long-path
   (lambda (who_0 p_0)
     (if (eq? (system-type) 'windows)
-      (let ((bstr_0 (|#%app| path-bytes p_0)))
+      (let ((bstr_0 (path-bytes p_0)))
         (if (if (> (unsafe-bytes-length bstr_0) 247)
               (not
                (if (fx= (unsafe-bytes-ref bstr_0 0) 92)
@@ -27594,7 +27470,7 @@
                  #f))
               #f)
           (let ((simple-p_0 (simplify-path-syntactically who_0 p_0 #f)))
-            (let ((simple-bstr_0 (|#%app| path-bytes simple-p_0)))
+            (let ((simple-bstr_0 (path-bytes simple-p_0)))
               (if (<= (unsafe-bytes-length simple-bstr_0) 247)
                 simple-p_0
                 (if (fx= (unsafe-bytes-ref simple-bstr_0 0) 92)
@@ -31334,7 +31210,7 @@
            (void)
            (raise-argument-error 'expand-user-path "path-string?" p_0))
          (let ((path_0 (->path p_0)))
-           (let ((bstr_0 (|#%app| path-bytes path_0)))
+           (let ((bstr_0 (path-bytes path_0)))
              (if (if (positive? (unsafe-bytes-length bstr_0))
                    (eqv? (unsafe-bytes-ref bstr_0 0) 126)
                    #f)
@@ -32139,7 +32015,7 @@
          (if (eq? (system-path-convention-type) 'unix)
            (string->path$1 "/")
            (let ((dir_0 (|#%app| 1/current-directory)))
-             (path1.1 (split-drive (|#%app| path-bytes dir_0)) 'windows))))))))
+             (path1.1 (split-drive (path-bytes dir_0)) 'windows))))))))
 (define make-guard-paths
   (lambda (who_0 normalize?_0)
     (lambda (path_0)
@@ -32203,11 +32079,7 @@
              (if or-part_0 or-part_0 (path-string? p_0)))
          (void)
          (raise-argument-error '_path "(or/c path-string? #f)" p_0))
-       (if p_0
-         (bytes-append
-          (let ((app_0 path-bytes)) (|#%app| app_0 (->path p_0)))
-          #vu8(0))
-         #f)))
+       (if p_0 (bytes-append (path-bytes (->path p_0)) #vu8(0)) #f)))
    (lambda (bstr_0)
      (if (check-not-unsafe-undefined bstr_0 'bstr_119)
        (path1.1
@@ -32247,7 +32119,7 @@
          (if (1/path? p_0)
            (void)
            (raise-argument-error 'path->bytes "path-for-some-system?" p_0))
-         (bytes-copy (|#%app| path-bytes p_0)))))))
+         (bytes-copy (path-bytes p_0)))))))
 (define 1/string->path-element
   (|#%name|
    string->path-element
@@ -32298,8 +32170,8 @@
    (lambda (try-quick?5_0 p7_0)
      (begin
        (if (1/path? p7_0)
-         (let ((bstr_0 (|#%app| path-bytes p7_0)))
-           (let ((convention_0 (|#%app| path-convention p7_0)))
+         (let ((bstr_0 (path-bytes p7_0)))
+           (let ((convention_0 (path-convention p7_0)))
              (if (let ((or-part_0 (not try-quick?5_0)))
                    (if or-part_0
                      or-part_0
@@ -32482,8 +32354,8 @@
            (bytes-copy (strip-//?/rel clean-p_0))))))))
 (define strip-//?/rel
   (lambda (elem-p_0)
-    (let ((bstr_0 (|#%app| path-bytes elem-p_0)))
-      (if (eq? (|#%app| path-convention elem-p_0) 'windows)
+    (let ((bstr_0 (path-bytes elem-p_0)))
+      (if (eq? (path-convention elem-p_0) 'windows)
         (strip-backslash-backslash-rel bstr_0)
         bstr_0))))
 (define 1/path<?
@@ -32499,8 +32371,7 @@
      (begin
        (if (is-path? p1_0) (void) (raise-argument-error 'path<? "path?" p1_0))
        (if (is-path? p2_0) (void) (raise-argument-error 'path<? "path?" p2_0))
-       (let ((app_0 (|#%app| path-bytes p1_0)))
-         (bytes<? app_0 (|#%app| path-bytes p2_0)))))
+       (let ((app_0 (path-bytes p1_0))) (bytes<? app_0 (path-bytes p2_0)))))
     ((p_0 . ps_0)
      (begin
        (if (is-path? p_0) (void) (raise-argument-error 'path<? "path?" p_0))
@@ -32517,11 +32388,11 @@
                      (if (is-path? p_1)
                        (void)
                        (raise-argument-error 'path<? "path?" p_1))
-                     (let ((bstr2_0 (|#%app| path-bytes p_1)))
+                     (let ((bstr2_0 (path-bytes p_1)))
                        (if (bytes<? bstr_0 bstr2_0)
                          (loop_0 bstr2_0 (cdr ps_1))
                          #f))))))))))
-        (loop_0 (|#%app| path-bytes p_0) ps_0)))))))
+        (loop_0 (path-bytes p_0) ps_0)))))))
 (define 1/path-convention-type
   (|#%name|
    path-convention-type
@@ -32534,7 +32405,7 @@
             'path-convention-type
             "path-for-some-system?"
             p_0))
-         (|#%app| path-convention p_0))))))
+         (path-convention p_0))))))
 (define utf-16-encode
   (lambda (s_0)
     (let ((surrogate-count_0
@@ -33293,8 +33164,8 @@
 (define relative-to-user-directory
   (lambda (p_0)
     (let ((dir_0 (current-directory-for-user$1)))
-      (let ((dir-bs_0 (|#%app| path-bytes dir_0)))
-        (let ((p-bs_0 (|#%app| path-bytes p_0)))
+      (let ((dir-bs_0 (path-bytes dir_0)))
+        (let ((p-bs_0 (path-bytes p_0)))
           (let ((dir-len_0 (unsafe-bytes-length dir-bs_0)))
             (let ((p-len_0 (unsafe-bytes-length p-bs_0)))
               (if (if (< dir-len_0 p-len_0)
@@ -33336,13 +33207,11 @@
                       (begin
                         (if (if (< i_0 p-len_0)
                               (let ((app_0 (unsafe-bytes-ref p-bs_0 i_0)))
-                                (is-sep? app_0 (|#%app| path-convention p_0)))
+                                (is-sep? app_0 (path-convention p_0)))
                               #f)
                           (loop_0 (fx+ i_0 1))
                           (let ((app_0 (subbytes p-bs_0 i_0)))
-                            (path1.1
-                             app_0
-                             (|#%app| path-convention p_0)))))))))
+                            (path1.1 app_0 (path-convention p_0)))))))))
                  (loop_0 dir-len_0))
                 p_0))))))))
 (define 1/srcloc->string
@@ -34508,8 +34377,7 @@
              (syslog-log-receiver4.1
               app_0
               (unsafe-place-local-ref cell.1)
-              (let ((app_1 path-bytes))
-                (|#%app| app_1 (1/find-system-path 'run-file)))))))
+              (path-bytes (1/find-system-path 'run-file))))))
       (begin
         (unsafe-start-atomic)
         (begin0
@@ -36127,11 +35995,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3745 unsafe-undefined)
+               (let ((lr3626 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3745
+                 (set! lr3626
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -36186,9 +36054,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3745 0))
-                 (set! command_0 (unsafe-vector*-ref lr3745 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3745 2))
+                 (set! group_0 (unsafe-vector*-ref lr3626 0))
+                 (set! command_0 (unsafe-vector*-ref lr3626 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3626 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)
@@ -36347,8 +36215,7 @@
                                                                                               63)
                                                                                              (if (1/path?
                                                                                                   arg_0)
-                                                                                               (|#%app|
-                                                                                                path-bytes
+                                                                                               (path-bytes
                                                                                                 arg_0)
                                                                                                arg_0))
                                                                                            fold-var_0)))
@@ -36820,7 +36687,7 @@
    #f
    1
    1))
-(define effect_2432
+(define effect_3035
   (struct-type-install-properties!
    struct:tcp-input-port
    'tcp-input-port
@@ -36832,7 +36699,7 @@
     (cons
      prop:fd-place-message-opener
      (lambda (fd_0 name_0)
-       (make-tcp-input-port.1 unsafe-undefined fd_0 name_0)))
+       (|#%app| make-tcp-input-port.1 unsafe-undefined fd_0 name_0)))
     (cons prop:file-stream #f))
    (current-inspector)
    #f
@@ -36963,7 +36830,7 @@
                                 (|#%app|
                                  rktio_socket_shutdown
                                  (unsafe-place-local-ref cell.1)
-                                 (|#%app| fd-input-port-fd this-id_0)
+                                 (fd-input-port-fd this-id_0)
                                  0)))))
                          (|#%name|
                           raise-read-error
@@ -37014,7 +36881,7 @@
    #f
    1
    1))
-(define effect_2320
+(define effect_2595
   (struct-type-install-properties!
    struct:tcp-output-port
    'tcp-output-port
@@ -37026,7 +36893,7 @@
     (cons
      prop:fd-place-message-opener
      (lambda (fd_0 name_0)
-       (make-tcp-output-port.1 unsafe-undefined fd_0 name_0)))
+       (|#%app| make-tcp-output-port.1 unsafe-undefined fd_0 name_0)))
     (cons prop:file-stream #f))
    (current-inspector)
    #f
@@ -37147,7 +37014,7 @@
                           (|#%app|
                            rktio_socket_shutdown
                            (unsafe-place-local-ref cell.1)
-                           (|#%app| fd-output-port-fd this-id_0)
+                           (fd-output-port-fd this-id_0)
                            1)))))
                    (|#%name|
                     raise-write-error
@@ -40657,8 +40524,7 @@
                               "\n  library: "
                               (if dll-name_0
                                 (1/bytes->string/locale
-                                 (let ((app_1 path-bytes))
-                                   (|#%app| app_1 (->path dll-name_0)))
+                                 (path-bytes (->path dll-name_0))
                                  '#\x3f)
                                 "[all opened]")))))
                       (if err-str_0

@@ -10,7 +10,7 @@
 (provide (struct-out struct-type-info)
          struct-type-info-rest-properties-list-pos
          make-struct-type-info
-         pure-properties-list?)
+         pure-properties-list)
 
 (struct struct-type-info (name parent
                                immediate-field-count
@@ -118,19 +118,20 @@
 
 ;; Check whether `e` has the shape of a property list that uses only
 ;; properties where the property doesn't have a guard or won't invoke
-;; a guarded procedure
-(define (pure-properties-list? e prim-knowns knowns imports mutated simples)
+;; a guarded procedure, and returns a list of value expressions.
+(define (pure-properties-list e prim-knowns knowns imports mutated simples)
   (match e
     [`(list (cons ,props ,vals) ...)
-     (for/and ([prop (in-list props)]
-               [val (in-list vals)])
-       (let ([u-prop (unwrap prop)])
-         (and (symbol? u-prop)
-              (or (known-struct-type-property/immediate-guard?
-                   (find-known u-prop prim-knowns knowns imports mutated)))
-              (simple? val prim-knowns knowns imports mutated simples))))]
-    [`null #t]
-    [`'() #t]
+     (and (for/and ([prop (in-list props)]
+                    [val (in-list vals)])
+            (let ([u-prop (unwrap prop)])
+              (and (symbol? u-prop)
+                   (or (known-struct-type-property/immediate-guard?
+                        (find-known u-prop prim-knowns knowns imports mutated)))
+                   (simple? val prim-knowns knowns imports mutated simples))))
+          vals)]
+    [`null null]
+    [`'() null]
     [`,_ #f]))
 
 ;; Recognide

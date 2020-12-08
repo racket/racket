@@ -80,70 +80,21 @@
     prop:stream
     (vector
      (lambda (v_0)
-       (let ((cont?_0
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2)))
-         (if cont?_0
-           (not
-            (|#%app|
-             cont?_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              0)))
-           #f)))
+       (let ((cont?_0 (|#%app| range-ref v_0 2)))
+         (if cont?_0 (not (|#%app| cont?_0 (|#%app| range-ref v_0 0))) #f)))
+     (lambda (v_0) (|#%app| range-ref v_0 0))
      (lambda (v_0)
-       (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 0))
-     (lambda (v_0)
-       (let ((app_0 make-range))
-         (let ((app_1
-                (let ((app_1
-                       (|#%app|
-                        (check-not-unsafe-undefined range-ref 'range-ref)
-                        v_0
-                        1)))
-                  (|#%app|
-                   app_1
-                   (|#%app|
-                    (check-not-unsafe-undefined range-ref 'range-ref)
-                    v_0
-                    0)))))
-           (let ((app_2
-                  (|#%app|
-                   (check-not-unsafe-undefined range-ref 'range-ref)
-                   v_0
-                   1)))
-             (|#%app|
-              app_0
-              app_1
-              app_2
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2))))))))
+       (let ((app_0
+              (let ((app_0 (|#%app| range-ref v_0 1)))
+                (|#%app| app_0 (|#%app| range-ref v_0 0)))))
+         (let ((app_1 (|#%app| range-ref v_0 1)))
+           (make-range app_0 app_1 (|#%app| range-ref v_0 2)))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (let ((app_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              1)))
-        (let ((app_1
-               (|#%app|
-                (check-not-unsafe-undefined range-ref 'range-ref)
-                v_0
-                0)))
-          (values
-           values
-           #f
-           app_0
-           app_1
-           (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 2)
-           #f
-           #f))))))))
+      (let ((app_0 (|#%app| range-ref v_0 1)))
+        (let ((app_1 (|#%app| range-ref v_0 0)))
+          (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define-values
  (struct:list-stream
   make-list-stream
@@ -160,42 +111,13 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (not
-        (pair?
-         (|#%app|
-          (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-          v_0
-          0))))
-     (lambda (v_0)
-       (car
-        (|#%app|
-         (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (let ((app_0 make-list-stream))
-         (|#%app|
-          app_0
-          (cdr
-           (|#%app|
-            (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-            v_0
-            0)))))))
+     (lambda (v_0) (not (pair? (|#%app| list-stream-ref v_0 0))))
+     (lambda (v_0) (car (|#%app| list-stream-ref v_0 0)))
+     (lambda (v_0) (make-list-stream (cdr (|#%app| list-stream-ref v_0 0))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (values
-       car
-       cdr
-       values
-       (|#%app|
-        (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-        v_0
-        0)
-       pair?
-       #f
-       #f))))))
+      (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define-values
  (struct:do-stream make-do-stream do-stream? do-stream-ref do-stream-set!)
  (make-struct-type
@@ -208,24 +130,9 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         1)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         2))))))))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 0)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
 (define struct:known-constant
   (make-record-type-descriptor*

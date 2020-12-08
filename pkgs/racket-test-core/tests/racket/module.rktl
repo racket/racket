@@ -3473,6 +3473,21 @@ case of module-leve bindings; it doesn't cover local bindings.
                                           [call/cc callcc])))))))
   )
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module regression-test-to-make-sure-property-procedure-mutation-is-seen racket/base
+  (struct foo2 (f g) #:transparent
+    #:property prop:equal+hash
+    (list (λ (a b recur) #f)
+          (λ (a recur) 0)
+          (λ (a recur) (set! here? #t) 0)))
+  
+  (define here? #f)
+  (void (equal-secondary-hash-code (foo2 0 "ggg"))))
+
+(dynamic-require ''regression-test-to-make-sure-property-procedure-mutation-is-seen #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

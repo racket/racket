@@ -269,70 +269,21 @@
     prop:stream
     (vector
      (lambda (v_0)
-       (let ((cont?_0
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2)))
-         (if cont?_0
-           (not
-            (|#%app|
-             cont?_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              0)))
-           #f)))
+       (let ((cont?_0 (|#%app| range-ref v_0 2)))
+         (if cont?_0 (not (|#%app| cont?_0 (|#%app| range-ref v_0 0))) #f)))
+     (lambda (v_0) (|#%app| range-ref v_0 0))
      (lambda (v_0)
-       (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 0))
-     (lambda (v_0)
-       (let ((app_0 make-range))
-         (let ((app_1
-                (let ((app_1
-                       (|#%app|
-                        (check-not-unsafe-undefined range-ref 'range-ref)
-                        v_0
-                        1)))
-                  (|#%app|
-                   app_1
-                   (|#%app|
-                    (check-not-unsafe-undefined range-ref 'range-ref)
-                    v_0
-                    0)))))
-           (let ((app_2
-                  (|#%app|
-                   (check-not-unsafe-undefined range-ref 'range-ref)
-                   v_0
-                   1)))
-             (|#%app|
-              app_0
-              app_1
-              app_2
-              (|#%app|
-               (check-not-unsafe-undefined range-ref 'range-ref)
-               v_0
-               2))))))))
+       (let ((app_0
+              (let ((app_0 (|#%app| range-ref v_0 1)))
+                (|#%app| app_0 (|#%app| range-ref v_0 0)))))
+         (let ((app_1 (|#%app| range-ref v_0 1)))
+           (make-range app_0 app_1 (|#%app| range-ref v_0 2)))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (let ((app_0
-             (|#%app|
-              (check-not-unsafe-undefined range-ref 'range-ref)
-              v_0
-              1)))
-        (let ((app_1
-               (|#%app|
-                (check-not-unsafe-undefined range-ref 'range-ref)
-                v_0
-                0)))
-          (values
-           values
-           #f
-           app_0
-           app_1
-           (|#%app| (check-not-unsafe-undefined range-ref 'range-ref) v_0 2)
-           #f
-           #f))))))))
+      (let ((app_0 (|#%app| range-ref v_0 1)))
+        (let ((app_1 (|#%app| range-ref v_0 0)))
+          (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define check-range$1
   (|#%name|
    check-range
@@ -365,42 +316,13 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (not
-        (pair?
-         (|#%app|
-          (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-          v_0
-          0))))
-     (lambda (v_0)
-       (car
-        (|#%app|
-         (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (let ((app_0 make-list-stream))
-         (|#%app|
-          app_0
-          (cdr
-           (|#%app|
-            (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-            v_0
-            0)))))))
+     (lambda (v_0) (not (pair? (|#%app| list-stream-ref v_0 0))))
+     (lambda (v_0) (car (|#%app| list-stream-ref v_0 0)))
+     (lambda (v_0) (make-list-stream (cdr (|#%app| list-stream-ref v_0 0))))))
    (cons
     prop:gen-sequence
     (lambda (v_0)
-      (values
-       car
-       cdr
-       values
-       (|#%app|
-        (check-not-unsafe-undefined list-stream-ref 'list-stream-ref)
-        v_0
-        0)
-       pair?
-       #f
-       #f))))))
+      (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define check-list
   (lambda (l_0)
     (if (list? l_0) (void) (raise-argument-error 'in-list "list?" l_0))))
@@ -505,24 +427,9 @@
    (cons
     prop:stream
     (vector
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         0)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         1)))
-     (lambda (v_0)
-       (|#%app|
-        (|#%app|
-         (check-not-unsafe-undefined do-stream-ref 'do-stream-ref)
-         v_0
-         2))))))))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 0)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
+     (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
 (define map_2960
   (|#%name|
@@ -7579,7 +7486,7 @@
             #f))))))
 (define struct:rx:regexp
   (make-record-type-descriptor* 'regexp #f #f #f #f 10 0))
-(define effect_2503
+(define effect_2093
   (struct-type-install-properties!
    struct:rx:regexp
    'regexp
@@ -7591,22 +7498,19 @@
      prop:equal+hash
      (list
       (lambda (a_0 b_0 eql?_0)
-        (if (let ((app_0 (|#%app| rx:regexp-px? a_0)))
-              (eq? app_0 (|#%app| rx:regexp-px? b_0)))
-          (let ((app_0 (|#%app| rx:regexp-source a_0)))
-            (equal? app_0 (|#%app| rx:regexp-source b_0)))
+        (if (let ((app_0 (rx:regexp-px? a_0))) (eq? app_0 (rx:regexp-px? b_0)))
+          (let ((app_0 (rx:regexp-source a_0)))
+            (equal? app_0 (rx:regexp-source b_0)))
           #f))
-      (lambda (a_0 hc_0) (|#%app| hc_0 (|#%app| rx:regexp-source a_0)))
-      (lambda (a_0 hc_0) (|#%app| hc_0 (|#%app| rx:regexp-source a_0)))))
+      (lambda (a_0 hc_0) (|#%app| hc_0 (rx:regexp-source a_0)))
+      (lambda (a_0 hc_0) (|#%app| hc_0 (rx:regexp-source a_0)))))
     (cons prop:object-name 2)
     (cons
      prop:custom-write
      (lambda (rx_0 port_0 mode_0)
        (begin
-         (write-bytes
-          (if (|#%app| rx:regexp-px? rx_0) #vu8(35 112 120) #vu8(35 114 120))
-          port_0)
-         (write (|#%app| rx:regexp-source rx_0) port_0)))))
+         (write-bytes (if (rx:regexp-px? rx_0) #vu8(35 112 120) #vu8(35 114 120)) port_0)
+         (write (rx:regexp-source rx_0) port_0)))))
    (current-inspector)
    #f
    '(0 1 2 3 4 5 6 7 8 9)
@@ -7853,7 +7757,7 @@
    (lambda (v_0)
      (begin
        (if (rx:regexp? v_0)
-         (if (not (rx:regexp-bytes? v_0)) (|#%app| rx:regexp-px? v_0) #f)
+         (if (not (rx:regexp-bytes? v_0)) (rx:regexp-px? v_0) #f)
          #f)))))
 (define 1/byte-pregexp?
   (|#%name|
@@ -7861,7 +7765,7 @@
    (lambda (v_0)
      (begin
        (if (rx:regexp? v_0)
-         (if (rx:regexp-bytes? v_0) (|#%app| rx:regexp-px? v_0) #f)
+         (if (rx:regexp-bytes? v_0) (rx:regexp-px? v_0) #f)
          #f)))))
 (define copy-port-bytes
   (letrec ((copy_0
