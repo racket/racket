@@ -607,7 +607,7 @@ each element in the sequence.
   
   @(examples
     #:eval sequence-evaluator
-    (for ([(i ch) (in-indexed "hello")])
+    (for ([(ch i) (in-indexed "hello")])
       (printf "The char at position ~a is: ~a\n" i ch)))
 }
 
