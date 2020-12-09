@@ -412,10 +412,10 @@
       (resize! rtd-props))))
 
 (define (|#%struct-constructor| p arity-mask)
-  (make-wrapper-procedure p arity-mask 'constructor))
+  (make-wrapper-procedure p arity-mask #\c))
 
 (define (|#%struct-predicate| p)
-  (make-wrapper-procedure p 2 'predicate))
+  (make-wrapper-procedure p 2 #\p))
 
 (define (|#%struct-field-accessor| p rtd pos)
   (make-wrapper-procedure p 2 (cons rtd pos)))
@@ -426,12 +426,12 @@
 (define (struct-constructor-procedure? v)
   (let ([v (strip-impersonator v)])
     (and (wrapper-procedure? v)
-         (eq? 'constructor (wrapper-procedure-data v)))))
+         (eq? #\c (wrapper-procedure-data v)))))
 
 (define (struct-predicate-procedure? v)
   (let ([v (strip-impersonator v)])
     (and (wrapper-procedure? v)
-         (eq? 'predicate (wrapper-procedure-data v)))))
+         (eq? #\p (wrapper-procedure-data v)))))
 
 (define (struct-accessor-procedure? v)
   (let ([v (strip-impersonator v)])
