@@ -9,6 +9,7 @@ jobs:
 # component finishes building.
 
   build-racketcgc:
+    if: github.repository == 'racket/racket'
     runs-on: [self-hosted, Linux, '${{ matrix.arch }}']
     container:
       image: racket/racket-ci:latest
@@ -68,6 +69,7 @@ jobs:
         path: /tmp/racketcgc-debian10-${{ matrix.cify }}-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
+    if: github.repository == 'racket/racket'
     container:
       image: racket/racket-ci:latest
                 
@@ -146,6 +148,7 @@ jobs:
         path: /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.ep }}-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
+    if: github.repository == 'racket/racket'
     container:
       image: racket/racket-ci:latest
 
@@ -202,6 +205,7 @@ jobs:
         path: /tmp/racketcs-debian10-${{ matrix.arch }}_git${{ github.sha }}.tar.bz2
 
   test-3m:
+    if: github.repository == 'racket/racket'
     container:
       image: racket/racket-ci:latest
       options: --init
@@ -275,6 +279,7 @@ jobs:
         run: raco test -l tests/db/all-tests
 
   test-cs:
+    if: github.repository == 'racket/racket'
     container:
       image: racket/racket-ci:latest
       options: --init
