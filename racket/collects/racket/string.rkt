@@ -9,7 +9,8 @@
          non-empty-string?
          string-prefix?
          string-suffix?
-         string-contains?)
+         string-contains?
+         string-reverse)
 
 (module+ private
   (provide build-kmp-table))
@@ -307,3 +308,11 @@
                          (loop (- start+offset skip) skip t tL)]
                         [else
                          (loop (add1 start+offset) 0 t tL)]))]))))))
+                         
+;; Reverses strings! Tail recursion is it's own reward!
+(define (string-reverse str)
+  (define (f x final count)
+    (define length (string-length x))
+    (if (= count 0) final
+        (f (substring x 1 length) (string-append (substring x 0 1) final) (- count 1))))
+  (f str "" (string-length str)))
