@@ -409,3 +409,22 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+  slack:
+    runs-on: ubuntu-latest
+    needs: [test-cgc, test-3m, test-cs]
+
+    # this is required, otherwise it gets skipped if any needed jobs fail. 
+    # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idneeds
+    if: always()
+
+    steps:
+      - uses: technote-space/workflow-conclusion-action@v2
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ env.WORKFLOW_CONCLUSION }}
+          author_name: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK.URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
