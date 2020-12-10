@@ -4,6 +4,7 @@ on: [pull_request]
 
 jobs:
   build-racket3m:
+    if: github.repository == 'racket/racket'
     container:
       image: racket/racket-ci:latest
                 
@@ -17,6 +18,7 @@ jobs:
       run: make CPUS=$(nproc) PKGS="" bc-in-place
 
   build-racketcs:
+    if: github.repository == 'racket/racket'
     container:
       image: racket/racket-ci:latest
 

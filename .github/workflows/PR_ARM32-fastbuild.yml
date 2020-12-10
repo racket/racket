@@ -4,6 +4,7 @@ on: [pull_request]
 
 jobs:
   build-racket3m:
+    if: github.repository == 'racket/racket'
     runs-on: [self-hosted, Linux, ARM]
 
     steps:
@@ -14,6 +15,7 @@ jobs:
       run: make CPUS=$(nproc) PKGS="" bc-in-place
 
   build-racketcs:
+    if: github.repository == 'racket/racket'
     runs-on: [self-hosted, Linux, ARM]
 
     steps:
