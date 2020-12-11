@@ -1,14 +1,17 @@
 
 (define raise
   (case-lambda
-    [(v) (raise v #t)]
-    [(v barrier?)
-     (if barrier?
-         (call-with-continuation-barrier
-          (lambda ()
-            (do-raise v)))
-         (do-raise v))]))
+   [(v) (#%$app/no-return do-raise/barrier v)]
+   [(v barrier?)
+    (if barrier?
+        (#%$app/no-return do-raise/barrier v)
+        (#%$app/no-return do-raise v))]))
 
+(define (do-raise/barrier v)
+  (call-with-continuation-barrier
+   (lambda ()
+     (do-raise v))))
+  
 (define (do-raise v)
   (let ([get-next-h (continuation-mark-set->iterator (current-continuation-marks/no-trace)
                                                      (list exception-handler-key)
@@ -131,7 +134,7 @@
     (raise-argument-error 'raise-arguments-error "symbol?" who))
   (unless (string? what)
     (raise-argument-error 'raise-arguments-error "string?" what))
-  (#%$app/no-inline do-raise-arguments-error who what exn:fail:contract more))
+  (#%$app/no-return do-raise-arguments-error who what exn:fail:contract more))
   
 (define (do-raise-arguments-error who what exn:fail:contract more)
   (raise
@@ -224,16 +227,16 @@
 (define raise-argument-error
   (case-lambda
     [(who what arg)
-     (#%$app/no-inline do-raise-argument-error 'raise-argument-error "given" who what #f arg #f)]
+     (#%$app/no-return do-raise-argument-error 'raise-argument-error "given" who what #f arg #f)]
     [(who what pos arg . args)
-     (#%$app/no-inline do-raise-argument-error 'raise-argument-error "given" who what pos arg args)]))
+     (#%$app/no-return do-raise-argument-error 'raise-argument-error "given" who what pos arg args)]))
 
 (define raise-result-error
   (case-lambda
     [(who what arg)
-     (#%$app/no-inline do-raise-argument-error 'raise-result-error "result" who what #f arg #f)]
+     (#%$app/no-return do-raise-argument-error 'raise-result-error "result" who what #f arg #f)]
     [(who what pos arg . args)
-     (#%$app/no-inline do-raise-argument-error 'raise-result-error "result" who what pos arg args)]))
+     (#%$app/no-return do-raise-argument-error 'raise-result-error "result" who what pos arg args)]))
 
 (define (do-raise-type-error e-who tag who what pos arg args)
   (unless (symbol? who)
@@ -269,9 +272,9 @@
 (define raise-type-error
   (case-lambda
     [(who what arg)
-     (#%$app/no-inline do-raise-type-error 'raise-argument-error "given" who what #f arg #f)]
+     (#%$app/no-return do-raise-type-error 'raise-argument-error "given" who what #f arg #f)]
     [(who what pos arg . args)
-     (#%$app/no-inline do-raise-type-error 'raise-argument-error "given" who what pos arg args)]))
+     (#%$app/no-return do-raise-type-error 'raise-argument-error "given" who what pos arg args)]))
 
 (define/who (raise-mismatch-error in-who what v . more)
   (check who symbol? in-who)

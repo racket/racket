@@ -10,6 +10,10 @@
          racket/unsafe/ops
          compiler/zo-parse
          compiler/zo-marshal
+         compiler/private/deserialize
+         compiler/compilation-path
+         ffi/unsafe/vm
+         racket/match
          (prefix-in k: '#%kernel))
          ;; Some primitives like `random` are shadowed by Racket functions in
          ;; `racket/base` and other modules. Using the primitive makes the
@@ -18,31 +22,165 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (comp=? c1 c2 want-same?)
-  (let ([s1 (open-output-bytes)]
-	[s2 (open-output-bytes)])
-    (write c1 s1)
-    (write c2 s2)
-    (let ([t1 (get-output-bytes s1)]
-	  [t2 (get-output-bytes s2)])
-      (define same? (bytes=? t1 t2))
-      (when (and (not same?) want-same?)
-        (pretty-write (zo-parse (open-input-bytes t1)))
-        (pretty-write (zo-parse (open-input-bytes t2))))
-      (unless (equal? same? want-same?)
-        ;; Unquote to cause a failure to stop
-        'stop)
-      same?)))
+;; For CS:
+(define compile/optimize
+  (let ()
+    ;; General strategy for checking optimization: compile to machine-independent
+    ;; linklets, then use `expand/optimize-linklet` (provided as a priitive just
+    ;; for this test suite) to run schemify and cp0
+    (define expand/optimize-linklet (vm-primitive 'expand/optimize-linklet))
 
-(define test-comp
-  (case-lambda
-   [(expr1 expr2) (test-comp expr1 expr2 #t)]
-   [(expr1 expr2 same?)
+    ;; The expander uses these prefabs to represent machine-independent linklets:
+    (struct faslable-correlated-linklet (expr name)
+      #:prefab)
+    (struct faslable-correlated (e source position line column span props)
+      #:prefab)
+    (define (strip-correlated v)
+      (let strip ([v v])
+        (cond
+          [(pair? v)
+           (cons (strip (car v))
+                 (strip (cdr v)))]
+          [(faslable-correlated? v)
+           (strip (faslable-correlated-e v))]
+          [else v])))
+
+    (lambda (e)
+      (define o (open-output-bytes))
+      (parameterize ([current-compile-target-machine #f])
+        (write (compile e) o))
+      (define lnkl (zo-parse (open-input-bytes (get-output-bytes o))))
+      (unless (linkl-directory? lnkl)
+        (error 'compile/optimize "expected a linklet directory"))
+      (define ht (linkl-directory-table lnkl))
+      (define bundle (hash-ref ht '() #f))
+      (unless bundle
+        (error 'compile/optimize (string-append "didn't find main linklet bundle in directory;"
+                                                " maybe a top-level `begin` sequence?")))
+      (define code (hash-ref (linkl-bundle-table bundle) 0 #f))
+      (unless code
+        (error 'compile/optimize "didn't find phase-0 code in the main linklet bundle"))
+      (unless (faslable-correlated-linklet? code)
+        (error 'compile/optimize "code is not recognizable as a platform-independent representation"))
+      (define s-exp (strip-correlated (faslable-correlated-linklet-expr code)))
+      (unless (and (list? s-exp)
+                   ((length s-exp) . > . 3)
+                   (eq? 'linklet (car s-exp)))
+        (error 'compile/optimize "compiled content does not have expected shape: ~s"
+               s-exp))
+
+      ;; Support cross-module inling, at least through one layer of `require`
+      (define-values (mpi-vector requires provides phase-to-link-modules)
+        (deserialize-requires-and-provides bundle))
+      (define link-modules (hash-ref phase-to-link-modules 0 '()))
+      (define keys (for/list ([r (in-list link-modules)])
+                     (gensym)))
+      (define mod-uses (for/hasheq ([key (in-list keys)]
+                                    [mod-use (in-list link-modules)])
+                         (values key mod-use)))
+      (define (get-module-info key)
+        (define mu (hash-ref mod-uses key #f))
+        (cond
+          [mu
+           (define mp (module-path-index-resolve (module-use-module mu) #f))
+           (define path (resolved-module-path-name mp))
+           (cond
+             [(path? path)
+              (define zo-path (get-compilation-bytecode-file path))
+              (define lnkl (call-with-input-file* zo-path zo-parse))
+              (define bundle (if (linkl-directory? lnkl)
+                                 (hash-ref (linkl-directory-table lnkl) '() #f)
+                                 lnkl))
+              (define code (hash-ref (linkl-bundle-table bundle) (module-use-phase mu) #f))
+              (values code #f)]
+             [else
+              (values #f #f)])]
+          [else (values #f #f)]))
+
+      (define s (if (null? link-modules)
+                    (expand/optimize-linklet s-exp)
+                    (expand/optimize-linklet s-exp
+                                             #f
+                                             (list->vector (append '(#f #f #f) keys))
+                                             get-module-info
+                                             '())))
+      
+      ;; normalize bindings and gensyms
+      (define (new formals env)
+        (cond
+          [(null? formals) env]
+          [(symbol? formals)
+           (hash-set env formals (string->symbol (format "x~a" (hash-count env))))]
+          [else
+           (new (cdr formals) (new (car formals) env))]))
+      (let loop ([s s] [env #hasheq()])
+        (match s
+          [`(lambda ,formals . ,bodys)
+           (define new-env (new formals env))
+           `(lambda ,(loop formals new-env) . ,(loop bodys new-env))]
+          [`(case-lambda [,formalss . ,bodyss] ...)
+           `(case-lambda
+              ,@(for/list ([formals (in-list formalss)]
+                           [bodys (in-list bodyss)])
+                  (define new-env (new formals env))
+                  `[,(loop formals new-env) . ,(loop bodys new-env)]))]
+          [`(let ([,ids ,rhss] ...) . ,bodys)
+           (define new-env (new ids env))
+           `(let ,(for/list ([id (in-list ids)]
+                             [rhs (in-list rhss)])
+                    `[,(loop id new-env) ,(loop rhs env)])
+              . ,(loop bodys new-env))]
+          [`(letrec ([,ids ,rhss] ...) . ,bodys)
+           (define new-env (new ids env))
+           `(letrec ,(for/list ([id (in-list ids)]
+                                [rhs (in-list rhss)])
+                       `[,(loop id new-env) ,(loop rhs new-env)])
+              . ,(loop bodys new-env))]
+          [`(,es ...)
+           (for/list ([e (in-list es)])
+             (loop e env))]
+          [else
+           (hash-ref env s s)])))))
+
+(define (comp=? c1 c2 want-same?)
+  (cond
+    [(eq? 'chez-scheme (system-type 'vm))
+     (let ([t1 (compile/optimize c1)]
+           [t2 (compile/optimize c2)])
+       (define same? (equal? t1 t2))
+       (when (and (not same?) want-same?)
+         (pretty-write t1)
+         (pretty-write t2))
+       (unless (equal? same? want-same?)
+         ;; Unquote to cause a failure to stop
+         'stop)
+       same?)]
+    [else
+     (let ([s1 (open-output-bytes)]
+           [s2 (open-output-bytes)])
+       (write (compile c1) s1)
+       (write (compile c2) s2)
+       (let ([t1 (get-output-bytes s1)]
+             [t2 (get-output-bytes s2)])
+         (define same? (bytes=? t1 t2))
+         (when (and (not same?) want-same?)
+           (pretty-write (zo-parse (open-input-bytes t1)))
+           (pretty-write (zo-parse (open-input-bytes t2))))
+         (unless (equal? same? want-same?)
+           ;; Unquote to cause a failure to stop
+           'stop)
+         same?))]))
+
+(define (test-comp expr1 expr2 [same? #t]
+                   #:except [except '()])
+  (unless (or (eq? (system-type 'vm) except)
+              (and (list? except)
+                   (memq (system-type 'vm) except)))
     (define (->stx s)
       ;; Give `s` a minimal location, so that other macro locations
       ;; don't bleed through:
       (datum->syntax #f s (vector 'here #f #f #f #f)))
-    (test same? `(compile ,same? (,expr1 => ,expr2)) (comp=? (compile (->stx expr1)) (compile (->stx expr2)) same?))]))
+    (test same? `(compile ,same? (,expr1 => ,expr2)) (comp=? (->stx expr1) (->stx expr2) same?))))
 
 (let ([x (compile '(lambda (x) x))])
   (test #t 'fixpt (eq? x (compile x))))
@@ -81,7 +219,8 @@
            '(lambda () (begin0 5 (random))))
 (test-comp '(lambda () (begin (read) 5))
            '(lambda () (begin0 5 (read))))
-(test-comp '(lambda () (begin (random) (cons 1 2)))
+(test-comp #:except 'chez-scheme
+           '(lambda () (begin (random) (cons 1 2)))
            '(lambda () (begin0 (cons 1 2) (random))))
 (test-comp '(lambda () (begin (read) (cons 1 2)))
            '(lambda () (begin0 (cons 1 2) (read)))
@@ -95,7 +234,8 @@
 
 (test-comp '(lambda (f) (begin (random) (begin0 (f) 7)))
            '(lambda (f) (begin0 (begin (random) (f)) 7)))
-(test-comp '(lambda () (begin (random) (random) (cons 1 2)))
+(test-comp #:except 'chez-scheme
+           '(lambda () (begin (random) (random) (cons 1 2)))
            '(lambda () (begin0 (begin (random) (cons 1 2)) (random))))
 
 
@@ -109,7 +249,9 @@
 (test-comp '(letrec ([x (begin x 5)]) x) '5 #f)
 (test-comp '(letrec ([x (letrec ([y 5]) x 6)]) x) '6 #f)
 
-(test-comp '(let ([x 5]) (set! x 2)) '(let ([x 5]) (set! x x) (set! x 2)))
+(test-comp #:except 'chez-scheme
+           '(let ([x 5]) (set! x 2))
+           '(let ([x 5]) (set! x x) (set! x 2)))
 
 (test-comp '(let* () (f 5))
 	   '(f 5))
@@ -170,9 +312,11 @@
                    `(lambda (x) (eq? x ,val)))
         (test-comp `(lambda (x) (equal? ,val x))
                    `(lambda (x) (eq? ,val x)))
-        (test-comp `(lambda (x) (eqv? x ,val))
+        (test-comp #:except 'chez-scheme ; `eqv?` conversion happens in cpnanopass
+                   `(lambda (x) (eqv? x ,val))
                    `(lambda (x) (eq? x ,val)))
-        (test-comp `(lambda (x) (eqv? ,val x))
+        (test-comp #:except 'chez-scheme ; `eqv?` conversion happens in cpnanopass
+                   `(lambda (x) (eqv? ,val x))
                    `(lambda (x) (eq? ,val x))))]
        [test-equal-reduction/only-eqv
         (lambda (val)
@@ -195,18 +339,23 @@
   (test-equal-reduction 7)
   (test-equal-reduction/only-eqv 7.0)
   (test-equal-reduction/only-eqv '(expt 2 100))
-  (test-equal-reduction #\a)
+  (if (eq? 'chez-scheme (system-type 'vm))
+      (test-equal-reduction/only-eqv #\a)
+      (test-equal-reduction #\a))
   (test-equal-reduction/only-eqv #\u100)
   (test-equal-reduction ''a)
   (test-equal-reduction ''#:a)
-  (test-equal-reduction '(exact-positive-integer? (random 2))))
+  (unless (eq? 'chez-scheme (system-type 'vm))
+    (test-equal-reduction '(exact-positive-integer? (random 2)))))
   
   
 (test-comp '(lambda (x) (eq? 7 x))
            '(lambda (x) (equal? 7 x)))
-(test-comp '(lambda (x) (eq? x 7))
+(test-comp #:except 'chez-scheme ; `eqv?` conversion happens in cpnanopass
+           '(lambda (x) (eq? x 7))
            '(lambda (x) (eqv? x 7)))
-(test-comp '(lambda (x) (eq? 7 x))
+(test-comp #:except 'chez-scheme ; `eqv?` conversion happens in cpnanopass
+           '(lambda (x) (eq? 7 x))
            '(lambda (x) (eqv? 7 x)))
 
 ; car is a primitive, map is required from another module
@@ -238,11 +387,14 @@
                               [y (random)])
                        (list x x y y))
                     #f)
-         (test-comp `(lambda (x y) (when (and (pair? x) (box? y)) (,e? x y)))
+         (test-comp #:except 'chez-scheme
+                    `(lambda (x y) (when (and (pair? x) (box? y)) (,e? x y)))
                     `(lambda (x y) (when (and (pair? x) (box? y)) #f)))
-         (test-comp `(lambda (x y) (car x) (unbox y) (,e? x y))
+         (test-comp #:except 'chez-scheme
+                    `(lambda (x y) (car x) (unbox y) (,e? x y))
                     `(lambda (x y) (car x) (unbox y) #f))
-         (test-comp `(lambda (x) (car x) (,e? x (box 0)))
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
+                    `(lambda (x) (car x) (,e? x (box 0)))
                     `(lambda (x) (car x) #f))
          ;Ensure that the reduction doesn't eliminate side effects
          (test-comp `(lambda (x) (car x) (,e? (begin (newline) x) (box 0)))
@@ -257,16 +409,21 @@
          (test-comp `(lambda () (,e? (begin (newline) 7) (box 0)))
                     `(lambda () (begin (newline) 7))
                     #f)
-         (test-comp `(lambda (x) (if (,e? x '(0)) (pair? x) 0))
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
+                    `(lambda (x) (if (,e? x '(0)) (pair? x) 0))
                     `(lambda (x) (if (,e? x '(0)) #t 0)))
-         (test-comp `(lambda (x) (if (,e? x (list 0)) (pair? x) 0))
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
+                    `(lambda (x) (if (,e? x (list 0)) (pair? x) 0))
                     `(lambda (x) (if (,e? x (list 0)) #t 0)))
-         (test-comp `(lambda (x y) (car y) (if (,e? x y) (pair? x) 0))
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
+                    `(lambda (x y) (car y) (if (,e? x y) (pair? x) 0))
                     `(lambda (x y) (car y) (if (,e? x y) #t 0)))
-         (test-comp `(lambda (x y) (boolean? (,e? x y)))
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
+                    `(lambda (x y) (boolean? (,e? x y)))
                     `(lambda (x y) (,e? x y) #t)))])
   (test-equal? 'eq?)
-  (test-equal? 'eqv?)
+  (unless (eq? 'chez-scheme (system-type 'vm))
+    (test-equal? 'eqv?))
   (test-equal? 'equal?))
 
 (test-comp '(let ([x 3]) x)
@@ -431,7 +588,8 @@
               (let ([x (list* w z)])
                 (car x)))
            '(lambda (w z) w))
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (let ([x (list w z)])
                 (cadr x)))
            '(lambda (w z) z))
@@ -499,22 +657,30 @@
 (test-comp '(lambda (u v) (cdr (unsafe-cons-list u v)))
            '(lambda (u v) v))
 
-(test-comp '(lambda (v) (unbox (box v)))
+(test-comp #:except 'chez-scheme
+           '(lambda (v) (unbox (box v)))
            '(lambda (v) v))
-(test-comp '(lambda (v) (unsafe-unbox (box v)))
+(test-comp #:except 'chez-scheme
+           '(lambda (v) (unsafe-unbox (box v)))
            '(lambda (v) v))
-(test-comp '(lambda (v) (unsafe-unbox* (box v)))
+(test-comp #:except 'chez-scheme
+           '(lambda (v) (unsafe-unbox* (box v)))
            '(lambda (v) v))
 
-(test-comp '(lambda () (car (cons (random 2) (random 3))))
+(test-comp #:except 'chez-scheme
+           '(lambda () (car (cons (random 2) (random 3))))
            '(lambda () (begin0 (random 2) (random 3))))
-(test-comp '(lambda () (car (cons (random 2) (begin (random 3) (lambda (x) x)))))
+(test-comp #:except 'chez-scheme
+           '(lambda () (car (cons (random 2) (begin (random 3) (lambda (x) x)))))
            '(lambda () (begin0 (random 2) (random 3))))
-(test-comp '(lambda () (cdr (cons (random 2) (random 3))))
+(test-comp #:except 'chez-scheme
+           '(lambda () (cdr (cons (random 2) (random 3))))
            '(lambda () (begin (random 2) (random 3))))
-(test-comp '(lambda () (cdr (cons (begin (random 2) (lambda (x) x)) (random 3))))
+(test-comp #:except 'chez-scheme
+           '(lambda () (cdr (cons (begin (random 2) (lambda (x) x)) (random 3))))
            '(lambda () (begin (random 2) (random 3))))
-(test-comp '(lambda () (cdr (cons (begin (random 1) (random 2) (lambda (x) x)) (random 3))))
+(test-comp #:except 'chez-scheme
+           '(lambda () (cdr (cons (begin (random 1) (random 2) (lambda (x) x)) (random 3))))
            '(lambda () (begin (random 1) (random 2) (random 3))))
 
 (test-comp '(lambda (w z) (pair? (list)))
@@ -533,17 +699,22 @@
            '(lambda (w z) #t))
 (test-comp '(lambda (w z) (pair? (list w (random) w)))
            '(lambda (w z) (random) #t))
-(test-comp '(lambda (w z) (pair? (list (read) (random) w)))
+(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
+           '(lambda (w z) (pair? (list (read) (random) w)))
            '(lambda (w z) (values (read)) (random) #t))
-(test-comp '(lambda (w z) (pair? (list z (random) (read))))
+(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
+           '(lambda (w z) (pair? (list z (random) (read))))
            '(lambda (w z) (random) (values (read)) #t))
-(test-comp '(lambda (w z) (pair? (list (if z (random) (error 'e)) (read))))
+(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
+           '(lambda (w z) (pair? (list (if z (random) (error 'e)) (read))))
            '(lambda (w z) (if z (random) (error 'e)) (values (read)) #t))
-(test-comp '(lambda (w z) (pair? (list (with-continuation-mark 'k 'v (read)) (random))))
+(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
+           '(lambda (w z) (pair? (list (with-continuation-mark 'k 'v (read)) (random))))
            '(lambda (w z) (values (with-continuation-mark 'k 'v (read))) (random) #t))
 (test-comp '(lambda (w z) (vector? (vector w z)))
            '(lambda (w z) #t))
-(test-comp '(lambda (w z) (vector? (vector-immutable w z)))
+(test-comp #:except 'chez-scheme
+           '(lambda (w z) (vector? (vector-immutable w z)))
            '(lambda (w z) #t))
 (test-comp '(lambda (w z) (vector? (list 1)))
            '(lambda (w z) #f))
@@ -584,9 +755,11 @@
            '(lambda (x) (cdr x) (pair? x)))
 (test-comp '(lambda (x) (cadr x) #t)
            '(lambda (x) (cadr x) (pair? x)))
-(test-comp '(lambda (f) (procedure-arity-includes? f 5) #t)
+(test-comp #:except 'chez-scheme
+           '(lambda (f) (procedure-arity-includes? f 5) #t)
            '(lambda (f) (procedure-arity-includes? f 5) (procedure? f)))
-(test-comp '(lambda (f l) (f l) #t)
+(test-comp #:except 'chez-scheme
+           '(lambda (f l) (f l) #t)
            '(lambda (f l) (f l) (procedure? f)))
 
 (test-comp '(lambda (z) (let ([o #f]) (car z)) #t)
@@ -610,15 +783,20 @@
 (test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
            '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
 
-(test-comp '(lambda (z) (fl+ z z))
+(test-comp #:except 'chez-scheme
+           '(lambda (z) (fl+ z z))
            '(lambda (z) (real->double-flonum (fl+ z z))))
-(test-comp '(lambda (z) (fl+ z z))
+(test-comp #:except 'chez-scheme
+           '(lambda (z) (fl+ z z))
            '(lambda (z) (exact->inexact (fl+ z z))))
-(test-comp '(lambda (z) (real->double-flonum z))
+(test-comp #:except 'chez-scheme
+           '(lambda (z) (real->double-flonum z))
            '(lambda (z) (real->double-flonum (real->double-flonum z))))
-(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+(test-comp #:except 'chez-scheme
+           '(lambda (z) (unsafe-fx->fl (fx+ z z)))
            '(lambda (z) (real->double-flonum (fx+ z z))))
-(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+(test-comp #:except 'chez-scheme
+           '(lambda (z) (unsafe-fx->fl (fx+ z z)))
            '(lambda (z) (exact->inexact (fx+ z z))))
 
 ; Test that the optimizer infers correctly the type of all the arguments
@@ -644,49 +822,53 @@
     (test-comp `(lambda ,vars (,proc ,@vars) (list ,@test/vars))
                `(lambda ,vars (,proc ,@vars) (list ,@vars/true)))))
 
-;Test types inference for vector?
-(test-arg-types '(vector-length vector?) 'fixnum? 'may-omit)
-(test-arg-types '(vector->values vector?) #f)
-(test-arg-types '(vector-ref vector? fixnum?) #f)
-(test-arg-types '(vector-set! vector? fixnum? #f) 'void?)
-(test-arg-types '(vector->list vector?) 'list?)
-(test-arg-types '(list->vector list?) 'vector?)
-(test-arg-types '(struct->vector #f) 'vector?)
-(test-arg-types '(struct->vector #f #f) 'vector?)
-(test-arg-types '(vector->immutable-vector vector?) 'vector?)
+(unless (eq? (system-type 'vm) 'chez-scheme)
+  ;Test types inference for vector?
+  (test-arg-types '(vector-length vector?) 'fixnum? 'may-omit)
+  (test-arg-types '(vector->values vector?) #f)
+  (test-arg-types '(vector-ref vector? fixnum?) #f)
+  (test-arg-types '(vector-set! vector? fixnum? #f) 'void?)
+  (test-arg-types '(vector->list vector?) 'list?)
+  (test-arg-types '(list->vector list?) 'vector?)
+  (test-arg-types '(struct->vector #f) 'vector?)
+  (test-arg-types '(struct->vector #f #f) 'vector?)
+  (test-arg-types '(vector->immutable-vector vector?) 'vector?))
 
 ;Test special cases of make-vector
-(test-arg-types '(make-vector fixnum?) 'vector?)
-(test-arg-types '(make-vector fixnum? #f) 'vector?)
-(test-comp '(lambda (w z) (vector? (make-vector (w) (z))))
-           '(lambda (w z) (make-vector (w) (z)) #t))
-(test-comp '(lambda (w z) (vector? (make-vector (w))))
-           '(lambda (w z) (make-vector (w)) #t))
-(test-comp '(lambda (w z) (vector? (make-vector 5 (z))))
-           '(lambda (w z) (values (z)) #t))
-(test-comp '(lambda (w z) (vector? (make-vector 5 w)))
-           '(lambda (w z) #t))
-(test-comp '(lambda (w z) (vector? (make-vector 5)))
-           '(lambda (w z) #t))
-(test-comp '(lambda (w z) (vector? (make-vector -1)))
-           '(lambda (w z) #t)
-           #f)
-(test-comp '(lambda (w z) (vector? (make-vector #f)))
-           '(lambda (w z) #t)
-           #f)
+(unless (eq? (system-type 'vm) 'chez-scheme)
+  (test-arg-types '(make-vector fixnum?) 'vector?)
+  (test-arg-types '(make-vector fixnum? #f) 'vector?)
+  (test-comp '(lambda (w z) (vector? (make-vector (w) (z))))
+             '(lambda (w z) (make-vector (w) (z)) #t))
+  (test-comp '(lambda (w z) (vector? (make-vector (w))))
+             '(lambda (w z) (make-vector (w)) #t))
+  (test-comp '(lambda (w z) (vector? (make-vector 5 (z))))
+             '(lambda (w z) (values (z)) #t))
+  (test-comp '(lambda (w z) (vector? (make-vector 5 w)))
+             '(lambda (w z) #t))
+  (test-comp '(lambda (w z) (vector? (make-vector 5)))
+             '(lambda (w z) #t))
+  (test-comp '(lambda (w z) (vector? (make-vector -1)))
+             '(lambda (w z) #t)
+             #f)
+  (test-comp '(lambda (w z) (vector? (make-vector #f)))
+             '(lambda (w z) #t)
+             #f))
 
 ;Test types inference for box?
-(test-arg-types '(box #f) 'box?)
-(test-arg-types '(box-immutable #f) 'box?)
-(test-arg-types '(unbox box?) #f)
-(test-arg-types '(set-box! box? #f) 'void?)
+(unless (eq? (system-type 'vm) 'chez-scheme)
+  (test-arg-types '(box #f) 'box?)
+  (test-arg-types '(box-immutable #f) 'box?)
+  (test-arg-types '(unbox box?) #f)
+  (test-arg-types '(set-box! box? #f) 'void?))
 
 ;Test types inference for string?
 (test-arg-types '(string-length string?) 'fixnum? 'may-omit)
 (test-arg-types '(string-ref string? fixnum?) 'char?)
-(test-arg-types '(string-set! string? fixnum? char?) 'void?)
+(unless (eq? (system-type 'vm) 'chez-scheme) ;; cptypes doesn't know that void? => eq? to (void)
+  (test-arg-types '(string-set! string? fixnum? char?) 'void?))
 (test-arg-types '(string->immutable-string string?) 'string? 'may-omit)
-(test-arg-types '(string-append) string? 'may-omit)
+(test-arg-types '(string-append) 'string? 'may-omit)
 (test-arg-types '(string-append string?) 'string? 'may-omit)
 (test-arg-types '(string-append string? string?) 'string? 'may-omit)
 (test-arg-types '(string-append string? string? string?) 'string? 'may-omit)
@@ -695,46 +877,53 @@
 ;Test types inference for bytes?
 (test-arg-types '(bytes-length bytes?) 'fixnum? 'may-omit)
 (test-arg-types '(bytes-ref bytes? fixnum?) 'fixnum?)
-(test-arg-types '(bytes-set! bytes? fixnum? fixnum?) 'void?)
-(test-arg-types '(bytes->immutable-bytes bytes?) 'bytes? 'may-omit)
-(test-arg-types '(bytes-append) bytes? 'may-omit)
-(test-arg-types '(bytes-append bytes?) 'bytes? 'may-omit)
-(test-arg-types '(bytes-append bytes? bytes?) 'bytes? 'may-omit)
-(test-arg-types '(bytes-append bytes? bytes? bytes?) 'bytes? 'may-omit)
-(test-arg-types '(bytes-append bytes? bytes? bytes? bytes?) 'bytes? 'may-omit)
+(unless (eq? (system-type 'vm) 'chez-scheme) ;; cptypes doesn't know that void? => eq? to (void)
+  (test-arg-types '(bytes-set! bytes? fixnum? fixnum?) 'void?))
+(unless (eq? (system-type 'vm) 'chez-scheme) ;; ???
+  (test-arg-types '(bytes->immutable-bytes bytes?) 'bytes? 'may-omit))
+(unless (eq? (system-type 'vm) 'chez-scheme) ;; bytes-append is not primitive
+  (test-arg-types '(bytes-append) 'bytes? 'may-omit)
+  (test-arg-types '(bytes-append bytes?) 'bytes? 'may-omit)
+  (test-arg-types '(bytes-append bytes? bytes?) 'bytes? 'may-omit)
+  (test-arg-types '(bytes-append bytes? bytes? bytes?) 'bytes? 'may-omit)
+  (test-arg-types '(bytes-append bytes? bytes? bytes? bytes?) 'bytes? 'may-omit))
 
 ;Test types inference for list?
-(test-arg-types '(length list?) 'fixnum? 'may-omit)
-(test-arg-types '(list-ref pair? fixnum?) #f)
-(test-arg-types '(append) #f 'may-omit)
-(test-arg-types '(append #f) #f 'may-omit)
-(test-arg-types '(append list? #f) #f 'may-omit)
-(test-arg-types '(append list? list? #f) #f 'may-omit)
-(test-arg-types '(append list? list? list? #f) #f 'may-omit)
-(test-arg-types '(append list?) list? 'may-omit 'dont-infer)
-(test-arg-types '(append list? list?) list? 'may-omit 'dont-infer)
-(test-arg-types '(append list? list? list?) list? 'may-omit 'dont-infer)
-(test-arg-types '(append list? list? list? list?) list? 'may-omit 'dont-infer)
+(unless (eq? (system-type 'vm) 'chez-scheme)
+  (test-arg-types '(length list?) 'fixnum? 'may-omit)
+  (test-arg-types '(list-ref pair? fixnum?) #f)
+  (test-arg-types '(append) #f 'may-omit)
+  (test-arg-types '(append #f) #f 'may-omit)
+  (test-arg-types '(append list? #f) #f 'may-omit)
+  (test-arg-types '(append list? list? #f) #f 'may-omit)
+  (test-arg-types '(append list? list? list? #f) #f 'may-omit)
+  (test-arg-types '(append list?) list? 'may-omit 'dont-infer)
+  (test-arg-types '(append list? list?) list? 'may-omit 'dont-infer)
+  (test-arg-types '(append list? list? list?) list? 'may-omit 'dont-infer)
+  (test-arg-types '(append list? list? list? list?) list? 'may-omit 'dont-infer))
 
 ;Test types inference for symbol? and keyword?
-(test-arg-types '(symbol->string symbol?) 'string? 'may-omit)
-(test-arg-types '(string->symbol string?) 'symbol? 'may-omit)
-(test-arg-types '(keyword->string keyword?) 'string? 'may-omit)
-(test-arg-types '(string->keyword string?) 'keyword? 'may-omit)
-(test-arg-types '(gensym) 'symbol?)
-(test-arg-types '(gensym #f) 'symbol?)
+(unless (eq? (system-type 'vm) 'chez-scheme)
+  (test-arg-types '(symbol->string symbol?) 'string? 'may-omit)
+  (test-arg-types '(string->symbol string?) 'symbol? 'may-omit)
+  (test-arg-types '(keyword->string keyword?) 'string? 'may-omit)
+  (test-arg-types '(string->keyword string?) 'keyword? 'may-omit)
+  (test-arg-types '(gensym) 'symbol?)
+  (test-arg-types '(gensym #f) 'symbol?))
 
 ;Test the map primitive and the map version defined in private/map.rkt
 ;The optimizer is not capable of figuring out that the result of map is a list?
-(test-arg-types '(k:map procedure? list?) 'list?)
-(test-arg-types '(k:map procedure? list? list?) 'list?)
+(unless (eq? (system-type 'vm) 'chez-scheme)
+  (test-arg-types '(k:map procedure? list?) 'list?)
+  (test-arg-types '(k:map procedure? list? list?) 'list?))
 
 ;Non-inlined slow-path means that the optimizer cannot infer for
 ;non-built-in `map`:
 ;(test-arg-types '(map procedure? list?) #f) ;should be list?
 ;(test-arg-types '(map procedure? list? list?) #f) ;should be list? 
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (let ([x (list* w z)]
                     [y (list* z w)])
                 (error "bad")
@@ -786,7 +975,8 @@
                       #f
                       v v v2 v2))))
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (if (list w z (random 7))
                   (let ([l (list (random))])
                     (if l
@@ -799,7 +989,8 @@
                 (let ([l (list (random))])
                   (list (unsafe-car l) (unsafe-cdr l))))))
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme ;; `procedure?` is not primitive
+           '(lambda (w z)
               (let ([l (if w
                            (lambda () w)
                            (lambda () z))])
@@ -812,7 +1003,8 @@
                            (lambda () z))])
                 (list l l))))
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (list (if (pair? w) (car w) (car z))
                     (cdr w)))
            '(lambda (w z)
@@ -820,7 +1012,8 @@
                     (unsafe-cdr w)))
            #f)
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (list (if z (car z) (car w))
                     (cdr w)))
            '(lambda (w z)
@@ -828,41 +1021,48 @@
                     (unsafe-cdr w)))
            #f)
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (list (if (pair? w) (car z) (car w))
                     (cdr w)))
            '(lambda (w z)
               (list (if (pair? w) (car z) (car w))
                     (unsafe-cdr w))))
 
-(test-comp '(lambda (w z)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z)
               (list (if z (car w) (cdr w))
                     (cdr w)))
            '(lambda (w z)
               (list (if z (car w) (cdr w))
                     (unsafe-cdr w))))
 
-(test-comp '(lambda (w z x)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z x)
               (list (car x) (if z (car w) (cdr w)) (car x)))
            '(lambda (w z x)
               (list (car x) (if z (car w) (cdr w)) (unsafe-car x))))
 
-(test-comp '(lambda (w z x)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z x)
               (list (car x) (if z (car w) 2) (car x)))
            '(lambda (w z x)
               (list (car x) (if z (car w) 2) (unsafe-car x))))
 
-(test-comp '(lambda (w z x)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (car x)))
            '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (unsafe-car x))))
 
-(test-comp '(lambda (w z x)
+(test-comp #:except 'chez-scheme
+           '(lambda (w z x)
               (list (car x) (if z 1 2) (car x)))
            '(lambda (w z x)
               (list (car x) (if z 1 2) (unsafe-car x))))
 
-(test-comp '(lambda (w)
+(test-comp #:except 'chez-scheme
+           '(lambda (w)
               (list
                 (car (begin (random) w))
                 (cdr (begin (random) w))
@@ -880,7 +1080,8 @@
 (test-comp '(lambda (w) (cadr w) #t)
            '(lambda (w) (cadr w) (pair? w)))
 
-(test-comp '(lambda (w f)
+(test-comp #:except 'chez-scheme
+           '(lambda (w f)
               (list
                 (car (let ([x (random)]) (f x x) w))
                 (cdr (let ([x (random)]) (f x x) w))
@@ -893,7 +1094,8 @@
                 (let ([x (random)]) (f x x) #t)
                 (let ([x (random)]) (f x x) #f))))
 
-(test-comp '(lambda ()
+(test-comp #:except 'chez-scheme
+           '(lambda ()
               (car (let ([y (random)])
                      (list y (set! y 5)))))
            '(lambda ()
@@ -903,16 +1105,17 @@
 ; It's necessary to use the random from #%kernel because otherwise
 ; the function will keep an unnecessary reference for the module that
 ; defines the random visible from racket/base.
-(test-comp '(lambda (w) (car w) (mcar w))
-           '(lambda (w) (car w) (mcar w) (k:random)))
-(test-comp '(lambda (w) (car w w))
-           '(lambda (w) (car w w) (k:random)))
-(test-comp '(lambda (w) (car w w w))
-           '(lambda (w) (car w w w) (k:random)))
-(test-comp '(lambda (w) (cons w))
-           '(lambda (w) (cons w) (k:random)))
-(test-comp '(lambda (w) (cons))
-           '(lambda (w) (cons) (k:random)))
+(unless (eq? 'chez-scheme (system-type 'vm))
+  (test-comp '(lambda (w) (car w) (mcar w))
+             '(lambda (w) (car w) (mcar w) (k:random)))
+  (test-comp '(lambda (w) (car w w))
+             '(lambda (w) (car w w) (k:random)))
+  (test-comp '(lambda (w) (car w w w))
+             '(lambda (w) (car w w w) (k:random)))
+  (test-comp '(lambda (w) (cons w))
+             '(lambda (w) (cons w) (k:random)))
+  (test-comp '(lambda (w) (cons))
+             '(lambda (w) (cons) (k:random))))
 
 ; test for unary applications
 (test-comp -1
@@ -931,7 +1134,8 @@
 (test-comp '(lambda (w z) (box? (list (cons (random w) z))))
            '(lambda (w z) (random w) #f))
 
-(test-comp '(lambda () (begin0 (random 1) (random 2)))
+(test-comp #:except 'chez-scheme
+           '(lambda () (begin0 (random 1) (random 2)))
            '(lambda () (car (cons (random 1) (random 2)))))
 (test-comp '(lambda () (begin (random 1) (random 2)))
            '(lambda () (cdr (cons (random 1) (random 2)))))

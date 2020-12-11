@@ -361,6 +361,8 @@
        (define var (hash-ref env (unwrap id)))
        (vector 'ref-variable (stack->pos var stk-i))]
       [`(#%app ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
+      [`(#%app/value ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
+      [`(#%app/no-return ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
       [`(,rator ,_ ...)  (compile-apply e env stack-depth stk-i tail? mutated)]
       [`,id
        (define u (unwrap id))
@@ -475,6 +477,10 @@
       [`(variable-ref/no-check ,id)
        mutated]
       [`(#%app ,es ...)
+       (extract-list-mutated es mutated)]
+      [`(#%app/value ,es ...)
+       (extract-list-mutated es mutated)]
+      [`(#%app/no-return ,es ...)
        (extract-list-mutated es mutated)]
       [`(,es ...)
        (extract-list-mutated es mutated)]

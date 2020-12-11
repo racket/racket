@@ -76,7 +76,7 @@
 
 ;; Convert an application to enforce left-to-right
 ;; evaluation order
-(define (left-to-right/app rator rands plain-app? target
+(define (left-to-right/app rator rands app-form target
                            prim-knowns knowns imports mutated simples)
   (cond
     [(aim? target 'cify) (cons rator rands)]
@@ -97,9 +97,9 @@
                         [else
                          (loop (cdr accum) (cons (car accum) rev-accum))]))]
                    [else (reverse accum)])])
-            (if plain-app?
-                app
-                `(|#%app| . ,app)))]
+            (if app-form
+                (cons app-form app)
+                app))]
          [(simple? (car l) prim-knowns knowns imports mutated simples)
           (loop (cdr l) (cons (car l) accum) pending-non-simple pending-id)]
          [pending-non-simple

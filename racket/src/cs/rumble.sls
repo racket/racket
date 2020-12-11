@@ -146,6 +146,8 @@
           procedure-specialize
           |#%app|
           |#%call-with-values|
+          |#%app/no-return|
+          |#%app/value|
           extract-procedure ; not exported to Racket
           procedure-arity-includes?
           procedure-arity

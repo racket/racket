@@ -73,6 +73,16 @@
            receiver
            (lambda args (apply receiver args)))))))
 
+(define-syntax (|#%app/no-return| stx)
+  (syntax-case stx ()
+    [(_ rator rand ...)
+     #'(#3%$app/no-return rator rand ...)]))
+
+(define-syntax (|#%app/value| stx)
+  (syntax-case stx ()
+    [(_ rator rand ...)
+     #'(#3%$app/value rator rand ...)]))
+
 (define-syntax-rule (extract-procedure f n-args)
   (let ([tmp f])
     (if (#%procedure? tmp)

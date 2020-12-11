@@ -10,6 +10,7 @@
          "inline.rkt"
          "mutated-state.rkt"
          "optimize.rkt"
+         "single-valued.rkt"
          "aim.rkt")
 
 (provide infer-known
@@ -28,17 +29,21 @@
       [(lambda? rhs)
        (define-values (lam inlinable?) (extract-lambda rhs))
        (define arity-mask (lambda-arity-mask lam))
-       (if (and inlinable?
-                (not post-schemify?)
-                (or (can-inline? lam)
-                    (wrap-property defn 'compiler-hint:cross-module-inline)))
-           (let ([lam (if optimize-inline?
-                          (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
-                          lam)])
-             (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
-                                                        (add-begin-unsafe lam)
-                                                        lam)))
-           (known-procedure arity-mask))]
+       (cond
+         [(and inlinable?
+               (not post-schemify?)
+               (or (can-inline? lam)
+                   (wrap-property defn 'compiler-hint:cross-module-inline)))
+          (let ([lam (if optimize-inline?
+                         (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
+                         lam)])
+            (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
+                                                       (add-begin-unsafe lam)
+                                                       lam)))]
+         [(single-valued-lambda? lam knowns prim-knowns imports mutated)
+          (known-procedure/single-valued arity-mask)]
+         [else
+          (known-procedure arity-mask)])]
       [(and (literal? rhs)
             (not (hash-ref mutated (unwrap id) #f)))
        (known-literal (unwrap-literal rhs))]

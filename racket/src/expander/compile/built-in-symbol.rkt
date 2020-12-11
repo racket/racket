@@ -73,6 +73,8 @@
                annotation-expression
                #%app
                #%call-with-values
+               #%app/no-return
+               #%app/value
                call-with-module-prompt
                make-pthread-parameter
                engine-block

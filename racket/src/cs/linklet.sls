@@ -1,6 +1,7 @@
 (library (linklet)
   (export linklet?
           compile-linklet
+          expand/optimize-linklet            ; for optimization test suite
           recompile-linklet
           eval-linklet
           instantiate-linklet
@@ -493,7 +494,17 @@
      [(c name import-keys) (compile-linklet c name import-keys #f '(serializable))]
      [(c name import-keys get-import) (compile-linklet c name import-keys get-import '(serializable))]
      [(c name import-keys get-import options)
-      (define check-result (check-compile-args 'compile-linklet import-keys get-import options))
+      (do-compile-linklet 'compile-linklet c name import-keys get-import options #f)]))
+
+  (define expand/optimize-linklet ; for testing
+    (case-lambda
+     [(c) (do-compile-linklet 'expand/optimize-linklet c #f #f #f '() #t)]
+     [(c name import-keys get-import options)
+      (do-compile-linklet 'expand/optimize-linklet c name import-keys get-import options #t)]))
+
+  (define do-compile-linklet
+    (lambda (who c name import-keys get-import options just-expand?)
+      (define check-result (check-compile-args who import-keys get-import options))
       (define serializable? (#%memq 'serializable options))
       (define use-prompt? (#%memq 'use-prompt options))
       (define unsafe? (and (#%memq 'unsafe options) #t))
@@ -503,9 +514,10 @@
                                         m))))
       (define enforce-constant? (|#%app| compile-enforce-module-constants))
       (define inline? (not (|#%app| compile-context-preservation-enabled)))
-      (define quick-mode? (or default-compile-quick?
-                              (and (not serializable?)
-                                   (#%memq 'quick options))))
+      (define quick-mode? (and (not just-expand?)
+                               (or default-compile-quick?
+                                   (and (not serializable?)
+                                        (#%memq 'quick options)))))
       (define serializable?-box (and serializable? (box #f)))
       (define sfd-cache (if serializable?
                             ;; For determinism: a fresh, non-weak cache per linklet
@@ -515,14 +527,16 @@
       (performance-region
        'schemify
        (define jitify-mode?
-         (or (eq? linklet-compilation-mode 'jit)
-             (and (eq? linklet-compilation-mode 'mach)
-                  (linklet-bigger-than? c linklet-compilation-limit serializable?)
-                  (log-message root-logger 'info 'linklet "compiling only interior functions for large linklet" #f)
-                  #t)))
+         (and (not just-expand?)
+              (or (eq? linklet-compilation-mode 'jit)
+                  (and (eq? linklet-compilation-mode 'mach)
+                       (linklet-bigger-than? c linklet-compilation-limit serializable?)
+                       (log-message root-logger 'info 'linklet "compiling only interior functions for large linklet" #f)
+                       #t))))
        (define format (if (or jitify-mode?
                               quick-mode?
-                              (eq? linklet-compilation-mode 'interp))
+                              (and (eq? linklet-compilation-mode 'interp)
+                                   (not just-expand?)))
                           'interpret
                           'compile))
        ;; Convert the linklet S-expression to a `lambda` S-expression:
@@ -603,32 +617,35 @@
         'compile-linklet
         ;; Create the linklet:
         (let ([impl (show (and (eq? format 'interpret) post-interp-on?) "post-interp" impl-lam/interpable)])
-          (let-values ([(code literals)
-                        (if serializable?
-                            (let ([quoteds (unbox serializable?-box)])
-                              (if cross-machine
-                                  (cross-compile-to-bytevector cross-machine impl quoteds format unsafe?)
-                                  (compile-to-bytevector impl quoteds format unsafe?)))
-                            (values (compile-to-proc impl format unsafe?) '#()))])
-            (when literals-on?
-              (show "literals" literals))
-            (let ([lk (make-linklet code
-                                    literals
-                                    format
-                                    (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
-                                    importss-abi
-                                    exports-info
-                                    name
-                                    importss
-                                    exports)])
-              (show "compiled" 'done)
-              ;; In general, `compile-linklet` is allowed to extend the set
-              ;; of linklet imports if `import-keys` is provided (e.g., for
-              ;; cross-linklet optimization where inlining needs a new
-              ;; direct import)
-              (if import-keys
-                  (values lk new-import-keys)
-                  lk))))))]))
+          (cond
+            [just-expand? (expand/optimize* impl unsafe?)]
+            [else
+             (let-values ([(code literals)
+                           (if serializable?
+                               (let ([quoteds (unbox serializable?-box)])
+                                 (if cross-machine
+                                     (cross-compile-to-bytevector cross-machine impl quoteds format unsafe?)
+                                     (compile-to-bytevector impl quoteds format unsafe?)))
+                               (values (compile-to-proc impl format unsafe?) '#()))])
+               (when literals-on?
+                 (show "literals" literals))
+               (let ([lk (make-linklet code
+                                       literals
+                                       format
+                                       (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
+                                       importss-abi
+                                       exports-info
+                                       name
+                                       importss
+                                       exports)])
+                 (show "compiled" 'done)
+                 ;; In general, `compile-linklet` is allowed to extend the set
+                 ;; of linklet imports if `import-keys` is provided (e.g., for
+                 ;; cross-linklet optimization where inlining needs a new
+                 ;; direct import)
+                 (if import-keys
+                     (values lk new-import-keys)
+                     lk)))]))))))
 
   (define (lookup-linklet-or-instance get-import key)
     ;; Use the provided callback to get an linklet for the

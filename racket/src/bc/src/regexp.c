@@ -6104,16 +6104,16 @@ void scheme_regexp_initialize(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 2, env);
   ADD_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 2, env);
   ADD_PRIM_W_ARITY("regexp-match",                          compare,                 2, 6, env);
-  ADD_PRIM_W_ARITY("regexp-match/end",                      compare_end,             2, 7, env);
+  ADD_PRIM_W_ARITY2("regexp-match/end",                      compare_end,            2, 7, 2, 2, env);
   ADD_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 6, env);
-  ADD_PRIM_W_ARITY("regexp-match-positions/end",            positions_end,           2, 7, env);
+  ADD_PRIM_W_ARITY2("regexp-match-positions/end",            positions_end,          2, 7, 2, 2, env);
   ADD_PRIM_W_ARITY("regexp-match?",                         compare_bool,            2, 6, env);
   ADD_PRIM_W_ARITY("regexp-match-peek",                     compare_peek,            2, 6, env);
   ADD_PRIM_W_ARITY("regexp-match-peek-positions",           positions_peek,          2, 6, env);
-  ADD_PRIM_W_ARITY("regexp-match-peek-positions/end",       positions_peek_end,      2, 7, env);
+  ADD_PRIM_W_ARITY2("regexp-match-peek-positions/end",       positions_peek_end,     2, 7, 2, 2, env);
   ADD_PRIM_W_ARITY("regexp-match-peek-immediate",           compare_peek_nonblock,   2, 6, env);
   ADD_PRIM_W_ARITY("regexp-match-peek-positions-immediate", positions_peek_nonblock, 2, 6, env);
-  ADD_PRIM_W_ARITY("regexp-match-peek-positions-immediate/end", positions_peek_nonblock_end, 2, 7, env);
+  ADD_PRIM_W_ARITY2("regexp-match-peek-positions-immediate/end", positions_peek_nonblock_end, 2, 7, 2, 2, env);
   ADD_PRIM_W_ARITY("regexp-replace",                        replace,                 3, 4, env);
   ADD_PRIM_W_ARITY("regexp-replace*",                       replace_star,            3, 4, env);
 

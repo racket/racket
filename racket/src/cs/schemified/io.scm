@@ -32172,18 +32172,18 @@
   (|#%name|
    error
    (lambda (init_0 . args_0)
-     (begin (do-error 'error exn:fail init_0 args_0)))))
+     (begin (raise (format-error 'error exn:fail init_0 args_0))))))
 (define 1/raise-user-error
   (|#%name|
    raise-user-error
    (lambda (init_0 . args_0)
-     (begin (do-error 'raise-user-error exn:fail:user init_0 args_0)))))
-(define do-error
+     (begin
+       (raise (format-error 'raise-user-error exn:fail:user init_0 args_0))))))
+(define format-error
   (lambda (who_0 exn:fail_0 init_0 args_0)
     (if (if (symbol? init_0) (null? args_0) #f)
-      (raise
-       (let ((app_0 (string-append "error: " (symbol->string init_0))))
-         (|#%app| exn:fail_0 app_0 (current-continuation-marks))))
+      (let ((app_0 (string-append "error: " (symbol->string init_0))))
+        (|#%app| exn:fail_0 app_0 (current-continuation-marks)))
       (if (symbol? init_0)
         (begin
           (if (string? (car args_0))
@@ -32193,45 +32193,43 @@
             (begin
               (let ((app_0 (car args_0)))
                 (do-printf who_0 o_0 app_0 (cdr args_0)))
-              (raise
-               (let ((app_0
-                      (let ((app_0 (symbol->string init_0)))
-                        (string-append app_0 ": " (1/get-output-string o_0)))))
-                 (|#%app| exn:fail_0 app_0 (current-continuation-marks)))))))
+              (let ((app_0
+                     (let ((app_0 (symbol->string init_0)))
+                       (string-append app_0 ": " (1/get-output-string o_0)))))
+                (|#%app| exn:fail_0 app_0 (current-continuation-marks))))))
         (if (string? init_0)
-          (raise
-           (let ((app_0
-                  (apply
-                   string-append
-                   init_0
-                   (1/reverse
-                    (begin
-                      (letrec*
-                       ((for-loop_0
-                         (|#%name|
-                          for-loop
-                          (lambda (fold-var_0 lst_0)
-                            (begin
-                              (if (pair? lst_0)
-                                (let ((arg_0 (unsafe-car lst_0)))
-                                  (let ((rest_0 (unsafe-cdr lst_0)))
-                                    (let ((fold-var_1
-                                           (let ((fold-var_1
-                                                  (cons
-                                                   (string-append
-                                                    " "
-                                                    (let ((app_0
-                                                           (error-value->string-handler)))
-                                                      (|#%app|
-                                                       app_0
-                                                       arg_0
-                                                       (error-print-width))))
-                                                   fold-var_0)))
-                                             (values fold-var_1))))
-                                      (for-loop_0 fold-var_1 rest_0))))
-                                fold-var_0))))))
-                       (for-loop_0 null args_0)))))))
-             (|#%app| exn:fail_0 app_0 (current-continuation-marks))))
+          (let ((app_0
+                 (apply
+                  string-append
+                  init_0
+                  (1/reverse
+                   (begin
+                     (letrec*
+                      ((for-loop_0
+                        (|#%name|
+                         for-loop
+                         (lambda (fold-var_0 lst_0)
+                           (begin
+                             (if (pair? lst_0)
+                               (let ((arg_0 (unsafe-car lst_0)))
+                                 (let ((rest_0 (unsafe-cdr lst_0)))
+                                   (let ((fold-var_1
+                                          (let ((fold-var_1
+                                                 (cons
+                                                  (string-append
+                                                   " "
+                                                   (let ((app_0
+                                                          (error-value->string-handler)))
+                                                     (|#%app|
+                                                      app_0
+                                                      arg_0
+                                                      (error-print-width))))
+                                                  fold-var_0)))
+                                            (values fold-var_1))))
+                                     (for-loop_0 fold-var_1 rest_0))))
+                               fold-var_0))))))
+                      (for-loop_0 null args_0)))))))
+            (|#%app| exn:fail_0 app_0 (current-continuation-marks)))
           (raise-argument-error who_0 "(or/c symbol? string?)" init_0))))))
 (define 1/error-print-source-location
   (make-parameter
@@ -34948,11 +34946,11 @@
                   'subprocess
                   "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                   stderr_0))
-               (let ((lr3567 unsafe-undefined)
+               (let ((lr3566 unsafe-undefined)
                      (group_0 unsafe-undefined)
                      (command_0 unsafe-undefined)
                      (exact/args_0 unsafe-undefined))
-                 (set! lr3567
+                 (set! lr3566
                    (call-with-values
                     (lambda ()
                       (if (path-string? group/command_0)
@@ -35007,9 +35005,9 @@
                      ((group_1 command_1 exact/args_1)
                       (vector group_1 command_1 exact/args_1))
                      (args (raise-binding-result-arity-error 3 args)))))
-                 (set! group_0 (unsafe-vector*-ref lr3567 0))
-                 (set! command_0 (unsafe-vector*-ref lr3567 1))
-                 (set! exact/args_0 (unsafe-vector*-ref lr3567 2))
+                 (set! group_0 (unsafe-vector*-ref lr3566 0))
+                 (set! command_0 (unsafe-vector*-ref lr3566 1))
+                 (set! exact/args_0 (unsafe-vector*-ref lr3566 2))
                  (call-with-values
                   (lambda ()
                     (if (if (pair? exact/args_0)

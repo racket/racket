@@ -740,6 +740,8 @@
             (let ([exp1 (schemify exp1 'fresh)]
                   [exp2 (schemify exp2 'fresh)])
               (cond
+                [(eq? exp1 exp2)
+                 #t]
                 [(or (equal-implies-eq? exp1) (equal-implies-eq? exp2))
                  `(eq? ,exp1 ,exp2)]
                 [(or (equal-implies-eqv? exp1) (equal-implies-eqv? exp2))
@@ -747,7 +749,7 @@
                 [else
                  (left-to-right/app 'equal?
                                     (list exp1 exp2)
-                                    #t target
+                                    #f target
                                     prim-knowns knowns imports mutated simples)]))]
            [`(call-with-values ,generator ,receiver)
             (cond
@@ -758,7 +760,7 @@
               [else
                (left-to-right/app (if (aim? target 'cify) 'call-with-values '#%call-with-values)
                                   (list (schemify generator 'fresh) (schemify receiver 'fresh))
-                                  #t target
+                                  #f target
                                   prim-knowns knowns imports mutated simples)])]
            [`(single-flonum-available?)
             ;; Fold to a boolean to allow earlier simplification
@@ -821,7 +823,7 @@
                 [type-id
                  (left-to-right/app 'unsafe-struct
                                     (cons (schemify type-id 'fresh) args)
-                                    #t target
+                                    #f target
                                     prim-knowns knowns imports mutated simples)]
                 [else #f]))
             (define (inline-struct-predicate k s-rator im args)
@@ -883,7 +885,7 @@
                      => (lambda (e)
                           (left-to-right/app (car e)
                                              (cdr e)
-                                             #t target
+                                             #f target
                                              prim-knowns knowns imports mutated simples))]
                     [(and (not (or
                                 ;; Don't inline in cify mode, because cify takes care of it
@@ -914,14 +916,23 @@
                           (known-procedure/has-unsafe? k))
                      (left-to-right/app (known-procedure/has-unsafe-alternate k)
                                         args
-                                        #t target
+                                        #f target
                                         prim-knowns knowns imports mutated simples)]
                     [else
-                     (define plain-app? (or (known-procedure? k)
-                                            (lambda? rator)))
                      (left-to-right/app s-rator
                                         args
-                                        plain-app? target
+                                        (cond
+                                          [(and (not (aim? target 'system))
+                                                (known-procedure/no-return? k))
+                                           '#%app/no-return]
+                                          [(and im
+                                                (known-procedure/single-valued? k))
+                                           '#%app/value]
+                                          [(or (known-procedure? k)
+                                               (lambda? rator))
+                                           #f]
+                                          [else '|#%app|])
+                                        target
                                         prim-knowns knowns imports mutated simples)])))]
            [`,_
             (let ([u-v (unwrap v)])

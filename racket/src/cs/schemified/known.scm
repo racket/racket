@@ -476,14 +476,14 @@
          s
          'known-procedure
          'arity-mask))))))
-(define struct:known-procedure/no-prompt
+(define struct:known-procedure/single-valued
   (make-record-type-descriptor*
-   'known-procedure/no-prompt
+   'known-procedure/single-valued
    (if (struct-type? struct:known-procedure)
      struct:known-procedure
      (check-struct-type 'struct struct:known-procedure))
    (structure-type-lookup-prefab-uid
-    'known-procedure/no-prompt
+    'known-procedure/single-valued
     (if (struct-type? struct:known-procedure)
       struct:known-procedure
       (check-struct-type 'struct struct:known-procedure))
@@ -495,15 +495,71 @@
    #f
    0
    0))
-(define effect_2413
+(define effect_3076
   (struct-type-install-properties!
-   struct:known-procedure/no-prompt
-   'known-procedure/no-prompt
+   struct:known-procedure/single-valued
+   'known-procedure/single-valued
    0
    0
    (if (struct-type? struct:known-procedure)
      struct:known-procedure
      (check-struct-type 'struct struct:known-procedure))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/single-valued))
+(define known-procedure/single-valued
+  (|#%name|
+   known-procedure/single-valued
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-procedure/single-valued
+     #f
+     #f))))
+(define known-procedure/single-valued?_3105
+  (|#%name|
+   known-procedure/single-valued?
+   (record-predicate struct:known-procedure/single-valued)))
+(define known-procedure/single-valued?
+  (|#%name|
+   known-procedure/single-valued?
+   (lambda (v)
+     (if (known-procedure/single-valued?_3105 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-procedure/single-valued?_3105 (impersonator-val v))
+          #f))))))
+(define struct:known-procedure/no-prompt
+  (make-record-type-descriptor*
+   'known-procedure/no-prompt
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   (structure-type-lookup-prefab-uid
+    'known-procedure/no-prompt
+    (if (struct-type? struct:known-procedure/single-valued)
+      struct:known-procedure/single-valued
+      (check-struct-type 'struct struct:known-procedure/single-valued))
+    0
+    0
+    #f
+    '())
+   #f
+   #f
+   0
+   0))
+(define effect_2720
+  (struct-type-install-properties!
+   struct:known-procedure/no-prompt
+   'known-procedure/no-prompt
+   0
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
    null
    'prefab
    #f
@@ -531,6 +587,118 @@
        ($value
         (if (impersonator? v)
           (known-procedure/no-prompt?_2036 (impersonator-val v))
+          #f))))))
+(define struct:known-procedure/no-prompt/multi
+  (make-record-type-descriptor*
+   'known-procedure/no-prompt/multi
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   (structure-type-lookup-prefab-uid
+    'known-procedure/no-prompt/multi
+    (if (struct-type? struct:known-procedure)
+      struct:known-procedure
+      (check-struct-type 'struct struct:known-procedure))
+    0
+    0
+    #f
+    '())
+   #f
+   #f
+   0
+   0))
+(define effect_2928
+  (struct-type-install-properties!
+   struct:known-procedure/no-prompt/multi
+   'known-procedure/no-prompt/multi
+   0
+   0
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/no-prompt/multi))
+(define known-procedure/no-prompt/multi
+  (|#%name|
+   known-procedure/no-prompt/multi
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-procedure/no-prompt/multi
+     #f
+     #f))))
+(define known-procedure/no-prompt/multi?_2394
+  (|#%name|
+   known-procedure/no-prompt/multi?
+   (record-predicate struct:known-procedure/no-prompt/multi)))
+(define known-procedure/no-prompt/multi?
+  (|#%name|
+   known-procedure/no-prompt/multi?
+   (lambda (v)
+     (if (known-procedure/no-prompt/multi?_2394 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-procedure/no-prompt/multi?_2394 (impersonator-val v))
+          #f))))))
+(define struct:known-procedure/no-return
+  (make-record-type-descriptor*
+   'known-procedure/no-return
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   (structure-type-lookup-prefab-uid
+    'known-procedure/no-return
+    (if (struct-type? struct:known-procedure/single-valued)
+      struct:known-procedure/single-valued
+      (check-struct-type 'struct struct:known-procedure/single-valued))
+    0
+    0
+    #f
+    '())
+   #f
+   #f
+   0
+   0))
+(define effect_2574
+  (struct-type-install-properties!
+   struct:known-procedure/no-return
+   'known-procedure/no-return
+   0
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/no-return))
+(define known-procedure/no-return
+  (|#%name|
+   known-procedure/no-return
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-procedure/no-return
+     #f
+     #f))))
+(define known-procedure/no-return?_1763
+  (|#%name|
+   known-procedure/no-return?
+   (record-predicate struct:known-procedure/no-return)))
+(define known-procedure/no-return?
+  (|#%name|
+   known-procedure/no-return?
+   (lambda (v)
+     (if (known-procedure/no-return?_1763 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-procedure/no-return?_1763 (impersonator-val v))
           #f))))))
 (define struct:known-procedure/can-inline
   (make-record-type-descriptor*
@@ -1498,14 +1666,14 @@
 (define struct:known-accessor
   (make-record-type-descriptor*
    'known-accessor
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
    (structure-type-lookup-prefab-uid
     'known-accessor
-    (if (struct-type? struct:known-procedure)
-      struct:known-procedure
-      (check-struct-type 'struct struct:known-procedure))
+    (if (struct-type? struct:known-procedure/single-valued)
+      struct:known-procedure/single-valued
+      (check-struct-type 'struct struct:known-procedure/single-valued))
     1
     0
     #f
@@ -1514,15 +1682,15 @@
    #f
    1
    1))
-(define effect_2150
+(define effect_2802
   (struct-type-install-properties!
    struct:known-accessor
    'known-accessor
    1
    0
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
    null
    'prefab
    #f
@@ -1565,14 +1733,14 @@
 (define struct:known-mutator
   (make-record-type-descriptor*
    'known-mutator
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
    (structure-type-lookup-prefab-uid
     'known-mutator
-    (if (struct-type? struct:known-procedure)
-      struct:known-procedure
-      (check-struct-type 'struct struct:known-procedure))
+    (if (struct-type? struct:known-procedure/single-valued)
+      struct:known-procedure/single-valued
+      (check-struct-type 'struct struct:known-procedure/single-valued))
     1
     0
     #f
@@ -1581,15 +1749,15 @@
    #f
    1
    1))
-(define effect_2575
+(define effect_2101
   (struct-type-install-properties!
    struct:known-mutator
    'known-mutator
    1
    0
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
    null
    'prefab
    #f

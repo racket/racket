@@ -98,7 +98,8 @@
                  (and (if pure?
                           (and (known-procedure/pure? v)
                                (returns 1))
-                          (and (known-procedure/no-prompt? v)
+                          (and (or (known-procedure/no-prompt? v)
+                                   (known-procedure/no-prompt/multi? v))
                                (eqv? result-arity #f)))
                       (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
                (simple-mutated-state? (hash-ref mutated proc #f))

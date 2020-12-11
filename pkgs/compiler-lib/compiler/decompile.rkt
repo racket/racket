@@ -108,33 +108,8 @@
                                   #:when (exact-integer? k))
                          k)
                        <))
-  (define-values (mpi-vector requires provides)
-    (let ([data-l (hash-ref ht 'data #f)]
-          [decl-l (hash-ref ht 'decl #f)])
-      (define (zo->linklet l)
-        (cond
-          [(faslable-correlated-linklet? l)
-           (compile-linklet (strip-correlated (faslable-correlated-linklet-expr l))
-                            (faslable-correlated-linklet-name l))]
-          [(linklet? l) l]
-          [else
-           (let ([o (open-output-bytes)])
-             (zo-marshal-to (linkl-bundle (hasheq 'data l)) o)
-             (parameterize ([read-accept-compiled #t])
-               (define b (read (open-input-bytes (get-output-bytes o))))
-               (hash-ref (linklet-bundle->hash b) 'data)))]))
-      (cond
-        [(and data-l
-              decl-l)
-         (define data-i (instantiate-linklet (zo->linklet data-l)
-                                             (list deserialize-instance)))
-         (define decl-i (instantiate-linklet (zo->linklet decl-l)
-                                             (list deserialize-instance
-                                                   data-i)))
-         (values (instance-variable-value data-i '.mpi-vector)
-                 (instance-variable-value decl-i 'requires)
-                 (instance-variable-value decl-i 'provides))]
-        [else (values '#() '() '#hasheqv())])))
+  (define-values (mpi-vector requires provides phase-to-link-modules)
+    (deserialize-requires-and-provides l))
   (define (phase-wrap phase l)
     (case phase
       [(0) l]
@@ -783,24 +758,6 @@
     [else
      (error 'deserialize "bad fill encoding: ~v" (vector-ref vec pos))]))
   
-;; ----------------------------------------
-
-(struct faslable-correlated-linklet (expr name)
-  #:prefab)
-
-(struct faslable-correlated (e source position line column span props)
-  #:prefab)
-
-(define (strip-correlated v)
-  (let strip ([v v])
-    (cond
-      [(pair? v)
-       (cons (strip (car v))
-             (strip (cdr v)))]
-      [(faslable-correlated? v)
-       (strip (faslable-correlated-e v))]
-      [else v])))
-
 ;; ----------------------------------------
 
 #;

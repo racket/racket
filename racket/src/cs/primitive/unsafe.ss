@@ -107,7 +107,7 @@
   [unsafe-get-place-table (known-procedure 1)]
   [unsafe-immutable-hash-iterate-first (known-procedure/pure 2)]
   [unsafe-immutable-hash-iterate-key (known-procedure/pure 12)]
-  [unsafe-immutable-hash-iterate-key+value (known-procedure/pure 12)]
+  [unsafe-immutable-hash-iterate-key+value (known-procedure 12)]
   [unsafe-immutable-hash-iterate-next (known-procedure/pure 4)]
   [unsafe-immutable-hash-iterate-pair (known-procedure/pure 12)]
   [unsafe-immutable-hash-iterate-value (known-procedure/pure 12)]
