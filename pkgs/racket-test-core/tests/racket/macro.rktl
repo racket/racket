@@ -1047,6 +1047,22 @@
       (sloop (cdr stx) in-prop?)])))
 
 ;; ----------------------------------------
+;; Check that an implicitly introduced #%app has the same
+;; `syntax-original?` as its parenthesized form
+
+(let ([find (lambda (e sym)
+              (let loop ([s (syntax-property e 'origin)])
+                (cond
+                  [(and (identifier? s)
+                        (eq? sym (syntax-e s)))
+                   s]
+                  [(pair? s) (or (loop (car s)) (loop (cdr s)))]
+                  [else #f])))])
+  ;; expecting `#%app` from `racket/base` to reqrite to core `#%app`
+  (test #t syntax-original? (find (expand #'(+ 1 2)) '#%app))
+  (test #f syntax-original? (find (expand (datum->syntax #'here '(+ 1 2))) '#%app)))
+
+;; ----------------------------------------
 
 (err/rt-test (syntax-local-lift-require 'abc #'def))
 

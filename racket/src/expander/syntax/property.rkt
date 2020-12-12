@@ -6,7 +6,8 @@
 (provide syntax-property
          syntax-property-preserved?
          syntax-property-symbol-keys
-         syntax-property-remove)
+         syntax-property-remove
+         syntax-property-copy)
 
 ;; ----------------------------------------
 
@@ -56,3 +57,10 @@
       (struct-copy syntax s
                    [props (hash-remove (syntax-props s) key)])
       s))
+
+;; internal use by expander:
+(define (syntax-property-copy from-s key)
+  (define v (hash-ref (syntax-props from-s) key #f))
+  (if v
+      (hash-set empty-props key v)
+      empty-props))
