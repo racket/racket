@@ -39,7 +39,8 @@
          "../common/performance.rkt"
          "rebuild.rkt"
          "parsed.rkt"
-         "expanded+parsed.rkt")
+         "expanded+parsed.rkt"
+         "implicit-property.rkt")
 
 (provide expand
          lookup
@@ -243,7 +244,9 @@
 (define (make-explicit ctx sym s disarmed-s)
   (define insp (current-module-code-inspector))
   (define sym-s (immediate-datum->syntax disarmed-s sym s
-                                         (syntax-property-copy s original-property-sym)
+                                         (if (syntax-has-property? s original-property-sym)
+                                             original-implicit-made-explicit-properties
+                                             implicit-made-explicit-properties)
                                          insp))
   (define new-s (syntax-rearm (immediate-datum->syntax disarmed-s (cons sym-s disarmed-s) s
                                                        (syntax-props s)

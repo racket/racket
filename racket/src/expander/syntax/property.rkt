@@ -7,7 +7,7 @@
          syntax-property-preserved?
          syntax-property-symbol-keys
          syntax-property-remove
-         syntax-property-copy)
+         syntax-has-property?)
 
 ;; ----------------------------------------
 
@@ -59,8 +59,5 @@
       s))
 
 ;; internal use by expander:
-(define (syntax-property-copy from-s key)
-  (define v (hash-ref (syntax-props from-s) key #f))
-  (if v
-      (hash-set empty-props key v)
-      empty-props))
+(define (syntax-has-property? from-s key)
+  (hash-ref (syntax-props from-s) key #f))

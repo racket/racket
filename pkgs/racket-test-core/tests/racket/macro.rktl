@@ -1060,7 +1060,9 @@
                   [else #f])))])
   ;; expecting `#%app` from `racket/base` to reqrite to core `#%app`
   (test #t syntax-original? (find (expand #'(+ 1 2)) '#%app))
-  (test #f syntax-original? (find (expand (datum->syntax #'here '(+ 1 2))) '#%app)))
+  (test #t syntax-property (find (expand #'(+ 1 2)) '#%app) 'implicit-made-explicit)
+  (test #f syntax-original? (find (expand (datum->syntax #'here '(+ 1 2))) '#%app))
+  (test #t syntax-property (find (expand (datum->syntax #'here '(+ 1 2))) '#%app) 'implicit-made-explicit))
 
 ;; ----------------------------------------
 
