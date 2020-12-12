@@ -1079,8 +1079,8 @@
 (define (unsafe-struct? v r)
   (#3%record? v r))
 
-(define (unsafe-struct r . args)
-  (#%apply #%$record r args))
+;; internal use only, so doesn't need to have 'unsafe-struct as it's name, etc.:
+(define unsafe-struct #%$record)
 
 (define (unsafe-struct-ref s i)
   (if (impersonator? s)
