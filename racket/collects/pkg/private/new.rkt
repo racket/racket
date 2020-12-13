@@ -136,21 +136,23 @@ jobs:
     name: "Build on Racket '${{ matrix.racket-version }}' (${{ matrix.racket-variant }})"
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        racket-version: ["7.9", "current"]
-        racket-variant: ["regular", "CS"]
+        racket-version: ["stable", "current"]
+        racket-variant: ["BC", "CS"]
     steps:
       - uses: actions/checkout@v2
-      - uses: Bogdanp/setup-racket@v0.10
+      - uses: Bogdanp/setup-racket@v0.12
         with:
           architecture: x64
           distribution: full
           variant: ${{ matrix.racket-variant }}
           version: ${{ matrix.racket-version }}
-      - run: |
-          raco pkg install --auto --name <<name>>
-          raco test -x -p <<name>>
+      - name: Installing <<name>> and its dependencies
+        run: raco pkg install --no-docs --auto --name <<name>>
+      - name: Compiling <<name>> and building its docs
+        run: raco setup --check-pkg-deps --unused-pkg-deps <<name>>
+      - name: Testing <<name>>
+        run: raco test -x -p <<name>>
 
 EOS
 )))
