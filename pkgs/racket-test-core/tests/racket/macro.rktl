@@ -1061,8 +1061,13 @@
   ;; expecting `#%app` from `racket/base` to reqrite to core `#%app`
   (test #t syntax-original? (find (expand #'(+ 1 2)) '#%app))
   (test #t syntax-property (find (expand #'(+ 1 2)) '#%app) 'implicit-made-explicit)
+  (test #t syntax-original? (find (expand #'100) '#%datum))
+  (test #t syntax-property (find (expand #'100) '#%datum) 'implicit-made-explicit)
+
   (test #f syntax-original? (find (expand (datum->syntax #'here '(+ 1 2))) '#%app))
-  (test #t syntax-property (find (expand (datum->syntax #'here '(+ 1 2))) '#%app) 'implicit-made-explicit))
+  (test #t syntax-property (find (expand (datum->syntax #'here '(+ 1 2))) '#%app) 'implicit-made-explicit)
+  (test #f syntax-original? (find (expand (datum->syntax #'here '100)) '#%datum))
+  (test #t syntax-property (find (expand (datum->syntax #'here '100)) '#%datum) 'implicit-made-explicit))
 
 ;; ----------------------------------------
 
@@ -1751,7 +1756,7 @@
 (let ()
   (define m
     '(module m racket/base
-      (define-syntax-rule (m) 1)
+      (define-syntax-rule (m) '1)
       (module+ main
         (m))))
 
