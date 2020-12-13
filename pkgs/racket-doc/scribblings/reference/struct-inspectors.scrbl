@@ -155,7 +155,8 @@ Returns a value for the name of @racket[v] if @racket[v] has a name,
 @racket[#f] otherwise. The argument @racket[v] can be any value, but
 only (some) procedures, @tech{structures}, @tech{structure types},
 @tech{structure type properties}, @tech{regexp values},
-@tech{ports}, and @tech{loggers} have names. See also @secref["infernames"].
+@tech{ports}, @tech{loggers}, and @tech{prompt tags} have names.
+See also @secref["infernames"].
 
 The name (if any) of a procedure is always a symbol. The
 @racket[procedure-rename] function creates a procedure with a specific
@@ -182,7 +183,14 @@ The name of a port can be any value, but many tools use a path or
 string name as the port's for (to report source locations, for
 example).
 
-The name of a @tech{logger} is either a symbol or @racket[#f].}
+The name of a @tech{logger} is either a symbol or @racket[#f].
+
+The name of a @tech{prompt tag} is either the optional symbol
+given to @racket[make-continuation-prompt-tag] or @racket[#f].
+
+ @history[#:changed "7.9.0.13" @elem{Recognize the name of
+            continuation prompt tags.}]
+}
 
 @defthing[prop:object-name struct-type-property?]{
 
