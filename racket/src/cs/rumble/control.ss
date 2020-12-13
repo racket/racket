@@ -783,7 +783,10 @@
                         (lambda (c . args) (apply-non-composable-continuation c args)))
   (struct-property-set! prop:procedure
                         (record-type-descriptor escape-continuation)
-                        (lambda (c . args) (apply-escape-continuation c args))))
+                        (lambda (c . args) (apply-escape-continuation c args)))
+  (struct-property-set! prop:object-name
+                        (record-type-descriptor continuation-prompt-tag)
+                        0))
 
 ;; ----------------------------------------
 ;; Metacontinuation operations for continutions

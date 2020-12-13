@@ -342,6 +342,8 @@
      (print-named "input-port" v mode o max-length)]
     [(core-output-port? v)
      (print-named "output-port" v mode o max-length)]
+    [(continuation-prompt-tag? v)
+     (print-named "continuation-prompt-tag" v mode o max-length)]
     [(unquoted-printing-string? v)
      (write-string/max (unquoted-printing-string-value v) o max-length)]
     [(eq? v unsafe-undefined)
