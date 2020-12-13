@@ -22669,26 +22669,34 @@
                                                            mode_0
                                                            o_0
                                                            max-length_0)
-                                                          (if (unquoted-printing-string?
+                                                          (if (continuation-prompt-tag?
                                                                v_0)
-                                                            (write-string/max
-                                                             (unquoted-printing-string-value
-                                                              v_0)
+                                                            (print-named
+                                                             "continuation-prompt-tag"
+                                                             v_0
+                                                             mode_0
                                                              o_0
                                                              max-length_0)
-                                                            (if (eq?
-                                                                 v_0
-                                                                 unsafe-undefined)
+                                                            (if (unquoted-printing-string?
+                                                                 v_0)
                                                               (write-string/max
-                                                               "#<unsafe-undefined>"
-                                                               o_0
-                                                               max-length_0)
-                                                              (write-string/max
-                                                               (format
-                                                                "~s"
+                                                               (unquoted-printing-string-value
                                                                 v_0)
                                                                o_0
-                                                               max-length_0))))))))))))))))))))))))))))))))
+                                                               max-length_0)
+                                                              (if (eq?
+                                                                   v_0
+                                                                   unsafe-undefined)
+                                                                (write-string/max
+                                                                 "#<unsafe-undefined>"
+                                                                 o_0
+                                                                 max-length_0)
+                                                                (write-string/max
+                                                                 (format
+                                                                  "~s"
+                                                                  v_0)
+                                                                 o_0
+                                                                 max-length_0)))))))))))))))))))))))))))))))))
 (define fail-unreadable
   (lambda (who_0 v_0)
     (raise
