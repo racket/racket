@@ -1,4 +1,4 @@
-;;; Parts from "newhash.ss" in Chez Scheme's implementation
+;;; Parts from "newhash.ss" in Chez Scheme's imp<lementation
 
 ;;; newhash.ss
 ;;; Copyright 1984-2016 Cisco Systems, Inc.
@@ -160,6 +160,10 @@
                                              (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
                                                hc0)))))])
          (values hc burn)))]
+    [(mpair? x)
+     (let-values ([(hc0 burn) (equal-hash-loop (mcar x) (fx+ burn 2) 0)])
+       (let ([hc (fx+/wraparound (mix-hash-code hc) (fx+/wraparound hc0 5))])
+         (equal-hash-loop (mcdr x) burn hc)))]
     [(and (#%$record? x) (#%$record-hash-procedure x))
      => (lambda (rec-hash)
           (let ([burn (fx+ burn 2)])
@@ -213,6 +217,10 @@
                                              (let-values ([(hc0 burn0) (equal-secondary-hash-loop x burn 0)])
                                                hc0)))))])
          (values hc burn)))]
+    [(mpair? x)
+     (let-values ([(hc0 burn) (equal-secondary-hash-loop (mcar x) (fx+ burn 2) 0)])
+       (let ([hc (fx+/wraparound (mix-hash-code hc) hc0)])
+         (equal-secondary-hash-loop (mcdr x) burn hc)))]
     [(and (#%$record? x)
           (or (struct-property-ref 'secondary-hash (#%$record-type-descriptor x) #f)
               ;; to use default hash proc as default secondary hash proc:
