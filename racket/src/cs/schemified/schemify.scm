@@ -20991,10 +20991,14 @@
                 (list ids_0 body_0)
                 (list
                  'args
-                 (list*
-                  'raise-binding-result-arity-error
-                  (length ids_0)
-                  '(args))))))))))))
+                 (let ((app_0
+                        (if (eq? target_0 'system) '() '(|#%app/no-return|))))
+                   (qq-append
+                    app_0
+                    (list*
+                     'raise-binding-result-arity-error
+                     (length ids_0)
+                     '(args))))))))))))))
 (define equal-implies-eq?
   (lambda (e_0)
     (let ((hd_0
@@ -23192,32 +23196,57 @@
                       app_0
                       app_1
                       (if no-prompt?_0
-                        (cons
-                         schemified_0
-                         (let ((app_2 (cdr l_0)))
-                           (loop_0
-                            add-import!_0
-                            allow-inline?_0
-                            allow-set!-undefined?_0
-                            datum-intern?_0
-                            explicit-unnamed?_0
-                            exports_0
-                            extra-variables_0
-                            final-knowns_0
-                            imports_0
-                            mutated_0
-                            no-prompt?_0
-                            prim-knowns_0
-                            primitives_0
-                            serializable?-box_0
-                            simples_0
-                            target_0
-                            unsafe-mode?_0
-                            app_2
-                            mut-l_0
-                            null
-                            (reverse$1 ids_0)
-                            knowns_0)))
+                        (let ((app_2
+                               (if (if unsafe-mode?_0
+                                     unsafe-mode?_0
+                                     (let ((or-part_0 (eq? target_0 'system)))
+                                       (if or-part_0
+                                         or-part_0
+                                         (if (pair? ids_0)
+                                           (null? (cdr ids_0))
+                                           #f))))
+                                 schemified_0
+                                 (list
+                                  'define-values
+                                  ids_0
+                                  (list
+                                   'call-with-values
+                                   (list 'lambda '() rhs_0)
+                                   (list
+                                    'case-lambda
+                                    (list ids_0 (list* 'values ids_0))
+                                    (list
+                                     'vals
+                                     (list*
+                                      'raise-definition-result-arity-error
+                                      (list 'quote ids_0)
+                                      '(vals)))))))))
+                          (cons
+                           app_2
+                           (let ((app_3 (cdr l_0)))
+                             (loop_0
+                              add-import!_0
+                              allow-inline?_0
+                              allow-set!-undefined?_0
+                              datum-intern?_0
+                              explicit-unnamed?_0
+                              exports_0
+                              extra-variables_0
+                              final-knowns_0
+                              imports_0
+                              mutated_0
+                              no-prompt?_0
+                              prim-knowns_0
+                              primitives_0
+                              serializable?-box_0
+                              simples_0
+                              target_0
+                              unsafe-mode?_0
+                              app_3
+                              mut-l_0
+                              null
+                              (reverse$1 ids_0)
+                              knowns_0))))
                         (let ((expr_0
                                (let ((app_2
                                       (list

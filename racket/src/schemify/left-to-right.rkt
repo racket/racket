@@ -129,4 +129,5 @@
           `(call-with-values (lambda () ,rhs)
              (case-lambda 
                [,ids ,body]
-               [args (#%app/no-return raise-binding-result-arity-error ,(length ids) args)]))])])]))
+               [args (,@(if (aim? target 'system) '() '(#%app/no-return))
+                      raise-binding-result-arity-error ,(length ids) args)]))])])]))

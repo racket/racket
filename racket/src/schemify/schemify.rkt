@@ -342,7 +342,18 @@
            (cond
              [no-prompt?
               (cons
-               schemified
+               (cond
+                 [(or unsafe-mode?
+                      (aim? target 'system)
+                      (and (pair? ids) (null? (cdr ids))))
+                  schemified]
+                 [else
+                  `(define-values ,ids
+                     (call-with-values
+                      (lambda () ,rhs)
+                      (case-lambda
+                        [,ids (values . ,ids)]
+                        [vals (raise-definition-result-arity-error ',ids vals)])))])
                (loop (cdr l) mut-l null (reverse ids) knowns))]
              [else
               (define expr

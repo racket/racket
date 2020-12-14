@@ -31,6 +31,7 @@
 
   [call-with-module-prompt (known-procedure 2)]
   [raise-binding-result-arity-error (known-procedure 4)]
+  [raise-definition-result-arity-error (known-procedure 4)]
 
   [make-pthread-parameter (known-procedure 2)]
   [engine-block (known-procedure 1)]

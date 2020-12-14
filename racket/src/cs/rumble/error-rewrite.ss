@@ -64,8 +64,11 @@
     (getprop n 'error-rename n)))
 
 (define is-not-a-str "~s is not a")
+(define result-arity-msg-head "returned ")
+(define result-arity-msg-tail " values to single value return context")
 
 (define (rewrite-format who str irritants)
+  (#%printf ">> ~s\n" str)
   (cond
    [(equal? str "attempt to reference undefined variable ~s")
     (values (string-append
@@ -75,6 +78,18 @@
    [(and (equal? str "undefined for ~s")
          (equal? irritants '(0)))
     (values "division by zero" null)]
+   [(and (string-prefix? result-arity-msg-head str)
+         (string-suffix? result-arity-msg-tail str))
+    (values (string-append "result arity mismatch;\n"
+                           " expected number of values not received\n"
+                           "  expected: 1\n"
+                           "  received: " (let ([s (substring str
+                                                              (string-length result-arity-msg-head)
+                                                              (- (string-length str) (string-length result-arity-msg-tail)))])
+                                            (if (equal? s "~a")
+                                                (number->string (car irritants))
+                                                s)))
+            null)]
    [(equal? str "~s is not a pair")
     (format-error-values "contract violation\n  expected: pair?\n  given: ~s"
                          irritants)]

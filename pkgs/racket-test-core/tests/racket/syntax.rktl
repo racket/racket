@@ -1118,14 +1118,17 @@
 (syntax-test #'(cond [(< 2 3) (define x 2)] [else 5]))
 (syntax-test #'(cond [else (define x 2)]))
 
-;; No good way to test in mzc:
-(error-test #'(define x (values)) exn:application:arity?)
-(error-test #'(define x (values 1 2)) exn:application:arity?)
-(error-test #'(define-values () 3) exn:application:arity?)
-(error-test #'(define-values () (values 1 3)) exn:application:arity?)
-(error-test #'(define-values (x y) (values)) exn:application:arity?)
-(error-test #'(define-values (x y) 3) exn:application:arity?)
-(error-test #'(define-values (x y) (values 1 2 3)) exn:application:arity?)
+(define (definition-arity-error? x)
+  (and (exn:application:arity? x)
+       (regexp-match? #rx"expected number of values not received" (exn-message x))))
+
+(error-test #'(define x (values)) definition-arity-error?)
+(error-test #'(define x (values 1 2)) definition-arity-error?)
+(error-test #'(define-values () 3) definition-arity-error?)
+(error-test #'(define-values () (values 1 3)) definition-arity-error?)
+(error-test #'(define-values (x y) (values)) definition-arity-error?)
+(error-test #'(define-values (x y) 3) definition-arity-error?)
+(error-test #'(define-values (x y) (values 1 2 3)) definition-arity-error?)
 
 (begin (define ed-t1 1) (define ed-t2 2))
 (test 1 'begin-define ed-t1)

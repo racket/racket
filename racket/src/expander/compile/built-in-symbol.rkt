@@ -93,6 +93,7 @@
                unsafe-struct?
                unsafe-struct
                raise-binding-result-arity-error
+               raise-definition-result-arity-error
                structure-type-lookup-prefab-uid
                struct-type-constructor-add-guards
                impersonator-val
