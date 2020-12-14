@@ -1895,7 +1895,10 @@
      [else
       ;; Inform the scheduler that it's in atomic mode
       (scheduler-start-atomic)
+      ;; Now that the schedule is in atomic mode, reenable interrupts (for GC)
+      (enable-interrupts)
       (let ([v (thunk)])
+        (disable-interrupts)
         (scheduler-end-atomic)
         v)])]
    [(box? async-apply)
