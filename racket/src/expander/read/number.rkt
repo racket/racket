@@ -238,28 +238,27 @@
              (n . < . (expt 2 50))
              (n . > . (- (expt 2 50))))
         ;; No loss of precision in mantissa from early flonum conversion
-        (let ([exp (+ exp (* sgn2 exp2))]
-              [m (fx->fl (if (fx= sgn -1)
-                             (fx- 0 n)
-                             n))])
+        (let ([exp (+ exp (* sgn2 exp2))])
           (cond
-            [(eqv? exp 0) m]
-            [(not (fixnum? exp)) #f]
-            [else
-             (define fradix (if (fx= radix 10)
-                                10.0
-                                (fx->fl radix)))
-             (cond
-               [(exp . fx< . 0)
-                ;; Stay well away from limits on the exponent to make
-                ;; sure there's still no loss of precision. We could
-                ;; use `(integer-length n)` to improve the bounds,
-                ;; but this seems good enough for the common case.
-                (and (exp . fx> . (cond
-                                    [(radix . fx<= . 10) -300]
-                                    [else -240]))
-                     (/ m (expt fradix (fx- 0 exp))))]
-               [else (* m (expt fradix exp))])]))]
+            [(and (fixnum? exp)
+                  (cond
+                    [(radix . fx<= . 10) (fx<= -15 exp 15)]
+                    [else (fx<= -12 exp 12)]))
+             ;; No loss of precision in radix^exponent as a flonum
+             (let ([m (fx->fl (if (fx= sgn -1)
+                                  (fx- 0 n)
+                                  n))])
+               (cond
+                 [(eqv? exp 0) m]
+                 [(not (fixnum? exp)) #f]
+                 [else
+                  (define fradix (if (fx= radix 10)
+                                     10.0
+                                     (fx->fl radix)))
+                  (cond
+                    [(exp . fx< . 0) (/ m (expt fradix (fx- 0 exp)))]
+                    [else (* m (expt fradix exp))])]))]
+            [else #f]))]
        [else #f])]
     [else #f]))
 
@@ -839,7 +838,7 @@
   (try "#i+inf.f")
   (try "-inf.f")
   (try "#e+inf.0")
-  (try "-inf.t")
+  (when (extflonum-available?) (try "-inf.t"))
   (try "10")
   (try "10.1")
   (try "1+2i")
@@ -851,9 +850,9 @@
   (try "#e#x+e#s+e")
   (try "-e#l-e")
   (try "#e#x+e#s+e@-e#l-e")
-  (try "3.1415926535897932385t0")
+  (when (extflonum-available?) (try "3.1415926535897932385t0"))
   (try "+nan.0+1i")
-  (try "3.0t0")
+  (when (extflonum-available?) (try "3.0t0"))
   (try "+i")
   (try "-i")
   (try "#i3")
@@ -862,7 +861,7 @@
   (try "1.2+i")
   (try "1/2+3")
   (try "1.2+3")
-  (try "#i1.2t0+3i")
+  (when (extflonum-available?) (try "#i1.2t0+3i"))
   (try "#i-0")
   (try "#i0")
   (try "-0#")
@@ -885,11 +884,12 @@
   (try "1@+inf.0")
   (try "1/1@+inf.0")
   ;(try "#d1/0+3.0i")
-  (try "3.0t0+1/0i")
-  (try "1/0+3.0t0i")
-  (try "+inf.t0+1/0i")
-  (try "1/0+inf.t0i")
-  (try "3.#t0")
+  (when (extflonum-available?)
+    (try "3.0t0+1/0i")
+    (try "1/0+3.0t0i")
+    (try "+inf.t0+1/0i")
+    (try "1/0+inf.t0i")
+    (try "3.#t0"))
   (try "-1-2i")
   (try "-4.242154731064108e-5-6.865001427422244e-5i")
   (try "1e300+1e300i")

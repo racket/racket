@@ -2652,6 +2652,9 @@
 (test 10.0 string->number (string-append "1" (make-string 8000 #\0) "/" "1" (make-string 7998 #\0) "#@0"))
 (test #f zero? (string->number "7.4109846876187e-323"))
 
+;; Regression test to make sure prevision isn't lost by multiplying 10.0 times 1e44:
+(test (exact->inexact #e1e45) string->number "1.0e45")
+
 (test #t andmap (lambda (x) (and (>= x 0) (< x 10))) (map random '(10 10 10 10)))
 (test (void) random-seed 5)
 (test (begin (random-seed 23) (list (random 10) (random 20) (random 30)))
