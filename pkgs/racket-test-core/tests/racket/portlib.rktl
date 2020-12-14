@@ -472,6 +472,23 @@
   (try-peeking 'none)
   (try-peeking 'block))
 
+(when (run-unreliable-tests? 'timing)
+  (define (try get)
+    (define-values (in out) (make-pipe))
+    (write-char #\. out)
+    (let ((i (peeking-input-port in)))
+      (read-byte i)
+      (let loop ([tries 10])
+        (if (zero? tries)
+            (test #t values `(peeking-input-port-timing-test-failed ,get))
+            (let ([now (current-process-milliseconds)])
+              (get i)
+              (let ([spun (- (current-process-milliseconds) now)])
+                (unless (< spun (/ (* SLEEP-TIME 1000) 10))
+                  (loop (sub1 tries)))))))))
+  (try (lambda (i) (sync/timeout SLEEP-TIME (thread (lambda () (read-byte i))))))
+  (try (lambda (i) (sync/timeout SLEEP-TIME i))))
+
 ;; read synchronization events
 (define (go mk-hello sync atest btest)
   (test #t list? (list mk-hello sync atest btest))
