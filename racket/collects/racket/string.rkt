@@ -320,8 +320,13 @@
  byte strings are sequences of bytes, not characters use bytes->string/utf-8 or a similar function instead"
      "expected" (unquoted-printing-string "(sequence/c char?)")
      "given" sequence))
+  (define (check-char ch) (unless (char? ch) (raise-argument-error 'sequence->string "char?" ch)))
+  (define (check-list char-list)
+    (for ([ch (in-list char-list)]) (check-char ch))
+    char-list)
   ;; TODO(jackfirth): Is there a way to reduce the number of copies we create here?
   (cond
     [(string? sequence) (string->immutable-string sequence)]
-    [(list? sequence) (string->immutable-string (list->string sequence))]
-    [else (string->immutable-string (list->string (for/list ([element sequence]) element)))]))
+    [(list? sequence) (string->immutable-string (list->string (check-list sequence)))]
+    [else
+     (string->immutable-string (list->string (for/list ([ch sequence]) (check-char ch))))]))
