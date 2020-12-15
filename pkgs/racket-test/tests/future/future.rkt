@@ -911,8 +911,7 @@ We should also test deep continuations.
       (define f (func (lambda () (loop i))))
       (sleep 0.1)
       (with-handlers ([exn:fail? (lambda (exn)
-                                   (unless (or (regexp-match #rx"expected number of values not received" (exn-message exn))
-                                               (regexp-match #rx"returned two values to single value return context" (exn-message exn)))
+                                   (unless (regexp-match #rx"expected number of values not received" (exn-message exn))
                                      (raise exn)))])
         (touch f))))
 
