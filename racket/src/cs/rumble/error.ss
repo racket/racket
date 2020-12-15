@@ -429,22 +429,24 @@
     (current-continuation-marks))))
 
 (define (raise-binding-result-arity-error expected-args args)
-  (apply raise-result-arity-error #f
-         (if (integer? expected-args)
-             expected-args
-             (length expected-args))
-         "\n  in: local-binding form"
-         args))
+  (|#%app/no-return| #%apply
+   raise-result-arity-error #f
+   (if (integer? expected-args)
+       expected-args
+       (length expected-args))
+   "\n  in: local-binding form"
+   args))
 
 (define (raise-definition-result-arity-error expected-args args)
-  (apply raise-result-arity-error 'define-values
-         (length expected-args)
-         (if (null? expected-args)
-             ""
-             (string-append "\n  in: definition of "
-                            (symbol->string (car expected-args))
-                            " ..."))
-         args))
+  (|#%app/no-return| #%apply
+   raise-result-arity-error 'define-values
+   (length expected-args)
+   (if (null? expected-args)
+       ""
+       (string-append "\n  in: definition of "
+                      (symbol->string (car expected-args))
+                      " ..."))
+   args))
 
 (define raise-unsupported-error
   (case-lambda
