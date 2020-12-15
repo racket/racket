@@ -3,7 +3,8 @@
 
 (Section 'string)
 
-(require racket/string
+(require racket/stream
+         racket/string
          (submod racket/string private))
 
 ;; ---------- real->decimal-string ----------
@@ -597,5 +598,63 @@
   ; examples from https://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
   (test #(#f 0 0 0 #f 0 2 0) build-kmp-table "abcdabd")
   (test #(#f 0 #f 1 #f 0 #f 3 2 0) build-kmp-table "abacababc"))
+
+;; ---------- sequence->string ----------
+(let ()
+  
+  (let ()
+    (define immutable-str "xyz")
+    (test "xyz" sequence->string immutable-str)
+    (test #true immutable? (sequence->string immutable-str))
+    (test #true eq? (sequence->string immutable-str) immutable-str))
+
+  (let ()
+    (define mutable-str (string #\x #\y #\z))
+    (test "xyz" sequence->string mutable-str)
+    (test #true immutable? (sequence->string mutable-str))
+    (test #false eq? (sequence->string mutable-str) mutable-str))
+
+  (let ()
+    (define lst (list #\x #\y #\z))
+    (test "xyz" sequence->string lst)
+    (test #true immutable? (sequence->string lst)))
+
+  (let ()
+    (define mutable-vec (vector #\x #\y #\z))
+    (test "xyz" sequence->string mutable-vec)
+    (test #true immutable? (sequence->string mutable-vec)))
+
+  (let ()
+    (define immutable-vec (vector->immutable-vector (vector #\x #\y #\z)))
+    (test "xyz" sequence->string immutable-vec)
+    (test #true immutable? (sequence->string immutable-vec)))
+
+  (let ()
+    (define char-stream (stream #\x #\y #\z))
+    (test "xyz" sequence->string char-stream)
+    (test #true immutable? (sequence->string char-stream)))
+  
+  (let ()
+    (err/rt-test
+     (sequence->string #"hello") exn:fail:contract? #rx"sequence\\->string: contract violation")
+    (err/rt-test (sequence->string #"hello") exn:fail:contract? #rx"use bytes\\->string/utf\\-8")
+    (err/rt-test
+     (sequence->string #"hello") exn:fail:contract? #rx"expected: \\(sequence/c char\\?\\)")
+    (err/rt-test
+     (sequence->string #"hello") exn:fail:contract? #rx"given: #\"hello\""))
+
+  (let ()
+    (err/rt-test
+     (sequence->string (vector #\x #\y 'oops))
+     exn:fail:contract?
+     #rx"sequence\\->string: contract violation")
+    (err/rt-test
+     (sequence->string (vector #\x #\y 'oops))
+     exn:fail:contract?
+     #rx"expected: char\\?")
+    (err/rt-test
+     (sequence->string (vector #\x #\y 'oops))
+     exn:fail:contract?
+     #rx"given: 'oops")))
 
 (report-errs)
