@@ -345,6 +345,8 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
 
   test-cs:
     runs-on: ubuntu-18.04
@@ -409,6 +411,8 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
   slack:
     runs-on: ubuntu-latest
     needs: [test-cgc, test-3m, test-cs]

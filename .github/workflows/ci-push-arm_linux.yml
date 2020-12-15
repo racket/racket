@@ -273,6 +273,8 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
 
   test-cs:
     container:
@@ -343,3 +345,5 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
