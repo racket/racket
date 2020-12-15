@@ -115,9 +115,7 @@ Compare and set operation for vectors. See @racket[box-cas!].
 
  This function takes time proportional to the size of @racket[vec].
 
- Prefer using @racket[sequence->list], which accepts all kinds of sequences.
-
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->vector].}]}
+ See also @racket[sequence->list], which accepts all kinds of sequences.}
 
 
 @defproc[(list->vector [lst list?]) vector?]{
@@ -127,10 +125,8 @@ Compare and set operation for vectors. See @racket[box-cas!].
  
  This function takes time proportional to the length of @racket[lst].
  
- Prefer using @racket[sequence->vector], which accepts all kinds of sequences and returns immutable
- vectors.
- 
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->vector].}]}
+ See also @racket[sequence->vector], which accepts all kinds of sequences and returns immutable
+ vectors.}
 
 
 @defproc[(vector->immutable-vector [vec vector?])
@@ -142,11 +138,9 @@ Compare and set operation for vectors. See @racket[box-cas!].
  This function takes time proportional to the size of @racket[vec] when
  @racket[vec] is mutable.
 
- Prefer using @racket[sequence->vector], which accepts all kinds of sequences and returns immutable
+ See also @racket[sequence->vector], which accepts all kinds of sequences and returns immutable
  vectors. When given mutable vectors, @racket[sequence->vector] is just as fast as
- @racket[vector->immutable-vector].
- 
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->vector].}]}
+ @racket[vector->immutable-vector].}
 
 
 @defproc[(vector-fill! [vec (and/c vector? (not/c immutable?))]

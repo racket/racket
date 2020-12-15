@@ -56,11 +56,9 @@ whose positions are initialized with the given @racket[char]s.
  Returns an immutable string with the same content as @racket[str], returning @racket[str] itself if
  @racket[str] is immutable.
 
- Prefer using @racket[sequence->string], which accepts all kinds of sequences and returns immutable
+ See also @racket[sequence->string], which accepts all kinds of sequences and returns immutable
  strings. When given mutable strings, @racket[sequence->string] is just as fast as
- @racket[string->immutable-string].
- 
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->string].}]}
+ @racket[string->immutable-string].}
 
 
 @defproc[(string-length [str string?]) exact-nonnegative-integer?]{
@@ -177,11 +175,9 @@ string.
  the list is @racket[(string-length str)], and the sequence of characters in @racket[str] is the same
  sequence in the result list.
 
- Prefer using @racket[sequence->list], which accepts all kinds of sequences.
+ See also using @racket[sequence->list], which accepts all kinds of sequences.
 
- @mz-examples[(string->list "Apple")]
-
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->list].}]}
+ @mz-examples[(string->list "Apple")]}
 
 
 @defproc[(list->string [lst (listof char?)]) string?]{
@@ -190,12 +186,10 @@ string.
  length of the string is @racket[(length lst)], and the sequence of characters in @racket[lst] is the
  same sequence in the result string.
 
- Prefer using @racket[sequence->string], which accepts all kinds of sequences and returns immutable
+ See also using @racket[sequence->string], which accepts all kinds of sequences and returns immutable
  strings.
 
- @mz-examples[(list->string (list #\A #\p #\p #\l #\e))]
-
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->string].}]}
+ @mz-examples[(list->string (list #\A #\p #\p #\l #\e))]}
 
 
 @defproc[(build-string [n exact-nonnegative-integer?]

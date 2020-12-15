@@ -726,9 +726,7 @@ Produces a list containing the elements of @racket[st].
 
 Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
-Prefer using @racket[sequence->list], which accepts all kinds of sequences.
-
-@history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->list].}]
+See also @racket[sequence->list], which accepts all kinds of sequences.
 }
 
 @defproc[(set-map [st generic-set?]

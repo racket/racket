@@ -164,11 +164,9 @@ string.
  list is @racket[(bytes-length bstr)], and the sequence of bytes in @racket[bstr] is the same sequence
  in the result list.
 
- Prefer using @racket[sequence->list], which accepts all kinds of sequences.
+ See also @racket[sequence->list], which accepts all kinds of sequences.
 
- @mz-examples[(bytes->list #"Apple")]
-
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->bytes].}]}
+ @mz-examples[(bytes->list #"Apple")]}
 
 
 @defproc[(list->bytes [lst (listof byte?)]) bytes?]{
@@ -176,12 +174,10 @@ string.
  length of the byte string is @racket[(length lst)], and the sequence of bytes in @racket[lst] is the
  same sequence in the resulting byte string.
 
- Prefer using @racket[sequence->bytes], which accepts all kinds of sequences and returns immutable
- byte strings.
+ See also @racket[sequence->bytes], which accepts all kinds of sequences and returns immutable byte
+ strings.
 
- @mz-examples[(list->bytes (list 65 112 112 108 101))]
-
- @history[#:changed "7.9.0.10" @elem{Soft deprecated in favor of @racket[sequence->bytes].}]}
+ @mz-examples[(list->bytes (list 65 112 112 108 101))]}
 
 @defproc[(make-shared-bytes [k exact-nonnegative-integer?] [b byte? 0])
 bytes?]{ Returns a new mutable byte string of length @racket[k] where each
