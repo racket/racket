@@ -68,7 +68,6 @@
 (define result-arity-msg-tail " values to single value return context")
 
 (define (rewrite-format who str irritants)
-  (#%printf ">> ~s\n" str)
   (cond
    [(equal? str "attempt to reference undefined variable ~s")
     (values (string-append
