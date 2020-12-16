@@ -68,12 +68,12 @@
                [lo (- x delta)]
                [hi (+ x delta)])
           (cond
-           [(equal? x +nan.0) x]
+           [(not (= x x)) x]
            [(or (equal? x +inf.0) 
                 (equal? x -inf.0))
             (if (equal? delta +inf.0) +nan.0 x)]
            [(equal? delta +inf.0) 0.0]
-           [(not (= x x)) +nan.0]
+           [(not (= within within)) within]
            [(<= lo 0 hi) (if (exact? x) 0 0.0)]
            [(or (inexact? lo) (inexact? hi))
             (exact->inexact (do-find-between (inexact->exact lo) (inexact->exact hi)))]
