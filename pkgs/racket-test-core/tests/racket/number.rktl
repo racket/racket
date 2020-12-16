@@ -2440,15 +2440,15 @@
 (err/rt-test (rationalize .3+0.0i 1/10))
 
 (define (test-rat-inf v)
-  (define zero (if (exact? v) 0 0.0))
-
   (test +inf.0 rationalize +inf.0 v)
   (test -inf.0 rationalize -inf.0 v)
   (test-nan.0 rationalize +nan.0 v)
 
-  (test zero rationalize v +inf.0)
-  (test zero rationalize v -inf.0)
+  (test 0.0 rationalize v +inf.0)
+  (test 0.0 rationalize v -inf.0)
   (test-nan.0 rationalize v +nan.0))
+
+(test-rat-inf 1/3)
 
 (let loop ([i 100])
   (unless (= i -100)
