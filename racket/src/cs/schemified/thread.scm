@@ -5732,7 +5732,27 @@
             c_0
             "second custodian"
             super-c_0))
-         (hash-keys (custodian-children c_0)))))))
+         (reverse$1
+          (let ((ht_0 (custodian-children c_0)))
+            (begin
+              (letrec*
+               ((for-loop_0
+                 (|#%name|
+                  for-loop
+                  (lambda (fold-var_0 i_0)
+                    (begin
+                      (if i_0
+                        (let ((v_0 (hash-iterate-key ht_0 i_0)))
+                          (let ((fold-var_1
+                                 (if (not (1/custodian-box? v_0))
+                                   (let ((fold-var_1 (cons v_0 fold-var_0)))
+                                     (values fold-var_1))
+                                   fold-var_0)))
+                            (for-loop_0
+                             fold-var_1
+                             (hash-iterate-next ht_0 i_0))))
+                        fold-var_0))))))
+               (for-loop_0 null (hash-iterate-first ht_0)))))))))))
 (define 1/custodian-memory-accounting-available?
   (|#%name| custodian-memory-accounting-available? (lambda () (begin #t))))
 (define 1/custodian-require-memory

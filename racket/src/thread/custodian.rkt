@@ -381,7 +381,9 @@
     (raise-arguments-error who "the second custodian does not manage the first custodian"
                            "first custodian" c
                            "second custodian" super-c))
-  (hash-keys (custodian-children c)))
+  (for/list ([v (in-hash-keys (custodian-children c))]
+             #:when (not (custodian-box? v)))
+    v))
 
 (define (custodian-memory-accounting-available?)
   #t)

@@ -432,6 +432,15 @@
   (test #f pair? (member sp (custodian-managed-list c2 c)))
   (custodian-shutdown-all c))
 
+;; Check custodian-boxes are omitted by custodian-managed-list:
+(let* ([c (make-custodian)]
+       [c2 (make-custodian c)])
+  (define cb (make-custodian-box c2 'value))
+  (test '() custodian-managed-list c2 c)
+  (test 'value custodian-box-value cb)
+  (custodian-shutdown-all c2)
+  (test #f custodian-box-value cb))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; process groups
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
