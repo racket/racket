@@ -220,13 +220,13 @@ raw_gracketcs: grmain.o boot.o $(BOOT_OBJ_DEPS)
 	@POST_LINKER@ raw_gracketcs
 
 petite-v.boot: $(SCHEME_TARGET_INC)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot petite-v.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/petite.boot petite-v.boot
 
 scheme-v.boot: $(SCHEME_TARGET_INC)/scheme.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot scheme-v.boot petite
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/scheme.boot scheme-v.boot petite
 
 racket-v.boot: racket.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot racket-v.boot petite scheme
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.boot racket-v.boot petite scheme
 
 # ----------------------------------------
 # Mac OS
@@ -273,9 +273,9 @@ $(RKTFW): $(BOOT_OBJ_DEPS) $(BOOT_FILES)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_CS/Racket Racket.framework/Racket
 	mkdir -p Racket.framework/Versions/$(FWVERSION)_CS/boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
 
 adjust-framework-boot-compress:
 	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
