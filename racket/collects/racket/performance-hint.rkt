@@ -99,23 +99,23 @@
                 [(_ arg*:actual ...)
                  ;; let*-bind the actuals, to ensure that they're evaluated
                  ;; only once, and in order
-                 #`(syntax-parameterize
-                    ([name (make-rename-transformer #'internal-name)])
-                    (let* ([arg*.tmp arg*.arg] ...)
-                      #,(let* ([arg-entries     (attribute arg*.for-aux)]
-                               [keyword-entries (filter car arg-entries)]
-                               [positional-entries
-                                (filter (lambda (x) (not (car x)))
-                                        arg-entries)]
-                               [sorted-keyword-entries
-                                (sort keyword-entries
-                                      string<?
-                                      #:key (lambda (kw)
-                                              (keyword->string
-                                               (syntax-e (car kw)))))])
-                          (keyword-apply
-                           function-aux
-                           (map (lambda (x) (syntax-e (car x)))
-                                sorted-keyword-entries)
-                           (map cadr sorted-keyword-entries)
-                           (map cadr positional-entries)))))])))))]))
+                 #`(let* ([arg*.tmp arg*.arg] ...)
+                     (syntax-parameterize
+                         ([name (make-rename-transformer #'internal-name)])
+                       #,(let* ([arg-entries     (attribute arg*.for-aux)]
+                                [keyword-entries (filter car arg-entries)]
+                                [positional-entries
+                                 (filter (lambda (x) (not (car x)))
+                                         arg-entries)]
+                                [sorted-keyword-entries
+                                 (sort keyword-entries
+                                       string<?
+                                       #:key (lambda (kw)
+                                               (keyword->string
+                                                (syntax-e (car kw)))))])
+                           (keyword-apply
+                            function-aux
+                            (map (lambda (x) (syntax-e (car x)))
+                                 sorted-keyword-entries)
+                            (map cadr sorted-keyword-entries)
+                            (map cadr positional-entries)))))])))))]))
