@@ -132,7 +132,10 @@ Racket CS currently supports three compilation modes:
    interpreter around the compiled parts).
 
    Select this mode by setting the `PLT_CS_MACH` environment variable,
-   but it's currently the default.
+   but it's currently the default. When this mode is selected,
+   interpreter mode is still used for compile-time code that does not
+   span a module (or, more generally, for the 'quick option to
+   `compile-linklet` and similar functions).
 
    When the "cs" suffix is used for build mode, compiled ".zo" files
    in this mode are written to a subdirectory of "compiled" using the
@@ -164,7 +167,12 @@ Racket CS currently supports three compilation modes:
  * JIT mode --- The compiled form of a module is an S-expression where
    individual `lambda`s are compiled on demand.
 
+   JIT mode does not perform well and probably should be discontinued.
+
    Select this mode by setting the `PLT_CS_JIT` environment variable.
+   When this mode is selected, interpreter mode is still used for
+   compile-time code that does not span a module (or, more generally,
+   for the 'quick option to `compile-linklet` and similar functions).
 
    When the "cs" suffix is used for build mode, compiled ".zo" files
    in this mode are written to a "cs" subdirectory of "compiled".

@@ -91,9 +91,6 @@ forms or adjust the way forms are displayed:
         generated names, instead of abbreviations that may conflate
         different symbols}
 
-   @item{@envvar-indexed{PLT_LINKLET_SHOW_PRE_LIFT} --- shows a
-         schemified forms before closure transformations are applied}
-
    @item{@envvar-indexed{PLT_LINKLET_SHOW_PRE_JIT} --- shows a
          schemified forms before a transformation to JIT mode, which
          applies only when @envvar{PLT_CS_JIT} is set}

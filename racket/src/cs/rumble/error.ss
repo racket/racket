@@ -464,12 +464,11 @@
   (fields value))
 
 (define make-unquoted-printing-string
-  (let ([unquoted-printing-string
-         (escapes-ok
-           (lambda (s)
-             (check 'unquoted-printing-string string? s)
-             (new-unquoted-printing-string s)))])
-    unquoted-printing-string))
+  (|#%name|
+   unquoted-printing-string
+   (lambda (s)
+     (check 'unquoted-printing-string string? s)
+     (new-unquoted-printing-string s))))
 
 ;; ----------------------------------------
 

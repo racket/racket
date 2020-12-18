@@ -734,8 +734,7 @@
           current-atomic-virtual-register
           end-atomic-virtual-register
           current-future-virtual-register)
-  (import (rename (chezpart)
-                  [define define/no-lift])
+  (import (chezpart)
 	  (rename (only (chezscheme) sleep)
 		  [sleep chez:sleep])
 	  (only (chezscheme)
@@ -752,10 +751,9 @@
                 record-field-mutator))
 
   ;; Internal tokens that are different from all possible user-level values:
-  (define/no-lift none '#{none kwcju864gpycc2h151s9atbmo-1})
-  (define/no-lift none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
+  (define none '#{none kwcju864gpycc2h151s9atbmo-1})
+  (define none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
 
-  (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
   (include "rumble/layout.ss")
   (include "rumble/begin0.ss")

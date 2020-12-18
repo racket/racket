@@ -175,7 +175,6 @@
                             [else #f])]))
 
   (define gensym-on? (getenv "PLT_LINKLET_SHOW_GENSYM"))
-  (define pre-lift-on? (getenv "PLT_LINKLET_SHOW_PRE_LIFT"))
   (define pre-jit-on? (getenv "PLT_LINKLET_SHOW_PRE_JIT"))
   (define lambda-on? (getenv "PLT_LINKLET_SHOW_LAMBDA"))
   (define post-lambda-on? (getenv "PLT_LINKLET_SHOW_POST_LAMBDA"))
@@ -187,7 +186,6 @@
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
   (define show-on? (or gensym-on?
                        pre-jit-on?
-                       pre-lift-on?
                        post-lambda-on?
                        post-interp-on?
                        jit-demand-on?
@@ -304,10 +302,17 @@
   (define (run-interpret s)
     (interpret-linklet s))
 
+  (define (lambda->linklet-lambda s)
+    ;; Replace `lambda` with `$lambda/lift-barrier`, which prevents
+    ;; the compiler from converting functions in the immediate linklet
+    ;; body to take closure elements are arguments; at the level of a
+    ;; linklet, it's better to create all of the closures on instantiation
+    (cons '$lambda/lift-barrier (cdr s)))
+
   (define (compile-to-proc s format unsafe?)
     (if (eq? format 'interpret)
         (run-interpret s)
-        (compile* s unsafe?)))
+        (compile* (lambda->linklet-lambda s) unsafe?)))
 
   ;; returns code bytevector and literals vector
   (define (compile*-to-bytevector s quoteds unsafe?)
@@ -322,13 +327,13 @@
        (let-values ([(o get) (open-bytevector-output-port)])
          (let ([literals (fasl-write-code* s quoteds o)])
            (values (get) literals)))]
-      [else (compile*-to-bytevector s quoteds unsafe?)]))
+      [else (compile*-to-bytevector (lambda->linklet-lambda s) quoteds unsafe?)]))
 
   ;; returns code bytevector and literals vector
   (define (cross-compile-to-bytevector machine s quoteds format unsafe?)
     (cond
       [(eq? format 'interpret) (cross-fasl-to-string machine s quoteds)]
-      [else (cross-compile machine s quoteds unsafe?)]))
+      [else (cross-compile machine (lambda->linklet-lambda s) quoteds unsafe?)]))
 
   (define (eval-from-bytevector bv literals format)
     (add-performance-memory! 'faslin-code (bytevector-length bv))
@@ -528,6 +533,7 @@
        'schemify
        (define jitify-mode?
          (and (not just-expand?)
+              (not quick-mode?)
               (or (eq? linklet-compilation-mode 'jit)
                   (and (eq? linklet-compilation-mode 'mach)
                        (linklet-bigger-than? c linklet-compilation-limit serializable?)
@@ -558,19 +564,15 @@
                                (lambda (key) (lookup-linklet-or-instance get-import key))
                                (lambda (key) (values #f #f #f)))
                            import-keys))
-       (define impl-lam/lifts
-         (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)
-                                     ;; preserve loop forms?
-                                     (not (eq? linklet-compilation-mode 'interp))))
        (define impl-lam/jitified
          (cond
-           [(not jitify-mode?) impl-lam/lifts]
+           [(not jitify-mode?) impl-lam]
            [else
             (performance-region
              'jitify
              (jitify-schemified-linklet (case linklet-compilation-mode
-                                          [(jit) (show pre-jit-on? "pre-jitified" impl-lam/lifts)]
-                                          [else (show "schemified" impl-lam/lifts)])
+                                          [(jit) (show pre-jit-on? "pre-jitified" impl-lam)]
+                                          [else (show "schemified" impl-lam)])
                                         ;; don't need extract for non-serializable 'lambda mode
                                         (or serializable? (eq? linklet-compilation-mode 'jit))
                                         ;; need lift only for serializable JIT mode

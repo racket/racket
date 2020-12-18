@@ -898,28 +898,22 @@
                                              (cdr e)
                                              #f target
                                              prim-knowns knowns imports mutated simples))]
-                    [(and (not (or
-                                ;; Don't inline in cify mode, because cify takes care of it
-                                (aim? target 'cify)
-                                ;; Don't inline in 'system mode, because there will
-                                ;; be no `|#%struct-constructor| in the way, and
-                                ;; it's more readable to use the normal constructor name
-                                (aim? target 'system)))
+                    ;; Struct procedures are only inlined for imported values, which implies
+                    ;; a non-cify, non-system target; for non-imported values, we expect a
+                    ;; later pass to be able to handle things
+                    [(and im
                           (known-struct-constructor? k)
                           (inline-struct-constructor k s-rator im args))
                      => (lambda (e) e)]
-                    [(and (not (or (aim? target 'cify)
-                                   (aim? target 'system)))
+                    [(and im
                           (known-struct-predicate? k)
                           (inline-struct-predicate k s-rator im args))
                      => (lambda (e) e)]
-                    [(and (not (or (aim? target 'cify)
-                                   (aim? target 'system)))
+                    [(and im
                           (known-field-accessor? k)
                           (inline-field-access k s-rator im args))
                      => (lambda (e) e)]
-                    [(and (not (or (aim? target 'cify)
-                                   (aim? target 'system)))
+                    [(and im
                           (known-field-mutator? k)
                           (inline-field-mutate k s-rator im args))
                      => (lambda (e) e)]

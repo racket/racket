@@ -218,19 +218,18 @@
     (let ([props-ht
            ;; Check for duplicates and record property values
            (let ([get-struct-info
-                  (escapes-ok
-                    (lambda ()
-                      (let ([parent-total*-count (if parent-rtd*
-                                                     (struct-type-total*-field-count parent-rtd*)
-                                                     0)])
-                        (list name
-                              init-count
-                              auto-count
-                              (make-position-based-accessor rtd parent-total*-count (+ init-count auto-count))
-                              (make-position-based-mutator rtd parent-total*-count (+ init-count auto-count))
-                              all-immutables
-                              parent-rtd
-                              #f))))])
+                  (lambda ()
+                    (let ([parent-total*-count (if parent-rtd*
+                                                   (struct-type-total*-field-count parent-rtd*)
+                                                   0)])
+                      (list name
+                            init-count
+                            auto-count
+                            (make-position-based-accessor rtd parent-total*-count (+ init-count auto-count))
+                            (make-position-based-mutator rtd parent-total*-count (+ init-count auto-count))
+                            all-immutables
+                            parent-rtd
+                            #f)))])
              (let loop ([props props] [ht empty-hasheq])
                (cond
                 [(null? props)
@@ -951,11 +950,10 @@
   (let ([rtd* (strip-impersonator rtd)])
     (check-inspector-access who rtd*)
     (|#%struct-predicate|
-     (escapes-ok
-      (lambda (v)
-        (or (record? v rtd*)
-            (and (impersonator? v)
-                 (record? (impersonator-val v) rtd*))))))))
+     (lambda (v)
+       (or (record? v rtd*)
+           (and (impersonator? v)
+                (record? (impersonator-val v) rtd*)))))))
 
 ;; ----------------------------------------
 

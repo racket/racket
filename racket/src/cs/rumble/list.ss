@@ -34,7 +34,7 @@
 ;; compatilation approach
 
 (define-syntax-rule (define-list-proc |#%name| name base combine)
-  (define/no-lift |#%name|
+  (define |#%name|
     (case-lambda
      [(f l)
       (if (list? l)

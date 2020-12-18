@@ -132,10 +132,7 @@
                       unsafe-mode?
                       #t    ; no-prompt?
                       #f))) ; explicit-unnamed?
-    (printf "Lift...\n")
-    ;; Lift functions to avoid closure creation:
-    (time
-     (lift-in-schemified-body body #t))))
+    body))
 
 ;; ----------------------------------------
 

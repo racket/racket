@@ -677,11 +677,10 @@
 
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
-         (escapes-ok
-          (lambda (c hash-code)
-             ((record-hash-procedure (impersonator-val c))
-              c
-              hash-code)))])
+         (lambda (c hash-code)
+           ((record-hash-procedure (impersonator-val c))
+            c
+            hash-code))])
     (let ([add (lambda (rtd)
                  (record-type-hash-procedure rtd struct-impersonator-hash-code))])
       (add (record-type-descriptor struct-impersonator))

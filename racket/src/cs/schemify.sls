@@ -1,6 +1,5 @@
 (library (schemify)
   (export schemify-linklet
-          lift-in-schemified-linklet
           jitify-schemified-linklet
           xify
           interpreter-link!
