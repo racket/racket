@@ -855,7 +855,7 @@
     (define-record-type info-lambda (nongenerative)
       (parent info)
       (sealed #t)
-      (fields src sexpr libspec interface* (mutable dcl*) (mutable flags) (mutable fv*) (mutable name)
+      (fields src sexpr libspec (mutable interface*) (mutable dcl*) (mutable flags) (mutable fv*) (mutable name)
         (mutable well-known?) (mutable closure-rep) ctci (mutable pinfo*) seqno)
       (protocol
         (lambda (pargs->new)
@@ -2098,6 +2098,326 @@
                  (let ([b* (car b**)])
                    `(closures ([,(map binding-x b*) (,(map binding-x* b*) ...) ,(map binding-le b*)] ...)
                       ,(f (cdr b**)))))))]))
+
+    ;;; This pass lifts all internal well-known closures to outermost lambda body
+    (module (np-lift-well-known-closures)
+      (define-syntax with-outers
+        (syntax-rules ()
+          [(_ ?x* ?e1 ?e2 ...)
+           (let ([x* ?x*])
+             (for-each (lambda (x) (var-index-set! x #t)) x*)
+             (let ([v (begin ?e1 ?e2 ...)])
+               (for-each (lambda (x) (var-index-set! x #f)) x*)
+               v))]))
+
+      ;; defined in or lifted to outermost lambda body
+      (define outer? var-index)
+
+      (define-record-type lift-info
+        (nongenerative)
+        (sealed #t)
+        (fields (mutable le**))
+        (protocol (lambda (n) (lambda () (n '())))))
+
+      (define-record-type le-info
+        (nongenerative)
+        (sealed #t)
+        (fields x fv* cle))
+      
+      (define cle-info
+        (lambda (cle)
+          (nanopass-case (L6 CaseLambdaExpr) cle
+            [(case-lambda ,info ,cl* ...) info])))
+
+      ;; simply a eq-hashtable, but can retrieve the keys deterministically
+      (define-record-type uvar-set
+        (nongenerative)
+        (sealed #t)
+        (fields ht (mutable ls))
+        (protocol
+         (lambda (n)
+           (lambda (ls)
+             (define ht (make-eq-hashtable))
+             (for-each (lambda (x) (eq-hashtable-set! ht x #t)) ls)
+             (n ht ls)))))
+
+      (define uvar-set-has?
+        (lambda (us x)
+          (eq-hashtable-contains? (uvar-set-ht us) x)))
+
+      (define uvar-set-add!
+        (lambda (us x)
+          (cond
+           [(null? x) (void)]
+           [(pair? x)
+            (for-each (lambda (x) (uvar-set-add! us x)) x)]
+           [(eq-hashtable-contains? (uvar-set-ht us) x)
+            (void)]
+           [else
+            (eq-hashtable-set! (uvar-set-ht us) x #t)
+            (uvar-set-ls-set! us (cons x (uvar-set-ls us)))])))
+
+      (define filter2
+        (lambda (proc l1 l2)
+          (let f ([l1 l1] [l2 l2])
+            (cond
+             [(null? l1) '()]
+             [(proc (car l1)) (cons (car l2) (f (cdr l1) (cdr l2)))]
+             [else (f (cdr l1) (cdr l2))]))))
+
+      (define-pass inner-lift : L6 (ir) -> L6 (lift-info)
+        (definitions
+          (define liftable? info-lambda-well-known?)
+
+          (define find-extra-arg*
+            (lambda (x arg-info)
+              (and (outer? x)
+                   (let ([info (uvar-info-lambda x)])
+                     (and info
+                          (liftable? info)
+                          (assq x arg-info))))))
+
+          (define partition-lift
+            (lambda (x* x** le*)
+              (let f ([x* x*] [x** x**] [le* le*])
+                (cond
+                 [(null? x*) (values '() '() '())]
+                 [(liftable? (cle-info (car le*)))
+                  ;; any free variables other than
+                  ;; procedures lifted or defined in outermost lambda body
+                  ;; are moved to extra arguments
+                  (let*-values ([(new-fv* extra-arg*) (partition outer? (car x**))]
+                                [(rest* lift* extra-arg**) (f (cdr x*) (cdr x**) (cdr le*))])
+                    (values rest*
+                            (cons (make-le-info (car x*) new-fv* (car le*))
+                                  lift*)
+                            (cons extra-arg* extra-arg**)))]
+                 [else
+                  (let-values ([(rest* lift* extra-arg**)
+                                (f (cdr x*) (cdr x**) (cdr le*))])
+                    (values (cons (make-le-info (car x*) (car x**) (car le*))
+                                  rest*)
+                            lift*
+                            extra-arg**))]))))
+
+          (define rename
+            (case-lambda
+              [(rename-info)
+               (lambda (x)
+                 (rename rename-info x))]
+              [(rename-info x)
+               (cond
+                [(assq x rename-info) => cdr]
+                [else x])]))
+
+           (define (make-renamed x)
+             (make-tmp (uvar-name x)))
+
+          (define rewrite-rest-body
+            (lambda (le-info lift-info arg-info rename-info)
+              (define new-lift-info (make-lift-info))
+              (define le (CaseLambdaExpr (le-info-cle le-info) new-lift-info arg-info rename-info))
+              (define lift-x* (map le-info-x (apply append (lift-info-le** new-lift-info))))
+              (lift-info-le**-set! lift-info (append (lift-info-le** new-lift-info) (lift-info-le** lift-info)))
+              ;; add newly lifted procedures as free variables
+              (values (append lift-x* (le-info-fv* le-info)) le)))
+
+          (define rewrite-rest-le
+            (lambda (le-info lift-info arg-info rename-info)
+              (define-values (new-fv* new-le) (rewrite-rest-body le-info lift-info arg-info rename-info))
+              (define us (make-uvar-set new-fv*))
+
+              ;; also add extra arguments from free lifted procedures as free variables
+              ;; there is no need to recur since extra arguments of a lifted procedure would not be lifted procedures
+              (for-each
+               (lambda (fv)
+                 (cond
+                  [(find-extra-arg* fv arg-info)
+                  =>
+                  (lambda (xe*)
+                    (uvar-set-add! us (cdr xe*)))]
+                  [else (void)]))
+               new-fv*)
+              
+              (make-le-info (le-info-x le-info)
+                            (map (rename rename-info) (uvar-set-ls us))
+                            new-le)))
+
+          (define union-extra-arg*
+            (lambda (le-info* arg-info extra-arg**)
+              (define us (make-uvar-set '()))
+              ;; simply computes a union since lambdas are strongly-connected after np-identify-scc
+              (for-each
+               (lambda (le-info extra-arg*)
+                 (uvar-set-add! us extra-arg*)
+                 (for-each
+                  (lambda (fv)
+                    (cond
+                     [(find-extra-arg* fv arg-info)
+                      =>
+                      (lambda (x+e*)
+                        (uvar-set-add! us (cdr x+e*)))]
+                     [else (void)]))
+                  (le-info-fv* le-info)))
+               le-info* extra-arg**)
+              (map (lambda (le)
+                     (fold-left
+                      (lambda (ls fv) (if (uvar-set-has? us fv) (remq fv ls) ls))
+                      (uvar-set-ls us) (le-info-fv* le)))
+                   le-info*)))
+
+          (define rewrite-lifted-le
+            (lambda (le-info lift-info arg-info rename-info extra-arg*)
+              (define-values (new-le lift-x*)
+                (LiftedCaseLambdaExpr (le-info-cle le-info)
+                                      lift-info arg-info rename-info extra-arg*))
+              (nanopass-case (L6 CaseLambdaExpr) new-le
+                [(case-lambda ,info (clause (,x** ...) ,mcp* ,interface* ,body*) ...)
+                 (let* ()
+                   (info-lambda-interface*-set! info interface*)
+                   (make-le-info (le-info-x le-info)
+                                 ;; add newly lifted procedures as free variables
+                                 (append lift-x* (map (rename rename-info) (le-info-fv* le-info)))
+                                 new-le))]))))
+
+        ;; arg-info : lifted-x -> unrenamed extra-arg*
+        ;; rename-info : unrenamed x -> renamed x
+        (Expr : Expr (ir lift-info arg-info rename-info) -> Expr ()
+          [,x (rename rename-info x)]
+          [(call ,info ,mdcl ,x ,[e*] ...)
+           (cond
+            [(find-extra-arg* x arg-info)
+             =>
+             (lambda (x+extra-arg*)
+               `(call ,info ,mdcl ,(rename rename-info x)
+                      ,(append (map (rename rename-info) (cdr x+extra-arg*)) e*) ...))]
+            [else
+             `(call ,info ,mdcl ,(rename rename-info x) ,e* ...)])]
+          [(closures ([,x* (,x** ...) ,le*] ...) ,body)
+           (let* ([lift-x* (filter2 (lambda (cle) (liftable? (cle-info cle))) le* x*)])
+             (with-outers lift-x*
+               (let*-values ([(rest-le* lift-le* extra-arg**) (partition-lift x* x** le*)]
+                             [(extra-arg**) (union-extra-arg* lift-le* arg-info extra-arg**)]
+                             [(arg-info) (append (map (lambda (le-info extra-arg*)
+                                                        (cons (le-info-x le-info) extra-arg*))
+                                                      lift-le* extra-arg**)
+                                                 arg-info)]
+                             [(rest-le*)
+                              (map (lambda (le-info) (rewrite-rest-le le-info lift-info arg-info rename-info))
+                                   rest-le*)]
+                             [(lift-le*)
+                              (map (lambda (le-info extra-arg*)
+                                     (rewrite-lifted-le le-info lift-info arg-info rename-info extra-arg*))
+                                   lift-le* extra-arg**)])
+                 (unless (null? lift-le*)
+                   (lift-info-le**-set! lift-info (cons lift-le* (lift-info-le** lift-info))))
+                 (let ([body (Expr body lift-info arg-info rename-info)])
+                   (cond
+                    [(null? rest-le*) body]
+                    [else
+                     `(closures ([,(map le-info-x rest-le*) (,(map le-info-fv* rest-le*) ...)
+                                  ,(map le-info-cle rest-le*)] ...)
+                        ,body)])))))])
+
+        (CaseLambdaClause : CaseLambdaClause (ir lift-info arg-info rename-info) -> CaseLambdaClause ()
+          [(clause (,x* ...) ,mcp ,interface ,body)
+           (let* ([old-le** (lift-info-le** lift-info)]
+                  [new-body (Expr body lift-info arg-info rename-info)])
+             `(clause (,x* ...)
+                      ,(or mcp
+                           ;;introduce a cpvar if something lifted from this clause
+                           (and (not (eq? (lift-info-le** lift-info) old-le**))
+                                (make-cpvar)))
+                      ,interface ,new-body))])
+        (CaseLambdaExpr : CaseLambdaExpr (ir lift-info arg-info rename-info) -> CaseLambdaExpr ())
+
+        (LiftedCaseLambdaClause : CaseLambdaClause (ir lift-info arg-info rename-info extra-arg*) -> CaseLambdaClause ()
+          [(clause (,x* ...) ,mcp ,interface ,body)
+           (let* ([new-extra-arg* (map make-renamed extra-arg*)]
+                  [n (length new-extra-arg*)]
+                  [new-rename-info (append (map cons extra-arg* new-extra-arg*) rename-info)]
+                  [old-le** (lift-info-le** lift-info)]
+                  [new-body (Expr body lift-info arg-info new-rename-info)]
+                  [new-interface (cond
+                                  [(fx< interface 0) (fx- interface n)]
+                                  [else (fx+ interface n)])])
+             `(clause (,(append new-extra-arg* x*) ...)
+                      ,(or mcp
+                           ;;introduce a cpvar if something lifted from this clause
+                           (and (not (eq? (lift-info-le** lift-info) old-le**))
+                                (make-cpvar)))
+                      ,new-interface ,new-body))])
+
+        (LiftedCaseLambdaExpr : CaseLambdaExpr (ir lift-info arg-info rename-info extra-arg*) -> CaseLambdaExpr (lift-x*)
+          [(case-lambda ,info ,cl* ...)
+           (let* ([new-lift-info (make-lift-info)]
+                  [cl* (map (lambda (cl) (LiftedCaseLambdaClause cl new-lift-info arg-info rename-info extra-arg*)) cl*)]
+                  [lift-x* (map le-info-x (apply append (lift-info-le** new-lift-info)))])
+             (lift-info-le**-set! lift-info (append (lift-info-le** new-lift-info) (lift-info-le** lift-info)))
+             (values `(case-lambda ,info ,cl* ...) lift-x*))])
+
+        (nanopass-case (L6 CaseLambdaExpr) ir
+          [(case-lambda ,info (clause (,x** ...) ,mcp* ,interface* ,body*) ...)
+           (let*-values ([(lift-info) (make-lift-info)]
+                         [(body* mcp*)
+                          (let f ([x** x**] [mcp* mcp*] [body* body*])
+                            (cond
+                             [(null? x**) (values '() '())]
+                             [else
+                              (let*-values ([(old-le**) (lift-info-le** lift-info)]
+                                            [(new-body) (Expr (car body*) lift-info '() '())]
+                                            [(new-le**) (lift-info-le** lift-info)]
+                                            [(fbody* fmcp*) (f (cdr x**) (cdr mcp*) (cdr body*))])
+                                (values (cons new-body fbody*)
+                                        (cons (or (car mcp*)
+                                                  (and (not (eq? old-le** new-le**))
+                                                       (make-cpvar)))
+                                              fmcp*)))]))])
+             (values `(case-lambda ,info (clause (,x** ...) ,mcp* ,interface* ,body*) ...)
+                     (lift-info-le** lift-info)))]))
+
+      (define-pass outer-lift : L6 (ir) -> L6 ()
+        (Expr : Expr (ir) -> Expr ()
+          [(let ([,x* ,[e*]] ...) ,body)
+           (with-outers x*
+             `(let ([,x* ,e*] ...) ,(Expr body)))]
+          [(mvlet ,[e] ((,x** ...) ,interface* ,body*) ...)
+           `(mvlet ,e
+              ((,x** ...)
+               ,interface*
+               ,(map (lambda (x* body)
+                       (with-outers x*
+                         (Expr body)))
+                     x** body*))
+              ...)]
+          [(loop ,x (,x* ...) ,body)
+           (with-outers (list x)
+             `(loop ,x (,x* ...) ,(Expr body)))]
+          [(closures ([,x* (,x** ...) ,le*] ...) ,body)
+           (with-outers x*
+             (let f ([x* x*] [x** x**] [le* le*] [rx* '()] [rfv** '()] [rle* '()])
+               (cond
+                [(null? x*)
+                 `(closures ([,(reverse rx*) (,(reverse rfv**) ...) ,(reverse rle*)] ...)
+                    ,(Expr body))]
+                [else
+                 (let*-values ([(new-le lift**) (inner-lift (car le*))]
+                               [(lift*) (apply append lift**)])
+                   (f (cdr x*) (cdr x**) (cdr le*)
+                      (append (map le-info-x lift*) (cons (car x*) rx*))
+                      (append (map le-info-fv* lift*) (cons (append (car x**) (map le-info-x lift*)) rfv**))
+                      (append (map le-info-cle lift*) (cons new-le rle*))))])))])
+        (CaseLambdaExpr : CaseLambdaExpr (ir) -> CaseLambdaExpr ())
+        (CaseLambdaClause : CaseLambdaClause (ir) -> CaseLambdaClause ()
+          [(clause (,x* ...) ,mcp ,interface ,body)
+           (with-outers x*
+             (let ([body (Expr body)])
+               `(clause (,x* ...) ,mcp ,interface ,body)))])
+        (CaseLambdaExpr ir))
+
+      (define np-lift-well-known-closures
+        (lambda (ir)
+          (np-identify-scc (outer-lift ir)))))
 
     (module (np-expand-closures np-expand/optimize-closures)
       (define sort-bindings
@@ -18762,6 +19082,9 @@
               (pass np-convert-closures unparse-L6)
               (pass np-optimize-direct-call unparse-L6)
               (pass np-identify-scc unparse-L6)
+              (if ($lift-closures)
+                  (pass np-lift-well-known-closures unparse-L6)
+                  (lambda (ir) ir))
               (if ($optimize-closures)
                   (pass np-expand/optimize-closures unparse-L7)
                   (pass np-expand-closures unparse-L7))
@@ -18807,4 +19130,6 @@
   (set! $track-static-closure-counts track-static-closure-counts)
 
   (set! $optimize-closures (make-parameter #t (lambda (x) (and x #t))))
+
+  (set! $lift-closures (make-parameter #t (lambda (x) (and x #t))))
 )

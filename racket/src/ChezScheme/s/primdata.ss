@@ -2452,6 +2452,7 @@
   ($enable-pass-timing [flags single-valued])
   ($expeditor-history-file [feature expeditor] [flags single-valued])
   ($fasl-target [flags single-valued])
+  ($lift-closures [sig [() -> (boolean)] [(ptr) -> (void)]] [flags unrestricted])
   ($optimize-closures [sig [() -> (boolean)] [(ptr) -> (void)]] [flags unrestricted])
   ($suppress-primitive-inlining [sig [() -> (boolean)] [(ptr) -> (void)]] [flags unrestricted])
   ($sfd [flags single-valued])

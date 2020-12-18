@@ -559,6 +559,7 @@
                    [$compile-profile ($compile-profile)]
                    [generate-interrupt-trap (generate-interrupt-trap)]
                    [$optimize-closures ($optimize-closures)]
+                   [$lift-closures ($lift-closures)]
                    [enable-cross-library-optimization (enable-cross-library-optimization)]
                    [generate-covin-files (generate-covin-files)]
                    [enable-arithmetic-left-associative (enable-arithmetic-left-associative)]

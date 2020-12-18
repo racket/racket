@@ -104,6 +104,7 @@
          $compile-profile
          compile-profile
          $optimize-closures
+         $lift-closures
          $profile-block-data?
          run-cp0
          generate-interrupt-trap
@@ -932,6 +933,7 @@
 (define $compile-profile (make-parameter #f))
 (define compile-profile $compile-profile)
 (define $optimize-closures (make-parameter #t))
+(define $lift-closures (make-parameter #t))
 (define $profile-block-data? (make-parameter #f))
 (define run-cp0 (make-parameter error))
 (define generate-interrupt-trap (make-parameter #t))
