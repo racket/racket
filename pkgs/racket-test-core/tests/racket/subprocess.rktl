@@ -634,9 +634,9 @@
 
 (when (eq? 'windows (system-type))
   (define (try-arg cmdline-str result-str)
-    (let ()
+    (let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
       (define-values (sp i o no-e)
-	(subprocess #f #f (current-error-port) self 'exact
+	(subprocess #f #f f self 'exact
 		    (string-append (regexp-replace* #rx" " (path->string self) "\" \"")
                                    " -l racket/base"
                                    " -e \"(write (vector-ref (current-command-line-arguments) 0))\""
@@ -644,17 +644,19 @@
       (close-output-port o)
       (test result-str read i)
       (subprocess-wait sp) 
+      (close-output-port f)
       (close-input-port i))
     ;; Check encoding by `subprocess`, too
-    (let ()
+    (let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
       (define-values (sp i o no-e)
-	(subprocess #f #f (current-error-port) self
+	(subprocess #f #f f self
 		    "-l" "racket/base"
                     "-e" "(write (vector-ref (current-command-line-arguments) 0))"
 		    result-str))
       (close-output-port o)
       (test result-str read i)
       (subprocess-wait sp) 
+      (close-output-port f)
       (close-input-port i)))
 
   (try-arg "x" "x")
