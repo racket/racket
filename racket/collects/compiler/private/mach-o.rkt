@@ -492,8 +492,12 @@
               (write-ulong padded-size out) ; data offset
               (write-ulong data-size out)
               ;; Update LINKEDIT length:
-              (file-position out (+ link-edit-pos 8 16 (* 3 (if link-edit-64? 8 4))))
-              ((if link-edit-64? write-xulong write-ulong) (+ link-edit-len data-size (- padded-size orig-size)) out)
+              (let ([file-pos (+ link-edit-pos 8 16 (* 1 (if link-edit-64? 8 4)))]
+                    [len (+ link-edit-len data-size (- padded-size orig-size))])
+                (file-position out file-pos)
+                ((if link-edit-64? write-xulong write-ulong) (round-up-page len) out) ; vm-len
+                (file-position out (+ file-pos (* 2 (if link-edit-64? 8 4))))
+                ((if link-edit-64? write-xulong write-ulong) len out))
               ;; Add padding:
               (file-position out orig-size)
               (write-bytes (make-bytes (- padded-size orig-size) 0) out)
