@@ -2110,8 +2110,20 @@
                (for-each (lambda (x) (var-index-set! x #f)) x*)
                v))]))
 
+      (define-syntax with-lifts
+        (syntax-rules ()
+          [(_ ?x* ?e1 ?e2 ...)
+           (let ([x* ?x*])
+             (for-each (lambda (x) (var-index-set! x 'lifted)) x*)
+             (let ([v (begin ?e1 ?e2 ...)])
+               (for-each (lambda (x) (var-index-set! x #f)) x*)
+               v))]))
+
       ;; defined in or lifted to outermost lambda body
       (define outer? var-index)
+
+      (define (lifted? x)
+        (eq? 'lifted (var-index x)))
 
       (define-record-type lift-info
         (nongenerative)
@@ -2157,24 +2169,29 @@
             (eq-hashtable-set! (uvar-set-ht us) x #t)
             (uvar-set-ls-set! us (cons x (uvar-set-ls us)))])))
 
-      (define filter2
-        (lambda (proc l1 l2)
-          (let f ([l1 l1] [l2 l2])
+      (define filter3
+        (lambda (proc l1 l2 l3)
+          (let f ([l1 l1] [l2 l2] [l3 l3])
             (cond
              [(null? l1) '()]
-             [(proc (car l1)) (cons (car l2) (f (cdr l1) (cdr l2)))]
-             [else (f (cdr l1) (cdr l2))]))))
+             [(proc (car l1) (car l2) (car l3))
+              (cons (car l1) (f (cdr l1) (cdr l2) (cdr l3)))]
+             [else (f (cdr l1) (cdr l2) (cdr l3))]))))
 
       (define-pass inner-lift : L6 (ir) -> L6 (lift-info)
         (definitions
-          (define liftable? info-lambda-well-known?)
+          (define filter-liftable
+            (lambda (x* fv** cle*)
+              (filter3
+               (lambda (x fv* cle)
+                 (info-lambda-well-known? (cle-info cle)))
+               x* fv** cle*)))
 
           (define find-extra-arg*
             (lambda (x arg-info)
-              (and (outer? x)
+              (and (lifted? x)
                    (let ([info (uvar-info-lambda x)])
                      (and info
-                          (liftable? info)
                           (assq x arg-info))))))
 
           (define partition-lift
@@ -2182,7 +2199,7 @@
               (let f ([x* x*] [x** x**] [le* le*])
                 (cond
                  [(null? x*) (values '() '() '())]
-                 [(liftable? (cle-info (car le*)))
+                 [(lifted? (car x*))
                   ;; any free variables other than
                   ;; procedures lifted or defined in outermost lambda body
                   ;; are moved to extra arguments
@@ -2260,11 +2277,17 @@
                      [else (void)]))
                   (le-info-fv* le-info)))
                le-info* extra-arg**)
-              (map (lambda (le)
-                     (fold-left
-                      (lambda (ls fv) (if (uvar-set-has? us fv) (remq fv ls) ls))
-                      (uvar-set-ls us) (le-info-fv* le)))
-                   le-info*)))
+
+              ;;if rules in filter-liftable are changed, lambdas passed as extra arguments would no longer be well-known
+              (for-each
+               (lambda (x)
+                 (let ([info (uvar-info-lambda x)])
+                   (and info
+                        (when (info-lambda-well-known? info)
+                          (info-lambda-well-known?-set! info #f)))))
+               (uvar-set-ls us))
+
+              (uvar-set-ls us)))
 
           (define rewrite-lifted-le
             (lambda (le-info lift-info arg-info rename-info extra-arg*)
@@ -2294,21 +2317,21 @@
             [else
              `(call ,info ,mdcl ,(rename rename-info x) ,e* ...)])]
           [(closures ([,x* (,x** ...) ,le*] ...) ,body)
-           (let* ([lift-x* (filter2 (lambda (cle) (liftable? (cle-info cle))) le* x*)])
-             (with-outers lift-x*
+           (let* ([lift-x* (filter-liftable x* x** le*)])
+             (with-lifts lift-x*
                (let*-values ([(rest-le* lift-le* extra-arg**) (partition-lift x* x** le*)]
-                             [(extra-arg**) (union-extra-arg* lift-le* arg-info extra-arg**)]
-                             [(arg-info) (append (map (lambda (le-info extra-arg*)
+                             [(extra-arg*) (union-extra-arg* lift-le* arg-info extra-arg**)]
+                             [(arg-info) (append (map (lambda (le-info)
                                                         (cons (le-info-x le-info) extra-arg*))
-                                                      lift-le* extra-arg**)
+                                                      lift-le*)
                                                  arg-info)]
                              [(rest-le*)
                               (map (lambda (le-info) (rewrite-rest-le le-info lift-info arg-info rename-info))
                                    rest-le*)]
                              [(lift-le*)
-                              (map (lambda (le-info extra-arg*)
+                              (map (lambda (le-info)
                                      (rewrite-lifted-le le-info lift-info arg-info rename-info extra-arg*))
-                                   lift-le* extra-arg**)])
+                                   lift-le*)])
                  (unless (null? lift-le*)
                    (lift-info-le**-set! lift-info (cons lift-le* (lift-info-le** lift-info))))
                  (let ([body (Expr body lift-info arg-info rename-info)])
