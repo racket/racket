@@ -1226,6 +1226,9 @@
       [did-post2 #f]
       [did-done #f]
       [break-on (lambda () (break-enabled #t))]
+      [sync-idle/break-thread (lambda (t)
+                                (sync (system-idle-evt))
+                                (break-thread t))]
       [sw semaphore-wait])
   (let ([mk-t
 	 (lambda (init ;; how to start
@@ -1273,8 +1276,8 @@
 			reset
 			(lambda ()
 			  (set! did-pre1 #t)
-			  (semaphore-post p)
 			  (pre-thunk)
+			  (semaphore-post p)
 			  (pre-semaphore-wait s)
 			  (set! did-pre2 #t))))
 		     (lambda () 
@@ -1282,8 +1285,8 @@
 			reset
 			(lambda ()
 			  (set! did-act1 #t)
-			  (semaphore-post p)
 			  (act-thunk)
+			  (semaphore-post p)
 			  (act-semaphore-wait s)
 			  (set! did-act2 #t))))
 		     (lambda ()
@@ -1291,8 +1294,8 @@
 			reset
 			(lambda ()
 			  (set! did-post1 #t)
-			  (semaphore-post p)
 			  (post-thunk)
+			  (semaphore-post p)
 			  (post-semaphore-wait s)
 			  (set! did-post2 #t)))))
 		 (set! did-done #t))))))])
@@ -1337,7 +1340,8 @@
 	(semaphore-post s)
 	(if should-pre-break?
 	    (begin
-	      (thread-wait t)
+              (thread-wait t)
+              (test #t semaphore-try-wait? s)
 	      (test #f 'pre2 did-pre2))
 	    (if should-preact-break?
 		(begin
@@ -1365,6 +1369,7 @@
 			(if should-post-break?
 			    (begin
 			      (thread-wait t)
+                              (test #t semaphore-try-wait? s)
 			      (test #f 'post2 did-post2))
 			    (begin
 			      (thread-wait t)
@@ -1374,29 +1379,32 @@
      (lambda (mk-t)
        (for-each 
 	(lambda (nada)
-	  ;; Basic checks --- dynamic-wind thunks don't explicitly enable breaks
-	  (go mk-t #f  nada nada nada  sw sw sw  void #f #f void #f void #f #f)
-	  (go mk-t #f  nada nada nada  sw sw sw  break-thread #f 'pre-act void #f void #f #f)
-	  (go mk-t #f  nada nada nada  sw sw sw  void #f #f break-thread 'act void #f #f)
-	  (go mk-t #f  nada nada nada  sw sw sw  void #f #f void #f break-thread #f 'done)
+          (for-each
+           (lambda (break-thread)
+             ;; Basic checks --- dynamic-wind thunks don't explicitly enable breaks
+             (go mk-t #f  nada nada nada  sw sw sw  void #f #f void #f void #f #f)
+             (go mk-t #f  nada nada nada  sw sw sw  break-thread #f 'pre-act void #f void #f #f)
+             (go mk-t #f  nada nada nada  sw sw sw  void #f #f break-thread 'act void #f #f)
+             (go mk-t #f  nada nada nada  sw sw sw  void #f #f void #f break-thread #f 'done)
 
-	  ;; All dynamic-wind thunks enable breaks
-	  (map (lambda (break-on sw)
-		 (go mk-t #f  break-on break-on break-on  sw sw sw  void #f #f void #f void #f #f)
-		 (go mk-t #f  break-on break-on break-on  sw sw sw  break-thread 'pre #f void #f void #f #f)
-		 (go mk-t #f  break-on break-on break-on  sw sw sw  void #f #f break-thread 'act void #f #f)
-		 (go mk-t #f  break-on break-on break-on  sw sw sw  void #f #f void #f break-thread 'post #f))
-	       (list break-on void)
-	       (list sw semaphore-wait/enable-break))
+             ;; All dynamic-wind thunks enable breaks
+             (map (lambda (break-on sw)
+                    (go mk-t #f  break-on break-on break-on  sw sw sw  void #f #f void #f void #f #f)
+                    (go mk-t #f  break-on break-on break-on  sw sw sw  break-thread 'pre #f void #f void #f #f)
+                    (go mk-t #f  break-on break-on break-on  sw sw sw  void #f #f break-thread 'act void #f #f)
+                    (go mk-t #f  break-on break-on break-on  sw sw sw  void #f #f void #f break-thread 'post #f))
+                  (list break-on void)
+                  (list sw semaphore-wait/enable-break))
 
-	  ;; Enable break in pre or act shouldn't affect post
-	  (go mk-t #f  break-on nada nada  sw sw sw  void #f #f void #f break-thread #f 'done)
-	  (go mk-t #f  nada break-on nada  sw sw sw  void #f #f void #f break-thread #f 'done)
-	  
-	  ;; Enable break in pre shouldn't affect act/done
-	  (go mk-t #t  break-on nada nada  sw sw sw  void #f #f break-thread #f void #f #f)
-	  (go mk-t #t  break-on nada nada  sw sw sw  void #f #f void #f break-thread #f #f))
-	(list void sleep)))
+             ;; Enable break in pre or act shouldn't affect post
+             (go mk-t #f  break-on nada nada  sw sw sw  void #f #f void #f break-thread #f 'done)
+             (go mk-t #f  nada break-on nada  sw sw sw  void #f #f void #f break-thread #f 'done)
+
+             ;; Enable break in pre shouldn't affect act/done
+             (go mk-t #t  break-on nada nada  sw sw sw  void #f #f break-thread #f void #f #f)
+             (go mk-t #t  break-on nada nada  sw sw sw  void #f #f void #f break-thread #f #f))
+           (list break-thread sync-idle/break-thread)))
+        (list void sleep)))
      ;; We'll make threads in three modes: normal, restore a continuation into pre,
      ;;  and restore a continuation into act
      (let* ([no-capture (lambda (reset body) (body))]
@@ -1575,6 +1583,40 @@
   (try values 'ok-channel)
   (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-inexact-milliseconds)))))
        'ok-channel+alarm))
+
+;; ----------------------------------------
+;; Extra check that a sync/enable-break either succeeds or breaks,
+;; where we avoid explicit thread synchronization and spin to
+;; try to get different schedules.
+;; Based on an example from Bogdan.
+
+(for ([i 50])
+  (let ([succeeded? #f]
+        [broke? #f])
+    (define (spin-then thunk)
+      (let loop ([n (random 1000000)])
+        (cond
+          [(zero? n) (thunk)]
+          [else (loop (sub1 n))])))
+    (struct p ()
+      #:property prop:evt (unsafe-poller
+                           (lambda (self wakeups)
+                             ;; loop to try to be slow
+                             (spin-then
+                              (lambda ()
+                                (set! succeeded? #t)
+                                (values (list 'success) #f))))))
+    (define ready-sema (make-semaphore))
+    (define t (thread (lambda ()
+                        (parameterize-break #f
+                          (semaphore-post ready-sema)
+                          (with-handlers ([exn:break? (lambda (exn)
+                                                        (set! broke? #t))])
+                            (sync/enable-break (p)))))))
+    (semaphore-wait ready-sema)
+    (spin-then (lambda () (break-thread t)))
+    (sync t)
+    (test #t 'xor-on-success-and-break (if succeeded? (not broke?) broke?))))
 
 ;; ----------------------------------------
 ;; Make sure that suspending a thread that's blocked on a

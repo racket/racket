@@ -440,8 +440,8 @@
           (if (force-atomic-timeout-callback)
               (loop)
               (internal-error "attempt to deschedule the current thread in atomic mode"))))
-      (engine-block)
-      (check-for-break))))
+      ;; implies `(check-for-break)`:
+      (engine-block))))
 
 ;; Extends `do-thread-deschdule!` where `t` is always `(current-thread)`.
 ;; The `interrupt-callback` is called if the thread receives a break
@@ -836,6 +836,10 @@
        (unless (thread-pending-break t)
          (set-thread-pending-break! t kind)
          (thread-did-work!)
+         (begin
+           ;; interrupt synchronization, if any
+           (run-suspend/resume-callbacks t car)
+           (run-suspend/resume-callbacks t cdr))
          (when (thread-descheduled? t)
            (unless (thread-suspended? t)
              (run-interrupt-callback t)

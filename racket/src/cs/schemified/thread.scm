@@ -7010,8 +7010,7 @@
                          "attempt to deschedule the current thread in atomic mode"))
                       (void)))))))
              (loop_0))
-            (engine-block)
-            (|#%app| 1/check-for-break))
+            (engine-block))
           (void))))))
 (define thread-deschedule!
   (lambda (t_0 timeout-at_0 interrupt-callback_0)
@@ -7703,6 +7702,8 @@
                    (begin
                      (set-thread-pending-break! t_0 kind_0)
                      (thread-did-work!)
+                     (run-suspend/resume-callbacks t_0 car)
+                     (run-suspend/resume-callbacks t_0 cdr)
                      (if (thread-descheduled? t_0)
                        (if (thread-suspended? t_0)
                          (void)
@@ -9197,11 +9198,7 @@
            (go_0
             (|#%name|
              go
-             (lambda (enable-break?7_0
-                      local-break-cell_0
-                      s_0
-                      timeout10_0
-                      thunk-result?38_0)
+             (lambda (enable-break?7_0 s_0 timeout10_0 thunk-result?38_0)
                (begin
                  (dynamic-wind
                   (lambda ()
@@ -9239,11 +9236,6 @@
                       (start-atomic)
                       (thread-pop-suspend+resume-callbacks!)
                       (thread-pop-kill-callback!)
-                      (if local-break-cell_0
-                        (thread-remove-ignored-break-cell!
-                         (current-thread/in-atomic)
-                         local-break-cell_0)
-                        (void))
                       (|#%app| syncing-abandon! s_0)
                       (end-atomic))))))))
            (loop_0
@@ -9406,13 +9398,13 @@
                            push-authentic
                            break-enabled-key
                            local-break-cell_0
-                           (go_0
-                            enable-break?7_0
-                            local-break-cell_0
-                            s_0
-                            timeout10_0
-                            #t))))
-                     (begin (1/check-for-break) (|#%app| thunk_0)))
+                           (go_0 enable-break?7_0 s_0 timeout10_0 #t))))
+                     (begin
+                       (thread-remove-ignored-break-cell!
+                        (current-thread/in-atomic)
+                        local-break-cell_0)
+                       (1/check-for-break)
+                       (|#%app| thunk_0)))
                    (let ((temp52_0
                           (lambda (sched-info_0 polled-all?_0 no-wrappers?_0)
                             (if polled-all?_0
@@ -9423,26 +9415,15 @@
                                 (if (procedure? timeout10_0)
                                   (|#%app| timeout10_0)
                                   (if no-wrappers?_0
-                                    (go_0
-                                     enable-break?7_0
-                                     local-break-cell_0
-                                     s_0
-                                     timeout10_0
-                                     #f)
+                                    (go_0 enable-break?7_0 s_0 timeout10_0 #f)
                                     (|#%app|
                                      (go_0
                                       enable-break?7_0
-                                      local-break-cell_0
                                       s_0
                                       timeout10_0
                                       #t)))))
                               (|#%app|
-                               (go_0
-                                enable-break?7_0
-                                local-break-cell_0
-                                s_0
-                                timeout10_0
-                                #t))))))
+                               (go_0 enable-break?7_0 s_0 timeout10_0 #t))))))
                      (|#%app|
                       sync-poll.1
                       #f
