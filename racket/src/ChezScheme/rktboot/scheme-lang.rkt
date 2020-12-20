@@ -704,6 +704,7 @@
            [(prelex-was-flags-offset) prelex-was-flags-offset]
            [(prelex-sticky-mask) prelex-sticky-mask]
            [(prelex-is-mask) prelex-is-mask]
+           [(code-flag-lift-barrier) code-flag-lift-barrier]
            [else (error 'constant "unknown: ~s" #'id)])]))
 
 (define $target-machine (make-parameter (string->symbol target-machine)))
