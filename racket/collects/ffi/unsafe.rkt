@@ -503,6 +503,7 @@
 ;; (callouts) or the input procedure (callbacks).
 (define* (_cprocedure itypes otype
                       #:abi         [abi     #f]
+                      #:varargs-after [varargs-after  #f]
                       #:wrapper     [wrapper #f]
                       #:keep        [keep    #t]
                       #:atomic?     [atomic? #f]
@@ -511,7 +512,7 @@
                       #:lock-name   [lock-name #f]
                       #:async-apply [async-apply #f]
                       #:save-errno  [errno   #f])
-  (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? blocking? async-apply errno lock-name))
+  (_cprocedure* itypes otype abi varargs-after wrapper keep atomic? orig-place? blocking? async-apply errno lock-name))
 
 ;; A lightwegith delay meachnism for a single-argument function when
 ;; it's ok (but unlikely) to evaluate `expr` more than once and keep
@@ -532,9 +533,9 @@
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? blocking? async-apply errno lock-name)
-  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi atomic? async-apply)))
-  (define make-ffi-call (delay/cas (ffi-call-maker itypes otype abi errno orig-place? lock-name blocking?)))
+(define (_cprocedure* itypes otype abi varargs-after wrapper keep atomic? orig-place? blocking? async-apply errno lock-name)
+  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi varargs-after atomic? async-apply)))
+  (define make-ffi-call (delay/cas (ffi-call-maker itypes otype abi varargs-after errno orig-place? lock-name blocking?)))
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
@@ -570,7 +571,7 @@
 
 (provide _fun)
 (define-for-syntax _fun-keywords
-  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f]
+  `([#:abi ,#'#f] [#:varargs-after ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f]
     [#:in-original-place? ,#'#f] [#:blocking? ,#'#f] [#:lock-name ,#'#f]
     [#:async-apply ,#'#f] [#:save-errno ,#'#f]
     [#:retry #f]))
@@ -730,6 +731,7 @@
              #`(_cprocedure* (list #,@(filter-map car inputs))
                              #,(car output)
                              #,(kwd-ref '#:abi)
+                             #,(kwd-ref '#:varargs-after)
                              #,wrapper
                              #,(kwd-ref '#:keep)
                              #,(kwd-ref '#:atomic?)

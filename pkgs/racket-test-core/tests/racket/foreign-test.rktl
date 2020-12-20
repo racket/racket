@@ -681,6 +681,43 @@
                                           (ptr-set! m _int i 0)))))))))
 
 (let ()
+  (define-syntax (_varargs stx)
+    (syntax-case stx ()
+      [(_ arg ...)
+       #`(_fun #:varargs-after 2
+               _int ; init for result
+               (_int = #,(quotient (length (syntax->list #'(arg ...))) 2))
+               ;; each argument is an _int in [1, 5] followed by:
+               ;;  1 - _int
+               ;;  2 - _long
+               ;;  3 - _double
+               ;;  4 - _int pointer
+               ;;  5 - (_fun #:varargs-after 2 _int _long ... -> _int)
+               arg ... -> _long)]))
+  (test 77
+        (get-ffi-obj 'varargs_check test-lib (_varargs))
+        77)
+  (test 75
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 1) _int))
+        77 -2)
+  (test 277
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 2) _long))
+        77 200)
+  (test 86
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 3) _double))
+        76 10.2)
+  (test 96
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 3) _double (_int = 1) _int (_int = 2) _long (_int = 3) _double))
+        86 1.0 2 3 4.0)
+  (test 67
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 4) (_ptr i _int) (_int = 1) _int))
+        50 8 9)
+  (test 16
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 5) (_fun #:varargs-after 2 _int _long _double -> _int)))
+        10 (lambda (a b c) (inexact->exact (+ a b c))))
+  (void))
+
+(let ()
   (struct foo (ptr)
     #:property prop:cpointer 0)
   

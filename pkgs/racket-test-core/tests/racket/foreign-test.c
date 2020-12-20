@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
 #ifdef USE_THREAD_TEST
 #include <pthread.h>
@@ -336,4 +337,42 @@ X int sum_after_callback(int *a, int n, void (*cb)()) {
     s += a[i];
 
   return s;
+}
+
+typedef int (*varargs_callback)(int, int, ...);
+
+X long varargs_check(int init, int n, ...) {
+  va_list va;
+  long accum = init;
+  
+  va_start(va, n);
+
+  while (n-- > 0) {
+    int kind = va_arg(va, int);
+    switch (kind) {
+    case 1:
+      accum += va_arg(va, int);
+      break;
+    case 2:
+      accum += va_arg(va, long);
+      break;
+    case 3:
+      accum += va_arg(va, double);
+      break;
+    case 4:
+      accum += *(va_arg(va, int*));
+      break;
+    case 5:
+      accum += (va_arg(va, varargs_callback))(1, 2, 3.0);
+      break;
+    default:
+      accum = -1;
+      n = 0;
+      break;
+    }
+  }
+  
+  va_end(va);
+
+  return accum;
 }

@@ -1516,45 +1516,44 @@
    [(p in-types out-type)
     (ffi-call p in-types out-type #f #f #f)]
    [(p in-types out-type abi)
-    (ffi-call p in-types out-type abi #f #f)]
-   [(p in-types out-type abi save-errno)
-    (ffi-call p in-types out-type abi save-errno #f)]
-   [(p in-types out-type abi save-errno orig-place?)
-    (ffi-call p in-types out-type abi save-errno orig-place? #f)]
-   [(p in-types out-type abi save-errno orig-place? lock-name)
-    (ffi-call p in-types out-type abi save-errno orig-place? lock-name #f)]
-   [(p in-types out-type abi save-errno orig-place? lock-name blocking?)
+    (ffi-call p in-types out-type abi #f #f #f)]
+   [(p in-types out-type abi varargs-after)
+    (ffi-call p in-types out-type abi varargs-after #f #f)]
+   [(p in-types out-type abi varargs-after save-errno)
+    (ffi-call p in-types out-type abi varargs-after save-errno #f)]
+   [(p in-types out-type abi varargs-after save-errno orig-place?)
+    (ffi-call p in-types out-type abi varargs-after save-errno orig-place? #f)]
+   [(p in-types out-type abi varargs-after save-errno orig-place? lock-name)
+    (ffi-call p in-types out-type abi varargs-after save-errno orig-place? lock-name #f)]
+   [(p in-types out-type abi varargs-after save-errno orig-place? lock-name blocking?)
     (check who cpointer? p)
-    (check who (lambda (l)
-                 (and (list? l)
-                      (andmap ctype? l)))
-           :contract "(listof ctype?)"
-           in-types)
-    (check who ctype? out-type)
-    (check who string? :or-false lock-name)
-    ((ffi-call/callable #t in-types out-type abi save-errno lock-name blocking? orig-place? #f #f) p)]))
+    (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
+    ((ffi-call/callable #t in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? #f #f) p)]))
 
 (define/who ffi-call-maker
   (case-lambda
    [(in-types out-type)
-    (ffi-call-maker in-types out-type #f #f #f)]
+    (ffi-call-maker in-types out-type #f #f #f #f)]
    [(in-types out-type abi)
-    (ffi-call-maker in-types out-type abi #f #f)]
-   [(in-types out-type abi save-errno)
-    (ffi-call-maker in-types out-type abi save-errno #f)]
-   [(in-types out-type abi save-errno orig-place?)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? #f)]
-   [(in-types out-type abi save-errno orig-place? lock-name)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name #f)]
-   [(in-types out-type abi save-errno orig-place? lock-name blocking?)
-    (check who (lambda (l)
-                 (and (list? l)
-                      (andmap ctype? l)))
-           :contract "(listof ctype?)"
-           in-types)
-    (check who ctype? out-type)
-    (check who string? :or-false lock-name)
-    (ffi-call/callable #t in-types out-type abi save-errno lock-name blocking? orig-place? #f #f)]))
+    (ffi-call-maker in-types out-type abi #f #f #f)]
+   [(in-types out-type abi varargs-after)
+    (ffi-call-maker in-types out-type abi varargs-after #f #f)]
+   [(in-types out-type abi varargs-after save-errno)
+    (ffi-call-maker in-types out-type abi varargs-after save-errno #f)]
+   [(in-types out-type abi varargs-after save-errno orig-place?)
+    (ffi-call-maker in-types out-type abi varargs-after save-errno orig-place? #f)]
+   [(in-types out-type abi varargs-after save-errno orig-place? lock-name)
+    (ffi-call-maker in-types out-type abi varargs-after save-errno orig-place? lock-name #f)]
+   [(in-types out-type abi varargs-after save-errno orig-place? lock-name blocking?)
+    (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
+    (ffi-call/callable #t in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? #f #f)]))
+
+(define (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
+  (check-ffi who in-types out-type abi varargs-after)
+  (check who (lambda (save-errno) (#%memq save-errno '(#f posix windows)))
+         :contract "(or/c #f 'posix 'windows)"
+         save-errno)
+  (check who string? :or-false lock-name))
 
 ;; For sanity checking of callbacks during a blocking callout:
 (define-virtual-register currently-blocking? #f)
@@ -1569,11 +1568,14 @@
 
 (define call-locks (make-eq-hashtable))
 
-(define (ffi-call/callable call? in-types out-type abi save-errno lock-name blocking? orig-place? atomic? async-apply)
-  (let* ([conv (case abi
-                 [(stdcall) '__stdcall]
-                 [(sysv) '__cdecl]
-                 [else #f])]
+(define (ffi-call/callable call? in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? atomic? async-apply)
+  (let* ([conv* (let ([conv* (case abi
+                               [(stdcall) '(__stdcall)]
+                               [(sysv) '(__cdecl)]
+                               [else '()])])
+                  (if varargs-after
+                      (cons `(__varargs_after ,varargs-after) conv*)
+                      conv*))]
          [by-value? (lambda (type)
                       ;; An 'array rep is compound, but should be
                       ;; passed as a pointer, so only pass 'struct and
@@ -1616,7 +1618,7 @@
                          (list
                           (lambda (to-wrap)
                             (,(if call? 'foreign-procedure 'foreign-callable)
-                             ,conv
+                             ,@conv*
                              ,@(if (or blocking? async-apply) '(__collect_safe) '())
                              to-wrap
                              ,(map (lambda (in-type id)
@@ -1935,40 +1937,69 @@
 (define/who ffi-callback
   (case-lambda
    [(proc in-types out-type)
-    (ffi-callback proc in-types out-type #f #f #f)]
+    (ffi-callback proc in-types out-type #f #f #f #f)]
    [(proc in-types out-type abi)
-    (ffi-callback proc in-types out-type abi #f #f)]
-   [(proc in-types out-type abi atomic?)
-    (ffi-callback proc in-types out-type abi atomic? #f)]
-   [(proc in-types out-type abi atomic? async-apply)
+    (ffi-callback proc in-types out-type abi #f #f #f)]
+   [(proc in-types out-type abi varargs-after)
+    (ffi-callback proc in-types out-type abi varargs-after #f #f)]
+   [(proc in-types out-type abi varargs-after atomic?)
+    (ffi-callback proc in-types out-type abi varargs-after atomic? #f)]
+   [(proc in-types out-type abi varargs-after atomic? async-apply)
     (check who procedure? proc)
-    (check who (lambda (l)
-                 (and (list? l)
-                      (andmap ctype? l)))
-           :contract "(listof ctype?)"
-           in-types)
-    (check who ctype? out-type)
-    ((ffi-callback-maker in-types out-type abi atomic? async-apply) proc)]))
+    (check-ffi-callback who in-types out-type abi varargs-after async-apply)
+    ((ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply) proc)]))
 
 (define/who ffi-callback-maker
   (case-lambda
    [(in-types out-type)
-    (ffi-callback-maker in-types out-type #f #f #f)]
+    (ffi-callback-maker in-types out-type #f #f #f #f)]
    [(in-types out-type abi)
-    (ffi-callback-maker in-types out-type abi #f #f)]
-   [(in-types out-type abi atomic?)
-    (ffi-callback-maker in-types out-type abi atomic? #f)]
-   [(in-types out-type abi atomic? async-apply)
-    (check who (lambda (l)
-                 (and (list? l)
-                      (andmap ctype? l)))
-           :contract "(listof ctype?)"
-           in-types)
-    (check who ctype? out-type)
-    (let ([make-code (ffi-call/callable #f in-types out-type abi #f #f #f #f (and atomic? #t) async-apply)])
-      (lambda (proc)
-        (check 'make-ffi-callback procedure? proc)
-        (create-callback (make-code proc))))]))
+    (ffi-callback-maker in-types out-type abi #f #f #f)]
+   [(in-types out-type abi varargs-after)
+    (ffi-callback-maker in-types out-type abi varargs-after #f #f)]
+   [(in-types out-type abi varargs-after atomic?)
+    (ffi-callback-maker in-types out-type abi varargs-after atomic? #f)]
+   [(in-types out-type abi varargs-after atomic? async-apply)
+    (check-ffi-callback who in-types out-type abi varargs-after async-apply)
+    (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)]))
+
+(define (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)
+  (let ([make-code (ffi-call/callable #f in-types out-type abi varargs-after #f #f #f #f (and atomic? #t) async-apply)])
+    (lambda (proc)
+      (check 'make-ffi-callback procedure? proc)
+      (create-callback (make-code proc)))))
+
+(define (check-ffi-callback who in-types out-type abi varargs-after async-apply)
+  (check-ffi who in-types out-type abi varargs-after)
+  (check who (lambda (async-apply)
+               (or (not async-apply)
+                   (box? async-apply)
+                   (and (procedure? async-apply)
+                        (unsafe-procedure-and-arity-includes? async-apply 1))))
+         :contract "(or/c #f (procedure-arity-includes/c 1) box?)"
+         async-apply))
+  
+(define (check-ffi who in-types out-type abi varargs-after)
+  (check who (lambda (l)
+               (and (list? l)
+                    (andmap ctype? l)))
+         :contract "(listof ctype?)"
+         in-types)
+  (check who ctype? out-type)
+  (check who (lambda (a) (#%memq a '(#f default stdcall sysv)))
+         :contract "(or/c #f 'default 'stdcall 'sysv)"
+         abi)
+  (check who (lambda (varargs-after) (or (not varargs-after)
+                                         (and (exact-positive-integer? varargs-after))))
+         :contract "(or/c #f exact-positive-integer?)"
+         varargs-after)
+  (when  varargs-after
+    (let ([len (length in-types)])
+      (when (> varargs-after len)
+        (raise-arguments-error who
+                               "varargs-after value is too large"
+                               "given value" varargs-after
+                               "argument count" len)))))
 
 ;; ----------------------------------------
 
