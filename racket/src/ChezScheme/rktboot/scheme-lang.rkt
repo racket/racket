@@ -333,7 +333,8 @@
          priminfo-libraries
          $c-bufsiz
          $foreign-procedure
-         make-guardian)
+         make-guardian
+         $lambda/lift-barrier)
 
 (module+ callback
   (provide set-current-expand-set-callback!))
@@ -1290,3 +1291,7 @@
     [() #f]
     [(v) (void)]
     [(v rep) (void)]))
+
+(define-syntax $lambda/lift-barrier
+  (syntax-rules ()
+    [(_ fmls body ...) (lambda fmls body ...)]))
