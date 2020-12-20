@@ -1044,6 +1044,7 @@
 )
 
 (define-symbol-flags* ([libraries] [flags keyword])
+  ($lambda/lift-barrier [flags])
   ($system [flags library-uid])
   (add-prefix [flags])
   (alias [flags])
