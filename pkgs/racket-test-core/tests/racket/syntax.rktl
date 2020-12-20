@@ -2358,6 +2358,18 @@
                        (set! i (add1 i))
                        (+ i 1)))))
 
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make sure a `values` wrapper is not
+;; discarded:
+
+(err/rt-test (for/fold ([x 0]
+                        [y 0])
+                       ([i '(1)])
+               (values (values x y)))
+             exn:fail:contract:arity?)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
