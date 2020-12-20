@@ -1517,15 +1517,15 @@
     (ffi-call p in-types out-type #f #f #f)]
    [(p in-types out-type abi)
     (ffi-call p in-types out-type abi #f #f #f)]
-   [(p in-types out-type abi varargs-after)
-    (ffi-call p in-types out-type abi varargs-after #f #f)]
-   [(p in-types out-type abi varargs-after save-errno)
-    (ffi-call p in-types out-type abi varargs-after save-errno #f)]
-   [(p in-types out-type abi varargs-after save-errno orig-place?)
-    (ffi-call p in-types out-type abi varargs-after save-errno orig-place? #f)]
-   [(p in-types out-type abi varargs-after save-errno orig-place? lock-name)
-    (ffi-call p in-types out-type abi varargs-after save-errno orig-place? lock-name #f)]
-   [(p in-types out-type abi varargs-after save-errno orig-place? lock-name blocking?)
+   [(p in-types out-type abi save-errno)
+    (ffi-call p in-types out-type abi save-errno #f #f)]
+   [(p in-types out-type abi save-errno orig-place?)
+    (ffi-call p in-types out-type abi save-errno orig-place? #f #f)]
+   [(p in-types out-type abi save-errno orig-place? lock-name)
+    (ffi-call p in-types out-type abi save-errno orig-place? lock-name #f #f)]
+   [(p in-types out-type abi save-errno orig-place? lock-name blocking?)
+    (ffi-call p in-types out-type abi save-errno orig-place? lock-name blocking? #f)]
+   [(p in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after)
     (check who cpointer? p)
     (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
     ((ffi-call/callable #t in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? #f #f) p)]))
@@ -1536,15 +1536,15 @@
     (ffi-call-maker in-types out-type #f #f #f #f)]
    [(in-types out-type abi)
     (ffi-call-maker in-types out-type abi #f #f #f)]
-   [(in-types out-type abi varargs-after)
-    (ffi-call-maker in-types out-type abi varargs-after #f #f)]
-   [(in-types out-type abi varargs-after save-errno)
-    (ffi-call-maker in-types out-type abi varargs-after save-errno #f)]
-   [(in-types out-type abi varargs-after save-errno orig-place?)
-    (ffi-call-maker in-types out-type abi varargs-after save-errno orig-place? #f)]
-   [(in-types out-type abi varargs-after save-errno orig-place? lock-name)
-    (ffi-call-maker in-types out-type abi varargs-after save-errno orig-place? lock-name #f)]
-   [(in-types out-type abi varargs-after save-errno orig-place? lock-name blocking?)
+   [(in-types out-type abi save-errno)
+    (ffi-call-maker in-types out-type abi save-errno #f #f)]
+   [(in-types out-type abi save-errno orig-place?)
+    (ffi-call-maker in-types out-type abi save-errno orig-place? #f #f)]
+   [(in-types out-type abi save-errno orig-place? lock-name)
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name #f #f)]
+   [(in-types out-type abi save-errno orig-place? lock-name blocking?)
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? #f)]
+   [(in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after)
     (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
     (ffi-call/callable #t in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? #f #f)]))
 
@@ -1940,11 +1940,11 @@
     (ffi-callback proc in-types out-type #f #f #f #f)]
    [(proc in-types out-type abi)
     (ffi-callback proc in-types out-type abi #f #f #f)]
-   [(proc in-types out-type abi varargs-after)
-    (ffi-callback proc in-types out-type abi varargs-after #f #f)]
-   [(proc in-types out-type abi varargs-after atomic?)
-    (ffi-callback proc in-types out-type abi varargs-after atomic? #f)]
-   [(proc in-types out-type abi varargs-after atomic? async-apply)
+   [(proc in-types out-type abi atomic?)
+    (ffi-callback proc in-types out-type abi atomic? #f #f)]
+   [(proc in-types out-type abi atomic? async-apply)
+    (ffi-callback proc in-types out-type abi atomic? #f)]
+   [(proc in-types out-type abi atomic? async-apply varargs-after)
     (check who procedure? proc)
     (check-ffi-callback who in-types out-type abi varargs-after async-apply)
     ((ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply) proc)]))
@@ -1955,11 +1955,11 @@
     (ffi-callback-maker in-types out-type #f #f #f #f)]
    [(in-types out-type abi)
     (ffi-callback-maker in-types out-type abi #f #f #f)]
-   [(in-types out-type abi varargs-after)
-    (ffi-callback-maker in-types out-type abi varargs-after #f #f)]
-   [(in-types out-type abi varargs-after atomic?)
-    (ffi-callback-maker in-types out-type abi varargs-after atomic? #f)]
-   [(in-types out-type abi varargs-after atomic? async-apply)
+   [(in-types out-type abi atomic?)
+    (ffi-callback-maker in-types out-type abi atomic? #f #f)]
+   [(in-types out-type abi atomic? async-apply)
+    (ffi-callback-maker in-types out-type abi atomic? async-apply #f)]
+   [(in-types out-type abi atomic? async-apply varargs-after)
     (check-ffi-callback who in-types out-type abi varargs-after async-apply)
     (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)]))
 

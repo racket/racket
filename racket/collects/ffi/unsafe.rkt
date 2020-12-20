@@ -534,8 +534,8 @@
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
 (define (_cprocedure* itypes otype abi varargs-after wrapper keep atomic? orig-place? blocking? async-apply errno lock-name)
-  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi varargs-after atomic? async-apply)))
-  (define make-ffi-call (delay/cas (ffi-call-maker itypes otype abi varargs-after errno orig-place? lock-name blocking?)))
+  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi atomic? async-apply varargs-after)))
+  (define make-ffi-call (delay/cas (ffi-call-maker itypes otype abi errno orig-place? lock-name blocking? varargs-after)))
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)

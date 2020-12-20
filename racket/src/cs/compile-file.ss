@@ -108,7 +108,7 @@
 (when xpatch-path
   (load xpatch-path))
 
-(time
+(define (compile-it)
  (cond
    [whole-program?
     (unless (= 1 (length deps))
@@ -149,5 +149,7 @@
         [else
          ;; Normal mode
          (compile-file src dest)]))]))
+
+(time (compile-it))
 
 (printf "    ~a bytes peak memory use\n" (maximum-memory-bytes))

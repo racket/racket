@@ -3077,36 +3077,38 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
   rtype = CTYPE_ARG_PRIMTYPE(base);
   abi = GET_ABI(who, ARGPOS(3));
   if (argc > ARGPOS(4)) {
-    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(4), nargs);
-  } else
-    varargs_after = -1;
-  if (argc > ARGPOS(5)) {
     save_errno = -1;
-    if (SCHEME_FALSEP(argv[ARGPOS(5)]))
+    if (SCHEME_FALSEP(argv[ARGPOS(4)]))
       save_errno = 0;
-    else if (SCHEME_SYMBOLP(argv[ARGPOS(5)])
-             && !SCHEME_SYM_WEIRDP(argv[ARGPOS(5)])) {
-      if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(5)]), "posix"))
+    else if (SCHEME_SYMBOLP(argv[ARGPOS(4)])
+             && !SCHEME_SYM_WEIRDP(argv[ARGPOS(4)])) {
+      if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(4)]), "posix"))
         save_errno = 1;
-      else if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(5)]), "windows"))
+      else if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(4)]), "windows"))
         save_errno = 2;
     }
     if (save_errno == -1) {
-      scheme_wrong_contract(who, "(or/c 'posix 'windows #f)", ARGPOS(5), argc, argv);
+      scheme_wrong_contract(who, "(or/c 'posix 'windows #f)", ARGPOS(4), argc, argv);
     }
   } else
     save_errno = 0;
   @@IF{defined(MZ_USE_PLACES) && !defined(MZ_USE_FFIPOLL)}{
-    if (argc > ARGPOS(6)) orig_place = SCHEME_TRUEP(argv[ARGPOS(6)]);
+    if (argc > ARGPOS(5)) orig_place = SCHEME_TRUEP(argv[ARGPOS(5)]);
     else orig_place = 0;
   }
-  if (argc > ARGPOS(7)) {
-    if (!SCHEME_FALSEP(argv[ARGPOS(7)])) {
-      if (!SCHEME_CHAR_STRINGP(argv[ARGPOS(7)]))
-        scheme_wrong_contract(who, "(or/c string? #f)", ARGPOS(7), argc, argv);
-      lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[ARGPOS(7)]));
+  if (argc > ARGPOS(6)) {
+    if (!SCHEME_FALSEP(argv[ARGPOS(6)])) {
+      if (!SCHEME_CHAR_STRINGP(argv[ARGPOS(6)]))
+        scheme_wrong_contract(who, "(or/c string? #f)", ARGPOS(6), argc, argv);
+      lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[ARGPOS(6)]));
     }
   }
+  /* ARGPOS(7) is `blocking?`, but we don't use that */
+  if (argc > ARGPOS(8)) {
+    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(8), nargs);
+  } else
+    varargs_after = -1;
+
   if (cp && SCHEME_FFIOBJP(cp))
     name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
   else
@@ -3504,16 +3506,16 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     scheme_wrong_contract(who, "ctype?", ARGPOS(2), argc, argv);
   rtype = CTYPE_ARG_PRIMTYPE(base);
   abi = GET_ABI(who, ARGPOS(3));
-  if (argc > ARGPOS(4))
-    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(4), nargs);
+  is_atomic = ((argc > ARGPOS(4)) && SCHEME_TRUEP(argv[ARGPOS(4)]));
+  sync = (is_atomic ? scheme_true : NULL);
+  if ((argc > ARGPOS(5))
+      && !SCHEME_BOXP(argv[ARGPOS(5)])
+      && !scheme_check_proc_arity2(NULL, 1, ARGPOS(5), argc, argv, 1))
+    scheme_wrong_contract(who, "(or/c #f (procedure-arity-includes/c 0) box?)", ARGPOS(5), argc, argv);
+  if (argc > ARGPOS(6))
+    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(6), nargs);
   else
     varargs_after = -1;
-  is_atomic = ((argc > ARGPOS(5)) && SCHEME_TRUEP(argv[ARGPOS(5)]));
-  sync = (is_atomic ? scheme_true : NULL);
-  if ((argc > ARGPOS(6))
-      && !SCHEME_BOXP(argv[ARGPOS(6)])
-      && !scheme_check_proc_arity2(NULL, 1, ARGPOS(6), argc, argv, 1))
-    scheme_wrong_contract(who, "(or/c #f (procedure-arity-includes/c 0) box?)", ARGPOS(6), argc, argv);
 
   if (curry) {
     /* all checks are done */
@@ -3559,6 +3561,7 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     do_callback = ffi_queue_callback;
   } else
     do_callback = ffi_do_callback;
+
   /* malloc space for everything needed, so a single free gets rid of this */
   cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   scheme_thread_code_start_write();
