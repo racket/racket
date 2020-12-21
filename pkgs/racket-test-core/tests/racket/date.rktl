@@ -26,7 +26,9 @@
 (test 0 find-seconds 0 0 0 1 1 1970 #f)
 (test 32416215 find-seconds 15 30 4 11 1 1971 #f)
 
-(test 1969 date-year (seconds->date (- (* 24 60 60))))
+(define (date-year.seconds->date sec)
+  (date-year (seconds->date sec)))
+(test 1969 date-year.seconds->date (- (* 24 60 60)))
 
 (let* ([s (current-seconds)]
        [d1 (seconds->date s)]

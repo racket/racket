@@ -73,17 +73,19 @@
     (and progfiles (concat progfiles "/Microsoft Visual Studio 10.0")))
   (when (and studio (directory-exists? studio))
     (define (paths-env var . ps)
+      (define orig-val (getenv var))
       (define val
         (apply concat (for/list ([p (in-list ps)]
                                  #:when (and p (directory-exists? p)))
                         (concat p ";"))))
       (printf ">>> $~a = ~s\n" var val)
-      (putenv var val))
+      (putenv var (if orig-val
+                      (concat orig-val ";" val)
+                      val)))
     (define (vc p)     (concat studio "/VC/" p))
     (define (common p) (concat studio "/Common7/" p))
     (define (winsdk p) (concat progfiles "/Microsoft SDKs/Windows/v7.0A/" p))
     (paths-env "PATH"
-               (getenv "PATH")
                (vc (if 64bit? "BIN/amd64" "BIN"))
                (vc "IDE") (vc "Tools") (vc "Tools/bin")
                (common "Tools") (common "IDE"))

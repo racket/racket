@@ -47,7 +47,9 @@ jobs:
         call racket\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
     - name: Run tests/racket/test
       shell: cmd
-      run: racket\raco.exe test -l tests/racket/test
+      run: |
+        call .\racket\src\worksp\msvcprep.bat x86_amd64
+        racket\raco.exe test -l tests/racket/test
     - name: Run tests/racket/contract/all
       shell: cmd
       run: racket\racket.exe -l tests/racket/contract/all
