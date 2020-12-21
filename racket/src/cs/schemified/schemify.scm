@@ -29324,7 +29324,16 @@
                                                                                                                                             mutated_0
                                                                                                                                             simples_0))
                                                                                                                                          (let ((c5_0
-                                                                                                                                                (if im_0
+                                                                                                                                                (if (not
+                                                                                                                                                     (let ((or-part_2
+                                                                                                                                                            (eq?
+                                                                                                                                                             target_0
+                                                                                                                                                             'cify)))
+                                                                                                                                                       (if or-part_2
+                                                                                                                                                         or-part_2
+                                                                                                                                                         (eq?
+                                                                                                                                                          target_0
+                                                                                                                                                          'system))))
                                                                                                                                                   (if (known-struct-constructor?
                                                                                                                                                        k_0)
                                                                                                                                                     (inline-struct-constructor_0
@@ -29337,7 +29346,16 @@
                                                                                                                                            (if c5_0
                                                                                                                                              c5_0
                                                                                                                                              (let ((c4_0
-                                                                                                                                                    (if im_0
+                                                                                                                                                    (if (not
+                                                                                                                                                         (let ((or-part_2
+                                                                                                                                                                (eq?
+                                                                                                                                                                 target_0
+                                                                                                                                                                 'cify)))
+                                                                                                                                                           (if or-part_2
+                                                                                                                                                             or-part_2
+                                                                                                                                                             (eq?
+                                                                                                                                                              target_0
+                                                                                                                                                              'system))))
                                                                                                                                                       (if (known-struct-predicate?
                                                                                                                                                            k_0)
                                                                                                                                                         (inline-struct-predicate_0
@@ -29350,7 +29368,16 @@
                                                                                                                                                (if c4_0
                                                                                                                                                  c4_0
                                                                                                                                                  (let ((c3_0
-                                                                                                                                                        (if im_0
+                                                                                                                                                        (if (not
+                                                                                                                                                             (let ((or-part_2
+                                                                                                                                                                    (eq?
+                                                                                                                                                                     target_0
+                                                                                                                                                                     'cify)))
+                                                                                                                                                               (if or-part_2
+                                                                                                                                                                 or-part_2
+                                                                                                                                                                 (eq?
+                                                                                                                                                                  target_0
+                                                                                                                                                                  'system))))
                                                                                                                                                           (if (known-field-accessor?
                                                                                                                                                                k_0)
                                                                                                                                                             (inline-field-access_0
@@ -29363,7 +29390,16 @@
                                                                                                                                                    (if c3_0
                                                                                                                                                      c3_0
                                                                                                                                                      (let ((c2_0
-                                                                                                                                                            (if im_0
+                                                                                                                                                            (if (not
+                                                                                                                                                                 (let ((or-part_2
+                                                                                                                                                                        (eq?
+                                                                                                                                                                         target_0
+                                                                                                                                                                         'cify)))
+                                                                                                                                                                   (if or-part_2
+                                                                                                                                                                     or-part_2
+                                                                                                                                                                     (eq?
+                                                                                                                                                                      target_0
+                                                                                                                                                                      'system))))
                                                                                                                                                               (if (known-field-mutator?
                                                                                                                                                                    k_0)
                                                                                                                                                                 (inline-field-mutate_0
