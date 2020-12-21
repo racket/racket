@@ -3650,7 +3650,7 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
 static Scheme_Object *make_ffi_callback_from_curried(int argc, Scheme_Object *argv[], Scheme_Object *self)
 {
   Scheme_Object *vec = SCHEME_PRIM_CLOSURE_ELS(self)[0];
-  Scheme_Object *a[6];
+  Scheme_Object *a[7];
   int c = SCHEME_VEC_SIZE(vec), i;
 
   for (i = 0; i < c; i++) {
