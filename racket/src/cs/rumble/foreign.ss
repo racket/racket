@@ -726,7 +726,17 @@
    [(compound-ctype? c)
     (compound-ctype-alignment c)]
    [else
-    (ctype-sizeof c)]))
+    (case (ctype-host-rep c)
+      [(boolean int) (foreign-alignof 'int)]
+      [(double) (foreign-alignof 'double)]
+      [(float) (foreign-alignof 'float)]
+      [(integer-8 unsigned-8) (foreign-alignof 'integer-8)]
+      [(integer-16 unsigned-16) (foreign-alignof 'integer-16)]
+      [(integer-32 unsigned-32) (foreign-alignof 'integer-32)]
+      [(integer-64 unsigned-64) (foreign-alignof 'integer-64)]
+      [else
+       ;; Everything else is pointer-sized:
+       (foreign-alignof 'void*)])]))
 
 (define/who (cpointer-gcable? p)
   (let ([p (unwrap-cpointer who p)])
