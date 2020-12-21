@@ -1,5 +1,6 @@
 #lang racket/base
 (require file/unzip
+         file/gunzip
          racket/runtime-path
          racket/port
          tests/eli-tester)
@@ -27,7 +28,18 @@
   (call-with-input-file* unzip-me.zip test-with-unzip)
   (call-with-input-file* unzip-me.zip
                          (lambda(in_port) (test-with-unzip (input-port-append #f in_port))))
-  (test-with-unzip-entry))
+  (test-with-unzip-entry)
+
+  (test (let ()
+          (define out (open-output-bytes))
+          (define infinite-voids
+            (make-input-port
+             'voids
+             (lambda (s) (lambda args 'void))
+             (lambda (skip s evt) (lambda args 'void))
+             void))
+          (inflate infinite-voids out))
+        =error> "non-character in an unsupported context"))
 
 (provide tests)
 (module+ main (tests))

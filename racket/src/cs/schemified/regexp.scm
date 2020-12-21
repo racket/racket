@@ -5028,13 +5028,19 @@
                               len_0))))))
                   (if (eof-object? n_0)
                     #f
-                    (if (zero? n_0)
-                      (begin (set-lazy-bytes-failed?! s_0 #t) #f)
-                      (begin
-                        (set-lazy-bytes-end!
-                         s_0
-                         (+ n_0 len_0 discarded-count_0))
-                        #t))))
+                    (if (not (fixnum? n_0))
+                      (raise-arguments-error
+                       'regexp-match
+                       "non-character in an unsupported context"
+                       "port"
+                       (lazy-bytes-in s_0))
+                      (if (zero? n_0)
+                        (begin (set-lazy-bytes-failed?! s_0 #t) #f)
+                        (begin
+                          (set-lazy-bytes-end!
+                           s_0
+                           (+ n_0 len_0 discarded-count_0))
+                          #t)))))
                 (let ((max-peek_0 (lazy-bytes-max-peek s_0)))
                   (let ((prefix-len_0
                          (if max-peek_0 (lazy-bytes-prefix-len s_0) #f)))
