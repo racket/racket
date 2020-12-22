@@ -720,6 +720,7 @@
         (struct/dc s
                    [a (>=/c c)]
                    [b (a) (>=/c a)]))
+      (set! mk mk) ;suppress inlining
       (define one (mk 1))
       (define two (mk 2))
       (,test #f trust/not-stronger? one two)
