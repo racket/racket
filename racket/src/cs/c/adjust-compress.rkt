@@ -190,7 +190,6 @@
    (for ([path (in-list path)])
      (define bstr (file->bytes path))
      (define bstr2 (adjust-compress bstr))
-     (printf "~s ~s\n" path (equal? bstr bstr2))
      (unless (equal? bstr bstr2)
        (call-with-output-file*
         path
