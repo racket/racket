@@ -67,7 +67,7 @@
 (define (prepare exe src)
   (printf/flush "Making ~a with ~a...\n" exe src)
   (when (file-exists? exe)
-	(call-with-retries (lambda () (delete-file exe)))))
+    (call-with-retries (lambda () (delete-file exe)))))
 
 (define (try-one-exe exe expect mred?)
   (printf/flush "Running ~a\n" exe)

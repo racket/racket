@@ -290,108 +290,120 @@
                 ;; Adjust the number of load commands:
                 (write-ulong (+ total-cnt (if segdata 1 0) (if code-signature-pos -1 0)) out)
                 (write-ulong (+ cmdssz (- code-signature-lc-sz) new-cmd-sz) out)
-                (when segdata
-                  ;; Write the new command:
-                  (file-position out link-edit-pos)
-                  (write-ulong (if link-edit-64? #x19 1) out) ; LC_SEGMENT[_64]
-                  (write-ulong new-cmd-sz out)
-                  (display (pad-segment-name segment-name) out)
-                  ((if link-edit-64? write-xulong write-ulong) out-addr out)
-                  ((if link-edit-64? write-xulong write-ulong) outlen out)
-                  ((if link-edit-64? write-xulong write-ulong) out-offset out)
-                  ((if link-edit-64? write-xulong write-ulong) outlen out)
-                  (write-ulong 0 out) ; maxprot
-                  (write-ulong 0 out) ; minprot
-                  (write-ulong 0 out)
-                  (write-ulong 4 out) ; 4 means SG_NORELOC
-                  ;; Shift command positions
-                  (unless sym-tab-pos
-                    (error 'mach-o "symtab position not found"))
-                  (when (sym-tab-pos . > . link-edit-pos)
-                    (set! sym-tab-pos (+ sym-tab-pos new-cmd-sz)))
-                  (unless dysym-pos
-                    (error 'mach-o "dysym position not found"))
-                  (when (dysym-pos . > . link-edit-pos)
-                    (set! dysym-pos (+ dysym-pos new-cmd-sz)))
-                  (when hints-pos
-                    (when (hints-pos . > . link-edit-pos)
-                      (set! hints-pos (+ hints-pos new-cmd-sz))))
-                  (when function-starts-pos
-                    (when (function-starts-pos . > . link-edit-pos)
-                      (set! function-starts-pos (+ function-starts-pos new-cmd-sz))))
-                  (when data-in-code-pos
-                    (when (data-in-code-pos . > . link-edit-pos)
-                      (set! data-in-code-pos (+ data-in-code-pos new-cmd-sz))))
-                  (when code-sign-drs-pos
-                    (when (code-sign-drs-pos . > . link-edit-pos)
-                      (set! code-sign-drs-pos (+ code-sign-drs-pos new-cmd-sz))))
-                  (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
-                  (when move-link-edit?
-                    ;; Update link-edit segment entry:
-                    (file-position out (+ link-edit-pos 24))
-                    ((if link-edit-64? write-xulong write-ulong) (+ link-edit-addr outlen) out)
-                    ((if link-edit-64? write-xulong write-ulong) link-edit-vmlen out)
-                    ;; (printf "Update to ~a\n" (+ out-offset outlen))
-                    ((if link-edit-64? write-xulong write-ulong) (+ out-offset outlen) out)
-                    ((if link-edit-64? write-xulong write-ulong) (- link-edit-len code-signature-size) out)
-                    ;; Read link-edit segment:
-                    (file-position p link-edit-offset)
-                    (let ([link-edit (read-bytes (- link-edit-len code-signature-size) p)])
-                      ;; Write link-edit data in new location:
-                      (file-position out (+ link-edit-offset outlen))
-                      (display link-edit out))
-                    ;; Shift symbol-table pointer:
-                    (file-position p (+ sym-tab-pos 8))
-                    (let ([symtab-offset (read-ulong p)]
-                          [_ (read-ulong p)]
-                          [symstr-offset (read-ulong p)])
-                      (file-position out (+ sym-tab-pos 8))
-                      (write-ulong (+ symtab-offset outlen) out)
-                      (file-position out (+ sym-tab-pos 16))
-                      (write-ulong (+ symstr-offset outlen) out))
-                    ;; Shift dysym pointers:
-                    (for-each (lambda (delta)
-                                (file-position p (+ dysym-pos delta))
-                                (let ([offset (read-ulong p)])
-                                  (unless (zero? offset)
-                                    (file-position out (+ dysym-pos delta))
-                                    (write-ulong (+ offset outlen) out))))
-                              '(32 40 48 56 64 72))
-                    ;; Shift hints pointer:
-                    (when hints-pos
-                      (file-position p (+ hints-pos 8))
-                      (let ([hints-offset (read-ulong p)])
-                        (file-position out (+ hints-pos 8))
-                        (write-ulong (+ hints-offset outlen) out)))
-                    ;; Shift function starts:
-                    (when function-starts-pos
-                      (file-position p (+ function-starts-pos 8))
-                      (write-ulong (+ function-starts-offset outlen) out))
-                    ;; Shift data-in-code:
-                    (when data-in-code-pos
-                      (file-position p (+ data-in-code-pos 8))
-                      (write-ulong (+ data-in-code-offset outlen) out))
-                    ;; Shift code-sign drs:
-                    (when code-sign-drs-pos
-                      (file-position p (+ code-sign-drs-pos 8))
-                      (write-ulong (+ code-sign-drs-offset outlen) out))
-                    ;; Shift dyld-info offs
-                    (when dyld-info-pos
-                      (let ([update (lambda (n)
-                                      (unless (< (vector-ref dyld-info-offs n) out-offset)
-                                        (file-position out (+ dyld-info-pos new-cmd-sz 8 (* n 8)))
-                                        (write-ulong (+ (vector-ref dyld-info-offs n) outlen) out)))])
-                        (update 0)
-                        (update 1)
-                        (update 2)
-                        (update 3)
-                        (update 4))))
-                  ;; Write segdata to former link-data offset:
-                  (file-position out out-offset)
-                  (display segdata out)
-                  (display (make-bytes (- outlen (bytes-length segdata)) 0) out))
-                ;; Adjust file size 
-                (file-truncate out (+ link-edit-offset link-edit-len (- code-signature-size) outlen))
+                (cond
+                  [segdata
+                   ;; Write the new command:
+                   (file-position out link-edit-pos)
+                   (write-ulong (if link-edit-64? #x19 1) out) ; LC_SEGMENT[_64]
+                   (write-ulong new-cmd-sz out)
+                   (display (pad-segment-name segment-name) out)
+                   ((if link-edit-64? write-xulong write-ulong) out-addr out)
+                   ((if link-edit-64? write-xulong write-ulong) outlen out)
+                   ((if link-edit-64? write-xulong write-ulong) out-offset out)
+                   ((if link-edit-64? write-xulong write-ulong) outlen out)
+                   (write-ulong 0 out) ; maxprot
+                   (write-ulong 0 out) ; minprot
+                   (write-ulong 0 out)
+                   (write-ulong 4 out) ; 4 means SG_NORELOC
+                   ;; Shift command positions
+                   (unless sym-tab-pos
+                     (error 'mach-o "symtab position not found"))
+                   (when (sym-tab-pos . > . link-edit-pos)
+                     (set! sym-tab-pos (+ sym-tab-pos new-cmd-sz)))
+                   (unless dysym-pos
+                     (error 'mach-o "dysym position not found"))
+                   (when (dysym-pos . > . link-edit-pos)
+                     (set! dysym-pos (+ dysym-pos new-cmd-sz)))
+                   (when hints-pos
+                     (when (hints-pos . > . link-edit-pos)
+                       (set! hints-pos (+ hints-pos new-cmd-sz))))
+                   (when function-starts-pos
+                     (when (function-starts-pos . > . link-edit-pos)
+                       (set! function-starts-pos (+ function-starts-pos new-cmd-sz))))
+                   (when data-in-code-pos
+                     (when (data-in-code-pos . > . link-edit-pos)
+                       (set! data-in-code-pos (+ data-in-code-pos new-cmd-sz))))
+                   (when code-sign-drs-pos
+                     (when (code-sign-drs-pos . > . link-edit-pos)
+                       (set! code-sign-drs-pos (+ code-sign-drs-pos new-cmd-sz))))
+                   (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
+                   (when move-link-edit?
+                     ;; Update link-edit segment entry:
+                     (file-position out (+ link-edit-pos 24))
+                     ((if link-edit-64? write-xulong write-ulong) (+ link-edit-addr outlen) out)
+                     ((if link-edit-64? write-xulong write-ulong) link-edit-vmlen out)
+                     ;; (printf "Update to ~a\n" (+ out-offset outlen))
+                     ((if link-edit-64? write-xulong write-ulong) (+ out-offset outlen) out)
+                     ((if link-edit-64? write-xulong write-ulong) (- link-edit-len code-signature-size) out)
+                     ;; Read link-edit segment:
+                     (file-position p link-edit-offset)
+                     (let ([link-edit (read-bytes (- link-edit-len code-signature-size) p)])
+                       ;; Write link-edit data in new location:
+                       (file-position out (+ link-edit-offset outlen))
+                       (display link-edit out))
+                     ;; Shift symbol-table pointer:
+                     (file-position p (+ sym-tab-pos 8))
+                     (let ([symtab-offset (read-ulong p)]
+                           [_ (read-ulong p)]
+                           [symstr-offset (read-ulong p)])
+                       (file-position out (+ sym-tab-pos 8))
+                       (write-ulong (+ symtab-offset outlen) out)
+                       (file-position out (+ sym-tab-pos 16))
+                       (write-ulong (+ symstr-offset outlen) out))
+                     ;; Shift dysym pointers:
+                     (for-each (lambda (delta)
+                                 (file-position p (+ dysym-pos delta))
+                                 (let ([offset (read-ulong p)])
+                                   (unless (zero? offset)
+                                     (file-position out (+ dysym-pos delta))
+                                     (write-ulong (+ offset outlen) out))))
+                               '(32 40 48 56 64 72))
+                     ;; Shift hints pointer:
+                     (when hints-pos
+                       (file-position p (+ hints-pos 8))
+                       (let ([hints-offset (read-ulong p)])
+                         (file-position out (+ hints-pos 8))
+                         (write-ulong (+ hints-offset outlen) out)))
+                     ;; Shift function starts:
+                     (when function-starts-pos
+                       (file-position p (+ function-starts-pos 8))
+                       (write-ulong (+ function-starts-offset outlen) out))
+                     ;; Shift data-in-code:
+                     (when data-in-code-pos
+                       (file-position p (+ data-in-code-pos 8))
+                       (write-ulong (+ data-in-code-offset outlen) out))
+                     ;; Shift code-sign drs:
+                     (when code-sign-drs-pos
+                       (file-position p (+ code-sign-drs-pos 8))
+                       (write-ulong (+ code-sign-drs-offset outlen) out))
+                     ;; Shift dyld-info offs
+                     (when dyld-info-pos
+                       (let ([update (lambda (n)
+                                       (unless (< (vector-ref dyld-info-offs n) out-offset)
+                                         (file-position out (+ dyld-info-pos new-cmd-sz 8 (* n 8)))
+                                         (write-ulong (+ (vector-ref dyld-info-offs n) outlen) out)))])
+                         (update 0)
+                         (update 1)
+                         (update 2)
+                         (update 3)
+                         (update 4))))
+                   ;; Write segdata to former link-data offset:
+                   (file-position out out-offset)
+                   (display segdata out)
+                   (display (make-bytes (- outlen (bytes-length segdata)) 0) out)
+                   ;; Adjust file size 
+                   (file-truncate out (+ link-edit-offset link-edit-len (- code-signature-size) outlen))]
+                  [code-signature-pos
+                   ;; Shrink linkedit size, since signature is going away
+                   (let* ([file-pos (+ link-edit-pos 8 16 (* 1 (if link-edit-64? 8 4)))]
+                          [link-edit-len (- linkedit-limit-offset link-edit-offset)]
+                          [link-edit-vm-len (round-up-page link-edit-len machine-id)])
+                     (file-position out file-pos)
+                     ((if link-edit-64? write-xulong write-ulong) link-edit-vmlen out)
+                     (file-position out (+ file-pos (* 2 (if link-edit-64? 8 4))))
+                     ((if link-edit-64? write-xulong write-ulong) link-edit-len out)
+                     ;; Adjust file size 
+                     (file-truncate out (+ link-edit-offset link-edit-len)))])
                 ;; Result is offset where data was written:
                 out-offset))))
         (lambda ()
