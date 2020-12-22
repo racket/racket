@@ -386,7 +386,7 @@ supported are
 
  @item{@litchar{[:blank:]} --- ASCII widthful whitespace: space and tab}
 
- @item{@litchar{[:cntrl:]} --- ``control'' characters: ASCII 0 to 32}
+ @item{@litchar{[:cntrl:]} --- ``control'' characters: ASCII 0 to 31}
 
  @item{@litchar{[:digit:]} --- ASCII digits, same as @litchar{\d}}
 
