@@ -33,7 +33,7 @@ through a textbook:
 
 @itemize[
 
- @item{@italic{@link["http://htdp.org/"]{How to Design Programs, Second Edition}}
+ @item{@italic{@link["https://htdp.org/"]{How to Design Programs, Second Edition}}
        is the best place to start.}
 
  @item{@other-manual['(lib "web-server/scribblings/tutorial/continue.scrbl")]
