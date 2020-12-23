@@ -36,6 +36,6 @@ includes documentation for packages in that catalog, updated daily.
 For more information about packages, see see @other-manual['(lib
 "pkg/scribblings/pkg.scrbl")].
 
-@link["https://planet.racket.org/"]{@|PLaneT|} serves packages that
+@link["https://planet.racket-lang.org/"]{@|PLaneT|} serves packages that
 were developed using an older package system. Racket packages should
 use the newer system, instead.
