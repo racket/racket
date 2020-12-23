@@ -24,7 +24,7 @@
   (other-manual '(lib "scribblings/quick/quick.scrbl")))
 
 (define HtDP
-  (italic (link "http://www.htdp.org" "How to Design Programs")))
+  (italic (link "https://htdp.org" "How to Design Programs")))
 
 (define (tool name . desc)
   (apply item (bold name) ", " desc))
