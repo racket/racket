@@ -10,7 +10,7 @@
   ;; An msdos-time or an msdos-date is an exact-integer in the respective format
   ;; described at:
   ;;
-  ;;     http://msdn.microsoft.com/library/en-us/com/htm/cmf_a2c_25gl.asp
+  ;;     https://web.archive.org/web/20050209013515/http://msdn.microsoft.com/library/en-us/com/htm/cmf_a2c_25gl.asp
 
   ;; metadata : path * bytes * boolean * integer * integer * nat * integer
   (define-struct metadata
