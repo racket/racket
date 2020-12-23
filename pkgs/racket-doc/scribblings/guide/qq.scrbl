@@ -42,7 +42,7 @@ certain patterns.
 Or even to cheaply construct expressions programmatically. (Of course, 9 times out of 10,
 you should be using a @seclink["macros"]{macro} to do this 
 (the 10th time being when you're working through
-a textbook like @hyperlink["http://www.cs.brown.edu/~sk/Publications/Books/ProgLangs/"]{PLAI}).)
+a textbook like @hyperlink["https://www.cs.brown.edu/~sk/Publications/Books/ProgLangs/"]{PLAI}).)
 
 @examples[(define (build-exp n)
             (add-lets n (make-sum n)))

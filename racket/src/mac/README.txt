@@ -11,7 +11,7 @@ MMTabBarView
 
 Download from
 
-  http://mimo42.github.io/MMTabBarView/
+  https://mimo42.github.io/MMTabBarView/
 
 PSMTabBarControl
 ----------------
