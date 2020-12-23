@@ -1040,5 +1040,26 @@
 (test (+ (expt 2 100) #x55AA) bxor (+ #x5555 (expt 2 100)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure {u,s}16vector-{ref,set!} work when underlying
+;; memory is not `bytes?`
+
+(module mem racket/base
+  (provide c-malloc)
+  (require ffi/unsafe)
+  (define c-malloc
+    (get-ffi-obj 'malloc (ffi-lib #f) (_fun _int -> (_cpointer #f)))))
+
+(require 'mem)
+(let ((uv (u16vector 0)))
+  (unsafe-struct*-set! uv 0 (c-malloc 2))
+  (test (void) u16vector-set! uv 0 99)
+  (test 99 u16vector-ref uv 0))
+
+(let ((sv (s16vector 0)))
+  (unsafe-struct*-set! sv 0 (c-malloc 2))
+  (test (void) s16vector-set! sv 0 -99)
+  (test -99 s16vector-ref sv 0))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
