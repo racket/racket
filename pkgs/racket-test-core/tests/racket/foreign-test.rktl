@@ -12,7 +12,8 @@
          ffi/vector
          racket/extflonum
          racket/place
-         racket/file)
+         racket/file
+         racket/unsafe/ops)
 
 (define test-async? (and (place-enabled?) (not (eq? 'windows (system-type)))))
 
@@ -502,6 +503,79 @@
        [v (make-u8vector l x)])
   (do ([i 0 (add1 i)]) [(= i l)]
     (test x u8vector-ref v i)))
+
+(let ()
+  (define-syntax (check stx)
+    (syntax-case stx ()
+      [(_ vec _type zero e1 e2 e3 has-unsafe?)
+       (let ([id (lambda (a b [c ""])
+                   (datum->syntax
+                    #'vec
+                    (string->symbol
+                     (format "~a~a~a"
+                             (if (syntax? a) (syntax-e a) a)
+                             (if (syntax? b) (syntax-e b) b)
+                             (if (syntax? c) (syntax-e c) c)))))])
+         (with-syntax ([make-vec (id "make-" #'vec)]
+                       [vec? (id #'vec "?")]
+                       [vec-length (id #'vec "-length")]
+                       [vec-ref (id #'vec "-ref")]
+                       [vec-set! (id #'vec "-set!")]
+                       [unsafe-vec-ref (id "unsafe-" #'vec "-ref")]
+                       [unsafe-vec-set! (id "unsafe-" #'vec "-set!")]
+                       [list->vec (id "list->" #'vec)]
+                       [vec->list (id #'vec "->list")]
+                       [vec->cpointer (id #'vec "->cpointer")]
+                       [_vec (id "_" #'vec)])
+           #`(let ([v1 (make-vec 5 zero)]
+                   [v2 (vec e1 e2 e3)]
+                   #,@(if (syntax-e #'has-unsafe?)
+                          '()
+                          (list #`[unsafe-vec-ref vec-ref]
+                                #`[unsafe-vec-set! vec-set!])))
+               (test #f vec? (make-vector 5))
+               (test #t vec? v1)
+               (test #t vec? v2)
+               (test 5 vec-length v1)
+               (test 3 vec-length v2)
+               (test zero vec-ref v1 0)
+               (test zero vec-ref v1 2)
+               (test zero vec-ref v1 4)
+               (test e1 vec-ref v2 0)
+               (test e2 vec-ref v2 1)
+               (test e3 vec-ref v2 2)
+               (test e3 vec-ref v2 2)
+               (test (void) vec-set! v1 2 e1)
+               (test zero vec-ref v1 1)
+               (test e1 vec-ref v1 2)
+               (test zero vec-ref v1 3)
+               (test zero unsafe-vec-ref v1 4)
+               (test (void) unsafe-vec-set! v1 4 e2)
+               (test e2 unsafe-vec-ref v1 4)
+               (test (list zero zero e1 zero e2) vec->list v1)
+               (test (list e1 e2 e3) vec->list v2)
+               (let ([v3 (cast (vec->cpointer v1) _pointer (_vec o 5))])
+                 (test (vec->list v1) vec->list v3))
+               (let* ([p (malloc 'raw 4 _type)]
+                      [v4 (cast p  _pointer (_vec o 4))])
+                 (test (void) vec-set! v4 0 e3)
+                 (test (void) vec-set! v4 1 e1)
+                 (test (void) vec-set! v4 2 e1)
+                 (test (void) vec-set! v4 3 e2)
+                 (test e1 vec-ref v4 1)
+                 (test e3 vec-ref v4 0))
+               (void))))]))
+  (check u8vector _ubyte 0 1 127 255 #f)
+  (check s8vector _sbyte 0 1 127 -128 #f)
+  (check u16vector _ushort 0 1 (expt 2 8) (sub1 (expt 2 16)) #t)
+  (check s16vector _sshort 0 1 (sub1 (expt 2 15)) (- (expt 2 15)) #t)
+  (check u32vector _uint 0 1 (expt 2 16) (sub1 (expt 2 32)) #f)
+  (check s32vector _sint 0 1 (sub1 (expt 2 31)) (- (expt 2 31)) #f)
+  (check u64vector _uint64 0 1 (expt 2 32) (sub1 (expt 2 64)) #f)
+  (check s64vector _sint64 0 1 (sub1 (expt 2 63)) (- (expt 2 63)) #f)
+  (check f32vector _float 0.0 1.0 1e10 -1e10 #f)
+  (check f64vector _double 0.0 1.0 1e300 -1e300 #t)
+  (void))
 
 ;; Test pointer arithmetic and memmove-like operations
 (let ([p (malloc 10 _int)])
