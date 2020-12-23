@@ -31,8 +31,10 @@
 @(bibliography
 
  (bib-entry #:key "CGI"
-            #:title "Common Gateway Interface (CGI/1.1)"
-            #:url "http://hoohoo.ncsa.uiuc.edu/cgi/")
+            #:title "The Common Gateway Interface (CGI) Version 1.1"
+            #:location "RFC"
+            #:url "http://www.ietf.org/rfc/rfc3875.txt"
+            #:date "2004")
 
  (bib-entry #:key "RFC822"
             #:title "Standard for the Format of ARPA Internet Text Messages"
