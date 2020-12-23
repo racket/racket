@@ -29,7 +29,7 @@ popular among Racketeers as well.
        provides thorough syntax highlighting and DrRacket-style REPL
        and buffer execution support for Emacs.
 
-       Racket mode can be installed via @hyperlink["http://melpa.milkbox.net"]{MELPA}
+       Racket mode can be installed via @hyperlink["https://melpa.org/"]{MELPA}
        or manually from the Github repository.}
 
  @item{@hyperlink["http://www.neilvandyke.org/quack/"]{Quack} is an
