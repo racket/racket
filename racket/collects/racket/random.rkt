@@ -54,7 +54,7 @@
     (vector->list samples)]))
 
 (define (random-sample/out-replacement seq n prng)
-  ;; Based on: http://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
+  ;; Based on: https://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
   (define samples (make-vector n not-there))
   (for ([elt seq]
         [i   (in-naturals)])

@@ -16,7 +16,7 @@ use. Racket also supports arbitrary macro transformers that are
 implemented in Racket---or in a macro-extended variant of Racket.
 
 This chapter provides an introduction to Racket macros, but see
-@hyperlink["http://www.greghendershott.com/fear-of-macros/"]{@italic{Fear of
+@hyperlink["https://www.greghendershott.com/fear-of-macros/"]{@italic{Fear of
 Macros}} for an introduction from a different perspective.
 
 Racket includes additional support for macro development:
