@@ -1132,7 +1132,7 @@ that the @racket[read-single-flonum] parameter affects @racket[read].
          #:changed "7.3.0.5" @elem{Added the @racket[single-mode] argument.}]}
 
 
-@defproc[(real->decimal-string [n real?] [decimal-digits exact-nonnegative-integer? 2])
+@defproc[(real->decimal-string [n rational?] [decimal-digits exact-nonnegative-integer? 2])
          string?]{
 
 Prints @racket[n] into a string and returns the string. The printed
