@@ -144,16 +144,20 @@
           [(hash? x)
            (write-bytes #"{" o)
            (define first? #t)
-           (for ([(k v) (in-hash x)])
-             (unless (symbol? k)
-               (raise-type-error who "legal JSON key value" k))
-             (if first? (set! first? #f) (write-bytes #"," o))
-             ;; use a string encoding so we get the same deal with
-             ;; `rx-to-encode'
-             (write-json-string (symbol->string k))
-             (write-bytes #":" o)
-             (loop v))
-           (write-bytes #"}" o)]
+           (hash-for-each
+            x
+            (lambda (k v)
+              (unless (symbol? k)
+                (raise-type-error who "legal JSON key value" k))
+              (if first? (set! first? #f) (write-bytes #"," o))
+              ;; use a string encoding so we get the same deal with
+              ;; `rx-to-encode'
+              (write-json-string (symbol->string k))
+              (write-bytes #":" o)
+              (loop v))
+            ;; order output
+            #true)
+            (write-bytes #"}" o)]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
 
