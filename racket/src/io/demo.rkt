@@ -579,15 +579,22 @@
         (call-with-values (lambda () (bytes-convert c #"A\302\200")) list))
   (test `(,(reorder #"A\0") 1 error)
         (call-with-values (lambda () (bytes-convert c #"A\200")) list))
-  ;; unpaired high surrogate
-  (test `(,(reorder #"\0\330") 3 complete)
+  ;; unpaired high surrogate - incomplete because we have to watch for a low surrogate after
+  (test `(,(reorder #"") 0 aborts)
         (call-with-values (lambda () (bytes-convert c #"\355\240\200")) list))
   ;; unpaired low surrogate
   (test `(,(reorder #"\1\334") 3 complete)
         (call-with-values (lambda () (bytes-convert c #"\355\260\201")) list))
-  ;; surrogate pair where each is separately encoded
-  (test `(,(reorder #"\0\330\1\334") 6 complete)
+  ;; surrogate pair where each is separately encoded, high before low
+  (log-error "here")
+  (test `(,(reorder #"") 0 error)
         (call-with-values (lambda () (bytes-convert c #"\355\240\200\355\260\201")) list))
+  ;; surrogate pair where each is separately encoded, low before high
+  (test `(,(reorder #"\1\334") 3 aborts)
+        (call-with-values (lambda () (bytes-convert c #"\355\260\201\355\240\200")) list))
+  (test `(,(reorder #"\1\334\0\330x\0") 7 complete)
+        (call-with-values (lambda () (bytes-convert c #"\355\260\201\355\240\200x")) list))
+  ;; correctly encoded surrogate pair
   (test `(,(reorder #"\1\330\0\334") 4 complete)
         (call-with-values (lambda () (bytes-convert c #"\360\220\220\200")) list))
   (test (void) (bytes-close-converter c)))

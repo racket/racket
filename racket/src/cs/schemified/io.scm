@@ -14916,7 +14916,7 @@
         ((loop_0
           (|#%name|
            loop
-           (lambda (i_0 j_0 base-i_0 accum_0 remaining_0)
+           (lambda (i_0 j_0 base-i_0 accum_0 remaining_0 pending-surrogate_0)
              (begin
                (let ((encoding-failure_0
                       (|#%name|
@@ -14942,32 +14942,72 @@
                                               next-j_0
                                               next-i_0
                                               0
-                                              0))))))))
-                               (if (if (not to-utf-16?4_0)
-                                     (<= (+ j_0 3) out-end13_0)
+                                              0
+                                              #f))))))))
+                               (if (if pending-surrogate_0
+                                     (> (+ j_0 2) out-end13_0)
                                      #f)
-                                 (begin
-                                   (unsafe-bytes-set! out-bstr11_0 j_0 239)
-                                   (unsafe-bytes-set!
-                                    out-bstr11_0
-                                    (+ j_0 1)
-                                    191)
-                                   (unsafe-bytes-set!
-                                    out-bstr11_0
-                                    (+ j_0 2)
-                                    189)
-                                   (continue-after-permissive_0 (+ j_0 3)))
-                                 (if (if to-utf-16?4_0
-                                       (<= (+ j_0 2) out-end13_0)
-                                       #f)
-                                   (begin
-                                     (bytes-set-two! out-bstr11_0 j_0 255 253)
-                                     (continue-after-permissive_0 (+ j_0 2)))
-                                   (let ((app_0 (- base-i_0 in-start9_0)))
-                                     (values
-                                      app_0
-                                      (- j_0 out-start12_0)
-                                      'continues)))))
+                                 (let ((app_0 (- base-i_0 in-start9_0)))
+                                   (values
+                                    app_0
+                                    (- j_0 out-start12_0)
+                                    'continues))
+                                 (let ((j_1
+                                        (if pending-surrogate_0
+                                          (begin
+                                            (let ((app_0
+                                                   (arithmetic-shift
+                                                    pending-surrogate_0
+                                                    -8)))
+                                              (bytes-set-two!
+                                               out-bstr11_0
+                                               j_0
+                                               app_0
+                                               (bitwise-and
+                                                pending-surrogate_0
+                                                255)))
+                                            (+ j_0 2))
+                                          j_0)))
+                                   (let ((base-i_1
+                                          (if pending-surrogate_0
+                                            (+ base-i_0 3)
+                                            base-i_0)))
+                                     (let ((j_2 j_1))
+                                       (if (if (not to-utf-16?4_0)
+                                             (<= (+ j_2 3) out-end13_0)
+                                             #f)
+                                         (begin
+                                           (unsafe-bytes-set!
+                                            out-bstr11_0
+                                            j_2
+                                            239)
+                                           (unsafe-bytes-set!
+                                            out-bstr11_0
+                                            (+ j_2 1)
+                                            191)
+                                           (unsafe-bytes-set!
+                                            out-bstr11_0
+                                            (+ j_2 2)
+                                            189)
+                                           (continue-after-permissive_0
+                                            (+ j_2 3)))
+                                         (if (if to-utf-16?4_0
+                                               (<= (+ j_2 2) out-end13_0)
+                                               #f)
+                                           (begin
+                                             (bytes-set-two!
+                                              out-bstr11_0
+                                              j_2
+                                              255
+                                              253)
+                                             (continue-after-permissive_0
+                                              (+ j_2 2)))
+                                           (let ((app_0
+                                                  (- base-i_1 in-start9_0)))
+                                             (values
+                                              app_0
+                                              (- j_2 out-start12_0)
+                                              'continues)))))))))
                              (let ((app_0 (- base-i_0 in-start9_0)))
                                (values
                                 app_0
@@ -14988,29 +15028,74 @@
                                       (if (= next-i_0 in-end10_0)
                                         'complete
                                         'continues))))
-                                 (loop_0 next-i_0 next-j_0 next-i_0 0 0))))))))
+                                 (loop_0
+                                  next-i_0
+                                  next-j_0
+                                  next-i_0
+                                  0
+                                  0
+                                  #f))))))))
                    (if (= i_0 in-end10_0)
                      (if (zero? remaining_0)
-                       (let ((app_0 (- base-i_0 in-start9_0)))
-                         (values app_0 (- j_0 out-start12_0) 'complete))
+                       (if pending-surrogate_0
+                         (let ((app_0 (- base-i_0 in-start9_0)))
+                           (let ((app_1 (- j_0 out-start12_0)))
+                             (values
+                              app_0
+                              app_1
+                              (if (= j_0 out-end13_0) 'continues 'aborts))))
+                         (let ((app_0 (- base-i_0 in-start9_0)))
+                           (values app_0 (- j_0 out-start12_0) 'complete)))
                        (let ((app_0 (- base-i_0 in-start9_0)))
                          (values app_0 (- j_0 out-start12_0) 'aborts)))
                      (let ((b_0 (unsafe-bytes-ref in-bstr8_0 i_0)))
                        (if (< b_0 128)
                          (if (zero? remaining_0)
-                           (if (if (not to-utf-16?4_0) (< j_0 out-end13_0) #f)
-                             (begin
-                               (unsafe-bytes-set! out-bstr11_0 j_0 b_0)
-                               (continue_0 (add1 j_0)))
-                             (if (< (add1 j_0) out-end13_0)
-                               (begin
-                                 (bytes-set-two! out-bstr11_0 j_0 0 b_0)
-                                 (continue_0 (+ j_0 2)))
-                               (let ((app_0 (- base-i_0 in-start9_0)))
-                                 (values
-                                  app_0
-                                  (- j_0 out-start12_0)
-                                  'continues))))
+                           (if (if pending-surrogate_0
+                                 (> (+ j_0 2) out-end13_0)
+                                 #f)
+                             (let ((app_0 (- base-i_0 in-start9_0)))
+                               (values app_0 (- j_0 out-start12_0) 'continues))
+                             (let ((j_1
+                                    (if pending-surrogate_0
+                                      (begin
+                                        (let ((app_0
+                                               (arithmetic-shift
+                                                pending-surrogate_0
+                                                -8)))
+                                          (bytes-set-two!
+                                           out-bstr11_0
+                                           j_0
+                                           app_0
+                                           (bitwise-and
+                                            pending-surrogate_0
+                                            255)))
+                                        (+ j_0 2))
+                                      j_0)))
+                               (let ((base-i_1
+                                      (if pending-surrogate_0
+                                        (+ base-i_0 3)
+                                        base-i_0)))
+                                 (let ((j_2 j_1))
+                                   (if (if (not to-utf-16?4_0)
+                                         (< j_2 out-end13_0)
+                                         #f)
+                                     (begin
+                                       (unsafe-bytes-set! out-bstr11_0 j_2 b_0)
+                                       (continue_0 (add1 j_2)))
+                                     (if (< (add1 j_2) out-end13_0)
+                                       (begin
+                                         (bytes-set-two!
+                                          out-bstr11_0
+                                          j_2
+                                          0
+                                          b_0)
+                                         (continue_0 (+ j_2 2)))
+                                       (let ((app_0 (- base-i_1 in-start9_0)))
+                                         (values
+                                          app_0
+                                          (- j_2 out-start12_0)
+                                          'continues))))))))
                            (encoding-failure_0))
                          (if (= 128 (bitwise-and b_0 192))
                            (if (zero? remaining_0)
@@ -15019,120 +15104,286 @@
                                (let ((next-accum_0
                                       (+ (arithmetic-shift accum_0 6) next_0)))
                                  (if (= 1 remaining_0)
-                                   (let ((next-i_0 (add1 i_0)))
+                                   (if (> next-accum_0 1114111)
+                                     (encoding-failure_0)
                                      (if (< next-accum_0 128)
                                        (encoding-failure_0)
-                                       (if (if from-utf-8-ish?3_0
-                                             from-utf-8-ish?3_0
-                                             (not
-                                              (let ((or-part_0
-                                                     (> next-accum_0 1114111)))
-                                                (if or-part_0
-                                                  or-part_0
-                                                  (if (>= next-accum_0 55296)
-                                                    (<= next-accum_0 57343)
-                                                    #f)))))
+                                       (if (if (>= next-accum_0 55296)
+                                             (<= next-accum_0 57343)
+                                             #f)
+                                         (if from-utf-8-ish?3_0
+                                           (if (= i_0 in-end10_0)
+                                             (let ((app_0
+                                                    (- base-i_0 in-start9_0)))
+                                               (values
+                                                app_0
+                                                (- j_0 out-start12_0)
+                                                'aborts))
+                                             (if (if pending-surrogate_0
+                                                   (=
+                                                    (bitwise-and
+                                                     next-accum_0
+                                                     56320)
+                                                    56320)
+                                                   #f)
+                                               (if permissive?2_0
+                                                 (if (<=
+                                                      (+ j_0 12)
+                                                      out-end13_0)
+                                                   (begin
+                                                     (begin
+                                                       (letrec*
+                                                        ((for-loop_0
+                                                          (|#%name|
+                                                           for-loop
+                                                           (lambda (pos_0)
+                                                             (begin
+                                                               (if (unsafe-fx<
+                                                                    pos_0
+                                                                    6)
+                                                                 (begin
+                                                                   (bytes-set-two!
+                                                                    out-bstr11_0
+                                                                    (+
+                                                                     j_0
+                                                                     (*
+                                                                      pos_0
+                                                                      2))
+                                                                    255
+                                                                    253)
+                                                                   (for-loop_0
+                                                                    (unsafe-fx+
+                                                                     pos_0
+                                                                     1)))
+                                                                 (values)))))))
+                                                        (for-loop_0 0)))
+                                                     (void)
+                                                     (continue_0 (+ j_0 12)))
+                                                   (let ((app_0
+                                                          (-
+                                                           base-i_0
+                                                           in-start9_0)))
+                                                     (values
+                                                      app_0
+                                                      (- j_0 out-start12_0)
+                                                      'continues)))
+                                                 (encoding-failure_0))
+                                               (if (=
+                                                    (bitwise-and
+                                                     next-accum_0
+                                                     56320)
+                                                    55296)
+                                                 (let ((next-i_0 (add1 i_0)))
+                                                   (if (if pending-surrogate_0
+                                                         (>
+                                                          (+ j_0 2)
+                                                          out-end13_0)
+                                                         #f)
+                                                     (let ((app_0
+                                                            (-
+                                                             base-i_0
+                                                             in-start9_0)))
+                                                       (values
+                                                        app_0
+                                                        (- j_0 out-start12_0)
+                                                        'continues))
+                                                     (let ((j_1
+                                                            (if pending-surrogate_0
+                                                              (begin
+                                                                (let ((app_0
+                                                                       (arithmetic-shift
+                                                                        pending-surrogate_0
+                                                                        -8)))
+                                                                  (bytes-set-two!
+                                                                   out-bstr11_0
+                                                                   j_0
+                                                                   app_0
+                                                                   (bitwise-and
+                                                                    pending-surrogate_0
+                                                                    255)))
+                                                                (+ j_0 2))
+                                                              j_0)))
+                                                       (let ((base-i_1
+                                                              (if pending-surrogate_0
+                                                                (+ base-i_0 3)
+                                                                base-i_0)))
+                                                         (let ((j_2 j_1))
+                                                           (loop_0
+                                                            next-i_0
+                                                            j_2
+                                                            base-i_1
+                                                            0
+                                                            0
+                                                            next-accum_0))))))
+                                                 (if (<= (+ j_0 2) out-end13_0)
+                                                   (begin
+                                                     (let ((app_0
+                                                            (arithmetic-shift
+                                                             next-accum_0
+                                                             -8)))
+                                                       (bytes-set-two!
+                                                        out-bstr11_0
+                                                        j_0
+                                                        app_0
+                                                        (bitwise-and
+                                                         next-accum_0
+                                                         255)))
+                                                     (continue_0 (+ j_0 2)))
+                                                   (let ((app_0
+                                                          (-
+                                                           base-i_0
+                                                           in-start9_0)))
+                                                     (values
+                                                      app_0
+                                                      (- j_0 out-start12_0)
+                                                      'continues))))))
+                                           (encoding-failure_0))
                                          (if to-utf-16?4_0
-                                           (if (if (< next-accum_0 65536)
-                                                 (<= (+ j_0 2) out-end13_0)
+                                           (if (if pending-surrogate_0
+                                                 (> (+ j_0 2) out-end13_0)
                                                  #f)
-                                             (begin
-                                               (let ((app_0
-                                                      (arithmetic-shift
-                                                       next-accum_0
-                                                       -8)))
-                                                 (bytes-set-two!
-                                                  out-bstr11_0
-                                                  j_0
-                                                  app_0
-                                                  (bitwise-and
-                                                   next-accum_0
-                                                   255)))
-                                               (continue_0 (+ j_0 2)))
-                                             (if (<= (+ j_0 4) out-end13_0)
-                                               (let ((av_0
-                                                      (- next-accum_0 65536)))
-                                                 (let ((hi_0
-                                                        (bitwise-ior
-                                                         55296
-                                                         (bitwise-and
-                                                          (arithmetic-shift
-                                                           av_0
-                                                           -10)
-                                                          1023))))
-                                                   (let ((lo_0
-                                                          (bitwise-ior
-                                                           56320
+                                             (let ((app_0
+                                                    (- base-i_0 in-start9_0)))
+                                               (values
+                                                app_0
+                                                (- j_0 out-start12_0)
+                                                'continues))
+                                             (let ((j_1
+                                                    (if pending-surrogate_0
+                                                      (begin
+                                                        (let ((app_0
+                                                               (arithmetic-shift
+                                                                pending-surrogate_0
+                                                                -8)))
+                                                          (bytes-set-two!
+                                                           out-bstr11_0
+                                                           j_0
+                                                           app_0
                                                            (bitwise-and
-                                                            av_0
-                                                            1023))))
+                                                            pending-surrogate_0
+                                                            255)))
+                                                        (+ j_0 2))
+                                                      j_0)))
+                                               (let ((base-i_1
+                                                      (if pending-surrogate_0
+                                                        (+ base-i_0 3)
+                                                        base-i_0)))
+                                                 (let ((j_2 j_1))
+                                                   (if (if (<
+                                                            next-accum_0
+                                                            65536)
+                                                         (<=
+                                                          (+ j_2 2)
+                                                          out-end13_0)
+                                                         #f)
                                                      (begin
                                                        (let ((app_0
                                                               (arithmetic-shift
-                                                               hi_0
+                                                               next-accum_0
                                                                -8)))
                                                          (bytes-set-two!
                                                           out-bstr11_0
-                                                          j_0
+                                                          j_2
                                                           app_0
                                                           (bitwise-and
-                                                           hi_0
+                                                           next-accum_0
                                                            255)))
-                                                       (let ((app_0 (+ j_0 2)))
-                                                         (let ((app_1
-                                                                (arithmetic-shift
-                                                                 lo_0
-                                                                 -8)))
-                                                           (bytes-set-two!
-                                                            out-bstr11_0
-                                                            app_0
-                                                            app_1
-                                                            (bitwise-and
-                                                             lo_0
-                                                             255))))
-                                                       (continue_0
-                                                        (+ j_0 4))))))
-                                               (let ((app_0
-                                                      (-
-                                                       base-i_0
-                                                       in-start9_0)))
-                                                 (values
-                                                  app_0
-                                                  (- j_0 out-start12_0)
-                                                  'continues))))
-                                           (letrec*
-                                            ((loop_1
-                                              (|#%name|
-                                               loop
-                                               (lambda (from-i_0 to-j_0)
-                                                 (begin
-                                                   (if (= from-i_0 next-i_0)
-                                                     (continue_0 to-j_0)
-                                                     (if (= to-j_0 out-end13_0)
+                                                       (continue_0 (+ j_2 2)))
+                                                     (if (<=
+                                                          (+ j_2 4)
+                                                          out-end13_0)
+                                                       (let ((av_0
+                                                              (-
+                                                               next-accum_0
+                                                               65536)))
+                                                         (let ((hi_0
+                                                                (bitwise-ior
+                                                                 55296
+                                                                 (bitwise-and
+                                                                  (arithmetic-shift
+                                                                   av_0
+                                                                   -10)
+                                                                  1023))))
+                                                           (let ((lo_0
+                                                                  (bitwise-ior
+                                                                   56320
+                                                                   (bitwise-and
+                                                                    av_0
+                                                                    1023))))
+                                                             (begin
+                                                               (let ((app_0
+                                                                      (arithmetic-shift
+                                                                       hi_0
+                                                                       -8)))
+                                                                 (bytes-set-two!
+                                                                  out-bstr11_0
+                                                                  j_2
+                                                                  app_0
+                                                                  (bitwise-and
+                                                                   hi_0
+                                                                   255)))
+                                                               (let ((app_0
+                                                                      (+
+                                                                       j_2
+                                                                       2)))
+                                                                 (let ((app_1
+                                                                        (arithmetic-shift
+                                                                         lo_0
+                                                                         -8)))
+                                                                   (bytes-set-two!
+                                                                    out-bstr11_0
+                                                                    app_0
+                                                                    app_1
+                                                                    (bitwise-and
+                                                                     lo_0
+                                                                     255))))
+                                                               (continue_0
+                                                                (+ j_2 4))))))
                                                        (let ((app_0
                                                               (-
-                                                               base-i_0
+                                                               base-i_1
                                                                in-start9_0)))
                                                          (values
                                                           app_0
-                                                          (- j_0 out-start12_0)
-                                                          'continues))
-                                                       (begin
-                                                         (unsafe-bytes-set!
-                                                          out-bstr11_0
-                                                          to-j_0
-                                                          (unsafe-bytes-ref
-                                                           in-bstr8_0
-                                                           from-i_0))
+                                                          (- j_2 out-start12_0)
+                                                          'continues))))))))
+                                           (let ((next-i_0 (add1 i_0)))
+                                             (letrec*
+                                              ((loop_1
+                                                (|#%name|
+                                                 loop
+                                                 (lambda (from-i_0 to-j_0)
+                                                   (begin
+                                                     (if (= from-i_0 next-i_0)
+                                                       (continue_0 to-j_0)
+                                                       (if (=
+                                                            to-j_0
+                                                            out-end13_0)
                                                          (let ((app_0
-                                                                (add1
-                                                                 from-i_0)))
-                                                           (loop_1
+                                                                (-
+                                                                 base-i_0
+                                                                 in-start9_0)))
+                                                           (values
                                                             app_0
-                                                            (add1
-                                                             to-j_0)))))))))))
-                                            (loop_1 base-i_0 j_0)))
-                                         (encoding-failure_0))))
+                                                            (-
+                                                             j_0
+                                                             out-start12_0)
+                                                            'continues))
+                                                         (begin
+                                                           (unsafe-bytes-set!
+                                                            out-bstr11_0
+                                                            to-j_0
+                                                            (unsafe-bytes-ref
+                                                             in-bstr8_0
+                                                             from-i_0))
+                                                           (let ((app_0
+                                                                  (add1
+                                                                   from-i_0)))
+                                                             (loop_1
+                                                              app_0
+                                                              (add1
+                                                               to-j_0)))))))))))
+                                              (loop_1 base-i_0 j_0)))))))
                                    (if (if (= 2 remaining_0)
                                          (<= next-accum_0 31)
                                          #f)
@@ -15147,24 +15398,43 @@
                                           j_0
                                           base-i_0
                                           next-accum_0
-                                          (sub1 remaining_0)))))))))
+                                          (sub1 remaining_0)
+                                          pending-surrogate_0))))))))
                            (if (not (zero? remaining_0))
                              (encoding-failure_0)
                              (if (= 192 (bitwise-and b_0 224))
                                (let ((accum_1 (bitwise-and b_0 31)))
                                  (if (zero? accum_1)
                                    (encoding-failure_0)
-                                   (loop_0 (add1 i_0) j_0 i_0 accum_1 1)))
+                                   (loop_0
+                                    (add1 i_0)
+                                    j_0
+                                    base-i_0
+                                    accum_1
+                                    1
+                                    pending-surrogate_0)))
                                (if (= 224 (bitwise-and b_0 240))
                                  (let ((accum_1 (bitwise-and b_0 15)))
-                                   (loop_0 (add1 i_0) j_0 i_0 accum_1 2))
+                                   (loop_0
+                                    (add1 i_0)
+                                    j_0
+                                    base-i_0
+                                    accum_1
+                                    2
+                                    pending-surrogate_0))
                                  (if (= 240 (bitwise-and b_0 248))
                                    (let ((accum_1 (bitwise-and b_0 7)))
                                      (if (> accum_1 4)
                                        (encoding-failure_0)
-                                       (loop_0 (add1 i_0) j_0 i_0 accum_1 3)))
+                                       (loop_0
+                                        (add1 i_0)
+                                        j_0
+                                        base-i_0
+                                        accum_1
+                                        3
+                                        pending-surrogate_0)))
                                    (encoding-failure_0))))))))))))))))
-        (loop_0 in-start9_0 out-start12_0 in-start9_0 0 0))))))
+        (loop_0 in-start9_0 out-start12_0 in-start9_0 0 0 #f))))))
 (define utf-16-ish-reencode!.1
   (|#%name|
    utf-16-ish-reencode!
@@ -33681,11 +33951,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr3566 unsafe-undefined)
+             (let ((lr3604 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr3566
+               (set! lr3604
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -33740,9 +34010,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr3566 0))
-               (set! command_0 (unsafe-vector*-ref lr3566 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr3566 2))
+               (set! group_0 (unsafe-vector*-ref lr3604 0))
+               (set! command_0 (unsafe-vector*-ref lr3604 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr3604 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
