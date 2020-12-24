@@ -2042,11 +2042,17 @@
 ;; function is called with interrupts disabled
 (define get-errno
   (cond
-   [(foreign-entry? "racket_errno")
+   [(and (not (chez:memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
+         (foreign-entry? "racket_errno"))
     (foreign-procedure "racket_errno" () int)]
    [else
-    ;; We get here only during a bootstrapping process or in a
-    ;; development mode that is not running in a Racket executable
+    ;; We get here when (i) during a bootstrapping process, (ii) in a
+    ;; development mode that is not running in a Racket executable,
+    ;; or (iii) running on Windows.
+    ;; In the third case, `errno` could be a different one from
+    ;; `_errno` in MSVCRT. Therefore fallback to the foreign function.
+    ;; See `save_errno_values` in `foreign.c` from Racket BC for more
+    ;; information.
     (let ([get-&errno-name
            (case (machine-type)
              [(a6nt ta6nt i3nt ti3nt)
