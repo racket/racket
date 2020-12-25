@@ -574,7 +574,7 @@
         (call-with-values (lambda () (bytes-convert c #"\360\220\220\200")) list))
   (test (void) (bytes-close-converter c)))
 
-(let ([c (bytes-open-converter "UTF-8-ish" "UTF-16-ish")])
+(let ([c (bytes-open-converter "WTF-8" "WTF-16")])
   (test `(,(reorder #"A\0\200\0") 3 complete)
         (call-with-values (lambda () (bytes-convert c #"A\302\200")) list))
   (test `(,(reorder #"A\0") 1 error)
@@ -586,7 +586,6 @@
   (test `(,(reorder #"\1\334") 3 complete)
         (call-with-values (lambda () (bytes-convert c #"\355\260\201")) list))
   ;; surrogate pair where each is separately encoded, high before low
-  (log-error "here")
   (test `(,(reorder #"") 0 error)
         (call-with-values (lambda () (bytes-convert c #"\355\240\200\355\260\201")) list))
   ;; surrogate pair where each is separately encoded, low before high
@@ -599,7 +598,7 @@
         (call-with-values (lambda () (bytes-convert c #"\360\220\220\200")) list))
   (test (void) (bytes-close-converter c)))
 
-(let ([c (bytes-open-converter "UTF-16-ish" "UTF-8-ish")])
+(let ([c (bytes-open-converter "WTF-16" "WTF-8")])
   (test `(#"A\302\200" 4 complete)
         (call-with-values (lambda () (bytes-convert c (reorder #"A\0\200\0"))) list))
   ;; unpaired high surrogate

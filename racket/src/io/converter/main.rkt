@@ -24,9 +24,9 @@
 ;; intended for converting to and from arbitrary 16-byte sequences,
 ;; which is useful for encoding Windows paths.
 (define windows? (eq? 'windows (system-type)))
-(define platform-utf-8 (if windows? 'utf-8-ish 'utf-8))
-(define platform-utf-8-permissive (if windows? 'utf-8-ish-permissive 'utf-8-permissive))
-(define platform-utf-16 (if windows? 'utf-16-ish 'utf-16-assume))
+(define platform-utf-8 (if windows? 'wtf-8 'utf-8))
+(define platform-utf-8-permissive (if windows? 'wtf-8-permissive 'utf-8-permissive))
+(define platform-utf-16 (if windows? 'wtf-16 'utf-16-assume))
 
 (define (bytes-open-converter-in-custodian who cust from-str to-str)
   (check who string? from-str)
@@ -47,17 +47,18 @@
     [(and (string=? from-str "platform-UTF-16") (string=? to-str "platform-UTF-8"))
      (bytes-converter (utf-8-converter platform-utf-16 platform-utf-8)
                       #f)]
-    ;; "UTF-8-ish" is also known as "WTF-8".
-    ;; "UTF-16-ish" is similar to UTF-16, but allows unpaired surrogates --- which is still
+    ;; WTF-16 is similar to UTF-16, but allows unpaired surrogates --- which is still
     ;; different from UCS-2, since paired surrogates are decoded as in UTF-16.
-    [(and (string=? from-str "UTF-8-ish") (string=? to-str "UTF-16-ish"))
-     (bytes-converter (utf-8-converter 'utf-8-ish 'utf-16-ish)
+    ;; WTF-8 is the analogous extension of UTF-8, where a surrogate pair encoded
+    ;; as a sequence of unpaired surrogates is specifically disallowed.
+    [(and (string=? from-str "WTF-8") (string=? to-str "WTF-16"))
+     (bytes-converter (utf-8-converter 'wtf-8 'wtf-16)
                       #f)]
-    [(and (string=? from-str "UTF-8-ish-permissive") (string=? to-str "UTF-16-ish"))
-     (bytes-converter (utf-8-converter 'utf-8-ish-permissive 'utf-16-ish)
+    [(and (string=? from-str "WTF-8-permissive") (string=? to-str "WTF-16"))
+     (bytes-converter (utf-8-converter 'wtf-8-permissive 'wtf-16)
                       #f)]
-    [(and (string=? from-str "UTF-16-ish") (string=? to-str "UTF-8-ish"))
-     (bytes-converter (utf-8-converter 'utf-16-ish 'utf-8-ish)
+    [(and (string=? from-str "WTF-16") (string=? to-str "WTF-8"))
+     (bytes-converter (utf-8-converter 'wtf-16 'wtf-8)
                       #f)]
     [(and (or (and (string=? from-str "UTF-8") (string=? to-str ""))
               (and (string=? from-str "") (string=? to-str "UTF-8")))

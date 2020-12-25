@@ -453,29 +453,43 @@ Certain encoding combinations are always available:
  @item{@racket[(bytes-open-converter "platform-UTF-8" "platform-UTF-16")]
    --- converts UTF-8 to UTF-16 on @|AllUnix|, where each UTF-16
    code unit is a sequence of two bytes ordered by the current
-   platform's endianness. On Windows, the input can include
-   encodings that are not valid UTF-8, but which naturally extend the
-   UTF-8 encoding to support unpaired surrogate code units, and the
-   output is a sequence of UTF-16 code units (as little-endian byte
-   pairs), potentially including unpaired surrogates.}
+   platform's endianness. On Windows, the conversion is the same
+   as @racket[(bytes-open-converter "WTF-8" "WTF-16")] to support
+   unpaired surrogate code units.}
 
  @item{@racket[(bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16")]
    --- like @racket[(bytes-open-converter "platform-UTF-8" "platform-UTF-16")],
    but an input byte that is not part of a valid UTF-8 encoding
    sequence (or valid for the unpaired-surrogate extension on
-   Windows) is effectively replaced with @racket[(char->integer #\?)].}
+   Windows) is effectively replaced with @racketvalfont{#\uFFFD}.}
 
  @item{@racket[(bytes-open-converter "platform-UTF-16" "platform-UTF-8")]
    --- converts UTF-16 (bytes ordered by the current platform's
-   endianness) to UTF-8 on @|AllUnix|. On Windows, the input can
-   include UTF-16 code units that are unpaired surrogates, and the
-   corresponding output includes an encoding of each surrogate in a
-   natural extension of UTF-8. On @|AllUnix|, surrogates are
+   endianness) to UTF-8 on @|AllUnix|. On Windows, the conversion
+   is the same as @racket[(bytes-open-converter "WTF-16" "WTF-8")]
+   to support unpaired surrogates. On @|AllUnix|, surrogates are
    assumed to be paired: a pair of bytes with the bits @code{#xD800}
    starts a surrogate pair, and the @code{#x03FF} bits are used from
    the pair and following pair (independent of the value of the
    @code{#xDC00} bits). On all platforms, performance may be poor
    when decoding from an odd offset within an input byte string.}
+
+ @item{@racket[(bytes-open-converter "WTF-8" "WTF-16")]
+   --- converts the WTF-8 @cite["Sapin18"] superset of UTF-8 to a
+   superset of UTF-16 to support unpaired surrogate code units, where
+   each UTF-16 code unit is a sequence of two bytes ordered by the
+   current platform's endianness.}
+
+ @item{@racket[(bytes-open-converter "WTF-8-permissive" "WTF-16")]
+   --- like @racket[(bytes-open-converter "WTF-8" "WTF-16")],
+   but an input byte that is not part of a valid WTF-8 encoding
+   sequence is effectively replaced with @racketvalfont{#\uFFFD}.}
+
+ @item{@racket[(bytes-open-converter "WTF-16" "WTF-8")]
+   --- converts the WTF-16 @cite["Sapin18"] superset of UTF-16 to the
+   WTF-8 superset of UTF-8. The input can include UTF-16 code units
+   that are unpaired surrogates, and the corresponding output includes
+   an encoding of each surrogate in a natural extension of UTF-8.}
 
  ]
 
@@ -501,7 +515,12 @@ current executable's directory at run time, and the DLL must either
 supply @tt{_errno} or link to @filepath{msvcrt.dll} for @tt{_errno};
 otherwise, only the guaranteed combinations are available.
 
-Use @racket[bytes-convert] with the result to convert byte strings.}
+Use @racket[bytes-convert] with the result to convert byte strings.
+
+@history[#:changed "7.9.0.17" @elem{Added built-in converters for
+                                    @racket["WTF-8"],
+                                    <@racket["WTF-8-permissive"], and
+                                    @racket["WTF-16"].}]}
 
 
 @defproc[(bytes-close-converter [converter bytes-converter?]) void]{

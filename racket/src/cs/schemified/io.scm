@@ -14846,9 +14846,9 @@
            (if (let ((or-part_0 (eq? from_0 'utf-16)))
                  (if or-part_0
                    or-part_0
-                   (let ((or-part_1 (eq? from_0 'utf-16-ish)))
+                   (let ((or-part_1 (eq? from_0 'wtf-16)))
                      (if or-part_1 or-part_1 (eq? from_0 'utf-16-assume)))))
-             (let ((temp33_0 (eq? from_0 'utf-16-ish)))
+             (let ((temp33_0 (eq? from_0 'wtf-16)))
                (let ((temp34_0 (eq? from_0 'utf-16-assume)))
                  (utf-16-ish-reencode!.1
                   temp34_0
@@ -14861,19 +14861,17 @@
                   dest-end_0)))
              (let ((or-part_0 (eq? from_0 'utf-8-permissive)))
                (let ((temp41_0
-                      (if or-part_0
-                        or-part_0
-                        (eq? from_0 'utf-8-ish-permissive))))
+                      (if or-part_0 or-part_0 (eq? from_0 'wtf-8-permissive))))
                  (let ((temp42_0
-                        (let ((or-part_1 (eq? from_0 'utf-8-ish)))
+                        (let ((or-part_1 (eq? from_0 'wtf-8)))
                           (if or-part_1
                             or-part_1
-                            (eq? from_0 'utf-8-ish-permissive)))))
+                            (eq? from_0 'wtf-8-permissive)))))
                    (let ((temp43_0
                           (let ((or-part_1 (eq? to_0 'utf-16)))
                             (if or-part_1
                               or-part_1
-                              (let ((or-part_2 (eq? to_0 'utf-16-ish)))
+                              (let ((or-part_2 (eq? to_0 'wtf-16)))
                                 (if or-part_2
                                   or-part_2
                                   (eq? to_0 'utf-16-assume)))))))
@@ -14902,7 +14900,7 @@
 (define utf-8-ish-reencode!.1
   (|#%name|
    utf-8-ish-reencode!
-   (lambda (from-utf-8-ish?3_0
+   (lambda (from-wtf-8?3_0
             permissive?2_0
             to-utf-16?4_0
             in-bstr8_0
@@ -15111,7 +15109,7 @@
                                        (if (if (>= next-accum_0 55296)
                                              (<= next-accum_0 57343)
                                              #f)
-                                         (if from-utf-8-ish?3_0
+                                         (if from-wtf-8?3_0
                                            (if (= i_0 in-end10_0)
                                              (let ((app_0
                                                     (- base-i_0 in-start9_0)))
@@ -15439,7 +15437,7 @@
   (|#%name|
    utf-16-ish-reencode!
    (lambda (assume-paired-surrogates?16_0
-            from-utf-16-ish?15_0
+            from-wtf-16?15_0
             in-bstr19_0
             in-start20_0
             in-end21_0
@@ -15693,10 +15691,10 @@
                                                        v2_0
                                                        1023))))))
                                              (continue_0 v3_0 (+ i_0 4)))
-                                           (if from-utf-16-ish?15_0
+                                           (if from-wtf-16?15_0
                                              (continue_0 v_0 (+ i_0 2))
                                              (done_0 'error)))))))
-                                 (if from-utf-16-ish?15_0
+                                 (if from-wtf-16?15_0
                                    (continue_0 v_0 (+ i_0 2))
                                    (done_0 'error)))
                                (continue_0 v_0 (+ i_0 2)))))))))))))))
@@ -15806,10 +15804,10 @@
          'bytes-converter
          'custodian-reference))))))
 (define windows? (eq? 'windows (system-type)))
-(define platform-utf-8 (if windows? 'utf-8-ish 'utf-8))
+(define platform-utf-8 (if windows? 'wtf-8 'utf-8))
 (define platform-utf-8-permissive
-  (if windows? 'utf-8-ish-permissive 'utf-8-permissive))
-(define platform-utf-16 (if windows? 'utf-16-ish 'utf-16-assume))
+  (if windows? 'wtf-8-permissive 'utf-8-permissive))
+(define platform-utf-16 (if windows? 'wtf-16 'utf-16-assume))
 (define bytes-open-converter-in-custodian
   (lambda (who_0 cust_0 from-str_0 to-str_0)
     (begin
@@ -15843,23 +15841,21 @@
                 (bytes-converter1.1
                  (utf-8-converter1.1 platform-utf-16 platform-utf-8)
                  #f)
-                (if (if (string=? from-str_0 "UTF-8-ish")
-                      (string=? to-str_0 "UTF-16-ish")
+                (if (if (string=? from-str_0 "WTF-8")
+                      (string=? to-str_0 "WTF-16")
                       #f)
-                  (bytes-converter1.1
-                   (utf-8-converter1.1 'utf-8-ish 'utf-16-ish)
-                   #f)
-                  (if (if (string=? from-str_0 "UTF-8-ish-permissive")
-                        (string=? to-str_0 "UTF-16-ish")
+                  (bytes-converter1.1 (utf-8-converter1.1 'wtf-8 'wtf-16) #f)
+                  (if (if (string=? from-str_0 "WTF-8-permissive")
+                        (string=? to-str_0 "WTF-16")
                         #f)
                     (bytes-converter1.1
-                     (utf-8-converter1.1 'utf-8-ish-permissive 'utf-16-ish)
+                     (utf-8-converter1.1 'wtf-8-permissive 'wtf-16)
                      #f)
-                    (if (if (string=? from-str_0 "UTF-16-ish")
-                          (string=? to-str_0 "UTF-8-ish")
+                    (if (if (string=? from-str_0 "WTF-16")
+                          (string=? to-str_0 "WTF-8")
                           #f)
                       (bytes-converter1.1
-                       (utf-8-converter1.1 'utf-16-ish 'utf-8-ish)
+                       (utf-8-converter1.1 'wtf-16 'wtf-8)
                        #f)
                       (if (if (let ((or-part_0
                                      (if (string=? from-str_0 "UTF-8")

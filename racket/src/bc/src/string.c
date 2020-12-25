@@ -29,6 +29,12 @@
 # define mzLOCALE_IS_UTF_8(s) (!(rktio_convert_properties(scheme_rktio) & RKTIO_CONVERTER_SUPPORTED))
 #endif
 
+#ifdef WINDOWS_UNICODE_SUPPORT
+# define WIN_UTF16_AS_WTF16(utf16) utf16
+#else
+# define WIN_UTF16_AS_WTF16(utf16) 0
+#endif
+
 #define mzICONV_KIND 0
 #define mzUTF8_KIND 1
 #define mzUTF8_TO_UTF16_KIND 2
@@ -39,7 +45,7 @@ typedef struct Scheme_Converter {
   short closed;
   short kind;
   rktio_converter_t *cd;
-  int permissive;
+  int permissive, wtf;
   Scheme_Custodian_Reference *mref;
 } Scheme_Converter;
 
@@ -154,13 +160,13 @@ static int mz_char_strcmp_ci(const char *who, const mzchar *str1, intptr_t l1, c
 static int mz_strcmp(const char *who, unsigned char *str1, intptr_t l1, unsigned char *str2, intptr_t l2);
 
 XFORM_NONGCING static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t end,
-					unsigned int *us, intptr_t dstart, intptr_t dend,
-					intptr_t *ipos, intptr_t *jpos,
-					char compact, char utf16,
-					int *state, int might_continue, int permissive);
+                                             unsigned int *us, intptr_t dstart, intptr_t dend,
+                                             intptr_t *ipos, intptr_t *jpos,
+                                             char compact, char utf16,
+                                             int *state, int might_continue, int permissive, int wtf);
 XFORM_NONGCING static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t end,
-					unsigned char *s, intptr_t dstart, intptr_t dend,
-					intptr_t *_ipos, intptr_t *_opos, char utf16);
+                                             unsigned char *s, intptr_t dstart, intptr_t dend,
+                                             intptr_t *_ipos, intptr_t *_opos, char utf16, int wtf);
 
 static char *string_to_from_locale(int to_bytes,
 				   char *in, intptr_t delta, intptr_t len,
@@ -1199,7 +1205,7 @@ do_byte_string_to_char_string(const char *who,
 		       NULL, 0, -1,
 		       NULL, NULL, 0, 0,
 		       NULL, 0, 
-		       (perm > -1) ? 0xD800 : 0);
+		       (perm > -1) ? 0xD800 : 0, 0);
   if (ulen < 0) {
     scheme_contract_error(who,
                           "string is not a well-formed UTF-8 encoding",
@@ -1212,7 +1218,7 @@ do_byte_string_to_char_string(const char *who,
 		v, 0, -1,
 		NULL, NULL, 0, 0,
 		NULL, 0, 
-		(perm > -1) ? 0xD800 : 0);
+		(perm > -1) ? 0xD800 : 0, 0);
   
   if (perm > -1) {
     for (i = 0; i < ulen; i++) {
@@ -1562,7 +1568,7 @@ byte_string_utf8_index(int argc, Scheme_Object *argv[])
   result = utf8_decode_x((unsigned char *)chars, istart, ifinish,
 			 NULL, 0, pos,
 			 &ipos, &opos,
-			 0, 0, NULL, 0, perm ? 1 : 0);
+			 0, 0, NULL, 0, perm ? 1 : 0, 0);
 
   if (((result < 0) && (result != -3))
       || ((ipos == ifinish) && (opos <= pos)))
@@ -1610,7 +1616,7 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
     utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		  NULL, 0, pos,
 		  &ipos, &opos,
-		  0, 0, NULL, 0, perm ? 1 : 0);
+		  0, 0, NULL, 0, perm ? 1 : 0, 0);
     if (opos < pos)
       return scheme_false;
     istart = ipos;
@@ -1619,7 +1625,7 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
   utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		us, 0, 1,
 		&ipos, &opos,
-		0, 0, NULL, 0, perm ? 0xFFFFFF : 0);
+		0, 0, NULL, 0, perm ? 0xFFFFFF : 0, 0);
 
   if (opos < 1)
     return scheme_false;
@@ -2771,7 +2777,7 @@ static char *do_convert(rktio_converter_t *cd,
 	r = utf8_decode_x((unsigned char *)in, id + dip, iilen,
 			  (unsigned int *)out, (od + dop) >> 2, iolen >> 2,
 			  &ipos, &opos,
-			  0, 0, NULL, 0, 0);
+			  0, 0, NULL, 0, 0, 0);
 	
 	opos <<= 2;
 	dop = (opos - od);
@@ -4334,7 +4340,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
   Scheme_Converter *c;
   rktio_converter_t *cd;
   int kind;
-  int permissive;
+  int permissive, wtf;
   int need_regis = 1;
   Scheme_Custodian_Reference *mref;
 
@@ -4354,6 +4360,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
       permissive = 0;
     cd = NULL;
     need_regis = 0;
+    wtf = 0;
   } else if ((!strcmp(from_e, "platform-UTF-8")
 	      || !strcmp(from_e, "platform-UTF-8-permissive"))
 	     && !strcmp(to_e, "platform-UTF-16")) {
@@ -4364,12 +4371,32 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
       permissive = 0;
     cd = NULL;
     need_regis = 0;
+    wtf = WIN_UTF16_AS_WTF16(1);
+  } else if ((!strcmp(from_e, "WTF-8")
+	      || !strcmp(from_e, "WTF-8-permissive"))
+	     && !strcmp(to_e, "WTF-16")) {
+    kind = mzUTF8_TO_UTF16_KIND;
+    if (!strcmp(from_e, "WTF-8-permissive"))
+      permissive = 0xFFFD;
+    else
+      permissive = 0;
+    cd = NULL;
+    need_regis = 0;
+    wtf = 1;
   } else if (!strcmp(from_e, "platform-UTF-16")
 	     && !strcmp(to_e, "platform-UTF-8")) {
     kind = mzUTF16_TO_UTF8_KIND;
     permissive = 0;
     cd = NULL;
     need_regis = 0;
+    wtf = WIN_UTF16_AS_WTF16(1);
+  } else if (!strcmp(from_e, "WTF-16")
+	     && !strcmp(to_e, "WTF-8")) {
+    kind = mzUTF16_TO_UTF8_KIND;
+    permissive = 0;
+    cd = NULL;
+    need_regis = 0;
+    wtf = 1;
   } else {
     char *tmp_from_e = NULL, *tmp_to_e = NULL;
 
@@ -4397,6 +4424,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
 
     kind = mzICONV_KIND;
     permissive = 0;
+    wtf = 0;
   }
 
   c = MALLOC_ONE_TAGGED(Scheme_Converter);
@@ -4404,6 +4432,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
   c->closed = 0;
   c->kind = kind;
   c->permissive = permissive;
+  c->wtf = wtf;
   c->cd = cd;
   if (!need_regis)
     mref = NULL;
@@ -4537,7 +4566,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 
     status = utf8_encode_x((const unsigned int *)instr, istart >> 1, ifinish >> 1,
 			   (unsigned char *)r, ostart, ofinish,
-			   &amt_read, &amt_wrote, 1);
+			   &amt_read, &amt_wrote, 1, c->wtf);
     
     amt_read -= (istart >> 1);
 
@@ -4547,7 +4576,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 	r = (char *)scheme_malloc_atomic(amt_wrote + 1);
 	utf8_encode_x((const unsigned int *)instr, istart >> 1, ifinish >> 1,
 		      (unsigned char *)r, ostart, ofinish,
-		      NULL, NULL, 1);
+		      NULL, NULL, 1, c->wtf);
 	r[amt_wrote] = 0;
       }
       amt_read <<= 1;
@@ -4600,7 +4629,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
       status = utf8_decode_x((unsigned char *)instr, istart, ifinish,
 			     (unsigned int *)r, _ostart, _ofinish,
 			     &amt_read, &amt_wrote,
-			     1, utf16, NULL, 1, c->permissive);
+			     1, utf16, NULL, 1, c->permissive, c->wtf);
       
       if (utf16) {
 	_ostart <<= 1;
@@ -4624,7 +4653,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 	    utf8_decode_x((unsigned char *)instr, istart, ifinish,
 			  (unsigned int *)r, ostart, _ofinish,
 			  NULL, NULL,
-			  1, utf16, NULL, 1, c->permissive);
+			  1, utf16, NULL, 1, c->permissive, c->wtf);
 	    r[amt_wrote] = 0;
 	  }
 	} else if (!r)
@@ -4721,7 +4750,7 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
                               unsigned int *us, intptr_t dstart, intptr_t dend,
                               intptr_t *ipos, intptr_t *jpos,
                               char compact, char utf16, int *_state,
-                              int might_continue, int permissive)
+                              int might_continue, int permissive, int wtf)
      /* Results:
 	non-negative => translation complete, = number of produced chars
 	-1 => input ended in middle of encoding (only if might_continue)
@@ -4731,8 +4760,8 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 	ipos & jpos are filled with ending positions (between [d]start
 	and [d]end) before return, unless they are NULL.
 
-	compact => UTF-8 to UTF-8 or UTF-16 --- the latter if utf16
-	for Windows for utf16, decode extended UTF-8 that allows surrogates
+	compact => UTF-8 to UTF-8 or UTF-16 --- the latter if utf16;
+	for utf16 and wtf, decode extended UTF-8 that allows surrogates
 
 	_state provides initial state and is filled with ending state;
 	when it's not NULL, the us must be NULL
@@ -4742,16 +4771,13 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 	permissive is non-zero => use permissive as value for bad byte
 	sequences. When generating UTF-8, this must be an ASCII character
         or U+FFFD. */
-
 {
   intptr_t i, j, oki;
   int failmode = -3, state;
   int init_doki;
   int nextbits, v;
   unsigned int sc;
-# ifdef WINDOWS_UNICODE_SUPPORT
   int pending_surrogate = 0;
-# endif
 
   if (_state) {
     state = (*_state) & 0x7;
@@ -4817,12 +4843,10 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 	    /* We finished. One last check: */
 	    if ((((v >= 0xD800) && (v <= 0xDFFF))
 		 || (v > 0x10FFFF))
-# ifdef WINDOWS_UNICODE_SUPPORT
-		&& (!utf16
-		    /* If UTF-16 for Windows, just apply upper-limit check */
-		    || (v > 0x10FFFF))
-# endif
-		) {
+		&& (!wtf
+                    || !utf16
+                    /* If WTF-16, just apply upper-limit check */
+                    || (v > 0x10FFFF))) {
 	      /* UTF-16 surrogates or other illegal code units */
 	      if (permissive) {
 		v = permissive;
@@ -4902,14 +4926,12 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
       if (compact) {
 	if (utf16) {
 	  if (v > 0xFFFF) {
-# ifdef WINDOWS_UNICODE_SUPPORT
 	    if (pending_surrogate) {
 	      if (us)
 		((unsigned short *)us)[j] = pending_surrogate;
 	      j++; /* Accept previously written unpaired surrogate */
 	      pending_surrogate = 0;
 	    }
-# endif
 	    if (j + 1 >= dend)
 	      break;
 	    if (us) {
@@ -4918,8 +4940,7 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 	      ((unsigned short *)us)[j+1] = 0xDC00 | (v & 0x3FF);
 	    }
 	    j++;
-	  } else {
-# ifdef WINDOWS_UNICODE_SUPPORT
+	  } else if (wtf) {
 	    /* We allow a surrogate by itself, but don't allow
 	       a 0xDC00 after a 0xD800, otherwise multiple encodings can
 	       map to the same thing. */
@@ -4977,10 +4998,9 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 	      --j; /* don't accept unpaired surrogate, yet */
 	    else if (us)
 	      ((unsigned short *)us)[j] = v;
-# else
+          } else {
 	    if (us)
 	      ((unsigned short *)us)[j] = v;
-# endif
 	  }
 	} else {
 	  intptr_t delta;
@@ -5031,7 +5051,6 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
       failmode = -1;
       i = end - 1; /* to ensure that failmode is returned */
     } else if (permissive) {
-# ifdef WINDOWS_UNICODE_SUPPORT
       if (pending_surrogate) {
         /* Unpaired surrogate before permissive replacements */
         if (utf16 && (j < dend)) {
@@ -5041,7 +5060,6 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
         }
         pending_surrogate = 0;
       }
-#endif
       for (i = oki; i < end; i++) {
 	if (j < dend) {
 	  if (us) {
@@ -5061,7 +5079,6 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
     }
   }
 
-# ifdef WINDOWS_UNICODE_SUPPORT
   if (pending_surrogate) {
     if (!might_continue) {
       /* Accept unpaired surrogate at end of input */
@@ -5074,7 +5091,6 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
       oki -= 3;
     }
   }
-#endif
 
   if (ipos)
     *ipos = oki;
@@ -5084,12 +5100,10 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
   if (i < end)
     return failmode;
 
-# ifdef WINDOWS_UNICODE_SUPPORT
   if (pending_surrogate) {
     /* input must have ended right after surrogate */
     return -1;
   }
-#endif
 
   return j - dstart;
 }
@@ -5099,7 +5113,7 @@ intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end
                             intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
-		       ipos, NULL, utf16, utf16, NULL, 0, permissive);
+		       ipos, NULL, utf16, utf16, NULL, 0, permissive, WIN_UTF16_AS_WTF16(utf16));
 }
 
 intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start, intptr_t end,
@@ -5107,7 +5121,7 @@ intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start
                                           intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
-		       ipos, NULL, utf16, utf16, NULL, 1, permissive);
+		       ipos, NULL, utf16, utf16, NULL, 1, permissive, WIN_UTF16_AS_WTF16(utf16));
 }
 
 intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end,
@@ -5117,13 +5131,13 @@ intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, in
 {
   intptr_t opos;
   utf8_decode_x(s, start, end, us, dstart, dend,
-		ipos, &opos, utf16, utf16, NULL, 1, permissive);
+		ipos, &opos, utf16, utf16, NULL, 1, permissive, WIN_UTF16_AS_WTF16(utf16));
   return opos - dstart;
 }
 
 intptr_t scheme_utf8_decode_all(const unsigned char *s, intptr_t len, unsigned int *us, int permissive)
 {
-  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 0, permissive);
+  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 0, permissive, 0);
 }
 
 intptr_t scheme_utf8_decode_prefix(const unsigned char *s, intptr_t len, unsigned int *us, int permissive)
@@ -5142,7 +5156,7 @@ intptr_t scheme_utf8_decode_prefix(const unsigned char *s, intptr_t len, unsigne
       return len;
   }
 
-  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 1, permissive);
+  return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 1, permissive, 0);
 }
 
 mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
@@ -5152,7 +5166,7 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
 
   ulen = utf8_decode_x(s, 0, len, NULL, 0, -1,
 		       NULL, NULL, 0, 0,
-		       NULL, 0, 0);
+		       NULL, 0, 0, 0);
   if (ulen < 0)
     return NULL;
   if (ulen + 1 > blen) {
@@ -5160,7 +5174,7 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
   }
   utf8_decode_x(s, 0, len, buf, 0, -1,
 		NULL, NULL, 0, 0,
-		NULL, 0, 0);
+		NULL, 0, 0, 0);
   buf[ulen] = 0;
   *_ulen = ulen;
   return buf;
@@ -5193,14 +5207,14 @@ intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr
 		NULL, 0, -1,
 		NULL, &pos,
 		0, 0, _state,
-		might_continue, permissive);
+		might_continue, permissive, 0);
 
   return pos;
 }
 
 static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t end,
-			 unsigned char *s, intptr_t dstart, intptr_t dend,
-			 intptr_t *_ipos, intptr_t *_opos, char utf16)
+                              unsigned char *s, intptr_t dstart, intptr_t dend,
+                              intptr_t *_ipos, intptr_t *_opos, char utf16, int wtf)
   /* Results:
         -1 => input ended in the middle of an encoding - only when utf16 and _opos
 	non-negative => reports number of bytes/code-units produced */
@@ -5222,30 +5236,23 @@ static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t e
              end and _opos is 0. The well-formedness assumption was
              probably not a good idea, but note that it's explicitly
              documented to behave that way. */
-# ifdef WINDOWS_UNICODE_SUPPORT
-#  define UNPAIRED_MASK 0xFC00
-# else
-#  define UNPAIRED_MASK 0xF800
-# endif
-	  if (((i + 1) == end) && ((wc & UNPAIRED_MASK) == 0xD800) && _opos) {
+# define UNPAIRED_MASK(wtf) (wtf ? 0xFC00 : 0xF800)
+	  if (((i + 1) == end) && ((wc & UNPAIRED_MASK(wtf)) == 0xD800) && _opos) {
 	    /* Ended in the middle of a surrogate pair */
 	    *_opos = j;
 	    if (_ipos)
 	      *_ipos = i;
 	    return -1;
 	  }
-# ifdef WINDOWS_UNICODE_SUPPORT
-	  if ((wc & 0xFC00) != 0xD800) {
+	  if (wtf && ((wc & 0xFC00) != 0xD800)) {
 	    /* Count as one */
-	  } else if ((i + 1 >= end)
-		     || (((((unsigned short *)us)[i+1]) & 0xFC00) != 0xDC00)) {
-	  } else 
-# endif
-	    {
-	      i++;
-	      wc = ((wc & 0x3FF) << 10) + ((((unsigned short *)us)[i]) & 0x3FF);
-	      wc += 0x10000;
-	    }
+	  } else if (wtf && ((i + 1 >= end)
+                             || (((((unsigned short *)us)[i+1]) & 0xFC00) != 0xDC00))) {
+	  } else {
+            i++;
+            wc = ((wc & 0x3FF) << 10) + ((((unsigned short *)us)[i]) & 0x3FF);
+            wc += 0x10000;
+          }
 	}
       } else {
 	wc = us[i];
@@ -5279,26 +5286,23 @@ static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t e
 	  /* Unparse surrogates. We assume that the surrogates are
 	     well formed on non-Windows platforms, but when _opos,
 	     we detect ending in the middle of an surrogate pair. */
-	  if (((i + 1) == end) && ((wc & UNPAIRED_MASK) == 0xD800) && _opos) {
+	  if (((i + 1) == end) && ((wc & UNPAIRED_MASK(wtf)) == 0xD800) && _opos) {
 	    /* Ended in the middle of a surrogate pair */
 	    *_opos = j;
 	    if (_ipos)
 	      *_ipos = i;
 	    return -1;
 	  }
-# ifdef WINDOWS_UNICODE_SUPPORT
-	  if ((wc & 0xFC00) != 0xD800) {
+	  if (wtf && ((wc & 0xFC00) != 0xD800)) {
 	    /* Let the misplaced surrogate through */
-	  } else if ((i + 1 >= end)
-		     || (((((unsigned short *)us)[i+1]) & 0xFC00) != 0xDC00)) {
+	  } else if (wtf && ((i + 1 >= end)
+                             || (((((unsigned short *)us)[i+1]) & 0xFC00) != 0xDC00))) {
 	    /* Let the misplaced surrogate through */
-	  } else
-# endif
-	    {
-	      i++;
-	      wc = ((wc & 0x3FF) << 10) + ((((unsigned short *)us)[i]) & 0x3FF);
-	      wc += 0x10000;
-	    }
+	  } else {
+            i++;
+            wc = ((wc & 0x3FF) << 10) + ((((unsigned short *)us)[i]) & 0x3FF);
+            wc += 0x10000;
+          }
 	}
       } else {
 	wc = us[i];
@@ -5360,12 +5364,12 @@ intptr_t scheme_utf8_encode(const unsigned int *us, intptr_t start, intptr_t end
 {
   return utf8_encode_x(us, start, end,
 		       s, dstart, -1,
-		       NULL, NULL, utf16);
+		       NULL, NULL, utf16, WIN_UTF16_AS_WTF16(utf16));
 }
 
 intptr_t scheme_utf8_encode_all(const unsigned int *us, intptr_t len, unsigned char *s)
 {
-  return utf8_encode_x(us, 0, len, s, 0, -1, NULL, NULL, 0 /* utf16 */);
+  return utf8_encode_x(us, 0, len, s, 0, -1, NULL, NULL, 0 /* utf16 */, 0);
 }
 
 char *scheme_utf8_encode_to_buffer_len(const mzchar *s, intptr_t len,
@@ -5389,11 +5393,11 @@ char *scheme_utf8_encode_to_buffer_len(const mzchar *s, intptr_t len,
     }
   }
 
-  slen = utf8_encode_x(s, 0, len, NULL, 0, -1, NULL, NULL, 0);
+  slen = utf8_encode_x(s, 0, len, NULL, 0, -1, NULL, NULL, 0, 0);
   if (slen + 1 > blen) {
     buf = (char *)scheme_malloc_atomic(slen + 1);
   }
-  utf8_encode_x(s, 0, len, (unsigned char *)buf, 0, -1, NULL, NULL, 0);
+  utf8_encode_x(s, 0, len, (unsigned char *)buf, 0, -1, NULL, NULL, 0, 0);
   buf[slen] = 0;
   *_slen = slen;
   return buf;

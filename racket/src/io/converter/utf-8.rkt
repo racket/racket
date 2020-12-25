@@ -19,20 +19,20 @@
   (define to (utf-8-converter-to c))
   (define-values (in-consumed out-produced status)
     (if (or (eq? from 'utf-16)
-            (eq? from 'utf-16-ish)
+            (eq? from 'wtf-16)
             (eq? from 'utf-16-assume))
         (utf-16-ish-reencode! src src-start src-end
                               dest dest-start dest-end
-                              #:from-utf-16-ish? (eq? from 'utf-16-ish)
+                              #:from-wtf-16? (eq? from 'wtf-16)
                               #:assume-paired-surrogates? (eq? from 'utf-16-assume))
         (utf-8-ish-reencode! src src-start src-end
                              dest dest-start dest-end
                              #:permissive? (or (eq? from 'utf-8-permissive)
-                                               (eq? from 'utf-8-ish-permissive))
-                             #:from-utf-8-ish? (or (eq? from 'utf-8-ish)
-                                                   (eq? from 'utf-8-ish-permissive))
+                                               (eq? from 'wtf-8-permissive))
+                             #:from-wtf-8? (or (eq? from 'wtf-8)
+                                                   (eq? from 'wtf-8-permissive))
                              #:to-utf-16? (or (eq? to 'utf-16)
-                                              (eq? to 'utf-16-ish)
+                                              (eq? to 'wtf-16)
                                               (eq? to 'utf-16-assume)))))
   (values in-consumed
           out-produced
@@ -44,17 +44,17 @@
 
 ;; Similar to `utf-8-decode` in "../string/utf-8-decode.rkt", but
 ;; "decodes" back to a byte string either as UTF-8 or UTF-16, and also
-;; supports a "utf-8-ish" encoding that allows unpaired surrogates.
+;; supports a WTF-8 encoding that allows unpaired surrogates.
 ;;
 ;; There's a lot of similarly to the implementation of `utf-8-decode`,
 ;; but with enough differences to make abstraction difficult.
 (define (utf-8-ish-reencode! in-bstr in-start in-end
                              out-bstr out-start out-end
                              #:permissive? permissive?
-                             #:from-utf-8-ish? from-utf-8-ish?
+                             #:from-wtf-8? from-wtf-8?
                              #:to-utf-16? to-utf-16?)
   (let loop ([i in-start] [j out-start] [base-i in-start] [accum 0] [remaining 0]
-                          ;; for '-ish' mode to UTF-16:
+                          ;; for WTF-8 mode to WTF-16:
                           [pending-surrogate #f])
 
     ;; Used to write a pending surrogate before continuing to write other:
@@ -196,7 +196,7 @@
                  [(and (v . >= . #xD800)
                        (v . <= . #xDFFF))
                   (cond
-                    [from-utf-8-ish?
+                    [from-wtf-8?
                      ;; Assuming `to-utf-16?`...
                      ;; Allow an unpaired surrogate, but make sure it's really unpaired
                      (cond
@@ -268,7 +268,7 @@
                                   (- j out-start)
                                   'continues)]))]
                     [else
-                     ;; For UTF-8-to-UTF-8 with no "-ish" corrections, we can just copy
+                     ;; For UTF-8-to-UTF-8 (no WTF-8), we can just copy
                      ;; the input encoding bytes to the output bytes
                      (define next-i (add1 i))
                      (let loop ([from-i base-i] [to-j j])
@@ -329,7 +329,7 @@
 ;; Converts UTF-16 into UTF-8
 (define (utf-16-ish-reencode! in-bstr in-start in-end
                               out-bstr out-start out-end
-                              #:from-utf-16-ish? from-utf-16-ish?
+                              #:from-wtf-16? from-wtf-16?
                               #:assume-paired-surrogates? assume-paired-surrogates?)
   (let loop ([i in-start] [j out-start])
     (define (done status)
@@ -378,7 +378,7 @@
                                  (bitwise-ior (arithmetic-shift (bitwise-and v #x3FF) 10)
                                               (bitwise-and v2 #x3FF))))
                    (continue v3 (+ i 4))]
-                  [from-utf-16-ish?
+                  [from-wtf-16?
                    ;; continue anyway as as unpaired surrogate
                    (continue v (+ i 2))]
                   [else
@@ -386,7 +386,7 @@
             [else
              ;; unpaired surrogate
              (cond
-               [from-utf-16-ish?
+               [from-wtf-16?
                 ;; continue anyway
                 (continue v (+ i 2))]
                [else (done 'error)])])]

@@ -209,6 +209,12 @@ The @racketmodname[racket] library combines
              #:url "https://doi.org/10.1017/CBO9780511574962"
              #:date "1999")
 
+  (bib-entry #:key "Sapin18"
+             #:author "Simon Sapin"
+             #:title "The WTF-8 Encoding"
+             #:url "http://simonsapin.github.io/wtf-8/"
+             #:date "2018")
+
   (bib-entry #:key "Shan04"
              #:author "Ken Shan"
              #:title "Shift to Control"
