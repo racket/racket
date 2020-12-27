@@ -1025,6 +1025,12 @@ drive-clients:
 describe-clients:
 	$(MAKE) drive-clients DRIVE_DESCRIBE=--describe
 
+fake-installers:
+	$(MAKE) installers DRIVE_DESCRIBE="--dry-run fake"
+
+fake-installers-from-built:
+	$(MAKE) installers-from-built DRIVE_DESCRIBE="--dry-run fake"
+
 # ------------------------------------------------------------
 # Create installers, then assemble as a web site:
 
