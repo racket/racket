@@ -212,6 +212,25 @@
          (ftype-ref rktio_identity_t (a_bits) p)
          (ftype-ref rktio_identity_t (b_bits) p)
          (ftype-ref rktio_identity_t (c_bits) p))))
+
+    (define (rktio_date_to_vector p)
+      (let* ([p (make-ftype-pointer rktio_date_t (ptr->address p))]
+             [tzn (ftype-ref rktio_date_t (zone_name) p)])
+        (vector
+         (ftype-ref rktio_date_t (nanosecond) p)
+         (ftype-ref rktio_date_t (second) p)
+         (ftype-ref rktio_date_t (minute) p)
+         (ftype-ref rktio_date_t (hour) p)
+         (ftype-ref rktio_date_t (day) p)
+         (ftype-ref rktio_date_t (month) p)
+         (ftype-ref rktio_date_t (year) p)
+         (ftype-ref rktio_date_t (day_of_week) p)
+         (ftype-ref rktio_date_t (day_of_year) p)
+         (ftype-ref rktio_date_t (is_dst) p)
+         (ftype-ref rktio_date_t (zone_offset) p)
+         (if (eqv? tzn NULL)
+             #f
+             (address->ptr tzn)))))
     
     (define (rktio_convert_result_to_vector p)
       (let ([p (make-ftype-pointer rktio_convert_result_t (ptr->address p))])
@@ -356,6 +375,7 @@
                                  'rktio_recv_length_ref rktio_recv_length_ref
                                  'rktio_recv_address_ref rktio_recv_address_ref
                                  'rktio_identity_to_vector rktio_identity_to_vector
+                                 'rktio_date_to_vector rktio_date_to_vector
                                  'rktio_convert_result_to_vector rktio_convert_result_to_vector
                                  'rktio_to_bytes rktio_to_bytes
                                  'rktio_to_bytes_list rktio_to_bytes_list

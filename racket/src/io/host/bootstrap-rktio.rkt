@@ -113,6 +113,22 @@
      (Rrktio_identity_t-b_bits p)
      (Rrktio_identity_t-c_bits p))))
 
+(define (rktio_date_to_vector p)
+  (let ([p (cast p _pointer _Rrktio_date_t-pointer)])
+    (vector
+     (Rrktio_date_t-nanosecond p)
+     (Rrktio_date_t-second p)
+     (Rrktio_date_t-minute p)
+     (Rrktio_date_t-hour p)
+     (Rrktio_date_t-day p)
+     (Rrktio_date_t-month p)
+     (Rrktio_date_t-year p)
+     (Rrktio_date_t-day_of_week p)
+     (Rrktio_date_t-day_of_year p)
+     (Rrktio_date_t-is_dst p)
+     (Rrktio_date_t-zone_offset p)
+     (Rrktio_date_t-zone_name p))))
+
 (define (rktio_convert_result_to_vector p)
   (let ([p (cast p _pointer _Rrktio_convert_result_t-pointer)])
     (vector
@@ -216,6 +232,7 @@
                                          'rktio_recv_length_ref rktio_recv_length_ref
                                          'rktio_recv_address_ref rktio_recv_address_ref
                                          'rktio_identity_to_vector rktio_identity_to_vector
+                                         'rktio_date_to_vector rktio_date_to_vector
                                          'rktio_convert_result_to_vector rktio_convert_result_to_vector
                                          'rktio_to_bytes rktio_to_bytes
                                          'rktio_to_bytes_list rktio_to_bytes_list

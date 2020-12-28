@@ -470,7 +470,6 @@
           current-milliseconds
           current-gc-milliseconds
           current-seconds
-          seconds->date
 
           collect-garbage
           current-memory-use
