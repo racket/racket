@@ -307,7 +307,7 @@ maybe-fetch-pb-as-is:
 	echo done
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
-	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q --single-branch -b circa-7.9.0.15-1 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-7.9.0.15-1:remotes/origin/circa-7.9.0.15-1 ; fi
+	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q -b circa-7.9.0.15-1 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-7.9.0.15-1:remotes/origin/circa-7.9.0.15-1 ; fi
 	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-7.9.0.15-1
 pb-fetch:
 	$(MAKE) fetch-pb EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" PB_REPO="$(PB_REPO)"
