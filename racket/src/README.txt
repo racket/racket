@@ -72,7 +72,6 @@ If you need more information specific to Racket BC, see
 "bc/README.txt".
 
 
-
 ========================================================================
  Compiling for supported Unix variants (including Linux)
 ========================================================================
@@ -458,7 +457,7 @@ See also the shared sources below, which includes rktio, the macro
 expander, and schemify.
 
 Sources for the Racket BC implementation
--------------------------------------------------
+----------------------------------------
 
  * "bc" --- `racket` BC executable
 
