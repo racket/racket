@@ -1147,6 +1147,12 @@ process is an exact number whose decimal representation has no more
 than @racket[decimal-digits] digits after the decimal (and it is
 padded with trailing zeros if necessary).
 
+If @racket[n] is a real number with no decimal representation (e.g.
+@racket[+nan.0], @racket[+inf.0]), then the @exnraise[exn:fail:contract].
+(Any real number that is convertible to decimal notation is rational, 
+so @racket[n] must be @racket[rational?], despite the name of the 
+function.)
+
 @mz-examples[
 #:eval math-eval
 (real->decimal-string pi)
