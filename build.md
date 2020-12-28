@@ -368,8 +368,8 @@ repository’s top-level makefile and the `"distro-build"` package.
 
 The `installers` target of the makefile will do everything to generate
 installers: build a server on the current machine, run clients on hosts
-specified via `CONFIG`, and start/stop VirtualBox virtual machines or
-Docker containers that act as client machines.
+specified via `CONFIG`, and start/stop VirtualBox virtual machines that
+act as client machines.
 
 If the server is already built, the `installers-from-built` target will
 drive the client builds without re-building the server.
@@ -393,14 +393,6 @@ build (not the one for building installers), you can use
 
 to see, without building anything, the effect of the configuration in
 `"my-site-config.rkt"` and the planned build steps.
-
-As an intermediate point, use `make fake-installers` instead of `make
-installers` to create “installers” on the server side that just contain
-the corresponding `"README"` text without running any build clients.
-Beware, however, that installer names are normally determined on the
-client side, so `make fake-installers` has to guess about each installer
-name based on the description (e.g., “Windows” in the description
-implies a Windows installer).
 
 The default `CONFIG` path is `"build/site.rkt"`, so you could put your
 configuration file there and omit the `CONFIG` argument to `make`. A

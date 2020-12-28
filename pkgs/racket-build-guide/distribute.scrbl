@@ -36,8 +36,7 @@ Git repository's top-level makefile and @|distro-build-package|.
 The @exec{installers} target of the makefile will do everything to
 generate installers: build a server on the current machine, run
 clients on hosts specified via @exec{CONFIG}, and start/stop
-VirtualBox virtual machines or Docker containers that act as client
-machines.
+VirtualBox virtual machines that act as client machines.
 
 If the server is already built, the @exec{installers-from-built}
 target will drive the client builds without re-building the server.
@@ -61,14 +60,6 @@ some Racket build (not the one for building installers), you can use
 
 to see, without building anything, the effect of the configuration in
 @filepath{my-site-config.rkt} and the planned build steps.
-
-As an intermediate point, use @exec{make fake-installers} instead of
-@exec{make installers} to create ``installers'' on the server side
-that just contain the corresponding @filepath{README} text without
-running any build clients. Beware, however, that installer names are
-normally determined on the client side, so @exec{make fake-installers}
-has to guess about each installer name based on the description (e.g.,
-``Windows'' in the description implies a Windows installer).
 
 The default @exec{CONFIG} path is @filepath{build/site.rkt}, so you
 could put your configuration file there and omit the @exec{CONFIG}
