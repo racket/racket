@@ -76908,7 +76908,7 @@ static const char *startup_source =
 "(let-values(((b_0)(resolve+shift/extra-inspector spec_0 at-phase_0 ns_0)))"
 "(let-values((()"
 "(begin"
-"(if b_0"
+"(if(module-binding? b_0)"
 "(void)"
 "(let-values()"
 "(raise-syntax-error$1"

@@ -1277,6 +1277,22 @@
   (test 10 eval `(dynamic-require '(submod 'm m) 'x)))
 
 ;; ----------------------------------------
+;; Check bad lift provide
+
+(err/rt-test
+ (eval '(module a '#%kernel
+          (#%require (for-syntax '#%kernel))
+          (define-syntaxes (m)
+            (lambda (stx)
+              (let-values ([(ctx) (syntax-local-make-definition-context)])
+                (syntax-local-bind-syntaxes (list (quote-syntax x)) (quote-syntax 5) ctx)
+                (syntax-local-lift-provide (internal-definition-context-introduce ctx (quote-syntax x) 'add))
+                (quote-syntax (void)))))
+          (m)))
+ exn:fail:syntax?
+ #rx"provided identifier is not defined or required")
+
+;; ----------------------------------------
 ;; Check module lifting in a top-level context
 
 (define-syntax (do-lift-example-1 stx)

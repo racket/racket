@@ -183,7 +183,7 @@
 
 (define (parse-identifier! spec orig-s sym at-phase ns rp protected?)
   (define b (resolve+shift/extra-inspector spec at-phase ns))
-  (unless b
+  (unless (module-binding? b)
     (raise-syntax-error provide-form-name "provided identifier is not defined or required" orig-s spec))
   (define as-transformer? (binding-for-transformer? b spec at-phase ns))
   (define immed-b (resolve+shift spec at-phase #:immediate? #t))
