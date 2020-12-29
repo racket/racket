@@ -1034,14 +1034,14 @@
         (if (impersonator? v)
           (known-procedure/succeeds?_3041 (impersonator-val v))
           #f))))))
-(define struct:known-procedure/pure
+(define struct:known-procedure/allocates
   (make-record-type-descriptor*
-   'known-procedure/pure
+   'known-procedure/allocates
    (if (struct-type? struct:known-procedure/succeeds)
      struct:known-procedure/succeeds
      (check-struct-type 'struct struct:known-procedure/succeeds))
    (structure-type-lookup-prefab-uid
-    'known-procedure/pure
+    'known-procedure/allocates
     (if (struct-type? struct:known-procedure/succeeds)
       struct:known-procedure/succeeds
       (check-struct-type 'struct struct:known-procedure/succeeds))
@@ -1053,15 +1053,71 @@
    #f
    0
    0))
-(define effect_2377
+(define effect_2234
   (struct-type-install-properties!
-   struct:known-procedure/pure
-   'known-procedure/pure
+   struct:known-procedure/allocates
+   'known-procedure/allocates
    0
    0
    (if (struct-type? struct:known-procedure/succeeds)
      struct:known-procedure/succeeds
      (check-struct-type 'struct struct:known-procedure/succeeds))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/allocates))
+(define known-procedure/allocates
+  (|#%name|
+   known-procedure/allocates
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-procedure/allocates
+     #f
+     #f))))
+(define known-procedure/allocates?_2244
+  (|#%name|
+   known-procedure/allocates?
+   (record-predicate struct:known-procedure/allocates)))
+(define known-procedure/allocates?
+  (|#%name|
+   known-procedure/allocates?
+   (lambda (v)
+     (if (known-procedure/allocates?_2244 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-procedure/allocates?_2244 (impersonator-val v))
+          #f))))))
+(define struct:known-procedure/pure
+  (make-record-type-descriptor*
+   'known-procedure/pure
+   (if (struct-type? struct:known-procedure/allocates)
+     struct:known-procedure/allocates
+     (check-struct-type 'struct struct:known-procedure/allocates))
+   (structure-type-lookup-prefab-uid
+    'known-procedure/pure
+    (if (struct-type? struct:known-procedure/allocates)
+      struct:known-procedure/allocates
+      (check-struct-type 'struct struct:known-procedure/allocates))
+    0
+    0
+    #f
+    '())
+   #f
+   #f
+   0
+   0))
+(define effect_2568
+  (struct-type-install-properties!
+   struct:known-procedure/pure
+   'known-procedure/pure
+   0
+   0
+   (if (struct-type? struct:known-procedure/allocates)
+     struct:known-procedure/allocates
+     (check-struct-type 'struct struct:known-procedure/allocates))
    null
    'prefab
    #f
@@ -1530,14 +1586,14 @@
 (define struct:known-constructor
   (make-record-type-descriptor*
    'known-constructor
-   (if (struct-type? struct:known-procedure/pure)
-     struct:known-procedure/pure
-     (check-struct-type 'struct struct:known-procedure/pure))
+   (if (struct-type? struct:known-procedure/allocates)
+     struct:known-procedure/allocates
+     (check-struct-type 'struct struct:known-procedure/allocates))
    (structure-type-lookup-prefab-uid
     'known-constructor
-    (if (struct-type? struct:known-procedure/pure)
-      struct:known-procedure/pure
-      (check-struct-type 'struct struct:known-procedure/pure))
+    (if (struct-type? struct:known-procedure/allocates)
+      struct:known-procedure/allocates
+      (check-struct-type 'struct struct:known-procedure/allocates))
     1
     0
     #f
@@ -1546,15 +1602,15 @@
    #f
    1
    1))
-(define effect_2019
+(define effect_2907
   (struct-type-install-properties!
    struct:known-constructor
    'known-constructor
    1
    0
-   (if (struct-type? struct:known-procedure/pure)
-     struct:known-procedure/pure
-     (check-struct-type 'struct struct:known-procedure/pure))
+   (if (struct-type? struct:known-procedure/allocates)
+     struct:known-procedure/allocates
+     (check-struct-type 'struct struct:known-procedure/allocates))
    null
    'prefab
    #f

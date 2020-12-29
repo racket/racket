@@ -1231,7 +1231,8 @@
 
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
-(test-comp '(let ([h (box 0.0)])
+(test-comp #:except 'chez-scheme
+           '(let ([h (box 0.0)])
               (list (random) h))
            '(list (random) (box 0.0)))
 
@@ -1259,7 +1260,8 @@
 
 ;; Do copy-propagate a reference to a mutable top-level 
 ;; across non-effects:
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
               (define x 10)
               (define (f y)
                 (let ([old x])
@@ -1319,7 +1321,8 @@
 	   '(let* ([x (cons 1 1)]) (cons x x)))
 (test-comp '(let* ([x 1][y (add1 x)]) (+ y x))
 	   '3)
-(test-comp '(letrec ([x (cons 1 1)][y x]) (cons x y))
+(test-comp #:except 'chez-scheme
+           '(letrec ([x (cons 1 1)][y x]) (cons x y))
 	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
 
 ;; Remove unnecessary bindings 
@@ -1426,7 +1429,8 @@
            '(values 1 2)
            #f)
 ; car is a primitive, map is required from another module
-(test-comp '(lambda (x) (if (null? x) car car))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (if (null? x) car car))
            '(lambda (x) car))
 (test-comp '(lambda (x) (if (null? x) map map))
            '(lambda (x) map))
@@ -1436,11 +1440,14 @@
            '(module ? racket/base
               (define x (if (zero? (random 2)) '() '(1)))
               x))
-(test-comp '(lambda (x) (if (null? x) x x))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (if (null? x) x x))
            '(lambda (x) x))
-(test-comp '(lambda (x) (if (null? x) null x))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (if (null? x) null x))
            '(lambda (x) x))
-(test-comp '(lambda (x) (not (if (null? x) #t x)))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (not (if (null? x) #t x)))
            '(lambda (x) (not x)))
 
 ;reduce ignored `if`s
@@ -1452,11 +1459,14 @@
            '(lambda () (void (random 2))))
 (test-comp '(lambda (x) (void (if (eq? (random 2) 0) (box x) (list x))))
            '(lambda (x) (void (random 2))))
-(test-comp '(lambda (x) (void (if x (random) 1)))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void (if x (random) 2))))
-(test-comp '(lambda (x) (void (if x 1 (random))))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (void (if x 1 (random))))
            '(lambda (x) (void (if x 2 (random)))))
-(test-comp '(lambda (x) (void (if x (random) 1)))
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void))
            #f)
 (test-comp '(lambda (x) (void (if x 1 (random))))
@@ -1523,7 +1533,8 @@
 (test-comp '(lambda (x) (if (pair? x) #t #f))
            '(lambda (x) (pair? x)))
 
-(test-comp '(lambda (x) (let ([r (something)])
+(test-comp #:except 'chez-scheme
+           '(lambda (x) (let ([r (something)])
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))
 

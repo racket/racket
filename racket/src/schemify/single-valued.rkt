@@ -21,7 +21,7 @@
              (simple-mutated-state? (hash-ref mutated u #f))
              (let ([k (or (hash-ref prim-knowns u #f)
                           (hash-ref-either knowns imports u))])
-               (or (known-procedure/pure? k)
+               (or (known-procedure/allocates? k)
                    (known-procedure/single-valued? k))))
         v]
        [else `($value ,v)])]

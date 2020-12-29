@@ -19,6 +19,7 @@
          known-procedure/can-inline/need-imports known-procedure/can-inline/need-imports?
          known-procedure/can-inline/need-imports-needed
          known-procedure/succeeds known-procedure/succeeds?
+         known-procedure/allocates known-procedure/allocates?
          known-procedure/pure known-procedure/pure?
          known-procedure/pure/folding known-procedure/pure/folding? ; not a subtype of `known-procedure/folding`
          known-procedure/pure/folding-unsafe known-procedure/pure/folding-unsafe?
@@ -96,8 +97,11 @@
 ;; procedure with single value that never raises an exception or otherwise captures/escapes the calling context
 (struct known-procedure/succeeds () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/no-prompt)
 
-;; procedure that accepts any arguments, returns a single value, and is functional so that it can be reordered
-(struct known-procedure/pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
+;; procedure that accepts any arguments, returns a single value, and has allocation as its only effect 
+(struct known-procedure/allocates () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
+
+;; procedure that accepts any arguments, returns a single value, and has/observes no effect so that it can be reordered
+(struct known-procedure/pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/allocates)
 
 ;; pure and folding:
 (struct known-procedure/pure/folding () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
@@ -112,7 +116,7 @@
 (struct known-struct-type (type field-count pure-constructor?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedures with a known connection to a structure type:
-(struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
+(struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/allocates)
 (struct known-predicate (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
 (struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
 (struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)

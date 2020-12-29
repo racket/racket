@@ -377,23 +377,23 @@
         (match schemified
           [`(define ,id ,rhs)
            (cond
-             [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples)
+             [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples unsafe-mode?)
               (finish-definition (list id))]
              [else
               (finish-wrapped-definition (list id) rhs)])]
           [`(define-values ,ids ,rhs)
            (cond
-             [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples
+             [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples unsafe-mode?
                        #:result-arity (length ids))
               (match rhs
                 [`(values ,rhss ...)
                  ;; Flatten `(define-values (id ...) (values rhs ...))` to
                  ;; a sequence `(define id rhs) ...`
                  (if (and (= (length rhss) (length ids))
-                          ;; Must be pure, otherwise a variable might be referenced
+                          ;; Must be simple enough, otherwise a variable might be referenced
                           ;; too early:
                           (for/and ([rhs (in-list rhss)])
-                            (simple? rhs prim-knowns knowns imports mutated simples)))
+                            (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?)))
                      (let values-loop ([ids ids] [rhss rhss] [accum-exprs accum-exprs] [accum-ids accum-ids] [knowns knowns])
                        (cond
                          [(null? ids) (loop (cdr l) mut-l accum-exprs accum-ids knowns)]
@@ -422,7 +422,7 @@
               (finish-definition ids (append set-vars accum-exprs) null)]
              [`,_
               (cond
-                [(simple? #:pure? #f schemified prim-knowns knowns imports mutated simples
+                [(simple? #:pure? #f schemified prim-knowns knowns imports mutated simples unsafe-mode?
                           #:result-arity #f)
                  (loop (cdr l) mut-l (cons schemified accum-exprs) accum-ids knowns)]
                 [else
@@ -567,8 +567,8 @@
                                      (schemify rhs 'fresh))
                                    (for/list ([body (in-list bodys)])
                                      (schemify/knowns new-knowns inline-fuel wcm-state body))
-                                   prim-knowns knowns imports mutated simples)
-                prim-knowns knowns imports mutated simples)])]
+                                   prim-knowns knowns imports mutated simples unsafe-mode?)
+                prim-knowns knowns imports mutated simples unsafe-mode?)])]
            [`(let-values ([() (begin ,rhss ... (values))]) ,bodys ...)
             `(begin ,@(schemify-body rhss 'fresh) ,@(schemify-body bodys wcm-state))]
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
@@ -584,7 +584,7 @@
                                            (schemify-body bodys wcm-state)
                                            mutated
                                            target)
-                 prim-knowns knowns imports mutated simples))]
+                 prim-knowns knowns imports mutated simples unsafe-mode?))]
            [`(letrec-values () ,bodys ...)
             (schemify `(begin . ,bodys) wcm-state)]
            [`(letrec-values ([() (values)]) ,bodys ...)
@@ -611,7 +611,7 @@
                            `[,id ,(schemify/knowns rhs-knowns inline-fuel 'fresh rhs)])
                  ,@(for/list ([body (in-list bodys)])
                      (schemify/knowns body-knowns inline-fuel wcm-state body))))
-             prim-knowns knowns imports mutated simples)]
+             prim-knowns knowns imports mutated simples unsafe-mode?)]
            [`(letrec-values ([,idss ,rhss] ...) ,bodys ...)
             (cond
               [(struct-convert-local v #:letrec? #t prim-knowns knowns imports mutated simples
@@ -661,7 +661,7 @@
               (authentic-valued? key knowns prim-knowns imports mutated))
             (cond
               [(and authentic-key?
-                    (simple? s-body prim-knowns knowns imports mutated simples #:result-arity #f))
+                    (simple? s-body prim-knowns knowns imports mutated simples unsafe-mode? #:result-arity #f))
                `(begin ,(ensure-single-valued s-key knowns prim-knowns imports mutated)
                        ,(ensure-single-valued s-val knowns prim-knowns imports mutated)
                        ,s-body)]
@@ -761,7 +761,7 @@
                  (left-to-right/app 'equal?
                                     (list exp1 exp2)
                                     #f target
-                                    prim-knowns knowns imports mutated simples)]))]
+                                    prim-knowns knowns imports mutated simples unsafe-mode?)]))]
            [`(call-with-values ,generator ,receiver)
             (cond
               [(and (lambda? generator)
@@ -772,7 +772,7 @@
                (left-to-right/app (if (aim? target 'cify) 'call-with-values '#%call-with-values)
                                   (list (schemify generator 'fresh) (schemify receiver 'fresh))
                                   #f target
-                                  prim-knowns knowns imports mutated simples)])]
+                                  prim-knowns knowns imports mutated simples unsafe-mode?)])]
            [`(single-flonum-available?)
             ;; Fold to a boolean to allow earlier simplification
             (aim? target 'cify)]
@@ -835,7 +835,7 @@
                  (left-to-right/app 'unsafe-struct
                                     (cons (schemify type-id 'fresh) args)
                                     #f target
-                                    prim-knowns knowns imports mutated simples)]
+                                    prim-knowns knowns imports mutated simples unsafe-mode?)]
                 [else #f]))
             (define (inline-struct-predicate k s-rator im args)
               (define type-id (and (known-struct-predicate-authentic? k)
@@ -897,7 +897,7 @@
                           (left-to-right/app (car e)
                                              (cdr e)
                                              #f target
-                                             prim-knowns knowns imports mutated simples))]
+                                             prim-knowns knowns imports mutated simples unsafe-mode?))]
                     [(and (not (or
                                 ;; Don't inline in cify mode, because cify takes care of it
                                 (aim? target 'cify)
@@ -931,7 +931,7 @@
                      (left-to-right/app (known-procedure/has-unsafe-alternate k)
                                         args
                                         #f target
-                                        prim-knowns knowns imports mutated simples)]
+                                        prim-knowns knowns imports mutated simples unsafe-mode?)]
                     [else
                      (left-to-right/app s-rator
                                         args
@@ -947,7 +947,7 @@
                                            #f]
                                           [else '|#%app|])
                                         target
-                                        prim-knowns knowns imports mutated simples)])))]
+                                        prim-knowns knowns imports mutated simples unsafe-mode?)])))]
            [`,_
             (let ([u-v (unwrap v)])
               (cond

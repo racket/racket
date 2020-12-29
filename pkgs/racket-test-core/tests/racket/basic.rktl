@@ -2129,6 +2129,25 @@
            (escape1 3))))))))
  (sync ch))
 
+;; Make sure allocation and continuation capture are left-to-right in
+;; a function call:
+(let ([join (if (zero? (random 1)) list 'oops)])
+  (let ([k0 (cadr
+             (call-with-continuation-prompt
+              (lambda ()
+                (join (cons 1 2)
+                      (call/cc (lambda (k) k))))))]
+        [k1 (car
+             (call-with-continuation-prompt
+              (lambda ()
+                (join (call/cc (lambda (k) k))
+                      (cons 1 2)))))])
+    (define (do-k k) (call-with-continuation-prompt
+                      (lambda ()
+                        (k k))))
+    (test #t eq? (car (do-k k0)) (car (do-k k0)))
+    (test #f eq? (cadr (do-k k1)) (cadr (do-k k1)))))
+
 (arity-test call/cc 1 2)
 (arity-test call/ec 1 1)
 (err/rt-test (call/cc 4))

@@ -16,7 +16,7 @@
 ;; expressions that have no shadowing (and introduce
 ;; shadowing here)
 (define (left-to-right/let ids rhss bodys
-                           prim-knowns knowns imports mutated simples)
+                           prim-knowns knowns imports mutated simples unsafe-mode?)
   (cond
    [(null? ids) (if (null? (cdr bodys))
                     (car bodys)
@@ -30,7 +30,7 @@
          (define id (car ids))
          (define rhs (car rhss))
          (if (and all-simple?
-                  (simple? rhs prim-knowns knowns imports mutated simples))
+                  (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
              `(let ([,id ,rhs])
                 . ,bodys)
              `(let ([,id ,rhs])
@@ -43,7 +43,7 @@
            ,(loop (cdr ids)
                   (cdr rhss)
                   (and all-simple?
-                       (simple? rhs prim-knowns knowns imports mutated simples))
+                       (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
                   (cons `[,id ,id] binds)))]))]))
 
 ;; Convert a `let-values` to nested `let-values`es to
@@ -74,41 +74,63 @@
                                              binds))
          target)]))]))
 
-;; Convert an application to enforce left-to-right
-;; evaluation order
+;; Convert an application to enforce left-to-right evaluation order.
 (define (left-to-right/app rator rands app-form target
-                           prim-knowns knowns imports mutated simples)
+                           prim-knowns knowns imports mutated simples unsafe-mode?)
   (cond
     [(aim? target 'cify) (cons rator rands)]
     [else
-     (let loop ([l (cons rator rands)] [accum null] [pending-non-simple #f] [pending-id #f])
-       (cond
-         [(null? l)
-          (let ([app
-                 (cond
-                   [pending-non-simple
-                    ;; Since the last non-simple was followed only by simples,
-                    ;; we don't need that variable
-                    (let loop ([accum accum] [rev-accum null])
-                      (cond
-                        [(null? accum) rev-accum]
-                        [(eq? (car accum) pending-id)
-                         (loop (cdr accum) (cons pending-non-simple rev-accum))]
-                        [else
-                         (loop (cdr accum) (cons (car accum) rev-accum))]))]
-                   [else (reverse accum)])])
-            (if app-form
-                (cons app-form app)
-                app))]
-         [(simple? (car l) prim-knowns knowns imports mutated simples)
-          (loop (cdr l) (cons (car l) accum) pending-non-simple pending-id)]
-         [pending-non-simple
-          `(let ([,pending-id ,pending-non-simple])
-             ,(loop l accum #f #f))]
-         [else
-          (define g (deterministic-gensym "app_"))
-          (loop (cdr l) (cons g accum) (car l) g)]))]))
-
+     (define l (cons rator rands))
+     (define modes
+       ;; If an argument is pure, we don't have to order it explicitly.
+       ;; If an argument is pure except for allocation, then we only have to
+       ;; order it if a later argument is non-pure.
+       (let loop ([l l])
+         (cond
+           [(null? l) 'pure]
+           [else
+            (define modes (loop (cdr l)))
+            (cond
+              [(simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode? #:no-alloc? #t)
+               (if (symbol? modes)
+                   modes
+                   (cons 'pure modes))]
+              [(simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode?) ; allocates
+               (if (symbol? modes)
+                   'alloc
+                   (cons 'bind modes))]
+              [else
+               (if (eq? modes 'pure)
+                   (cons 'non-simple modes)
+                   (cons 'bind modes))])])))
+     (define no-bind-needed?
+       (let loop ([modes modes])
+         (cond
+           [(symbol? modes) #t]
+           [(eq? (car modes) 'pure) (loop (cdr modes))]
+           [(eq? (car modes) 'non-simple) #t]
+           [else #f])))
+     (cond
+       [no-bind-needed?
+        (if app-form
+            (cons app-form l)
+            l)]
+       [else
+        (let loop ([l l] [modes modes] [accum null])
+          (cond
+            [(or (symbol? modes)
+                 (eq? (car modes) 'non-simple))
+             (define app (append (reverse accum) l))
+             (if app-form
+                 (cons app-form app)
+                 app)]
+            [(eq? (car modes) 'bind)
+             (define g (deterministic-gensym "app_"))
+             `(let ([,g ,(car l)])
+                ,(loop (cdr l) (cdr modes) (cons g accum)))]
+            [else
+             (loop (cdr l) (cdr modes) (cons (car l) accum))]))])]))
+          
 ;; ----------------------------------------
 
 (define (make-let-values ids rhs body target)

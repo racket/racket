@@ -69,11 +69,11 @@
               ;; check individual property values using `ids`, so procedures won't
               ;; count as used until some instace is created
               (for ([e (in-list prop-vals)])
-                (find-mutated! e ids prim-knowns knowns imports mutated simples))]
+                (find-mutated! e ids prim-knowns knowns imports mutated simples unsafe-mode?))]
              [else
-              (find-mutated! e ids prim-knowns knowns imports mutated simples)]))]
+              (find-mutated! e ids prim-knowns knowns imports mutated simples unsafe-mode?)]))]
         [else
-         (find-mutated! rhs ids prim-knowns knowns imports mutated simples)])
+         (find-mutated! rhs ids prim-knowns knowns imports mutated simples unsafe-mode?)])
        ;; For any among `ids` that didn't get a delay and wasn't used
        ;; too early, the variable is now ready, so remove from
        ;; `mutated`:
@@ -82,7 +82,7 @@
            (when (eq? 'not-ready (hash-ref mutated id #f))
              (hash-remove! mutated id))))]
       [`,_
-       (find-mutated! form #f prim-knowns knowns imports mutated simples)])
+       (find-mutated! form #f prim-knowns knowns imports mutated simples unsafe-mode?)])
     knowns)
   ;; For definitions that are not yet used, force delays:
   (for ([form (in-list l)])
@@ -101,7 +101,7 @@
 
 ;; Schemify `let-values` to `let`, etc., and
 ;; reorganize struct bindings.
-(define (find-mutated! top-v ids prim-knowns knowns imports mutated simples)
+(define (find-mutated! top-v ids prim-knowns knowns imports mutated simples unsafe-mode?)
   (define (delay! ids thunk)
     (define done? #f)
     (define force (lambda () (unless done?
@@ -153,7 +153,7 @@
                                       [rhs (in-list rhss)])
             (find-mutated! rhs (unwrap-list ids))
             (define new-maybe-cc? (or maybe-cc?
-                                      (not (simple? rhs prim-knowns knowns imports mutated simples
+                                      (not (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?
                                                     #:pure? #f
                                                     #:result-arity (length ids)))))
             ;; Each `id` in `ids` is now ready (but might also hold a delay):
@@ -222,7 +222,7 @@
                                  (eq? rator 'make-struct-type-property))
                              (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
                       (for/and ([exp (in-list exps)])
-                        (simple? exp prim-knowns knowns imports mutated simples)))))
+                        (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?)))))
           ;; Can delay construction
           (delay! ids (lambda () (find-mutated!* exps #f)))]
          [else

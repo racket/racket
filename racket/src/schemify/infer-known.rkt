@@ -93,7 +93,7 @@
          [`,_
           (cond
             [(and defn
-                  (simple? rhs prim-knowns knowns imports mutated simples))
+                  (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
              a-known-constant]
             [else #f])])])))
 
