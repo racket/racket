@@ -667,20 +667,15 @@
            '(lambda (v) (unsafe-unbox* (box v)))
            '(lambda (v) v))
 
-(test-comp #:except 'chez-scheme
-           '(lambda () (car (cons (random 2) (random 3))))
+(test-comp '(lambda () (car (cons (random 2) (random 3))))
            '(lambda () (begin0 (random 2) (random 3))))
-(test-comp #:except 'chez-scheme
-           '(lambda () (car (cons (random 2) (begin (random 3) (lambda (x) x)))))
+(test-comp '(lambda () (car (cons (random 2) (begin (random 3) (lambda (x) x)))))
            '(lambda () (begin0 (random 2) (random 3))))
-(test-comp #:except 'chez-scheme
-           '(lambda () (cdr (cons (random 2) (random 3))))
+(test-comp '(lambda () (cdr (cons (random 2) (random 3))))
            '(lambda () (begin (random 2) (random 3))))
-(test-comp #:except 'chez-scheme
-           '(lambda () (cdr (cons (begin (random 2) (lambda (x) x)) (random 3))))
+(test-comp '(lambda () (cdr (cons (begin (random 2) (lambda (x) x)) (random 3))))
            '(lambda () (begin (random 2) (random 3))))
-(test-comp #:except 'chez-scheme
-           '(lambda () (cdr (cons (begin (random 1) (random 2) (lambda (x) x)) (random 3))))
+(test-comp '(lambda () (cdr (cons (begin (random 1) (random 2) (lambda (x) x)) (random 3))))
            '(lambda () (begin (random 1) (random 2) (random 3))))
 
 (test-comp '(lambda (w z) (pair? (list)))
@@ -699,17 +694,13 @@
            '(lambda (w z) #t))
 (test-comp '(lambda (w z) (pair? (list w (random) w)))
            '(lambda (w z) (random) #t))
-(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
-           '(lambda (w z) (pair? (list (read) (random) w)))
+(test-comp '(lambda (w z) (pair? (list (read) (random) w)))
            '(lambda (w z) (values (read)) (random) #t))
-(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
-           '(lambda (w z) (pair? (list z (random) (read))))
+(test-comp '(lambda (w z) (pair? (list z (random) (read))))
            '(lambda (w z) (random) (values (read)) #t))
-(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
-           '(lambda (w z) (pair? (list (if z (random) (error 'e)) (read))))
+(test-comp '(lambda (w z) (pair? (list (if z (random) (error 'e)) (read))))
            '(lambda (w z) (if z (random) (error 'e)) (values (read)) #t))
-(test-comp #:except 'chez-scheme ;; optimizer doesn't know that `random` produces a single value
-           '(lambda (w z) (pair? (list (with-continuation-mark 'k 'v (read)) (random))))
+(test-comp '(lambda (w z) (pair? (list (with-continuation-mark 'k 'v (read)) (random))))
            '(lambda (w z) (values (with-continuation-mark 'k 'v (read))) (random) #t))
 (test-comp '(lambda (w z) (vector? (vector w z)))
            '(lambda (w z) #t))
@@ -922,8 +913,7 @@
 ;(test-arg-types '(map procedure? list?) #f) ;should be list?
 ;(test-arg-types '(map procedure? list? list?) #f) ;should be list? 
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (let ([x (list* w z)]
                     [y (list* z w)])
                 (error "bad")
@@ -1003,8 +993,7 @@
                            (lambda () z))])
                 (list l l))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (list (if (pair? w) (car w) (car z))
                     (cdr w)))
            '(lambda (w z)
@@ -1012,8 +1001,7 @@
                     (unsafe-cdr w)))
            #f)
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (list (if z (car z) (car w))
                     (cdr w)))
            '(lambda (w z)
@@ -1055,8 +1043,7 @@
            '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (unsafe-car x))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z 1 2) (car x)))
            '(lambda (w z x)
               (list (car x) (if z 1 2) (unsafe-car x))))
@@ -1094,8 +1081,7 @@
                 (let ([x (random)]) (f x x) #t)
                 (let ([x (random)]) (f x x) #f))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda ()
+(test-comp '(lambda ()
               (car (let ([y (random)])
                      (list y (set! y 5)))))
            '(lambda ()
@@ -1105,17 +1091,16 @@
 ; It's necessary to use the random from #%kernel because otherwise
 ; the function will keep an unnecessary reference for the module that
 ; defines the random visible from racket/base.
-(unless (eq? 'chez-scheme (system-type 'vm))
-  (test-comp '(lambda (w) (car w) (mcar w))
-             '(lambda (w) (car w) (mcar w) (k:random)))
-  (test-comp '(lambda (w) (car w w))
-             '(lambda (w) (car w w) (k:random)))
-  (test-comp '(lambda (w) (car w w w))
-             '(lambda (w) (car w w w) (k:random)))
-  (test-comp '(lambda (w) (cons w))
-             '(lambda (w) (cons w) (k:random)))
-  (test-comp '(lambda (w) (cons))
-             '(lambda (w) (cons) (k:random))))
+(test-comp '(lambda (w) (car w) (mcar w))
+           '(lambda (w) (car w) (mcar w) (k:random)))
+(test-comp '(lambda (w) (car w w))
+           '(lambda (w) (car w w) (k:random)))
+(test-comp '(lambda (w) (car w w w))
+           '(lambda (w) (car w w w) (k:random)))
+(test-comp '(lambda (w) (cons w))
+           '(lambda (w) (cons w) (k:random)))
+(test-comp '(lambda (w) (cons))
+           '(lambda (w) (cons) (k:random)))
 
 ; test for unary applications
 (test-comp -1
@@ -1134,18 +1119,17 @@
 (test-comp '(lambda (w z) (box? (list (cons (random w) z))))
            '(lambda (w z) (random w) #f))
 
-(test-comp #:except 'chez-scheme
-           '(lambda () (begin0 (random 1) (random 2)))
+(test-comp '(lambda () (begin0 (random 1) (random 2)))
            '(lambda () (car (cons (random 1) (random 2)))))
 (test-comp '(lambda () (begin (random 1) (random 2)))
            '(lambda () (cdr (cons (random 1) (random 2)))))
 
 (test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
-           '(lambda () (begin (car (cons (random 1) (random 2))) (random 3) (random 4)))) ;
+           '(lambda () (begin (car (cons (random 1) (random 2))) (random 3) (random 4))))
 (test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
            '(lambda () (begin (cdr (cons (random 1) (random 2))) (random 3) (random 4))))
 (test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
-           '(lambda () (begin (random 1) (car (cons (random 2) (random 3))) (random 4)))) ;
+           '(lambda () (begin (random 1) (car (cons (random 2) (random 3))) (random 4))))
 (test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
            '(lambda () (begin (random 1) (cdr (cons (random 2) (random 3))) (random 4))))
 (test-comp '(lambda () (begin (random 1) (random 2) (begin0 (random 3) (random 4))))
@@ -1155,10 +1139,11 @@
 
 (test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
            '(lambda () (begin0 (car (cons (random 1) (random 2))) (random 3) (random 4))))
-(test-comp '(lambda () (begin0 (begin (random 1) (random 2)) (random 3) (random 4)))
+(test-comp #:except 'chez-scheme
+           '(lambda () (begin0 (begin (random 1) (random 2)) (random 3) (random 4)))
            '(lambda () (begin0 (cdr (cons (random 1) (random 2))) (random 3) (random 4))))
 (test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
-           '(lambda () (begin0 (random 1) (car (cons (random 2) (random 3))) (random 4)))) ;
+           '(lambda () (begin0 (random 1) (car (cons (random 2) (random 3))) (random 4))))
 (test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
            '(lambda () (begin0 (random 1) (cdr (cons (random 2) (random 3))) (random 4))))
 (test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
