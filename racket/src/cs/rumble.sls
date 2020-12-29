@@ -511,6 +511,8 @@
           unsafe-list-tail
           unsafe-list-ref
           unsafe-cons-list
+          unsafe-set-immutable-car!
+          unsafe-set-immutable-cdr!
 
           unsafe-char=?
           unsafe-char<?

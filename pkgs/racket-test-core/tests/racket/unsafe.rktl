@@ -526,6 +526,15 @@
 
   (test-un 5 'unsafe-car (cons 5 9))
   (test-un 9 'unsafe-cdr (cons 5 9))
+  (let ([v (cons 3 7)])
+    (test-bin 8 'unsafe-set-immutable-car! v 8
+              #:pre (lambda () (unsafe-set-immutable-car! v 0))
+              #:post (lambda (x) (car v))
+              #:literal-ok? #f)
+    (test-bin 9 'unsafe-set-immutable-cdr! v 9
+              #:pre (lambda () (unsafe-set-immutable-cdr! v 0))
+              #:post (lambda (x) (cdr v))
+              #:literal-ok? #f))
   (test-un 15 'unsafe-mcar (mcons 15 19))
   (test-un 19 'unsafe-mcdr (mcons 15 19))
   (let ([v (mcons 3 7)])

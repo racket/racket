@@ -4242,10 +4242,13 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-set-mcar!")
-               || IS_NAMED_PRIM(rator, "unsafe-set-mcdr!")) {
+               || IS_NAMED_PRIM(rator, "unsafe-set-mcdr!")
+               || IS_NAMED_PRIM(rator, "unsafe-set-immutable-car!")
+               || IS_NAMED_PRIM(rator, "unsafe-set-immutable-cdr!")) {
       int set_mcar;
 
-      set_mcar = IS_NAMED_PRIM(rator, "unsafe-set-mcar!");
+      set_mcar = (IS_NAMED_PRIM(rator, "unsafe-set-mcar!")
+                  || IS_NAMED_PRIM(rator, "unsafe-set-immutable-car!"));
 
       LOG_IT(("inlined unsafe-set-mcar!\n"));
 

@@ -8,6 +8,8 @@
 (define unsafe-cdr (unsafe-primitive cdr))
 (define unsafe-list-tail (unsafe-primitive list-tail))
 (define unsafe-list-ref (unsafe-primitive list-ref))
+(define (unsafe-set-immutable-car! p a) ((unsafe-primitive set-car!) p a))
+(define (unsafe-set-immutable-cdr! p d) ((unsafe-primitive set-cdr!) p d))
 
 (define unsafe-char=? (unsafe-primitive char=?))
 (define unsafe-char<? (unsafe-primitive char<?))

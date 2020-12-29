@@ -235,7 +235,7 @@ Unchecked versions of @racket[char=?], @racket[char<?], @racket[char>?],
 
 
 
-@section{Unsafe Data Extraction}
+@section[#:tag "Unsafe Data Extraction"]{Unsafe Compound-Data Operations}
 
 @deftogether[(
 @defproc[(unsafe-car [p pair?]) any/c]
@@ -266,6 +266,44 @@ Unsafe variants of @racket[list-ref] and @racket[list-tail], where
 at least @racket[(add1 pos)] (for @racket[unsafe-list-ref]) or
 @racket[pos] (for @racket[unsafe-list-tail]) pairs.}
 
+
+@deftogether[(
+@defproc[(unsafe-set-immutable-car! [p pair?] [v any/c]) void?]
+@defproc[(unsafe-set-immutable-cdr! [p pair?] [v any/c]) void?]
+)]{
+
+As their oxymoronic names should suggest, there is @emph{no generally
+correct way} to use these functions. They may be useful nevertheless,
+as a last resort, in settings where pairs are used in a constrained
+way and when making correct assumptions about Racket's implementation
+(including limits on the compiler's optimizations).
+
+Some pitfalls of using @racket[unsafe-set-immutable-car!] and
+@racket[unsafe-set-immutable-cdr!]:
+
+@itemlist[
+
+ @item{Functions that consume a pair may take advantage of
+       immutability, such as computing a list's length once and
+       expecting the list to retain that length, or checking a list
+       against a contract and expecting the contract to hold
+       thereafter.}
+
+ @item{The result of @racket[list?] for a pair may be cached
+       internally, so that changing the @racket[cdr] of a pair from a
+       list to a non-list or vice versa may cause @racket[list?] to
+       produce the wrong value---for the mutated pair or for another
+       pair that reaches the mutated pair.}
+
+ @item{The compiler may reorder or even optimize away a call to
+       @racket[car] or @racket[cdr] on the grounds that pairs are
+       immutable, in which case a @racket[unsafe-set-immutable-car!]
+       or @racket[unsafe-set-immutable-cdr!] may not have an effect on
+       the use of @racket[car] or @racket[cdr].}
+
+]
+
+@history[#:added "7.9.0.18"]}
 
 @deftogether[(
 @defproc[(unsafe-unbox [b box?]) fixnum?]
