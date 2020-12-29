@@ -242,7 +242,7 @@
                  (ftype-ref rktio_date_t (nanosecond) dt)
                  (if (eqv? tzn NULL)
                      unknown-zone-name
-                     (string->immutable-string (1/bytes->string/utf-8 (rktio_to_bytes tzn)))))
+                     (string->immutable-string (utf8->string (rktio_to_bytes tzn)))))
                 (unless (eqv? tzn NULL)
                   (rktio_free tzn))
                 (rktio_free p)))]))]))
