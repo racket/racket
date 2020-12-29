@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/include
+         racket/fixnum
          (only-in '#%linklet primitive-table)
+         (only-in '#%kernel [date* kernel:date*])
          ffi/unsafe
          ffi/unsafe/atomic
          (for-syntax racket/base)
@@ -113,21 +115,44 @@
      (Rrktio_identity_t-b_bits p)
      (Rrktio_identity_t-c_bits p))))
 
-(define (rktio_date_to_vector p)
-  (let ([p (cast p _pointer _Rrktio_date_t-pointer)])
-    (vector
-     (Rrktio_date_t-nanosecond p)
-     (Rrktio_date_t-second p)
-     (Rrktio_date_t-minute p)
-     (Rrktio_date_t-hour p)
-     (Rrktio_date_t-day p)
-     (Rrktio_date_t-month p)
-     (Rrktio_date_t-year p)
-     (Rrktio_date_t-day_of_week p)
-     (Rrktio_date_t-day_of_year p)
-     (Rrktio_date_t-is_dst p)
-     (Rrktio_date_t-zone_offset p)
-     (Rrktio_date_t-zone_name p))))
+(define (in-date-range? si)
+  (if (fixnum? (expt 2 33))
+      (<= -9223372036854775808 si 9223372036854775807)
+      (<= -2147483648 si 2147483647)))
+
+(define unknown-zone-name (string->immutable-string "?"))
+
+(define (rktio_seconds_to_date* rktio si nsecs get-gmt)
+  (cond
+    [(not (in-date-range? si))
+     (vector RKTIO_ERROR_KIND_RACKET
+             RKTIO_ERROR_TIME_OUT_OF_RANGE)]
+    [else
+     (let ([p (rktio_seconds_to_date rktio si nsecs get-gmt)])
+       (cond
+         [(vector? p) p]
+         [else
+          (define dt (cast p _pointer _Rrktio_date_t-pointer))
+          (define tzn (Rrktio_date_t-zone_name dt))
+          (begin0
+            (kernel:date*
+             (Rrktio_date_t-second dt)
+             (Rrktio_date_t-minute dt)
+             (Rrktio_date_t-hour dt)
+             (Rrktio_date_t-day dt)
+             (Rrktio_date_t-month dt)
+             (Rrktio_date_t-year dt)
+             (Rrktio_date_t-day_of_week dt)
+             (Rrktio_date_t-day_of_year dt)
+             (if (fx= 0 (Rrktio_date_t-is_dst dt)) #f #t)
+             (Rrktio_date_t-zone_offset dt)
+             (Rrktio_date_t-nanosecond dt)
+             (if tzn
+                 (string->immutable-string (bytes->string/utf-8 (rktio_to_bytes tzn)))
+                 unknown-zone-name))
+            (unless tzn
+              (rktio_free tzn))
+            (rktio_free p))]))]))
 
 (define (rktio_convert_result_to_vector p)
   (let ([p (cast p _pointer _Rrktio_convert_result_t-pointer)])
@@ -232,7 +257,7 @@
                                          'rktio_recv_length_ref rktio_recv_length_ref
                                          'rktio_recv_address_ref rktio_recv_address_ref
                                          'rktio_identity_to_vector rktio_identity_to_vector
-                                         'rktio_date_to_vector rktio_date_to_vector
+                                         'rktio_seconds_to_date* rktio_seconds_to_date*
                                          'rktio_convert_result_to_vector rktio_convert_result_to_vector
                                          'rktio_to_bytes rktio_to_bytes
                                          'rktio_to_bytes_list rktio_to_bytes_list
