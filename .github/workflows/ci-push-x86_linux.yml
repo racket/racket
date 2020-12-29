@@ -425,7 +425,7 @@ jobs:
       - uses: technote-space/workflow-conclusion-action@v2
       - name: Send Slack notification
         uses: 8398a7/action-slack@v3
-        if: always()
+        if: github.repository == 'racket/racket'
         with:
           status: ${{ env.WORKFLOW_CONCLUSION }}
           author_name: ${{ github.actor }}
