@@ -161,6 +161,8 @@
           [`(,es ...)
            (for/list ([e (in-list es)])
              (loop e env))]
+          [`(,e1 . ,e2)
+           (cons (loop e1 env) (loop e2 env))]
           [else
            (hash-ref env s s)])))))
 
@@ -1001,8 +1003,7 @@
                 (let ([l (list (random))])
                   (list (unsafe-car l) (unsafe-cdr l))))))
 
-(test-comp #:except 'chez-scheme ;; `procedure?` is not primitive
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (let ([l (if w
                            (lambda () w)
                            (lambda () z))])
@@ -1750,16 +1751,14 @@
                 (+ y 1))))
 
 
-(test-comp #:except 'chez-scheme ; procedure-specialize doesn't inline enough
-           '(let ()
+(test-comp '(let ()
              (define (f x)
                (procedure-specialize
                 (lambda (y) (+ x y))))
              ((f 10) 12))
            '22)
 
-(test-comp #:except 'chez-scheme ; procedure-specialize doesn't inline enough
-           '(let ()
+(test-comp '(let ()
              (define (f x)
                (procedure-specialize
                 (lambda (y) (+ x y))))
@@ -2314,11 +2313,9 @@
            '(procedure? add1))
 (test-comp '(lambda () #t)
            '(lambda () (procedure? add1)))
-(test-comp #:except 'chez-scheme
-           #t
+(test-comp #t
            '(procedure? (lambda (x) x)))
-(test-comp #:except 'chez-scheme
-           '(lambda () #t)
+(test-comp '(lambda () #t)
            '(lambda () (procedure? (lambda (x) x))))
 (test-comp #f
            '(pair? (lambda (x) x)))
@@ -2330,8 +2327,7 @@
                   88))
            '(let ([f (lambda (x) x)])
               (list f)))
-(test-comp #:except 'chez-scheme
-           '(let ([f (lambda (x) x)])
+(test-comp '(let ([f (lambda (x) x)])
               (list
                f
                f
@@ -2354,13 +2350,11 @@
 
 (test-comp '(lambda (x) #f)
            '(lambda (x) (pair? (if x car cdr))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) #t)
+(test-comp '(lambda (x) #t)
            '(lambda (x) (procedure? (if x car cdr))))
 (test-comp '(lambda (x) #t)
            '(lambda (x) (fixnum? (if x 2 3))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) #f)
+(test-comp '(lambda (x) #f)
            '(lambda (x) (procedure? (if x 2 3))))
 
 (test-comp '(lambda ()
@@ -2503,69 +2497,72 @@
               (define (q x)
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; procedures are not primitivee
-  (let ([check (lambda (proc arities non-arities)
-                 (test-comp `(procedure? ,proc)
-                            #t)
-                 (test-comp `(module m racket/base
-                               (define f ,proc)
-                               (print (procedure? f)))
-                            `(module m racket/base
-                               (define f ,proc)
-                               (print #t)))
-                 (test-comp `(procedure-arity-includes? ,proc -1)
-                            #t
-                            #f)
-                 (test-comp `(procedure-arity-includes? ,proc -1)
-                            #f
-                            #f)
-                 (for-each
-                  (lambda (a)
-                    (test-comp `(procedure-arity-includes? ,proc ,a)
-                               #t)
-                    (test-comp `(module m racket/base
-                                  (define f ,proc)
-                                  (print (procedure-arity-includes? f ,a)))
-                               `(module m racket/base
-                                  (define f ,proc)
-                                  (print #t))))
-                  arities)
-                 (for-each
-                  (lambda (a)
-                    (test-comp `(procedure-arity-includes? ,proc ,a)
-                               #f)
-                    (test-comp `(module m racket/base
-                                  (define f ,proc)
-                                  (print (procedure-arity-includes? f ,a)))
-                               `(module m racket/base
-                                  (define f ,proc)
-                                  (print #f))))
-                  non-arities))])
-    (check '(lambda (x) x) '(1) '(0 2 3))
-    (check '(lambda (x y) x) '(2) '(0 1 3))
-    (check '(lambda (x . y) x) '(1 2 3) '(0))
-    (check '(case-lambda [() 1] [(x y) x]) '(0 2) '(1 3))
-    (check '(lambda (x [y #f]) y) '(1 2) '(0 3))
-    (check 'integer? '(1) '(0 2 3))
-    (check 'cons '(2) '(0 1 3))
-    (check 'list '(0 1 2 3) '()))
+(let ([check (lambda (proc arities non-arities)
+               (test-comp `(procedure? ,proc)
+                          #t)
+               (test-comp `(module m racket/base
+                             (define f ,proc)
+                             (print (procedure? f)))
+                          `(module m racket/base
+                             (define f ,proc)
+                             (print #t)))
+               (test-comp `(procedure-arity-includes? ,proc -1)
+                          #t
+                          #f)
+               (test-comp `(procedure-arity-includes? ,proc -1)
+                          #f
+                          #f)
+               (for-each
+                (lambda (a)
+                  (test-comp `(procedure-arity-includes? ,proc ,a)
+                             #t)
+                  (test-comp `(module m racket/base
+                                (define f ,proc)
+                                (print (procedure-arity-includes? f ,a)))
+                             `(module m racket/base
+                                (define f ,proc)
+                                (print #t))))
+                arities)
+               (for-each
+                (lambda (a)
+                  (test-comp `(procedure-arity-includes? ,proc ,a)
+                             #f)
+                  (test-comp `(module m racket/base
+                                (define f ,proc)
+                                (print (procedure-arity-includes? f ,a)))
+                             `(module m racket/base
+                                (define f ,proc)
+                                (print #f))))
+                non-arities))])
+  (check '(lambda (x) x) '(1) '(0 2 3))
+  (check '(lambda (x y) x) '(2) '(0 1 3))
+  (check '(lambda (x . y) x) '(1 2 3) '(0))
+  (check '(case-lambda [() 1] [(x y) x]) '(0 2) '(1 3))
+  (check '(lambda (x [y #f]) y) '(1 2) '(0 3))
+  (check 'integer? '(1) '(0 2 3))
+  (check 'cons '(2) '(0 1 3))
+  (check 'list '(0 1 2 3) '()))
 
+(unless (eq? 'chez-scheme (system-type 'vm)) ; procedures are not primitivee
   (test-comp '(lambda () (primitive? car))
-             '(lambda () #t))
-  (test-comp '(lambda () (procedure-arity-includes? car 1))
-             '(lambda () #t))
-  (test-comp '(lambda () (procedure-arity-includes? car 2))
-             '(lambda () #f))
-  (test-comp '(lambda () (procedure-arity-includes? (begin (random) car) 1))
-             '(lambda () (random) #t))
-  (test-comp '(lambda () (procedure-arity-includes? (begin (random) car) 2))
-             '(lambda () (random) #f))
-  (test-comp '(lambda () (procedure-arity-includes? (begin (random) car) 1))
-             '(lambda () #t)
-             #f)
-  (test-comp '(lambda () (procedure-arity-includes? (begin (random) car) 2))
-             '(lambda () #f)
-             #f))
+             '(lambda () #t)))
+
+(test-comp '(lambda () (procedure-arity-includes? car 1))
+           '(lambda () #t))
+(test-comp '(lambda () (procedure-arity-includes? car 2))
+           '(lambda () #f))
+(test-comp #:except 'chez-scheme ; schemify only recognizes immediate identifiers
+           '(lambda () (procedure-arity-includes? (begin (random) car) 1))
+           '(lambda () (random) #t))
+(test-comp #:except 'chez-scheme ; schemify only recognizes immediate identifiers
+           '(lambda () (procedure-arity-includes? (begin (random) car) 2))
+           '(lambda () (random) #f))
+(test-comp '(lambda () (procedure-arity-includes? (begin (random) car) 1))
+           '(lambda () #t)
+           #f)
+(test-comp '(lambda () (procedure-arity-includes? (begin (random) car) 2))
+           '(lambda () #f)
+           #f)
 
 (test-comp '(lambda ()
               (let ([l '(1 2)])
@@ -2693,7 +2690,7 @@
   (test-implies 'k:true-object? 'boolean?)
 )
 
-(test-comp #:except 'chez-scheme
+(test-comp #:except 'chez-scheme ; list-pair? is not primitive enough for cptypes
            '(lambda (z)
               (when (and (list? z)
                          (pair? z))
@@ -2748,7 +2745,6 @@
                          (not (not z)))
                 #t)))
 
-
 (let ([test-reduce
        (lambda (pred-name expr [val #t])
          (test-comp `(list ',pred-name (,pred-name ,expr))
@@ -2757,19 +2753,21 @@
                        (list ',pred-name e e (,pred-name e)))
                     `(let ([e ,expr])
                        (list ',pred-name e e ,val))))])
-  (test-reduce 'list? 0 #f)
-  (test-reduce 'list? ''())
-  (test-reduce 'list? ''(1))
-  (test-reduce 'list? ''(1 2))
-  #;(test-reduce 'list? ''(1 . 2) #f)
-  (test-reduce 'list? '(list))
-  (test-reduce 'list? '(list 1))
-  (test-reduce 'list? '(list 1 2))
-  #;(test-reduce 'list? '(cons 1 2) #f)
-  (test-reduce 'list? '(cons 1 null))
-  (test-reduce 'list? '(cons 1 (list 2 3)))
-  (test-reduce 'list? '(cdr (list 1 2)))
-  (test-reduce 'list? '(cdr (list 1)))
+
+  (unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't yet specialize `list?`
+    (test-reduce 'list? 0 #f)
+    (test-reduce 'list? ''())
+    (test-reduce 'list? ''(1))
+    (test-reduce 'list? ''(1 2))
+    #;(test-reduce 'list? ''(1 . 2) #f)
+    (test-reduce 'list? '(list))
+    (test-reduce 'list? '(list 1))
+    (test-reduce 'list? '(list 1 2))
+    #;(test-reduce 'list? '(cons 1 2) #f)
+    (test-reduce 'list? '(cons 1 null))
+    (test-reduce 'list? '(cons 1 (list 2 3)))
+    (test-reduce 'list? '(cdr (list 1 2)))
+    (test-reduce 'list? '(cdr (list 1))))
 
   (test-reduce 'null? 0 #f)
   (test-reduce 'null? ''())
@@ -2815,24 +2813,25 @@
     (test-reduce 'k:list-pair? '(cdr (list 1)) #f))
 )
 
-(test-comp '(lambda (z)
-              (when (and (list? z) (pair? z))
-                (list? (cdr z))))
-           '(lambda (z)
-              (when (and (list? z) (pair? z))
-                #t)))
-(test-comp '(lambda (z)
-              (when (list? z)
-                (list? (unsafe-cdr z))))
-           '(lambda (z)
-              (when (list? z)
-                #t)))
-(test-comp '(lambda (z)
-              (when (list? z)
-                (list? (cdr z))))
-           '(lambda (z)
-              (when (list? z)
-                (begin (cdr z) #t))))
+(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't yet specialize `list?`
+  (test-comp '(lambda (z)
+                (when (and (list? z) (pair? z))
+                  (list? (cdr z))))
+             '(lambda (z)
+                (when (and (list? z) (pair? z))
+                  #t)))
+  (test-comp '(lambda (z)
+                (when (list? z)
+                  (list? (unsafe-cdr z))))
+             '(lambda (z)
+                (when (list? z)
+                  #t)))
+  (test-comp '(lambda (z)
+                (when (list? z)
+                  (list? (cdr z))))
+             '(lambda (z)
+                (when (list? z)
+                  (begin (cdr z) #t)))))
 
 (let ([test-bin
        (lambda (bin-name)
@@ -2844,48 +2843,50 @@
   (test-bin 'eq?)
   (test-bin 'eqv?))
 
-(for ([middle (in-list (list '(random) ; known immediate
-                             '(read)))] ; could capture continuation?
-      [default-same? (in-list (list #t
-                                    #f))])
-  (let ([test-move
-         (lambda (expr [same? default-same?])
-           (test-comp `(lambda (z)
-                         (let ([x ,expr])
-                           (let ([y ,middle])
-                             (list y x))))
-                      `(lambda (z)
-                         (list ,middle ,expr))
-                      same?))])
-    (test-move '(cons 1 2))
-    (test-move '(mcons 1 2))
-    (test-move '(list 1))
-    (test-move '(list 1 2))
-    (test-move '(list 1 2 3))
-    (test-move '(list* 1 2))
-    (test-move '(list* 1 2 3))
-    (test-move '(vector 1))
-    (test-move '(vector 1 2))
-    (test-move '(vector 1 2 3))
-    (test-move '(box 2))
-    (test-move '(box-immutable 2))
-    (test-move '(cons 1 2 3) #f)
-    (test-move '(mcons 1 2 3) #f)
-    (test-move '(box 1 2) #f)
-    (test-move '(box-immutable 1 2) #f)
-    (test-move '(quote (1 2)) #t)))
-
-;; Check move in to `else` branch where `then`
-;; branch might capture a continuation
-(test-comp `(lambda (z)
-              (let ([x (cons 1 2)])
+(unless (eq? 'chez-scheme (system-type 'vm))
+  (for ([middle (in-list (list '(random) ; known immediate
+                               '(read)))] ; could capture continuation?
+        [default-same? (in-list (list #t
+                                      #f))])
+    (let ([test-move
+           (lambda (expr [same? default-same?])
+             (test-comp `(lambda (z)
+                           (let ([x ,expr])
+                             (let ([y ,middle])
+                               (list y x))))
+                        `(lambda (z)
+                           (list ,middle ,expr))
+                        same?))])
+      (test-move '(cons 1 2))
+      (test-move '(mcons 1 2))
+      (test-move '(list 1))
+      (test-move '(list 1 2))
+      (test-move '(list 1 2 3))
+      (test-move '(list* 1 2))
+      (test-move '(list* 1 2 3))
+      (test-move '(vector 1))
+      (test-move '(vector 1 2))
+      (test-move '(vector 1 2 3))
+      (test-move '(box 2))
+      (test-move '(box-immutable 2))
+      (test-move '(cons 1 2 3) #f)
+      (test-move '(mcons 1 2 3) #f)
+      (test-move '(box 1 2) #f)
+      (test-move '(box-immutable 1 2) #f)
+      (test-move '(quote (1 2)) #t)))
+  
+  ;; Check move in to `else` branch where `then`
+  ;; branch might capture a continuation
+  (test-comp `(lambda (z)
+                (let ([x (cons 1 2)])
+                  (if z
+                      (read)
+                      x)))
+             `(lambda (z)
                 (if z
                     (read)
-                    x)))
-           `(lambda (z)
-              (if z
-                  (read)
-                  (cons 1 2))))
+                    (cons 1 2)))))
+
 ;; But not after the merge:
 (test-comp `(lambda (z)
               (let ([x (cons 1 2)])
@@ -2911,9 +2912,11 @@
                             (,unsafe-op x)
                             (cdr x))))
           (test-comp `(lambda (x)
-                        (list (,op x) (,op x)))
+                        (let ([a (,op x)])
+                          (list a (,op x))))
                      `(lambda (x)
-                        (list (,op x) (,unsafe-op x)))
+                        (let ([a (,op x)])
+                          (list a (,unsafe-op x))))
                      savetype)
           (test-comp `(lambda (x)
                         (if (and (,pred x)
@@ -2932,22 +2935,23 @@
   (test-use-unsafe 'pair? 'cdr 'unsafe-cdr)
   (test-use-unsafe 'mpair? 'mcar 'unsafe-mcar)
   (test-use-unsafe 'mpair? 'mcdr 'unsafe-mcdr)
-  (test-use-unsafe 'box? 'unbox 'unsafe-unbox)
-  (test-use-unsafe 'vector? 'vector-length 'unsafe-vector-length)
+  (unless (eq? 'chez-scheme (system-type 'vm)) ; impersonators currently get in the way
+    (test-use-unsafe 'box? 'unbox 'unsafe-unbox)
+    (test-use-unsafe 'vector? 'vector-length 'unsafe-vector-length))
   (test-use-unsafe 'string? 'string-length 'unsafe-string-length)
   (test-use-unsafe 'bytes? 'bytes-length 'unsafe-bytes-length)
   (test-use-unsafe/savetype 'fixnum? 'bitwise-not 'unsafe-fxnot #f)
-  (test-use-unsafe/savetype 'fixnum? 'fxnot 'unsafe-fxnot #f))
+  (test-use-unsafe/savetype 'fixnum? 'fxnot 'unsafe-fxnot (not (eq? 'racket (system-type 'vm)))))
 
 (let ([test-use-unsafe-fxbinary
        (lambda (op unsafe-op)
          (test-comp `(lambda (vx vy)
-                       (let ([x (vector-length vx)]
-                             [y (vector-length vy)])
+                       (let ([x (string-length vx)]
+                             [y (string-length vy)])
                          (,op x y)))
                     `(lambda (vx vy)
-                       (let ([x (vector-length vx)]
-                             [y (vector-length vy)])
+                       (let ([x (string-length vx)]
+                             [y (string-length vy)])
                          (,unsafe-op x y))))
          (test-comp `(lambda (x y)
                        (when (and (fixnum? x) (fixnum? y))
@@ -2968,13 +2972,14 @@
   (test-use-unsafe-fxbinary 'fxior 'unsafe-fxior)
   (test-use-unsafe-fxbinary 'fxxor 'unsafe-fxxor)
 
-  (test-use-unsafe-fxbinary '= 'unsafe-fx=)
-  (test-use-unsafe-fxbinary '< 'unsafe-fx<)
-  (test-use-unsafe-fxbinary '> 'unsafe-fx>)
-  (test-use-unsafe-fxbinary '<= 'unsafe-fx<=)
-  (test-use-unsafe-fxbinary '>= 'unsafe-fx>=)
-  (test-use-unsafe-fxbinary 'min 'unsafe-fxmin)
-  (test-use-unsafe-fxbinary 'max 'unsafe-fxmax)
+  (unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
+    (test-use-unsafe-fxbinary '= 'unsafe-fx=)
+    (test-use-unsafe-fxbinary '< 'unsafe-fx<)
+    (test-use-unsafe-fxbinary '> 'unsafe-fx>)
+    (test-use-unsafe-fxbinary '<= 'unsafe-fx<=)
+    (test-use-unsafe-fxbinary '>= 'unsafe-fx>=)
+    (test-use-unsafe-fxbinary 'min 'unsafe-fxmin)
+    (test-use-unsafe-fxbinary 'max 'unsafe-fxmax))
 
   (test-use-unsafe-fxbinary 'fx= 'unsafe-fx=)
   (test-use-unsafe-fxbinary 'fx< 'unsafe-fx<)
@@ -2984,52 +2989,55 @@
   (test-use-unsafe-fxbinary 'fxmin 'unsafe-fxmin)
   (test-use-unsafe-fxbinary 'fxmax 'unsafe-fxmax))
 
-(test-comp '(lambda (vx)
-              (let ([x (vector-length vx)])
+(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
+  (test-comp '(lambda (vx)
+                (let ([x (string-length vx)])
                   (zero? x)))
-           '(lambda (vx)
-              (let ([x (vector-length vx)])
-                (unsafe-fx= x 0))))
-(test-comp '(lambda (x)
-              (when (fixnum? x)
-                (zero? x)))
-           '(lambda (x)
-              (when  (fixnum? x)
-                (unsafe-fx= x 0))))
-(test-comp '(lambda (x)
-              (when (and (fixnum? x) (zero? (random 2)))
-                (zero? x)))
-           '(lambda (x)
-              (when (and (fixnum? x) (zero? (random 2)))
-                (unsafe-fx= x 0))))
+             '(lambda (vx)
+                (let ([x (string-length vx)])
+                  (unsafe-fx= x 0))))
+  (test-comp '(lambda (x)
+                (when (fixnum? x)
+                  (zero? x)))
+             '(lambda (x)
+                (when  (fixnum? x)
+                  (unsafe-fx= x 0))))
+  (test-comp '(lambda (x)
+                (when (and (fixnum? x) (zero? (random 2)))
+                  (zero? x)))
+             '(lambda (x)
+                (when (and (fixnum? x) (zero? (random 2)))
+                  (unsafe-fx= x 0)))))
 
-;test special case for bitwise-and and fixnum?
-(test-comp '(lambda (x)
-              (let ([y (bitwise-and x 2)])
-                (list y y (fixnum? y))))
-           '(lambda (x)
-              (let ([y (bitwise-and x 2)])
-                (list y y #t))))
-(test-comp '(lambda (x)
-              (let ([y (bitwise-and x 2)])
-                (fixnum? x)))
-           '(lambda (x)
-              (let ([y (bitwise-and x 2)])
-                #t))
-           #f)
+(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
+  ;test special case for bitwise-and and fixnum?
+  (test-comp '(lambda (x)
+                (let ([y (bitwise-and x 2)])
+                  (list y y (fixnum? y))))
+             '(lambda (x)
+                (let ([y (bitwise-and x 2)])
+                  (list y y #t))))
+  (test-comp '(lambda (x)
+                (let ([y (bitwise-and x 2)])
+                  (fixnum? x)))
+             '(lambda (x)
+                (let ([y (bitwise-and x 2)])
+                  #t))
+             #f))
 
-;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
-;; fixnum arguments but not for a negative one
+(unless (eq? 'chez-scheme (system-type 'vm)) ; no literal specializations right now
+  ;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
+  ;; fixnum arguments but not for a negative one
 
-(test-comp '(lambda (x)
-             (bitwise-ior (bitwise-and x 7) 1))
-           '(lambda (x)
-             (unsafe-fxior (bitwise-and x 7) 1)))
-(test-comp '(lambda (x)
-             (bitwise-ior (bitwise-and x -7) 1))
-           '(lambda (x)
-             (unsafe-fxior (bitwise-and x -7) 1))
-           #f)
+  (test-comp '(lambda (x)
+                (bitwise-ior (bitwise-and x 7) 1))
+             '(lambda (x)
+                (unsafe-fxior (bitwise-and x 7) 1)))
+  (test-comp '(lambda (x)
+                (bitwise-ior (bitwise-and x -7) 1))
+             '(lambda (x)
+                (unsafe-fxior (bitwise-and x -7) 1))
+             #f))
 
 
 (test-comp `(lambda (x)
@@ -3044,26 +3052,37 @@
                   (cdr x)))
            #f)
 
-;; + fold to fixnum overflow, fx+ doesn't
-(test-comp `(module m racket/base
-              (+ (sub1 (expt 2 30)) (sub1 (expt 2 30))))
-           `(module m racket/base
-              (- (expt 2 31) 2)))
-(test-comp `(module m racket/base
-              (require racket/fixnum)
-              (fx+ (sub1 (expt 2 30)) (sub1 (expt 2 30))))
-           `(module m racket/base
-              (require racket/fixnum)
-              (- (expt 2 31) 2))
-           #f)
+(let ([width (case (system-type 'vm)
+               [(chez-scheme)
+                ;; Need machine-specific fixnum bound:
+                (case (system-type 'word)
+                  [(32) 29]
+                  [(64) 60])]
+               [else
+                ;; Racket compiles independent of current machine:
+                30])])
+  ;; + fold to fixnum overflow, fx+ doesn't
+  (test-comp `(module m racket/base
+                (+ (sub1 (expt 2 ,width)) (sub1 (expt 2 ,width))))
+             `(module m racket/base
+                (- (expt 2 ,(+ width 1)) 2)))
+  (test-comp `(module m racket/base
+                (require racket/fixnum)
+                (fx+ (sub1 (expt 2 ,width)) (sub1 (expt 2 ,width))))
+             `(module m racket/base
+                (require racket/fixnum)
+                (- (expt 2 ,(+ width 1)) 2))
+             #f))
 
 ;; Propagate type implications from RHS:
 (test-comp '(lambda (x)
               (let ([y (car x)])
-                (list (cdr x) y (car x) y)))
+                (let ([a (cdr x)])
+                  (list a y (car x) y))))
            '(lambda (x)
-             (let ([y (car x)])
-               (list (unsafe-cdr x) y (unsafe-car x) y))))
+              (let ([y (car x)])
+                (let ([a (unsafe-cdr x)])
+                  (list a y (unsafe-car x) y)))))
 
 ;; don't duplicate an operation by moving it into a lambda':
 (test-comp '(lambda (x)
@@ -3103,7 +3122,8 @@
               (f)
               (list x))
            #f)
-(test-comp '(lambda (f x)
+(test-comp #:except 'chez-scheme
+           '(lambda (f x)
               (let ([y (list x)])
                 (random)
                 y))

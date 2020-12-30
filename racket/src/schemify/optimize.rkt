@@ -6,6 +6,8 @@
          "find-known.rkt"
          "mutated-state.rkt"
          "literal.rkt"
+         "lambda.rkt"
+         "simple.rkt"
          "fold.rkt")
 
 (provide optimize
@@ -28,26 +30,47 @@
          `,(not (unwrap t))
          v)]
     [`(procedure? ,e)
-     (define u (unwrap e))
      (cond
-       [(symbol? u)
-        (define k (find-known u prim-knowns knowns imports mutated))
-        (if (known-procedure? k)
-            '#t
-            v)]
-       [else v])]
-    [`(procedure-arity-includes? ,e ,n)
-     (define u (unwrap e))
+       [(lambda? e)
+        (define-values (lam inlinable?) (extract-lambda e))
+        (if inlinable?
+            #t
+            `(begin ,e #t))]
+       [else
+        (define u (unwrap e))
+        (cond
+          [(symbol? u)
+           (define k (find-known u prim-knowns knowns imports mutated))
+           (if (known-procedure? k)
+               '#t
+               v)]
+          [else v])])]
+    [`(procedure-arity-includes? ,e ,n . ,opt)
      (define u-n (unwrap n))
      (cond
-       [(and (symbol? u)
-             (exact-nonnegative-integer? n))
-        (define k (find-known u prim-knowns knowns imports mutated))
-        (if (and (known-procedure? k)
-                 (bitwise-bit-set? (known-procedure-arity-mask k) u-n))
-            '#t
-            v)]
+       [(and (exact-nonnegative-integer? n)
+             (or (null? opt)
+                 (and (null? (cdr opt))
+                      (literal? (car opt)))))
+        (cond
+          [(lambda? e)
+           (define-values (lam inlinable?) (extract-lambda e))
+           (define inc? (bitwise-bit-set? (lambda-arity-mask lam) n))
+           (if inlinable?
+               inc?
+               `(begin ,e ,inc?))]
+          [else
+           (define u (unwrap e))
+           (cond
+             [(symbol? u)
+              (define k (find-known u prim-knowns knowns imports mutated))
+              (if (known-procedure? k)
+                  (bitwise-bit-set? (known-procedure-arity-mask k) u-n)
+                  v)]
+             [else v])])]
        [else v])]
+    [`(procedure-specialize ,e)
+     (if (lambda? e) e v)]
     [`(,rator . ,rands)
      (define u-rator (unwrap rator))
      (define k (and (symbol? u-rator) (hash-ref prim-knowns u-rator #f)))

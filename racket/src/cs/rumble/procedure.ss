@@ -31,7 +31,10 @@
 (define (procedure? v)
   (or (#%procedure? v)
       (and (record? v)
-           (not (eq? (struct-property-ref prop:procedure (record-rtd v) none) none)))))
+           (#%$app/no-inline struct-procedure? v))))
+
+(define (struct-procedure? v)
+  (not (eq? (struct-property-ref prop:procedure (record-rtd v) none) none)))
 
 (define/who (procedure-specialize proc)
   (check who procedure? proc)
