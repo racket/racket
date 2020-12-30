@@ -20,7 +20,8 @@
                   (proc)))
   (void))
 
-(struct os-semaphore ([count #:mutable] mutex condition))
+(struct os-semaphore ([count #:mutable] mutex condition)
+  #:authentic)
 
 (define/who (unsafe-make-os-semaphore)
   (unless threaded? (raise-unsupported who))

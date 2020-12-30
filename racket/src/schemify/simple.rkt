@@ -107,15 +107,25 @@
                (let ([v (or (hash-ref-either knowns imports proc)
                             (hash-ref prim-knowns proc #f))])
                  (and (if pure?
-                          (and (if no-alloc?
-                                   (known-procedure/pure? v)
-                                   (or (known-procedure/allocates? v)
-                                       (and unsafe-mode?
-                                            (known-accessor? v))))
+                          (and (or (if no-alloc?
+                                       (known-procedure/pure? v)
+                                       (known-procedure/allocates? v))
+                                   ;; in unsafe mode, we can assume no constract error:
+                                   (and unsafe-mode?
+                                        (known-field-accessor? v)
+                                        (known-field-accessor-authentic? v)
+                                        (known-field-accessor-known-immutable? v)))
                                (returns 1))
-                          (and (or (known-procedure/no-prompt? v)
-                                   (known-procedure/no-prompt/multi? v))
-                               (eqv? result-arity #f)))
+                          (or (and (known-procedure/no-prompt? v)
+                                   (returns 1))
+                              (and (known-procedure/no-prompt/multi? v)
+                                   (eqv? result-arity #f))
+                              (and (known-field-accessor? v)
+                                   (known-field-accessor-authentic? v)
+                                   (returns 1))
+                              (and (known-field-mutator? v)
+                                   (known-field-mutator-authentic? v)
+                                   (returns 1))))
                       (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
                (simple-mutated-state? (hash-ref mutated proc #f))
                (for/and ([arg (in-list args)])

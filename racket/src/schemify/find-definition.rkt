@@ -45,9 +45,10 @@
                                 (if (struct-type-info-pure-constructor? info)
                                     (known-struct-constructor (arithmetic-shift 1 (struct-type-info-field-count info)) type struct:s)
                                     a-known-constant))]
+              [authentic? (struct-type-info-authentic? info)]
               [knowns (hash-set knowns
                                 (unwrap s?)
-                                (known-struct-predicate 2 type struct:s (struct-type-info-authentic? info)))]
+                                (known-struct-predicate 2 type struct:s authentic?))]
               [knowns
                (let* ([immediate-count (struct-type-info-immediate-field-count info)]
                       [parent-count (- (struct-type-info-field-count info)
@@ -62,10 +63,14 @@
                                (cond
                                  [(and (wrap-eq? make 'make-struct-field-accessor)
                                        (wrap-eq? ref-or-set -ref))
-                                  (hash-set knowns (unwrap id) (known-field-accessor 2 type struct:s (+ parent-count pos)))]
+                                  (define immutable? (memv pos (or (struct-type-info-prefab-immutables info)
+                                                                   (struct-type-info-non-prefab-immutables info)
+                                                                   '())))
+                                  (hash-set knowns (unwrap id) (known-field-accessor 2 type struct:s authentic? (+ parent-count pos)
+                                                                                     immutable?))]
                                  [(and (wrap-eq? make 'make-struct-field-mutator)
                                        (wrap-eq? ref-or-set -set!))
-                                  (hash-set knowns (unwrap id) (known-field-mutator 4 type struct:s (+ parent-count pos)))]
+                                  (hash-set knowns (unwrap id) (known-field-mutator 4 type struct:s authentic? (+ parent-count pos)))]
                                  [else knowns]))
                           knowns)]
                      [`,_ knowns])))])

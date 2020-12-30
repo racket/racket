@@ -2027,19 +2027,19 @@
     (if (struct-type? struct:known-accessor)
       struct:known-accessor
       (check-struct-type 'struct struct:known-accessor))
-    2
+    4
     0
     #f
-    '(0 1))
+    '(0 1 2 3))
    #f
    #f
-   2
-   3))
-(define effect_1804
+   4
+   15))
+(define effect_2706
   (struct-type-install-properties!
    struct:known-field-accessor
    'known-field-accessor
-   2
+   4
    0
    (if (struct-type? struct:known-accessor)
      struct:known-accessor
@@ -2047,7 +2047,7 @@
    null
    'prefab
    #f
-   '(0 1)
+   '(0 1 2 3)
    #f
    'known-field-accessor))
 (define known-field-accessor
@@ -2087,24 +2087,60 @@
          s
          'known-field-accessor
          'type-id))))))
-(define known-field-accessor-pos_2286
+(define known-field-accessor-authentic?_2286
+  (|#%name|
+   known-field-accessor-authentic?
+   (record-accessor struct:known-field-accessor 1)))
+(define known-field-accessor-authentic?
+  (|#%name|
+   known-field-accessor-authentic?
+   (lambda (s)
+     (if (known-field-accessor?_2878 s)
+       (known-field-accessor-authentic?_2286 s)
+       ($value
+        (impersonate-ref
+         known-field-accessor-authentic?_2286
+         struct:known-field-accessor
+         1
+         s
+         'known-field-accessor
+         'authentic?))))))
+(define known-field-accessor-pos_2482
   (|#%name|
    known-field-accessor-pos
-   (record-accessor struct:known-field-accessor 1)))
+   (record-accessor struct:known-field-accessor 2)))
 (define known-field-accessor-pos
   (|#%name|
    known-field-accessor-pos
    (lambda (s)
      (if (known-field-accessor?_2878 s)
-       (known-field-accessor-pos_2286 s)
+       (known-field-accessor-pos_2482 s)
        ($value
         (impersonate-ref
-         known-field-accessor-pos_2286
+         known-field-accessor-pos_2482
          struct:known-field-accessor
-         1
+         2
          s
          'known-field-accessor
          'pos))))))
+(define known-field-accessor-known-immutable?_2377
+  (|#%name|
+   known-field-accessor-known-immutable?
+   (record-accessor struct:known-field-accessor 3)))
+(define known-field-accessor-known-immutable?
+  (|#%name|
+   known-field-accessor-known-immutable?
+   (lambda (s)
+     (if (known-field-accessor?_2878 s)
+       (known-field-accessor-known-immutable?_2377 s)
+       ($value
+        (impersonate-ref
+         known-field-accessor-known-immutable?_2377
+         struct:known-field-accessor
+         3
+         s
+         'known-field-accessor
+         'known-immutable?))))))
 (define struct:known-field-mutator
   (make-record-type-descriptor*
    'known-field-mutator
@@ -2116,19 +2152,19 @@
     (if (struct-type? struct:known-mutator)
       struct:known-mutator
       (check-struct-type 'struct struct:known-mutator))
-    2
+    3
     0
     #f
-    '(0 1))
+    '(0 1 2))
    #f
    #f
-   2
-   3))
-(define effect_2511
+   3
+   7))
+(define effect_3046
   (struct-type-install-properties!
    struct:known-field-mutator
    'known-field-mutator
-   2
+   3
    0
    (if (struct-type? struct:known-mutator)
      struct:known-mutator
@@ -2136,7 +2172,7 @@
    null
    'prefab
    #f
-   '(0 1)
+   '(0 1 2)
    #f
    'known-field-mutator))
 (define known-field-mutator
@@ -2176,21 +2212,39 @@
          s
          'known-field-mutator
          'type-id))))))
-(define known-field-mutator-pos_2735
+(define known-field-mutator-authentic?_2735
+  (|#%name|
+   known-field-mutator-authentic?
+   (record-accessor struct:known-field-mutator 1)))
+(define known-field-mutator-authentic?
+  (|#%name|
+   known-field-mutator-authentic?
+   (lambda (s)
+     (if (known-field-mutator?_2222 s)
+       (known-field-mutator-authentic?_2735 s)
+       ($value
+        (impersonate-ref
+         known-field-mutator-authentic?_2735
+         struct:known-field-mutator
+         1
+         s
+         'known-field-mutator
+         'authentic?))))))
+(define known-field-mutator-pos_2749
   (|#%name|
    known-field-mutator-pos
-   (record-accessor struct:known-field-mutator 1)))
+   (record-accessor struct:known-field-mutator 2)))
 (define known-field-mutator-pos
   (|#%name|
    known-field-mutator-pos
    (lambda (s)
      (if (known-field-mutator?_2222 s)
-       (known-field-mutator-pos_2735 s)
+       (known-field-mutator-pos_2749 s)
        ($value
         (impersonate-ref
-         known-field-mutator-pos_2735
+         known-field-mutator-pos_2749
          struct:known-field-mutator
-         1
+         2
          s
          'known-field-mutator
          'pos))))))

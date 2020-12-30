@@ -277,7 +277,9 @@
         (known-field-accessor/need-imports (known-procedure-arity-mask k)
                                            (known-accessor-type k)
                                            (known-field-accessor-type-id k)
+                                           (known-field-accessor-authentic? k)
                                            (known-field-accessor-pos k)
+                                           (known-field-accessor-known-immutable? k)
                                            (needed->list needed))]
        [else
         (known-accessor (known-procedure-arity-mask k)
@@ -289,6 +291,7 @@
         (known-field-mutator/need-imports (known-procedure-arity-mask k)
                                           (known-mutator-type k)
                                           (known-field-mutator-type-id k)
+                                          (known-field-mutator-authentic? k)
                                           (known-field-mutator-pos k)
                                           (needed->list needed))]
        [else

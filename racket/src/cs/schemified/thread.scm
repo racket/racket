@@ -1090,10 +1090,12 @@
   (lambda (q_0 n_0)
     (begin
       (if (node-prev$1 n_0)
-        (set-node-next!$1 (node-prev$1 n_0) (node-next$1 n_0))
+        (let ((app_0 (node-prev$1 n_0)))
+          (set-node-next!$1 app_0 (node-next$1 n_0)))
         (set-queue-start! q_0 (node-next$1 n_0)))
       (if (node-next$1 n_0)
-        (set-node-prev!$1 (node-next$1 n_0) (node-prev$1 n_0))
+        (let ((app_0 (node-next$1 n_0)))
+          (set-node-prev!$1 app_0 (node-prev$1 n_0)))
         (set-queue-end! q_0 (node-prev$1 n_0))))))
 (define internal-error
   (lambda (s_0)
@@ -1333,24 +1335,18 @@
         (if (|#%app| <?_0 (node-key t_0) key_0)
           (insert-to t_0 key_0 val_0 <?_0 node-right node-left reverse-combine)
           (if (node?$1 t_0)
-            (node1.1$1
-             (node-key t_0)
-             val_0
-             (node-height t_0)
-             (node-left t_0)
-             (node-right t_0))
+            (let ((app_0 (node-key t_0)))
+              (let ((app_1 (node-height t_0)))
+                (let ((app_2 (node-left t_0)))
+                  (node1.1$1 app_0 val_0 app_1 app_2 (node-right t_0)))))
             (raise-argument-error 'struct-copy "node?" t_0)))))))
 (define insert-to
   (lambda (t_0 new-key_0 new-val_0 <?_0 node-to_0 node-other_0 comb_0)
     (let ((new-to_0 (insert (|#%app| node-to_0 t_0) new-key_0 new-val_0 <?_0)))
       (let ((new-other_0 (|#%app| node-other_0 t_0)))
         (let ((new-t_0
-               (|#%app|
-                comb_0
-                (node-key t_0)
-                (node-val t_0)
-                new-to_0
-                new-other_0)))
+               (let ((app_0 (node-key t_0)))
+                 (|#%app| comb_0 app_0 (node-val t_0) new-to_0 new-other_0))))
           (check-rotate new-t_0 node-to_0 node-other_0 comb_0))))))
 (define check-rotate
   (lambda (new-t_0 node-to_0 node-other_0 comb_0)
@@ -1391,12 +1387,13 @@
                            comb_0
                            app_2
                            app_3
-                           (|#%app|
-                            comb_0
-                            (node-key orange_0)
-                            (node-val orange_0)
-                            A_0
-                            B_0)
+                           (let ((app_4 (node-key orange_0)))
+                             (|#%app|
+                              comb_0
+                              app_4
+                              (node-val orange_0)
+                              A_0
+                              B_0))
                            C_0)))
                       D_0)))
                  node-to_0
@@ -1485,12 +1482,12 @@
 (define min-key+value
   (lambda (t_0)
     (if (not (node-left t_0))
-      (values (node-key t_0) (node-val t_0))
+      (let ((app_0 (node-key t_0))) (values app_0 (node-val t_0)))
       (min-key+value (node-left t_0)))))
 (define max-key+value
   (lambda (t_0)
     (if (not (node-right t_0))
-      (values (node-key t_0) (node-val t_0))
+      (let ((app_0 (node-key t_0))) (values app_0 (node-val t_0)))
       (max-key+value (node-right t_0)))))
 (define struct:sandman
   (make-record-type-descriptor*
@@ -4504,10 +4501,12 @@
       (begin
         (begin-unsafe (void))
         (if (node-next n_0)
-          (set-node-prev! (node-next n_0) (node-prev n_0))
+          (let ((app_0 (node-next n_0)))
+            (set-node-prev! app_0 (node-prev n_0)))
           (set-thread-group-chain-end! parent_0 (node-prev n_0)))
         (if (node-prev n_0)
-          (set-node-next! (node-prev n_0) (node-next n_0))
+          (let ((app_0 (node-prev n_0)))
+            (set-node-next! app_0 (node-next n_0)))
           (set-thread-group-chain-start! parent_0 (node-next n_0)))
         (if (eq? n_0 (thread-group-chain parent_0))
           (set-thread-group-chain! parent_0 (node-next n_0))
@@ -5160,15 +5159,14 @@
                         (|#%app| host:make-will-executor void))
                       #f)))
                (begin
-                 (let ((app_0 (custodian-children cust14_0)))
-                   (hash-set!
-                    app_0
-                    obj15_0
-                    (if weak?7_0
-                      callback16_0
-                      (if at-exit?6_0
-                        (at-exit-callback3.1 callback16_0 we_0)
-                        (willed-callback2.1 callback16_0 we_0)))))
+                 (hash-set!
+                  (custodian-children cust14_0)
+                  obj15_0
+                  (if weak?7_0
+                    callback16_0
+                    (if at-exit?6_0
+                      (at-exit-callback3.1 callback16_0 we_0)
+                      (willed-callback2.1 callback16_0 we_0))))
                  (if we_0
                    (|#%app| host:will-register we_0 obj15_0 void)
                    (void))
@@ -5338,9 +5336,8 @@
                     (hash-clear! (custodian-children c_0))
                     (set-custodian-post-shutdown!
                      parent_0
-                     (append
-                      (custodian-post-shutdown c_0)
-                      (custodian-post-shutdown parent_0)))
+                     (let ((app_0 (custodian-post-shutdown c_0)))
+                       (append app_0 (custodian-post-shutdown parent_0))))
                     (set-custodian-post-shutdown! c_0 null)
                     (if gc-roots_0 (hash-clear! gc-roots_0) (void))
                     (check-limit-custodian parent_0)))))))))))
@@ -5905,7 +5902,7 @@
 (define memory-limit-lock (|#%app| host:make-mutex))
 (define compute-memory-sizes 0)
 (define computed-memory-sizes? #f)
-(define effect_2285
+(define effect_2497
   (begin
     (void
      (|#%app|
@@ -5942,162 +5939,160 @@
                                        (if gc-roots_0
                                          (hash-keys gc-roots_0)
                                          null)))
-                                  (let ((pl_1 (custodian-place c_0)))
-                                    (let ((host-regs_0
+                                  (let ((host-regs_0
+                                         (let ((pl_1 (custodian-place c_0)))
                                            (if (eq? (place-custodian pl_1) c_0)
                                              (list pl_1)
-                                             null)))
-                                      (letrec*
-                                       ((loop_0
-                                         (|#%name|
-                                          loop
-                                          (lambda (roots_1
-                                                   local-accum-roots_0
-                                                   accum-roots_1
-                                                   accum-custs_1)
-                                            (begin
-                                              (if (null? roots_1)
-                                                (let ((local-custs_0
-                                                       (reverse$1
-                                                        (begin
-                                                          (letrec*
-                                                           ((for-loop_0
-                                                             (|#%name|
-                                                              for-loop
-                                                              (lambda (fold-var_0
-                                                                       lst_0)
-                                                                (begin
-                                                                  (if (pair?
-                                                                       lst_0)
-                                                                    (let ((root_0
-                                                                           (unsafe-car
+                                             null))))
+                                    (letrec*
+                                     ((loop_0
+                                       (|#%name|
+                                        loop
+                                        (lambda (roots_1
+                                                 local-accum-roots_0
+                                                 accum-roots_1
+                                                 accum-custs_1)
+                                          (begin
+                                            (if (null? roots_1)
+                                              (let ((local-custs_0
+                                                     (reverse$1
+                                                      (begin
+                                                        (letrec*
+                                                         ((for-loop_0
+                                                           (|#%name|
+                                                            for-loop
+                                                            (lambda (fold-var_0
+                                                                     lst_0)
+                                                              (begin
+                                                                (if (pair?
+                                                                     lst_0)
+                                                                  (let ((root_0
+                                                                         (unsafe-car
+                                                                          lst_0)))
+                                                                    (let ((rest_0
+                                                                           (unsafe-cdr
                                                                             lst_0)))
-                                                                      (let ((rest_0
-                                                                             (unsafe-cdr
-                                                                              lst_0)))
-                                                                        (let ((fold-var_1
-                                                                               (cons
-                                                                                c_0
-                                                                                fold-var_0)))
-                                                                          (let ((fold-var_2
-                                                                                 (values
-                                                                                  fold-var_1)))
-                                                                            (for-loop_0
-                                                                             fold-var_2
-                                                                             rest_0)))))
-                                                                    fold-var_0))))))
-                                                           (for-loop_0
-                                                            null
-                                                            local-accum-roots_0))))))
-                                                  (let ((app_0
-                                                         (append
-                                                          (reverse$1
-                                                           local-accum-roots_0)
-                                                          accum-roots_1)))
-                                                    (values
-                                                     app_0
-                                                     (append
-                                                      local-custs_0
-                                                      accum-custs_1))))
-                                                (if (1/custodian?
-                                                     (car roots_1))
-                                                  (call-with-values
-                                                   (lambda ()
-                                                     (c-loop_0
-                                                      (car roots_1)
-                                                      pl_0
-                                                      accum-roots_1
-                                                      accum-custs_1))
-                                                   (case-lambda
-                                                    ((new-roots_0 new-custs_0)
-                                                     (loop_0
-                                                      (cdr roots_1)
-                                                      local-accum-roots_0
-                                                      new-roots_0
-                                                      new-custs_0))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args))))
-                                                  (if (1/place? (car roots_1))
-                                                    (let ((pl_2 (car roots_1)))
-                                                      (let ((c_1
-                                                             (place-custodian
-                                                              pl_2)))
-                                                        (begin
-                                                          (let ((app_0
-                                                                 future-scheduler-add-thread-custodian-mapping!))
-                                                            (|#%app|
-                                                             app_0
-                                                             (place-future-scheduler
-                                                              pl_2)
-                                                             custodian-future-threads_0))
-                                                          (call-with-values
-                                                           (lambda ()
-                                                             (c-loop_0
-                                                              c_1
-                                                              pl_2
-                                                              accum-roots_1
-                                                              accum-custs_1))
-                                                           (case-lambda
-                                                            ((new-roots_0
-                                                              new-custs_0)
-                                                             (loop_0
-                                                              (cdr roots_1)
-                                                              local-accum-roots_0
-                                                              new-roots_0
-                                                              new-custs_0))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))))
-                                                    (let ((root_0
-                                                           (car roots_1)))
-                                                      (let ((new-local-roots_0
-                                                             (cons
-                                                              root_0
-                                                              local-accum-roots_0)))
-                                                        (let ((more-local-roots_0
-                                                               (if (eq?
-                                                                    root_0
-                                                                    (place-current-thread
-                                                                     pl_0))
-                                                                 (let ((more-local-roots_0
-                                                                        (cons
-                                                                         (place-host-thread
-                                                                          pl_0)
-                                                                         new-local-roots_0)))
-                                                                   (if (eq?
-                                                                        pl_0
-                                                                        (unsafe-place-local-ref
-                                                                         cell.1$2))
-                                                                     (append
-                                                                      k-roots_0
-                                                                      more-local-roots_0)
-                                                                     more-local-roots_0))
-                                                                 new-local-roots_0)))
-                                                          (let ((even-more-local-roots_0
-                                                                 (let ((c2_0
-                                                                        (|#%app|
-                                                                         thread-engine-for-roots
-                                                                         root_0)))
-                                                                   (if c2_0
-                                                                     (append
+                                                                      (let ((fold-var_1
+                                                                             (cons
+                                                                              c_0
+                                                                              fold-var_0)))
+                                                                        (let ((fold-var_2
+                                                                               (values
+                                                                                fold-var_1)))
+                                                                          (for-loop_0
+                                                                           fold-var_2
+                                                                           rest_0)))))
+                                                                  fold-var_0))))))
+                                                         (for-loop_0
+                                                          null
+                                                          local-accum-roots_0))))))
+                                                (let ((app_0
+                                                       (append
+                                                        (reverse$1
+                                                         local-accum-roots_0)
+                                                        accum-roots_1)))
+                                                  (values
+                                                   app_0
+                                                   (append
+                                                    local-custs_0
+                                                    accum-custs_1))))
+                                              (if (1/custodian? (car roots_1))
+                                                (call-with-values
+                                                 (lambda ()
+                                                   (c-loop_0
+                                                    (car roots_1)
+                                                    pl_0
+                                                    accum-roots_1
+                                                    accum-custs_1))
+                                                 (case-lambda
+                                                  ((new-roots_0 new-custs_0)
+                                                   (loop_0
+                                                    (cdr roots_1)
+                                                    local-accum-roots_0
+                                                    new-roots_0
+                                                    new-custs_0))
+                                                  (args
+                                                   (raise-binding-result-arity-error
+                                                    2
+                                                    args))))
+                                                (if (1/place? (car roots_1))
+                                                  (let ((pl_1 (car roots_1)))
+                                                    (let ((c_1
+                                                           (place-custodian
+                                                            pl_1)))
+                                                      (begin
+                                                        (let ((app_0
+                                                               future-scheduler-add-thread-custodian-mapping!))
+                                                          (|#%app|
+                                                           app_0
+                                                           (place-future-scheduler
+                                                            pl_1)
+                                                           custodian-future-threads_0))
+                                                        (call-with-values
+                                                         (lambda ()
+                                                           (c-loop_0
+                                                            c_1
+                                                            pl_1
+                                                            accum-roots_1
+                                                            accum-custs_1))
+                                                         (case-lambda
+                                                          ((new-roots_0
+                                                            new-custs_0)
+                                                           (loop_0
+                                                            (cdr roots_1)
+                                                            local-accum-roots_0
+                                                            new-roots_0
+                                                            new-custs_0))
+                                                          (args
+                                                           (raise-binding-result-arity-error
+                                                            2
+                                                            args)))))))
+                                                  (let ((root_0 (car roots_1)))
+                                                    (let ((new-local-roots_0
+                                                           (cons
+                                                            root_0
+                                                            local-accum-roots_0)))
+                                                      (let ((more-local-roots_0
+                                                             (if (eq?
+                                                                  root_0
+                                                                  (place-current-thread
+                                                                   pl_0))
+                                                               (let ((more-local-roots_0
+                                                                      (cons
+                                                                       (place-host-thread
+                                                                        pl_0)
+                                                                       new-local-roots_0)))
+                                                                 (if (eq?
+                                                                      pl_0
+                                                                      (unsafe-place-local-ref
+                                                                       cell.1$2))
+                                                                   (append
+                                                                    k-roots_0
+                                                                    more-local-roots_0)
+                                                                   more-local-roots_0))
+                                                               new-local-roots_0)))
+                                                        (let ((even-more-local-roots_0
+                                                               (let ((c2_0
                                                                       (|#%app|
-                                                                       engine-roots
-                                                                       c2_0)
-                                                                      more-local-roots_0)
-                                                                     more-local-roots_0))))
-                                                            (loop_0
-                                                             (cdr roots_1)
-                                                             even-more-local-roots_0
-                                                             accum-roots_1
-                                                             accum-custs_1)))))))))))))
-                                       (loop_0
-                                        roots_0
-                                        (cons c_0 host-regs_0)
-                                        accum-roots_0
-                                        accum-custs_0))))))))))))
+                                                                       thread-engine-for-roots
+                                                                       root_0)))
+                                                                 (if c2_0
+                                                                   (append
+                                                                    (|#%app|
+                                                                     engine-roots
+                                                                     c2_0)
+                                                                    more-local-roots_0)
+                                                                   more-local-roots_0))))
+                                                          (loop_0
+                                                           (cdr roots_1)
+                                                           even-more-local-roots_0
+                                                           accum-roots_1
+                                                           accum-custs_1)))))))))))))
+                                     (loop_0
+                                      roots_0
+                                      (cons c_0 host-regs_0)
+                                      accum-roots_0
+                                      accum-custs_0)))))))))))
                      (c-loop_0
                       initial-place-root-custodian
                       initial-place
@@ -6189,11 +6184,13 @@
                                                                                        (begin
                                                                                          (set-custodian-memory-use!
                                                                                           c_0
-                                                                                          (+
-                                                                                           (custodian-memory-use
-                                                                                            next-c_0)
-                                                                                           (custodian-memory-use
-                                                                                            c_0)))
+                                                                                          (let ((app_0
+                                                                                                 (custodian-memory-use
+                                                                                                  next-c_0)))
+                                                                                            (+
+                                                                                             app_0
+                                                                                             (custodian-memory-use
+                                                                                              c_0))))
                                                                                          (if root-any-limits?_0
                                                                                            root-any-limits?_0
                                                                                            any-limits?_0))))))
@@ -6635,13 +6632,13 @@
       (if b_0 (if (unbox b_0) #t #f) #f))))
 (define set-thread-suspended?!
   (lambda (t_0 suspended?_0)
-    (let ((or-part_0 (thread-suspended-box t_0)))
-      (let ((b_0
+    (let ((b_0
+           (let ((or-part_0 (thread-suspended-box t_0)))
              (if or-part_0
                or-part_0
                (let ((b_0 (box #f)))
-                 (begin (set-thread-suspended-box! t_0 b_0) b_0)))))
-        (set-box! b_0 (if suspended?_0 t_0 #f))))))
+                 (begin (set-thread-suspended-box! t_0 b_0) b_0))))))
+      (set-box! b_0 (if suspended?_0 t_0 #f)))))
 (define 1/thread-running?
   (|#%name|
    thread-running?
@@ -7228,9 +7225,10 @@
                      (begin
                        (set-thread-suspended?! b-t_0 (thread-suspended? b-t_0))
                        (list
-                        (transitive-resume16.1
-                         (make-weak-box b-t_0)
-                         (thread-suspended-box b-t_0))))
+                        (let ((app_0 (make-weak-box b-t_0)))
+                          (transitive-resume16.1
+                           app_0
+                           (thread-suspended-box b-t_0)))))
                      (let ((o-t_0
                             (weak-box-value
                              (transitive-resume-weak-box (car l_0)))))
@@ -7272,7 +7270,8 @@
     (let ((t_0 (current-thread/in-atomic)))
       (set-thread-suspend+resume-callbacks!
        t_0
-       (cons (cons s-cb_0 r-cb_0) (thread-suspend+resume-callbacks t_0))))))
+       (let ((app_0 (cons s-cb_0 r-cb_0)))
+         (cons app_0 (thread-suspend+resume-callbacks t_0)))))))
 (define thread-pop-suspend+resume-callbacks!
   (lambda ()
     (let ((t_0 (current-thread/in-atomic)))
@@ -7619,24 +7618,24 @@
                             #f)
                           #f)
                         #f)
-                    (let ((tmp_0 (thread-pending-break t_0)))
-                      (let ((exn:break*_0
+                    (let ((exn:break*_0
+                           (let ((tmp_0 (thread-pending-break t_0)))
                              (if (eq? tmp_0 'hang-up)
                                exn:break:hang-up/non-engine
                                (if (eq? tmp_0 'terminate)
                                  exn:break:terminate/non-engine
-                                 exn:break/non-engine))))
-                        (begin
-                          (set-thread-pending-break! t_0 #f)
-                          (lambda ()
-                            (call-with-escape-continuation
-                             (lambda (k_0)
-                               (raise
-                                (|#%app|
-                                 exn:break*_0
-                                 "user break"
-                                 (current-continuation-marks)
-                                 k_0))))))))
+                                 exn:break/non-engine)))))
+                      (begin
+                        (set-thread-pending-break! t_0 #f)
+                        (lambda ()
+                          (call-with-escape-continuation
+                           (lambda (k_0)
+                             (raise
+                              (|#%app|
+                               exn:break*_0
+                               "user break"
+                               (current-continuation-marks)
+                               k_0)))))))
                     void)
                   (end-atomic))))
              (void))))))))
@@ -8041,7 +8040,7 @@
          'put-queue))))))
 (define struct:channel-put-evt*
   (make-record-type-descriptor* 'channel-put-evt #f #f #f #f 2 0))
-(define effect_2675
+(define effect_2694
   (struct-type-install-properties!
    struct:channel-put-evt*
    'channel-put-evt
@@ -8053,11 +8052,12 @@
      1/prop:evt
      (poller2.1
       (lambda (cp_0 poll-ctx_0)
-        (channel-put/poll
-         (channel-put-evt*-ch cp_0)
-         (channel-put-evt*-v cp_0)
-         cp_0
-         poll-ctx_0)))))
+        (let ((app_0 (channel-put-evt*-ch cp_0)))
+          (channel-put/poll
+           app_0
+           (channel-put-evt*-v cp_0)
+           cp_0
+           poll-ctx_0))))))
    (current-inspector)
    #f
    '(0 1)
@@ -8239,37 +8239,36 @@
             (values #f ch_0)
             (let ((b_0 (box #f)))
               (let ((gq_0 (channel-get-queue ch_0)))
-                (let ((app_0 (poll-ctx-select-proc poll-ctx_0)))
-                  (let ((gw_0
-                         (channel-select-waiter3.1
-                          app_0
-                          (current-thread/in-atomic))))
-                    (let ((n_0 (queue-add! gq_0 (cons gw_0 b_0))))
-                      (values
-                       #f
-                       (control-state-evt9.1
-                        the-async-evt
-                        (lambda (v_0) (unbox b_0))
-                        (lambda () (queue-remove-node! gq_0 n_0))
-                        void
-                        (lambda ()
-                          (let ((pw+v_1
-                                 (queue-fremove!
-                                  pq_0
-                                  not-matching-select-waiter)))
-                            (if pw+v_1
-                              (begin
-                                (let ((w_0 (car pw+v_1)))
-                                  (begin-unsafe
-                                   (|#%app|
-                                    (waiter-methods-resume (waiter-ref w_0))
-                                    w_0
-                                    (void))))
-                                (set-box! b_0 (cdr pw+v_1))
-                                (values #t #t))
-                              (begin
-                                (set! n_0 (queue-add! gq_0 (cons gw_0 b_0)))
-                                (values #f #f))))))))))))))))))
+                (let ((gw_0
+                       (channel-select-waiter3.1
+                        (poll-ctx-select-proc poll-ctx_0)
+                        (current-thread/in-atomic))))
+                  (let ((n_0 (queue-add! gq_0 (cons gw_0 b_0))))
+                    (values
+                     #f
+                     (control-state-evt9.1
+                      the-async-evt
+                      (lambda (v_0) (unbox b_0))
+                      (lambda () (queue-remove-node! gq_0 n_0))
+                      void
+                      (lambda ()
+                        (let ((pw+v_1
+                               (queue-fremove!
+                                pq_0
+                                not-matching-select-waiter)))
+                          (if pw+v_1
+                            (begin
+                              (let ((w_0 (car pw+v_1)))
+                                (begin-unsafe
+                                 (|#%app|
+                                  (waiter-methods-resume (waiter-ref w_0))
+                                  w_0
+                                  (void))))
+                              (set-box! b_0 (cdr pw+v_1))
+                              (values #t #t))
+                            (begin
+                              (set! n_0 (queue-add! gq_0 (cons gw_0 b_0)))
+                              (values #f #f)))))))))))))))))
 (define channel-put
   (lambda (ch_0 v_0)
     (begin
@@ -8321,37 +8320,34 @@
           (if (poll-ctx-poll? poll-ctx_0)
             (values #f self_0)
             (let ((pq_0 (channel-put-queue ch_0)))
-              (let ((app_0 (poll-ctx-select-proc poll-ctx_0)))
-                (let ((pw_0
-                       (channel-select-waiter3.1
-                        app_0
-                        (current-thread/in-atomic))))
-                  (let ((n_0 (queue-add! pq_0 (cons pw_0 v_0))))
-                    (values
-                     #f
-                     (control-state-evt9.1
-                      the-async-evt
-                      (lambda (v_1) self_0)
-                      (lambda () (queue-remove-node! pq_0 n_0))
-                      void
-                      (lambda ()
-                        (let ((gw+b_1
-                               (queue-fremove!
-                                gq_0
-                                not-matching-select-waiter)))
-                          (if gw+b_1
-                            (begin
-                              (set-box! (cdr gw+b_1) v_0)
-                              (let ((w_0 (car gw+b_1)))
-                                (begin-unsafe
-                                 (|#%app|
-                                  (waiter-methods-resume (waiter-ref w_0))
-                                  w_0
-                                  v_0)))
-                              (values self_0 #t))
-                            (begin
-                              (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
-                              (values #f #f)))))))))))))))))
+              (let ((pw_0
+                     (channel-select-waiter3.1
+                      (poll-ctx-select-proc poll-ctx_0)
+                      (current-thread/in-atomic))))
+                (let ((n_0 (queue-add! pq_0 (cons pw_0 v_0))))
+                  (values
+                   #f
+                   (control-state-evt9.1
+                    the-async-evt
+                    (lambda (v_1) self_0)
+                    (lambda () (queue-remove-node! pq_0 n_0))
+                    void
+                    (lambda ()
+                      (let ((gw+b_1
+                             (queue-fremove! gq_0 not-matching-select-waiter)))
+                        (if gw+b_1
+                          (begin
+                            (set-box! (cdr gw+b_1) v_0)
+                            (let ((w_0 (car gw+b_1)))
+                              (begin-unsafe
+                               (|#%app|
+                                (waiter-methods-resume (waiter-ref w_0))
+                                w_0
+                                v_0)))
+                            (values self_0 #t))
+                          (begin
+                            (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
+                            (values #f #f))))))))))))))))
 (define 1/channel-put-evt
   (|#%name|
    channel-put-evt
@@ -8374,7 +8370,8 @@
           (|#%app| channel-put_0 old-ch_0 new-v_0))))))
 (define channel-put-do
   (lambda (v_0)
-    (channel-put (channel-put-evt*-ch v_0) (channel-put-evt*-v v_0))))
+    (let ((app_0 (channel-put-evt*-ch v_0)))
+      (channel-put app_0 (channel-put-evt*-v v_0)))))
 (define not-matching-select-waiter
   (lambda (w+b/v_0)
     (let ((w_0 (car w+b/v_0)))
@@ -9628,10 +9625,12 @@
   (lambda (sr_0 s_0)
     (begin
       (if (syncer-prev sr_0)
-        (set-syncer-next! (syncer-prev sr_0) (syncer-next sr_0))
+        (let ((app_0 (syncer-prev sr_0)))
+          (set-syncer-next! app_0 (syncer-next sr_0)))
         (set-syncing-syncers! s_0 (syncer-next sr_0)))
       (if (syncer-next sr_0)
-        (set-syncer-prev! (syncer-next sr_0) (syncer-prev sr_0))
+        (let ((app_0 (syncer-next sr_0)))
+          (set-syncer-prev! app_0 (syncer-prev sr_0)))
         (void)))))
 (define syncer-replace!
   (lambda (sr_0 new-syncers_0 s_0)
@@ -9812,15 +9811,23 @@
                                                     app_0
                                                     (let ((app_1
                                                            evts->syncers))
-                                                      (|#%app|
-                                                       app_1
-                                                       #f
-                                                       (choice-evt-evts
-                                                        new-evt_0)
-                                                       (syncer-wraps sr_0)
-                                                       (syncer-commits sr_0)
-                                                       (syncer-abandons
-                                                        sr_0)))))))
+                                                      (let ((app_2
+                                                             (choice-evt-evts
+                                                              new-evt_0)))
+                                                        (let ((app_3
+                                                               (syncer-wraps
+                                                                sr_0)))
+                                                          (let ((app_4
+                                                                 (syncer-commits
+                                                                  sr_0)))
+                                                            (|#%app|
+                                                             app_1
+                                                             #f
+                                                             app_2
+                                                             app_3
+                                                             app_4
+                                                             (syncer-abandons
+                                                              sr_0))))))))))
                                             (if (not new-syncers_0)
                                               (begin
                                                 (syncer-remove! sr_0 s32_0)
@@ -10294,17 +10301,17 @@
                                        (let ((ns_0 (unsafe-car lst_0)))
                                          (let ((rest_0 (unsafe-cdr lst_0)))
                                            (let ((result_1
-                                                  (syncing-selected ns_0)))
-                                             (let ((result_2
-                                                    (values result_1)))
-                                               (if (if (not
-                                                        (let ((x_0
-                                                               (list ns_0)))
-                                                          result_2))
-                                                     #t
-                                                     #f)
-                                                 (for-loop_0 result_2 rest_0)
-                                                 result_2)))))
+                                                  (let ((result_1
+                                                         (syncing-selected
+                                                          ns_0)))
+                                                    (values result_1))))
+                                             (if (if (not
+                                                      (let ((x_0 (list ns_0)))
+                                                        result_1))
+                                                   #t
+                                                   #f)
+                                               (for-loop_0 result_1 rest_0)
+                                               result_1))))
                                        result_0))))))
                               (for-loop_0 #f nss_0)))))
                      void
@@ -10488,24 +10495,24 @@
            (if (procedure? next_0)
              (void)
              (raise-argument-error 'replace-evt "procedure?" next_0))
-           (let ((orig-evt_0 unsafe-undefined))
-             (set! orig-evt_0
-               (replacing-evt34.1
-                (lambda ()
-                  (let ((s_0
-                         (let ((temp89_0
-                                (let ((app_0 evts->syncers))
-                                  (|#%app| app_0 'replace-evt (list evt_0)))))
-                           (make-syncing.1 #f temp89_0))))
-                    (values
-                     #f
-                     (control-state-evt9.1
-                      (nested-sync-evt35.1 s_0 next_0 orig-evt_0)
-                      values
-                      (lambda () (syncing-interrupt! s_0))
-                      (lambda () (syncing-abandon! s_0))
-                      (lambda () (syncing-retry! s_0))))))))
-             orig-evt_0)))))))
+           (letrec*
+            ((orig-evt_0
+              (replacing-evt34.1
+               (lambda ()
+                 (let ((s_0
+                        (let ((temp89_0
+                               (let ((app_0 evts->syncers))
+                                 (|#%app| app_0 'replace-evt (list evt_0)))))
+                          (make-syncing.1 #f temp89_0))))
+                   (values
+                    #f
+                    (control-state-evt9.1
+                     (nested-sync-evt35.1 s_0 next_0 orig-evt_0)
+                     values
+                     (lambda () (syncing-interrupt! s_0))
+                     (lambda () (syncing-abandon! s_0))
+                     (lambda () (syncing-retry! s_0)))))))))
+            orig-evt_0)))))))
 (define poll-nested-sync
   (lambda (ns_0 just-poll?_0 fast-only?_0 sched-info_0)
     (let ((temp90_0 (|#%app| nested-sync-evt-s ns_0)))
@@ -11675,10 +11682,12 @@
             (if or-part_0 or-part_0 (future*-next f_0)))
         (begin
           (if (future*-prev f_0)
-            (set-future*-next! (future*-prev f_0) (future*-next f_0))
+            (let ((app_0 (future*-prev f_0)))
+              (set-future*-next! app_0 (future*-next f_0)))
             (set-scheduler-futures-head! s_0 (future*-next f_0)))
           (if (future*-next f_0)
-            (set-future*-prev! (future*-next f_0) (future*-prev f_0))
+            (let ((app_0 (future*-next f_0)))
+              (set-future*-prev! app_0 (future*-prev f_0)))
             (set-scheduler-futures-tail! s_0 (future*-prev f_0)))
           (set-future*-prev! f_0 #f)
           (set-future*-next! f_0 #f))
@@ -12302,9 +12311,10 @@
                          (if (pair? lst_0)
                            (let ((t_0 (unsafe-car lst_0)))
                              (let ((rest_0 (unsafe-cdr lst_0)))
-                               (let ((sched-info_0 (thread-sched-info t_0)))
-                                 (let ((exts_1
-                                        (let ((exts_1
+                               (let ((exts_1
+                                      (let ((exts_1
+                                             (let ((sched-info_0
+                                                    (thread-sched-info t_0)))
                                                (let ((t-exts_0
                                                       (if sched-info_0
                                                         (schedule-info-exts
@@ -12315,9 +12325,9 @@
                                                    (sandman-do-merge-external-event-sets
                                                     the-sandman)
                                                    exts_0
-                                                   t-exts_0)))))
-                                          (values exts_1))))
-                                   (for-loop_0 exts_1 rest_0)))))
+                                                   t-exts_0))))))
+                                        (values exts_1))))
+                                 (for-loop_0 exts_1 rest_0))))
                            exts_0))))))
                   (for-loop_0 sleeping-exts_0 ts_0)))))
           (begin
@@ -13678,10 +13688,11 @@
                                                  (let ((temp12_0
                                                         (place-id
                                                          new-place_0)))
-                                                   (log-place.1
-                                                    unsafe-undefined
-                                                    temp12_0
-                                                    temp11_0)))
+                                                   (let ((temp11_1 temp11_0))
+                                                     (log-place.1
+                                                      unsafe-undefined
+                                                      temp12_0
+                                                      temp11_1))))
                                                (values
                                                 new-place_0
                                                 parent-in_0
@@ -13897,7 +13908,8 @@
                            (end-atomic)))
                      (let ((temp26_0 "reap"))
                        (let ((temp27_0 (place-id p_0)))
-                         (log-place.1 unsafe-undefined temp27_0 temp26_0)))
+                         (let ((temp26_1 temp26_0))
+                           (log-place.1 unsafe-undefined temp27_0 temp26_1))))
                      (void))
                    (void))
                  (let ((cref_0 (place-custodian-ref p_0)))
@@ -14631,18 +14643,18 @@
                      (lock-release (fsemaphore-lock fs_0))
                      (future-suspend)
                      (void))
-                   (let ((or-part_0 (fsemaphore-dep-box fs_0)))
-                     (let ((dep-box_0
+                   (let ((dep-box_0
+                          (let ((or-part_0 (fsemaphore-dep-box fs_0)))
                             (if or-part_0
                               or-part_0
                               (let ((b_0 (box #f)))
                                 (begin
                                   (set-fsemaphore-dep-box! fs_0 b_0)
-                                  b_0)))))
-                       (begin
-                         (lock-release (fsemaphore-lock fs_0))
-                         (1/sync (fsemaphore-box-evt2.1 dep-box_0))
-                         (1/fsemaphore-wait fs_0))))))
+                                  b_0))))))
+                     (begin
+                       (lock-release (fsemaphore-lock fs_0))
+                       (1/sync (fsemaphore-box-evt2.1 dep-box_0))
+                       (1/fsemaphore-wait fs_0)))))
                (begin
                  (set-fsemaphore-c! fs_0 (sub1 c_0))
                  (lock-release (fsemaphore-lock fs_0)))))))))))
@@ -14698,14 +14710,14 @@
          (void))))))
 (define struct:os-semaphore
   (make-record-type-descriptor* 'os-semaphore #f #f #f #f 3 1))
-(define effect_2794
+(define effect_3038
   (struct-type-install-properties!
    struct:os-semaphore
    'os-semaphore
    3
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(1 2)
@@ -14716,84 +14728,16 @@
    os-semaphore
    (record-constructor
     (make-record-constructor-descriptor struct:os-semaphore #f #f))))
-(define os-semaphore?_1935
-  (|#%name| os-semaphore? (record-predicate struct:os-semaphore)))
 (define os-semaphore?
-  (|#%name|
-   os-semaphore?
-   (lambda (v)
-     (if (os-semaphore?_1935 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (os-semaphore?_1935 (impersonator-val v))
-          #f))))))
-(define os-semaphore-count_2300
-  (|#%name| os-semaphore-count (record-accessor struct:os-semaphore 0)))
+  (|#%name| os-semaphore? (record-predicate struct:os-semaphore)))
 (define os-semaphore-count
-  (|#%name|
-   os-semaphore-count
-   (lambda (s)
-     (if (os-semaphore?_1935 s)
-       (os-semaphore-count_2300 s)
-       ($value
-        (impersonate-ref
-         os-semaphore-count_2300
-         struct:os-semaphore
-         0
-         s
-         'os-semaphore
-         'count))))))
-(define os-semaphore-mutex_3012
-  (|#%name| os-semaphore-mutex (record-accessor struct:os-semaphore 1)))
+  (|#%name| os-semaphore-count (record-accessor struct:os-semaphore 0)))
 (define os-semaphore-mutex
-  (|#%name|
-   os-semaphore-mutex
-   (lambda (s)
-     (if (os-semaphore?_1935 s)
-       (os-semaphore-mutex_3012 s)
-       ($value
-        (impersonate-ref
-         os-semaphore-mutex_3012
-         struct:os-semaphore
-         1
-         s
-         'os-semaphore
-         'mutex))))))
-(define os-semaphore-condition_1733
-  (|#%name| os-semaphore-condition (record-accessor struct:os-semaphore 2)))
+  (|#%name| os-semaphore-mutex (record-accessor struct:os-semaphore 1)))
 (define os-semaphore-condition
-  (|#%name|
-   os-semaphore-condition
-   (lambda (s)
-     (if (os-semaphore?_1935 s)
-       (os-semaphore-condition_1733 s)
-       ($value
-        (impersonate-ref
-         os-semaphore-condition_1733
-         struct:os-semaphore
-         2
-         s
-         'os-semaphore
-         'condition))))))
-(define set-os-semaphore-count!_2394
-  (|#%name| set-os-semaphore-count! (record-mutator struct:os-semaphore 0)))
+  (|#%name| os-semaphore-condition (record-accessor struct:os-semaphore 2)))
 (define set-os-semaphore-count!
-  (|#%name|
-   set-os-semaphore-count!
-   (lambda (s v)
-     (if (os-semaphore?_1935 s)
-       (set-os-semaphore-count!_2394 s v)
-       ($value
-        (impersonate-set!
-         set-os-semaphore-count!_2394
-         struct:os-semaphore
-         0
-         0
-         s
-         v
-         'os-semaphore
-         'count))))))
+  (|#%name| set-os-semaphore-count! (record-mutator struct:os-semaphore 0)))
 (define 1/unsafe-make-os-semaphore
   (|#%name|
    unsafe-make-os-semaphore

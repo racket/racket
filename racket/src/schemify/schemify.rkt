@@ -857,7 +857,8 @@
               (cond
                 [type-id
                  (define tmp (maybe-tmp (car args) 'v))
-                 (define sel (if unsafe-mode?
+                 (define sel (if (and unsafe-mode?
+                                      (known-field-accessor-authentic? k))
                                  `(unsafe-struct*-ref ,tmp ,(known-field-accessor-pos k))
                                  `(if (unsafe-struct? ,tmp ,(schemify type-id 'fresh))
                                       (unsafe-struct*-ref ,tmp ,(known-field-accessor-pos k))
@@ -874,7 +875,8 @@
                 [type-id
                  (define tmp (maybe-tmp (car args) 'v))
                  (define tmp-rhs (maybe-tmp (cadr args) 'rhs))
-                 (define mut (if unsafe-mode?
+                 (define mut (if (and unsafe-mode?
+                                      (known-field-mutator-authentic? k))
                                  `(unsafe-struct*-set! ,tmp ,(known-field-mutator-pos k) ,tmp-rhs)
                                  `(if (unsafe-struct? ,tmp ,(schemify type-id 'fresh))
                                       (unsafe-struct*-set! ,tmp ,(known-field-mutator-pos k) ,tmp-rhs)

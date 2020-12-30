@@ -36,8 +36,10 @@
          known-mutator known-mutator? known-mutator-type
          known-struct-constructor known-struct-constructor? known-struct-constructor-type-id
          known-struct-predicate known-struct-predicate? known-struct-predicate-type-id known-struct-predicate-authentic?
-         known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-pos
-         known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-pos
+         known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-authentic?
+         known-field-accessor-pos known-field-accessor-known-immutable?
+         known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-authentic?
+         known-field-mutator-pos
          known-struct-constructor/need-imports known-struct-constructor/need-imports? known-struct-constructor/need-imports-needed
          known-struct-predicate/need-imports known-struct-predicate/need-imports? known-struct-predicate/need-imports-needed
          known-field-accessor/need-imports known-field-accessor/need-imports? known-field-accessor/need-imports-needed
@@ -122,8 +124,8 @@
 (struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
 (struct known-struct-constructor (type-id) #:prefab #:omit-define-syntaxes #:super struct:known-constructor)
 (struct known-struct-predicate (type-id authentic?) #:prefab #:omit-define-syntaxes #:super struct:known-predicate)
-(struct known-field-accessor (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
-(struct known-field-mutator (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
+(struct known-field-accessor (type-id authentic? pos known-immutable?) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
+(struct known-field-mutator (type-id authentic? pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
 (struct known-struct-constructor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-constructor)
 (struct known-struct-predicate/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-predicate)
 (struct known-field-accessor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-accessor)
