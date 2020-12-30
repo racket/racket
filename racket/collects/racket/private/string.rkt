@@ -15,6 +15,9 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (define (real->decimal-string n [digits 2])
+    (unless (rational? n)
+      (raise-argument-error 'real->decimal-string "rational?"
+                            n))
     (unless (exact-nonnegative-integer? digits)
       (raise-argument-error 'real->decimal-string "exact-nonnegative-integer?"
                             digits))
