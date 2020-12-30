@@ -460,6 +460,11 @@
             (position-based-mutator-rtd v))
       (wrapper-procedure-data v)))
 
+(define-syntax (|#%nongenerative-uid| stx)
+  (syntax-case stx ()
+    [(_ name) #`(quote #,(datum->syntax #'name ((current-generate-id) (datum name))))]
+    [else #'#f]))
+
 ;; ----------------------------------------
 
 ;; General structure-type creation, but not called when a `schemify`

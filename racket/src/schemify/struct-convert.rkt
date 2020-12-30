@@ -12,7 +12,7 @@
          struct-convert-local)
 
 (define (struct-convert form prim-knowns knowns imports exports mutated
-                        schemify target no-prompt?)
+                        schemify target no-prompt? top?)
   (match form
     [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
         (let-values (((,struct: ,make ,?1 ,-ref ,-set!) ,mk))
@@ -64,7 +64,10 @@
            (define ,struct:s (make-record-type-descriptor* ',(struct-type-info-name sti)
                                                            ,(schemify (struct-type-info-parent sti) knowns)
                                                            ,(if (not (struct-type-info-prefab-immutables sti))
-                                                                #f
+                                                                (if (and top?
+                                                                         (aim? target 'system))
+                                                                    `(#%nongenerative-uid ,(struct-type-info-name sti))
+                                                                    #f)
                                                                 `(structure-type-lookup-prefab-uid
                                                                   ',(struct-type-info-name sti)
                                                                   ,(schemify (struct-type-info-parent sti) knowns)
@@ -199,7 +202,7 @@
      (define new-seq
        (struct-convert defn
                        prim-knowns knowns imports #f mutated
-                       schemify target #t))
+                       schemify target #t #f))
      (and new-seq
           (match new-seq
             [`(begin . ,new-seq)

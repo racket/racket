@@ -20890,6 +20890,7 @@ static const char *startup_source =
 " #%struct-predicate"
 " #%struct-field-accessor"
 " #%struct-field-mutator"
+" #%nongenerative-uid"
 " unsafe-struct?"
 " unsafe-struct"
 " raise-binding-result-arity-error"

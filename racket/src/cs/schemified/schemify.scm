@@ -4435,7 +4435,15 @@
          (let ((app_0
                 (if (string? prefix_0) prefix_0 (symbol->string prefix_0))))
            (string-append app_0 (number->string (unbox b_0)))))))))
-(define struct:import (make-record-type-descriptor* 'import #f #f #f #f 4 0))
+(define struct:import
+  (make-record-type-descriptor*
+   'import
+   #f
+   (|#%nongenerative-uid| import)
+   #f
+   #f
+   4
+   0))
 (define effect_2897
   (struct-type-install-properties!
    struct:import
@@ -4515,7 +4523,14 @@
          'import
          'ext-id))))))
 (define struct:import-group
-  (make-record-type-descriptor* 'import-group #f #f #f #f 6 60))
+  (make-record-type-descriptor*
+   'import-group
+   #f
+   (|#%nongenerative-uid| import-group)
+   #f
+   #f
+   6
+   60))
 (define effect_2514
   (struct-type-install-properties!
    struct:import-group
@@ -4877,7 +4892,15 @@
             (|#%app| inc-index!_0)
             (|#%app| add-group!_0 grp_0)
             grp_0))))))
-(define struct:export (make-record-type-descriptor* 'export #f #f #f #f 2 0))
+(define struct:export
+  (make-record-type-descriptor*
+   'export
+   #f
+   (|#%nongenerative-uid| export)
+   #f
+   #f
+   2
+   0))
 (define effect_2166
   (struct-type-install-properties!
    struct:export
@@ -4931,7 +4954,14 @@
          'export
          'ext-id))))))
 (define struct:too-early
-  (make-record-type-descriptor* 'too-early #f #f #f #f 2 0))
+  (make-record-type-descriptor*
+   'too-early
+   #f
+   (|#%nongenerative-uid| too-early)
+   #f
+   #f
+   2
+   0))
 (define effect_2681
   (struct-type-install-properties!
    struct:too-early
@@ -7233,7 +7263,14 @@
       ((k_0 im_0) k_0)
       (args (raise-binding-result-arity-error 2 args))))))
 (define struct:struct-type-info
-  (make-record-type-descriptor* 'struct-type-info #f #f #f #f 10 0))
+  (make-record-type-descriptor*
+   'struct-type-info
+   #f
+   (|#%nongenerative-uid| struct-type-info)
+   #f
+   #f
+   10
+   0))
 (define effect_3042
   (struct-type-install-properties!
    struct:struct-type-info
@@ -15868,7 +15905,8 @@
            mutated_0
            schemify_0
            target_0
-           no-prompt?_0)
+           no-prompt?_0
+           top?_0)
     (let ((hd_0
            (let ((p_0 (unwrap form_0)))
              (if (pair? p_0) (unwrap (car p_0)) #f))))
@@ -16926,7 +16964,13 @@
                                         (if (not
                                              (struct-type-info-prefab-immutables
                                               sti_0))
-                                          #f
+                                          (if (if top?_0
+                                                (eq? target_0 'system)
+                                                #f)
+                                            (list
+                                             '|#%nongenerative-uid|
+                                             (struct-type-info-name sti_0))
+                                            #f)
                                           (let ((app_2
                                                  (list
                                                   'quote
@@ -17921,7 +17965,8 @@
                       mutated11_0
                       schemify13_0
                       target3_0
-                      #t)))
+                      #t
+                      #f)))
                 (if new-seq_0
                   (let ((hd_0
                          (let ((p_0 (unwrap new-seq_0)))
@@ -25232,7 +25277,8 @@
                                                   'fresh
                                                   v_3))
                                                target_0
-                                               no-prompt?_0)))
+                                               no-prompt?_0
+                                               #t)))
                                          (if new-seq_0
                                            new-seq_0
                                            (if (let ((p_0 (unwrap v_2)))
@@ -30149,7 +30195,14 @@
              (schemify_0 v_1 wcm-state_1)))))))
      (schemify/knowns_0 knowns_0 8 wcm-state_0 v_0))))
 (define struct:convert-mode
-  (make-record-type-descriptor* 'convert-mode #f #f #f #f 4 0))
+  (make-record-type-descriptor*
+   'convert-mode
+   #f
+   (|#%nongenerative-uid| convert-mode)
+   #f
+   #f
+   4
+   0))
 (define effect_2645
   (struct-type-install-properties!
    struct:convert-mode
@@ -39282,7 +39335,14 @@
                           #t
                           (if (extflonum? q_0) #t #f))))))))))))))
 (define struct:to-unfasl
-  (make-record-type-descriptor* 'to-unfasl #f #f #f #f 3 0))
+  (make-record-type-descriptor*
+   'to-unfasl
+   #f
+   (|#%nongenerative-uid| to-unfasl)
+   #f
+   #f
+   3
+   0))
 (define effect_3053
   (struct-type-install-properties!
    struct:to-unfasl
@@ -39425,7 +39485,15 @@
      'write
      "cannot marshal value that is embedded in compiled code\n  value: ~v"
      v_0)))
-(define struct:node (make-record-type-descriptor* 'node #f #f #f #f 5 0))
+(define struct:node
+  (make-record-type-descriptor*
+   'node
+   #f
+   (|#%nongenerative-uid| node)
+   #f
+   #f
+   5
+   0))
 (define effect_2498
   (struct-type-install-properties!
    struct:node
@@ -39740,7 +39808,14 @@
                          (stack-set stack_1 pos_1 (car vals_1))))))))))))
          (loop_0 pos_0 vals_0 count_0 stack_0))))))
 (define struct:stack-info
-  (make-record-type-descriptor* 'stack-info #f #f #f #f 5 28))
+  (make-record-type-descriptor*
+   'stack-info
+   #f
+   (|#%nongenerative-uid| stack-info)
+   #f
+   #f
+   5
+   28))
 (define effect_2396
   (struct-type-install-properties!
    struct:stack-info
@@ -40091,7 +40166,14 @@
   (lambda (stk-i_0 stack-depth_0)
     (set-stack-info-non-tail-call-later?! stk-i_0 #t)))
 (define struct:indirect
-  (make-record-type-descriptor* 'indirect #f #f #f #f 2 0))
+  (make-record-type-descriptor*
+   'indirect
+   #f
+   (|#%nongenerative-uid| indirect)
+   #f
+   #f
+   2
+   0))
 (define effect_2066
   (struct-type-install-properties!
    struct:indirect
@@ -40151,7 +40233,15 @@
          s
          'indirect
          'element))))))
-(define struct:boxed (make-record-type-descriptor* 'boxed #f #f #f #f 1 0))
+(define struct:boxed
+  (make-record-type-descriptor*
+   'boxed
+   #f
+   (|#%nongenerative-uid| boxed)
+   #f
+   #f
+   1
+   0))
 (define effect_2558
   (struct-type-install-properties!
    struct:boxed
@@ -40189,7 +40279,14 @@
        ($value
         (impersonate-ref boxed-pos_2515 struct:boxed 0 s 'boxed 'pos))))))
 (define struct:boxed/check
-  (make-record-type-descriptor* 'boxed/check struct:boxed #f #f #f 0 0))
+  (make-record-type-descriptor*
+   'boxed/check
+   struct:boxed
+   (|#%nongenerative-uid| boxed/check)
+   #f
+   #f
+   0
+   0))
 (define effect_2563
   (struct-type-install-properties!
    struct:boxed/check

@@ -517,7 +517,7 @@
             (define new-seq
               (struct-convert v prim-knowns knowns imports exports mutated
                               (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
-                              target no-prompt?))
+                              target no-prompt? #t))
             (or new-seq
                 (match v
                   [`(,_ ,ids ,rhs)

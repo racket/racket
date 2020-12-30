@@ -227,6 +227,7 @@
           |#%struct-predicate| ; not exported to Racket
           |#%struct-field-accessor| ; not exported to Racket
           |#%struct-field-mutator| ; not exported to Racket
+          |#%nongenerative-uid| ; not exported to Racket
           struct-property-set!  ; not exported to Racket
           struct-constructor-procedure?
           struct-predicate-procedure?
