@@ -33,7 +33,9 @@ To embed Racket CS in a program, follow these steps:
   standard framework search path, or your embedding executable must
   provide a specific path to the framework (possibly an
   executable-relative path using the Mach-O @tt["@executable_path"]
-  prefix).}
+  prefix). When targeting the Hardened Runtime, you must enable the
+  ``Allow Unsigned Executable Memory'' entitlement, otherwise you will
+  run into ``out of memory'' errors when calling @cppi{racket_boot}.}
 
  @item{For each C file that uses Racket library functions,
   @cpp{#include} the files @as-index{@filepath{chezscheme.h}}
