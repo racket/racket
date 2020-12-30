@@ -38087,46 +38087,51 @@
    'current-load-extension))
 (define rktio_seconds_to_date-error-kind (vector-immutable 3 25))
 (define 1/seconds->date
-  (|#%name|
-   seconds->date
-   (case-lambda
-    ((s_0) (begin (1/seconds->date s_0 #t)))
-    ((s_0 local?_0)
-     (begin
-       (if (real? s_0)
-         (void)
-         (raise-argument-error 'seconds->date "real?" s_0))
-       (let ((s_1 (inexact->exact s_0)))
-         (let ((si_0 (floor s_1)))
-           (let ((get-gmt_0 (if local?_0 0 1)))
-             (let ((nsecs_0 (floor (* (- s_1 si_0) 1000000000))))
-               (let ((dt_0
-                      (|#%app|
-                       rktio_seconds_to_date*
-                       (unsafe-place-local-ref cell.1)
-                       si_0
-                       nsecs_0
-                       get-gmt_0)))
-                 (if (date*? dt_0)
-                   dt_0
-                   (if (equal? dt_0 rktio_seconds_to_date-error-kind)
-                     (raise-arguments-error
-                      'seconds->date
-                      "integer is out-of-range"
-                      "integer"
-                      si_0)
-                     (let ((base-msg_0 "conversion error"))
-                       (begin-unsafe
-                        (raise
-                         (let ((app_0
-                                (format-rktio-message
-                                 'seconds->date
-                                 dt_0
-                                 base-msg_0)))
-                           (|#%app|
-                            exn:fail
-                            app_0
-                            (current-continuation-marks))))))))))))))))))
+  (let ((seconds->date_0
+         (|#%name|
+          seconds->date
+          (lambda (s2_0 local?1_0)
+            (begin
+              (begin
+                (if (real? s2_0)
+                  (void)
+                  (raise-argument-error 'seconds->date "real?" s2_0))
+                (let ((s_0 (inexact->exact s2_0)))
+                  (let ((si_0 (floor s_0)))
+                    (let ((get-gmt_0 (if local?1_0 0 1)))
+                      (let ((nsecs_0 (floor (* (- s_0 si_0) 1000000000))))
+                        (let ((dt_0
+                               (|#%app|
+                                rktio_seconds_to_date*
+                                (unsafe-place-local-ref cell.1)
+                                si_0
+                                nsecs_0
+                                get-gmt_0)))
+                          (if (date*? dt_0)
+                            dt_0
+                            (if (equal? dt_0 rktio_seconds_to_date-error-kind)
+                              (raise-arguments-error
+                               'seconds->date
+                               "integer is out-of-range"
+                               "integer"
+                               si_0)
+                              (let ((base-msg_0 "conversion error"))
+                                (begin-unsafe
+                                 (raise
+                                  (let ((app_0
+                                         (format-rktio-message
+                                          'seconds->date
+                                          dt_0
+                                          base-msg_0)))
+                                    (|#%app|
+                                     exn:fail
+                                     app_0
+                                     (current-continuation-marks)))))))))))))))))))
+    (|#%name|
+     seconds->date
+     (case-lambda
+      ((s_0) (begin (seconds->date_0 s_0 #t)))
+      ((s_0 local?1_0) (seconds->date_0 s_0 local?1_0))))))
 (define 1/unsafe-poller
   (|#%name|
    unsafe-poller

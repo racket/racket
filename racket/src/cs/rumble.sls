@@ -133,7 +133,6 @@
 
           struct:date* date*? date* make-date*
           date*-nanosecond date*-time-zone-name
-          in-date-range? unknown-zone-name ;; not exported to Racket
 
           struct:arity-at-least arity-at-least arity-at-least?
           arity-at-least-value

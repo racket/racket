@@ -213,6 +213,13 @@
          (ftype-ref rktio_identity_t (b_bits) p)
          (ftype-ref rktio_identity_t (c_bits) p))))
 
+    (define (in-date-range? si)
+      (if (> (fixnum-width) 32)
+          (<= -9223372036854775808 si 9223372036854775807)
+          (<= -2147483648 si 2147483647)))
+
+    (define unknown-zone-name (string->immutable-string "?"))
+
     (define (rktio_seconds_to_date* rktio si nsecs get-gmt)
       (cond
        [(not (in-date-range? si))

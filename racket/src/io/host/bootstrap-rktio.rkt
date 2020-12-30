@@ -2,7 +2,6 @@
 (require racket/include
          racket/fixnum
          (only-in '#%linklet primitive-table)
-         (only-in '#%kernel [date* kernel:date*])
          ffi/unsafe
          ffi/unsafe/atomic
          (for-syntax racket/base)
@@ -135,7 +134,7 @@
           (define dt (cast p _pointer _Rrktio_date_t-pointer))
           (define tzn (Rrktio_date_t-zone_name dt))
           (begin0
-            (kernel:date*
+            (date*
              (Rrktio_date_t-second dt)
              (Rrktio_date_t-minute dt)
              (Rrktio_date_t-hour dt)
@@ -226,54 +225,62 @@
 (define (rktio_make_sha2_ctx)
   (malloc _Rrktio_sha2_ctx_t))
 
+(define (replace-ltps-open ht)
+  ;; Disable rktio_ltps_open in demo mode, since it is not
+  ;; connected to the host scheduler
+  (hash-set ht 'rktio_ltps_open
+            (lambda (x) (vector RKTIO_ERROR_KIND_RACKET
+                                RKTIO_ERROR_UNSUPPORTED))))
+
 (primitive-table '#%rktio
-                 (let ()
-                   (define-syntax extract-functions
-                     (syntax-rules (define-constant
-                                     define-type
-                                     define-struct-type
-                                     define-function
-                                     define-function/errno
-                                     define-function/errno+step)
-                       [(_ accum) (hasheq . accum)]
-                       [(_ accum (define-constant . _) . rest)
-                        (extract-functions accum . rest)]
-                       [(_ accum (define-type . _) . rest)
-                        (extract-functions accum . rest)]
-                       [(_ accum (define-struct-type . _) . rest)
-                        (extract-functions accum . rest)]
-                       [(_ accum (define-function _ _ id . _) . rest)
-                        (extract-functions ('id id . accum) . rest)]
-                       [(_ accum (define-function/errno _ _ _ id . _) . rest)
-                        (extract-functions ('id id . accum) . rest)]
-                       [(_ accum (define-function/errno+step _ _ _ id . _) . rest)
-                        (extract-functions ('id id . accum) . rest)]))
-                   (define-syntax-rule (begin form ...)
-                     (extract-functions [#;(begin)
-                                         'rktio_NULL rktio_NULL
-                                         'rktio_filesize_ref rktio_filesize_ref
-                                         'rktio_timestamp_ref rktio_timestamp_ref
-                                         'rktio_is_timestamp rktio_is_timestamp
-                                         'rktio_recv_length_ref rktio_recv_length_ref
-                                         'rktio_recv_address_ref rktio_recv_address_ref
-                                         'rktio_identity_to_vector rktio_identity_to_vector
-                                         'rktio_seconds_to_date* rktio_seconds_to_date*
-                                         'rktio_convert_result_to_vector rktio_convert_result_to_vector
-                                         'rktio_to_bytes rktio_to_bytes
-                                         'rktio_to_bytes_list rktio_to_bytes_list
-                                         'rktio_to_shorts rktio_to_shorts
-                                         'rktio_from_bytes_list rktio_from_bytes_list
-                                         'rktio_free_bytes_list rktio_free_bytes_list
-                                         'rktio_make_sha1_ctx rktio_make_sha1_ctx
-                                         'rktio_make_sha2_ctx rktio_make_sha2_ctx
-                                         'rktio_process_result_stdin_fd rktio_process_result_stdin_fd
-                                         'rktio_process_result_stdout_fd rktio_process_result_stdout_fd
-                                         'rktio_process_result_stderr_fd rktio_process_result_stderr_fd
-                                         'rktio_process_result_process rktio_process_result_process
-                                         'rktio_status_running rktio_status_running
-                                         'rktio_status_result rktio_status_result
-                                         'rktio_pipe_results rktio_pipe_results
-                                         'rktio_do_install_os_signal_handler rktio_do_install_os_signal_handler
-                                         'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
-                                        form ...))
-                   (include "../../rktio/rktio.rktl")))
+                 (replace-ltps-open
+                  (let ()
+                    (define-syntax extract-functions
+                      (syntax-rules (define-constant
+                                      define-type
+                                      define-struct-type
+                                      define-function
+                                      define-function/errno
+                                      define-function/errno+step)
+                        [(_ accum) (hasheq . accum)]
+                        [(_ accum (define-constant . _) . rest)
+                         (extract-functions accum . rest)]
+                        [(_ accum (define-type . _) . rest)
+                         (extract-functions accum . rest)]
+                        [(_ accum (define-struct-type . _) . rest)
+                         (extract-functions accum . rest)]
+                        [(_ accum (define-function _ _ id . _) . rest)
+                         (extract-functions ('id id . accum) . rest)]
+                        [(_ accum (define-function/errno _ _ _ id . _) . rest)
+                         (extract-functions ('id id . accum) . rest)]
+                        [(_ accum (define-function/errno+step _ _ _ id . _) . rest)
+                         (extract-functions ('id id . accum) . rest)]))
+                    (define-syntax-rule (begin form ...)
+                      (extract-functions [#;(begin)
+                                          'rktio_NULL rktio_NULL
+                                          'rktio_filesize_ref rktio_filesize_ref
+                                          'rktio_timestamp_ref rktio_timestamp_ref
+                                          'rktio_is_timestamp rktio_is_timestamp
+                                          'rktio_recv_length_ref rktio_recv_length_ref
+                                          'rktio_recv_address_ref rktio_recv_address_ref
+                                          'rktio_identity_to_vector rktio_identity_to_vector
+                                          'rktio_seconds_to_date* rktio_seconds_to_date*
+                                          'rktio_convert_result_to_vector rktio_convert_result_to_vector
+                                          'rktio_to_bytes rktio_to_bytes
+                                          'rktio_to_bytes_list rktio_to_bytes_list
+                                          'rktio_to_shorts rktio_to_shorts
+                                          'rktio_from_bytes_list rktio_from_bytes_list
+                                          'rktio_free_bytes_list rktio_free_bytes_list
+                                          'rktio_make_sha1_ctx rktio_make_sha1_ctx
+                                          'rktio_make_sha2_ctx rktio_make_sha2_ctx
+                                          'rktio_process_result_stdin_fd rktio_process_result_stdin_fd
+                                          'rktio_process_result_stdout_fd rktio_process_result_stdout_fd
+                                          'rktio_process_result_stderr_fd rktio_process_result_stderr_fd
+                                          'rktio_process_result_process rktio_process_result_process
+                                          'rktio_status_running rktio_status_running
+                                          'rktio_status_result rktio_status_result
+                                          'rktio_pipe_results rktio_pipe_results
+                                          'rktio_do_install_os_signal_handler rktio_do_install_os_signal_handler
+                                          'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
+                                         form ...))
+                    (include "../../rktio/rktio.rktl"))))

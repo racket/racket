@@ -104,10 +104,3 @@
 (define (current-seconds)
   (let ((t (current-time 'time-utc)))
     (time-second t)))
-
-(define (in-date-range? si)
-  (if (> (fixnum-width) 32)
-      (<= -9223372036854775808 si 9223372036854775807)
-      (<= -2147483648 si 2147483647)))
-
-(define unknown-zone-name (string->immutable-string "?"))

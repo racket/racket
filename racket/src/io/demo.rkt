@@ -747,8 +747,8 @@
 (test l (sync l))
 (define-values (tai tao) (tcp-accept l))
 
-(test #f (file-stream-port? i))
-(test #f (file-stream-port? o))
+(test #f (file-stream-port? ti))
+(test #f (file-stream-port? to))
 
 (test 6 (write-string "hello\n" to))
 (flush-output to)
