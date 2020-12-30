@@ -919,3 +919,24 @@
 
 (test 3 (bytes-utf-8-index #"apple" 3))
 (test 4 (bytes-utf-8-index (string->bytes/utf-8 "apλple") 3))
+
+(test 1969 (date-year (seconds->date (- (* 24 60 60)))))
+
+(let* ([s (current-seconds)]
+       [d1 (seconds->date s)]
+       [d2 (seconds->date (+ s 1/100000000))])
+  (test 0 (date*-nanosecond d1))
+  (test 10 (date*-nanosecond d2))
+  (test (date*-time-zone-name d1) (date*-time-zone-name d2))
+  (test (struct-copy date d1) (struct-copy date d2)))
+
+(test (seconds->date 0 #f)
+      (seconds->date 0.1e-16 #f))
+(test (date* 59 59 23 31 12 1969 3 364 #f 0 999999999 "UTC")
+      (seconds->date -0.1e-16 #f))
+
+(let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+  (test #t (with-handlers ([exn:fail? out-of-range])
+             (seconds->date (expt 2 60))))
+  (test #t (with-handlers ([exn:fail? out-of-range])
+             (seconds->date (expt 2 80)))))

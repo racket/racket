@@ -19,6 +19,7 @@
          "host/processor-count.rkt"
          "network/main.rkt"
          "foreign/main.rkt"
+         "time/main.rkt"
          "unsafe/main.rkt"
          "machine/main.rkt"
          "run/main.rkt"
@@ -59,6 +60,7 @@
          (all-from-out "host/processor-count.rkt")
          (all-from-out "network/main.rkt")
          (all-from-out "foreign/main.rkt")
+         (all-from-out "time/main.rkt")
          (all-from-out "unsafe/main.rkt")
          (all-from-out "machine/main.rkt")
          (all-from-out "run/main.rkt")

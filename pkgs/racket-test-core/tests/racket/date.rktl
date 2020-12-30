@@ -124,11 +124,13 @@
   (test 789/1000 - (date*->seconds d) (date->seconds d)))
 
 ;; Check some overflow handling on Windows:
-(when (eq? (system-type) 'windows)
-  (let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+(let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+  (when (eq? (system-type) 'windows)
     (err/rt-test (seconds->date (expt 2 40)) out-of-range)
-    (err/rt-test (seconds->date (expt 2 50)) out-of-range)
-    (err/rt-test (seconds->date (expt 2 60)) out-of-range)))
+    (err/rt-test (seconds->date (expt 2 50)) out-of-range))
+
+  (err/rt-test (seconds->date (expt 2 80)) out-of-range)
+  (err/rt-test (seconds->date (expt 2 60)) out-of-range))
 
 ;; Check inexact arithmetic
 (test (seconds->date 0 #f)
