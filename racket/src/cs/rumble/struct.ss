@@ -1282,16 +1282,20 @@
                  (define name ctr-expr)
                  (define authentic-name? (record-predicate struct:name))
                  (define name? (|#%struct-predicate|
-                                (lambda (v) (or (authentic-name? v)
-                                                (and (impersonator? v)
-                                                     (authentic-name? (impersonator-val v)))))))
+                                (|#%name|
+                                 name?
+                                 (lambda (v) (or (authentic-name? v)
+                                                 (and (impersonator? v)
+                                                      (authentic-name? (impersonator-val v))))))))
                  (define name-field
                    (let ([name-field (record-accessor struct:name field-index)])
                      (|#%struct-field-accessor|
-                      (lambda (v)
-                        (if (authentic-name? v)
-                            (name-field v)
-                            (pariah (impersonate-ref name-field struct:name field-index v 'name 'field))))
+                      (|#%name|
+                       name-field
+                       (lambda (v)
+                         (if (authentic-name? v)
+                             (name-field v)
+                             (pariah (impersonate-ref name-field struct:name field-index v 'name 'field)))))
                       struct:name
                       field-index)))
                  ...

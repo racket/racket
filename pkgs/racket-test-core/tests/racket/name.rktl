@@ -207,4 +207,11 @@
 (test 'bytes-set! object-name bytes-set!)
 (test 'bytes-length object-name bytes-length)
 
+;; Check some primitive structure functions
+(test 'date object-name date)
+(test 'date* object-name date*)
+(test 'date? object-name date?)
+(test 'date*? object-name date*?)
+(test 'date-second object-name date-second)
+
 (report-errs)
