@@ -228,6 +228,7 @@
                 (1/relative-path? relative-path?)
                 (1/rename-file-or-directory rename-file-or-directory)
                 (1/resolve-path resolve-path)
+                (1/seconds->date seconds->date)
                 (1/security-guard-check-file security-guard-check-file)
                 (1/security-guard-check-file-link
                  security-guard-check-file-link)
@@ -3030,6 +3031,7 @@
 (define RKTIO_ERROR_INFO_TRY_AGAIN 22)
 (define RKTIO_ERROR_TRY_AGAIN 23)
 (define RKTIO_ERROR_TRY_AGAIN_WITH_IPV_2541 24)
+(define RKTIO_ERROR_TIME_OUT_OF_RANGE 25)
 (define RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE 28)
 (define RKTIO_ERROR_CONVERT_BAD_SEQUENCE 29)
 (define RKTIO_ERROR_CONVERT_PREMATURE_END 30)
@@ -3428,6 +3430,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_recv_address_ref)))
 (define rktio_identity_to_vector
   (begin-unsafe (hash-ref rktio-table 'rktio_identity_to_vector)))
+(define rktio_seconds_to_date*
+  (begin-unsafe (hash-ref rktio-table 'rktio_seconds_to_date*)))
 (define rktio_convert_result_to_vector
   (begin-unsafe (hash-ref rktio-table 'rktio_convert_result_to_vector)))
 (define rktio_to_bytes (begin-unsafe (hash-ref rktio-table 'rktio_to_bytes)))
@@ -33741,11 +33745,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1121 unsafe-undefined)
+             (let ((lr1122 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1121
+               (set! lr1122
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -33800,9 +33804,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1121 0))
-               (set! command_0 (unsafe-vector*-ref lr1121 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1121 2))
+               (set! group_0 (unsafe-vector*-ref lr1122 0))
+               (set! command_0 (unsafe-vector*-ref lr1122 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1122 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
@@ -38081,6 +38085,48 @@
           p_0))
        p_0))
    'current-load-extension))
+(define rktio_seconds_to_date-error-kind (vector-immutable 3 25))
+(define 1/seconds->date
+  (|#%name|
+   seconds->date
+   (case-lambda
+    ((s_0) (begin (1/seconds->date s_0 #t)))
+    ((s_0 local?_0)
+     (begin
+       (if (real? s_0)
+         (void)
+         (raise-argument-error 'seconds->date "real?" s_0))
+       (let ((s_1 (inexact->exact s_0)))
+         (let ((si_0 (floor s_1)))
+           (let ((get-gmt_0 (if local?_0 0 1)))
+             (let ((nsecs_0 (floor (* (- s_1 si_0) 1000000000))))
+               (let ((dt_0
+                      (|#%app|
+                       rktio_seconds_to_date*
+                       (unsafe-place-local-ref cell.1)
+                       si_0
+                       nsecs_0
+                       get-gmt_0)))
+                 (if (date*? dt_0)
+                   dt_0
+                   (if (equal? dt_0 rktio_seconds_to_date-error-kind)
+                     (raise-arguments-error
+                      'seconds->date
+                      "integer is out-of-range"
+                      "integer"
+                      si_0)
+                     (let ((base-msg_0 "conversion error"))
+                       (begin-unsafe
+                        (raise
+                         (let ((app_0
+                                (format-rktio-message
+                                 'seconds->date
+                                 dt_0
+                                 base-msg_0)))
+                           (|#%app|
+                            exn:fail
+                            app_0
+                            (current-continuation-marks))))))))))))))))))
 (define 1/unsafe-poller
   (|#%name|
    unsafe-poller

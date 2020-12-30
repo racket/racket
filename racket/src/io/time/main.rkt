@@ -6,6 +6,7 @@
          (only-in '#%kernel [date*? kernel:date*?])
          "../common/check.rkt"
          "../host/rktio.rkt"
+         "../host/error.rkt"
          "../string/main.rkt"
          "../error/main.rkt")
 
@@ -22,6 +23,9 @@
            [si (floor s)]
            [get-gmt (if local? 0 1)]
            [nsecs (floor (* (- s si) 1000000000))]
+           ;; The allocation, deallocation and the conversion of the
+           ;; rktio_date_t* result is hidden in rktio_seconds_to_date*,
+           ;; therefore no atomicity is needed here.
            [dt (rktio_seconds_to_date* rktio si nsecs get-gmt)])
       (cond
         [(kernel:date*? dt)
@@ -30,8 +34,4 @@
          (raise-arguments-error who "integer is out-of-range"
                                 "integer" si)]
         [else
-         (error who "conversion error\n  error: ~a; ~a"
-                (vector-ref dt 1)
-                (bytes->string/utf-8
-                 (rktio_to_bytes
-                  (rktio_get_last_error_string rktio))))]))]))
+         (raise-rktio-error who dt "conversion error")]))]))
