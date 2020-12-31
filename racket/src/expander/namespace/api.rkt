@@ -6,7 +6,7 @@
          "../syntax/module-binding.rkt"
          "../syntax/api.rkt"
          "../syntax/error.rkt"
-         "../syntax/mapped-name.rkt"
+         (only-in "../syntax/mapped-name.rkt" syntax-mapped-names)
          "namespace.rkt"
          "module.rkt"
          "attach.rkt"

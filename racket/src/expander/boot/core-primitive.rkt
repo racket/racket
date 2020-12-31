@@ -57,6 +57,7 @@
                       identifier-binding-symbol
                       identifier-prune-lexical-context
                       syntax-debug-info
+                      syntax-mapped-symbols
                       syntax-track-origin
                       syntax-shift-phase-level
                       syntax-source-module

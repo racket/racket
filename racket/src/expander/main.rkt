@@ -127,6 +127,7 @@
          identifier?
          syntax-property
          syntax-debug-info
+         syntax-mapped-symbols
          module-compiled-exports
          module-compiled-indirect-exports
          read-accept-compiled

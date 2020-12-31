@@ -69,6 +69,7 @@
            (struct-out interned-scope)
            (struct-out multi-scope)
            (struct-out representative-scope)
+           (struct-out shifted-multi-scope)
            scope-set-at-fallback))
 
 ;; A scope represents a distinct "dimension" of binding. We can attach
