@@ -1,10 +1,17 @@
 #lang racket
 (require rackunit
          rackunit/text-ui
+         racket/string
          xml
          xml/plist
          mzlib/etc
          "to-list.rkt")
+
+(define (fix-newline s)
+  (define p (open-input-string s))
+  (begin0
+    (string-join (port->lines p) "\n")
+    (close-input-port p)))
 
 ;; test-bad-read-input : format-str str -> void
 ;; First argument is the input, second is the error message
@@ -81,10 +88,11 @@ END
          (read-xml (open-input-string source-string)))
        (define result-string
          (with-output-to-string (lambda () (write-xml source-document))))
-       (define expected-string #<<END
+       (define expected-string
+         (fix-newline #<<END
 <html xmlns="http://www.w3.org/1999/xhtml"> </html>
 END
-         )
+         ))
        (test-equal?
         "DOCTYPE dropping" result-string expected-string)))
     
@@ -797,12 +805,13 @@ END
                            (data "some data"))
                (assoc-pair "eighth-key"
                            (date "2013-05-10T20:29:55Z"))))
-      (define example-str #<<END
+      (define example-str
+        (fix-newline #<<END
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist SYSTEM "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="0.9"><dict><key>first-key</key><string>just a string with some  whitespace in it</string><key>second-key</key><false /><key>third-key</key><dict /><key>fourth-key</key><dict><key>inner-key</key><real>3.432</real></dict><key>fifth-key</key><array><integer>14</integer><string>another string</string><true /></array><key>sixth-key</key><array /><key>seventh-key</key><data>some data</data><key>eighth-key</key><date>2013-05-10T20:29:55Z</date></dict></plist>
 END
-        )]
+        ))]
      (test-suite
       "PList Library"
       
