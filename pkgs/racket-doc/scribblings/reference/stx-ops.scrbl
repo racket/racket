@@ -491,7 +491,7 @@ limited to---the following keys:
 
 @defproc[(syntax-mapped-symbols [stx syntax?])
          (listof (cons/c (or/c exact-integer? #f) (listof symbol?)))]{
-Return an association list mapping @tech{phase level} values(where
+Return an association list mapping @tech{phase level} values (where
 @racket[#f] corresponds to the @tech{label phase level}) to symbols
 of bindings accessible at the corresponding phase through the
 @tech{lexical information} of @racket[stx].
