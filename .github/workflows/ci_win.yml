@@ -41,6 +41,11 @@ jobs:
       shell: cmd
       run: |
         call racket\racket.exe --version
+    - name: Install catalog
+      shell: cmd
+      run: |
+        racket\racket.exe -l- pkg/dirs-catalog --immediate %cd%\rktcat %cd%\pkgs\
+        racket\raco.exe pkg config --set catalogs %cd%\rktcat\ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
     - name: Install Testing Deps
       shell: cmd
       run: |
