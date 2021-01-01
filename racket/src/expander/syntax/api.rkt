@@ -27,6 +27,8 @@
          "../common/contract.rkt"
          (rename-in "debug.rkt"
                     [syntax-debug-info raw:syntax-debug-info])
+         (rename-in "mapped-name.rkt"
+                    [syntax-mapped-symbols raw:syntax-mapped-symbols])
          (only-in "../expand/context.rkt" get-current-expand-context)
          "../expand/log.rkt")
 
@@ -62,7 +64,8 @@
          identifier-prune-lexical-context
          syntax-shift-phase-level
          syntax-track-origin
-         syntax-debug-info)
+         syntax-debug-info
+         syntax-mapped-symbols)
 
 (define/who (syntax-e s)
   (check who syntax? s)
@@ -221,3 +224,7 @@
   (define ctx (get-current-expand-context #:fail-ok? #t))
   (when ctx (log-expand ctx 'track-syntax 'track-origin new-stx s))
   s)
+
+(define/who (syntax-mapped-symbols s)
+  (check who syntax? s)
+  (raw:syntax-mapped-symbols s))

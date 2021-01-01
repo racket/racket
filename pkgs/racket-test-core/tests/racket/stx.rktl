@@ -2857,5 +2857,31 @@
     (test #t 'syntax/loc (same-src? (syntax/loc good1 (x ... . y)) (syntax y)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-mapped-symbols
+(let ([check (lambda (reqs phase syms shift)
+               (parameterize ([current-namespace (make-base-namespace)])
+                 (define stx (syntax-shift-phase-level
+                              (namespace-syntax-introduce (datum->syntax #f 'a))
+                              shift))
+                 (for-each eval reqs)
+                 (define ls (cdr (assq phase (syntax-mapped-symbols stx))))
+                 (test #t 'syntax-mapped-symbols
+                       (and (for/and ([sym (in-list syms)])
+                              (memq sym ls))
+                            #t))))])
+  (check '() 0 '(syntax-mapped-symbols) 0)
+  (check '((require (for-syntax racket/base))) 1 '(syntax-mapped-symbols) 0)
+  (check '((require (for-label racket/base))) #f '(syntax-mapped-symbols) 0)
+  (check '() 1 '(syntax-mapped-symbols) 1)
+  (check '() #f '(syntax-mapped-symbols) #f)
+
+  (test #t 'syntax-mapped-symbols
+        (and (memq 'a
+                   (cdr (assq 0
+                              (let ([a 1])
+                                (syntax-mapped-symbols (quote-syntax a #:local))))))
+             #t)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
