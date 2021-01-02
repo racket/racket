@@ -785,6 +785,11 @@
            [`(begin ,es ... ,en)
             (list es en)]))
 
+   (comp '((1 2 3 4) (6 7) (9))
+         (match '(0 1 2 3 4 5 6 7 8 9)
+           [`(0 ,@a 5 ,@b 8 ,@c)
+            (list a b c)]))
+
    (comp '(a b c)
 	 (let ()
 
