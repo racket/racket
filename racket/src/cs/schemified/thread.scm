@@ -12507,18 +12507,21 @@
                          (poll-and-select-thread! new-leftover-ticks_0))))
                    (begin
                      (add-end-atomic-callback! engine-timeout)
-                     (loop_0 e_2 void)))))))))))
+                     (loop_0 e_2 check-for-atomic-timeout)))))))))))
      (loop_0 e_0 check-break-prefix))))
 (define check-break-prefix
   (lambda ()
     (begin
       (current-thread-now-running!)
       (1/check-for-break)
-      (if (unsafe-place-local-ref cell.4)
-        (if (positive? (current-atomic))
-          (|#%app| (unsafe-place-local-ref cell.4) #f)
-          (void))
-        (void)))))
+      (check-for-atomic-timeout))))
+(define check-for-atomic-timeout
+  (lambda ()
+    (if (unsafe-place-local-ref cell.4)
+      (if (positive? (current-atomic))
+        (|#%app| (unsafe-place-local-ref cell.4) #f)
+        (void))
+      (void))))
 (define maybe-done
   (lambda (callbacks_0)
     (if (pair? callbacks_0)

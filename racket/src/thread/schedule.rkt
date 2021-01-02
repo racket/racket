@@ -174,11 +174,14 @@
              ;; where host-system interrupts are not disabled (i.e.,
              ;; don't use `engine-block` instead of `engine-timeout`):
              (add-end-atomic-callback! engine-timeout)
-             (loop e void)])])))))
+             (loop e check-for-atomic-timeout)])])))))
 
 (define (check-break-prefix)
   (current-thread-now-running!)
   (check-for-break)
+  (check-for-atomic-timeout))
+
+(define (check-for-atomic-timeout)
   (when atomic-timeout-callback
     (when (positive? (current-atomic))
       (atomic-timeout-callback #f))))
