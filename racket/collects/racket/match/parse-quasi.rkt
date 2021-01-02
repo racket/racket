@@ -11,6 +11,7 @@
   (cond [(Pair? pat) (null-terminated? (Pair-d pat))]
         [(GSeq? pat) (null-terminated? (GSeq-tail pat))]
         [(Null? pat) #t]
+        [(Var? pat) #t]
         [else #f]))
 
 ;; combine a null-terminated pattern with another pattern to match afterwards
@@ -23,6 +24,12 @@
                                (append-pats (GSeq-tail p1) p2)
                                (GSeq-mutable? p1))]
         [(Null? p1) p2]
+        [(Var? p1) (make-GSeq (list (list p1))
+                              (list #f)
+                              (list #f)
+                              (list #f)
+                              p2
+                              #f)]
         [else (error 'match "illegal input to append-pats")]))
 
 (define hard-case?
