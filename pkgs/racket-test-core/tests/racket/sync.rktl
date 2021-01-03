@@ -774,10 +774,8 @@
 		   1000.0)]
 	  [real-took (/ (abs (- (current-milliseconds) real-msecs)) 1000.0)]
 	  [boundary (/ SYNC-BUSY-DELAY 6)])
-      ;; Hack.
-      ;; The following test isn't reliable, so only Matthew should see it,
-      ;; and only in non-parallel mode:
-      (when (and (regexp-match #rx"(mflatt)|(matthewf)" (path->string (find-system-path 'home-dir)))
+      ;; Run unreliable timing test only in non-parallel mode:
+      (when (and (run-unreliable-tests? 'timing)
                  (equal? "" Section-prefix))
 	(test busy? (lambda (a ax b c d) (> b c)) 'busy-wait? go took boundary real-took)))))
 
