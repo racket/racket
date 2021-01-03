@@ -214,4 +214,10 @@
 (test 'date*? object-name date*?)
 (test 'date-second object-name date-second)
 
+;; Check that `object-name` produces #f for some primitive value types
+;; that might happen to be implemented with structures at some level
+(test #f object-name (make-thread-group))
+(test #f object-name (current-directory))
+(test #f object-name (quote-syntax x))
+
 (report-errs)

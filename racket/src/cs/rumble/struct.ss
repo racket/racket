@@ -173,6 +173,8 @@
             (and parent
                  (inspector-superior? sup-insp parent))))))
 
+;; result can be 'prefab, #f, an inspector, or `none`, where
+;; `none` is the result for opaque "system" records
 (define (inspector-ref rtd)
   (getprop (record-type-uid rtd) 'inspector none))
 
@@ -572,7 +574,7 @@
    [(rtd name init-count auto-count parent-rtd props insp proc-spec immutables guard constructor-name install-props!)
     (let ([install-props!
            (or install-props!
-               (check-make-struct-type-arguments 'make-struct-type name parent-rtd init-count auto-count
+               (check-make-struct-type-arguments 'make-struct-type (if (pair? name) (car name) name) parent-rtd init-count auto-count
                                                  props insp proc-spec immutables guard constructor-name))])
       (unless (eq? insp 'prefab) ; everything for prefab must be covered in `prefab-key+count->rtd`
         (let* ([parent-rtd* (strip-impersonator parent-rtd)]
@@ -603,7 +605,8 @@
           ;; Finish checking and install new property values:
           (install-props! rtd parent-rtd* all-immutables)
           ;; Record inspector
-          (inspector-set! rtd insp)
+          (unless (pair? name) ; pair implies a system structure type
+            (inspector-set! rtd insp))
           ;; Register guard
           (register-guards! rtd parent-rtd guard 'at-start))))]))
 

@@ -43778,7 +43778,7 @@ static const char *startup_source =
 " 0"
 " #f"
 "(list(cons 1/prop:liberal-define-context #t))"
-" #f"
+"(current-inspector)"
 " #f"
 " '()"
 " #f"

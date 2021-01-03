@@ -1096,7 +1096,8 @@ typedef struct Scheme_Struct_Type {
   mzshort num_islots; /* initialized + parent-initialized */
   mzshort name_pos;
   char authentic; /* 1 => chaperones/impersonators disallowed */
-  char nonfail_constructor; /* 1 => constructor never fails */
+  char more_flags; /* STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR => constructor never fails
+                      STRUCT_TYPE_FLAG_SYSTEM_OPAQUE => #f for `object-name`, for example */
 
   Scheme_Object *name;
 
@@ -1126,6 +1127,10 @@ typedef struct Scheme_Struct_Type {
 
 #define STRUCT_TYPE_ALL_IMMUTABLE 0x1
 #define STRUCT_TYPE_CHECKED_PROC  0x2
+
+/* for `more_flags` field */
+#define STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR 0x1
+#define STRUCT_TYPE_FLAG_SYSTEM_OPAQUE       0x2
 
 typedef struct Scheme_Structure
 {

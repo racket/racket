@@ -981,10 +981,10 @@
    #f
    2
    3))
-(define effect_2520
+(define effect_2212
   (struct-type-install-properties!
    struct:queue
-   'queue
+   '(queue)
    2
    0
    #f
@@ -1015,10 +1015,10 @@
    #f
    3
    6))
-(define effect_2809
+(define effect_2496
   (struct-type-install-properties!
    struct:node$2
-   'node
+   '(node)
    3
    0
    #f
@@ -1249,10 +1249,10 @@
    #f
    5
    0))
-(define effect_2451
+(define effect_1764
   (struct-type-install-properties!
    struct:node$1
-   'node
+   '(node)
    5
    0
    #f
@@ -1528,10 +1528,10 @@
    #f
    11
    2047))
-(define effect_2883
+(define effect_2467
   (struct-type-install-properties!
    struct:sandman
-   'sandman
+   '(sandman)
    11
    0
    #f
@@ -1986,10 +1986,10 @@
    #f
    1
    0))
-(define effect_2090
+(define effect_3012
   (struct-type-install-properties!
    struct:selector-prop-evt-value
-   'selector-prop-evt-value
+   '(selector-prop-evt-value)
    1
    0
    #f
@@ -2034,10 +2034,10 @@
    #f
    1
    0))
-(define effect_2384
+(define effect_2322
   (struct-type-install-properties!
    struct:poller
-   'poller
+   '(poller)
    1
    0
    #f
@@ -2063,10 +2063,10 @@
    #f
    4
    8))
-(define effect_3060
+(define effect_2873
   (struct-type-install-properties!
    struct:poll-ctx
-   'poll-ctx
+   '(poll-ctx)
    4
    0
    #f
@@ -2101,10 +2101,10 @@
    #f
    0
    0))
-(define effect_2812
+(define effect_2678
   (struct-type-install-properties!
    struct:never-evt
-   'never-evt
+   '(never-evt)
    0
    0
    #f
@@ -2142,10 +2142,10 @@
    #f
    0
    0))
-(define effect_2453
+(define effect_2666
   (struct-type-install-properties!
    struct:always-evt
-   'always-evt
+   '(always-evt)
    0
    0
    #f
@@ -2183,10 +2183,10 @@
    #f
    0
    0))
-(define effect_2629
+(define effect_2516
   (struct-type-install-properties!
    struct:async-evt
-   'async-evt
+   '(async-evt)
    0
    0
    #f
@@ -2217,10 +2217,10 @@
 (define the-async-evt (async-evt6.1))
 (define struct:wrap-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 2 0))
-(define effect_2319
+(define effect_2243
   (struct-type-install-properties!
    struct:wrap-evt
-   'evt
+   '(evt)
    2
    0
    #f
@@ -2282,10 +2282,10 @@
    #f
    0
    0))
-(define effect_2329
+(define effect_2575
   (struct-type-install-properties!
    struct:handle-evt
-   'handle-evt
+   '(handle-evt)
    0
    0
    struct:wrap-evt
@@ -2321,10 +2321,10 @@
    #f
    5
    0))
-(define effect_2665
+(define effect_2497
   (struct-type-install-properties!
    struct:control-state-evt
-   'control-state-evt
+   '(control-state-evt)
    5
    0
    #f
@@ -2446,10 +2446,10 @@
          'retry-proc))))))
 (define struct:poll-guard-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2393
+(define effect_2340
   (struct-type-install-properties!
    struct:poll-guard-evt
-   'evt
+   '(evt)
    1
    0
    #f
@@ -2497,10 +2497,10 @@
          'proc))))))
 (define struct:choice-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2512
+(define effect_2203
   (struct-type-install-properties!
    struct:choice-evt
-   'evt
+   '(evt)
    1
    0
    #f
@@ -2583,10 +2583,10 @@
    #f
    1
    0))
-(define effect_3144
+(define effect_2389
   (struct-type-install-properties!
    struct:delayed-poll
-   'delayed-poll
+   '(delayed-poll)
    1
    0
    #f
@@ -2614,10 +2614,10 @@
    #f
    1
    0))
-(define effect_2558
+(define effect_2296
   (struct-type-install-properties!
    struct:poller-evt
-   'poller-evt
+   '(poller-evt)
    1
    0
    #f
@@ -2670,10 +2670,10 @@
    #f
    2
    0))
-(define effect_3162
+(define effect_3276
   (struct-type-install-properties!
    struct:waiter-methods
-   'waiter-methods
+   '(waiter-methods)
    2
    0
    #f
@@ -2714,10 +2714,10 @@
    #f
    1
    0))
-(define effect_2458
+(define effect_2810
   (struct-type-install-properties!
    struct:select-waiter
-   'select-waiter
+   '(select-waiter)
    1
    0
    #f
@@ -2777,10 +2777,10 @@
    #f
    13
    8188))
-(define effect_2364
+(define effect_2862
   (struct-type-install-properties!
    struct:custodian
-   'custodian
+   '(custodian)
    13
    0
    #f
@@ -2910,10 +2910,10 @@
    #f
    1
    0))
-(define effect_2650
+(define effect_2533
   (struct-type-install-properties!
    struct:message-ized
-   'message-ized
+   '(message-ized)
    1
    0
    #f
@@ -4005,10 +4005,10 @@
    #f
    19
    491440))
-(define effect_3085
+(define effect_2252
   (struct-type-install-properties!
    struct:place
-   'place
+   '(place)
    19
    0
    #f
@@ -4168,10 +4168,10 @@
    #f
    1
    1))
-(define effect_3126
+(define effect_2858
   (struct-type-install-properties!
    struct:semaphore
-   'semaphore
+   '(semaphore)
    1
    0
    struct:queue
@@ -4208,10 +4208,10 @@
    #f
    1
    0))
-(define effect_2127
+(define effect_2145
   (struct-type-install-properties!
    struct:semaphore-peek-evt
-   'semaphore-peek-evt
+   '(semaphore-peek-evt)
    1
    0
    #f
@@ -4271,10 +4271,10 @@
    #f
    0
    0))
-(define effect_2734
+(define effect_2532
   (struct-type-install-properties!
    struct:semaphore-peek-select-waiter
-   'semaphore-peek-select-waiter
+   '(semaphore-peek-select-waiter)
    0
    0
    struct:select-waiter
@@ -4505,10 +4505,10 @@
    #f
    2
    3))
-(define effect_2755
+(define effect_2309
   (struct-type-install-properties!
    struct:node
-   'node
+   '(node)
    2
    0
    #f
@@ -4541,10 +4541,10 @@
    #f
    4
    14))
-(define effect_2111
+(define effect_2274
   (struct-type-install-properties!
    struct:thread-group
-   'thread-group
+   '(thread-group)
    4
    0
    struct:node
@@ -4713,10 +4713,10 @@
    #f
    2
    3))
-(define effect_2459
+(define effect_2483
   (struct-type-install-properties!
    struct:schedule-info
-   'schedule-info
+   '(schedule-info)
    2
    0
    #f
@@ -4844,10 +4844,10 @@
    #f
    2
    0))
-(define effect_2525
+(define effect_2626
   (struct-type-install-properties!
    struct:plumber
-   'plumber
+   '(plumber)
    2
    0
    #f
@@ -4892,10 +4892,10 @@
    #f
    2
    0))
-(define effect_2524
+(define effect_2487
   (struct-type-install-properties!
    struct:plumber-flush-handle
-   'plumber-flush-handle
+   '(plumber-flush-handle)
    2
    0
    #f
@@ -5124,10 +5124,10 @@
    #f
    2
    1))
-(define effect_2780
+(define effect_2348
   (struct-type-install-properties!
    struct:custodian-box
-   'custodian-box
+   '(custodian-box)
    2
    0
    #f
@@ -5164,10 +5164,10 @@
    #f
    2
    0))
-(define effect_2810
+(define effect_2870
   (struct-type-install-properties!
    struct:willed-callback
-   'willed-callback
+   '(willed-callback)
    2
    0
    #f
@@ -5197,10 +5197,10 @@
    #f
    0
    0))
-(define effect_2345
+(define effect_2332
   (struct-type-install-properties!
    struct:at-exit-callback
-   'at-exit-callback
+   '(at-exit-callback)
    0
    0
    struct:willed-callback
@@ -5226,10 +5226,10 @@
    #f
    1
    1))
-(define effect_2616
+(define effect_2409
   (struct-type-install-properties!
    struct:custodian-reference
-   'custodian-reference
+   '(custodian-reference)
    1
    0
    #f
@@ -6106,7 +6106,7 @@
 (define memory-limit-lock (|#%app| host:make-mutex))
 (define compute-memory-sizes 0)
 (define computed-memory-sizes? #f)
-(define effect_2497
+(define effect_2498
   (begin
     (void
      (|#%app|
@@ -6569,10 +6569,10 @@
    #f
    24
    16777082))
-(define effect_2521
+(define effect_2967
   (struct-type-install-properties!
    struct:thread
-   'thread
+   '(thread)
    24
    0
    struct:node
@@ -7079,10 +7079,10 @@
    #f
    1
    0))
-(define effect_2807
+(define effect_2406
   (struct-type-install-properties!
    struct:dead-evt
-   'thread-dead-evt
+   '(thread-dead-evt)
    1
    0
    #f
@@ -7409,10 +7409,10 @@
    #f
    2
    0))
-(define effect_2586
+(define effect_2379
   (struct-type-install-properties!
    struct:transitive-resume
-   'transitive-resume
+   '(transitive-resume)
    2
    0
    #f
@@ -7540,10 +7540,10 @@
    #f
    2
    2))
-(define effect_2400
+(define effect_2856
   (struct-type-install-properties!
    struct:suspend-resume-evt
-   'suspend-resume-evt
+   '(suspend-resume-evt)
    2
    0
    #f
@@ -7641,10 +7641,10 @@
    #f
    0
    0))
-(define effect_3145
+(define effect_2484
   (struct-type-install-properties!
    struct:suspend-evt
-   'thread-suspend-evt
+   '(thread-suspend-evt)
    0
    0
    struct:suspend-resume-evt
@@ -7678,10 +7678,10 @@
    #f
    0
    0))
-(define effect_2454
+(define effect_2390
   (struct-type-install-properties!
    struct:resume-evt
-   'thread-resume-evt
+   '(thread-resume-evt)
    0
    0
    struct:suspend-resume-evt
@@ -8114,10 +8114,10 @@
    #f
    0
    0))
-(define effect_2592
+(define effect_2597
   (struct-type-install-properties!
    struct:thread-receiver-evt
-   'thread-receive-evt
+   '(thread-receive-evt)
    0
    0
    #f
@@ -8222,10 +8222,10 @@
    #f
    2
    0))
-(define effect_1795
+(define effect_2021
   (struct-type-install-properties!
    struct:channel
-   'channel
+   '(channel)
    2
    0
    #f
@@ -8294,10 +8294,10 @@
    #f
    2
    0))
-(define effect_2694
+(define effect_2566
   (struct-type-install-properties!
    struct:channel-put-evt*
-   'channel-put-evt
+   '(channel-put-evt)
    2
    0
    #f
@@ -8375,10 +8375,10 @@
    #f
    1
    0))
-(define effect_3243
+(define effect_2402
   (struct-type-install-properties!
    struct:channel-select-waiter
-   'channel-select-waiter
+   '(channel-select-waiter)
    1
    0
    struct:select-waiter
@@ -8889,10 +8889,10 @@
    #f
    5
    31))
-(define effect_2377
+(define effect_2287
   (struct-type-install-properties!
    struct:syncing
-   'syncing
+   '(syncing)
    5
    0
    #f
@@ -9095,10 +9095,10 @@
    #f
    9
    511))
-(define effect_2549
+(define effect_2172
   (struct-type-install-properties!
    struct:syncer
-   'syncer
+   '(syncer)
    9
    0
    #f
@@ -10618,10 +10618,10 @@
          (end-atomic))))))
 (define struct:replacing-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2634
+(define effect_2315
   (struct-type-install-properties!
    struct:replacing-evt
-   'evt
+   '(evt)
    1
    0
    #f
@@ -10670,10 +10670,10 @@
          'guard))))))
 (define struct:nested-sync-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 3 0))
-(define effect_2232
+(define effect_2607
   (struct-type-install-properties!
    struct:nested-sync-evt
-   'evt
+   '(evt)
    3
    0
    #f
@@ -10894,10 +10894,10 @@
    #f
    0
    0))
-(define effect_2282
+(define effect_2854
   (struct-type-install-properties!
    struct:system-idle-evt
-   'system-idle-evt
+   '(system-idle-evt)
    0
    0
    #f
@@ -10955,10 +10955,10 @@
    #f
    10
    1016))
-(define effect_2884
+(define effect_3020
   (struct-type-install-properties!
    struct:future*
-   'future
+   '(future)
    10
    0
    #f
@@ -11058,10 +11058,10 @@
    #f
    6
    63))
-(define effect_2666
+(define effect_2966
   (struct-type-install-properties!
    struct:future-event
-   'future-event
+   '(future-event)
    6
    0
    #f
@@ -11350,10 +11350,10 @@
    #f
    1
    0))
-(define effect_2445
+(define effect_2519
   (struct-type-install-properties!
    struct:future-evt
-   'future-evt
+   '(future-evt)
    1
    0
    #f
@@ -11793,10 +11793,10 @@
    #f
    6
    7))
-(define effect_2609
+(define effect_2452
   (struct-type-install-properties!
    struct:scheduler
-   'scheduler
+   '(scheduler)
    6
    0
    #f
@@ -11839,10 +11839,10 @@
    #f
    5
    26))
-(define effect_2322
+(define effect_2639
   (struct-type-install-properties!
    struct:worker
-   'worker
+   '(worker)
    5
    0
    #f
@@ -12687,10 +12687,10 @@
    #f
    1
    0))
-(define effect_2291
+(define effect_2783
   (struct-type-install-properties!
    struct:alarm-evt
-   'alarm-evt
+   '(alarm-evt)
    1
    0
    #f
@@ -13249,10 +13249,10 @@
    #f
    2
    0))
-(define effect_3021
+(define effect_2531
   (struct-type-install-properties!
    struct:will-executor
-   'will-executor
+   '(will-executor)
    2
    0
    #f
@@ -13595,10 +13595,10 @@
    #f
    4
    15))
-(define effect_2267
+(define effect_2427
   (struct-type-install-properties!
    struct:place-event
-   'place-event
+   '(place-event)
    4
    0
    #f
@@ -14279,10 +14279,10 @@
    #f
    2
    0))
-(define effect_2146
+(define effect_2098
   (struct-type-install-properties!
    struct:place-done-evt
-   'place-dead-evt
+   '(place-dead-evt)
    2
    0
    #f
@@ -14385,10 +14385,10 @@
    #f
    6
    22))
-(define effect_2821
+(define effect_2499
   (struct-type-install-properties!
    struct:message-queue
-   'message-queue
+   '(message-queue)
    6
    0
    #f
@@ -14540,10 +14540,10 @@
    #f
    6
    0))
-(define effect_2712
+(define effect_2960
   (struct-type-install-properties!
    struct:pchannel
-   'place-channel
+   '(place-channel)
    6
    0
    #f
@@ -14829,10 +14829,10 @@
    #f
    4
    13))
-(define effect_2870
+(define effect_2715
   (struct-type-install-properties!
    struct:fsemaphore
-   'fsemaphore
+   '(fsemaphore)
    4
    0
    #f
@@ -14872,10 +14872,10 @@
    #f
    1
    0))
-(define effect_2902
+(define effect_2250
   (struct-type-install-properties!
    struct:fsemaphore-box-evt
-   'fsemaphore-box-evt
+   '(fsemaphore-box-evt)
    1
    0
    #f
@@ -15074,10 +15074,10 @@
    #f
    3
    1))
-(define effect_3038
+(define effect_2314
   (struct-type-install-properties!
    struct:os-semaphore
-   'os-semaphore
+   '(os-semaphore)
    3
    0
    #f

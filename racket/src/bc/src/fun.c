@@ -2715,7 +2715,8 @@ Scheme_Object *scheme_object_name(Scheme_Object *a)
   }
 
   if (SCHEME_STRUCTP(a)) {
-    return SCHEME_STRUCT_NAME_SYM(a);
+    if (!(SCHEME_STRUCT_TYPE(a)->more_flags & STRUCT_TYPE_FLAG_SYSTEM_OPAQUE))
+      return SCHEME_STRUCT_NAME_SYM(a);
   } else if (SCHEME_PROCP(a)) {
     const char *s;
     int len;

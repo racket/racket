@@ -3431,7 +3431,7 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
                 | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
                    : 0)
-                | ((st->nonfail_constructor
+                | (((st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
                     && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
                    ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
                    : 0)
@@ -3448,7 +3448,7 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT)
                 | STRUCT_PROC_SHAPE_CONSTR
-                | ((st->nonfail_constructor
+                | (((st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
                     && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
                    ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
                    : 0));
@@ -4752,7 +4752,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
   struct_type->name_pos = depth;
   struct_type->authentic = 0;
-  struct_type->nonfail_constructor = 1;
+  struct_type->more_flags = STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR;
   struct_type->inspector = scheme_false;
   struct_type->uninit_val = uninit_val;
   struct_type->props = NULL;
@@ -4819,7 +4819,12 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
   }
 
   struct_type->name = name;
-  struct_type->nonfail_constructor = (parent_type ? parent_type->nonfail_constructor : 1);
+  struct_type->more_flags = ((parent_type
+                              ? (parent_type->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
+                              : STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
+                             | ((scheme_starting_up && inspector)
+                                ? STRUCT_TYPE_FLAG_SYSTEM_OPAQUE
+                                : 0));
 
   struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
@@ -5083,7 +5088,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
     }
     
     struct_type->guard = guard;
-    struct_type->nonfail_constructor = 0;
+    struct_type->more_flags = 0;
   } else if (chaperone_undefined) {
     struct_type->guard = scheme_undefined;
   }
@@ -5091,7 +5096,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
   if (parent && SCHEME_NP_CHAPERONEP(parent)) {
     guard = add_struct_type_chaperone_guards(parent, struct_type->guard);
     struct_type->guard = guard;
-    struct_type->nonfail_constructor = 0;
+    struct_type->more_flags = 0;
   }
 
   if (checked_proc)
@@ -5162,7 +5167,7 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *name,
                         guard);
 
   if (scheme_starting_up)
-    /* Force allocation for a strcuture type that may be in the master GC: */
+    /* Force allocation for a struc<ture type that may be in the master GC: */
     scheme_force_struct_type_info((Scheme_Struct_Type *)r);
 
   return r;

@@ -1470,7 +1470,7 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
       Scheme_Struct_Type *st = (Scheme_Struct_Type *)v;
       if (st->num_slots == st->num_islots) {
         if (_nonfail_constr)
-          *_nonfail_constr = st->nonfail_constructor;
+          *_nonfail_constr = (st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR);
         if (_prefab)
           *_prefab = !!st->prefab_key;
         return st->num_slots + 1;

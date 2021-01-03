@@ -1966,10 +1966,10 @@
    #f
    0
    0))
-(define effect_2431
+(define effect_2175
   (struct-type-install-properties!
    struct:known-constant
-   'known-constant
+   '(known-constant)
    0
    0
    #f
@@ -2015,10 +2015,10 @@
    #f
    0
    0))
-(define effect_2525
+(define effect_2225
   (struct-type-install-properties!
    struct:known-consistent
-   'known-consistent
+   '(known-consistent)
    0
    0
    (if (struct-type? struct:known-constant)
@@ -2066,10 +2066,10 @@
    #f
    0
    0))
-(define effect_2733
+(define effect_3179
   (struct-type-install-properties!
    struct:known-authentic
-   'known-authentic
+   '(known-authentic)
    0
    0
    (if (struct-type? struct:known-constant)
@@ -2117,10 +2117,10 @@
    #f
    1
    1))
-(define effect_2848
+(define effect_1974
   (struct-type-install-properties!
    struct:known-copy
-   'known-copy
+   '(known-copy)
    1
    0
    (if (struct-type? struct:known-constant)
@@ -2182,10 +2182,10 @@
    #f
    1
    1))
-(define effect_2418
+(define effect_2741
   (struct-type-install-properties!
    struct:known-literal
-   'known-literal
+   '(known-literal)
    1
    0
    (if (struct-type? struct:known-consistent)
@@ -2249,10 +2249,10 @@
    #f
    1
    1))
-(define effect_2727
+(define effect_1867
   (struct-type-install-properties!
    struct:known-procedure
-   'known-procedure
+   '(known-procedure)
    1
    0
    (if (struct-type? struct:known-consistent)
@@ -2318,10 +2318,10 @@
    #f
    0
    0))
-(define effect_3076
+(define effect_2708
   (struct-type-install-properties!
    struct:known-procedure/single-valued
-   'known-procedure/single-valued
+   '(known-procedure/single-valued)
    0
    0
    (if (struct-type? struct:known-procedure)
@@ -2374,10 +2374,10 @@
    #f
    0
    0))
-(define effect_2720
+(define effect_2348
   (struct-type-install-properties!
    struct:known-procedure/no-prompt
-   'known-procedure/no-prompt
+   '(known-procedure/no-prompt)
    0
    0
    (if (struct-type? struct:known-procedure/single-valued)
@@ -2430,10 +2430,10 @@
    #f
    0
    0))
-(define effect_2928
+(define effect_2331
   (struct-type-install-properties!
    struct:known-procedure/no-prompt/multi
-   'known-procedure/no-prompt/multi
+   '(known-procedure/no-prompt/multi)
    0
    0
    (if (struct-type? struct:known-procedure)
@@ -2486,10 +2486,10 @@
    #f
    0
    0))
-(define effect_2574
+(define effect_2377
   (struct-type-install-properties!
    struct:known-procedure/no-return
-   'known-procedure/no-return
+   '(known-procedure/no-return)
    0
    0
    (if (struct-type? struct:known-procedure/single-valued)
@@ -2542,10 +2542,10 @@
    #f
    1
    1))
-(define effect_2566
+(define effect_2149
   (struct-type-install-properties!
    struct:known-procedure/can-inline
-   'known-procedure/can-inline
+   '(known-procedure/can-inline)
    1
    0
    (if (struct-type? struct:known-procedure)
@@ -2616,10 +2616,10 @@
    #f
    1
    1))
-(define effect_2249
+(define effect_2717
   (struct-type-install-properties!
    struct:known-procedure/can-inline/need-imports
-   'known-procedure/can-inline/need-imports
+   '(known-procedure/can-inline/need-imports)
    1
    0
    (if (struct-type? struct:known-procedure/can-inline)
@@ -2690,10 +2690,10 @@
    #f
    0
    0))
-(define effect_2382
+(define effect_2516
   (struct-type-install-properties!
    struct:known-procedure/folding
-   'known-procedure/folding
+   '(known-procedure/folding)
    0
    0
    (if (struct-type? struct:known-procedure/no-prompt)
@@ -2746,10 +2746,10 @@
    #f
    1
    1))
-(define effect_2255
+(define effect_2551
   (struct-type-install-properties!
    struct:known-procedure/folding/limited
-   'known-procedure/folding/limited
+   '(known-procedure/folding/limited)
    1
    0
    (if (struct-type? struct:known-procedure/folding)
@@ -2820,10 +2820,10 @@
    #f
    0
    0))
-(define effect_2403
+(define effect_2332
   (struct-type-install-properties!
    struct:known-procedure/succeeds
-   'known-procedure/succeeds
+   '(known-procedure/succeeds)
    0
    0
    (if (struct-type? struct:known-procedure/no-prompt)
@@ -2876,10 +2876,10 @@
    #f
    0
    0))
-(define effect_2234
+(define effect_2307
   (struct-type-install-properties!
    struct:known-procedure/allocates
-   'known-procedure/allocates
+   '(known-procedure/allocates)
    0
    0
    (if (struct-type? struct:known-procedure/succeeds)
@@ -2932,10 +2932,10 @@
    #f
    0
    0))
-(define effect_2568
+(define effect_2394
   (struct-type-install-properties!
    struct:known-procedure/pure
-   'known-procedure/pure
+   '(known-procedure/pure)
    0
    0
    (if (struct-type? struct:known-procedure/allocates)
@@ -2985,10 +2985,10 @@
    #f
    0
    0))
-(define effect_2204
+(define effect_2781
   (struct-type-install-properties!
    struct:known-procedure/pure/folding
-   'known-procedure/pure/folding
+   '(known-procedure/pure/folding)
    0
    0
    (if (struct-type? struct:known-procedure/pure)
@@ -3041,10 +3041,10 @@
    #f
    1
    1))
-(define effect_2430
+(define effect_2709
   (struct-type-install-properties!
    struct:known-procedure/pure/folding-unsafe
-   'known-procedure/pure/folding-unsafe
+   '(known-procedure/pure/folding-unsafe)
    1
    0
    (if (struct-type? struct:known-procedure/pure/folding)
@@ -3115,10 +3115,10 @@
    #f
    1
    1))
-(define effect_2420
+(define effect_2998
   (struct-type-install-properties!
    struct:known-procedure/has-unsafe
-   'known-procedure/has-unsafe
+   '(known-procedure/has-unsafe)
    1
    0
    (if (struct-type? struct:known-procedure/no-prompt)
@@ -3189,10 +3189,10 @@
    #f
    0
    0))
-(define effect_1752
+(define effect_2584
   (struct-type-install-properties!
    struct:known-procedure/has-unsafe/folding
-   'known-procedure/has-unsafe/folding
+   '(known-procedure/has-unsafe/folding)
    0
    0
    (if (struct-type? struct:known-procedure/has-unsafe)
@@ -3245,10 +3245,10 @@
    #f
    1
    1))
-(define effect_2526
+(define effect_2633
   (struct-type-install-properties!
    struct:known-procedure/has-unsafe/folding/limited
-   'known-procedure/has-unsafe/folding/limited
+   '(known-procedure/has-unsafe/folding/limited)
    1
    0
    (if (struct-type? struct:known-procedure/has-unsafe/folding)
@@ -3320,10 +3320,10 @@
    #f
    3
    7))
-(define effect_2722
+(define effect_2547
   (struct-type-install-properties!
    struct:known-struct-type
-   'known-struct-type
+   '(known-struct-type)
    3
    0
    (if (struct-type? struct:known-consistent)
@@ -3425,10 +3425,10 @@
    #f
    1
    1))
-(define effect_2907
+(define effect_2090
   (struct-type-install-properties!
    struct:known-constructor
-   'known-constructor
+   '(known-constructor)
    1
    0
    (if (struct-type? struct:known-procedure/allocates)
@@ -3494,10 +3494,10 @@
    #f
    1
    1))
-(define effect_2630
+(define effect_2975
   (struct-type-install-properties!
    struct:known-predicate
-   'known-predicate
+   '(known-predicate)
    1
    0
    (if (struct-type? struct:known-procedure/pure)
@@ -3561,10 +3561,10 @@
    #f
    1
    1))
-(define effect_2802
+(define effect_2542
   (struct-type-install-properties!
    struct:known-accessor
-   'known-accessor
+   '(known-accessor)
    1
    0
    (if (struct-type? struct:known-procedure/single-valued)
@@ -3628,10 +3628,10 @@
    #f
    1
    1))
-(define effect_2101
+(define effect_2533
   (struct-type-install-properties!
    struct:known-mutator
-   'known-mutator
+   '(known-mutator)
    1
    0
    (if (struct-type? struct:known-procedure/single-valued)
@@ -3695,10 +3695,10 @@
    #f
    1
    1))
-(define effect_3019
+(define effect_2411
   (struct-type-install-properties!
    struct:known-struct-constructor
-   'known-struct-constructor
+   '(known-struct-constructor)
    1
    0
    (if (struct-type? struct:known-constructor)
@@ -3772,7 +3772,7 @@
 (define effect_2929
   (struct-type-install-properties!
    struct:known-struct-predicate
-   'known-struct-predicate
+   '(known-struct-predicate)
    2
    0
    (if (struct-type? struct:known-predicate)
@@ -3858,10 +3858,10 @@
    #f
    4
    15))
-(define effect_2706
+(define effect_2971
   (struct-type-install-properties!
    struct:known-field-accessor
-   'known-field-accessor
+   '(known-field-accessor)
    4
    0
    (if (struct-type? struct:known-accessor)
@@ -3983,10 +3983,10 @@
    #f
    3
    7))
-(define effect_3046
+(define effect_2493
   (struct-type-install-properties!
    struct:known-field-mutator
-   'known-field-mutator
+   '(known-field-mutator)
    3
    0
    (if (struct-type? struct:known-mutator)
@@ -4090,10 +4090,10 @@
    #f
    1
    1))
-(define effect_2765
+(define effect_3135
   (struct-type-install-properties!
    struct:known-struct-constructor/need-imports
-   'known-struct-constructor/need-imports
+   '(known-struct-constructor/need-imports)
    1
    0
    (if (struct-type? struct:known-struct-constructor)
@@ -4164,10 +4164,10 @@
    #f
    1
    1))
-(define effect_2432
+(define effect_2453
   (struct-type-install-properties!
    struct:known-struct-predicate/need-imports
-   'known-struct-predicate/need-imports
+   '(known-struct-predicate/need-imports)
    1
    0
    (if (struct-type? struct:known-struct-predicate)
@@ -4238,10 +4238,10 @@
    #f
    1
    1))
-(define effect_2891
+(define effect_2353
   (struct-type-install-properties!
    struct:known-field-accessor/need-imports
-   'known-field-accessor/need-imports
+   '(known-field-accessor/need-imports)
    1
    0
    (if (struct-type? struct:known-field-accessor)
@@ -4312,10 +4312,10 @@
    #f
    1
    1))
-(define effect_2824
+(define effect_2148
   (struct-type-install-properties!
    struct:known-field-mutator/need-imports
-   'known-field-mutator/need-imports
+   '(known-field-mutator/need-imports)
    1
    0
    (if (struct-type? struct:known-field-mutator)
@@ -4382,10 +4382,10 @@
    #f
    0
    0))
-(define effect_2752
+(define effect_2693
   (struct-type-install-properties!
    struct:known-struct-type-property/immediate-guard
-   'known-struct-type-property/immediate-guard
+   '(known-struct-type-property/immediate-guard)
    0
    0
    #f
@@ -4444,10 +4444,10 @@
    #f
    4
    0))
-(define effect_2897
+(define effect_3124
   (struct-type-install-properties!
    struct:import
-   'import
+   '(import)
    4
    0
    #f
@@ -4531,10 +4531,10 @@
    #f
    6
    60))
-(define effect_2514
+(define effect_2534
   (struct-type-install-properties!
    struct:import-group
-   'import-group
+   '(import-group)
    6
    0
    #f
@@ -4901,10 +4901,10 @@
    #f
    2
    0))
-(define effect_2166
+(define effect_2393
   (struct-type-install-properties!
    struct:export
-   'export
+   '(export)
    2
    0
    #f
@@ -4962,10 +4962,10 @@
    #f
    2
    0))
-(define effect_2681
+(define effect_2424
   (struct-type-install-properties!
    struct:too-early
-   'too-early
+   '(too-early)
    2
    0
    #f
@@ -7271,10 +7271,10 @@
    #f
    10
    0))
-(define effect_3042
+(define effect_2476
   (struct-type-install-properties!
    struct:struct-type-info
-   'struct-type-info
+   '(struct-type-info)
    10
    0
    #f
@@ -17128,7 +17128,11 @@
                                      (let ((app_2
                                             (list
                                              'quote
-                                             (struct-type-info-name sti_0))))
+                                             (if system-opaque?_0
+                                               (list
+                                                (struct-type-info-name sti_0))
+                                               (struct-type-info-name
+                                                sti_0)))))
                                        (let ((app_3
                                               (struct-type-info-immediate-field-count
                                                sti_0)))
@@ -30276,10 +30280,10 @@
    #f
    4
    0))
-(define effect_2645
+(define effect_2536
   (struct-type-install-properties!
    struct:convert-mode
-   'convert-mode
+   '(convert-mode)
    4
    0
    #f
@@ -39416,10 +39420,10 @@
    #f
    3
    0))
-(define effect_3053
+(define effect_2468
   (struct-type-install-properties!
    struct:to-unfasl
-   'to-unfasl
+   '(to-unfasl)
    3
    0
    #f
@@ -39567,10 +39571,10 @@
    #f
    5
    0))
-(define effect_2498
+(define effect_2447
   (struct-type-install-properties!
    struct:node
-   'node
+   '(node)
    5
    0
    #f
@@ -39889,10 +39893,10 @@
    #f
    5
    28))
-(define effect_2396
+(define effect_2734
   (struct-type-install-properties!
    struct:stack-info
-   'stack-info
+   '(stack-info)
    5
    0
    #f
@@ -40247,10 +40251,10 @@
    #f
    2
    0))
-(define effect_2066
+(define effect_2736
   (struct-type-install-properties!
    struct:indirect
-   'indirect
+   '(indirect)
    2
    0
    #f
@@ -40315,10 +40319,10 @@
    #f
    1
    0))
-(define effect_2558
+(define effect_2333
   (struct-type-install-properties!
    struct:boxed
-   'boxed
+   '(boxed)
    1
    0
    #f
@@ -40360,10 +40364,10 @@
    #f
    0
    0))
-(define effect_2563
+(define effect_2358
   (struct-type-install-properties!
    struct:boxed/check
-   'boxed/check
+   '(boxed/check)
    0
    0
    struct:boxed

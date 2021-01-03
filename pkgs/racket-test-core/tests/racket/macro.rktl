@@ -762,8 +762,8 @@
         #:trim-error #rx"^[^\n]*\n[^\n]*")
   
   (define (in-defctx s) `(let () ,s))
-  (test '("(#(struct:liberal-define-context))\n10\n" "") go '(definition-context expression) in-defctx 'prop:procedure)
-  (test '("(#(struct:liberal-define-context))\n10\n" "") go '(definition-context) in-defctx 'prop:procedure)
+  (test '("(#<liberal-define-context>)\n10\n" "") go '(definition-context expression) in-defctx 'prop:procedure)
+  (test '("(#<liberal-define-context>)\n10\n" "") go '(definition-context) in-defctx 'prop:procedure)
   (test '("expression\n10\n" "") go '(expression) in-defctx 'prop:procedure)
   (test '("" "m: not allowed in context\n  expansion context: definition-context") go '() in-defctx 'prop:procedure
         #:trim-error #rx"^[^\n]*\n[^\n]*")

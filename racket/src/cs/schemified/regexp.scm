@@ -874,10 +874,10 @@
    #f
    2
    0))
-(define effect_2665
+(define effect_1936
   (struct-type-install-properties!
    struct:rx:alts
-   'rx:alts
+   '(rx:alts)
    2
    0
    #f
@@ -930,10 +930,10 @@
    #f
    2
    0))
-(define effect_2137
+(define effect_2662
   (struct-type-install-properties!
    struct:rx:sequence
-   'rx:sequence
+   '(rx:sequence)
    2
    0
    #f
@@ -1001,10 +1001,10 @@
    #f
    2
    0))
-(define effect_2340
+(define effect_3021
   (struct-type-install-properties!
    struct:rx:group
-   'rx:group
+   '(rx:group)
    2
    0
    #f
@@ -1069,10 +1069,10 @@
    #f
    4
    0))
-(define effect_2551
+(define effect_2413
   (struct-type-install-properties!
    struct:rx:repeat
-   'rx:repeat
+   '(rx:repeat)
    4
    0
    #f
@@ -1170,10 +1170,10 @@
    #f
    2
    0))
-(define effect_2619
+(define effect_1615
   (struct-type-install-properties!
    struct:rx:maybe
-   'rx:maybe
+   '(rx:maybe)
    2
    0
    #f
@@ -1238,10 +1238,10 @@
    #f
    6
    0))
-(define effect_2459
+(define effect_2714
   (struct-type-install-properties!
    struct:rx:conditional
-   'rx:conditional
+   '(rx:conditional)
    6
    0
    #f
@@ -1375,10 +1375,10 @@
    #f
    4
    0))
-(define effect_2324
+(define effect_2193
   (struct-type-install-properties!
    struct:rx:lookahead
-   'rx:lookahead
+   '(rx:lookahead)
    4
    0
    #f
@@ -1478,10 +1478,10 @@
    #f
    6
    12))
-(define effect_2263
+(define effect_2578
   (struct-type-install-properties!
    struct:rx:lookbehind
-   'rx:lookbehind
+   '(rx:lookbehind)
    6
    0
    #f
@@ -1649,10 +1649,10 @@
    #f
    4
    0))
-(define effect_2942
+(define effect_2428
   (struct-type-install-properties!
    struct:rx:cut
-   'rx:cut
+   '(rx:cut)
    4
    0
    #f
@@ -1742,10 +1742,10 @@
    #f
    2
    0))
-(define effect_2344
+(define effect_2572
   (struct-type-install-properties!
    struct:rx:reference
-   'rx:reference
+   '(rx:reference)
    2
    0
    #f
@@ -1815,10 +1815,10 @@
    #f
    1
    0))
-(define effect_2702
+(define effect_2430
   (struct-type-install-properties!
    struct:rx:range
-   'rx:range
+   '(rx:range)
    1
    0
    #f
@@ -1867,10 +1867,10 @@
    #f
    2
    0))
-(define effect_2129
+(define effect_2489
   (struct-type-install-properties!
    struct:rx:unicode-categories
-   'rx:unicode-categories
+   '(rx:unicode-categories)
    2
    0
    #f
@@ -2138,10 +2138,10 @@
    #f
    7
    0))
-(define effect_2566
+(define effect_2522
   (struct-type-install-properties!
    struct:parse-config
-   'parse-config
+   '(parse-config)
    7
    0
    #f
@@ -4706,10 +4706,10 @@
    #f
    13
    3075))
-(define effect_2272
+(define effect_2409
   (struct-type-install-properties!
    struct:lazy-bytes
-   'lazy-bytes
+   '(lazy-bytes)
    13
    0
    #f
@@ -7251,10 +7251,10 @@
    #f
    10
    0))
-(define effect_2093
+(define effect_2528
   (struct-type-install-properties!
    struct:rx:regexp
-   'regexp
+   '(regexp)
    10
    0
    #f

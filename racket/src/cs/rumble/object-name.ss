@@ -55,7 +55,8 @@
    [(procedure? v)
     (extract-procedure-name v)]
    [(struct-type? v)
-    (record-type-name v)]
+    (and (not (eq? (inspector-ref v) none))
+         (record-type-name v))]
    [(struct-type-property? v)
     (struct-type-prop-name v)]
    [(record? v)

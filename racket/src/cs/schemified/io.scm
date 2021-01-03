@@ -2631,10 +2631,10 @@
    #f
    11
    2047))
-(define effect_2883
+(define effect_2467
   (struct-type-install-properties!
    struct:sandman
-   'sandman
+   '(sandman)
    11
    0
    #f
@@ -3598,10 +3598,10 @@
    #f
    2
    0))
-(define effect_2383
+(define effect_2305
   (struct-type-install-properties!
    struct:exts
-   'exts
+   '(exts)
    2
    0
    #f
@@ -3891,10 +3891,10 @@
    #f
    7
    124))
-(define effect_2716
+(define effect_2672
   (struct-type-install-properties!
    struct:core-port
-   'core-port
+   '(core-port)
    7
    0
    #f
@@ -3947,10 +3947,10 @@
    #f
    5
    0))
-(define effect_2750
+(define effect_2243
   (struct-type-install-properties!
    struct:core-port-methods.1
-   'core-port-methods
+   '(core-port-methods)
    5
    0
    #f
@@ -4083,10 +4083,10 @@
    #f
    3
    7))
-(define effect_3200
+(define effect_2315
   (struct-type-install-properties!
    struct:direct
-   'direct
+   '(direct)
    3
    0
    #f
@@ -4120,10 +4120,10 @@
    #f
    5
    31))
-(define effect_2872
+(define effect_2878
   (struct-type-install-properties!
    struct:location
-   'location
+   '(location)
    5
    0
    #f
@@ -4227,10 +4227,10 @@
    #f
    2
    3))
-(define effect_2614
+(define effect_2934
   (struct-type-install-properties!
    struct:core-input-port
-   'core-input-port
+   '(core-input-port)
    2
    0
    struct:core-port
@@ -4302,10 +4302,10 @@
    #f
    6
    0))
-(define effect_3216
+(define effect_2804
   (struct-type-install-properties!
    struct:core-input-port-methods.1
-   'core-input-port-methods
+   '(core-input-port-methods)
    6
    0
    struct:core-port-methods.1
@@ -4546,10 +4546,10 @@
    #f
    4
    15))
-(define effect_2619
+(define effect_2929
   (struct-type-install-properties!
    struct:core-output-port
-   'core-output-port
+   '(core-output-port)
    4
    0
    struct:core-port
@@ -4622,10 +4622,10 @@
    #f
    4
    0))
-(define effect_2581
+(define effect_2086
   (struct-type-install-properties!
    struct:core-output-port-methods.1
-   'core-output-port-methods
+   '(core-output-port-methods)
    4
    0
    struct:core-port-methods.1
@@ -4793,10 +4793,10 @@
    #f
    1
    0))
-(define effect_2681
+(define effect_2624
   (struct-type-install-properties!
    struct:write-evt
-   'write-evt
+   '(write-evt)
    1
    0
    #f
@@ -4865,10 +4865,10 @@
    #f
    3
    0))
-(define effect_2417
+(define effect_2392
   (struct-type-install-properties!
    struct:utf-8-state
-   'utf-8-state
+   '(utf-8-state)
    3
    0
    #f
@@ -6692,10 +6692,10 @@
    #f
    3
    0))
-(define effect_3024
+(define effect_2778
   (struct-type-install-properties!
    struct:commit-manager
-   'commit-manager
+   '(commit-manager)
    3
    0
    #f
@@ -6783,10 +6783,10 @@
    #f
    5
    0))
-(define effect_2327
+(define effect_2971
   (struct-type-install-properties!
    struct:commit-request
-   'commit-request
+   '(commit-request)
    5
    0
    #f
@@ -6908,10 +6908,10 @@
    #f
    2
    0))
-(define effect_2424
+(define effect_2630
   (struct-type-install-properties!
    struct:commit-response
-   'commit-response
+   '(commit-response)
    2
    0
    #f
@@ -7226,10 +7226,10 @@
    #f
    2
    3))
-(define effect_2713
+(define effect_2923
   (struct-type-install-properties!
    struct:commit-input-port
-   'commit-input-port
+   '(commit-input-port)
    2
    0
    struct:core-input-port
@@ -7271,10 +7271,10 @@
    #f
    0
    0))
-(define effect_2628
+(define effect_1933
   (struct-type-install-properties!
    struct:commit-input-port-methods.1
-   'commit-input-port-methods
+   '(commit-input-port-methods)
    0
    0
    struct:core-input-port-methods.1
@@ -7446,10 +7446,10 @@
    #f
    16
    65534))
-(define effect_3136
+(define effect_2761
   (struct-type-install-properties!
    struct:pipe-data
-   'pipe-data
+   '(pipe-data)
    16
    0
    #f
@@ -7548,10 +7548,10 @@
    #f
    0
    0))
-(define effect_2891
+(define effect_2809
   (struct-type-install-properties!
    struct:pipe-data-methods.1
-   'pipe-data-methods
+   '(pipe-data-methods)
    0
    0
    #f
@@ -7682,10 +7682,10 @@
    #f
    1
    1))
-(define effect_2367
+(define effect_1840
   (struct-type-install-properties!
    struct:pipe-input-port
-   'pipe-input-port
+   '(pipe-input-port)
    1
    0
    struct:commit-input-port
@@ -7715,10 +7715,10 @@
    #f
    0
    0))
-(define effect_2379
+(define effect_3026
   (struct-type-install-properties!
    struct:pipe-input-port-methods.1
-   'pipe-input-port-methods
+   '(pipe-input-port-methods)
    0
    0
    struct:commit-input-port-methods.1
@@ -8078,10 +8078,10 @@
    #f
    1
    1))
-(define effect_2458
+(define effect_3143
   (struct-type-install-properties!
    struct:pipe-output-port
-   'pipe-output-port
+   '(pipe-output-port)
    1
    0
    struct:core-output-port
@@ -8113,10 +8113,10 @@
    #f
    0
    0))
-(define effect_2137
+(define effect_2754
   (struct-type-install-properties!
    struct:pipe-output-port-methods.1
-   'pipe-output-port-methods
+   '(pipe-output-port-methods)
    0
    0
    struct:core-output-port-methods.1
@@ -8690,10 +8690,10 @@
    #f
    1
    0))
-(define effect_2371
+(define effect_2496
   (struct-type-install-properties!
    struct:pipe-write-poller
-   'pipe-write-poller
+   '(pipe-write-poller)
    1
    0
    #f
@@ -8775,10 +8775,10 @@
    #f
    1
    0))
-(define effect_2439
+(define effect_2898
   (struct-type-install-properties!
    struct:pipe-read-poller
-   'pipe-read-poller
+   '(pipe-read-poller)
    1
    0
    #f
@@ -8860,10 +8860,10 @@
    #f
    5
    31))
-(define effect_2246
+(define effect_2594
   (struct-type-install-properties!
    struct:peek-via-read-input-port
-   'peek-via-read-input-port
+   '(peek-via-read-input-port)
    5
    0
    struct:commit-input-port
@@ -8934,10 +8934,10 @@
    #f
    1
    0))
-(define effect_2651
+(define effect_2499
   (struct-type-install-properties!
    struct:peek-via-read-input-port-methods.1
-   'peek-via-read-input-port-methods
+   '(peek-via-read-input-port-methods)
    1
    0
    struct:commit-input-port-methods.1
@@ -9640,10 +9640,10 @@
    #f
    3
    7))
-(define effect_2195
+(define effect_2353
   (struct-type-install-properties!
    struct:fd-input-port
-   'fd-input-port
+   '(fd-input-port)
    3
    0
    struct:peek-via-read-input-port
@@ -9694,10 +9694,10 @@
    #f
    2
    0))
-(define effect_2334
+(define effect_2026
   (struct-type-install-properties!
    struct:fd-input-port-methods.1
-   'fd-input-port-methods
+   '(fd-input-port-methods)
    2
    0
    struct:peek-via-read-input-port-methods.1
@@ -9948,10 +9948,10 @@
    #f
    8
    255))
-(define effect_2068
+(define effect_2985
   (struct-type-install-properties!
    struct:fd-output-port
-   'fd-output-port
+   '(fd-output-port)
    8
    0
    struct:core-output-port
@@ -10060,10 +10060,10 @@
    #f
    2
    0))
-(define effect_2413
+(define effect_2747
   (struct-type-install-properties!
    struct:fd-output-port-methods.1
-   'fd-output-port-methods
+   '(fd-output-port-methods)
    2
    0
    struct:core-output-port-methods.1
@@ -10661,10 +10661,10 @@
    #f
    3
    4))
-(define effect_2551
+(define effect_2106
   (struct-type-install-properties!
    struct:fd-evt
-   'fd-evt
+   '(fd-evt)
    3
    0
    #f
@@ -10800,10 +10800,10 @@
    #f
    1
    0))
-(define effect_2495
+(define effect_1965
   (struct-type-install-properties!
    struct:rktio-fd-flushed-evt
-   'rktio-fd-flushed-evt
+   '(rktio-fd-flushed-evt)
    1
    0
    #f
@@ -11592,10 +11592,10 @@
    #f
    2
    0))
-(define effect_2813
+(define effect_2746
   (struct-type-install-properties!
    struct:progress-evt
-   'progress-evt
+   '(progress-evt)
    2
    0
    #f
@@ -14915,10 +14915,10 @@
    #f
    2
    0))
-(define effect_2723
+(define effect_2854
   (struct-type-install-properties!
    struct:utf-8-converter
-   'utf-8-converter
+   '(utf-8-converter)
    2
    0
    #f
@@ -15849,10 +15849,10 @@
    #f
    2
    3))
-(define effect_2529
+(define effect_2513
   (struct-type-install-properties!
    struct:bytes-converter
-   'bytes-converter
+   '(bytes-converter)
    2
    0
    #f
@@ -16726,10 +16726,10 @@
    #f
    4
    15))
-(define effect_2666
+(define effect_2505
   (struct-type-install-properties!
    struct:cache
-   'cache
+   '(cache)
    4
    0
    #f
@@ -17100,10 +17100,10 @@
    #f
    2
    0))
-(define effect_2481
+(define effect_2269
   (struct-type-install-properties!
    struct:path
-   'path
+   '(path)
    2
    0
    #f
@@ -18402,10 +18402,10 @@
    #f
    3
    7))
-(define effect_2730
+(define effect_2303
   (struct-type-install-properties!
    struct:bytes-input-port
-   'bytes-input-port
+   '(bytes-input-port)
    3
    0
    struct:commit-input-port
@@ -18451,10 +18451,10 @@
    #f
    0
    0))
-(define effect_2624
+(define effect_2574
   (struct-type-install-properties!
    struct:bytes-input-port-methods.1
-   'bytes-input-port-methods
+   '(bytes-input-port-methods)
    0
    0
    struct:commit-input-port-methods.1
@@ -18682,10 +18682,10 @@
    #f
    3
    7))
-(define effect_2717
+(define effect_2607
   (struct-type-install-properties!
    struct:bytes-output-port
-   'bytes-output-port
+   '(bytes-output-port)
    3
    0
    struct:core-output-port
@@ -18735,10 +18735,10 @@
    #f
    2
    0))
-(define effect_2372
+(define effect_2007
   (struct-type-install-properties!
    struct:bytes-output-port-methods.1
-   'bytes-output-port-methods
+   '(bytes-output-port-methods)
    2
    0
    struct:core-output-port-methods.1
@@ -19188,10 +19188,10 @@
    #f
    2
    3))
-(define effect_3238
+(define effect_2654
   (struct-type-install-properties!
    struct:max-output-port
-   'max-output-port
+   '(max-output-port)
    2
    0
    struct:core-output-port
@@ -19229,10 +19229,10 @@
    #f
    0
    0))
-(define effect_2860
+(define effect_2484
   (struct-type-install-properties!
    struct:max-output-port-methods.1
-   'max-output-port-methods
+   '(max-output-port-methods)
    0
    0
    struct:core-output-port-methods.1
@@ -20151,10 +20151,10 @@
    #f
    0
    0))
-(define effect_2671
+(define effect_2498
   (struct-type-install-properties!
    struct:nowhere-output-port
-   'nowhere-output-port
+   '(nowhere-output-port)
    0
    0
    struct:core-output-port
@@ -20182,10 +20182,10 @@
    #f
    0
    0))
-(define effect_2396
+(define effect_2432
   (struct-type-install-properties!
    struct:nowhere-output-port-methods.1
-   'nowhere-output-port-methods
+   '(nowhere-output-port-methods)
    0
    0
    struct:core-output-port-methods.1
@@ -20429,10 +20429,10 @@
    #f
    1
    0))
-(define effect_2971
+(define effect_2500
   (struct-type-install-properties!
    struct:as-constructor
-   'as-constructor
+   '(as-constructor)
    1
    0
    #f
@@ -23427,10 +23427,10 @@
    #f
    7
    0))
-(define effect_2720
+(define effect_2733
   (struct-type-install-properties!
    struct:starting-point
-   'starting-point
+   '(starting-point)
    7
    0
    #f
@@ -25409,10 +25409,10 @@
    #f
    4
    0))
-(define effect_2690
+(define effect_2725
   (struct-type-install-properties!
    struct:security-guard
-   'security-guard
+   '(security-guard)
    4
    0
    #f
@@ -29810,7 +29810,7 @@
             (current-directory$1))
           '()
           hash2725))))))
-(define effect_2315
+(define effect_2316
   (begin (void (begin-unsafe (set! simplify-path/dl 1/simplify-path))) (void)))
 (define bytes-no-nuls?
   (lambda (s_0)
@@ -29864,10 +29864,10 @@
    #f
    1
    1))
-(define effect_2652
+(define effect_2324
   (struct-type-install-properties!
    struct:environment-variables
-   'environment-variables
+   '(environment-variables)
    1
    0
    #f
@@ -31596,10 +31596,10 @@
    #f
    11
    376))
-(define effect_2192
+(define effect_2502
   (struct-type-install-properties!
    struct:logger
-   'logger
+   '(logger)
    11
    0
    #f
@@ -32067,10 +32067,10 @@
    #f
    2
    3))
-(define effect_2520
+(define effect_2212
   (struct-type-install-properties!
    struct:queue
-   'queue
+   '(queue)
    2
    0
    #f
@@ -32101,10 +32101,10 @@
    #f
    3
    6))
-(define effect_2547
+(define effect_2737
   (struct-type-install-properties!
    struct:node
-   'node
+   '(node)
    3
    0
    #f
@@ -32165,10 +32165,10 @@
    #f
    1
    0))
-(define effect_2708
+(define effect_2818
   (struct-type-install-properties!
    struct:log-receiver
-   'log-receiver
+   '(log-receiver)
    1
    0
    #f
@@ -32223,10 +32223,10 @@
    #f
    3
    0))
-(define effect_2181
+(define effect_2203
   (struct-type-install-properties!
    struct:queue-log-receiver
-   'log-receiver
+   '(log-receiver)
    3
    0
    struct:log-receiver
@@ -32404,10 +32404,10 @@
    #f
    2
    0))
-(define effect_2592
+(define effect_1964
   (struct-type-install-properties!
    struct:stdio-log-receiver
-   'stdio-log-receiver
+   '(stdio-log-receiver)
    2
    0
    struct:log-receiver
@@ -32550,10 +32550,10 @@
    #f
    2
    0))
-(define effect_2241
+(define effect_2057
   (struct-type-install-properties!
    struct:syslog-log-receiver
-   'syslog-log-receiver
+   '(syslog-log-receiver)
    2
    0
    struct:log-receiver
@@ -33516,10 +33516,10 @@
    #f
    2
    3))
-(define effect_2322
+(define effect_2420
   (struct-type-install-properties!
    struct:fs-change-evt
-   'filesystem-change-evt
+   '(filesystem-change-evt)
    2
    0
    #f
@@ -34018,10 +34018,10 @@
    #f
    3
    3))
-(define effect_2272
+(define effect_2643
   (struct-type-install-properties!
    struct:subprocess
-   'subprocess
+   '(subprocess)
    3
    0
    #f
@@ -34895,10 +34895,10 @@
    #f
    1
    1))
-(define effect_3035
+(define effect_2557
   (struct-type-install-properties!
    struct:tcp-input-port
-   'tcp-input-port
+   '(tcp-input-port)
    1
    0
    struct:fd-input-port
@@ -34936,10 +34936,10 @@
    #f
    0
    0))
-(define effect_2838
+(define effect_2306
   (struct-type-install-properties!
    struct:tcp-input-port-methods.1
-   'tcp-input-port-methods
+   '(tcp-input-port-methods)
    0
    0
    struct:fd-input-port-methods.1
@@ -35072,10 +35072,10 @@
    #f
    1
    1))
-(define effect_2595
+(define effect_2686
   (struct-type-install-properties!
    struct:tcp-output-port
-   'tcp-output-port
+   '(tcp-output-port)
    1
    0
    struct:fd-output-port
@@ -35115,10 +35115,10 @@
    #f
    0
    0))
-(define effect_2727
+(define effect_2463
   (struct-type-install-properties!
    struct:tcp-output-port-methods.1
-   'tcp-output-port-methods
+   '(tcp-output-port-methods)
    0
    0
    struct:fd-output-port-methods.1
@@ -35272,10 +35272,10 @@
    #f
    2
    0))
-(define effect_2914
+(define effect_2460
   (struct-type-install-properties!
    struct:rktio-evt
-   'rktio-evt
+   '(rktio-evt)
    2
    0
    #f
@@ -35463,10 +35463,10 @@
    #f
    2
    3))
-(define effect_2403
+(define effect_2123
   (struct-type-install-properties!
    struct:connect-progress
-   'connect-progress
+   '(connect-progress)
    2
    0
    #f
@@ -35842,10 +35842,10 @@
    #f
    3
    0))
-(define effect_2611
+(define effect_2228
   (struct-type-install-properties!
    struct:tcp-listener
-   'tcp-listener
+   '(tcp-listener)
    3
    0
    #f
@@ -36225,10 +36225,10 @@
    #f
    1
    0))
-(define effect_2325
+(define effect_2314
   (struct-type-install-properties!
    struct:accept-evt
-   'tcp-accept-evt
+   '(tcp-accept-evt)
    1
    0
    #f
@@ -36389,10 +36389,10 @@
       (args (raise-binding-result-arity-error 2 args))))))
 (define struct:udp
   (make-record-type-descriptor* 'udp #f (|#%nongenerative-uid| udp) #f #f 3 7))
-(define effect_2368
+(define effect_2285
   (struct-type-install-properties!
    struct:udp
-   'udp
+   '(udp)
    3
    0
    #f
@@ -37570,10 +37570,10 @@
    #f
    2
    0))
-(define effect_2348
+(define effect_2811
   (struct-type-install-properties!
    struct:udp-sending-evt
-   'udp-send-evt
+   '(udp-send-evt)
    2
    0
    #f
@@ -37627,10 +37627,10 @@
    #f
    0
    0))
-(define effect_3038
+(define effect_2766
   (struct-type-install-properties!
    struct:udp-sending-ready-evt
-   'udp-send-ready-evt
+   '(udp-send-ready-evt)
    0
    0
    struct:rktio-evt
@@ -37959,10 +37959,10 @@
    #f
    2
    0))
-(define effect_2847
+(define effect_3133
   (struct-type-install-properties!
    struct:udp-receiving-evt
-   'udp-receive-evt
+   '(udp-receive-evt)
    2
    0
    #f
@@ -38021,10 +38021,10 @@
    #f
    0
    0))
-(define effect_2341
+(define effect_2191
   (struct-type-install-properties!
    struct:udp-receiving-ready-evt
-   'udp-receive-ready-evt
+   '(udp-receive-ready-evt)
    0
    0
    struct:rktio-evt

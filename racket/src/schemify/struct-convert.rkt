@@ -95,7 +95,11 @@
                  null
                  `((define ,(deterministic-gensym "effect")
                      (struct-type-install-properties! ,struct:s
-                                                      ',(struct-type-info-name sti)
+                                                      ',(if system-opaque?
+                                                            ;; list is recognized by `struct-type-install-properties!`
+                                                            ;; to indincate a system structure type:
+                                                            (list (struct-type-info-name sti))
+                                                            (struct-type-info-name sti))
                                                       ,(struct-type-info-immediate-field-count sti)
                                                       0
                                                       ,(schemify (struct-type-info-parent sti) knowns)
