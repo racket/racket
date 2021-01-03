@@ -39,7 +39,7 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 (fn2 a #:b 'c)
 ]
 
-@history[#:added "7.9.0.3"]
+@history[#:added "7.9.0.22"]
 }
 
 @defform[(define-syntax-parser macro-id parse-option ... clause ...+)]{
