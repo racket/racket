@@ -343,7 +343,11 @@
 
 ;; String splitting can take longer than byte-string splitting,
 ;;  but it should have the same computational complexity.
-(let ()
+;;
+;; While the test is unreliable, it seems to fail mostly on
+;; Windows CI.
+(when (or (not (eq? (system-type 'os) 'windows))
+          (run-unreliable-tests? 'timing))
   (define N 100000)
   (define-values (b bcpu breal bgc) 
     (time-apply
