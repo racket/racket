@@ -106,19 +106,19 @@ boxes that are not @tech{impersonators}.
 
 
 @defproc[(box-cas! [box (and/c box? (not/c immutable?) (not/c impersonator?))]
-                   [old any/c] 
-                   [new any/c]) 
+                   [old any/c]
+                   [new any/c])
          boolean?]{
   Atomically updates the contents of @racket[box] to @racket[new], provided
   that @racket[box] currently contains a value that is @racket[eq?] to
-  @racket[old], and returns @racket[#t] in that case.  If @racket[box] 
+  @racket[old], and returns @racket[#t] in that case.  If @racket[box]
   does not contain @racket[old], then the result is @racket[#f].
 
   If no other @tech{threads} or @tech{futures} attempt to access
-  @racket[box], the operation is equivalent to 
+  @racket[box], the operation is equivalent to
 
   @racketblock[
-  (and (eq? old (unbox loc)) (set-box! loc new) #t)]
+  (and (eq? old (unbox box)) (set-box! box new) #t)]
 
   except that @racket[box-cas!] can spuriously fail on some platforms.
   That is, with low probability, the result can be @racket[#f] with the
