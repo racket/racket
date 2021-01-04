@@ -677,10 +677,11 @@
                   ;; E.g., if N = 10 and we have #(3 4 8 9)
                   ;; then we change it to #(3 5 6 7)
                   [index-to-change
-                   (vector-set! k* index-to-change
-                                (add1 (vector-ref k* index-to-change)))
-                   (for ([i (in-range (add1 index-to-change) k)])
-                     (vector-set! k* i (add1 (vector-ref k* (sub1 i)))))]
+                   (define val-to-change (add1 (vector-ref k* index-to-change)))
+                   (vector-set! k* index-to-change val-to-change)
+                   (for ([i (in-range (add1 index-to-change) k)]
+                         [v (in-naturals (add1 val-to-change))])
+                     (vector-set! k* i v))]
                   ;; Otherwise, there's no incrementable index. E.g.,
                   ;; N = 10 and we have #(6 7 8 9), so we quit enumeration
                   [else (set! running? #f)])))]
