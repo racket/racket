@@ -605,7 +605,8 @@
           ;; Finish checking and install new property values:
           (install-props! rtd parent-rtd* all-immutables)
           ;; Record inspector
-          (unless (pair? name) ; pair implies a system structure type
+          (unless (and (pair? name) ; pair implies a system structure type
+                       insp)
             (inspector-set! rtd insp))
           ;; Register guard
           (register-guards! rtd parent-rtd guard 'at-start))))]))

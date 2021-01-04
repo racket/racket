@@ -5167,7 +5167,7 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *name,
                         guard);
 
   if (scheme_starting_up)
-    /* Force allocation for a struc<ture type that may be in the master GC: */
+    /* Force allocation for a structure type that may be in the master GC: */
     scheme_force_struct_type_info((Scheme_Struct_Type *)r);
 
   return r;
