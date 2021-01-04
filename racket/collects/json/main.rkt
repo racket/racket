@@ -35,6 +35,7 @@
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (output-port? ;; (current-output-port)
          #:null any/c ;; (json-null)
+         #:sort-keys? any/c ;; #f
          #:encode (or/c 'control 'all)) ;; 'control
         any)]
   [read-json
@@ -44,11 +45,13 @@
   [jsexpr->string
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (#:null any/c ;; (json-null)
+         #:sort-keys? any/c ;; #f
          #:encode (or/c 'control 'all)) ;; 'control
         any)] ;; string?
   [jsexpr->bytes
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
         (#:null any/c ;; (json-null)
+         #:sort-keys? any/c ;; #f
          #:encode (or/c 'control 'all)) ;; 'control
         any)] ;; bytes?
   [string->jsexpr
@@ -88,10 +91,12 @@
 ;; GENERATION  (from Racket to JSON)
 
 (define (write-json x [o (current-output-port)]
-                    #:null [jsnull (json-null)] #:encode [enc 'control])
-  (write-json* 'write-json x o jsnull enc))
+                    #:null [jsnull (json-null)]
+                    #:sort-keys? [sort-keys? #f]
+                    #:encode [enc 'control])
+  (write-json* 'write-json x o jsnull enc sort-keys?))
 
-(define (write-json* who x o jsnull enc)
+(define (write-json* who x o jsnull enc sort-keys?)
   (define (escape m)
     (define ch (string-ref m 0))
     (case ch
@@ -156,7 +161,7 @@
               (write-bytes #":" o)
               (loop v))
             ;; order output
-            #true)
+            sort-keys?)
             (write-bytes #"}" o)]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
@@ -471,14 +476,20 @@
 ;; -----------------------------------------------------------------------------
 ;; CONVENIENCE FUNCTIONS
 
-(define (jsexpr->string x #:null [jsnull (json-null)] #:encode [enc 'control])
+(define (jsexpr->string x
+                        #:null [jsnull (json-null)]
+                        #:sort-keys? [sort-keys? #f]
+                        #:encode [enc 'control])
   (define o (open-output-string))
-  (write-json* 'jsexpr->string x o jsnull enc)
+  (write-json* 'jsexpr->string x o jsnull enc sort-keys?)
   (get-output-string o))
 
-(define (jsexpr->bytes x #:null [jsnull (json-null)] #:encode [enc 'control])
+(define (jsexpr->bytes x
+                       #:null [jsnull (json-null)]
+                       #:sort-keys? [sort-keys? #f]
+                       #:encode [enc 'control])
   (define o (open-output-bytes))
-  (write-json* 'jsexpr->bytes x o jsnull enc)
+  (write-json* 'jsexpr->bytes x o jsnull enc sort-keys?)
   (get-output-bytes o))
 
 (define (string->jsexpr str #:null [jsnull (json-null)])

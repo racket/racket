@@ -4,6 +4,12 @@
 
 @(define website @link["http://json.org"]{JSON web site})
 @(define rfc @link["http://www.ietf.org/rfc/rfc4627.txt"]{JSON RFC})
+@; FIXME:
+@;  - RFC 4627 was obsoleted by RFC 8259,
+@;    which more explicitly discusses object keys.
+@;  - Should probably mention ECMA-404.
+@;    https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+@;  - Consider using bibliography forms.
 
 @(begin (require scribble/eval)
         (define ev (make-base-eval))
@@ -67,6 +73,7 @@ the @rfc for more information about JSON.
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
                      [#:null jsnull any/c (json-null)]
+                     [#:sort-keys? sort-keys? any/c #f]
                      [#:encode encode (or/c 'control 'all) 'control])
          any]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
@@ -80,20 +87,32 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
+  If @racket[sort-keys?] is given and is not @racket[#false],
+  the key--value pairs comprising a JSON object are emitted
+  in a deterministic order, as with @racket[hash-map]
+  when called with a non-false third argument.
+  Otherwise, and by default, the order of key--value pairs
+  is unspecified.
+  Interoperable uses of JSON can not rely on the order
+  of key--value pairs:
+  see @secref["The_JS-Expression_Data_Type"] for further discussion.
+
 @examples[#:eval ev
-  (with-output-to-string
-    (λ () (write-json #hasheq((waffle . (1 2 3))))))
-  (with-output-to-string
-    (λ () (write-json #hasheq((와플 . (1 2 3)))
-                      #:encode 'all)))
+  (write-json #hasheq((waffle . (1 2 3))))
+  (write-json #hasheq((b . #t) (a . #t))
+              #:sort-keys? #t)
+  (write-json #hasheq((와플 . (1 2 3)))
+              #:encode 'all)
 ]
 }
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any/c (json-null)]
+                         [#:sort-keys? sort-keys? any/c #f]
                          [#:encode encode (or/c 'control 'all) 'control])
          string?]{
-  Generates a JSON source string for the @tech{jsexpr} @racket[x].
+  Like @racket[write-json], but
+  generates a JSON source string for the @tech{jsexpr} @racket[x].
 
 @examples[#:eval ev
   (jsexpr->string #hasheq((waffle . (1 2 3))))
@@ -102,9 +121,11 @@ the @rfc for more information about JSON.
 
 @defproc[(jsexpr->bytes [x jsexpr?]
                         [#:null jsnull any/c (json-null)]
+                        [#:sort-keys? sort-keys? any/c #f]
                         [#:encode encode (or/c 'control 'all) 'control])
          bytes?]{
-  Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
+  Like @racket[write-json], but
+  generates a JSON source byte string for the @tech{jsexpr} @racket[x].
   (The byte string is encoded in UTF-8.)
 
 @examples[#:eval ev
