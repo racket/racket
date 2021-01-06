@@ -192,6 +192,32 @@ if test "$ARFLAGS" = '' ; then
   ARFLAGS=rc
 fi
 
+if test "${enable_ios}" != "" ; then
+  case "$host_cpu" in
+    aarch64)
+     IOS_ARCH=arm64
+     ;;
+    *)
+     IOS_ARCH=$host_cpu
+     ;;
+  esac
+  case "${enable_ios}" in
+    iPhoneOS|iPhoneSimulator)
+     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     ;;
+    *)
+     ios_sdk="${enable_ios}"
+     ;;
+  esac
+  IOS_PHONE_VERS="6.0"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
+  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
+  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+fi
+
+
 WINDRES=windres
 
 ############## platform tests ################
@@ -317,8 +343,10 @@ case "$host_os" in
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
 
-    # ncurses.h is always available
-    disable_curses_arg=""
+    # ncurses.h is always available, except on iOS
+    if test "${enable_ios}" == "" ; then
+      disable_curses_arg=""
+    fi
     ;;
   nto-qnx*)
     MACH_OS=qnx
@@ -611,9 +639,11 @@ fi
 
 ############## other inferred machine properties ################
 
-AC_CHECK_SIZEOF([void *])
+if test "${enable_ios}" = "" ; then
+  AC_CHECK_SIZEOF([void *])
 
-m4_include(../ac/valid_sizeof.m4)
+  m4_include(../ac/valid_sizeof.m4)
+fi
 
 ############## subconfigure ################
 

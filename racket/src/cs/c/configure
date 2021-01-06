@@ -4254,6 +4254,32 @@ if test "$ARFLAGS" = '' ; then
   ARFLAGS=rc
 fi
 
+if test "${enable_ios}" != "" ; then
+  case "$host_cpu" in
+    aarch64)
+     IOS_ARCH=arm64
+     ;;
+    *)
+     IOS_ARCH=$host_cpu
+     ;;
+  esac
+  case "${enable_ios}" in
+    iPhoneOS|iPhoneSimulator)
+     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     ;;
+    *)
+     ios_sdk="${enable_ios}"
+     ;;
+  esac
+  IOS_PHONE_VERS="6.0"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
+  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
+  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+fi
+
+
 WINDRES=windres
 
 ############## platform tests ################
@@ -4456,8 +4482,10 @@ case "$host_os" in
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
 
-    # ncurses.h is always available
-    disable_curses_arg=""
+    # ncurses.h is always available, except on iOS
+    if test "${enable_ios}" == "" ; then
+      disable_curses_arg=""
+    fi
     ;;
   nto-qnx*)
     MACH_OS=qnx
@@ -5455,7 +5483,8 @@ fi
 
 ############## other inferred machine properties ################
 
-# The cast to long int works around a bug in the HP C Compiler
+if test "${enable_ios}" = "" ; then
+  # The cast to long int works around a bug in the HP C Compiler
 # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
 # declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
 # This bug is HP SR number 8606223364.
@@ -5489,13 +5518,14 @@ _ACEOF
 
 
 
-if test "${ac_cv_sizeof_void_p}" != "4" ; then
+  if test "${ac_cv_sizeof_void_p}" != "4" ; then
   if test "${ac_cv_sizeof_void_p}" != "8" ; then
     echo "Something has gone wrong getting the pointer size; see config.log"
     exit 1
   fi
 fi
 
+fi
 
 ############## subconfigure ################
 
