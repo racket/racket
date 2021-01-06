@@ -326,7 +326,11 @@ typedef int tputsputcchar;
 #endif
 #if defined(__arm64__)
 # define S_MAP_CODE  MAP_JIT
-# define S_ENABLE_CODE_WRITE(on) pthread_jit_write_protect_np(!(on))
+# if defined(TARGET_OS_IPHONE)
+#  define SYSTEM(s) ((void)s, -1)
+# else
+#  define S_ENABLE_CODE_WRITE(on) pthread_jit_write_protect_np(!(on))
+# endif
 # define CANNOT_READ_DIRECTLY_INTO_CODE
 # include <pthread.h>
 #elif defined(__x86_64__)
