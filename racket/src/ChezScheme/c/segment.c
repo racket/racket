@@ -88,14 +88,14 @@ void *S_getmem(iptr bytes, IBOOL zerofill, UNUSED IBOOL for_code) {
 
   if ((addr = malloc(bytes)) == (void *)0) out_of_memory();
 
-  debug(printf("getmem(%p) -> %p\n", bytes, addr))
+  debug(printf("getmem(%ld) -> %p\n", bytes, addr))
   if ((membytes += bytes) > maxmembytes) maxmembytes = membytes;
   if (zerofill) memset(addr, 0, bytes);
   return addr;
 }
 
 void S_freemem(void *addr, iptr bytes) {
-  debug(printf("freemem(%p, %p)\n", addr, bytes))
+  debug(printf("freemem(%p, %ld)\n", addr, bytes))
   free(addr);
   membytes -= bytes;
 }
@@ -146,7 +146,7 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
 
   if ((uptr)bytes < S_pagesize) {
     if ((addr = malloc(bytes)) == (void *)0) out_of_memory();
-    debug(printf("getmem malloc(%p) -> %p\n", bytes, addr))
+    debug(printf("getmem malloc(%ld) -> %p\n", bytes, addr))
     if ((membytes += bytes) > maxmembytes) maxmembytes = membytes;
     if (zerofill) memset(addr, 0, bytes);
   } else {
@@ -160,13 +160,13 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
 #endif
       if ((addr = mmap(NULL, p_bytes, perm, flags, -1, 0)) == (void *)-1) {
         out_of_memory();
-        debug(printf("getmem mmap(%p) -> %p\n", bytes, addr))
+        debug(printf("getmem mmap(%ld) -> %p\n", bytes, addr))
       }
 #ifdef MAP_32BIT
     }
 #endif
     if ((membytes += p_bytes) > maxmembytes) maxmembytes = membytes;
-    debug(printf("getmem mmap(%p => %p) -> %p\n", bytes, p_bytes, addr))
+    debug(printf("getmem mmap(%ld => %ld) -> %p\n", bytes, p_bytes, addr))
   }
 
   return addr;
@@ -174,12 +174,12 @@ void *S_getmem(iptr bytes, IBOOL zerofill, IBOOL for_code) {
 
 void S_freemem(void *addr, iptr bytes) {
   if ((uptr)bytes < S_pagesize) {
-    debug(printf("freemem free(%p, %p)\n", addr, bytes))
+    debug(printf("freemem free(%p, %ld)\n", addr, bytes))
     free(addr);
     membytes -= bytes;
   } else {
     uptr n = S_pagesize - 1; iptr p_bytes = (iptr)(((uptr)bytes + n) & ~n);
-    debug(printf("freemem munmap(%p, %p => %p)\n", addr, bytes, p_bytes))
+    debug(printf("freemem munmap(%p, %ld => %ld)\n", addr, bytes, p_bytes))
     munmap(addr, p_bytes);
     membytes -= p_bytes;
   }
@@ -273,7 +273,7 @@ iptr S_find_segments(creator, s, g, n) thread_gc *creator; ISPC s; IGEN g; iptr 
 
   if (g != static_generation) S_G.number_of_nonstatic_segments += n;
 
-  debug(printf("attempting to find %d segments for space %d, generation %d\n", n, s, g))
+  debug(printf("attempting to find %ld segments for space %d, generation %d\n", n, s, g))
 
   chunks = (for_code ? S_code_chunks : S_chunks);
 
