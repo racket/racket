@@ -258,8 +258,8 @@ $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
 	$(CC) $(CFLAGS) -o $(GRACKET_BIN)_raw grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
 	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=$(GRACKET_BIN)_raw EMBED_DEST=$(GRACKET_BIN)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
-	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
 	rm $(GRACKET_BIN)_raw
+	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
 
 $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../version/racket_version.h $(srcdir)/../../mac/icon/GRacket.icns
 	$(BOOTSTRAP_RACKET) $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "CS"
