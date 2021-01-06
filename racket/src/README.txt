@@ -412,11 +412,11 @@ where [arch] is one of
  - armv7, armv7s, or aarch64: to run on iOS
  - i386 or x86_64: to run on the simulator
 
-To cross-compile for CS, you must supply a Chez Scheme compiler.  For
-example, assuming you have built Racket CS for your machine at
-"/path/to/racket" using the default `make` target, you can configure
-the cross build using that Racket binary and a path to the Chez Scheme
-build folder like so:
+To cross-compile for CS, you must supply the Chez Scheme compiler that
+Racket CS was built with.  Assuming you have built Racket CS for your
+machine at "/path/to/racket" using the default `make` target, you can
+configure the cross build using that Racket binary and a path to the
+Chez Scheme build folder like so:
 
   configure --host=[arch]-apple-darwin
             --enable-ios="[sdk]"
