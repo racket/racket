@@ -265,6 +265,13 @@ install-pdf:
 # Clean ----------------------------------------
 
 clean:
+	if [ -f cs/c/Makefile ]; then $(MAKE) clean-cs; fi
+	if [ -f bc/Makefile ]; then $(MAKE) clean-bc; fi
+
+clean-cs:
+	cd cs/c && $(MAKE) clean
+
+clean-bc:
 	cd bc && $(MAKE) clean
 	rm -rf compiled
 	rm -f TAGS
