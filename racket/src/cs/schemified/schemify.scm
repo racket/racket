@@ -29750,41 +29750,84 @@
                                                                                                                              args_0)
                                                                                                                       (begin
                                                                                                                         (let ((type-id_0
-                                                                                                                               (if (known-struct-predicate-authentic?
-                                                                                                                                    k_0)
-                                                                                                                                 (if (pair?
-                                                                                                                                      args_0)
-                                                                                                                                   (if (null?
-                                                                                                                                        (cdr
-                                                                                                                                         args_0))
-                                                                                                                                     (inline-type-id
-                                                                                                                                      k_0
-                                                                                                                                      im_0
-                                                                                                                                      add-import!_0
-                                                                                                                                      mutated_0
-                                                                                                                                      imports_0)
-                                                                                                                                     #f)
+                                                                                                                               (if (pair?
+                                                                                                                                    args_0)
+                                                                                                                                 (if (null?
+                                                                                                                                      (cdr
+                                                                                                                                       args_0))
+                                                                                                                                   (inline-type-id
+                                                                                                                                    k_0
+                                                                                                                                    im_0
+                                                                                                                                    add-import!_0
+                                                                                                                                    mutated_0
+                                                                                                                                    imports_0)
                                                                                                                                    #f)
                                                                                                                                  #f)))
-                                                                                                                          (if type-id_0
-                                                                                                                            (let ((tmp_0
-                                                                                                                                   (maybe-tmp_0
-                                                                                                                                    (car
-                                                                                                                                     args_0)
-                                                                                                                                    'v)))
-                                                                                                                              (let ((ques_0
-                                                                                                                                     (list
-                                                                                                                                      'unsafe-struct?
-                                                                                                                                      tmp_0
-                                                                                                                                      (schemify_0
-                                                                                                                                       type-id_0
-                                                                                                                                       'fresh))))
-                                                                                                                                (wrap-tmp_0
-                                                                                                                                 tmp_0
-                                                                                                                                 (car
-                                                                                                                                  args_0)
-                                                                                                                                 ques_0)))
-                                                                                                                            #f)))))))
+                                                                                                                          (if (not
+                                                                                                                               type-id_0)
+                                                                                                                            #f
+                                                                                                                            (if (known-struct-predicate-authentic?
+                                                                                                                                 k_0)
+                                                                                                                              (let ((tmp_0
+                                                                                                                                     (maybe-tmp_0
+                                                                                                                                      (car
+                                                                                                                                       args_0)
+                                                                                                                                      'v)))
+                                                                                                                                (let ((ques_0
+                                                                                                                                       (list
+                                                                                                                                        'unsafe-struct?
+                                                                                                                                        tmp_0
+                                                                                                                                        (schemify_0
+                                                                                                                                         type-id_0
+                                                                                                                                         'fresh))))
+                                                                                                                                  (wrap-tmp_0
+                                                                                                                                   tmp_0
+                                                                                                                                   (car
+                                                                                                                                    args_0)
+                                                                                                                                   ques_0)))
+                                                                                                                              (let ((tmp_0
+                                                                                                                                     (maybe-tmp_0
+                                                                                                                                      (car
+                                                                                                                                       args_0)
+                                                                                                                                      'v)))
+                                                                                                                                (let ((schemified-type-id_0
+                                                                                                                                       (schemify_0
+                                                                                                                                        type-id_0
+                                                                                                                                        'fresh)))
+                                                                                                                                  (let ((tmp-type-id_0
+                                                                                                                                         (maybe-tmp_0
+                                                                                                                                          schemified-type-id_0
+                                                                                                                                          'v)))
+                                                                                                                                    (let ((ques_0
+                                                                                                                                           (list
+                                                                                                                                            'if
+                                                                                                                                            (list
+                                                                                                                                             'unsafe-struct?
+                                                                                                                                             tmp_0
+                                                                                                                                             tmp-type-id_0)
+                                                                                                                                            #t
+                                                                                                                                            (list*
+                                                                                                                                             'if
+                                                                                                                                             (list
+                                                                                                                                              'impersonator?
+                                                                                                                                              tmp_0)
+                                                                                                                                             (list
+                                                                                                                                              'unsafe-struct?
+                                                                                                                                              (list
+                                                                                                                                               'impersonator-val
+                                                                                                                                               tmp_0)
+                                                                                                                                              tmp-type-id_0)
+                                                                                                                                             '(#f)))))
+                                                                                                                                      (let ((app_0
+                                                                                                                                             (car
+                                                                                                                                              args_0)))
+                                                                                                                                        (wrap-tmp_0
+                                                                                                                                         tmp_0
+                                                                                                                                         app_0
+                                                                                                                                         (wrap-tmp_0
+                                                                                                                                          tmp-type-id_0
+                                                                                                                                          schemified-type-id_0
+                                                                                                                                          ques_0)))))))))))))))
                                                                                                               (let ((inline-field-access_0
                                                                                                                      (|#%name|
                                                                                                                       inline-field-access
