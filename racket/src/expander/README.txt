@@ -139,7 +139,7 @@ makefile/preprocessor dance that generates the bytecode version of the
 expander itself.
 
 The `make` step for Racket BC generates source files in
-"compiled/cache-src". In come cases (hopefully rare), you may have to
+"compiled/cache-src". In some cases (hopefully rare), you may have to
 manually discard "compiled/cache-src" when things change.
 
 ----------------------------------------
