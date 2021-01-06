@@ -87,8 +87,12 @@ cs:
 	$(MAKE) starter
 	$(MAKE) repack-@INSTALL_LIBS_ENABLE@-libs
 
+clean:
+	cd $(SCHEME_WORKAREA); $(MAKE) clean
+	cd rktio; $(MAKE) clean
+
 SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
-BOOT_COMPILED_SUBDIR = 
+BOOT_COMPILED_SUBDIR =
 SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled$(BOOT_COMPILED_SUBDIR)
 
 ABS_SCHEME_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_WORKAREA)`"
