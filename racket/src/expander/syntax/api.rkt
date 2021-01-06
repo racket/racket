@@ -79,25 +79,25 @@
 
 (define/who (datum->syntax stx-c s [stx-l #f] [stx-p #f] [ignored #f])
   (unless (or (not stx-c) (syntax? stx-c))
-    (raise-argument-error who "(or #f syntax?)" stx-c))
+    (raise-argument-error who "(or/c #f syntax?)" stx-c))
   (unless (or (not stx-l)
               (syntax? stx-l)
               (encoded-srcloc? stx-l))
     (raise-argument-error who
-                          (string-append "(or #f syntax?\n"
-                                         "       (list/c any/c\n"
-                                         "               (or/c exact-positive-integer? #f)\n"
-                                         "               (or/c exact-nonnegative-integer? #f)\n"
-                                         "               (or/c exact-positive-integer? #f)\n"
-                                         "               (or/c exact-nonnegative-integer? #f))\n"
-                                         "       (vector/c any/c\n"
+                          (string-append "(or/c #f syntax?\n"
+                                         "         (list/c any/c\n"
                                          "                 (or/c exact-positive-integer? #f)\n"
                                          "                 (or/c exact-nonnegative-integer? #f)\n"
                                          "                 (or/c exact-positive-integer? #f)\n"
-                                         "                 (or/c exact-nonnegative-integer? #f)))")
+                                         "                 (or/c exact-nonnegative-integer? #f))\n"
+                                         "         (vector/c any/c\n"
+                                         "                   (or/c exact-positive-integer? #f)\n"
+                                         "                   (or/c exact-nonnegative-integer? #f)\n"
+                                         "                   (or/c exact-positive-integer? #f)\n"
+                                         "                   (or/c exact-nonnegative-integer? #f)))")
                           stx-l))
   (unless (or (not stx-p) (syntax? stx-p))
-    (raise-argument-error who "(or #f syntax?)" stx-p))
+    (raise-argument-error who "(or/c #f syntax?)" stx-p))
   (raw:datum->syntax stx-c s (to-srcloc-stx stx-l) stx-p))
 
 (define/who (syntax-binding-set)
