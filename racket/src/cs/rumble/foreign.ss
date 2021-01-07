@@ -1849,7 +1849,7 @@
                                                                    (addr->gcpointer-memory arg)]
                                                                   [else arg])]))])
                                               (cons arg (loop (cdr args) (cdr in-types))))])))))
-                              atomic?
+                              (or #t atomic?) ; force all callbacks to be atomic
                               async-apply
                               async-callback-queue)])
                       (if ret-id

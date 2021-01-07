@@ -381,6 +381,9 @@ several different ways:
    cannot be usefully passed to foreign functions, since the layout is
    not actually an array of pointers.
 
+ * Callbacks are always in atomic mode (i.e., the `#:atomic?` option
+   in `_fun` and `_cprocedure` is ignored).
+
 Threads, Threads, Atomicity, Atomicity, and Atomicity
 -----------------------------------------------------
 

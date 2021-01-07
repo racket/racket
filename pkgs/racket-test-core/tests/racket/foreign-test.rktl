@@ -869,15 +869,36 @@
 ;; check async:
 (when test-async?
   (define (check async like)
-    (define foreign_thread_callback (get-ffi-obj 'foreign_thread_callback test-lib 
-                                                 (_fun #:blocking? #t
-                                                       (_fun #:async-apply async
-                                                             _intptr -> _intptr)
-                                                       _intptr
-                                                       (_fun #:async-apply (lambda (f) (f))
-                                                             -> _void)
-                                                       -> _intptr)))
-    (test (like 16) foreign_thread_callback (lambda (v) (add1 v)) 16 sleep))
+    (cond
+      [(eq? (system-type 'vm) 'racket)
+       (define foreign_thread_callback (get-ffi-obj 'foreign_thread_callback test-lib 
+                                                    (_fun #:blocking? #t
+                                                          (_fun #:async-apply async
+                                                                _intptr -> _intptr)
+                                                          _intptr
+                                                          (_fun #:async-apply (lambda (f) (f))
+                                                                -> _void)
+                                                          -> _intptr)))
+       (test (like 16) foreign_thread_callback (lambda (v) (add1 v)) 16 sleep)]
+      [else
+       (define foreign_thread_callback_setup (get-ffi-obj 'foreign_thread_callback_setup test-lib 
+                                                          (_fun #:blocking? #t ; doesn't do anything in this case
+                                                                (_fun #:async-apply async
+                                                                      _intptr -> _intptr)
+                                                                _intptr
+                                                                -> _pointer)))
+       (define foreign_thread_callback_check_done (get-ffi-obj 'foreign_thread_callback_check_done test-lib 
+                                                               (_fun _pointer
+                                                                     -> _bool)))
+       (define foreign_thread_callback_finish (get-ffi-obj 'foreign_thread_callback_finish test-lib 
+                                                           (_fun _pointer
+                                                                 -> _intptr)))
+       (define d (foreign_thread_callback_setup (lambda (v) (add1 v)) 16))
+       (let loop ()
+         (unless (foreign_thread_callback_check_done d)
+           (sleep)
+           (loop)))
+       (test (like 16) foreign_thread_callback_finish d)]))
   (check (lambda (f) (f)) add1)
   (check (box 20) (lambda (x) 20)))
 

@@ -705,12 +705,13 @@ For @tech{callbacks} to Racket functions with the generated type:
        @racket[keep] is based on the original function for the
        callback, not the result of @racket[wrapper].}
 
- @item{If @racket[atomic?] is true, then when a Racket procedure is
-       given this procedure type and called as a @tech{callback} from
-       foreign code, then the Racket process is put into atomic mode
-       while evaluating the Racket procedure body.
+ @item{If @racket[atomic?] is true or when using the @CS[] variant of
+       Racket, then when a Racket procedure is given this type and
+       called as a @tech{callback} from foreign code, then the Racket
+       process is put into atomic mode while evaluating the Racket
+       procedure body.
 
-        In atomic mode, other Racket threads do not run, so the Racket
+       In atomic mode, other Racket threads do not run, so the Racket
        code must not call any function that potentially blocks on
        synchronization with other threads, or else it may lead to
        deadlock. In addition, the Racket code must not perform any
@@ -718,7 +719,13 @@ For @tech{callbacks} to Racket functions with the generated type:
        an uncaught exception, it must not perform any escaping
        continuation jumps, and its non-tail recursion must be minimal
        to avoid C-level stack overflow; otherwise, the process may
-       crash or misbehave.}
+       crash or misbehave.
+
+       Callbacks are always atomic in the @CS[] variant of Racket,
+       because Racket threads do not capture C-stack context. Even on
+       the @3m[] or @CGC[] variants of Racket, atomic mode is
+       typically needed for callbacks, because capturing by copying a
+       portion of the C stack is often incompatible with C libraries.}
 
  @item{If a @racket[async-apply] is provided as a procedure or box, then a Racket
        @tech{callback} procedure with the generated procedure type can

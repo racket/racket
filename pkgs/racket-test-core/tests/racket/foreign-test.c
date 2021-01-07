@@ -290,14 +290,13 @@ void *do_f(void *_data)
   return data;
 }
 
-X void* foreign_thread_callback(test_callback_t f, 
-                                void *data,
-                                sleep_callback_t s)
+X void** foreign_thread_callback_setup(test_callback_t f,
+                                      void *data)
 {
   pthread_t th;
-  void *r, **d;
+  void **d;
 
-  d = malloc(3 * sizeof(void*));
+  d = malloc(4 * sizeof(void*));
   d[0] = f;
   d[1] = data;
   d[2] = NULL;
@@ -305,14 +304,41 @@ X void* foreign_thread_callback(test_callback_t f,
   if (pthread_create(&th, NULL, do_f, d))
     return NULL;
 
-  while (!d[2]) {
-    s();
-  }
-  
+  d[3] = (void *)th;
+
+  return d;
+}
+
+X int foreign_thread_callback_check_done(void **d)
+{
+  return d[2] != NULL;
+}
+
+X void *foreign_thread_callback_finish(void **d)
+{
+  void *r;
+  pthread_t th = (pthread_t)d[3];
+
   if (pthread_join(th, &r))
     return NULL;
 
+  free(d);
+
   return r;
+}
+
+/* only works if callbacks can be in non-atomic mode: */
+X void* foreign_thread_callback(test_callback_t f,
+                                void *data,
+                                sleep_callback_t s)
+{
+  void **d = foreign_thread_callback_setup(f, data);
+
+  while (!foreign_thread_callback_check_done(d)) {
+    s();
+  }
+
+  return foreign_thread_callback_finish(d);
 }
 #endif
 
