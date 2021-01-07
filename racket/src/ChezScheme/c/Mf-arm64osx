@@ -39,7 +39,7 @@ ${Scheme}: ${Kernel} ${KernelLinkDeps} ${Main}
 	$C -o ${Scheme} ${Main} ${Kernel} ${KernelLinkLibs} ${LDFLAGS} ${LIBS}
 
 ../zlib/configure.log:
-	(cd ../zlib; ${SetConfigEnv} CPPFLAGS="${CPPFLAGS}" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ./configure)
+	(cd ../zlib; ${SetConfigEnv} CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ./configure)
 
 ../lz4/lib/liblz4.a: ${LZ4Sources}
-	(cd ../lz4/lib; ${SetConfigEnv} CPPFLAGS="${CPPFLAGS}" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ${MAKE} liblz4.a)
+	(cd ../lz4/lib; ${SetConfigEnv} CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ${MAKE} liblz4.a)
