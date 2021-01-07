@@ -16,10 +16,13 @@
                   (adjust-path (srcloc-source s))
                   (srcloc-line s)
                   (srcloc-column s))]
-         [else
+         [(srcloc-position s)
           (format "~a::~s"
                   (adjust-path (srcloc-source s))
-                  (srcloc-position s))])))
+                  (srcloc-position s))]
+         [else
+          (format "~a"
+                  (adjust-path (srcloc-source s)))])))
 
 (define (adjust-path p)
   (cond

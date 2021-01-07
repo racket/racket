@@ -2142,16 +2142,16 @@ static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col,
   result = (char *)scheme_malloc_atomic(srclen + 15);
 
   if (line >= 0 && col >= 0) {
-    /* If both line and column are available, use the format :line:col */
+    /* If both line and column are available, use the format `path:line:col` */
     rlen = scheme_sprintf(result, srclen + 15, "%t:%L%ld",
                           srcstr, srclen, line, col-1);
   } else if (pos >= 0) {
-    /* If pos is available, use the format ::pos */
+    /* If pos is available, use the format `path::pos` */
     rlen = scheme_sprintf(result, srclen + 15, "%t::%ld",
                           srcstr, srclen, pos);
   } else {
-    /* Otherwise, use the format ::#f */
-    rlen = scheme_sprintf(result, srclen + 15, "%t::#f",
+    /* Otherwise, use the format `path` */
+    rlen = scheme_sprintf(result, srclen + 15, "%t",
                           srcstr, srclen);
   }
 

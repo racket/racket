@@ -31582,8 +31582,10 @@
              (let ((app_0 (adjust-path (srcloc-source s_0))))
                (let ((app_1 (srcloc-line s_0)))
                  (1/format "~a:~s:~s" app_0 app_1 (srcloc-column s_0))))
-             (let ((app_0 (adjust-path (srcloc-source s_0))))
-               (1/format "~a::~s" app_0 (srcloc-position s_0))))
+             (if (srcloc-position s_0)
+               (let ((app_0 (adjust-path (srcloc-source s_0))))
+                 (1/format "~a::~s" app_0 (srcloc-position s_0)))
+               (1/format "~a" (adjust-path (srcloc-source s_0)))))
            #f))))))
 (define adjust-path
   (lambda (p_0) (if (is-path? p_0) (relative-to-user-directory p_0) p_0)))

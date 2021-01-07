@@ -1472,9 +1472,9 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; srcloc->string
 
-(test "x.rkt::#f" srcloc->string (make-srcloc "x.rkt" #f #f #f #f))
+(test "x.rkt" srcloc->string (make-srcloc "x.rkt" #f #f #f #f))
 (test "x.rkt::90" srcloc->string (make-srcloc "x.rkt" #f #f 90 #f))
-(test "x.rkt::#f" srcloc->string (make-srcloc "x.rkt" #f 80 #f #f))
+(test "x.rkt" srcloc->string (make-srcloc "x.rkt" #f 80 #f #f))
 
 (test "x.rkt::90" srcloc->string (make-srcloc "x.rkt" #f 80 90 #f))
 (test "x.rkt::90" srcloc->string (make-srcloc "x.rkt" 70 #f 90 #f))
