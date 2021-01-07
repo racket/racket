@@ -324,11 +324,13 @@ typedef int tputsputcchar;
 #if !defined(__POWERPC__)
 # define LITTLE_ENDIAN_IEEE_DOUBLE
 #endif
+/* for both iPhone and iPhoneSimulator */
+#if defined(TARGET_OS_IPHONE)
+# define SYSTEM(s) ((void)s, -1)
+#endif
 #if defined(__arm64__)
-# define S_MAP_CODE  MAP_JIT
-# if defined(TARGET_OS_IPHONE)
-#  define SYSTEM(s) ((void)s, -1)
-# else
+# if !defined(TARGET_OS_IPHONE)
+#  define S_MAP_CODE MAP_JIT
 #  define S_ENABLE_CODE_WRITE(on) pthread_jit_write_protect_np(!(on))
 # endif
 # define CANNOT_READ_DIRECTLY_INTO_CODE
