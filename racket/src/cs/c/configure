@@ -5482,8 +5482,7 @@ fi
 
 ############## other inferred machine properties ################
 
-if test "${enable_ios}" = "" ; then
-  # The cast to long int works around a bug in the HP C Compiler
+# The cast to long int works around a bug in the HP C Compiler
 # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
 # declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
 # This bug is HP SR number 8606223364.
@@ -5517,14 +5516,13 @@ _ACEOF
 
 
 
-  if test "${ac_cv_sizeof_void_p}" != "4" ; then
+if test "${ac_cv_sizeof_void_p}" != "4" ; then
   if test "${ac_cv_sizeof_void_p}" != "8" ; then
     echo "Something has gone wrong getting the pointer size; see config.log"
     exit 1
   fi
 fi
 
-fi
 
 ############## subconfigure ################
 

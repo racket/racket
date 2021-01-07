@@ -616,11 +616,9 @@ fi
 
 ############## other inferred machine properties ################
 
-if test "${enable_ios}" = "" ; then
-  AC_CHECK_SIZEOF([void *])
+AC_CHECK_SIZEOF([void *])
 
-  m4_include(../ac/valid_sizeof.m4)
-fi
+m4_include(../ac/valid_sizeof.m4)
 
 ############## subconfigure ################
 
