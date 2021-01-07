@@ -2922,7 +2922,7 @@ if test "${enable_sdk6}" != "" ; then
    echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
 fi
 if test "${enable_ios}" != "" ; then
-   echo "=== Using ios SDK directory ${enable_ios}"
+   echo "=== Using iOS SDK directory ${enable_ios}"
 fi
 
 if test "${enable_sysroot}" != "" ; then
@@ -3214,6 +3214,30 @@ enable_pthread_by_default=yes
 cs_auto_flags=--disable-auto-flags
 
 ###### Autoconfigure #######
+
+if test "${enable_ios}" != "" ; then
+  case "$host_cpu" in
+    aarch64)
+     IOS_ARCH=arm64
+     ;;
+    *)
+     IOS_ARCH=$host_cpu
+     ;;
+  esac
+  case "${enable_ios}" in
+    iPhoneOS|iPhoneSimulator)
+     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     echo "=== Using inferred iOS SDK path ${ios_sdk}"
+     ;;
+    *)
+     ios_sdk="${enable_ios}"
+     ;;
+  esac
+  IOS_PHONE_VERS="6.0"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+fi
+
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -4252,31 +4276,6 @@ fi
 fi
 if test "$ARFLAGS" = '' ; then
   ARFLAGS=rc
-fi
-
-if test "${enable_ios}" != "" ; then
-  case "$host_cpu" in
-    aarch64)
-     IOS_ARCH=arm64
-     ;;
-    *)
-     IOS_ARCH=$host_cpu
-     ;;
-  esac
-  case "${enable_ios}" in
-    iPhoneOS|iPhoneSimulator)
-     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
-     ;;
-    *)
-     ios_sdk="${enable_ios}"
-     ;;
-  esac
-  IOS_PHONE_VERS="6.0"
-  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
-  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
-  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
 fi
 
 

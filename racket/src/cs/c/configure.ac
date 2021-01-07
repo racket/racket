@@ -167,6 +167,8 @@ cs_auto_flags=--disable-auto-flags
 
 ###### Autoconfigure #######
 
+m4_include(../ac/sdk_ios.m4)
+
 AC_PROG_CC
 
 m4_include(../ac/is_gcc.m4)
@@ -190,31 +192,6 @@ if test "$AR" = '' ; then
 fi
 if test "$ARFLAGS" = '' ; then 
   ARFLAGS=rc
-fi
-
-if test "${enable_ios}" != "" ; then
-  case "$host_cpu" in
-    aarch64)
-     IOS_ARCH=arm64
-     ;;
-    *)
-     IOS_ARCH=$host_cpu
-     ;;
-  esac
-  case "${enable_ios}" in
-    iPhoneOS|iPhoneSimulator)
-     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
-     ;;
-    *)
-     ios_sdk="${enable_ios}"
-     ;;
-  esac
-  IOS_PHONE_VERS="6.0"
-  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
-  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
-  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
 fi
 
 
