@@ -2120,9 +2120,6 @@ static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col,
     return NULL;
   }
 
-  if (col < 0)
-    col = pos + 1;
-
   if (src && SCHEME_PATHP(src)) {
     /* Strip off prefix matching the current directory: */
     src = scheme_remove_current_directory_prefix(src);
@@ -2144,12 +2141,18 @@ static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col,
 
   result = (char *)scheme_malloc_atomic(srclen + 15);
 
-  if (col >= 0) {
+  if (line >= 0 && col >= 0) {
+    /* If both line and column are available, use the format :line:col */
     rlen = scheme_sprintf(result, srclen + 15, "%t:%L%ld",
-			  srcstr, srclen, line, col-1);
+                          srcstr, srclen, line, col-1);
+  } else if (pos >= 0) {
+    /* If pos is available, use the format ::pos */
+    rlen = scheme_sprintf(result, srclen + 15, "%t::%ld",
+                          srcstr, srclen, pos);
   } else {
-    rlen = scheme_sprintf(result, srclen + 15, "%t::",
-			  srcstr, srclen);
+    /* Otherwise, use the format ::#f */
+    rlen = scheme_sprintf(result, srclen + 15, "%t::#f",
+                          srcstr, srclen);
   }
 
   if (len) *len = rlen;

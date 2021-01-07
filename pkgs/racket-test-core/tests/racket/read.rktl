@@ -1472,6 +1472,15 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; srcloc->string
 
+(test "x.rkt::#f" srcloc->string (make-srcloc "x.rkt" #f #f #f #f))
+(test "x.rkt::90" srcloc->string (make-srcloc "x.rkt" #f #f 90 #f))
+(test "x.rkt::#f" srcloc->string (make-srcloc "x.rkt" #f 80 #f #f))
+
+(test "x.rkt::90" srcloc->string (make-srcloc "x.rkt" #f 80 90 #f))
+(test "x.rkt::90" srcloc->string (make-srcloc "x.rkt" 70 #f 90 #f))
+(test "x.rkt:70:80" srcloc->string (make-srcloc "x.rkt" 70 80 #f #f))
+(test "x.rkt:70:80" srcloc->string (make-srcloc "x.rkt" 70 80 90 #f))
+
 (test "x.rkt:10:11" srcloc->string (make-srcloc "x.rkt" 10 11 100 8))
 (test "x.rkt::100" srcloc->string (make-srcloc "x.rkt" #f #f 100 8))
 (test "x.rkt::100" srcloc->string (chaperone-struct (make-srcloc "x.rkt" #f #f 100 8)
