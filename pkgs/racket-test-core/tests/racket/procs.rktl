@@ -785,4 +785,58 @@
 
 ;; ----------------------------------------
 
+(module kw-defns racket/base
+  (provide (all-defined-out))
+
+  (define (func-name/opt.1 arg [opt.1 (lambda (x) x)])
+    (object-name arg))
+
+  (define (func-name/opt.2 arg [opt.2 (lambda (x) x)])
+    (object-name opt.2))
+
+  (define (func-name/kw.1 arg1 #:kw.1 arg2)
+    (object-name arg1))
+
+  (define (func-name/kw.2 arg1 #:kw.2 arg2)
+    (object-name arg2))
+
+  (define (func-name/kw.opt.1 arg #:kw.opt.1 [kw.opt.1 (lambda (x) x)])
+    (object-name arg))
+
+  (define (func-name/kw.opt.2 arg #:kw.opt.2 [kw.opt.2 (lambda (x) x)])
+    (object-name kw.opt.2))
+  )
+(require 'kw-defns)
+
+(define ((proc-has-name? name) s)
+  (and (symbol? s) (regexp-match? name (symbol->string s))))
+
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/opt.1 (lambda (z) z)))
+
+;; the default value of the optional argument picks up
+;; the name of the optional argument
+(test #t (proc-has-name? #rx"opt[.]2")
+         (func-name/opt.2 (lambda (z) z)))
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/opt.2 (lambda (z) z) (lambda (w) w)))
+
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/kw.1 (lambda (z) z) #:kw.1 (lambda (w) w)))
+
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/kw.2 (lambda (z) z) #:kw.2 (lambda (w) w)))
+
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/kw.opt.1 (lambda (z) z)))
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/kw.opt.1 (lambda (z) z) #:kw.opt.1 (lambda (w) w)))
+
+(test #t (proc-has-name? #rx"kw[.]opt[.]2")
+         (func-name/kw.opt.2 (lambda (z) z)))
+(test #t (proc-has-name? #rx"procs.rktl:")
+         (func-name/kw.opt.2 (lambda (z) z) #:kw.opt.2 (lambda (w) w)))
+
+;; ----------------------------------------
+
 (report-errs)

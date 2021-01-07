@@ -421,6 +421,12 @@
        (syntax-property (datum->syntax #'e (syntax-e #'e) #f #'e)
                         'inferred-name (void))]))
 
+  (define-for-syntax (hide-binding-name stx)
+    (syntax-property stx
+                     'inferred-name
+                     ;; void hides binding name
+                     (void)))
+
   ;; Similar to the above, when we copy source locations from an input
   ;; expression, we need to ensure the source location is copied even if there
   ;; is no source location on the input, but (quasi)syntax/loc doesn’t copy
@@ -1267,17 +1273,15 @@
                   [(keyword? (syntax-e (car l)))
                    (loop (cddr l)
                          (cdr ids)
-                         (cons (list (car ids) (syntax-property (cadr l)
-                                                                'inferred-name
-                                                                ;; void hides binding name
-                                                                (void)))
+                         (cons (list (car ids) (hide-binding-name (cadr l)))
                                bind-accum)
                          arg-accum
                          (cons (cons (car l) (car ids))
                                kw-pairs))]
                   [else (loop (cdr l)
                               (cdr ids)
-                              (cons (list (car ids) (car l)) bind-accum)
+                              (cons (list (car ids) (hide-binding-name (car l)))
+                                    bind-accum)
                               (cons (copy-properties (car ids) (car l)) arg-accum)
                               kw-pairs)])))))))
 
@@ -1346,7 +1350,8 @@
                                                  (if (not lifted?)
                                                      ;; caller didn't lift expressions out
                                                      (let ([ids (generate-temporaries args)])
-                                                       #`(let #,(map list ids args)
+                                                       #`(let #,(map list ids
+                                                                     (map hide-binding-name args))
                                                            #,(k ids)))
                                                      ;; caller already lifted expression:
                                                      (k args)))])
