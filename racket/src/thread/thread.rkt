@@ -890,14 +890,14 @@
                                          ;; Convert to set
                                          (hasheq ignore #t bc #t)]))))
 
-;; in atomic mode
 (define (thread-remove-ignored-break-cell! t bc)
-  (assert-atomic-mode)
-  (when (thread-ignore-break-cell? t bc)
-    (let ([ignore (thread-ignore-break-cells t)])
-      (set-thread-ignore-break-cells! t (cond
-                                          [(eq? ignore bc) #f]
-                                          [else (hash-remove ignore bc)])))))
+  (atomically
+   (when (thread-ignore-break-cell? t bc)
+     (let ([ignore (thread-ignore-break-cells t)])
+       (set-thread-ignore-break-cells! t (cond
+                                           [(eq? ignore bc) #f]
+                                           [else (hash-remove ignore bc)]))))
+   (void)))
 
 ;; ----------------------------------------
 ;; Thread mailboxes

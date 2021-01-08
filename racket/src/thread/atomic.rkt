@@ -4,7 +4,8 @@
          "place-local.rkt"
          "internal-error.rkt"
          "parameter.rkt"
-         "debug.rkt")
+         "debug.rkt"
+         (for-syntax racket/base))
 
 (provide atomically
          current-atomic
@@ -145,10 +146,12 @@
       (internal-error "not implicitly in atomic mode?"))
     (current-implicit-atomic #f))
 
-  (define-syntax-rule (assert-atomic-mode)
-    (unless (or (current-implicit-atomic)
-                (positive? (current-atomic)))
-      (internal-error "should be in atomic mode")))]
+  (define-syntax (assert-atomic-mode stx)
+    (syntax-case stx ()
+      [(_)
+       #`(unless (or (current-implicit-atomic)
+                     (positive? (current-atomic)))
+           (internal-error #,(format "should be in atomic mode: ~s" stx)))]))]
  #:off
  [(define-syntax-rule (start-implicit-atomic-mode) (begin))
   (define-syntax-rule (end-implicit-atomic-mode) (begin))

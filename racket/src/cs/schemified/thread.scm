@@ -7978,12 +7978,15 @@
            (hasheq ignore_0 #t bc_0 #t)))))))
 (define thread-remove-ignored-break-cell!
   (lambda (t_0 bc_0)
-    (if (thread-ignore-break-cell? t_0 bc_0)
-      (let ((ignore_0 (thread-ignore-break-cells t_0)))
-        (set-thread-ignore-break-cells!
-         t_0
-         (if (eq? ignore_0 bc_0) #f (hash-remove ignore_0 bc_0))))
-      (void))))
+    (begin
+      (start-atomic)
+      (if (thread-ignore-break-cell? t_0 bc_0)
+        (let ((ignore_0 (thread-ignore-break-cells t_0)))
+          (set-thread-ignore-break-cells!
+           t_0
+           (if (eq? ignore_0 bc_0) #f (hash-remove ignore_0 bc_0))))
+        (void))
+      (end-atomic))))
 (define enqueue-mail!
   (lambda (thd_0 v_0) (queue-add! (thread-mailbox thd_0) v_0)))
 (define dequeue-mail!

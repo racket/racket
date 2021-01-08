@@ -90,6 +90,7 @@
   (define host-thread
     (host:fork-place
      (lambda ()
+       (start-implicit-atomic-mode)
        (call-in-another-main-thread
         orig-cust
         (lambda ()
