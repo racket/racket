@@ -329,7 +329,9 @@ typedef int tputsputcchar;
 # define SYSTEM(s) ((void)s, -1)
 #endif
 #if defined(__arm64__)
-# if !defined(TARGET_OS_IPHONE)
+# if defined(TARGET_OS_IPHONE)
+#  define WRITE_XOR_EXECUTE_CODE
+# else
 #  define S_MAP_CODE MAP_JIT
 #  define S_ENABLE_CODE_WRITE(on) pthread_jit_write_protect_np(!(on))
 # endif

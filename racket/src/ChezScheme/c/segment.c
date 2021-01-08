@@ -577,9 +577,39 @@ static void contract_segment_table(uptr base, uptr end) {
    executable pages. */
 
 void S_thread_start_code_write(void) {
+#if defined(WRITE_XOR_EXECUTE_CODE)
+  chunkinfo *chunk;
+  INT i, res;
+  for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
+    chunk = S_code_chunks[i];
+    while (chunk != NULL) {
+      res = mprotect(chunk->addr, chunk->bytes, PROT_WRITE|PROT_READ);
+      if (res != 0) {
+        S_error_abort("mprotect for write failed");
+      }
+      chunk = chunk->next;
+    }
+  }
+#else
   S_ENABLE_CODE_WRITE(1);
+#endif
 }
 
 void S_thread_end_code_write(void) {
+#if defined(WRITE_XOR_EXECUTE_CODE)
+  chunkinfo *chunk;
+  INT i, res;
+  for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
+    chunk = S_code_chunks[i];
+    while (chunk != NULL) {
+      res = mprotect(chunk->addr, chunk->bytes, PROT_EXEC|PROT_READ);
+      if (res != 0) {
+        S_error_abort("mprotect for exec failed");
+      }
+      chunk = chunk->next;
+    }
+  }
+#else
   S_ENABLE_CODE_WRITE(0);
+#endif
 }
