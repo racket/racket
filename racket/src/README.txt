@@ -397,9 +397,6 @@ the [comp] of your choice and the [platform] used to compile.
  Cross-compiling for iOS
 ========================================================================
 
-[Cross-compilation works for both the BC and CS variants of Racket,
- but the CS variant currently crashes at runtime.]
-
 To compile the Racket runtime system as a Framework for iOS, use (all
 on one line) for BC
 
