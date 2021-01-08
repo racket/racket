@@ -132,6 +132,7 @@
   (set-thread-engine! (current-thread/in-atomic) 'running))
 
 (define (swap-in-engine e t leftover-ticks)
+  (assert-no-end-atomic-callbacks)
   (let loop ([e e] [prefix check-break-prefix])
     (end-implicit-atomic-mode)
     (e
@@ -149,6 +150,7 @@
           (current-future #f)
           (unless (zero? (current-atomic))
             (internal-error "terminated in atomic mode!"))
+          (flush-end-atomic-callbacks!)
           (thread-dead! t)
           (when (eq? root-thread t)
             (force-exit 0))

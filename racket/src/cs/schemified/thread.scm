@@ -1938,6 +1938,7 @@
                       (loop_0 (cdr cbs_0)))))))))
            (loop_0 all-cbs_0))
           (|#%app| host:enable-interrupts))))))
+(define flush-end-atomic-callbacks! (lambda () (end-atomic-callback 0)))
 (define future-block-for-atomic (lambda () (void)))
 (define set-future-block!
   (lambda (block_0) (set! future-block-for-atomic block_0)))
@@ -12482,6 +12483,7 @@
                    (if (zero? (current-atomic))
                      (void)
                      (internal-error "terminated in atomic mode!"))
+                   (flush-end-atomic-callbacks!)
                    (thread-dead! t_0)
                    (if (eq? (unsafe-place-local-ref cell.1$1) t_0)
                      (force-exit 0)
