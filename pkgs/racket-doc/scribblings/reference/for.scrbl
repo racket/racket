@@ -130,7 +130,7 @@ property; in most cases this improves performance.
 @history[#:changed "6.7.0.4" @elem{Added support for the optional second result.}
          #:changed "7.8.0.11" @elem{Added support for implicit optimization.}]}
 
-@defform[(for/list (for-clause ...) body-or-break ... body)]{ Iter  ates like
+@defform[(for/list (for-clause ...) body-or-break ... body)]{ Iterates like
 @racket[for], but that the last expression in the @racket[body]s must
 produce a single value, and the result of the @racket[for/list]
 expression is a list of the results in order.
