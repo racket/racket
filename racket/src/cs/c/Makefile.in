@@ -388,6 +388,10 @@ plain-install-upcased:
 install-cross:
 	$(MAKE) compile-xpatch.$(TARGET_MACH)
 	$(MAKE) library-xpatch.$(TARGET_MACH)
+	rm -f "$(DESTDIR)$(libpltdir)/compile-xpatch.$(TARGET_MACH)"
+	rm -f "$(DESTDIR)$(libpltdir)/library-xpatch.$(TARGET_MACH)"
+	$(ICP) compile-xpatch.$(TARGET_MACH) "$(DESTDIR)$(libpltdir)/compile-xpatch.$(TARGET_MACH)"
+	$(ICP) library-xpatch.$(TARGET_MACH) "$(DESTDIR)$(libpltdir)/library-xpatch.$(TARGET_MACH)"
 
 SCHEME_XPATCH = $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
 
