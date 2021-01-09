@@ -1,3 +1,17 @@
+Version 8.0, January 2021
+Racket CS is now the default variant of Racket
+Add support for Apple Silicon Mac OS (AArch64)
+Improve Racket CS parallel GC, improve various optimizations,
+ improve weak `equal?`-based hash tables, improve hash-code
+ calculations, add direct support for flvectors, and reduce
+ the size of generated code by 10-30%
+Add `#:unsafe` for `#%declare` in a module
+Add 'os* and 'arch modes to `system-type`
+Add `fx{+,-,*,lshift}/wraparound`
+Fix `normal-case-path` on bad encodings, which previously could
+ cause a corrupted preferences file to disable DrRacket
+Other bug repairs and other changes noted in the documentation
+
 Version 7.9, October 2020
 Improve Racket CS place-local allocation, add parallel GC,
  and merge Chez Scheme GC support for incremental promotion
