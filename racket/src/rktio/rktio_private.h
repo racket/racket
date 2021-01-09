@@ -416,6 +416,7 @@ char *rktio_strndup(char *s, intptr_t len);
 
 #ifdef RKTIO_SYSTEM_UNIX
 void rktio_set_signal_handler(int sig_id, void (*proc)(int));
+void rktio_set_default_signal_handlers_for_subprocess(void);
 #endif
 void rktio_forget_os_signal_handler(rktio_t *rktio);
 

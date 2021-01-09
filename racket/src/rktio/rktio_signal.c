@@ -105,4 +105,60 @@ void rktio_set_signal_handler(int sig_id, void (*proc)(int))
   sa.sa_handler = proc;
   sigaction(sig_id, &sa, NULL);
 }
+
+void rktio_set_default_signal_handlers_for_subprocess()
+{
+  /* This is a list of all signals potentially used by Racket. */
+# ifdef SIGBUS
+  rktio_set_signal_handler(SIGBUS, SIG_DFL);
+# endif
+# ifdef SIGCHLD
+  rktio_set_signal_handler(SIGCHLD, SIG_DFL);
+# endif
+# ifdef SIGFPE
+  rktio_set_signal_handler(SIGFPE, SIG_DFL);
+# endif
+# ifdef SIGHUP
+  rktio_set_signal_handler(SIGHUP, SIG_DFL);
+# endif
+# ifdef SIGILL
+  rktio_set_signal_handler(SIGILL, SIG_DFL);
+# endif
+# ifdef SIGINFO
+  rktio_set_signal_handler(SIGINFO, SIG_DFL);
+# endif
+# ifdef SIGINT
+  rktio_set_signal_handler(SIGINT, SIG_DFL);
+# endif
+# ifdef SIGIO
+  rktio_set_signal_handler(SIGIO, SIG_DFL);
+# endif
+# ifdef SIGPIPE
+  rktio_set_signal_handler(SIGPIPE, SIG_DFL);
+# endif
+# ifdef SIGPROF
+  rktio_set_signal_handler(SIGPROF, SIG_DFL);
+# endif
+# ifdef SIGQUIT
+  rktio_set_signal_handler(SIGQUIT, SIG_DFL);
+# endif
+# ifdef SIGSEGV
+  rktio_set_signal_handler(SIGSEGV, SIG_DFL);
+# endif
+# ifdef SIGTERM
+  rktio_set_signal_handler(SIGTERM, SIG_DFL);
+# endif
+# ifdef SIGTSTP
+  rktio_set_signal_handler(SIGTSTP, SIG_DFL);
+# endif
+# ifdef SIGUSR1
+  rktio_set_signal_handler(SIGUSR1, SIG_DFL);
+# endif
+# ifdef SIGUSR2
+  rktio_set_signal_handler(SIGUSR2, SIG_DFL);
+# endif
+# ifdef SIGWINCH
+  rktio_set_signal_handler(SIGWINCH, SIG_DFL);
+# endif
+}
 #endif

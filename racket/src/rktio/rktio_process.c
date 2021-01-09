@@ -1532,6 +1532,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
         _exit(1);
       }
 
+      /* Reset signal handling for new process */
+      rktio_set_default_signal_handlers_for_subprocess();
+
+
       /* Exec new process */
 
       {
