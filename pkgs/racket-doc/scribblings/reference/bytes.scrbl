@@ -519,7 +519,7 @@ Use @racket[bytes-convert] with the result to convert byte strings.
 
 @history[#:changed "7.9.0.17" @elem{Added built-in converters for
                                     @racket["WTF-8"],
-                                    <@racket["WTF-8-permissive"], and
+                                    @racket["WTF-8-permissive"], and
                                     @racket["WTF-16"].}]}
 
 
