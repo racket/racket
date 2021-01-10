@@ -2094,9 +2094,7 @@
   (setup-printf "version" "~a" (version))
   (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
   (setup-printf "target machine" "~a" (or (current-compile-target-machine)
-                                          ;; Check for `cross-multi-compile?` mode like compiler/cm:
-                                          (and ((length (current-compiled-file-roots)) . > . 1)
-                                               (cross-installation?)
+                                          (and (cross-multi-compile? (current-compiled-file-roots))
                                                (cross-system-type 'target-machine))
                                           'any))
   (when (cross-installation?)
