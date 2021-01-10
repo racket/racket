@@ -744,11 +744,9 @@
                                                    (append sub-paths extra-runtime-paths)))
                                       (map get-submod-mapping pre-submods)))])
                           ;; Record the module
-                          ;; HACK: We are currently unable to read fasl data for machines other than the host so
-                          ;; cross-compilation is tricky: we use modules compiled for the host to figure out the general
-                          ;; layout of things but then swap the actual code of those modules with code for the target
-                          ;; machine. This works out as long as the code for both targets is in sync, which ought to be
-                          ;; the case by virtue of the cross-compilation flags (see `cross-multi-compile?`) used to get here.
+                          ;; For cross-compilation, we need to be able to execute code using the host Racket (to find
+                          ;; dependencies and runtime paths), but then we have to swap in code for the target Racket
+                          ;; here, before writing it to the output.
                           (let ([code (cond
                                         [(cross-compiling?)
                                          (when verbose?
