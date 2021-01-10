@@ -409,17 +409,6 @@ where [arch] is one of
  - armv7, armv7s, or aarch64: to run on iOS
  - i386 or x86_64: to run on the simulator
 
-To cross-compile for CS, you must supply the Chez Scheme compiler that
-Racket CS was built with.  Assuming you have built Racket CS for your
-machine at "/path/to/racket" using the default `make` target, you can
-configure the cross build using that Racket binary and a path to the
-Chez Scheme build folder like so:
-
-  configure --host=[arch]-apple-darwin
-            --enable-ios="[sdk]"
-            --enable-racket=/path/to/racket/bin/racket
-            --enable-scheme=/path/to/racket/src/build/cs/c
-
 The [sdk] argument is a path to an iOS SDK, but if it is "iPhoneOS" or
 "iPhoneSimulator", then the corresponding SDK is located in the
 standard place within the XCode application. For example, "iPhoneOS"
@@ -427,6 +416,22 @@ becomes the path (all on one line)
 
   /Applications/Xcode.app/Contents/Developer/Platforms/
     iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+
+To cross-compile for CS, you must supply the Chez Scheme compiler that
+Racket CS was built with.  Assuming you have built Racket CS for your
+machine at "/path/to/racket" using the default `make` target, you can
+configure the cross build using that Racket binary and a path to the
+Chez Scheme build folder as follows (all on one line)
+
+  configure --host=[arch]-apple-darwin
+            --enable-ios="[sdk]"
+            --enable-racket=/path/to/racket/bin/racket
+            --enable-scheme=/path/to/racket/src/build/cs/c
+
+Cross-compilation of Racket CS to iOS currently has limited support
+for multi-threading due to the platform's poor support for JIT
+compilation.  Avoid futures and dynamic code evaluation (`eval`,
+`dynamic-require`, etc.) within places.
 
 
 ========================================================================
