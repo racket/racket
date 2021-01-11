@@ -45,6 +45,10 @@ static void add_to_chunk_list PROTO((chunkinfo *chunk, chunkinfo **pchunk_list))
 static seginfo *sort_seginfo PROTO((seginfo *si, uptr n));
 static seginfo *merge_seginfo PROTO((seginfo *si1, seginfo *si2));
 
+#if defined(WRITE_XOR_EXECUTE_CODE)
+static void flip_code_segment_protection_bits PROTO((INT flags, IGEN mingen, IGEN maxgen));
+#endif
+
 void S_segment_init() {
   IGEN g; ISPC s; int i;
 
@@ -568,48 +572,89 @@ static void contract_segment_table(uptr base, uptr end) {
    thread-specific, the bracketing functions disable execution of the
    code's memory while enabling writing.
 
-   Note that these function will not work for a W^X implementation
-   where each page's disposition is process-wide. Indeed, a
-   process-wide W^X disposition seems incompatible with the Chez
+   A process-wide W^X disposition seems incompatible with the Chez
    Scheme rule that a foreign thread is allowed to invoke a callback
    (as long as the callback is immobile/locked) at any time --- even,
    say, while Scheme is collecting garbage and needs to write to
-   executable pages. */
+   executable pages.  However, on platforms where such a disposition
+   is enforced (eg. iOS), we provide a best-effort implementation that
+   flips pages between W and X for the minimal set of generations
+   possible (depending on the context) in an effort to minimize the
+   chances of a page being flipped while a thread is executing code
+   off of it.
+*/
 
-void S_thread_start_code_write(void) {
+void S_thread_start_code_write(IGEN mingen, IGEN maxgen) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  chunkinfo *chunk;
-  INT i, res;
-  for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
-    chunk = S_code_chunks[i];
-    while (chunk != NULL) {
-      res = mprotect(chunk->addr, chunk->bytes, PROT_WRITE|PROT_READ);
-      if (res != 0) {
-        S_error_abort("mprotect for write failed");
-      }
-      chunk = chunk->next;
-    }
-  }
+  flip_code_segment_protection_bits(PROT_WRITE|PROT_READ, mingen, maxgen);
 #else
+  (void)mingen;
+  (void)maxgen;
   S_ENABLE_CODE_WRITE(1);
 #endif
 }
 
-void S_thread_end_code_write(void) {
+void S_thread_end_code_write(IGEN mingen, IGEN maxgen) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  chunkinfo *chunk;
-  INT i, res;
-  for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
-    chunk = S_code_chunks[i];
-    while (chunk != NULL) {
-      res = mprotect(chunk->addr, chunk->bytes, PROT_EXEC|PROT_READ);
-      if (res != 0) {
-        S_error_abort("mprotect for exec failed");
-      }
-      chunk = chunk->next;
-    }
-  }
+  flip_code_segment_protection_bits(PROT_EXEC|PROT_READ, mingen, maxgen);
 #else
+  (void)mingen;
+  (void)maxgen;
   S_ENABLE_CODE_WRITE(0);
 #endif
 }
+
+#if defined(WRITE_XOR_EXECUTE_CODE)
+static IBOOL is_unused_seg(chunkinfo *chunk, uptr number) {
+  seginfo *si;
+  si = chunk->unused_segs;
+  while (si != NULL) {
+    if (si->number == number) {
+      return 1;
+    }
+    si = si->next;
+  }
+  return 0;
+}
+
+static void flip_code_segment_protection_bits(INT flags, IGEN mingen, IGEN maxgen) {
+  chunkinfo *chunk;
+  seginfo si;
+  iptr i, j, bytes, res;
+  void *addr;
+  for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
+    chunk = S_code_chunks[i];
+    while (chunk != NULL) {
+      // Flip whole runs of segs that are either unused or whose generation is within the range [mingen, maxgen]
+      addr = chunk->addr;
+      bytes = 0;
+      for (j = 0; j < chunk->segs; j++) {
+        si = chunk->sis[j];
+        if ((si.generation >= mingen && si.generation <= maxgen) || is_unused_seg(chunk, si.number)) {
+          bytes += bytes_per_segment;
+        } else {
+          if (bytes > 0) {
+            debug(printf("mprotect segs flags=%d from=%p to=%p mingen=%d maxgen=%d (interrupted)\n", flags, addr, TO_VOIDP((char *)addr + bytes), mingen, maxgen))
+              res = mprotect(addr, bytes, flags);
+            if (res != 0) {
+              S_error_abort("mprotect failed");
+            }
+          }
+
+          addr = TO_VOIDP((char *)chunk->addr + (j + 1) * bytes_per_segment);
+          bytes = 0;
+        }
+      }
+      if (bytes > 0) {
+        debug(printf("mprotect segs flags=%d from=%p to=%p mingen=%d maxgen=%d\n", flags, addr, TO_VOIDP((char *)addr + bytes), mingen, maxgen))
+          res = mprotect(addr, bytes, flags);
+        if (res != 0) {
+          S_error_abort("mprotect failed");
+        }
+      }
+
+      chunk = chunk->next;
+    }
+  }
+}
+#endif
