@@ -878,10 +878,10 @@ static char *s_getwd() {
 static ptr s_set_code_byte(p, n, x) ptr p, n, x; {
     I8 *a;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
     a = (I8 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I8)UNFIX(x);
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 
     return Svoid;
 }
@@ -889,10 +889,10 @@ static ptr s_set_code_byte(p, n, x) ptr p, n, x; {
 static ptr s_set_code_word(p, n, x) ptr p, n, x; {
     I16 *a;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
     a = (I16 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I16)UNFIX(x);
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 
     return Svoid;
 }
@@ -900,10 +900,10 @@ static ptr s_set_code_word(p, n, x) ptr p, n, x; {
 static ptr s_set_code_long(p, n, x) ptr p, n, x; {
     I32 *a;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
     a = (I32 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I32)(Sfixnump(x) ? UNFIX(x) : Sinteger_value(x));
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 
     return Svoid;
 }
@@ -911,19 +911,19 @@ static ptr s_set_code_long(p, n, x) ptr p, n, x; {
 static void s_set_code_long2(p, n, h, l) ptr p, n, h, l; {
     I32 *a;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
     a = (I32 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I32)((UNFIX(h) << 16) + UNFIX(l));
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 }
 
 static ptr s_set_code_quad(p, n, x) ptr p, n, x; {
     I64 *a;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
     a = (I64 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = Sfixnump(x) ? UNFIX(x) : S_int64_value("\\#set-code-quad!", x);
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 
     return Svoid;
 }
@@ -931,10 +931,10 @@ static ptr s_set_code_quad(p, n, x) ptr p, n, x; {
 static ptr s_set_reloc(p, n, e) ptr p, n, e; {
     iptr *a;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
     a = (iptr *)(&RELOCIT(CODERELOC(p), UNFIX(n)));
     *a = Sfixnump(e) ? UNFIX(e) : Sinteger_value(e);
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 
     return e;
 }
@@ -948,7 +948,7 @@ static ptr s_make_code(flags, free, name, arity_mark, n, info, pinfos)
                        iptr flags, free, n; ptr name, arity_mark, info, pinfos; {
     ptr co;
 
-    S_thread_start_code_write(0, static_generation);
+    S_thread_start_code_write(0);
 
     co = S_code(get_thread_context(), type_code | (flags << code_flags_offset), n);
     CODEFREE(co) = free;
@@ -960,16 +960,16 @@ static ptr s_make_code(flags, free, name, arity_mark, n, info, pinfos)
       S_G.profile_counters = Scons(S_weak_cons(co, pinfos), S_G.profile_counters);
     }
 
-    S_thread_end_code_write(0, static_generation);
+    S_thread_end_code_write(0);
 
     return co;
 }
 
 static ptr s_make_reloc_table(codeobj, n) ptr codeobj, n; {
-    S_thread_start_code_write(0, 0);
+    S_thread_start_code_write(0);
     CODERELOC(codeobj) = S_relocation_table(UNFIX(n));
     RELOCCODE(CODERELOC(codeobj)) = codeobj;
-    S_thread_end_code_write(0, 0);
+    S_thread_end_code_write(0);
     return Svoid;
 }
 

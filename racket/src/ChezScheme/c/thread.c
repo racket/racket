@@ -256,7 +256,7 @@ static IBOOL destroy_thread(tc) ptr tc; {
       S_scan_dirty((ptr *)EAP(tc), (ptr *)REAL_EAP(tc));
 
      /* close off thread-local allocation */
-      S_thread_start_code_write(0, static_generation);
+      S_thread_start_code_write(static_generation);
       {
         ISPC s; IGEN g;
         thread_gc *tgc = THREAD_GC(tc);
@@ -265,7 +265,7 @@ static IBOOL destroy_thread(tc) ptr tc; {
             if (tgc->next_loc[g][s])
               S_close_off_thread_local_segment(tc, s, g);
       }
-      S_thread_end_code_write(0, static_generation);
+      S_thread_end_code_write(static_generation);
 
       alloc_mutex_release();
 

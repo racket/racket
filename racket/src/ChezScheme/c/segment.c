@@ -46,7 +46,7 @@ static seginfo *sort_seginfo PROTO((seginfo *si, uptr n));
 static seginfo *merge_seginfo PROTO((seginfo *si1, seginfo *si2));
 
 #if defined(WRITE_XOR_EXECUTE_CODE)
-static void flip_code_segment_protection_bits PROTO((INT flags, IGEN mingen, IGEN maxgen));
+static void flip_code_protection_bits PROTO((INT flags, IGEN maxg));
 #endif
 
 void S_segment_init() {
@@ -584,22 +584,20 @@ static void contract_segment_table(uptr base, uptr end) {
    off of it.
 */
 
-void S_thread_start_code_write(IGEN mingen, IGEN maxgen) {
+void S_thread_start_code_write(IGEN maxg) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  flip_code_segment_protection_bits(PROT_WRITE|PROT_READ, mingen, maxgen);
+  flip_code_protection_bits(PROT_WRITE|PROT_READ, maxg);
 #else
-  (void)mingen;
-  (void)maxgen;
+  (void)maxg;
   S_ENABLE_CODE_WRITE(1);
 #endif
 }
 
-void S_thread_end_code_write(IGEN mingen, IGEN maxgen) {
+void S_thread_end_code_write(IGEN maxg) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  flip_code_segment_protection_bits(PROT_EXEC|PROT_READ, mingen, maxgen);
+  flip_code_protection_bits(PROT_EXEC|PROT_READ, maxg);
 #else
-  (void)mingen;
-  (void)maxgen;
+  (void)maxg;
   S_ENABLE_CODE_WRITE(0);
 #endif
 }
@@ -617,38 +615,43 @@ static IBOOL is_unused_seg(chunkinfo *chunk, uptr number) {
   return 0;
 }
 
-static void flip_code_segment_protection_bits(INT flags, IGEN mingen, IGEN maxgen) {
+static void flip_code_protection_bits(INT flags, IGEN maxg) {
   chunkinfo *chunk;
   seginfo si;
-  iptr i, j, bytes, res;
+  iptr i, j, bytes;
   void *addr;
   for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
     chunk = S_code_chunks[i];
     while (chunk != NULL) {
-      // Flip whole runs of segs that are either unused or whose generation is within the range [mingen, maxgen]
       addr = chunk->addr;
       bytes = 0;
-      for (j = 0; j < chunk->segs; j++) {
-        si = chunk->sis[j];
-        if ((si.generation >= mingen && si.generation <= maxgen) || is_unused_seg(chunk, si.number)) {
-          bytes += bytes_per_segment;
-        } else {
-          if (bytes > 0) {
-            debug(printf("mprotect segs flags=%d from=%p to=%p mingen=%d maxgen=%d (interrupted)\n", flags, addr, TO_VOIDP((char *)addr + bytes), mingen, maxgen))
-              res = mprotect(addr, bytes, flags);
-            if (res != 0) {
-              S_error_abort("mprotect failed");
+      if (chunk->nused_segs == 0) {
+        // None of the segments in the chunk are used so flip the bits
+        // for all of them in one go.
+        bytes = chunk->bytes;
+      } else {
+        // Flip bits for whole runs of segs that are either unused or
+        // whose generation is within the range [0, maxg].
+        for (j = 0; j < chunk->segs; j++) {
+          si = chunk->sis[j];
+          if (si.generation <= maxg || is_unused_seg(chunk, si.number)) {
+            bytes += bytes_per_segment;
+          } else {
+            if (bytes > 0) {
+              debug(printf("mprotect segs flags=%d from=%p to=%p maxg=%d (interrupted)\n", flags, addr, TO_VOIDP((char *)addr + bytes), maxg))
+              if (mprotect(addr, bytes, flags) != 0) {
+                S_error_abort("mprotect failed");
+              }
             }
-          }
 
-          addr = TO_VOIDP((char *)chunk->addr + (j + 1) * bytes_per_segment);
-          bytes = 0;
+            addr = TO_VOIDP((char *)chunk->addr + (j + 1) * bytes_per_segment);
+            bytes = 0;
+          }
         }
       }
       if (bytes > 0) {
-        debug(printf("mprotect segs flags=%d from=%p to=%p mingen=%d maxgen=%d\n", flags, addr, TO_VOIDP((char *)addr + bytes), mingen, maxgen))
-          res = mprotect(addr, bytes, flags);
-        if (res != 0) {
+        debug(printf("mprotect segs flags=%d from=%p to=%p maxg=%d\n", flags, addr, TO_VOIDP((char *)addr + bytes), maxg))
+        if (mprotect(addr, bytes, flags) != 0) {
           S_error_abort("mprotect failed");
         }
       }
