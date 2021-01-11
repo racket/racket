@@ -17,10 +17,7 @@
            #:attr params #'(arg.name ...)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
                        "duplicate argument name"
-           #:fail-when (check-duplicate (attribute arg.kw)
-                                        #:same? (λ (x y)
-                                                  (and x y (equal? (syntax-e x)
-                                                                   (syntax-e y)))))
+           #:fail-when (check-duplicates (attribute arg.kw) #:key syntax-e)
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
                         (attribute arg.kw) (attribute arg.name) (attribute arg.default))
@@ -29,10 +26,7 @@
            #:attr params #'(arg.name ... rest)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
                        "duplicate argument name"
-           #:fail-when (check-duplicate (attribute arg.kw)
-                                        #:same? (λ (x y)
-                                                  (and x y (equal? (syntax-e x)
-                                                                   (syntax-e y)))))
+           #:fail-when (check-duplicates (attribute arg.kw) #:key syntax-e)
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
                         (attribute arg.kw) (attribute arg.name) (attribute arg.default))
@@ -70,43 +64,3 @@
            (loop (cdr kws) (cdr names) (cdr defaults))]
           [else ;; found optional
            (find-mandatory (cdr kws) (cdr names) (cdr defaults))])))
-
-;; Copied from unstable/list
-;; check-duplicate : (listof X)
-;;                   #:key (X -> K)
-;;                   #:same? (or/c (K K -> bool) dict?)
-;;                -> X or #f
-(define (check-duplicate items
-                        #:key [key values]
-                        #:same? [same? equal?])
-  (cond [(procedure? same?)
-         (cond [(eq? same? equal?)
-                (check-duplicate/t items key (make-hash) #t)]
-               [(eq? same? eq?)
-                (check-duplicate/t items key (make-hasheq) #t)]
-               [(eq? same? eqv?)
-                (check-duplicate/t items key (make-hasheqv) #t)]
-               [else
-                (check-duplicate/list items key same?)])]
-        [(dict? same?)
-         (let ([dict same?])
-           (if (dict-mutable? dict)
-               (check-duplicate/t items key dict #t)
-               (check-duplicate/t items key dict #f)))]))
-(define (check-duplicate/t items key table mutating?)
-  (let loop ([items items] [table table])
-    (and (pair? items)
-         (let ([key-item (key (car items))])
-           (if (dict-ref table key-item #f)
-               (car items)
-               (loop (cdr items) (if mutating?
-                                     (begin (dict-set! table key-item #t) table)
-                                     (dict-set table key-item #t))))))))
-(define (check-duplicate/list items key same?)
-  (let loop ([items items] [sofar null])
-    (and (pair? items)
-         (let ([key-item (key (car items))])
-           (if (for/or ([prev (in-list sofar)])
-                 (same? key-item prev))
-               (car items)
-               (loop (cdr items) (cons key-item sofar)))))))
