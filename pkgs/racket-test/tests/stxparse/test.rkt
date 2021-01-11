@@ -1059,3 +1059,8 @@
 (convert-compile-time-error
  (syntax-parse #'(1 2 'bar 4 5 'bar 'foo)
    [((~seq (~between x:nat 2 2) ... z) ...+ expr) (void)]))
+
+;; from Laurent Orseau, issue #3603 (1/2021)
+(test-case "skip keywords in invalid-option-placement"
+  (syntax-parse #'(#:a [a 1] #:b b)
+    [a:formals #'(a a.params)]))
