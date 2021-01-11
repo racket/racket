@@ -792,6 +792,6 @@ The comparison predicate of the first argument (@racket[eq?],
 ]
 
 
-@history[#:added "7.8.0.11"]}
+@history[#:added "7.9.0.1"]}
 
 @(close-eval the-eval)
