@@ -65,7 +65,8 @@
   (let loop ([kws kws] [names names] [defaults defaults])
     (cond [(or (null? names) (null? defaults))
            #f]
-          [(eq? (car defaults) #f) ;; mandatory
+          [(or (car kws) ;; keyword
+               (eq? (car defaults) #f)) ;; mandatory arg
            (loop (cdr kws) (cdr names) (cdr defaults))]
           [else ;; found optional
            (find-mandatory (cdr kws) (cdr names) (cdr defaults))])))
