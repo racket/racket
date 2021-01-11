@@ -1061,6 +1061,7 @@
    [((~seq (~between x:nat 2 2) ... z) ...+ expr) (void)]))
 
 ;; from Laurent Orseau, issue #3603 (1/2021)
+(require syntax/parse/lib/function-header)
 (test-case "skip keywords in invalid-option-placement"
   (syntax-parse #'(#:a [a 1] #:b b)
     [a:formals #'(a a.params)]))

@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require "../../parse.rkt"
-         racket/dict)
+         racket/dict
+         racket/list)
 
 (provide function-header formal formals)
 
@@ -17,7 +18,9 @@
            #:attr params #'(arg.name ...)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
                        "duplicate argument name"
-           #:fail-when (check-duplicates (attribute arg.kw) #:key syntax-e)
+           #:fail-when (check-duplicates (attribute arg.kw)
+                                         (lambda (x y)
+                                           (and x y (equal? (syntax-e x) (syntax-e y)))))
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
                         (attribute arg.kw) (attribute arg.name) (attribute arg.default))
@@ -26,7 +29,9 @@
            #:attr params #'(arg.name ... rest)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
                        "duplicate argument name"
-           #:fail-when (check-duplicates (attribute arg.kw) #:key syntax-e)
+           #:fail-when (check-duplicates (attribute arg.kw)
+                                         (lambda (x y)
+                                           (and x y (equal? (syntax-e x) (syntax-e y)))))
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
                         (attribute arg.kw) (attribute arg.name) (attribute arg.default))
