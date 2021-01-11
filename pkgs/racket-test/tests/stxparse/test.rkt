@@ -1062,6 +1062,14 @@
 
 ;; from Laurent Orseau, issue #3603 (1/2021)
 (require syntax/parse/lib/function-header)
-(test-case "skip keywords in invalid-option-placement"
+(check-equal?
+ (syntax->datum
   (syntax-parse #'(#:a [a 1] #:b b)
-    [a:formals #'(a a.params)]))
+    [fmls:formals #'(fmls fmls.params)]))
+ '((#:a (a 1) #:b b) (a b)))
+
+(check-equal?
+ (syntax->datum
+  (syntax-parse #'(a #:b [b 1] c #:d d [e 2] #:f [f 3] [g 4] . rest)
+    [fmls:formals #'(fmls fmls.params)]))
+ '((a #:b [b 1] c #:d d [e 2] #:f [f 3] [g 4] . rest) (a b c d e f g rest)))
