@@ -48,11 +48,11 @@
            #:attr default #f)
   (pattern (~seq kw:keyword [name:id default])))
 
-;; invalid-option-placement : (Listof Id) (Listof Syntax/#f) -> Id/#f
+;; invalid-option-placement : (Listof Keyword) (Listof Id) (Listof Syntax/#f) -> Id/#f
 ;; Checks for mandatory argument after optional argument; if found, returns
 ;; identifier of mandatory argument.
 (define (invalid-option-placement kws names defaults)
-  ;; find-mandatory : (Listof Id) (Listof Syntax/#f) -> Id/#f
+  ;; find-mandatory : (Listof Keyword) (Listof Id) (Listof Syntax/#f) -> Id/#f
   ;; Finds first name w/o corresponding default.
   (define (find-mandatory kws names defaults)
     (for/first ([kw (in-list kws)]
