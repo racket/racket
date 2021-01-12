@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/date racket/file racket/port racket/tcp racket/list)
+(require racket/date racket/file racket/port racket/tcp racket/list racket/string)
 
 (provide ftp-connection?
          ftp-cd
@@ -13,7 +13,8 @@
          ftp-delete-file
          ftp-make-directory
          ftp-delete-directory
-         ftp-rename-file)
+         ftp-rename-file
+         ftp-current-directory)
 
 ;; opqaue record to represent an FTP connection:
 (define-struct ftp-connection (in out))
@@ -167,6 +168,15 @@
   (ftp-check-response (ftp-connection-in ftp-ports)
                       (ftp-connection-out ftp-ports)
                       #"250" void (void)))
+
+(define (ftp-current-directory ftp-ports)
+  (fprintf (ftp-connection-out ftp-ports) "PWD\r\n")
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"257"
+                      (lambda (line acc)
+                        (cadr (string-split (bytes->string/latin-1 line) "\"")))
+                      (void)))
 
 (define re:dir-line
   (regexp (string-append
