@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/struct racket/shared (for-label racket/shared))
+@(require "mz.rkt" scribble/struct racket/shared (for-label racket/shared racket/undefined))
 
 
 @(define shared-eval (make-base-eval))
@@ -21,8 +21,8 @@
 
 @defform[(shared ([id expr] ...) body ...+)]{
 
-Binds @racket[id]s with shared structure according to @racket[exprs]
-and then evaluates the @racket[body-expr]s, returning the result of
+Binds @racket[id]s with shared structure according to @racket[expr]s
+and then evaluates the @racket[body]s, returning the result of
 the last expression. 
 
 The @racket[shared] form is similar to @racket[letrec], except that
