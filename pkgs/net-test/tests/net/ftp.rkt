@@ -53,6 +53,7 @@
         (when (ftp-connection? conn)
           (define output (open-output-bytes))
           (test (ftp-cd conn "gnu")
+                (ftp-current-directory conn) => "/gnu"
                 (for ([f (in-list (ftp-directory-list conn))])
                   (match-define (list* type ftp-date name ?size) f)
                   (test (ftp-make-file-seconds ftp-date)))
@@ -239,6 +240,7 @@
      250-system. See:
      250-http://www.gnu.org/philosophy/categories.html#TheGNUsystem
      250 Directory successfully changed.
+     257 "/gnu" is the current directory
      227 Entering Passive Mode (127,0,0,1,@pasv1-port)
      200 Switching to Binary mode.
      150 Here comes the directory listing.
@@ -263,6 +265,7 @@
   @(lambda xs (regexp-replace* #rx"\n" (apply S xs) "\r\n")){
      USER anonymous
      CWD gnu
+     PWD
      PASV
      TYPE I
      LIST
