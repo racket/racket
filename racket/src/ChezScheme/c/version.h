@@ -327,6 +327,7 @@ typedef int tputsputcchar;
 /* for both iPhone and iPhoneSimulator */
 #if defined(TARGET_OS_IPHONE)
 # define SYSTEM(s) ((void)s, -1)
+# define S_PROT_CODE (PROT_WRITE | PROT_READ)
 # define WRITE_XOR_EXECUTE_CODE
 #endif
 #if defined(__arm64__)

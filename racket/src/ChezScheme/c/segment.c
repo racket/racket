@@ -46,7 +46,7 @@ static seginfo *sort_seginfo PROTO((seginfo *si, uptr n));
 static seginfo *merge_seginfo PROTO((seginfo *si1, seginfo *si2));
 
 #if defined(WRITE_XOR_EXECUTE_CODE)
-static void flip_code_protection_bits PROTO((INT flags, IGEN maxg));
+static void enable_code_write PROTO((ptr tc, IGEN maxg, IBOOL on));
 #endif
 
 void S_segment_init() {
@@ -584,27 +584,36 @@ static void contract_segment_table(uptr base, uptr end) {
    off of it.
 */
 
-void S_thread_start_code_write(IGEN maxg) {
+void S_thread_start_code_write(ptr tc, IGEN maxg) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  flip_code_protection_bits(PROT_WRITE|PROT_READ, maxg);
+  enable_code_write(tc, maxg, 1);
 #else
+  (void)tc;
   (void)maxg;
   S_ENABLE_CODE_WRITE(1);
 #endif
 }
 
-void S_thread_end_code_write(IGEN maxg) {
+void S_thread_end_code_write(ptr tc, IGEN maxg) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  flip_code_protection_bits(PROT_EXEC|PROT_READ, maxg);
+  enable_code_write(tc, maxg, 0);
 #else
+  (void)tc;
   (void)maxg;
   S_ENABLE_CODE_WRITE(0);
 #endif
 }
 
 #if defined(WRITE_XOR_EXECUTE_CODE)
-static IBOOL is_unused_seg(chunkinfo *chunk, uptr number) {
-  seginfo *si;
+# if defined(PTHREADS)
+static IBOOL is_unused_seg(chunkinfo *chunk, seginfo *si) {
+  uptr number;
+  if (si->creator == NULL) {
+    /* If the seginfo doesn't have a creator, then it's unused so we
+       can skip the search. */
+    return 1;
+  }
+  number = si->number;
   si = chunk->unused_segs;
   while (si != NULL) {
     if (si->number == number) {
@@ -614,31 +623,40 @@ static IBOOL is_unused_seg(chunkinfo *chunk, uptr number) {
   }
   return 0;
 }
+# endif
 
-static void flip_code_protection_bits(INT flags, IGEN maxg) {
+static void enable_code_write(ptr tc, IGEN maxg, IBOOL on) {
   chunkinfo *chunk;
   seginfo si;
   iptr i, j, bytes;
   void *addr;
+  INT flags = (on ? PROT_WRITE : PROT_EXEC) | PROT_READ;
+  thread_gc *tgc = THREAD_GC(tc);
+
   for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
     chunk = S_code_chunks[i];
     while (chunk != NULL) {
       addr = chunk->addr;
+# if defined(PTHREADS)
       bytes = 0;
       if (chunk->nused_segs == 0) {
-        // None of the segments in the chunk are used so flip the bits
-        // for all of them in one go.
+        /* None of the segments in the chunk are used so flip the bits
+           for all of them in one go. */
         bytes = chunk->bytes;
       } else {
-        // Flip bits for whole runs of segs that are either unused or
-        // whose generation is within the range [0, maxg].
+        /* Flip bits for whole runs of segs that are either unused or
+           whose generation is within the range [0, maxg]. */
         for (j = 0; j < chunk->segs; j++) {
           si = chunk->sis[j];
-          if (si.generation <= maxg || is_unused_seg(chunk, si.number)) {
+          /* When maxg is 0, limit the search to unused segments and
+             segments that belong to the current thread. */
+          if ((maxg == 0 && si.generation == 0 && si.creator == tgc) ||
+              (maxg != 0 && si.generation <= maxg) ||
+              (is_unused_seg(chunk, &si))) {
             bytes += bytes_per_segment;
           } else {
             if (bytes > 0) {
-              debug(printf("mprotect segs flags=%d from=%p to=%p maxg=%d (interrupted)\n", flags, addr, TO_VOIDP((char *)addr + bytes), maxg))
+              debug(printf("mprotect flags=%d from=%p to=%p maxg=%d (interrupted)\n", flags, addr, TO_VOIDP((char *)addr + bytes), maxg))
               if (mprotect(addr, bytes, flags) != 0) {
                 S_error_abort("mprotect failed");
               }
@@ -649,8 +667,11 @@ static void flip_code_protection_bits(INT flags, IGEN maxg) {
           }
         }
       }
+# else
+      bytes = chunk->bytes;
+# endif
       if (bytes > 0) {
-        debug(printf("mprotect segs flags=%d from=%p to=%p maxg=%d\n", flags, addr, TO_VOIDP((char *)addr + bytes), maxg))
+        debug(printf("mprotect flags=%d from=%p to=%p maxg=%d\n", flags, addr, TO_VOIDP((char *)addr + bytes), maxg))
         if (mprotect(addr, bytes, flags) != 0) {
           S_error_abort("mprotect failed");
         }

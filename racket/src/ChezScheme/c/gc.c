@@ -870,7 +870,7 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
 
     GET_REAL_TIME(astart);
 
-    S_thread_start_code_write(MAX_TG);
+    S_thread_start_code_write(tc, MAX_TG);
 
    /* flush instruction cache: effectively clear_code_mod but safer */
     for (ls = S_threads; ls != Snil; ls = Scdr(ls)) {
@@ -1679,7 +1679,7 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
     if (MAX_CG >= S_G.min_free_gen) S_free_chunks();
 
     S_flush_instruction_cache(tc);
-    S_thread_end_code_write(MAX_TG);
+    S_thread_end_code_write(tc, MAX_TG);
 
 #ifndef NO_DIRTY_NEWSPACE_POINTERS
     /* mark dirty those newspace cards to which we've added wrong-way pointers */
