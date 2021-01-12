@@ -2,7 +2,7 @@
 (require racket/cmdline)
 
 (provide build-command-line
-         m32? win? mac? linux? ppc?
+         m32? win? mac? linux? ppc? aarch64?
          archives-dirs)
 
 (define m32? 'unknown)
@@ -10,6 +10,7 @@
 (define linux? #f)
 (define mac? 'unknown)
 (define ppc? #f)
+(define aarch64? #f)
 
 (define archives-dirs #f)
 
@@ -20,6 +21,7 @@
     (define mac? 'unknown)
     (define linux? #f)
     (define ppc? (regexp-match? #rx"ppc" (system-library-subpath #f)))
+    (define aarch64? (eq? 'aarch64 (system-type 'arch)))
     (define archives-dirs #f)
     (begin0
      (command-line
@@ -34,11 +36,14 @@
       #:once-any
       [("--m32") "build 32-bit mode x86/PowerPC"
        (set! m32? #t)]
-      [("--m64") "build 64-bit mode x86_64"
+      [("--m64") "build 64-bit mode x86_64/AArch64"
        (set! m32? #f)]
       [("--mppc") "build 32-bit mode PowerPC"
        (set! m32? #t)
        (set! ppc? #t)]
+      [("--maarch64") "build 64-bit mode AArch64"
+       (set! m32? #f)
+       (set! aarch64? #t)]
       #:multi
       [("--archives") dir "Find archives in <dir>"
        (set! archives-dirs (cons dir (or archives-dirs null)))]
@@ -51,14 +56,15 @@
      (when (and ppc? (not m32?))
        (error 'build "cannot use `--m64` on PowerPC"))
      (set! mac? (not (or win? linux?)))
-     (install! m32? win? mac? linux? (and mac? ppc?)
+     (install! m32? win? mac? linux? (and mac? ppc?) aarch64?
                (reverse (or archives-dirs
                             (list (current-directory))))))))
 
-(define (install! -m32? -win? -mac? -linux? -ppc? -archives-dirs)
+(define (install! -m32? -win? -mac? -linux? -ppc? -aarch64? -archives-dirs)
   (set! m32? -m32?)
   (set! win? -win?)
   (set! mac? -mac?)
   (set! linux? -linux?)
   (set! ppc? -ppc?)
+  (set! aarch64? -aarch64?)
   (set! archives-dirs -archives-dirs))

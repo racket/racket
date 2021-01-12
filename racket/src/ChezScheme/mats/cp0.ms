@@ -377,6 +377,18 @@
        '(lambda (x)
           (#3%$value (if x 1 (#2%values 3 3 3)))
           #t)))
+
+  (not
+   (equivalent-expansion?
+    (expand/optimize
+     '(lambda (g x y)
+        (call-with-values (lambda ()
+                            (values
+                             (values x y)))
+          (case-lambda
+           [(x y) (g x y)]))))
+    '(lambda (g x y) (g x y))))
+
 )
 
 (cp0-mat cp0-mrvs
@@ -2453,7 +2465,11 @@
                     (begin (#%write 'e) ($xxx-ok))))))
     ; other possibilities exist...
    '(begin (#%write 'a) (#%write 'b) (#%cdr (begin (#%write 'c) (#%write 'd) (#%write 'e) ($xxx-ok)))))
- )
+  (expansion-matches?
+   '(cdr (let ([x (#%write 1)])
+           (cons x (#%write 2))))
+   '(begin (#%write 1) (#%write 2)))
+  )
 
 (mat cp0-seq-ref
   (equivalent-expansion?
@@ -2858,13 +2874,14 @@
         '(let ()
            (define-record foo ((immutable boolean x)))
            (or (foo-x e1) e2))))
-    `(if (let ([g0 e1])
-           (if (#3%record? g0 ',record-type-descriptor?)
-               (#2%void)
-               (#3%$record-oops 'foo-x g0 ',record-type-descriptor?))
-           (#3%$object-ref 'boolean g0 ,fixnum?))
-         #t
-         e2))
+    `(let ([g0 e1])
+       (if (begin
+             (if (#3%record? g0 ',record-type-descriptor?)
+                 (#2%void)
+                 (#3%$record-oops 'foo-x g0 ',record-type-descriptor?))
+             (#3%$object-ref 'boolean g0 ,fixnum?))
+           #t
+           e2)))
   (equivalent-expansion?
     (parameterize ([#%$suppress-primitive-inlining #f] [run-cp0 (lambda (cp0 x) (cp0 x))] [optimize-level 3] [compile-profile #f])
       (expand/optimize
@@ -3139,5 +3156,186 @@
                       (list (mk (lambda () 1))
                             (mk (lambda () (values 1 2))))))
                '(#t #f)))
+   
+   (or (not (enable-cp0))
+       (eq? (current-eval) interpret)
+       (procedure-known-single-valued? (lambda (f) (#3%$app/value f))))
+   (or (not (enable-cp0))
+       (not (procedure-known-single-valued? (lambda (f) (#2%$app/value f)))))
+   (or (not (enable-cp0))
+       (eq? (current-eval) interpret)
+       (procedure-known-single-valued? (case-lambda
+                                        [(f) (#3%$app/value f)]
+                                        [(f g) (if (g)
+                                                   (abort 'oops)
+                                                   (#3%$app/value f))])))
 
+   (or (not (enable-cp0))
+       (eq? (current-eval) interpret)
+       (procedure-known-single-valued? (lambda () (abort 'x))))
+   (or (not (enable-cp0))
+       (eq? (current-eval) interpret)
+       (procedure-known-single-valued? (lambda (f) (#3%$app/no-return f))))
+   (or (not (enable-cp0))
+       (not (procedure-known-single-valued? (lambda (f) (#2%$app/no-return f)))))
+   (or (not (enable-cp0))
+       (eq? (current-eval) interpret)
+       (procedure-known-single-valued? (case-lambda
+                                        [(f) (#3%$app/no-return f)]
+                                        [(f g) (if (g)
+                                                   (abort 'oops)
+                                                   (#3%$app/no-return f))])))
+
+)
+
+(mat make-wrapper-procedure
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '((make-wrapper-procedure (lambda (x) x) 2 'ok) 5)))
+   5)
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '((make-arity-wrapper-procedure (lambda (x) x) 2 'ok) 5)))
+   5)
+
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '((make-wrapper-procedure (lambda (x) x) 2 (g)) 5)))
+   (if (= 3 (optimize-level))
+       '(begin (g) 5)
+       '(begin (#3%$value (g)) 5)))
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '((make-arity-wrapper-procedure (lambda (x) x) 2 (g)) 5)))
+   (if (= 3 (optimize-level))
+       '(begin (g) 5)
+       '(begin (#3%$value (g)) 5)))
+
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '(let ([f (make-wrapper-procedure (lambda (x) x) 2 (g))]) (f 5))))
+   (if (= 3 (optimize-level))
+       '(begin (g) 5)
+       '(begin (#3%$value (g)) 5)))
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '(let ([f (make-arity-wrapper-procedure (lambda (x) x) 2 (g))]) (f 5))))
+   (if (= 3 (optimize-level))
+       '(begin (g) 5)
+       '(begin (#3%$value (g)) 5)))
+
+  (equivalent-expansion?
+   (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+     (expand/optimize '(let ([g (let ([f (make-wrapper-procedure (lambda (x) x) 2 (g))]) f)]) (g 5))))
+   (if (= 3 (optimize-level))
+       '(begin (g) 5)
+       '(begin (#3%$value (g)) 5)))
+
+  (not
+   (equivalent-expansion?
+    (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+      (expand/optimize '(let ([f (#2%make-wrapper-procedure (lambda (x) x) 2 (g))]) (#2%list (g f) (f 5)))))
+    '(#2%list (g (#2%make-wrapper-procedure (lambda (x) x) 2 (g))) 5)))
+  (not
+   (equivalent-expansion?
+    (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+      (expand/optimize '(let ([f (#2%make-arity-wrapper-procedure (lambda (x) x) 2 (g))]) (#2%list (g f) (f 5)))))
+    '(#2%list (g (#2%make-arity-wrapper-procedure (lambda (x) x) 2 (g))) 5)))
+
+  (not
+   (equivalent-expansion?
+    (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+      ;; arity mismatch:
+      (expand/optimize '((make-arity-wrapper-procedure (lambda (x) x) 1 'ok) 5)))
+    5))
+  )
+
+(mat uncprep-app-variants
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(x y))
+     '(x y)))
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app x y))
+     '(x y)))
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app x y))
+     (if (eqv? 3 (optimize-level))
+         '(x y)
+         '(#3%$app x y))))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(x y))
+     '(x y)))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app x y))
+     '(x y)))
+
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app/no-return x y))
+     '($app/no-return x y)))
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app/no-return x y))
+     (if (eqv? 3 (optimize-level))
+         '($app/no-return x y)
+         '(#3%$app/no-return x y))))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app/no-return x y))
+     '($app/no-return x y)))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app/no-return x y))
+     '($app/no-return x y)))
+
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app/no-inline x y))
+     '($app/no-inline x y)))
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app/no-inline x y))
+     (if (eqv? 3 (optimize-level))
+         '($app/no-inline x y)
+         '(#3%$app/no-inline x y))))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app/no-inline x y))
+     '($app/no-inline x y)))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app/no-inline x y))
+     '($app/no-inline x y)))
+
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app/value x y))
+     '($app/value x y)))
+  (parameterize ([enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app/value x y))
+     (if (eqv? 3 (optimize-level))
+         '($app/value x y)
+         '(#3%$app/value x y))))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#%$app/value x y))
+     '($app/value x y)))
+  (parameterize ([enable-unsafe-application #t]
+                 [enable-cp0 #t])
+    (equivalent-expansion?
+     (expand/optimize '(#3%$app/value x y))
+     '($app/value x y)))
 )

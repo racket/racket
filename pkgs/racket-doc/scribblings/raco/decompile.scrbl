@@ -30,9 +30,37 @@ The @exec{raco decompile} command accepts the following command-line flags:
         of decoding linklets to approximate Racket @racket[module] forms}
   @item{@DFlag{no-disassemble} --- show machine code as-is in a byte string,
         instead of attempting to disassemble}
+  @item{@DFlag{partial-fasl} --- preserve more of the original structure of
+        the bytecode file, instead of focusing on procedure bodies}
 ]
 
-To the degree that it can be converted back to Racket code,
+@history[#:changed "1.8" @elem{Added @DFlag{no-disassemble}.}
+         #:changed "1.9" @elem{Added @DFlag{partial-fasl}.}]
+
+@section{Racket CS Decompilation}
+
+Decompilation of Racket CS bytecode mostly shows the structure of a
+module around machine-code implementations of procedures.
+
+@itemize[
+
+@item{A @racketidfont{#%machine-code} form corresponds to machine code
+ that is not disassembled, where the machine code is in a byte string.}
+
+@item{A @racketidfont{#%assembly-code} form corresponds to disassembled
+ machine code, where the assembly code is shown as a sequence of strings.}
+
+@item{A @racketidfont{#%interpret} form corresponds to a compiled form
+ of a large procedure, where only smaller nested procedures are compiled
+ to machine code.}
+
+]
+
+@section{Racket BC Decompilation}
+
+Racket BC bytecode has a structure that is close enough to Racket's
+ core language that it can more often be converted to an approximation
+ of Racket code. To the degree that it can be converted back,
  many forms in the decompiled code have the same meanings as
  always, such as @racket[module], @racket[define], and @racket[lambda].
  Other forms and transformations are specific to the rendering
@@ -130,18 +158,7 @@ To the degree that it can be converted back to Racket code,
  local binding might have a name that starts @racketidfont{flonum} to
  indicate a flonum value.}
 
-@item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
- object.}
-
-@item{A @racketidfont{#%machine-code} form corresponds to machine code
- that is not disassembled, where the machine code is in a byte string.}
-
-@item{A @racketidfont{#%assembly-code} form corresponds to disassembled
- machine code, where the assembly code is shown as a sequence of strings.}
-
 ]
-
-@history[#:changed "1.8" @elem{Added @DFlag{no-disassemble}.}]
 
 @; ------------------------------------------------------------
 

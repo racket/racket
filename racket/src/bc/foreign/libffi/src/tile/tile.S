@@ -31,7 +31,7 @@
 /* Number of bytes in a register. */
 #define REG_SIZE FFI_SIZEOF_ARG
 
-/* Number of bytes in stack linkage area for backtracking.
+/* Number of bytes in stack linkage area for backtracing.
 
    A note about the ABI: on entry to a procedure, sp points to a stack
    slot where it must spill the return address if it's not a leaf.

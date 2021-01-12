@@ -2629,6 +2629,33 @@ static void release_ffi_lock(void *lock)
 }
 
 /*****************************************************************************/
+
+static int extract_varargs_after(const char *who, int argc, Scheme_Object **argv, int argpos, int nargs)
+{
+  int varargs_after;
+  
+  if (SCHEME_FALSEP(argv[argpos]))
+    varargs_after = -1;
+  else if (SCHEME_INTP(argv[argpos])
+           && (SCHEME_INT_VAL(argv[argpos]) > 0)) {
+    varargs_after = SCHEME_INT_VAL(argv[argpos]);
+  } else if (SCHEME_BIGNUMP(argv[argpos])
+             && SCHEME_BIGPOS((argv[argpos]))) {
+    varargs_after = nargs + 1;
+  } else {
+    varargs_after = -1;
+    scheme_wrong_contract(who, "(or/c exact-positive-integer? #f)", argpos, argc, argv);
+  }
+  if (varargs_after > nargs)
+    scheme_contract_error(who, "varargs-after value is too large",
+                          "given value", 1, argv[argpos],
+                          "argument count", 1, scheme_make_integer(nargs),
+                          NULL);
+
+  return varargs_after;
+}
+
+/*****************************************************************************/
 /* Calling foreign function objects */
 
 #define MAX_QUICK_ARGS 16
@@ -3015,6 +3042,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
   Scheme_Object *otype  = argv[ARGPOS(2)];
   Scheme_Object *obj, *data, *p, *base, *cp, *name, *a[1];
   ffi_abi abi;
+  int varargs_after;
   intptr_t ooff;
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
@@ -3075,6 +3103,12 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
       lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[ARGPOS(6)]));
     }
   }
+  /* ARGPOS(7) is `blocking?`, but we don't use that */
+  if (argc > ARGPOS(8)) {
+    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(8), nargs);
+  } else
+    varargs_after = -1;
+
   if (cp && SCHEME_FFIOBJP(cp))
     name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
   else
@@ -3088,8 +3122,13 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
   cif = malloc(sizeof(ffi_cif));
-  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
-    scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  if (varargs_after == -1) {
+    if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  } else {
+    if (ffi_prep_cif_var(cif, abi, varargs_after, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif_var did not return FFI_OK");
+  }
   data = scheme_make_vector(FFI_CALL_VEC_SIZE, NULL);
   SCHEME_VEC_ELS(data)[0] = name;
   SCHEME_VEC_ELS(data)[1] = obj;
@@ -3121,15 +3160,15 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
 #undef ARGPOS
 }
 
-/* (ffi-call ffi-obj in-types out-type [abi save-errno? orig-place? lock-name blocking?]) -> (in-types -> out-value) */
+/* (ffi-call ffi-obj in-types out-type [abi varargs-after save-errno? orig-place? lock-name blocking?]) -> (in-types -> out-value) */
 /* the real work is done by ffi_do_call above */
-@cdefine[ffi-call 3 8]{
+@cdefine[ffi-call 3 9]{
   return ffi_call_or_curry(MYNAME, 0, argc, argv);
 }
 
-/* (ffi-call-maker in-types out-type [abi save-errno? orig-place? lock-name blocking?]) -> (ffi->obj -> (in-types -> out-value)) */
+/* (ffi-call-maker in-types out-type [abi varargs-after save-errno? orig-place? lock-name blocking?]) -> (ffi->obj -> (in-types -> out-value)) */
 /* Curried version of `ffi-call` */
-@cdefine[ffi-call-maker 2 7]{
+@cdefine[ffi-call-maker 2 8]{
   return ffi_call_or_curry(MYNAME, 1, argc, argv);
 }
 
@@ -3414,7 +3453,8 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
   Scheme_Object *p, *base;
   ffi_abi abi;
   int is_atomic;
-  int nargs, i;
+  int nargs, i, varargs_after;
+  ffi_status ffi_ok;
   /* ffi_closure objects are problematic when used with a moving GC.  The
    * problem is that memory that is GC-visible can move at any time.  The
    * solution is to use an immobile-box, which an immobile pointer (in a simple
@@ -3472,6 +3512,10 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
       && !SCHEME_BOXP(argv[ARGPOS(5)])
       && !scheme_check_proc_arity2(NULL, 1, ARGPOS(5), argc, argv, 1))
     scheme_wrong_contract(who, "(or/c #f (procedure-arity-includes/c 0) box?)", ARGPOS(5), argc, argv);
+  if (argc > ARGPOS(6))
+    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(6), nargs);
+  else
+    varargs_after = -1;
 
   if (curry) {
     /* all checks are done */
@@ -3517,21 +3561,32 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     do_callback = ffi_queue_callback;
   } else
     do_callback = ffi_do_callback;
+
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args =
-    scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  scheme_thread_code_start_write();
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
-    if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
+    if (NULL == (base = get_ctype_base(SCHEME_CAR(p)))) {
+      scheme_thread_code_end_write();
       scheme_wrong_contract(who, "(listof ctype?)", ARGPOS(1), argc, argv);
-    if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
+    }
+    if (CTYPE_PRIMLABEL(base) == FOREIGN_void) {
+      scheme_thread_code_end_write();
       wrong_void(who, SCHEME_CAR(p), 1, ARGPOS(1), argc, argv);
+    }
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
-  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
-    scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  if (varargs_after == -1) {
+    if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  } else {
+    if (ffi_prep_cif_var(cif, abi, varargs_after, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif_var did not return FFI_OK");
+  }
+  scheme_thread_code_end_write();
   @cmake["data" ffi-callback
          "cl_cif_args" "(curry ? NULL : argv[ARGPOS(0)])" "argv[ARGPOS(1)]" "argv[ARGPOS(2)]"
          "sync"]
@@ -3564,9 +3619,11 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
       callback_data = (void *)tmp;
     }
   }
+  scheme_thread_code_start_write();
   cl_cif_args->data = callback_data;
-  if (ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl)
-      != FFI_OK)
+  ffi_ok = ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl);
+  scheme_thread_code_end_write();
+  if (ffi_ok != FFI_OK)
     scheme_signal_error
       ("internal error: ffi_prep_closure did not return FFI_OK");
   @@IFDEF{MZ_USE_MZRT}{
@@ -3593,7 +3650,7 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
 static Scheme_Object *make_ffi_callback_from_curried(int argc, Scheme_Object *argv[], Scheme_Object *self)
 {
   Scheme_Object *vec = SCHEME_PRIM_CLOSURE_ELS(self)[0];
-  Scheme_Object *a[6];
+  Scheme_Object *a[7];
   int c = SCHEME_VEC_SIZE(vec), i;
 
   for (i = 0; i < c; i++) {
@@ -3607,7 +3664,7 @@ static Scheme_Object *make_ffi_callback_from_curried(int argc, Scheme_Object *ar
 /* (ffi-callback-maker in-types out-type [abi atomic? sync]) -> (proc -> ffi-callback) */
 /* Curried version of `ffi-callback`. Check arguments eagerly, but we don't do anything
    otherwise until a function is available. */
-@cdefine[ffi-callback-maker 2 5]{
+@cdefine[ffi-callback-maker 2 6]{
   int i;
   Scheme_Object *vec, *a[1];
   

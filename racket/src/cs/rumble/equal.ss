@@ -99,6 +99,17 @@
                                  (let ([ctx (deeper-context ctx)])
                                    (lambda (a b)
                                      (equal? a b ctx)))))))]
+           [(mpair? a)
+            (and (mpair? b)
+                 (or (check-union-find ctx a b)
+                     (if eql?
+                         (and (eql? (mcar a) (mcar b))
+                              (eql? (mcdr a) (mcdr b))
+                              #t)
+                         (let ([ctx (deeper-context ctx)])
+                           (and
+                            (equal? (mcar a) (mcar b) ctx)
+                            (equal? (mcdr a) (mcdr b) ctx))))))]
            [(record? a)
             (and (record? b)
                  ;; Check for `prop:impersonator-of`
@@ -130,7 +141,11 @@
                                                               ;; Make sure record sees only booleans:
                                                               (and (eql? a b) #t)))]
                                  [(and (eq? mode 'chaperone-of?)
-                                       (with-global-lock* (hashtable-contains? rtd-mutables (record-rtd a))))
+                                       (let ([rtd (record-rtd a)])
+                                         (and (not (eq? 0 (struct-type-mpm rtd)))
+                                              (if (struct-type-prefab? rtd)
+                                                  (with-global-lock* (hashtable-contains? rtd-mutables rtd))
+                                                  #t))))
                                   ;; Mutable records must be `eq?` for `chaperone-of?`
                                   #f]
                                  [else

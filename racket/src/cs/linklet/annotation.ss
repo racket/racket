@@ -75,7 +75,14 @@
        (hash-ref sfd-cache src #f))
       ;; We'll use a file-position object in source objects, so
       ;; the sfd checksum doesn't matter
-      (let ([sfd (source-file-descriptor src 0)])
+      (let ([sfd (source-file-descriptor
+                  ;; Wrap path as a srcloc so that absolute paths are just
+                  ;; dropped when serializing the path (while paths relative
+                  ;; to the containing source can be preserved):
+                  (if (path? src)
+                      (srcloc src #f #f #f #f)
+                      src)
+                  0)])
         (with-interrupts-disabled
          (hash-set! sfd-cache src sfd))
         sfd)))

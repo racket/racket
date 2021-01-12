@@ -134,6 +134,7 @@ static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *fu
 
 static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const char *post1,
 				const char *fn, int fnl, const char *post2, int sym);
+XFORM_NONGCING static void adjust_primitive(Scheme_Object *vi, Scheme_Struct_Type *stype, int flags);
 
 static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always);
 
@@ -190,7 +191,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 #define icons scheme_make_pair
 #define _intern scheme_intern_symbol
 
-#define BUILTIN_STRUCT_FLAGS (SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_MAKE_PREFIX)
+#define BUILTIN_STRUCT_FLAGS (SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_MAKE_PREFIX | SCHEME_STRUCT_BUILTIN)
 
 #define TYPE_NAME(base, blen, sym) make_name("struct:", base, blen, "", NULL, 0, "", sym)
 #define CSTR_NAME(base, blen, sym) make_name("", base, blen, "", NULL, 0, "", sym)
@@ -3296,15 +3297,17 @@ int scheme_struct_is_transparent(Scheme_Object *s)
 
 #define STRUCT_mPROCP(o, v)						\
   (SCHEME_PRIMP(o) && ((((Scheme_Primitive_Proc *)o)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == (v)))
+#define STRUCT_PRIM_PROCP(o) ((((Scheme_Primitive_Proc *)o)->pp.flags & SCHEME_PRIM_IS_PRIMITIVE))
 
 static Scheme_Object *
 struct_setter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
-	   || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
-           || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER))
+  return (((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+            || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
+            || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER))
+           && !STRUCT_PRIM_PROCP(v))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3313,8 +3316,9 @@ struct_getter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
-           || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
+  return (((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
+            || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
+           && !STRUCT_PRIM_PROCP(v))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3323,7 +3327,8 @@ struct_pred_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return (STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_PRED)
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_PRED)
+           && !STRUCT_PRIM_PROCP(v))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3332,8 +3337,9 @@ struct_constr_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_CONSTR)
-           || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR))
+  return (((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_CONSTR)
+            || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR))
+           && !STRUCT_PRIM_PROCP(v))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3425,7 +3431,7 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
                 | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
                    : 0)
-                | ((st->nonfail_constructor
+                | (((st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
                     && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
                    ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
                    : 0)
@@ -3442,7 +3448,7 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT)
                 | STRUCT_PROC_SHAPE_CONSTR
-                | ((st->nonfail_constructor
+                | (((st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
                     && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
                    ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
                    : 0));
@@ -4203,6 +4209,7 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
                           nm,
 			  SCHEME_CONSTR, 
 			  struct_type->num_slots);
+    adjust_primitive(vi, struct_type, flags);
     values[pos] = vi;
     pos++;
   }
@@ -4214,6 +4221,7 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
                           nm,
 			  SCHEME_PRED,
 			  0);
+    adjust_primitive(vi, struct_type, flags);
     values[pos] = vi;
     pos++;
   }
@@ -4235,6 +4243,7 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
                             nm,
 			    SCHEME_GETTER,
 			    slot_num);
+      adjust_primitive(vi, struct_type, flags);
       values[pos] = vi;
       pos++;
     }
@@ -4247,6 +4256,7 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
                             nm,
 			    SCHEME_SETTER,
 			    slot_num);
+      adjust_primitive(vi, struct_type, flags);
       values[pos] = vi;
       pos++;
     }
@@ -4278,6 +4288,20 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
   }
   
   return values;
+}
+
+static void adjust_primitive(Scheme_Object *vi, Scheme_Struct_Type *stype, int flags) {
+  if (flags & SCHEME_STRUCT_BUILTIN) {
+    /* Make sure the primitive flag is *not* set, because we mean
+       for these to be exposed as struct procedures */
+    ((Scheme_Closed_Primitive_Proc *)vi)->pp.flags &= ~SCHEME_PRIM_IS_PRIMITIVE;
+  } else if (scheme_starting_up) {
+    /* Set primitive flag on non-transparent so structs in startup
+       code (the expander and reader) are *not* exposed as a structure
+       procedure */
+    if (SCHEME_TRUEP(stype->inspector))
+      ((Scheme_Closed_Primitive_Proc *)vi)->pp.flags |= SCHEME_PRIM_IS_PRIMITIVE;
+  }
 }
 
 static Scheme_Object **_make_struct_names(const char *base, int blen,
@@ -4728,7 +4752,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
   struct_type->name_pos = depth;
   struct_type->authentic = 0;
-  struct_type->nonfail_constructor = 1;
+  struct_type->more_flags = STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR;
   struct_type->inspector = scheme_false;
   struct_type->uninit_val = uninit_val;
   struct_type->props = NULL;
@@ -4795,7 +4819,12 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
   }
 
   struct_type->name = name;
-  struct_type->nonfail_constructor = (parent_type ? parent_type->nonfail_constructor : 1);
+  struct_type->more_flags = ((parent_type
+                              ? (parent_type->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
+                              : STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
+                             | ((scheme_starting_up && inspector)
+                                ? STRUCT_TYPE_FLAG_SYSTEM_OPAQUE
+                                : 0));
 
   struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
@@ -5059,7 +5088,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
     }
     
     struct_type->guard = guard;
-    struct_type->nonfail_constructor = 0;
+    struct_type->more_flags = 0;
   } else if (chaperone_undefined) {
     struct_type->guard = scheme_undefined;
   }
@@ -5067,7 +5096,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
   if (parent && SCHEME_NP_CHAPERONEP(parent)) {
     guard = add_struct_type_chaperone_guards(parent, struct_type->guard);
     struct_type->guard = guard;
-    struct_type->nonfail_constructor = 0;
+    struct_type->more_flags = 0;
   }
 
   if (checked_proc)
@@ -5138,7 +5167,7 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *name,
                         guard);
 
   if (scheme_starting_up)
-    /* Force allocation for a strcuture type that may be in the master GC: */
+    /* Force allocation for a structure type that may be in the master GC: */
     scheme_force_struct_type_info((Scheme_Struct_Type *)r);
 
   return r;

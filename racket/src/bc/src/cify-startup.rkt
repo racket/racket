@@ -4,7 +4,7 @@
                   primitive-in-category?)
          racket/cmdline
          "../../schemify/schemify.rkt"
-         "../../schemify/serialize.rkt"
+         "../../cify/literal.rkt"
          "../../schemify/known.rkt"
          "../../schemify/lift.rkt"
          "../../schemify/reinfer-name.rkt"
@@ -66,20 +66,19 @@
                a-known-constant]))))
 
 (printf "Serializable...\n")
-(define-values (bodys/constants-lifted lifted-constants)
-  (time (convert-for-serialize l #t #t)))
+(define-values (bodys/literals-extracted literals)
+  (time (extract-literals l)))
 
 ;; Startup code reuses names to keep it compact; make
 ;; te names unique again
 (define bodys/re-uniqued
-  (cdr (re-unique `(begin . ,bodys/constants-lifted))))
+  (cdr (re-unique `(begin . ,bodys/literals-extracted))))
 
 (printf "Schemify...\n")
 (define body
   (time
    (schemify-body (recognize-inferred-names bodys/re-uniqued) prim-knowns #hasheq() #hasheq() #hasheq()
-                  ;; for cify:
-                  #t
+                  'cify
                   ;; unsafe mode:
                   #t
                   ;; no prompts:
@@ -93,7 +92,7 @@
    (lift-in-schemified-body body)))
 
 (define converted-body
-  (append (for/list ([p (in-list lifted-constants)])
+  (append (for/list ([p (in-list literals)])
             (cons 'define p))
           lifted-body))
 

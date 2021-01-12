@@ -42,7 +42,7 @@ JIT compiler is disabled. See @racket[eval-jit-enabled].
 
 The CS variant of Racket supports several compilation modes:
 machine code, machine-independent, interpreted, and JIT. Machine code
-is the primay mode, and the machine-independent mode is the same as
+is the primary mode, and the machine-independent mode is the same as
 for 3m and CGC. Interpreted mode uses an interpreter at
 the level of core @tech{linklet} forms with no compilation. JIT mode
 triggers compilation of individual function forms on demand.
@@ -90,9 +90,6 @@ forms or adjust the way forms are displayed:
   @item{@envvar-indexed{PLT_LINKLET_SHOW_GENSYM} --- prints full
         generated names, instead of abbreviations that may conflate
         different symbols}
-
-   @item{@envvar-indexed{PLT_LINKLET_SHOW_PRE_LIFT} --- shows a
-         schemified forms before closure transformations are applied}
 
    @item{@envvar-indexed{PLT_LINKLET_SHOW_PRE_JIT} --- shows a
          schemified forms before a transformation to JIT mode, which

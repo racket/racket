@@ -1,4 +1,4 @@
-# Getting Started
+# Implementation Overview
 
 The majority of the Chez Scheme compiler and libraries are implemented
 in Scheme and can be found in the "s" (for Scheme) subdirectory. The
@@ -9,7 +9,8 @@ found in the "c" directory.
 
 Some key files in "s":
 
- * "cmacro.ss": object layouts and other global constants
+ * "cmacro.ss": object layouts and other global constants, including
+   constants that are needed by both the compiler and the kernel
 
  * "syntax.ss": the macro expander
 
@@ -64,10 +65,15 @@ that particular machine. This is the script that "configure" runs when
 configuring for doing the build, but you can also run the "workarea"
 script on your own, supplying the machine type you'd like to build.
 
-If you have a working Chez Scheme build and you want to cross-compile
-to generate *machine-type* boot and header files, the easiest approach
-is `make` *machine-type*`.boot`. The output is written to the
-"boot/*machine-type*" directory.
+Bootstrap from scratch by running the Racket program
+"rktboot/main.rkt", which should work even with a relatively old
+version of Racket. Output is written directly to a "boot"
+subdirectory.
+
+If you have a working Chez Scheme build for the current sources and
+you want to cross-compile to generate *machine-type* boot and header
+files, the fastest approach is `make` *machine-type*`.boot`. The
+output is written to the "boot/*machine-type*" directory.
 
 # Porting to a New Platform
 
@@ -97,6 +103,66 @@ You can port to a new operating system by imitating the files of a
 similar supported oerating system, but building a new backend for a
 new processor requires much more understanding of the compiler and
 runtime system.
+
+# Adding Functionality
+
+If new functionality can be implemented in terms of existing
+functionality, then you don't have to understand too much about the
+compiler internals. Just write Scheme code, and put it in a reasonable
+existing "s/*...*.ss" file.
+
+The main catch is that all bindings have to be declared in
+"primdata.ss". The declarations are organized by exporting library and
+functions versus non-functions. Unless you're also changing a
+standard, your addition will go in one of the sets that is declared
+with `[libraries]`, meaning that the binding is in the `chezscheme`
+library.
+
+When a helper function needs to be a different source file than the
+place where it's used, so it can't just be locally defined, prefix the
+helper function name with `$` and register it in the `[flags system
+proc]` group in "primdata.ss".
+
+There's usually not much of a bootstrapping problem with new bindings,
+since you can add declarations in "primdata.ss" and implement them any
+time afterward. If you get into a bad state, however, you can always
+bootstrap from scratch using "rktboot/main.rkt". In the rare case that
+your new functionality is needed to compile Chez Scheme itself, you'll
+have to implement a copy of the functionality (or enough of it) in
+"rktboot".
+
+Take care to implement and new functionality as safe, which means
+checking arguments fully. Keep in mind that your implementation tself
+will be compiled as unsafe. While testing and debugging your
+additions, however, you'll probably want to use `make o=0` in the
+"*machine-type*/s" workarea space, which compiles in safe mode.
+
+Tests go in "mats/*...*.ms". In "*machine-type*/mats", you can use
+`make 7.mo` to build and run `7.ms`. Remove `7.mo` to re-run without
+changing `7.ms`. Makefile variables like `o` control the way tests
+are run; for example, use `make o=3 7.mo` to test in unsafe mode.
+
+# Compiled Files and Boot Files
+
+A Scheme file conventionally uses the suffix ".ss" and it's compiled
+form uses the suffix ".so". The format of a compiled file is closely
+related to the fasl format that is exposed by `fasl-write` and
+`fasl-read`, but you can't compile Scheme code to some value that is
+written with `fasl-write`. Instead, `compile-file` and related
+functions directly generate compiled code in a fasled form that
+includes needed linking information.
+
+A boot file, usually with the suffix ".boot", has the same format as a
+compiled file, but with an extra header that identifies it as a boot
+file and takes care of some singleton objects, such as `#!base-rtd`
+and the stub to invoke compiled code.
+
+The vfasl format is used for the same purposes as the fasl format, but
+mostly for boot files. It is always platform-specific and its content
+is very close to the form that the content will take when loaded into
+memory. It can load especially quickly with streamlined linking and
+interning of symbols and record types, especially in uncompressed
+form. The build scripts do not convert boot files to vfasl format.
 
 # Scheme Objects
 
@@ -168,6 +234,13 @@ the first field above is `type`, and it turns out that it will always
 contain the value `type-inexactnum`. The `iptr` type for `type` means
 "a pointer-sized signed integer". The `ptr` type for `real` and `imag`
 means "pointer" or "Scheme object".
+
+If you create a new type of object, then several pieces need to be
+updated: the garbage collector (in "mkgc.ss" and "gc.c"), the compiler
+to implement primitives that generate the kind of objects, the fasl
+writer (in "fasl.ss"), the fasl reader (in "fasl.c"), the fasl reader
+used by `strip-fasl-file` and `vfasl-convert-file` (in "strip.ss"),
+the vfasl writer (in "vfasl.ss"), and the inspector (in "inspect.ss").
 
 # Functions and Calls
 
@@ -282,6 +355,91 @@ either the `rp-header` or `rp-compact-header` (see "cmacro.ss") shape.
 So, when you disassemble code generated by the Chez Scheme compiler,
 you may see garbage instructions mingled with the well-formed
 instructions, but the garbage will always be jumped over.
+
+# Primitives, Library Entries, and C Entries
+
+Chez Scheme functions are mostly implemented in Chez Scheme, but some
+primitives are hand-coded within the compiler, and some primitives are
+implemented or supported by C code in the kernel.
+
+For example, the definition of `set-car!` is in "prims.ss" is
+
+```scheme
+(define set-car!
+  (lambda (p v)
+    (#2%set-car! p v)))
+```
+
+This turns out not to be a circular definition, because the compiler
+recogizes an immediate application of the `set-car!` primitive and
+inlines its implementation. The `#2%` prefix instructs the compiler to
+inline the safe implementation of `set-car!`, which checks whether its
+first argument is a pair. Look for `define-inline 2 set-car!` in
+"cpnanopass.ss" for that part of the compiler. The content of
+"prims.ss" is compiled in unsafe mode, so that's why safe mode needs
+to be selected explicitly when needed.
+
+What if the argument to `set-car!` is not a pair? The implementation
+of inline `set-car!` in "cpnanopass.ss" includes
+
+```scheme
+(build-libcall #t src sexpr set-car! e-pair e-new)
+```
+
+which calls a `set-car!` *library function*. That's defined in
+"library.ss" by
+
+```scheme
+(define-library-entry (set-car! x y) (pair-oops 'set-car! x))
+```
+
+That is, the `set-car!` library function always reports an error,
+because that's the only reason the library function is called. Some
+other library functions implement the slow path for functions where
+the compiler inlines only a fast path.
+
+Every library function has to be declared in "cmacros.ss" in the
+`declare-library-entries` form. That form declares a vector of
+*library entries*, which the linker uses to replace an address stub
+(as inserted into machine code via `build-libcall`) with the run-time
+address of the library function. The vector is filled in by loading
+"library.ss". Since some library functions can refer to others, the
+order is important; the linker encouters the forms of "library.ss" one
+at a time, and a library entry must be registered before it is
+referenced.
+
+Some functions or other pointers, such as the thread-context mutex,
+are created by the kernel in C. Those pointers are stored in an array
+of *C entries* that is used by the linker. The kernel registers C
+entries with `S_install_c_entry` in "prim.c". Machine code that refer
+to a C entry is generated in the compiler with `(make-info-literal #f
+'entry (lookup-c-entry ....) ....)`. All C entries are also declared
+in "cmacros.ss" with `declare-c-entries`.
+
+Adding a new library entry or C entry shifts indices that are
+generated by the Scheme compiler. If you change the set of entries,
+it's usually easiest to re-bootstrap from scratch using
+"rktboot/main.rkt". To avoid confusion, be sure to change the version
+number first (see "Changing the Version Number" below).
+
+Some primitives are implemented directly in the compiler but should
+not be inlined. Those functions are implemented with a `$hand-coded`
+form. For example, `list` is implemented in "prims.ss" as
+
+```scheme
+(define list ($hand-coded 'list-procedure))
+```
+
+Look for `list-procedure` in "cpnanopass.ss" to see the
+implementation.
+
+Finally, some primitives in "prims.ss" are implemented in the kernel
+and simply accessed with `foreign-procedure`. Other parts of the
+implementation also use `foreign-procedure` instead of having a
+defintion in "prims.ss".
+
+If you're looking for math primitives, see "mathprims.ss" instead of
+"prims.ss".
 
 # Compilation Pipeline
 
@@ -842,7 +1000,7 @@ handling in "compile.ss", and the update routine in "fasl.c".
 
 Support for foreign procedures and callables in Chez Scheme boils down
 to foriegn calls and callable stubs for the backend. A backend's
-`asm-foreign-call` and `asm-forieng-callbable` function receives an
+`asm-foreign-call` and `asm-foreign-callbable` function receives an
 `info-foreign` record, which describes the argument and result types
 in relatively primitive forms:
 
@@ -950,3 +1108,39 @@ The `asm-foreign-callable` function returns 4 values:
 
    Generate the code for a C return, including any teardown needed to
    balance `c-init`.
+
+# Cross Compilation and Compile-Time Constants
+
+When cross compiling, there are two notions of quantities/properties
+like the size of pointers or endianness: the host notion and the
+target platform's notion. A function like `(native-endianness)` always
+reports the host's notion. A constant like `(constant
+native-endianness)` refers to the target machine notion.
+
+Cross compilation works by starting with a Chez Scheme that runs on
+the host machine and then re-compiling a subset of the Chez Scheme
+implementation to run on the host machine but with `constant` values
+suitable for the target machine. The recompiled parts are assembled
+into an `xpatch` file that can be loaded to replace functions like
+`compile-file` and `vfasl-convert-file` with ones that use the
+target-machine constants. Loading an `xpatch` file tends to make
+compilation or fasl operations for the host machine inaccessible, so a
+given Chez Scheme process is only good for targeting one particular
+platform.
+
+When working on the compiler or fasl-related tools, take care to use
+the right notion of a quantity or property. If you need the host
+value, then there must be some function that provides the value. If
+you need the target machine's value, then it must be accessed using
+`constant`.
+
+# Changing the Version Number
+
+To change the version number:
+
+ * Edit the `version` definition in "cmacro.ss"
+
+ * Edit the `Version` macro in "makefiles/Mf-install"
+
+After changing the version number, re-bootstrap from scratch using
+"rktboot/main.rkt".

@@ -74,6 +74,7 @@ bc-explain-configure:
 
 racketcs:
 	if [ ! -f cs/c/Makefile ]; then $(MAKE) cs-explain-configure; fi
+	$(MAKE) @MAKE_LOCAL_RACKET@
 	$(MAKE) @CS_BOOTSTRAP_HELP@
 	cd cs/c && $(MAKE) @CS_USE_BOOTSTRAP_HELP@
 
@@ -90,13 +91,13 @@ cs-explain-configure:
 no-local-racket:
 	$(NOOP)
 
-local/bc/racket3m:
+@RUN_LOCAL_RACKET@:
 	mkdir -p local
 	$(MAKE) local/Makefile
-	cd local  && $(MAKE)
+	cd local && $(MAKE)
 
 local/Makefile:
-	cd local && `cd ..; cd $(srcdir); pwd`/configure --disable-gracket
+	cd local && `cd ..; cd $(srcdir); pwd`/configure --disable-gracket @CONFIGURE_LOCAL_RACKET@
 
 # Install (common) ----------------------------------------
 

@@ -574,25 +574,31 @@
         (call-with-values (lambda () (bytes-convert c #"\360\220\220\200")) list))
   (test (void) (bytes-close-converter c)))
 
-(let ([c (bytes-open-converter "UTF-8-ish" "UTF-16-ish")])
+(let ([c (bytes-open-converter "WTF-8" "WTF-16")])
   (test `(,(reorder #"A\0\200\0") 3 complete)
         (call-with-values (lambda () (bytes-convert c #"A\302\200")) list))
   (test `(,(reorder #"A\0") 1 error)
         (call-with-values (lambda () (bytes-convert c #"A\200")) list))
-  ;; unpaired high surrogate
-  (test `(,(reorder #"\0\330") 3 complete)
+  ;; unpaired high surrogate - incomplete because we have to watch for a low surrogate after
+  (test `(,(reorder #"") 0 aborts)
         (call-with-values (lambda () (bytes-convert c #"\355\240\200")) list))
   ;; unpaired low surrogate
   (test `(,(reorder #"\1\334") 3 complete)
         (call-with-values (lambda () (bytes-convert c #"\355\260\201")) list))
-  ;; surrogate pair where each is separately encoded
-  (test `(,(reorder #"\0\330\1\334") 6 complete)
+  ;; surrogate pair where each is separately encoded, high before low
+  (test `(,(reorder #"") 0 error)
         (call-with-values (lambda () (bytes-convert c #"\355\240\200\355\260\201")) list))
+  ;; surrogate pair where each is separately encoded, low before high
+  (test `(,(reorder #"\1\334") 3 aborts)
+        (call-with-values (lambda () (bytes-convert c #"\355\260\201\355\240\200")) list))
+  (test `(,(reorder #"\1\334\0\330x\0") 7 complete)
+        (call-with-values (lambda () (bytes-convert c #"\355\260\201\355\240\200x")) list))
+  ;; correctly encoded surrogate pair
   (test `(,(reorder #"\1\330\0\334") 4 complete)
         (call-with-values (lambda () (bytes-convert c #"\360\220\220\200")) list))
   (test (void) (bytes-close-converter c)))
 
-(let ([c (bytes-open-converter "UTF-16-ish" "UTF-8-ish")])
+(let ([c (bytes-open-converter "WTF-16" "WTF-8")])
   (test `(#"A\302\200" 4 complete)
         (call-with-values (lambda () (bytes-convert c (reorder #"A\0\200\0"))) list))
   ;; unpaired high surrogate
@@ -741,8 +747,8 @@
 (test l (sync l))
 (define-values (tai tao) (tcp-accept l))
 
-(test #f (file-stream-port? i))
-(test #f (file-stream-port? o))
+(test #f (file-stream-port? ti))
+(test #f (file-stream-port? to))
 
 (test 6 (write-string "hello\n" to))
 (flush-output to)
@@ -913,3 +919,24 @@
 
 (test 3 (bytes-utf-8-index #"apple" 3))
 (test 4 (bytes-utf-8-index (string->bytes/utf-8 "apλple") 3))
+
+(test 1969 (date-year (seconds->date (- (* 24 60 60)))))
+
+(let* ([s (current-seconds)]
+       [d1 (seconds->date s)]
+       [d2 (seconds->date (+ s 1/100000000))])
+  (test 0 (date*-nanosecond d1))
+  (test 10 (date*-nanosecond d2))
+  (test (date*-time-zone-name d1) (date*-time-zone-name d2))
+  (test (struct-copy date d1) (struct-copy date d2)))
+
+(test (seconds->date 0 #f)
+      (seconds->date 0.1e-16 #f))
+(test (date* 59 59 23 31 12 1969 3 364 #f 0 999999999 "UTC")
+      (seconds->date -0.1e-16 #f))
+
+(let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+  (test #t (with-handlers ([exn:fail? out-of-range])
+             (seconds->date (expt 2 60))))
+  (test #t (with-handlers ([exn:fail? out-of-range])
+             (seconds->date (expt 2 80)))))

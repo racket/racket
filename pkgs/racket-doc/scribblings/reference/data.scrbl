@@ -118,7 +118,7 @@ boxes that are not @tech{impersonators}.
   @racket[box], the operation is equivalent to 
 
   @racketblock[
-  (and (eq? old (unbox loc)) (set-box! loc new) #t)]
+  (and (eq? old (unbox box)) (set-box! box new) #t)]
 
   except that @racket[box-cas!] can spuriously fail on some platforms.
   That is, with low probability, the result can be @racket[#f] with the

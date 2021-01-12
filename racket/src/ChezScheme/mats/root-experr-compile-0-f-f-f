@@ -262,18 +262,18 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 3.mo:Expected error in mat define-values: "duplicate variable in define-values left-hand side (x . x)".
 3.mo:Expected error in mat define-values: "define-values: incorrect number of values from rhs (values)".
 3.mo:Expected error in mat define-values: "duplicate variable in define-values left-hand side ($dv-foo2-x . $dv-foo2-x)".
-3.mo:Expected error in mat mrvs: "returned zero values to single value return context".
-3.mo:Expected error in mat mrvs: "returned three values to single value return context".
-3.mo:Expected error in mat mrvs: "returned three values to single value return context".
-3.mo:Expected error in mat mrvs: "returned zero values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 0 values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 3 values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 3 values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 0 values to single value return context".
 3.mo:Expected error in mat mrvs: "incorrect number of values received in multiple value context".
-3.mo:Expected error in mat mrvs: "returned zero values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 0 values to single value return context".
 3.mo:Expected error in mat mrvs: "incorrect number of values received in multiple value context".
 3.mo:Expected error in mat mrvs: "incorrect number of values received in multiple value context".
 3.mo:Expected error in mat mrvs: "variable $mrvs-foo is not bound".
 3.mo:Expected error in mat mrvs: "attempt to apply non-procedure 17".
-3.mo:Expected error in mat mrvs: "returned two values to single value return context".
-3.mo:Expected error in mat mrvs: "returned two values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 2 values to single value return context".
+3.mo:Expected error in mat mrvs: "returned 2 values to single value return context".
 3.mo:Expected error in mat mrvs: "cdr: a is not a pair".
 3.mo:Expected error in mat let-values: "invalid syntax (let-values)".
 3.mo:Expected error in mat let-values: "invalid syntax (let-values ((x)))".
@@ -8244,6 +8244,22 @@ hash.mo:Expected error in mat generic-hashtable: "hashtable-clear!: #<hashtable>
 hash.mo:Expected error in mat generic-hashtable: "hashtable-delete!: #<hashtable> is not mutable".
 hash.mo:Expected error in mat generic-hashtable: "hashtable-update!: #<hashtable> is not mutable".
 hash.mo:Expected error in mat generic-hashtable: "hashtable-update!: #<hashtable> is not mutable".
+hash.mo:Expected error in mat generic-hashtable-arguments: "incorrect argument count in call (make-weak-hashtable)".
+hash.mo:Expected error in mat generic-hashtable-arguments: "incorrect argument count in call (make-weak-hashtable equal-hash)".
+hash.mo:Expected error in mat generic-hashtable-arguments: "incorrect argument count in call (make-weak-hashtable equal-hash equal? 45 53)".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-weak-hashtable: a is not a procedure".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-weak-hashtable: a is not a procedure".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-weak-hashtable: invalid size argument a".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-weak-hashtable: invalid size argument -45".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-weak-hashtable: invalid size argument 45.0".
+hash.mo:Expected error in mat generic-hashtable-arguments: "incorrect argument count in call (make-ephemeron-hashtable)".
+hash.mo:Expected error in mat generic-hashtable-arguments: "incorrect argument count in call (make-ephemeron-hashtable equal-hash)".
+hash.mo:Expected error in mat generic-hashtable-arguments: "incorrect argument count in call (make-ephemeron-hashtable equal-hash equal? 45 53)".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-ephemeron-hashtable: a is not a procedure".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-ephemeron-hashtable: a is not a procedure".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-ephemeron-hashtable: invalid size argument a".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-ephemeron-hashtable: invalid size argument -45".
+hash.mo:Expected error in mat generic-hashtable-arguments: "make-ephemeron-hashtable: invalid size argument 45.0".
 hash.mo:Expected error in mat hash-functions: "incorrect argument count in call (equal-hash)".
 hash.mo:Expected error in mat hash-functions: "incorrect argument count in call (equal-hash 0 0)".
 hash.mo:Expected error in mat hash-functions: "incorrect argument count in call (symbol-hash)".
@@ -9128,6 +9144,11 @@ fx.mo:Expected error in mat r6rs:fx+: "fx+: <int> is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx+: "fx+: <-int> is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx+: "fx+: #f is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx+: "fx+: #f is not a fixnum".
+fx.mo:Expected error in mat fx+/wraparound: "fx+/wraparound: (a . b) is not a fixnum".
+fx.mo:Expected error in mat fx+/wraparound: "fx+: <int> is not a fixnum".
+fx.mo:Expected error in mat fx+/wraparound: "fx+: <int> is not a fixnum".
+fx.mo:Expected error in mat fx+/wraparound: "fx+: <-int> is not a fixnum".
+fx.mo:Expected error in mat fx+/wraparound: "fx+: <-int> is not a fixnum".
 fx.mo:Expected error in mat fx-: "fx-: (a . b) is not a fixnum".
 fx.mo:Expected error in mat fx-: "fx-: fixnum overflow with arguments <-int> and 1".
 fx.mo:Expected error in mat fx-: "fx-: <int> is not a fixnum".
@@ -9140,6 +9161,11 @@ fx.mo:Expected error in mat r6rs:fx-: "fx-: <int> is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx-: "fx-: <-int> is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx-: "fx-: #f is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx-: "fx-: #f is not a fixnum".
+fx.mo:Expected error in mat fx-/wraparound: "fx-/wraparound: (a . b) is not a fixnum".
+fx.mo:Expected error in mat fx-/wraparound: "fx-: <int> is not a fixnum".
+fx.mo:Expected error in mat fx-/wraparound: "fx-: <int> is not a fixnum".
+fx.mo:Expected error in mat fx-/wraparound: "fx-: <-int> is not a fixnum".
+fx.mo:Expected error in mat fx-/wraparound: "fx-: <-int> is not a fixnum".
 fx.mo:Expected error in mat fx*: "fx*: (a . b) is not a fixnum".
 fx.mo:Expected error in mat fx*: "fx*: fixnum overflow with arguments <int> and 2".
 fx.mo:Expected error in mat fx*: "fx*: <int> is not a fixnum".
@@ -9152,6 +9178,11 @@ fx.mo:Expected error in mat r6rs:fx*: "fx*: <int> is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx*: "fx*: <-int> is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx*: "fx*: #f is not a fixnum".
 fx.mo:Expected error in mat r6rs:fx*: "fx*: #f is not a fixnum".
+fx.mo:Expected error in mat fx*/wraparound: "fx*/wraparound: (a . b) is not a fixnum".
+fx.mo:Expected error in mat fx*/wraparound: "fx*: <int> is not a fixnum".
+fx.mo:Expected error in mat fx*/wraparound: "fx*: <int> is not a fixnum".
+fx.mo:Expected error in mat fx*/wraparound: "fx*: <-int> is not a fixnum".
+fx.mo:Expected error in mat fx*/wraparound: "fx*: <-int> is not a fixnum".
 fx.mo:Expected error in mat fxquotient: "fxquotient: (a . b) is not a fixnum".
 fx.mo:Expected error in mat fxquotient: "fxquotient: attempt to divide by zero".
 fx.mo:Expected error in mat fxquotient: "fxquotient: <int> is not a fixnum".
@@ -9272,6 +9303,14 @@ fx.mo:Expected error in mat fxarithmetic-shift-left: "fxarithmetic-shift-left: f
 fx.mo:Expected error in mat fxarithmetic-shift-left: "fxarithmetic-shift-left: fixnum overflow with arguments <int> and 10".
 fx.mo:Expected error in mat fxarithmetic-shift-left: "fxarithmetic-shift-left: fixnum overflow with arguments -4097 and <int>".
 fx.mo:Expected error in mat fxarithmetic-shift-left: "fxarithmetic-shift-left: fixnum overflow with arguments <-int> and 1".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll/wraparound: (a . b) is not a fixnum".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll/wraparound: invalid shift count -3".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll/wraparound: invalid shift count 1000".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll/wraparound: invalid shift count -1000".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll: <int> is not a fixnum".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll: <int> is not a fixnum".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll: <-int> is not a fixnum".
+fx.mo:Expected error in mat fsll/wraparound: "fxsll: <-int> is not a fixnum".
 fx.mo:Expected error in mat fxsrl: "fxsrl: invalid shift count -1".
 fx.mo:Expected error in mat fxsrl: "fxsrl: invalid shift count <int>".
 fx.mo:Expected error in mat fxsrl: "fxsrl: a is not a fixnum".

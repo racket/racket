@@ -36,15 +36,9 @@ typedef uintptr_t size_sha2_t;
 
 typedef rktio_sha2_ctx_t mbedtls_sha256_context;
 
-#ifdef RKTIO_BIG_ENDIAN
-# define GET_UINT32_BE(n,b,i) n = b[i]
-# define PUT_UINT32_BE(n,b,i) b[i] = n
-#endif
-
 /*
  * 32-bit integer manipulation macros (big endian)
  */
-#ifndef GET_UINT32_BE
 #define GET_UINT32_BE(n,b,i)                            \
 do {                                                    \
     (n) = ( (uint32_sha2_t) (b)[(i)    ] << 24 )             \
@@ -52,9 +46,7 @@ do {                                                    \
         | ( (uint32_sha2_t) (b)[(i) + 2] <<  8 )             \
         | ( (uint32_sha2_t) (b)[(i) + 3]       );            \
 } while( 0 )
-#endif
 
-#ifndef PUT_UINT32_BE
 #define PUT_UINT32_BE(n,b,i)                            \
 do {                                                    \
     (b)[(i)    ] = (unsigned char) ( (n) >> 24 );       \
@@ -62,7 +54,6 @@ do {                                                    \
     (b)[(i) + 2] = (unsigned char) ( (n) >>  8 );       \
     (b)[(i) + 3] = (unsigned char) ( (n)       );       \
 } while( 0 )
-#endif
 
 static void mbedtls_sha256_init( mbedtls_sha256_context *ctx )
 {

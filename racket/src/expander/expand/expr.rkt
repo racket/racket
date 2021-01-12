@@ -405,10 +405,12 @@
    (if (and (expand-context-to-parsed? ctx)
             (free-id-set-empty? (expand-context-stops ctx)))
        (parsed-quote (keep-properties-only~ s) (syntax->datum datum))
-       (rebuild
-        s
-        (list (core-id 'quote phase)
-              datum)))))
+       (syntax-track-origin (rebuild s
+                                     (list (core-id 'quote phase)
+                                           datum)
+                                     #:track? #f)
+                            s
+                            (m '#%datum)))))
 
 ;; '#%kernel `#%app` treats an empty combination as a literal null
 (add-core-form!

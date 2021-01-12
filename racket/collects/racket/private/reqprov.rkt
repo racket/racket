@@ -263,7 +263,7 @@
                                               (module-path? (syntax-e p))))]))]
                   [transform-simple
                    (lambda (in base-mode)
-                     (syntax-case in (lib file planet submod prefix-in except-in quote)
+                     (syntax-case in (lib file planet submod prefix-in except-in rename-in quote)
                        ;; Detect simple cases first:
                        [_ 
                         (string? (syntax-e in))
@@ -320,6 +320,30 @@
                                   (quasisyntax/loc in
                                     (all-except #,(xlate-path #'path) id ...))))
                                 in)))]
+                       [(rename-in path [orig-id bind-id] ...)
+                        (and (simple-path? #'path)
+                             (call-with-values (lambda () (expand-import in))
+                               (lambda (a b) #t)))
+                        (let ([xlated-path (xlate-path #'path)])
+                          (cons (mode-wrap
+                                 base-mode
+                                 (syntax-track/form
+                                  (datum->syntax
+                                   #'path
+                                   (syntax-e
+                                    (quasisyntax/loc in
+                                      (all-except #,xlated-path orig-id ...))))
+                                  in))
+                                (map (λ (bind-id orig-id)
+                                       (mode-wrap
+                                        base-mode
+                                        (datum->syntax
+                                         #'path
+                                         (syntax-e
+                                          (quasisyntax/loc in
+                                            (rename #,xlated-path #,bind-id #,orig-id))))))
+                                     (syntax->list #'(bind-id ...))
+                                     (syntax->list #'(orig-id ...)))))]
                        ;; General case:
                        [_ (let-values ([(imports sources) (expand-import in)])
                             ;; Note: in case `in` could be expressed as a simple import form,

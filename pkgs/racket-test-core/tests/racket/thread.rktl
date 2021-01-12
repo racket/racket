@@ -16,6 +16,10 @@
 (err/rt-test (thread (lambda (x) 8)) type?)
 (arity-test thread? 1 1)
 
+(test #f struct-predicate-procedure? thread?)
+(test #f struct-predicate-procedure? evt?)
+(test #f struct-type-property-predicate-procedure? evt?)
+
 ;; ----------------------------------------
 ;; Thread sets
 

@@ -12,7 +12,7 @@
 
 @defmodule[syntax/parse/define]
 
-@defform[(define-simple-macro (macro-id . pattern) pattern-directive ...
+@defform[(define-syntax-parse-rule (macro-id . pattern) pattern-directive ...
            template)]{
 
 Defines a macro named @racket[macro-id]; equivalent to the following:
@@ -26,11 +26,11 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 
 @(the-eval '(require syntax/parse/define))
 @examples[#:eval the-eval
-(define-simple-macro (fn x:id rhs:expr) (lambda (x) rhs))
+(define-syntax-parse-rule (fn x:id rhs:expr) (lambda (x) rhs))
 ((fn x x) 17)
 (fn 1 2)
 
-(define-simple-macro (fn2 x y rhs)
+(define-syntax-parse-rule (fn2 x y rhs)
   #:declare x id
   #:declare y id
   #:declare rhs expr
@@ -39,12 +39,7 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 (fn2 a #:b 'c)
 ]
 
-@history[#:changed "6.12.0.3" @elem{Changed pattern head to @racket[(~var macro-id id)] from
-                                    @racket[macro-id], allowing tilde-prefixed identifiers or
-                                    identifiers containing colons to be used as @racket[macro-id]
-                                    without producing a syntax error.}
-         #:changed "6.90.0.29" @elem{Changed to always use the @racket[#:track-literals]
-                                     @racket[syntax-parse] option.}]
+@history[#:added "7.9.0.22"]
 }
 
 @defform[(define-syntax-parser macro-id parse-option ... clause ...+)]{
@@ -67,5 +62,19 @@ Defines a macro named @racket[macro-id]; equivalent to:
 (fn3 1 2)
 (fn3 a #:b 'c)
 ]}
+
+@defform[(define-simple-macro (macro-id . pattern) pattern-directive ...
+           template)]{
+@deprecated[#:what "macro" @racket[define-syntax-parse-rule]]
+
+Re-exports @racket[define-syntax-parse-rule] for backward-compatibility.
+
+@history[#:changed "6.12.0.3" @elem{Changed pattern head to @racket[(~var macro-id id)] from
+                                    @racket[macro-id], allowing tilde-prefixed identifiers or
+                                    identifiers containing colons to be used as @racket[macro-id]
+                                    without producing a syntax error.}
+         #:changed "6.90.0.29" @elem{Changed to always use the @racket[#:track-literals]
+                                     @racket[syntax-parse] option.}]
+}
 
 @(close-eval the-eval)

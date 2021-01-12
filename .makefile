@@ -338,7 +338,7 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH == circa-7.9.0.5-1
+PB_BRANCH == circa-7.9.0.22-2
 PB_REPO = https://github.com/racket/pb
 
 # Alternative source for Chez Scheme boot files, normally set by
@@ -420,7 +420,6 @@ cs-minimal-in-place-after-base:
 cs-minimal-in-place-after-base-cross:
 	$(MAKE) plain-minimal-in-place-after-base PLAIN_RACKET="$(RACKET_FOR_BUILD)" PLT_SETUP_OPTIONS="--no-pkg-deps $(PLT_SETUP_OPTIONS)"
 
-
 fetch-pb:
 	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
           then $(MAKE) fetch-pb-from ; \
@@ -442,12 +441,19 @@ fetch-pb-from:
 	  else cd $(PB_DIR) && git fetch -q origin $(PB_BRANCH):remotes/origin/$(PB_BRANCH) ; fi
 	cd $(PB_DIR) && git checkout -q $(PB_BRANCH)
 
+pb-fetch:
+	$(MAKE) fetch-pb
+
 # Helpers for managing the "pb" repo:
+#  * `make pb-build` to rebuild pb boot files
 #  * `make pb-stage` after updating `PB_BRANCH`
 #  * `make pb-push` to upload the branch after checking that
 #    the staged branch looks right
 # If you don't have push access to `PB_REPO`, you may need to
 # change the origin of your "pb" checkout.
+pb-build:
+	cd racket/src/ChezScheme && racket rktboot/main.rkt --machine pb
+
 pb-stage:
 	cd $(PB_DIR) && git branch $(PB_BRANCH)
 	cd $(PB_DIR) && git checkout $(PB_BRANCH)
@@ -641,7 +647,13 @@ INSTALL_NAME =
 
 # For Mac OS, a signing identity (spaces allowed) for binaries in an
 # installer:
-SIGN_IDENTITY = 
+SIGN_IDENTITY =
+
+# For Mac OS, set to a notarization configuration as a base64-encoded
+# hash table <config> in `--notarization-config <config>`, where the
+# distro-build documentation for `#:notarization-config` describes the
+# keys and values:
+NOTARIZATION_CONFIG =
 
 # For Windows, `osslsigncode' arguments other than `-n', `-t', `-in',
 # and `-out' as a Base64-encoded, S-expression, list of strings:
@@ -919,6 +931,7 @@ DIST_ARGS_q == $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
                $(MAC_PKG_MODE) $(TGZ_MODE) --packed-options "$(INSTALLER_OPTIONS)" \
                --pre-process "$(INSTALLER_PRE_PROCESS_BASE64)" \
                --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
+               $(NOTARIZATION_CONFIG) \
                "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
                "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 

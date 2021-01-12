@@ -113,6 +113,10 @@
                  len))
       (cond
        [(eof-object? n) #f]
+       [(not (fixnum? n))
+        (raise-arguments-error 'regexp-match
+                               "non-character in an unsupported context"
+                               "port" (lazy-bytes-in s))]
        [(zero? n)
         ;; would block or progress evt became ready
         (set-lazy-bytes-failed?! s #t)

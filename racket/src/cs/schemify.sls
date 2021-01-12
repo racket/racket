@@ -1,16 +1,15 @@
 (library (schemify)
   (export schemify-linklet
-          lift-in-schemified-linklet
           jitify-schemified-linklet
           xify
-          extract-paths-and-fasls-from-schemified-linklet
           interpreter-link!
           interpretable-jitified-linklet
           interpret-linklet
           linklet-bigger-than?
-          make-path->compiled-path
-          compiled-path->path
-          (rename [1/force-unfasl force-unfasl])
+          fasl-literal?
+          fasl-literals
+          unfasl-literals/lazy
+          force-unfasl-literals
           prim-knowns
           known-procedure
           known-procedure/pure

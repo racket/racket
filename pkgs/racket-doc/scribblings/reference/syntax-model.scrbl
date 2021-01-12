@@ -356,7 +356,8 @@ the @tech{syntax object} being expanded:
        @tech{binding}, that @tech{binding} is used to continue. If the @tech{identifier}
        is @tech{unbound}, a new @tech{syntax-object} symbol
        @racket['#%top] is created using the @tech{lexical information}
-       of the @tech{identifier}; if this @racketidfont{#%top}
+       of the @tech{identifier} with @tech{implicit-made-explicit properties};
+       if this @racketidfont{#%top}
        @tech{identifier} has no @tech{binding}, then parsing fails with an
        @racket[exn:fail:syntax] exception. Otherwise, the new
        @tech{identifier} is combined with the original
@@ -376,7 +377,8 @@ the @tech{syntax object} being expanded:
 
  @item{If it is a @tech{syntax-object} pair of any other form, then a
        new @tech{syntax-object} symbol @racket['#%app] is created
-       using the @tech{lexical information} of the pair. If the
+       using the @tech{lexical information} of the pair with
+       @tech{implicit-made-explicit properties}. If the
        resulting @racketidfont{#%app} @tech{identifier} has no
        binding, parsing fails with an @racket[exn:fail:syntax]
        exception. Otherwise, the new @tech{identifier} is combined
@@ -388,7 +390,7 @@ the @tech{syntax object} being expanded:
  @item{If it is any other syntax object, then a new
        @tech{syntax-object} symbol @racket['#%datum] is created using
        the @tech{lexical information} of the original @tech{syntax
-       object}. If the resulting @racketidfont{#%datum}
+       object} with @tech{implicit-made-explicit properties}. If the resulting @racketidfont{#%datum}
        @tech{identifier} has no @tech{binding}, parsing fails with an
        @racket[exn:fail:syntax] exception. Otherwise, the new
        @tech{identifier} is combined with the original @tech{syntax
@@ -435,6 +437,18 @@ things:
        sub-forms.}
 
 ]
+
+When a @racketidfont{#%top}, @racketidfont{#%app}, or
+@racketidfont{#%datum} identifier is added by the expander, it is
+given @deftech{implicit-made-explicit properties}: an
+@racket['implicit-made-explicit] @tech{syntax property} whose value is
+@racket[#t], and a hidden property to indicate that the implicit
+identifier is original in the sense of @racket[syntax-original?] if
+the syntax object that gives the identifier its @tech{lexical information}
+has that property.
+
+@history[#:changed "7.9.0.13" @elem{Added @tech{implicit-made-explicit
+                                    properties}.}]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "expand-context-model"]{Expansion Context}

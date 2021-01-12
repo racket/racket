@@ -1277,6 +1277,7 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "auto" ; then
+  # See also "configure-parent.ac"
   enable_racket="`pwd`/../local/bc/racket3m"
 fi
 
@@ -1408,6 +1409,8 @@ AC_SUBST(STATIC_AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
+AC_SUBST(STRIP_SIGNATURE)
+AC_SUBST(RESTORE_SIGNATURE)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
 AC_SUBST(POST_LINKER)
@@ -1531,6 +1534,10 @@ if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   if test "${have_libffi}" != "yes" ; then
     AC_CONFIG_AUX_DIR( foreign/libffi )
     AC_CONFIG_SUBDIRS( foreign/libffi )
+    # Smooth transition from libffi v3.1 to v3.3:
+    if test -h foreign/libffi/include/ffitarget.h ; then
+       rm foreign/libffi/include/ffitarget.h
+    fi
   fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"

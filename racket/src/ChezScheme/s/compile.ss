@@ -70,7 +70,7 @@
     (with-output-language (Lsrc Expr)
       ($c-make-closure
         ; pretending main is a library routine to avoid argument-count check
-        (let ([x `(case-lambda ,(make-preinfo-lambda #f #f (lookup-libspec main)) (clause () 0 ,x))])
+        (let ([x `(case-lambda ,(make-preinfo-lambda #f #f (lookup-libspec main) #f (constant code-flag-lift-barrier)) (clause () 0 ,x))])
           ($np-compile x #f))))))
 
 (define c-set-code-quad!
@@ -150,19 +150,16 @@
                           [(arm32)
                            (record-case c
                              [(arm32-abs) (n x)
-                              ; on ARMV7 would be 8: 4-byte movi, 4-byte movt
-                              (let ([a1 (fx- a 12)]) ; 4-byte ldr, 4-byte bra, 4-byte value
+                              (let ([a1 (fx- a 4)]) ; [4-byte ldr, 4-byte bra,] 4-byte value
                                 (let ([x* (cons (mkcode x) x*)])
                                   (let ([r ($reloc (constant reloc-arm32-abs) n (fx- a1 ra))])
                                     (mkc0 (cdr c*) a (cons r r*) a1 x*))))]
                              [(arm32-call) (n x)
-                              ; on ARMV7 would be 12: 4-byte movi, 4-byte movt, 4-byte blx
                               (let ([a1 (fx- a 16)]) ; 4-byte ldr, 4-byte bra, 4-byte value, 4-byte blx
                                 (let ([x* (cons (mkcode x) x*)])
                                   (let ([r ($reloc (constant reloc-arm32-call) n (fx- a1 ra))])
                                     (mkc0 (cdr c*) a (cons r r*) a1 x*))))]
                              [(arm32-jump) (n x)
-                              ; on ARMV7 would be 12: 4-byte movi, 4-byte movt, 4-byte bx
                               (let ([a1 (fx- a 16)]) ; 4-byte ldr, 4-byte bra, 4-byte value, 4-byte bx
                                 (let ([x* (cons (mkcode x) x*)])
                                   (let ([r ($reloc (constant reloc-arm32-jump) n (fx- a1 ra))])
@@ -411,17 +408,14 @@
                          [(arm32)
                           (record-case c
                             [(arm32-abs) (n x)
-                             ; on ARMV7 would be 8: 4-byte movi, 4-byte movt
-                             (let ([a1 (fx- a 12)]) ; 4-byte ldr, 4-byte bra, 4-byte value
+                             (let ([a1 (fx- a 4)]) ; [4-byte ldr, 4-byte bra,] 4-byte value
                                (let ([r ($reloc (constant reloc-arm32-abs) n (fx- a1 ra))])
                                  (prf0 (cdr c*) a (cons r r*) a1 (cons x x*))))]
                             [(arm32-call) (n x)
-                             ; on ARMV7 would be 12: 4-byte movi, 4-byte movt, 4-byte blx
                              (let ([a1 (fx- a 16)]) ; 4-byte ldr, 4-byte bra, 4-byte value, 4-byte blx
                                (let ([r ($reloc (constant reloc-arm32-call) n (fx- a1 ra))])
                                  (prf0 (cdr c*) a (cons r r*) a1 (cons x x*))))]
                             [(arm32-jump) (n x)
-                             ; on ARMV7 would be 12: 4-byte movi, 4-byte movt, 4-byte bx
                              (let ([a1 (fx- a 16)]) ; 4-byte ldr, 4-byte bra, 4-byte value, 4-byte bx
                                (let ([r ($reloc (constant reloc-arm32-jump) n (fx- a1 ra))])
                                  (prf0 (cdr c*) a (cons r r*) a1 (cons x x*))))]
@@ -565,6 +559,7 @@
                    [$compile-profile ($compile-profile)]
                    [generate-interrupt-trap (generate-interrupt-trap)]
                    [$optimize-closures ($optimize-closures)]
+                   [$lift-closures ($lift-closures)]
                    [enable-cross-library-optimization (enable-cross-library-optimization)]
                    [generate-covin-files (generate-covin-files)]
                    [enable-arithmetic-left-associative (enable-arithmetic-left-associative)]
@@ -652,7 +647,7 @@
         (with-output-language (Lsrc Expr)
           (define (lambda-chunk lsrc)
             ; pretending main is a library routine to avoid argument-count check
-            `(case-lambda ,(make-preinfo-lambda #f #f (lookup-libspec main))
+            `(case-lambda ,(make-preinfo-lambda #f #f (lookup-libspec main) #f (constant code-flag-lift-barrier))
                (clause () 0 ,lsrc)))
           (define (visit lsrc e* rchunk*)
             (define (rchunks) (cons (make-visit-chunk (lambda-chunk lsrc)) rchunk*))
@@ -1829,43 +1824,8 @@
     ; create boot loader (invoke) for entry into Scheme from C
     (lambda (out machine . bootfiles)
       (do-make-boot-header who out machine bootfiles)))
-  
-  (set-who! vfasl-convert-file
-    (let ([->vfasl (foreign-procedure "(cs)to_vfasl" (scheme-object) scheme-object)]
-          [vfasl-can-combine? (foreign-procedure "(cs)vfasl_can_combinep" (scheme-object) boolean)])
-      (lambda (in-file out-file bootfile*)
-        (let ([op ($open-file-output-port who out-file (file-options replace))])
-          (on-reset (delete-file out-file #f)
-            (on-reset (close-port op)
-              (when bootfile*
-                (emit-boot-header op (constant machine-type-name) bootfile*))
-              (emit-header op (constant scheme-version) (constant machine-type))
-              (let ([ip ($open-file-input-port who in-file (file-options compressed))])
-                (on-reset (close-port ip)
-                  (let* ([write-out (lambda (x)
-                                      (let ([bv (->vfasl x)])
-                                        ($write-fasl-bytevectors op (list bv) (bytevector-length bv)
-                                                                 (constant fasl-type-visit-revisit) (constant fasl-type-vfasl))))]
-                         [write-out-accum (lambda (accum)
-                                            (unless (null? accum)
-                                              (if (null? (cdr accum))
-                                                  (write-out (car accum))
-                                                  (write-out (list->vector (reverse accum))))))])
-                    (let loop ([accum '()])
-                      (let ([x (fasl-read ip)])
-                        (cond
-                         [(eof-object? x)
-                          (write-out-accum accum)]
-                         [(not (vfasl-can-combine? x))
-                          (write-out-accum accum)
-                          (write-out x)
-                          (loop '())]
-                         [(vector? x)
-                          (loop (append (reverse (vector->list x)) accum))]
-                         [else
-                          (loop (cons x accum))]))))
-                  (close-port ip)))
-              (close-port op)))))))
+
+  (set! $emit-boot-header emit-boot-header)
   )
 
 (set-who! $write-fasl-bytevectors

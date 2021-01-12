@@ -93,36 +93,42 @@ The @racketmodname[racket] library combines
              #:author "Ryan Culpepper, Sam Tobin-Hochstadt, and Matthew Flatt"
              #:title "Advanced Macrology and the Implementation of Typed Scheme"
              #:location "Workshop on Scheme and Functional Programming"
+             #:url "https://www2.ccs.neu.edu/racket/pubs/scheme2007-ctf.pdf"
              #:date "2007")
 
   (bib-entry #:key "Danvy90"
              #:author "Olivier Danvy and Andre Filinski"
              #:title "Abstracting Control"
              #:location "LISP and Functional Programming"
+             #:url "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.6.960&rep=rep1&type=pdf"
              #:date "1990")
 
   (bib-entry #:key "Felleisen88a"
              #:author "Matthias Felleisen"
              #:title "The theory and practice of first-class prompts"
              #:location "Principles of Programming Languages"
+             #:url "https://www.cs.tufts.edu/~nr/cs257/archive/matthias-felleisen/prompts.pdf"
              #:date "1988")
 
   (bib-entry #:key "Felleisen88"
              #:author "Matthias Felleisen, Mitch Wand, Dan Friedman, and Bruce Duba"
              #:title "Abstract Continuations: A Mathematical Semantics for Handling Full Functional Jumps"
              #:location "LISP and Functional Programming"
+             #:url "https://help.luddy.indiana.edu/techreports/TRNNN.cgi?trnum=TR248"
              #:date "1988")
 
   (bib-entry #:key "Feltey18"
              #:author "Daniel Feltey, Ben Greenman, Christophe Scholliers, Robert Bruce Findler, and Vincent St-Amour"
              #:title "Collapsible Contracts: Fixing a Pathology of Gradual Typing"
              #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA)"
+             #:url "https://www.ccis.northeastern.edu/~types/publications/collapsible/fgsfs-oopsla-2018.pdf"
              #:date "2018")
 
   (bib-entry #:key "Flatt02"
              #:author "Matthew Flatt"
              #:title "Composable and Compilable Macros: You Want it When?"
              #:location "International Conference on Functional Programming (ICFP)"
+             #:url "http://www.cs.utah.edu/plt/publications/gpce13-f-color.pdf"
              #:date "2002")
 
   (bib-entry #:key "Friedman95"
@@ -136,54 +142,63 @@ The @racketmodname[racket] library combines
              #:title "Processes vs. User-Level Threads in Scsh"
              #:author "Martin Gasbichler and Michael Sperber"
              #:date "2002"
+             #:url "http://www.ccs.neu.edu/home/shivers/papers/scheme02/article/threads.pdf"
              #:location "Workshop on Scheme and Functional Programming")
 
   (bib-entry #:key "Greenberg15"
              #:author "Michael Greenberg"
              #:title "Space-Efficient Manifest Contracts"
              #:location "Principles of Programming Languages (POPL)"
+             #:url "https://cs.pomona.edu/~michael/papers/popl2015_space.pdf"
              #:date "2015")
 
  (bib-entry #:key "Gunter95"
             #:author "Carl Gunter, Didier Remy, and Jon Rieke"
             #:title "A Generalization of Exceptions and Control in ML-like Languages"
             #:location "Functional Programming Languages and Computer Architecture"
+            #:url "http://gallium.inria.fr/~remy/ftp/prompt.pdf"
             #:date "1995")
 
  (bib-entry #:key "Haynes84"
             #:author "Christopher T. Haynes and Daniel P. Friedman"
             #:title "Engines Build Process Abstractions"
             #:location "Symposium on LISP and Functional Programming"
+            #:url "https://legacy.cs.indiana.edu/ftp/techreports/TR159.pdf"
             #:date "1984")
 
  (bib-entry #:key "Hayes97"
             #:author "Barry Hayes"
             #:title "Ephemerons: a New Finalization Mechanism"
             #:location "Object-Oriented Languages, Programming, Systems, and Applications"
+            #:url "https://static.aminer.org/pdf/PDF/000/522/273/ephemerons_a_new_finalization_mechanism.pdf"
             #:date "1997")
 
  (bib-entry #:key "Hieb90"
             #:author "Robert Hieb and R. Kent Dybvig"
             #:title "Continuations and Concurrency"
             #:location "Principles and Practice of Parallel Programming"
+            #:url "https://legacy.cs.indiana.edu/ftp/techreports/TR256.pdf"
             #:date "1990")
 
   (bib-entry #:key "Lamport79"
              #:title "How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs"
              #:author "Leslie Lamport"
              #:location "IEEE Transactions on Computers"
+             #:url "https://www.microsoft.com/en-us/research/uploads/prod/2016/12/How-to-Make-a-Multiprocessor-Computer-That-Correctly-Executes-Multiprocess-Programs.pdf"
              #:date "179")
 
   (bib-entry #:key "L'Ecuyer02"
             #:author "Pierre L'Ecuyer, Richard Simard, E. Jack Chen, and W. David Kelton"
             #:title "An Object-Oriented Random-Number Package With Many Long Streams and Substreams"
             #:location "Operations Research, 50(6)"
+            #:url "https://www.iro.umontreal.ca/~lecuyer/myftp/papers/streams00.pdf"
             #:date "2002")
 
   (bib-entry #:key "Queinnec91"
              #:author "Queinnec and Serpette"
              #:title "A Dynamic Extent Control Operator for Partial Continuations"
              #:location "Principles of Programming Languages"
+             #:url "https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.40.9946&rep=rep1&type=pdf"
              #:date "1991")
 
   (bib-entry #:key "Reppy99"
@@ -191,12 +206,20 @@ The @racketmodname[racket] library combines
              #:title "Concurrent Programming in ML"
              #:is-book? #t
              #:location "Cambridge University Press"
+             #:url "https://doi.org/10.1017/CBO9780511574962"
              #:date "1999")
+
+  (bib-entry #:key "Sapin18"
+             #:author "Simon Sapin"
+             #:title "The WTF-8 Encoding"
+             #:url "http://simonsapin.github.io/wtf-8/"
+             #:date "2018")
 
   (bib-entry #:key "Shan04"
              #:author "Ken Shan"
              #:title "Shift to Control"
              #:location "Workshop on Scheme and Functional Programming"
+             #:url "http://homes.sice.indiana.edu/ccshan/recur/recur.pdf"
              #:date "2004")
 
  (bib-entry #:key "Sperber07"
@@ -209,12 +232,14 @@ The @racketmodname[racket] library combines
              #:author "Dorai Sitaram and Matthias Felleisen"
              #:title "Control Delimiters and Their Hierarchies"
              #:location @italic{Lisp and Symbolic Computation}
+             #:url "https://www2.ccs.neu.edu/racket/pubs/lasc1990-sf.pdf"
              #:date "1990")
 
   (bib-entry #:key "Sitaram93"
              #:title "Handling Control"
              #:author "Dorai Sitaram"
              #:location "Programming Language Design and Implementation"
+             #:url "http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.22.7256"
              #:date "1993")
 
   (bib-entry #:key "SRFI-42"

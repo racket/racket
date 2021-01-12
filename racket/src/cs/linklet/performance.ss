@@ -106,9 +106,9 @@
              [name-len (apply max (hash-table-map region-times (lambda (k v) (string-length (symbol->string k)))))]
              [len (string-length (number->string total))]
              [gc-len (string-length (number->string gc-total))]
-             [categories '((read (read-bundle faslin-code))
+             [categories '((read (read-bundle faslin-code faslin-literals))
                            (comp-ffi (comp-ffi-call comp-ffi-back))
-                           (run (instantiate outer))
+                           (run (instantiate))
                            (compile (compile-linklet compile-nested))
                            (compile-pass (regalloc other)))]
              [region-subs (make-eq-hashtable)]

@@ -8,6 +8,7 @@
          "../syntax/taint.rkt"
          "../syntax/taint-dispatch.rkt"
          "../syntax/match.rkt"
+         "../syntax/original.rkt"
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
          "../namespace/inspector.rkt"
@@ -38,7 +39,8 @@
          "../common/performance.rkt"
          "rebuild.rkt"
          "parsed.rkt"
-         "expanded+parsed.rkt")
+         "expanded+parsed.rkt"
+         "implicit-property.rkt")
 
 (provide expand
          lookup
@@ -240,7 +242,16 @@
          result-s)]))
 
 (define (make-explicit ctx sym s disarmed-s)
-  (define new-s (syntax-rearm (datum->syntax disarmed-s (cons sym disarmed-s) s s) s))
+  (define insp (current-module-code-inspector))
+  (define sym-s (immediate-datum->syntax disarmed-s sym s
+                                         (if (syntax-has-property? s original-property-sym)
+                                             original-implicit-made-explicit-properties
+                                             implicit-made-explicit-properties)
+                                         insp))
+  (define new-s (syntax-rearm (immediate-datum->syntax disarmed-s (cons sym-s disarmed-s) s
+                                                       (syntax-props s)
+                                                       insp)
+                              s))
   (log-expand ctx 'tag2 new-s disarmed-s)
   new-s)
 

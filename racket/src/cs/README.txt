@@ -132,7 +132,10 @@ Racket CS currently supports three compilation modes:
    interpreter around the compiled parts).
 
    Select this mode by setting the `PLT_CS_MACH` environment variable,
-   but it's currently the default.
+   but it's currently the default. When this mode is selected,
+   interpreter mode is still used for compile-time code that does not
+   span a module (or, more generally, for the 'quick option to
+   `compile-linklet` and similar functions).
 
    When the "cs" suffix is used for build mode, compiled ".zo" files
    in this mode are written to a subdirectory of "compiled" using the
@@ -164,7 +167,12 @@ Racket CS currently supports three compilation modes:
  * JIT mode --- The compiled form of a module is an S-expression where
    individual `lambda`s are compiled on demand.
 
+   JIT mode does not perform well and probably should be discontinued.
+
    Select this mode by setting the `PLT_CS_JIT` environment variable.
+   When this mode is selected, interpreter mode is still used for
+   compile-time code that does not span a module (or, more generally,
+   for the 'quick option to `compile-linklet` and similar functions).
 
    When the "cs" suffix is used for build mode, compiled ".zo" files
    in this mode are written to a "cs" subdirectory of "compiled".
@@ -373,6 +381,9 @@ several different ways:
    cannot be usefully passed to foreign functions, since the layout is
    not actually an array of pointers.
 
+ * Callbacks are always in atomic mode (i.e., the `#:atomic?` option
+   in `_fun` and `_cprocedure` is ignored).
+
 Threads, Threads, Atomicity, Atomicity, and Atomicity
 -----------------------------------------------------
 
@@ -461,6 +472,18 @@ configuration:
    Effectiveness: Avoids improvement to stack traces, but also avoids
    increases load time and memory use of Racket programs by as much as
    50%.
+
+Structure Types
+---------------
+
+See the note in "../expander/README.txt" about structure types. That
+applies for all of layers. So, for example,
+
+   (struct-predicate-procedure? thread?) ; => #f
+
+Beware, however, that if schemify is not able to optimize a
+structure-type creation, then the current implementation will end up
+exposing structure procedures as such.
 
 Inlining Expectations
 ---------------------

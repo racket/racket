@@ -622,10 +622,12 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+PLT_CS_SLSP_SUFFIX
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 RUN_RACKET
+CS_HOST_WORKAREA_PREFIX
 CROSS_COMPILE_TARGET_KIND
 COMP_SUBDIR_CONFIGURE_ARGS
 ENABLE_OR_DISABLE_WPO
@@ -666,6 +668,8 @@ RKTL_PRE
 INCLUDEDEP
 POST_LINKER
 RKTLINKER
+RESTORE_SIGNATURE
+STRIP_SIGNATURE
 STRIP_LIB_DEBUG
 STRIP_DEBUG
 ICP_LIB
@@ -1430,8 +1434,8 @@ Optional Features:
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
-  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
-  --enable-scheme=<path>  obsolete
+  --enable-racket=<path>  use <path> as Racket for build; or "auto" to create
+  --enable-scheme=<path>  use <path> as host's build directory for cross
   --enable-mach=<mach>    use Chez Scheme machine type <mach>
   --enable-target=<mach>  cross-build for Chez Scheme machine type <mach>
   --enable-natipkg        add "-natipkg" to library subpath
@@ -2683,6 +2687,9 @@ strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
 
+STRIP_SIGNATURE=":"
+RESTORE_SIGNATURE=":"
+
 # Check whether --enable-ubsan was given.
 if test "${enable_ubsan+set}" = set; then :
   enableval=$enable_ubsan;
@@ -3197,6 +3204,10 @@ Z_LIB_UNPACK='$(AR) x $(OWN_Z_LIB)'
 LZ4_LIB_DEP='$(OWN_LZ4_LIB)'
 LZ4_LIB='$(OWN_LZ4_LIB)'
 LZ4_LIB_UNPACK='$(AR) x $(OWN_LZ4_LIB)'
+
+CS_HOST_WORKAREA_PREFIX=
+
+PLT_CS_SLSP_SUFFIX=
 
 enable_pthread_by_default=yes
 
@@ -4476,11 +4487,11 @@ case "$MACH_HOST_CPU" in
   x86|i*86)
     MACH="${thread_prefix}i3${MACH_OS}"
     ;;
+  aarch64*|arm64*)
+    MACH="${thread_prefix}arm64${MACH_OS}"
+    ;;
   arm*)
     MACH="${thread_prefix}arm32${MACH_OS}"
-    ;;
-  aarch64*)
-    MACH="${thread_prefix}arm64${MACH_OS}"
     ;;
   power*)
     MACH="${thread_prefix}ppc32${MACH_OS}"
@@ -4533,11 +4544,11 @@ elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
     x86|i*86)
       BUILD_MACH="${BUILD_THREAD_PREFIX}i3${BUILD_OS}"
       ;;
+    aarch64*|arm64*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}arm64${BUILD_OS}"
+      ;;
     arm*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}arm32${BUILD_OS}"
-      ;;
-    aarch64*)
-      BUILD_MACH="${BUILD_THREAD_PREFIX}arm64${BUILD_OS}"
       ;;
     power*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}ppc32${BUILD_OS}"
@@ -4580,10 +4591,15 @@ SCHEME_DIR=${srcdir}/../../ChezScheme
 MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
-  echo Warning: --enable-scheme=... is obsolete and unsupported
+  CS_HOST_WORKAREA_PREFIX="${enable_scheme}/"
 fi
 
 if test "${enable_racket}" != "" ; then
+  if test "${enable_racket}" = "auto" ; then
+    # See also "configure-parent.ac"
+    enable_racket="`pwd`/../../local/cs/c/racketcs"
+    CS_HOST_WORKAREA_PREFIX=../../local/cs/c/
+  fi
   # In non-cross mode, we interpret `--enable-racket` to supply a
   # Racket used only for generating Chez Scheme boot files
   if test "${CROSS_MODE}" = "cross" ; then
@@ -4751,11 +4767,30 @@ $as_echo "$set_strip_lib" >&6; }
   fi
 fi
 
+case "$host_os" in
+  darwin*)
+    case "$host_cpu" in
+       aarch64)
+         STRIP_SIGNATURE="codesign --remove-signature"
+         RESTORE_SIGNATURE="codesign -s - --entitlements"
+       ;;
+       *)
+        # Check whether `codesign` can remove signatures
+        touch sig-test-file
+        if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
+           STRIP_SIGNATURE="codesign --remove-signature"
+        fi
+        rm sig-test-file
+        ;;
+    esac
+esac
+
 
 ############## natipkg ################
 
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+  PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
 
 ############## ubsan ################
@@ -5536,6 +5571,8 @@ if test "${enable_shared}" = "yes" ; then
   STRIP_LIB_DEBUG=":"
   LIBSFX=la
   ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
+
+  CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_LINK_SHARED=y"
 else
   ICP=cp
   LTO="o"
@@ -5577,6 +5614,10 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
+
+
+
 
 
 

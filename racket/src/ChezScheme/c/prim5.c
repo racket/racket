@@ -275,6 +275,10 @@ static ptr sorted_chunk_list(void) {
       ls = Scons(TO_PTR(chunk), ls);
       n += 1;
     }
+    for (chunk = (i == -1) ? S_code_chunks_full : S_code_chunks[i]; chunk != NULL; chunk = chunk->next) {
+      ls = Scons(TO_PTR(chunk), ls);
+      n += 1;
+    }
   }
 
   return sort_chunks(ls, n);
@@ -874,47 +878,64 @@ static char *s_getwd() {
 static ptr s_set_code_byte(p, n, x) ptr p, n, x; {
     I8 *a;
 
+    S_thread_start_code_write();
     a = (I8 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I8)UNFIX(x);
+    S_thread_end_code_write();
+
     return Svoid;
 }
 
 static ptr s_set_code_word(p, n, x) ptr p, n, x; {
     I16 *a;
 
+    S_thread_start_code_write();
     a = (I16 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I16)UNFIX(x);
+    S_thread_end_code_write();
+
     return Svoid;
 }
 
 static ptr s_set_code_long(p, n, x) ptr p, n, x; {
     I32 *a;
 
+    S_thread_start_code_write();
     a = (I32 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I32)(Sfixnump(x) ? UNFIX(x) : Sinteger_value(x));
+    S_thread_end_code_write();
+
     return Svoid;
 }
 
 static void s_set_code_long2(p, n, h, l) ptr p, n, h, l; {
     I32 *a;
 
+    S_thread_start_code_write();
     a = (I32 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = (I32)((UNFIX(h) << 16) + UNFIX(l));
+    S_thread_end_code_write();
 }
 
 static ptr s_set_code_quad(p, n, x) ptr p, n, x; {
     I64 *a;
 
+    S_thread_start_code_write();
     a = (I64 *)TO_VOIDP((uptr)p + UNFIX(n));
     *a = Sfixnump(x) ? UNFIX(x) : S_int64_value("\\#set-code-quad!", x);
+    S_thread_end_code_write();
+
     return Svoid;
 }
 
 static ptr s_set_reloc(p, n, e) ptr p, n, e; {
     iptr *a;
 
+    S_thread_start_code_write();
     a = (iptr *)(&RELOCIT(CODERELOC(p), UNFIX(n)));
     *a = Sfixnump(e) ? UNFIX(e) : Sinteger_value(e);
+    S_thread_end_code_write();
+
     return e;
 }
 
@@ -927,6 +948,8 @@ static ptr s_make_code(flags, free, name, arity_mark, n, info, pinfos)
                        iptr flags, free, n; ptr name, arity_mark, info, pinfos; {
     ptr co;
 
+    S_thread_start_code_write();
+
     co = S_code(get_thread_context(), type_code | (flags << code_flags_offset), n);
     CODEFREE(co) = free;
     CODENAME(co) = name;
@@ -936,12 +959,17 @@ static ptr s_make_code(flags, free, name, arity_mark, n, info, pinfos)
     if (pinfos != Snil) {
       S_G.profile_counters = Scons(S_weak_cons(co, pinfos), S_G.profile_counters);
     }
+
+    S_thread_end_code_write();
+
     return co;
 }
 
 static ptr s_make_reloc_table(codeobj, n) ptr codeobj, n; {
+    S_thread_start_code_write();
     CODERELOC(codeobj) = S_relocation_table(UNFIX(n));
     RELOCCODE(CODERELOC(codeobj)) = codeobj;
+    S_thread_end_code_write();
     return Svoid;
 }
 
@@ -1650,6 +1678,8 @@ void S_prim5_init() {
     Sforeign_symbol("(cs)s_strings_to_gensym", (void *)s_strings_to_gensym);
     Sforeign_symbol("(cs)s_intern_gensym", (void *)S_intern_gensym);
     Sforeign_symbol("(cs)s_uninterned", (void *)S_uninterned);
+    Sforeign_symbol("(cs)symbol_hash32", (void *)S_symbol_hash32);
+    Sforeign_symbol("(cs)symbol_hash64", (void *)S_symbol_hash64);
     Sforeign_symbol("(cs)cputime", (void *)S_cputime);
     Sforeign_symbol("(cs)realtime", (void *)S_realtime);
     Sforeign_symbol("(cs)clock_gettime", (void *)S_clock_gettime);
@@ -1678,9 +1708,7 @@ void S_prim5_init() {
     Sforeign_symbol("(cs)getpid", (void *)s_getpid);
     Sforeign_symbol("(cs)fasl_read", (void *)S_fasl_read);
     Sforeign_symbol("(cs)bv_fasl_read", (void *)S_bv_fasl_read);
-    Sforeign_symbol("(cs)to_vfasl", (void *)S_to_vfasl);
     Sforeign_symbol("(cs)vfasl_to", (void *)S_vfasl_to);
-    Sforeign_symbol("(cs)vfasl_can_combinep", (void *)S_vfasl_can_combinep);
     Sforeign_symbol("(cs)s_decode_float", (void *)s_decode_float);
 
     Sforeign_symbol("(cs)new_open_input_fd", (void *)S_new_open_input_fd);

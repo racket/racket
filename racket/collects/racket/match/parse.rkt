@@ -2,10 +2,12 @@
 
 (require racket/struct-info
          racket/syntax
+         racket/list
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
          (for-template (only-in "runtime.rkt" matchable? mlist? mlist->list)
+                       (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
 (provide parse)
@@ -24,6 +26,31 @@
      (eq? 'quote (syntax-e #'_quote))
      (parse-literal (syntax-e #'e))]
     [_ (parse-literal (syntax-e p))]))
+
+;; underscore? :: syntax? -> boolean?
+(define (underscore? x) (eq? '_ (syntax-e x)))
+
+;; one-wildcard-ddk? :: (listof syntax?) -> boolean?
+;; return #t if there is exactly one ddk and the preceding pattern before
+;; ddk is underscore
+(define (one-wildcard-ddk? es)
+  (and (= 1 (count ddk? es))
+       ;; the fact that count = 1 means that rest is always valid
+       (for/first ([be (in-list es)]
+                   [e (in-list (rest es))]
+                   #:when (ddk? e))
+         (underscore? be))))
+
+;; split-one-wildcard-ddk :: (listof syntax?) ->
+;;                           (listof syntax?) (listof syntax?) number?
+;; precondition: es satisfies one-wildcard-ddk?
+(define (split-one-wildcard-ddk es)
+  ;; the prefix has underscore, the suffix has ddk
+  (define-values (prefix suffix) (splitf-at es (λ (e) (not (ddk? e)))))
+  (define ddk-size (ddk? (first suffix)))
+  (values (drop-right prefix 1)
+          (rest suffix)
+          (if (eq? ddk-size #t) 0 ddk-size)))
 
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
@@ -75,6 +102,19 @@
                        (regexp-match (if (pregexp? r) r (pregexp r)) e)))
                   (rearm+parse #'p))]
     [(box e) (Box (parse #'e))]
+    [(vector es ...)
+     (one-wildcard-ddk? (syntax->list #'(es ...)))
+     (let-values ([(prefix suffix ddk-size) (split-one-wildcard-ddk (syntax->list #'(es ...)))])
+       (define prefix-len (length prefix))
+       (define suffix-len (length suffix))
+       (trans-match
+        #`(λ (e) (and (vector? e) (>= (vector-length e) #,(+ prefix-len suffix-len ddk-size))))
+        #`(λ (e)
+            (define vec-len (vector-length e))
+            (for/list ([idx (in-sequences (in-range #,prefix-len)
+                                          (in-range (- vec-len #,suffix-len) vec-len))])
+              (unsafe-vector-ref e idx)))
+        (rearm+parse (quasisyntax/loc stx (list #,@prefix #,@suffix)))))]
     [(vector es ...)
      (ormap ddk? (syntax->list #'(es ...)))
      (trans-match #'vector?

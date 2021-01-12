@@ -111,6 +111,7 @@
 (define (fx->fl x) (#2%fixnum->flonum x))
 (define (fxrshift x y) (#2%fxarithmetic-shift-right x y))
 (define (fxlshift x y) (#2%fxarithmetic-shift-left x y))
+(define (fxlshift/wraparound x y) (#2%fxsll/wraparound x y))
 
 (define (fl->fx x) (#2%flonum->fixnum x))
 (define (->fl x) (#2%real->flonum x))

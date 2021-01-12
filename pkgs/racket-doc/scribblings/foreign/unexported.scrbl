@@ -44,10 +44,11 @@ cstructs, and another ctype for user-defined ctypes.}
 
 @defproc[(ffi-call [ptr cpointer?] [in-types (listof ctype?)] [out-type ctype?]
                    [abi (or/c #f 'default 'stdcall 'sysv) #f]
-                   [save-errno? any/c]
-                   [orig-place? any/c]
+                   [save-errno? any/c #f]
+                   [orig-place? any/c #f]
                    [lock-name (or/c #f string?) #f]
-                   [blocking? any/c #f])
+                   [blocking? any/c #f]
+                   [varargs-after (or/c #f positive-exact-integer?) #f])
          procedure?]{
 
 The primitive mechanism that creates Racket @tech{callout} values for
@@ -57,10 +58,11 @@ values are marshaled.}
 
 @defproc[(ffi-call-maker [in-types (listof ctype?)] [out-type ctype?]
                    [abi (or/c #f 'default 'stdcall 'sysv) #f]
-                   [save-errno? any/c]
-                   [orig-place? any/c]
+                   [save-errno? any/c #f]
+                   [orig-place? any/c #f]
                    [lock-name (or/c #f string?) #f]
-                   [blocking? any/c #f])
+                   [blocking? any/c #f]
+                   [varargs-after (or/c #f positive-exact-integer?) #f])
          (cpointer . -> . procedure?)]{
 
 A curried variant of @racket[ffi-call] that takes the foreign-procedure pointer
@@ -70,7 +72,8 @@ separately.}
 @defproc[(ffi-callback [proc procedure?] [in-types any/c] [out-type any/c]
                        [abi (or/c #f 'default 'stdcall 'sysv) #f]
                        [atomic? any/c #f]
-                       [async-apply (or/c #f ((-> any) . -> . any)) #f])
+                       [async-apply (or/c #f ((-> any) . -> . any) box?) #f]
+                       [varargs-after (or/c #f positive-exact-integer?) #f])
          ffi-callback?]{
 
 The symmetric counterpart of @racket[ffi-call].  It receives a Racket
@@ -80,7 +83,8 @@ C pointer.}
 @defproc[(ffi-callback-maker [in-types any/c] [out-type any/c]
                        [abi (or/c #f 'default 'stdcall 'sysv) #f]
                        [atomic? any/c #f]
-                       [async-apply (or/c #f ((-> any) . -> . any)) #f])
+                       [async-apply (or/c #f ((-> any) . -> . any) box?) #f]
+                       [varargs-after (or/c #f positive-exact-integer?) #f])
          (procedure? . -> . ffi-callback?)]{
 
 A curried variant of @racket[ffi-callback] that takes the callback procedure

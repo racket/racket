@@ -433,6 +433,17 @@
   (lambda (f . args)
     (#2%apply f args)))
 
+;; Implies no-inline, and in unsafe mode, asserts that the
+;; application will not return
+(define $app/no-return
+  (lambda (f . args)
+    (#2%apply f args)))
+
+;; In unsafe mode, asserts that the applicaiton returns a single value
+(define $app/value
+  (lambda (f . args)
+    (#2%apply f args)))
+
 (define call-with-values
   (lambda (producer consumer)
     (unless (procedure? producer)
@@ -1794,6 +1805,8 @@
       ($oops '$thread-tc "~s is not a thread" thread))
     ($thread-tc thread)))
 
+)
+
 (when-feature pthreads
 
 (define $raw-collect-cond (lambda () ($raw-collect-cond)))
@@ -2025,7 +2038,7 @@
   (let ([thread (car (ts))])
     (lambda () thread)))
 ))
-
+(begin
 (let ()
   (define-syntax define-tc-parameter
     (lambda (x)
@@ -2757,6 +2770,11 @@
            (and ($code-arity-in-closure? c)
                 ;; Indirect way of distinguishing from `$make-wrapper-procedure` result:
                 ($code-mutable-closure? c))))))
+
+(define-who wrapper-procedure-procedure
+  (lambda (x)
+    (unless (wrapper-procedure? x) ($oops who "~s is not a wrapper procedure" x))
+    ($closure-ref x 0)))
 
 (define-who set-wrapper-procedure!
   (lambda (x proc)

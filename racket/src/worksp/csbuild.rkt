@@ -297,7 +297,9 @@
           "../cs/c/gen-system.rkt"
           (format "../../lib/system~a.rktd" cs-suffix)
           machine
-          "machine")
+          "machine"
+          "../cs/c"
+          "")
 
 (when install-boot?
   (bootstrap-racket! "../cs/c/add-terminator.rkt"

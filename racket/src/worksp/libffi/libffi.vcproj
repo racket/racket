@@ -119,6 +119,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\bc\foreign\libffi\src\x86\ffiw64.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\bc\foreign\libffi\src\prep_cif.c"
 				>
 			</File>

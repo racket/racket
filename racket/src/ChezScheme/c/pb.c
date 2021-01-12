@@ -17,6 +17,9 @@ typedef uint32_t instruction_t;
 #define INSTR_di_imm(instr)   (((int32_t)(instr)) >> 16)
 #define INSTR_di_imm_unsigned(instr) ((instr) >> 16)
 
+#define INSTR_adr_dest(instr) INSTR_di_dest(instr)
+#define INSTR_adr_imm(instr)  (((int32_t)(instr)) >> 12)
+
 #define INSTR_drr_dest(instr) INSTR_d_dest(instr)
 #define INSTR_drr_reg1(instr) (((instr) >> 12) & 0xF)
 #define INSTR_drr_reg2(instr) (((instr) >> 16) & 0xF)
@@ -398,6 +401,20 @@ void S_pb_interp(ptr tc, void *bytecode) {
         flag = (r == 0);
       }
       break;
+    case pb_bin_op_pb_signal_pb_subp_pb_register:
+      {
+        iptr r = regs[INSTR_drr_reg1(instr)] - regs[INSTR_drr_reg2(instr)];
+        regs[INSTR_drr_dest(instr)] = r;
+        flag = (r > 0);
+      }
+      break;
+    case pb_bin_op_pb_signal_pb_subp_pb_immediate:
+      {
+        iptr r = regs[INSTR_dri_reg(instr)] - (uptr)INSTR_dri_imm(instr);
+        regs[INSTR_dri_dest(instr)] = r;
+        flag = (r > 0);
+      }
+      break;
     case pb_cmp_op_pb_eq_pb_register:
       flag = regs[INSTR_dr_dest(instr)] == regs[INSTR_dr_reg(instr)];
       break;
@@ -673,7 +690,7 @@ void S_pb_interp(ptr tc, void *bytecode) {
     case pb_return:
       return; /* <--- not break */
     case pb_adr:
-      regs[INSTR_di_dest(instr)] = (uptr)TO_PTR(next_ip) + INSTR_di_imm(instr);
+      regs[INSTR_adr_dest(instr)] = (uptr)TO_PTR(next_ip) + INSTR_adr_imm(instr);
       break;
     case pb_interp:
       {

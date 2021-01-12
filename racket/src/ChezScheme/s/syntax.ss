@@ -501,7 +501,7 @@
           (if src `(seq (profile ,src) ,e) e))
         e)))
 
-(module (build-lambda build-library-case-lambda build-case-lambda)
+(module (build-lambda build-lambda/lift-barrier build-library-case-lambda build-case-lambda)
   (define build-clause
     (lambda (fmls body)
       (let f ((ids fmls) (n 0))
@@ -527,6 +527,12 @@
       (build-profile ae
          `(case-lambda ,(make-preinfo-lambda (ae->src ae))
             ,(build-clause vars exp)))))
+
+  (define build-lambda/lift-barrier
+    (lambda (ae vars exp)
+      (build-profile ae
+        `(case-lambda ,(make-preinfo-lambda (ae->src ae) #f #f #f (constant code-flag-lift-barrier))
+           ,(build-clause vars exp)))))
 
   (define build-case-lambda
     (lambda (ae clauses)
@@ -2704,7 +2710,7 @@
                             (make-ctdesc import-req* visit-visit-req* visit-req* #t #t '() #f #f)
                             (make-rtdesc invoke-req* #t
                               (top-level-eval-hook
-                                (build-lambda no-source '()
+                                (build-lambda/lift-barrier no-source '()
                                   (build-library-body no-source dl* db* dv* de*
                                     (build-sequence no-source `(,@inits ,(build-void)))))))))
 
@@ -5614,7 +5620,7 @@
   (lambda (uid dl* db* dv* de* body)
     (build-primcall no-source 3 '$install-library/rt-code
       (build-data no-source uid)
-      (build-lambda no-source '()
+      (build-lambda/lift-barrier no-source '()
         (build-library-body no-source dl* db* dv* de* body)))))
 
 (let ()
@@ -6215,6 +6221,13 @@
       ((_ . c)
        (let-values ([(vars body) (chi-lambda-clause (source-wrap e w ae) (syntax c) r w)])
          (build-lambda ae vars body))))))
+
+(global-extend 'core '$lambda/lift-barrier
+  (lambda (e r w ae)
+    (syntax-case e ()
+      ((_ . c)
+       (let-values ([(vars body) (chi-lambda-clause (source-wrap e w ae) (syntax c) r w)])
+         (build-lambda/lift-barrier ae vars body))))))
 
 (global-extend 'core 'case-lambda
   (lambda (e r w ae)
@@ -8921,10 +8934,14 @@
          [else ($oops '$fp-type->pred "unrecognized type ~s" type)])])))
 
 (define $filter-conv
-  (lambda (who conv*)
+  (lambda (who conv* num-args)
     (define squawk
       (lambda (x)
         (syntax-error x (format "invalid ~s convention" who))))
+    (define check-arg-count
+      (lambda (n orig-c)
+        (unless (<= n num-args)
+          (syntax-error orig-c (format "invalid ~s convention with ~a arguments" who num-args)))))
     (let loop ([conv* conv*] [selected #f] [accum '()] [keep-accum '()])
       (cond
         [(null? conv*) (datum->syntax #'filter-conv keep-accum)]
@@ -8935,7 +8952,17 @@
                          (cond
                            [(not c) (values #f #f)]
                            [(eq? c '__collect_safe) (values 'adjust-active #f)]
-                           [(eq? c '__varargs) (values 'varargs #f)]
+                           [(eq? c '__varargs)
+                            (check-arg-count 1 orig-c)
+                            (values (cons 'varargs 1) #f)]
+                           [(and (pair? c) (eq? (car c) '__varargs_after)
+                                 (pair? (cdr c)) (null? (cddr c))
+                                 (let ([i (cadr c)])
+                                   (and (integer? i)
+                                        (exact? i)
+                                        (positive? i))))
+                            (check-arg-count (cadr c) orig-c)
+                            (values (cons 'varargs (cadr c)) #f)]
                            [else
                             (values
                              (case ($target-machine)
@@ -8951,7 +8978,8 @@
                                   [else (squawk orig-c)])]
                                [else (squawk orig-c)])
                              #t)])])
-             (when (member c accum)
+             (when (or (member c accum)
+                       (and (pair? c) (ormap pair? accum)))
                (syntax-error orig-c (format "redundant ~s convention" who)))
              (when (and select? selected)
                (syntax-error orig-c (format "conflicting ~s convention" who)))
@@ -8966,16 +8994,18 @@
       (define (check-strings-allowed)
         (when (memq 'adjust-active (syntax->datum conv*))
           ($oops who "string argument not allowed with __collect_safe procedure")))
-      (define (check-floats-allowed)
-        (when (memq 'varargs (syntax->datum conv*))
-          ($oops who "float argument not allowed for __varargs procedure")))
+      (define (check-floats-allowed pos)
+        (let ([va-n (ormap (lambda (conv) (and (pair? conv) (eq? (car conv) 'varargs) (cdr conv)))
+                           (syntax->datum conv*))])
+          (when (and va-n (>= pos va-n))
+            ($oops who "single-float varargs argument not allowed"))))
       (with-syntax ([conv* conv*]
                     [foreign-name foreign-name]
                     [?foreign-addr ?foreign-addr]
                     [(t ...) (generate-temporaries type*)])
         (with-syntax ([(((check ...) (actual ...) (arg ...)) ...)
                        (map
-                         (lambda (type x)
+                         (lambda (type x pos)
                            (with-syntax ([x x])
                              (or (case type
                                    [(boolean)
@@ -9066,7 +9096,7 @@
                                                         (err ($moi) x)))))
                                        (u32*))]
                                    [(single-float)
-                                    (check-floats-allowed)
+                                    (check-floats-allowed pos)
                                     #f]
                                    [else #f])
                                  (if (or ($ftd? type) ($ftd-as-box? type))
@@ -9079,7 +9109,7 @@
                                        #`(#,(if unsafe? #'() #'((unless (pred x) (err ($moi) x))))
                                           (x)
                                           (type)))))))
-                         type* #'(t ...))]
+                         type* #'(t ...) (enumerate type*))]
                       [(result-filter result)
                        (case result-type
                          [(boolean) #`((lambda (x) (not (eq? x 0)))
@@ -9147,7 +9177,7 @@
       [(_ c ... ?name (arg ...) result)
        (lambda (r)
          ($make-foreign-procedure 'foreign-procedure
-           ($filter-conv 'foreign-procedure #'(c ...))
+           ($filter-conv 'foreign-procedure #'(c ...) (length #'(arg ...)))
            (let ([x (datum ?name)]) (and (string? x) x))
            #'($foreign-entry ?name)
            (map (lambda (x) (filter-type r x #f)) #'(arg ...))
@@ -9163,13 +9193,15 @@
       (define (check-strings-allowed)
         (when (memq 'adjust-active (syntax->datum conv*))
           ($oops who "string result not allowed with __collect_safe callable")))
-      (define (check-floats-allowed)
-        (when (memq 'varargs (syntax->datum conv*))
-          ($oops who "float argument not allowed for __varargs procedure")))
+      (define (check-floats-allowed pos)
+        (let ([va-n (ormap (lambda (conv) (and (pair? conv) (eq? (car conv) 'varargs) (cdr conv)))
+                           (syntax->datum conv*))])
+          (when (and va-n (>= pos va-n))
+            ($oops who "single-float argument not allowed for __varargs procedure"))))
       (with-syntax ([conv* conv*] [?proc ?proc])
         (with-syntax ([((actual (t ...) (arg ...)) ...)
                        (map
-                        (lambda (type)
+                        (lambda (type pos)
                            (or (case type
                                  [(boolean)
                                   (with-syntax ([(x) (generate-temporaries #'(*))])
@@ -9256,12 +9288,12 @@
                                        (x)
                                        (unsigned-64)))]
                                  [(single-float)
-                                  (check-floats-allowed)
+                                  (check-floats-allowed pos)
                                   #f]
                                  [else #f])
                                (with-syntax ([(x) (generate-temporaries #'(*))])
                                  #`(x (x) (#,(datum->syntax #'foreign-callable type))))))
-                         type*)]
+                         type* (enumerate type*))]
                       [(result-filter result [extra-arg ...] [extra ...])
                        (case result-type
                          [(boolean) #`((lambda (x) (if x 1 0))
@@ -9410,7 +9442,7 @@
       [(_ c ... ?proc (arg ...) result)
        (lambda (r)
          ($make-foreign-callable 'foreign-callable
-           ($filter-conv 'foreign-callable #'(c ...))
+           ($filter-conv 'foreign-callable #'(c ...) (length #'(arg ...)))
            #'?proc
            (map (lambda (x) (filter-type r x #f)) #'(arg ...))
            (filter-type r #'result #t)))])))

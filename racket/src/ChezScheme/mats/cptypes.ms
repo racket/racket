@@ -126,10 +126,10 @@
     '(let ([y (vector 1 2 3)]) (display (list y y)) #t))
   (cptypes-equivalent-expansion?
     '(vector? (let ([y (vector 1 2 3)]) (display (list y y)) y))
-    '(begin (let ([y (vector 1 2 3)]) (display (list y y)) y) #t))
+    '(let ([y (vector 1 2 3)]) (display (list y y)) #t))
   (cptypes-equivalent-expansion?
     '(vector? (let ([y (vector 1 2 3)]) (display (list y y)) (vector 4 5 6)))
-    '(begin (let ([y (vector 1 2 3)]) (display (list y y)) (vector 4 5 6)) #t))
+    '(let ([y (vector 1 2 3)]) (display (list y y)) #t))
   (cptypes-equivalent-expansion?
     '(lambda (x) (when (null? x) (display x)))
     '(lambda (x) (when (null? x) (display '()))))
@@ -198,6 +198,18 @@
   (cptypes-equivalent-expansion?
     '(lambda (x) (vector-set! x 0 0) (#2%odd? x) 1)
     '(lambda (x) (vector-set! x 0 0) (#2%odd? x) 2))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) (zero? x)))
+    '(lambda (x) (when (or (fixnum? x) (bignum? x)) (#3%eq? x 0))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (or (fixnum? x) (bignum? x)) (zero? x)) x))
+    '(lambda (x) (when (and (or (fixnum? x) (bignum? x)) (zero? x)) 0)))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (fixnum? x) (zero? x)))
+    '(lambda (x) (when (fixnum? x) (#3%fxzero? x))))
+  (cptypes-equivalent-expansion?
+    '(lambda (x) (when (and (fixnum? x) (zero? x)) x))
+    '(lambda (x) (when (and (fixnum? x) (zero? x)) 0)))
 )
 
 (mat cptypes-type-if
@@ -548,7 +560,8 @@
   (test-chain '((lambda (x) (eq? x 0)) fixnum? #;exact-integer? real? number?))
   (test-chain* '(fixnum? integer? real?))
   (test-chain* '(fixnum? exact? number?)) ; exact? may raise an error
-  (test-chain* '((lambda (x) (eq? x (expt 256 100))) real? number?)) ; bignum?
+  (test-chain* '(bignum? exact? number?)) ; exact? may raise an error
+  (test-chain* '((lambda (x) (eq? x (expt 256 100))) bignum? real? number?))
   (test-chain '((lambda (x) (eqv? 0.0 x)) flonum? real? number?))
   (test-chain '(gensym? symbol?))
   (test-chain '(not boolean?))

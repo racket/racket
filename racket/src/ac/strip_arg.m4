@@ -5,3 +5,6 @@ STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
+
+STRIP_SIGNATURE=":"
+RESTORE_SIGNATURE=":"

@@ -8,6 +8,7 @@
            pkg/path
            setup/main-collects
            "private/macfw.rkt"
+           "private/mach-o.rkt"
            "private/windlldir.rkt"
            "private/elf.rkt"
            "private/collects-path.rkt"
@@ -132,13 +133,17 @@
 				 (build-path collects-dir f)))
 			      (directory-list dir)))
 		  copy-collects)
+        ;; Remove signatures, if any
+        (when (eq? 'macosx (cross-system-type))
+          (for-each remove-signature binaries))
 	;; Patch binaries to find libs
         (when executables?
           (patch-binaries binaries types))
         (let ([relative->binary-relative
                (lambda (sub-dir type relative-dir)
                  (cond
-                  [relative-base relative-base]
+                  [relative-base
+                   (if (string? relative-base) (string->path relative-base) relative-base)]
                   [(not executables?)
                    (build-path dest-dir relative-dir)]
                   [sub-dir
@@ -168,6 +173,9 @@
                                                    exts-dir 
                                                    relative-exts-dir
                                                    relative->binary-relative)
+            ;; Add signatures, if needed
+            (when (eq? 'macosx (cross-system-type))
+              (for-each add-ad-hoc-signature binaries))
             ;; Restore executable permissions:
             (when old-permss
               (map done-writable binaries old-permss))
@@ -306,15 +314,15 @@
 		(memq (car types) '(gracketcgc gracket3m gracketcs)))
 	   ;; Special case for single GRacket app:
 	   (update-framework-path "@executable_path/../Frameworks/"
-				  (car binaries)
-				  #t)
+                                  (car binaries)
+                                  #t)
 	   ;; General case:
 	   (for-each (lambda (b type)
 		       (update-framework-path (if (memq type '(racketcgc racket3m racketcs))
-						  "@executable_path/../lib/" 
-						  "@executable_path/../../../lib/" )
-					      b
-					      (memq type '(gracketcgc gracket3m gracketcs))))
+                                                  "@executable_path/../lib/" 
+                                                  "@executable_path/../../../lib/" )
+                                              b
+                                              (memq type '(gracketcgc gracket3m gracketcs))))
 		     binaries types))]
       [(unix)
        (for-each (lambda (b type)

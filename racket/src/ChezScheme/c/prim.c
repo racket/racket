@@ -228,6 +228,8 @@ static void s_instantiate_code_object() {
     cookie = S_get_scheme_arg(tc, 2);
     proc = S_get_scheme_arg(tc, 3);
 
+    S_thread_start_code_write();
+
     new = S_code(tc, CODETYPE(old), CODELEN(old));
 
     S_immobilize_object(new);
@@ -278,12 +280,15 @@ static void s_instantiate_code_object() {
     }
     S_flush_instruction_cache(tc);
 
+    S_thread_end_code_write();
+
     AC0(tc) = new;
 }
 
 static void s_link_code_object(co, objs) ptr co, objs; {
     ptr t; uptr a, m, n;
 
+    S_thread_start_code_write();
     t = CODERELOC(co);
     m = RELOCSIZE(t);
     a = 0;
@@ -302,6 +307,7 @@ static void s_link_code_object(co, objs) ptr co, objs; {
         S_set_code_obj("gc", RELOC_TYPE(entry), co, a, Scar(objs), item_off);
         objs = Scdr(objs);
     }
+    S_thread_end_code_write();
 }
 
 static INT s_check_heap_enabledp(void) {

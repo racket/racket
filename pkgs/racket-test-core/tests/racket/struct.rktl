@@ -672,6 +672,19 @@
 (test #t inspector-superior? (current-inspector) (make-sibling-inspector (make-inspector)))
 
 ;; ------------------------------------------------------------
+;; Some built-in structure procedures
+
+(test #t struct-predicate-procedure? exn?)
+(test #t struct-predicate-procedure? exn:fail?)
+(test #t struct-predicate-procedure? exn:fail:contract?)
+(test #t struct-predicate-procedure? srcloc?)
+(test #t struct-predicate-procedure? date?)
+
+(test #t struct-accessor-procedure? exn-message)
+(test #t struct-accessor-procedure? srcloc-line)
+(test #t struct-accessor-procedure? date-month)
+
+;; ------------------------------------------------------------
 ;; Property accessor errors
 
 (let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop1 #f '() #t)])
@@ -987,6 +1000,43 @@
         (equal-secondary-hash-code (shared ([t (make-o t 1 t)]) t)))
 
   (void))
+
+;; ----------------------------------------
+
+(let ([got-here? #f])
+  (struct foo2 (f g) #:transparent
+    #:property prop:equal+hash
+    (list (λ (a b recur) #f)
+          (λ (a recur) 0)
+          (λ (a recur) (set! got-here? #t) 0)))
+  (define (check-secondary-used v)
+    (set! got-here? #f)
+    (equal-secondary-hash-code v)
+    got-here?)
+  (test #t check-secondary-used (foo2 0 "ggg"))
+  ;; Although nothing promises that we'll hash an element within a
+  ;; list, vector, etc., the current implementation is meant to
+  ;; do so in at least these cases:
+  (test #t check-secondary-used (list (foo2 0 "ggg")))
+  (test #t check-secondary-used (cons 6 (foo2 0 "ggg")))
+  (test #t check-secondary-used (vector (foo2 0 "ggg")))
+  (test #t check-secondary-used (box (foo2 0 "ggg")))
+  (test #t check-secondary-used (hash 'ok (foo2 0 "ggg"))))
+
+;; ----------------------------------------
+
+(let ([got-here? #f])
+  (struct foo (f g)
+    #:property prop:equal+hash
+    (list (λ (a b recur) #f)
+          (λ (a recur) 'wrong)
+          (λ (a recur) 'wrong)))
+  (err/rt-test (equal-hash-code (foo 1 2))
+               exn:fail:contract?
+               #rx"hash procedure returned a value other than an exact integer")
+  (err/rt-test (equal-secondary-hash-code (foo 1 2))
+               exn:fail:contract?
+               #rx"hash procedure returned a value other than an exact integer"))
 
 ;; ----------------------------------------
 

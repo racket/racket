@@ -10,7 +10,7 @@
 (provide (struct-out struct-type-info)
          struct-type-info-rest-properties-list-pos
          make-struct-type-info
-         pure-properties-list?)
+         pure-properties-list)
 
 (struct struct-type-info (name parent
                                immediate-field-count
@@ -18,6 +18,7 @@
                                pure-constructor?
                                authentic?
                                prefab-immutables ; #f or immutable expression to be quoted
+                               non-prefab-immutables ; #f or immutable expression to be quoted
                                constructor-name-expr  ; an expression
                                rest)) ; argument expressions after auto-field value
 (define struct-type-info-rest-properties-list-pos 0)
@@ -59,9 +60,39 @@
                         (for/or ([prop (in-list props)])
                           (eq? (unwrap prop) name))]
                        [`,_ #f])))
+              (define (handle-proc-spec proc-spec imms)
+                (cond
+                  [(not proc-spec) imms]
+                  [(exact-nonnegative-integer? proc-spec) (cons proc-spec imms)]
+                  [else
+                   (let ([proc-spec (unwrap proc-spec)])
+                     (and
+                      (symbol? proc-spec)
+                      (let ([k (find-known proc-spec prim-knowns knowns imports mutated)])
+                        (cond
+                          [(not k) #f]
+                          [(known-literal? k)
+                           (let ([v (known-literal-value k)])
+                             (and (or (not v) (exact-nonnegative-integer? v))
+                                  (handle-proc-spec v imms)))]
+                          [(known-procedure? k) imms]
+                          [else #f]))))]))
               (define constructor-name-expr (and ((length rest) . > . 5)
                                                  (list-ref rest 5)))
-              (and prefab-imms
+              (define non-prefab-imms
+                (and (eq? prefab-imms 'non-prefab)
+                     (match rest
+                       [`() '()]
+                       [`(,_) '()]
+                       [`(,_ ,_) '()]
+                       [`(,_ ,_ ,proc-spec)
+                        (handle-proc-spec proc-spec '())]
+                       [`(,_ ,_ ,proc-spec ',immutables . ,_)
+                        (handle-proc-spec proc-spec immutables)]
+                       [`,_ #f])))
+              (and (if (eq? prefab-imms 'non-prefab)
+                       non-prefab-imms
+                       prefab-imms)
                    (struct-type-info name
                                      parent
                                      fields
@@ -78,6 +109,7 @@
                                      (if (eq? prefab-imms 'non-prefab)
                                          #f
                                          prefab-imms)
+                                     non-prefab-imms
                                      constructor-name-expr
                                      rest)))))]
     [`(let-values () ,body)
@@ -86,19 +118,20 @@
 
 ;; Check whether `e` has the shape of a property list that uses only
 ;; properties where the property doesn't have a guard or won't invoke
-;; a guarded procedure
-(define (pure-properties-list? e prim-knowns knowns imports mutated simples)
+;; a guarded procedure, and returns a list of value expressions.
+(define (pure-properties-list e prim-knowns knowns imports mutated simples)
   (match e
     [`(list (cons ,props ,vals) ...)
-     (for/and ([prop (in-list props)]
-               [val (in-list vals)])
-       (let ([u-prop (unwrap prop)])
-         (and (symbol? u-prop)
-              (or (known-struct-type-property/immediate-guard?
-                   (find-known u-prop prim-knowns knowns imports mutated)))
-              (simple? val prim-knowns knowns imports mutated simples))))]
-    [`null #t]
-    [`'() #t]
+     (and (for/and ([prop (in-list props)]
+                    [val (in-list vals)])
+            (let ([u-prop (unwrap prop)])
+              (and (symbol? u-prop)
+                   (or (known-struct-type-property/immediate-guard?
+                        (find-known u-prop prim-knowns knowns imports mutated)))
+                   (simple? val prim-knowns knowns imports mutated simples #f))))
+          vals)]
+    [`null null]
+    [`'() null]
     [`,_ #f]))
 
 ;; Recognide

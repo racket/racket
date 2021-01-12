@@ -25,7 +25,6 @@ check_pb equates.h
 check_pb gc-ocd.inc
 check_pb gc-oce.inc
 check_pb gc-par.inc
-check_pb vfasl.inc
 check_pb heapcheck.inc
 
 check_mach()
@@ -46,5 +45,4 @@ check_mach equates.h
 check_mach gc-ocd.inc
 check_mach gc-oce.inc
 check_mach gc-par.inc
-check_mach vfasl.inc
 check_mach heapcheck.inc

@@ -118,6 +118,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\bc\foreign\libffi\src\closures.c" />
     <ClCompile Include="..\..\bc\foreign\libffi\src\x86\ffi.c" />
+    <ClCompile Include="..\..\bc\foreign\libffi\src\x86\ffiw64.c" />
     <ClCompile Include="..\..\bc\foreign\libffi\src\prep_cif.c" />
     <ClCompile Include="..\..\bc\foreign\libffi\src\raw_api.c" />
     <ClCompile Include="..\..\bc\foreign\libffi\src\types.c" />

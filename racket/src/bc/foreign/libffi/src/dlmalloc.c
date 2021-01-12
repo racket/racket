@@ -438,6 +438,11 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 
 */
 
+#if defined __linux__ && !defined _GNU_SOURCE
+/* mremap() on Linux requires this via sys/mman.h */
+#define _GNU_SOURCE 1
+#endif
+
 #ifndef WIN32
 #ifdef _WIN32
 #define WIN32 1
@@ -1336,7 +1341,7 @@ static void* os2mmap(size_t size) {
 
 #define os2direct_mmap(n)     os2mmap(n)
 
-/* This function supports releasing coalesced segments */
+/* This function supports releasing coalesed segments */
 static int os2munmap(void* ptr, size_t size) {
   while (size) {
     ULONG ulSize = size;
@@ -1373,7 +1378,7 @@ static void* win32direct_mmap(size_t size) {
   return (ptr != 0)? ptr: MFAIL;
 }
 
-/* This function supports releasing coalesced segments */
+/* This function supports releasing coalesed segments */
 static int win32munmap(void* ptr, size_t size) {
   MEMORY_BASIC_INFORMATION minfo;
   char* cptr = ptr;
@@ -2291,7 +2296,7 @@ static size_t traverse_and_check(mstate m);
 #define treebin_at(M,i)     (&((M)->treebins[i]))
 
 /* assign tree index for size S to variable I */
-#if defined(__GNUC__) && defined(i386)
+#if defined(__GNUC__) && defined(__i386__)
 #define compute_tree_index(S, I)\
 {\
   size_t X = S >> TREEBIN_SHIFT;\
@@ -2356,7 +2361,7 @@ static size_t traverse_and_check(mstate m);
 
 /* index corresponding to given bit */
 
-#if defined(__GNUC__) && defined(i386)
+#if defined(__GNUC__) && defined(__i386__)
 #define compute_bit2idx(X, I)\
 {\
   unsigned int J;\

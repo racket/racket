@@ -45,6 +45,8 @@
                         [(#\?) (cons #\p rest)]
                         [(#\>) rest]
                         [(#\*) (cons #\s rest)]
+                        [(#\=) (cons* #\e #\q #\l rest)]
+                        [(#\?) (cons #\p rest)]
                         [else (cons x rest)]))
           '()
           (string->list (symbol->string x))))))
@@ -652,9 +654,12 @@
                (pr "                        : \"r\" (addr)   \\~%")
                (pr "                        : \"flags\", \"memory\")~%")))]
           [(ppc32)
+           (let ([reg (constant-case machine-type-name
+                        [(ppc32osx tppc32osx) ""]
+                        [else "%%"])])
             (pr "#define INITLOCK(addr)     \\~%")
-            (pr "  __asm__ __volatile__ (\"li %%r0, 0\\n\\t\"\\~%")
-            (pr "                        \"stw %%r0, 0(%0)\\n\\t\"\\~%")
+            (pr "  __asm__ __volatile__ (\"li ~ar0, 0\\n\\t\"\\~%" reg)
+            (pr "                        \"stw ~ar0, 0(%0)\\n\\t\"\\~%" reg)
             (pr "                        :             \\~%")
             (pr "                        : \"b\" (addr)\\~%")
             (pr "                        :\"memory\", \"r0\")~%")
@@ -662,16 +667,16 @@
             (nl)
             (pr "#define SPINLOCK(addr)      \\~%")
             (pr "  __asm__ __volatile__ (\"0:\\n\\t\"\\~%")                    ; top:
-            (pr "                        \"lwarx %%r0, 0, %0\\n\\t\"\\~%")     ;  start lock acquisition
-            (pr "                        \"cmpwi %%r0, 0\\n\\t\"\\~%")         ;  see if someone already owns the lock
+            (pr "                        \"lwarx ~ar0, 0, %0\\n\\t\"\\~%" reg) ;  start lock acquisition
+            (pr "                        \"cmpwi ~ar0, 0\\n\\t\"\\~%" reg)     ;  see if someone already owns the lock
             (pr "                        \"bne 1f\\n\\t\"\\~%")                ;  if so, go to our try_again loop
-            (pr "                        \"li %%r0, 1\\n\\t\"\\~%")            ;  attempt to store the value 1
-            (pr "                        \"stwcx. %%r0, 0, %0\\n\\t\"\\~%")    ; 
+            (pr "                        \"li ~ar0, 1\\n\\t\"\\~%" reg)        ;  attempt to store the value 1
+            (pr "                        \"stwcx. ~ar0, 0, %0\\n\\t\"\\~%" reg); 
             (pr "                        \"beq 2f\\n\\t\"\\~%")                ;  if we succeed, we own the lock
             (pr "                        \"1:\\n\\t\"\\~%")                    ; again:
             (pr "                        \"isync\\n\\t\"\\~%")                 ;  sync things to pause the processor 
-            (pr "                        \"lwz %%r0, 0(%0)\\n\\t\"\\~%")       ;  try a non-reserved load to see if we are likely to succeed
-            (pr "                        \"cmpwi %%r0, 0\\n\\t\"\\~%")         ;  if it is = 0, try to acquire at start
+            (pr "                        \"lwz ~ar0, 0(%0)\\n\\t\"\\~%" reg)   ;  try a non-reserved load to see if we are likely to succeed
+            (pr "                        \"cmpwi ~ar0, 0\\n\\t\"\\~%" reg)     ;  if it is = 0, try to acquire at start
             (pr "                        \"beq 0b\\n\\t\"\\~%")                ;
             (pr "                        \"b 1b\\n\\t\"\\~%")                  ;  othwerise loop through the try again
             (pr "                        \"2:\\n\\t\"\\~%")                    ; done:
@@ -681,8 +686,8 @@
 
             (nl)
             (pr "#define UNLOCK(addr)     \\~%")
-            (pr "  __asm__ __volatile__ (\"li %%r0, 0\\n\\t\"\\~%")
-            (pr "                        \"stw %%r0, 0(%0)\\n\\t\"\\~%")
+            (pr "  __asm__ __volatile__ (\"li ~ar0, 0\\n\\t\"\\~%" reg)
+            (pr "                        \"stw ~ar0, 0(%0)\\n\\t\"\\~%" reg)
             (pr "                        :             \\~%")
             (pr "                        : \"b\" (addr)\\~%")
             (pr "                        :\"memory\", \"r0\")~%")
@@ -691,11 +696,11 @@
             (pr "#define LOCKED_INCR(addr, ret) \\~%")
             (pr "  __asm__ __volatile__ (\"li %0, 0\\n\\t\"\\~%")
             (pr "                        \"0:\\n\\t\"\\~%")
-            (pr "                        \"lwarx %%r12, 0, %1\\n\\t\"\\~%")
-            (pr "                        \"addi %%r12, %%r12, 1\\n\\t\"\\~%")
-            (pr "                        \"stwcx. %%r12, 0, %1\\n\\t\"\\~%")
+            (pr "                        \"lwarx ~ar12, 0, %1\\n\\t\"\\~%" reg)
+            (pr "                        \"addi ~ar12, ~ar12, 1\\n\\t\"\\~%" reg reg)
+            (pr "                        \"stwcx. ~ar12, 0, %1\\n\\t\"\\~%" reg)
             (pr "                        \"bne 0b\\n\\t\"\\~%")
-            (pr "                        \"cmpwi %%r12, 0\\n\\t\"\\~%")
+            (pr "                        \"cmpwi ~ar12, 0\\n\\t\"\\~%" reg)
             (pr "                        \"bne 1f\\n\\t\"\\~%")
             (pr "                        \"li %0, 1\\n\\t\"\\~%")
             (pr "                        \"1:\\n\\t\"\\~%")
@@ -707,17 +712,17 @@
             (pr "#define LOCKED_DECR(addr, ret) \\~%")
             (pr "  __asm__ __volatile__ (\"li %0, 0\\n\\t\"\\~%")
             (pr "                        \"0:\\n\\t\"\\~%")
-            (pr "                        \"lwarx %%r12, 0, %1\\n\\t\"\\~%")
-            (pr "                        \"addi %%r12, %%r12, -1\\n\\t\"\\~%")
-            (pr "                        \"stwcx. %%r12, 0, %1\\n\\t\"\\~%")
+            (pr "                        \"lwarx ~ar12, 0, %1\\n\\t\"\\~%" reg)
+            (pr "                        \"addi ~ar12, ~ar12, -1\\n\\t\"\\~%" reg reg)
+            (pr "                        \"stwcx. ~ar12, 0, %1\\n\\t\"\\~%" reg)
             (pr "                        \"bne 0b\\n\\t\"\\~%")
-            (pr "                        \"cmpwi %%r12, 0\\n\\t\"\\~%")
+            (pr "                        \"cmpwi ~ar12, 0\\n\\t\"\\~%" reg)
             (pr "                        \"bne 1f\\n\\t\"\\~%")
             (pr "                        \"li %0, 1\\n\\t\"\\~%")
             (pr "                        \"1:\\n\\t\"\\~%")
             (pr "                        : \"=&r\" (ret)\\~%")
             (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        : \"cc\", \"memory\", \"r12\")~%")]
+            (pr "                        : \"cc\", \"memory\", \"r12\")~%"))]
           [(arm32)
             (pr "#define INITLOCK(addr)     \\~%")
             (pr "  __asm__ __volatile__ (\"mov r12, #0\\n\\t\"\\~%")
@@ -823,6 +828,8 @@
 
             (nl)
             (pr "#define LOCKED_INCR(addr, ret) \\~%")
+            (pr "  do {\\~%")
+            (pr "  long _return_;\\~%")
             (pr "  __asm__ __volatile__ (\"mov %0, #0\\n\\t\"\\~%")
             (pr "                        \"0:\\n\\t\"\\~%")
             (pr "                        \"ldxr x12, [%1, #0]\\n\\t\"\\~%")
@@ -834,12 +841,16 @@
             (pr "                        \"bne 1f\\n\\t\"\\~%")
             (pr "                        \"mov %0, #1\\n\\t\"\\~%")
             (pr "                        \"1:\\n\\t\"\\~%")
-            (pr "                        : \"=&r\" (ret)\\~%")
+            (pr "                        : \"=&r\" (_return_)\\~%")
             (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\")~%")
+            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\");\\~%")
+            (pr "  ret = _return_;\\~%")
+            (pr "  } while (0)~%")
 
             (nl)
             (pr "#define LOCKED_DECR(addr, ret) \\~%")
+            (pr "  do {\\~%")
+            (pr "  long _return_;\\~%")
             (pr "  __asm__ __volatile__ (\"mov %0, #0\\n\\t\"\\~%")
             (pr "                        \"0:\\n\\t\"\\~%")
             (pr "                        \"ldxr x12, [%1, #0]\\n\\t\"\\~%")
@@ -851,9 +862,11 @@
             (pr "                        \"bne 1f\\n\\t\"\\~%")
             (pr "                        \"mov %0, #1\\n\\t\"\\~%")
             (pr "                        \"1:\\n\\t\"\\~%")
-            (pr "                        : \"=&r\" (ret)\\~%")
+            (pr "                        : \"=&r\" (_return_)\\~%")
             (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\")~%")]
+            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\");\\~%")
+            (pr "  ret = _return_;\\~%")
+            (pr "  } while (0)~%")]
           [(pb)
            (pr "#define INITLOCK(addr) (*((long *) addr) = 0)~%")
            (pr "#define SPINLOCK(addr) (*((long *) addr) = 1)~%")
@@ -1086,7 +1099,7 @@
         (defref RTDCOUNTSTIMESTAMP rtd-counts timestamp)
         (defref RTDCOUNTSIT rtd-counts data)
 
-        (defref RECORDDESCPARENT record-type parent)
+        (defref RECORDDESCANCESTRY record-type ancestry)
         (defref RECORDDESCSIZE record-type size)
         (defref RECORDDESCPM record-type pm)
         (defref RECORDDESCMPM record-type mpm)
@@ -1141,6 +1154,14 @@
 
         (defref RPCOMPACTHEADERMASKANDSIZE rp-compact-header mask+size+mode)
         (defref RPCOMPACTHEADERTOPLINK rp-compact-header toplink)
+
+        (defref VFASLHEADER_DATA_SIZE vfasl-header data-size)
+        (defref VFASLHEADER_TABLE_SIZE vfasl-header table-size)
+        (defref VFASLHEADER_RESULT_OFFSET vfasl-header result-offset)
+        (defref VFASLHEADER_VSPACE_REL_OFFSETS vfasl-header vspace-rel-offsets)
+        (defref VFASLHEADER_SYMREF_COUNT vfasl-header symref-count)
+        (defref VFASLHEADER_RTDREF_COUNT vfasl-header rtdref-count)
+        (defref VFASLHEADER_SINGLETONREF_COUNT vfasl-header singletonref-count)
 
         (nl)
         (comment "machine types")

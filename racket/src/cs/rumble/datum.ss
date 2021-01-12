@@ -1,22 +1,21 @@
-(define-thread-local datums (make-weak-hash))
+(define-thread-local datums (make-weak-hashtable equal-hash-code equal?))
 
 (define intern-regexp? #f)
 (define (set-intern-regexp?! p) (set! intern-regexp? p))
 
 (define (datum-intern-literal v)
   (when (current-future) (block-future))
-  (cond
-   [(or (number? v)
-        (string? v)
-        (char? v)
-        (bytes? v)
-        (intern-regexp? v))
-    (with-interrupts-disabled*
-     (or (weak-hash-ref-key datums v #f)
-         (let ([v (cond
-                   [(string? v) (string->immutable-string v)]
-                   [(bytes? v) (bytes->immutable-bytes v)]
-                   [else v])])
-           (hash-set! datums v #t)
-           v)))]
-   [else v]))
+  (let ([intern (lambda (v)
+                  (with-interrupts-disabled*
+                   (car (hashtable-cell datums v #f))))])
+    (cond
+      [(or (and (number? v)
+                (not (fixnum? v)))
+           (immutable-string? v)
+           (immutable-bytevector? v)
+           (intern-regexp? v))
+       (intern v)]
+      [(string? v) (intern (string->immutable-string v))]
+      [(bytes? v) (intern (bytes->immutable-bytes v))]
+      [else v])))
+

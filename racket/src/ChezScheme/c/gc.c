@@ -870,6 +870,8 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
 
     GET_REAL_TIME(astart);
 
+    S_thread_start_code_write();
+
    /* flush instruction cache: effectively clear_code_mod but safer */
     for (ls = S_threads; ls != Snil; ls = Scdr(ls)) {
       ptr t_tc = (ptr)THREADTC(Scar(ls));
@@ -1649,7 +1651,7 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
         si->forwarded_flonums = 0;
 #endif
       } else {
-        chunkinfo *chunk = si->chunk;
+        chunkinfo *chunk = si->chunk, **chunks = ((si->space == space_code) ? S_code_chunks : S_chunks);
         S_G.number_of_nonstatic_segments -= 1;
         S_G.number_of_empty_segments += 1;
         si->space = space_empty;
@@ -1664,10 +1666,10 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
              * small stuff into them and thereby invite fragmentation */
             S_free_chunk(chunk);
           } else {
-            S_move_to_chunk_list(chunk, &S_chunks[PARTIAL_CHUNK_POOLS]);
+            S_move_to_chunk_list(chunk, &chunks[PARTIAL_CHUNK_POOLS]);
           }
         } else {
-          S_move_to_chunk_list(chunk, &S_chunks[PARTIAL_CHUNK_POOLS-1]);
+          S_move_to_chunk_list(chunk, &chunks[PARTIAL_CHUNK_POOLS-1]);
         }
       }
     }
@@ -1677,6 +1679,7 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
     if (MAX_CG >= S_G.min_free_gen) S_free_chunks();
 
     S_flush_instruction_cache(tc);
+    S_thread_end_code_write();
 
 #ifndef NO_DIRTY_NEWSPACE_POINTERS
     /* mark dirty those newspace cards to which we've added wrong-way pointers */
@@ -2529,7 +2532,7 @@ static void resweep_dirty_weak_pairs(thread_gc *tgc) {
                       youngest = TARGET_GENERATION(si);
                     } else if (FORWARDEDP(p, si)) {
                       IGEN newpg;
-                      *pp = FWDADDRESS(p);
+                      *pp = GET_FWDADDRESS(p);
                       newpg = TARGET_GENERATION(si);
                       if (newpg < youngest) youngest = newpg;
                     } else {
@@ -2647,7 +2650,7 @@ static void check_ephemeron(thread_gc *tgc, ptr pe) {
         IGEN tg = TARGET_GENERATION(si);
         if (tg < from_g) S_record_new_dirty_card(tgc, &INITCAR(pe), tg);
 #endif
-        INITCAR(pe) = FWDADDRESS(p);
+        INITCAR(pe) = GET_FWDADDRESS(p);
         relocate_impure(&INITCDR(pe), from_g);
       } else {
         /* Not reached, so far; install as trigger */
@@ -2946,6 +2949,8 @@ static void setup_sweepers(thread_gc *tgc) {
 
 static s_thread_rv_t start_sweeper(void *_sweeper) {
   gc_sweeper *sweeper = _sweeper;
+
+  S_thread_start_code_write(); /* never ended */
 
   (void)s_thread_mutex_lock(&sweep_mutex);
   while (1) {

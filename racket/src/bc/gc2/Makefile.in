@@ -611,7 +611,7 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@ $(LIBRKTIO)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
 	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
-	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
+	cp "Racket.framework/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
 
 # Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
 MACLIBRKT_LINK_fw = -F. -framework Racket
@@ -619,7 +619,9 @@ MACLIBRKT_LINK_static = $(MACLIBRKT_LIBS)
 
 ../racket@MMM@@OSX@: $(MZFWMMM) main.@LTO@
 	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) @LIBS@
+	@STRIP_SIGNATURE@ "../racket@MMM@"
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
+	@RESTORE_SIGNATURE@ "${srcdir}/../../mac/entitlements.plist" "../racket@MMM@"
 
 ../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o $(LIBRKTIO)
 	mkdir -p ../lib

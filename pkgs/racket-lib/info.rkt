@@ -9,6 +9,7 @@
     ("racket-x86_64-macosx-3" #:platform "x86_64-macosx")
     ("racket-i386-macosx-3" #:platform "i386-macosx")
     ("racket-ppc-macosx-3" #:platform "ppc-macosx")
+    ("racket-aarch64-macosx-3" #:platform "aarch64-macosx")
     ("db-ppc-macosx" #:platform "ppc-macosx")
     ("db-win32-i386" #:platform "win32\\i386")
     ("db-win32-x86_64" #:platform "win32\\x86_64")

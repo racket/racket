@@ -9,7 +9,10 @@
          "literal.rkt"
          "inline.rkt"
          "mutated-state.rkt"
-         "optimize.rkt")
+         "optimize.rkt"
+         "single-valued.rkt"
+         "lambda.rkt"
+         "aim.rkt")
 
 (provide infer-known
          can-improve-infer-known?
@@ -18,7 +21,7 @@
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early. If `post-schemify?`, then `rhs` has been schemified.
-(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?
+(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? target
                      #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
                      #:optimize-inline? [optimize-inline? #f]
                      #:post-schemify? [post-schemify? #f])
@@ -27,17 +30,21 @@
       [(lambda? rhs)
        (define-values (lam inlinable?) (extract-lambda rhs))
        (define arity-mask (lambda-arity-mask lam))
-       (if (and inlinable?
-                (not post-schemify?)
-                (or (can-inline? lam)
-                    (wrap-property defn 'compiler-hint:cross-module-inline)))
-           (let ([lam (if optimize-inline?
-                          (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
-                          lam)])
-             (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not for-cify?))
-                                                        (add-begin-unsafe lam)
-                                                        lam)))
-           (known-procedure arity-mask))]
+       (cond
+         [(and inlinable?
+               (not post-schemify?)
+               (or (can-inline? lam)
+                   (wrap-property defn 'compiler-hint:cross-module-inline)))
+          (let ([lam (if optimize-inline?
+                         (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
+                         lam)])
+            (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
+                                                       (add-begin-unsafe lam)
+                                                       lam)))]
+         [(single-valued-lambda? lam knowns prim-knowns imports mutated)
+          (known-procedure/single-valued arity-mask)]
+         [else
+          (known-procedure arity-mask)])]
       [(and (literal? rhs)
             (not (hash-ref mutated (unwrap id) #f)))
        (known-literal (unwrap-literal rhs))]
@@ -65,7 +72,11 @@
                  [(or (not defn)
                       ;; can't just return `known`; like `known-procedure/can-inline/need-imports`,
                       ;; we'd lose track of the need to potentially propagate imports
-                      (known-copy? known))
+                      (known-copy? known)
+                      (known-struct-constructor/need-imports? known)
+                      (known-struct-predicate/need-imports? known)
+                      (known-field-accessor/need-imports? known)
+                      (known-field-mutator/need-imports? known))
                   (known-copy rhs)]
                  [else known]))]
          [defn a-known-constant]
@@ -83,7 +94,7 @@
          [`,_
           (cond
             [(and defn
-                  (simple? rhs prim-knowns knowns imports mutated simples))
+                  (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
              a-known-constant]
             [else #f])])])))
 
@@ -94,68 +105,6 @@
       (eq? k a-known-constant)))
 
 ;; ----------------------------------------
-
-;; Recognize forms that produce plain procedures; expression can be
-;; pre- or post-schemify
-(define (lambda? v #:simple? [simple? #f])
-  (match v
-    [`(lambda . ,_) #t]
-    [`(case-lambda . ,_) #t]
-    [`(let-values ([(,id) ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
-    [`(letrec-values ([(,id) ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
-    [`(let ([,id ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
-    [`(letrec* ([,id ,rhs]) ,body) (let-lambda? id rhs body #:simple? simple?)]
-    [`(let-values ,_ ,body) (and (not simple?) (lambda? body))]
-    [`(letrec-values ,_ ,body) (and (not simple?) (lambda? body))]
-    [`(begin ,body) (lambda? body #:simple? simple?)]
-    [`(values ,body) (lambda? body #:simple? simple?)]
-    [`,_ #f]))
-
-(define (let-lambda? id rhs body #:simple? simple?)
-  (or (and (wrap-eq? id body) (lambda? rhs #:simple? simple?))
-      (and (not simple?)
-           (lambda? body #:simple? simple?))))
-
-;; Extract procedure from a form on which `lambda?` produces true
-(define (extract-lambda v)
-  (match v
-    [`(lambda . ,_) (values v #t)]
-    [`(case-lambda . ,_) (values v #t)]
-    [`(let-values ([(,id) ,rhs]) ,body) (extract-let-lambda #f id rhs body)]
-    [`(letrec-values ([(,id) ,rhs]) ,body) (extract-let-lambda #t id rhs body)]
-    [`(let ([,id ,rhs]) ,body) (extract-let-lambda #f id rhs body)]
-    [`(letrec* ([,id ,rhs]) ,body) (extract-let-lambda #t id rhs body)]
-    [`(let-values ,_ ,body) (extract-lambda* body)]
-    [`(letrec-values ,_ ,body) (extract-lambda* body)]
-    [`(let ,_ ,body) (extract-lambda* body)]
-    [`(letrec* ,_ ,body) (extract-lambda* body)]
-    [`(begin ,body) (extract-lambda body)]
-    [`(values ,body) (extract-lambda body)]))
-
-(define (extract-let-lambda rec? id rhs body)
-  (if (wrap-eq? id body)
-      (if rec?
-          (extract-lambda* rhs)
-          (extract-lambda rhs))
-      (extract-lambda* body)))
-
-(define (extract-lambda* v)
-  (define-values (lam inlinable?) (extract-lambda v))
-  (values lam #f))
-
-(define (lambda-arity-mask v)
-  (match v
-    [`(lambda ,args . ,_) (args-arity-mask args)]
-    [`(case-lambda [,argss . ,_] ...)
-     (for/fold ([mask 0]) ([args (in-list argss)])
-       (bitwise-ior mask (args-arity-mask args)))]))
-
-(define (args-arity-mask args)
-  (cond
-    [(wrap-null? args) 1]
-    [(wrap-pair? args)
-     (arithmetic-shift (args-arity-mask (wrap-cdr args)) 1)]
-    [else -1]))
 
 (define (add-begin-unsafe lam)
   (reannotate

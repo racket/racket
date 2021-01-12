@@ -45,7 +45,7 @@
   (fx=? [sig [(fixnum fixnum fixnum ...) -> (boolean)]] [flags pure cp02 safeongoodargs])    ; restricted to 2+ arguments
   (fx>? [sig [(fixnum fixnum fixnum ...) -> (boolean)]] [flags pure cp02 safeongoodargs])    ; restricted to 2+ arguments
   (fx>=? [sig [(fixnum fixnum fixnum ...) -> (boolean)]] [flags pure cp02 safeongoodargs])   ; restricted to 2+ arguments
-  (fxzero? [sig [(fixnum) -> (boolean)]] [flags pure cp02 safeongoodargs])
+  (fxzero? [sig [(fixnum) -> (boolean)]] [flags pure cp02 safeongoodargs cptypes2])
   (fxnegative? [sig [(fixnum) -> (boolean)]] [flags pure cp02 safeongoodargs])
   (fxpositive? [sig [(fixnum) -> (boolean)]] [flags pure cp02 safeongoodargs])
   (fxeven? [sig [(fixnum) -> (boolean)]] [flags pure cp02 safeongoodargs])
@@ -201,7 +201,7 @@
   ((r6rs: =) [sig [(number number number ...) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])   ; restricted to 2+ arguments
   ((r6rs: >) [sig [(real real real ...) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])   ; restricted to 2+ arguments
   ((r6rs: >=) [sig [(real real real ...) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])  ; restricted to 2+ arguments
-  (zero? [sig [(number) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])
+  (zero? [sig [(number) -> (boolean)]] [flags pure mifoldable discard safeongoodargs cptypes2 ieee r5rs])
   (positive? [sig [(real) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])
   (negative? [sig [(real) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])
   (odd? [sig [(integer) -> (boolean)]] [flags pure mifoldable discard safeongoodargs ieee r5rs])
@@ -1044,6 +1044,7 @@
 )
 
 (define-symbol-flags* ([libraries] [flags keyword])
+  ($lambda/lift-barrier [flags])
   ($system [flags library-uid])
   (add-prefix [flags])
   (alias [flags])
@@ -1349,6 +1350,7 @@
   (foreign-address-name [sig [(uptr/iptr) -> (maybe-string)]] [flags discard])
   (foreign-callable-entry-point [sig [(code) -> (uint)]] [flags discard])
   (foreign-callable-code-object [sig [(sint) -> (code)]] [flags discard])
+  (foreign-alignof [sig [(sub-symbol) -> (fixnum)]] [flags pure true cp02])
   (foreign-alloc [sig [(pfixnum) -> (uint)]] [flags discard true])
   (foreign-free [sig [(sub-uint) -> (void)]] [flags true])
   (foreign-ref [sig [(sub-symbol uptr/iptr uptr/iptr) -> (ptr)]] [flags])
@@ -1365,8 +1367,11 @@
   (ftype-pointer-null? [sig [(ftype-pointer) -> (boolean)]] [flags pure mifoldable discard])
   (ftype-pointer->sexpr [sig [(ftype-pointer) -> (ptr)]] [flags])
   (fx* [sig [(fixnum ...) -> (fixnum)]] [flags arith-op partial-folder])  ; not restricted to 2 arguments
+  (fx*/wraparound [sig [(fixnum fixnum) -> (fixnum)]] [flags arith-op partial-folder safeongoodargs])
   (fx+ [sig [(fixnum ...) -> (fixnum)]] [flags arith-op partial-folder])  ; not restricted to 2 arguments
+  (fx+/wraparound [sig [(fixnum fixnum) -> (fixnum)]] [flags arith-op partial-folder safeongoodargs])
   (fx- [sig [(fixnum fixnum ...) -> (fixnum)]] [flags arith-op partial-folder])  ; not restricted to 1 or 2 arguments
+  (fx-/wraparound [sig [(fixnum fixnum) -> (fixnum)]] [flags arith-op partial-folder safeongoodargs])
   (fx/ [sig [(fixnum fixnum ...) -> (fixnum)]] [flags arith-op partial-folder])  ; not restricted to 1 or 2 arguments
   (fx1+ [sig [(fixnum) -> (fixnum)]] [flags arith-op cp02])
   (fx1- [sig [(fixnum) -> (fixnum)]] [flags arith-op cp02])
@@ -1394,6 +1399,7 @@
   (fxquotient [sig [(fixnum fixnum ...) -> (fixnum)]] [flags arith-op partial-folder])
   (fxremainder [sig [(fixnum fixnum) -> (fixnum)]] [flags arith-op cp02])
   (fxsll [sig [(fixnum sub-ufixnum) -> (fixnum)]] [flags arith-op cp02])
+  (fxsll/wraparound [sig [(fixnum sub-ufixnum) -> (fixnum)]] [flags arith-op cp02])
   (fxsra [sig [(fixnum sub-ufixnum) -> (fixnum)]] [flags arith-op cp02])
   (fxsrl [sig [(fixnum sub-ufixnum) -> (fixnum)]] [flags arith-op cp02])
   (fxvector [sig [(fixnum ...) -> (fxvector)]] [flags alloc cp02 safeongoodargs])
@@ -1483,6 +1489,7 @@
   (make-source-table [sig [() -> (source-table)]] [flags unrestricted alloc])
   (make-ephemeron-eq-hashtable [sig [() (uint) -> (eq-hashtable)]] [flags alloc])
   (make-ephemeron-eqv-hashtable [sig [() (uint) -> (hashtable)]] [flags alloc])
+  (make-ephemeron-hashtable [sig [(procedure procedure) (procedure procedure uint) -> (hashtable)]] [flags alloc])
   (make-engine [sig [(procedure) -> (engine)]] [flags pure alloc])
   (make-format-condition [sig [() -> (condition)]] [flags pure unrestricted mifoldable discard])
   (make-flvector [sig [(length) (length flonum) -> (flvector)]] [flags alloc])
@@ -1509,6 +1516,7 @@
   (make-thread-parameter [feature pthreads] [sig [(ptr) (ptr procedure) -> (thread-parameter)]] [flags true cp02 cp03])
   (make-weak-eq-hashtable [sig [() (uint) -> (eq-hashtable)]] [flags alloc])
   (make-weak-eqv-hashtable [sig [() (uint) -> (hashtable)]] [flags alloc])
+  (make-weak-hashtable [sig [(procedure procedure) (procedure procedure uint) -> (hashtable)]] [flags alloc])
   (make-wrapper-procedure [sig [(procedure sint ptr) -> (procedure)]] [flags pure true mifoldable discard])
   (mark-port-closed! [sig [(port) -> (void)]] [flags true])
   (maximum-memory-bytes [sig [() -> (uint)]] [flags alloc])
@@ -1820,7 +1828,8 @@
   (with-profile-tracker [sig [(procedure) (ptr procedure) -> (ptr ptr ...)]] [flags])
   (with-source-path [sig [(maybe-who pathname procedure) -> (ptr ...)]] [flags])
   (wrapper-procedure? [sig [(ptr) -> (boolean)]] [flags pure unrestricted mifoldable discard])
-  (wrapper-procedure-data [sig [(ptr) -> (ptr)]] [flags discard])
+  (wrapper-procedure-data [sig [(ptr) -> (ptr)]] [flags])
+  (wrapper-procedure-procedure [sig [(ptr) -> (procedure)]] [flags true])
 )
 
 
@@ -1831,6 +1840,8 @@
   ($allocate-thread-parameter [feature pthreads] [flags single-valued alloc])
   ($app [flags])
   ($app/no-inline [flags])
+  ($app/no-return [flags])
+  ($app/value [flags])
   ($apply [sig [(procedure exact-integer list) -> (ptr ...)]] [flags cptypes2x])
   ($assembly-output [flags single-valued])
   ($assert-continuation [sig [(ptr) -> (void)] [(ptr ptr) -> (void)]] [flags])
@@ -1912,10 +1923,12 @@
   ($current-stack-link [flags single-valued])
   ($current-winders [flags single-valued])
   ($dequeue-scheme-signals [flags])
+  ($describe-fasl-from-port [sig [(input-port) (input-port vector) -> (ptr)]] [flags])
   ($distinct-bound-ids? [sig [(list) -> (boolean)]] [flags discard])
   ($dofmt [flags single-valued])
   ($do-wind [flags single-valued])
   ($dynamic-closure-counts [flags single-valued alloc])  ; added for closure instrumentation
+  ($emit-boot-header [flags single-valued])
   ($enum-set-members [flags single-valued])
   ($eol-style? [sig [(ptr) -> (boolean)]] [flags pure unrestricted mifoldable])
   ($eq-hashtable-cells [flags single-valued discard])
@@ -1939,11 +1952,13 @@
   ($expeditor [feature expeditor] [flags])
   ($fasl-base-rtd [flags single-valued])
   ($fasl-bld-graph [flags single-valued])
+  ($fasl-can-combine? [flags single-valued])
   ($fasl-enter [flags single-valued])
   ($fasl-file-equal? [sig [(pathname pathname) (pathname pathname ptr) -> (boolean)]] [flags discard])
   ($fasl-out [flags single-valued])
   ($fasl-start [flags single-valued])
   ($fasl-table [flags single-valued])
+  ($fasl-to-vfasl [flags single-valued])
   ($fasl-wrf-graph [flags single-valued])
   ($filter-conv [flags single-valued])
   ($filter-foreign-type [flags single-valued])
@@ -2123,6 +2138,7 @@
   ($ftd-atomic-category [flags single-valued])
   ($ftd-compound? [sig [(sub-ptr) -> (boolean)]] [flags discard])
   ($ftd-size [flags single-valued])
+  ($ftd-union? [sig [(sub-ptr) -> (boolean)]] [flags discard])
   ($ftd-unsigned? [flags single-valued])
   ($ftd->members [flags single-valued])
   ($ftype-guardian-oops [flags])
@@ -2438,6 +2454,7 @@
   ($enable-pass-timing [flags single-valued])
   ($expeditor-history-file [feature expeditor] [flags single-valued])
   ($fasl-target [flags single-valued])
+  ($lift-closures [sig [() -> (boolean)] [(ptr) -> (void)]] [flags unrestricted])
   ($optimize-closures [sig [() -> (boolean)] [(ptr) -> (void)]] [flags unrestricted])
   ($suppress-primitive-inlining [sig [() -> (boolean)] [(ptr) -> (void)]] [flags unrestricted])
   ($sfd [flags single-valued])

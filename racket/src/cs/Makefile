@@ -152,7 +152,7 @@ $(BUILDDIR)linklet.$(CSO): linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE
 	$(COMPILE_FILE) linklet.sls $(LINKLET_DEPS)
 
 
-$(BUILDDIR)schemify.$(CSO): schemify.sls schemified/schemify.scm schemified/known.scm $(SCHEMIFY_DEPS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)schemify.$(CSO): schemify.sls schemified/schemify.scm schemified/known.scm $(PRIMITIVES_TABLES) $(SCHEMIFY_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) schemify.sls $(SCHEMIFY_DEPS)
 
 $(BOOTSTRAPPED)/schemify.scm: $(BUILDDIR)compiled/schemify.rktl $(CONVERT_DEPS)
@@ -258,8 +258,7 @@ future-demo: $(BUILDDIR)rumble.$(CSO)
 future2-demo: $(BUILDDIR)rumble.$(CSO)
 	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/future2.ss
 
-RUMBLE_SRCS = rumble/define.ss \
-              rumble/virtual-register.ss \
+RUMBLE_SRCS = rumble/virtual-register.ss \
               rumble/layout.ss \
               rumble/check.ss \
 	      rumble/syntax-rule.ss \

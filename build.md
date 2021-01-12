@@ -272,11 +272,12 @@ under Windows, encoding-conversion, extflonum, and SSL functionality is
 hobbled until native libraries from the `"racket-win32-i386"` or
 `"racket-win32-x86_64"` package are installed.
 
-On all platforms, from the top-level makefile, `JOB_OPTIONS` as a
-makefile variable and `PLT_SETUP_OPTIONS` as an environment variable are
-passed on to the `raco setup` that is used to build minimal-Racket
-libraries. See the documentation for `raco setup` for information on the
-options.
+On all platforms, from the top-level makefile, the `PLT_SETUP_OPTIONS`
+makefile variable is passed on to the `raco setup` that is used to build
+minimal-Racket libraries. See the documentation for `raco setup` for
+information on the options. (The `JOB_OPTIONS` makefile variable is also
+passed on, but it is meant to be set by some makefile targets when
+`CPUS` is non-empty.)
 
 For cross compilation, add configuration options to
 `CONFIGURE_ARGS="<options>"` as described in the `"README.txt"` of
@@ -367,8 +368,8 @@ repository’s top-level makefile and the `"distro-build"` package.
 
 The `installers` target of the makefile will do everything to generate
 installers: build a server on the current machine, run clients on hosts
-specified via `CONFIG`, and start/stop VirtualBox virtual machines that
-act as client machines.
+specified via `CONFIG`, and start/stop VirtualBox virtual machines or
+Docker containers that act as client machines.
 
 If the server is already built, the `installers-from-built` target will
 drive the client builds without re-building the server.
@@ -391,7 +392,8 @@ build (not the one for building installers), you can use
   `make describe-clients CONFIG=my-site-config.rkt`
 
 to see, without building anything, the effect of the configuration in
-`"my-site-config.rkt"` and the planned build steps.
+`"my-site-config.rkt"` and the planned build steps. See also the
+`#:fake-installers?` site-configuration option.
 
 The default `CONFIG` path is `"build/site.rkt"`, so you could put your
 configuration file there and omit the `CONFIG` argument to `make`. A

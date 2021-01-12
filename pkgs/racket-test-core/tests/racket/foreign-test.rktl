@@ -12,7 +12,8 @@
          ffi/vector
          racket/extflonum
          racket/place
-         racket/file)
+         racket/file
+         racket/unsafe/ops)
 
 (define test-async? (and (place-enabled?) (not (eq? 'windows (system-type)))))
 
@@ -73,17 +74,19 @@
     (and progfiles (concat progfiles "/Microsoft Visual Studio 10.0")))
   (when (and studio (directory-exists? studio))
     (define (paths-env var . ps)
+      (define orig-val (getenv var))
       (define val
         (apply concat (for/list ([p (in-list ps)]
                                  #:when (and p (directory-exists? p)))
                         (concat p ";"))))
       (printf ">>> $~a = ~s\n" var val)
-      (putenv var val))
+      (putenv var (if orig-val
+                      (concat orig-val ";" val)
+                      val)))
     (define (vc p)     (concat studio "/VC/" p))
     (define (common p) (concat studio "/Common7/" p))
     (define (winsdk p) (concat progfiles "/Microsoft SDKs/Windows/v7.0A/" p))
     (paths-env "PATH"
-               (getenv "PATH")
                (vc (if 64bit? "BIN/amd64" "BIN"))
                (vc "IDE") (vc "Tools") (vc "Tools/bin")
                (common "Tools") (common "IDE"))
@@ -501,6 +504,79 @@
   (do ([i 0 (add1 i)]) [(= i l)]
     (test x u8vector-ref v i)))
 
+(let ()
+  (define-syntax (check stx)
+    (syntax-case stx ()
+      [(_ vec _type zero e1 e2 e3 has-unsafe?)
+       (let ([id (lambda (a b [c ""])
+                   (datum->syntax
+                    #'vec
+                    (string->symbol
+                     (format "~a~a~a"
+                             (if (syntax? a) (syntax-e a) a)
+                             (if (syntax? b) (syntax-e b) b)
+                             (if (syntax? c) (syntax-e c) c)))))])
+         (with-syntax ([make-vec (id "make-" #'vec)]
+                       [vec? (id #'vec "?")]
+                       [vec-length (id #'vec "-length")]
+                       [vec-ref (id #'vec "-ref")]
+                       [vec-set! (id #'vec "-set!")]
+                       [unsafe-vec-ref (id "unsafe-" #'vec "-ref")]
+                       [unsafe-vec-set! (id "unsafe-" #'vec "-set!")]
+                       [list->vec (id "list->" #'vec)]
+                       [vec->list (id #'vec "->list")]
+                       [vec->cpointer (id #'vec "->cpointer")]
+                       [_vec (id "_" #'vec)])
+           #`(let ([v1 (make-vec 5 zero)]
+                   [v2 (vec e1 e2 e3)]
+                   #,@(if (syntax-e #'has-unsafe?)
+                          '()
+                          (list #`[unsafe-vec-ref vec-ref]
+                                #`[unsafe-vec-set! vec-set!])))
+               (test #f vec? (make-vector 5))
+               (test #t vec? v1)
+               (test #t vec? v2)
+               (test 5 vec-length v1)
+               (test 3 vec-length v2)
+               (test zero vec-ref v1 0)
+               (test zero vec-ref v1 2)
+               (test zero vec-ref v1 4)
+               (test e1 vec-ref v2 0)
+               (test e2 vec-ref v2 1)
+               (test e3 vec-ref v2 2)
+               (test e3 vec-ref v2 2)
+               (test (void) vec-set! v1 2 e1)
+               (test zero vec-ref v1 1)
+               (test e1 vec-ref v1 2)
+               (test zero vec-ref v1 3)
+               (test zero unsafe-vec-ref v1 4)
+               (test (void) unsafe-vec-set! v1 4 e2)
+               (test e2 unsafe-vec-ref v1 4)
+               (test (list zero zero e1 zero e2) vec->list v1)
+               (test (list e1 e2 e3) vec->list v2)
+               (let ([v3 (cast (vec->cpointer v1) _pointer (_vec o 5))])
+                 (test (vec->list v1) vec->list v3))
+               (let* ([p (malloc 'raw 4 _type)]
+                      [v4 (cast p  _pointer (_vec o 4))])
+                 (test (void) vec-set! v4 0 e3)
+                 (test (void) vec-set! v4 1 e1)
+                 (test (void) vec-set! v4 2 e1)
+                 (test (void) vec-set! v4 3 e2)
+                 (test e1 vec-ref v4 1)
+                 (test e3 vec-ref v4 0))
+               (void))))]))
+  (check u8vector _ubyte 0 1 127 255 #f)
+  (check s8vector _sbyte 0 1 127 -128 #f)
+  (check u16vector _ushort 0 1 (expt 2 8) (sub1 (expt 2 16)) #t)
+  (check s16vector _sshort 0 1 (sub1 (expt 2 15)) (- (expt 2 15)) #t)
+  (check u32vector _uint 0 1 (expt 2 16) (sub1 (expt 2 32)) #f)
+  (check s32vector _sint 0 1 (sub1 (expt 2 31)) (- (expt 2 31)) #f)
+  (check u64vector _uint64 0 1 (expt 2 32) (sub1 (expt 2 64)) #f)
+  (check s64vector _sint64 0 1 (sub1 (expt 2 63)) (- (expt 2 63)) #f)
+  (check f32vector _float 0.0 1.0 1e10 -1e10 #f)
+  (check f64vector _double 0.0 1.0 1e300 -1e300 #t)
+  (void))
+
 ;; Test pointer arithmetic and memmove-like operations
 (let ([p (malloc 10 _int)])
   (memset p 0 10 _int)
@@ -681,6 +757,43 @@
                                           (ptr-set! m _int i 0)))))))))
 
 (let ()
+  (define-syntax (_varargs stx)
+    (syntax-case stx ()
+      [(_ arg ...)
+       #`(_fun #:varargs-after 2
+               _int ; init for result
+               (_int = #,(quotient (length (syntax->list #'(arg ...))) 2))
+               ;; each argument is an _int in [1, 5] followed by:
+               ;;  1 - _int
+               ;;  2 - _long
+               ;;  3 - _double
+               ;;  4 - _int pointer
+               ;;  5 - (_fun #:varargs-after 2 _int _long ... -> _int)
+               arg ... -> _long)]))
+  (test 77
+        (get-ffi-obj 'varargs_check test-lib (_varargs))
+        77)
+  (test 75
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 1) _int))
+        77 -2)
+  (test 277
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 2) _long))
+        77 200)
+  (test 86
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 3) _double))
+        76 10.2)
+  (test 96
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 3) _double (_int = 1) _int (_int = 2) _long (_int = 3) _double))
+        86 1.0 2 3 4.0)
+  (test 67
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 4) (_ptr i _int) (_int = 1) _int))
+        50 8 9)
+  (test 16
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 5) (_fun #:varargs-after 2 _int _long _double -> _int)))
+        10 (lambda (a b c) (inexact->exact (+ a b c))))
+  (void))
+
+(let ()
   (struct foo (ptr)
     #:property prop:cpointer 0)
   
@@ -756,15 +869,36 @@
 ;; check async:
 (when test-async?
   (define (check async like)
-    (define foreign_thread_callback (get-ffi-obj 'foreign_thread_callback test-lib 
-                                                 (_fun #:blocking? #t
-                                                       (_fun #:async-apply async
-                                                             _intptr -> _intptr)
-                                                       _intptr
-                                                       (_fun #:async-apply (lambda (f) (f))
-                                                             -> _void)
-                                                       -> _intptr)))
-    (test (like 16) foreign_thread_callback (lambda (v) (add1 v)) 16 sleep))
+    (cond
+      [(eq? (system-type 'vm) 'racket)
+       (define foreign_thread_callback (get-ffi-obj 'foreign_thread_callback test-lib 
+                                                    (_fun #:blocking? #t
+                                                          (_fun #:async-apply async
+                                                                _intptr -> _intptr)
+                                                          _intptr
+                                                          (_fun #:async-apply (lambda (f) (f))
+                                                                -> _void)
+                                                          -> _intptr)))
+       (test (like 16) foreign_thread_callback (lambda (v) (add1 v)) 16 sleep)]
+      [else
+       (define foreign_thread_callback_setup (get-ffi-obj 'foreign_thread_callback_setup test-lib 
+                                                          (_fun #:blocking? #t ; doesn't do anything in this case
+                                                                (_fun #:async-apply async
+                                                                      _intptr -> _intptr)
+                                                                _intptr
+                                                                -> _pointer)))
+       (define foreign_thread_callback_check_done (get-ffi-obj 'foreign_thread_callback_check_done test-lib 
+                                                               (_fun _pointer
+                                                                     -> _bool)))
+       (define foreign_thread_callback_finish (get-ffi-obj 'foreign_thread_callback_finish test-lib 
+                                                           (_fun _pointer
+                                                                 -> _intptr)))
+       (define d (foreign_thread_callback_setup (lambda (v) (add1 v)) 16))
+       (let loop ()
+         (unless (foreign_thread_callback_check_done d)
+           (sleep)
+           (loop)))
+       (test (like 16) foreign_thread_callback_finish d)]))
   (check (lambda (f) (f)) add1)
   (check (box 20) (lambda (x) 20)))
 

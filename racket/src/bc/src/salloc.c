@@ -947,6 +947,8 @@ THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
 THREAD_LOCAL_DECL(intptr_t scheme_code_total);
 THREAD_LOCAL_DECL(intptr_t scheme_code_count);
 
+THREAD_LOCAL_DECL(int jit_code_write_enabled);
+
 #if defined(MZ_CODE_ALLOC_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
 #endif
@@ -955,6 +957,22 @@ static int fd, fd_created;
 # define MAYBE_PROT_EXEC 0
 #else
 # define MAYBE_PROT_EXEC PROT_EXEC
+#endif
+
+#ifdef MZ_USE_MAP_JIT
+# define MAYBE_MAP_JIT MAP_JIT
+void scheme_thread_code_start_write(void) {
+  if (jit_code_write_enabled == 0)
+    pthread_jit_write_protect_np(0);
+  jit_code_write_enabled++;
+}
+void scheme_thread_code_end_write(void) {
+  --jit_code_write_enabled;
+  if (jit_code_write_enabled == 0)
+    pthread_jit_write_protect_np(1);
+}
+#else
+# define MAYBE_MAP_JIT 0
 #endif
 
 #define LOG_CODE_MALLOC(lvl, s) /* if (lvl > 1) s */
@@ -1031,13 +1049,13 @@ static void *malloc_page(intptr_t size)
   }
 #else
 # ifdef MAP_ANON
-  r = mmap(NULL, size, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
+  r = mmap(NULL, size, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC, MAP_PRIVATE | MAYBE_MAP_JIT | MAP_ANON, -1, 0);
 # else
   if (!fd_created) {
     fd_created = 1;
     fd = open("/dev/zero", O_RDWR);
   }
-  r = mmap(NULL, size, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC, MAP_PRIVATE, fd, 0);
+  r = mmap(NULL, size, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC, MAP_PRIVATE | MAYBE_MAP_JIT, fd, 0);
 # endif
   if (r  == (void *)-1)
     r = NULL;
@@ -1144,6 +1162,8 @@ void *scheme_malloc_code(intptr_t size)
   intptr_t size2, bucket, sz, page_size;
   void *p, *pg, *prev;
 
+  scheme_thread_code_start_write();
+
   if (size < CODE_HEADER_SIZE) {
     /* ensure CODE_HEADER_SIZE alignment 
        and room for free-list pointers */
@@ -1213,6 +1233,8 @@ void *scheme_malloc_code(intptr_t size)
     LOG_CODE_MALLOC(0, printf("allocated %ld (->%ld / %ld)\n", size, size2, bucket));
   }
 
+  scheme_thread_code_end_write();
+
   return p;
 #else
   return malloc(size); /* good luck! */
@@ -1266,6 +1288,8 @@ void scheme_free_code(void *p)
   intptr_t size, size2, bucket, page_size;
   int per_page, n;
   void *prev;
+
+  scheme_thread_code_start_write();
 
   page_size = get_page_size();
 
@@ -1345,6 +1369,8 @@ void scheme_free_code(void *p)
     }
   }
 
+  scheme_thread_code_end_write();
+
 #else
   free(p);
 #endif
@@ -1355,6 +1381,8 @@ void scheme_free_all_code(void)
 #if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   void *p, *next;
   intptr_t page_size;
+
+  scheme_thread_code_start_write();
 
   page_size = get_page_size();
 
@@ -1368,6 +1396,8 @@ void scheme_free_all_code(void)
   code_allocation_page_list = NULL;
 
   free_page(free_list, page_size);
+
+  scheme_thread_code_end_write();
 #endif
 }
 

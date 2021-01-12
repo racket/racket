@@ -2415,8 +2415,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_movr_p(dest, JIT_R0);
       refdone = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
-      (void)jit_blti_p(refslow, JIT_R0, scheme_make_integer(0));
-      (void)jit_bgti_p(refslow, JIT_R0, scheme_make_integer(255));
+      (void)jit_blti_l(refslow, JIT_R0, (intptr_t)scheme_make_integer(0));
+      (void)jit_bgti_l(refslow, JIT_R0, (intptr_t)scheme_make_integer(255));
 
       jit_rshi_l(JIT_R0, JIT_R0, 1);
       jit_lshi_l(JIT_R2, JIT_R0, JIT_LOG_WORD_SIZE);
@@ -3674,6 +3674,12 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "fx+")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_ADD, 0, 0, NULL, 1, -1, 0, NULL, dest);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx+/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_ADD_WRAP, 0, 0, NULL, 1, 1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx+/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_ADD_WRAP, 0, 0, NULL, 1, -1, 0, NULL, dest);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl+")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_ADD, 0, 0, NULL, 1, 0, 1, NULL, dest);
       return 1;
@@ -3689,6 +3695,12 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "fx-")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SUB, 0, 0, NULL, 1, -1, 0, NULL, dest);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx-/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SUB_WRAP, 0, 0, NULL, 1, 1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx-/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SUB_WRAP, 0, 0, NULL, 1, -1, 0, NULL, dest);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl-")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SUB, 0, 0, NULL, 1, 0, 1, NULL, dest);
       return 1;
@@ -3703,6 +3715,12 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "fx*")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MUL, 0, 0, NULL, 1, -1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx*/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MUL_WRAP, 0, 0, NULL, 1, 1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx*/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MUL_WRAP, 0, 0, NULL, 1, -1, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl*")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MUL, 0, 0, NULL, 1, 0, 1, NULL, dest);
@@ -3804,13 +3822,19 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_XOR, 0, 0, NULL, 1, -1, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "arithmetic-shift")) {
-      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_LSH, 0, 0, NULL, 1, 0, 0, NULL, dest);
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SH, 0, 0, NULL, 1, 0, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxlshift")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_LSH, 0, 0, NULL, 1, 1, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "fxlshift")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_LSH, 0, 0, NULL, 1, -1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxlshift/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_LSH_WRAP, 0, 0, NULL, 1, 1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxlshift/wraparound")) {
+      scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_LSH_WRAP, 0, 0, NULL, 1, -1, 0, NULL, dest);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxrshift")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_RSH, 0, 0, NULL, 1, 1, 0, NULL, dest);
@@ -4218,10 +4242,13 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-set-mcar!")
-               || IS_NAMED_PRIM(rator, "unsafe-set-mcdr!")) {
+               || IS_NAMED_PRIM(rator, "unsafe-set-mcdr!")
+               || IS_NAMED_PRIM(rator, "unsafe-set-immutable-car!")
+               || IS_NAMED_PRIM(rator, "unsafe-set-immutable-cdr!")) {
       int set_mcar;
 
-      set_mcar = IS_NAMED_PRIM(rator, "unsafe-set-mcar!");
+      set_mcar = (IS_NAMED_PRIM(rator, "unsafe-set-mcar!")
+                  || IS_NAMED_PRIM(rator, "unsafe-set-immutable-car!"));
 
       LOG_IT(("inlined unsafe-set-mcar!\n"));
 

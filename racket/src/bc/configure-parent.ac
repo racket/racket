@@ -37,6 +37,8 @@ MAKE_LOCAL_RACKET=no-local-racket
 if test "${enable_racket}" = "auto" ; then
   MAKE_LOCAL_RACKET="local/bc/racket3m"
 fi
+RUN_LOCAL_RACKET="local/bc/racket3m"
+CONFIGURE_LOCAL_RACKET=--enable-bc
 
 if test "${enable_cgcdefault}" = "yes" ; then
   MAIN_VARIANT=cgc
@@ -48,6 +50,8 @@ RUN_RACKET="bc/racket${MAIN_VARIANT}"
 
 AC_SUBST(RUN_RACKET)
 AC_SUBST(MAKE_LOCAL_RACKET)
+AC_SUBST(RUN_LOCAL_RACKET)
+AC_SUBST(CONFIGURE_LOCAL_RACKET)
 
 makefiles="Makefile"
 

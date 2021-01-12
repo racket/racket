@@ -151,6 +151,9 @@
   (err/rt-test (unsafe-fxmodulo (error "bad") 1) exn:fail?) ; not 0
   (err/rt-test (unsafe-fxmodulo 0 (error "bad")) exn:fail?) ; not 0
 
+  (test-bin 60 'unsafe-fxlshift 15 2)  
+  (test-bin 3 'unsafe-fxrshift 15 2)
+
   (test-zero 0.0 'unsafe-fl+)
   (test-un 6.7 'unsafe-fl+ 6.7)
   (test-bin 3.4 'unsafe-fl+ 1.4 2.0)
@@ -523,6 +526,15 @@
 
   (test-un 5 'unsafe-car (cons 5 9))
   (test-un 9 'unsafe-cdr (cons 5 9))
+  (let ([v (cons 3 7)])
+    (test-bin 8 'unsafe-set-immutable-car! v 8
+              #:pre (lambda () (unsafe-set-immutable-car! v 0))
+              #:post (lambda (x) (car v))
+              #:literal-ok? #f)
+    (test-bin 9 'unsafe-set-immutable-cdr! v 9
+              #:pre (lambda () (unsafe-set-immutable-cdr! v 0))
+              #:post (lambda (x) (cdr v))
+              #:literal-ok? #f))
   (test-un 15 'unsafe-mcar (mcons 15 19))
   (test-un 19 'unsafe-mcdr (mcons 15 19))
   (let ([v (mcons 3 7)])
@@ -1016,6 +1028,25 @@
     (test #f immutable? (make-string 0))
     (test #t immutable? (unsafe-vector*->immutable-vector! (make-vector 0)))
     (test #f immutable? (make-vector 0))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `bitwise-{and,ior,xor}` are not converted to
+;; unsafe fixnum operations in `#:unsafe` mode
+
+(module unsafe-but-not-restricted-to-fixnum racket/base
+  (#%declare #:unsafe)
+  (provide band bior bxor)
+  (define (band x)
+    (bitwise-and #xFF x))
+  (define (bior x)
+    (bitwise-ior #xFF x))
+  (define (bxor x)
+    (bitwise-xor #xFF x)))
+
+(require 'unsafe-but-not-restricted-to-fixnum)
+(test #x55 band (+ #x5555 (expt 2 100)))
+(test (+ (expt 2 100) #x55FF) bior (+ #x5555 (expt 2 100)))
+(test (+ (expt 2 100) #x55AA) bxor (+ #x5555 (expt 2 100)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

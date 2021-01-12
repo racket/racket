@@ -59,6 +59,7 @@ jobs:
         run: ../../../.github/scripts/test.sh
 
   build-arm64:
+    if: github.repository == 'racket/racket'
     runs-on: [self-hosted, ARM64, Linux]
     container:
       image: racket/racket-ci:latest

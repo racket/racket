@@ -18,22 +18,23 @@
 
 @guideintro["effective-places"]{places}
 
-@note-lib[racket/place]
+@note-lib[racket/place #:more-libs (racket/place/dynamic) #:use-sources(racket/place)]
 
 @tech{Places} enable the development of parallel programs that
 take advantage of machines with multiple processors, cores, or
 hardware threads.
 
 @margin-note{Currently, parallel support for places is enabled
-  only for the 3m (main) and CS variants of Racket, and only
+  only for the CS and 3m variants of Racket, and for 3m, only
   by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
-  enable support for other platforms, use @DFlag{enable-places} with
+  enable support for other platforms with 3m, use @DFlag{enable-places} with
   @exec{configure} when building Racket. The @racket[place-enabled?]
   function reports whether places run in parallel.
 
   Implementation and operating-system constraints may limit the
   scalability of places. For example, although places can perform
-  garbage collections independently in the 3m variant, a garbage collection
+  garbage collections in parallel in the CS variant or independently
+  in the 3m variant, a garbage collection
   may need to manipulate a page table that is shared across all
   places, and that shared page table can be a bottleneck with enough
   places---perhaps around 8 or 16.}
@@ -246,46 +247,6 @@ The @racket[dynamic-place*] procedure returns four values:
 The @racket[dynamic-place*] binding is protected in the same way as
  @racket[dynamic-place].}
 
-@defform[(place id body ...+)]{
-  Creates a place that evaluates @racket[body]
-  expressions with @racket[id] bound to a place channel.  The
-  @racket[body]s close only over @racket[id] plus the top-level
-  bindings of the enclosing module, because the
-  @racket[body]s are lifted to a submodule.
-  The result of @racket[place] is a place descriptor,
-  like the result of @racket[dynamic-place].
-
-The generated submodule has the name @racketidfont{place-body-@racket[_n]}
-for an integer @racket[_n], and the submodule exports a @racket[main]
-function that takes a place channel for the new place. The submodule
-is not intended for use, however, except by the expansion of the
-@racket[place] form.
-
-The @racket[place] binding is protected in the same way as
- @racket[dynamic-place].}
-
-@defform/subs[(place* maybe-port ...
-                      id 
-                      body ...+)
-              ([maybe-port code:blank
-                           (code:line #:in in-expr)
-                           (code:line #:out out-expr)
-                           (code:line #:err err-expr)])]{
- Like @racket[place], but supports optional @racket[#:in], @racket[#:out],
- and @racket[#:err] expressions (at most one of each) to specify ports in the same way and
- with the same defaults as @racket[dynamic-place*]. The result of
- a @racket[place*] form is also the same as for  @racket[dynamic-place*].
-
-The @racket[place*] binding is protected in the same way as
- @racket[dynamic-place].}
-
-@defform[(place/context id body ...+)]{
-  Like @racket[place], but @racket[body ...] may have free lexical
-  variables, which are automatically sent to the newly-created place.
-  Note that these variables must have values accepted by
-  @racket[place-message-allowed?], otherwise an @exnraise[exn:fail:contract].
-}
-
 
 @defproc[(place-wait [p place?]) exact-integer?]{
   Returns the @tech{completion value} of the place indicated by @racket[p],
@@ -321,7 +282,6 @@ If any pumping threads were created to connect a non-@tech{file-stream
          void?]{
   Sends the main thread of place @racket[p] a break; see @secref["breakhandler"].
 }
-
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 
@@ -426,6 +386,56 @@ A @tech{place location} can be passed as the @racket[#:at] argument to
 
 A distributed places note created with @racket[create-place-node]
 is an example of a @tech{place location}.}
+
+ 
+@section[#:tag "places-syntax"]{Syntactic Support for Using Places}
+
+@declare-exporting[racket/place]
+
+The bindings in this section are @emph{not} provided by
+@racketmodname[racket/place/dynamic].
+ 
+@defform[(place id body ...+)]{
+  Creates a place that evaluates @racket[body]
+  expressions with @racket[id] bound to a place channel.  The
+  @racket[body]s close only over @racket[id] plus the top-level
+  bindings of the enclosing module, because the
+  @racket[body]s are lifted to a submodule.
+  The result of @racket[place] is a place descriptor,
+  like the result of @racket[dynamic-place].
+
+The generated submodule has the name @racketidfont{place-body-@racket[_n]}
+for an integer @racket[_n], and the submodule exports a @racket[main]
+function that takes a place channel for the new place. The submodule
+is not intended for use, however, except by the expansion of the
+@racket[place] form.
+
+The @racket[place] binding is protected in the same way as
+ @racket[dynamic-place].}
+
+@defform/subs[(place* maybe-port ...
+                      id 
+                      body ...+)
+              ([maybe-port code:blank
+                           (code:line #:in in-expr)
+                           (code:line #:out out-expr)
+                           (code:line #:err err-expr)])]{
+ Like @racket[place], but supports optional @racket[#:in], @racket[#:out],
+ and @racket[#:err] expressions (at most one of each) to specify ports in the same way and
+ with the same defaults as @racket[dynamic-place*]. The result of
+ a @racket[place*] form is also the same as for  @racket[dynamic-place*].
+
+The @racket[place*] binding is protected in the same way as
+ @racket[dynamic-place].}
+
+@defform[(place/context id body ...+)]{
+  Like @racket[place], but @racket[body ...] may have free lexical
+  variables, which are automatically sent to the newly-created place.
+  Note that these variables must have values accepted by
+  @racket[place-message-allowed?], otherwise an @exnraise[exn:fail:contract].
+}
+
+
 
 @;------------------------------------------------------------------------
 

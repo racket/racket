@@ -13,6 +13,9 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
+;; The fasl reader is "fasl.c", which includes an overview of the fasl
+;; format.
+
 (let ()
 (define-record-type target
   (nongenerative #{target dchg2hp5v3cck8ge283luo-1})
@@ -35,7 +38,7 @@
 ; file for cross compilation, because the offsets may be incorrect
 (define rtd-size (csv7:record-field-accessor #!base-rtd 'size))
 (define rtd-flds (csv7:record-field-accessor #!base-rtd 'flds))
-(define rtd-parent (csv7:record-field-accessor #!base-rtd 'parent))
+(define rtd-ancestors (csv7:record-field-accessor #!base-rtd 'ancestors))
 (define rtd-name (csv7:record-field-accessor #!base-rtd 'name))
 (define rtd-uid (csv7:record-field-accessor #!base-rtd 'uid))
 (define rtd-flags (csv7:record-field-accessor #!base-rtd 'flags))
@@ -207,9 +210,7 @@
         [(symbol-hashtable? x) (bld-graph x t a? d #t bld-ht)]
         [($record? x) (bld-graph x t a? d #t bld-record)]
         [(box? x) (bld-graph x t a? d #t bld-box)]
-        [(or (large-integer? x) (ratnum? x) ($inexactnum? x) ($exactnum? x)
-             (fxvector? x) (flvector? x) (bytevector? x))
-         (bld-graph x t a? d #t bld-simple)])))
+        [else (bld-graph x t a? d #t bld-simple)])))
 
 (module (small-integer? large-integer?)
   (define least-small-integer (- (expt 2 31)))
@@ -626,6 +627,11 @@
              (put-u8 p (constant fasl-type-graph-ref))
              (put-uptr p (car a))]))))
 
+(define (wrf-invalid x p t a?)
+  (wrf-graph x p t a?
+             (lambda (x p t a?)
+               ($oops 'fasl-write "invalid fasl object ~s" x))))
+
 (define wrf
    (lambda (x p t a?)
       (cond
@@ -649,7 +655,7 @@
          ; this check must go before $record? check
          [(symbol-hashtable? x) (wrf-graph x p t a? wrf-symht)]
          ; this check must go before $record? check
-         [(hashtable? x) ($oops 'fasl-write "invalid fasl object ~s" x)]
+         [(hashtable? x) (wrf-invalid  x p t a?)]
          [($record? x) (wrf-graph x p t a? wrf-record)]
          [(vector? x) (wrf-graph x p t a? wrf-vector)]
          [(stencil-vector? x) (wrf-graph x p t a? wrf-stencil-vector)]
@@ -667,7 +673,7 @@
          [(eq? x '#0=#0#) (wrf-immediate (constant black-hole) p)]
          [($rtd-counts? x) (wrf-immediate (constant sfalse) p)]
          [(phantom-bytevector? x) (wrf-phantom x p)]
-         [else ($oops 'fasl-write "invalid fasl object ~s" x)])))
+         [else (wrf-invalid x p t a?)])))
 
 (module (start)
   (define start

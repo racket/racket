@@ -273,7 +273,7 @@
                                                (any/c . -> . any/c)
                                                (any/c . -> . any/c))
                                               #:rest (listof any/c)
-                                              . ->* . (and/c chaperone? async-channel?)))
+                                              . ->* . (and/c impersonator? async-channel?)))
                   (chaperone-async-channel ((async-channel?
                                              (any/c . -> . any/c)
                                              (any/c . -> . any/c))

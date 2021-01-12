@@ -239,6 +239,8 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
 
   test-3m:
     strategy:
@@ -304,6 +306,8 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax
           
   test-cs:
     runs-on: macos-latest
@@ -364,3 +368,5 @@ jobs:
         run: raco pkg install --auto db-test
       - name: Run db tests
         run: raco test -l tests/db/all-tests
+      - name: Run syntax tests
+        run: raco test -c tests/syntax

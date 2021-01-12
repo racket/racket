@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
 #ifdef USE_THREAD_TEST
 #include <pthread.h>
@@ -289,14 +290,13 @@ void *do_f(void *_data)
   return data;
 }
 
-X void* foreign_thread_callback(test_callback_t f, 
-                                void *data,
-                                sleep_callback_t s)
+X void** foreign_thread_callback_setup(test_callback_t f,
+                                      void *data)
 {
   pthread_t th;
-  void *r, **d;
+  void **d;
 
-  d = malloc(3 * sizeof(void*));
+  d = malloc(4 * sizeof(void*));
   d[0] = f;
   d[1] = data;
   d[2] = NULL;
@@ -304,14 +304,41 @@ X void* foreign_thread_callback(test_callback_t f,
   if (pthread_create(&th, NULL, do_f, d))
     return NULL;
 
-  while (!d[2]) {
-    s();
-  }
-  
+  d[3] = (void *)th;
+
+  return d;
+}
+
+X int foreign_thread_callback_check_done(void **d)
+{
+  return d[2] != NULL;
+}
+
+X void *foreign_thread_callback_finish(void **d)
+{
+  void *r;
+  pthread_t th = (pthread_t)d[3];
+
   if (pthread_join(th, &r))
     return NULL;
 
+  free(d);
+
   return r;
+}
+
+/* only works if callbacks can be in non-atomic mode: */
+X void* foreign_thread_callback(test_callback_t f,
+                                void *data,
+                                sleep_callback_t s)
+{
+  void **d = foreign_thread_callback_setup(f, data);
+
+  while (!foreign_thread_callback_check_done(d)) {
+    s();
+  }
+
+  return foreign_thread_callback_finish(d);
 }
 #endif
 
@@ -336,4 +363,42 @@ X int sum_after_callback(int *a, int n, void (*cb)()) {
     s += a[i];
 
   return s;
+}
+
+typedef int (*varargs_callback)(int, int, ...);
+
+X long varargs_check(int init, int n, ...) {
+  va_list va;
+  long accum = init;
+  
+  va_start(va, n);
+
+  while (n-- > 0) {
+    int kind = va_arg(va, int);
+    switch (kind) {
+    case 1:
+      accum += va_arg(va, int);
+      break;
+    case 2:
+      accum += va_arg(va, long);
+      break;
+    case 3:
+      accum += va_arg(va, double);
+      break;
+    case 4:
+      accum += *(va_arg(va, int*));
+      break;
+    case 5:
+      accum += (va_arg(va, varargs_callback))(1, 2, 3.0);
+      break;
+    default:
+      accum = -1;
+      n = 0;
+      break;
+    }
+  }
+  
+  va_end(va);
+
+  return accum;
 }

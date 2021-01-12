@@ -1002,7 +1002,8 @@ int scheme_intern_prim_opt_flags(int flags)
     }
   }
 
-  scheme_signal_error("too many flag combinations");
+  scheme_log_abort("too many flag combinations");
+  abort();
 
   return 0;
 }
@@ -2714,7 +2715,8 @@ Scheme_Object *scheme_object_name(Scheme_Object *a)
   }
 
   if (SCHEME_STRUCTP(a)) {
-    return SCHEME_STRUCT_NAME_SYM(a);
+    if (!(SCHEME_STRUCT_TYPE(a)->more_flags & STRUCT_TYPE_FLAG_SYSTEM_OPAQUE))
+      return SCHEME_STRUCT_NAME_SYM(a);
   } else if (SCHEME_PROCP(a)) {
     const char *s;
     int len;
@@ -2752,6 +2754,10 @@ Scheme_Object *scheme_object_name(Scheme_Object *a)
     Scheme_Logger *logger = (Scheme_Logger *)a;
     if (logger->name)
       return logger->name;
+  } else if (SCHEME_PROMPT_TAGP(a)) {
+    /* See make_prompt_tag for the structure of continuation prompt tags. */
+    if (SCHEME_CDR(a))
+      return SCHEME_CDR(a);
   }
 
   return scheme_false;

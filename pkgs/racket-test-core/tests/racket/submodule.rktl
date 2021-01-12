@@ -636,7 +636,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Directory for testing
 
-(define temp-dir (make-temporary-file "submodule-tests-~s" 'directory))
+(define temp-dir (make-temporary-file "submodule-tests-~a" 'directory))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check submodule resolution of relative paths:

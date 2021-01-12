@@ -197,10 +197,10 @@ The @racket[protocol] should be one of the following:
 @item{@racket['auto] : Automatically negotiates the protocol version
 from those that this library considers sufficiently secure---currently
 TLS versions 1.0 and higher, but subject to change.}
-@item{@racket['tls] : Only TLS protocol version 1.0.}
-@item{@racket['tls11] : Only TLS protocol version 1.1.}
 @item{@racket['tls12] : Only TLS protocol version 1.2.}
 ]
+Note that later TLS versions are supported, but there is no corresponding
+@racket[protocol] symbol; using @racket['secure] is best and forward-compatible.
 The following @racket[protocol] symbols are deprecated but still supported:
 @itemlist[
 @item{@racket['sslv2-or-v3] : Alias for @racket['auto]. Note that
@@ -209,6 +209,8 @@ secure, so this @racket[protocol] no longer allows either of them.}
 @item{@racket['sslv2] : SSL protocol version 2.0. @bold{Insecure.}
 Note that SSL 2.0 support has been removed from many platforms.}
 @item{@racket['sslv3] : SSL protocol version 3.0. @bold{Insecure.}}
+@item{@racket['tls] : Only TLS protocol version 1.0.}
+@item{@racket['tls11] : Only TLS protocol version 1.1.}
 ]
 
 Not all protocol versions are supported by all servers. The

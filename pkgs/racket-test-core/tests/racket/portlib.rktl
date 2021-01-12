@@ -472,6 +472,23 @@
   (try-peeking 'none)
   (try-peeking 'block))
 
+(when (run-unreliable-tests? 'timing)
+  (define (try get)
+    (define-values (in out) (make-pipe))
+    (write-char #\. out)
+    (let ((i (peeking-input-port in)))
+      (read-byte i)
+      (let loop ([tries 10])
+        (if (zero? tries)
+            (test #t values `(peeking-input-port-timing-test-failed ,get))
+            (let ([now (current-process-milliseconds)])
+              (get i)
+              (let ([spun (- (current-process-milliseconds) now)])
+                (unless (< spun (/ (* SLEEP-TIME 1000) 10))
+                  (loop (sub1 tries)))))))))
+  (try (lambda (i) (sync/timeout SLEEP-TIME (thread (lambda () (read-byte i))))))
+  (try (lambda (i) (sync/timeout SLEEP-TIME i))))
+
 ;; read synchronization events
 (define (go mk-hello sync atest btest)
   (test #t list? (list mk-hello sync atest btest))
@@ -589,6 +606,41 @@
   (test "" sync (read-line-evt p 'any-one))
   (test "c" sync (read-line-evt p 'any-one))
   (test eof sync (read-line-evt p 'any-one)))
+
+;; check that `read-line-evt` works right with a port that is reluctant to give out bytes
+(let* ([pos 0]
+       [progress (make-semaphore)]
+       [move! (lambda (n)
+                (set! pos (+ pos n))
+                (semaphore-post progress)
+                (set! progress (make-semaphore)))]
+       [get-byte (lambda (bstr skip)
+                   (define i (modulo (+ pos skip) 10))
+                   (bytes-set! bstr 0 (if (= i 9)
+                                          (char->integer #\newline)
+                                          (+ 48 i))))]
+       [p (make-input-port
+           'slow
+           (lambda (bstr)
+             (get-byte bstr 0)
+             (move! 1)
+             1)
+           (lambda (bstr skip progress-evt)
+             (printf "peek ~s\n" skip)
+             (get-byte bstr skip)
+             1)
+           void
+           (lambda ()
+             progress)
+           (lambda (amt progress done)
+             (cond
+               [(sync/timeout 0 progress) #f]
+               [(sync/timeout 0 done) #f]
+               [else
+                (printf "commit ~s\n" amt)
+                (move! amt)
+                #t])))])
+  (test "012345678" sync (read-line-evt p)))
 
 ;; input-port-append tests
 (let* ([do-test

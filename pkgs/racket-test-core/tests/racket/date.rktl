@@ -26,7 +26,9 @@
 (test 0 find-seconds 0 0 0 1 1 1970 #f)
 (test 32416215 find-seconds 15 30 4 11 1 1971 #f)
 
-(test 1969 date-year (seconds->date (- (* 24 60 60))))
+(define (date-year.seconds->date sec)
+  (date-year (seconds->date sec)))
+(test 1969 date-year.seconds->date (- (* 24 60 60)))
 
 (let* ([s (current-seconds)]
        [d1 (seconds->date s)]
@@ -122,11 +124,13 @@
   (test 789/1000 - (date*->seconds d) (date->seconds d)))
 
 ;; Check some overflow handling on Windows:
-(when (eq? (system-type) 'windows)
-  (let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+(let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+  (when (eq? (system-type) 'windows)
     (err/rt-test (seconds->date (expt 2 40)) out-of-range)
-    (err/rt-test (seconds->date (expt 2 50)) out-of-range)
-    (err/rt-test (seconds->date (expt 2 60)) out-of-range)))
+    (err/rt-test (seconds->date (expt 2 50)) out-of-range))
+
+  (err/rt-test (seconds->date (expt 2 80)) out-of-range)
+  (err/rt-test (seconds->date (expt 2 60)) out-of-range))
 
 ;; Check inexact arithmetic
 (test (seconds->date 0 #f)

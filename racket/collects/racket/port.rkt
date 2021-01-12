@@ -664,14 +664,25 @@
                             #:init-position [init-position 1])
   (define buffer-mode (or (file-stream-buffer-mode orig-in)
                           'block))
+  (define (make-evt delta)
+    (wrap-evt (if (= delta 0)
+                  orig-in
+                  (peek-bytes-evt 1 delta #f orig-in))
+              (lambda (v) 0)))
   (make-input-port/read-to-peek
    name
    (lambda (s)
      (let ([r (peek-bytes-avail!* s delta #f orig-in)])
-       (set! delta (+ delta (if (number? r) r 1)))
-       (if (eq? r 0) (wrap-evt orig-in (lambda (v) 0)) r)))
+       (cond
+         [(eq? r 0) (make-evt delta)]
+         [else
+          (set! delta (+ delta (if (number? r) r 1)))
+          r])))
    (lambda (s skip default)
-     (peek-bytes-avail!* s (+ delta skip) #f orig-in))
+     (define r (peek-bytes-avail!* s (+ delta skip) #f orig-in))
+     (cond
+       [(eq? r 0) (make-evt (+ delta skip))]
+       [else r]))
    void
    #f
    void
@@ -1420,7 +1431,7 @@
                                      (let ([bstr (make-bytes (- (cdr p) (car p)))])
                                        (unless (= (car p) (cdr p))
                                          (let loop ([offset 0])
-                                           (let ([v (peek-bytes-avail! bstr (car p) progress-evt input-port offset)])
+                                           (let ([v (peek-bytes-avail! bstr (+ (car p) offset) progress-evt input-port offset)])
                                              (unless (zero? v)
                                                (when ((+ offset v) . < . (bytes-length bstr))
                                                  (loop (+ offset v)))))))

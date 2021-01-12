@@ -1470,7 +1470,7 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
       Scheme_Struct_Type *st = (Scheme_Struct_Type *)v;
       if (st->num_slots == st->num_islots) {
         if (_nonfail_constr)
-          *_nonfail_constr = st->nonfail_constructor;
+          *_nonfail_constr = (st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR);
         if (_prefab)
           *_prefab = !!st->prefab_key;
         return st->num_slots + 1;
@@ -5150,11 +5150,11 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_AD_HOC_OPT) {
       check_known_both_variant(info, app_o, rator, rand1, rand2, "bitwise-and", scheme_fixnum_p_proc,
-                               scheme_unsafe_fxand_proc, info->unsafe_mode, scheme_real_p_proc);
+                               scheme_unsafe_fxand_proc, 0, scheme_real_p_proc);
       check_known_both_variant(info, app_o, rator, rand1, rand2, "bitwise-ior", scheme_fixnum_p_proc,
-                               scheme_unsafe_fxior_proc, info->unsafe_mode, scheme_real_p_proc);
+                               scheme_unsafe_fxior_proc, 0, scheme_real_p_proc);
       check_known_both_variant(info, app_o, rator, rand1, rand2, "bitwise-xor", scheme_fixnum_p_proc,
-                               scheme_unsafe_fxxor_proc, info->unsafe_mode, scheme_real_p_proc);
+                               scheme_unsafe_fxxor_proc, 0, scheme_real_p_proc);
 
       check_known_both_variant(info, app_o, rator, rand1, rand2, "fxand", scheme_fixnum_p_proc,
                                scheme_unsafe_fxand_proc, info->unsafe_mode, scheme_real_p_proc);

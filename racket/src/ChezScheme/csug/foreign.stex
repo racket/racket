@@ -221,9 +221,11 @@ Since \scheme{__cdecl} is the default, specifying \scheme{__cdecl} is
 equivalent to specifying \scheme{#f} or no convention.
 Finally, \var{conv} can be \scheme{__collect_safe} to indicate that garbage
 collection is allowed concurrent to a call of the foreign procedure, or it
-can be \var{conv} can be \scheme{__varargs} to indicate that the procedure
-uses a convention that works with a variable number of arguments (which
-differs from the fixed-argument variant for some platforms and conventions).
+can be \var{conv} can be \scheme{__varargs} or \scheme{(__varargs_after \var{n})} to indicate
+that the procedure uses a convention that works with a variable number of arguments
+after the first \var{n} (which
+differs from the fixed-argument variant for some platforms and conventions),
+where \scheme{__varargs} is a shorthand for \scheme{(__varargs_after 1)}.
 
 Use \scheme{__stdcall} to access most Windows API procedures.
 Use \scheme{__cdecl} for Windows API varargs procedures,
@@ -1293,7 +1295,7 @@ the C stack is reset to its original value.
 
 The procedures described in this section directly create and manipulate
 foreign data, i.e., data that resides outside of the Scheme heap.
-With the exception of \scheme{foreign-alloc} and \scheme{foreign-sizeof},
+With the exception of \scheme{foreign-alloc}, \scheme{foreign-sizeof}, and \scheme{foreign-alignof},
 these procedures are inherently unsafe in the sense that they do not (and
 cannot) check the validity of the addresses they are passed.
 Improper use of these procedures can result in invalid memory references,
@@ -1465,6 +1467,17 @@ For multiple-byte values, the native endianness of the machine is assumed.
 \entryheader
 \formdef{foreign-sizeof}{\categoryprocedure}{(foreign-sizeof \var{type})}
 \returns the size in bytes of \var{type}
+\listlibraries
+\endentryheader
+
+\var{type} must be one of the symbols listed in the description
+of \scheme{foreign-ref} above.
+
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{foreign-alignof}{\categoryprocedure}{(foreign-alignof \var{type})}
+\returns the alignment in bytes of \var{type}
 \listlibraries
 \endentryheader
 

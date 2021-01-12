@@ -523,6 +523,14 @@
 (define-library-entry (fx1+ x) (fxoops1 'fx1+ x))
 (define-library-entry (fx1- x) (fxoops1 'fx1- x))
 
+(define-library-entry (fx+/wraparound x y) (fxoops2 'fx+/wraparound x y))
+(define-library-entry (fx-/wraparound x y) (fxoops2 'fx-/wraparound x y))
+(define-library-entry (fx*/wraparound x y) (fxoops2 'fx*/wraparound x y))
+(define-library-entry (fxsll/wraparound x y)
+  (if (and (fixnum? x) (fixnum? y))
+      (shift-count-oops 'fxsll/wraparound y)
+      (fxoops2 'fxsll/wraparound x y)))
+
 (define-library-entry (fx= x y) (fxnonfixnum2 'fx= x y))
 (define-library-entry (fx< x y) (fxnonfixnum2 'fx< x y))
 (define-library-entry (fx> x y) (fxnonfixnum2 'fx> x y))
@@ -1536,12 +1544,10 @@
                        (adjust! h vec n n2)
                        (loop n2)))))))]))
 
+    ;; Must be consistent with `eq_hash` in "../c/segment.h"
     (define-syntax eq-hash
       (syntax-rules ()
-        [(_ v-expr) (let ([v v-expr])
-                      (if (fixnum? v)
-                          (fixmix v)
-                          ($fxaddress v)))]))
+        [(_ v-expr) (fixmix ($fxaddress v-expr))]))
   
     (define adjust!
       (lambda (h vec1 n1 n2)

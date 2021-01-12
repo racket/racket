@@ -31,7 +31,10 @@
 (define (procedure? v)
   (or (#%procedure? v)
       (and (record? v)
-           (not (eq? (struct-property-ref prop:procedure (record-rtd v) none) none)))))
+           (#%$app/no-inline struct-procedure? v))))
+
+(define (struct-procedure? v)
+  (not (eq? (struct-property-ref prop:procedure (record-rtd v) none) none)))
 
 (define/who (procedure-specialize proc)
   (check who procedure? proc)
@@ -72,6 +75,16 @@
        (if (#%procedure? receiver)
            receiver
            (lambda args (apply receiver args)))))))
+
+(define-syntax (|#%app/no-return| stx)
+  (syntax-case stx ()
+    [(_ rator rand ...)
+     #'(#3%$app/no-return rator rand ...)]))
+
+(define-syntax (|#%app/value| stx)
+  (syntax-case stx ()
+    [(_ rator rand ...)
+     #'(#3%$app/value rator rand ...)]))
 
 (define-syntax-rule (extract-procedure f n-args)
   (let ([tmp f])
@@ -338,6 +351,11 @@
 ;;  - (vector <symbol-or-#f> <proc> 'method) => is a method
 ;;  - (box <symbol>) => JIT function generated, name is <symbol>, not a method
 ;;  - <parameter-data> => parameter
+;;  - <symbol> => JITted with <symbol> name
+;;  - #\c => struct constructor
+;;  - #\p => struct predicate
+;;  - (cons rtd pos) => struct accessor
+;;  - (cons pos rtd) => struct mutator
 
 ;; ----------------------------------------
 
@@ -580,7 +598,8 @@
      [(#%vector? name) (or (#%vector-ref name 0)
                            (object-name (#%vector-ref name 1)))]
      [(parameter-data? name) (parameter-data-name name)]
-     [else name])))
+     [(symbol? name) name]
+     [else (object-name (wrapper-procedure-procedure p))])))
 
 ;; ----------------------------------------
 

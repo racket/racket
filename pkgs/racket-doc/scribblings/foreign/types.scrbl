@@ -517,6 +517,7 @@ the later case, the result is the @racket[ctype]).}
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
                       [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
+                      [#:varargs-after varargs-after (or/c #f positive-exact-integer?) #f]
                       [#:atomic? atomic? any/c #f]
                       [#:async-apply async-apply (or/c #f ((-> any/c) . -> . any/c) box?) #f]
                       [#:lock-name lock-name (or/c string? #f) #f]
@@ -553,6 +554,17 @@ platform-dependent default. The other possible
 values---@racket['stdcall] and @racket['sysv] (i.e., ``cdecl'')---are
 currently supported only for 32-bit Windows; using them on other
 platforms raises an exception. See also @racketmodname[ffi/winapi].
+
+The optional @racket[varargs-after] argument indicates whether some
+function-type arguments should be considered ``varargs,'' which are
+argument represented by an ellipsis @litchar{...} in the C
+declaration. A @racket[#f] value indicates that the C function type
+does not have varargs. If @racket[varargs-after] is a number, then
+arguments after the first @racket[varargs-after] arguments are
+varargs. Note that @racket[#f] is different from @racket[(length
+input-types)] on some platforms; the possibility of varargs for a
+function may imply a different calling convention even for non-vararg
+arguments.
 
 For @tech{callouts} to foreign functions with the generated type:
 
@@ -693,12 +705,13 @@ For @tech{callbacks} to Racket functions with the generated type:
        @racket[keep] is based on the original function for the
        callback, not the result of @racket[wrapper].}
 
- @item{If @racket[atomic?] is true, then when a Racket procedure is
-       given this procedure type and called as a @tech{callback} from
-       foreign code, then the Racket process is put into atomic mode
-       while evaluating the Racket procedure body.
+ @item{If @racket[atomic?] is true or when using the @CS[] variant of
+       Racket, then when a Racket procedure is given this type and
+       called as a @tech{callback} from foreign code, then the Racket
+       process is put into atomic mode while evaluating the Racket
+       procedure body.
 
-        In atomic mode, other Racket threads do not run, so the Racket
+       In atomic mode, other Racket threads do not run, so the Racket
        code must not call any function that potentially blocks on
        synchronization with other threads, or else it may lead to
        deadlock. In addition, the Racket code must not perform any
@@ -706,7 +719,13 @@ For @tech{callbacks} to Racket functions with the generated type:
        an uncaught exception, it must not perform any escaping
        continuation jumps, and its non-tail recursion must be minimal
        to avoid C-level stack overflow; otherwise, the process may
-       crash or misbehave.}
+       crash or misbehave.
+
+       Callbacks are always atomic in the @CS[] variant of Racket,
+       because Racket threads do not capture C-stack context. Even on
+       the @3m[] or @CGC[] variants of Racket, atomic mode is
+       typically needed for callbacks, because capturing by copying a
+       portion of the C stack is often incompatible with C libraries.}
 
  @item{If a @racket[async-apply] is provided as a procedure or box, then a Racket
        @tech{callback} procedure with the generated procedure type can
@@ -759,12 +778,14 @@ For @tech{callbacks} to Racket functions with the generated type:
 ]
 
 @history[#:changed "6.3" @elem{Added the @racket[#:lock-name] argument.}
-         #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] argument.}]}
+         #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] argument.}
+         #:changed "7.9.0.16" @elem{Added the @racket[#:varargs-after] argument.}]}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
                     maybe-wrapper)
               ([fun-option (code:line #:abi abi-expr)
+                           (code:line #:varargs-after varargs-after-expr)
                            (code:line #:save-errno save-errno-expr)
                            (code:line #:keep keep-expr)
                            (code:line #:atomic? atomic?-expr)
@@ -798,6 +819,7 @@ specifies a function that receives a string and an integer
 and returns an integer.
 
 See @racket[_cprocedure] for information about the @racket[#:abi],
+@racket[#:varargs-after],
 @racket[#:save-errno], @racket[#:keep], @racket[#:atomic?],
 @racket[#:async-apply], @racket[#:in-original-place?], and
 @racket[#:blocking] options.
@@ -893,7 +915,8 @@ specifications:
 
 @history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}
          #:changed "6.3" @elem{Added the @racket[#:lock-name] option.}
-         #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] option.}]}
+         #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] option.}
+         #:changed "7.9.0.16" @elem{Added the @racket[#:varargs-after] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])

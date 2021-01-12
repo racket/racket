@@ -24,7 +24,7 @@
 ;; This pass is also responsible for recording when a letrec binding
 ;; must be mutated implicitly via `call/cc`.
 
-(define (mutated-in-body l exports prim-knowns knowns imports simples unsafe-mode? for-cify? enforce-constant?)
+(define (mutated-in-body l exports prim-knowns knowns imports simples unsafe-mode? target enforce-constant?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -53,7 +53,7 @@
     ;; that information is correct, because it dynamically precedes
     ;; the `set!`
     (define-values (knowns info)
-      (find-definitions form prim-knowns prev-knowns imports mutated simples unsafe-mode? for-cify?
+      (find-definitions form prim-knowns prev-knowns imports mutated simples unsafe-mode? target
                         #:optimize? #f))
     (match form
       [`(define-values (,ids ...) ,rhs)
@@ -62,11 +62,18 @@
          ;; Look just at the "rest" part:
          (for ([e (in-list (struct-type-info-rest info))]
                [pos (in-naturals)])
-           (unless (and (= pos struct-type-info-rest-properties-list-pos)
-                        (pure-properties-list? e prim-knowns knowns imports mutated simples))
-             (find-mutated! e ids prim-knowns knowns imports mutated simples)))]
+           (define prop-vals (and (= pos struct-type-info-rest-properties-list-pos)
+                                  (pure-properties-list e prim-knowns knowns imports mutated simples)))
+           (cond
+             [prop-vals
+              ;; check individual property values using `ids`, so procedures won't
+              ;; count as used until some instace is created
+              (for ([e (in-list prop-vals)])
+                (find-mutated! e ids prim-knowns knowns imports mutated simples unsafe-mode?))]
+             [else
+              (find-mutated! e ids prim-knowns knowns imports mutated simples unsafe-mode?)]))]
         [else
-         (find-mutated! rhs ids prim-knowns knowns imports mutated simples)])
+         (find-mutated! rhs ids prim-knowns knowns imports mutated simples unsafe-mode?)])
        ;; For any among `ids` that didn't get a delay and wasn't used
        ;; too early, the variable is now ready, so remove from
        ;; `mutated`:
@@ -75,7 +82,7 @@
            (when (eq? 'not-ready (hash-ref mutated id #f))
              (hash-remove! mutated id))))]
       [`,_
-       (find-mutated! form #f prim-knowns knowns imports mutated simples)])
+       (find-mutated! form #f prim-knowns knowns imports mutated simples unsafe-mode?)])
     knowns)
   ;; For definitions that are not yet used, force delays:
   (for ([form (in-list l)])
@@ -94,7 +101,7 @@
 
 ;; Schemify `let-values` to `let`, etc., and
 ;; reorganize struct bindings.
-(define (find-mutated! v ids prim-knowns knowns imports mutated simples)
+(define (find-mutated! top-v ids prim-knowns knowns imports mutated simples unsafe-mode?)
   (define (delay! ids thunk)
     (define done? #f)
     (define force (lambda () (unless done?
@@ -103,10 +110,14 @@
     (for ([id (in-list ids)])
       (let ([id (unwrap id)])
         (define m (hash-ref mutated id 'not-ready))
-        (if (eq? 'not-ready m)
-            (hash-set! mutated id force)
-            (force)))))
-  (let find-mutated! ([v v] [ids ids])
+        (cond
+          [(eq? 'not-ready m)
+           (hash-set! mutated id force)]
+          [(procedure? m)
+           (hash-set! mutated id (lambda () (m) (force)))]
+          [else
+           (force)]))))
+  (let find-mutated! ([v top-v] [ids ids])
     (define (find-mutated!* l ids)
       (let loop ([l l])
         (cond
@@ -142,7 +153,7 @@
                                       [rhs (in-list rhss)])
             (find-mutated! rhs (unwrap-list ids))
             (define new-maybe-cc? (or maybe-cc?
-                                      (not (simple? rhs prim-knowns knowns imports mutated simples
+                                      (not (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?
                                                     #:pure? #f
                                                     #:result-arity (length ids)))))
             ;; Each `id` in `ids` is now ready (but might also hold a delay):
@@ -202,10 +213,16 @@
                (let ([rator (unwrap rator)])
                  (and (symbol? rator)
                       (let ([v (find-known rator prim-knowns knowns imports mutated)])
-                        (and (known-constructor? v)
+                        (and (or (known-constructor? v)
+                                 ;; Some ad hoc constructors that are particularly
+                                 ;; useful to struct-type properties:
+                                 (eq? rator 'cons)
+                                 (eq? rator 'list)
+                                 (eq? rator 'vector)
+                                 (eq? rator 'make-struct-type-property))
                              (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
                       (for/and ([exp (in-list exps)])
-                        (simple? exp prim-knowns knowns imports mutated simples)))))
+                        (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?)))))
           ;; Can delay construction
           (delay! ids (lambda () (find-mutated!* exps #f)))]
          [else

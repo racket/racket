@@ -18,6 +18,7 @@
 
 (define (osx-old-openssl?)
   (and (eq? 'macosx (system-type))
+       (not (eq? 'ppc (system-type 'arch))) ; Mac OS 10.5 is too old for this to work?
        (or (not ssl-available?)
            (not (memq 'tls12 (supported-client-protocols))))))
 

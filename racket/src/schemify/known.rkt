@@ -9,13 +9,17 @@
          known-copy? known-copy known-copy-id
          known-literal known-literal? known-literal-value
          known-procedure known-procedure? known-procedure-arity-mask
+         known-procedure/single-valued known-procedure/single-valued?
          known-procedure/no-prompt known-procedure/no-prompt?
+         known-procedure/no-prompt/multi known-procedure/no-prompt/multi?
+         known-procedure/no-return known-procedure/no-return?
          known-procedure/folding known-procedure/folding?
          known-procedure/folding/limited known-procedure/folding/limited? known-procedure/folding/limited-kind
          known-procedure/can-inline known-procedure/can-inline? known-procedure/can-inline-expr
          known-procedure/can-inline/need-imports known-procedure/can-inline/need-imports?
          known-procedure/can-inline/need-imports-needed
          known-procedure/succeeds known-procedure/succeeds?
+         known-procedure/allocates known-procedure/allocates?
          known-procedure/pure known-procedure/pure?
          known-procedure/pure/folding known-procedure/pure/folding? ; not a subtype of `known-procedure/folding`
          known-procedure/pure/folding-unsafe known-procedure/pure/folding-unsafe?
@@ -30,9 +34,13 @@
          known-predicate known-predicate? known-predicate-type
          known-accessor known-accessor? known-accessor-type
          known-mutator known-mutator? known-mutator-type
+         known-struct-constructor known-struct-constructor? known-struct-constructor-type-id
          known-struct-predicate known-struct-predicate? known-struct-predicate-type-id known-struct-predicate-authentic?
-         known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-pos
-         known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-pos
+         known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-authentic?
+         known-field-accessor-pos known-field-accessor-known-immutable?
+         known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-authentic?
+         known-field-mutator-pos
+         known-struct-constructor/need-imports known-struct-constructor/need-imports? known-struct-constructor/need-imports-needed
          known-struct-predicate/need-imports known-struct-predicate/need-imports? known-struct-predicate/need-imports-needed
          known-field-accessor/need-imports known-field-accessor/need-imports? known-field-accessor/need-imports-needed
          known-field-mutator/need-imports known-field-mutator/need-imports? known-field-mutator/need-imports-needed
@@ -62,10 +70,19 @@
 ;; Scheme's perspective --- not an applicable struct or chaperoned procedure
 (struct known-procedure (arity-mask) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
-;; procedure that does not need to run inside a module prompt, which implies that the
-;; procedure does not call arbitrary other code, not even through an impersonator/chaperone
-;; interposition procedure
-(struct known-procedure/no-prompt () #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+;; procedure that always returns a single value (or escapes)
+(struct known-procedure/single-valued () #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+
+;; procedure that returns a single value and does not need to run inside a module prompt, which
+;; implies that the procedure does not call arbitrary other code, not even through an impersonator/chaperone
+;; interposition procedure; see also `known-procedure/no-prompt/multi`
+(struct known-procedure/no-prompt () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
+
+;; like known-procedure/no-prompt, but not single-valued
+(struct known-procedure/no-prompt/multi () #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+
+;; procedure that does not return, because it always escapes
+(struct known-procedure/no-return () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
 
 ;; procedure that can be inlined, where the `expr` is in pre-schemify form
 (struct known-procedure/can-inline (expr) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
@@ -79,11 +96,14 @@
 ;; `'expt` to mean "apply only to small numbers")
 (struct known-procedure/folding/limited (kind) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/folding)
 
-;; procedure that never raises an exception or otherwise captures/escapes the calling context
+;; procedure with single value that never raises an exception or otherwise captures/escapes the calling context
 (struct known-procedure/succeeds () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/no-prompt)
 
-;; procedure that accepts any arguments, returns a single value, and is functional so that it can be reordered
-(struct known-procedure/pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
+;; procedure that accepts any arguments, returns a single value, and has allocation as its only effect 
+(struct known-procedure/allocates () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
+
+;; procedure that accepts any arguments, returns a single value, and has/observes no effect so that it can be reordered
+(struct known-procedure/pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/allocates)
 
 ;; pure and folding:
 (struct known-procedure/pure/folding () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
@@ -98,13 +118,15 @@
 (struct known-struct-type (type field-count pure-constructor?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedures with a known connection to a structure type:
-(struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
+(struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/allocates)
 (struct known-predicate (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
-(struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
-(struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+(struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
+(struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
+(struct known-struct-constructor (type-id) #:prefab #:omit-define-syntaxes #:super struct:known-constructor)
 (struct known-struct-predicate (type-id authentic?) #:prefab #:omit-define-syntaxes #:super struct:known-predicate)
-(struct known-field-accessor (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
-(struct known-field-mutator (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
+(struct known-field-accessor (type-id authentic? pos known-immutable?) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
+(struct known-field-mutator (type-id authentic? pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
+(struct known-struct-constructor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-constructor)
 (struct known-struct-predicate/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-predicate)
 (struct known-field-accessor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-accessor)
 (struct known-field-mutator/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-mutator)

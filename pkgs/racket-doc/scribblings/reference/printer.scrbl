@@ -588,6 +588,12 @@ identifier; those functions lead to top-level and module variables
 with @tech{unreadable symbol}ic names, and the names are deterministic
 as long as expansion is otherwise deterministic.
 
+When a compiled-form object has string and byte string literals, they
+are @tech{interned} using @racket[datum-intern-literal] when the
+compiled-object for is read back in. Numbers and other values that
+@racket[read-syntax] would intern, however, are not interned when read
+back as quoted literals in a compiled object.
+
 A compiled form may contain path literals. Although paths are
 not normally printed in a way that can be read back in, path literals
 can be written and read as part of compiled code. The
@@ -618,7 +624,7 @@ the conversion of the source field is to preserve some source
 information but not expose or record a path that makes no sense on
 a different filesystem or platform.
 
-For internal testing purposes, when the
+For internal testing purposes in the 3m and CGC variants of Racket, when the
 @as-index{@envvar{PLT_VALIDATE_LOAD}} environment variable is set, the
 reader runs a validator on bytecode parsed from @litchar{#~}. The
 validator may catch miscompilations or bytecode-file corruption. The

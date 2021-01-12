@@ -2440,15 +2440,15 @@
 (err/rt-test (rationalize .3+0.0i 1/10))
 
 (define (test-rat-inf v)
-  (define zero (if (exact? v) 0 0.0))
-
   (test +inf.0 rationalize +inf.0 v)
   (test -inf.0 rationalize -inf.0 v)
   (test-nan.0 rationalize +nan.0 v)
 
-  (test zero rationalize v +inf.0)
-  (test zero rationalize v -inf.0)
+  (test 0.0 rationalize v +inf.0)
+  (test 0.0 rationalize v -inf.0)
   (test-nan.0 rationalize v +nan.0))
+
+(test-rat-inf 1/3)
 
 (let loop ([i 100])
   (unless (= i -100)
@@ -2651,6 +2651,9 @@
 (test 1 string->number (string-append "1" (make-string 8000 #\0) "/" "1" (make-string 8000 #\0) "@0"))
 (test 10.0 string->number (string-append "1" (make-string 8000 #\0) "/" "1" (make-string 7998 #\0) "#@0"))
 (test #f zero? (string->number "7.4109846876187e-323"))
+
+;; Regression test to make sure prevision isn't lost by multiplying 10.0 times 1e44:
+(test (exact->inexact #e1e45) string->number "1.0e45")
 
 (test #t andmap (lambda (x) (and (>= x 0) (< x 10))) (map random '(10 10 10 10)))
 (test (void) random-seed 5)
@@ -3552,7 +3555,7 @@
                 extra-p))
     (define n3 (inexact->exact (exact->inexact n2)))
     (unless (= n3 (arithmetic-shift 53-bit-number (+ num-zeros 1 extra-p)))
-      (error 'random-exact->inexact "truncating round failed ~s" n2)))
+      (error 'random-exact->inexact "truncating round failed ~s ~s ~s" n2 53-bit-number (+ num-zeros 1 extra-p))))
   (check-random-pairs check-shift-plus-bits-to-truncate)
   
   ;; If we add a one bit and then a non-zero bit anywhere later,

@@ -75,7 +75,7 @@
     Lsrc Lsrc? Ltype Ltype? unparse-Ltype unparse-Lsrc
     lookup-primref primref? primref-level primref-name primref-flags primref-arity
     preinfo-src preinfo-sexpr preinfo-lambda-name preinfo-lambda-flags preinfo-lambda-libspec
-    preinfo-call? preinfo-call-check?
+    preinfo-call? preinfo-call-check? preinfo-call-no-return?
     prelex-name prelex-name-set!)
 
   (import (nanopass))
@@ -535,7 +535,9 @@
   (declare-primitive c-call effect #f)
   (declare-primitive c-simple-call effect #f)
   (declare-primitive c-simple-return effect #f)
+  (declare-primitive check-stack-align effect #f) ; x86
   (declare-primitive deactivate-thread effect #f) ; threaded version only
+  (declare-primitive debug effect #f) ; x86_64 and arm64
   (declare-primitive fldl effect #f) ; x86
   (declare-primitive flds effect #f) ; x86
   (declare-primitive inc-cc-counter effect #f)
@@ -589,6 +591,7 @@
   (declare-primitive +/carry value #f)
   (declare-primitive -/ovfl value #f)
   (declare-primitive -/eq value #f)
+  (declare-primitive -/pos value #f)
   (declare-primitive asmlibcall value #f)
   (declare-primitive cpuid value #t) ; x86_64 only, actually side-effects ebx/ecx/edx
   (declare-primitive fstpl value #f) ; x86 only

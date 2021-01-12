@@ -2,24 +2,18 @@
 (define-syntax (who stx)
   (syntax-error stx "not bound"))
 
-(define-syntax-rule (define-define/who define/who define)
-  (...
-   (define-syntax (define/who stx)
-     (syntax-case stx ()
-       [(_ (id . args) body ...)
-        #'(define id
-            (fluid-let-syntax ([who (lambda (stx)
-                                      #''id)])
-              (lambda args body ...)))]
-       [(_ id rhs)
-        #'(define id
-            (fluid-let-syntax ([who (lambda (stx)
-                                      #''id)])
-              rhs))]))))
-
-(define-define/who define/who define)
-(define-define/who define/lift/who define/lift)
-(define-define/who define/no-lift/who define/no-lift)
+(define-syntax (define/who stx)
+  (syntax-case stx ()
+    [(_ (id . args) body ...)
+     #'(define id
+         (fluid-let-syntax ([who (lambda (stx)
+                                   #''id)])
+           (lambda args body ...)))]
+    [(_ id rhs)
+     #'(define id
+         (fluid-let-syntax ([who (lambda (stx)
+                                   #''id)])
+           rhs))]))
 
 (define-syntax (check stx)
   (syntax-case stx (:test :contract :or-false)

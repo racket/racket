@@ -1,11 +1,4 @@
 
-(define system-type
-  (case-lambda
-   [() (system-type* 'os)]
-   [(mode) (if (eq? mode 'vm)
-               'chez-scheme
-               (system-type* mode))]))
-
 (define unix-style-macos?
   (meta-cond
    [(getenv "PLT_CS_MAKE_UNIX_STYLE_MACOS") #t]
@@ -22,37 +15,123 @@
 (define fs-change-properties '#(#f #f #f #f))
 (define (set-fs-change-properties! vec) (set! fs-change-properties vec))
 
-(define (system-type* mode)
-  (case mode
-    [(vm) 'chez-scheme]
-    [(os) (case (machine-type)
-            [(a6osx ta6osx i3osx ti3osx)
-             (if unix-style-macos? 'unix 'macosx)]
-            [(a6nt ta6nt i3nt ti3nt) 'windows]
-            [else 'unix])]
-    [(word) (if (> (fixnum-width) 32) 64 32)]
-    [(gc) 'cs]
-    [(link) (case (and (not unix-style-macos?)
-                       (machine-type))
-              [(a6osx ta6osx i3osx ti3osx) 'framework]
-              [(a6nt ta6nt i3nt ti3nt) 'windows]
-              [else (if unix-link-shared?
-                        'shared
-                        'static)])]
-    [(machine) (get-machine-info)]
-    [(so-suffix) (case (machine-type)
-                   [(a6osx ta6osx i3osx ti3osx) (string->utf8 ".dylib")]
-                   [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
-                   [else (string->utf8 ".so")])]
-    [(so-mode) 'local]
-    [(fs-change) fs-change-properties]
-    [(target-machine) (machine-type)]
-    [(cross) cross-mode]
-    [else (raise-argument-error 'system-type
-                                (string-append
-                                 "(or/c 'os 'word 'vm 'gc 'link 'machine 'target-machine\n"
-                                 "      'so-suffix 'so-mode 'fs-change 'cross)")
-                                mode)]))
+;; Definitons like `os-symbol` are also parsed by "../c/gen-system.rkt"
+
+(define os-symbol
+  (case (machine-type)
+    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
+     (if unix-style-macos? 'unix 'macosx)]
+    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [else 'unix]))
+
+(define os*-symbol
+  (case (machine-type)
+    [(a6osx ta6osx
+            i3osx ti3osx
+            arm64osx tarm64osx
+            ppc32osx tppc32osx)
+     (if unix-style-macos?
+         'darwin
+         'macosx)]
+    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [(a6le ta6le i3le ti3le
+           arm32le tarm32le arm64le tarm64le
+           ppc32le tppc32le)
+     'linux]
+    [(a6ob ta6ob i3ob ti3ob) 'openbsd]
+    [(a6fb ta6fb i3fb ti3fb) 'freebsd]
+    [(a6nb ta6nb i3nb ti3nb) 'netbsd]
+    [(a6s2 ta6s2 i3s2 ti3s2) 'solaris]
+    [(i3qnx) 'qnx]
+    [else (error 'system-type "internal error: unknown operating system")]))
+
+(define arch-symbol
+  (case (machine-type)
+    [(a6osx ta6osx
+            a6nt ta6nt
+            a6le ta6le
+            a6ob ta6ob
+            a6fb ta6fb
+            a6s2 ta6s2)
+     'x86_64]
+    [(i3osx ti3osx
+            i3nt ti3nt
+            i3le ti3le
+            i3ob ti3ob
+            i3fb ti3fb
+            i3s2 ti3s2
+            i3qnx)
+     'i386]
+    [(arm32le tarm32le) 'arm]
+    [(arm64le tarm64le arm64osx tarm64osx) 'aarch64]
+    [(ppc32le tppc32le
+              ppc32osx tppc32osx)
+     'ppc]
+    [else (error 'system-type "internal error: unknown architecture")]))
+
+(define link-symbol
+  (case (machine-type)
+    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx)
+     (if unix-style-macos?
+         'static
+         'framework)]
+    [(a6nt ta6nt i3nt ti3nt) 'windows]
+    [else (if unix-link-shared?
+              'shared
+              'static)]))
+
+(define so-suffix-bytes
+  (case (machine-type)
+    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx) (string->utf8 ".dylib")]
+    [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
+    [else (string->utf8 ".so")]))
+
+(define so-mode
+  (case (machine-type)
+    [(arm64osx tarm64osx) 'global]
+    [else 'local]))
+
+;; Force inline of some common cases, so optimization can use
+;; the resulting constant:
+(define-syntax system-type
+  (lambda (stx)
+    (syntax-case stx (quote)
+      [(_ 'key) (case (#%syntax->datum #'key)
+                  [(vm) #''chez-scheme]
+                  [(os) #'os-symbol]
+                  [(os*) #'os*-symbol]
+                  [(arch) #'arch-symbol]
+                  [(word) #'(if (> (fixnum-width) 32) 64 32)]
+                  [(gc) #''cs]
+                  [else #'(system-type* 'key)])]
+      [(_ arg ...) #'(system-type* arg ...)]
+      [_ #'system-type*])))
+
+(define system-type*
+  (|#%name|
+   system-type
+   (case-lambda
+    [() (system-type* 'os)]
+    [(mode)
+     (case mode
+       [(vm) 'chez-scheme]
+       [(os) os-symbol]
+       [(os*) os*-symbol]
+       [(arch) arch-symbol]
+       [(word) (if (> (fixnum-width) 32) 64 32)]
+       [(gc) 'cs]
+       [(link) link-symbol]
+       [(machine) (get-machine-info)]
+       [(so-suffix) so-suffix-bytes]
+       [(so-mode) so-mode]
+       [(fs-change) fs-change-properties]
+       [(target-machine) (machine-type)]
+       [(cross) cross-mode]
+       [else (raise-argument-error 'system-type
+                                   (string-append
+                                    "(or/c 'os 'os* 'arch 'word 'vm 'gc 'link 'machine 'target-machine\n"
+                                    "      'so-suffix 'so-mode 'fs-change 'cross)")
+                                   mode)])])))
 
 (define (system-path-convention-type)
   (case (machine-type)
@@ -64,23 +143,9 @@
    (case (machine-type)
      [(a6nt ta6nt) "win32\\x86_64"]
      [(i3nt ti3nt) "win32\\i386"]
-     [(a6osx ta6osx) (if unix-style-macos? "x86_64-darwin" "x86_64-macosx")]
-     [(i3osx ti3osx) (if unix-style-macos? "i386-darwin" "i386-macosx")]
-     [(a6le ta6le) "x86_64-linux"]
-     [(i3le ti3le) "i386-linux"]
-     [(arm32le tarm32le) "arm-linux"]
-     [(arm64le tarm64le) "aarch64-linux"]
-     [(ppc32le tppc32le) "ppc-linux"]
-     [(i3ob ti3ob) "i386-openbsd"]
-     [(a6ob ta6ob) "x86_64-openbsd"]
-     [(i3ob ti3ob) "i386-openbsd"]
-     [(a6fb ta6fb) "x86_64-freebsd"]
-     [(i3fb ti3fb) "i386-freebsd"]
-     [(a6nb ta6nb) "x86_64-netbsd"]
-     [(i3nb ti3nb) "i386-netbsd"]
-     [(a6s2 ta6s2) "x86_64-solaris"]
-     [(i3s2 ti3s2) "i386-solaris"]
-     [else "unix"])
+     [else (string-append (symbol->string arch-symbol)
+                          "-"
+                          (symbol->string os*-symbol))])
    (let-syntax ([suffix
                  (lambda (stx)
                    (or (getenv "PLT_CS_SLSP_SUFFIX")

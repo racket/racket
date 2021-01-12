@@ -9,6 +9,18 @@
   (err/rt-test (break-thread (current-thread)) exn:break?))
 
 
+;; ----------------------------------------
+;; the names of prompt tags
+
+(test 'default object-name (default-continuation-prompt-tag))
+(test #f object-name (make-continuation-prompt-tag))
+(test 'myprompt object-name (make-continuation-prompt-tag 'myprompt))
+(test #t regexp-match? #rx"default" (format "~a" (default-continuation-prompt-tag)))
+(test #f regexp-match? #rx":" (format "~a" (make-continuation-prompt-tag)))
+(test #t regexp-match? #rx"myprompt" (format "~a" (make-continuation-prompt-tag 'myprompt)))
+
+;; ----------------------------------------
+
 (test (void) call-with-continuation-prompt void)
 (test (void) call-with-continuation-prompt void (default-continuation-prompt-tag))
 (test (void) call-with-continuation-prompt void (default-continuation-prompt-tag) list)

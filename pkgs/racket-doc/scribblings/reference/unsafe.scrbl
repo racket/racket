@@ -51,13 +51,10 @@ operations can be prevented by adjusting the code inspector (see
 @defproc[(unsafe-fxabs       [a fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @racket[+], @racket[-], @racket[*],
-@racket[quotient], @racket[remainder], @racket[modulo], and
-@racket[abs], but constrained to consume @tech{fixnums} and produce a
-@tech{fixnum} result. The mathematical operation on @racket[a] and
-@racket[b] must be representable as a @tech{fixnum}. In the case of
-@racket[unsafe-fxquotient], @racket[unsafe-fxremainder], and
-@racket[unsafe-fxmodulo], @racket[b] must not be @racket[0].
+For @tech{fixnums}: Unchecked versions of @racket[fx+], @racket[fx-],
+@racket[fx*], @racket[fxquotient],
+@racket[fxremainder], @racket[fxmodulo], and
+@racket[fxabs]. 
 
 @history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[unsafe-fx+] and @racket[unsafe-fx*]
                                     and allow one or more arguments for @racket[unsafe-fx-].}]}
@@ -72,22 +69,26 @@ For @tech{fixnums}: Like @racket[+], @racket[-], @racket[*],
 @defproc[(unsafe-fxrshift [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @racket[bitwise-and], @racket[bitwise-ior],
-@racket[bitwise-xor], @racket[bitwise-not], and
-@racket[arithmetic-shift], but constrained to consume @tech{fixnums};
-the result is always a @tech{fixnum}. The @racket[unsafe-fxlshift] and
-@racket[unsafe-fxrshift] operations correspond to
-@racket[arithmetic-shift], but require non-negative arguments;
-@racket[unsafe-fxlshift] is a positive (i.e., left) shift, and
-@racket[unsafe-fxrshift] is a negative (i.e., right) shift, where the
-number of bits to shift must be no more than the number of bits used to
-represent a @tech{fixnum}. In the case of @racket[unsafe-fxlshift],
-bits in the result beyond the number of bits used to represent a
-@tech{fixnum} are effectively replaced with a copy of the high bit.
+For @tech{fixnums}: Unchecked versions of @racket[fxand], @racket[fxior], @racket[fxxor],
+@racket[fxnot], @racket[fxlshift], and @racket[fxrshift].
 
 @history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for
                                     @racket[unsafe-fxand], @racket[unsafe-fxior],
                                     and @racket[unsafe-fxxor].}]}
+
+
+@deftogether[(
+@defproc[(unsafe-fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx-/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx*/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxlshift/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+)]{
+
+For @tech{fixnums}: Unchecked versions of @racket[fx+/wraparound],
+@racket[fx-/wraparound], @racket[fx*/wraparound], and
+@racket[fxlshift/wraparound].
+
+@history[#:added "7.9.0.6"]}
 
 
 @deftogether[(
@@ -100,9 +101,9 @@ bits in the result beyond the number of bits used to represent a
 @defproc[(unsafe-fxmax [a fixnum?] [b fixnum?] ...) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @racket[=], @racket[<], @racket[>],
-@racket[<=], @racket[>=], @racket[min], and @racket[max], but
-constrained to consume @tech{fixnums}.
+For @tech{fixnums}: Unchecked versions of @racket[fx=], @racket[fx<],
+ @racket[fx>], @racket[fx<=], @racket[fx>=],
+ @racket[fxmin], and @racket[fxmax].
 
 @history[#:changed "7.0.0.13" @elem{Allow one or more argument,
                                     instead of allowing just two.}]}
@@ -234,7 +235,7 @@ Unchecked versions of @racket[char=?], @racket[char<?], @racket[char>?],
 
 
 
-@section{Unsafe Data Extraction}
+@section[#:tag "Unsafe Data Extraction"]{Unsafe Compound-Data Operations}
 
 @deftogether[(
 @defproc[(unsafe-car [p pair?]) any/c]
@@ -265,6 +266,44 @@ Unsafe variants of @racket[list-ref] and @racket[list-tail], where
 at least @racket[(add1 pos)] (for @racket[unsafe-list-ref]) or
 @racket[pos] (for @racket[unsafe-list-tail]) pairs.}
 
+
+@deftogether[(
+@defproc[(unsafe-set-immutable-car! [p pair?] [v any/c]) void?]
+@defproc[(unsafe-set-immutable-cdr! [p pair?] [v any/c]) void?]
+)]{
+
+As their oxymoronic names should suggest, there is @emph{no generally
+correct way} to use these functions. They may be useful nevertheless,
+as a last resort, in settings where pairs are used in a constrained
+way and when making correct assumptions about Racket's implementation
+(including limits on the compiler's optimizations).
+
+Some pitfalls of using @racket[unsafe-set-immutable-car!] and
+@racket[unsafe-set-immutable-cdr!]:
+
+@itemlist[
+
+ @item{Functions that consume a pair may take advantage of
+       immutability, such as computing a list's length once and
+       expecting the list to retain that length, or checking a list
+       against a contract and expecting the contract to hold
+       thereafter.}
+
+ @item{The result of @racket[list?] for a pair may be cached
+       internally, so that changing the @racket[cdr] of a pair from a
+       list to a non-list or vice versa may cause @racket[list?] to
+       produce the wrong value---for the mutated pair or for another
+       pair that reaches the mutated pair.}
+
+ @item{The compiler may reorder or even optimize away a call to
+       @racket[car] or @racket[cdr] on the grounds that pairs are
+       immutable, in which case a @racket[unsafe-set-immutable-car!]
+       or @racket[unsafe-set-immutable-cdr!] may not have an effect on
+       the use of @racket[car] or @racket[cdr].}
+
+]
+
+@history[#:added "7.9.0.18"]}
 
 @deftogether[(
 @defproc[(unsafe-unbox [b box?]) fixnum?]

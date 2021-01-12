@@ -11,7 +11,7 @@
 
 ;; Record top-level functions and structure types, and returns
 ;;  (values knowns struct-type-info-or-#f)
-(define (find-definitions v prim-knowns knowns imports mutated simples unsafe-mode? for-cify?
+(define (find-definitions v prim-knowns knowns imports mutated simples unsafe-mode? target
                           #:primitives [primitives #hasheq()] ; for `optimize?` mode
                           #:optimize? optimize?)
   (match v
@@ -20,7 +20,7 @@
                      (optimize orig-rhs prim-knowns primitives knowns imports mutated)
                      orig-rhs))
      (values
-      (let ([k (infer-known rhs v id knowns prim-knowns imports mutated simples unsafe-mode? for-cify?
+      (let ([k (infer-known rhs v id knowns prim-knowns imports mutated simples unsafe-mode? target
                             #:primitives primitives
                             #:optimize-inline? optimize?)])
         (if k
@@ -43,11 +43,12 @@
        (let* ([knowns (hash-set knowns
                                 (unwrap make-s)
                                 (if (struct-type-info-pure-constructor? info)
-                                    (known-constructor (arithmetic-shift 1 (struct-type-info-field-count info)) type)
+                                    (known-struct-constructor (arithmetic-shift 1 (struct-type-info-field-count info)) type struct:s)
                                     a-known-constant))]
+              [authentic? (struct-type-info-authentic? info)]
               [knowns (hash-set knowns
                                 (unwrap s?)
-                                (known-struct-predicate 2 type struct:s (struct-type-info-authentic? info)))]
+                                (known-struct-predicate 2 type struct:s authentic?))]
               [knowns
                (let* ([immediate-count (struct-type-info-immediate-field-count info)]
                       [parent-count (- (struct-type-info-field-count info)
@@ -62,10 +63,14 @@
                                (cond
                                  [(and (wrap-eq? make 'make-struct-field-accessor)
                                        (wrap-eq? ref-or-set -ref))
-                                  (hash-set knowns (unwrap id) (known-field-accessor 2 type struct:s (+ parent-count pos)))]
+                                  (define immutable? (memv pos (or (struct-type-info-prefab-immutables info)
+                                                                   (struct-type-info-non-prefab-immutables info)
+                                                                   '())))
+                                  (hash-set knowns (unwrap id) (known-field-accessor 2 type struct:s authentic? (+ parent-count pos)
+                                                                                     immutable?))]
                                  [(and (wrap-eq? make 'make-struct-field-mutator)
                                        (wrap-eq? ref-or-set -set!))
-                                  (hash-set knowns (unwrap id) (known-field-mutator 4 type struct:s (+ parent-count pos)))]
+                                  (hash-set knowns (unwrap id) (known-field-mutator 4 type struct:s authentic? (+ parent-count pos)))]
                                  [else knowns]))
                           knowns)]
                      [`,_ knowns])))])
@@ -120,7 +125,7 @@
                                            [rhs (in-list rhss)])
                 (define-values (new-knowns info)
                   (find-definitions `(define-values (,id) ,rhs)
-                                    prim-knowns knowns imports mutated simples unsafe-mode? for-cify?
+                                    prim-knowns knowns imports mutated simples unsafe-mode? target
                                     #:optimize? optimize?))
                 new-knowns)
               #f)]

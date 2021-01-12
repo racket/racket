@@ -9,24 +9,35 @@
          simple/can-copy?)
 
 ;; Check whether an expression is simple in the sense that its order
-;; of evaluation isn't detectable. This function receives both
-;; schemified and non-schemified expressions.
-(define (simple? e prim-knowns knowns imports mutated simples
+;; of evaluation isn't detectable (`pure?` = #t) or at least it won't
+;; try to capture a comtinuation (`pure?` = #f). In `pure?` mode, if
+;; `no-alloc?` is true, then allocation counts as detectable (for
+;; ordering with respect to functions that might capture a continuation).
+;; This function receives both schemified and non-schemified expressions.
+(define (simple? e prim-knowns knowns imports mutated simples unsafe-mode?
                  #:pure? [pure? #t]
+                 #:no-alloc? [no-alloc? #f]
                  #:result-arity [result-arity 1])
   (let simple? ([e e] [result-arity result-arity])
     (define-syntax-rule (cached expr)
-      (let* ([c (hash-ref simples e #(unknown unknown 1))]
-             [r (vector-ref c (if pure? 0 1))]
-             [arity-match? (eqv? result-arity (vector-ref c 2))])
+      (let* ([c (hash-ref simples e #(unknown unknown unknown 1))]
+             [r (vector-ref c (if pure? (if no-alloc? 1 0) 2))]
+             [arity-match? (eqv? result-arity (vector-ref c 3))])
         (if (or (eq? 'unknown r)
                 (not arity-match?))
             (let ([r expr])
               (hash-set! simples e (if pure?
-                                       (vector r
-                                               (if arity-match? (vector-ref c 1) 'unknown)
-                                               result-arity)
+                                       (if no-alloc?
+                                           (vector (if arity-match? (vector-ref c 0) 'unknown)
+                                                   r
+                                                   (if arity-match? (vector-ref c 2) 'unknown)
+                                                   result-arity)
+                                           (vector r
+                                                   (if arity-match? (vector-ref c 1) 'unknown)
+                                                   (if arity-match? (vector-ref c 2) 'unknown)
+                                                   result-arity))
                                        (vector (if arity-match? (vector-ref c 0) 'unknown)
+                                               (if arity-match? (vector-ref c 1) 'unknown)
                                                r
                                                result-arity)))
               r)
@@ -96,10 +107,25 @@
                (let ([v (or (hash-ref-either knowns imports proc)
                             (hash-ref prim-knowns proc #f))])
                  (and (if pure?
-                          (and (known-procedure/pure? v)
+                          (and (or (if no-alloc?
+                                       (known-procedure/pure? v)
+                                       (known-procedure/allocates? v))
+                                   ;; in unsafe mode, we can assume no constract error:
+                                   (and unsafe-mode?
+                                        (known-field-accessor? v)
+                                        (known-field-accessor-authentic? v)
+                                        (known-field-accessor-known-immutable? v)))
                                (returns 1))
-                          (and (known-procedure/no-prompt? v)
-                               (eqv? result-arity #f)))
+                          (or (and (known-procedure/no-prompt? v)
+                                   (returns 1))
+                              (and (known-procedure/no-prompt/multi? v)
+                                   (eqv? result-arity #f))
+                              (and (known-field-accessor? v)
+                                   (known-field-accessor-authentic? v)
+                                   (returns 1))
+                              (and (known-field-mutator? v)
+                                   (known-field-mutator-authentic? v)
+                                   (returns 1))))
                       (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
                (simple-mutated-state? (hash-ref mutated proc #f))
                (for/and ([arg (in-list args)])

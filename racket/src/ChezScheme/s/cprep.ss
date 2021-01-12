@@ -131,7 +131,8 @@
                    '(let $primitive quote begin case-lambda
                       library-case-lambda lambda if set!
                       letrec letrec* $foreign-procedure
-                      $foreign-callable eval-when))))
+                      $foreign-callable eval-when
+                      $lambda/lift-barrier))))
              (nanopass-case (Lsrc Expr) x
                [(ref ,maybe-src ,x) (get-name x)]
                [(call ,preinfo0 (case-lambda ,preinfo1 (clause (,x* ...) ,interface ,body)) ,e* ...)
@@ -163,17 +164,22 @@
                       [,pr `(,(uncprep e) ,@(map uncprep e*))]
                       [else
                        (let ([a `(,(uncprep e) ,@(map uncprep e*))])
-                         (if (or (preinfo-call-check? preinfo)
-                                 ;; Reporting `#3%$app` is redundant for unsafe mode.
-                                 ;; Note that we're losing explicit `#2%$app`s.
-                                 (>= (optimize-level) 3)
-                                 (enable-unsafe-application))
-                             (if (preinfo-call-can-inline? preinfo)
-                                 a
-                                 (cons '$app/no-inline a))
-                             (if (preinfo-call-can-inline? preinfo)
-                                 (cons '#3%$app a)
-                                 (cons '#3%$app/no-inline a))))])))]
+                         (let ([prim (if (or (preinfo-call-check? preinfo)
+                                             ;; Reporting `#3%$app` is redundant for unsafe mode.
+                                             ;; Note that we're losing explicit `#2%$app`s.
+                                             (>= (optimize-level) 3)
+                                             (enable-unsafe-application))
+                                         (lambda (s a) (if s (cons s a) a))
+                                         (lambda (s arg) (cons `($primitive 3 ,(or s '$app)) a)))])
+                           (cond
+                             [(preinfo-call-no-return? preinfo)
+                              (prim '$app/no-return a)]
+                             [(preinfo-call-single-valued? preinfo)
+                              (prim '$app/value a)]
+                             [(preinfo-call-can-inline? preinfo)
+                              (prim #f a)]
+                             [else
+                              (prim '$app/no-inline a)])))])))]
                [,pr (let ([sym (primref-name pr)])
                       (if sexpr?
                           ($sgetprop sym '*unprefixed* sym)
@@ -193,7 +199,10 @@
                   (lambda ()
                     (let ((cl* (map uncprep-lambda-clause cl*)))
                       (if (and (not (null? cl*)) (null? (cdr cl*)))
-                          `(lambda ,@(car cl*))
+                          (if (fx= (bitwise-and (constant code-flag-lift-barrier) (preinfo-lambda-flags preinfo))
+                                   (constant code-flag-lift-barrier))
+                              `($lambda/lift-barrier ,@(car cl*))
+                              `(lambda ,@(car cl*)))
                           `(case-lambda ,@cl*)))))]
                [(if ,[e0] ,[e1] ,[e2]) `(if ,e0 ,e1 ,e2)]
                [(set! ,maybe-src ,x ,[e]) `(set! ,(get-name x) ,e)]

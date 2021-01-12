@@ -8,6 +8,8 @@
 (define unsafe-cdr (unsafe-primitive cdr))
 (define unsafe-list-tail (unsafe-primitive list-tail))
 (define unsafe-list-ref (unsafe-primitive list-ref))
+(define (unsafe-set-immutable-car! p a) ((unsafe-primitive set-car!) p a))
+(define (unsafe-set-immutable-cdr! p d) ((unsafe-primitive set-cdr!) p d))
 
 (define unsafe-char=? (unsafe-primitive char=?))
 (define unsafe-char<? (unsafe-primitive char<?))
@@ -17,8 +19,11 @@
 (define unsafe-char->integer (unsafe-primitive char->integer))
 
 (define unsafe-fx+ (unsafe-primitive fx+))
+(define unsafe-fx+/wraparound (unsafe-primitive fx+/wraparound))
 (define unsafe-fx- (unsafe-primitive fx-))
+(define unsafe-fx-/wraparound (unsafe-primitive fx-/wraparound))
 (define unsafe-fx* (unsafe-primitive fx*))
+(define unsafe-fx*/wraparound (unsafe-primitive fx*/wraparound))
 (define (unsafe-fxquotient n d) (#3%fxquotient n d))
 (define unsafe-fxremainder (unsafe-primitive fxremainder))
 (define unsafe-fxmodulo (unsafe-primitive fxmodulo))
@@ -29,6 +34,7 @@
 (define unsafe-fxnot (unsafe-primitive fxnot))
 (define unsafe-fxrshift (unsafe-primitive fxarithmetic-shift-right))
 (define unsafe-fxlshift (unsafe-primitive fxarithmetic-shift-left))
+(define unsafe-fxlshift/wraparound (unsafe-primitive fxsll/wraparound))
 
 (define unsafe-fx= (unsafe-primitive fx=))
 (define unsafe-fx< (unsafe-primitive fx<))
@@ -117,14 +123,14 @@
          [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-s16-native-ref mem k)
-        (foreign-ref 'int16 mem k))))
+        (foreign-ref 'integer-16 mem k))))
 (define (unsafe-s16vector-set! s16 k v)
   (let* ([cptr (unsafe-struct*-ref s16 0)]
          [mem (cpointer-memory cptr)]
          [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-s16-native-set! mem k v)
-        (foreign-set! 'int16 mem k v))))
+        (foreign-set! 'integer-16 mem k v))))
 
 (define (unsafe-u16vector-ref u16 k)
   (let* ([cptr (unsafe-struct*-ref u16 0)]
@@ -132,14 +138,14 @@
          [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-u16-native-ref mem k)
-        (foreign-ref 'uint16 mem k))))
+        (foreign-ref 'unsigned-16 mem k))))
 (define (unsafe-u16vector-set! u16 k v)
   (let* ([cptr (unsafe-struct*-ref u16 0)]
          [mem (cpointer-memory cptr)]
          [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-u16-native-set! mem k v)
-        (foreign-set! 'uint16 mem k v))))
+        (foreign-set! 'unsigned-16 mem k v))))
 
 (define (unsafe-f64vector-ref f64 k)
   (let* ([cptr (unsafe-struct*-ref f64 0)]
@@ -202,6 +208,13 @@
      (#%$string-set-immutable! s)
      s]))
 (define (unsafe-vector*->immutable-vector! v)
+  (vector->immutable-vector v)
+  ;; The implementation below is not right, because the vector
+  ;; may contain elements allocated after the vector itself, and
+  ;; wrong-way pointers are not supposed to show up in mutable
+  ;; vectors. Maybe the GC should treat immutable vectors like
+  ;; mutable ones, and then morphing to immutable would be ok.
+  #;
   (cond
     [(= (vector-length v) 0)  (immutable-constant #())]
     [else

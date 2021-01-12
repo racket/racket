@@ -88,6 +88,7 @@
         ;; and that the same holds for keys
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}"))
           => "{\"\U0010FFFF\":\"\U0010FFFF\"}"
+	(jsexpr->string #hash[(a . 1) (b . 2)]) => "{\"a\":1,\"b\":2}"
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}")
                         #:encode 'all)
           => "{\"\\udbff\\udfff\":\"\\udbff\\udfff\"}"

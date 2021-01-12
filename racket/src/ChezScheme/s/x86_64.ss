@@ -323,7 +323,7 @@
          `(set! ,(make-live-info) ,t (asm ,info ,asm-sub ,t ,y))
          `(set! ,(make-live-info) ,z ,t)))])
 
-  (define-instruction value (-/ovfl -/eq) ; must set condition codes, so can't use lea or sub-negate
+  (define-instruction value (-/ovfl -/eq -/pos) ; must set condition codes, so can't use lea or sub-negate
     [(op (z mem) (x z) (y ur imm32))
      `(set! ,(make-live-info) ,z (asm ,info ,asm-sub ,x ,y))]
     [(op (z mem) (x zero) (y z))
@@ -791,6 +791,9 @@
   (define-instruction effect (pause)
     [(op) `(asm ,info ,asm-pause)])
 
+  (define-instruction effect (debug)
+    [(op) `(asm ,info ,asm-debug)])
+
   (define-instruction value read-performance-monitoring-counter
     [(op (z ur) (x ur mem imm))
      (safe-assert (eq? z %rax))
@@ -848,7 +851,7 @@
                      asm-direct-jump asm-return-address asm-jump asm-conditional-jump
                      asm-lea1 asm-lea2 asm-indirect-call asm-condition-code
                      asm-fl-cvt asm-store-single asm-load-single asm-fpt asm-fptrunc asm-div asm-popcount
-                     asm-exchange asm-pause asm-locked-incr asm-locked-decr asm-locked-cmpxchg
+                     asm-exchange asm-pause asm-debug asm-locked-incr asm-locked-decr asm-locked-cmpxchg
                      asm-fpsqrt asm-fpop-2 asm-fpmove asm-fpcast asm-fpsingle
                      asm-c-simple-call
                      asm-save-flrv asm-restore-flrv asm-return asm-c-return asm-size
@@ -982,6 +985,8 @@
   (define-op rdtsc     two-byte-op     #b1111 #b00110001) ; read time-stamp counter
   (define-op rdpmc     two-byte-op     #b1111 #b00110011) ; read performance monitoring counter
   (define-op pause     two-byte-op #b11110011 #b10010000) ; equivalent to rep nop
+
+  (define-op int3      byte-op     #b11001100)
 
   (define-op dec (#;b *) unary-op  #b1111111 #b001)
   (define-op inc (#;b *) unary-op  #b1111111 #b000)
@@ -2031,6 +2036,10 @@
     (lambda (code*)
       (emit pause code*)))
 
+  (define asm-debug
+    (lambda (code*)
+      (emit int3 code*)))
+
   (define asm-exchange
     (lambda (code* dest src0 src1)
       (Trivit (dest src1)
@@ -2374,6 +2383,7 @@
               [(>) (i? (r? bge ble) (r? blt bgt))]
               [(>=) (i? (r? bgt blt) (r? ble bge))]
               [(overflow multiply-overflow) (i? bvc bvs)]
+              [(positive) (i? ble bgt)]
               [(carry) (i? bcc bcs)]
               ; unordered: zf,pf,cf <- 111; gt: 000; lt: 001; eq: 100
               ; reversed & inverted: !(fl< y x) = !(fl> x y) iff zf = 1 & cf = 1

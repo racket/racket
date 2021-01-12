@@ -28,9 +28,7 @@
           (thread)
           (regexp)
           (io)
-          (linklet)
-          (only (schemify)
-                force-unfasl))
+          (linklet))
 
   (include "place-register.ss")
   (define-place-register-define define expander-register-start expander-register-count)

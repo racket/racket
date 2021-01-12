@@ -29,7 +29,7 @@
 ;; and <rhs> are immediate `lambda` forms, though, to avoid
 ;; pessimizing a set of mutually recursive functions.
 
-(define (unnest-let e prim-knowns knowns imports mutated simples)
+(define (unnest-let e prim-knowns knowns imports mutated simples unsafe-mode?)
   (match e
     [`(,let-id (,binds ...) . ,body)
      (cond
@@ -63,7 +63,7 @@
                         (for/and ([rhs (in-list rhss)])
                           (and (or (eq? 'let let-id)
                                    (immediate-lambda? rhs))
-                               (simple? rhs prim-knowns knowns imports mutated simples))))
+                               (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))))
                    (match (car binds)
                      [`[,_ (,_ ,inner-binds ,_)]
                       (cond

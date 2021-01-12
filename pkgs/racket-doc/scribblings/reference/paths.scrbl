@@ -302,7 +302,20 @@ Windows examples.
          path-for-some-system?]{
 
 Like @racket[build-path], except a path convention type is specified
-explicitly.}
+explicitly.
+
+Note that, just as with @racket[build-path], any string arguments for either
+@racket[base] or @racket[sub] will be implicitly converted into a path for the
+current platform before being combined with the others. For this reason, you
+cannot use this function to build paths from strings for any platform other
+than the current one; in such attempts, @racket[type] does not match the
+inferred convention type for the strings and an @exnraise[exn:fail:contract].
+(To create paths for foreign platforms, see @racket[bytes->path].)
+
+The usefulness of @racket[build-path/convention-type] over @racket[build-path]
+is limited to cases where the sub-paths contain @racket['same] or @racket['up]
+elements.}
+
 
 @defproc[(absolute-path? [path (or/c path? string? path-for-some-system?)]) boolean?]{
 

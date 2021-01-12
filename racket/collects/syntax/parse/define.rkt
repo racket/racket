@@ -2,19 +2,20 @@
 (require (for-syntax racket/base
                      syntax/parse
                      "private/sc.rkt"))
-(provide define-simple-macro
+(provide define-syntax-parse-rule
          define-syntax-parser
+         (rename-out [define-syntax-parse-rule define-simple-macro])
          (for-syntax (all-from-out syntax/parse)))
 
-(define-syntax (define-simple-macro stx)
+(define-syntax (define-syntax-parse-rule stx)
   (syntax-parse stx
-    [(define-simple-macro (macro:id . pattern) . body)
+    [(_ (macro:id . pattern) . body)
      #`(define-syntax macro
          (syntax-parser/template
           #,((make-syntax-introducer) stx)
           [((~var macro id) . pattern) . body]))]))
 
-(define-simple-macro (define-syntax-parser macro:id option-or-clause ...)
+(define-syntax-parse-rule (define-syntax-parser macro:id option-or-clause ...)
   (define-syntax macro
     (syntax-parser option-or-clause ...)))
 

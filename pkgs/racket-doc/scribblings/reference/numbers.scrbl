@@ -1132,7 +1132,7 @@ that the @racket[read-single-flonum] parameter affects @racket[read].
          #:changed "7.3.0.5" @elem{Added the @racket[single-mode] argument.}]}
 
 
-@defproc[(real->decimal-string [n real?] [decimal-digits exact-nonnegative-integer? 2])
+@defproc[(real->decimal-string [n rational?] [decimal-digits exact-nonnegative-integer? 2])
          string?]{
 
 Prints @racket[n] into a string and returns the string. The printed
@@ -1146,6 +1146,12 @@ divided again by @racket[(expt 10 decimal-digits)].  The result of this
 process is an exact number whose decimal representation has no more
 than @racket[decimal-digits] digits after the decimal (and it is
 padded with trailing zeros if necessary).
+
+If @racket[n] is a real number with no decimal representation (e.g.
+@racket[+nan.0], @racket[+inf.0]), then the @exnraise[exn:fail:contract].
+(Any real number that is convertible to decimal notation is rational, 
+so @racket[n] must be @racket[rational?], despite the name of the 
+function.)
 
 @mz-examples[
 #:eval math-eval

@@ -19,20 +19,20 @@
   (define to (utf-8-converter-to c))
   (define-values (in-consumed out-produced status)
     (if (or (eq? from 'utf-16)
-            (eq? from 'utf-16-ish)
+            (eq? from 'wtf-16)
             (eq? from 'utf-16-assume))
         (utf-16-ish-reencode! src src-start src-end
                               dest dest-start dest-end
-                              #:from-utf-16-ish? (eq? from 'utf-16-ish)
+                              #:from-wtf-16? (eq? from 'wtf-16)
                               #:assume-paired-surrogates? (eq? from 'utf-16-assume))
         (utf-8-ish-reencode! src src-start src-end
                              dest dest-start dest-end
                              #:permissive? (or (eq? from 'utf-8-permissive)
-                                               (eq? from 'utf-8-ish-permissive))
-                             #:from-utf-8-ish? (or (eq? from 'utf-8-ish)
-                                                   (eq? from 'utf-8-ish-permissive))
+                                               (eq? from 'wtf-8-permissive))
+                             #:from-wtf-8? (or (eq? from 'wtf-8)
+                                                   (eq? from 'wtf-8-permissive))
                              #:to-utf-16? (or (eq? to 'utf-16)
-                                              (eq? to 'utf-16-ish)
+                                              (eq? to 'wtf-16)
                                               (eq? to 'utf-16-assume)))))
   (values in-consumed
           out-produced
@@ -44,16 +44,41 @@
 
 ;; Similar to `utf-8-decode` in "../string/utf-8-decode.rkt", but
 ;; "decodes" back to a byte string either as UTF-8 or UTF-16, and also
-;; supports a "utf-8-ish" encoding that allows unpaired surrogates.
+;; supports a WTF-8 encoding that allows unpaired surrogates.
 ;;
 ;; There's a lot of similarly to the implementation of `utf-8-decode`,
 ;; but with enough differences to make abstraction difficult.
 (define (utf-8-ish-reencode! in-bstr in-start in-end
                              out-bstr out-start out-end
                              #:permissive? permissive?
-                             #:from-utf-8-ish? from-utf-8-ish?
+                             #:from-wtf-8? from-wtf-8?
                              #:to-utf-16? to-utf-16?)
-  (let loop ([i in-start] [j out-start] [base-i in-start] [accum 0] [remaining 0])
+  (let loop ([i in-start] [j out-start] [base-i in-start] [accum 0] [remaining 0]
+                          ;; for WTF-8 mode to WTF-16:
+                          [pending-surrogate #f])
+
+    ;; Used to write a pending surrogate before continuing to write other:
+    (define-syntax-rule (with-pending-surrogate-done [j base-i] body ...)
+      (cond
+        [(and pending-surrogate
+              ((+ j 2) . > . out-end))
+         (values (- base-i in-start)
+                 (- j out-start)
+                 'continues)]
+        [else
+         (let ([j (cond
+                    [pending-surrogate
+                     ;; write the pending surrogate
+                     (bytes-set-two! out-bstr j
+                                     (arithmetic-shift pending-surrogate -8)
+                                     (bitwise-and pending-surrogate #xFF))
+                     (+ j 2)]
+                    [else j])]
+               [base-i (if pending-surrogate
+                           (+ base-i 3)
+                           base-i)])
+           body
+           ...)]))
 
     ;; Shared handling for encoding failures:
     (define (encoding-failure)
@@ -68,24 +93,25 @@
                       (- next-j out-start)
                       'continues)]
              [else
-              (loop next-i next-j next-i 0 0)]))
-         (cond
-           [(and (not to-utf-16?) ((+ j 3) . <= . out-end))
-            (bytes-set! out-bstr j #o357)
-            (bytes-set! out-bstr (+ j 1) #o277)
-            (bytes-set! out-bstr (+ j 2) #o275)
-            (continue-after-permissive (+ j 3))]
-           [(and to-utf-16? ((+ j 2) . <= . out-end))
-            (bytes-set-two! out-bstr j #xFF #xFD)
-            (continue-after-permissive (+ j 2))]
-           [else
-            (values (- base-i in-start)
-                    (- j out-start)
-                    'continues)])]
-       [else
-        (values (- base-i in-start)
-                (- j out-start)
-                'error)]))
+              (loop next-i next-j next-i 0 0 #f)]))
+         (with-pending-surrogate-done [j base-i]
+           (cond
+             [(and (not to-utf-16?) ((+ j 3) . <= . out-end))
+              (bytes-set! out-bstr j #o357)
+              (bytes-set! out-bstr (+ j 1) #o277)
+              (bytes-set! out-bstr (+ j 2) #o275)
+              (continue-after-permissive (+ j 3))]
+             [(and to-utf-16? ((+ j 2) . <= . out-end))
+              (bytes-set-two! out-bstr j #xFF #xFD)
+              (continue-after-permissive (+ j 2))]
+             [else
+              (values (- base-i in-start)
+                      (- j out-start)
+                      'continues)]))]
+        [else
+         (values (- base-i in-start)
+                 (- j out-start)
+                 'error)]))
     
     ;; Shared handling for decoding success:
     (define (continue next-j)
@@ -98,21 +124,29 @@
                     'complete
                     'continues))]
        [else
-        (loop next-i next-j next-i 0 0)]))
+        (loop next-i next-j next-i 0 0 #f)]))
     
     ;; Dispatch on byte:
     (cond
      [(= i in-end)
       ;; End of input
       (cond
-       [(zero? remaining)
-        (values (- base-i in-start)
-                (- j out-start)
-                'complete)]
-       [else
-        (values (- base-i in-start) 
-                (- j out-start)
-                'aborts)])]
+        [(zero? remaining)
+         (cond
+           [pending-surrogate
+            (values (- base-i in-start)
+                    (- j out-start)
+                    (if (= j out-end)
+                        'continues
+                        'aborts))]
+           [else
+            (values (- base-i in-start)
+                    (- j out-start)
+                    'complete)])]
+        [else
+         (values (- base-i in-start)
+                 (- j out-start)
+                 'aborts)])]
      [else
       (define b (bytes-ref in-bstr i))
       (cond
@@ -120,18 +154,19 @@
         (cond
           [(zero? remaining)
            ;; Found ASCII
-           (cond
-             [(and (not to-utf-16?)
-                   (j . < . out-end))
-              (bytes-set! out-bstr j b)
-              (continue (add1 j))]
-             [((add1 j) . < . out-end)
-              (bytes-set-two! out-bstr j 0 b)
-              (continue (+ j 2))]
-             [else
-              (values (- base-i in-start) 
-                      (- j out-start)
-                      'continues)])]
+           (with-pending-surrogate-done [j base-i]
+             (cond
+               [(and (not to-utf-16?)
+                     (j . < . out-end))
+                (bytes-set! out-bstr j b)
+                (continue (add1 j))]
+               [((add1 j) . < . out-end)
+                (bytes-set-two! out-bstr j 0 b)
+                (continue (+ j 2))]
+               [else
+                (values (- base-i in-start)
+                        (- j out-start)
+                        'continues)]))]
           [else
            ;; We were accumulating bytes for an encoding, and
            ;; the encoding didn't complete
@@ -152,41 +187,90 @@
               [(= 1 remaining)
                ;; This continuation byte finishes an encoding
                (define v next-accum)
-               (define next-i (add1 i))
                (cond
+                 [(v . > . #x10FFFF)
+                  (encoding-failure)]
                  [(v . < . 128)
                   ;; A shorter byte sequence would work
                   (encoding-failure)]
-                 [(or from-utf-8-ish?
-                      (not (or (v . > . #x10FFFF)
-                               (and (v . >= . #xD800)
-                                    (v . <= . #xDFFF)))))
-                  ;; A character to write, either in UTF-16 output for UTF-8
+                 [(and (v . >= . #xD800)
+                       (v . <= . #xDFFF))
                   (cond
-                    [to-utf-16?
-                     ;; Write one character in UTF-16
+                    [from-wtf-8?
+                     ;; Assuming `to-utf-16?`...
+                     ;; Allow an unpaired surrogate, but make sure it's really unpaired
                      (cond
-                       [(and (v . < . #x10000)
-                             ((+ j 2) . <= . out-end))
-                        ;; No need for a surrogate pair (so, 2 bytes)
+                       ;; Report 'aborts if there is no more input (because
+                       ;; we'd need to check that it's really unpaired)
+                       [(= i in-end)
+                        (values (- base-i in-start)
+                                (- j out-start)
+                                'aborts)]
+                       [(and pending-surrogate
+                             (= (bitwise-and v #xDC00) #xDC00))
+                        ;; Failure, because two unpaired surrogates would look paired
+                        (cond
+                          [permissive?
+                           ;; We need to treat the failed encoding as spanning 6 bytes,
+                           ;; and each of those needs a failure substitution in the output;
+                           ;; we can't write any if they don't all fit
+                           (cond
+                             [((+ j 12) . <= . out-end)
+                              (for ([i (in-range 6)])
+                                (bytes-set-two! out-bstr (+ j (* i 2)) #xFF #xFD))
+                              (continue (+ j 12))]
+                             [else
+                              (values (- base-i in-start)
+                                      (- j out-start)
+                                      'continues)])]
+                          [else (encoding-failure)])]
+                       [(= (bitwise-and v #xDC00) #xD800)
+                        ;; This unpaired surrogate is pending to make sure it's
+                        ;; not followed by a #xDC00 "unpaired" surrogate (but
+                        ;; any pending unpaired surrogate is done)
+                        (define next-i (add1 i))
+                        (with-pending-surrogate-done [j base-i]
+                          (loop next-i j base-i 0 0 v))]
+                       [((+ j 2) . <= . out-end)
+                        ;; Unpaired surrogate:
                         (bytes-set-two! out-bstr j (arithmetic-shift v -8) (bitwise-and v #xFF))
                         (continue (+ j 2))]
-                       [((+ j 4) . <= . out-end)
-                        ;; Write surrogate pair (as 4 bytes)
-                        (define av (- v #x10000))
-                        (define hi (bitwise-ior #xD800 (bitwise-and (arithmetic-shift av -10) #x3FF)))
-                        (define lo (bitwise-ior #xDC00 (bitwise-and av #x3FF)))
-                        (bytes-set-two! out-bstr j (arithmetic-shift hi -8) (bitwise-and hi #xFF))
-                        (bytes-set-two! out-bstr (+ j 2) (arithmetic-shift lo -8) (bitwise-and lo #xFF))
-                        (continue (+ j 4))]
                        [else
                         ;; Not enought space for UTF-16 encoding
                         (values (- base-i in-start)
                                 (- j out-start)
                                 'continues)])]
                     [else
-                     ;; From UTF-8-to-UTF-8 with no "-ish" corrections, we can just copy
+                     (encoding-failure)])]
+                 [else
+                  ;; A character to write, either in UTF-16 output for UTF-8
+                  (cond
+                    [to-utf-16?
+                     ;; Write one character in UTF-16
+                     (with-pending-surrogate-done [j base-i]
+                       (cond
+                         [(and (v . < . #x10000)
+                               ((+ j 2) . <= . out-end))
+                          ;; No need for a surrogate pair (so, 2 bytes)
+                          (bytes-set-two! out-bstr j (arithmetic-shift v -8) (bitwise-and v #xFF))
+                          (continue (+ j 2))]
+                         [((+ j 4) . <= . out-end)
+                          ;; Write surrogate pair (as 4 bytes)
+                          (define av (- v #x10000))
+                          (define hi (bitwise-ior #xD800 (bitwise-and (arithmetic-shift av -10) #x3FF)))
+                          (define lo (bitwise-ior #xDC00 (bitwise-and av #x3FF)))
+                          (bytes-set-two! out-bstr j (arithmetic-shift hi -8) (bitwise-and hi #xFF))
+                          (bytes-set-two! out-bstr (+ j 2) (arithmetic-shift lo -8) (bitwise-and lo #xFF))
+                          (continue (+ j 4))]
+                         [else
+                          ;; Not enough space for UTF-16 encoding
+                          (values (- base-i in-start)
+                                  (- j out-start)
+                                  'continues)]))]
+                    [else
+                     ;; For UTF-8-to-UTF-8 (no WTF-8), we can just copy
                      ;; the input encoding bytes to the output bytes
+                     (define next-i (add1 i))
                      (let loop ([from-i base-i] [to-j j])
                        (cond
                          [(= from-i next-i)
@@ -197,11 +281,7 @@
                                   'continues)]
                          [else
                           (bytes-set! out-bstr to-j (bytes-ref in-bstr from-i))
-                          (loop (add1 from-i) (add1 to-j))]))])]
-                 [else
-                  ;; Not a valid character --- an unpaired surrogate
-                  ;; or too-large value in normal UTF-8 decoding (not UTF-8-ish)
-                  (encoding-failure)])]
+                          (loop (add1 from-i) (add1 to-j))]))])])]
               [(and (= 2 remaining)
                     (next-accum . <= . #b11111))
                ;; A shorter byte sequence would work
@@ -216,7 +296,7 @@
               ;; old behavior for now
               [else
                ;; An encoding continues...
-               (loop (add1 i) j base-i next-accum (sub1 remaining))])])]
+               (loop (add1 i) j base-i next-accum (sub1 remaining) pending-surrogate)])])]
           [(not (zero? remaining))
            ;; Trying to start a new encoding while one is in
            ;; progress
@@ -227,11 +307,11 @@
            ;; If `accum` is zero, that's an encoding mistake
            (cond
              [(zero? accum) (encoding-failure)]
-             [else (loop (add1 i) j i accum 1)])]
+             [else (loop (add1 i) j base-i accum 1 pending-surrogate)])]
          [(= #b11100000 (bitwise-and b #b11110000))
           ;; Start a three-byte encoding
           (define accum (bitwise-and b #b1111))
-          (loop (add1 i) j i accum 2)]
+          (loop (add1 i) j base-i accum 2 pending-surrogate)]
          [(= #b11110000 (bitwise-and b #b11111000))
           ;; Start a four-byte encoding
           (define accum (bitwise-and b #b111))
@@ -240,7 +320,7 @@
              ;; Will be greater than #x10FFFF
              (encoding-failure)]
             [else
-             (loop (add1 i) j i  accum 3)])]
+             (loop (add1 i) j base-i  accum 3 pending-surrogate)])]
          [else
           ;; Five- or six-byte encodings don't produce valid
           ;; characters
@@ -249,7 +329,7 @@
 ;; Converts UTF-16 into UTF-8
 (define (utf-16-ish-reencode! in-bstr in-start in-end
                               out-bstr out-start out-end
-                              #:from-utf-16-ish? from-utf-16-ish?
+                              #:from-wtf-16? from-wtf-16?
                               #:assume-paired-surrogates? assume-paired-surrogates?)
   (let loop ([i in-start] [j out-start])
     (define (done status)
@@ -298,7 +378,7 @@
                                  (bitwise-ior (arithmetic-shift (bitwise-and v #x3FF) 10)
                                               (bitwise-and v2 #x3FF))))
                    (continue v3 (+ i 4))]
-                  [from-utf-16-ish?
+                  [from-wtf-16?
                    ;; continue anyway as as unpaired surrogate
                    (continue v (+ i 2))]
                   [else
@@ -306,7 +386,7 @@
             [else
              ;; unpaired surrogate
              (cond
-               [from-utf-16-ish?
+               [from-wtf-16?
                 ;; continue anyway
                 (continue v (+ i 2))]
                [else (done 'error)])])]

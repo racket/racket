@@ -124,14 +124,28 @@ static void unregister_mach_thread() {
 # define ARCH_thread_state_t ppc_thread_state_t
 # define ARCH_THREAD_STATE PPC_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT PPC_THREAD_STATE_COUNT
-#elif defined(__arm__) || defined(__arm64__)
+#elif defined(__arm__)
 # define ARCH_thread_state_t arm_thread_state_t
 # define ARCH_THREAD_STATE ARM_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT ARM_THREAD_STATE_COUNT
 #elif defined(__x86_64__)
+# define ARCH_exception_state_t x86_exception_state64_t
+# define ARCH_EXCEPTION_STATE x86_EXCEPTION_STATE64
+# define ARCH_EXCEPTION_STATE_COUNT x86_EXCEPTION_STATE64_COUNT
 # define ARCH_thread_state_t x86_thread_state64_t
 # define ARCH_THREAD_STATE x86_THREAD_STATE64
 # define ARCH_THREAD_STATE_COUNT x86_THREAD_STATE64_COUNT
+# define USE_THREAD_STATE
+# include <mach/thread_status.h>
+# include <mach/exception.h>
+#elif defined(__arm64__)
+# define ARCH_exception_state_t arm_exception_state64_t
+# define ARCH_EXCEPTION_STATE ARM_EXCEPTION_STATE64
+# define ARCH_EXCEPTION_STATE_COUNT ARM_EXCEPTION_STATE64_COUNT
+# define ARCH_thread_state_t arm_thread_state64_t
+# define ARCH_THREAD_STATE ARM_THREAD_STATE64
+# define ARCH_THREAD_STATE_COUNT ARM_THREAD_STATE64_COUNT
+# define ARCH_FAULTVADDR_FIELD THREAD_FLD(far)
 # define USE_THREAD_STATE
 # include <mach/thread_status.h>
 # include <mach/exception.h>
@@ -139,6 +153,10 @@ static void unregister_mach_thread() {
 # define ARCH_thread_state_t i386_thread_state_t
 # define ARCH_THREAD_STATE i386_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT i386_THREAD_STATE_COUNT
+#endif
+
+#ifndef ARCH_FAULTVADDR_FIELD
+# define ARCH_FAULTVADDR_FIELD THREAD_FLD(faultvaddr)
 #endif
 
 /* the structure of an exception msg and its reply */
@@ -214,8 +232,7 @@ static void os_protect_pages(void *p, size_t len, int writeable)
   }
 
   retval = vm_protect(task_self, (vm_address_t)p, len, FALSE,
-		      writeable ? VM_PROT_ALL 
-		      : (VM_PROT_READ | VM_PROT_EXECUTE));
+		      (VM_PROT_READ | (writeable ? VM_PROT_WRITE : 0)));
   if(retval != KERN_SUCCESS) {
     GCPRINT(GCOUTF, "WARNING: couldn't protect %li bytes of page %p%s\n",
 	   len, p, mach_error_string(retval));
@@ -311,11 +328,11 @@ kern_return_t GC_catch_exception_raise(mach_port_t port,
     p = (void*)exception_data[1];
 #else
     /* We have to do it this way for 64-bit mode: */
-    x86_exception_state64_t exc_state;
-    mach_msg_type_number_t exc_state_count = x86_EXCEPTION_STATE64_COUNT;
-    (void)thread_get_state(thread_port, x86_EXCEPTION_STATE64, (natural_t*)&exc_state,
+    ARCH_exception_state_t exc_state;
+    mach_msg_type_number_t exc_state_count = ARCH_EXCEPTION_STATE_COUNT;
+    (void)thread_get_state(thread_port, ARCH_EXCEPTION_STATE, (natural_t*)&exc_state,
                            &exc_state_count);
-    p = (void *)exc_state. THREAD_FLD(faultvaddr);
+    p = (void *)exc_state.ARCH_FAULTVADDR_FIELD;
 #endif
 
 #if defined(MZ_USE_PLACES)

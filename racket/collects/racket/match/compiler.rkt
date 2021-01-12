@@ -40,12 +40,25 @@
 (define (hash-on-map ht-l f)
   (map (lambda (p) (f (car p) (cdr p))) ht-l))
 
+(define (and* . vs)
+  (andmap values vs))
+
+;; Produce a bool for every column in a set of rows, where #t means
+;; that every pat in that column is a Dummy.
+(define (dummy?-columns rows pat-acc)
+  (apply map and* (for/list ([r (in-list rows)])
+                    (map Dummy? (pat-acc (Row-first-pat r))))))
+
 ;; generate a clause of kind k
 ;; for rows rows, with matched variable x and rest variable xs
 ;; escaping to esc
 (define (gen-clause k rows x xs esc)
   (define-syntax-rule (constant-pat predicate-stx)
-    (with-syntax ([rhs (compile* (cons x xs)
+    (with-syntax ([lhs (if (procedure? predicate-stx)
+                           (predicate-stx x)
+                           (quasisyntax/loc predicate-stx
+                             (#,predicate-stx #,x)))]
+                  [rhs (compile* (cons x xs)
                                  (map (lambda (row)
                                         (define-values (p ps)
                                           (Row-split-pats row))
@@ -55,26 +68,35 @@
                                                   (Row-vars-seen row)))
                                       rows)
                                  esc)])
-      (if (procedure? predicate-stx)
-          #`[#,(predicate-stx x) rhs]
-          #`[(#,predicate-stx #,x) rhs])))
+      #'[lhs rhs]))
   (define (compile-con-pat accs pred pat-acc)
-    (with-syntax* ([(tmps ...) (generate-temporaries accs)]
-                   [(accs ...) accs]
-                   [question (if (procedure? pred)
-                                 (pred x)
-                                 #`(#,pred #,x))]
-                   [body (compile*
-                          (append (syntax->list #'(tmps ...)) xs)
-                          (map (lambda (row)
-                                  (define-values (p1 ps) (Row-split-pats row))
-                                  (make-Row (append (pat-acc p1) ps)
-                                            (Row-rhs row)
-                                            (Row-unmatch row)
-                                            (Row-vars-seen row)))
-                                rows)
-                           esc)])
-      #`[question (let ([tmps (accs #,x)] ...) body)]))
+    ;; eliminate accessors for columns where every pat is a Dummy
+    (let* ([dummy?s (dummy?-columns rows pat-acc)]
+           [accs (for/list ([acc (in-list accs)]
+                            [dummy? (in-list dummy?s)]
+                            #:unless dummy?)
+                   acc)]
+           [filtered-acc (lambda (v)
+                           (for/list ([pat (in-list (pat-acc v))]
+                                      [dummy? (in-list dummy?s)]
+                                      #:unless dummy?)
+                             pat))])
+      (with-syntax* ([(tmps ...) (generate-temporaries accs)]
+                     [(accs ...) accs]
+                     [question (if (procedure? pred)
+                                   (pred x)
+                                   #`(#,pred #,x))]
+                     [body (compile*
+                            (append (syntax->list #'(tmps ...)) xs)
+                            (map (lambda (row)
+                                   (define-values (p1 ps) (Row-split-pats row))
+                                   (make-Row (append (filtered-acc p1) ps)
+                                             (Row-rhs row)
+                                             (Row-unmatch row)
+                                             (Row-vars-seen row)))
+                                 rows)
+                            esc)])
+        #`[question (let ([tmps (accs #,x)] ...) body)])))
   (cond
     [(eq? 'box k)
      (compile-con-pat (list #'unsafe-unbox*) #'box? (compose list Box-p))]
@@ -94,7 +116,17 @@
                       (hash-on-map
                        ht
                        (lambda (arity rows)
-                         (define ns (build-list arity values))
+                         (define dummy?s (dummy?-columns rows Vector-ps))
+                         (define ns
+                           (for/list ([n (in-range arity)]
+                                      [dummy? (in-list dummy?s)]
+                                      #:unless dummy?)
+                             n))
+                         (define (filtered-acc v)
+                           (for/list ([pat (in-list (Vector-ps v))]
+                                      [dummy? (in-list dummy?s)]
+                                      #:unless dummy?)
+                             pat))
                          (with-syntax ([(tmps ...) (generate-temporaries ns)])
                            (with-syntax ([body
                                           (compile*
@@ -102,7 +134,7 @@
                                            (map (lambda (row)
                                                   (define-values (p1 ps)
                                                     (Row-split-pats row))
-                                                  (make-Row (append (Vector-ps p1) ps)
+                                                  (make-Row (append (filtered-acc p1) ps)
                                                             (Row-rhs row)
                                                             (Row-unmatch row)
                                                             (Row-vars-seen row)))
@@ -129,7 +161,6 @@
     [(syntax? k) (constant-pat k)]
     [(procedure? k) (constant-pat k)]
     [else (error 'match-compile "bad key: ~a" k)]))
-
 
 ;; produces the syntax for a let clause
 (define (compile-one vars block esc)
@@ -259,12 +290,14 @@
        (error 'compile-one "App block with multiple rows: ~a" block))
      (let* ([row (car block)]
             [pats (Row-pats row)]
-            [app-pats (App-ps first)])
+            [app-pats (App-ps first)]
+            [app-expr (App-expr first)])
        (with-syntax ([(t ...) (generate-temporaries app-pats)])
          #`(let-values ([(t ...)
-                         #,(if (procedure? (App-expr first))
-                             ((App-expr first) x)
-                             #`(#,(App-expr first) #,x))])
+                         #,(if (procedure? app-expr)
+                               (app-expr x)
+                               (quasisyntax/loc app-expr
+                                 (#,app-expr #,x)))])
              #,(compile* (append (syntax->list #'(t ...)) xs)
                          (list (make-Row (append app-pats (cdr pats))
                                          (Row-rhs row)

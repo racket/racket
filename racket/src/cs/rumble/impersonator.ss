@@ -505,10 +505,10 @@
            [(struct-mutator-procedure? (car args))
             (let* ([orig-proc (car args)]
                    [key-proc (strip-impersonator orig-proc)]
-                   [rtd+pos (struct-mutator-procedure-rtd+pos key-proc)])
+                   [pos+rtd (struct-mutator-procedure-pos+rtd key-proc)])
               (get-proc "mutator" args 2
-                        orig-proc (car rtd+pos) (struct-mutator-pos->key2 (cdr rtd+pos))
-                        (record? val (car rtd+pos))
+                        orig-proc (cdr pos+rtd) (struct-mutator-pos->key2 (car pos+rtd))
+                        (record? val (cdr pos+rtd))
                         #t))]
            [(struct-type-property-accessor-procedure? (car args))
             (let* ([orig-proc (car args)]
@@ -548,7 +548,8 @@
             [(null? args) empty-hash]
             [(struct-mutator-procedure? (car args))
              (hash-set (loop (cddr args))
-                       (struct-mutator-procedure-rtd+pos (strip-impersonator (car args)))
+                       (let ([pos+rtd (struct-mutator-procedure-pos+rtd (strip-impersonator (car args)))])
+                         (cons (cdr pos+rtd) (car pos+rtd)))
                        #t)]
             [else
              (loop (cddr args))]))])
@@ -676,11 +677,10 @@
 
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
-         (escapes-ok
-          (lambda (c hash-code)
-             ((record-hash-procedure (impersonator-val c))
-              c
-              hash-code)))])
+         (lambda (c hash-code)
+           ((record-hash-procedure (impersonator-val c))
+            c
+            hash-code))])
     (let ([add (lambda (rtd)
                  (record-type-hash-procedure rtd struct-impersonator-hash-code))])
       (add (record-type-descriptor struct-impersonator))

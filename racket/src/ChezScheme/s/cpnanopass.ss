@@ -217,6 +217,8 @@
           (annotation-expression x)
           x)))
 
+  (define rtd-ancestors (csv7:record-field-accessor #!base-rtd 'ancestors))
+
   (let ()
     (import (nanopass) np-languages)
 
@@ -548,7 +550,7 @@
                                             arg-offset fp-offset rextra* rfpextra*)
                                          (if (eq? (syntax->datum (car other-type*)) 'fp)
                                              (f (cdr other*) (cdr other-type*) (cons fp-offset rtc-disp*)
-                                                arg-offset (fx+ fp-offset 8) rextra* (cons other rfpextra*))
+                                                arg-offset (fx+ fp-offset (constant double-bytes)) rextra* (cons other rfpextra*))
                                              (f (cdr other*) (cdr other-type*) (cons arg-offset rtc-disp*)
                                                 (fx+ arg-offset (constant ptr-bytes)) fp-offset (cons other rextra*) rfpextra*))))))]
                             [_ (syntax-error x "missing or out-of-order required registers")])]
@@ -855,7 +857,7 @@
     (define-record-type info-lambda (nongenerative)
       (parent info)
       (sealed #t)
-      (fields src sexpr libspec interface* (mutable dcl*) (mutable flags) (mutable fv*) (mutable name)
+      (fields src sexpr libspec (mutable interface*) (mutable dcl*) (mutable flags) (mutable fv*) (mutable name)
         (mutable well-known?) (mutable closure-rep) ctci (mutable pinfo*) seqno)
       (protocol
         (lambda (pargs->new)
@@ -1147,7 +1149,8 @@
              `(letrec ([,uvar* ,e*] ...) ,(Expr body))))]
         [(call ,preinfo ,e ,[e*] ...)
          (unless (preinfo-call? preinfo) (error 'preinfo-call "oops"))
-         `(call ,(make-info-call (preinfo-src preinfo) (preinfo-sexpr preinfo) (preinfo-call-check? preinfo) #f #f)
+         `(call ,(make-info-call (preinfo-src preinfo) (preinfo-sexpr preinfo) (preinfo-call-check? preinfo) #f
+                                 (and (preinfo-call-no-return? preinfo) (not (preinfo-call-check? preinfo))))
             ,(Expr e) ,e* ...)]
         [(foreign (,conv* ...) ,name ,[e] (,arg-type* ...) ,result-type)
          (let ([info (make-info-foreign conv* arg-type* result-type #f)])
@@ -2097,6 +2100,367 @@
                  (let ([b* (car b**)])
                    `(closures ([,(map binding-x b*) (,(map binding-x* b*) ...) ,(map binding-le b*)] ...)
                       ,(f (cdr b**)))))))]))
+
+    ;;; This pass lifts all internal well-known closures to a intermost lambda body with a lift barrier
+    (module (np-lift-well-known-closures)
+      (define-syntax with-level
+        (syntax-rules ()
+          [(_ [?x* ?level] ?e1 ?e2 ...)
+           (let ([x* ?x*] [level ?level])
+             (for-each (lambda (x) (var-index-set! x level)) x*)
+             (let ([v (begin ?e1 ?e2 ...)])
+               (for-each (lambda (x) (var-index-set! x #f)) x*)
+               v))]))
+
+      (define-syntax with-lifts
+        (syntax-rules ()
+          [(_ ?x* ?e1 ?e2 ...)
+           (with-level [?x* 'lifted] ?e1 ?e2 ...)]))
+
+      ;; defined in or lifted to outer lambda body
+      (define outer?
+        (case-lambda
+          [(target x)
+           (let ([index (var-index x)])
+             (or (eq? index 'lifted)
+                 (fx<= index target)))]
+          [(target)
+           (lambda (x) (outer? target x))]))
+
+      (define (lifted? x)
+        (eq? 'lifted (var-index x)))
+
+      (define-record-type lift-info
+        (nongenerative)
+        (sealed #t)
+        (fields (mutable le**))
+        (protocol (lambda (n) (lambda () (n '())))))
+
+      (define-record-type le-info
+        (nongenerative)
+        (sealed #t)
+        (fields x fv* cle))
+
+      (define cle-info
+        (lambda (cle)
+          (nanopass-case (L6 CaseLambdaExpr) cle
+            [(case-lambda ,info ,cl* ...) info])))
+
+      ;; simply a eq-hashtable, but can retrieve the keys deterministically
+      (define-record-type uvar-set
+        (nongenerative)
+        (sealed #t)
+        (fields ht (mutable ls))
+        (protocol
+         (lambda (n)
+           (lambda (ls)
+             (define ht (make-eq-hashtable))
+             (for-each (lambda (x) (eq-hashtable-set! ht x #t)) ls)
+             (n ht ls)))))
+
+      (define uvar-set-has?
+        (lambda (us x)
+          (eq-hashtable-contains? (uvar-set-ht us) x)))
+
+      (define uvar-set-add!
+        (lambda (us x)
+          (cond
+           [(null? x) (void)]
+           [(pair? x)
+            (for-each (lambda (x) (uvar-set-add! us x)) x)]
+           [(eq-hashtable-contains? (uvar-set-ht us) x)
+            (void)]
+           [else
+            (eq-hashtable-set! (uvar-set-ht us) x #t)
+            (uvar-set-ls-set! us (cons x (uvar-set-ls us)))])))
+
+      (define partition3
+        (lambda (proc l1 l2 l3)
+          (let f ([l1 l1] [l2 l2] [l3 l3])
+            (cond
+             [(null? l1) (values '()'())]
+             [(proc (car l1) (car l2) (car l3))
+              (let-values ([(a b) (f (cdr l1) (cdr l2) (cdr l3))])
+                (values (cons (car l1) a) b))]
+             [else
+              (let-values ([(a b) (f (cdr l1) (cdr l2) (cdr l3))])
+                (values a (cons (car l1) b)))]))))
+
+      (define info-lambda-lift-barrier?
+        (lambda (info)
+          (fx= (bitwise-and (info-lambda-flags info) (constant code-flag-lift-barrier))
+               (constant code-flag-lift-barrier))))
+
+      (define-pass np-lift : L6 (ir) -> L6 ()
+        (definitions
+          (define partition-liftable
+            (lambda (x* fv** cle*)
+              (partition3
+               (lambda (x fv* cle)
+                 (info-lambda-well-known? (cle-info cle)))
+               x* fv** cle*)))
+
+          (define find-extra-arg*
+            (lambda (x arg-info)
+              (and (lifted? x)
+                   (let ([info (uvar-info-lambda x)])
+                     (and info
+                          (assq x arg-info))))))
+
+          (define partition-lift
+            (lambda (x* x** le* target)
+              (let f ([x* x*] [x** x**] [le* le*])
+                (cond
+                 [(null? x*) (values '() '() '())]
+                 [(lifted? (car x*))
+                  ;; any free variables other than
+                  ;; procedures lifted or defined in outermost lambda body
+                  ;; are moved to extra arguments
+                  (let*-values ([(new-fv* extra-arg*) (partition (outer? target) (car x**))]
+                                [(rest* lift* extra-arg**) (f (cdr x*) (cdr x**) (cdr le*))])
+                    (values rest*
+                            (cons (make-le-info (car x*) new-fv* (car le*))
+                                  lift*)
+                            (cons extra-arg* extra-arg**)))]
+                 [else
+                  (let-values ([(rest* lift* extra-arg**)
+                                (f (cdr x*) (cdr x**) (cdr le*))])
+                    (values (cons (make-le-info (car x*) (car x**) (car le*))
+                                  rest*)
+                            lift*
+                            extra-arg**))]))))
+
+          (define rename
+            (case-lambda
+              [(rename-info)
+               (lambda (x)
+                 (rename rename-info x))]
+              [(rename-info x)
+               (cond
+                [(assq x rename-info) => cdr]
+                [else x])]))
+
+           (define (make-renamed x)
+             (make-tmp (uvar-name x)))
+
+          (define-syntax (recur stx)
+            (syntax-case stx ()
+              [(_ ?f ?e ...)
+               (identifier? #'?f)
+               (with-implicit (?f lift-info arg-info rename-info level target)
+                 #'(?f ?e ... lift-info arg-info rename-info level target))]))
+
+          (define rewrite-rest-body
+            (lambda (le-info lift-info arg-info rename-info level target)
+              (define new-lift-info (make-lift-info))
+              (define le (let ([level (fx+ level 1)]
+                               [lift-info new-lift-info])
+                           (recur CaseLambdaExpr (le-info-cle le-info))))
+              (define lift-x* (map le-info-x (apply append (lift-info-le** new-lift-info))))
+              (lift-info-le**-set! lift-info (append (lift-info-le** new-lift-info) (lift-info-le** lift-info)))
+              ;; add newly lifted procedures as free variables
+              (values (append lift-x* (le-info-fv* le-info)) le)))
+
+          (define rewrite-rest-le
+            (lambda (le-info lift-info arg-info rename-info level target)
+              (define-values (new-fv* new-le) (recur rewrite-rest-body le-info))
+              (define us (make-uvar-set new-fv*))
+
+              ;; also add extra arguments from free lifted procedures as free variables
+              ;; there is no need to recur since extra arguments of a lifted procedure would not be lifted procedures
+              (for-each
+               (lambda (fv)
+                 (cond
+                  [(find-extra-arg* fv arg-info)
+                  =>
+                  (lambda (xe*)
+                    (uvar-set-add! us (cdr xe*)))]
+                  [else (void)]))
+               new-fv*)
+
+              (make-le-info (le-info-x le-info)
+                            (map (rename rename-info) (uvar-set-ls us))
+                            new-le)))
+
+          (define union-extra-arg*
+            (lambda (le-info* arg-info extra-arg**)
+              (define us (make-uvar-set '()))
+              ;; simply computes a union since lambdas are strongly-connected after np-identify-scc
+              (for-each
+               (lambda (le-info extra-arg*)
+                 (uvar-set-add! us extra-arg*)
+                 (for-each
+                  (lambda (fv)
+                    (cond
+                     [(find-extra-arg* fv arg-info)
+                      =>
+                      (lambda (x+e*)
+                        (uvar-set-add! us (cdr x+e*)))]
+                     [else (void)]))
+                  (le-info-fv* le-info)))
+               le-info* extra-arg**)
+
+              ;;if rules in filter-liftable are changed, lambdas passed as extra arguments would no longer be well-known
+              (for-each
+               (lambda (x)
+                 (let ([info (uvar-info-lambda x)])
+                   (and info
+                        (when (info-lambda-well-known? info)
+                          (info-lambda-well-known?-set! info #f)))))
+               (uvar-set-ls us))
+
+              (uvar-set-ls us)))
+
+          (define rewrite-lifted-le
+            (lambda (le-info extra-arg* lift-info arg-info rename-info level target)
+              (define-values (new-le lift-x*)
+                (recur LiftedCaseLambdaExpr (le-info-cle le-info) extra-arg*))
+              (nanopass-case (L6 CaseLambdaExpr) new-le
+                [(case-lambda ,info (clause (,x** ...) ,mcp* ,interface* ,body*) ...)
+                 (let* ()
+                   (info-lambda-interface*-set! info interface*)
+                   (make-le-info (le-info-x le-info)
+                                 ;; add newly lifted procedures as free variables
+                                 (append lift-x* (map (rename rename-info) (le-info-fv* le-info)))
+                                 new-le))])))
+          )
+
+        ;; arg-info : lifted-x -> unrenamed extra-arg*
+        ;; rename-info : unrenamed x -> renamed x
+        (Expr : Expr (ir lift-info arg-info rename-info level target) -> Expr ()
+          [,x (rename rename-info x)]
+
+          [(call ,info ,mdcl ,x ,[e*] ...)
+           (cond
+            [(find-extra-arg* x arg-info)
+             =>
+             (lambda (x+extra-arg*)
+               `(call ,info ,mdcl ,(rename rename-info x)
+                      ,(append (map (rename rename-info) (cdr x+extra-arg*)) e*) ...))]
+            [else
+             `(call ,info ,mdcl ,(rename rename-info x) ,e* ...)])]
+
+          [(let ([,x* ,[e*]] ...) ,body)
+           (with-level [x* level]
+             `(let ([,x* ,e*] ...) ,(recur Expr body)))]
+
+          [(mvlet ,[e] ((,x** ...) ,interface* ,body*) ...)
+           `(mvlet ,e
+              ((,x** ...)
+               ,interface*
+               ,(map (lambda (x* body)
+                       (with-level [x* level]
+                         (recur Expr body)))
+                     x** body*))
+              ...)]
+          [(loop ,x (,x* ...) ,body)
+           (with-level [(list x) level]
+             `(loop ,x (,x* ...) ,(recur Expr body)))]
+
+          ;; a lift barrier on this level
+          [(closures ([,x* (,x** ...) ,le*] ...) ,body)
+           (guard (fx= level target))
+           (with-level [x* level]
+             (let f ([x* x*] [x** x**] [le* le*] [rx* '()] [rfv** '()] [rle* '()])
+               (cond
+                [(null? x*)
+                 `(closures ([,(reverse rx*) (,(reverse rfv**) ...) ,(reverse rle*)] ...)
+                            ,(recur Expr body))]
+                [else
+                 (let*-values ([(new-lift-info) (make-lift-info)]
+                               [(new-le) (let ([level (fx+ level 1)] [lift-info new-lift-info])
+                                           (recur CaseLambdaExpr (car le*)))]
+                               [(lift*) (apply append (lift-info-le** new-lift-info))])
+                   (f (cdr x*) (cdr x**) (cdr le*)
+                      (append (map le-info-x lift*) (cons (car x*) rx*))
+                      (append (map le-info-fv* lift*) (cons (append (car x**) (map le-info-x lift*)) rfv**))
+                      (append (map le-info-cle lift*) (cons new-le rle*))))])))]
+
+          [(closures ([,x* (,x** ...) ,le*] ...) ,body)
+           (let-values ([(lift-x* non-lift-x*) (partition-liftable x* x** le*)])
+             (with-level [non-lift-x* level]
+               (with-lifts lift-x*
+                 (let*-values ([(rest-le* lift-le* extra-arg**) (partition-lift x* x** le* target)]
+                               [(extra-arg*) (union-extra-arg* lift-le* arg-info extra-arg**)]
+                               [(arg-info) (append (map (lambda (le-info)
+                                                          (cons (le-info-x le-info) extra-arg*))
+                                                        lift-le*)
+                                                   arg-info)]
+                               [(rest-le*)
+                                (map (lambda (le-info) (recur rewrite-rest-le le-info))
+                                     rest-le*)]
+                               [(lift-le*)
+                                (map (lambda (le-info)
+                                       (recur rewrite-lifted-le le-info extra-arg*))
+                                     lift-le*)])
+                   (unless (null? lift-le*)
+                     (lift-info-le**-set! lift-info (cons lift-le* (lift-info-le** lift-info))))
+                   (let ([body (recur Expr body)])
+                     (cond
+                      [(null? rest-le*) body]
+                      [else
+                       `(closures ([,(map le-info-x rest-le*) (,(map le-info-fv* rest-le*) ...)
+                                    ,(map le-info-cle rest-le*)] ...)
+                                  ,body)]))))))])
+
+        (CaseLambdaClause : CaseLambdaClause (ir lift-info arg-info rename-info level target) -> CaseLambdaClause ()
+          [(clause (,x* ...) ,mcp ,interface ,body)
+           (with-level [x* level]
+             (let* ([old-le** (lift-info-le** lift-info)]
+                    [new-body (recur Expr body)])
+               `(clause (,x* ...)
+                        ,(or mcp
+                             ;;introduce a cpvar if something lifted from this clause
+                             (and (not (eq? (lift-info-le** lift-info) old-le**))
+                                  (make-cpvar)))
+                        ,interface ,new-body)))])
+        (CaseLambdaExpr : CaseLambdaExpr (ir lift-info arg-info rename-info level target) -> CaseLambdaExpr ()
+          [(case-lambda ,info ,cl* ...)
+           `(case-lambda
+              ,info
+              ,(if (info-lambda-lift-barrier? info)
+                   (let ([target level])
+                     (map (lambda (cl) (recur CaseLambdaClause cl)) cl*))
+                   (map (lambda (cl) (recur CaseLambdaClause cl)) cl*))
+              ...)])
+
+        (LiftedCaseLambdaClause : CaseLambdaClause (ir extra-arg* lift-info arg-info rename-info level target) -> CaseLambdaClause ()
+          [(clause (,x* ...) ,mcp ,interface ,body)
+           (with-level [x* level]
+             (let* ([new-extra-arg* (map make-renamed extra-arg*)]
+                    [n (length new-extra-arg*)]
+                    [new-rename-info (append (map cons extra-arg* new-extra-arg*) rename-info)]
+                    [old-le** (lift-info-le** lift-info)]
+                    [new-body (let ([rename-info new-rename-info])
+                                (recur Expr body))]
+                    [new-interface (cond
+                                    [(fx< interface 0) (fx- interface n)]
+                                    [else (fx+ interface n)])])
+               `(clause (,(append new-extra-arg* x*) ...)
+                        ,(or mcp
+                             ;;introduce a cpvar if something lifted from this clause
+                             (and (not (eq? (lift-info-le** lift-info) old-le**))
+                                  (make-cpvar)))
+                        ,new-interface ,new-body)))])
+
+        (LiftedCaseLambdaExpr : CaseLambdaExpr (ir extra-arg* lift-info arg-info rename-info level target) -> CaseLambdaExpr (lift-x*)
+          [(case-lambda ,info ,cl* ...)
+           (let* ([new-lift-info (make-lift-info)]
+                  [cl* (let ([lift-info new-lift-info])
+                         (if (info-lambda-lift-barrier? info)
+                             (let ([target level])
+                               (map (lambda (cl) (recur LiftedCaseLambdaClause cl extra-arg*)) cl*))
+                             (map (lambda (cl) (recur LiftedCaseLambdaClause cl extra-arg*)) cl*)))]
+                  [lift-x* (map le-info-x (apply append (lift-info-le** new-lift-info)))])
+             (lift-info-le**-set! lift-info (append (lift-info-le** new-lift-info) (lift-info-le** lift-info)))
+             (values `(case-lambda ,info ,cl* ...) lift-x*))])
+
+        (CaseLambdaExpr ir (make-lift-info) '() '() 0 0))
+
+      (define np-lift-well-known-closures
+        (lambda (ir)
+          (let ([ir (np-lift ir)])
+            (np-identify-scc ir)))))
 
     (module (np-expand-closures np-expand/optimize-closures)
       (define sort-bindings
@@ -3737,6 +4101,8 @@
             [(base index offset e build-assign build-barrier-seq)
              (if (nanopass-case (L7 Expr) e
                    [(quote ,d) (ptr->imm d)]
+                   [(call ,info ,mdcl ,pr ,e* ...)
+                    (eq? 'fixnum ($sgetprop (primref-name pr) '*result-type* #f))]
                    [else #f])
                  (build-assign base index offset e)
                  (let ([a (if (eq? index %zero)
@@ -4598,7 +4964,8 @@
           [(e) (ensure-single-valued e #f)])
         (define-inline 2 eq?
           [(e1 e2)
-           (or (relop-length RELOP= e1 e2)
+           (or (eqvop-null-fptr e1 e2)
+               (relop-length RELOP= e1 e2)
                (%inline eq? ,e1 ,e2))])
         (define-inline 2 keep-live
           [(e) (%seq ,(%inline keep-live ,e) ,(%constant svoid))])
@@ -4790,6 +5157,8 @@
           [(e1 . e*) (reduce src sexpr moi e1 e*)])
         (define-inline 3 r6rs:fx+ ; limited to two arguments
           [(e1 e2) (%inline + ,e1 ,e2)])
+        (define-inline 3 fx+/wraparound
+          [(e1 e2) (%inline + ,e1 ,e2)])
         (define-inline 3 fx1+
           [(e) (%inline + ,e (immediate ,(fix 1)))])
         (define-inline 2 $fx+?
@@ -4835,7 +5204,13 @@
                       (goto ,Llib))))]
             [(e1 . e*) #f])
           (define-inline 2 r6rs:fx+ ; limited to two arguments
-            [(e1 e2) (go src sexpr e1 e2)]))
+            [(e1 e2) (go src sexpr e1 e2)])
+          (define-inline 2 fx+/wraparound
+            [(e1 e2)
+              (bind #t (e1 e2)
+                `(if ,(build-fixnums? (list e1 e2))
+                     ,(%inline + ,e1 ,e2)
+                     ,(build-libcall #t src sexpr fx+/wraparound e1 e2)))]))
 
         (define-inline 3 fx-
           [(e) (%inline - (immediate 0) ,e)]
@@ -4843,6 +5218,8 @@
           [(e1 . e*) (reduce src sexpr moi e1 e*)])
         (define-inline 3 r6rs:fx- ; limited to one or two arguments
           [(e) (%inline - (immediate 0) ,e)]
+          [(e1 e2) (%inline - ,e1 ,e2)])
+        (define-inline 3 fx-/wraparound
           [(e1 e2) (%inline - ,e1 ,e2)])
         (define-inline 3 fx1-
           [(e) (%inline - ,e (immediate ,(fix 1)))])
@@ -4885,7 +5262,13 @@
             [(e1 . e*) #f])
           (define-inline 2 r6rs:fx- ; limited to one or two arguments
             [(e) (go src sexpr `(immediate ,(fix 0)) e)]
-            [(e1 e2) (go src sexpr e1 e2)]))
+            [(e1 e2) (go src sexpr e1 e2)])
+          (define-inline 2 fx-/wraparound
+            [(e1 e2)
+             (bind #t (e1 e2)
+               `(if ,(build-fixnums? (list e1 e2))
+                    ,(%inline - ,e1 ,e2)
+                    ,(build-libcall #t src sexpr fx-/wraparound e1 e2)))]))
         (define-inline 2 fx1-
           [(e) (let ([Llib (make-local-label 'Llib)])
                  (bind #t (e)
@@ -4970,6 +5353,8 @@
               [(e1 . e*) (reduce src sexpr moi e1 e*)])
             (define-inline 3 r6rs:fx* ; limited to two arguments
               [(e1 e2) (build-fx* e1 e2 #f)])
+            (define-inline 3 fx*/wraparound
+              [(e1 e2) (build-fx* e1 e2 #f)])
             (let ()
               (define (go src sexpr e1 e2)
                 (let ([Llib (make-local-label 'Llib)])
@@ -5003,7 +5388,13 @@
                           (goto ,Llib))))]
                 [(e1 . e*) #f])
               (define-inline 2 r6rs:fx* ; limited to two arguments
-                [(e1 e2) (go src sexpr e1 e2)]))
+                [(e1 e2) (go src sexpr e1 e2)])
+              (define-inline 2 fx*/wraparound
+                [(e1 e2)
+                 (bind #t (e1 e2)
+                   `(if ,(build-fixnums? (list e1 e2))
+                        ,(build-fx* e1 e2 #f)
+                        ,(build-libcall #t src sexpr fx*/wraparound e1 e2)))]))
             (let ()
               (define build-fx/p2
                 (lambda (e1 p2)
@@ -5158,6 +5549,8 @@
           (define-inline 3 fxsll
             [(e1 e2) (do-fxsll e1 e2)])
           (define-inline 3 fxarithmetic-shift-left
+            [(e1 e2) (do-fxsll e1 e2)])
+          (define-inline 3 fxsll/wraparound
             [(e1 e2) (do-fxsll e1 e2)]))
         (define-inline 3 fxsrl
           [(e1 e2)
@@ -6797,6 +7190,19 @@
           [(e0 e1) (build-libcall #f src sexpr fxsll e0 e1)])
         (define-inline 2 fxarithmetic-shift-left
           [(e0 e1) (build-libcall #f src sexpr fxarithmetic-shift-left e0 e1)])
+        (define-inline 2 fxsll/wraparound
+          [(e1 e2)
+           (bind #t (e1 e2)
+             `(if ,(nanopass-case (L7 Expr) e2
+                     [(quote ,d)
+                      (guard (target-fixnum? d)
+                             ($fxu< d (fx+ 1 (constant fixnum-bits))))
+                      (build-fixnums? (list e1 e2))]
+                     [else
+                      (build-and (build-fixnums? (list e1 e2))
+                                 (%inline u< ,e2 (immediate ,(fix (fx+ 1 (constant fixnum-bits))))))])
+                  ,(%inline sll ,e1 ,(build-unfix e2))
+                  ,(build-libcall #t src sexpr fxsll/wraparound e1 e2)))])
         (define-inline 3 display-string
           [(e-s) (build-libcall #f src sexpr display-string e-s (%tc-ref current-output))]
           [(e-s e-op) (build-libcall #f src sexpr display-string e-s e-op)])
@@ -10695,23 +11101,34 @@
                       ,e-rtd))))))
           (define build-unsealed-isa?
             (lambda (e e-rtd)
-              (let ([t (make-assigned-tmp 't)] [Ltop (make-local-label 'Ltop)])
-                (bind #t (e e-rtd)
-                  (build-and
-                    (%type-check mask-typed-object type-typed-object ,e)
-                    `(let ([,t ,(%mref ,e ,(constant typed-object-type-disp))])
-                       ,(build-simple-or
-                          (%inline eq? ,t ,e-rtd)
-                          (build-and
+              (let ([t (make-tmp 't)] [a (make-tmp 'a)])
+                (let ([known-depth (nanopass-case (L7 Expr) e-rtd
+                                     [(quote ,d) (and (record-type-descriptor? d)
+                                                      (vector-length (rtd-ancestors d)))]
+                                     [else #f])])
+                  (bind #t (e e-rtd)
+                    (build-and
+                      (%type-check mask-typed-object type-typed-object ,e)
+                      `(let ([,t ,(%mref ,e ,(constant typed-object-type-disp))])
+                         ,(build-simple-or
+                           (%inline eq? ,t ,e-rtd)
+                           (build-and
                             (%type-check mask-record type-record ,t)
-                            `(label ,Ltop
-                               (seq
-                                 (set! ,t ,(%mref ,t ,(constant record-type-parent-disp)))
-                                 ,(build-simple-or
-                                    (%inline eq? ,t ,e-rtd)
-                                    `(if ,(%inline eq? ,t ,(%constant sfalse))
-                                         ,(%constant sfalse)
-                                         (goto ,Ltop)))))))))))))
+                            `(let ([,a ,(%mref ,t ,(constant record-type-ancestry-disp))])
+                               ,(begin
+                                  ;; take advantage of being able to use the type field of a vector
+                                  ;; as a pointer offset with just shifting:
+                                  (safe-assert (zero? (constant type-vector)))
+                                  (bind #f ([d (%inline -/pos ,(%mref ,a ,(constant vector-type-disp))
+                                                        ,(if known-depth
+                                                             `(immediate ,(fxsll known-depth (constant vector-length-offset)))
+                                                             (%mref ,(%mref ,e-rtd ,(constant record-type-ancestry-disp))
+                                                                    ,(constant vector-type-disp))))])
+                                     `(if (inline ,(make-info-condition-code 'positive #f #t) ,%condition-code)
+                                          ,(%inline eq? ,e-rtd ,(%mref ,a
+                                                                       ,(translate d (constant vector-length-offset) (constant log2-ptr-bytes))
+                                                                       ,(fx- (constant vector-data-disp) (constant ptr-bytes))))
+                                          ,(%constant sfalse))))))))))))))
           (define-inline 3 record?
             [(e) (build-record? e)]
             [(e e-rtd)
@@ -11323,7 +11740,7 @@
                           (literal ,(make-info-literal #t 'object '$oops (constant symbol-value-disp)))
                           ,(%constant sfalse)
                           (literal ,(make-info-literal #f 'object
-                                      (format "returned ~r values to single value return context"
+                                      (format "returned ~a values to single value return context"
                                         (length t*)) 0)))
                         (set! ,lvalue ,(%constant svoid)))]
                     [else (sorry! who "unexpected Rhs expression ~s" e)])))))))
@@ -11741,7 +12158,7 @@
                  (literal ,(make-info-literal #t 'object '$oops (constant symbol-value-disp)))
                  ,(%constant sfalse)
                  (literal ,(make-info-literal #f 'object
-                             (format "returned ~r values to single value return context"
+                             (format "returned ~a values to single value return context"
                                (length t*)) 0))
                  ())
             (true))])
@@ -16466,12 +16883,15 @@
       (define asm-rp-compact-header
         (lambda (code* err? fs lpm func code-size)
           (let ([size (constant-case ptr-bits [(32) 'long] [(64) 'quad])])
-            (let* ([code* (cons* `(,size . ,(fxior (constant compact-header-mask)
-                                                   (if err?
-                                                       (constant compact-header-values-error-mask)
-                                                       0)
-                                                   (fxsll fs (constant compact-frame-words-offset))
-                                                   (fxsll lpm (constant compact-frame-mask-offset))))
+            (let* ([code* (cons* `(,size . ,(let ([v (bitwise-ior
+                                                      (constant compact-header-mask)
+                                                      (if err?
+                                                          (constant compact-header-values-error-mask)
+                                                          0)
+                                                      (bitwise-arithmetic-shift-left fs (constant compact-frame-words-offset))
+                                                      (bitwise-arithmetic-shift-left lpm (constant compact-frame-mask-offset)))])
+                                              (safe-assert (target-fixnum? v))
+                                              v))
                                  (aop-cons* `(asm "mrv pt:" (,lpm ,fs ,(if err? 'error 'continue)))
                                             code*))]
                    [code* (cons*
@@ -18716,6 +19136,9 @@
               (pass np-convert-closures unparse-L6)
               (pass np-optimize-direct-call unparse-L6)
               (pass np-identify-scc unparse-L6)
+              (if ($lift-closures)
+                  (pass np-lift-well-known-closures unparse-L6)
+                  (lambda (ir) ir))
               (if ($optimize-closures)
                   (pass np-expand/optimize-closures unparse-L7)
                   (pass np-expand-closures unparse-L7))
@@ -18761,4 +19184,6 @@
   (set! $track-static-closure-counts track-static-closure-counts)
 
   (set! $optimize-closures (make-parameter #t (lambda (x) (and x #t))))
+
+  (set! $lift-closures (make-parameter #t (lambda (x) (and x #t))))
 )

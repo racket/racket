@@ -37,7 +37,7 @@
                           (lambda (v) (not (eq? v 0)))))
 
 (define _Method (_cpointer/null 'Method))
-(define _IMP (_fun #:async-apply (lambda (f) (f)) _id _SEL -> _id))
+(define _IMP (_fun #:atomic? #t #:async-apply (lambda (f) (f)) _id _SEL -> _id))
 
 (define-cstruct _objc_super ([receiver _id][class _Class]))
 
@@ -273,17 +273,18 @@
 (define objc_msgSendSuper_fpret objc_msgSendSuper) ; why no fpret variant?
 (define-objc/private objc_msgSendSuper_stret _fpointer)
 
-(define sizes-for-direct-struct-results
+(define use-stret?
   (case (string->symbol (path->string (system-library-subpath #f)))
-    [(i386-macosx i386-darwin) (lambda (v) (memq (ctype-sizeof v) '(1 2 4 8)))]
-    [(ppc-macosx ppc-darwin) (lambda (v) (memq (ctype-sizeof v) '(1 2 3 4)))]
+    [(i386-macosx i386-darwin) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 4 8))))]
+    [(ppc-macosx ppc-darwin) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 3 4))))]
     [(x86_64-macosx x86_64-darwin) 
      (lambda (v)
        ;; Remarkably complex rules govern sizes > 8 and <= 32.
        ;; But if we assume no unaligned data and that fancy types
        ;; like _m256 won't show up with ObjC, it seems to be as
        ;; simple as this:
-       ((ctype-sizeof v) . <= . 16))]))
+       ((ctype-sizeof v) . > . 16))]
+    [(aarch64-macosx aarch64-darwin) (lambda (v) #f)]))
 
 ;; Make `msgSends' access atomic, so that a thread cannot be suspended
 ;; or killed during access, which would block other threads.
@@ -294,31 +295,18 @@
   ;; First type in `types' vector is the result type
   (or (as-atomic (hash-ref msgSends types #f))
       (let ([ret-layout (ctype->layout (vector-ref types 0))])
-        (if (and (list? ret-layout)
-                 (not (sizes-for-direct-struct-results (vector-ref types 0))))
-            ;; Structure return type:
-            (let* ([pre-m (function-ptr msgSend_stret
-                                        (_cprocedure
-                                         #:blocking? blocking?
-                                         (list* _pointer first-arg-type _SEL (cdr (vector->list types)))
-                                         _void))]
-                   [m (lambda args
-                        (let ([v (malloc (vector-ref types 0))])
-                          (apply pre-m v args)
-                          (ptr-ref v (vector-ref types 0))))])
-              (as-atomic (hash-set! msgSends types m))
-              m)
-            ;; Non-structure return type:
-            (let ([m (function-ptr (if (memq ret-layout
-                                             '(float double double*))
-                                       msgSend_fpret
-                                       msgSend)
-                                   (_cprocedure
-                                    #:blocking? blocking?
-                                    (list* first-arg-type _SEL (cdr (vector->list types)))
-                                    (vector-ref types 0)))])
-              (as-atomic (hash-set! msgSends types m))
-              m)))))
+        (let ([m (function-ptr (cond
+                                 [(and (pair? ret-layout) (use-stret? (vector-ref types 0)))
+                                  msgSend_stret]
+                                 [(or (eq? ret-layout 'float) (eq? ret-layout 'double) (eq? ret-layout 'double*))
+                                  msgSend_fpret]
+                                 [else msgSend])
+                               (_cprocedure
+                                #:blocking? blocking?
+                                (list* first-arg-type _SEL (cdr (vector->list types)))
+                                (vector-ref types 0)))])
+          (as-atomic (hash-set! msgSends types m))
+          m))))
 
 (define msgSends (make-weak-hash))
 (define (objc_msgSend/typed types)

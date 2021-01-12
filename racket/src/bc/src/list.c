@@ -875,6 +875,14 @@ scheme_init_unsafe_list (Scheme_Startup_Env *env)
   scheme_addto_prim_instance ("unsafe-cdr", p, env);
   scheme_unsafe_cdr_proc = p;
 
+  p = scheme_make_immed_prim(unsafe_set_mcar, "unsafe-set-immutable-car!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_addto_prim_instance ("unsafe-set-immutable-car!", p, env);
+
+  p = scheme_make_immed_prim(unsafe_set_mcdr, "unsafe-set-immutable-cdr!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_addto_prim_instance ("unsafe-set-immutable-cdr!", p, env);
+
   p = scheme_make_folding_prim(unsafe_list_ref, "unsafe-list-ref", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL

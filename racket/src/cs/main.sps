@@ -869,6 +869,15 @@
    (when (getenv "PLTDISABLEGC")
      (collect-request-handler void))
 
+   (let ([s (getenv "PLT_THREAD_QUANTUM")])
+     ;; Setting the thread quantum is useful in probing for race conditions. The default quantum
+     ;; is 100000. If it's made too small (on the order of 100), then a thread will use up its
+     ;; quantum just checking for breaks as it is swapped in, and then it won't make any progress.
+     (when s
+       (let ([n (string->number s)])
+         (when (and n (exact-nonnegative-integer? n))
+           (set-schedule-quantum! n)))))
+
    (when version?
      (display (banner)))
    (call/cc ; Chez Scheme's `call/cc`, used here to escape from the Racket-thread engine loop

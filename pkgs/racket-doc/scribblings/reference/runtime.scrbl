@@ -4,7 +4,7 @@
 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
-@defproc[(system-type [mode (or/c 'os 'word 'vm 'gc 'link 'machine 'target-machine
+@defproc[(system-type [mode (or/c 'os 'os* 'arch 'word 'vm 'gc 'link 'machine 'target-machine
                                   'so-suffix 'so-mode 'fs-change 'cross)
                             'os])
          (or/c symbol? string? bytes? exact-positive-integer? vector? #f)]{
@@ -21,6 +21,19 @@ In @indexed-racket['os] mode,
 @item{@indexed-racket['windows]}
 @item{@indexed-racket['macosx]}
 ]
+
+@margin-note{Prior to the introduction of @racket['os*] and
+@racket['arch] modes, @racket[(system-library-subpath #f)] could be
+used to obtain this information somewhat indirectly.}
+
+In @indexed-racket['os*] mode, the result is similar to @racket['os]
+mode, but refined to a specific operating system, such as
+@racket['linux] or @racket['freebsd], instead of a generic
+@racket['unix] classification.
+
+In @indexed-racket['arch] mode, the result is a symbol representing an
+architecture. Possible results include @racket['x86_64], @racket['i386],
+@racket['aarch64], @racket['arm] (32-bit), and @racket['ppc] (32-bit).
 
 In @indexed-racket['word] mode, the result is either @racket[32] or
 @racket[64] to indicate whether Racket is running as a 32-bit program
@@ -55,8 +68,8 @@ In @indexed-racket['link] mode, the possible symbol results are:
 @item{@indexed-racket['framework] (Mac OS)}
 ]
 
-Future ports of Racket may expand the list of @racket['os], @racket['vm],
-@racket['gc], and @racket['link] results.
+Future ports of Racket may expand the list of @racket['os], @racket['os*],
+@racket['arch], @racket['vm], @racket['gc], and @racket['link] results.
 
 In @indexed-racket['machine] mode, then the result is a string, which
 contains further details about the current machine in a
@@ -118,7 +131,8 @@ The possible symbols are:
 
 @history[#:changed "6.8.0.2" @elem{Added @racket['vm] mode.}
          #:changed "6.9.0.1" @elem{Added @racket['cross] mode.}
-         #:changed "7.1.0.6" @elem{Added @racket['target-machine] mode.}]}
+         #:changed "7.1.0.6" @elem{Added @racket['target-machine] mode.}
+         #:changed "7.9.0.6" @elem{Added @racket['os*] and @racket['arch] modes.}]}
 
 
 @defproc[(system-language+country) string?]{

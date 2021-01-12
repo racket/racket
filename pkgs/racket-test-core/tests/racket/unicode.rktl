@@ -889,11 +889,14 @@
 		      (go (lambda (n p) (read-n n p 1)))
 		      (go (lambda (n p) (read-n n p 2))))))
 		;; Test UTF-16
-		(let ([c (bytes-open-converter "platform-UTF-8" "platform-UTF-16")])
+		(for ([c (list (bytes-open-converter "platform-UTF-8" "platform-UTF-16")
+                               (bytes-open-converter "WTF-8" "WTF-16"))]
+                      [wtf? (list (eq? 'windows (system-type))
+                                  #t)])
 		  (let-values ([(s2 n status) (bytes-convert c s)])
 		    (case parse-status
 		      [(surrogate1 surrogate2)
-		       (if (eq? (system-type) 'windows)
+		       (if wtf?
 			   (begin
 			     (if (eq? parse-status 'surrogate1)
 				 (test 'aborts 'status status)
@@ -975,20 +978,23 @@
 	    basic-utf-8-tests))
 
 ;; Further UTF-16 tests
-(let ([c (bytes-open-converter "platform-UTF-16" "platform-UTF-8")])
+(for ([c (list (bytes-open-converter "platform-UTF-16" "platform-UTF-8")
+               (bytes-open-converter "WTF-16" "WTF-8"))]
+      [wtf? (list (eq? 'windows (system-type))
+                  #t)])
   (let-values ([(s n status) (bytes-convert c (bytes-append
 					       (integer->integer-bytes #xD800 2 #f)
 					       (integer->integer-bytes #xDC00 2 #f)))])
     (test-values (list #"" 0 'aborts)
 		 (lambda () (bytes-convert c (integer->integer-bytes #xD800 2 #f) )))
-    ;; Windows: unpaired surrogates allowed:
-    (when (eq? 'windows (system-type))
+    ;; WTF: unpaired surrogates allowed:
+    (when wtf?
       (test-values (list #"" 0 'aborts)
 		   (lambda () (bytes-convert c (integer->integer-bytes #xD8FF 2 #f))))
       (test-values (list #"\355\277\277" 2 'complete)
 		   (lambda () (bytes-convert c (integer->integer-bytes #xDFFF 2 #f)))))
-    ;; Non-windows: after #xD800 bits, surrogate pair is assumed
-    (unless (eq? 'windows (system-type))
+    ;; UTF: after #xD800 bits, surrogate pair is assumed
+    (unless wtf?
       (test-values (list #"" 0 'aborts)
 		   (lambda () (bytes-convert c (integer->integer-bytes #xD800 2 #f))))
       (test-values (list #"" 0 'aborts)
@@ -1027,29 +1033,32 @@
   (test-values '(#"" complete)
                (lambda () (bytes-convert-end c))))
 
-(when (eq? (system-type) 'windows)
-  (let ([c (bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16")])
-    ;; Check that we use all 6 bytes of #"\355\240\200\355\260\200" or none
-    (test-values (list 12 6 'complete)
-		 (lambda ()
-		   (bytes-convert c #"\355\240\200\355\260\200" 0 6 (make-bytes 12))))
-    ;; If we can't look all the way to the end, reliably abort without writing:
-    (let ([s (make-bytes 12 (char->integer #\x))])
-      (let loop ([n 1])
-	(unless (= n 6)
-	  (test-values (list 0 0 'aborts)
-		       (lambda ()
-		         (bytes-convert c #"\355\240\200\355\260\200" 0 n s)))
-	  (test #"xxxxxxxxxxxx" values s) ; no writes to bytes string
-	  (loop (add1 n)))))
-    (let ([s (make-bytes 12 (char->integer #\x))])
-      (let loop ([n 0])
-	(unless (= n 12)
-	  (test-values (list 0 0 'continues)
-		       (lambda ()
-			 (bytes-convert c #"\355\240\200\355\260\200" 0 6 (make-bytes n))))
-	  (test #"xxxxxxxxxxxx" values s) ; no writes to bytes string
-	  (loop (add1 n)))))))
+(for ([c (append
+          (if (eq? (system-type) 'windows)
+              (list (bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16"))
+              null)
+          (list (bytes-open-converter "WTF-8-permissive" "WTF-16")))])
+  ;; Check that we use all 6 bytes of #"\355\240\200\355\260\200" or none
+  (test-values (list 12 6 'complete)
+               (lambda ()
+                 (bytes-convert c #"\355\240\200\355\260\200" 0 6 (make-bytes 12))))
+  ;; If we can't look all the way to the end, reliably abort without writing:
+  (let ([s (make-bytes 12 (char->integer #\x))])
+    (let loop ([n 1])
+      (unless (= n 6)
+        (test-values (list 0 0 'aborts)
+                     (lambda ()
+                       (bytes-convert c #"\355\240\200\355\260\200" 0 n s)))
+        (test #"xxxxxxxxxxxx" values s) ; no writes to bytes string
+        (loop (add1 n)))))
+  (let ([s (make-bytes 12 (char->integer #\x))])
+    (let loop ([n 0])
+      (unless (= n 12)
+        (test-values (list 0 0 'continues)
+                     (lambda ()
+                       (bytes-convert c #"\355\240\200\355\260\200" 0 6 (make-bytes n))))
+        (test #"xxxxxxxxxxxx" values s) ; no writes to bytes string
+        (loop (add1 n))))))
 
 ;; Seems like this sort of thing should be covered above, and maybe it
 ;;  it after some other corrections. But just in case:

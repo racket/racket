@@ -6,8 +6,22 @@
          racket/pretty
          "cmdline.rkt")
 
+(define sign-as #f)
+
+(define dest-dir
+  (build-command-line
+   #:once-each
+   [("--sign-as") id "Sign Mac OS X libraries"
+    (set! sign-as id)]
+   #:args (dest-dir)
+   dest-dir))
+
+;; Hack to make AArch64 Mac OS libraries look like other Macs:
+(define renames
+  `(("libffi.7" "libffi.6")))
+
 (define libs
-  '("libffi.6"
+  `("libffi.6"
     "libgio-2.0.0"
     "libgmodule-2.0.0"
     "libgthread-2.0.0"
@@ -42,11 +56,13 @@
     "libpangowin32-1.0.0"))
 
 (define mac-libs
-  '("libedit.0"
-    "PSMTabBarControl.framework"))
+  '("libedit.0"))
 
 (define mac64-libs
   '("MMTabBarView.framework"))
+
+(define macx86-libs
+  '("PSMTabBarControl.framework"))
 
 (define nonwin-libs
   '("libcrypto.1.1"
@@ -217,10 +233,11 @@
   (or (equal? p "fonts")
       (framework? p)))
 
-(define dest-dir
-  (build-command-line
-   #:args (dest-dir)
-   dest-dir))
+(define (revert-name p)
+  (or (for/or ([pr (in-list renames)])
+	(and (equal? (cadr pr) p)
+	     (car pr)))
+      p))
 
 (define from (build-path (current-directory) "dest" (if win? "bin" "lib")))
 
@@ -315,10 +332,15 @@
   (define pkgs-lic (make-hash))
 
   (define (install lib)
-    (define p (cond
-               [(plain-path? lib) lib]
-               [(procedure? so) (so lib)]
-               [else (format "~a.~a" lib so)]))
+    (define-values (p orig-p)
+      (let ()
+	(define (both v) (values v v))
+	(cond
+	 [(plain-path? lib) (both lib)]
+	 [(procedure? so) (both (so lib))]
+	 [else
+	  (define (make lib) (format "~a.~a" lib so))
+	  (values (make lib) (make (revert-name lib)))])))
     (define-values (pkg suffix subdir lic) (find-pkg lib))
     (define dir (build-path dest-dir
                             (~a pkg "-" platform suffix)
@@ -330,7 +352,7 @@
       (cond
         [(file-exists? dest) (delete-file dest)]
         [(directory-exists? dest) (delete-directory/files dest)])
-      (define src (build-path from p))
+      (define src (build-path from orig-p))
       (if (directory-exists? src)
           (copy-directory/files src dest)
           (copy-file src dest)))
@@ -360,23 +382,35 @@
   (define (fixup p p-new)
     (unless (framework? p)
       (printf "Fixing ~s\n" p-new)
+      (when aarch64?
+	(system (format "codesign --remove-signature ~a" p-new)))
       (unless (memq 'write (file-or-directory-permissions p-new))
         (file-or-directory-permissions p-new #o744))
       (system (format "install_name_tool -id ~a ~a" (file-name-from-path p-new) p-new))
       (for-each (lambda (s)
                   (system (format "install_name_tool -change ~a @loader_path/~a ~a"
-                                  (format "~a/~a.dylib" from s)
+                                  (format "~a/~a.dylib" from (revert-name s))
                                   (format "~a.dylib" s)
                                   p-new)))
                 (append libs nonwin-libs))
-      (system (format "strip -S ~a" p-new))))
+      (system (format "strip -S ~a" p-new))
+      (when sign-as
+	(system (format "codesign -s ~s --timestamp ~a" sign-as p-new)))))
 
   (define platform (~a (if m32? 
                            (if ppc? "ppc" "i386")
-                           "x86_64")
+			   (if aarch64? "aarch64" "x86_64"))
                        "-macosx"))
 
-  (install platform platform "dylib" fixup (append libs mac-libs (if m32? '() mac64-libs) nonwin-libs)))
+  (install platform platform "dylib" fixup (append libs
+                                                   mac-libs
+                                                   (cond
+                                                     [m32? '()]
+                                                     [else mac64-libs])
+                                                   (cond
+                                                     [aarch64? '()]
+                                                     [else macx86-libs])
+                                                   nonwin-libs)))
 
 (define (install-win)
   (define exe-prefix (if m32?

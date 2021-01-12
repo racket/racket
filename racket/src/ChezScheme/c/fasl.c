@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/* The fasl writer is in "fasl.ss".
+   There's a second fasl reader and writer in "strip.ss", so it has
+   to be kept in sync with this one. */
+
 /* fasl representation:
  *
  * <fasl-file> -> <fasl-group>*
@@ -51,6 +55,8 @@
  *        -> {flvector}<uptr n><uptr elthi1><uptr eltlo1>...<uptr elthin><uptr eltlon>
  *
  *        -> {bytevector}<uptr n><octet elt1>...<octet eltn>
+ *
+ *        -> {stencil-vector}<uptr mask><octet elt1>...<octet eltn>
  *
  *        -> {immediate}<uptr>
  *
@@ -114,6 +120,8 @@
  *                 <faslreloc>       # first relocation entry
  *                 ...
  *                 <faslreloc>       # last relocation entry
+ *
+ *        -> {begin}<va>...<val>     # all but last is intended to be a {graph-def}
  *
  * <faslreloc> -> <byte type-etc>    # bit 0: extended entry, bit 1: expect item offset, bit 2+: type
  *                <uptr code-offset>
@@ -500,6 +508,8 @@ static ptr fasl_entry(ptr tc, IFASLCODE situation, unbufFaslFile uf, ptr externa
         Scompact_heap();
       }
 
+      S_thread_start_code_write();
+
       switch (ty) {
         case fasl_type_gzip:
         case fasl_type_lz4: {
@@ -547,6 +557,7 @@ static ptr fasl_entry(ptr tc, IFASLCODE situation, unbufFaslFile uf, ptr externa
           return (ptr)0;
       }
       S_flush_instruction_cache(tc);
+      S_thread_end_code_write();
       return x;
     } else {
       uf_skipbytes(uf, size);
@@ -557,6 +568,8 @@ static ptr fasl_entry(ptr tc, IFASLCODE situation, unbufFaslFile uf, ptr externa
 static ptr bv_fasl_entry(ptr tc, ptr bv, int ty, uptr offset, uptr len, unbufFaslFile uf, ptr externals) {
   ptr x; ptr strbuf = S_G.null_string;
   struct faslFileObj ffo;
+
+  S_thread_start_code_write();
 
   if (ty == fasl_type_vfasl) {
     x = S_vfasl(bv, NULL, offset, len);
@@ -572,6 +585,8 @@ static ptr bv_fasl_entry(ptr tc, ptr bv, int ty, uptr offset, uptr len, unbufFas
   }
 
   S_flush_instruction_cache(tc);
+  S_thread_end_code_write();
+  
   return x;
 }
 
@@ -601,6 +616,25 @@ static void bytesin(octet *s, iptr n, faslFile f) {
     memcpy(s, f->next, n);
     f->next += n;
   }
+}
+
+static void code_bytesin(octet *s, iptr n, faslFile f) {
+#ifdef CANNOT_READ_DIRECTLY_INTO_CODE
+  while (1) {
+    iptr avail = f->end - f->next;
+    if (avail < n) {
+      bytesin(s, avail, f);
+      n -= avail;
+      s += avail;
+      fillFaslFile(f);
+    } else {
+      bytesin(s, n, f);
+      break;
+    }
+  }
+#else
+  bytesin(s, n, f);
+#endif
 }
 
 static void toolarge(ptr path) {
@@ -1036,7 +1070,7 @@ static void faslin(ptr tc, ptr *x, ptr t, ptr *pstrbuf, faslFile f) {
             if (pinfos != Snil) {
               S_G.profile_counters = Scons(S_weak_cons(co, pinfos), S_G.profile_counters);
             }
-            bytesin((octet *)&CODEIT(co, 0), n, f);
+            code_bytesin((octet *)&CODEIT(co, 0), n, f);
 #ifdef PORTABLE_BYTECODE_BIGENDIAN
             swap_code_endian((octet *)&CODEIT(co, 0), n);
 #endif
@@ -1307,7 +1341,7 @@ static IBOOL rtd_equiv(x, y) ptr x, y; {
           /* recognize `base-rtd` shape: */
           || ((RECORDINSTTYPE(x) == x)
               && (RECORDINSTTYPE(y) == y))) &&
-         RECORDDESCPARENT(x) == RECORDDESCPARENT(y) &&
+         rtd_parent(x) == rtd_parent(y) &&
          equalp(RECORDDESCPM(x), RECORDDESCPM(y)) &&
          equalp(RECORDDESCMPM(x), RECORDDESCMPM(y)) &&
          equalp(RECORDDESCFLDS(x), RECORDDESCFLDS(y)) &&
@@ -1519,19 +1553,27 @@ ptr S_get_code_obj(typ, p, n, o) IFASLCODE typ; iptr n, o; ptr p; {
     return (ptr)(item - o);
 }
 
-
 #ifdef PORTABLE_BYTECODE
 
 /* Address pieces in a movz,movk,movk,movk sequence are upper 16 bits */
 #define ADDRESS_BITS_SHIFT 16
-#define ADDRESS_BITS_MASK  ((U32)0xffff0000)
+#define ADDRESS_BITS_MASK  ((U32)0xFFFF0000)
+#define DEST_REG_MASK      0xF00
 
 static void pb_set_abs(void *address, uptr item) {
-  ((U32 *)address)[0] = ((((U32 *)address)[0] & ~ADDRESS_BITS_MASK) | ((item & 0xFFFF) << ADDRESS_BITS_SHIFT));
-  ((U32 *)address)[1] = ((((U32 *)address)[1] & ~ADDRESS_BITS_MASK) | (((item >> 16) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  /* First word can have an arbitrary value due to vfasl offset
+     storage, so get the target register from the end: */
 #if ptr_bytes == 8  
-  ((U32 *)address)[2] = ((((U32 *)address)[2] & ~ADDRESS_BITS_MASK) | (((item >> 32) & 0xFFFF) << ADDRESS_BITS_SHIFT));
-  ((U32 *)address)[3] = ((((U32 *)address)[3] & ~ADDRESS_BITS_MASK) | (((item >> 48) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  int dest_reg = ((U32 *)address)[3] & DEST_REG_MASK;
+#else
+  int dest_reg = ((U32 *)address)[1] & DEST_REG_MASK;
+#endif
+
+  ((U32 *)address)[0] = (pb_mov16_pb_zero_bits_pb_shift0 | dest_reg | ((item & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  ((U32 *)address)[1] = (pb_mov16_pb_keep_bits_pb_shift1 | dest_reg | (((item >> 16) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+#if ptr_bytes == 8  
+  ((U32 *)address)[2] = (pb_mov16_pb_keep_bits_pb_shift2 | dest_reg | (((item >> 32) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  ((U32 *)address)[3] = (pb_mov16_pb_keep_bits_pb_shift3 | dest_reg | (((item >> 48) & 0xFFFF) << ADDRESS_BITS_SHIFT));
 #endif
 }
 
@@ -1545,17 +1587,17 @@ static uptr pb_get_abs(void *address) {
           );
 }
 
-#endif /* AARCH64 */
+#endif /* PORTABLE_BYTECODE */
 
 #ifdef ARMV6
 static void arm32_set_abs(void *address, uptr item) {
   /* code generator produces ldrlit destreg, 0; brai 0; long 0 */
-  /* we change long 0 => long item */
-  *((U32 *)address + 2) = item;
+  /* given address is at long 0, which we change to `item` */
+  *((U32 *)address) = item;
 }
 
 static uptr arm32_get_abs(void *address) {
-  return *((U32 *)address + 2);
+  return *((U32 *)address);
 }
 
 #define MAKE_B(n) (0xEA000000 | (n))
@@ -1608,11 +1650,24 @@ static uptr arm32_get_jump(void *address) {
 #define ADDRESS_BITS_SHIFT 5
 #define ADDRESS_BITS_MASK  ((U32)0x1fffe0)
 
+/* Dest register in either movz or movk: */
+#define DEST_REG_MASK 0x1F
+
+#define MOVZ_OPCODE    0xD2800000
+#define MOVK_OPCODE    0xF2800000
+#define SHIFT16_OPCODE 0x00200000
+#define SHIFT32_OPCODE 0x00400000
+#define SHIFT48_OPCODE 0x00600000
+
 static void arm64_set_abs(void *address, uptr item) {
-  ((U32 *)address)[0] = ((((U32 *)address)[0] & ~ADDRESS_BITS_MASK) | ((item & 0xFFFF) << ADDRESS_BITS_SHIFT));
-  ((U32 *)address)[1] = ((((U32 *)address)[1] & ~ADDRESS_BITS_MASK) | (((item >> 16) & 0xFFFF) << ADDRESS_BITS_SHIFT));
-  ((U32 *)address)[2] = ((((U32 *)address)[2] & ~ADDRESS_BITS_MASK) | (((item >> 32) & 0xFFFF) << ADDRESS_BITS_SHIFT));
-  ((U32 *)address)[3] = ((((U32 *)address)[3] & ~ADDRESS_BITS_MASK) | (((item >> 48) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  /* First word can have an arbitrary value due to vfasl offset
+     storage, so get the target register from the end: */
+  int dest_reg = ((U32 *)address)[3] & DEST_REG_MASK;
+  
+  ((U32 *)address)[0] = (MOVZ_OPCODE | dest_reg | ((item & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  ((U32 *)address)[1] = (MOVK_OPCODE | SHIFT16_OPCODE | dest_reg | (((item >> 16) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  ((U32 *)address)[2] = (MOVK_OPCODE | SHIFT32_OPCODE | dest_reg | (((item >> 32) & 0xFFFF) << ADDRESS_BITS_SHIFT));
+  ((U32 *)address)[3] = (MOVK_OPCODE | SHIFT48_OPCODE | dest_reg | (((item >> 48) & 0xFFFF) << ADDRESS_BITS_SHIFT));
 }
 
 static uptr arm64_get_abs(void *address) {
@@ -1629,21 +1684,26 @@ static uptr arm64_get_abs(void *address) {
 #define UPDATE_ADDIS(item, instr) (((instr) & ~0xFFFF) | (((item) >> 16) & 0xFFFF))
 #define UPDATE_ADDI(item, instr)  (((instr) & ~0xFFFF) | ((item) & 0xFFFF))
 
-#define MAKE_B(disp, callp) ((18 << 26) | (((disp) & 0xFFFFFF) << 2) | (callp))
-#define MAKE_ADDIS(item)    ((15 << 26) | (((item) >> 16) & 0xFFFF))
-#define MAKE_ORI(item)      ((24 << 26) | ((item) & 0xFFFF))
-#define MAKE_NOP            ((24 << 26))
-#define MAKE_MTCTR          ((31 << 26) | (9 << 16) | (467 << 1))
-#define MAKE_BCTR(callp)    ((19 << 26) | (20 << 21) | (528 << 1) | (callp))
+#define MAKE_B(disp, callp)   ((18 << 26) | (((disp) & 0xFFFFFF) << 2) | (callp))
+#define MAKE_ADDIS(item)      ((15 << 26) | (((item) >> 16) & 0xFFFF))
+#define MAKE_ADDI(item)       ((14 << 26) | ((item) & 0xFFFF))
+#define MAKE_ORI(item)        ((24 << 26) | ((item) & 0xFFFF))
+#define MAKE_NOP              ((24 << 26))
+#define MAKE_MTCTR            ((31 << 26) | (9 << 16) | (467 << 1))
+#define MAKE_BCTR(callp)      ((19 << 26) | (20 << 21) | (528 << 1) | (callp))
+
+#define DEST_REG_MASK         (0x1F << 21)
 
 static void ppc32_set_abs(void *address, uptr item) {
   /* code generator produces addis destreg, %r0, 0 (hi) ; addi destreg, destreg, 0 (lo) */
   /* we change 0 (hi) => upper 16 bits of address */
   /* we change 0 (lo) => lower 16 bits of address */
   /* low part is signed: if negative, increment high part */
+  /* but the first word may have been overritten for vfasl */
+  int dest_reg = (*((U32 *)address + 1)) & DEST_REG_MASK;
   item = item + (item << 1 & 0x10000);
-  *((U32 *)address + 0) = UPDATE_ADDIS(item, *((U32 *)address + 0));
-  *((U32 *)address + 1) = UPDATE_ADDI(item, *((U32 *)address + 1));
+  *((U32 *)address + 0) = dest_reg | MAKE_ADDIS(item);
+  *((U32 *)address + 1) = dest_reg | dest_reg >> 5 | MAKE_ADDI(item);
 }
 
 static uptr ppc32_get_abs(void *address) {
@@ -1922,14 +1982,21 @@ static void sparc64_set_literal(address, item) void *address; uptr item; {
 #endif /* SPARC64 */
 
 #ifdef PORTABLE_BYTECODE_BIGENDIAN
+typedef struct {
+  octet *code;
+  uptr size;
+} rpheader_t;
+static rpheader_t *rpheader_stack;
+static int rpheader_stack_size = 0, rpheader_stack_pos = 0;
+
 static void swap_code_endian(octet *code, uptr len)
 {
-  octet *next_rpheader = NULL;
-  uptr header_size = 0;
-
   while (len > 0) {
-    if (code == next_rpheader) {
+    if ((rpheader_stack_pos > 0)
+	&& (code == rpheader_stack[rpheader_stack_pos-1].code)) {
       /* swap 8-byte segments while we're in the header */
+      uptr header_size = rpheader_stack[--rpheader_stack_pos].size;
+
       while (header_size > 0) {
         octet a = code[0];
         octet b = code[1];
@@ -1963,28 +2030,62 @@ static void swap_code_endian(octet *code, uptr len)
       code[2] = b;
       code[3] = a;
 
+      code += 4;
+      len -= 4;
+
       if (a == pb_adr) {
         /* delta can be negative for a mvlet-error reinstall of the return address */
-        iptr delta = (int16_t)(uint16_t)(((uptr)d << 16) + c);
+        iptr delta = (((iptr)d << (ptr_bits - 8)) >> (ptr_bits - 20)) + ((iptr)c << 4) + (b >> 4);
         if (delta > 0) {
           /* after a few more instructions, we'll hit
              a header where 64-bit values needs to be
              swapped, instead of 32-bit values */
-          octet *after_rpheader = code + 4 + delta;
+          octet *after_rpheader = code + delta, *rpheader;
+	  uptr header_size;
+	  int pos;
+
+	  if ((uptr)delta > len)
+	    S_error_abort("swap endian: delta goes past end");
+	  if (delta & 0x3)
+	    S_error_abort("swap endian: delta is not a multiple of 4");
 
           if (after_rpheader[-8] & 0x1)
             header_size = size_rp_compact_header;
           else
             header_size = size_rp_header;
+          rpheader = after_rpheader - header_size;
 
-          next_rpheader = after_rpheader - header_size;
+	  if (rpheader_stack_pos == rpheader_stack_size) {
+	    int new_size = (2 * rpheader_stack_size) + 16;
+	    rpheader_t *new_stack;
+	    new_stack = malloc(new_size * sizeof(rpheader_t));
+	    if (rpheader_stack != NULL) {
+	      memcpy(new_stack, rpheader_stack, rpheader_stack_pos * sizeof(rpheader_t));
+	      free(rpheader_stack);
+	    }
+	    rpheader_stack_size = new_size;
+	    rpheader_stack = new_stack;
+	  }
+
+	  rpheader_stack[rpheader_stack_pos].code = rpheader;
+	  rpheader_stack[rpheader_stack_pos].size = header_size;
+	  rpheader_stack_pos++;
+
+	  /* bubble down to keep sorted */
+	  for (pos = rpheader_stack_pos - 2; pos > 0; --pos) {
+	    if (rpheader_stack[pos].code < rpheader_stack[pos+1].code) {
+	      rpheader_t tmp = rpheader_stack[pos];
+	      rpheader_stack[pos] = rpheader_stack[pos+1];
+	      rpheader_stack[pos+1] = tmp;
+	    }
+	  }
         }
       }
-
-      code += 4;
-      len -= 4;
     }
   }
+
+  if (rpheader_stack_pos > 0)
+    S_error_abort("swap endian: header stack ends non-empty");
 }
 
 void S_swap_dounderflow_header_endian(ptr co)

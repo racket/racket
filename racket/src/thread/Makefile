@@ -33,7 +33,8 @@ GLOBALS = --no-global \
           ++global-ok log-future-event \
           ++global-ok "logging-place-events?" \
           ++global-ok log-place-event \
-          ++global-ok thread-engine-for-roots
+          ++global-ok thread-engine-for-roots \
+          ++global-ok TICKS
 
 GENERATE_ARGS = -t main.rkt \
                 --check-depends $(BUILDDIR)compiled/thread-dep.rktd \

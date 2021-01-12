@@ -4697,7 +4697,7 @@
              (#2%display 1))))
 )
 
-(unless (memq (machine-type) '(arm32le tarm32le arm64le tarm64le ; timestamp counter tends to be priviledged on Arm
+(unless (memq (machine-type) '(arm32le tarm32le arm64le tarm64le arm64osx tarm64osx ; timestamp counter tends to be priviledged on Arm
                                        pb)) ; doesn't increment for pb
   (mat $read-time-stamp-counter
 
@@ -4927,7 +4927,11 @@
     (define immutable-objs (list (vector->immutable-vector '#(1 2 3))
                                  (string->immutable-string "abc")
                                  (bytevector->immutable-bytevector #vu8(1 2 3))
-                                 (box-immutable 1)))
+                                 (box-immutable 1)
+                                 ;; Not immutable, but we want to test strip:
+                                 (fxvector 1 2 3)
+                                 (flvector 1.5 2.5 3.5)
+                                 (stencil-vector 6 'a 'b)))
     (define immutable-zero-objs (list (vector->immutable-vector '#())
                                       (string->immutable-string "")
                                       (bytevector->immutable-bytevector #vu8())

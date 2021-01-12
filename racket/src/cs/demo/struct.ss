@@ -97,6 +97,9 @@
 (check ((struct-type-make-constructor struct:q) 9 10) a-q)
 (check ((struct-type-make-predicate struct:q) a-q) #t)
 
+(check (struct-accessor-procedure? q-ref) #t)
+(check (struct-mutator-procedure? q-set!) #t)
+
 (check (andmap (lambda (a b)
                  (or (equal? a b)
                      (and (struct-accessor-procedure? a)

@@ -260,7 +260,11 @@
                              (datum->syntax #f
                                             guarded-spec
                                             (vector src spec-line spec-col spec-pos
-                                                    (max 0 (- spec-end-pos spec-pos))))
+                                                    (max 0 (- spec-end-pos spec-pos)))
+                                            ;; get syntax with `syntax-original?` property:
+                                            (call-with-default-reading-parameterization
+                                             (lambda ()
+                                               (read-syntax 'orig (open-input-bytes #"x")))))
                              guarded-spec))
                         (loop (cdr specs))))
                   (bad spec #f))))))

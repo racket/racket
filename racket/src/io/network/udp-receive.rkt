@@ -149,7 +149,7 @@
              (sandman-poll-ctx-add-poll-set-adder!
               poll-ctx
               (lambda (ps)
-                (rktio_poll_add rktio (udp-s (udp-receiving-evt-u self)) ps RKTIO_POLL_WRITE)))
+                (rktio_poll_add rktio (udp-s (udp-receiving-evt-u self)) ps RKTIO_POLL_READ)))
              (values #f self)])]))))
   #:reflection-name 'udp-receive-evt
   #:authentic)

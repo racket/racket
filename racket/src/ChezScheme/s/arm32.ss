@@ -354,27 +354,27 @@
   ; WARNING: do not assume that if x isn't the same as z then x is independent
   ; of z, since x might be an mref with z as it's base or index
 
-  (define-instruction value (- -/ovfl -/eq)
+  (define-instruction value (- -/ovfl -/eq -/pos)
     [(op (z ur) (x ur) (y funky12))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (memq op '(-/ovfl -/eq))) ,x ,y))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (not (eq? op '-))) ,x ,y))]
     [(op (z ur) (x funky12) (y ur))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-rsb (memq op '(-/ovfl -/eq))) ,y ,x))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-rsb (not (eq? op '-))) ,y ,x))]
     [(op (z ur) (x ur) (y negate-funky12))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (memq op '(-/ovfl -/eq))) ,x ,y))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (not (eq? op '-))) ,x ,y))]
     [(op (z ur) (x ur) (y ur))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (memq op '(-/ovfl -/eq))) ,x ,y))])
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (not (eq? op '-))) ,x ,y))])
 
   (define-instruction value (+ +/ovfl +/carry)
     [(op (z ur) (x ur) (y funky12))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (memq op '(+/ovfl +/carry))) ,x ,y))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (not (eq? op '+))) ,x ,y))]
     [(op (z ur) (x funky12) (y ur))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (memq op '(+/ovfl +/carry))) ,y ,x))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (not (eq? op '+))) ,y ,x))]
     [(op (z ur) (x ur) (y negate-funky12))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (memq op '(+/ovfl +/carry))) ,x ,y))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (not (eq? op '+))) ,x ,y))]
     [(op (z ur) (x negate-funky12) (y ur))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (memq op '(+/ovfl +/carry))) ,y ,x))]
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-sub (not (eq? op '+))) ,y ,x))]
     [(op (z ur) (x ur) (y ur))
-     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (memq op '(+/ovfl +/carry))) ,x ,y))])
+     `(set! ,(make-live-info) ,z (asm ,info ,(asm-add (not (eq? op '+))) ,x ,y))])
 
   (define-instruction value (*)
     ; no imm form available
@@ -2295,6 +2295,7 @@
               [(>=) (i? (r? bgt blt) (r? ble bge))]
               [(overflow) (i? bvc bvs)]
               [(multiply-overflow) (i? beq bne)] ; result of comparing sign bit of low word with all bits in high word: eq if no overflow, ne if oveflow
+              [(positive) (i? ble bgt)]
               [(carry) (i? bcc bcs)]
               [(fp<) (i? (r? ble bcs) (r? bgt bcc))]
               [(fp<=) (i? (r? blt bhi) (r? bge bls))]
@@ -2770,7 +2771,7 @@
             (safe-assert (reg-callee-save? %tc)) ; no need to save-restore
             (let* ([arg-type* (info-foreign-arg-type* info)]
                    [conv* (info-foreign-conv* info)]
-                   [varargs? (memq 'varargs conv*)]
+                   [varargs? (ormap (lambda (conv) (and (pair? conv) (eq? (car conv) 'varargs))) conv*)]
 		   [result-type (info-foreign-result-type info)]
                    [result-reg* (get-result-regs result-type varargs?)]
 		   [fill-result-here? (indirect-result-that-fits-in-registers? result-type)]
@@ -3240,7 +3241,7 @@
                                  (vector->list regvec)))
             (let* ([arg-type* (info-foreign-arg-type* info)]
                    [conv* (info-foreign-conv* info)]
-		   [varargs? (memq 'varargs conv*)]
+                   [varargs? (ormap (lambda (conv) (and (pair? conv) (eq? (car conv) 'varargs))) conv*)]
 		   [result-type (info-foreign-result-type info)]
                    [synthesize-first? (indirect-result-that-fits-in-registers? result-type)]
                    [adjust-active? (if-feature pthreads (memq 'adjust-active conv*) #f)])

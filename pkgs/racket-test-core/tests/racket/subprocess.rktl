@@ -432,6 +432,15 @@
   (test #f pair? (member sp (custodian-managed-list c2 c)))
   (custodian-shutdown-all c))
 
+;; Check custodian-boxes are omitted by custodian-managed-list:
+(let* ([c (make-custodian)]
+       [c2 (make-custodian c)])
+  (define cb (make-custodian-box c2 'value))
+  (test '() custodian-managed-list c2 c)
+  (test 'value custodian-box-value cb)
+  (custodian-shutdown-all c2)
+  (test #f custodian-box-value cb))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; process groups
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -625,9 +634,9 @@
 
 (when (eq? 'windows (system-type))
   (define (try-arg cmdline-str result-str)
-    (let ()
+    (let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
       (define-values (sp i o no-e)
-	(subprocess #f #f (current-error-port) self 'exact
+	(subprocess #f #f f self 'exact
 		    (string-append (regexp-replace* #rx" " (path->string self) "\" \"")
                                    " -l racket/base"
                                    " -e \"(write (vector-ref (current-command-line-arguments) 0))\""
@@ -635,17 +644,19 @@
       (close-output-port o)
       (test result-str read i)
       (subprocess-wait sp) 
+      (close-output-port f)
       (close-input-port i))
     ;; Check encoding by `subprocess`, too
-    (let ()
+    (let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
       (define-values (sp i o no-e)
-	(subprocess #f #f (current-error-port) self
+	(subprocess #f #f f self
 		    "-l" "racket/base"
                     "-e" "(write (vector-ref (current-command-line-arguments) 0))"
 		    result-str))
       (close-output-port o)
       (test result-str read i)
       (subprocess-wait sp) 
+      (close-output-port f)
       (close-input-port i)))
 
   (try-arg "x" "x")

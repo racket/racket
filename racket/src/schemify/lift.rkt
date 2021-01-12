@@ -520,7 +520,7 @@
                           (find-loops rand lifts #hasheq() loops))])
             (cond
               [(not (hash-ref loops u-id #f))
-               (find-loops rhs #hasheq() loops)]
+               (find-loops rhs lifts #hasheq() loops)]
               [else
                (define new-loop-if-tail
                  (hash-set (for/hasheq ([(id bx) (in-hash loop-if-tail)])

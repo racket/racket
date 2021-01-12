@@ -26,7 +26,10 @@
  
  syntax->datum
  datum->syntax
- 
+
+ immediate-datum->syntax
+ empty-props
+
  syntax-map
  non-syntax-map
  
@@ -227,6 +230,27 @@
 
 (define-place-local known-syntax-pairs (make-weak-hasheq))
 
+(define (immediate-datum->syntax stx-c content stx-l props insp)
+  (syntax (if (and stx-c
+                   (syntax-tamper stx-c))
+              (modified-content content
+                                (tamper-tainted-for-content content))
+              content)
+          (if stx-c
+              (syntax-scopes stx-c)
+              empty-scopes)
+          (if stx-c
+              (syntax-shifted-multi-scopes stx-c)
+              empty-shifted-multi-scopes)
+          (if stx-c
+              (syntax-mpi-shifts stx-c)
+              empty-mpi-shifts)
+          (and stx-l (syntax-srcloc stx-l))
+          props
+          (and insp
+               stx-c
+               (weaker-inspector insp (syntax-inspector stx-c)))))
+
 (define (datum->syntax stx-c s [stx-l #f] [stx-p #f])
   (cond
    [(syntax? s) s]
@@ -234,25 +258,7 @@
     (define insp (if (syntax? s) 'not-needed (current-module-code-inspector)))
     (define (wrap content)
       (let ([content (datum-intern-literal content)])
-        (syntax (if (and stx-c
-                         (syntax-tamper stx-c))
-                    (modified-content content
-                                      (tamper-tainted-for-content content))
-                    content)
-                (if stx-c
-                    (syntax-scopes stx-c)
-                    empty-scopes)
-                (if stx-c
-                    (syntax-shifted-multi-scopes stx-c)
-                    empty-shifted-multi-scopes)
-                (if stx-c
-                    (syntax-mpi-shifts stx-c)
-                    empty-mpi-shifts)
-                (and stx-l (syntax-srcloc stx-l))
-                empty-props
-                (and insp
-                     stx-c
-                     (weaker-inspector insp (syntax-inspector stx-c))))))
+        (immediate-datum->syntax stx-c content stx-l empty-props insp)))
     (define result-s
       (non-syntax-map s
                       (lambda (tail? x) (cond

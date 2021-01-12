@@ -357,7 +357,7 @@
 ;; ---------------------------------------------------------------------
 ;; Version and machine types:
 
-(define-constant scheme-version #x09050331)
+(define-constant scheme-version #x0905033A)
 
 (define-syntax define-machine-types
   (lambda (x)
@@ -375,6 +375,7 @@
 
 (define-machine-types
   any
+  pb
   i3le      ti3le
   i3nt      ti3nt
   i3fb      ti3fb
@@ -393,7 +394,8 @@
   arm32le   tarm32le
   ppc32le   tppc32le
   arm64le   tarm64le
-  pb
+  arm64osx  tarm64osx
+  ppc32osx  tppc32osx
 )
 
 (include "machine.def")
@@ -417,6 +419,12 @@
 
 (define-constant ptr-bytes (/ (constant ptr-bits) 8)) ; size in bytes
 (define-constant log2-ptr-bytes (log2 (constant ptr-bytes)))
+
+(define-constant double-bytes 8)
+
+(define-constant byte-bytes 1)
+(define-constant byte-bits 8)
+(define-constant log2-byte-bits 3)
 
 ;;; ordinary types must be no more than 8 bits long
 (define-constant ordinary-type-bits 8)    ; smallest addressable unit
@@ -861,13 +869,14 @@
 
 ;; Flags that matter to the GC must apply only to static-generation
 ;; objects, and they must not overlap with `forward-marker`
-(define-constant code-flag-system           #b0000001)
-(define-constant code-flag-continuation     #b0000010)
-(define-constant code-flag-template         #b0000100)
-(define-constant code-flag-guardian         #b0001000)
-(define-constant code-flag-mutable-closure  #b0010000)
-(define-constant code-flag-arity-in-closure #b0100000)
-(define-constant code-flag-single-valued    #b1000000)
+(define-constant code-flag-system           #b00000001)
+(define-constant code-flag-continuation     #b00000010)
+(define-constant code-flag-template         #b00000100)
+(define-constant code-flag-guardian         #b00001000)
+(define-constant code-flag-mutable-closure  #b00010000)
+(define-constant code-flag-arity-in-closure #b00100000)
+(define-constant code-flag-single-valued    #b01000000)
+(define-constant code-flag-lift-barrier     #b10000000)
 
 (define-constant fixnum-bits
   (case (constant ptr-bits)
@@ -1617,7 +1626,7 @@
 
 (define-primitive-structure-disps record-type type-typed-object
   ([ptr type]
-   [ptr parent]
+   [ptr ancestry] ; vector: parent at 0, grandparent at 1, etc.
    [ptr size]  ; total record size in bytes, including type tag
    [ptr pm]    ; pointer mask, where low bit corresponds to type tag
    [ptr mpm]   ; mutable-pointer mask, where low bit for type is always 0
@@ -1859,8 +1868,10 @@
   )
 
 (define-flags preinfo-call-mask
-  (unchecked                    #b01)
-  (no-inline                    #b10)
+  (unchecked                    #b0001)
+  (no-inline                    #b0010)
+  (no-return                    #b0100)
+  (single-valued                #b1000)
   )
 
 (define-syntax define-flag-field
@@ -2180,6 +2191,68 @@
 (define-constant time-utc 4)
 (define-constant time-collector-cpu 5)
 (define-constant time-collector-real 6)
+
+;; ---------------------------------------------------------------------
+;; vfasl
+
+;; For vfasl images: Similar to allocation spaces, but not all
+;; allocation spaces are represented, and these spaces are more
+;; fine-grained in some cases:
+(define-enumerated-constants
+  vspace-symbol
+  vspace-rtd
+  vspace-closure
+  vspace-impure
+  vspace-pure-typed
+  vspace-impure-record
+  ;; rest rest are at then end to make the pointer bitmap
+  ;; end with zeros (that can be dropped):
+  vspace-code
+  vspace-data
+  vspace-reloc ;; can be dropped after direct to static generation
+  vspaces-count)
+
+(define-constant vspaces-offsets-count (- (constant vspaces-count) 1))
+
+(define-primitive-structure-disps vfasl-header typemod
+  ([uptr data-size]
+   [uptr table-size]
+   
+   [uptr result-offset]
+   
+   ;; first starting offset is 0, so skip it in this array:
+   [uptr vspace-rel-offsets (constant vspaces-offsets-count)]
+   
+   [uptr symref-count]
+   [uptr rtdref-count]
+   [uptr singletonref-count]))
+
+(define-enumerated-constants
+  singleton-not-a-singleton
+  singleton-null-string
+  singleton-null-vector
+  singleton-null-fxvector
+  singleton-null-flvector
+  singleton-null-bytevector
+  singleton-null-immutable-string
+  singleton-null-immutable-vector
+  singleton-null-immutable-bytevector
+  singleton-eq
+  singleton-eqv
+  singleton-equal
+  singleton-symbol=?
+  singleton-symbol-symbol
+  singleton-symbol-ht-rtd)
+
+(define-constant vfasl-reloc-tag-bits 3)
+
+(define-enumerated-constants
+  vfasl-reloc-not-a-tag
+  vfasl-reloc-c-entry-tag
+  vfasl-reloc-library-entry-tag
+  vfasl-reloc-library-entry-code-tag
+  vfasl-reloc-symbol-tag
+  vfasl-reloc-singleton-tag)
 
 ;; ---------------------------------------------------------------------
 ;; General helpers for the compiler and runtime implementation:
@@ -2785,6 +2858,10 @@
      (sub1 #f 1 #f #t)
      (-1+ #f 1 #f #t)
      (fx* #f 2 #t #t)
+     (fx*/wraparound #f 2 #t #t)
+     (fx+/wraparound #f 2 #t #t)
+     (fx-/wraparound #f 2 #t #t)
+     (fxsll/wraparound #f 2 #t #t)
      (dofargint64 #f 1 #f #f)
      (dofretint64 #f 1 #f #f)
      (dofretuns64 #f 1 #f #f)
@@ -3138,6 +3215,7 @@
     pb-mul
     pb-div
     pb-subz
+    pb-subp
     pb-and
     pb-ior
     pb-xor

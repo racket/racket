@@ -90,6 +90,7 @@ LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
 SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
+SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d "$(srcdir)/../../start/collects-path.rkt" "${srcdir}/../.."
 
 # Incremented each time the binaries change:
 DOWNLOAD_BIN_VERSION = 1
@@ -224,7 +225,7 @@ install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) gracket/gracket@CGC@@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
 	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
 
 install-wx_xt-cgc-final:
 	$(NOOP)
@@ -239,7 +240,7 @@ install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) gracket/gracket@MMM@@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
+	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
 
 install-wx_xt-3m-final:
 	$(NOOP)
@@ -261,7 +262,7 @@ install-wx_mac-cgc:
 	cd ..; $(ICP) -r gracket/GRacket@CGC@.app $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app"
 	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(INSTALL_SETUP_BOOT) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
 	/usr/bin/install_name_tool -change "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
+	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
 	@STRIP_DEBUG@ $(DESTDIR)"$(libpltdir)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
 
 install-wx_mac-cgc-final:
@@ -271,7 +272,7 @@ install-wx_mac-3m:
 	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app"
 	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) $(INSTALL_SETUP_BOOT) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
 	/usr/bin/install_name_tool -change "@executable_path/../../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
+	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" @GR_APP_COLLECTS_PATH@ @GR_APP_CONFIG_PATH@
 	@STRIP_DEBUG@ $(DESTDIR)"$(libpltdir)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 
 install-wx_mac-3m-final:

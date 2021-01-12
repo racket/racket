@@ -695,6 +695,8 @@ PLAIN_CC
 POST_LINKER
 MZLINKER
 REZ
+RESTORE_SIGNATURE
+STRIP_SIGNATURE
 STRIP_LIB_DEBUG
 STRIP_DEBUG
 ARFLAGS
@@ -2906,6 +2908,9 @@ STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
+
+STRIP_SIGNATURE=":"
+RESTORE_SIGNATURE=":"
 
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
@@ -5379,6 +5384,24 @@ $as_echo "$set_strip_lib" >&6; }
   fi
 fi
 
+case "$host_os" in
+  darwin*)
+    case "$host_cpu" in
+       aarch64)
+         STRIP_SIGNATURE="codesign --remove-signature"
+         RESTORE_SIGNATURE="codesign -s - --entitlements"
+       ;;
+       *)
+        # Check whether `codesign` can remove signatures
+        touch sig-test-file
+        if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
+           STRIP_SIGNATURE="codesign --remove-signature"
+        fi
+        rm sig-test-file
+        ;;
+    esac
+esac
+
 
 ############## C flags ################
 
@@ -6948,6 +6971,7 @@ fi
 ############## Racket for Racket ################
 
 if test "${enable_racket}" = "auto" ; then
+  # See also "configure-parent.ac"
   enable_racket="`pwd`/../local/bc/racket3m"
 fi
 
@@ -7166,6 +7190,8 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -7233,6 +7259,10 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 subdirs="$subdirs foreign/libffi"
 
+    # Smooth transition from libffi v3.1 to v3.3:
+    if test -h foreign/libffi/include/ffitarget.h ; then
+       rm foreign/libffi/include/ffitarget.h
+    fi
   fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"

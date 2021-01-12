@@ -585,6 +585,8 @@ ac_unique_file="setup-go.rkt"
 enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+CONFIGURE_LOCAL_RACKET
+RUN_LOCAL_RACKET
 RUN_RACKET
 CS_USE_BOOTSTRAP_HELP
 CS_BOOTSTRAP_HELP
@@ -2325,6 +2327,8 @@ MAKE_LOCAL_RACKET=no-local-racket
 if test "${enable_racket}" = "auto" ; then
   MAKE_LOCAL_RACKET="local/bc/racket3m"
 fi
+RUN_LOCAL_RACKET="local/bc/racket3m"
+CONFIGURE_LOCAL_RACKET=--enable-bc
 
 if test "${enable_cgcdefault}" = "yes" ; then
   MAIN_VARIANT=cgc
@@ -2333,6 +2337,8 @@ else
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
 RUN_RACKET="bc/racket${MAIN_VARIANT}"
+
+
 
 
 

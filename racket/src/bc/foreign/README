@@ -1,14 +1,16 @@
-The "libffi" directory holds a copy of libffi version 3.1.
+The "libffi" directory holds a copy of libffi version 3.3.
 The libffi code is distributed under an LGPL-compatible license.
 
-Our copy of libffi for Racket has been changed in a few small:
+Changes to the source in this copy:
 
- * Test ftruncate() result in "closures.c" to avoid a compiler
-   warning.
+ * Commented out `__attribute__((deprecated))` for `ffi_java_...` to
+   avoid warnings when compiling libffi itself
 
- * In "x86/darwin.S", added ".long 0" after ".LFE3:" to avoid
-   problems compiling with gcc-4.0.
+ * Added $CPPFLAGS to use of $CC in "configure.host"
 
- * In "x86/win32.S", added ".long 0" after ".LFE5:" and ".LEFDE5", and
-   also included `.section .eh_frame,"w"` for X86_DARWIN --- again,
-   all to avoid problems compiling with gcc-4.0.
+ * Added preprocessor conditionals for Go closures in "ffi_darwin.c"
+
+ * Adjusted "config.guess" to detect Mac OS AArch64
+
+ * Disable FFI_EXEC_TRAMPOLINE_TABLE for Mac OS AArch64, since
+   we use pthread_jit_write_protect_np() in the Racket wrapper

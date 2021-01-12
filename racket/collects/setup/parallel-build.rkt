@@ -117,11 +117,18 @@
                  (log-message pb-logger level msg (parallel-compile-event id data)))
                #f]
               ['DONE
-                (define (string-!empty? s) (not (zero? (string-length s))))
-                (when (ormap string-!empty? (list out err))
-                  (append-error cc "making" #f out err "output"))
-                ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
-                #t]
+               (cond
+                 [#f
+                  ;; treat output as an error:
+                  (define (string-!empty? s) (not (zero? (string-length s))))
+                  (when (ormap string-!empty? (list out err))
+                    (append-error cc "making" #f out err "output"))]
+                 [else
+                  ;; copy output to here:
+                  (display out)
+                  (display err (current-error-port))])
+               ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
+               #t]
               [_ (eprintf "Failed trying to match:\n~s\n" result-type)]))]
         [(list _ (list 'ADD fn))
          ;; Currently ignoring queued individual files

@@ -73,10 +73,11 @@
                annotation-expression
                #%app
                #%call-with-values
+               #%app/no-return
+               #%app/value
                call-with-module-prompt
                make-pthread-parameter
                engine-block
-               force-unfasl
                make-record-type-descriptor
                make-record-type-descriptor*
                make-record-constructor-descriptor
@@ -85,12 +86,15 @@
                record-mutator
                record-predicate
                struct-type-install-properties!
-               register-struct-constructor!
-               register-struct-predicate!
-               register-struct-field-accessor!
-               register-struct-field-mutator!
+               #%struct-constructor
+               #%struct-predicate
+               #%struct-field-accessor
+               #%struct-field-mutator
+               #%nongenerative-uid
                unsafe-struct?
+               unsafe-struct
                raise-binding-result-arity-error
+               raise-definition-result-arity-error
                structure-type-lookup-prefab-uid
                struct-type-constructor-add-guards
                impersonator-val

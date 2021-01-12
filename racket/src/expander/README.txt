@@ -139,7 +139,7 @@ makefile/preprocessor dance that generates the bytecode version of the
 expander itself.
 
 The `make` step for Racket BC generates source files in
-"compiled/cache-src". In come cases (hopefully rare), you may have to
+"compiled/cache-src". In some cases (hopefully rare), you may have to
 manually discard "compiled/cache-src" when things change.
 
 ----------------------------------------
@@ -223,6 +223,25 @@ Set the `PLT_LINKLET_TIMES` environment variable to get similar
 information from the underlying runtime system. Except for compile
 times, linklet-level times generally will be disjoint from the times
 reported by the expander.
+
+----------------------------------------
+
+About structures:
+
+Constructors, predicates, accessors, etc., for a non-transparent
+structure type are defined in the implementation of the expander are
+compiled/loaded in a way that makes them claim not to be structure
+procedures when built into Racket. For example,
+
+   (struct-predicate-procedure? syntax?) ; => #f
+
+If a structure type's representation is exported, such as
+`exn:fail:syntax`, then operations do claim to be strcuture operations
+
+   (struct-predicate-procedure? exn:fail:syntax?) ; => #t
+
+As a consequence, it's ok to directly expose predicates, accessors,
+etc., without exposing an implementation detail.
 
 ----------------------------------------
 

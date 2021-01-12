@@ -2120,9 +2120,6 @@ static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col,
     return NULL;
   }
 
-  if (col < 0)
-    col = pos + 1;
-
   if (src && SCHEME_PATHP(src)) {
     /* Strip off prefix matching the current directory: */
     src = scheme_remove_current_directory_prefix(src);
@@ -2144,12 +2141,18 @@ static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col,
 
   result = (char *)scheme_malloc_atomic(srclen + 15);
 
-  if (col >= 0) {
+  if (line >= 0 && col >= 0) {
+    /* If both line and column are available, use the format `path:line:col` */
     rlen = scheme_sprintf(result, srclen + 15, "%t:%L%ld",
-			  srcstr, srclen, line, col-1);
+                          srcstr, srclen, line, col-1);
+  } else if (pos >= 0) {
+    /* If pos is available, use the format `path::pos` */
+    rlen = scheme_sprintf(result, srclen + 15, "%t::%ld",
+                          srcstr, srclen, pos);
   } else {
-    rlen = scheme_sprintf(result, srclen + 15, "%t::",
-			  srcstr, srclen);
+    /* Otherwise, use the format `path` */
+    rlen = scheme_sprintf(result, srclen + 15, "%t",
+                          srcstr, srclen);
   }
 
   if (len) *len = rlen;
@@ -4751,7 +4754,7 @@ void scheme_init_exn(Scheme_Startup_Env *env)
 
 #define EXN_PARENT(id) exn_table[id].type
 
-#define EXN_FLAGS (SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_NO_MAKE_PREFIX)
+#define EXN_FLAGS (SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_NO_MAKE_PREFIX | SCHEME_STRUCT_BUILTIN)
 
 #define SETUP_STRUCT(id, parent, name, argc, args, props, guard) \
     { tmpo = scheme_make_struct_type_from_string(name, parent, argc, props, guard, 1); \

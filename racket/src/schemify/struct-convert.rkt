@@ -4,13 +4,15 @@
          "struct-type-info.rkt"
          "mutated-state.rkt"
          "find-definition.rkt"
-         "gensym.rkt")
+         "gensym.rkt"
+         "known.rkt"
+         "aim.rkt")
 
 (provide struct-convert
          struct-convert-local)
 
-(define (struct-convert form prim-knowns knowns imports mutated
-                        schemify no-prompt?)
+(define (struct-convert form prim-knowns knowns imports exports mutated
+                        schemify target no-prompt? top?)
   (match form
     [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
         (let-values (((,struct: ,make ,?1 ,-ref ,-set!) ,mk))
@@ -55,11 +57,17 @@
                  (not (set!ed-mutated-state? (hash-ref mutated (unwrap struct:s) #f)))))
         (define can-impersonate? (not (struct-type-info-authentic? sti)))
         (define raw-s? (if can-impersonate? (deterministic-gensym (unwrap s?)) s?))
+        (define system-opaque? (and (aim? target 'system)
+                                    (or (not exports)
+                                        (eq? 'no (hash-ref exports (unwrap struct:s) 'no)))))
         `(begin
            (define ,struct:s (make-record-type-descriptor* ',(struct-type-info-name sti)
                                                            ,(schemify (struct-type-info-parent sti) knowns)
                                                            ,(if (not (struct-type-info-prefab-immutables sti))
-                                                                #f
+                                                                (if (and top?
+                                                                         (aim? target 'system))
+                                                                    `(#%nongenerative-uid ,(struct-type-info-name sti))
+                                                                    #f)
                                                                 `(structure-type-lookup-prefab-uid
                                                                   ',(struct-type-info-name sti)
                                                                   ,(schemify (struct-type-info-parent sti) knowns)
@@ -69,14 +77,29 @@
                                                            #f
                                                            #f
                                                            ,(struct-type-info-immediate-field-count sti)
-                                                           ;; Reporting all as mutable, for now:
-                                                           ,(let ([n (struct-type-info-immediate-field-count sti)])
-                                                              (sub1 (arithmetic-shift 1 n)))))
+                                                           ,(let* ([n (struct-type-info-immediate-field-count sti)]
+                                                                   [mask (sub1 (arithmetic-shift 1 n))])
+                                                              (cond
+                                                                [(struct-type-info-non-prefab-immutables sti)
+                                                                 =>
+                                                                 (lambda (immutables)
+                                                                   (let loop ([imms immutables] [mask mask])
+                                                                     (cond
+                                                                      [(null? imms) mask]
+                                                                      [else
+                                                                       (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
+                                                                         (loop (cdr imms) (bitwise-and mask m)))])))]
+                                                                [else
+                                                                 mask]))))
            ,@(if (null? (struct-type-info-rest sti))
                  null
                  `((define ,(deterministic-gensym "effect")
                      (struct-type-install-properties! ,struct:s
-                                                      ',(struct-type-info-name sti)
+                                                      ',(if system-opaque?
+                                                            ;; list is recognized by `struct-type-install-properties!`
+                                                            ;; to indincate a system structure type:
+                                                            (list (struct-type-info-name sti))
+                                                            (struct-type-info-name sti))
                                                       ,(struct-type-info-immediate-field-count sti)
                                                       0
                                                       ,(schemify (struct-type-info-parent sti) knowns)
@@ -88,22 +111,33 @@
                                     ctr
                                     `(struct-type-constructor-add-guards ,ctr ,struct:s ',(struct-type-info-name sti))))
                               (define name-expr (struct-type-info-constructor-name-expr sti))
-                              (match name-expr
-                                [`#f
-                                 (wrap-property-set ctr-expr 'inferred-name (struct-type-info-name sti))]
-                                [`',sym
-                                 (if (symbol? sym)
-                                     (wrap-property-set ctr-expr 'inferred-name sym)
-                                     `(procedure-rename ,ctr-expr ,name-expr))]
-                                [`,_
-                                 `(procedure-rename ,ctr-expr ,name-expr)])))
-           (define ,raw-s? ,(name-procedure
-                             "" (struct-type-info-name sti) "" '|| "?"
-                             `(record-predicate ,struct:s)))
+                              (define c
+                                (match name-expr
+                                  [`#f
+                                   (wrap-property-set ctr-expr 'inferred-name (struct-type-info-name sti))]
+                                  [`',sym
+                                   (if (symbol? sym)
+                                       (wrap-property-set ctr-expr 'inferred-name sym)
+                                       `(procedure-rename ,ctr-expr ,name-expr))]
+                                  [`,_
+                                   `(procedure-rename ,ctr-expr ,name-expr)]))
+                              (if system-opaque?
+                                  c
+                                  `(#%struct-constructor ,c ,(arithmetic-shift 1 (struct-type-info-field-count sti))))))
+           (define ,raw-s? ,(let ([p (name-procedure
+                                      "" (struct-type-info-name sti) "" '|| "?"
+                                      `(record-predicate ,struct:s))])
+                              (if (or can-impersonate?
+                                      system-opaque?)
+                                  p
+                                  `(#%struct-predicate ,p))))
            ,@(if can-impersonate?
-                 `((define ,s? ,(name-procedure
-                                 "" (struct-type-info-name sti) "" '|| "?"
-                                 `(lambda (v) (if (,raw-s? v) #t ($value (if (impersonator? v) (,raw-s? (impersonator-val v)) #f)))))))
+                 `((define ,s? ,(let ([p (name-procedure
+                                          "" (struct-type-info-name sti) "" '|| "?"
+                                          `(lambda (v) (if (,raw-s? v) #t ($value (if (impersonator? v) (,raw-s? (impersonator-val v)) #f)))))])
+                                  (if system-opaque?
+                                      p
+                                      `(#%struct-predicate ,p)))))
                  null)
            ,@(for/list ([acc/mut (in-list acc/muts)]
                         [make-acc/mut (in-list make-acc/muts)])
@@ -111,52 +145,53 @@
                (match make-acc/mut
                  [`(make-struct-field-accessor ,(? (lambda (v) (wrap-eq? v -ref))) ,pos ',field-name)
                   (define raw-def `(define ,raw-acc/mut
-                                     ,(name-procedure
-                                       "" (struct-type-info-name sti) "-" field-name ""
-                                       `(record-accessor ,struct:s ,pos))))
+                                     ,(let ([p (name-procedure
+                                                "" (struct-type-info-name sti) "-" field-name ""
+                                                `(record-accessor ,struct:s ,pos))])
+                                        (if (or can-impersonate?
+                                                system-opaque?)
+                                            p
+                                            `(#%struct-field-accessor ,p ,struct:s ,pos)))))
                   (if can-impersonate?
                       `(begin
                          ,raw-def
                          (define ,acc/mut
-                           ,(name-procedure
-                             "" (struct-type-info-name sti) "-" field-name ""
-                             `(lambda (s) (if (,raw-s? s)
-                                              (,raw-acc/mut s)
-                                              ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s
-                                                                       ',(struct-type-info-name sti) ',field-name)))))))
+                           ,(let ([p (name-procedure
+                                      "" (struct-type-info-name sti) "-" field-name ""
+                                      `(lambda (s) (if (,raw-s? s)
+                                                       (,raw-acc/mut s)
+                                                       ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s
+                                                                                ',(struct-type-info-name sti) ',field-name)))))])
+                              (if system-opaque?
+                                  p
+                                  `(#%struct-field-accessor ,p ,struct:s ,pos)))))
                       raw-def)]
                  [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ',field-name)
                   (define raw-def `(define ,raw-acc/mut
-                                     ,(name-procedure
-                                       "set-" (struct-type-info-name sti) "-" field-name "!"
-                                       `(record-mutator ,struct:s ,pos))))
+                                     ,(let ([p (name-procedure
+                                                "set-" (struct-type-info-name sti) "-" field-name "!"
+                                                `(record-mutator ,struct:s ,pos))])
+                                        (if (or can-impersonate?
+                                                system-opaque?)
+                                            p
+                                            `(#%struct-field-mutator ,p ,struct:s ,pos)))))
                   (define abs-pos (+ pos (- (struct-type-info-field-count sti)
                                             (struct-type-info-immediate-field-count sti))))
                   (if can-impersonate?
                       `(begin
                          ,raw-def
                          (define ,acc/mut
-                           ,(name-procedure
-                             "set-" (struct-type-info-name sti) "-" field-name "!"
-                             `(lambda (s v) (if (,raw-s? s)
-                                                (,raw-acc/mut s v)
-                                                ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v
-                                                                          ',(struct-type-info-name sti) ',field-name)))))))
+                            ,(let ([p (name-procedure
+                                       "set-" (struct-type-info-name sti) "-" field-name "!"
+                                       `(lambda (s v) (if (,raw-s? s)
+                                                          (,raw-acc/mut s v)
+                                                          ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v
+                                                                                    ',(struct-type-info-name sti) ',field-name)))))])
+                               (if system-opaque?
+                                   p
+                                   `(#%struct-field-mutator ,p ,struct:s ,pos)))))
                       raw-def)]
-                 [`,_ (error "oops")]))
-           (define ,(deterministic-gensym "effect")
-             (begin
-               (register-struct-constructor! ,make-s)
-               (register-struct-predicate! ,s?)
-               ,@(for/list ([acc/mut (in-list acc/muts)]
-                            [make-acc/mut (in-list make-acc/muts)])
-                   (match make-acc/mut
-                     [`(make-struct-field-accessor ,_ ,pos ,_)
-                      `(register-struct-field-accessor! ,acc/mut ,struct:s ,pos)]
-                     [`(make-struct-field-mutator ,_ ,pos ,_)
-                      `(register-struct-field-mutator! ,acc/mut ,struct:s ,pos)]
-                     [`,_ (error "oops")]))
-               (void))))]
+                 [`,_ (error "oops")])))]
        [else #f])]
     [`,_ #f]))
 
@@ -164,19 +199,19 @@
                               prim-knowns knowns imports mutated simples
                               schemify
                               #:unsafe-mode? unsafe-mode?
-                              #:for-cify? for-cify?)
+                              #:target target)
   (match form
     [`(,_ ([,ids ,rhs]) ,bodys ...)
      (define defn `(define-values ,ids ,rhs))
      (define new-seq
        (struct-convert defn
-                       prim-knowns knowns imports mutated
-                       schemify #t))
+                       prim-knowns knowns imports #f mutated
+                       schemify target #t #f))
      (and new-seq
           (match new-seq
             [`(begin . ,new-seq)
              (define-values (new-knowns info)
-               (find-definitions defn prim-knowns knowns imports mutated simples unsafe-mode? for-cify?
+               (find-definitions defn prim-knowns knowns imports mutated simples unsafe-mode? target
                                  #:optimize? #f))
              (cond
                [letrec?

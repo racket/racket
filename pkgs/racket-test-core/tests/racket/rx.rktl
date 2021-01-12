@@ -1605,6 +1605,19 @@
        (#"^(E)?(?(1)aa|a)*$" #"aaa" (#"aaa" #f))
        (#"^(E)?(?(1)aa|a)*$" #"aaaa" (#"aaaa" #f))))
 
+
+(let ()
+  (define out (open-output-bytes))
+  (define infinite-voids
+    (make-input-port
+     'voids
+     (lambda (s) (lambda args 'void))
+     (lambda (skip s evt) (lambda args 'void))
+     void))
+  (err/rt-test (regexp-match #rx"." infinite-voids)
+               exn:fail:contract?
+               #rx"non-character in an unsupported context"))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Test unicode-property patterns
 

@@ -604,6 +604,11 @@ each element in the sequence.
   produced by @racket[seq], and a non-negative exact integer starting
   with @racket[0].  The elements of @racket[seq] must be
   single-valued.
+  
+  @(examples
+    #:eval sequence-evaluator
+    (for ([(ch i) (in-indexed "hello")])
+      (printf "The char at position ~a is: ~a\n" i ch)))
 }
 
 @defproc[(in-sequences [seq sequence?] ...) sequence?]{

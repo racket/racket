@@ -15,16 +15,22 @@ static Scheme_Object *rem_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *quotient_remainder (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *fx_plus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_plus_wrap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_minus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_minus_wrap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_mult (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_mult_wrap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rem (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_mod (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_abs (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_fx_plus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fx_plus_wrap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_minus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fx_minus_wrap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_mult (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fx_mult_wrap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_rem (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_mod (int argc, Scheme_Object *argv[]);
@@ -168,6 +174,13 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx+", p, env);
 
+  p = scheme_make_folding_prim(fx_plus_wrap, "fx+/wraparound", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fx+/wraparound", p, env);
+
   p = scheme_make_folding_prim(fx_minus, "fx-", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
@@ -176,12 +189,27 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx-", p, env);
 
+  p = scheme_make_folding_prim(fx_minus_wrap, "fx-/wraparound", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fx-/wraparound", p, env);
+
   p = scheme_make_folding_prim(fx_mult, "fx*", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx*", p, env);
+
+  p = scheme_make_folding_prim(fx_mult_wrap, "fx*/wraparound", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fx*/wraparound", p, env);
 
   p = scheme_make_folding_prim(fx_div, "fxquotient", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -346,6 +374,13 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx+", p, env);
 
+  p = scheme_make_folding_prim(unsafe_fx_plus_wrap, "unsafe-fx+/wraparound", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("unsafe-fx+/wraparound", p, env);
+
   REGISTER_SO(scheme_unsafe_fx_minus_proc);
   p = scheme_make_folding_prim(unsafe_fx_minus, "unsafe-fx-", 1, -2, 1);
   scheme_unsafe_fx_minus_proc = p;
@@ -356,6 +391,13 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx-", p, env);
 
+  p = scheme_make_folding_prim(unsafe_fx_minus_wrap, "unsafe-fx-/wraparound", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("unsafe-fx-/wraparound", p, env);
+
   REGISTER_SO(scheme_unsafe_fx_times_proc);
   p = scheme_make_folding_prim(unsafe_fx_mult, "unsafe-fx*", 0, -1, 1);
   scheme_unsafe_fx_times_proc = p;
@@ -364,6 +406,13 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx*", p, env);
+
+  p = scheme_make_folding_prim(unsafe_fx_mult_wrap, "unsafe-fx*/wraparound", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("unsafe-fx*/wraparound", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_div, "unsafe-fxquotient", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -1219,6 +1268,20 @@ SAFE_FX(fx_div, "fxquotient", quotient, CHECK_SECOND_ZERO("fxquotient"))
 SAFE_FX(fx_rem, "fxremainder", rem_prim, CHECK_SECOND_ZERO("fxremainder"))
 SAFE_FX(fx_mod, "fxmodulo", scheme_modulo, CHECK_SECOND_ZERO("fxmodulo"))
 
+#define SAFE_FX_WRAP(name, s_name, op)        \
+ static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+ {                                                           \
+   uintptr_t r;                                              \
+   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
+   if (!SCHEME_INTP(argv[1])) scheme_wrong_contract(s_name, "fixnum?", 1, argc, argv); \
+   r = ((uintptr_t)SCHEME_INT_VAL(argv[0]) op (uintptr_t)SCHEME_INT_VAL(argv[1])); \
+   return scheme_make_integer(r);                                       \
+ }
+
+SAFE_FX_WRAP(fx_plus_wrap, "fx+/wraparound", +)
+SAFE_FX_WRAP(fx_minus_wrap, "fx-/wraparound", -)
+SAFE_FX_WRAP(fx_mult_wrap, "fx*/wraparound", *)
+
 static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o;
@@ -1251,8 +1314,11 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
  }
 
 UNSAFE_FX(unsafe_fx_plus, +, fx_plus, scheme_make_integer(0), )
+UNSAFE_FX(unsafe_fx_plus_wrap, +, fx_plus, scheme_make_integer(0), )
 UNSAFE_FX(unsafe_fx_minus, -, fx_minus, scheme_false, if (argc == 1) v = -v;)
+UNSAFE_FX(unsafe_fx_minus_wrap, -, fx_minus, scheme_false, if (argc == 1) v = -v;)
 UNSAFE_FX(unsafe_fx_mult, *, fx_mult, scheme_make_integer(1), )
+UNSAFE_FX(unsafe_fx_mult_wrap, *, fx_mult, scheme_make_integer(1), )
 UNSAFE_FX(unsafe_fx_div, /, fx_div, scheme_false, )
 UNSAFE_FX(unsafe_fx_rem, %, fx_rem, scheme_false, )
 

@@ -59,6 +59,7 @@ disablex11=no
 disablecurses=no
 addflags=yes
 addwarningflags=no
+default_warning_flags="-Wpointer-arith -Wall -Wextra -Werror -Wno-implicit-fallthrough"
 : ${CC:="gcc"}
 : ${CPPFLAGS:=""}
 : ${CFLAGS:=""}
@@ -156,6 +157,13 @@ case "${CONFIG_UNAME}" in
       m64=a6osx
       tm32=ti3osx
       tm64=ta6osx
+    elif uname -a | egrep 'arm|aarch' > /dev/null 2>&1 ; then
+      m64=arm64osx
+      tm64=tarm64osx
+    elif uname -a | egrep 'Power' > /dev/null 2>&1 ; then
+      m64=ppc32osx
+      tm64=tppc32osx
+      default_warning_flags=""
     fi
     installprefix=/usr/local
     installmansuffix=share/man
@@ -348,7 +356,7 @@ if [ "$m" = "pb" ] ; then
 fi
 
 if [ "$bits" = "" ] ; then
-  if uname -a | egrep 'amd64|x86_64|aarch64' > /dev/null 2>&1 ; then
+  if uname -a | egrep 'amd64|x86_64|aarch64|arm64' > /dev/null 2>&1 ; then
     bits=64
   else
     bits=32
@@ -359,6 +367,12 @@ if [ "$threads" = "" ] ; then
   threads=yes
 fi
 
+if [ $bits = 64 ] ; then
+  if [ $threads = yes ] ; then defaultm=$tm64 ; else defaultm=$m64 ; fi
+else
+  if [ $threads = yes ] ; then defaultm=$tm32 ; else defaultm=$m32 ; fi
+fi
+
 if [ "$m" = "" ] ; then
   machine_supplied=no
   if [ $pb = yes ] ; then
@@ -366,11 +380,7 @@ if [ "$m" = "" ] ; then
      if [ $bits = 64 ] ; then mpbhost=$m64 ; else mpbhost=$m32 ; fi
      flagsm=$mpbhost
   else      
-    if [ $bits = 64 ] ; then
-      if [ $threads = yes ] ; then m=$tm64 ; else m=$m64 ; fi
-    else
-      if [ $threads = yes ] ; then m=$tm32 ; else m=$m32 ; fi
-    fi
+    m=$defaultm
     flagsm=$m
   fi
 elif [ $pb = yes ] ; then
@@ -472,7 +482,7 @@ fi
 optFlags=-O2
 
 if [ "$cflagsset" = "no" -o "$addwarningflags" = "yes" ] ; then
-    warningFlags="-Wpointer-arith -Wall -Wextra -Werror -Wno-implicit-fallthrough"
+    warningFlags="$default_warning_flags"
 else
     warningFlags=""
 fi
@@ -511,6 +521,9 @@ if [ "$cflagsset" = "no" ] ; then
     a6osx|ta6osx)
         CFLAGS="-m64 ${optFlags}"
         ;;
+    arm64osx|tarm64osx)
+        CFLAGS="-arch arm64 ${optFlags}"
+        ;;
     a6nt|ta6nt)
         CFLAGS="${optFlags}"
         ;;
@@ -538,6 +551,9 @@ if [ "$cflagsset" = "no" ] ; then
         ;;
     ppc32le|tppc32le)
         CFLAGS="-m32 ${optFlags}"
+        ;;
+    ppc32osx|tppc32osx)
+        CFLAGS="${optFlags}"
         ;;
   esac
 fi
@@ -658,6 +674,7 @@ esac
 "$srcdir"/workarea $m $w $mpbhost
 
 sed -e 's/$(m)/'$m'/g'\
+    -e 's/$(defaultm)/'$defaultm'/g'\
     -e 's/$(workarea)/'$w'/g'\
   "$srcdir"/makefiles/Makefile.in > Makefile
 
@@ -673,6 +690,7 @@ sed -e 's/$(m)/'$m'/g'\
 cat "$srcdir"/makefiles/Makefile-workarea.in > $w/Makefile
 
 sed -e 's/$(m)/'$m'/g'\
+    -e 's/$(m)/'$m'/g'\
     -e 's/$(workarea)/'$w'/g'\
     "$srcdir"/makefiles/Mf-boot.in > $w/Mf-boot
 

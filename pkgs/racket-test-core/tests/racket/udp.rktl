@@ -195,6 +195,16 @@
 (test #f sync/timeout 0.05 udp2-r)
 (test #f sync/timeout 0.05 (udp-receive!-evt udp2 us1))
 (test #f sync/timeout 0.05 (udp-receive!-evt udp2 (make-bytes 0)))
+(when (run-unreliable-tests? 'timing)
+  (let loop ([retries 5])
+    (if (zero? retries)
+        (test #t 'udp-receive-evt-does-not-spin #f)
+        (let ([start (current-process-milliseconds)]
+              [wait 0.05])
+          (test #f sync/timeout wait (udp-receive!-evt udp2 (make-bytes 0)))
+          (or (< (- (current-process-milliseconds) start)
+                 (/ wait 5))
+              (loop (sub1 retries)))))))
 
 ;; break behavior
 (let ([t (parameterize-break #f

@@ -11,14 +11,15 @@
   [struct-type-install-properties! (known-constant)]
   [structure-type-lookup-prefab-uid (known-constant)]
   [struct-type-constructor-add-guards (known-constant)]
-  [register-struct-constructor! (known-constant)]
-  [register-struct-predicate! (known-constant)]
-  [register-struct-field-accessor! (known-constant)]
-  [register-struct-field-mutator! (known-constant)]
   [|#%call-with-values| (known-constant)]
   [unbox/check-undefined (known-constant)]
   [set-box!/check-undefined (known-constant)]
 
+  [|#%struct-constructor| (known-constant)]
+  [|#%struct-predicate| (known-constant)]
+  [|#%struct-field-accessor| (known-constant)]
+  [|#%struct-field-mutator| (known-constant)]
+  [|#%nongenerative-uid| (known-constant)]
   [make-record-type-descriptor (known-constant)]
   [make-record-type-descriptor* (known-constant)]
   [make-record-constructor-descriptor (known-constant)]
@@ -27,14 +28,14 @@
   [record-accessor (known-constant)]
   [record-mutator (known-constant)]
   [unsafe-struct? (known-constant)]
+  [unsafe-struct (known-constant)]
 
   [call-with-module-prompt (known-procedure 2)]
   [raise-binding-result-arity-error (known-procedure 4)]
+  [raise-definition-result-arity-error (known-procedure 4)]
 
   [make-pthread-parameter (known-procedure 2)]
   [engine-block (known-procedure 1)]
-
-  [force-unfasl (known-procedure 2)]
 
   [ptr-ref/int8 (known-procedure 8)]
   [ptr-ref/uint8 (known-procedure 8)]

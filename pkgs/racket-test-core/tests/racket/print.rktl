@@ -433,7 +433,12 @@
 ;; Test print parameters
 
 (let ()
-  (define (test-print/all x wri dis prn prx pr1)
+  (define (test-print/all x wri dis prn prx pr1
+                          #:pretty-write [pp-wri wri]
+                          #:pretty-display [pp-dis dis]
+                          #:pretty-print/not-expr [pp-prn prn]
+                          #:pretty-print/expr [pp-prx prx]
+                          #:pretty-print/1 [pp-pr1 pr1])
     (define (in-string f v)
       (let ([o (open-output-bytes)])
         (f v o)
@@ -449,16 +454,21 @@
     (define (pretty-print/depth-1 v [o (current-output-port)])
       (pretty-print v o 1))
 
+    (define pretty-non-exp-ok?
+      (and
+       ;; not consulted by `pretty-print`:
+       (print-reader-abbreviations)))
+
     (test wri in-string write x)
-    (test (string-append wri "\n") in-string pretty-write x)
+    (test (string-append pp-wri "\n") in-string pretty-write x)
     (test dis in-string display x)
-    (test (string-append dis "\n") in-string pretty-display x)
+    (test (string-append pp-dis "\n") in-string pretty-display x)
     (test prn in-string print/not-expr x)
-    (test (string-append prn "\n") in-string pretty-print/not-expr x)
+    (test (string-append pp-prn "\n") in-string pretty-print/not-expr x)
     (test prx in-string print x)
-    (test (string-append prx "\n") in-string pretty-print x)
+    (test (string-append pp-prx "\n") in-string pretty-print x)
     (test pr1 in-string print/depth-1 x)
-    (test (string-append pr1 "\n") in-string pretty-print/depth-1 x))
+    (test (string-append pp-pr1 "\n") in-string pretty-print/depth-1 x))
 
   (define-syntax (for*/parameterize stx)
     (syntax-case stx ()
@@ -638,7 +648,30 @@
                       "#fl(1.0 2.0 3.0 3.0 3.0)" "#fl(1.0 2.0 3.0 3.0 3.0)" "#fl(1.0 2.0 3.0 3.0 3.0)" "(flvector 1.0 2.0 3.0 3.0 3.0)" "#fl(1.0 2.0 3.0 3.0 3.0)")
       (test-print/all (flvector)
                       "#fl()" "#fl()" "#fl()" "(flvector)" "#fl()"))
-    (void))))
+
+    (void))
+
+  (parameterize ([print-reader-abbreviations #f])
+    (test-print/all (list ''a ',a '`a ',@a '#'a '#,a '#`a '#,@a)
+                    "((quote a) (unquote a) (quasiquote a) (unquote-splicing a) (syntax a) (unsyntax a) (quasisyntax a) (unsyntax-splicing a))"
+                    #:pretty-write "('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "((quote a) (unquote a) (quasiquote a) (unquote-splicing a) (syntax a) (unsyntax a) (quasisyntax a) (unsyntax-splicing a))"
+                    #:pretty-display "('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "((quote a) (unquote a) (quasiquote a) (unquote-splicing a) (syntax a) (unsyntax a) (quasisyntax a) (unsyntax-splicing a))"
+                    #:pretty-print/not-expr "('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "'('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "('a ,a `a ,@a #'a #,a #`a #,@a)"))
+
+  (parameterize ([print-reader-abbreviations #t])
+    (test-print/all (list ''a ',a '`a ',@a '#'a '#,a '#`a '#,@a)
+                    "('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "((quote a) (unquote a) (quasiquote a) (unquote-splicing a) (syntax a) (unsyntax a) (quasisyntax a) (unsyntax-splicing a))"
+                    #:pretty-display "('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "'('a ,a `a ,@a #'a #,a #`a #,@a)"
+                    "('a ,a `a ,@a #'a #,a #`a #,@a)"))
+    
+  (void)))
 
 ;; ----------------------------------------
 ;; More `prop:custom-write` and `prop:custom-print-quotable` checking.

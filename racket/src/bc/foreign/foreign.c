@@ -3462,6 +3462,33 @@ static void release_ffi_lock(void *lock)
 }
 
 /*****************************************************************************/
+
+static int extract_varargs_after(const char *who, int argc, Scheme_Object **argv, int argpos, int nargs)
+{
+  int varargs_after;
+
+  if (SCHEME_FALSEP(argv[argpos]))
+    varargs_after = -1;
+  else if (SCHEME_INTP(argv[argpos])
+           && (SCHEME_INT_VAL(argv[argpos]) > 0)) {
+    varargs_after = SCHEME_INT_VAL(argv[argpos]);
+  } else if (SCHEME_BIGNUMP(argv[argpos])
+             && SCHEME_BIGPOS((argv[argpos]))) {
+    varargs_after = nargs + 1;
+  } else {
+    varargs_after = -1;
+    scheme_wrong_contract(who, "(or/c exact-positive-integer? #f)", argpos, argc, argv);
+  }
+  if (varargs_after > nargs)
+    scheme_contract_error(who, "varargs-after value is too large",
+                          "given value", 1, argv[argpos],
+                          "argument count", 1, scheme_make_integer(nargs),
+                          NULL);
+
+  return varargs_after;
+}
+
+/*****************************************************************************/
 /* Calling foreign function objects */
 
 #define MAX_QUICK_ARGS 16
@@ -3848,6 +3875,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
   Scheme_Object *otype  = argv[ARGPOS(2)];
   Scheme_Object *obj, *data, *p, *base, *cp, *name, *a[1];
   ffi_abi abi;
+  int varargs_after;
   intptr_t ooff;
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
@@ -3908,6 +3936,12 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
       lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[ARGPOS(6)]));
     }
   }
+  /* ARGPOS(7) is `blocking?`, but we don't use that */
+  if (argc > ARGPOS(8)) {
+    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(8), nargs);
+  } else
+    varargs_after = -1;
+
   if (cp && SCHEME_FFIOBJP(cp))
     name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
   else
@@ -3921,8 +3955,13 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
   cif = malloc(sizeof(ffi_cif));
-  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
-    scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  if (varargs_after == -1) {
+    if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  } else {
+    if (ffi_prep_cif_var(cif, abi, varargs_after, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif_var did not return FFI_OK");
+  }
   data = scheme_make_vector(FFI_CALL_VEC_SIZE, NULL);
   SCHEME_VEC_ELS(data)[0] = name;
   SCHEME_VEC_ELS(data)[1] = obj;
@@ -3954,7 +3993,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
 #undef ARGPOS
 }
 
-/* (ffi-call ffi-obj in-types out-type [abi save-errno? orig-place? lock-name blocking?]) -> (in-types -> out-value) */
+/* (ffi-call ffi-obj in-types out-type [abi varargs-after save-errno? orig-place? lock-name blocking?]) -> (in-types -> out-value) */
 /* the real work is done by ffi_do_call above */
 #define MYNAME "ffi-call"
 static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
@@ -3963,7 +4002,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 }
 #undef MYNAME
 
-/* (ffi-call-maker in-types out-type [abi save-errno? orig-place? lock-name blocking?]) -> (ffi->obj -> (in-types -> out-value)) */
+/* (ffi-call-maker in-types out-type [abi varargs-after save-errno? orig-place? lock-name blocking?]) -> (ffi->obj -> (in-types -> out-value)) */
 /* Curried version of `ffi-call` */
 #define MYNAME "ffi-call-maker"
 static Scheme_Object *foreign_ffi_call_maker(int argc, Scheme_Object *argv[])
@@ -4257,7 +4296,8 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
   Scheme_Object *p, *base;
   ffi_abi abi;
   int is_atomic;
-  int nargs, i;
+  int nargs, i, varargs_after;
+  ffi_status ffi_ok;
   /* ffi_closure objects are problematic when used with a moving GC.  The
    * problem is that memory that is GC-visible can move at any time.  The
    * solution is to use an immobile-box, which an immobile pointer (in a simple
@@ -4315,6 +4355,10 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
       && !SCHEME_BOXP(argv[ARGPOS(5)])
       && !scheme_check_proc_arity2(NULL, 1, ARGPOS(5), argc, argv, 1))
     scheme_wrong_contract(who, "(or/c #f (procedure-arity-includes/c 0) box?)", ARGPOS(5), argc, argv);
+  if (argc > ARGPOS(6))
+    varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(6), nargs);
+  else
+    varargs_after = -1;
 
   if (curry) {
     /* all checks are done */
@@ -4360,21 +4404,32 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     do_callback = ffi_queue_callback;
   } else
     do_callback = ffi_do_callback;
+
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args =
-    scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  scheme_thread_code_start_write();
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
-    if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
+    if (NULL == (base = get_ctype_base(SCHEME_CAR(p)))) {
+      scheme_thread_code_end_write();
       scheme_wrong_contract(who, "(listof ctype?)", ARGPOS(1), argc, argv);
-    if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
+    }
+    if (CTYPE_PRIMLABEL(base) == FOREIGN_void) {
+      scheme_thread_code_end_write();
       wrong_void(who, SCHEME_CAR(p), 1, ARGPOS(1), argc, argv);
+    }
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
-  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
-    scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  if (varargs_after == -1) {
+    if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  } else {
+    if (ffi_prep_cif_var(cif, abi, varargs_after, nargs, rtype, atypes) != FFI_OK)
+      scheme_signal_error("internal error: ffi_prep_cif_var did not return FFI_OK");
+  }
+  scheme_thread_code_end_write();
   data = (ffi_callback_struct*)scheme_malloc_tagged(sizeof(ffi_callback_struct));
   data->so.type = ffi_callback_tag;
   data->callback = (cl_cif_args);
@@ -4411,9 +4466,11 @@ static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc
     callback_data = (void *)tmp;
   }
 # endif /* MZ_USE_MZRT */
+  scheme_thread_code_start_write();
   cl_cif_args->data = callback_data;
-  if (ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl)
-      != FFI_OK)
+  ffi_ok = ffi_prep_closure_loc(cl, cif, do_callback, (void*)(cl_cif_args->data), cl);
+  scheme_thread_code_end_write();
+  if (ffi_ok != FFI_OK)
     scheme_signal_error
       ("internal error: ffi_prep_closure did not return FFI_OK");
 # ifdef MZ_USE_MZRT
@@ -4443,7 +4500,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
 static Scheme_Object *make_ffi_callback_from_curried(int argc, Scheme_Object *argv[], Scheme_Object *self)
 {
   Scheme_Object *vec = SCHEME_PRIM_CLOSURE_ELS(self)[0];
-  Scheme_Object *a[6];
+  Scheme_Object *a[7];
   int c = SCHEME_VEC_SIZE(vec), i;
 
   for (i = 0; i < c; i++) {
@@ -5115,13 +5172,13 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("make-sized-byte-string",
     scheme_make_noncm_prim(foreign_make_sized_byte_string, "make-sized-byte-string", 2, 2), env);
   scheme_addto_prim_instance("ffi-call",
-    scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 8), env);
+    scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 9), env);
   scheme_addto_prim_instance("ffi-call-maker",
-    scheme_make_noncm_prim(foreign_ffi_call_maker, "ffi-call-maker", 2, 7), env);
+    scheme_make_noncm_prim(foreign_ffi_call_maker, "ffi-call-maker", 2, 8), env);
   scheme_addto_prim_instance("ffi-callback",
     scheme_make_noncm_prim(foreign_ffi_callback, "ffi-callback", 3, 6), env);
   scheme_addto_prim_instance("ffi-callback-maker",
-    scheme_make_noncm_prim(foreign_ffi_callback_maker, "ffi-callback-maker", 2, 5), env);
+    scheme_make_noncm_prim(foreign_ffi_callback_maker, "ffi-callback-maker", 2, 6), env);
   scheme_addto_prim_instance("saved-errno",
     scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 1), env);
   scheme_addto_prim_instance("lookup-errno",
@@ -5361,8 +5418,8 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
 int scheme_is_cpointer(Scheme_Object *cp)
 {
   return (SCHEME_FALSEP(cp)
-          || SCHEME_CPTRP(cp)
-          || SCHEME_BYTE_STRINGP(cp)
+          || SCHEME_CPTRP(x)
+          || SCHEME_BYTE_STRINGP(x)
           || (SCHEME_CHAPERONE_STRUCTP(cp)
               && scheme_struct_type_property_ref(scheme_cpointer_property, cp)));
 }
@@ -5482,13 +5539,13 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_addto_primitive_instance("make-sized-byte-string",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-sized-byte-string", 2, 2), env);
   scheme_addto_primitive_instance("ffi-call",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 8), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 9), env);
   scheme_addto_primitive_instance("ffi-call-maker",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call-maker", 2, 7), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call-maker", 2, 8), env);
   scheme_addto_primitive_instance("ffi-callback",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), env);
   scheme_addto_primitive_instance("ffi-callback-maker",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback-maker", 2, 5), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback-maker", 2, 6), env);
   scheme_addto_primitive_instance("saved-errno",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 1), env);
   scheme_addto_primitive_instance("lookup-errno",

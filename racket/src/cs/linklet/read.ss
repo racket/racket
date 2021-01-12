@@ -4,7 +4,7 @@
    'read-linklet
    (let* ([len (integer-bytes->integer (read-bytes 4 in) #f #f)]
           [bstr (read-bytes len in)])
-     (adjust-linklet-bundle-laziness-and-paths
+     (adjust-linklet-bundle-laziness-and-literals
       (fasl-read (open-bytevector-input-port bstr))))))
 
 (define read-on-demand-source
@@ -18,7 +18,7 @@
                     v)
 		  'read-on-demand-source))
 
-(define (adjust-linklet-bundle-laziness-and-paths ls)
+(define (adjust-linklet-bundle-laziness-and-literals ls)
   (let loop ([ls ls] [ht (hasheq)])
     (cond
      [(null? ls) ht]
@@ -30,7 +30,7 @@
                         key
                         (if (linklet? val)
                             (adjust-linklet-laziness
-                             (decode-linklet-paths val))
+                             (decode-linklet-literals val))
                             val))))])))
 
 (define (adjust-linklet-laziness linklet)
@@ -50,14 +50,10 @@
                      [else
                       'faslable-strict])))
 
-(define (decode-linklet-paths linklet)
-  (let ([paths (linklet-paths linklet)]
-        [sfd-paths (linklet-sfd-paths linklet)])
+(define (decode-linklet-literals linklet)
+  (let ([literals (linklet-literals linklet)])
     (cond
-      [(and (null? paths)
-            (fxzero? (#%vector-length sfd-paths)))
-       linklet]
+      [(vector? literals) linklet]
       [else
-       (set-linklet-paths linklet
-                          (#%map compiled-path->path paths)
-                          (#%vector-map compiled-path->path sfd-paths))])))
+       (set-linklet-literals linklet
+                             (unfasl-literals/lazy literals))])))

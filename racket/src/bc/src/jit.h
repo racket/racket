@@ -1650,7 +1650,7 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #define ARITH_IOR      4
 /*  bitwise-xor, fxxor, unsafe-fxxor */
 #define ARITH_XOR      5
-/*  arithmetic-shift, fxlshift, unsafe-fxlshift */
+/*  fxlshift, unsafe-fxlshift */
 #define ARITH_LSH      6
 /*  fxrshift, unsafe-fxrshift */
 #define ARITH_RSH     -6
@@ -1675,6 +1675,16 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #define ARITH_INEX_TRUNC_EX  16
 /*  flexpt */
 #define ARITH_EXPT     17
+/*  fx+/wraparound, unsafe-fl+/wraparound */
+#define ARITH_ADD_WRAP      18
+/*  fx-/wraparound, unsafe-fx-/wraparound */
+#define ARITH_SUB_WRAP     -18
+/*  fx+/wraparound, unsafe-fx+/wraparound */
+#define ARITH_MUL_WRAP      19
+/*  fxlshift/wraparound, unsafe-fxlshift/wraparound */
+#define ARITH_LSH_WRAP      20
+/*  arithmetic-shift */
+#define ARITH_SH            21
 
 /* Comparison codes. Used in jitarith.c and jitinline.c. */
 

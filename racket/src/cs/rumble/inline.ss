@@ -3,7 +3,9 @@
 
 (define-syntax (define-inline stx)
   (syntax-case stx ()
-    [(_ (orig-id arg ...) guard op)
+    [(_ proto guard op)
+     #'(define-inline proto guard op #3%$app/no-inline)]
+    [(_ (orig-id arg ...) guard op orig-app)
      (with-syntax ([(tmp ...) (generate-temporaries #'(arg ...))]
                    [id (datum->syntax #'orig-id
                                       (#%string->symbol
@@ -15,7 +17,7 @@
               #'(let ([arg tmp] ...)
                   (if guard
                       op
-                      (#3%$app/no-inline orig-id arg ...)))]
+                      (orig-app orig-id arg ...)))]
              [(_ . args)
               #'(orig-id . args)]
              [_ #'orig-id])))]))
@@ -62,19 +64,23 @@
 
 (define-inline (mcar p)
   (mpair? p)
-  (unsafe-mcar p))
+  (unsafe-mcar p)
+  |#%app/no-return|)
 
 (define-inline (mcdr p)
   (mpair? p)
-  (unsafe-mcdr p))
+  (unsafe-mcdr p)
+  |#%app/no-return|)
 
 (define-inline (set-mcar! p v)
   (mpair? p)
-  (unsafe-set-mcar! p v))
+  (unsafe-set-mcar! p v)
+  |#%app/no-return|)
 
 (define-inline (set-mcdr! p v)
   (mpair? p)
-  (unsafe-set-mcdr! p v))
+  (unsafe-set-mcdr! p v)
+  |#%app/no-return|)
 
 (define-inline (unsafe-struct-ref s i)
   (not (impersonator? s))

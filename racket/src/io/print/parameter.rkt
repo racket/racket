@@ -21,7 +21,7 @@
 (define-boolean-parameter print-pair-curly-braces #f)
 (define-boolean-parameter print-mpair-curly-braces #t)
 (define-boolean-parameter print-boolean-long-form #f)
-(define-boolean-parameter print-reader-abbreviations #t)
+(define-boolean-parameter print-reader-abbreviations #f)
 
 (define-boolean-parameter read-accept-bar-quote #t)
 (define-boolean-parameter read-case-sensitive #t)

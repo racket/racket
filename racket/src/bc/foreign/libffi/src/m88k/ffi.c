@@ -38,7 +38,7 @@
  * - the logic deciding whether a function argument gets passed through
  *   registers, or on the stack, has changed several times in OpenBSD in
  *   edge cases (especially for structs larger than 32 bytes being passed
- *   by value). The code below attempts to match the logic used by the
+ *   by value). The code below attemps to match the logic used by the
  *   system compiler of OpenBSD 5.3, i.e. gcc 3.3.6 with many m88k backend
  *   fixes.
  */
@@ -134,7 +134,7 @@ ffi_prep_args (void *stack, extended_cif *ecif)
       /* Enforce proper stack alignment of 64-bit types */
       if (argp == stackp && a > sizeof (int))
 	{
-	  stackp = (char *) ALIGN(stackp, a);
+	  stackp = (char *) FFI_ALIGN(stackp, a);
 	  argp = stackp;
 	}
 
@@ -177,7 +177,7 @@ ffi_prep_args (void *stack, extended_cif *ecif)
 
       /* Align if necessary.  */
       if ((sizeof (int) - 1) & z)
-	z = ALIGN(z, sizeof (int));
+	z = FFI_ALIGN(z, sizeof (int));
 
       p_argv++;
 
@@ -320,7 +320,7 @@ ffi_prep_closure_args_OBSD (ffi_cif *cif, void **avalue, unsigned int *regp,
       /* Enforce proper stack alignment of 64-bit types */
       if (argp == stackp && a > sizeof (int))
 	{
-	  stackp = (char *) ALIGN(stackp, a);
+	  stackp = (char *) FFI_ALIGN(stackp, a);
 	  argp = stackp;
 	}
 
@@ -331,7 +331,7 @@ ffi_prep_closure_args_OBSD (ffi_cif *cif, void **avalue, unsigned int *regp,
 
       /* Align if necessary */
       if ((sizeof (int) - 1) & z)
-	z = ALIGN(z, sizeof (int));
+	z = FFI_ALIGN(z, sizeof (int));
 
       p_argv++;
 

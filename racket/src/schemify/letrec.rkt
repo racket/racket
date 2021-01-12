@@ -2,7 +2,8 @@
 (require "wrap.rkt"
          "match.rkt"
          "infer-known.rkt"
-         "mutated-state.rkt")
+         "mutated-state.rkt"
+         "aim.rkt")
 
 (provide letrec-splitable-values-binding?
          letrec-split-values-binding
@@ -27,9 +28,9 @@
                      `[(,id) ,rhs])
      . ,bodys))
 
-(define (letrec-conversion ids mutated for-cify? e)
+(define (letrec-conversion ids mutated target e)
   (define need-convert?
-    (and (not for-cify?)
+    (and (not (aim? target 'cify))
          (let loop ([ids ids])
            (cond
              [(symbol? ids)

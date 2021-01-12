@@ -7,7 +7,8 @@
          racket/dict
          racket/set
          racket/fasl
-         ffi/unsafe/vm)
+         ffi/unsafe/vm
+         "private/opaque.rkt")
 
 (provide zo-parse)
 (provide (all-from-out compiler/zo-structs))
@@ -869,7 +870,7 @@
                    (open-input-bytes (bytes-append
                                       (integer->integer-bytes len 4 #f #f)
                                       bstr)))
-                  'opaque bstr)]
+                  'opaque (opaque bstr))]
        [else
         (hash 'opaque bstr)])]
     [else

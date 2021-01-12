@@ -8,6 +8,8 @@
 #endif
 
 string system_type_os = SYSTEM_TYPE_NAME;
+string system_type_os_star = SCHEME_OS;
+string system_type_arch = SCHEME_ARCH;
 string system_type_link = MZ_SYSTEM_TYPE_LINK;
 string system_type_so_suffix = MZ_SYSTEM_TYPE_SO_SUFFIX;
 string system_type_so_mode = MZ_SYSTEM_TYPE_SO_MODE;

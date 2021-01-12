@@ -41,27 +41,71 @@ jobs:
       shell: cmd
       run: |
         call racket\racket.exe --version
+    - name: Install catalog
+      shell: cmd
+      run: |
+        racket\racket.exe -l- pkg/dirs-catalog --immediate %cd%\rktcat %cd%\pkgs\
+        racket\raco.exe pkg config --set catalogs %cd%\rktcat\ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
     - name: Install Testing Deps
       shell: cmd
       run: |
         call racket\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
-    - name: Test
+    - name: Run tests/racket/test
       shell: cmd
       run: |
-        call racket\raco.exe test -l tests/racket/test
-        call racket\racket.exe -l tests/racket/contract/all
-        call racket\raco.exe test -l tests/json/json
-        call racket\raco.exe test -l tests/file/main
-        call racket\raco.exe test -l tests/net/head
-        call racket\raco.exe test -l tests/net/uri-codec
-        call racket\raco.exe test -l tests/net/url
-        call racket\raco.exe test -l tests/net/url-port
-        call racket\raco.exe test -l tests/net/encoders
-        call racket\raco.exe test -l tests/openssl/basic
-        call racket\raco.exe test -l tests/openssl/https
-        call racket\raco.exe test -l tests/match/main
-        call racket\raco.exe test -l tests/zo-path
-        call racket\raco.exe test -c tests/xml
-        call racket\raco.exe test -c tests/future
-        call racket\raco.exe test -l tests/db/all-tests
-        racket\raco.exe test -c tests/stxparse
+        call .\racket\src\worksp\msvcprep.bat x86_amd64
+        racket\raco.exe test -l tests/racket/test
+    - name: Run tests/racket/contract/all
+      shell: cmd
+      run: racket\racket.exe -l tests/racket/contract/all
+    - name: Run tests/json/json
+      shell: cmd
+      run: racket\raco.exe test -l tests/json/json
+    - name: Run tests/file/main
+      shell: cmd
+      run: racket\raco.exe test -l tests/file/main
+    - name: Run tests/net/head
+      shell: cmd
+      run: racket\raco.exe test -l tests/net/head
+    - name: Run tests/net/uri-codec
+      shell: cmd
+      run: racket\raco.exe test -l tests/net/uri-codec
+    - name: Run tests/net/url
+      shell: cmd
+      run: racket\raco.exe test -l tests/net/url
+    - name: Run tests/net/url-port
+      shell: cmd
+      run: racket\raco.exe test -l tests/net/url-port
+    - name: Run tests/net/encoders
+      shell: cmd
+      run: racket\raco.exe test -l tests/net/encoders
+    - name: Run tests/openssl/basic
+      shell: cmd
+      run: racket\raco.exe test -l tests/openssl/basic
+    - name: Run tests/openssl/https
+      shell: cmd
+      run: racket\raco.exe test -l tests/openssl/https
+    - name: Run tests/match/main
+      shell: cmd
+      run: racket\raco.exe test -l tests/match/main
+    - name: Run tests/zo-path
+      shell: cmd
+      run: racket\raco.exe test -l tests/zo-path
+    - name: Run tests/xml
+      shell: cmd
+      run: racket\raco.exe test -c tests/xml
+    - name: Run tests/future
+      shell: cmd
+      run: racket\raco.exe test -c tests/future
+    - name: Install db tests dependency
+      shell: cmd
+      run: racket\raco.exe pkg install --auto db-test
+    - name: Run db tests
+      shell: cmd
+      run: racket\raco.exe test -l tests/db/all-tests
+    - name: Run tests/stxparse
+      shell: cmd
+      run: racket\raco.exe test -c tests/stxparse
+    - name: Run syntax tests
+      shell: cmd
+      run: racket\raco.exe test -c tests/syntax

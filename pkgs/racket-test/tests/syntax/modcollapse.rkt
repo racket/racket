@@ -145,7 +145,7 @@
        "x/banana.rkt")
 (check (collapse-module-path-index dirrel
                                    here)
-       (build-path here-dir "x/banana.rkt"))
+       (build-path here-dir "x" "banana.rkt"))
 
 (define rel-dirrel (module-path-index-join
                     "apple.rkt"

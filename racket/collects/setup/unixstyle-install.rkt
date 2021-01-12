@@ -577,7 +577,7 @@
     ;; Copy pb boot files, if present
     (let ([src-pb "src/ChezScheme/boot/pb"])
       (when (directory-exists? src-pb)
-        (parameterize ([current-skip-filter (lambda (p) #f)])
+        (parameterize ([current-skip-filter dot-file?])
           (do-tree src-pb (build-path base-destdir src-pb) #:build-path? #t))))
     ;; Remove directories that get re-created:
     (define (remove! dst*) (rm (dir: dst*)))

@@ -572,6 +572,33 @@
   (test 1 f #s(o n e))
   (test (void) f #f))
 
+;; Make sure a mixture of fixnums and non-fixnums works:
+(let ()
+  (define (f x)
+    (case x
+      [(1) 'one]
+      [(1000) 'onek]
+      [(1001) 'onek+]
+      [(1002) 'onek+]
+      [(1003) 'onek+]
+      [(1000000) 'onem]
+      [(1000000000) 'onet]
+      [(1000000000000) 'oneqd]
+      [(1000000000001) 'oneqd+]
+      [(1000000000002) 'oneqd+]
+      [(1000000000003) 'oneqd+]
+      [(1000000000000000) 'oneqt]
+      [(1000000000000000000) 'ones]
+      [(1000000000000000001) 'ones+]
+      [(1000000000000000002) 'ones+]))
+  (test 'one f 1)
+  (test 'onek f 1000)
+  (test 'onem f 1000000)
+  (test 'onet f 1000000000)
+  (test 'oneqd f 1000000000000)
+  (test 'oneqt f 1000000000000000)
+  (test 'ones f 1000000000000000000))
+
 (test #t 'and (and (= 2 2) (> 2 1)))
 (test #f 'and (and (= 2 2) (< 2 1)))
 (test '(f g) 'and (and 1 2 'c '(f g)))
@@ -1091,14 +1118,17 @@
 (syntax-test #'(cond [(< 2 3) (define x 2)] [else 5]))
 (syntax-test #'(cond [else (define x 2)]))
 
-;; No good way to test in mzc:
-(error-test #'(define x (values)) exn:application:arity?)
-(error-test #'(define x (values 1 2)) exn:application:arity?)
-(error-test #'(define-values () 3) exn:application:arity?)
-(error-test #'(define-values () (values 1 3)) exn:application:arity?)
-(error-test #'(define-values (x y) (values)) exn:application:arity?)
-(error-test #'(define-values (x y) 3) exn:application:arity?)
-(error-test #'(define-values (x y) (values 1 2 3)) exn:application:arity?)
+(define (definition-arity-error? x)
+  (and (exn:application:arity? x)
+       (regexp-match? #rx"expected number of values not received" (exn-message x))))
+
+(error-test #'(define x (values)) definition-arity-error?)
+(error-test #'(define x (values 1 2)) definition-arity-error?)
+(error-test #'(define-values () 3) definition-arity-error?)
+(error-test #'(define-values () (values 1 3)) definition-arity-error?)
+(error-test #'(define-values (x y) (values)) definition-arity-error?)
+(error-test #'(define-values (x y) 3) definition-arity-error?)
+(error-test #'(define-values (x y) (values 1 2 3)) definition-arity-error?)
 
 (begin (define ed-t1 1) (define ed-t2 2))
 (test 1 'begin-define ed-t1)
@@ -2327,6 +2357,18 @@
                (λ () (begin0
                        (set! i (add1 i))
                        (+ i 1)))))
+
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make sure a `values` wrapper is not
+;; discarded:
+
+(err/rt-test (for/fold ([x 0]
+                        [y 0])
+                       ([i '(1)])
+               (values (values x y)))
+             exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

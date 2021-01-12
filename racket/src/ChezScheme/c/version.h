@@ -78,8 +78,24 @@
 # endif
 #endif
 
+#if (machine_type == machine_type_arm64osx || machine_type == machine_type_tarm64osx)
+# define OS_ANY_MACOSX
+# if (machine_type == machine_type_tarm64osx)
+#  define PTHREADS
+# endif
+# define FLUSHCACHE
+#endif
+
+#if (machine_type == machine_type_ppc32osx || machine_type == machine_type_tppc32osx)
+# define OS_ANY_MACOSX
+# if (machine_type == machine_type_tppc32osx)
+#  define PTHREADS
+# endif
+# define FLUSHCACHE
+#endif
+
 #if (machine_type == machine_type_pb)
-# if defined(__powerpc__) && !defined(__powerpc64__)
+# if (defined(__powerpc__) || defined(__POWERPC__)) && !defined(__powerpc64__)
 #  define PORTABLE_BYTECODE_BIGENDIAN
 # endif
 # if defined(__linux__)
@@ -305,7 +321,18 @@ typedef int tputsputcchar;
 #define USE_MMAP
 #define MMAP_HEAP
 #define IEEE_DOUBLE
-#define LITTLE_ENDIAN_IEEE_DOUBLE
+#if !defined(__POWERPC__)
+# define LITTLE_ENDIAN_IEEE_DOUBLE
+#endif
+#if defined(__arm64__)
+# define S_MAP_CODE  MAP_JIT
+# define S_ENABLE_CODE_WRITE(on) pthread_jit_write_protect_np(!(on))
+# define CANNOT_READ_DIRECTLY_INTO_CODE
+# include <pthread.h>
+#elif defined(__x86_64__)
+/* needed to run under Rosetta2 on ARM Mac OS: */
+# define CANNOT_READ_DIRECTLY_INTO_CODE
+#endif
 #define LDEXP
 #define ARCHYPERBOLIC
 #define GETPAGESIZE() getpagesize()
@@ -467,6 +494,16 @@ typedef char tputsputcchar;
 #endif
 #ifndef WRITE
 # define WRITE write
+#endif
+
+#ifndef S_PROT_CODE
+# define S_PROT_CODE (PROT_READ | PROT_WRITE | PROT_EXEC)
+#endif
+#ifndef S_MAP_CODE
+# define S_MAP_CODE 0
+#endif
+#ifndef S_ENABLE_CODE_WRITE
+# define S_ENABLE_CODE_WRITE(on) do { } while (0)
 #endif
 
 #ifdef PTHREADS

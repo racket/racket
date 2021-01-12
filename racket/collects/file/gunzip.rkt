@@ -288,13 +288,18 @@
             (set! buf-pos (min MAX-LOOKAHEAD buf-max)))
           ;; Peek (not read) some available bytes:
           (let ([got (peek-bytes-avail! buffer buf-pos #f input-port buf-pos BUFFER-SIZE)])
-            (if (eof-object? got)
-                ;; Treat an EOF as a -1 "byte":
-                (begin
-                  (bytes-set! buffer buf-pos 255)
-                  (set! buf-max (add1 buf-pos)))
-                ;; Got normal bytes:
-                (set! buf-max (+ buf-pos got))))
+            (cond
+              [(eof-object? got)
+               ;; Treat an EOF as a -1 "byte":
+               (bytes-set! buffer buf-pos 255)
+               (set! buf-max (add1 buf-pos))]
+              [(fixnum? got)
+               ;; Got normal bytes:
+               (set! buf-max (+ buf-pos got))]
+              [else
+               (raise-arguments-error 'inflate
+                                      "non-character in an unsupported context"
+                                      "port" input-port)]))
           (READBITS n))
         (let ([v (bytes-ref buffer buf-pos)])
           (set! buf-pos (add1 buf-pos))

@@ -146,6 +146,8 @@
           procedure-specialize
           |#%app|
           |#%call-with-values|
+          |#%app/no-return|
+          |#%app/value|
           extract-procedure ; not exported to Racket
           procedure-arity-includes?
           procedure-arity
@@ -221,10 +223,11 @@
           make-struct-field-accessor
           make-struct-field-mutator
           struct-type-constructor-add-guards ; not exported to Racket
-          register-struct-constructor! ; not exported to Racket
-          register-struct-predicate! ; not exported to Racket
-          register-struct-field-accessor! ; not exported to Racket
-          register-struct-field-mutator! ; not exported to Racket
+          |#%struct-constructor| ; not exported to Racket
+          |#%struct-predicate| ; not exported to Racket
+          |#%struct-field-accessor| ; not exported to Racket
+          |#%struct-field-mutator| ; not exported to Racket
+          |#%nongenerative-uid| ; not exported to Racket
           struct-property-set!  ; not exported to Racket
           struct-constructor-procedure?
           struct-predicate-procedure?
@@ -406,6 +409,7 @@
           fx->fl
           fxrshift
           fxlshift
+          fxlshift/wraparound
           fl->fx
           ->fl
           fl->exact-integer
@@ -467,7 +471,6 @@
           current-milliseconds
           current-gc-milliseconds
           current-seconds
-          seconds->date
 
           collect-garbage
           current-memory-use
@@ -508,6 +511,8 @@
           unsafe-list-tail
           unsafe-list-ref
           unsafe-cons-list
+          unsafe-set-immutable-car!
+          unsafe-set-immutable-cdr!
 
           unsafe-char=?
           unsafe-char<?
@@ -529,6 +534,10 @@
           unsafe-fxnot
           unsafe-fxrshift
           unsafe-fxlshift
+          unsafe-fx+/wraparound
+          unsafe-fx-/wraparound
+          unsafe-fx*/wraparound
+          unsafe-fxlshift/wraparound
 
           unsafe-fx=
           unsafe-fx<
@@ -688,6 +697,7 @@
           unsafe-struct*-set!
           unsafe-struct*-cas!
           unsafe-struct? ; not exported to racket
+          unsafe-struct  ; not exported to racket
 
           unsafe-s16vector-ref
           unsafe-s16vector-set!
@@ -726,8 +736,7 @@
           current-atomic-virtual-register
           end-atomic-virtual-register
           current-future-virtual-register)
-  (import (rename (chezpart)
-                  [define define/no-lift])
+  (import (chezpart)
 	  (rename (only (chezscheme) sleep)
 		  [sleep chez:sleep])
 	  (only (chezscheme)
@@ -744,10 +753,9 @@
                 record-field-mutator))
 
   ;; Internal tokens that are different from all possible user-level values:
-  (define/no-lift none '#{none kwcju864gpycc2h151s9atbmo-1})
-  (define/no-lift none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
+  (define none '#{none kwcju864gpycc2h151s9atbmo-1})
+  (define none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
 
-  (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
   (include "rumble/layout.ss")
   (include "rumble/begin0.ss")
