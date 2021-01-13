@@ -449,7 +449,7 @@
   ;; collapse them to a single import
   (define mu*-intern-table (make-hash))
   (define (intern-module-use* mu*)
-    (define mod-name (module-path-index-resolve (module-use-module mu*)))
+    (define mod-name (module-path-index-resolve (module-use-module mu*) load-modules?))
     (define existing-mu* (hash-ref mu*-intern-table (cons mod-name (module-use-phase mu*)) #f))
     (cond
       [existing-mu*

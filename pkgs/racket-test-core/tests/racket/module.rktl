@@ -3489,5 +3489,54 @@ case of module-leve bindings; it doesn't cover local bindings.
 (dynamic-require ''regression-test-to-make-sure-property-procedure-mutation-is-seen #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check an interaction of recompilation and cross-module-inlining
+
+;; Make sure that a constant is inlined across a module boundary by
+;; recompilation
+(parameterize ([current-module-name-resolver
+                (let ([orig (current-module-name-resolver)])
+                  (case-lambda
+                    [(mp ns) (orig mp ns)]
+                    [(mp wrt stx load?)
+                     (cond
+                       [(equal? mp "module-out-of-thin-air.rkt")
+                        (when load?
+                          (unless (module-declared? ''module-out-of-thin-air)
+                            (eval `(module module-out-of-thin-air racket/base
+                                     (define five 5)
+                                     (provide five)))))
+                        (make-resolved-module-path 'module-out-of-thin-air)]
+                       [else
+                        (orig mp wrt stx load?)])]))])
+  (define mi-compiled
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [current-compile-target-machine #f])
+      (compile '(module uses-module-out-of-thin-air racket/base
+                  (require "module-out-of-thin-air.rkt")
+                  (define also-five five)
+                  (provide also-five)))))
+  ;; We expect that `mi-compiled` does not have 5 inlined.
+  ;; If it does, that's not actually a problem, but it means that
+  ;; the rest of the test doesn't check what it means to check, so
+  ;; count it as a problem
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(module module-out-of-thin-air racket/base
+             (define five 6)
+             (provide five)))
+    (eval mi-compiled)
+    (test 6 dynamic-require ''uses-module-out-of-thin-air 'also-five))
+  (define recompiled
+    (parameterize ([current-namespace (make-base-namespace)])
+      (compiled-expression-recompile mi-compiled)))
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(module module-out-of-thin-air racket/base
+             (define five 6)
+             (provide five)))
+    (eval recompiled)
+    ;; Ir recompilation did not inline the 5, then the result
+    ;; will be 6 instead of 5:
+    (test 5 dynamic-require ''uses-module-out-of-thin-air 'also-five)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
