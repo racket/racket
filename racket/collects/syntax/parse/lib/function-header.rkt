@@ -4,7 +4,7 @@
          racket/dict
          racket/list)
 
-(provide function-header formal formals)
+(provide function-header formal formals splicing-formals-no-rest)
 
 (define-syntax-class function-header
   #:attributes (name params args)
@@ -12,9 +12,9 @@
            #:attr params #'((~@ . (~? header.params ())) . args.params)
            #:attr name   #'(~? header.name name*)))
 
-(define-syntax-class formals
+(define-splicing-syntax-class splicing-formals-no-rest
   #:attributes (params)
-  (pattern (arg:formal ...)
+  (pattern (~seq arg:formal ...)
            #:attr params #'(arg.name ...)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
                        "duplicate argument name"
@@ -24,18 +24,16 @@
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
                         (attribute arg.kw) (attribute arg.name) (attribute arg.default))
-                       "default-value expression missing")
-  (pattern (arg:formal ... . rest:id)
-           #:attr params #'(arg.name ... rest)
-           #:fail-when (check-duplicate-identifier (syntax->list #'params))
-                       "duplicate argument name"
-           #:fail-when (check-duplicates (attribute arg.kw)
-                                         (lambda (x y)
-                                           (and x y (equal? (syntax-e x) (syntax-e y)))))
-                       "duplicate keyword for argument"
-           #:fail-when (invalid-option-placement
-                        (attribute arg.kw) (attribute arg.name) (attribute arg.default))
                        "default-value expression missing"))
+
+(define-syntax-class formals
+  (pattern (~or* (args:splicing-formals-no-rest)
+                 (args:splicing-formals-no-rest . rest-id:id))
+           #:attr params #'((~@ . args.params) (~? rest-id))
+           #:fail-when (and (attribute rest-id)
+                            (member #'rest-id (syntax->list #'args.params) bound-identifier=?)
+                            #'rest-id)
+                       "duplicate argument identifier"))
 
 (define-splicing-syntax-class formal
   #:attributes (name kw default)

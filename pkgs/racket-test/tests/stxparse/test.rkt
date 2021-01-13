@@ -1086,3 +1086,17 @@
    (syntax-parse #'(a [b 1] c)
      #:context 'me
      [fmls:formals #'(fmls fmls.params)])))
+
+(check-exn
+ #rx"me: duplicate argument identifier"
+ (lambda ()
+   (syntax-parse #'(a . a)
+     #:context 'me
+     [fmls:formals #'(fmls fmls.params)])))
+
+(check-exn
+ #rx"me: duplicate argument identifier"
+ (lambda ()
+   (syntax-parse #'(#:a a . a)
+     #:context 'me
+     [fmls:formals #'(fmls fmls.params)])))
