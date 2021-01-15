@@ -71,6 +71,7 @@
   (define c (semaphore-count s))
   (cond
     [(and (c . >= . 0)
+          (not (current-future))
           (unsafe-struct*-cas! s count-field-pos c (add1 c)))
      (void)]
     [else
@@ -132,6 +133,7 @@
   (define c (semaphore-count s))
   (cond
     [(and (positive? c)
+          (not (current-future))
           (unsafe-struct*-cas! s count-field-pos c (sub1 c)))
      (void)]
     [else

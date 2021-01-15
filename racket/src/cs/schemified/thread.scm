@@ -4348,7 +4348,11 @@
 (define unsafe-semaphore-post
   (lambda (s_0)
     (let ((c_0 (semaphore-count s_0)))
-      (if (if (>= c_0 0) (unsafe-struct*-cas! s_0 2 c_0 (add1 c_0)) #f)
+      (if (if (>= c_0 0)
+            (if (not (current-future$1))
+              (unsafe-struct*-cas! s_0 2 c_0 (add1 c_0))
+              #f)
+            #f)
         (void)
         (begin (start-atomic) (semaphore-post/atomic s_0) (end-atomic))))))
 (define semaphore-post/atomic
@@ -4417,7 +4421,11 @@
 (define unsafe-semaphore-wait
   (lambda (s_0)
     (let ((c_0 (semaphore-count s_0)))
-      (if (if (positive? c_0) (unsafe-struct*-cas! s_0 2 c_0 (sub1 c_0)) #f)
+      (if (if (positive? c_0)
+            (if (not (current-future$1))
+              (unsafe-struct*-cas! s_0 2 c_0 (sub1 c_0))
+              #f)
+            #f)
         (void)
         (|#%app|
          (begin
