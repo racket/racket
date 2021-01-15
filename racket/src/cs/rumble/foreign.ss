@@ -315,7 +315,7 @@
     (create-compound-ctype (ctype-host-rep type)
                            (ctype-our-rep type)
                            type
-                           racket-to-c
+                           (protect-racket-to-c racket-to-c)
                            c-to-racket
                            (compound-ctype-get-decls type)
                            (compound-ctype-size type)
@@ -325,8 +325,16 @@
     (create-ctype (ctype-host-rep type)
                   (ctype-our-rep type)
                   type
-                  racket-to-c
+                  (protect-racket-to-c racket-to-c)
                   c-to-racket)]))
+
+(define (protect-racket-to-c racket-to-c)
+  ;; Make sure `racket-to-c` is not confused for an internal
+  ;; variant that accepts a `who` argument:
+  (if (and (#%procedure? racket-to-c)
+           (chez:procedure-arity-includes? racket-to-c 2))
+      (lambda (v) (racket-to-c v))
+      racket-to-c))
 
 ;; Apply all the conversion wrappers of `type` to the Scheme value `v`
 (define (s->c who type v)
