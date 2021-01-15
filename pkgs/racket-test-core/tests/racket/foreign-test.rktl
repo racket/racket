@@ -1540,6 +1540,21 @@
   (test #"data" cast (register-process-global orig-bstr #"data\0") _pointer _bytes))
 
 ;; ----------------------------------------
+;; Make sure `make-ctype` is not confused by a conversion function that
+;; could have extra arguments
+
+(let ()
+  (define _strnum (make-ctype _int
+                              (lambda (s [ignored 'ignore-me])
+                                (test 'ignore-me values ignored)
+                                (string->number s))
+                              (lambda (n [ignored 'ignore-me])
+                                (test 'ignore-me values ignored)
+                                (number->string n))))
+  (test 5 cast "5" _strnum _int)
+  (test "5" cast 5 _int _strnum))
+
+;; ----------------------------------------
 
 (report-errs)
 
