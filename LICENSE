@@ -2,13 +2,13 @@ Racket is distributed under the MIT license and the Apache version 2.0
 license, at your option. However, the Racket runtime system includes
 components distributed under other licenses. In short:
 
-  * The traditional Racket runtime system includes code distributed
-    under the GNU Lesser General Public License, version 3. This
-    runtime system is built from code in racket/src/racket.
-
-  * The Racket on Chez Scheme runtime system embeds Chez Scheme, which
-    is distributed under the Apache version 2.0 license. This runtime
+  * The Racket CS runtime system embeds Chez Scheme, which is
+    distributed under the Apache version 2.0 license. This runtime
     system is built from code in racket/src/cs.
+
+  * The Racket BC runtime system includes code distributed under the
+    GNU Lesser General Public License, version 3. This runtime system
+    is built from code in racket/src/bc.
 
 Except for Windows executables that are created with the "embed DLLs"
 option, the runtime system remains separate as a shared library or
