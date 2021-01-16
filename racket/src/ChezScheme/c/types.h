@@ -186,7 +186,7 @@ typedef struct _chunkinfo {
   iptr base;                                /* first segment */
   iptr bytes;                               /* size in bytes */
   iptr segs;                                /* size in segments */
-  iptr nused_segs;                          /* number of segments currently in used use */ 
+  iptr nused_segs;                          /* number of segments currently in use */
   struct _chunkinfo **prev;                 /* pointer to previous chunk's next */
   struct _chunkinfo *next;                  /* next chunk */
   struct _seginfo *unused_segs;             /* list of unused segments */

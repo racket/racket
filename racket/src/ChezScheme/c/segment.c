@@ -46,7 +46,7 @@ static seginfo *sort_seginfo PROTO((seginfo *si, uptr n));
 static seginfo *merge_seginfo PROTO((seginfo *si1, seginfo *si2));
 
 #if defined(WRITE_XOR_EXECUTE_CODE)
-static void enable_code_write PROTO((ptr tc, IGEN maxg, IBOOL on));
+static void enable_code_write PROTO((ptr tc, IGEN maxg, IBOOL on, ptr hint));
 #endif
 
 void S_segment_init() {
@@ -584,22 +584,24 @@ static void contract_segment_table(uptr base, uptr end) {
    off of it.
 */
 
-void S_thread_start_code_write(ptr tc, IGEN maxg) {
+void S_thread_start_code_write(ptr tc, IGEN maxg, ptr hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  enable_code_write(tc, maxg, 1);
+  enable_code_write(tc, maxg, 1, hint);
 #else
   (void)tc;
   (void)maxg;
+  (void)hint;
   S_ENABLE_CODE_WRITE(1);
 #endif
 }
 
-void S_thread_end_code_write(ptr tc, IGEN maxg) {
+void S_thread_end_code_write(ptr tc, IGEN maxg, ptr hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  enable_code_write(tc, maxg, 0);
+  enable_code_write(tc, maxg, 0, hint);
 #else
   (void)tc;
   (void)maxg;
+  (void)hint;
   S_ENABLE_CODE_WRITE(0);
 #endif
 }
@@ -625,14 +627,23 @@ static IBOOL is_unused_seg(chunkinfo *chunk, seginfo *si) {
 }
 # endif
 
-static void enable_code_write(ptr tc, IGEN maxg, IBOOL on) {
+static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, ptr hint) {
+  thread_gc *tgc;
   chunkinfo *chunk;
   seginfo si;
   iptr i, j, bytes;
   void *addr;
   INT flags = (on ? PROT_WRITE : PROT_EXEC) | PROT_READ;
-  thread_gc *tgc = THREAD_GC(tc);
 
+  if (maxg == 0 && hint != NULL) {
+    addr = TO_VOIDP((char*)hint - ((uptr)hint % bytes_per_segment));
+    if (mprotect(addr, bytes_per_segment, flags) != 0) {
+      S_error_abort("bad hint to enable_code_write");
+    }
+    return;
+  }
+
+  tgc = THREAD_GC(tc);
   for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
     chunk = S_code_chunks[i];
     while (chunk != NULL) {
