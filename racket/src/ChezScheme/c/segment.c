@@ -587,7 +587,7 @@ static void contract_segment_table(uptr base, uptr end) {
    off of it.
 */
 
-void S_thread_start_code_write(ptr tc, IGEN maxg, IBOOL current, ptr hint) {
+void S_thread_start_code_write(ptr tc, IGEN maxg, IBOOL current, void *hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
   enable_code_write(tc, maxg, 1, current, hint);
 #else
@@ -599,7 +599,7 @@ void S_thread_start_code_write(ptr tc, IGEN maxg, IBOOL current, ptr hint) {
 #endif
 }
 
-void S_thread_end_code_write(ptr tc, IGEN maxg, IBOOL current, ptr hint) {
+void S_thread_end_code_write(ptr tc, IGEN maxg, IBOOL current, void *hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
   enable_code_write(tc, maxg, 0, current, hint);
 #else
@@ -632,7 +632,7 @@ static IBOOL is_unused_seg(chunkinfo *chunk, seginfo *si) {
 }
 # endif
 
-static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, IBOOL current, ptr hint) {
+static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, IBOOL current, void *hint) {
   thread_gc *tgc;
   chunkinfo *chunk;
   seginfo si, *sip;

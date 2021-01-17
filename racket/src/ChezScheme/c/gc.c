@@ -2951,7 +2951,7 @@ static s_thread_rv_t start_sweeper(void *_sweeper) {
   gc_sweeper *sweeper = _sweeper;
 
 #if !defined(WRITE_XOR_EXECUTE_CODE)
-  S_thread_start_code_write(NULL, static_generation, 0, NULL); /* never ended */
+  S_thread_start_code_write((ptr)0, static_generation, 0, NULL); /* never ended */
 #endif
 
   (void)s_thread_mutex_lock(&sweep_mutex);
