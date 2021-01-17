@@ -15,9 +15,6 @@
          make-compile-lock
          compile-lock->parallel-lock-client
 
-         ;; re-used in setup/setup-core and setup/private/pkg-deps
-         cross-multi-compile?
-
          (contract-out
           [current-path->mode
            (parameter/c (or/c #f (-> path? (and/c path? relative-path?))))]))

@@ -12,6 +12,7 @@
          racket/string
          compiler/cm
          compiler/compilation-path
+         compiler/cross
          planet/planet-archives
          planet/private/planet-shared
          (only-in planet/resolver resolve-planet-path)

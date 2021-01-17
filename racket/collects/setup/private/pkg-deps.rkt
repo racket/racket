@@ -13,7 +13,7 @@
          setup/dirs
          setup/doc-db
          version/utils
-         (only-in compiler/cm cross-multi-compile?)
+         compiler/cross
          compiler/private/dep
          "time.rkt")
 
