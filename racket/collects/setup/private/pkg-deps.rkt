@@ -13,6 +13,7 @@
          setup/dirs
          setup/doc-db
          version/utils
+         compiler/cross
          compiler/private/dep
          "time.rkt")
 
@@ -407,10 +408,17 @@
 
   ;; ----------------------------------------
   (define (find-compiled-directories path)
-    ;; Find all directories that can hold compiled bytecode for `path`
+    ;; Find all directories that can hold compiled bytecode for
+    ;; `path`.  When cross-compiling, only list directories targeting
+    ;; the host machine.
+    (define roots
+      (let ([roots (current-compiled-file-roots)])
+        (if (cross-multi-compile? roots)
+            (list (car roots))
+            roots)))
     (filter
      values
-     (for*/list ([root (in-list (current-compiled-file-roots))]
+     (for*/list ([root (in-list roots)]
                  [mode (in-list (use-compiled-file-paths))])
        (define compiled-dir
          (cond

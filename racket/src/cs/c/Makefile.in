@@ -87,8 +87,12 @@ cs:
 	$(MAKE) starter
 	$(MAKE) repack-@INSTALL_LIBS_ENABLE@-libs
 
+clean:
+	cd $(SCHEME_WORKAREA); $(MAKE) clean
+	cd rktio; $(MAKE) clean
+
 SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
-BOOT_COMPILED_SUBDIR = 
+BOOT_COMPILED_SUBDIR =
 SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled$(BOOT_COMPILED_SUBDIR)
 
 ABS_SCHEME_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_WORKAREA)`"
@@ -258,8 +262,8 @@ $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
 	$(CC) $(CFLAGS) -o $(GRACKET_BIN)_raw grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
 	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=$(GRACKET_BIN)_raw EMBED_DEST=$(GRACKET_BIN)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
-	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
 	rm $(GRACKET_BIN)_raw
+	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
 
 $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../version/racket_version.h $(srcdir)/../../mac/icon/GRacket.icns
 	$(BOOTSTRAP_RACKET) $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "CS"
@@ -384,6 +388,10 @@ plain-install-upcased:
 install-cross:
 	$(MAKE) compile-xpatch.$(TARGET_MACH)
 	$(MAKE) library-xpatch.$(TARGET_MACH)
+	rm -f "$(DESTDIR)$(libpltdir)/compile-xpatch.$(TARGET_MACH)"
+	rm -f "$(DESTDIR)$(libpltdir)/library-xpatch.$(TARGET_MACH)"
+	$(ICP) compile-xpatch.$(TARGET_MACH) "$(DESTDIR)$(libpltdir)/compile-xpatch.$(TARGET_MACH)"
+	$(ICP) library-xpatch.$(TARGET_MACH) "$(DESTDIR)$(libpltdir)/library-xpatch.$(TARGET_MACH)"
 
 SCHEME_XPATCH = $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
 
@@ -464,7 +472,13 @@ install@NOT_MINGW@:
 	$(MAKE) setup-install $(PROPAGATE_VARIABLES)
 
 setup-install:
+	$(MAKE) do-setup-install@T_CROSS_MODE@
+
+do-setup-install:
 	@RUN_RACKET@ $(SELF_ROOT_CONFIG) $(SETUP_ARGS)
+
+do-setup-install-cross:
+	@RUN_RACKET@ $(SELF_ROOT_CONFIG) -C -M -R 'compiled_host:$(TARGET_MACH)' --cross-compiler $(TARGET_MACH) "$(DESTDIR)$(libpltdir)" $(SETUP_ARGS)
 
 no-setup-install:
 	echo done

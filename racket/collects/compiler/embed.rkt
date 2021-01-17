@@ -15,6 +15,7 @@
          racket/private/so-search
          racket/private/share-search
          setup/cross-system
+         "private/cm-minimal.rkt"
          "private/winsubsys.rkt"
          "private/macfw.rkt"
          "private/mach-o.rkt"
@@ -515,34 +516,38 @@
                                      ""
                                      submod-path)))])
         (hash-set! working filename full-name)
-        (let ([code (or ready-code
-                        (get-module-code just-filename
-                                         #:submodule-path submod-path
-                                         (let ([l (use-compiled-file-paths)])
-                                           (if (pair? l)
-                                               (car l)
-                                               "compiled"))
-                                         compiler
-                                         (if on-extension
-                                             (lambda (f l?)
-                                               (on-extension f l?)
-                                               #f)
-                                             (lambda (file _loader?)
-                                               (if _loader?
-                                                   (error 'create-embedding-executable
-                                                          "cannot use a _loader extension: ~e"
-                                                          file)
-                                                   (make-extension file))))
-                                         #:choose
-                                         ;; Prefer extensions, if we're handling them:
-                                         (lambda (src zo so)
-                                           (set! actual-filename src) ; remember convert source name
-                                           (if on-extension
-                                               #f
-                                               (if (and (file-exists? so)
-                                                        ((file-date so) . >= . (file-date zo)))
-                                                   'so
-                                                   #f)))))])
+        (let* ([get-module-code*
+                ;; Re-used when swapping code during cross-compilation.
+                (lambda (#:roots [roots (current-compiled-file-roots)])
+                  (get-module-code just-filename
+                                   #:roots roots
+                                   #:submodule-path submod-path
+                                   (let ([l (use-compiled-file-paths)])
+                                     (if (pair? l)
+                                         (car l)
+                                         "compiled"))
+                                   compiler
+                                   (if on-extension
+                                       (lambda (f l?)
+                                         (on-extension f l?)
+                                         #f)
+                                       (lambda (file _loader?)
+                                         (if _loader?
+                                             (error 'create-embedding-executable
+                                                    "cannot use a _loader extension: ~e"
+                                                    file)
+                                             (make-extension file))))
+                                   #:choose
+                                   ;; Prefer extensions, if we're handling them:
+                                   (lambda (src zo so)
+                                     (set! actual-filename src) ; remember convert source name
+                                     (if on-extension
+                                         #f
+                                         (if (and (file-exists? so)
+                                                  ((file-date so) . >= . (file-date zo)))
+                                             'so
+                                             #f)))))]
+               [code (or ready-code (get-module-code*))])
           (cond
            [(extension? code)
             (when verbose?
@@ -556,82 +561,83 @@
                             (unbox codes)))]
            [code
             (let ([importss (module-compiled-imports code)])
-              (let ([all-file-imports (filter (keep-import-dependency? keep-full? actual-filename)
-                                              (apply append (map cdr importss)))]
-                    [extra-paths 
-                     (map symbol-to-lib-form (append (if keep-full?
-                                                         (extract-full-imports module-path actual-filename code)
-                                                         null)
-                                                     (if use-source?
-                                                         (list 'compiler/private/read-bstr)
-                                                         null)
-                                                     (get-extra-imports actual-filename code)))])
-                (let* ([runtime-paths
-                        (if (module-compiled-cross-phase-persistent? code)
-                            ;; avoid potentially trying to redeclare cross-phase persistent modules,
-                            ;; since redeclaration isn't allowed:
+              (let* ([all-file-imports (filter (keep-import-dependency? keep-full? actual-filename)
+                                               (apply append (map cdr importss)))]
+                     [extra-paths
+                      (map symbol-to-lib-form (append (if keep-full?
+                                                          (extract-full-imports module-path actual-filename code)
+                                                          null)
+                                                      (if use-source?
+                                                          (list 'compiler/private/read-bstr)
+                                                          null)
+                                                      (get-extra-imports actual-filename code)))]
+                     [extract-submods
+                      (lambda (submods)
+                        (if use-source?
                             null
-                            ;; check for run-time paths by visiting the module in an
-                            ;; expand-time namespace:
-                            (parameterize ([current-namespace expand-namespace])
-                              (let ([module-path
-                                     (if (path? module-path)
-                                         (path->complete-path module-path)
-                                         module-path)])
-                                (unless (module-declared? module-path)
-                                  (parameterize ([current-module-declare-name
-                                                  (module-path-index-resolve (module-path-index-join
-                                                                              module-path
-                                                                              #f))])
-                                    (eval code)))
-                                (define e (expand `(,#'module m racket/kernel
-                                                     (#%require (only ,module-path)
-                                                                racket/runtime-path)
-                                                     (runtime-paths ,module-path))))
-                                (syntax-case e (quote)
-                                  [(_ m mz (#%mb req (quote (spec ...))))
-                                   (for/list ([p (in-list (syntax->datum #'(spec ...)))])
-                                     ;; Strip variable reference from 'module specs, because
-                                     ;; we don't need them and they retain the namespace:
-                                     (if (and (pair? p) (eq? 'module (car p)))
-                                         (list 'module (cadr p))
-                                         p))]
-                                  [_else (error 'create-empbedding-executable
-                                                "expansion mismatch when getting external paths: ~e"
-                                                (syntax->datum e))]))))]
-
-                       [extra-runtime-paths (filter
-                                             values
-                                             (map (lambda (p)
-                                                    (and (pair? p)
-                                                         (eq? (car p) 'module)
-                                                         (cadr p)))
-                                                  runtime-paths))]
-                       [renamed-code (if (symbol? (module-compiled-name code))
-                                         code
-                                         (module-compiled-name code (last (module-compiled-name code))))]
-                       [extract-submods (lambda (l)
-                                          (if use-source?
-                                              null
-                                              (for/list ([m (in-list l)]
-                                                         #:when (or (member (last (module-compiled-name m)) use-submods)
-                                                                    (declares-always-preserved? m)))
-                                                m)))]
-                       [pre-submods (extract-submods (module-compiled-submodules renamed-code #t))]
-                       [post-submods (extract-submods (module-compiled-submodules renamed-code #f))]
-                       [code (if keep-full?
-                                 code
-                                 (module-compiled-submodules (module-compiled-submodules
-                                                              renamed-code
-                                                              #f
-                                                              null)
-                                                             #t
-                                                             null))])
-                  (let ([sub-files (map (lambda (i) 
+                            (for/list ([m (in-list submods)]
+                                       #:when (or (member (last (module-compiled-name m)) use-submods)
+                                                  (declares-always-preserved? m)))
+                              m)))]
+                     [prepare-code&submods
+                      (lambda (code)
+                        (define name (module-compiled-name code))
+                        (define renamed-code
+                          (cond
+                            [(symbol? name) code]
+                            [else (module-compiled-name code (last name))]))
+                        (define pre-submods (extract-submods (module-compiled-submodules renamed-code #t)))
+                        (define post-submods (extract-submods (module-compiled-submodules renamed-code #f)))
+                        (define new-code
+                          (cond
+                            [keep-full? code]
+                            [else (module-compiled-submodules
+                                   (module-compiled-submodules renamed-code #f null) #t null)]))
+                        (values new-code pre-submods post-submods))])
+                (let*-values ([(runtime-paths)
+                               (if (module-compiled-cross-phase-persistent? code)
+                                   ;; avoid potentially trying to redeclare cross-phase persistent modules,
+                                   ;; since redeclaration isn't allowed:
+                                   null
+                                   ;; check for run-time paths by visiting the module in an
+                                   ;; expand-time namespace:
+                                   (parameterize ([current-namespace expand-namespace])
+                                     (let ([module-path
+                                            (if (path? module-path)
+                                                (path->complete-path module-path)
+                                                module-path)])
+                                       (unless (module-declared? module-path)
+                                         (parameterize ([current-module-declare-name
+                                                         (module-path-index-resolve (module-path-index-join
+                                                                                     module-path
+                                                                                     #f))])
+                                           (eval code)))
+                                       (define e (expand `(,#'module m racket/kernel
+                                                                     (#%require (only ,module-path)
+                                                                                racket/runtime-path)
+                                                                     (runtime-paths ,module-path))))
+                                       (syntax-case e (quote)
+                                         [(_ m mz (#%mb req (quote (spec ...))))
+                                          (for/list ([p (in-list (syntax->datum #'(spec ...)))])
+                                            ;; Strip variable reference from 'module specs, because
+                                            ;; we don't need them and they retain the namespace:
+                                            (if (and (pair? p) (eq? 'module (car p)))
+                                                (list 'module (cadr p))
+                                                p))]
+                                         [_else (error 'create-empbedding-executable
+                                                       "expansion mismatch when getting external paths: ~e"
+                                                       (syntax->datum e))]))))]
+                              [(extra-runtime-paths) (filter-map (lambda (p)
+                                                                   (and (pair? p)
+                                                                        (eq? (car p) 'module)
+                                                                        (cadr p)))
+                                                                 runtime-paths)]
+                              [(code pre-submods post-submods) (prepare-code&submods code)])
+                  (let ([sub-files (map (lambda (i)
                                           ;; use `just-filename', because i has submod name embedded
                                           (normalize (resolve-module-path-index i just-filename)))
                                         all-file-imports)]
-                        [sub-paths (map (lambda (i) 
+                        [sub-paths (map (lambda (i)
                                           ;; use `root-module-path', because i has submod name embedded
                                           (collapse-module-path-index i root-module-path))
                                         all-file-imports)]
@@ -738,25 +744,40 @@
                                                    (append sub-paths extra-runtime-paths)))
                                       (map get-submod-mapping pre-submods)))])
                           ;; Record the module
-                          (set-box! codes
-                                    (cons (make-mod filename module-path code 
-                                                    name full-name
-                                                    mappings-box
-                                                    runtime-paths
-                                                    ;; extract runtime-path module symbols:
-                                                    (let loop ([runtime-paths runtime-paths]
-                                                               [extra-files extra-files])
-                                                      (cond
-                                                       [(null? runtime-paths) null]
-                                                       [(let ([p (car runtime-paths)])
-                                                          (and (pair? p) (eq? (car p) 'module)))
-                                                        (cons (lookup-full-name (car extra-files))
-                                                              (loop (cdr runtime-paths) (cdr extra-files)))]
-                                                       [else
-                                                        (cons #f (loop (cdr runtime-paths) extra-files))]))
-                                                    actual-filename
-                                                    use-source?)
-                                          (unbox codes)))
+                          ;; For cross-compilation, we need to be able to execute code using the host Racket (to find
+                          ;; dependencies and runtime paths), but then we have to swap in code for the target Racket
+                          ;; here, before writing it to the output.
+                          (let ([code (cond
+                                        [(cross-compiling?)
+                                         (when verbose?
+                                           (eprintf "Swapping host code of ~s for target platform~n" module-path))
+                                         (define target-code
+                                           (get-module-code* #:roots (cdr (current-compiled-file-roots))))
+                                         ;; Apply the same trasformations to the target code that were made to the host code.
+                                         (define-values (prepared-code _pre-submods _post-submods)
+                                           (prepare-code&submods target-code))
+                                         prepared-code]
+                                        [else
+                                         code])])
+                            (set-box! codes
+                                      (cons (make-mod filename module-path code
+                                                      name full-name
+                                                      mappings-box
+                                                      runtime-paths
+                                                      ;; extract runtime-path module symbols:
+                                                      (let loop ([runtime-paths runtime-paths]
+                                                                 [extra-files extra-files])
+                                                        (cond
+                                                          [(null? runtime-paths) null]
+                                                          [(let ([p (car runtime-paths)])
+                                                             (and (pair? p) (eq? (car p) 'module)))
+                                                           (cons (lookup-full-name (car extra-files))
+                                                                 (loop (cdr runtime-paths) (cdr extra-files)))]
+                                                          [else
+                                                           (cons #f (loop (cdr runtime-paths) extra-files))]))
+                                                      actual-filename
+                                                      use-source?)
+                                            (unbox codes))))
                           ;; Add code for post submodules:
                           (for-each get-one-submodule-code post-submods)
                           ;; Add post-submodule mappings:
@@ -813,7 +834,8 @@
 (define (compile-using-kernel e)
   (let ([ns (make-empty-namespace)])
     (namespace-attach-module (current-namespace) ''#%kernel ns)
-    (parameterize ([current-namespace ns])
+    (parameterize ([current-namespace ns]
+                   [current-compile-target-machine (get-compile-target-machine)])
       (namespace-require ''#%kernel)
       (compile e))))
 
@@ -1404,7 +1426,8 @@
                              #:on-extension [on-extension #f]
                              #:expand-namespace [expand-namespace (current-namespace)]
                              #:compiler [compiler (lambda (expr)
-                                                    (parameterize ([current-namespace expand-namespace])
+                                                    (parameterize ([current-namespace expand-namespace]
+                                                                   [current-compile-target-machine (get-compile-target-machine)])
                                                       (compile expr)))]
                              #:src-filter [src-filter (lambda (filename) #f)]
                              #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
@@ -1417,6 +1440,14 @@
                           src-filter get-extra-imports
                           void
 			  #f)) ; don't accumulate embedded DLLs
+
+(define (cross-compiling?)
+  (cross-multi-compile? (current-compiled-file-roots)))
+
+(define (get-compile-target-machine)
+  (if (cross-compiling?)
+      (cross-system-type 'target-machine)
+      (system-type 'target-machine)))
 
 
 ;; The old interface:

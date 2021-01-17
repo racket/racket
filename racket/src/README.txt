@@ -397,11 +397,8 @@ the [comp] of your choice and the [platform] used to compile.
  Cross-compiling for iOS
 ========================================================================
 
-[Currently, cross-compilation works only for the Racket BC
- implementation.]
-
 To compile the Racket runtime system as a Framework for iOS, use (all
-on one line)
+on one line) for BC
 
   configure --host=[arch]-apple-darwin
             --enable-ios="[sdk]"
@@ -419,6 +416,23 @@ becomes the path (all on one line)
 
   /Applications/Xcode.app/Contents/Developer/Platforms/
     iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+
+To cross-compile for CS, you must supply the Chez Scheme compiler that
+Racket CS was built with.  Assuming you have built Racket CS for your
+machine at "/path/to/racket" using the default `make` target, you can
+configure the cross build using that Racket binary and a path to the
+Chez Scheme build folder as follows (all on one line)
+
+  configure --host=[arch]-apple-darwin
+            --enable-ios="[sdk]"
+            --enable-racket=/path/to/racket/bin/racket
+            --enable-scheme=/path/to/racket/src/build/cs/c
+
+Currently, iOS enforces strict W^X protection on memory pages. See the
+note about "writes to `space_code` memory" in "ChezScheme/c/segment.c"
+for the implications this has on Racket CS. In principle, if you avoid
+passing newly-allocated code between threads and avoid `#:blocking?`
+foreign callbacks, you should not run into any issues.
 
 
 ========================================================================

@@ -67,12 +67,14 @@
 
          managed-compiled-context-key
          make-compilation-context-error-display-handler
-         
+
          parallel-lock-client
-         
+
          install-module-hashes!
 
-         current-path->mode)
+         current-path->mode
+
+         cross-multi-compile?)
 
 (module+ cm-internal
   (provide try-file-time

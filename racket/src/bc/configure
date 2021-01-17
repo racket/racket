@@ -3388,7 +3388,7 @@ if test "${enable_sdk6}" != "" ; then
    echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
 fi
 if test "${enable_ios}" != "" ; then
-   echo "=== Using ios SDK directory ${enable_ios}"
+   echo "=== Using iOS SDK directory ${enable_ios}"
 fi
 
 if test "${enable_sysroot}" != "" ; then
@@ -3600,17 +3600,19 @@ if test "${enable_ios}" != "" ; then
   case "${enable_ios}" in
     iPhoneOS|iPhoneSimulator)
      ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     echo "=== Using inferred iOS SDK path ${ios_sdk}"
      ;;
     *)
      ios_sdk="${enable_ios}"
      ;;
   esac
   IOS_PHONE_VERS="6.0"
-  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
-  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
-  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
   LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+fi
+
+if test "${enable_ios}" != "" ; then
+  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'

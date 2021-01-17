@@ -28,6 +28,68 @@ build modes that are more suitable for developing Racket itself; see
 
 @; ----------------------------------------
 
+@section[#:tag "ios-cross-compilation"]{Cross-compiling Racket Sources for iOS}
+
+Everything in this section can be adapted to other cross-compilation
+targets, but iOS is used to give concrete examples.
+
+After cross-compiling Racket CS for iOS according to the documentation
+in the source distribution's @filepath{src/README.txt} file, you can
+use that build of Racket in conjunction with the host build it was
+compiled by to cross-compile Racket modules for iOS by passing the
+following set of flags to the host executable:
+
+@verbatim[#:indent 2]{
+racket \
+  --compile-any \
+  --compiled 'compiled_host:tarm64osx' \
+  --cross \
+  --cross-compiler tarm64osx /path/to/ios/racket/lib \
+  --config /path/to/ios/racket/etc \
+  --collects /path/to/ios/racket/collects
+}
+
+The above command runs the host Racket REPL with support for
+outputting compiled code for both the host machine and for the
+@tt{tarm64osx} target.  The second path to @exec{--compiled} may be
+any relative path, but @filepath{tarm64osx} is what the cross build
+uses to set up its installation so it is convenient to re-use it.
+
+Furthermore, you can instruct the host Racket to run library code by
+passing the @exec{-l} flag.  For example, you can setup the target
+Racket's installation with the following command:
+
+@verbatim[#:indent 2]{
+racket \
+  --compile-any \
+  --compiled 'compiled_host:tarm64osx' \
+  --cross \
+  --cross-compiler tarm64osx /path/to/ios/racket/lib \
+  --config /path/to/ios/racket/etc \
+  --collects /path/to/ios/racket/collects \
+  -l- \
+  raco setup
+}
+
+Finally, you can package up a Racket module and its dependencies for
+use with @cppi{racket_embedded_load_file} (after installing
+@filepath{compiler-lib} and @filepath{cext-lib} for the target Racket)
+with:
+
+@verbatim[#:indent 2]{
+racket \
+  --compile-any \
+  --compiled 'compiled_host:tarm64osx' \
+  --cross \
+  --cross-compiler tarm64osx /path/to/ios/racket/lib \
+  --config /path/to/ios/racket/etc \
+  --collects /path/to/ios/racket/collects \
+  -l- \
+  raco ctool --mods application.zo src/application.rkt
+}
+
+@; ----------------------------------------
+
 @section[#:tag "segment-ideas"]{Embedding Files in Executable Sections}
 
 Locating external files on startup, such as the boot files needed for
@@ -198,7 +260,7 @@ static char *get_self_path()
   char *s;
   uint32_t size = 0;
   int r;
-  
+
   r = _NSGetExecutablePath(NULL, &size);
   s = malloc(size+1);
   r = _NSGetExecutablePath(s, &size);
@@ -235,7 +297,7 @@ int main(int argc, char **argv)
   ba.boot1_offset = find_section("__DATA", "__rktboot1");
   ba.boot2_offset = find_section("__DATA", "__rktboot2");
   ba.boot3_offset = find_section("__DATA", "__rktboot3");
-  
+
   ba.exec_file = argv[0];
   ba.run_file = argv[0];
 
@@ -304,7 +366,7 @@ static long find_resource_offset(wchar_t *path, int id, int type, int encoding)
     DWORD val, got, sec_pos, virtual_addr, rsrcs, pos;
     WORD num_sections, head_size;
     char name[8];
-    
+
     SetFilePointer(fd, 60, 0, FILE_BEGIN);
     ReadFile(fd, &val, 4, &got, NULL);
     SetFilePointer(fd, val+4+2, 0, FILE_BEGIN); /* Skip "PE\0\0" tag and machine */
@@ -327,7 +389,7 @@ static long find_resource_offset(wchar_t *path, int id, int type, int encoding)
         SetFilePointer(fd, 4, 0, FILE_CURRENT); /* skip file size */
         ReadFile(fd, &rsrcs, 4, &got, NULL);
         SetFilePointer(fd, rsrcs, 0, FILE_BEGIN);
-        
+
         /* We're at the resource table; step through 3 layers */
         pos = find_by_id(fd, rsrcs, rsrcs, id);
 	if (pos) {
@@ -364,7 +426,7 @@ static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id)
 {
   DWORD got, val;
   WORD name_count, id_count;
-  
+
   SetFilePointer(fd, pos + 12, 0, FILE_BEGIN);
   ReadFile(fd, &name_count, 2, &got, NULL);
   ReadFile(fd, &id_count, 2, &got, NULL);

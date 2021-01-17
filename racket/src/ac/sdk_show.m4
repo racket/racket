@@ -32,7 +32,7 @@ if test "${enable_sdk6}" != "" ; then
    echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
 fi
 if test "${enable_ios}" != "" ; then
-   echo "=== Using ios SDK directory ${enable_ios}"
+   echo "=== Using iOS SDK directory ${enable_ios}"
 fi
 
 if test "${enable_sysroot}" != "" ; then

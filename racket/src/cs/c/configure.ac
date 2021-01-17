@@ -167,6 +167,8 @@ cs_auto_flags=--disable-auto-flags
 
 ###### Autoconfigure #######
 
+m4_include(../ac/sdk_ios.m4)
+
 AC_PROG_CC
 
 m4_include(../ac/is_gcc.m4)
@@ -191,6 +193,7 @@ fi
 if test "$ARFLAGS" = '' ; then 
   ARFLAGS=rc
 fi
+
 
 WINDRES=windres
 
@@ -317,8 +320,10 @@ case "$host_os" in
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
 
-    # ncurses.h is always available
-    disable_curses_arg=""
+    # ncurses.h is always available, except on iOS
+    if test "${enable_ios}" == "" ; then
+      disable_curses_arg=""
+    fi
     ;;
   nto-qnx*)
     MACH_OS=qnx
