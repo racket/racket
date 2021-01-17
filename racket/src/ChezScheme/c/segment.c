@@ -581,7 +581,7 @@ static void contract_segment_table(uptr base, uptr end) {
    say, while Scheme is collecting garbage and needs to write to
    executable pages.  However, on platforms where such a disposition
    is enforced (eg. iOS), we provide a best-effort implementation that
-   flips pages between W and X for the minimal set of generations
+   flips pages between W and X for the minimal set of segments
    possible (depending on the context) in an effort to minimize the
    chances of a page being flipped while a thread is executing code
    off of it.

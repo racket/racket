@@ -428,10 +428,11 @@ Chez Scheme build folder as follows (all on one line)
             --enable-racket=/path/to/racket/bin/racket
             --enable-scheme=/path/to/racket/src/build/cs/c
 
-Cross-compilation of Racket CS to iOS currently has limited support
-for multi-threading due to the platform's poor support for JIT
-compilation.  Avoid futures and dynamic code evaluation (`eval`,
-`dynamic-require`, etc.) within places.
+Currently, iOS enforces strict W^X protection on memory pages. See the
+note about "writes to `space_code` memory" in "ChezScheme/c/segment.c"
+for the implications this has on Racket CS. In principle, if you avoid
+passing newly-allocated code between threads and avoid `#:blocking?`
+foreign callbacks, you should not run into any issues.
 
 
 ========================================================================
