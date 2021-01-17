@@ -90,9 +90,6 @@ ptr S_create_thread_object(who, p_tc) const char *who; ptr p_tc; {
       for (g = 0; g <= static_generation; g++) {
         for (s = 0; s <= max_real_space; s++) {
           tgc->base_loc[g][s] = (ptr)0;
-#if defined(WRITE_XOR_EXECUTE_CODE)
-          tgc->base_bytes[g][s] = 0;
-#endif
           tgc->next_loc[g][s] = (ptr)0;
           tgc->bytes_left[g][s] = 0;
           tgc->sweep_loc[g][s] = (ptr)0;

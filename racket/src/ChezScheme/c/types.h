@@ -483,9 +483,6 @@ typedef struct thread_gc {
   struct thread_gc *next;
 
   ptr base_loc[static_generation+1][max_real_space+1];
-#if defined(WRITE_XOR_EXECUTE_CODE)
-  iptr base_bytes[static_generation+1][max_real_space+1]; /* number of bytes in allocation segments */
-#endif
   ptr next_loc[static_generation+1][max_real_space+1];
   iptr bytes_left[static_generation+1][max_real_space+1];
   ptr orig_next_loc[max_real_space+1];

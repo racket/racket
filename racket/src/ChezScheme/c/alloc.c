@@ -34,9 +34,6 @@ void S_alloc_init() {
             S_G.bytes_of_generation[g] = 0;
             for (s = 0; s <= max_real_space; s++) {
               S_G.main_thread_gc.base_loc[g][s] = FIX(0);
-#if defined(WRITE_XOR_EXECUTE_CODE)
-              S_G.main_thread_gc.base_bytes[g][s] = 0;
-#endif
               S_G.main_thread_gc.next_loc[g][s] = FIX(0);
               S_G.main_thread_gc.bytes_left[g][s] = 0;
               S_G.bytes_of_space[g][s] = 0;
@@ -257,9 +254,6 @@ ptr S_find_more_gc_room(thread_gc *tgc, ISPC s, IGEN g, iptr n, ptr old) {
   new_bytes = nsegs * bytes_per_segment;
 
   tgc->base_loc[g][s] = new;
-#if defined(WRITE_XOR_EXECUTE_CODE)
-  tgc->base_bytes[g][s] = new_bytes;
-#endif
   tgc->sweep_loc[g][s] = new;
   tgc->bytes_left[g][s] = (new_bytes - n) - ptr_bytes;
   tgc->next_loc[g][s] = (ptr)((uptr)new + n);
