@@ -162,6 +162,8 @@ jobs:
     - name: Installing
       working-directory: ./racket/src
       run: make -j  $((cpus+1)) install
+    - name: Copying src/ into distro # ChezScheme build is needed by build-ios
+      run: cp -r racket/src racketcs/
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racketcs-macos-x64_git${{ github.sha}}.tar.bz2 racketcs
@@ -169,6 +171,32 @@ jobs:
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+
+  build-ios:
+    runs-on: macos-latest
+    needs: build-racketcs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: racketcs-macos-x64_git${{ github.sha }}
+          path: ${{ github.workspace }}
+      - name: Untar host Racket
+        run: |
+          mkdir host-racket
+          tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
+      - name: Build iOS Racket
+        run: |
+          set -euo pipefail
+          mkdir -p racket/src/build-ios
+          pushd racket/src/build-ios
+          ../configure \
+            --host=aarch64-apple-darwin \
+            --enable-ios=iPhoneOS \
+            --enable-racket=${{ github.workspace }}/host-racket/bin/racket \
+            --enable-scheme=${{ github.workspace }}/host-racket/src/cs/c
+          make
+          make install
 
   # Tests
   # Unfortunately Actions does not support atm yaml anchors
