@@ -66,3 +66,33 @@ jobs:
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
         raco test -c tests/syntax
+    - name: Tarball
+      run: tar -cvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 racket
+    - uses: actions/upload-artifact@v2
+      with:
+        name: racketcs-macos-x64_git${{ github.sha }}
+        path: racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+
+  build-ios:
+    runs-on: macos-latest
+    needs: buildtest-macos
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v2
+      with:
+        name: racketcs-macos-x64_git${{ github.sha }}
+        path: ${{ github.workspace }}
+    - name: Untar host Racket
+      run: tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+    - name: Build iOS Racket
+      run: |
+        set -euo pipefail
+        mkdir -p racket/src/build-ios
+        pushd racket/src/build-ios
+        ../configure \
+          --host=aarch64-apple-darwin \
+          --enable-ios=iPhoneOS \
+          --enable-racket=${{ github.workspace}}/racket/bin/racket \
+          --enable-scheme=${{ github.workspace}}/racket/src/build/cs/c
+        make
+        make install
