@@ -46,7 +46,7 @@ static seginfo *sort_seginfo PROTO((seginfo *si, uptr n));
 static seginfo *merge_seginfo PROTO((seginfo *si1, seginfo *si2));
 
 #if defined(WRITE_XOR_EXECUTE_CODE)
-static void enable_code_write PROTO((ptr tc, IGEN maxg, IBOOL on, ptr hint));
+static void enable_code_write PROTO((ptr tc, IGEN maxg, IBOOL on, IBOOL current, ptr hint));
 #endif
 
 void S_segment_init() {
@@ -265,6 +265,9 @@ static void initialize_seginfo(seginfo *si, NO_THREADS_UNUSED thread_gc *creator
   si->counting_mask = NULL;
   si->measured_mask = NULL;
   si->sweep_next = NULL;
+#if defined(WRITE_XOR_EXECUTE_CODE)
+  si->sweep_bytes = 0;
+#endif
 }
 
 /* allocation mutex must be held */
@@ -584,23 +587,25 @@ static void contract_segment_table(uptr base, uptr end) {
    off of it.
 */
 
-void S_thread_start_code_write(ptr tc, IGEN maxg, ptr hint) {
+void S_thread_start_code_write(ptr tc, IGEN maxg, IBOOL current, ptr hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  enable_code_write(tc, maxg, 1, hint);
+  enable_code_write(tc, maxg, 1, current, hint);
 #else
   (void)tc;
   (void)maxg;
+  (void)current;
   (void)hint;
   S_ENABLE_CODE_WRITE(1);
 #endif
 }
 
-void S_thread_end_code_write(ptr tc, IGEN maxg, ptr hint) {
+void S_thread_end_code_write(ptr tc, IGEN maxg, IBOOL current, ptr hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
-  enable_code_write(tc, maxg, 0, hint);
+  enable_code_write(tc, maxg, 0, current, hint);
 #else
   (void)tc;
   (void)maxg;
+  (void)current;
   (void)hint;
   S_ENABLE_CODE_WRITE(0);
 #endif
@@ -627,14 +632,15 @@ static IBOOL is_unused_seg(chunkinfo *chunk, seginfo *si) {
 }
 # endif
 
-static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, ptr hint) {
+static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, IBOOL current, ptr hint) {
   thread_gc *tgc;
   chunkinfo *chunk;
-  seginfo si;
+  seginfo si, *sip;
   iptr i, j, bytes;
   void *addr;
   INT flags = (on ? PROT_WRITE : PROT_EXEC) | PROT_READ;
 
+  /* Flip only the segment hinted at by the caller. */
   if (maxg == 0 && hint != NULL) {
     addr = TO_VOIDP((char*)hint - ((uptr)hint % bytes_per_segment));
     if (mprotect(addr, bytes_per_segment, flags) != 0) {
@@ -643,7 +649,34 @@ static void enable_code_write(ptr tc, IGEN maxg, IBOOL on, ptr hint) {
     return;
   }
 
+  /* Flip only the current allocation segments. */
   tgc = THREAD_GC(tc);
+  if (maxg == 0 && current) {
+    addr = tgc->base_loc[0][space_code];
+    if (addr == NULL) {
+      return;
+    }
+    bytes = tgc->base_bytes[0][space_code];
+    if (mprotect(addr, bytes, flags) != 0) {
+      S_error_abort("failed to protect current allocation segments");
+    }
+    /* If disabling writes, turn on exec for recently-allocated
+       segments in addition to the current segments. Clears the
+       current sweep_next chain so must not be used durring
+       collection. */
+    if (!on) {
+      while ((sip = tgc->sweep_next[0][space_code]) != NULL) {
+        tgc->sweep_next[0][space_code] = sip->sweep_next;
+        addr = sip->sweep_start;
+        bytes = sip->sweep_bytes;
+        if (mprotect(addr, bytes, flags) != 0) {
+          S_error_abort("failed to protect recent allocation segments");
+        }
+      }
+    }
+    return;
+  }
+
   for (i = 0; i <= PARTIAL_CHUNK_POOLS; i++) {
     chunk = S_code_chunks[i];
     while (chunk != NULL) {

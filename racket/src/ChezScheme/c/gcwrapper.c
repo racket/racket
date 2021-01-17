@@ -1193,6 +1193,9 @@ ptr S_do_gc(IGEN max_cg, IGEN min_tg, IGEN max_tg, ptr count_roots) {
           ptr t_tc = (ptr)THREADTC(Scar(ls));
           thread_gc *tgc = THREAD_GC(t_tc);
           tgc->base_loc[new_g][s] = tgc->base_loc[old_g][s]; tgc->base_loc[old_g][s] = (ptr)0;
+#if defined(WRITE_XOR_EXECUTE_CODE)
+          tgc->base_bytes[new_g][s] = tgc->base_bytes[old_g][s]; tgc->base_bytes[old_g][s] = 0;
+#endif
           tgc->next_loc[new_g][s] = tgc->next_loc[old_g][s]; tgc->next_loc[old_g][s] = (ptr)0;
           tgc->bytes_left[new_g][s] = tgc->bytes_left[old_g][s]; tgc->bytes_left[old_g][s] = 0;
           tgc->sweep_loc[new_g][s] = tgc->sweep_loc[old_g][s]; tgc->sweep_loc[old_g][s] = 0;

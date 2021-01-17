@@ -158,6 +158,9 @@ typedef struct _seginfo {
   struct _seginfo *next;                    /* pointer to the next seginfo (used in occupied_segments and unused_segs) */
   struct _seginfo *sweep_next;              /* next in list of segments allocated during GC => need to sweep */
   ptr sweep_start;                          /* address within segment to start sweep */
+#if defined(WRITE_XOR_EXECUTE_CODE)
+  iptr sweep_bytes;                         /* total number of bytes starting at sweep_start */
+#endif
   struct _seginfo **dirty_prev;             /* pointer to the next pointer on the previous seginfo in the DirtySegments list */
   struct _seginfo *dirty_next;              /* pointer to the next seginfo on the DirtySegments list */
   ptr trigger_ephemerons;                   /* ephemerons to re-check if object in segment is copied out */
@@ -480,6 +483,9 @@ typedef struct thread_gc {
   struct thread_gc *next;
 
   ptr base_loc[static_generation+1][max_real_space+1];
+#if defined(WRITE_XOR_EXECUTE_CODE)
+  iptr base_bytes[static_generation+1][max_real_space+1]; /* number of bytes in allocation segments */
+#endif
   ptr next_loc[static_generation+1][max_real_space+1];
   iptr bytes_left[static_generation+1][max_real_space+1];
   ptr orig_next_loc[max_real_space+1];

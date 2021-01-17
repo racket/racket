@@ -90,6 +90,9 @@ ptr S_create_thread_object(who, p_tc) const char *who; ptr p_tc; {
       for (g = 0; g <= static_generation; g++) {
         for (s = 0; s <= max_real_space; s++) {
           tgc->base_loc[g][s] = (ptr)0;
+#if defined(WRITE_XOR_EXECUTE_CODE)
+          tgc->base_bytes[g][s] = 0;
+#endif
           tgc->next_loc[g][s] = (ptr)0;
           tgc->bytes_left[g][s] = 0;
           tgc->sweep_loc[g][s] = (ptr)0;
@@ -256,7 +259,7 @@ static IBOOL destroy_thread(tc) ptr tc; {
       S_scan_dirty((ptr *)EAP(tc), (ptr *)REAL_EAP(tc));
 
      /* close off thread-local allocation */
-      S_thread_start_code_write(tc, static_generation, NULL);
+      S_thread_start_code_write(tc, static_generation, 0, NULL);
       {
         ISPC s; IGEN g;
         thread_gc *tgc = THREAD_GC(tc);
@@ -265,7 +268,7 @@ static IBOOL destroy_thread(tc) ptr tc; {
             if (tgc->next_loc[g][s])
               S_close_off_thread_local_segment(tc, s, g);
       }
-      S_thread_end_code_write(tc, static_generation, NULL);
+      S_thread_end_code_write(tc, static_generation, 0, NULL);
 
       alloc_mutex_release();
 
