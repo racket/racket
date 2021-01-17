@@ -587,26 +587,18 @@ static void contract_segment_table(uptr base, uptr end) {
    off of it.
 */
 
-void S_thread_start_code_write(ptr tc, IGEN maxg, IBOOL current, void *hint) {
+void S_thread_start_code_write(WX_UNUSED ptr tc, WX_UNUSED IGEN maxg, WX_UNUSED IBOOL current, WX_UNUSED void *hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
   enable_code_write(tc, maxg, 1, current, hint);
 #else
-  (void)tc;
-  (void)maxg;
-  (void)current;
-  (void)hint;
   S_ENABLE_CODE_WRITE(1);
 #endif
 }
 
-void S_thread_end_code_write(ptr tc, IGEN maxg, IBOOL current, void *hint) {
+void S_thread_end_code_write(WX_UNUSED ptr tc, WX_UNUSED IGEN maxg, WX_UNUSED IBOOL current, WX_UNUSED void *hint) {
 #if defined(WRITE_XOR_EXECUTE_CODE)
   enable_code_write(tc, maxg, 0, current, hint);
 #else
-  (void)tc;
-  (void)maxg;
-  (void)current;
-  (void)hint;
   S_ENABLE_CODE_WRITE(0);
 #endif
 }

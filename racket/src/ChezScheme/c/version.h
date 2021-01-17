@@ -329,6 +329,7 @@ typedef int tputsputcchar;
 # define SYSTEM(s) ((void)s, -1)
 # define S_PROT_CODE (PROT_WRITE | PROT_READ)
 # define WRITE_XOR_EXECUTE_CODE
+# define WX_UNUSED
 #endif
 #if defined(__arm64__)
 # if !defined(TARGET_OS_IPHONE)
@@ -512,6 +513,12 @@ typedef char tputsputcchar;
 #endif
 #ifndef S_ENABLE_CODE_WRITE
 # define S_ENABLE_CODE_WRITE(on) do { } while (0)
+#endif
+
+/* Signals that an argument is unused when W&X memory pages are
+   supported. Relevant in relation to WRITE_XOR_EXECUTE_CODE. */
+#ifndef WX_UNUSED
+# define WX_UNUSED UNUSED
 #endif
 
 #ifdef PTHREADS
