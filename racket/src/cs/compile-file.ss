@@ -145,7 +145,8 @@
                                    (let ([e (map annotation-expression
                                                  (annotation-expression e))])
                                      (cons e (loop pos))))))))])
-             (compile-to-file exprs dest)))]
+             ;; Pass #t for `force-host-out?' in case  host and target are the same.
+             (compile-to-file exprs dest #f #t)))]
         [else
          ;; Normal mode
          (compile-file src dest)]))]))
