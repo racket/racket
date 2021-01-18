@@ -654,7 +654,9 @@
 #  define SCHEME_ARCH "arm"
 # elif defined(__arm64__)
 #  define SCHEME_ARCH "aarch64"
-#  define MZ_USE_MAP_JIT
+#  if !defined(TARGET_OS_IPHONE)
+#   define MZ_USE_MAP_JIT
+#  endif
 #  define USE_DLOPEN_GLOBAL_BY_DEFAULT
 # elif defined(__x86_64__)
 #   define SCHEME_ARCH "x86_64"
