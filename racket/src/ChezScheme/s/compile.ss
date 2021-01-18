@@ -2233,6 +2233,7 @@
          (unless (list? sexpr*) ($oops who "~s is not a proper list" sexpr*))
          (unless (string? out) ($oops who "~s is not a string" out))
          (when sfd (unless (source-file-descriptor? sfd) ($oops who "~s is not a source-file descriptor or #f" sfd)))
+         (unless (boolean? force-host-out?) ($oops who "~s is not a boolean" force-host-out?))
          (let ([library? (and (= (length sexpr*) 1) (pair? (car sexpr*)) (eq? (caar sexpr*) 'library))]
                [program? (and (= (length sexpr*) 1) (pair? (car sexpr*)) (eq? (caar sexpr*) 'top-level-program))])
            (define (go)
