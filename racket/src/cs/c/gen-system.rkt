@@ -63,8 +63,8 @@
                   (if (matches? e '(if unix-link-shared? _ _))
                       ;; Currently assuming shared-library mode is not a cross compile:
                       (if (eq? (system-type 'link) 'shared)
-                          (parse-expr (cadddr e))
-                          (parse-expr (caddr e)))
+                          (parse-expr (caddr e))
+                          (parse-expr (cadddr e)))
                       (error 'parse-expr "could not parse ~e" e)))))))
 
   (define-values (matches?)
