@@ -1391,9 +1391,20 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   @racket[#f] if none can be found. A @racket[#f] result is likely only
   in a stand-alone executable that is distributed without libraries.}
 
+@(define-syntax user-path
+   (syntax-rules ()
+     [(_ dir vers)
+      @list{The user-specific path depends on at least
+            @racket[(find-system-path 'addon-dir)] and
+            @racket[vers].}]
+     [(_ dir)
+      (user-path dir (get-installation-name))]))
+
 @defproc[(find-user-collects-dir) path?]{
   Returns a path to the user-specific @filepath{collects} directory; the
-  directory indicated by the returned path may or may not exist.}
+  directory indicated by the returned path may or may not exist.
+
+  @user-path["collects"]}
 
 @defproc[(get-collects-search-dirs) (listof path?)]{
   Returns the same result as @racket[(current-library-collection-paths)],
@@ -1429,7 +1440,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 @defproc[(find-user-links-file [vers string? (get-installation-name)]) path?]{
   Returns a path to the user's @tech[#:doc reference-doc]{collection
   links file}.  The file indicated by the returned path may or may not
-  exist.}
+  exist.
+
+  @user-path["links.rktd" vers]}
 
 @defproc[(get-links-search-files) (listof path?)]{
   Returns a list of paths to installation @tech[#:doc
@@ -1452,7 +1465,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 @defproc[(find-user-pkgs-dir [vers string? (get-installation-name)]) path?]{
   Returns a path to the directory containing packages with
   user-specific scope for installation name @racket[vers]; the directory indicated by
-  the returned path may or may not exist.}
+  the returned path may or may not exist.
+
+  @user-path["pkgs" vers]}
 
 @defproc[(get-pkgs-search-dirs) (listof path?)]{
   Returns a list of paths to the directories containing packages in
@@ -1471,7 +1486,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(find-user-doc-dir) path?]{
   Returns a path to a user-specific @filepath{doc} directory. The directory
-  indicated by the returned path may or may not exist.}
+  indicated by the returned path may or may not exist.
+
+  @user-path["doc"]}
 
 @defproc[(get-doc-search-dirs) (listof path?)]{
   Returns a list of paths to search for documentation, not including
@@ -1492,7 +1509,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(find-user-lib-dir) path?]{
   Returns a path to a user-specific @filepath{lib} directory; the directory
-  indicated by the returned path may or may not exist.}
+  indicated by the returned path may or may not exist.
+
+  @user-path["lib"]}
 
 @defproc[(get-lib-search-dirs) (listof path?)]{
   Returns a list of paths to search for foreign libraries.
@@ -1554,7 +1573,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(find-user-share-dir) path?]{
   Returns a path to a user-specific @filepath{share} directory; the directory
-  indicated by the returned path may or may not exist.}
+  indicated by the returned path may or may not exist.
+
+  @user-path["share"]}
 
 @defproc[(find-include-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{include} directory, which
@@ -1565,7 +1586,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(find-user-include-dir) path?]{
   Returns a path to a user-specific @filepath{include} directory; the
-  directory indicated by the returned path may or may not exist.}
+  directory indicated by the returned path may or may not exist.
+
+  @user-path["include"]}
 
 @defproc[(get-include-search-dirs) (listof path?)]{
   Returns a list of paths to search for @filepath{.h} files. Unless it is
@@ -1592,12 +1615,16 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(find-user-console-bin-dir) path?]{
   Returns a path to the user's executable directory; the directory
-  indicated by the returned path may or may not exist.}
+  indicated by the returned path may or may not exist.
+
+  @user-path[#f]}
 
 @defproc[(find-user-gui-bin-dir) path?]{
   Returns a path to the user's executable directory for graphical
   programs; the directory indicated by the returned path may or may
-  not exist.}
+  not exist.
+
+  @user-path[#f]}
 
 @defproc[(find-apps-dir) (or/c path? #f)]{
   Returns a path to the installation's directory @filepath{.desktop}
@@ -1609,7 +1636,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 @defproc[(find-user-apps-dir) path?]{
   Returns a path to the user's directory for @filepath{.desktop} files
   (for Unix); the directory indicated by the returned path may or may
-  not exist.}
+  not exist.
+
+  @user-path[#f]}
 
 @defproc[(find-man-dir) (or/c path? #f)]{
   Returns a path to the installation's man-page directory. The result is
@@ -1617,7 +1646,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(find-user-man-dir) path?]{
   Returns a path to the user's man-page directory; the directory
-  indicated by the returned path may or may not exist.}
+  indicated by the returned path may or may not exist.
+
+  @user-path["man"]}
 
 @defproc[(get-doc-search-url) string?]{
   Returns a string that is used by the documentation system, augmented
