@@ -2604,5 +2604,19 @@
           (def-h h x)]
     (test 'ok values (f 'ok))))
 
+;; ----------------------------------------
+;; Make sure that `block` does not evaluate phase 1 expressions multiple times
+
+(module block-define-syntax-evaluation racket/base
+  (require (for-syntax racket/base) racket/block)
+  (provide final-counter)
+
+  (define-for-syntax counter 0)
+  (define-syntax (get-counter stx) #`'#,counter)
+  (block (define-syntax m (set! counter (add1 counter))))
+  (define final-counter (get-counter)))
+
+(test 1 dynamic-require ''block-define-syntax-evaluation 'final-counter)
+
 
 (report-errs)
