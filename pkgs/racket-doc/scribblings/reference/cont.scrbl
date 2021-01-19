@@ -100,10 +100,11 @@ Creates a prompt tag that is not @racket[equal?] to the result of any
 other value (including prior or future results from
 @racket[make-continuation-prompt-tag]). The optional @racket[name]
 argument, if supplied, specifies the name of the prompt tag
-for printing or @racket[object-name].}
+for printing or @racket[object-name].
 
 @history[#:changed "7.9.0.13" @elem{The @racket[name] argument
           gives the name of the prompt tag.}]
+}
 
 @defproc[(default-continuation-prompt-tag) continuation-prompt-tag?]{
 
