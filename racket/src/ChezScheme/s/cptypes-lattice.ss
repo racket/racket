@@ -13,15 +13,31 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
+; bottom -> empty set / the expression raised an error
+; <something> -> some other set
+; ptr -> all single values expressions
+; #f -> a result that may be single or multiple valued.
+
+; bottom => <something> => ptr => #f
+
+; properties of bottom:
+; (implies? x bottom): only for x=bottom
+; (implies? bottom y): always
+; (disjoint? x bottom): always
+; (disjoint? bottom y): always
+; remember to check (implies? x bottom) before (implies? x something)
+
 (module cptypes-lattice
- (predicate-implies?
-  predicate-disjoint?
-  predicate-intersect
-  predicate-union
-  make-pred-$record/rtd
-  pred-$record/rtd-rtd
-  make-pred-$record/ref
-  pred-$record/ref-ref)
+  (predicate-implies?
+   predicate-disjoint?
+   predicate-intersect
+   predicate-union
+   make-pred-$record/rtd
+   make-pred-$record/ref)
+
+  (include "base-lang.ss")
+  (with-output-language (Lsrc Expr)
+    (define true-rec `(quote #t)))
 
   (define-record-type pred-$record/rtd
     (fields rtd)
@@ -202,9 +218,6 @@
         r
         (loop (cdr xa) (cdr ya) (car xa)))))
 
-  (define (bottom? x)
-    #f)
-
   (define (exact-integer? x)
     (and (integer? x) (exact? x)))
 
@@ -213,10 +226,10 @@
          (not (gensym? x))
          (not (uninterned-symbol? x))))
 
-  ;if x and y are equivalent, the result must be eq? to y
+  ;if x and y are equivalent, they result must be eq? to y
   ;so it's easy to test in predicate-implies?
   ;the result may be bigger than the actual union 
-  (define (predicate-union/new x y)
+  (define (predicate-union x y)
     (cond
       [(eq? x y) y]
       [(not x) #f] ;possible a multivalued expression
@@ -474,7 +487,7 @@
   ;the result may be bigger than the actual intersection 
   ;if there is no exact result, it must be at lest included in x
   ;so it's possible to make decreasing sequences
-  (define (predicate-intersect/new x y)
+  (define (predicate-intersect x y)
     (cond
       [(eq? x y) x]
       [(not y) x]
@@ -636,186 +649,11 @@
             [else
              'bottom])])]))
 
-  (define (predicate-disjoint?/old x y)
-    (and x
-         y
-         ; a pred-$record/ref may be any other kind or record
-         (not (and (pred-$record/ref? x)
-                   (predicate-implies? y '$record)))
-         (not (and (pred-$record/ref? y)
-                   (predicate-implies? x '$record)))
-         ; boolean and true may be a #t
-         (not (and (eq? x 'boolean)
-                   (eq? y 'true)))
-         (not (and (eq? y 'boolean)
-                   (eq? x 'true)))
-         ; the other types are included or disjoint
-         (not (predicate-implies? x y))
-         (not (predicate-implies? y x))))
 
-  (define (predicate-intersect/old x y)
-    (cond
-      [(predicate-implies? x y) x]
-      [(predicate-implies? y x) y]
-      [(predicate-disjoint? y x)
-       'bottom]
-      [(or (and (eq? x 'boolean) (eq? y 'true))
-           (and (eq? y 'boolean) (eq? x 'true)))
-       true-rec]
-      [else (or x y)])) ; if there is no exact option, at least keep the old value
-
-  ; strange properties of bottom here:
-  ; (implies? x bottom): only for x=bottom
-  ; (implies? bottom y): always
-  ; (implies-not? x bottom): never
-  ; (implies-not? bottom y): never
-  ; check (implies? x bottom) before (implies? x something)
-  (define (predicate-implies?/new x y)
-    (eq? (predicate-union/new x y) y))
-
-  (define (predicate-disjoint?/new x y)
-    (eq? (predicate-intersect/new x y) 'bottom))
-
-  ; strange properties of bottom here:
-  ; (implies? x bottom): only for x=bottom
-  ; (implies? bottom y): always
-  ; (implies-not? x bottom): never
-  ; (implies-not? bottom y): never
-  ; check (implies? x bottom) before (implies? x something)
-  (define (predicate-implies?/old x y)
-    (and x
-         y
-         (or (eq? x y)
-             (eq? x 'bottom)
-             (cond
-               [(Lsrc? y)
-                (and (Lsrc? x)
-                     (nanopass-case (Lsrc Expr) y
-                       [(quote ,d1)
-                        (nanopass-case (Lsrc Expr) x
-                          [(quote ,d2) (eqv? d1 d2)]
-                          [else #f])]
-                       [else #f]))]
-               [(pred-$record/rtd? y)
-                (and (pred-$record/rtd? x)
-                     (let ([x-rtd (pred-$record/rtd-rtd x)]
-                           [y-rtd (pred-$record/rtd-rtd y)])
-                       (cond
-                         [(record-type-sealed? y-rtd)
-                          (eqv? x-rtd y-rtd)]
-                         [else
-                          (let loop ([x-rtd x-rtd])
-                            (or (eqv? x-rtd y-rtd)
-                                (let ([xp-rtd (record-type-parent x-rtd)])
-                                  (and xp-rtd (loop xp-rtd)))))])))]
-               [(pred-$record/ref? y)
-                (and (pred-$record/ref? x)
-                     (eq? (pred-$record/ref-ref x)
-                          (pred-$record/ref-ref y)))]
-               [(case y
-                  [(null-or-pair) (or (eq? x 'pair)
-                                      (check-constant-is? x null?))]
-                  [(fixnum) (check-constant-is? x target-fixnum?)]
-                  [(bignum) (check-constant-is? x target-bignum?)]
-                  [(exact-integer)
-                   (or (eq? x 'fixnum)
-                       (eq? x 'bignum)
-                       (check-constant-is? x (lambda (x) (and (integer? x)
-                                                              (exact? x)))))]
-                  [(flonum) (check-constant-is? x flonum?)]
-                  [(real) (or (eq? x 'fixnum)
-                              (eq? x 'bignum)
-                              (eq? x 'exact-integer)
-                              (eq? x 'flonum)
-                              (check-constant-is? x real?))]
-                  [(number) (or (eq? x 'fixnum)
-                                (eq? x 'bignum)
-                                (eq? x 'exact-integer)
-                                (eq? x 'flonum)
-                                (eq? x 'real)
-                                (check-constant-is? x number?))]
-                  [(gensym) (check-constant-is? x gensym?)]
-                  [(uninterned-symbol) (check-constant-is? x uninterned-symbol?)]
-                  [(interned-symbol) (check-constant-is? x (lambda (x)
-                                                             (and (symbol? x)
-                                                                  (not (gensym? x))
-                                                                  (not (uninterned-symbol? x)))))]
-                  [(symbol) (or (eq? x 'gensym)
-                                (eq? x 'uninterned-symbol)
-                                (eq? x 'interned-symbol)
-                                (check-constant-is? x symbol?))]
-                  [(char) (check-constant-is? x char?)]
-                  [(boolean) (check-constant-is? x boolean?)]
-                  [(true) (and (not (check-constant-is? x not))
-                               (not (eq? x 'boolean))
-                               (not (eq? x 'ptr)))] ; only false-rec, boolean and ptr may be `#f
-                  [($record) (or (pred-$record/rtd? x)
-                                 (pred-$record/ref? x)
-                                 (check-constant-is? x #3%$record?))]
-                  [(vector) (check-constant-is? x vector?)] ; i.e. '#()
-                  [(string) (check-constant-is? x string?)] ; i.e. ""
-                  [(bytevector) (check-constant-is? x bytevector?)] ; i.e. '#vu8()
-                  [(fxvector) (check-constant-is? x fxvector?)] ; i.e. '#vfx()
-                  [(flvector) (check-constant-is? x flvector?)] ; i.e. '#vfl()
-                  [(ptr) #t]
-                  [else #f])]
-               [else #f]))))
-
-  (define (predicate-union/old x y)
-    (cond
-      [(predicate-implies?/old y x) x]
-      [(predicate-implies?/old x y) y]
-      [(find (lambda (t)
-               (and (predicate-implies?/old x t)
-                    (predicate-implies?/old y t)))
-             '(char null-or-pair $record
-               gensym uninterned-symbol interned-symbol symbol
-               fixnum bignum exact-integer flonum real number
-               boolean true ptr))] ; ensure they are order from more restrictive to less restrictive
-      [else #f]))
-
-  (define predicate-union predicate-union/new)
-  (define predicate-intersect predicate-intersect/new)
 
   (define (predicate-implies? x y)
-    (define o (predicate-implies?/old x y))
-    (define n (predicate-implies?/new x y))
-    (define u (predicate-union/new x y))
-    (unless (eq? o n)
-      (newline)
-      (display (list '************ x y o n u))
-      (newline)
-      (when (and (pred-$record/rtd? x)
-                 (pred-$record/rtd? y))
-        (display (rtd-ancestors (pred-$record/rtd-rtd x)))
-        (newline)
-        (display (rtd-ancestors (pred-$record/rtd-rtd y)))
-        (newline)
-        (display (list (rtd-ancestor? (pred-$record/rtd-rtd y)
-                                      (pred-$record/rtd-rtd x))
-                       (rtd-ancestor? (pred-$record/rtd-rtd x)
-                                      (pred-$record/rtd-rtd y))))
-        (newline)))
-    n)
+    (eq? (predicate-union x y) y))
 
   (define (predicate-disjoint? x y)
-    (define o (predicate-disjoint?/old x y))
-    (define n (predicate-disjoint?/new x y))
-    (define u (predicate-intersect/new x y))
-    (unless (or (eq? o n) (eq? x 'bottom))
-      (newline)
-      (display (list '+++++++++++++ x y o n u))
-      (newline)
-      (when (and (pred-$record/rtd? x)
-                 (pred-$record/rtd? y))
-        (display (rtd-ancestors (pred-$record/rtd-rtd x)))
-        (newline)
-        (display (rtd-ancestors (pred-$record/rtd-rtd y)))
-        (newline)
-        (display (list (rtd-ancestor? (pred-$record/rtd-rtd y)
-                                      (pred-$record/rtd-rtd x))
-                       (rtd-ancestor? (pred-$record/rtd-rtd x)
-                                      (pred-$record/rtd-rtd y))))
-        (newline)))
-    n)
+    (eq? (predicate-intersect x y) 'bottom))
 )
