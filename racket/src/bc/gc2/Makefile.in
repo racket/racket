@@ -602,6 +602,7 @@ EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(L
 #  path.
 
 MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
+MZFWMMM_DEST = "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
 
 MACLIBRKT_LIBS = ../libracket3m.@LIBSFX@ $(LIBRKTIO) -framework CoreFoundation
 
@@ -611,7 +612,8 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@ $(LIBRKTIO)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
 	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
-	cp "Racket.framework/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
+	rm -f $(MZFWMMM_DEST)
+	cp "Racket.framework/Racket" $(MZFWMMM_DEST)
 
 # Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
 MACLIBRKT_LINK_fw = -F. -framework Racket

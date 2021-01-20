@@ -77,40 +77,33 @@ other words, it produces the same value as
 ]}
 
 @defproc[(continuation-mark-set->list
-          [mark-set continuation-mark-set?]
+          [mark-set (or/c continuation-mark-set? #f)]
           [key-v any/c]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          list?]{
 Returns a newly-created list containing the marks for @racket[key-v]
 in @racket[mark-set], which is a set of marks returned by
-@racket[current-continuation-marks]. The result list is truncated at
+@racket[current-continuation-marks] or @racket[#f] as a shorthand for
+@racket[(current-continuation-marks prompt-tag)]. The result list is truncated at
 the first point, if any, where continuation frames were originally
 separated by a prompt tagged with @racket[prompt-tag]. Producing the result
 takes time proportional to the size of the continuation reflected by
-@racket[mark-set].}
+@racket[mark-set].
 
-@defproc*[([(make-continuation-mark-key) continuation-mark-key?]
-           [(make-continuation-mark-key [sym symbol?]) continuation-mark-key?])]{
-Creates a continuation mark key that is not @racket[equal?] to the result
-of any other value (including prior and future results from
-@racket[make-continuation-mark-key]). The continuation mark key can be used
-as the key argument for @racket[with-continuation-mark] or accessor procedures
-like @racket[continuation-mark-set-first]. The mark key can be chaperoned
-or impersonated, unlike other values that are used as the mark key.
+@history[#:changed "8.0.0.1" @elem{Changed to allow @racket[mark-set] as @racket[#f].}]}
 
-The optional @racket[sym] argument, if provided, is used when printing
-the continuation mark.
-}
 
 @defproc[(continuation-mark-set->list*
-          [mark-set continuation-mark-set?]
+          [mark-set (or/c continuation-mark-set? #f)]
           [key-list (listof any/c)]
           [none-v any/c #f]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          (listof vector?)]{
 Returns a newly-created list containing vectors of marks in
 @racket[mark-set] for the keys in @racket[key-list], up to
-@racket[prompt-tag]. The length of each vector in the result list is
+@racket[prompt-tag], where a @racket[#f] value for @racket[mark-set]
+is equivalent to @racket[(current-continuation-marks prompt-tag)].
+The length of each vector in the result list is
 the same as the length of @racket[key-list], and a value in a
 particular vector position is the value for the corresponding key in
 @racket[key-list]. Values for multiple keys appear in a single vector
@@ -118,10 +111,13 @@ only when the marks are for the same continuation frame in
 @racket[mark-set]. The @racket[none-v] argument is used for vector
 elements to indicate the lack of a value. Producing the result
 takes time proportional to the size of the continuation reflected by
-@racket[mark-set] times the length of @racket[key-list].}
+@racket[mark-set] times the length of @racket[key-list].
+
+@history[#:changed "8.0.0.1" @elem{Changed to allow @racket[mark-set] as @racket[#f].}]}
+
 
 @defproc[(continuation-mark-set->iterator
-          [mark-set continuation-mark-set?]
+          [mark-set (or/c continuation-mark-set? #f)]
           [key-list (listof any/c)]
           [none-v any/c #f]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
@@ -139,7 +135,9 @@ The time required for each step is proportional to the length of
 reflected by @racket[mark-set] between frames that have keys in
 @racket[key-list].
 
-@history[#:added "7.5.0.7"]}
+@history[#:added "7.5.0.7"
+         #:changed "8.0.0.1" @elem{Changed to allow @racket[mark-set] as @racket[#f].}]}
+
 
 @defproc[(continuation-mark-set-first 
           [mark-set (or/c continuation-mark-set? #f)]
@@ -162,6 +160,7 @@ result can be computed more quickly using
 Although @racket[#f] and @racket[(current-continuation-marks
 prompt-tag)] are equivalent for @racket[mark-set], providing @racket[#f]
 as @racket[mark-set] can enable shortcuts that make it even faster.}
+
 
 @defproc[(call-with-immediate-continuation-mark
           [key-v any/c]
@@ -198,14 +197,30 @@ continuation.
      (proc (vector-ref (car vecs) 0)))))
 ]}
 
+
+@defproc*[([(make-continuation-mark-key) continuation-mark-key?]
+           [(make-continuation-mark-key [sym symbol?]) continuation-mark-key?])]{
+Creates a continuation mark key that is not @racket[equal?] to the result
+of any other value (including prior and future results from
+@racket[make-continuation-mark-key]). The continuation mark key can be used
+as the key argument for @racket[with-continuation-mark] or accessor procedures
+like @racket[continuation-mark-set-first]. The mark key can be chaperoned
+or impersonated, unlike other values that are used as the mark key.
+
+The optional @racket[sym] argument, if provided, is used when printing
+the continuation mark.}
+
+
 @defproc[(continuation-mark-key? [v any/c]) boolean?]{
 Returns @racket[#t] if @racket[v] is a mark key created by
 @racket[make-continuation-mark-key], @racket[#f] otherwise.}
+
 
 @defproc[(continuation-mark-set? [v any/c]) boolean?]{
 Returns @racket[#t] if @racket[v] is a mark set created by
 @racket[continuation-marks] or @racket[current-continuation-marks],
 @racket[#f] otherwise.}
+
 
 @defproc[(continuation-mark-set->context [mark-set continuation-mark-set?])
           list?]{

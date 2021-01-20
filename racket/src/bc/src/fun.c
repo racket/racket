@@ -166,6 +166,7 @@ static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
                                                Scheme_Meta_Continuation *mc,
                                                MZ_MARK_POS_TYPE mpos,
                                                Scheme_Object *val);
+static Scheme_Cont_Mark_Chain *current_mark_chain(const char *who, Scheme_Object *prompt_tag);
 
 static Scheme_Object *jump_to_alt_continuation();
 static void reset_cjs(Scheme_Continuation_Jump_State *a);
@@ -7692,7 +7693,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
 					 Scheme_Object *econt,
                                          Scheme_Meta_Continuation *mc,
                                          Scheme_Object *prompt_tag,
-                                         char *who,
+                                         const char *who,
 					 int just_chain,
                                          int use_boundary_prompt)
      /* cont => p is not used */
@@ -8018,6 +8019,13 @@ Scheme_Object *scheme_all_current_continuation_marks()
                             0, 1);
 }
 
+Scheme_Cont_Mark_Chain *current_mark_chain(const char *who, Scheme_Object *prompt_tag) {
+  return (Scheme_Cont_Mark_Chain *)continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
+                                                      prompt_tag,
+                                                      who,
+                                                      1, 1);
+}
+
 static Scheme_Object *
 cc_marks(int argc, Scheme_Object *argv[])
 {
@@ -8141,8 +8149,9 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
   Scheme_Object *pr;
   int is_chaperoned = 0;
 
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
-    scheme_wrong_contract("continuation-mark-set->list", "continuation-mark-set?", 0, argc, argv);
+  if (SCHEME_TRUEP(argv[0])
+      && !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
+    scheme_wrong_contract("continuation-mark-set->list", "(or/c continuation-mark-set? #f)", 0, argc, argv);
     return NULL;
   }
   if (argc > 2) {
@@ -8160,7 +8169,10 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
   } else
     prompt_tag = scheme_default_prompt_tag;
 
-  chain = ((Scheme_Cont_Mark_Set *)argv[0])->chain;
+  if (SCHEME_FALSEP(argv[0]))
+    chain = current_mark_chain("continuation-mark-set->list", prompt_tag);
+  else
+    chain = ((Scheme_Cont_Mark_Set *)argv[0])->chain;
   key = argv[1];
 
   if ((key == scheme_parameterization_key)
@@ -8294,8 +8306,9 @@ do_extract_cc_markses(const char *who, int argc, Scheme_Object *argv[], int iter
   Scheme_Object *pr, **keys, *vals, *none, *prompt_tag;
   intptr_t len, i;
 
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
-    scheme_wrong_contract(who, "continuation-mark-set?", 0, argc, argv);
+  if (SCHEME_TRUEP(argv[0])
+      && !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
+    scheme_wrong_contract(who, "(or/c continuation-mark-set? #f)", 0, argc, argv);
     return NULL;
   }
   len = scheme_proper_list_length(argv[1]);
@@ -8332,7 +8345,10 @@ do_extract_cc_markses(const char *who, int argc, Scheme_Object *argv[], int iter
     }
   }
 
-  chain = ((Scheme_Cont_Mark_Set *)argv[0])->chain;
+  if (SCHEME_FALSEP(argv[0]))
+    chain = current_mark_chain(who, prompt_tag);
+  else
+    chain = ((Scheme_Cont_Mark_Set *)argv[0])->chain;
 
   if (iterator) {
     void **clos, **state;
