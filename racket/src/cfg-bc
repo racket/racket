@@ -2326,6 +2326,7 @@ MAKE_LOCAL_RACKET=no-local-racket
 
 if test "${enable_racket}" = "auto" ; then
   MAKE_LOCAL_RACKET="local/bc/racket3m"
+  enable_racket="${MAKE_LOCAL_RACKET}"
 fi
 RUN_LOCAL_RACKET="local/bc/racket3m"
 CONFIGURE_LOCAL_RACKET=--enable-bc
@@ -2336,7 +2337,12 @@ else
   MAIN_VARIANT=3m
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
-RUN_RACKET="bc/racket${MAIN_VARIANT}"
+
+if test "${enable_racket}" != "" ; then
+  RUN_RACKET="${enable_racket}"
+else
+  RUN_RACKET="bc/racket${MAIN_VARIANT}"
+fi
 
 
 

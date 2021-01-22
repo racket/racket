@@ -2235,6 +2235,7 @@ MAKE_LOCAL_RACKET=no-local-racket
 
 if test "${enable_racket}" = "auto" ; then
   MAKE_LOCAL_RACKET="local/cs/c/racketcs"
+  enable_racket="${MAKE_LOCAL_RACKET}"
 fi
 RUN_LOCAL_RACKET="local/cs/c/racketcs"
 CONFIGURE_LOCAL_RACKET=--enable-cs
@@ -2242,7 +2243,11 @@ CONFIGURE_LOCAL_RACKET=--enable-cs
 MAIN_MAKE_TARGET=racketcs
 MAIN_VARIANT=3m
 
-RUN_RACKET="cs/c/racketcs"
+if test "${enable_racket}" != "" ; then
+  RUN_RACKET="${enable_racket}"
+else
+  RUN_RACKET="cs/c/racketcs"
+fi
 
 
 
