@@ -3177,9 +3177,15 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
 
       /* Print srcloc(s) if present */
       l = scheme_struct_type_property_ref(scheme_source_property, argv[1]);
-      if (l)
+      if (l) {
         l = _scheme_apply(l, 1, &(argv[1]));
-
+        for (w = l; SCHEME_PAIRP(w); w = SCHEME_CDR(w)) {
+          if (!scheme_is_location(SCHEME_CAR(w)))
+            break;
+        }
+        if (!SCHEME_NULLP(w))
+          scheme_wrong_contract("prop:exn:srclocs procedure", "(listof srcloc?)", -1, 1, &l);
+      }
 
       if (l && !SCHEME_NULLP(l)) {
         /* Some exns include srcloc in the msg, so skip the first srcloc of those when needed */

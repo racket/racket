@@ -701,12 +701,32 @@
             (and (exn? v)
                  (not (exn:fail:user? v))))
     (let* ([n (|#%app| error-print-context-length)]
+           [locs (if (exn:srclocs? v)
+                     ((exn:srclocs-accessor* v) v)
+                     null)]
            [l (if (zero? n)
                   '()
                   (traces->context
                    (if (exn? v)
                        (continuation-mark-set-traces (exn-continuation-marks v))
                        (list (continuation->trace (condition-continuation v))))))])
+      (unless (null? locs)
+        (unless (and (list? locs)
+                     (andmap srcloc? locs))
+          (raise-result-error '|prop:exn:srclocs procedure| "(listof srcloc?)" locs))
+        (let ([locs
+               ;; Some exns are expected to include srcloc in the msg,
+               ;; so skip the first srcloc of those
+               (if (and (or (exn:fail:read? v)
+                            (exn:fail:contract:variable? v))
+                        (error-print-source-location))
+                   (cdr locs)
+                   locs)])
+          (unless (null? locs)
+            (eprintf "\n  location...:")
+            (#%for-each (lambda (sl)
+                          (eprintf (string-append "\n   " (srcloc->string sl))))
+                        locs))))
       (unless (null? l)
         (eprintf "\n  context...:")
         (let loop ([l l]
@@ -743,11 +763,22 @@
   (lambda (fmt . args)
     (apply fprintf (current-error-port) fmt args)))
 
+(define srcloc->string
+  (lambda (srcloc)
+    (#%format "~s" srcloc)))
+
+(define error-print-source-location
+  (lambda () #f))
+
 (define (emergency-error-display-handler msg v)
   (log-system-message 'error msg))
 
-(define (set-error-display-eprintf! proc)
-  (set! eprintf proc))
+(define (set-error-display-eprintf! proc
+                                    srcloc->string-proc
+                                    error-print-source-location-proc)
+  (set! eprintf proc)
+  (set! srcloc->string srcloc->string-proc)
+  (set! error-print-source-location error-print-source-location-proc))
 
 (define (default-error-escape-handler)
   (abort-current-continuation (default-continuation-prompt-tag) void))

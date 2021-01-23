@@ -308,4 +308,34 @@
 (test (srcloc 'm 1 2 3 0)
       build-source-location (srcloc 'm #f #f #f 0) (srcloc 'm 1 2 3 0))
 
+(err/rt-test (let ()
+               (struct a () #:property prop:exn:srclocs 'no)
+               'not-ok))
+
+;; Check that the error display handler uses `prop:exn:srclocs`:
+(let ()
+  (struct a exn:fail (srclocs)
+    #:property prop:exn:srclocs (lambda (a) (a-srclocs a)))
+  (define (go a #:catch? [catch? #f])
+    (define o (open-output-bytes))
+    ((if catch?
+         (lambda (thunk)
+           (let/ec k
+             (parameterize ([error-escape-handler (lambda () (k))])
+               (thunk))))
+         (lambda (thunk) (thunk)))
+     (lambda ()
+       (parameterize ([current-error-port o])
+         ((error-display-handler) "fail" a))))
+    (get-output-bytes o))
+  (test #t regexp-match? #rx"here:1:2" (go (a "msg" (current-continuation-marks)
+                                              (list (srcloc "here" 1 2 3 4)))))
+  (test #t regexp-match? #rx"there:10:20" (go (a "msg" (current-continuation-marks)
+                                                 (list (srcloc "here" 1 2 3 4)
+                                                       (srcloc "there" 10 20 30 40)))))
+  (test #t regexp-match? #rx"listof srcloc[?]" (go (a "msg" (current-continuation-marks)
+                                                      'oops)
+                                                   #:catch? #t))
+  (void))
+
 (report-errs)
