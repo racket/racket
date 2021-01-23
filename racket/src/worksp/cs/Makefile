@@ -24,7 +24,7 @@ MAIN_DEPS = ..\..\start\config.inc \
 
 MEMMOD = ..\..\start\MemoryModule.c
 
-FLAGS = /DWIN32 /Ox /MT
+FLAGS = /DWIN32 /Ox /MT /GF
 COMP_SUBDIR = /DCS_COMPILED_SUBDIR=1
 
 all: $(DEST) $(GDEST)
