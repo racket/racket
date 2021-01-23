@@ -758,7 +758,7 @@ h
 
 }
 
-@defproc[(hash-intersect [h0 (and/c hash? (not/c immutable?))]
+@defproc[(hash-intersect [h0 (and/c hash? immutable?)]
 			 [h hash?] ...
                          [#:combine combine
                                     (-> any/c any/c any/c)
