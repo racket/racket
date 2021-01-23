@@ -165,7 +165,7 @@ Like @racket[read-string], but reads bytes and produces a byte string.}
                        [in input-port? (current-input-port)]
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos exact-nonnegative-integer? (string-length str)])
-         (or/c exact-positive-integer? eof-object?)]{
+         (or/c exact-nonnegative-integer? eof-object?)]{
 
 Reads characters from @racket[in] like @racket[read-string], but puts
 them into @racket[str] starting from index @racket[start-pos]
@@ -197,7 +197,7 @@ not modified at indices @math{@racket[start-pos]+m} through
                       [in input-port? (current-input-port)]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         (or/c exact-positive-integer? eof-object?)]{
+         (or/c exact-nonnegative-integer? eof-object?)]{
 Like @racket[read-string!], but reads bytes, puts them into a byte
 string, and returns the number of bytes read.
 
@@ -216,7 +216,7 @@ string, and returns the number of bytes read.
                             [in input-port? (current-input-port)]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         (or/c exact-positive-integer? eof-object? procedure?)]{
+         (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
 Like @racket[read-bytes!], but returns without blocking after having
 read the immediately available bytes, and it may return a procedure for
@@ -301,7 +301,7 @@ Like @racket[peek-string], but @tech{peeks} bytes and produces a byte string.}
                        [in input-port? (current-input-port)]
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos exact-nonnegative-integer? (string-length str)])
-         (or/c exact-positive-integer? eof-object?)]{
+         (or/c exact-nonnegative-integer? eof-object?)]{
 Like @racket[read-string!], but for @tech{peek}ing, and with a
 @racket[skip-bytes-amt] argument like @racket[peek-string].}
 
@@ -310,7 +310,7 @@ Like @racket[read-string!], but for @tech{peek}ing, and with a
                       [in input-port? (current-input-port)]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         (or/c exact-positive-integer? eof-object?)]{
+         (or/c exact-nonnegative-integer? eof-object?)]{
 Like @racket[peek-string!], but @tech{peeks} bytes, puts them into a byte
 string, and returns the number of bytes read.}
 
