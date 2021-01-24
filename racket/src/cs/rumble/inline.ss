@@ -17,7 +17,7 @@
               #'(let ([arg tmp] ...)
                   (if guard
                       op
-                      (orig-app orig-id arg ...)))]
+                      (pariah (orig-app orig-id arg ...))))]
              [(_ . args)
               #'(orig-id . args)]
              [_ #'orig-id])))]))
