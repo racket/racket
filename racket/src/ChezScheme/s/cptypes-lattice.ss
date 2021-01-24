@@ -39,6 +39,13 @@
   (with-output-language (Lsrc Expr)
     (define true-rec `(quote #t)))
 
+  ; don't use rtd-* as defined in record.ss in case we're building a patch
+  ; file for cross compilation, because the offsets may be incorrect
+  (define rtd-ancestors (csv7:record-field-accessor #!base-rtd 'ancestors))
+  (define (rtd-parent x) (vector-ref (rtd-ancestors x) 0))
+  ;(define (rtd-ancestry x) ($object-ref 'scheme-object x (constant record-type-ancestry-disp)))
+  ;(define (rtd-parent x) (vector-ref (rtd-ancestry x) 0))
+
   (define-record-type pred-$record/rtd
     (fields rtd)
     (nongenerative #{pred-$record/rtd wnquzwrp8wl515lhz2url8sjc-0})
@@ -195,28 +202,60 @@
 	   (union/true x)]))
 
   ;true when x is an ancestor of y
-  (define (rtd-ancestor? x y)
-	(or (eqv? x y)
-	    (let ([y (record-type-parent y)])
-		   (and y
-			    (rtd-ancestor? x y)))))
+  ;includes the case when the are the same
+  (define (rtd-ancestor*? x y)
+    (or (eq? x y)
+        (let ()
+          (define ax (rtd-ancestors x))
+          (define lx (vector-length ax))
+          (define ay (rtd-ancestors y))
+          (define ly (vector-length ay))
+          (let ([pos (fx- ly lx 1)])
+            (and (fx>= pos 0)
+                 (eq? x (vector-ref ay pos)))))))
 
-  ; list on ancestors of x, includes x as the last element
-  (define (rtd-ancestors x)
-	(let loop ([x x] [r '()])
-	  (if x 
-	     (loop (record-type-parent x) (cons x r))
-	     r)))
- 
-  (define (rdt-last-common-ancestor x y)
-    (define xa (rtd-ancestors x))
-    (define ya (rtd-ancestors y))
-    (let loop ([xa xa] [ya ya] [r #f])
-      (if (or (null? xa)
-              (null? ya)
-              (not (eqv? (car xa) (car ya))))
-        r
-        (loop (cdr xa) (cdr ya) (car xa)))))
+  ;includes the case when the are the same
+  ;or when one is the ancester of the other
+  (define (rdt-last-common-ancestor* x y)
+    (cond 
+      [(eq? x y) x]
+      [else
+       (let ()
+         (define ax (rtd-ancestors x))
+         (define lx (vector-length ax))
+         (define ay (rtd-ancestors y))
+         (define ly (vector-length ay))
+         (cond
+           [(let ([pos (fx- ly lx 1)])
+              (and (fx>= pos 0)
+                   (eq? x (vector-ref ay pos))))
+            x]
+           [(let ([pos (fx- lx ly 1)])
+              (and (fx>= pos 0)
+                   (eq? y (vector-ref ax pos))))
+            y]
+           [(fx= lx 1) #f]
+           [(fx= ly 1) #f]
+           [else 
+             (let ()
+               (define offset (fx- lx ly))
+               (define f (if (fx< lx ly) (fx- offset) 0))
+               (define l (fx- ly 1))
+               (cond
+                 [(eq? (vector-ref ay f)
+                       (vector-ref ax (fx+ f offset)))
+                  (vector-ref ay f)]
+                 [else
+                  (let loop ([f f] [l l])
+                    (cond
+                      [(fx= (fx- l f) 1) (vector-ref ay l)]
+                      [else
+                       (let ()
+                         (define m (fxquotient (fx+ f l) 2))
+                         (if (eq? (vector-ref ay m)
+                                  (vector-ref ax (fx+ m offset)))
+                          (loop f m)
+                          (loop m l)))]))]))]))]))
 
   (define (exact-integer? x)
     (and (integer? x) (exact? x)))
@@ -298,11 +337,11 @@
               [(eqv? x-rtd y-rtd)
                y]
               [(record-type-sealed? x-rtd)
-               (if (rtd-ancestor? y-rtd x-rtd) y '$record)]
+               (if (rtd-ancestor*? y-rtd x-rtd) y '$record)]
               [(record-type-sealed? y-rtd)
-               (if (rtd-ancestor? x-rtd y-rtd) x '$record)]
+               (if (rtd-ancestor*? x-rtd y-rtd) x '$record)]
               [else
-               (let ([lca-rtd (rdt-last-common-ancestor x-rtd y-rtd)])
+               (let ([lca-rtd (rdt-last-common-ancestor* x-rtd y-rtd)])
                  (cond
                    [(not lca-rtd) '$record]
                    [(eqv? lca-rtd y-rtd) y]
@@ -559,13 +598,13 @@
               [(eqv? x-rtd y-rtd)
                x]
               [(record-type-sealed? x-rtd)
-               (if (rtd-ancestor? y-rtd x-rtd) x 'bottom)]
+               (if (rtd-ancestor*? y-rtd x-rtd) x 'bottom)]
               [(record-type-sealed? y-rtd)
-               (if (rtd-ancestor? x-rtd y-rtd) y 'bottom)]
+               (if (rtd-ancestor*? x-rtd y-rtd) y 'bottom)]
               [else
                (cond
-                 [(rtd-ancestor? y-rtd x-rtd) x]
-                 [(rtd-ancestor? x-rtd y-rtd) y]
+                 [(rtd-ancestor*? y-rtd x-rtd) x]
+                 [(rtd-ancestor*? x-rtd y-rtd) y]
                  [else 'bottom])]))]
          [else
           (intersect/record x y)])]
