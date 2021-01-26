@@ -58,6 +58,9 @@
   (_fun _sqlite3_database
         -> _int))
 
+(define-sqlite sqlite3_busy_timeout
+  (_fun _sqlite3_database _int -> _int))
+
 ;; -- Stmt --
 
 (define (trim-and-copy-buffer buffer)
