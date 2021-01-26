@@ -465,7 +465,8 @@
      [(fasl-path-type) (bytes->path (read-fasl-bytes i)
                                     (loop))]
      [(fasl-relative-path-type)
-      (define wrt-dir (current-load-relative-directory))
+      (define wrt-dir (or (current-load-relative-directory)
+                          (current-directory)))
       (define rel-elems (for/list ([p (in-list (loop))])
                           (if (bytes? p) (bytes->path-element p) p)))
       (cond

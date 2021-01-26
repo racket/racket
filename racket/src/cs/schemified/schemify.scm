@@ -38816,7 +38816,11 @@
                                              (if (unsafe-fx< index_0 26)
                                                (if (unsafe-fx< index_0 25)
                                                  (let ((wrt-dir_0
-                                                        (current-load-relative-directory)))
+                                                        (let ((or-part_0
+                                                               (current-load-relative-directory)))
+                                                          (if or-part_0
+                                                            or-part_0
+                                                            (current-directory)))))
                                                    (let ((rel-elems_0
                                                           (reverse$1
                                                            (let ((lst_0

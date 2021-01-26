@@ -62,7 +62,8 @@ structures. Compose @racket[s-exp->fasl] with @racket[serialize] to
 preserve graph structure, handle cyclic data, and encode serializable
 structures. The @racket[s-exp->fasl] and @racket[fasl->s-exp]
 functions consult @racket[current-write-relative-directory] and
-@racket[current-load-relative-directory], respectively, in the same
+@racket[current-load-relative-directory]
+(falling back to @racket[current-directory]), respectively, in the same
 way as bytecode saving and loading to store paths in relative form,
 and they similarly allow and convert constrained @racket[srcloc]
 values (see @secref["print-compiled"]).

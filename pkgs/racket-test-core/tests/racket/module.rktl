@@ -3538,5 +3538,46 @@ case of module-leve bindings; it doesn't cover local bindings.
     (test 5 dynamic-require ''uses-module-out-of-thin-air 'also-five)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check relative-path encoding and decoding for procedure source locations
+
+(let ([m (compile `(module m racket/base
+                     (provide f)
+                     (define f ,(datum->syntax #f
+                                               `(lambda (thunk) (list (thunk)))
+                                               (list (build-path (current-directory) "the-file.rkt")
+                                                     2
+                                                     3
+                                                     4
+                                                     5)))))])
+  (define o (open-output-bytes))
+  (parameterize ([current-write-relative-directory (current-directory)])
+    (write m o))
+  (define (get)
+    (parameterize ([read-accept-compiled #t])
+      (read (open-input-bytes (get-output-bytes o)))))
+  (define (check-name m p)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval m)
+      (define f (dynamic-require ''m 'f))
+      (define e (with-handlers ([exn:fail? values])
+                  (f (lambda () (car 0)))))
+      (define ctx (continuation-mark-set->context (exn-continuation-marks e)))
+      (test
+       #t
+       `(has ,p)
+       (for/or ([pr (in-list ctx)])
+         (printf ">> ~s\n" (cdr pr))
+         (and (cdr pr)
+              (equal? p (srcloc-source (cdr pr))))))))
+  (let ([m1 (parameterize ([current-load-relative-directory #f])
+              (get))])
+    (check-name m1 (build-path (current-directory) "the-file.rkt"))
+    (void))
+  (let ([m1 (parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
+              (get))])
+    (check-name m1 (build-path (find-system-path 'temp-dir) "the-file.rkt"))
+    (void)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

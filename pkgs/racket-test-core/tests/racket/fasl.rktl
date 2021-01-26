@@ -154,15 +154,16 @@
 (let* ([file-p (build-path "data.rktd")]
        [dir-p (build-path "nested")]
        [rel-p (build-path dir-p file-p)]
-       [p (build-path (current-directory) rel-p)])
+       [p (build-path (current-directory) rel-p)]
+       [unnested-p (build-path (current-directory) file-p)])
   (define-values (bstr srcloc-bstr)
     (parameterize ([current-write-relative-directory (current-directory)])
       (values
        (s-exp->fasl p)
        (s-exp->fasl (srcloc p 10 20 30 40)))))
   (parameterize ([current-load-relative-directory #f])
-    (test rel-p fasl->s-exp bstr)
-    (test (srcloc rel-p 10 20 30 40) fasl->s-exp srcloc-bstr))
+    (test p fasl->s-exp bstr)
+    (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr))
   (parameterize ([current-load-relative-directory (current-directory)])
     (test p fasl->s-exp bstr)
     (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr))
@@ -179,10 +180,10 @@
          (s-exp->fasl alt-p)
          (s-exp->fasl (srcloc alt-p 10 20 30 40)))))
     (parameterize ([current-load-relative-directory #f])
-      (test file-p fasl->s-exp bstr)
-      (test (srcloc file-p 10 20 30 40) fasl->s-exp srcloc-bstr)
-      (test (build-path 'up alt-rel-p) fasl->s-exp bstr2)
-      (test (srcloc (build-path 'up alt-rel-p) 10 20 30 40) fasl->s-exp srcloc-bstr2))
+      (test unnested-p fasl->s-exp bstr)
+      (test (srcloc unnested-p 10 20 30 40) fasl->s-exp srcloc-bstr)
+      (test (build-path (current-directory) 'up alt-rel-p) fasl->s-exp bstr2)
+      (test (srcloc (build-path (current-directory) 'up alt-rel-p) 10 20 30 40) fasl->s-exp srcloc-bstr2))
     (parameterize ([current-load-relative-directory (build-path (current-directory) dir-p)])
       (test p fasl->s-exp bstr)
       (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr)
@@ -203,7 +204,7 @@
      (fasl->s-exp (s-exp->fasl root))))
 
   (test
-   (build-path 'same)
+   (build-path (current-directory) 'same)
    'this-dir-path
    (parameterize ([current-write-relative-directory root]
                   [current-load-relative-directory #f])
