@@ -6069,11 +6069,7 @@
            (raise-argument-error 'make-custodian-box "custodian?" c_0))
          (let ((b_0 (custodian-box1.1 v_0 (custodian-get-shutdown-sema c_0))))
            (begin
-             (if (let ((temp76_0
-                        (|#%name|
-                         temp76
-                         (lambda (b_1)
-                           (begin (set-custodian-box-v! b_1 #f))))))
+             (if (let ((temp76_0 (lambda (b_1) (set-custodian-box-v! b_1 #f))))
                    (do-custodian-register.1 #f #t #f #t c_0 b_0 temp76_0))
                (void)
                (begin-unsafe
@@ -12414,8 +12410,7 @@
                     (if (all-threads-poll-done?)
                       (if (not (null? callbacks_0))
                         (begin
-                          (let ((temp4_0
-                                 (|#%name| temp4 (lambda () (begin (void))))))
+                          (let ((temp4_0 (lambda () (void))))
                             (do-make-thread.1 #t #f #f #f 'callbacks temp4_0))
                           (poll-and-select-thread! TICKS callbacks_0))
                         (if (if (not poll-now?_0) (check-external-events) #f)
@@ -12800,72 +12795,69 @@
                                  break-enabled-key
                                  (make-thread-cell #f)
                                  (let ((temp5_0
-                                        (|#%name|
-                                         temp5
-                                         (lambda ()
-                                           (begin
-                                             (begin
-                                               (1/semaphore-wait ready-sema_0)
-                                               (let ((with-handlers-predicate7_0
-                                                      (|#%name|
-                                                       with-handlers-predicate7
-                                                       (lambda (x_0)
-                                                         (begin #t)))))
-                                                 (let ((with-handlers-handler8_0
-                                                        (|#%name|
-                                                         with-handlers-handler8
-                                                         (lambda (x_0)
-                                                           (begin
-                                                             (begin
-                                                               (set! result-kind_0
-                                                                 'exn)
-                                                               (set! result_0
-                                                                 x_0)))))))
-                                                   (let ((bpz_0
-                                                          (continuation-mark-set-first
-                                                           #f
-                                                           break-enabled-key)))
-                                                     (call-handled-body
+                                        (lambda ()
+                                          (begin
+                                            (1/semaphore-wait ready-sema_0)
+                                            (let ((with-handlers-predicate7_0
+                                                   (|#%name|
+                                                    with-handlers-predicate7
+                                                    (lambda (x_0)
+                                                      (begin #t)))))
+                                              (let ((with-handlers-handler8_0
+                                                     (|#%name|
+                                                      with-handlers-handler8
+                                                      (lambda (x_0)
+                                                        (begin
+                                                          (begin
+                                                            (set! result-kind_0
+                                                              'exn)
+                                                            (set! result_0
+                                                              x_0)))))))
+                                                (let ((bpz_0
+                                                       (continuation-mark-set-first
+                                                        #f
+                                                        break-enabled-key)))
+                                                  (call-handled-body
+                                                   bpz_0
+                                                   (lambda (e_0)
+                                                     (select-handler/no-breaks
+                                                      e_0
                                                       bpz_0
-                                                      (lambda (e_0)
-                                                        (select-handler/no-breaks
-                                                         e_0
-                                                         bpz_0
-                                                         (list
-                                                          (cons
-                                                           with-handlers-predicate7_0
-                                                           with-handlers-handler8_0))))
-                                                      (lambda ()
-                                                        (with-continuation-mark*
-                                                         authentic
-                                                         break-enabled-key
-                                                         init-break-cell_0
-                                                         (begin
-                                                           (set! result_0
-                                                             (call-with-continuation-barrier
+                                                      (list
+                                                       (cons
+                                                        with-handlers-predicate7_0
+                                                        with-handlers-handler8_0))))
+                                                   (lambda ()
+                                                     (with-continuation-mark*
+                                                      authentic
+                                                      break-enabled-key
+                                                      init-break-cell_0
+                                                      (begin
+                                                        (set! result_0
+                                                          (call-with-continuation-barrier
+                                                           (lambda ()
+                                                             (call-with-values
                                                               (lambda ()
-                                                                (call-with-values
-                                                                 (lambda ()
-                                                                   (call-with-continuation-prompt
-                                                                    thunk2_0
+                                                                (call-with-continuation-prompt
+                                                                 thunk2_0
+                                                                 (default-continuation-prompt-tag)
+                                                                 (lambda (thunk_0)
+                                                                   (abort-current-continuation
                                                                     (default-continuation-prompt-tag)
-                                                                    (lambda (thunk_0)
-                                                                      (abort-current-continuation
-                                                                       (default-continuation-prompt-tag)
-                                                                       thunk_0))))
-                                                                 list))))
-                                                           (begin
-                                                             (start-atomic)
-                                                             (begin0
-                                                               (begin
-                                                                 (set! result-kind_0
-                                                                   'value)
-                                                                 (thread-dead!
-                                                                  (check-not-unsafe-undefined
-                                                                   t_0
-                                                                   't_79)))
-                                                               (end-atomic)))
-                                                           (engine-block))))))))))))))
+                                                                    thunk_0))))
+                                                              list))))
+                                                        (begin
+                                                          (start-atomic)
+                                                          (begin0
+                                                            (begin
+                                                              (set! result-kind_0
+                                                                'value)
+                                                              (thread-dead!
+                                                               (check-not-unsafe-undefined
+                                                                t_0
+                                                                't_79)))
+                                                            (end-atomic)))
+                                                        (engine-block))))))))))))
                                    (do-make-thread.1
                                     #f
                                     cust_0

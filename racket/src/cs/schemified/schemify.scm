@@ -26654,16 +26654,13 @@
                                                                         target_0
                                                                         'cify))))
                                                                 (let ((temp105_0
-                                                                       (|#%name|
-                                                                        temp105
-                                                                        (lambda (v_3
-                                                                                 knowns_2)
-                                                                          (begin
-                                                                            (schemify/knowns_0
-                                                                             knowns_2
-                                                                             inline-fuel_0
-                                                                             'fresh
-                                                                             v_3))))))
+                                                                       (lambda (v_3
+                                                                                knowns_2)
+                                                                         (schemify/knowns_0
+                                                                          knowns_2
+                                                                          inline-fuel_0
+                                                                          'fresh
+                                                                          v_3))))
                                                                   (struct-convert-local.1
                                                                    #f
                                                                    target_0
@@ -27893,16 +27890,13 @@
                                                                   rhss_0
                                                                   bodys_0)
                                                                  (let ((temp129_0
-                                                                        (|#%name|
-                                                                         temp129
-                                                                         (lambda (v_3
-                                                                                  knowns_2)
-                                                                           (begin
-                                                                             (schemify/knowns_0
-                                                                              knowns_2
-                                                                              inline-fuel_0
-                                                                              'fresh
-                                                                              v_3))))))
+                                                                        (lambda (v_3
+                                                                                 knowns_2)
+                                                                          (schemify/knowns_0
+                                                                           knowns_2
+                                                                           inline-fuel_0
+                                                                           'fresh
+                                                                           v_3))))
                                                                    (let ((c1_0
                                                                           (struct-convert-local.1
                                                                            #t
