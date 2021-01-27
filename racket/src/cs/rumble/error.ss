@@ -701,9 +701,10 @@
             (and (exn? v)
                  (not (exn:fail:user? v))))
     (let* ([n (|#%app| error-print-context-length)]
-           [locs (if (exn:srclocs? v)
+           [locs (if (and (exn:srclocs? v)
+                          (not (zero? n)))
                      ((exn:srclocs-accessor* v) v)
-                     null)]
+                     '())]
            [l (if (zero? n)
                   '()
                   (traces->context

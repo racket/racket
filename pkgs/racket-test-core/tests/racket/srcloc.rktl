@@ -336,6 +336,11 @@
   (test #t regexp-match? #rx"listof srcloc[?]" (go (a "msg" (current-continuation-marks)
                                                       'oops)
                                                    #:catch? #t))
+  (parameterize ([error-print-context-length 0])
+    (test #f regexp-match? #rx"here" (go (a "msg" (current-continuation-marks)
+                                            (list (srcloc "here" 1 2 3 4)
+                                                  (srcloc "there" 10 20 30 40))))))
+
   (void))
 
 (report-errs)
