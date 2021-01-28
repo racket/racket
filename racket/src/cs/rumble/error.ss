@@ -734,6 +734,8 @@
                    [prev #f]
                    [repeats 0]
                    [n n])
+          (when (and (pair? l) (zero? n))
+            (eprintf "\n   ..."))
           (unless (or (null? l) (zero? n))
             (let* ([p (car l)]
                    [s (cdr p)])
