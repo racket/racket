@@ -563,9 +563,9 @@
 
 (test #f regexp-match? #rx"context[.][.][.]"
       (get-repctx-error-message 0))
-(test #t regexp-match? #rx"param[.]rktl:[^\n]*repctx[^\n]*\n   [.][.][.]\n"
+(test #t regexp-match? #rx"param[.]rktl:[^\n]*repctx[^\n]*\n   [.][.][.]\n$"
       (get-repctx-error-message 1))
-(test #t regexp-match? #rx"repeats[^\n]+[0-9]+[^\n]+times[^\n]*\n   [.][.][.]\n"
+(test #t regexp-match? #rx"repeats[^\n]+[0-9]+[^\n]+times[^\n]*\n   [.][.][.]\n$"
       (get-repctx-error-message 2))
 (test #f regexp-match? #rx"[.][.][.]\n"
       (get-repctx-error-message 16))
