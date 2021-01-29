@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt"
-          (for-label ffi/unsafe/os-thread))
+          (for-label ffi/unsafe/os-thread
+                     ffi/unsafe/os-async-channel))
 
 @title{Operating System Threads}
 
@@ -61,3 +62,61 @@ by @racket[make-os-semaphore]. Waiting blocks the current thread; if
 the current thread is a Racket thread, then waiting also blocks all
 Racket threads.}
 
+@; ----------------------------------------
+
+@section{Operating System Asynchronous Channels}
+
+@defmodule[ffi/unsafe/os-async-channel]{The
+@racketmodname[ffi/unsafe/os-async-channel] library provides an
+asynchronous channels that work with operating-system threads, where
+normal racket channels or place channels are not allowed. These
+channels are typically used in combination with
+@racketmodname[ffi/unsafe/os-thread].}
+
+An asynchronous operating-system channel is a @tech[#:doc
+reference.scrbl]{synchronizable event}, so can it can be used with
+@racket[sync] to receive a value in a Racket thread. Other threads
+must use @racket[os-async-channel-try-get] or
+@racket[os-async-channel-get].
+
+When a thread is blocked on an otherwise inaccessible asynchronous
+channel that was produced by @racket[make-os-async-channel], the
+thread is @emph{not} available for garbage collection. That's
+different from a thread is blocked on a regular Racket channel or a
+place channel.
+
+@history[#:added "8.0.0.4"]
+
+@defproc[(make-os-async-channel) os-async-channel?]{
+
+Creates a new, empty asynchronous channel for use with
+operating-system threads.}
+
+
+@defproc[(os-async-channel? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is an asynchronous channel produced
+by @racket[make-os-async-channel], @racket[#f] otherwise.}
+
+@defproc[(os-async-channel-put [ch os-async-channel?] [v any/c]) void?]{
+
+Enqueues @racket[v] in the asynchronous channel @racket[ch]. This
+function can be called from a Racket thread or any operating-system
+thread.}
+
+@defproc[(os-async-channel-try-get [ch os-async-channel?] [default-v any/c #f]) any/c]{
+
+Dequeues a value from the the asynchronous channel @racket[ch] and
+returns it, if a value is available. If no value is immediately
+available in the channel, @racket[default-v] is returned. This
+function can be called from a Racket thread or any operating-system
+thread.}
+
+@defproc[(os-async-channel-get [ch os-async-channel?]) any/c]{
+
+Dequeues a value from the the asynchronous channel @racket[ch] and
+returns it, blocking until a value is available. This function can be
+called from any non-Racket operating-system thread. This function
+should @emph{not} be called from a Racket thread, since it blocks in a
+way that will block all Racket threads within a place; in a Racket
+thread, use @racket[sync], instead. }

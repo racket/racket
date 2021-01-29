@@ -57,11 +57,16 @@
 
 ;; inlined in Chez Scheme embedding:
 (define (start-atomic)
+  ;; Althogh it's adjusting atomicity for the thread scheduler,
+  ;; this function is documented as working in any Scheme thread.
+  ;; The current implementation relies on parameters like
+  ;; `future-barrier` and `current-atomic` being virtual registers
   (future-barrier)
   (current-atomic (fx+ (current-atomic) 1)))
 
 ;; inlined in Chez Scheme embedding:
 (define (end-atomic)
+  ;; See `start-atomic` note on calls from any Scheme thread
   (define n (fx- (current-atomic) 1))
   (cond
     [(fx= n 0)

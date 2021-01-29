@@ -45,7 +45,9 @@
   ;; Special handling of `current-atomic` to use the last virtual register, and
   ;; similarr for other. We rely on the fact that the register's default value is 0
   ;; or the rumble layer installs a suitable default. Also, force inline a few
-  ;; functions and handle other special cases.
+  ;; functions and handle other special cases. Note that the implementation of
+  ;; `start-atomic` and `end-atomic` rely on some specific parameters being thread
+  ;; registers so that the functions can be safely called from any Scheme thread.
   (define-syntax (define stx)
     (let ([define-as-virtual-register
             (lambda (stx n)

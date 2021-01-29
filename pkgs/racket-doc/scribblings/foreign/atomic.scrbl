@@ -59,6 +59,11 @@ conversion handler with @racket[call-as-nonatomic]. The latter is safe
 for a particular atomic region, however, only if the region can be
 safely interrupted by a non-atomic exception construction.
 
+Unlike @racket[call-as-atomic], @racket[start-atomic] and
+@racket[end-atomic] can be called from any OS thread as supported by
+@racketmodname[ffi/unsafe/os-thread], although the calls have no
+effect in that case.
+
 See also the caveat that @elemref["atomic-unsafe"]{atomic mode is unsafe}.}
 
 
