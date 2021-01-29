@@ -97,6 +97,18 @@
     => (lambda (ctc)
          (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
                               irritants))]
+   [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
+         (equal? str "index ~s is out of range for list ~s"))
+    (values (string-append "index too large for list\n"
+                           "  index: ~s\n"
+                           "  in: ~s")
+            irritants)]
+   [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
+         (equal? str "index ~s reaches a non-pair in ~s"))
+    (values (string-append "index reaches a non-pair\n"
+                           "  index: ~s\n"
+                           "  in: ~s")
+            irritants)]
    [(equal? str  "~s is not a valid index for ~s")
     (cond
      [(exact-nonnegative-integer? (car irritants))
