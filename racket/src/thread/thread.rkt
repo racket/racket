@@ -294,11 +294,7 @@
 
 (define/who (kill-thread t)
   (check who thread? t)
-  (unless (for/and ([cr (in-list (thread-custodian-references t))])
-            (custodian-manages-reference? (current-custodian) cr))
-    (raise-arguments-error who
-                           "the current custodian does not solely manage the specified thread"
-                           "thread" t))
+  (check-current-custodian-manages who t)
   (cond
     [(thread-suspend-to-kill? t)
      ((atomically
@@ -332,6 +328,14 @@
        (do-thread-suspend t)]
       [else
        (do-kill-thread t)])))
+
+(define (check-current-custodian-manages who t)
+  (define c (current-custodian))
+  (unless (for/and ([cr (in-list (thread-custodian-references t))])
+            (custodian-manages-reference? c cr))
+    (raise-arguments-error who
+                           "the current custodian does not solely manage the specified thread"
+                           "thread" t)))
 
 (define (thread-representative-custodian t)
   (atomically
@@ -483,6 +487,7 @@
 
 (define/who (thread-suspend t)
   (check who thread? t)
+  (check-current-custodian-manages who t)
   ((atomically
     (do-thread-suspend t))))
 
@@ -520,54 +525,68 @@
   (check who (lambda (p) (or (not p) (thread? p) (custodian? p)))
          #:contract "(or/c #f thread? custodian?)"
          benefactor)
-  (when (and (custodian? benefactor)
-             (custodian-shut-down? benefactor))
-    (raise-custodian-is-shut-down who benefactor))
-  (atomically
-   (do-thread-resume t benefactor)))
+  (unless (atomically
+           (do-thread-resume t benefactor))
+    (raise-custodian-is-shut-down who benefactor)))
 
 ;; in atomic mode
+;; returns #f if `benefactor` is a shut-down custodian
 (define (do-thread-resume t benefactor)
   (assert-atomic-mode)
-  (unless (thread-dead? t)
-    (cond
-      [(thread? benefactor)
-       (for ([cr (in-list (thread-custodian-references benefactor))])
-         (add-custodian-to-thread! t (custodian-reference->custodian cr)))
-       (add-transitive-resume-to-thread! benefactor t)]
-      [(custodian? benefactor)
-       (add-custodian-to-thread! t benefactor)])
-    (when (and (thread-suspended? t)
-               (pair? (thread-custodian-references t)))
-      (define resumed-evt (thread-resumed-evt t))
-      (when resumed-evt
-        (set-suspend-resume-evt-thread! resumed-evt t)
-        (semaphore-post-all (suspend-resume-evt-sema resumed-evt))
-        (set-thread-resumed-evt! t #f))
-      (set-thread-suspended?! t #f)
-      (run-suspend/resume-callbacks t cdr)
-      (thread-reschedule! t)
-      (do-resume-transitive-resumes t #f))))
+  (cond
+    [(thread-dead? t)
+     ;; not resuming thread, but still potentially report whether the
+     ;; given custodian is shutdown
+     (not (and (custodian? benefactor)
+               (custodian-shut-down? benefactor)))]
+    [else
+     (define add-ok?
+       (cond
+         [(thread? benefactor)
+          (for ([cr (in-list (thread-custodian-references benefactor))])
+            (add-custodian-to-thread! t (custodian-reference->custodian cr)))
+          (add-transitive-resume-to-thread! benefactor t)
+          #t]
+         [(custodian? benefactor)
+          (add-custodian-to-thread! t benefactor)]
+         [else #t]))
+     (when (and (thread-suspended? t)
+                (pair? (thread-custodian-references t)))
+       (define resumed-evt (thread-resumed-evt t))
+       (when resumed-evt
+         (set-suspend-resume-evt-thread! resumed-evt t)
+         (semaphore-post-all (suspend-resume-evt-sema resumed-evt))
+         (set-thread-resumed-evt! t #f))
+       (set-thread-suspended?! t #f)
+       (run-suspend/resume-callbacks t cdr)
+       (thread-reschedule! t)
+       (do-resume-transitive-resumes t #f))
+     add-ok?]))
 
 ;; in atomic mode
+;; returns #f if `benefactor` is a shut-down custodian
 (define (add-custodian-to-thread! t c)
   (assert-atomic-mode)
   (let loop ([crs (thread-custodian-references t)]
              [accum null])
     (cond
       [(null? crs)
-       (define new-crs
-         (cons (unsafe-custodian-register c t remove-thread-custodian #f #t)
-               accum))
-       (set-thread-custodian-references! t new-crs)
-       (do-resume-transitive-resumes t c)]
+       (define cr (unsafe-custodian-register c t remove-thread-custodian #f #t))
+       (cond
+         [(not cr)
+          ;; add failed due to shut-down custodian
+          #f]
+         [else
+          (set-thread-custodian-references! t (cons cr accum))
+          (do-resume-transitive-resumes t c)
+          #t])]
       [else
        (define old-c (custodian-reference->custodian (car crs)))
        (cond
          [(or (eq? c old-c)
               (custodian-subordinate? c old-c))
-          ;; no need to add new
-          (void)]
+          ;; no need to add new (and apparently not shut down)
+          #t]
          [(custodian-subordinate? old-c c)
           ;; new one replaces old one; we can simplify forget the
           ;; old reference

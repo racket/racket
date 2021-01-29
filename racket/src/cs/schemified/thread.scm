@@ -6935,38 +6935,7 @@
          (if (1/thread? t_0)
            (void)
            (raise-argument-error 'kill-thread "thread?" t_0))
-         (if (let ((lst_0 (thread-custodian-references t_0)))
-               (begin
-                 (letrec*
-                  ((for-loop_0
-                    (|#%name|
-                     for-loop
-                     (lambda (result_0 lst_1)
-                       (begin
-                         (if (pair? lst_1)
-                           (let ((cr_0 (unsafe-car lst_1)))
-                             (let ((rest_0 (unsafe-cdr lst_1)))
-                               (let ((result_1
-                                      (let ((result_1
-                                             (custodian-manages-reference?
-                                              (1/current-custodian)
-                                              cr_0)))
-                                        (values result_1))))
-                                 (if (if (not
-                                          (let ((x_0 (list cr_0)))
-                                            (not result_1)))
-                                       #t
-                                       #f)
-                                   (for-loop_0 result_1 rest_0)
-                                   result_1))))
-                           result_0))))))
-                  (for-loop_0 #t lst_0))))
-           (void)
-           (raise-arguments-error
-            'kill-thread
-            "the current custodian does not solely manage the specified thread"
-            "thread"
-            t_0))
+         (check-current-custodian-manages 'kill-thread t_0)
          (if (thread-suspend-to-kill? t_0)
            (|#%app|
             (begin
@@ -7019,6 +6988,41 @@
             (do-thread-suspend t_0)
             (do-kill-thread t_0))
           (void))))))
+(define check-current-custodian-manages
+  (lambda (who_0 t_0)
+    (let ((c_0 (1/current-custodian)))
+      (if (let ((lst_0 (thread-custodian-references t_0)))
+            (begin
+              (letrec*
+               ((for-loop_0
+                 (|#%name|
+                  for-loop
+                  (lambda (result_0 lst_1)
+                    (begin
+                      (if (pair? lst_1)
+                        (let ((cr_0 (unsafe-car lst_1)))
+                          (let ((rest_0 (unsafe-cdr lst_1)))
+                            (let ((result_1
+                                   (let ((result_1
+                                          (custodian-manages-reference?
+                                           c_0
+                                           cr_0)))
+                                     (values result_1))))
+                              (if (if (not
+                                       (let ((x_0 (list cr_0)))
+                                         (not result_1)))
+                                    #t
+                                    #f)
+                                (for-loop_0 result_1 rest_0)
+                                result_1))))
+                        result_0))))))
+               (for-loop_0 #t lst_0))))
+        (void)
+        (raise-arguments-error
+         who_0
+         "the current custodian does not solely manage the specified thread"
+         "thread"
+         t_0)))))
 (define thread-representative-custodian
   (lambda (t_0)
     (begin
@@ -7258,6 +7262,7 @@
          (if (1/thread? t_0)
            (void)
            (raise-argument-error 'thread-suspend "thread?" t_0))
+         (check-current-custodian-manages 'thread-suspend t_0)
          (|#%app|
           (begin
             (start-atomic)
@@ -7308,20 +7313,18 @@
                    'thread-resume
                    "(or/c #f thread? custodian?)"
                    benefactor14_0))
-                (if (if (1/custodian? benefactor14_0)
-                      (1/custodian-shut-down? benefactor14_0)
-                      #f)
+                (if (begin
+                      (start-atomic)
+                      (begin0
+                        (do-thread-resume t15_0 benefactor14_0)
+                        (end-atomic)))
+                  (void)
                   (begin-unsafe
                    (raise-arguments-error
                     'thread-resume
                     "the custodian has been shut down"
                     "custodian"
-                    benefactor14_0))
-                  (void))
-                (start-atomic)
-                (begin0
-                  (do-thread-resume t15_0 benefactor14_0)
-                  (end-atomic))))))))
+                    benefactor14_0)))))))))
     (|#%name|
      thread-resume
      (case-lambda
@@ -7330,49 +7333,56 @@
 (define do-thread-resume
   (lambda (t_0 benefactor_0)
     (if (1/thread-dead? t_0)
-      (void)
-      (begin
-        (if (1/thread? benefactor_0)
-          (begin
-            (let ((lst_0 (thread-custodian-references benefactor_0)))
+      (not
+       (if (1/custodian? benefactor_0)
+         (1/custodian-shut-down? benefactor_0)
+         #f))
+      (let ((add-ok?_0
+             (if (1/thread? benefactor_0)
+               (begin
+                 (let ((lst_0 (thread-custodian-references benefactor_0)))
+                   (begin
+                     (letrec*
+                      ((for-loop_0
+                        (|#%name|
+                         for-loop
+                         (lambda (lst_1)
+                           (begin
+                             (if (pair? lst_1)
+                               (let ((cr_0 (unsafe-car lst_1)))
+                                 (let ((rest_0 (unsafe-cdr lst_1)))
+                                   (begin
+                                     (add-custodian-to-thread!
+                                      t_0
+                                      (custodian-reference->custodian cr_0))
+                                     (for-loop_0 rest_0))))
+                               (values)))))))
+                      (for-loop_0 lst_0))))
+                 (void)
+                 (add-transitive-resume-to-thread! benefactor_0 t_0)
+                 #t)
+               (if (1/custodian? benefactor_0)
+                 (add-custodian-to-thread! t_0 benefactor_0)
+                 #t))))
+        (begin
+          (if (if (thread-suspended? t_0)
+                (pair? (thread-custodian-references t_0))
+                #f)
+            (let ((resumed-evt_0 (thread-resumed-evt t_0)))
               (begin
-                (letrec*
-                 ((for-loop_0
-                   (|#%name|
-                    for-loop
-                    (lambda (lst_1)
-                      (begin
-                        (if (pair? lst_1)
-                          (let ((cr_0 (unsafe-car lst_1)))
-                            (let ((rest_0 (unsafe-cdr lst_1)))
-                              (begin
-                                (add-custodian-to-thread!
-                                 t_0
-                                 (custodian-reference->custodian cr_0))
-                                (for-loop_0 rest_0))))
-                          (values)))))))
-                 (for-loop_0 lst_0))))
-            (void)
-            (add-transitive-resume-to-thread! benefactor_0 t_0))
-          (if (1/custodian? benefactor_0)
-            (add-custodian-to-thread! t_0 benefactor_0)
-            (void)))
-        (if (if (thread-suspended? t_0)
-              (pair? (thread-custodian-references t_0))
-              #f)
-          (let ((resumed-evt_0 (thread-resumed-evt t_0)))
-            (begin
-              (if resumed-evt_0
-                (begin
-                  (set-suspend-resume-evt-thread! resumed-evt_0 t_0)
-                  (semaphore-post-all (suspend-resume-evt-sema resumed-evt_0))
-                  (set-thread-resumed-evt! t_0 #f))
-                (void))
-              (set-thread-suspended?! t_0 #f)
-              (run-suspend/resume-callbacks t_0 cdr)
-              (thread-reschedule! t_0)
-              (do-resume-transitive-resumes t_0 #f)))
-          (void))))))
+                (if resumed-evt_0
+                  (begin
+                    (set-suspend-resume-evt-thread! resumed-evt_0 t_0)
+                    (semaphore-post-all
+                     (suspend-resume-evt-sema resumed-evt_0))
+                    (set-thread-resumed-evt! t_0 #f))
+                  (void))
+                (set-thread-suspended?! t_0 #f)
+                (run-suspend/resume-callbacks t_0 cdr)
+                (thread-reschedule! t_0)
+                (do-resume-transitive-resumes t_0 #f)))
+            (void))
+          add-ok?_0)))))
 (define add-custodian-to-thread!
   (lambda (t_0 c_0)
     (letrec*
@@ -7382,24 +7392,25 @@
         (lambda (crs_0 accum_0)
           (begin
             (if (null? crs_0)
-              (let ((new-crs_0
-                     (cons
-                      (1/unsafe-custodian-register
-                       c_0
-                       t_0
-                       remove-thread-custodian
-                       #f
-                       #t)
-                      accum_0)))
-                (begin
-                  (set-thread-custodian-references! t_0 new-crs_0)
-                  (do-resume-transitive-resumes t_0 c_0)))
+              (let ((cr_0
+                     (1/unsafe-custodian-register
+                      c_0
+                      t_0
+                      remove-thread-custodian
+                      #f
+                      #t)))
+                (if (not cr_0)
+                  #f
+                  (begin
+                    (set-thread-custodian-references! t_0 (cons cr_0 accum_0))
+                    (do-resume-transitive-resumes t_0 c_0)
+                    #t)))
               (let ((old-c_0 (custodian-reference->custodian (car crs_0))))
                 (if (let ((or-part_0 (eq? c_0 old-c_0)))
                       (if or-part_0
                         or-part_0
                         (custodian-subordinate? c_0 old-c_0)))
-                  (void)
+                  #t
                   (if (custodian-subordinate? old-c_0 c_0)
                     (loop_0 (cdr crs_0) accum_0)
                     (let ((app_0 (cdr crs_0)))
