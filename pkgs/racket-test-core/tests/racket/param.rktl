@@ -542,4 +542,34 @@
 
 ;; ----------------------------------------
 
+; Test error-print-context-length
+(define (repctx n)
+  (if (zero? n)
+      (error 'repctx)
+      (+ 1 (repctx (- n 1)))))
+(define (repctx/extra-context x)
+  (* 2 (repctx x)))
+
+(define (get-repctx-error-message context-length)
+  (define o (open-output-string))
+  (parameterize ([error-print-context-length context-length]
+                 [current-error-port o])
+    (with-handlers ([exn:fail? (λ (e) ((error-display-handler) (exn-message e) e))])
+      ;; 18 repeats the contexts at least 3 times in BC
+      (repctx/extra-context 18)))
+  (begin0
+    (get-output-string o)
+    (close-output-port o)))
+
+(test #f regexp-match? #rx"context[.][.][.]"
+      (get-repctx-error-message 0))
+(test #t regexp-match? #rx"param[.]rktl:[^\n]*repctx[^\n]*\n   [.][.][.]\n$"
+      (get-repctx-error-message 1))
+(test #t regexp-match? #rx"repeats[^\n]+[0-9]+[^\n]+times[^\n]*\n   [.][.][.]\n$"
+      (get-repctx-error-message 2))
+(test #f regexp-match? #rx"[.][.][.]\n"
+      (get-repctx-error-message 16))
+
+;; ----------------------------------------
+
 (report-errs)
