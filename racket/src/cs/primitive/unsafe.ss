@@ -121,6 +121,7 @@
   [unsafe-make-place-local (known-procedure/pure 2)]
   [unsafe-make-os-semaphore (known-procedure 1)]
   [unsafe-make-security-guard-at-root (known-procedure 15)]
+  [unsafe-make-signal-received (known-procedure/succeeds 1)]
   [unsafe-make-srcloc (known-procedure/pure 32)]
   [unsafe-mcar (known-procedure/succeeds 2)]
   [unsafe-mcdr (known-procedure/succeeds 2)]

@@ -404,6 +404,7 @@ static Scheme_Object *unsafe_poll_ctx_fd_wakeup(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_eventmask_wakeup(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_time_wakeup(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_signal_received(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_make_signal_received(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_set_sleep_in_thread(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_make_place_local(int argc, Scheme_Object **argv);
@@ -676,6 +677,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-poll-ctx-eventmask-wakeup", unsafe_poll_ctx_eventmask_wakeup, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-poll-ctx-milliseconds-wakeup", unsafe_poll_ctx_time_wakeup, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-signal-received", unsafe_signal_received, 0, 0, env);
+  ADD_PRIM_W_ARITY("unsafe-make-signal-received", unsafe_make_signal_received, 0, 0, env);
   ADD_PRIM_W_ARITY("unsafe-set-sleep-in-thread!", unsafe_set_sleep_in_thread, 2, 2, env);
 
   ADD_PRIM_W_ARITY("unsafe-os-thread-enabled?", unsafe_os_thread_enabled_p, 0, 0, env);
@@ -5546,6 +5548,24 @@ Scheme_Object *unsafe_signal_received(int argc, Scheme_Object **argv)
 {
   scheme_signal_received();
   return scheme_void;
+}
+
+static Scheme_Object *do_signal_received(int argc, Scheme_Object **argv, Scheme_Object *self)
+{
+  void *h = SCHEME_PRIM_CLOSURE_ELS(self)[0];
+  scheme_signal_received_at(h);
+  return scheme_void;
+}
+
+Scheme_Object *unsafe_make_signal_received(int argc, Scheme_Object **argv)
+{
+  void *h;
+  Scheme_Object *a[1];
+
+  h = scheme_get_signal_handle();
+  a[0] = (Scheme_Object *)h;
+  return scheme_make_prim_closure_w_arity(do_signal_received, 1, a, 
+					  "unsafe-signal-received", 0, 0);
 }
 
 static void sleep_via_thread(float seconds, void *fds)
