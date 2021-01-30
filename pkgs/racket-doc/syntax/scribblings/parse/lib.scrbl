@@ -277,7 +277,7 @@ Note that the literal-set uses the names @racket[#%plain-lambda] and
 ]
 
 @defstxclass[splicing-formals-no-rest #:splicing]{
- Like formals but without dotted-tail identifier.
+ Like @racket[formals] but without dotted-tail identifier.
  @defattribute[params syntax?]{
   The list of parameters.
  }
