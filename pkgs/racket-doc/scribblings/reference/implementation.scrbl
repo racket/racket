@@ -26,7 +26,7 @@ the implementation. Racket currently has two main implementations:
        contains platform-independent bytecode that is further compiled
        to machine code ``just in time'' as the code is loaded.
 
-       Racket BC has two subvariants: @deftech{3m} and @deftech{CGC}.
+       Racket BC has two variants: @deftech{3m} and @deftech{CGC}.
        The difference is the @tech{garbage collection} implementation,
        where 3m uses a garbage collector that moves objects in memory
        (an effect that is visible to foreign libraries, for example)
@@ -43,4 +43,4 @@ Most Racket programs run the same in all implementation variants, but some Racke
 features are available only on some implementation variants, and the
 interaction of Racket and foreign functions is significantly different
 across the variants. Use @racket[system-type] to get information about
-the current running implementation variant.
+the current running implementation.
