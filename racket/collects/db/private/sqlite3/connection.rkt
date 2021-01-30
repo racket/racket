@@ -5,8 +5,7 @@
          ffi/unsafe/atomic
          ffi/unsafe/custodian
          ffi/unsafe/os-thread
-         ffi/unsafe/vm
-         ffi/unsafe/schedule
+         ffi/unsafe/os-async-channel
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/prepared.rkt"
@@ -192,12 +191,12 @@
                          (raise e))])
         (define result
           (cond [use-os-thread?
-                 (let ([timeout (inexact->exact (ceiling (* 1000 busy-retry-delay)))])
-                   (A (sqlite3_busy_timeout -db timeout)))
-                 (begin0 (sync-call-in-os-thread
-                          (lambda ()
-                            (get-rows* who stmt end-box fetch-limit pst #f)))
-                   (A (sqlite3_busy_timeout -db 0)))]
+                 (define timeout (inexact->exact (ceiling (* 1000 busy-retry-delay))))
+                 (sync-call-in-os-thread
+                  (lambda (db)
+                    (sqlite3_busy_timeout db timeout)
+                    (begin0 (get-rows* who stmt end-box fetch-limit pst #f)
+                      (sqlite3_busy_timeout db 0))))]
                 [else (get-rows* who stmt end-box fetch-limit pst #t)]))
         (if (procedure? result) (result) result)))
 
@@ -302,36 +301,43 @@
     (define/public (real-disconnect from-custodian?)
       (call-as-atomic
        (lambda ()
-         (let ([db -db])
-           (cond [(not db)
-                  ;; Already disconnected
+         (when -db
+           ;; Save and clear fields
+           (define dont-gc this%)
+           (define db -db)
+           (define stmts (hash-keys stmt-table))
+           (set! -db #f)
+           (hash-clear! stmt-table)
+           ;; Unregister custodian shutdown, unless called from custodian.
+           (unless from-custodian? (unregister-custodian-shutdown this creg))
+           (set! creg #f)
+           ;; Close db connection
+           (cond [os-req-chan
+                  ;; OS thread might be using db, stmts
+                  (define resp-chan (make-os-async-channel))
+                  (define (shutdown _db)
+                    (finish-disconnect db stmts)
+                    (when resp-chan (os-async-channel-put resp-chan 'done))
+                    (void/reference-sink dont-gc))
+                  (log-db-debug "disconnect delayed to OS thread")
+                  (os-async-channel-put os-req-chan (cons shutdown #f))
+                  (when resp-chan
+                    (parameterize ((current-custodian (make-custodian-at-root)))
+                      (thread
+                       (lambda ()
+                         (void (sync resp-chan))
+                         (log-db-debug "finished delayed disconnect")))))
                   (void)]
-                 [os-result-box
-                  ;; OS thread is running; delay until finished
-                  => (lambda (result-box)
-                       (log-db-debug "disconnect delayed by OS thread")
-                       (define dont-gc this%)
-                       (parameterize ((current-custodian (make-custodian-at-root)))
-                         (thread
-                          (lambda ()
-                            (void (sync (box-evt result-box)))
-                            (log-db-debug "continuing delayed disconnect")
-                            (real-disconnect from-custodian?)
-                            (void/reference-sink dont-gc)))))]
                  [else
-                  ;; Normal disconnect
-                  (set! -db #f)
-                  ;; Unregister custodian shutdown, unless called from custodian.
-                  (unless from-custodian? (unregister-custodian-shutdown this creg))
-                  (set! creg #f)
-                  ;; Free all of connection's prepared statements. This will leave
-                  ;; pst objects with dangling foreign objects, so don't try to free
-                  ;; them again---check that -db is not-#f.
-                  (let ([stmts (hash-keys stmt-table)])
-                    (hash-clear! stmt-table)
-                    (for-each sqlite3_finalize stmts))
-                  (HANDLE 'disconnect (sqlite3_close db))
-                  (void)])))))
+                  (finish-disconnect db stmts)
+                  (void/reference-sink dont-gc)])))))
+
+    (define/private (finish-disconnect db stmts) ;; PRE: in atomic mode
+      ;; Free all of connection's prepared statements. This will leave
+      ;; pst objects with dangling foreign objects, so don't try to free
+      ;; them again---check that -db is not-#f.
+      (for-each sqlite3_finalize stmts)
+      (HANDLE 'disconnect (sqlite3_close db)))
 
     (define/public (get-base) this)
 
@@ -499,7 +505,8 @@
     ;; == OS Thread Support
 
     (define use-os-thread? #f)
-    (define os-result-box #f) ;; #f or box -- set if os thread is active
+    (define os-req-chan #f)  ;; #f or OS-Async-Channel
+    (define os-resp-chan #f) ;; #f or OS-Async-Channel
 
     (define/public (use-os-thread use?)
       (when use?
@@ -507,19 +514,30 @@
           (raise (exn:fail:unsupported "use-os-thread: not supported"
                                        (current-continuation-marks)))))
       (call-with-lock 'use-os-thread
-        (lambda () (set! use-os-thread? (and use? #t)))))
+        (lambda ()
+          (set! use-os-thread? (and use? #t))
+          (when use?
+            (call-as-atomic
+             (lambda ()
+               (unless os-req-chan
+                 (define db -db)
+                 (define req-chan (make-os-async-channel))
+                 (define resp-chan (make-os-async-channel))
+                 (call-in-os-thread
+                  (lambda ()
+                    (let loop ()
+                      (define msg (os-async-channel-get req-chan))
+                      (define proc (car msg))
+                      (define loop? (cdr msg))
+                      (os-async-channel-put resp-chan (proc db))
+                      (when loop? (loop)))))
+                 (set! os-req-chan req-chan)
+                 (set! os-resp-chan resp-chan))))))))
 
     (define/private (sync-call-in-os-thread proc)
-      (define result-box (box #f))
-      (set! os-result-box result-box)
-      (call-in-os-thread
-       (lambda ()
-         (set-box! result-box (proc))
-         (set! os-result-box #f)
-         (signal-received)
-         (void/reference-sink this)))
-      (void (sync (box-evt result-box)))
-      (unbox result-box))
+      (A (when os-req-chan
+           (os-async-channel-put os-req-chan (cons proc #t))))
+      (sync os-resp-chan))
     ))
 
 (define shutdown-connection
@@ -637,17 +655,3 @@
         SQLITE_IOERR SQLITE_IOERR_BLOCKED SQLITE_IOERR_LOCK SQLITE_CORRUPT
         SQLITE_NOTFOUND SQLITE_FULL SQLITE_CANTOPEN SQLITE_PROTOCOL SQLITE_EMPTY
         SQLITE_FORMAT SQLITE_NOTADB))
-
-;; adapted from readline/rktrl.rkt
-(struct box-evt (b)
-  #:property prop:evt
-  (unsafe-poller
-   (lambda (self wakeups)
-     (if (unbox (box-evt-b self))
-         (values (list self) #f)
-         (values #f self)))))
-
-(define signal-received
-  (case (system-type 'vm)
-    [(chez-scheme) ((vm-primitive 'unsafe-make-signal-received))]
-    [else void]))
