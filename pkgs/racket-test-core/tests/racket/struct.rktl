@@ -1196,6 +1196,29 @@
   (struct a-b a (d) #:transparent)
   (syntax-test #'(struct-copy a-b (a-b 1 2) [c 10])))
 
+(module test-struct-copy-no-struct-field-info racket/base
+  (provide bar)
+  (require (for-syntax racket/struct-info
+                       racket/base))
+  (define (bar-car x) (car x))
+  (define (bar-cdr x) (cdr x))
+  (define (bar? x) (pair? x))
+
+  (struct foo ())
+
+  (define-syntax bar
+    (make-struct-info
+     (λ () (list #f
+                 #'cons
+                 #'bar?
+                 (list #'bar-cdr #'bar-car)
+                 (list #f #f)
+                 #'foo)))))
+
+(let ()
+  (local-require 'test-struct-copy-no-struct-field-info)
+  (test (cons 3 2) 'struct-copy1 (struct-copy bar (cons 1 2) [car 3])))
+
 (test #t prefab-key? 'apple)
 (test #f prefab-key? '#(apple))
 (test #t prefab-key? '(apple 4))

@@ -11,7 +11,7 @@
   (define num-fields (length accessors))
   (define num-super-fields
     (if (identifier? parent)
-        (length (cadddr (syntax-local-value parent)))
+        (length (cadddr (id->struct-info parent orig-stx)))
         0))
   (define num-own-fields (- num-fields num-super-fields))
   (define own-accessors (take accessors num-own-fields))
@@ -20,6 +20,12 @@
     ;; add1 for hyphen
     (string->symbol (substring (symbol->string (syntax-e accessor))
                                (add1 (string-length struct-name))))))
+
+(define-for-syntax (id->struct-info id stx)
+  (define compile-time-info (syntax-local-value id (lambda () #f)))
+  (unless (struct-info? compile-time-info)
+    (raise-syntax-error #f "identifier is not bound to a structure type" stx id))
+  (extract-struct-info compile-time-info))
 
 (define-match-expander
   struct*
