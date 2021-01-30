@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title{Bignums, Rationals, and Complex Numbers}
+@bc-title[#:tag "Bignums, Rationals, and Complex Numbers"]{Bignums, Rationals, and Complex Numbers}
 
 Racket supports integers of an arbitrary magnitude; when an integer
 cannot be represented as a fixnum (i.e., 30 or 62 bits plus a sign

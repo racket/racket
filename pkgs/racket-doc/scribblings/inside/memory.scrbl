@@ -2,7 +2,7 @@
 @(require "utils.rkt" (for-label ffi/unsafe
                                  ffi/unsafe/collect-callback))
 
-@title[#:tag "im:memoryalloc"]{Memory Allocation}
+@bc-title[#:tag "im:memoryalloc"]{Memory Allocation}
 
 @section-index{memory}
 @section-index{garbage collection}

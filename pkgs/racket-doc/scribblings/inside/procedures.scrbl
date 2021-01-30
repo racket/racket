@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title{Procedures}
+@bc-title[#:tag "Procedure"]{Procedures}
 
 A @defterm{primitive procedure} is a Racket-callable procedure that is
 implemented in C.  Primitive procedures are created in Racket with

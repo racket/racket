@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "security"]{Security Guards}
+@bc-title[#:tag "security"]{Security Guards}
 
 Before a primitive procedure accesses the filesystem or creates a
 network connection, it should first consult the current security guard

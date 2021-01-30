@@ -284,15 +284,15 @@ converting between byte strings and C's @cpp{char*} type.
 A type for UCS-4 format strings that include a nul terminator. As
 usual, the type treats @racket[#f] as @cpp{NULL} and vice versa.
 
-For the @3m[] and @CGC[] variants of Racket, the conversion of a
+For the @CS[] implementation of Racket, the conversion of a Racket string for
+the foreign side is a copy of the Racket representation, where the
+copy is managed by the garbage collector.
+
+For the @BC[] implementation of Racket, the conversion of a
 Racket string for the foreign side shares memory with the Racket
 string representation, since UCS-4 is the native representation format
 for those variants. The foreign pointer corresponds to the
-@cpp{mzchar*} type in Racket's C API.
-
-For the @CS[] variant of Racket, the conversion of a Racket string for
-the foreign side is a copy of the Racket representation, where the
-copy is managed by the garbage collector.}
+@cpp{mzchar*} type in Racket's C API.}
 
 
 @deftogether[(
@@ -313,9 +313,9 @@ Simple @cpp{char*} strings that are nul terminated, corresponding to
 Racket's @tech[#:doc reference.scrbl]{path or string}. As usual, the
 type treats @racket[#f] as @cpp{NULL} and vice versa.
 
-For the @3m[] and @CGC[] variants of Racket, the conversion of a
+For the @BC[] implementation of Racket, the conversion of a
 Racket path for the foreign side shares memory with the Racket path
-representation. Otherwise (for the @CS[] variant or for Racket
+representation. Otherwise (for the @CS[] implementation or for Racket
 strings), conversion for the foreign side creates a copy that is
 managed by the garbage collector.
 
@@ -332,15 +332,15 @@ Simple @cpp{char*} strings as Racket symbols (encoded in UTF-8 and nul
 terminated), intended as read-only for the foreign side. Return values
 using this type are interned as symbols.
 
-For the @3m[] and @CGC[] variants of Racket, the conversion of a
+For the @CS[] implementation of Racket, the conversion of a Racket symbol for
+the foreign side is a copy of the Racket representation, where the
+copy is managed by the garbage collector.
+
+For the @BC[] implementation of Racket, the conversion of a
 Racket symbol for the foreign side shares memory with the Racket
 symbol representation, but points to the middle of the symbol's
 allocated memory---so the string pointer must not be used across a
-garbage collection.
-
-For the @CS[] variant of Racket, the conversion of a Racket symbol for
-the foreign side is a copy of the Racket representation, where the
-copy is managed by the garbage collector.}
+garbage collection.}
 
 
 @subsection{Fixed Auto-Converting String Types}
@@ -446,7 +446,7 @@ The same as @racket[_pointer] as an argument type, but as a result
 type, @racket[_gcpointer] corresponds to a C pointer value that refers
 to memory managed by the garbage collector.
 
-In the @3m[] and @CGC[] variants of Racket, a @racket[_gcpointer] result
+In the @BC[] implementation of Racket, a @racket[_gcpointer] result
 pointer can reference to memory that is not
 managed by the garbage collector, but beware of using an address that
 might eventually become managed by the garbage collector. For example,
@@ -615,7 +615,7 @@ For @tech{callouts} to foreign functions with the generated type:
  @item{If @racket[blocking?] is true, then a foreign @tech{callout}
        deactivates tracking of the calling OS thread---to the degree
        supported by the Racket variant---during the foreign call. The
-       value of @racket[blocking?] affects only the @CS[] variant of
+       value of @racket[blocking?] affects only the @CS[] implementation of
        Racket, where it enable activity
        such as garbage collection in other OS threads while the
        @tech{callout} blocks. If the blocking @tech{callout} can
@@ -705,7 +705,7 @@ For @tech{callbacks} to Racket functions with the generated type:
        @racket[keep] is based on the original function for the
        callback, not the result of @racket[wrapper].}
 
- @item{If @racket[atomic?] is true or when using the @CS[] variant of
+ @item{If @racket[atomic?] is true or when using the @CS[] implementation of
        Racket, then when a Racket procedure is given this type and
        called as a @tech{callback} from foreign code, then the Racket
        process is put into atomic mode while evaluating the Racket
@@ -721,9 +721,9 @@ For @tech{callbacks} to Racket functions with the generated type:
        to avoid C-level stack overflow; otherwise, the process may
        crash or misbehave.
 
-       Callbacks are always atomic in the @CS[] variant of Racket,
+       Callbacks are always atomic in the @CS[] implementation of Racket,
        because Racket threads do not capture C-stack context. Even on
-       the @3m[] or @CGC[] variants of Racket, atomic mode is
+       the @BC[] implementation of Racket, atomic mode is
        typically needed for callbacks, because capturing by copying a
        portion of the C stack is often incompatible with C libraries.}
 
@@ -1198,10 +1198,10 @@ type; a byte string is passed as @racket[_bytes] without any copying.
 Beware that a Racket byte string is not necessarily nul terminated;
 see also @racket[_bytes/nul-terminated].
 
-In the @3m[] and @CGC[] variants of Racket, a C non-NULL result value
+In the @BC[] implementation of Racket, a C non-NULL result value
 is converted to a Racket byte string without copying; the pointer is
 treated as potentially managed by the garbage collector (see
-@racket[_gcpointer] for caveats). In the @CS[] variant of Racket,
+@racket[_gcpointer] for caveats). In the @CS[] implementation of Racket,
 conversion requires copying to represent a C @cpp{char*}
 result as a Racket byte string, and the original pointer is @emph{not}
 treated as managed by the garbage collector. In both cases, the C result must have
@@ -1209,10 +1209,10 @@ a nul terminator to determine the Racket byte string's length.
 
 A @racket[(_bytes o len-expr)] form is a @tech{custom function type}.
 As an argument, a byte string is allocated with the given length; in
-the @3m[] and @CGC[] variants, that byte string includes an extra byte
+the @BC[] implementation, that byte string includes an extra byte
 for the nul terminator, and @racket[(_bytes o len-expr)] as a result
 wraps a C non-NULL @cpp{char*} pointer as a byte string of the given
-length. For the @CS[] variant, the allocated argument does not include
+length. For the @CS[] implementation, the allocated argument does not include
 a nul terminator and a copy is made for a result string.
 
 As usual, @racket[_bytes] treats @racket[#f] as @cpp{NULL} and vice

@@ -2,7 +2,7 @@
 @(require "utils.rkt"
           (for-label racket/system))
 
-@title{Subprocesses}
+@bc-title[#:tag "Subprocesses"]{Subprocesses}
 
 On Unix and Mac OS, subprocess handling involves
 @as-index[@cpp{fork}], @as-index[@cpp{waitpid}], and

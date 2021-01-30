@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "cs-procs"]{Calling Procedures}
+@cs-title[#:tag "cs-procs"]{Calling Procedures}
 
 As an entry point into Racket, C programs should normally call Racket
 procedures by using @cppi{racket_apply}, which calls the procedure in

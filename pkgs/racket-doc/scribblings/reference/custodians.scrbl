@@ -80,9 +80,8 @@ down, then it cannot be a subordinate of @racket[super].}
 
 @defproc[(custodian-memory-accounting-available?) boolean?]{
 
-@margin-note{Memory accounting is normally available in Racket 3m,
-which is the main variant of Racket, and not normally available in
-Racket CGC.}
+@margin-note{Memory accounting is normally available, but not in
+the @tech{CGC} implementation.}
 
 Returns @racket[#t] if Racket is compiled with support for
 per-custodian memory accounting, @racket[#f] otherwise.}

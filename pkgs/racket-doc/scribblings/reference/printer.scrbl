@@ -624,7 +624,7 @@ the conversion of the source field is to preserve some source
 information but not expose or record a path that makes no sense on
 a different filesystem or platform.
 
-For internal testing purposes in the 3m and CGC variants of Racket, when the
+For internal testing purposes in the @tech{BC} implementation of Racket, when the
 @as-index{@envvar{PLT_VALIDATE_LOAD}} environment variable is set, the
 reader runs a validator on bytecode parsed from @litchar{#~}. The
 validator may catch miscompilations or bytecode-file corruption. The

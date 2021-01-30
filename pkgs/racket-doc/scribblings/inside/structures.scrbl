@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title{Structures}
+@bc-title[#:tag "Structures"]{Structures}
 
 A new Racket structure type is created with
 @cppi{scheme_make_struct_type}.  This creates the structure type, but

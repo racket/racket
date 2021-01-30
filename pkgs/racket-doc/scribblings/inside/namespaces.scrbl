@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "im:env"]{Namespaces and Modules}
+@bc-title[#:tag "im:env"]{Namespaces and Modules}
 
 A Racket namespace (a top-level environment) is represented by a value
 of type @cppi{Scheme_Env*} --- which is also a Racket value, castable

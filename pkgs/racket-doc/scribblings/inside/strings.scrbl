@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "im:encodings"]{String Encodings}
+@bc-title[#:tag "im:encodings"]{String Encodings}
 
 The @cpp{scheme_utf8_decode} function decodes a @cpp{char} array as
 UTF-8 into either a UCS-4 @cpp{mzchar} array or a UTF-16 @cpp{short}

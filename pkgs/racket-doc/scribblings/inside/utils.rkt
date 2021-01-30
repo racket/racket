@@ -7,7 +7,8 @@
          (for-syntax scheme/base)
          (for-label scheme/base))
 
-(provide Racket
+(provide cs-title bc-title
+         Racket
          mzc cpp cppi cppdef (rename-out [*var var])
          function subfunction together
          FormatD
@@ -15,6 +16,12 @@
          reference-doc raco-doc
          (except-out (all-from-out scribble/manual) var)
          (for-label (all-from-out scheme/base)))
+
+(define (cs-title #:tag tag . content)
+  (apply title #:tag tag (append content (list " (CS)"))))
+
+(define (bc-title #:tag tag . content)
+  (apply title #:tag tag (append content (list " (BC)"))))
 
 (define (as-cpp-defn name s)
   (make-target-element #f

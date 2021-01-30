@@ -2,7 +2,7 @@
 @(require "utils.rkt"
           (for-label ffi/unsafe/global))
 
-@title{Miscellaneous Utilities}
+@bc-title[#:tag "Miscellaneous Utilities"]{Miscellaneous Utilities}
 
 The @cppi{MZSCHEME_VERSION} preprocessor macro is defined as a string
 describing the version of Racket. The @cppi{MZSCHEME_VERSION_MAJOR}

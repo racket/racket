@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "config"]{Parameterizations}
+@bc-title[#:tag "config"]{Parameterizations}
 
 A @defterm{parameterization} is a set of parameter values. Each thread
 has its own initial parameterization, which is extended functionally

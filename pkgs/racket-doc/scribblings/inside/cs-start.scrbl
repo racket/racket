@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "cs-start"]{Starting and Declaring Initial Modules}
+@cs-title[#:tag "cs-start"]{Starting and Declaring Initial Modules}
 
 As sketched in @secref["cs-embedding"], and embedded instance of
 Racket CS is started with @cppi{racket_boot}. Functions such as

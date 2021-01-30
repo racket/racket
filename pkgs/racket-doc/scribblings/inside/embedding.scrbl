@@ -4,7 +4,7 @@
 
 @(define cgc-v-3m "CGC versus 3m")
 
-@title[#:tag "embedding"]{Embedding into a Program}
+@bc-title[#:tag "embedding"]{Embedding into a Program}
 
 @section-index["embedding Racket BC"]
 

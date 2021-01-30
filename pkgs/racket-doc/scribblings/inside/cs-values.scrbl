@@ -3,7 +3,7 @@
           (for-label racket/unsafe/ops
                      ffi/unsafe))
 
-@title[#:tag "cs-values+types"]{Values and Types}
+@cs-title[#:tag "cs-values+types"]{Values and Types}
 
 A Racket value is represented by a pointer-sized value. The low bits
 of the value indicate the encoding that it uses. For example, two (on
