@@ -185,17 +185,19 @@ The @exec{raco exe} command accepts the following command-line flags:
    libraries when the executable is distributed to a different
    machine).}
 
+ @item{@DFlag{cs} --- generate an executable based on the @gtech{CS}
+   implementation of Racket, which is the default unless running a
+   @exec{raco exe} that is based on the @gtech{BC} implementation.}
+
  @item{@DFlag{3m} --- generate an executable based on the @gtech{3m}
-   variant of Racket, which is the default unless running a @exec{raco
-   exe} that is based on the @gtech{CGC} or @gtech{CS} variant.}
+   variant of Racket, which is the default only when running a @exec{raco
+   exe} that is based on the @gtech{3m} variant of the @gtech{BC}
+   implementation.}
 
  @item{@DFlag{cgc} --- generate an executable based on the @gtech{CGC}
    variant of Racket, which is the default only when running a
-   @exec{raco exe} that is based on the @gtech{CGC} variant.}
-
- @item{@DFlag{cs} --- generate an executable based on the @gtech{CS}
-   variant of Racket, which is the default only when running a
-   @exec{raco exe} that is based on the @gtech{CS} variant.}
+   @exec{raco exe} that is based on the @gtech{CGC} variant
+   of the @gtech{BC} implementation.}
 
  @item{@DPFlag{aux} @nonterm{file} --- attach information to the
    executable based on @nonterm{file}'s suffix; see
