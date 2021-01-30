@@ -22,7 +22,7 @@ parameter to @racket[#f] or supplying the @DFlag{compile-any}/@Flag{M}
 flag on startup. See @racket[current-compile-target-machine] for more
 information.
 
-Other compilation modes depend on the Racket variant (see
+Other compilation modes depend on the Racket implementation (see
 @secref["implementations"]).
 
 
