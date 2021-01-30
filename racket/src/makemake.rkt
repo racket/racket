@@ -266,4 +266,5 @@
     (loop #f)))
 
 (call-with-input-file* src variables)
+(printf "# `make` will continue this comment to the next line, but `nmake` won't \\\nthe-default-target-for-nmake: win\n")
 (call-with-input-file* src convert)

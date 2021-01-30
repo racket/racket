@@ -3,7 +3,7 @@
 # on the `make` dialect that it uses.
 #
 # The targets here do not use dependencies (mostly), so it's a strange
-# use of `make'. Really, this makefile is an alternative to a pile of
+# use of `make`. Really, this makefile is an alternative to a pile of
 # scripts, where each target plays the role of a script. It's written
 # as a makefile, because then the intersection of `make` and `nmake`
 # acts as a kind of always-available scripting language.
@@ -31,6 +31,10 @@
 # `make`. For example, `PKGS` can be supplied with `make PKGS="..."`.
 # Not all variables in the makefile are intended as arguments,
 # though.
+#
+# For Windows with `nmake`, add `win-` to the start of the above
+# targets. Using `nmake` by itself is the same as `nmake win`, which
+# is the same as `nmake win-in-place`.
 
 # Packages (separated by spaces) to link in development mode or
 # to include in a distribution:
@@ -39,6 +43,8 @@ PKGS = main-distribution main-distribution-test
 main:
 	$(MAKE) in-place
 
+# The makefile is compiled so that a target named `win` is the
+# default target for `nmake`:
 win:
 	$(MAKE) win-in-place
 
@@ -762,7 +768,7 @@ random:
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
 
-# These targets require GNU `make', so that we don't have to propagate
+# These targets require GNU `make`, so that we don't have to propagate
 # variables through all of the target layers.
 
 server:
