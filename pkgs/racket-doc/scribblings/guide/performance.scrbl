@@ -52,13 +52,25 @@ Non-interactive mode should be used instead of the
 
 @section[#:tag "virtual-machines"]{Racket Virtual Machine Implementations}
 
-Racket is available in three implementation variants: @deftech{3m},
-@deftech{CGC}, and @deftech{CS}:
+Racket is available in three implementation variants: @deftech{CS},
+@deftech{3m}, and @deftech{CGC}:
 
 @itemlist[
 
- @item{@tech{3m} is the current default implementation, so it's
-       probably the one that you're using.
+ @item{@tech{CS} is the current default implementation. It is
+       a newer implementation that builds on
+       @hyperlink["https://www.scheme.com/"]{Chez Scheme} as its core
+       virtual machine. This implementation performs better than
+       the @tech{3m} implementation for most programs.
+
+       For this variant, @racket[(system-type 'vm)] reports
+       @racket['chez-scheme] and @racket[(system-type 'gc)] reports
+       @racket['cs].}
+
+ @item{@tech{3m} is an older variant, and was the default until version 8.0.
+       The implementation features a compiler and runtime written in C,
+       with a precise garbage collector and a just-in-time compiler (JIT)
+       on most platforms.
 
        For this variant, @racket[(system-type 'vm)] reports
        @racket['racket] and @racket[(system-type 'gc)] reports
@@ -75,15 +87,7 @@ Racket is available in three implementation variants: @deftech{3m},
        @racket['racket] and @racket[(system-type 'gc)] reports
        @racket['cgc].}
 
- @item{@tech{CS} is a newer implementation that builds on
-       @hyperlink["https://www.scheme.com/"]{Chez Scheme} as its core
-       virtual machine. This implementation performs better for some
-       programs, and it is likely to improve and eventually replace
-       the @tech{3m} implementation as the default.
 
-       For this variant, @racket[(system-type 'vm)] reports
-       @racket['chez-scheme] and @racket[(system-type 'gc)] reports
-       @racket['cs].}
 
 ]
 
