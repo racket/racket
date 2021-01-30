@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt" (for-label scheme/tcp))
 
-@title[#:tag "threads"]{Threads}
+@bc-title[#:tag "threads"]{Threads}
 
 The initializer function @cppi{scheme_basic_env} creates the main
 Racket thread; all other threads are created through calls to

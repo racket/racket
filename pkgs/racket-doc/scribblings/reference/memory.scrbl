@@ -224,10 +224,10 @@ to a value that starts with @litchar{0}, @litchar{n}, or @litchar{N} to
 disable incremental-mode requests.
 
 Each garbage collection logs a message (see @secref["logging"]) at the
-@racket['debug] level with topic @racket['GC]. In the 3m and CS
-variants of Racket, ``major'' collections are also logged at the
-@racket['debug] level with the topic @racket['GC:major]. In the 3m
-and CS variants of Racket, the data portion of the message is an
+@racket['debug] level with topic @racket['GC]. In the @tech{CS} and @tech{3m}
+implementations of Racket, ``major'' collections are also logged at the
+@racket['debug] level with the topic @racket['GC:major]. In the @tech{CS}
+and @tech{3m} implementations of Racket, the data portion of the message is an
 instance of a @indexed-racket[gc-info] @tech{prefab} structure type
 with 10 fields as follows, but future versions of Racket may use a
 @racket[gc-info] @tech{prefab} structure with additional fields:
@@ -360,9 +360,9 @@ garbage-collection mode, depending on @racket[request]:
        The intent of incremental mode is to significantly reduce pause
        times due to major collections, but incremental mode may imply
        longer minor-collection times and higher memory use. Currently,
-       incremental mode is only meaningful when @racket[(system-type
-       'gc)] returns @racket['3m] or @racket['cs]; it has no effect in
-       other Racket variants.
+       incremental mode is only meaningful for @tech{CS} and @tech{3m}
+       Racket implementations; it has no effect in
+       other Racket implementations.
 
        If the @envvar{PLT_INCREMENTAL_GC} environment variable's value
        starts with @litchar{0}, @litchar{n}, or @litchar{N} on
@@ -373,7 +373,7 @@ garbage-collection mode, depending on @racket[request]:
 @history[#:changed "6.3" @elem{Added the @racket[request] argument.}
          #:changed "6.3.0.2" @elem{Added @racket['incremental] mode.}
          #:changed "7.7.0.4" @elem{Added @racket['incremental] effect
-                                   for Racket CS.}]}
+                                   for Racket @tech{CS}.}]}
 
 
 @defproc[(current-memory-use [mode (or/c #f 'cumulative custodian?) #f])
@@ -437,8 +437,7 @@ manager that memory is allocated within the process but through a
 separate allocator, such as through a foreign library that is accessed
 via @racketmodname[ffi/unsafe]. This hint is used to trigger
 @tech{garbage collections} or to compute the result of
-@racket[current-memory-use]. Currently, the hint is used only in
-Racket 3m (the main variant of Racket).
+@racket[current-memory-use].
 
 @defproc[(phantom-bytes? [v any/c]) boolean?]{
 

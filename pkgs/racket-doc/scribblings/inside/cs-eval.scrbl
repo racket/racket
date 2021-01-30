@@ -2,7 +2,7 @@
 @(require "utils.rkt"
           (for-label ffi/unsafe/vm))
 
-@title[#:tag "cs-eval"]{Evaluation and Running Modules}
+@cs-title[#:tag "cs-eval"]{Evaluation and Running Modules}
 
 The @cppi{racket_apply} function provides basic evaluation support,
 but @cppi{racket_eval}, @cppi{racket_dynamic_require}, and

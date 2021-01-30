@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "Writing Racket Extensions"]{Writing Racket Extensions}
+@bc-title[#:tag "Writing Racket Extensions"]{Writing Racket Extensions}
 
 @section-index["extending Racket"]
 

@@ -1,9 +1,9 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "cs-overview"]{Overview}
+@cs-title[#:tag "cs-overview"]{Overview}
 
-The Racket CS run-time system is implemented by a wrapper around the
+The Racket CS runtime system is implemented by a wrapper around the
 Chez Scheme kernel. The wrapper implements additional glue to the
 operating system (e.g., for I/O and networking) and provides entry
 points into the Racket layer's evaluator.
@@ -23,7 +23,7 @@ the Racket wrapper.
 @index['("allocation")]{Racket} values may be moved or garbage
 collected any time that @cpp{racket_...} functions are used to run
 Racket code. Do not retain a reference to any Racket value across such
-a call. This requirement contrasts with the 3m and CGC variants of
+a call. This requirement contrasts with the BC implementation of
 Racket, which provide a way for C code to more directly cooperate with
 the memory manager.
 

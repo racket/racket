@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title{Ports and the Filesystem}
+@bc-title[#:tag "Ports and the Filesystem"]{Ports and the Filesystem}
 
 Ports are represented as Racket values with the types
 @cppi{scheme_input_port_type} and @cppi{scheme_output_port_type}.  The

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title{Evaluation}
+@bc-title[#:tag "Evaluation"]{Evaluation}
 
 A Racket S-expression is evaluated by calling @cppi{scheme_eval}.
 This function takes an S-expression (as a @cpp{Scheme_Object*}) and a

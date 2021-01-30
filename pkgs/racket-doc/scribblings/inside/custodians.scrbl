@@ -2,7 +2,7 @@
 @(require "utils.rkt"
           (for-label ffi/unsafe/custodian))
 
-@title{Custodians}
+@bc-title[#:tag "Custodians"]{Custodians}
 
 When an extension allocates resources that must be explicitly freed
 (in the same way that a port must be explicitly closed), a Racket

@@ -43,7 +43,7 @@ or 64-bit program.
  about the @racket['vm] and @racket['gc] mode results.}
 
 In @indexed-racket['vm] mode,
-the possible symbol results are:
+the possible symbol results are (see also @secref["implementations"]):
 
 @itemize[
 @item{@indexed-racket['racket]}
@@ -51,7 +51,7 @@ the possible symbol results are:
 ]
 
 In @indexed-racket['gc] mode,
-the possible symbol results are:
+the possible symbol results are (see also @secref["implementations"]):
 
 @itemize[
 @item{@indexed-racket['cgc] --- when @racket[(system-type 'vm)] is @racket['racket]}

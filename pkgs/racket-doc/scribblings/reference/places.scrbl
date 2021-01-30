@@ -25,16 +25,16 @@ take advantage of machines with multiple processors, cores, or
 hardware threads.
 
 @margin-note{Currently, parallel support for places is enabled
-  only for the CS and 3m variants of Racket, and for 3m, only
+  only for the @tech{CS} and @tech{3m} implementations of Racket, and for @tech{3m}, only
   by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
-  enable support for other platforms with 3m, use @DFlag{enable-places} with
+  enable support for other platforms with @tech{3m}, use @DFlag{enable-places} with
   @exec{configure} when building Racket. The @racket[place-enabled?]
   function reports whether places run in parallel.
 
   Implementation and operating-system constraints may limit the
   scalability of places. For example, although places can perform
-  garbage collections in parallel in the CS variant or independently
-  in the 3m variant, a garbage collection
+  garbage collections in parallel in the @tech{CS} implementation or independently
+  in the @tech{3m} implementation, a garbage collection
   may need to manipulate a page table that is shared across all
   places, and that shared page table can be a bottleneck with enough
   places---perhaps around 8 or 16.}

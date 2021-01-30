@@ -9,3 +9,4 @@
 @include-section["syntax-model.scrbl"]
 @include-section["reader.scrbl"]
 @include-section["printer.scrbl"]
+@include-section["implementation.scrbl"]

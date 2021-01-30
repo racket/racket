@@ -6,11 +6,18 @@
 
 @author["Matthew Flatt"]
 
+The Racket runtime system is responsible for the implementation of
+primitive datatypes such as numbers and strings, the macro expansion
+and compilation of Racket from source, the allocation and reclamation
+of memory used during evaluation, and the scheduling of concurrent
+threads and parallel tasks.
+
 This manual describes the C interface of Racket's runtime system,
-which varies depending on the variant of Racket (see @secref[#:doc
-'(lib "scribblings/guide/guide.scrbl") "virtual-machines"]): the CS
-variant of Racket has one interface, while the BC (3m and CGC)
-variants of Racket have another.
+which varies depending on the implementation of Racket (see
+@secref[#:doc '(lib "scribblings/guide/guide.scrbl")
+"virtual-machines"]): the CS implementation of Racket has one
+interface, while the BC (3m and CGC) implementation of Racket has
+another.
 
 The C interface is relevant to some degree when interacting with
 foreign libraries as described in @other-manual['(lib

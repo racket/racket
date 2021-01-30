@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "cs-thread"]{Managing OS-Level Threads}
+@cs-title[#:tag "cs-thread"]{Managing OS-Level Threads}
 
 Chez Scheme functionality can only be accessed from OS-level threads
 that are known to the Chez Scheme runtime system. Otherwise, there's a

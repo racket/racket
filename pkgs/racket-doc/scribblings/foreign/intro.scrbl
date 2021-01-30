@@ -453,7 +453,8 @@ convenience) can be used directly as a pointer value (unlike character
 strings, which are always copied for UTF-8 encoding or decoding).
 
 For more information about memory management and garbage collection,
-see @secref[#:doc InsideRacket-doc "im:memoryalloc"] in
+see @secref[#:doc InsideRacket-doc "cs-memory"]
+and @secref[#:doc InsideRacket-doc "im:memoryalloc"] in
 @|InsideRacket|.
 
 @; --------------------------------------------------

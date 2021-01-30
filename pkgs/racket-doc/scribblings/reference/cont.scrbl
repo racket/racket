@@ -190,7 +190,7 @@ called in tail position, and the continuation procedure supplied to
 A continuation obtained from @racket[call-with-escape-continuation] is
 actually a kind of prompt. Escape continuations are provided mainly
 for backwards compatibility, since they pre-date general prompts in
-Racket. In the 3m and CGC variants of Racket,
+Racket. In the @tech{BC} implementation of Racket,
 @racket[call-with-escape-continuation] is implemented more efficiently
 than @racket[call-with-current-continuation], so
 @racket[call-with-escape-continuation] can sometimes replace

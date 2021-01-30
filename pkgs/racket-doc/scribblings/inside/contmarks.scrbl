@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "contmarks"]{Continuation Marks}
+@bc-title[#:tag "contmarks"]{Continuation Marks}
 
 A mark can be attached to the current continuation frame using
 @cppi{scheme_set_cont_mark}. To force the creation of a new frame

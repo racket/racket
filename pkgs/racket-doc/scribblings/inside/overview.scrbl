@@ -1,14 +1,12 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "overview"]{Overview}
+@bc-title[#:tag "overview"]{Overview}
 
-The Racket run-time system is responsible for the implementation of
-primitive datatypes such as numbers and strings, the evaluation and/or
-JIT compilation of Racket bytecode, the macro expansion and
-compilation of Racket from source to bytecode, the allocation and
-reclamation of memory used during evaluation, and the scheduling of
-concurrent threads and parallel tasks.
+The Racket BC runtime system is implemented in C and provides the
+compiler from source to bytecode format, the JIT compiler from
+bytecode to machine code, I/O functionality, threads, and memory
+management.
 
 @section{``Scheme'' versus ``Racket''}
 
@@ -22,19 +20,19 @@ all should be renamed to start @cpp{racket_}.
 
 @section[#:tag "CGC versus 3m"]{CGC versus 3m}
 
-Before mixing any C code with Racket, first decide whether to use the
+Before mixing any C code with Racket BC, first decide whether to use the
 @bold{3m} variant of Racket, the @bold{CGC} variant of Racket, or
 both:
 
 @itemize[
 
-@item{@bold{@as-index{3m}} : the main variant of Racket, which uses
+@item{@bold{@as-index{3m}} : the main variant of Racket BC, which uses
   @defterm{precise} garbage collection and requires explicit
   registration of pointer roots and allocation shapes. The precise
   garbage collector may move its objects in memory during a
   collection.}
 
-@item{@bold{@as-index{CGC}} : the original variant of Racket, where
+@item{@bold{@as-index{CGC}} : the original variant of Racket BC, where
   memory management depends on a @defterm{conservative} garbage
   collector. The conservative garbage collector can automatically find
   references to managed values from C local variables and (on some

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "im:values+types"]{Values and Types}
+@bc-title[#:tag "im:values+types"]{Values and Types}
 
 A Racket value is represented by a pointer-sized value. The low bit is
 a mark bit: a 1 in the low bit indicates an immediate integer, a 0

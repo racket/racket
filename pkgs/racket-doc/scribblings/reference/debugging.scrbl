@@ -5,9 +5,9 @@
 
 Racket's built-in debugging support is limited to context (i.e.,
 ``stack trace'') information that is printed with an exception. In
-some cases, for 3m and CGC variants of Racket, disabling the
-@tech{JIT} compiler can affect context information. For the CS variant
-of Racket, setting the @envvar-indexed{PLT_CS_DEBUG} environment
+some cases, for @tech{BC} implementation of Racket, disabling the
+@tech{JIT} compiler can affect context information. For the @tech{CS}
+implementation of Racket, setting the @envvar-indexed{PLT_CS_DEBUG} environment
 variable causes compilation to record expression-level context
 information, instead of just function-level information.
 

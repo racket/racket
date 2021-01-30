@@ -61,10 +61,10 @@ memory that is (assumed to be) managed by the garbage collector,
 @racket[#f] otherwise.
 
 For a pointer based on @racket[_gcpointer] as a result type,
-@racket[cpointer-gcable?] will return @racket[#t]. In the @3m[] and
-@CGC[] variants of Racket, @racket[cpointer-gcable?] will return
+@racket[cpointer-gcable?] will return @racket[#t]. In the @BC[]
+implementation of Racket, @racket[cpointer-gcable?] will return
 @racket[#f] for a pointer based on @racket[_pointer] as a result type.
-The @CS[] variant is mostly the sane, except that if a pointer is
+The @CS[] implementation is mostly the same, except that if a pointer is
 extracted using the @racket[_pointer] type from memory allocated as
 @racket['nonatomic], @racket[cpointer-gcable?] will report @racket[#t]
 for the extracted pointer.}
@@ -262,7 +262,7 @@ specification is required at minimum:
        garbage collector. The initial content of the memory is
        unspecified.
 
-       For the @3m[] and @CGC[] Racket variants, this allocation mode corresponds
+       For the @BC[] Racket implementation, this allocation mode corresponds
        to @cpp{scheme_malloc_atomic} in the C API.}
 
      @item{@indexed-racket['nonatomic] --- Allocates memory that can
@@ -270,10 +270,10 @@ specification is required at minimum:
        garbage collector as holding only pointers, and is initially
        filled with zeros.
 
-       For the @3m[] and @CGC[] Racket variants, this allocation mode corresponds
+       For the @BC[] Racket implementation, this allocation mode corresponds
        to @cpp{scheme_malloc} in the C API.
 
-       For the @CS[] Racket variant, this mode is of limited use,
+       For the @CS[] Racket implementation, this mode is of limited use,
        because a pointer allocated this way cannot be passed to
        foreign functions that expect a pointer to pointers. The result
        can only be used with functions like @racket[ptr-set!] and
@@ -284,7 +284,7 @@ specification is required at minimum:
        the garbage collector as long as the allocated object is
        retained.
 
-       For the @3m[] and @CGC[] Racket variants, a reference can point
+       For the @BC[] Racket implementation, a reference can point
        to the interior of the object, instead of its starting address.
        This allocation mode corresponds to
        @cpp{scheme_malloc_atomic_allow_interior} in the C API.}
@@ -294,7 +294,7 @@ specification is required at minimum:
        by the garbage collector as long as the allocated object is
        retained.
 
-       This mode is supported only for the @3m[] and @CGC[] Racket variants, and
+       This mode is supported only for the @BC[] Racket implementation, and
        it corresponds to @cpp{scheme_malloc_allow_interior} in the C
        API.}
 
@@ -302,14 +302,14 @@ specification is required at minimum:
        start with a @tt{short} value that is registered as a tag with
        the garbage collector.
 
-       This mode is supported only for the @3m[] and @CGC[] Racket variants, and
+       This mode is supported only for the @BC[] Racket implementation, and
        it corresponds to @cpp{scheme_malloc_tagged} in the C API.}
 
      @item{@indexed-racket['stubborn] --- Like @racket['nonatomic],
        but supports a hint to the GC via @racket[end-stubborn-change]
        after all changes to the object have been made.
 
-       This mode is supported only for the @3m[] and @CGC[] Racket variants, and
+       This mode is supported only for the @BC[] Racket implementation, and
        it corresponds to @cpp{scheme_malloc_stubborn} in the C API.}
 
      @item{@indexed-racket['eternal] --- Like @racket['raw], except the
@@ -468,8 +468,8 @@ use by such finalizers.}
          bytes?]{
 
 Returns a byte string made of the given pointer and the given length
-in the @3m[] and @CGC[] variants of Racket; no copying is performed.
-In the @CS[] variant, the @racket[exn:fail:unsupported] exception is
+in the @BC[] implementation of Racket; no copying is performed.
+In the @CS[] implementation, the @racket[exn:fail:unsupported] exception is
 raised.
 
 Beware that the representation of a Racket byte string normally

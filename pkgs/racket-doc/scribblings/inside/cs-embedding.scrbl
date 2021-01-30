@@ -2,7 +2,7 @@
 @(require "utils.rkt"
           scribble/bnf)
 
-@title[#:tag "cs-embedding"]{Embedding into a Program}
+@cs-title[#:tag "cs-embedding"]{Embedding into a Program}
 
 @section-index["embedding Racket CS"]
 

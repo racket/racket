@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt")
 
-@title[#:tag "exceptions"]{Exceptions and Escape Continuations}
+@bc-title[#:tag "exceptions"]{Exceptions and Escape Continuations}
 
 When Racket encounters an error, it raises an exception. The default
 exception handler invokes the error display handler and then the error

@@ -1088,8 +1088,8 @@ The values managed by a custodian are semi-weakly held by the
 custodian: a @techlink{will} can be executed for a value that is
 managed by a custodian; in addition, weak references via weak
 @tech{hash tables}, @tech{ephemerons}, or @tech{weak box}es can be
-dropped on the 3m or CGC variants of Racket, but not on the CS
-variant. For all variants, a custodian only weakly
+dropped on the @tech{BC} implementation of Racket, but not on the @tech{CS}
+implementation. For all variants, a custodian only weakly
 references its subordinate custodians; if a subordinate custodian is
 unreferenced but has its own subordinates, then the custodian may be
 garbage collected, at which point its subordinates become immediately
