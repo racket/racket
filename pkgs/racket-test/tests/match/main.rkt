@@ -305,6 +305,25 @@
   (struct foo (a))
   (provide (rename-out [foo bar])))
 
+(module test-struct*-no-struct-field-info racket/base
+  (provide bar)
+  (require (for-syntax racket/struct-info
+                       racket/base))
+  (define (bar-car x) (car x))
+  (define (bar-cdr x) (cdr x))
+  (define (bar? x) (pair? x))
+
+  (struct foo ())
+
+  (define-syntax bar
+    (make-struct-info
+     (λ () (list #f
+                 #'cons
+                 #'bar?
+                 (list #'bar-cdr #'bar-car)
+                 (list #f #f)
+                 #'foo)))))
+
 (define struct*-tests
   (test-suite 
    "Tests of struct*"
@@ -403,7 +422,13 @@
                 (match-define
                   (struct* bar ([a x]))
                   (bar 1))
-                (check = x 1)))))
+                (check = x 1)))
+
+   (test-case "without struct-field-info"
+     (let ()
+       (local-require 'test-struct*-no-struct-field-info)
+       (match-define (struct* bar ([car x])) (list 1 2 3))
+       (check = x 1)))))
 
 (define plt-match-tests
   (test-suite "Tests for plt-match.rkt"
