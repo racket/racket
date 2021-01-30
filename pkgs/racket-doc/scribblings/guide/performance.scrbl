@@ -105,7 +105,7 @@ Racket is available in two implementations, @deftech{CS} and
 In general, Racket programs should run the same in all variants.
 Furthermore, the performance characteristics of Racket program should
 be similar in the @tech{CS} and @tech{BC} implementations. The cases
-where a program may depends on the implementation will typically
+where a program may depend on the implementation will typically
 involve interactions with foreign libraries; in particular, the Racket
 C API described in @other-doc[inside-doc] is different for the
 @tech{CS} implementation versus the @tech{BC} implementation.
@@ -138,7 +138,7 @@ variant-independent format on all Racket implementations, but running
 code in that format requires an additional internal conversion step to
 the implementation's main bytecode format.
 
-Machine-independent bytecode for @tech{BC} implementation is further
+Machine-independent bytecode for the @tech{BC} implementation is further
 compiled to native code via a @deftech{just-in-time} or @deftech{JIT}
 compiler. The @tech{JIT} compiler substantially speeds programs that
 execute tight loops, arithmetic on small integers, and arithmetic on
@@ -147,7 +147,7 @@ for x86, x86_64 (a.k.a. AMD64), 32-bit ARM, and 32-bit PowerPC processors.
 The @tech{JIT} compiler can be disabled via the
 @racket[eval-jit-enabled] parameter or the @DFlag{no-jit}/@Flag{j}
 command-line flag for @exec{racket}. Setting @racket[eval-jit-enabled]
-to @racket[#f] has not effect on the @tech{CS} implementation of Racket.
+to @racket[#f] has no effect on the @tech{CS} implementation of Racket.
 
 The @tech{JIT} compiler works incrementally as functions are applied,
 but the @tech{JIT} compiler makes only limited use of run-time
