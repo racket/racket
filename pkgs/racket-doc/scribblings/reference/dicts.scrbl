@@ -188,7 +188,7 @@ values all satisfy the @racket[value-contract].
 @defproc[(heterogeneous-dictof [#:mandatory-keys? mandatory-keys? boolean? #t]
                                [#:exact-keys? exact-keys? boolean? #f]
                                [#:immutable? immutable? boolean? #t]
-                               key-contract value-contract ... ...)
+                               [key-contract contract?] [value-contract contract?] ... ...)
          contract?]{
 Recognizes a dictionary for which every key that satsifies a key contract maps
 to a value satisfying the corresponding value contract.
@@ -198,26 +198,26 @@ total number of non-keyword arguments is even.
 @examples[
 #:eval dict-eval
 
-((heterogenous-dictof symbol? integer? intger? symbol?) '())
-((heterogenous-dictof symbol? integer? intger? symbol?) '((a . 5) (6 . b)))
-((heterogenous-dictof symbol? integer? intger? symbol?) '((a . 5) (a . b)))
-((heterogenous-dictof symbol? integer? intger? symbol?) '((a . 5)))
-((heterogenous-dictof symbol? integer? intger? symbol?) '((6 . b)))
-((heterogenous-dictof 'a integer?) '((a . 5)))
-((heterogenous-dictof 'a integer?) '((b . 5)))
+((heterogeneous-dictof symbol? integer? integer? symbol?) '())
+((heterogeneous-dictof symbol? integer? integer? symbol?) '((a . 5) (6 . b)))
+((heterogeneous-dictof symbol? integer? integer? symbol?) '((a . 5) (a . b)))
+((heterogeneous-dictof symbol? integer? integer? symbol?) '((a . 5)))
+((heterogeneous-dictof symbol? integer? integer? symbol?) '((6 . b)))
+((heterogeneous-dictof 'a integer?) '((a . 5)))
+((heterogeneous-dictof 'a integer?) '((b . 5)))
 ]
 
-If @racket[exact-keys] is specified, then the @racket[key-contracts] are
+If @racket[exact-keys?] is specified, then the @racket[key-contract]s are
 interpreted as keys in contracted dictionary, and the dictionary is required to
 contain exactly the keys specified.
 
 @examples[
 #:eval dict-eval
-((heterogenous-dictof #:exact-keys? #f 'a integer?) '((a . 5)))
-((heterogenous-dictof #:exact-keys? #f 'a integer?) '((a . 5) (b . 5)))
+((heterogeneous-dictof #:exact-keys? #f 'a integer?) '((a . 5)))
+((heterogeneous-dictof #:exact-keys? #f 'a integer?) '((a . 5) (b . 5)))
 ]
 
-If @racket[mandatory-keys] is specified (the default), then a key matching each
+If @racket[mandatory-keys?] is specified (the default), then a key matching each
 key contracts is required to be in the dictionary.
 Otherwise, contracted keys are optional, but if present, their value must match
 the corresponding contract.
@@ -225,11 +225,11 @@ the corresponding contract.
 @examples[
 #:eval dict-eval
 
-((heterogenous-dictof #:mandatory-keys? #f symbol? integer? intger? symbol?) '())
-((heterogenous-dictof #:mandatory-keys? #f 'a integer?) '((b . 6)))
-((heterogenous-dictof #:mandatory-keys? #f 'a integer?) '((a . 5)))
-((heterogenous-dictof #:mandatory-keys? #f 'a integer?) '((a . 5) (b . 6)))
-((heterogenous-dictof #:mandatory-keys? #f 'a integer?) '((a . b)))
+((heterogeneous-dictof #:mandatory-keys? #f symbol? integer? integer? symbol?) '())
+((heterogeneous-dictof #:mandatory-keys? #f 'a integer?) '((b . 6)))
+((heterogeneous-dictof #:mandatory-keys? #f 'a integer?) '((a . 5)))
+((heterogeneous-dictof #:mandatory-keys? #f 'a integer?) '((a . 5) (b . 6)))
+((heterogeneous-dictof #:mandatory-keys? #f 'a integer?) '((a . b)))
 ]
 
 If @racket[immutable?] is specified (the default), then the contracted
@@ -238,12 +238,12 @@ if it is mutable.
 
 @examples[
 #:eval dict-eval
-((heterogenous-dictof 'a integer?) '((a . b)))
-((heterogenous-dictof #:immutable? #f 'a integer?) '((a . b)))
-((heterogenous-dictof 'a integer?) (make-hash))
-((heterogenous-dictof #:immutable? #f 'a integer?) (make-hash))
-((heterogenous-dictof 'a integer?) (make-immutable-hash))
-((heterogenous-dictof #:immutable? #f 'a integer?) (make-immutable-hash))
+((heterogeneous-dictof 'a integer?) '((a . 5)))
+((heterogeneous-dictof #:immutable? #f 'a integer?) '((a . 5)))
+((heterogeneous-dictof 'a integer?) (make-hash '((a . 5))))
+((heterogeneous-dictof #:immutable? #f 'a integer?) (make-hash '((a . 5))))
+((heterogeneous-dictof 'a integer?) (hash 'a 5))
+((heterogeneous-dictof #:immutable? #f 'a integer?) (hash 'a 5))
 ]
 }
 
