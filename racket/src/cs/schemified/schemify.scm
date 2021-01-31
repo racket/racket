@@ -21199,6 +21199,46 @@
             (let ((or-part_0 (number? val_1)))
               (if or-part_0 or-part_0 (char? val_1)))))
         (let ((val_0 (unwrap e_0))) (number? val_0))))))
+(define always-eq/no-marks?
+  (lambda (e1_0 e2_0 mutated_0)
+    (let ((hd_0
+           (let ((p_0 (unwrap e1_0))) (if (pair? p_0) (unwrap (car p_0)) #f))))
+      (if (if (eq? 'quote hd_0)
+            (let ((a_0 (cdr (unwrap e1_0))))
+              (let ((p_0 (unwrap a_0)))
+                (if (pair? p_0)
+                  (let ((a_1 (cdr p_0)))
+                    (begin-unsafe
+                     (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap a_1)))))
+                  #f)))
+            #f)
+        (let ((v1_0
+               (let ((d_0 (cdr (unwrap e1_0))))
+                 (let ((a_0 (car (unwrap d_0)))) a_0))))
+          (let ((hd_1
+                 (let ((p_0 (unwrap e2_0)))
+                   (if (pair? p_0) (unwrap (car p_0)) #f))))
+            (if (if (eq? 'quote hd_1)
+                  (let ((a_0 (cdr (unwrap e2_0))))
+                    (let ((p_0 (unwrap a_0)))
+                      (if (pair? p_0)
+                        (let ((a_1 (cdr p_0)))
+                          (begin-unsafe
+                           (let ((app_0 (unwrap '())))
+                             (eq? app_0 (unwrap a_1)))))
+                        #f)))
+                  #f)
+              (let ((v2_0
+                     (let ((d_0 (cdr (unwrap e2_0))))
+                       (let ((a_0 (car (unwrap d_0)))) a_0))))
+                (eq? v1_0 v2_0))
+              #f)))
+        (let ((u-e1_0 (unwrap e1_0)))
+          (if (symbol? u-e1_0)
+            (if (eq? u-e1_0 (unwrap e2_0))
+              (simple-mutated-state? (hash-ref mutated_0 u-e1_0 #f))
+              #f)
+            #f))))))
 (define unnest-let
   (lambda (e_0
            prim-knowns_0
@@ -28305,57 +28345,286 @@
                                                                                    prim-knowns_0
                                                                                    imports_0
                                                                                    mutated_0)))
-                                                                             (if (if authentic-key?_0
-                                                                                   (simple?.1
-                                                                                    #f
-                                                                                    #t
-                                                                                    #f
-                                                                                    s-body_0
-                                                                                    prim-knowns_0
-                                                                                    knowns_1
-                                                                                    imports_0
-                                                                                    mutated_0
-                                                                                    simples_0
-                                                                                    unsafe-mode?_0)
-                                                                                   #f)
-                                                                               (let ((app_0
-                                                                                      (ensure-single-valued
-                                                                                       s-key_0
-                                                                                       knowns_1
-                                                                                       prim-knowns_0
-                                                                                       imports_0
-                                                                                       mutated_0)))
-                                                                                 (list
-                                                                                  'begin
-                                                                                  app_0
-                                                                                  (ensure-single-valued
-                                                                                   s-val_0
-                                                                                   knowns_1
-                                                                                   prim-knowns_0
-                                                                                   imports_0
-                                                                                   mutated_0)
-                                                                                  s-body_0))
-                                                                               (if (eq?
-                                                                                    target_0
-                                                                                    'cify)
-                                                                                 (list
-                                                                                  'with-continuation-mark
-                                                                                  s-key_0
-                                                                                  s-val_0
-                                                                                  s-body_0)
-                                                                                 (let ((mode_0
-                                                                                        (if (eq?
-                                                                                             wcm-state_2
-                                                                                             'fresh)
-                                                                                          (if authentic-key?_0
-                                                                                            'push-authentic
-                                                                                            'push)
-                                                                                          (if authentic-key?_0
-                                                                                            'authentic
-                                                                                            'general))))
-                                                                                   (list
-                                                                                    'with-continuation-mark*
-                                                                                    mode_0
+                                                                             (let ((build-wcm_0
+                                                                                    (|#%name|
+                                                                                     build-wcm
+                                                                                     (lambda (s-key_1
+                                                                                              s-val_1
+                                                                                              s-body_1)
+                                                                                       (begin
+                                                                                         (if (eq?
+                                                                                              target_0
+                                                                                              'cify)
+                                                                                           (list
+                                                                                            'with-continuation-mark
+                                                                                            s-key_1
+                                                                                            s-val_1
+                                                                                            s-body_1)
+                                                                                           (let ((mode_0
+                                                                                                  (if (eq?
+                                                                                                       wcm-state_2
+                                                                                                       'fresh)
+                                                                                                    (if authentic-key?_0
+                                                                                                      'push-authentic
+                                                                                                      'push)
+                                                                                                    (if authentic-key?_0
+                                                                                                      'authentic
+                                                                                                      'general))))
+                                                                                             (list
+                                                                                              'with-continuation-mark*
+                                                                                              mode_0
+                                                                                              s-key_1
+                                                                                              s-val_1
+                                                                                              s-body_1))))))))
+                                                                               (let ((build-begin_0
+                                                                                      (|#%name|
+                                                                                       build-begin
+                                                                                       (lambda (s-key_1
+                                                                                                s-val_1
+                                                                                                s-body_1)
+                                                                                         (begin
+                                                                                           (if (if (simple?.1
+                                                                                                    #f
+                                                                                                    #t
+                                                                                                    1
+                                                                                                    s-key_1
+                                                                                                    prim-knowns_0
+                                                                                                    knowns_1
+                                                                                                    imports_0
+                                                                                                    mutated_0
+                                                                                                    simples_0
+                                                                                                    unsafe-mode?_0)
+                                                                                                 (simple?.1
+                                                                                                  #f
+                                                                                                  #t
+                                                                                                  1
+                                                                                                  s-val_1
+                                                                                                  prim-knowns_0
+                                                                                                  knowns_1
+                                                                                                  imports_0
+                                                                                                  mutated_0
+                                                                                                  simples_0
+                                                                                                  unsafe-mode?_0)
+                                                                                                 #f)
+                                                                                             s-body_1
+                                                                                             (let ((app_0
+                                                                                                    (ensure-single-valued
+                                                                                                     s-key_1
+                                                                                                     knowns_1
+                                                                                                     prim-knowns_0
+                                                                                                     imports_0
+                                                                                                     mutated_0)))
+                                                                                               (list
+                                                                                                'begin
+                                                                                                app_0
+                                                                                                (ensure-single-valued
+                                                                                                 s-val_1
+                                                                                                 knowns_1
+                                                                                                 prim-knowns_0
+                                                                                                 imports_0
+                                                                                                 mutated_0)
+                                                                                                s-body_1))))))))
+                                                                                 (if authentic-key?_0
+                                                                                   (if (simple?.1
+                                                                                        #f
+                                                                                        #t
+                                                                                        #f
+                                                                                        s-body_0
+                                                                                        prim-knowns_0
+                                                                                        knowns_1
+                                                                                        imports_0
+                                                                                        mutated_0
+                                                                                        simples_0
+                                                                                        unsafe-mode?_0)
+                                                                                     (build-begin_0
+                                                                                      s-key_0
+                                                                                      s-val_0
+                                                                                      s-body_0)
+                                                                                     (let ((hd_1
+                                                                                            (let ((p_0
+                                                                                                   (unwrap
+                                                                                                    s-body_0)))
+                                                                                              (if (pair?
+                                                                                                   p_0)
+                                                                                                (unwrap
+                                                                                                 (car
+                                                                                                  p_0))
+                                                                                                #f))))
+                                                                                       (if (if (eq?
+                                                                                                'with-continuation-mark*
+                                                                                                hd_1)
+                                                                                             (let ((a_0
+                                                                                                    (cdr
+                                                                                                     (unwrap
+                                                                                                      s-body_0))))
+                                                                                               (let ((p_0
+                                                                                                      (unwrap
+                                                                                                       a_0)))
+                                                                                                 (if (pair?
+                                                                                                      p_0)
+                                                                                                   (let ((a_1
+                                                                                                          (cdr
+                                                                                                           p_0)))
+                                                                                                     (let ((p_1
+                                                                                                            (unwrap
+                                                                                                             a_1)))
+                                                                                                       (if (pair?
+                                                                                                            p_1)
+                                                                                                         (let ((a_2
+                                                                                                                (cdr
+                                                                                                                 p_1)))
+                                                                                                           (let ((p_2
+                                                                                                                  (unwrap
+                                                                                                                   a_2)))
+                                                                                                             (if (pair?
+                                                                                                                  p_2)
+                                                                                                               (let ((a_3
+                                                                                                                      (cdr
+                                                                                                                       p_2)))
+                                                                                                                 (let ((p_3
+                                                                                                                        (unwrap
+                                                                                                                         a_3)))
+                                                                                                                   (if (pair?
+                                                                                                                        p_3)
+                                                                                                                     (let ((a_4
+                                                                                                                            (cdr
+                                                                                                                             p_3)))
+                                                                                                                       (begin-unsafe
+                                                                                                                        (let ((app_0
+                                                                                                                               (unwrap
+                                                                                                                                '())))
+                                                                                                                          (eq?
+                                                                                                                           app_0
+                                                                                                                           (unwrap
+                                                                                                                            a_4)))))
+                                                                                                                     #f)))
+                                                                                                               #f)))
+                                                                                                         #f)))
+                                                                                                   #f)))
+                                                                                             #f)
+                                                                                         (call-with-values
+                                                                                          (lambda ()
+                                                                                            (let ((d_0
+                                                                                                   (cdr
+                                                                                                    (unwrap
+                                                                                                     s-body_0))))
+                                                                                              (let ((p_0
+                                                                                                     (unwrap
+                                                                                                      d_0)))
+                                                                                                (let ((mode2_0
+                                                                                                       (let ((a_0
+                                                                                                              (car
+                                                                                                               p_0)))
+                                                                                                         a_0)))
+                                                                                                  (call-with-values
+                                                                                                   (lambda ()
+                                                                                                     (let ((d_1
+                                                                                                            (cdr
+                                                                                                             p_0)))
+                                                                                                       (let ((p_1
+                                                                                                              (unwrap
+                                                                                                               d_1)))
+                                                                                                         (let ((s-key2_0
+                                                                                                                (let ((a_0
+                                                                                                                       (car
+                                                                                                                        p_1)))
+                                                                                                                  a_0)))
+                                                                                                           (call-with-values
+                                                                                                            (lambda ()
+                                                                                                              (let ((d_2
+                                                                                                                     (cdr
+                                                                                                                      p_1)))
+                                                                                                                (let ((p_2
+                                                                                                                       (unwrap
+                                                                                                                        d_2)))
+                                                                                                                  (let ((s-val2_0
+                                                                                                                         (let ((a_0
+                                                                                                                                (car
+                                                                                                                                 p_2)))
+                                                                                                                           a_0)))
+                                                                                                                    (let ((s-body2_0
+                                                                                                                           (let ((d_3
+                                                                                                                                  (cdr
+                                                                                                                                   p_2)))
+                                                                                                                             (let ((a_0
+                                                                                                                                    (car
+                                                                                                                                     (unwrap
+                                                                                                                                      d_3))))
+                                                                                                                               a_0))))
+                                                                                                                      (let ((s-val2_1
+                                                                                                                             s-val2_0))
+                                                                                                                        (values
+                                                                                                                         s-val2_1
+                                                                                                                         s-body2_0)))))))
+                                                                                                            (case-lambda
+                                                                                                             ((s-val2_0
+                                                                                                               s-body2_0)
+                                                                                                              (let ((s-key2_1
+                                                                                                                     s-key2_0))
+                                                                                                                (values
+                                                                                                                 s-key2_1
+                                                                                                                 s-val2_0
+                                                                                                                 s-body2_0)))
+                                                                                                             (args
+                                                                                                              (raise-binding-result-arity-error
+                                                                                                               2
+                                                                                                               args))))))))
+                                                                                                   (case-lambda
+                                                                                                    ((s-key2_0
+                                                                                                      s-val2_0
+                                                                                                      s-body2_0)
+                                                                                                     (let ((mode2_1
+                                                                                                            mode2_0))
+                                                                                                       (values
+                                                                                                        mode2_1
+                                                                                                        s-key2_0
+                                                                                                        s-val2_0
+                                                                                                        s-body2_0)))
+                                                                                                    (args
+                                                                                                     (raise-binding-result-arity-error
+                                                                                                      3
+                                                                                                      args))))))))
+                                                                                          (case-lambda
+                                                                                           ((mode2_0
+                                                                                             s-key2_0
+                                                                                             s-val2_0
+                                                                                             s-body2_0)
+                                                                                            (if (if (always-eq/no-marks?
+                                                                                                     s-key_0
+                                                                                                     s-key2_0
+                                                                                                     mutated_0)
+                                                                                                  (simple?.1
+                                                                                                   #f
+                                                                                                   #t
+                                                                                                   1
+                                                                                                   s-val2_0
+                                                                                                   prim-knowns_0
+                                                                                                   knowns_1
+                                                                                                   imports_0
+                                                                                                   mutated_0
+                                                                                                   simples_0
+                                                                                                   unsafe-mode?_0)
+                                                                                                  #f)
+                                                                                              (build-begin_0
+                                                                                               s-key_0
+                                                                                               s-val_0
+                                                                                               (build-wcm_0
+                                                                                                s-key2_0
+                                                                                                s-val2_0
+                                                                                                s-body2_0))
+                                                                                              (build-wcm_0
+                                                                                               s-key_0
+                                                                                               s-val_0
+                                                                                               s-body_0)))
+                                                                                           (args
+                                                                                            (raise-binding-result-arity-error
+                                                                                             4
+                                                                                             args))))
+                                                                                         (build-wcm_0
+                                                                                          s-key_0
+                                                                                          s-val_0
+                                                                                          s-body_0))))
+                                                                                   (build-wcm_0
                                                                                     s-key_0
                                                                                     s-val_0
                                                                                     s-body_0)))))))))

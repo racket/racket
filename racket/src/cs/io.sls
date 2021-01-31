@@ -586,7 +586,7 @@
                               1/srcloc->string
                               1/error-print-source-location)
   (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ffi-unload-lib ptr->address)
-  (set-make-async-callback-poll-wakeup! unsafe-make-signal-received)
+  (set-make-async-callback-poll-wakeup! 1/unsafe-make-signal-received)
   (set-get-machine-info! get-machine-info)
   (set-processor-count! (1/processor-count))
   (install-future-logging-procs! logging-future-events? log-future-event)

@@ -10,7 +10,7 @@
 
 ;; Check whether an expression is simple in the sense that its order
 ;; of evaluation isn't detectable (`pure?` = #t) or at least it won't
-;; try to capture a comtinuation (`pure?` = #f). In `pure?` mode, if
+;; try to capture a continuation (`pure?` = #f). In `pure?` mode, if
 ;; `no-alloc?` is true, then allocation counts as detectable (for
 ;; ordering with respect to functions that might capture a continuation).
 ;; This function receives both schemified and non-schemified expressions.

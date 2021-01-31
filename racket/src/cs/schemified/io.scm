@@ -328,7 +328,7 @@
                  unsafe-file-descriptor->semaphore)
                 (1/unsafe-make-security-guard-at-root
                  unsafe-make-security-guard-at-root)
-                (unsafe-make-signal-received unsafe-make-signal-received)
+                (1/unsafe-make-signal-received unsafe-make-signal-received)
                 (1/unsafe-poll-ctx-eventmask-wakeup
                  unsafe-poll-ctx-eventmask-wakeup)
                 (1/unsafe-poll-ctx-fd-wakeup unsafe-poll-ctx-fd-wakeup)
@@ -38734,10 +38734,13 @@
    unsafe-signal-received
    (lambda ()
      (begin (|#%app| rktio_signal_received (unsafe-place-local-ref cell.1))))))
-(define unsafe-make-signal-received
-  (lambda ()
-    (let ((rktio_0 (unsafe-place-local-ref cell.1)))
-      (lambda () (|#%app| rktio_signal_received rktio_0)))))
+(define 1/unsafe-make-signal-received
+  (|#%name|
+   unsafe-make-signal-received
+   (lambda ()
+     (begin
+       (let ((rktio_0 (unsafe-place-local-ref cell.1)))
+         (lambda () (|#%app| rktio_signal_received rktio_0)))))))
 (define 1/unsafe-set-sleep-in-thread!
   (|#%name|
    unsafe-set-sleep-in-thread!

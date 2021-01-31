@@ -1,13 +1,15 @@
 #lang racket/base
 (require "wrap.rkt"
-         "match.rkt")
+         "match.rkt"
+         "mutated-state.rkt")
 
 ;; Since a Racket `equal?` will shadow the host Scheme's `equal?`,
 ;; its optimizer won't be able to reduce `equal?` to `eq?` or `eqv?`
 ;; with obvious arguments. So, we perform that conversion in schemify.
 
 (provide equal-implies-eq?
-         equal-implies-eqv?)
+         equal-implies-eqv?
+         always-eq/no-marks?)
 
 (define (equal-implies-eq? e)
   (match e
@@ -38,3 +40,19 @@
     [`,val
      (let ([val (unwrap val)])
        (number? val))]))
+
+;; e1 and e2 have been simplified;
+;; return #t only if e2 doesn't try to
+;; consult continuation marks
+(define (always-eq/no-marks? e1 e2 mutated)
+  (match e1
+    [`(quote ,v1)
+     (match e2
+       [`(quote ,v2)
+        (eq? v1 v2)]
+       [`,_ #f])]
+    [`,_
+     (define u-e1 (unwrap e1))
+     (and (symbol? u-e1)
+          (eq? u-e1 (unwrap e2))
+          (simple-mutated-state? (hash-ref mutated u-e1 #f)))]))
