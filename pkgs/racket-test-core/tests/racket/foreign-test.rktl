@@ -9,6 +9,7 @@
          ffi/unsafe/define
          ffi/unsafe/define/conventions
          ffi/unsafe/global
+         ffi/unsafe/atomic
          ffi/vector
          racket/extflonum
          racket/place
@@ -339,13 +340,18 @@
   ;; test sending a callback for C to hold, preventing the callback from GCing
   (let ([with-keeper
          (lambda (k)
+           (define (sqr x)
+             (when (eq? (system-type 'vm) 'chez-scheme)
+               (test #t in-atomic-mode?))
+             (* x x))
            (t (void) 'grab_callback
               (_fun (_fun #:keep k _int  -> _int) -> _void) sqr)
            (t 9      'use_grabbed_callback (_fun _int -> _int) 3)
            (collect-garbage) ; make sure it survives a GC
            (t 25     'use_grabbed_callback (_fun _int -> _int) 5)
            (collect-garbage)
-           (t 81     'use_grabbed_callback (_fun _int -> _int) 9))])
+           (t 81     'use_grabbed_callback (_fun _int -> _int) 9)
+           (void/reference-sink sqr))])
     (with-keeper #t)
     (let ([b (box #f)])
       (with-keeper b)
