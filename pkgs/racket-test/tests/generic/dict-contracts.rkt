@@ -9,7 +9,7 @@
   (check-true
    ((dict-mutability/c #f) '((a . 5))))
 
-  (check-true
+  (check-false
    ((dict-mutability/c #t) '((a . 5))))
 
   (check-false
