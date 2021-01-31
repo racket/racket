@@ -172,8 +172,8 @@ Equivalent to @racket[(dict-implements? d 'dict-set)].
 ]}
 
 
-@defproc[(homogenous-dictof [key-contract contract?] [value-contract contract?])
-          contract?]{
+@defproc[(homogenous-dictof [key-contract flat-contract?] [value-contract flat-contract?])
+          flat-contract?]{
 Recognizes a dictionary whose all satisfy the @racket[key-contract] and whose
 values all satisfy the @racket[value-contract].
 
@@ -188,8 +188,8 @@ values all satisfy the @racket[value-contract].
 @defproc[(heterogeneous-dictof [#:mandatory-keys? mandatory-keys? boolean? #t]
                                [#:exact-keys? exact-keys? boolean? #f]
                                [#:immutable? immutable? boolean? #t]
-                               [key-contract contract?] [value-contract contract?] ... ...)
-         contract?]{
+                               [key-contract flat-contract?] [value-contract flat-contract?] ... ...)
+         flat-contract?]{
 Recognizes a dictionary for which every key that satsifies a key contract maps
 to a value satisfying the corresponding value contract.
 Each @racket[key-contract] must be followed by a @racket[value-contract], so the

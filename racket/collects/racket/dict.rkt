@@ -281,13 +281,13 @@
  [dict-immutability/c
   (-> boolean? (-> any/c boolean?))]
  [homogeneous-dictof
-  (-> contract? contract? (-> any/c boolean?))]
+  (-> flat-contract? flat-contract? (-> any/c boolean?))]
  [heterogeneous-dictof
   (->* () (#:mandatory-keys? boolean?
            #:exact-keys? boolean?
            #:immutable? boolean?)
        #:rest (and/c (lambda (x) (even? (length x)))
-                     (listof contract?))
+                     (listof flat-contract?))
        (-> any/c boolean?))])
 
 (provide gen:dict
