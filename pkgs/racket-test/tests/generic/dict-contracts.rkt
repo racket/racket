@@ -83,4 +83,22 @@
 
   (check-true
    ((heterogeneous-dictof 'a integer? 'b integer?)
-    '((a . 5) (b . 6) (c . 7)))))
+    '((a . 5) (b . 6) (c . 7))))
+
+  (check-true
+   ((heterogeneous-dictof #:immutable? #t 'a integer?) '((a . 5))))
+
+  (check-false
+   ((heterogeneous-dictof #:immutable? #f 'a integer?) '((a . 5))))
+
+  (check-false
+   ((heterogeneous-dictof #:immutable? #t 'a integer?) (make-hash '((a . 5)))))
+
+  (check-true
+   ((heterogeneous-dictof #:immutable? #f 'a integer?) (make-hash '((a . 5)))))
+
+  (check-true
+   ((heterogeneous-dictof #:immutable? #t 'a integer?) (make-immutable-hash '((a . 5)))))
+
+  (check-false
+   ((heterogeneous-dictof #:immutable? #f 'a integer?) (make-immutable-hash '((a . 5))))))

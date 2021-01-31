@@ -45,7 +45,7 @@
   (let* ([k/v-contracts (apply unzip-args key-value-args)]
          [key-contracts (first k/v-contracts)]
          [value-contracts (second k/v-contracts)])
-    (and (dict-immutability/c immutable?)
+    (and ((dict-immutability/c immutable?) d)
          (if exact?
              (set=? (dict-keys d) key-contracts)
              #t)
