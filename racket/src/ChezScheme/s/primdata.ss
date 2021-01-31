@@ -2164,7 +2164,7 @@
   ($hashtable-veclen [flags discard])
   ($ht-minlen [flags single-valued discard])
   ($ht-veclen [flags single-valued discard])
-  ($immediate [sig [(ptr) -> (ptr)]] [flags pure mifoldable discard])
+  ($immediate [sig [(ptr) -> (ptr)]] [flags pure discard])
   ($immediate? [sig [(ptr) -> (boolean)]] [flags pure unrestricted]) ; no mifoldable due to fixnum
   ($impoops [flags abort-op])
   ($import-library [flags single-valued])

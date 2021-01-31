@@ -1772,15 +1772,9 @@
                       (if (lifted-seq? b)
                           `(letrec* ([,ids ,vals] ...) ,body)
                           `(letrec ([,ids ,vals] ...) ,body)))))))
-        (define (build-wrapper* b* body)
-          (nanopass-case (Lsrc Expr) body
-            [(call ,preinfo ,pr ,body)
-             (guard (eq? (primref-name pr) '$immediate))
-             `(call ,preinfo ,pr ,(build-wrapper b* body))]
-            [else (build-wrapper b* body)]))
         (let* ((ctxt (make-app opnds ctxt 'call name preinfo))
                (e (cp0 e ctxt env sc wd #f moi)))
-          (build-wrapper* (map operand-lifted opnds)
+          (build-wrapper (map operand-lifted opnds)
             (if (app-used ctxt)
                 (residualize-call-opnds (app-used ctxt) (app-unused ctxt) e (app-ctxt ctxt) sc)
                 (build-call preinfo e
@@ -5239,6 +5233,15 @@
             (make-1seq* 'ignored (list e1 e3))]
            [else
             `(call ,preinfo ,pr ,e1 ,e2 ,e3)]))]
+      [(call ,preinfo ,pr ,e)
+       (guard (eq? (primref-name pr) '$immediate))
+       (context-case ctxt
+         [(ignored) (cp0 e ctxt env sc wd name moi)]
+         [else
+          (let ([e (cp0 e 'value env sc wd name moi)])
+            (nanopass-case (Lsrc Expr) e
+              [(quote ,d) e]
+              [else `(call ,preinfo ,pr ,e)]))])]
       [(call ,preinfo ,e ,e* ...)
        (let ()
          (define lift-let
