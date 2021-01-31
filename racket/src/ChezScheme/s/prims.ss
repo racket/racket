@@ -1412,6 +1412,8 @@
   (lambda (b) 
     (#3%immutable-box? b)))
 
+(define $immediate (lambda (x) x))
+
 (define pair? (lambda (x) (pair? x)))
 
 (define box? (lambda (x) (box? x)))
