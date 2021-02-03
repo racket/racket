@@ -8003,12 +8003,18 @@ static Scheme_Object *make_empty_marks()
   return (Scheme_Object *)set;
 }
 
-Scheme_Object *scheme_current_continuation_marks(Scheme_Object *prompt_tag)
+Scheme_Object *scheme_current_continuation_marks_as(const char *who, Scheme_Object *prompt_tag)
+/* if who is NULL, the result can be NULL instead of a prompt-tag error */
 {
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
                             prompt_tag ? prompt_tag : scheme_default_prompt_tag,
-                            "continuation-marks",
+                            who,
                             0, 1);
+}
+
+Scheme_Object *scheme_current_continuation_marks(Scheme_Object *prompt_tag)
+{
+  return scheme_current_continuation_marks_as("continuation-marks", prompt_tag);
 }
 
 Scheme_Object *scheme_all_current_continuation_marks()
@@ -8122,6 +8128,12 @@ cont_marks(int argc, Scheme_Object *argv[])
       t->returned_marks = NULL;
       
       scheme_end_atomic_no_swap();
+
+      if (!m)
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                         "%s: no corresponding prompt in the continuation\n"
+                         "  tag: %V",
+                         "continuation-marks", prompt_tag);
 
       return m;
     }

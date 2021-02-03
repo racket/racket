@@ -1540,6 +1540,10 @@
            (prune-mark-chain-prefix (escape-continuation-tag k) (current-mark-chain)))
           null)]
         [else
+         ;; A `#f` is used to get the marks for a completed thread.
+         ;; It would make sense to raise an error for any prompt,
+         ;; since the continuaiton is empty, but `continuation-marks`
+         ;; is defined to return empty marks in this case.
          (make-continuation-mark-set null null)]))]))
 
 (define (get-metacontinuation-traces mc)

@@ -610,7 +610,18 @@
 	     (c 4 5))))
   (test '(1 2 4 5) values l))
 
-  
+(err/rt-test (continuation-marks (current-thread) (make-continuation-prompt-tag)))
+(let ([t (thread (lambda () (semaphore-wait (make-semaphore))))])
+  (err/rt-test (continuation-marks t (make-continuation-prompt-tag)))
+  (sync (system-idle-evt))
+  (err/rt-test (continuation-marks t (make-continuation-prompt-tag))))
+
+(let ([t (thread void)])
+  (sync (system-idle-evt))
+  (define m (continuation-marks t (make-continuation-prompt-tag)))
+  (test #t continuation-mark-set? m)
+  (test null continuation-mark-set->list m 'anything))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try to test internal caching strategies
 

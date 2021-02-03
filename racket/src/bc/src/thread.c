@@ -2959,7 +2959,7 @@ int scheme_in_main_thread(void)
 static void stash_current_marks()
 {
   Scheme_Object *m;
-  m = scheme_current_continuation_marks(scheme_current_thread->returned_marks);
+  m = scheme_current_continuation_marks_as(NULL, scheme_current_thread->returned_marks);
   scheme_current_thread->returned_marks = m;
   swap_target = scheme_current_thread->return_marks_to;
   scheme_current_thread->return_marks_to = NULL;

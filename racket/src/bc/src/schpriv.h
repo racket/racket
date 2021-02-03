@@ -2035,6 +2035,7 @@ int scheme_is_cm_deeper(struct Scheme_Meta_Continuation *m1, MZ_MARK_POS_TYPE p1
 void scheme_recheck_prompt_and_barrier(struct Scheme_Cont *c);
 
 Scheme_Object *scheme_all_current_continuation_marks(void);
+Scheme_Object *scheme_current_continuation_marks_as(const char *who, Scheme_Object *prompt_tag);
 
 void scheme_about_to_move_C_stack(void);
 

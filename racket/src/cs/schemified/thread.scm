@@ -12981,7 +12981,7 @@
                       (if (eq? e_0 'done)
                         (|#%app| host:continuation-marks #f prompt-tag_0)
                         (if (eq? e_0 'running)
-                          (current-continuation-marks)
+                          (current-continuation-marks prompt-tag_0)
                           (|#%app| host:continuation-marks e_0 prompt-tag_0))))
                     (|#%app| host:continuation-marks k2_0 prompt-tag_0)))))))))
     (|#%name|

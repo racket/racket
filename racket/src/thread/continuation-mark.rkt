@@ -15,7 +15,7 @@
      (define e (thread-engine k))
      (cond
        [(eq? e 'done) (host:continuation-marks #f prompt-tag)]
-       [(eq? e 'running) (current-continuation-marks)]
+       [(eq? e 'running) (current-continuation-marks prompt-tag)]
        [else (host:continuation-marks e prompt-tag)])]
     [else
      (host:continuation-marks k prompt-tag)]))
