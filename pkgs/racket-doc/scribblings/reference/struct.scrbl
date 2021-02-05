@@ -723,13 +723,13 @@ default), an error is raised. If it is @racket['return-false],
 the inaccessible fields are omitted from the list.
 
 @examples[#:eval struct-eval
-(define-struct open (u v) #:transparent)
-(struct->list (make-open 'a 'b))
+(struct open (u v) #:transparent)
+(struct->list (open 'a 'b))
 (struct->list #s(pre 1 2 3))
-(define-struct (secret open) (x y))
-(eval:error (struct->list (make-secret 0 1 17 22)))
-(struct->list (make-secret 0 1 17 22) #:on-opaque 'return-false)
-(struct->list (make-secret 0 1 17 22) #:on-opaque 'skip)
+(struct secret open (x y))
+(eval:error (struct->list (secret 0 1 17 22)))
+(struct->list (secret 0 1 17 22) #:on-opaque 'return-false)
+(struct->list (secret 0 1 17 22) #:on-opaque 'skip)
 (struct->list 'not-a-struct #:on-opaque 'return-false)
 (struct->list 'not-a-struct #:on-opaque 'skip)
 ]

@@ -379,20 +379,21 @@ and the @racket[prop:input-port] property takes precedence over
 @racket[prop:output-port] for synchronization.
 
 @examples[
-(define-struct wt (base val)
-               #:property prop:evt (struct-field-index base))
+(struct wt (base val)
+  #:property prop:evt (struct-field-index base))
 
 (define sema (make-semaphore))
-(sync/timeout 0 (make-wt sema #f))
+(sync/timeout 0 (wt sema #f))
 (semaphore-post sema)
-(sync/timeout 0 (make-wt sema #f))
+(sync/timeout 0 (wt sema #f))
 (semaphore-post sema)
-(sync/timeout 0 (make-wt (lambda (self) (wt-val self)) sema))
+(sync/timeout 0 (wt (lambda (self) (wt-val self)) sema))
 (semaphore-post sema)
-(define my-wt (make-wt (lambda (self) (wrap-evt
-                                       (wt-val self)
-                                       (lambda (x) self)))
-                       sema))
+(define my-wt (wt (lambda (self)
+                    (wrap-evt
+                     (wt-val self)
+                     (lambda (x) self)))
+                  sema))
 (sync/timeout 0 my-wt)
 (sync/timeout 0 my-wt)
 ]}

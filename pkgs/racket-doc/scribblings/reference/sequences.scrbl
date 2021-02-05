@@ -764,7 +764,7 @@ each element in the sequence.
   @let-syntax[([car (make-element-id-transformer
                      (lambda (id) #'@racketidfont{car}))])
     @examples[
-      (define-struct train (car next)
+      (struct train (car next)
         #:property prop:sequence
         (lambda (t)
           (make-do-sequence
@@ -773,10 +773,10 @@ each element in the sequence.
                      (lambda (t) t)
                      (lambda (v) #t)
                      (lambda (t v) #t))))))
-      (for/list ([c (make-train 'engine
-                                (make-train 'boxcar
-                                            (make-train 'caboose
-                                                        #f)))])
+      (for/list ([c (train 'engine
+                           (train 'boxcar
+                                  (train 'caboose
+                                         #f)))])
         c)]]}
 
 @; ----------------------------------------------------------------------

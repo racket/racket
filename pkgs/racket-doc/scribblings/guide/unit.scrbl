@@ -73,14 +73,14 @@ racket
 
   (printf "Factory started.\n")
 
-  (define-struct toy (color) #:transparent)
+  (struct toy (color) #:transparent)
 
   (define (build-toys n)
     (for/list ([i (in-range n)])
-      (make-toy 'blue)))
+      (toy 'blue)))
 
   (define (repaint t col)
-    (make-toy col)))
+    (toy col)))
 
 (provide simple-factory@)
 ]
@@ -212,13 +212,13 @@ racket
   (import toy-store^)
   (export toy-factory^)
 
-  (define-struct toy () #:transparent)
+  (struct toy () #:transparent)
 
   (define (toy-color t) (store-color))
 
   (define (build-toys n)
     (for/list ([i (in-range n)])
-      (make-toy)))
+      (toy)))
 
   (define (repaint t col)
     (error "cannot repaint")))
@@ -441,14 +441,14 @@ racket/unit
 
 (printf "Factory started.\n")
 
-(define-struct toy (color) #:transparent)
+(struct toy (color) #:transparent)
 
 (define (build-toys n)
   (for/list ([i (in-range n)])
-    (make-toy 'blue)))
+    (toy 'blue)))
 
 (define (repaint t col)
-  (make-toy col))
+  (toy col))
 ]
 
 The unit @racket[simple-factory@] is automatically provided from the
@@ -500,14 +500,14 @@ racket
 
   (printf "Factory started.\n")
 
-  (define-struct toy (color) #:transparent)
+  (struct toy (color) #:transparent)
 
   (define (build-toys n)
     (for/list ([i (in-range n)])
-      (make-toy 'blue)))
+      (toy 'blue)))
 
   (define (repaint t col)
-    (make-toy col)))
+    (toy col)))
 
 (provide contracted-simple-factory@)
 ]
@@ -553,14 +553,14 @@ racket
 
   (printf "Factory started.\n")
 
-  (define-struct toy (color) #:transparent)
+  (struct toy (color) #:transparent)
 
   (define (build-toys n)
     (for/list ([i (in-range n)])
-      (make-toy 'blue)))
+      (toy 'blue)))
 
   (define (repaint t col)
-    (make-toy col)))
+    (toy col)))
 
 (provide wrapped-simple-factory@)
 ]
