@@ -15,7 +15,7 @@ Parses @racket[stx] as a @racket[define-struct] form, but uses
 @racket[orig-stx] to report syntax errors (under the assumption that
 @racket[orig-stx] is the same as @racket[stx], or that they at least share
 sub-forms). The result is four values: an identifier for the struct
-type name, a identifier or #f for the super-name, a list of
+type name, a identifier or @racket[#f] for the super-name, a list of
 identifiers for fields, and a syntax object for the inspector
 expression.}
 

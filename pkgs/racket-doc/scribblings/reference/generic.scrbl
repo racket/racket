@@ -183,7 +183,7 @@ syntax error.}
                                    #:width w #:height [h 0])
                  (fprintf port "String (~ax~a): ~a" w h s))]))
 
-(define-struct num (v)
+(struct num (v)
   #:methods gen:printable
   [(define/generic super-print gen-print)
    (define (gen-print n [port (current-output-port)])
@@ -194,7 +194,7 @@ syntax error.}
                        #:width w #:height [h 0])
      (fprintf port "Num (~ax~a): ~a" w h (num-v n)))])
 
-(define-struct bool (v)
+(struct bool (v)
   #:methods gen:printable
   [(define/generic super-print gen-print)
    (define (gen-print b [port (current-output-port)])
@@ -207,14 +207,14 @@ syntax error.}
      (fprintf port "Bool (~ax~a): ~a" w h
               (if (bool-v b) "Yes" "No")))])
 
-(define x (make-num 10))
+(define x (num 10))
 (gen-print x)
 (gen-port-print (current-output-port) x)
 (gen-print* x #:width 100 #:height 90)
 
 (gen-print "Strings are printable too!")
 
-(define y (make-bool #t))
+(define y (bool #t))
 (gen-print y)
 (gen-port-print (current-output-port) y)
 (gen-print* y #:width 100 #:height 90)
@@ -227,7 +227,7 @@ syntax error.}
         [gen-print* (->* (printable? #:width exact-nonnegative-integer?)
                          (output-port? #:height exact-nonnegative-integer?)
                          void?)]))
-   make-num)
+   num)
 
 (define z (make-num-contracted 10))
 (eval:error (gen-print* z #:width "not a number" #:height 5))
