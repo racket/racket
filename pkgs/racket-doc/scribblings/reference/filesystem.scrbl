@@ -491,7 +491,7 @@ all three (owner, group, and others) are always the same, and read and
 execute permission are always available. On @|AllUnix|,
 higher bits have a platform-specific meaning.
 
-If an integer is supplied as the second argument, its is used as an
+If an integer is supplied as the second argument, it is used as an
 encoding of properties (mostly permissions) to install for the file.
 
 In all modes, the @exnraise[exn:fail:filesystem] on error (e.g., if no
