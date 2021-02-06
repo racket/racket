@@ -1,5 +1,6 @@
 #lang scribble/base
-@(require "utils.rkt")
+@(require "utils.rkt"
+          scribble/bnf)
 
 @title[#:style '(grouper toc) #:tag "appendix"]{Appendices}
 
@@ -30,44 +31,51 @@ build modes that are more suitable for developing Racket itself; see
 
 @section[#:tag "ios-cross-compilation"]{Cross-compiling Racket Sources for iOS}
 
-Everything in this section can be adapted to other cross-compilation
-targets, but iOS is used to give concrete examples.
+See @secref[#:doc raco-doc "cross-system"] for general information on
+using Racket in cross-build mode. Everything in this section can be
+adapted to other cross-compilation targets, but iOS is used to make
+the examples concrete.
 
-After cross-compiling Racket CS for iOS according to the documentation
-in the source distribution's @filepath{src/README.txt} file, you can
-use that build of Racket in conjunction with the host build it was
+After cross-compiling Racket CS for iOS according to the source
+distribution's @filepath{src/README.txt} file, you can use that build
+@nonterm{ios-racket-dir} in conjunction with the host build it was
 compiled by to cross-compile Racket modules for iOS by passing the
 following set of flags to the host executable:
 
 @verbatim[#:indent 2]{
-racket \
-  --compile-any \
-  --compiled 'compiled_host:tarm64osx' \
-  --cross \
-  --cross-compiler tarm64osx /path/to/ios/racket/lib \
-  --config /path/to/ios/racket/etc \
-  --collects /path/to/ios/racket/collects
+racket  \
+  --compile-any  \
+  --compiled @nonterm{ios-racket-dir}/src/build/cs/c/compiled:  \
+  --cross  \
+  --cross-compiler tarm64osx @nonterm{ios-racket-dir}/lib  \
+  --config @nonterm{ios-racket-dir}/etc  \
+  --collects @nonterm{ios-racket-dir}/collects
 }
 
-The above command runs the host Racket REPL with support for
-outputting compiled code for both the host machine and for the
-@tt{tarm64osx} target.  The second path to @exec{--compiled} may be
-any relative path, but @filepath{tarm64osx} is what the cross build
-uses to set up its installation so it is convenient to re-use it.
+The above command runs the host Racket REPL with support for writing
+compiled code for both the host machine and for the @tt{tarm64osx}
+target. The first path to @DFlag{compiled} (before the @litchar{:})
+can be any absolute path, and @filepath{.zo} files for the host
+platform will be written there; specifying the path
+@filepath{@nonterm{ios-racket-dir}/src/build/cs/c/compiled} is meant
+to reuse the directory that was created during cross-compilation
+installation. The second path to @DFlag{compiled} (after @litchar{:})
+is empty, which causes target-platform @filepath{.zo} files to be
+written in the usual @filepath{compiled} subdirectory.
 
-Furthermore, you can instruct the host Racket to run library code by
-passing the @exec{-l} flag.  For example, you can setup the target
+Instruct the host Racket to run library code by
+passing the @Flag{l} flag.  For example, you can setup the target
 Racket's installation with the following command:
 
 @verbatim[#:indent 2]{
-racket \
-  --compile-any \
-  --compiled 'compiled_host:tarm64osx' \
-  --cross \
-  --cross-compiler tarm64osx /path/to/ios/racket/lib \
-  --config /path/to/ios/racket/etc \
-  --collects /path/to/ios/racket/collects \
-  -l- \
+racket  \
+  --compile-any  \
+  --compiled @nonterm{ios-racket-dir}/src/build/cs/c/compiled:  \
+  --cross  \
+  --cross-compiler tarm64osx @nonterm{ios-racket-dir}/lib  \
+  --config @nonterm{ios-racket-dir}/etc  \
+  --collects @nonterm{ios-racket-dir}/collects  \
+  -l-  \
   raco setup
 }
 
@@ -77,14 +85,14 @@ use with @cppi{racket_embedded_load_file} (after installing
 with:
 
 @verbatim[#:indent 2]{
-racket \
-  --compile-any \
-  --compiled 'compiled_host:tarm64osx' \
-  --cross \
-  --cross-compiler tarm64osx /path/to/ios/racket/lib \
-  --config /path/to/ios/racket/etc \
-  --collects /path/to/ios/racket/collects \
-  -l- \
+racket  \
+  --compile-any  \
+  --compiled @nonterm{ios-racket-dir}/src/build/cs/c/compiled:  \
+  --cross  \
+  --cross-compiler tarm64osx @nonterm{ios-racket-dir}/lib  \
+  --config @nonterm{ios-racket-dir}/etc  \
+  --collects @nonterm{ios-racket-dir}/collects  \
+  -l-  \
   raco ctool --mods application.zo src/application.rkt
 }
 

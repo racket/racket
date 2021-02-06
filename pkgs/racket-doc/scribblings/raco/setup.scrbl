@@ -2163,8 +2163,9 @@ does not match the running Racket's information, then the
 @racketmodname[setup/cross-system] module infers that Racket is being
 run in cross-installation mode.
 
-For example, if an in-place Racket installation for a different
-platform resides at @nonterm{cross-dir}, then
+For example, if an in-place Racket @tech[#:doc guide-doc]{BC}
+installation for a different platform resides at @nonterm{cross-dir},
+then running Racket BC as
 
 @commandline{racket -C -G @nonterm{cross-dir}/etc -X @nonterm{cross-dir}/collects -l- raco pkg}
 
@@ -2176,6 +2177,53 @@ libraries need to run to perform the requested @exec{raco pkg} action
 (e.g., when installing built packages), or as long as the current
 platform's installation already includes those libraries.
 
+For Racket @tech[#:doc guide-doc]{CS}, cross compilation is more
+complicated, because Racket CS @filepath{.zo} files are
+platform-specific:
+
+@itemlist[
+
+ @item{A target installation @nonterm{cross-dir} is needed that
+       includes cross-compilation support for the host platform as
+       plug-in within the installation's
+       @filepath{@nonterm{cross-dir}/lib} directory. That installation
+       might be created by compiling from source on the host platform.
+       Only Racket CS can use a CS cross-compilation plug-in.
+
+       When running @exec{racket} in cross mode, use the
+       @DFlag{cross-compiler} flag to specify the target machine and
+       path to the @filepath{@nonterm{cross-dir}/lib} directory.}
+
+ @item{A flag combination @Flag{MCR} with argument
+       @filepath{@nonterm{absolute-zo-dir}:} is needed to enable
+       @filepath{.zo} file creation for both the host platform (which
+       uses the directory before a @litchar{:}) and the target
+       platform (which uses the normal compiled-file subdirectory when
+       the path after the @litchar{:} is empty).
+
+       The @nonterm{absolute-zo-dir} can be any absolute path. It
+       generally should be populated by running @exec{raco setup} in
+       cross mode before commands like @exec{raco pkg}.}
+
+]
+
+For example, the @exec{raco pkg} example for Racket CS is
+
+@verbatim[#:indent 2]{
+  racket --cross-compiler @nonterm{target-machine} @nonterm{cross-dir}/lib \
+    -MCR @nonterm{absolute-zo-dir}: \
+    -G @nonterm{cross-dir}/etc -X @nonterm{cross-dir}/collects -l- raco pkg
+}
+
+The @nonterm{target-machine} provided to @DFlag{cross-compiler} should
+be the same as the @racketidfont{target-machine} entry in
+@filepath{@nonterm{cross-dir}/lib/systemd.rktd}.
+
+The @Flag{C} flag is shorthand for @DFlag{cross}, @Flag{M} is short
+for @DFlag{compile-any}, @Flag{R} is short for @DFlag{compiled},
+@Flag{G} is short for @DFlag{config}, @Flag{X} is short for
+@DFlag{collects}, and @Flag{MCR} is short for @exec{@Flag{M} @Flag{C}
+@Flag{R}}.
 
 @history[#:added "6.3"]
 

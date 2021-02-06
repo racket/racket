@@ -478,7 +478,7 @@ do-setup-install:
 	@RUN_RACKET@ $(SELF_ROOT_CONFIG) $(SETUP_ARGS)
 
 do-setup-install-cross:
-	@RUN_RACKET@ $(SELF_ROOT_CONFIG) -C -M -R 'compiled_host:$(TARGET_MACH)' --cross-compiler $(TARGET_MACH) "$(DESTDIR)$(libpltdir)" $(SETUP_ARGS)
+	@RUN_RACKET@ $(SELF_ROOT_CONFIG) -C -M -R `pwd`/compiled: --cross-compiler $(TARGET_MACH) "$(DESTDIR)$(libpltdir)" $(SETUP_ARGS)
 
 no-setup-install:
 	echo done

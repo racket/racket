@@ -218,7 +218,7 @@ Detailed instructions:
     libraries can find the installation directories. At this stage, in
     case you are packaging an installation instead of installing
     directly, you can redirect the installation by setting the
-    "DESTDIR" environment variable to an absolute path for the
+    "DESTDIR" makefile variable to an absolute path for the
     packaging area. For example, `make DESTDIR=/tmp/racket-build
     install` places the installation into "/tmp/racket-build" instead
     of the location originally specified with `--prefix`. The
@@ -309,9 +309,6 @@ but note the following:
    Mac-style directory structure on top of an existing Unix-style
    directory structure.)
 
- * On Mac OS 10.6 and later, to build Racket in 32-bit mode, use
-   `--disable-mac64`.
-
 
 ========================================================================
  Compiling for Windows
@@ -397,12 +394,13 @@ the [comp] of your choice and the [platform] used to compile.
  Cross-compiling for iOS
 ========================================================================
 
-To compile the Racket runtime system as a Framework for iOS, use (all
-on one line) for BC
+To compile the Racket BC runtime system as a Framework for iOS, use
+(all on one line)
 
   configure --host=[arch]-apple-darwin
             --enable-ios="[sdk]"
             --enable-racket=racket
+            --enable-bcdefault
 
 where [arch] is one of
 
