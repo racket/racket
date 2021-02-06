@@ -31,6 +31,8 @@ fi
 RUN_LOCAL_RACKET="local/cs/c/racketcs"
 CONFIGURE_LOCAL_RACKET=--enable-cs
 
+# If BC is the default, then we rely on BC configure-parent
+# being used instead of this one:
 MAIN_MAKE_TARGET=racketcs
 MAIN_VARIANT=3m
 

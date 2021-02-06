@@ -46,7 +46,11 @@ if test "${enable_cgcdefault}" = "yes" ; then
 else
   MAIN_VARIANT=3m
 fi
-MAIN_MAKE_TARGET="${MAIN_VARIANT}"
+if test "${enable_csdefault}" = "yes" ; then
+  MAIN_MAKE_TARGET="racketcs"
+else
+  MAIN_MAKE_TARGET="${MAIN_VARIANT}"
+fi
 
 if test "${enable_racket}" != "" ; then
   RUN_RACKET="${enable_racket}"
