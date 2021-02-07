@@ -181,7 +181,7 @@ typedef int tputsputcchar;
 #define SECMTIME(sb) (sb).st_mtimespec.tv_sec
 #define NSECATIME(sb) (sb).st_atimespec.tv_nsec
 #define NSECCTIME(sb) (sb).st_ctimespec.tv_nsec
-#define NSECM<TIME(sb) (sb).st_mtimespec.tv_nsec
+#define NSECMTIME(sb) (sb).st_mtimespec.tv_nsec
 #define ICONV_INBUF_TYPE char **
 #define UNUSED __attribute__((__unused__))
 #define USE_OSSP_UUID
