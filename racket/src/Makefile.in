@@ -94,7 +94,7 @@ no-local-racket:
 @RUN_LOCAL_RACKET@:
 	mkdir -p local
 	$(MAKE) local/Makefile
-	cd local && $(MAKE)
+	cd local && $(MAKE) @LOCAL_RACKET_TARGET@
 
 local/Makefile:
 	cd local && `cd ..; cd $(srcdir); pwd`/configure --disable-gracket @CONFIGURE_LOCAL_RACKET@

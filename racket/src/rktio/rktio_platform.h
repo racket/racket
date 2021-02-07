@@ -50,6 +50,7 @@
 
 # ifdef __ANDROID__
 #  define PROTOENT_IS_INT IPPROTO_TCP
+#  define NO_PTHREAD_CANCEL
 # endif
 
 #endif
@@ -342,3 +343,7 @@
     standalone Racket. Used only if NO_SLEEP is undefined. */
 
  /* NO_STRERROR_AVAILABLE means that strerror() is not available. */
+
+ /* NO_PTHREAD_CANCEL means that pthread_setcanceltype() is
+    not available, which means it can't be used to implement
+    non-blocking open(). */

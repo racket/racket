@@ -30,6 +30,7 @@ if test "${enable_racket}" = "auto" ; then
 fi
 RUN_LOCAL_RACKET="local/cs/c/racketcs"
 CONFIGURE_LOCAL_RACKET=--enable-cs
+LOCAL_RACKET_TARGET=cs
 
 # If BC is the default, then we rely on BC configure-parent
 # being used instead of this one:
@@ -46,6 +47,7 @@ AC_SUBST(RUN_RACKET)
 AC_SUBST(MAKE_LOCAL_RACKET)
 AC_SUBST(RUN_LOCAL_RACKET)
 AC_SUBST(CONFIGURE_LOCAL_RACKET)
+AC_SUBST(LOCAL_RACKET_TARGET)
 
 makefiles="Makefile"
 

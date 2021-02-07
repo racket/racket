@@ -371,66 +371,84 @@ Some less commonly needed `configure` flags are for Racket BC:
  Cross-compiling for Android
 ========================================================================
 
-[Currently, cross-compilation for Android works only for the Racket BC
- implementation.]
-
-As an example of cross-compiling, to compile for Android on ARM using
-the NDK, use (all on one line)
+As an example of cross-compiling Racket for Android on ARMv7 using the
+NDK, use (all on one line)
 
   configure --host=arm-linux-androideabi 
-            --enable-sysroot="[ndk]/platforms/android-[N]/arch-arm"
+            --enable-sysroot="[sysroot]"
             --enable-racket=auto
 
-where [ndk] is the path to the installed NDK, [N] is a target version
-of Android (such as 14), and
+If you use the NDK script "make-standalone-toolchain.sh" to generate a
+toolchain directory, then include that directory's "bin" in your PATH
+(so that `arm-linux-androideabi-gcc`, etc., are found), and you can
+omit `--enable-sysroot` (or specify [sysroot] as the toolchain
+directory's "sysroot" subdirectory).
+
+In other NDK configurations, you may have
 
  [ndk]/toolchains/arm-linux-androideabi-[comp]/prebuilt/[platform]/bin
 
-is in your PATH (so that a suitable `gcc`, `ar`, etc., are found) for
-the [comp] of your choice and the [platform] used to compile.
+in your PATH (so that `arm-linux-androideabi-gcc`, etc., are found)
+where [ndk] is the path to the installed NDK and for the [comp] of
+your choice and the [platform] used to compile, and then [sysroot] is
+
+ [ndk]/platforms/android-[N]/arch-arm
+
+where [N] is a target version of Android (such as 14).
+
+For 64-bit ARM, replace "arm" above with "aarch64", and replace
+"androideabi" with "android".
+
+When building BC, you may need to add `--disable-cify` for 32-bit ARM
+and `--enable-cify` for 64-bit ARM instead of inheriting the build
+machine's disposition.
 
 
 ========================================================================
  Cross-compiling for iOS
 ========================================================================
 
-To compile the Racket BC runtime system as a Framework for iOS, use
-(all on one line)
+To compile the Racket runtime system as a Framework for iOS, use (all
+on one line)
 
   configure --host=[arch]-apple-darwin
             --enable-ios="[sdk]"
-            --enable-racket=racket
-            --enable-bcdefault
+            --enable-racket=auto
 
 where [arch] is one of
 
  - armv7, armv7s, or aarch64: to run on iOS
- - i386 or x86_64: to run on the simulator
+ - x86_64 or aarch64: to run on the simulator
 
-The [sdk] argument is a path to an iOS SDK, but if it is "iPhoneOS" or
-"iPhoneSimulator", then the corresponding SDK is located in the
-standard place within the XCode application. For example, "iPhoneOS"
-becomes the path (all on one line)
+The [sdk] argument is a path to an iOS SDK for "iPhoneOS" or
+"iPhoneSimulator". The corresponding SDK is located in the standard
+place within the XCode application. For example, "iPhoneOS" becomes
+the path (all on one line)
 
   /Applications/Xcode.app/Contents/Developer/Platforms/
     iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
 
-To cross-compile for CS, you must supply the Chez Scheme compiler that
-Racket CS was built with.  Assuming you have built Racket CS for your
-machine at "/path/to/racket" using the default `make` target, you can
-configure the cross build using that Racket binary and a path to the
-Chez Scheme build folder as follows (all on one line)
+To use an existing Racket build for the build platform using
+`--enable-racket`, be sure to include `--enable-scheme` for Racket CS.
+For example, if you have built Racket CS for your machine at
+"/path/to/racket" using the default `make` target, you can configure
+the cross build using that Racket binary and a path to the Chez Scheme
+build folder as follows (all on one line)
 
   configure --host=[arch]-apple-darwin
             --enable-ios="[sdk]"
             --enable-racket=/path/to/racket/bin/racket
             --enable-scheme=/path/to/racket/src/build/cs/c
 
-Currently, iOS enforces strict W^X protection on memory pages. See the
-note about "writes to `space_code` memory" in "ChezScheme/c/segment.c"
-for the implications this has on Racket CS. In principle, if you avoid
-passing newly-allocated code between threads and avoid `#:blocking?`
-foreign callbacks, you should not run into any issues.
+Currently, iOS enforces W^X protection on memory pages, which is
+technically a problem for Racket CS. See the note about "writes to
+`space_code` memory" in "ChezScheme/c/segment.c" for the implications.
+If you avoid passing newly-allocated code between threads and avoid
+`#:blocking?` foreign callbacks, you might not run into any issues.
+
+When building BC for iOS, you may need to add `--disable-cify` for
+32-bit target and `--enable-cify` for 64-bit target instead of
+inheriting the build machine's disposition.
 
 
 ========================================================================

@@ -360,7 +360,7 @@ void rktio_close_fds_after_fork(int len, int skip1, int skip2, int skip3);
 
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
 
-#ifdef RKTIO_USE_PTHREADS
+#if defined(RKTIO_USE_PTHREADS) && !defined(NO_PTHREAD_CANCEL)
 # define RKTIO_USE_PENDING_OPEN
 #endif
 

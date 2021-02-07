@@ -220,7 +220,8 @@ case "$host_os" in
     MACH_OS=fb
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LDFLAGS="${LDFLAGS} -L/usr/local/lib"
-    LIBS="${LIBS} -liconv -lm -lpthread"
+    LIBS="${LIBS} -lm -lpthread"
+    add_iconv_lib="-liconv"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
@@ -228,7 +229,8 @@ case "$host_os" in
     MACH_OS=ob
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LDFLAGS="${LDFLAGS} -L/usr/local/lib"
-    LIBS="${LIBS} -liconv -lm -lpthread"
+    LIBS="${LIBS} -lm -lpthread"
+    add_iconv_lib="-liconv"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -239,7 +241,8 @@ case "$host_os" in
     ;;
   netbsd*)
     MACH_OS=nb
-    LIBS="${LIBS} /usr/lib/i18n/libiconv_std.a -lm -lpthread"
+    LIBS="${LIBS} -lm -lpthread"
+    add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     POST_LINKER="paxctl +m"
@@ -248,7 +251,13 @@ case "$host_os" in
     ;;
   linux*)
     MACH_OS=le
-    LIBS="${LIBS} -lrt"
+    case "$host_os" in
+      *linux-android*)
+        ;;
+      *)
+        LIBS="${LIBS} -lrt"
+        ;;
+    esac
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
@@ -529,6 +538,8 @@ AC_LANG_C
 m4_include(../ac/iconv.m4)
 if test "${enable_iconv}" = "no" ; then
   AC_DEFINE(RKTIO_NO_ICONV,1,[Do not use iconv])
+  extra_scheme_config_args="${extra_scheme_config_args} --disable-iconv"
+  add_iconv_lib=
 fi
 
 if test "${enable_iconv}" = "yes" ; then
@@ -539,6 +550,10 @@ if test "${enable_iconv}" = "yes" ; then
                have_codeset=yes,
               have_codeset=no)
   AC_MSG_RESULT($have_codeset)
+fi
+
+if test "${add_iconv_lib}" != "" ; then
+    LIBS="${LIBS} ${add_iconv_lib}"
 fi
 
 ############### pthread ###################

@@ -4231,7 +4231,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
       return 0;
    }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 $as_echo "#define RKTIO_USE_XLOCALE 1" >>confdefs.h
 
@@ -4239,7 +4239,8 @@ $as_echo "#define RKTIO_USE_XLOCALE 1" >>confdefs.h
 else
   xlocaleon=no
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $xlocaleon" >&5
 $as_echo "$xlocaleon" >&6; }
 CFLAGS="$SAVE_CFLAGS"
