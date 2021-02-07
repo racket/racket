@@ -1564,8 +1564,8 @@
 (define-record-type (continuation-mark-key create-continuation-mark-key authentic-continuation-mark-key?)
   (fields (mutable name))) ; `mutable` ensures that `create-...` allocates
 
-(define-record continuation-mark-key-impersonator impersonator (get set))
-(define-record continuation-mark-key-chaperone chaperone (get set))
+(define-impersonator-record continuation-mark-key-impersonator impersonator (get set))
+(define-impersonator-record continuation-mark-key-chaperone chaperone (get set))
 
 (define make-continuation-mark-key
   (case-lambda
@@ -1673,8 +1673,8 @@
       (and (impersonator? v)
            (authentic-continuation-prompt-tag? (impersonator-val v)))))
 
-(define-record continuation-prompt-tag-impersonator impersonator (procs))
-(define-record continuation-prompt-tag-chaperone chaperone (procs))
+(define-impersonator-record continuation-prompt-tag-impersonator impersonator (procs))
+(define-impersonator-record continuation-prompt-tag-chaperone chaperone (procs))
 
 (define-record continuation-prompt-tag-procs (handler abort cc-guard cc-impersonate))
 

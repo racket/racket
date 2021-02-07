@@ -901,9 +901,9 @@
   (record-type-hash-procedure (record-type-descriptor mutable-hash)
                               hash-hash-code)
 
-  (record-type-hash-procedure (record-type-descriptor hash-impersonator)
+  (record-type-hash-procedure (impersonator-descriptor hash-impersonator)
                               hash-hash-code)
-  (record-type-hash-procedure (record-type-descriptor hash-chaperone)
+  (record-type-hash-procedure (impersonator-descriptor hash-chaperone)
                               hash-hash-code))
 
 ;; ----------------------------------------
@@ -912,8 +912,8 @@
 ;; `impersonator-of?` and `chaperone-of?`:
 (define-record hash-procs (ref set remove key clear equal-key))
 
-(define-record hash-impersonator impersonator (procs))
-(define-record hash-chaperone chaperone (procs))
+(define-impersonator-record hash-impersonator impersonator (procs))
+(define-impersonator-record hash-chaperone chaperone (procs))
 
 (define/who (impersonate-hash ht ref set remove key . args)
   (check who

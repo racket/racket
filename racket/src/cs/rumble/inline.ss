@@ -83,9 +83,9 @@
   |#%app/no-return|)
 
 (define-inline (unsafe-struct-ref s i)
-  (not (impersonator? s))
+  (unsafe-struct-not-impersonator? s)
   (unsafe-struct*-ref s i))
 
 (define-inline (unsafe-struct-set! s i v)
-  (not (impersonator? s))
+  (unsafe-struct-not-impersonator? s)
   (unsafe-struct*-set! s i v))

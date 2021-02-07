@@ -30,8 +30,8 @@
 
 ;; ----------------------------------------
 
-(define-record vector-chaperone chaperone (ref set))
-(define-record vector-impersonator impersonator (ref set))
+(define-impersonator-record vector-chaperone chaperone (ref set))
+(define-impersonator-record vector-impersonator impersonator (ref set))
 
 (define/who (chaperone-vector vec ref set . props)
   (check who vector? vec)
@@ -61,10 +61,10 @@
         (make-props-impersonator val vec props))))
 
 (define (set-vector-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor vector-chaperone)
+  (record-type-hash-procedure (impersonator-descriptor vector-chaperone)
                               (lambda (c hash-code)
                                 (hash-code (vector-copy c))))
-  (record-type-hash-procedure (record-type-descriptor vector-impersonator)
+  (record-type-hash-procedure (impersonator-descriptor vector-impersonator)
                               (lambda (i hash-code)
                                 (hash-code (vector-copy i)))))
 
@@ -77,8 +77,8 @@
 
 ;; ----------------------------------------
 
-(define-record vector*-chaperone vector-chaperone ())
-(define-record vector*-impersonator vector-impersonator ())
+(define-impersonator-record vector*-chaperone vector-chaperone ())
+(define-impersonator-record vector*-impersonator vector-impersonator ())
 
 (define/who (chaperone-vector* vec ref set . props)
   (check who vector? vec)
@@ -109,8 +109,8 @@
 
 ;; ----------------------------------------
 
-(define-record vector-unsafe-chaperone chaperone (vec))
-(define-record vector-unsafe-impersonator impersonator (vec))
+(define-impersonator-record vector-unsafe-chaperone chaperone (vec))
+(define-impersonator-record vector-unsafe-impersonator impersonator (vec))
 
 (define/who (unsafe-impersonate-vector vec alt-vec . props)
   (check who mutable-vector? :contract "(and/c vector? (not/c immutable?))" vec)

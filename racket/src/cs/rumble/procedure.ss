@@ -603,11 +603,11 @@
 
 ;; ----------------------------------------
 
-(define-record procedure-impersonator impersonator (wrapper arity-mask))
-(define-record procedure-chaperone chaperone (wrapper arity-mask))
+(define-impersonator-record procedure-impersonator impersonator (wrapper arity-mask))
+(define-impersonator-record procedure-chaperone chaperone (wrapper arity-mask))
 
-(define-record procedure*-impersonator procedure-impersonator ())
-(define-record procedure*-chaperone procedure-chaperone ())
+(define-impersonator-record procedure*-impersonator procedure-impersonator ())
+(define-impersonator-record procedure*-chaperone procedure-chaperone ())
 
 (define-values (impersonator-prop:application-mark application-mark? application-mark-ref)
   (make-impersonator-property 'application-mark))
@@ -806,10 +806,10 @@
               (apply p args)]))]))])))
 
 (define (set-procedure-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor procedure-chaperone)
+  (record-type-hash-procedure (impersonator-descriptor procedure-chaperone)
                               (lambda (c hash-code)
                                 (hash-code (impersonator-next c))))
-  (record-type-hash-procedure (record-type-descriptor procedure-impersonator)
+  (record-type-hash-procedure (impersonator-descriptor procedure-impersonator)
                               (lambda (i hash-code)
                                 (hash-code (impersonator-next i)))))
 
@@ -867,8 +867,8 @@
 
 ;; ----------------------------------------
 
-(define-record unsafe-procedure-impersonator impersonator (replace-proc))
-(define-record unsafe-procedure-chaperone chaperone (replace-proc))
+(define-impersonator-record unsafe-procedure-impersonator impersonator (replace-proc))
+(define-impersonator-record unsafe-procedure-chaperone chaperone (replace-proc))
 
 (define/who (unsafe-impersonate-procedure proc replace-proc . props)
   (do-unsafe-impersonate-procedure who make-unsafe-procedure-impersonator
@@ -1067,26 +1067,26 @@
            (lambda (rtd)
              (register-procedure-impersonator-struct-type! rtd)
              (struct-property-set! prop:procedure-arity rtd 4))])
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure-chaperone))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure-impersonator))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure*-chaperone))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure*-impersonator))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure-struct-chaperone))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure-struct-impersonator))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure~-struct-chaperone))
-      (register-procedure-impersonator-struct-type! (record-type-descriptor procedure~-struct-impersonator)))
-    (register-procedure-impersonator-struct-type! (record-type-descriptor procedure-struct-undefined-chaperone))
-    (register-procedure-impersonator-struct-type! (record-type-descriptor procedure~-struct-undefined-chaperone)))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure-chaperone))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure-impersonator))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure*-chaperone))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure*-impersonator))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure-struct-chaperone))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure-struct-impersonator))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure~-struct-chaperone))
+      (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure~-struct-impersonator)))
+    (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure-struct-undefined-chaperone))
+    (register-procedure-impersonator-struct-type! (impersonator-descriptor procedure~-struct-undefined-chaperone)))
 
   (let ([register-procedure-incomplete-arity!
          (lambda (rtd)
            (struct-property-set! prop:incomplete-arity rtd #t))])
-    (register-procedure-incomplete-arity! (record-type-descriptor procedure~-struct-chaperone))
-    (register-procedure-incomplete-arity! (record-type-descriptor procedure~-struct-impersonator))
-    (register-procedure-incomplete-arity! (record-type-descriptor procedure~-struct-undefined-chaperone)))
+    (register-procedure-incomplete-arity! (impersonator-descriptor procedure~-struct-chaperone))
+    (register-procedure-incomplete-arity! (impersonator-descriptor procedure~-struct-impersonator))
+    (register-procedure-incomplete-arity! (impersonator-descriptor procedure~-struct-undefined-chaperone)))
 
   (let ([register-unsafe-procedure-impersonator-struct-type!
          (lambda (rtd)
            (struct-property-set! prop:procedure rtd 'unsafe))])
-    (register-unsafe-procedure-impersonator-struct-type! (record-type-descriptor unsafe-procedure-chaperone))
-    (register-unsafe-procedure-impersonator-struct-type! (record-type-descriptor unsafe-procedure-impersonator))))
+    (register-unsafe-procedure-impersonator-struct-type! (impersonator-descriptor unsafe-procedure-chaperone))
+    (register-unsafe-procedure-impersonator-struct-type! (impersonator-descriptor unsafe-procedure-impersonator))))

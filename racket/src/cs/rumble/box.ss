@@ -6,8 +6,8 @@
 
 ;; ----------------------------------------
 
-(define-record box-chaperone chaperone (ref set))
-(define-record box-impersonator impersonator (ref set))
+(define-impersonator-record box-chaperone chaperone (ref set))
+(define-impersonator-record box-impersonator impersonator (ref set))
 
 (define (box? v)
   (or (#%box? v)
@@ -136,10 +136,10 @@
            [else (loop next val)]))]))]))
 
 (define (set-box-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor box-chaperone)
+  (record-type-hash-procedure (impersonator-descriptor box-chaperone)
                               (lambda (c hash-code)
                                 (hash-code (box (unbox c)))))
-  (record-type-hash-procedure (record-type-descriptor box-impersonator)
+  (record-type-hash-procedure (impersonator-descriptor box-impersonator)
                               (lambda (i hash-code)
                                 (hash-code (box (unbox i))))))
 
