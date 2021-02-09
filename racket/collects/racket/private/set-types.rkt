@@ -682,7 +682,7 @@
                     "given ~a: ~e\n"
                     "argument position: 1st")
      method-name
-     (if immut "(not/c set-mutable?)" "set-mutable?")
+     (if immut "(not/c (or/c set-mutable? set-weak?))" "(or/c set-mutable? set-weak?)")
      (if immut "mutable set" "immutable set")
      s)
     (current-continuation-marks))))
