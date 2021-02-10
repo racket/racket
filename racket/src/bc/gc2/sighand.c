@@ -247,8 +247,12 @@ static void initialize_signal_handler(GCTYPE *gc)
 #  ifdef NEED_SIGSTACK
     act.sa_flags |= SA_ONSTACK;
 #  endif
+    if (GC_report_signal_handle_modify)
+      GC_report_signal_handle_modify(USE_SIGACTON_SIGNAL_KIND);
     sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
 #  ifdef USE_ANOTHER_SIGACTON_SIGNAL_KIND
+    if (GC_report_signal_handle_modify)
+      GC_report_signal_handle_modify(USE_ANOTHER_SIGACTON_SIGNAL_KIND);
     sigaction(USE_ANOTHER_SIGACTON_SIGNAL_KIND, &act, &oact); 
 #  endif
   }

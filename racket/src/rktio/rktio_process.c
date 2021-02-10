@@ -1526,6 +1526,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
         rktio_close_fds_after_fork(close_after_len, 0, 1, 2);
       }
 
+      rktio_restore_modified_signal_handlers();
+
       /* Set real CWD: */
       if (!rktio_set_current_directory(rktio, current_directory)) {
         fprintf(stderr, "racket: chdir failed to: %s\n", current_directory);

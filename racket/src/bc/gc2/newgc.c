@@ -185,6 +185,7 @@ extern double scheme_get_inexact_milliseconds(void);
 
 GC_Out_Of_Memory_Proc GC_out_of_memory;
 void (*GC_report_out_of_memory)(void);
+void (*GC_report_signal_handle_modify)(int);
 
 GC_Out_Of_Memory_Proc GC_get_out_of_memory(void)
 {

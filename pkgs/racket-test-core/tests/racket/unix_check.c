@@ -7,6 +7,16 @@
 int main()
 {
   sigset_t set, old_set;
+  struct sigaction sa;
+  int i;
+
+  /* SIGPROF tends to be near the end of the range of signal IDs */
+  for (i = 0; i < SIGPROF; i++) {
+    sigaction(i, NULL, &sa);
+    if (sa.sa_handler != SIG_DFL)
+      return 1;
+  }
+
   sigemptyset(&set);
   sigprocmask(SIG_BLOCK, &set, &old_set);
 

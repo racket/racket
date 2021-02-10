@@ -103,6 +103,58 @@ void rktio_set_signal_handler(int sig_id, void (*proc)(int))
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
   sa.sa_handler = proc;
+  rktio_will_modify_os_signal_handler(sig_id);
   sigaction(sig_id, &sa, NULL);
+}
+#endif
+
+/*========================================================================*/
+/* Signal handler original state                                          */
+/*========================================================================*/
+
+typedef struct signal_handler_saved_disposition {
+  int sig_id;
+  struct signal_handler_saved_disposition *next;
+#if defined(RKTIO_SYSTEM_UNIX)
+  struct sigaction sa;
+#endif
+} signal_handler_saved_disposition;
+
+static signal_handler_saved_disposition *saved_dispositions;
+static sigset_t initial_procmask;
+
+void rktio_will_modify_os_signal_handler(int sig_id) {
+  signal_handler_saved_disposition *saved;
+
+#ifdef RKTIO_SYSTEM_UNIX
+  if (saved_dispositions == NULL)
+    sigprocmask(SIG_SETMASK, NULL, &initial_procmask);
+#endif
+
+  for (saved = saved_dispositions; saved; saved = saved->next)
+    if (saved->sig_id == sig_id)
+      return;
+
+  saved = malloc(sizeof(signal_handler_saved_disposition));
+  saved->next = saved_dispositions;
+  saved->sig_id = sig_id;
+  saved_dispositions = saved;
+
+#if defined(RKTIO_SYSTEM_UNIX)
+  sigaction(sig_id, NULL, &saved->sa);
+#endif
+}
+
+#ifdef RKTIO_SYSTEM_UNIX
+/* called in a child thread after `fork */
+void rktio_restore_modified_signal_handlers() {
+  if (saved_dispositions) {
+    signal_handler_saved_disposition *saved;
+
+    for (saved = saved_dispositions; saved; saved = saved->next)
+      sigaction(saved->sig_id, &saved->sa, NULL);
+
+    sigprocmask(SIG_SETMASK, &initial_procmask, NULL);
+  }
 }
 #endif

@@ -109,6 +109,8 @@ void racket_boot(racket_boot_arguments_t *ba)
     rktio_set_dll_procs(ba->dll_open, ba->dll_find_object, ba->dll_close);
 #endif
 
+  Sscheme_register_signal_registerer(rktio_will_modify_os_signal_handler);
+
   Sscheme_init(NULL);
 
   if ((ba->argc == 4) && !strcmp(ba->argv[0], "--cross-server"))
