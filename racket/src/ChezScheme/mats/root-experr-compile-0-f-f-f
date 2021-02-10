@@ -64,6 +64,9 @@ primvars.mo:Expected error testing (pseudo-random-generator-seed! *pseudo-random
 primvars.mo:Expected error testing (pseudo-random-generator-next! (quote #f)): Exception in pseudo-random-generator-next!: not a pseudo-random generator #f
 primvars.mo:Expected error testing (pseudo-random-generator-next! (quote #!eof) *pseudo-random-generator): Exception: variable *pseudo-random-generator is not bound
 primvars.mo:Expected error testing (pseudo-random-generator-next! (quote #f) *pseudo-random-generator): Exception: variable *pseudo-random-generator is not bound
+primvars.mo:Expected error testing (record-instance? 1.0+2.0i (quote #[#{foo nks5foiv91hvnm77o1ekdo731-1} 3])): Exception in record-instance?: 1.0+2.0i is not a record
+primvars.mo:Expected error testing (record-instance? 1.0+2.0i (quote "")): Exception in record-instance?: 1.0+2.0i is not a record
+primvars.mo:Expected error testing (record-instance? 1.0+2.0i (quote #f)): Exception in record-instance?: 1.0+2.0i is not a record
 primvars.mo:Expected error testing (set-wrapper-procedure! 1.0+2.0i (quote 0)): Exception in set-wrapper-procedure!: 1.0+2.0i is not a wrapper procedure
 primvars.mo:Expected error testing (set-wrapper-procedure! 1.0+2.0i (quote #f)): Exception in set-wrapper-procedure!: 1.0+2.0i is not a wrapper procedure
 primvars.mo:Expected error testing (vector->pseudo-random-generator (quote "a")): Exception in vector->pseudo-random-generator: not a valid pseudo-random generator state vector "a"
