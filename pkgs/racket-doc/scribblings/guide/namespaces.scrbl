@@ -560,9 +560,10 @@ object. Even if the source syntax object is not @tech{arm}ed, however,
 the resulting syntax object may have limited access to bindings;
 @racket[datum->syntax] will not transfer an inspector from the source
 syntax object unless @racket[datum->syntax] is called during the
-expansion of a macro whose module's declaration-time code inspector.
+expansion of a macro whose module's declaration-time code inspector
+is strong enough.
 More generally, @racket[datum->syntax] chooses the strongest inspector
-that is the same or weaker than the inspector of the currently
+that is the same as or weaker than the inspector of the currently
 expanding macro's module and the source syntax object's inspector.
 
 Compiled code from a @filepath{.zo} file is inherently untrustworthy,
