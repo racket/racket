@@ -68,7 +68,13 @@ void rktio_install_os_signal_handler(rktio_t *rktio)
 #if defined(RKTIO_SYSTEM_UNIX)
   rktio_set_signal_handler(SIGINT, user_break_hit);
   rktio_set_signal_handler(SIGTERM, term_hit);
-  rktio_set_signal_handler(SIGHUP, hup_hit);
+  {
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGHUP, NULL, &sa);
+    if (sa.sa_handler != SIG_IGN)
+      rktio_set_signal_handler(SIGHUP, hup_hit);
+  }
 #endif
 
 #if defined(RKTIO_SYSTEM_WINDOWS)

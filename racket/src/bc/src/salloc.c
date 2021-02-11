@@ -462,6 +462,14 @@ void scheme_set_signal_handler(int sig_id, Scheme_Signal_Handler_Proc proc) XFOR
 {
 #ifndef WINDOWS_PROCESSES
   struct sigaction sa;
+
+  if (sig_id == SIGHUP) {
+    /* cooperate with `nohup` by keeping SIHGUP as-is when ignored */
+    sigaction(SIGHUP, NULL, &sa);
+    if (sa.sa_handler == SIG_IGN)
+      return;
+  }
+
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
   sa.sa_handler = (proc ? proc : SIG_IGN);
