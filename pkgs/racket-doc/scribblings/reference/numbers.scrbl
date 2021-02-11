@@ -943,8 +943,8 @@ In each case, the number is provided by the given pseudo-random number
 generator (which defaults to the current one, as produced by
 @racket[current-pseudo-random-generator]). The generator maintains an
 internal state for generating numbers. The random number generator
-uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
-@cite["L'Ecuyer02"].
+uses L'Ecuyer's MRG32k3a algorithm @cite["L'Ecuyer02"] that has a
+state space of practically 192 bits.
 
 @history[#:changed "6.4"]{Added support for ranges.}}
 
