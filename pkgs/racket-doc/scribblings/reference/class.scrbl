@@ -1964,21 +1964,30 @@ As with the external contracts, when a method or field name is specified
    
    @examples[#:eval class-eval
                 (eval:no-prompt
-                 (define/contract woody2+c%
-                   (class/c (super [draw (->m symbol? string?)]))
-                   (class woody%
-                     (define/override draw
-                       (case-lambda
-                         [(a) (super draw a)]
-                         [(a b) (string-append (super draw a)
-                                               " and "
-                                               (super draw b))]))
-                     (super-new))))
+
+  (define/contract woody%+s
+    (class/c (super [draw (->m symbol? string?)]))
+    (class object%
+      (define/public (draw who)
+        (format "reach for the sky, ~a" who))
+      (super-new)))
+
+  (define woody2+c%
+    (class woody%+s
+      (define/override draw
+        (case-lambda
+          [(a) (super draw a)]
+          [(a b) (string-append (super draw a)
+                                " and "
+                                (super draw b))]))
+      (super-new))))
+                 
                 (send (new woody2+c%) draw 'evil-dr-porkchop  'zurg)
-                (send (new woody2+c%) draw "evil dr porkchop" "zurg")]
+                (eval:error (send (new woody2+c%) draw "evil dr porkchop" "zurg"))]
    
-   The last call signals an error blaming @racket[woody2%] because
-   there is no contract checking the initial @racket[draw] call.
+   The last call signals an error blaming @racket[woody2%+c] because
+   there is no contract checking the initial @racket[draw] call and
+   the super-call violates its contract. 
    }
  @item{A method contract tagged with @racket[inner] describes the
    behavior the class expects of an augmenting method in a subclass.
