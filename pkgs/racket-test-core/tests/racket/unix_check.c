@@ -11,7 +11,7 @@ int main()
   int i;
 
   /* SIGPROF tends to be near the end of the range of signal IDs */
-  for (i = 0; i < SIGPROF; i++) {
+  for (i = 1; i < SIGPROF; i++) {
     sigaction(i, NULL, &sa);
     if (sa.sa_handler != SIG_DFL)
       return 1;
