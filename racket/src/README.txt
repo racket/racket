@@ -452,6 +452,27 @@ inheriting the build machine's disposition.
 
 
 ========================================================================
+ Modifying Racket
+========================================================================
+
+See "cs/README.txt" and "bc/README.txt" for information about
+modifying those implementations of Racket, but one thing they have in
+common is updating the Racket version number. The source for the
+Racket version number is shared in "version/racket_version.h".
+
+The version number for the "base" package needs to be updated
+separately. If this directory is part of a clone of the Git repository
+for Racket, then the "base" version is in "../../pkgs/base/info.rkt".
+
+Unfortunately, there's no single source for the version number in both
+Racket and "base". Those are extracted as subtrees into separate
+distributions, and the point of a version in each place is to detect a
+mismatch between those extracted distributions. The "version.rktl"
+test in Racket's core test suite effectively checks that they're in
+sync within the Racket repo.
+
+
+========================================================================
  Test Suite
 ========================================================================
 
