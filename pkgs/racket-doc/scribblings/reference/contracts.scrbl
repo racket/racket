@@ -1101,8 +1101,13 @@ directly as @tech{flat contracts}. It exists today for backwards compatibility.
 
 Extracts the predicate from a @tech{flat contract}.
 
-This function is a holdover from before @tech{flat contracts} could be used
-directly as predicates. It exists today for backwards compatibility.
+Note that most @tech{flat contracts} can be used directly as predicates, but not all.
+This function can be used to build predicates for ordinary Racket values that double
+as contracts, such as numbers and symbols. When building a @tech{contract combinator}
+that needs to explicitly convert ordinary racket values to flat contracts, consider
+using @racket[coerce-flat-contract] instead of @racket[flat-contract-predicate] so
+that the combinator can raise errors that use the combinator's name in the error
+message.
 }
 
 @defproc[(property/c [accessor (-> any/c any/c)]
