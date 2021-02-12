@@ -127,17 +127,9 @@ typedef struct signal_handler_saved_disposition {
 } signal_handler_saved_disposition;
 
 static signal_handler_saved_disposition *saved_dispositions;
-#ifdef RKTIO_SYSTEM_UNIX
-static sigset_t initial_procmask;
-#endif
 
 void rktio_will_modify_os_signal_handler(int sig_id) {
   signal_handler_saved_disposition *saved;
-
-#ifdef RKTIO_SYSTEM_UNIX
-  if (saved_dispositions == NULL)
-    sigprocmask(SIG_SETMASK, NULL, &initial_procmask);
-#endif
 
   for (saved = saved_dispositions; saved; saved = saved->next)
     if (saved->sig_id == sig_id)
@@ -156,13 +148,13 @@ void rktio_will_modify_os_signal_handler(int sig_id) {
 #ifdef RKTIO_SYSTEM_UNIX
 /* called in a child thread after `fork */
 void rktio_restore_modified_signal_handlers() {
-  if (saved_dispositions) {
-    signal_handler_saved_disposition *saved;
+  signal_handler_saved_disposition *saved;
+  sigset_t set;
 
-    for (saved = saved_dispositions; saved; saved = saved->next)
-      sigaction(saved->sig_id, &saved->sa, NULL);
+  for (saved = saved_dispositions; saved; saved = saved->next)
+    sigaction(saved->sig_id, &saved->sa, NULL);
 
-    sigprocmask(SIG_SETMASK, &initial_procmask, NULL);
-  }
+  sigemptyset(&set);
+  sigprocmask(SIG_SETMASK, &set, NULL);
 }
 #endif

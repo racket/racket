@@ -1004,7 +1004,9 @@ RKTIO_EXTERN void rktio_install_os_signal_handler(rktio_t *rktio);
    Ctl-C on Windows) to signal the handle of `rktio` and also records
    the signal for reporting via `rktio_poll_os_signal`. Only one
    `rktio` can be registered this way at a time. This function must
-   not be called in two threads at the same time. */
+   not be called in two threads at the same time; more generally, it
+   can only be called when `rktio_will_modify_os_signal_handler`
+   can be called for SIGINT, etc. */
 
 RKTIO_EXTERN_NOERR int rktio_poll_os_signal(rktio_t *rktio);
 /* Returns one of the following, not counting the last one: */
@@ -1021,11 +1023,11 @@ RKTIO_EXTERN void rktio_will_modify_os_signal_handler(int sig_id);
    about to be modified within the process but outside of rktio, where
    `sig_id` is a signal identifier --- such as SIGINT or SIGTERM. This
    notification allows rktio to record the current signal disposition
-   so that it can be restored after forking a new Unix process.
-   Signal registrations should happen only before multiple threads use
-   rktio, and registration of the signal can happen before any
-   `rktio_init` call. On the first `rktio_will_modify_os_signal_handler`
-   call, the signal mask is also recorded to be restored in a fork. */
+   so that it can be restored after forking a new Unix process. Signal
+   registrations should happen only before multiple threads use rktio,
+   and registration of the signal can happen before any `rktio_init`
+   call. After a signal is registered, trying to re-register it after
+   threads start is harmless. */
 
 /*************************************************/
 /* Time and date                                 */

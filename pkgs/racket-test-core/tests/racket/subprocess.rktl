@@ -595,7 +595,10 @@
                         exe
                         (path->complete-path "unix_check.c" (or (current-load-relative-directory)
                                                                 (current-directory)))))
-      (test #t 'subprocess-state (system* exe)))
+      (test #t 'subprocess-state (let ([o (open-output-bytes)])
+                                   (or (parameterize ([current-output-port o])
+                                         (system* exe))
+                                       (get-output-bytes o)))))
     (delete-directory/files dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
