@@ -127,7 +127,9 @@ typedef struct signal_handler_saved_disposition {
 } signal_handler_saved_disposition;
 
 static signal_handler_saved_disposition *saved_dispositions;
+#ifdef RKTIO_SYSTEM_UNIX
 static sigset_t initial_procmask;
+#endif
 
 void rktio_will_modify_os_signal_handler(int sig_id) {
   signal_handler_saved_disposition *saved;
