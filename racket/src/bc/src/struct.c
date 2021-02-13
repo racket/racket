@@ -28,6 +28,7 @@ READ_ONLY Scheme_Object *scheme_app_mark_impersonator_property;
 READ_ONLY Scheme_Object *scheme_object_name_property;
 READ_ONLY Scheme_Object *scheme_struct_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_authentic_property;
+READ_ONLY Scheme_Object *scheme_sealed_property;
 READ_ONLY Scheme_Object *scheme_unsafe_poller_proc;
 
 READ_ONLY static Scheme_Object *location_struct;
@@ -115,6 +116,8 @@ static Scheme_Object *struct_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[]);
+static Scheme_Object *struct_type_sealed_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *struct_type_authentic_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[]);
@@ -445,6 +448,12 @@ scheme_init_struct (Scheme_Startup_Env *env)
     scheme_addto_prim_instance("prop:authentic", scheme_authentic_property, env);
   }
 
+  {
+    REGISTER_SO(scheme_sealed_property);
+    scheme_sealed_property = scheme_make_struct_type_property(scheme_intern_symbol("sealed"));
+    scheme_addto_prim_instance("prop:sealed", scheme_sealed_property, env);
+  }
+
   REGISTER_SO(scheme_recur_symbol);
   REGISTER_SO(scheme_display_symbol);
   REGISTER_SO(scheme_write_special_symbol);
@@ -576,6 +585,16 @@ scheme_init_struct (Scheme_Startup_Env *env)
 			     scheme_make_prim_w_arity(struct_type_constr,
 						      "struct-type-make-constructor",
 						      1, 2),
+			     env);
+  scheme_addto_prim_instance("struct-type-sealed?",
+			     scheme_make_prim_w_arity(struct_type_sealed_p,
+						      "struct-type-sealed?",
+						      1, 1),
+			     env);
+  scheme_addto_prim_instance("struct-type-authentic?",
+			     scheme_make_prim_w_arity(struct_type_authentic_p,
+						      "struct-type-authentic?",
+						      1, 1),
 			     env);
 
   REGISTER_SO(scheme_struct_to_vector_proc);
@@ -2962,6 +2981,24 @@ static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[])
   return scheme_values(mzNUM_ST_INFO, a);
 }
 
+static Scheme_Object *struct_type_sealed_p(int argc, Scheme_Object *argv[]) {
+  if (!SCHEME_STRUCT_TYPEP(argv[0]))
+    scheme_wrong_contract("struct-type-sealed?", "struct-type?", 0, argc, argv);
+
+  return ((((Scheme_Struct_Type *)argv[0])->more_flags & STRUCT_TYPE_FLAG_SEALED)
+          ? scheme_true
+          : scheme_false);
+}
+
+static Scheme_Object *struct_type_authentic_p(int argc, Scheme_Object *argv[]) {
+  if (!SCHEME_STRUCT_TYPEP(argv[0]))
+    scheme_wrong_contract("struct-type-authentic?", "struct-type?", 0, argc, argv);
+
+  return ((((Scheme_Struct_Type *)argv[0])->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
+          ? scheme_true
+          : scheme_false);
+}
+
 static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
 {
   Scheme_Struct_Type *stype;
@@ -3428,7 +3465,8 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
     else
       want_v = ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT)
                 | STRUCT_PROC_SHAPE_STRUCT
-                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                | (((st->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
+                    && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
                    : 0)
                 | (((st->more_flags & STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR)
@@ -3455,7 +3493,8 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_PRED) {
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = (STRUCT_PROC_SHAPE_PRED
-                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                | (((st->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
+                    && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
                    : 0));
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER) {
@@ -3471,7 +3510,8 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
         pos = 0; /* => unknown, since simple struct info can't track it */
       want_v = ((pos << STRUCT_PROC_SHAPE_SHIFT)
                 | STRUCT_PROC_SHAPE_SETTER
-                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                | (((st->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
+                    && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
                    : 0));
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER) {
@@ -3479,7 +3519,8 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = ((pos << STRUCT_PROC_SHAPE_SHIFT) 
                 | STRUCT_PROC_SHAPE_GETTER
-                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                | (((st->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
+                    && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
                    : 0));
     } else if ((i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
@@ -4751,7 +4792,6 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
   struct_type->name_pos = depth;
-  struct_type->authentic = 0;
   struct_type->more_flags = STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR;
   struct_type->inspector = scheme_false;
   struct_type->uninit_val = uninit_val;
@@ -4946,7 +4986,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
         if (SAME_OBJ(prop, scheme_chaperone_undefined_property))
           chaperone_undefined = 1;
         if (SAME_OBJ(prop, scheme_authentic_property))
-          struct_type->authentic = 1;
+          struct_type->more_flags |= STRUCT_TYPE_FLAG_AUTHENTIC;
+        if (SAME_OBJ(prop, scheme_sealed_property))
+          struct_type->more_flags |= STRUCT_TYPE_FLAG_SEALED;
 
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
         
@@ -5008,7 +5050,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
         if (SAME_OBJ(prop, scheme_chaperone_undefined_property))
           chaperone_undefined = 1;
         if (SAME_OBJ(prop, scheme_authentic_property))
-          struct_type->authentic = 1;
+          struct_type->more_flags |= STRUCT_TYPE_FLAG_AUTHENTIC;
+        if (SAME_OBJ(prop, scheme_sealed_property))
+          struct_type->more_flags |= STRUCT_TYPE_FLAG_SEALED;
 
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
 
@@ -5062,8 +5106,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
     }
   }
 
-  if (parent_type && (parent_type->authentic != struct_type->authentic)) {
-    if (parent_type->authentic)
+  if (parent_type && ((parent_type->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
+                      != (struct_type->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC))) {
+    if (parent_type->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC)
       scheme_contract_error("make-struct-type",
                             "cannot make a non-authentic subtype of an authentic type",
                             "type name", 1, struct_type->name,
@@ -5402,8 +5447,24 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
                                           uninit_val,
                                           immutable_array);
   } else {
+    Scheme_Object *parent = SCHEME_FALSEP(argv[1]) ? NULL : argv[1];
+    Scheme_Struct_Type *parent_type;
+    
+    if (parent && SCHEME_NP_CHAPERONEP(parent))
+      parent_type = (Scheme_Struct_Type *)SCHEME_CHAPERONE_VAL(parent);
+    else
+      parent_type = (Scheme_Struct_Type *)parent;
+      
+    if (parent_type && (parent_type->more_flags & STRUCT_TYPE_FLAG_SEALED)) {
+      scheme_contract_error("make-struct-type",
+                            "cannot make a subtype of a sealed type",
+                            "type name", 1, argv[0],
+                            "sealed type", 1, parent,
+                            NULL);
+    }
+
     type = (Scheme_Struct_Type *)_make_struct_type(argv[0],
-                                                   SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
+                                                   parent,
                                                    inspector,
                                                    initc, uninitc,
                                                    uninit_val, props,
@@ -6247,7 +6308,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     return NULL;
   }
 
-  if (SCHEME_STRUCTP(val) && ((Scheme_Structure *)val)->stype->authentic) {
+  if (SCHEME_STRUCTP(val) && ((Scheme_Structure *)val)->stype->more_flags & STRUCT_TYPE_FLAG_AUTHENTIC) {
     scheme_contract_error(name,
                           (is_impersonator
                            ? "cannot impersonate instance of an authentic structure type"

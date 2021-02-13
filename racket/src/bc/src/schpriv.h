@@ -700,6 +700,7 @@ extern Scheme_Object *scheme_app_mark_impersonator_property;
 extern Scheme_Object *scheme_no_arity_property;
 
 extern Scheme_Object *scheme_authentic_property;
+extern Scheme_Object *scheme_sealed_property;
 
 extern Scheme_Object *scheme_chaperone_undefined_property;
 
@@ -1095,9 +1096,10 @@ typedef struct Scheme_Struct_Type {
   mzshort num_slots;   /* initialized + auto + parent-initialized + parent-auto */
   mzshort num_islots; /* initialized + parent-initialized */
   mzshort name_pos;
-  char authentic; /* 1 => chaperones/impersonators disallowed */
-  char more_flags; /* STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR => constructor never fails
-                      STRUCT_TYPE_FLAG_SYSTEM_OPAQUE => #f for `object-name`, for example */
+  int more_flags; /* STRUCT_TYPE_FLAG_AUTHENTIC => chaperones/impersonators disallowed
+                     STRUCT_TYPE_FLAG_SEALED => subtypes disallowed
+                     STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR => constructor never fails
+                     STRUCT_TYPE_FLAG_SYSTEM_OPAQUE => #f for `object-name`, for example */
 
   Scheme_Object *name;
 
@@ -1131,6 +1133,8 @@ typedef struct Scheme_Struct_Type {
 /* for `more_flags` field */
 #define STRUCT_TYPE_FLAG_NONFAIL_CONSTRUCTOR 0x1
 #define STRUCT_TYPE_FLAG_SYSTEM_OPAQUE       0x2
+#define STRUCT_TYPE_FLAG_AUTHENTIC           0x4
+#define STRUCT_TYPE_FLAG_SEALED              0x8
 
 typedef struct Scheme_Structure
 {
@@ -3108,6 +3112,7 @@ typedef struct {
   int normal_ops;  /* are selectors and predicates in the usual order? */
   int indexed_ops; /* do selectors have the index built in (as opposed to taking an index argument)? */
   int authentic; /* conservatively 0 is ok */
+  int sealed; /* conservatively 0 is ok */
   int nonfail_constructor;
   int prefab;
   int num_gets, num_sets;
@@ -3144,7 +3149,8 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
 #define STRUCT_PROC_SHAPE_GETTER  3
 #define STRUCT_PROC_SHAPE_SETTER  4
 #define STRUCT_PROC_SHAPE_OTHER   5
-#define STRUCT_PROC_SHAPE_MASK    0xF
+#define STRUCT_PROC_SHAPE_MASK    0x7
+#define STRUCT_PROC_SHAPE_SEALED  0x8
 #define STRUCT_PROC_SHAPE_AUTHENTIC       0x10
 #define STRUCT_PROC_SHAPE_NONFAIL_CONSTR  0x20
 #define STRUCT_PROC_SHAPE_PREFAB  0x40

@@ -972,18 +972,8 @@
         (void)
         (raise-argument-error 'hash-empty? "hash?" table_0))
       (zero? (hash-count table_0)))))
-(define struct:queue
-  (make-record-type-descriptor*
-   'queue
-   #f
-   (|#%nongenerative-uid| queue)
-   #f
-   #f
-   2
-   3))
-(define effect_2212
-  (struct-type-install-properties!
-   struct:queue
+(define finish35
+  (make-struct-type-install-properties
    '(queue)
    2
    0
@@ -994,6 +984,16 @@
    '()
    #f
    'queue))
+(define struct:queue
+  (make-record-type-descriptor*
+   'queue
+   #f
+   (|#%nongenerative-uid| queue)
+   #f
+   #f
+   2
+   3))
+(define effect_2998 (finish35 struct:queue))
 (define queue1.1
   (|#%name|
    queue
@@ -1006,18 +1006,8 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define struct:node$2
-  (make-record-type-descriptor*
-   'node
-   #f
-   (|#%nongenerative-uid| node)
-   #f
-   #f
-   3
-   6))
-(define effect_2496
-  (struct-type-install-properties!
-   struct:node$2
+(define finish37
+  (make-struct-type-install-properties
    '(node)
    3
    0
@@ -1028,6 +1018,16 @@
    '(0)
    #f
    'node))
+(define struct:node$2
+  (make-record-type-descriptor*
+   'node
+   #f
+   (|#%nongenerative-uid| node)
+   #f
+   #f
+   3
+   6))
+(define effect_1943 (finish37 struct:node$2))
 (define node2.1
   (|#%name|
    node
@@ -1240,18 +1240,8 @@
   (hash-ref (primitive-table '|#%engine|) 'continuation-current-primitive #f))
 (define host:prop:unsafe-authentic-override
   (hash-ref (primitive-table '|#%engine|) 'prop:unsafe-authentic-override #f))
-(define struct:node$1
-  (make-record-type-descriptor*
-   'node
-   #f
-   (|#%nongenerative-uid| node)
-   #f
-   #f
-   5
-   0))
-(define effect_1764
-  (struct-type-install-properties!
-   struct:node$1
+(define finish45
+  (make-struct-type-install-properties
    '(node)
    5
    0
@@ -1262,6 +1252,16 @@
    '(0 1 2 3 4)
    #f
    'node))
+(define struct:node$1
+  (make-record-type-descriptor*
+   'node
+   #f
+   (|#%nongenerative-uid| node)
+   #f
+   #f
+   5
+   0))
+(define effect_1944 (finish45 struct:node$1))
 (define node1.1$1
   (|#%name|
    node
@@ -1513,6 +1513,18 @@
     (if (not (node-right t_0))
       (let ((app_0 (node-key t_0))) (values app_0 (node-val t_0)))
       (max-key+value (node-right t_0)))))
+(define finish75
+  (make-struct-type-install-properties
+   '(sandman)
+   11
+   0
+   #f
+   null
+   'prefab
+   #f
+   '(0 1 2 3 4 5 6 7 8 9 10)
+   #f
+   'sandman))
 (define struct:sandman
   (make-record-type-descriptor*
    'sandman
@@ -1528,19 +1540,7 @@
    #f
    11
    2047))
-(define effect_2467
-  (struct-type-install-properties!
-   struct:sandman
-   '(sandman)
-   11
-   0
-   #f
-   null
-   'prefab
-   #f
-   '(0 1 2 3 4 5 6 7 8 9 10)
-   #f
-   'sandman))
+(define effect_2951 (finish75 struct:sandman))
 (define sandman1.1
   (|#%name|
    sandman
@@ -1978,18 +1978,8 @@
              'guard-for-prop:evt
              "(or/c evt? (procedure-arity-includes/c 1) exact-nonnegative-integer?)"
              v_0))))))))
-(define struct:selector-prop-evt-value
-  (make-record-type-descriptor*
-   'selector-prop-evt-value
-   #f
-   (|#%nongenerative-uid| selector-prop-evt-value)
-   #f
-   #f
-   1
-   0))
-(define effect_3012
-  (struct-type-install-properties!
-   struct:selector-prop-evt-value
+(define finish93
+  (make-struct-type-install-properties
    '(selector-prop-evt-value)
    1
    0
@@ -2000,6 +1990,16 @@
    '(0)
    #f
    'selector-prop-evt-value))
+(define struct:selector-prop-evt-value
+  (make-record-type-descriptor*
+   'selector-prop-evt-value
+   #f
+   (|#%nongenerative-uid| selector-prop-evt-value)
+   #f
+   #f
+   1
+   0))
+(define effect_2735 (finish93 struct:selector-prop-evt-value))
 (define selector-prop-evt-value1.1
   (|#%name|
    selector-prop-evt-value
@@ -2026,18 +2026,8 @@
      (begin
        (let ((or-part_0 (primary-evt? v_0)))
          (if or-part_0 or-part_0 (secondary-evt? v_0)))))))
-(define struct:poller
-  (make-record-type-descriptor*
-   'poller
-   #f
-   (|#%nongenerative-uid| poller)
-   #f
-   #f
-   1
-   0))
-(define effect_2322
-  (struct-type-install-properties!
-   struct:poller
+(define finish95
+  (make-struct-type-install-properties
    '(poller)
    1
    0
@@ -2048,6 +2038,16 @@
    '(0)
    #f
    'poller))
+(define struct:poller
+  (make-record-type-descriptor*
+   'poller
+   #f
+   (|#%nongenerative-uid| poller)
+   #f
+   #f
+   1
+   0))
+(define effect_2545 (finish95 struct:poller))
 (define poller2.1
   (|#%name|
    poller
@@ -2055,18 +2055,8 @@
     (make-record-constructor-descriptor struct:poller #f #f))))
 (define poller? (|#%name| poller? (record-predicate struct:poller)))
 (define poller-proc (|#%name| poller-proc (record-accessor struct:poller 0)))
-(define struct:poll-ctx
-  (make-record-type-descriptor*
-   'poll-ctx
-   #f
-   (|#%nongenerative-uid| poll-ctx)
-   #f
-   #f
-   4
-   8))
-(define effect_2873
-  (struct-type-install-properties!
-   struct:poll-ctx
+(define finish97
+  (make-struct-type-install-properties
    '(poll-ctx)
    4
    0
@@ -2077,6 +2067,16 @@
    '(0 1 2)
    #f
    'poll-ctx))
+(define struct:poll-ctx
+  (make-record-type-descriptor*
+   'poll-ctx
+   #f
+   (|#%nongenerative-uid| poll-ctx)
+   #f
+   #f
+   4
+   8))
+(define effect_2667 (finish97 struct:poll-ctx))
 (define poll-ctx3.1
   (|#%name|
    poll-ctx
@@ -2093,18 +2093,8 @@
   (|#%name| poll-ctx-incomplete? (record-accessor struct:poll-ctx 3)))
 (define set-poll-ctx-incomplete?!
   (|#%name| set-poll-ctx-incomplete?! (record-mutator struct:poll-ctx 3)))
-(define struct:never-evt
-  (make-record-type-descriptor*
-   'never-evt
-   #f
-   (|#%nongenerative-uid| never-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2678
-  (struct-type-install-properties!
-   struct:never-evt
+(define finish100
+  (make-struct-type-install-properties
    '(never-evt)
    0
    0
@@ -2118,6 +2108,16 @@
    '()
    #f
    'never-evt))
+(define struct:never-evt
+  (make-record-type-descriptor*
+   'never-evt
+   #f
+   (|#%nongenerative-uid| never-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2474 (finish100 struct:never-evt))
 (define never-evt4.1
   (|#%name|
    never-evt
@@ -2134,18 +2134,8 @@
        ($value
         (if (impersonator? v) (never-evt?_1958 (impersonator-val v)) #f))))))
 (define the-never-evt (never-evt4.1))
-(define struct:always-evt
-  (make-record-type-descriptor*
-   'always-evt
-   #f
-   (|#%nongenerative-uid| always-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2666
-  (struct-type-install-properties!
-   struct:always-evt
+(define finish103
+  (make-struct-type-install-properties
    '(always-evt)
    0
    0
@@ -2159,6 +2149,16 @@
    '()
    #f
    'always-evt))
+(define struct:always-evt
+  (make-record-type-descriptor*
+   'always-evt
+   #f
+   (|#%nongenerative-uid| always-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2333 (finish103 struct:always-evt))
 (define always-evt5.1
   (|#%name|
    always-evt
@@ -2175,18 +2175,8 @@
        ($value
         (if (impersonator? v) (always-evt?_2466 (impersonator-val v)) #f))))))
 (define the-always-evt (always-evt5.1))
-(define struct:async-evt
-  (make-record-type-descriptor*
-   'async-evt
-   #f
-   (|#%nongenerative-uid| async-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2516
-  (struct-type-install-properties!
-   struct:async-evt
+(define finish106
+  (make-struct-type-install-properties
    '(async-evt)
    0
    0
@@ -2200,6 +2190,16 @@
    '()
    #f
    'async-evt))
+(define struct:async-evt
+  (make-record-type-descriptor*
+   'async-evt
+   #f
+   (|#%nongenerative-uid| async-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2210 (finish106 struct:async-evt))
 (define async-evt6.1
   (|#%name|
    async-evt
@@ -2216,11 +2216,8 @@
        ($value
         (if (impersonator? v) (async-evt?_2619 (impersonator-val v)) #f))))))
 (define the-async-evt (async-evt6.1))
-(define struct:wrap-evt
-  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 2 0))
-(define effect_2243
-  (struct-type-install-properties!
-   struct:wrap-evt
+(define finish109
+  (make-struct-type-install-properties
    '(evt)
    2
    0
@@ -2234,6 +2231,9 @@
    '(0 1)
    #f
    'wrap-evt))
+(define struct:wrap-evt
+  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 2 0))
+(define effect_2815 (finish109 struct:wrap-evt))
 (define wrap-evt7.1
   (|#%name|
    wrap-evt
@@ -2274,18 +2274,8 @@
          s
          'evt
          'wrap))))))
-(define struct:handle-evt
-  (make-record-type-descriptor*
-   'handle-evt
-   struct:wrap-evt
-   (|#%nongenerative-uid| handle-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2575
-  (struct-type-install-properties!
-   struct:handle-evt
+(define finish114
+  (make-struct-type-install-properties
    '(handle-evt)
    0
    0
@@ -2296,6 +2286,16 @@
    '()
    #f
    'handle-evt))
+(define struct:handle-evt
+  (make-record-type-descriptor*
+   'handle-evt
+   struct:wrap-evt
+   (|#%nongenerative-uid| handle-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_3118 (finish114 struct:handle-evt))
 (define handle-evt8.1
   (|#%name|
    handle-evt
@@ -2313,18 +2313,8 @@
         (if (impersonator? v)
           (handle-evt?$1_2894 (impersonator-val v))
           #f))))))
-(define struct:control-state-evt
-  (make-record-type-descriptor*
-   'control-state-evt
-   #f
-   (|#%nongenerative-uid| control-state-evt)
-   #f
-   #f
-   5
-   0))
-(define effect_2497
-  (struct-type-install-properties!
-   struct:control-state-evt
+(define finish117
+  (make-struct-type-install-properties
    '(control-state-evt)
    5
    0
@@ -2338,6 +2328,16 @@
    '(0 1 2 3 4)
    #f
    'control-state-evt))
+(define struct:control-state-evt
+  (make-record-type-descriptor*
+   'control-state-evt
+   #f
+   (|#%nongenerative-uid| control-state-evt)
+   #f
+   #f
+   5
+   0))
+(define effect_3002 (finish117 struct:control-state-evt))
 (define control-state-evt9.1
   (|#%name|
    control-state-evt
@@ -2445,11 +2445,8 @@
          s
          'control-state-evt
          'retry-proc))))))
-(define struct:poll-guard-evt
-  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2340
-  (struct-type-install-properties!
-   struct:poll-guard-evt
+(define finish125
+  (make-struct-type-install-properties
    '(evt)
    1
    0
@@ -2463,6 +2460,9 @@
    '(0)
    #f
    'poll-guard-evt))
+(define struct:poll-guard-evt
+  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
+(define effect_2169 (finish125 struct:poll-guard-evt))
 (define poll-guard-evt10.1
   (|#%name|
    poll-guard-evt
@@ -2496,11 +2496,8 @@
          s
          'evt
          'proc))))))
-(define struct:choice-evt
-  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2203
-  (struct-type-install-properties!
-   struct:choice-evt
+(define finish129
+  (make-struct-type-install-properties
    '(evt)
    1
    0
@@ -2514,6 +2511,9 @@
    '(0)
    #f
    'choice-evt))
+(define struct:choice-evt
+  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
+(define effect_2613 (finish129 struct:choice-evt))
 (define choice-evt11.1
   (|#%name|
    choice-evt
@@ -2575,18 +2575,8 @@
           (if (poller? v_1)
             (|#%app| (poller-proc v_1) evt_0 poll-ctx_0)
             (if (1/evt? v_1) (values #f v_1) (values #f the-never-evt))))))))
-(define struct:delayed-poll
-  (make-record-type-descriptor*
-   'delayed-poll
-   #f
-   (|#%nongenerative-uid| delayed-poll)
-   #f
-   #f
-   1
-   0))
-(define effect_2389
-  (struct-type-install-properties!
-   struct:delayed-poll
+(define finish132
+  (make-struct-type-install-properties
    '(delayed-poll)
    1
    0
@@ -2597,6 +2587,16 @@
    '(0)
    #f
    'delayed-poll))
+(define struct:delayed-poll
+  (make-record-type-descriptor*
+   'delayed-poll
+   #f
+   (|#%nongenerative-uid| delayed-poll)
+   #f
+   #f
+   1
+   0))
+(define effect_2263 (finish132 struct:delayed-poll))
 (define delayed-poll12.1
   (|#%name|
    delayed-poll
@@ -2606,18 +2606,8 @@
   (|#%name| delayed-poll? (record-predicate struct:delayed-poll)))
 (define delayed-poll-resume
   (|#%name| delayed-poll-resume (record-accessor struct:delayed-poll 0)))
-(define struct:poller-evt
-  (make-record-type-descriptor*
-   'poller-evt
-   #f
-   (|#%nongenerative-uid| poller-evt)
-   #f
-   #f
-   1
-   0))
-(define effect_2296
-  (struct-type-install-properties!
-   struct:poller-evt
+(define finish135
+  (make-struct-type-install-properties
    '(poller-evt)
    1
    0
@@ -2628,6 +2618,16 @@
    '(0)
    #f
    'poller-evt))
+(define struct:poller-evt
+  (make-record-type-descriptor*
+   'poller-evt
+   #f
+   (|#%nongenerative-uid| poller-evt)
+   #f
+   #f
+   1
+   0))
+(define effect_2260 (finish135 struct:poller-evt))
 (define poller-evt13.1
   (|#%name|
    poller-evt
@@ -2662,18 +2662,8 @@
 (define-values
  (prop:waiter waiter? waiter-ref)
  (make-struct-type-property 'waiter))
-(define struct:waiter-methods
-  (make-record-type-descriptor*
-   'waiter-methods
-   #f
-   (|#%nongenerative-uid| waiter-methods)
-   #f
-   #f
-   2
-   0))
-(define effect_3276
-  (struct-type-install-properties!
-   struct:waiter-methods
+(define finish138
+  (make-struct-type-install-properties
    '(waiter-methods)
    2
    0
@@ -2684,6 +2674,16 @@
    '(0 1)
    #f
    'waiter-methods))
+(define struct:waiter-methods
+  (make-record-type-descriptor*
+   'waiter-methods
+   #f
+   (|#%nongenerative-uid| waiter-methods)
+   #f
+   #f
+   2
+   0))
+(define effect_2191 (finish138 struct:waiter-methods))
 (define waiter-methods1.1
   (|#%name|
    waiter-methods
@@ -2706,18 +2706,8 @@
 (define waiter-suspend!
   (lambda (w_0 interrupt-cb_0)
     (|#%app| (waiter-methods-suspend (waiter-ref w_0)) w_0 interrupt-cb_0)))
-(define struct:select-waiter
-  (make-record-type-descriptor*
-   'select-waiter
-   #f
-   (|#%nongenerative-uid| select-waiter)
-   #f
-   #f
-   1
-   0))
-(define effect_2810
-  (struct-type-install-properties!
-   struct:select-waiter
+(define finish141
+  (make-struct-type-install-properties
    '(select-waiter)
    1
    0
@@ -2736,6 +2726,16 @@
    '(0)
    #f
    'select-waiter))
+(define struct:select-waiter
+  (make-record-type-descriptor*
+   'select-waiter
+   #f
+   (|#%nongenerative-uid| select-waiter)
+   #f
+   #f
+   1
+   0))
+(define effect_2826 (finish141 struct:select-waiter))
 (define select-waiter7.1
   (|#%name|
    select-waiter
@@ -2769,18 +2769,8 @@
          s
          'select-waiter
          'proc))))))
-(define struct:custodian
-  (make-record-type-descriptor*
-   'custodian
-   #f
-   (|#%nongenerative-uid| custodian)
-   #f
-   #f
-   13
-   8188))
-(define effect_2862
-  (struct-type-install-properties!
-   struct:custodian
+(define finish144
+  (make-struct-type-install-properties
    '(custodian)
    13
    0
@@ -2791,6 +2781,16 @@
    '(0 1)
    #f
    'custodian))
+(define struct:custodian
+  (make-record-type-descriptor*
+   'custodian
+   #f
+   (|#%nongenerative-uid| custodian)
+   #f
+   #f
+   13
+   8188))
+(define effect_2161 (finish144 struct:custodian))
 (define custodian1.1
   (|#%name|
    custodian
@@ -2902,18 +2902,8 @@
 (define-values
  (prop:place-message place-message? place-message-ref)
  (make-struct-type-property 'place-message))
-(define struct:message-ized
-  (make-record-type-descriptor*
-   'message-ized
-   #f
-   (|#%nongenerative-uid| message-ized)
-   #f
-   #f
-   1
-   0))
-(define effect_2533
-  (struct-type-install-properties!
-   struct:message-ized
+(define finish147
+  (make-struct-type-install-properties
    '(message-ized)
    1
    0
@@ -2924,6 +2914,16 @@
    '(0)
    #f
    'message-ized))
+(define struct:message-ized
+  (make-record-type-descriptor*
+   'message-ized
+   #f
+   (|#%nongenerative-uid| message-ized)
+   #f
+   #f
+   1
+   0))
+(define effect_2995 (finish147 struct:message-ized))
 (define message-ized1.1
   (|#%name|
    message-ized
@@ -3997,18 +3997,8 @@
                               (|#%app| (message-ized-unmessage v_1))
                               v_1)))))))))))))
        (loop_0 v_0)))))
-(define struct:place
-  (make-record-type-descriptor*
-   'place
-   #f
-   (|#%nongenerative-uid| place)
-   #f
-   #f
-   19
-   491440))
-(define effect_2252
-  (struct-type-install-properties!
-   struct:place
+(define finish157
+  (make-struct-type-install-properties
    '(place)
    19
    0
@@ -4025,6 +4015,16 @@
    '(0 1 2 3 6 15)
    #f
    'place))
+(define struct:place
+  (make-record-type-descriptor*
+   'place
+   #f
+   (|#%nongenerative-uid| place)
+   #f
+   #f
+   19
+   491440))
+(define effect_2619 (finish157 struct:place))
 (define place1.1
   (|#%name|
    place
@@ -4160,18 +4160,8 @@
                    (for-loop_0 lst_0))))
               (void)))))
       (void))))
-(define struct:semaphore
-  (make-record-type-descriptor*
-   'semaphore
-   struct:queue
-   (|#%nongenerative-uid| semaphore)
-   #f
-   #f
-   1
-   1))
-(define effect_2858
-  (struct-type-install-properties!
-   struct:semaphore
+(define finish162
+  (make-struct-type-install-properties
    '(semaphore)
    1
    0
@@ -4189,6 +4179,16 @@
    '()
    #f
    'semaphore))
+(define struct:semaphore
+  (make-record-type-descriptor*
+   'semaphore
+   struct:queue
+   (|#%nongenerative-uid| semaphore)
+   #f
+   #f
+   1
+   1))
+(define effect_2927 (finish162 struct:semaphore))
 (define semaphore1.1
   (|#%name|
    semaphore
@@ -4200,18 +4200,8 @@
 (define set-semaphore-count!
   (|#%name| set-semaphore-count! (record-mutator struct:semaphore 0)))
 (define count-field-pos 2)
-(define struct:semaphore-peek-evt
-  (make-record-type-descriptor*
-   'semaphore-peek-evt
-   #f
-   (|#%nongenerative-uid| semaphore-peek-evt)
-   #f
-   #f
-   1
-   0))
-(define effect_2145
-  (struct-type-install-properties!
-   struct:semaphore-peek-evt
+(define finish165
+  (make-struct-type-install-properties
    '(semaphore-peek-evt)
    1
    0
@@ -4228,6 +4218,16 @@
    '(0)
    #f
    'semaphore-peek-evt))
+(define struct:semaphore-peek-evt
+  (make-record-type-descriptor*
+   'semaphore-peek-evt
+   #f
+   (|#%nongenerative-uid| semaphore-peek-evt)
+   #f
+   #f
+   1
+   0))
+(define effect_2414 (finish165 struct:semaphore-peek-evt))
 (define semaphore-peek-evt2.1
   (|#%name|
    semaphore-peek-evt
@@ -4263,18 +4263,8 @@
          s
          'semaphore-peek-evt
          'sema))))))
-(define struct:semaphore-peek-select-waiter
-  (make-record-type-descriptor*
-   'semaphore-peek-select-waiter
-   struct:select-waiter
-   (|#%nongenerative-uid| semaphore-peek-select-waiter)
-   #f
-   #f
-   0
-   0))
-(define effect_2532
-  (struct-type-install-properties!
-   struct:semaphore-peek-select-waiter
+(define finish169
+  (make-struct-type-install-properties
    '(semaphore-peek-select-waiter)
    0
    0
@@ -4285,6 +4275,16 @@
    '()
    #f
    'semaphore-peek-select-waiter))
+(define struct:semaphore-peek-select-waiter
+  (make-record-type-descriptor*
+   'semaphore-peek-select-waiter
+   struct:select-waiter
+   (|#%nongenerative-uid| semaphore-peek-select-waiter)
+   #f
+   #f
+   0
+   0))
+(define effect_2387 (finish169 struct:semaphore-peek-select-waiter))
 (define semaphore-peek-select-waiter3.1
   (|#%name|
    semaphore-peek-select-waiter
@@ -4505,18 +4505,8 @@
         (set-semaphore-count! s_0 (sub1 c_0))
         (internal-error
          "semaphore-wait/atomic: cannot decrement semaphore")))))
-(define struct:node
-  (make-record-type-descriptor*
-   'node
-   #f
-   (|#%nongenerative-uid| node)
-   #f
-   #f
-   2
-   3))
-(define effect_2309
-  (struct-type-install-properties!
-   struct:node
+(define finish182
+  (make-struct-type-install-properties
    '(node)
    2
    0
@@ -4527,6 +4517,16 @@
    '()
    #f
    'node))
+(define struct:node
+  (make-record-type-descriptor*
+   'node
+   #f
+   (|#%nongenerative-uid| node)
+   #f
+   #f
+   2
+   3))
+(define effect_2547 (finish182 struct:node))
 (define node1.1
   (|#%name|
    node
@@ -4541,18 +4541,8 @@
   (|#%name| set-node-next! (record-mutator struct:node 1)))
 (define child-node (lambda (child_0) child_0))
 (define node-child (lambda (n_0) n_0))
-(define struct:thread-group
-  (make-record-type-descriptor*
-   'thread-group
-   struct:node
-   (|#%nongenerative-uid| thread-group)
-   #f
-   #f
-   4
-   14))
-(define effect_2274
-  (struct-type-install-properties!
-   struct:thread-group
+(define finish184
+  (make-struct-type-install-properties
    '(thread-group)
    4
    0
@@ -4563,6 +4553,16 @@
    '(0)
    #f
    'thread-group))
+(define struct:thread-group
+  (make-record-type-descriptor*
+   'thread-group
+   struct:node
+   (|#%nongenerative-uid| thread-group)
+   #f
+   #f
+   4
+   14))
+(define effect_2514 (finish184 struct:thread-group))
 (define thread-group2.1
   (|#%name|
    thread-group
@@ -4713,18 +4713,8 @@
                     (begin-unsafe n_0)
                     accum_1)))))))))
        (loop_0 (thread-group-chain-start parent_0) accum_0)))))
-(define struct:schedule-info
-  (make-record-type-descriptor*
-   'schedule-info
-   #f
-   (|#%nongenerative-uid| schedule-info)
-   #f
-   #f
-   2
-   3))
-(define effect_2483
-  (struct-type-install-properties!
-   struct:schedule-info
+(define finish196
+  (make-struct-type-install-properties
    '(schedule-info)
    2
    0
@@ -4735,6 +4725,16 @@
    '()
    #f
    'schedule-info))
+(define struct:schedule-info
+  (make-record-type-descriptor*
+   'schedule-info
+   #f
+   (|#%nongenerative-uid| schedule-info)
+   #f
+   #f
+   2
+   3))
+(define effect_2462 (finish196 struct:schedule-info))
 (define schedule-info1.1
   (|#%name|
    schedule-info
@@ -4844,18 +4844,8 @@
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
 (define reference-sink
   (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
-(define struct:plumber
-  (make-record-type-descriptor*
-   'plumber
-   #f
-   (|#%nongenerative-uid| plumber)
-   #f
-   #f
-   2
-   0))
-(define effect_2626
-  (struct-type-install-properties!
-   struct:plumber
+(define finish204
+  (make-struct-type-install-properties
    '(plumber)
    2
    0
@@ -4866,6 +4856,16 @@
    '(0 1)
    #f
    'plumber))
+(define struct:plumber
+  (make-record-type-descriptor*
+   'plumber
+   #f
+   (|#%nongenerative-uid| plumber)
+   #f
+   #f
+   2
+   0))
+(define effect_2412 (finish204 struct:plumber))
 (define plumber1.1
   (|#%name|
    plumber
@@ -4892,18 +4892,8 @@
          (raise-argument-error 'current-plumber "plumber?" v_0))
        v_0))
    'current-plumber))
-(define struct:plumber-flush-handle
-  (make-record-type-descriptor*
-   'plumber-flush-handle
-   #f
-   (|#%nongenerative-uid| plumber-flush-handle)
-   #f
-   #f
-   2
-   0))
-(define effect_2487
-  (struct-type-install-properties!
-   struct:plumber-flush-handle
+(define finish208
+  (make-struct-type-install-properties
    '(plumber-flush-handle)
    2
    0
@@ -4914,6 +4904,16 @@
    '(0 1)
    #f
    'plumber-flush-handle))
+(define struct:plumber-flush-handle
+  (make-record-type-descriptor*
+   'plumber-flush-handle
+   #f
+   (|#%nongenerative-uid| plumber-flush-handle)
+   #f
+   #f
+   2
+   0))
+(define effect_2328 (finish208 struct:plumber-flush-handle))
 (define plumber-flush-handle2.1
   (|#%name|
    plumber-flush-handle
@@ -5124,18 +5124,8 @@
     (|#%name|
      exit
      (case-lambda (() (begin (exit_0 #t))) ((v1_0) (exit_0 v1_0))))))
-(define struct:custodian-box
-  (make-record-type-descriptor*
-   'custodian-box
-   #f
-   (|#%nongenerative-uid| custodian-box)
-   #f
-   #f
-   2
-   1))
-(define effect_2348
-  (struct-type-install-properties!
-   struct:custodian-box
+(define finish212
+  (make-struct-type-install-properties
    '(custodian-box)
    2
    0
@@ -5151,6 +5141,16 @@
    '(1)
    #f
    'custodian-box))
+(define struct:custodian-box
+  (make-record-type-descriptor*
+   'custodian-box
+   #f
+   (|#%nongenerative-uid| custodian-box)
+   #f
+   #f
+   2
+   1))
+(define effect_2694 (finish212 struct:custodian-box))
 (define custodian-box1.1
   (|#%name|
    custodian-box
@@ -5164,18 +5164,8 @@
   (|#%name| custodian-box-sema (record-accessor struct:custodian-box 1)))
 (define set-custodian-box-v!
   (|#%name| set-custodian-box-v! (record-mutator struct:custodian-box 0)))
-(define struct:willed-callback
-  (make-record-type-descriptor*
-   'willed-callback
-   #f
-   (|#%nongenerative-uid| willed-callback)
-   #f
-   #f
-   2
-   0))
-(define effect_2870
-  (struct-type-install-properties!
-   struct:willed-callback
+(define finish214
+  (make-struct-type-install-properties
    '(willed-callback)
    2
    0
@@ -5186,6 +5176,16 @@
    '(0 1)
    #f
    'willed-callback))
+(define struct:willed-callback
+  (make-record-type-descriptor*
+   'willed-callback
+   #f
+   (|#%nongenerative-uid| willed-callback)
+   #f
+   #f
+   2
+   0))
+(define effect_2527 (finish214 struct:willed-callback))
 (define willed-callback2.1
   (|#%name|
    willed-callback
@@ -5197,18 +5197,8 @@
   (|#%name| willed-callback-proc (record-accessor struct:willed-callback 0)))
 (define willed-callback-will
   (|#%name| willed-callback-will (record-accessor struct:willed-callback 1)))
-(define struct:at-exit-callback
-  (make-record-type-descriptor*
-   'at-exit-callback
-   struct:willed-callback
-   (|#%nongenerative-uid| at-exit-callback)
-   #f
-   #f
-   0
-   0))
-(define effect_2332
-  (struct-type-install-properties!
-   struct:at-exit-callback
+(define finish216
+  (make-struct-type-install-properties
    '(at-exit-callback)
    0
    0
@@ -5219,6 +5209,16 @@
    '()
    #f
    'at-exit-callback))
+(define struct:at-exit-callback
+  (make-record-type-descriptor*
+   'at-exit-callback
+   struct:willed-callback
+   (|#%nongenerative-uid| at-exit-callback)
+   #f
+   #f
+   0
+   0))
+(define effect_2512 (finish216 struct:at-exit-callback))
 (define at-exit-callback3.1
   (|#%name|
    at-exit-callback
@@ -5226,18 +5226,8 @@
     (make-record-constructor-descriptor struct:at-exit-callback #f #f))))
 (define at-exit-callback?
   (|#%name| at-exit-callback? (record-predicate struct:at-exit-callback)))
-(define struct:custodian-reference
-  (make-record-type-descriptor*
-   'custodian-reference
-   #f
-   (|#%nongenerative-uid| custodian-reference)
-   #f
-   #f
-   1
-   1))
-(define effect_2409
-  (struct-type-install-properties!
-   struct:custodian-reference
+(define finish218
+  (make-struct-type-install-properties
    '(custodian-reference)
    1
    0
@@ -5248,6 +5238,16 @@
    '()
    #f
    'custodian-reference))
+(define struct:custodian-reference
+  (make-record-type-descriptor*
+   'custodian-reference
+   #f
+   (|#%nongenerative-uid| custodian-reference)
+   #f
+   #f
+   1
+   1))
+(define effect_2141 (finish218 struct:custodian-reference))
 (define custodian-reference4.1
   (|#%name|
    custodian-reference
@@ -6111,7 +6111,7 @@
 (define memory-limit-lock (|#%app| host:make-mutex))
 (define compute-memory-sizes 0)
 (define computed-memory-sizes? #f)
-(define effect_2498
+(define effect_2497
   (begin
     (void
      (|#%app|
@@ -6565,52 +6565,54 @@
                   (void)))
               (void)))))))
      (loop_0 mref_0))))
-(define struct:thread
-  (make-record-type-descriptor*
-   'thread
-   struct:node
-   (|#%nongenerative-uid| thread)
-   #f
-   #f
-   24
-   16777082))
-(define effect_2967
-  (struct-type-install-properties!
-   struct:thread
+(define finish235
+  (make-struct-type-install-properties
    '(thread)
    24
    0
    struct:node
-   (let ((app_0 (cons prop:authentic #t)))
-     (let ((app_1 (cons prop:object-name 0)))
-       (let ((app_2
-              (cons
-               1/prop:evt
-               (lambda (t_0)
-                 (wrap-evt7.1
-                  (|#%app| get-thread-dead-evt t_0)
-                  (lambda (v_0) t_0))))))
+   (let ((app_0 (cons prop:sealed #t)))
+     (let ((app_1 (cons prop:authentic #t)))
+       (let ((app_2 (cons prop:object-name 0)))
          (let ((app_3
                 (cons
-                 prop:waiter
-                 (let ((temp28_0
-                        (lambda (t_0 i-cb_0)
-                          (|#%app| thread-deschedule! t_0 #f i-cb_0))))
-                   (let ((temp29_0
-                          (lambda (t_0 v_0)
-                            (begin (|#%app| thread-reschedule! t_0) v_0))))
-                     (make-waiter-methods.1 temp29_0 temp28_0))))))
-           (list
-            app_0
-            app_1
-            app_2
-            app_3
-            (cons host:prop:unsafe-authentic-override #t))))))
+                 1/prop:evt
+                 (lambda (t_0)
+                   (wrap-evt7.1
+                    (|#%app| get-thread-dead-evt t_0)
+                    (lambda (v_0) t_0))))))
+           (let ((app_4
+                  (cons
+                   prop:waiter
+                   (let ((temp28_0
+                          (lambda (t_0 i-cb_0)
+                            (|#%app| thread-deschedule! t_0 #f i-cb_0))))
+                     (let ((temp29_0
+                            (lambda (t_0 v_0)
+                              (begin (|#%app| thread-reschedule! t_0) v_0))))
+                       (make-waiter-methods.1 temp29_0 temp28_0))))))
+             (list
+              app_0
+              app_1
+              app_2
+              app_3
+              app_4
+              (cons host:prop:unsafe-authentic-override #t)))))))
    (current-inspector)
    #f
    '(0 2 7)
    #f
    'thread))
+(define struct:thread
+  (make-record-type-descriptor*
+   'thread
+   struct:node
+   (|#%nongenerative-uid| thread)
+   #t
+   #f
+   24
+   16777082))
+(define effect_2668 (finish235 struct:thread))
 (define thread1.1
   (|#%name|
    thread
@@ -7079,18 +7081,8 @@
            (void)
            (raise-argument-error 'thread-wait "thread?" t_0))
          (1/semaphore-wait (|#%app| get-thread-dead-sema t_0)))))))
-(define struct:dead-evt
-  (make-record-type-descriptor*
-   'thread-dead-evt
-   #f
-   (|#%nongenerative-uid| thread-dead-evt)
-   #f
-   #f
-   1
-   0))
-(define effect_2406
-  (struct-type-install-properties!
-   struct:dead-evt
+(define finish248
+  (make-struct-type-install-properties
    '(thread-dead-evt)
    1
    0
@@ -7105,6 +7097,16 @@
    '(0)
    #f
    'dead-evt))
+(define struct:dead-evt
+  (make-record-type-descriptor*
+   'thread-dead-evt
+   #f
+   (|#%nongenerative-uid| thread-dead-evt)
+   #f
+   #f
+   1
+   0))
+(define effect_2691 (finish248 struct:dead-evt))
 (define dead-evt13.1
   (|#%name|
    dead-evt
@@ -7416,18 +7418,8 @@
                     (let ((app_0 (cdr crs_0)))
                       (loop_0 app_0 (cons (car crs_0) accum_0))))))))))))
      (loop_0 (thread-custodian-references t_0) null))))
-(define struct:transitive-resume
-  (make-record-type-descriptor*
-   'transitive-resume
-   #f
-   (|#%nongenerative-uid| transitive-resume)
-   #f
-   #f
-   2
-   0))
-(define effect_2379
-  (struct-type-install-properties!
-   struct:transitive-resume
+(define finish260
+  (make-struct-type-install-properties
    '(transitive-resume)
    2
    0
@@ -7438,6 +7430,16 @@
    '(0 1)
    #f
    'transitive-resume))
+(define struct:transitive-resume
+  (make-record-type-descriptor*
+   'transitive-resume
+   #f
+   (|#%nongenerative-uid| transitive-resume)
+   #f
+   #f
+   2
+   0))
+(define effect_3100 (finish260 struct:transitive-resume))
 (define transitive-resume16.1
   (|#%name|
    transitive-resume
@@ -7547,18 +7549,8 @@
           (set-thread-interrupt-callback! t_0 #f)
           (|#%app| interrupt-callback_0))
         (void)))))
-(define struct:suspend-resume-evt
-  (make-record-type-descriptor*
-   'suspend-resume-evt
-   #f
-   (|#%nongenerative-uid| suspend-resume-evt)
-   #f
-   #f
-   2
-   2))
-(define effect_2856
-  (struct-type-install-properties!
-   struct:suspend-resume-evt
+(define finish266
+  (make-struct-type-install-properties
    '(suspend-resume-evt)
    2
    0
@@ -7575,6 +7567,16 @@
    '(0)
    #f
    'suspend-resume-evt))
+(define struct:suspend-resume-evt
+  (make-record-type-descriptor*
+   'suspend-resume-evt
+   #f
+   (|#%nongenerative-uid| suspend-resume-evt)
+   #f
+   #f
+   2
+   2))
+(define effect_2478 (finish266 struct:suspend-resume-evt))
 (define suspend-resume-evt17.1
   (|#%name|
    suspend-resume-evt
@@ -7648,18 +7650,8 @@
          v
          'suspend-resume-evt
          'thread))))))
-(define struct:suspend-evt
-  (make-record-type-descriptor*
-   'thread-suspend-evt
-   struct:suspend-resume-evt
-   (|#%nongenerative-uid| thread-suspend-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2484
-  (struct-type-install-properties!
-   struct:suspend-evt
+(define finish272
+  (make-struct-type-install-properties
    '(thread-suspend-evt)
    0
    0
@@ -7670,6 +7662,16 @@
    '()
    #f
    'suspend-evt))
+(define struct:suspend-evt
+  (make-record-type-descriptor*
+   'thread-suspend-evt
+   struct:suspend-resume-evt
+   (|#%nongenerative-uid| thread-suspend-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2442 (finish272 struct:suspend-evt))
 (define suspend-evt18.1
   (|#%name|
    suspend-evt
@@ -7685,18 +7687,8 @@
        #t
        ($value
         (if (impersonator? v) (suspend-evt?_3224 (impersonator-val v)) #f))))))
-(define struct:resume-evt
-  (make-record-type-descriptor*
-   'thread-resume-evt
-   struct:suspend-resume-evt
-   (|#%nongenerative-uid| thread-resume-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2390
-  (struct-type-install-properties!
-   struct:resume-evt
+(define finish275
+  (make-struct-type-install-properties
    '(thread-resume-evt)
    0
    0
@@ -7707,6 +7699,16 @@
    '()
    #f
    'resume-evt))
+(define struct:resume-evt
+  (make-record-type-descriptor*
+   'thread-resume-evt
+   struct:suspend-resume-evt
+   (|#%nongenerative-uid| thread-resume-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2874 (finish275 struct:resume-evt))
 (define resume-evt19.1
   (|#%name|
    resume-evt
@@ -8124,18 +8126,8 @@
                 (begin-unsafe (queue-add-front! (thread-mailbox t_0) msg_0)))
               lst_0))
            (end-atomic)))))))
-(define struct:thread-receiver-evt
-  (make-record-type-descriptor*
-   'thread-receive-evt
-   #f
-   (|#%nongenerative-uid| thread-receive-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2597
-  (struct-type-install-properties!
-   struct:thread-receiver-evt
+(define finish290
+  (make-struct-type-install-properties
    '(thread-receive-evt)
    0
    0
@@ -8186,6 +8178,16 @@
    '()
    #f
    'thread-receiver-evt))
+(define struct:thread-receiver-evt
+  (make-record-type-descriptor*
+   'thread-receive-evt
+   #f
+   (|#%nongenerative-uid| thread-receive-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2506 (finish290 struct:thread-receiver-evt))
 (define thread-receiver-evt26.1
   (|#%name|
    thread-receiver-evt
@@ -8205,7 +8207,7 @@
           #f))))))
 (define 1/thread-receive-evt
   (|#%name| thread-receive-evt (lambda () (begin (thread-receiver-evt26.1)))))
-(define effect_2328
+(define effect_2329
   (begin
     (void
      (|#%app|
@@ -8232,18 +8234,8 @@
                 #f))))
        (begin-unsafe (set! thread-engine-for-roots thread-engine_0))))
     (void)))
-(define struct:channel
-  (make-record-type-descriptor*
-   'channel
-   #f
-   (|#%nongenerative-uid| channel)
-   #f
-   #f
-   2
-   0))
-(define effect_2021
-  (struct-type-install-properties!
-   struct:channel
+(define finish294
+  (make-struct-type-install-properties
    '(channel)
    2
    0
@@ -8258,6 +8250,16 @@
    '(0 1)
    #f
    'channel))
+(define struct:channel
+  (make-record-type-descriptor*
+   'channel
+   #f
+   (|#%nongenerative-uid| channel)
+   #f
+   #f
+   2
+   0))
+(define effect_2481 (finish294 struct:channel))
 (define channel1.1
   (|#%name|
    channel
@@ -8304,18 +8306,8 @@
          s
          'channel
          'put-queue))))))
-(define struct:channel-put-evt*
-  (make-record-type-descriptor*
-   'channel-put-evt
-   #f
-   (|#%nongenerative-uid| channel-put-evt)
-   #f
-   #f
-   2
-   0))
-(define effect_2566
-  (struct-type-install-properties!
-   struct:channel-put-evt*
+(define finish301
+  (make-struct-type-install-properties
    '(channel-put-evt)
    2
    0
@@ -8336,6 +8328,16 @@
    '(0 1)
    #f
    'channel-put-evt*))
+(define struct:channel-put-evt*
+  (make-record-type-descriptor*
+   'channel-put-evt
+   #f
+   (|#%nongenerative-uid| channel-put-evt)
+   #f
+   #f
+   2
+   0))
+(define effect_2715 (finish301 struct:channel-put-evt*))
 (define channel-put-evt*2.1
   (|#%name|
    channel-put-evt*
@@ -8385,18 +8387,8 @@
          s
          'channel-put-evt
          'v))))))
-(define struct:channel-select-waiter
-  (make-record-type-descriptor*
-   'channel-select-waiter
-   struct:select-waiter
-   (|#%nongenerative-uid| channel-select-waiter)
-   #f
-   #f
-   1
-   0))
-(define effect_2402
-  (struct-type-install-properties!
-   struct:channel-select-waiter
+(define finish307
+  (make-struct-type-install-properties
    '(channel-select-waiter)
    1
    0
@@ -8407,6 +8399,16 @@
    '(0)
    #f
    'channel-select-waiter))
+(define struct:channel-select-waiter
+  (make-record-type-descriptor*
+   'channel-select-waiter
+   struct:select-waiter
+   (|#%nongenerative-uid| channel-select-waiter)
+   #f
+   #f
+   1
+   0))
+(define effect_2956 (finish307 struct:channel-select-waiter))
 (define channel-select-waiter3.1
   (|#%name|
    channel-select-waiter
@@ -8899,18 +8901,8 @@
                    (car args_1))
                   (loop_0 (cddr args_1))))))))))
      (loop_0 args_0))))
-(define struct:syncing
-  (make-record-type-descriptor*
-   'syncing
-   #f
-   (|#%nongenerative-uid| syncing)
-   #f
-   #f
-   5
-   31))
-(define effect_2287
-  (struct-type-install-properties!
-   struct:syncing
+(define finish337
+  (make-struct-type-install-properties
    '(syncing)
    5
    0
@@ -8921,6 +8913,16 @@
    '()
    #f
    'syncing))
+(define struct:syncing
+  (make-record-type-descriptor*
+   'syncing
+   #f
+   (|#%nongenerative-uid| syncing)
+   #f
+   #f
+   5
+   31))
+(define effect_2363 (finish337 struct:syncing))
 (define syncing1.1
   (|#%name|
    syncing
@@ -9105,18 +9107,8 @@
          v
          'syncing
          'need-retry?))))))
-(define struct:syncer
-  (make-record-type-descriptor*
-   'syncer
-   #f
-   (|#%nongenerative-uid| syncer)
-   #f
-   #f
-   9
-   511))
-(define effect_2172
-  (struct-type-install-properties!
-   struct:syncer
+(define finish350
+  (make-struct-type-install-properties
    '(syncer)
    9
    0
@@ -9127,6 +9119,16 @@
    '()
    #f
    'syncer))
+(define struct:syncer
+  (make-record-type-descriptor*
+   'syncer
+   #f
+   (|#%nongenerative-uid| syncer)
+   #f
+   #f
+   9
+   511))
+(define effect_2176 (finish350 struct:syncer))
 (define syncer2.1
   (|#%name|
    syncer
@@ -10635,11 +10637,8 @@
                                      (end-atomic)))))))))))))))))
           (retry_0))
          (end-atomic))))))
-(define struct:replacing-evt
-  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2315
-  (struct-type-install-properties!
-   struct:replacing-evt
+(define finish400
+  (make-struct-type-install-properties
    '(evt)
    1
    0
@@ -10654,6 +10653,9 @@
    '(0)
    #f
    'replacing-evt))
+(define struct:replacing-evt
+  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
+(define effect_2704 (finish400 struct:replacing-evt))
 (define replacing-evt34.1
   (|#%name|
    replacing-evt
@@ -10687,11 +10689,8 @@
          s
          'evt
          'guard))))))
-(define struct:nested-sync-evt
-  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 3 0))
-(define effect_2607
-  (struct-type-install-properties!
-   struct:nested-sync-evt
+(define finish404
+  (make-struct-type-install-properties
    '(evt)
    3
    0
@@ -10705,6 +10704,9 @@
    '(0 1 2)
    #f
    'nested-sync-evt))
+(define struct:nested-sync-evt
+  (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 3 0))
+(define effect_2461 (finish404 struct:nested-sync-evt))
 (define nested-sync-evt35.1
   (|#%name|
    nested-sync-evt
@@ -10904,18 +10906,8 @@
 (define cell.2$3
   (unsafe-make-place-local
    (wrap-evt7.1 (unsafe-place-local-ref cell.1$5) void)))
-(define struct:system-idle-evt
-  (make-record-type-descriptor*
-   'system-idle-evt
-   #f
-   (|#%nongenerative-uid| system-idle-evt)
-   #f
-   #f
-   0
-   0))
-(define effect_2854
-  (struct-type-install-properties!
-   struct:system-idle-evt
+(define finish413
+  (make-struct-type-install-properties
    '(system-idle-evt)
    0
    0
@@ -10926,6 +10918,16 @@
    '()
    #f
    'system-idle-evt))
+(define struct:system-idle-evt
+  (make-record-type-descriptor*
+   'system-idle-evt
+   #f
+   (|#%nongenerative-uid| system-idle-evt)
+   #f
+   #f
+   0
+   0))
+(define effect_2195 (finish413 struct:system-idle-evt))
 (define system-idle-evt1.1
   (|#%name|
    system-idle-evt
@@ -10965,18 +10967,8 @@
        (wrap-evt7.1 (unsafe-place-local-ref cell.1$5) void)))))
 (define TICKS 100000)
 (define set-schedule-quantum! (lambda (n_0) (set! TICKS n_0)))
-(define struct:future*
-  (make-record-type-descriptor*
-   'future
-   #f
-   (|#%nongenerative-uid| future)
-   #f
-   #f
-   10
-   1016))
-(define effect_3020
-  (struct-type-install-properties!
-   struct:future*
+(define finish419
+  (make-struct-type-install-properties
    '(future)
    10
    0
@@ -10987,6 +10979,16 @@
    '(0 1 2)
    #f
    'future*))
+(define struct:future*
+  (make-record-type-descriptor*
+   'future
+   #f
+   (|#%nongenerative-uid| future)
+   #f
+   #f
+   10
+   1016))
+(define effect_2258 (finish419 struct:future*))
 (define future*1.1
   (|#%name|
    future*
@@ -11068,18 +11070,8 @@
       (if (eq? (unbox lock_0) 0)
         (internal-error "lock release failed!")
         (lock-release lock_0)))))
-(define struct:future-event
-  (make-record-type-descriptor*
-   'future-event
-   #f
-   (structure-type-lookup-prefab-uid 'future-event #f 6 0 #f '(0 1 2 3 4 5))
-   #f
-   #f
-   6
-   63))
-(define effect_2966
-  (struct-type-install-properties!
-   struct:future-event
+(define finish422
+  (make-struct-type-install-properties
    '(future-event)
    6
    0
@@ -11090,6 +11082,16 @@
    '(0 1 2 3 4 5)
    #f
    'future-event))
+(define struct:future-event
+  (make-record-type-descriptor*
+   'future-event
+   #f
+   (structure-type-lookup-prefab-uid 'future-event #f 6 0 #f '(0 1 2 3 4 5))
+   #f
+   #f
+   6
+   63))
+(define effect_2115 (finish422 struct:future-event))
 (define future-event1.1
   (|#%name|
    future-event
@@ -11360,18 +11362,8 @@
 (define init-future-place! (lambda () (init-future-logging-place!)))
 (define 1/futures-enabled?
   (|#%name| futures-enabled? (lambda () (begin (|#%app| threaded?)))))
-(define struct:future-evt
-  (make-record-type-descriptor*
-   'future-evt
-   #f
-   (|#%nongenerative-uid| future-evt)
-   #f
-   #f
-   1
-   0))
-(define effect_2519
-  (struct-type-install-properties!
-   struct:future-evt
+(define finish437
+  (make-struct-type-install-properties
    '(future-evt)
    1
    0
@@ -11396,6 +11388,16 @@
    '(0)
    #f
    'future-evt))
+(define struct:future-evt
+  (make-record-type-descriptor*
+   'future-evt
+   #f
+   (|#%nongenerative-uid| future-evt)
+   #f
+   #f
+   1
+   0))
+(define effect_2000 (finish437 struct:future-evt))
 (define future-evt1.1
   (|#%name|
    future-evt
@@ -11803,18 +11805,8 @@
                    v_0))))))))))
 (define pthread-count 1)
 (define set-processor-count! (lambda (n_0) (set! pthread-count n_0)))
-(define struct:scheduler
-  (make-record-type-descriptor*
-   'scheduler
-   #f
-   (|#%nongenerative-uid| scheduler)
-   #f
-   #f
-   6
-   7))
-(define effect_2452
-  (struct-type-install-properties!
-   struct:scheduler
+(define finish441
+  (make-struct-type-install-properties
    '(scheduler)
    6
    0
@@ -11825,6 +11817,16 @@
    '(3 4 5)
    #f
    'scheduler))
+(define struct:scheduler
+  (make-record-type-descriptor*
+   'scheduler
+   #f
+   (|#%nongenerative-uid| scheduler)
+   #f
+   #f
+   6
+   7))
+(define effect_2657 (finish441 struct:scheduler))
 (define scheduler7.1
   (|#%name|
    scheduler
@@ -11849,18 +11851,8 @@
   (|#%name| set-scheduler-futures-head! (record-mutator struct:scheduler 1)))
 (define set-scheduler-futures-tail!
   (|#%name| set-scheduler-futures-tail! (record-mutator struct:scheduler 2)))
-(define struct:worker
-  (make-record-type-descriptor*
-   'worker
-   #f
-   (|#%nongenerative-uid| worker)
-   #f
-   #f
-   5
-   26))
-(define effect_2639
-  (struct-type-install-properties!
-   struct:worker
+(define finish443
+  (make-struct-type-install-properties
    '(worker)
    5
    0
@@ -11871,6 +11863,16 @@
    '(0 2)
    #f
    'worker))
+(define struct:worker
+  (make-record-type-descriptor*
+   'worker
+   #f
+   (|#%nongenerative-uid| worker)
+   #f
+   #f
+   5
+   26))
+(define effect_2821 (finish443 struct:worker))
 (define worker8.1
   (|#%name|
    worker
@@ -12697,18 +12699,8 @@
 (define check-place-activity void)
 (define set-check-place-activity!
   (lambda (proc_0) (set! check-place-activity proc_0)))
-(define struct:alarm-evt
-  (make-record-type-descriptor*
-   'alarm-evt
-   #f
-   (|#%nongenerative-uid| alarm-evt)
-   #f
-   #f
-   1
-   0))
-(define effect_2783
-  (struct-type-install-properties!
-   struct:alarm-evt
+(define finish462
+  (make-struct-type-install-properties
    '(alarm-evt)
    1
    0
@@ -12731,6 +12723,16 @@
    '(0)
    #f
    'alarm-evt))
+(define struct:alarm-evt
+  (make-record-type-descriptor*
+   'alarm-evt
+   #f
+   (|#%nongenerative-uid| alarm-evt)
+   #f
+   #f
+   1
+   0))
+(define effect_2822 (finish462 struct:alarm-evt))
 (define alarm-evt1.1
   (|#%name|
    alarm-evt
@@ -13256,18 +13258,8 @@
        (begin (call-with-semaphore/enable-break_0 s_0 proc_0 #f null)))
       ((s_0 proc_0 try-fail12_0 . args_0)
        (call-with-semaphore/enable-break_0 s_0 proc_0 try-fail12_0 args_0))))))
-(define struct:will-executor
-  (make-record-type-descriptor*
-   'will-executor
-   #f
-   (|#%nongenerative-uid| will-executor)
-   #f
-   #f
-   2
-   0))
-(define effect_2531
-  (struct-type-install-properties!
-   struct:will-executor
+(define finish467
+  (make-struct-type-install-properties
    '(will-executor)
    2
    0
@@ -13286,6 +13278,16 @@
    '(0 1)
    #f
    'will-executor))
+(define struct:will-executor
+  (make-record-type-descriptor*
+   'will-executor
+   #f
+   (|#%nongenerative-uid| will-executor)
+   #f
+   #f
+   2
+   0))
+(define effect_2170 (finish467 struct:will-executor))
 (define will-executor1.1
   (|#%name|
    will-executor
@@ -13602,18 +13604,8 @@
           v_0))
        v_0))
    'current-thread-initial-stack-size))
-(define struct:place-event
-  (make-record-type-descriptor*
-   'place-event
-   #f
-   (structure-type-lookup-prefab-uid 'place-event #f 4 0 #f '(0 1 2 3))
-   #f
-   #f
-   4
-   15))
-(define effect_2427
-  (struct-type-install-properties!
-   struct:place-event
+(define finish471
+  (make-struct-type-install-properties
    '(place-event)
    4
    0
@@ -13624,6 +13616,16 @@
    '(0 1 2 3)
    #f
    'place-event))
+(define struct:place-event
+  (make-record-type-descriptor*
+   'place-event
+   #f
+   (structure-type-lookup-prefab-uid 'place-event #f 4 0 #f '(0 1 2 3))
+   #f
+   #f
+   4
+   15))
+(define effect_2598 (finish471 struct:place-event))
 (define place-event1.1
   (|#%name|
    place-event
@@ -14286,18 +14288,8 @@
                          (|#%app| (sandman-do-sleep the-sandman) #f))
                         (loop_0)))))))))))
        (loop_0)))))
-(define struct:place-done-evt
-  (make-record-type-descriptor*
-   'place-dead-evt
-   #f
-   (|#%nongenerative-uid| place-dead-evt)
-   #f
-   #f
-   2
-   0))
-(define effect_2098
-  (struct-type-install-properties!
-   struct:place-done-evt
+(define finish487
+  (make-struct-type-install-properties
    '(place-dead-evt)
    2
    0
@@ -14331,6 +14323,16 @@
    '(0 1)
    #f
    'place-done-evt))
+(define struct:place-done-evt
+  (make-record-type-descriptor*
+   'place-dead-evt
+   #f
+   (|#%nongenerative-uid| place-dead-evt)
+   #f
+   #f
+   2
+   0))
+(define effect_2480 (finish487 struct:place-done-evt))
 (define place-done-evt3.1
   (|#%name|
    place-done-evt
@@ -14392,18 +14394,8 @@
            (void)
            (raise-argument-error 'place-dead-evt "place?" p_0))
          (place-done-evt3.1 p_0 #f))))))
-(define struct:message-queue
-  (make-record-type-descriptor*
-   'message-queue
-   #f
-   (|#%nongenerative-uid| message-queue)
-   #f
-   #f
-   6
-   22))
-(define effect_2499
-  (struct-type-install-properties!
-   struct:message-queue
+(define finish491
+  (make-struct-type-install-properties
    '(message-queue)
    6
    0
@@ -14414,6 +14406,16 @@
    '(0 3 5)
    #f
    'message-queue))
+(define struct:message-queue
+  (make-record-type-descriptor*
+   'message-queue
+   #f
+   (|#%nongenerative-uid| message-queue)
+   #f
+   #f
+   6
+   22))
+(define effect_2109 (finish491 struct:message-queue))
 (define message-queue4.1
   (|#%name|
    message-queue
@@ -14547,18 +14549,8 @@
                       (void))
                     (|#%app| host:mutex-release lock_0)
                     (|#%app| success-k_0 (car q_0))))))))))))
-(define struct:pchannel
-  (make-record-type-descriptor*
-   'place-channel
-   #f
-   (|#%nongenerative-uid| place-channel)
-   #f
-   #f
-   6
-   0))
-(define effect_2960
-  (struct-type-install-properties!
-   struct:pchannel
+(define finish495
+  (make-struct-type-install-properties
    '(place-channel)
    6
    0
@@ -14588,6 +14580,16 @@
    '(0 1 2 3 4 5)
    #f
    'pchannel))
+(define struct:pchannel
+  (make-record-type-descriptor*
+   'place-channel
+   #f
+   (|#%nongenerative-uid| place-channel)
+   #f
+   #f
+   6
+   0))
+(define effect_2172 (finish495 struct:pchannel))
 (define pchannel5.1
   (|#%name|
    pchannel
@@ -14836,18 +14838,8 @@
       (lambda () (place-has-activity! (unsafe-place-local-ref cell.1$2)))
       (lambda () (ensure-wakeup-handle!))))
     (void)))
-(define struct:fsemaphore
-  (make-record-type-descriptor*
-   'fsemaphore
-   #f
-   (|#%nongenerative-uid| fsemaphore)
-   #f
-   #f
-   4
-   13))
-(define effect_2715
-  (struct-type-install-properties!
-   struct:fsemaphore
+(define finish505
+  (make-struct-type-install-properties
    '(fsemaphore)
    4
    0
@@ -14858,6 +14850,16 @@
    '(1)
    #f
    'fsemaphore))
+(define struct:fsemaphore
+  (make-record-type-descriptor*
+   'fsemaphore
+   #f
+   (|#%nongenerative-uid| fsemaphore)
+   #f
+   #f
+   4
+   13))
+(define effect_2528 (finish505 struct:fsemaphore))
 (define fsemaphore1.1
   (|#%name|
    fsemaphore
@@ -14879,18 +14881,8 @@
   (|#%name| set-fsemaphore-dependents! (record-mutator struct:fsemaphore 2)))
 (define set-fsemaphore-dep-box!
   (|#%name| set-fsemaphore-dep-box! (record-mutator struct:fsemaphore 3)))
-(define struct:fsemaphore-box-evt
-  (make-record-type-descriptor*
-   'fsemaphore-box-evt
-   #f
-   (|#%nongenerative-uid| fsemaphore-box-evt)
-   #f
-   #f
-   1
-   0))
-(define effect_2250
-  (struct-type-install-properties!
-   struct:fsemaphore-box-evt
+(define finish510
+  (make-struct-type-install-properties
    '(fsemaphore-box-evt)
    1
    0
@@ -14907,6 +14899,16 @@
    '(0)
    #f
    'fsemaphore-box-evt))
+(define struct:fsemaphore-box-evt
+  (make-record-type-descriptor*
+   'fsemaphore-box-evt
+   #f
+   (|#%nongenerative-uid| fsemaphore-box-evt)
+   #f
+   #f
+   1
+   0))
+(define effect_2415 (finish510 struct:fsemaphore-box-evt))
 (define fsemaphore-box-evt2.1
   (|#%name|
    fsemaphore-box-evt
@@ -15081,18 +15083,8 @@
           fork-pthread
           (lambda () (begin (start-atomic) (|#%app| proc_0))))
          (void))))))
-(define struct:os-semaphore
-  (make-record-type-descriptor*
-   'os-semaphore
-   #f
-   (|#%nongenerative-uid| os-semaphore)
-   #f
-   #f
-   3
-   1))
-(define effect_2314
-  (struct-type-install-properties!
-   struct:os-semaphore
+(define finish513
+  (make-struct-type-install-properties
    '(os-semaphore)
    3
    0
@@ -15103,6 +15095,16 @@
    '(1 2)
    #f
    'os-semaphore))
+(define struct:os-semaphore
+  (make-record-type-descriptor*
+   'os-semaphore
+   #f
+   (|#%nongenerative-uid| os-semaphore)
+   #f
+   #f
+   3
+   1))
+(define effect_2703 (finish513 struct:os-semaphore))
 (define os-semaphore1.1
   (|#%name|
    os-semaphore

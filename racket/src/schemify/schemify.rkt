@@ -872,21 +872,24 @@
               (define type-id (and (pair? args)
                                    (null? (cdr args))
                                    (inline-type-id k im add-import! mutated imports)))
+              (define unsafe-struct? (if (known-struct-predicate-sealed? k)
+                                         'unsafe-sealed-struct?
+                                         'unsafe-struct?))
               (cond
                 [(not type-id) #f]
                 [(known-struct-predicate-authentic? k)
                  (define tmp (maybe-tmp (car args) 'v))
-                 (define ques `(unsafe-struct? ,tmp ,(schemify type-id 'fresh)))
+                 (define ques `(,unsafe-struct? ,tmp ,(schemify type-id 'fresh)))
                  (wrap-tmp tmp (car args)
                            ques)]
                 [else
                  (define tmp (maybe-tmp (car args) 'v))
                  (define schemified-type-id (schemify type-id 'fresh))
                  (define tmp-type-id (maybe-tmp schemified-type-id 'v))
-                 (define ques `(if (unsafe-struct? ,tmp ,tmp-type-id)
+                 (define ques `(if (,unsafe-struct? ,tmp ,tmp-type-id)
                                    #t
                                    (if (impersonator? ,tmp)
-                                       (unsafe-struct? (impersonator-val ,tmp) ,tmp-type-id)
+                                       (,unsafe-struct? (impersonator-val ,tmp) ,tmp-type-id)
                                        #f)))
                  (wrap-tmp tmp (car args)
                            (wrap-tmp tmp-type-id schemified-type-id 

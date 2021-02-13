@@ -167,6 +167,7 @@
                      shifted  ; box of table: interned shifted-multi-scopes for non-label phases
                      label-shifted) ; box of table: interned shifted-multi-scopes for label phases
   #:authentic
+  #:sealed
   #:property prop:serialize
   (lambda (ms ser-push! state)
     (ser-push! 'tag '#:multi-scope)
@@ -247,6 +248,7 @@
 (struct shifted-multi-scope (phase        ; non-label phase shift or shifted-to-label-phase
                              multi-scope) ; a multi-scope
   #:authentic
+  #:sealed
   #:property prop:custom-write
   (lambda (sms port mode)
     (write-string "#<scope:" port)
@@ -574,6 +576,7 @@
                      inspector  ; #f or inspector
                      tamper)    ; see "tamper.rkt"
   #:authentic
+  #:sealed
   #:property prop:propagation syntax-e
   #:property prop:propagation-tamper (lambda (p) (propagation-tamper p))
   #:property prop:propagation-set-tamper (lambda (p v) (propagation-set-tamper p v)))

@@ -131,6 +131,7 @@
 
                      [future #:mutable])  ; current would-be future
   #:authentic
+  #:sealed
   #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:waiter
   (make-waiter-methods 

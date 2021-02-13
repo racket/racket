@@ -59,7 +59,8 @@
                 fxarithmetic-shift-left fxlshift
                 fxsll/wraparound fxlshift/wraparound
                 real->flonum ->fl
-                time-utc->date seconds->date)
+                time-utc->date seconds->date
+                make-record-type-descriptor* make-struct-type)
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 
@@ -140,6 +141,11 @@
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
       (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
                            irritants))]
+   [(equal? str "cannot extend sealed record type ~s as ~s")
+    (format-error-values (string-append "cannot make a subtype of a sealed type\n"
+                                        "  type name: ~s\n"
+                                        "  sealed type: ~s")
+                         (reverse irritants))]
    [(eq? who 'time-utc->date)
     (values "integer is out-of-range" null)]
    [else

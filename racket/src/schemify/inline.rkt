@@ -266,6 +266,7 @@
                                              (known-predicate-type k)
                                              (known-struct-predicate-type-id k)
                                              (known-struct-predicate-authentic? k)
+                                             (known-struct-predicate-sealed? k)
                                              (needed->list needed))]
        [else
         (known-predicate (known-procedure-arity-mask k)

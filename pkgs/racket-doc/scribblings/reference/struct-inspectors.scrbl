@@ -129,6 +129,23 @@ Returns eight values that provide information about the structure type
 If the type for @racket[struct-type] is not controlled by the current inspector,
 the @exnraise[exn:fail:contract].}
 
+
+@defproc[(struct-type-sealed? [struct-type struct-type?]) boolean?]{
+
+Reports whether @racket[struct-type] has the @racket[prop:sealed]
+structure type property.
+
+@history[#:added "8.0.0.7"]}
+
+
+@defproc[(struct-type-authentic? [struct-type struct-type?]) boolean?]{
+
+Reports whether @racket[struct-type] has the @racket[prop:authentic]
+structure type property.
+
+@history[#:added "8.0.0.7"]}
+
+
 @defproc[(struct-type-make-constructor [struct-type struct-type?]
                                        [constructor-name (or/c symbol? #f) #f])
          struct-constructor-procedure?]{

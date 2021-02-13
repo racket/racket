@@ -865,18 +865,8 @@
 (define rx:line-end 'line-end)
 (define rx:word-boundary 'word-boundary)
 (define rx:not-word-boundary 'not-word-boundary)
-(define struct:rx:alts
-  (make-record-type-descriptor*
-   'rx:alts
-   #f
-   (|#%nongenerative-uid| rx:alts)
-   #f
-   #f
-   2
-   0))
-(define effect_1936
-  (struct-type-install-properties!
-   struct:rx:alts
+(define finish39
+  (make-struct-type-install-properties
    '(rx:alts)
    2
    0
@@ -887,6 +877,16 @@
    '(0 1)
    #f
    'rx:alts))
+(define struct:rx:alts
+  (make-record-type-descriptor*
+   'rx:alts
+   #f
+   (|#%nongenerative-uid| rx:alts)
+   #f
+   #f
+   2
+   0))
+(define effect_2414 (finish39 struct:rx:alts))
 (define rx:alts1.1
   (|#%name|
    rx:alts
@@ -921,18 +921,8 @@
        (rx:alts-rx_2917 s)
        ($value
         (impersonate-ref rx:alts-rx_2917 struct:rx:alts 1 s 'rx:alts 'rx2))))))
-(define struct:rx:sequence
-  (make-record-type-descriptor*
-   'rx:sequence
-   #f
-   (|#%nongenerative-uid| rx:sequence)
-   #f
-   #f
-   2
-   0))
-(define effect_2662
-  (struct-type-install-properties!
-   struct:rx:sequence
+(define finish44
+  (make-struct-type-install-properties
    '(rx:sequence)
    2
    0
@@ -943,6 +933,16 @@
    '(0 1)
    #f
    'rx:sequence))
+(define struct:rx:sequence
+  (make-record-type-descriptor*
+   'rx:sequence
+   #f
+   (|#%nongenerative-uid| rx:sequence)
+   #f
+   #f
+   2
+   0))
+(define effect_2459 (finish44 struct:rx:sequence))
 (define rx:sequence2.1
   (|#%name|
    rx:sequence
@@ -992,18 +992,8 @@
          s
          'rx:sequence
          'needs-backtrack?))))))
-(define struct:rx:group
-  (make-record-type-descriptor*
-   'rx:group
-   #f
-   (|#%nongenerative-uid| rx:group)
-   #f
-   #f
-   2
-   0))
-(define effect_3021
-  (struct-type-install-properties!
-   struct:rx:group
+(define finish49
+  (make-struct-type-install-properties
    '(rx:group)
    2
    0
@@ -1014,6 +1004,16 @@
    '(0 1)
    #f
    'rx:group))
+(define struct:rx:group
+  (make-record-type-descriptor*
+   'rx:group
+   #f
+   (|#%nongenerative-uid| rx:group)
+   #f
+   #f
+   2
+   0))
+(define effect_1819 (finish49 struct:rx:group))
 (define rx:group3.1
   (|#%name|
    rx:group
@@ -1060,18 +1060,8 @@
          s
          'rx:group
          'number))))))
-(define struct:rx:repeat
-  (make-record-type-descriptor*
-   'rx:repeat
-   #f
-   (|#%nongenerative-uid| rx:repeat)
-   #f
-   #f
-   4
-   0))
-(define effect_2413
-  (struct-type-install-properties!
-   struct:rx:repeat
+(define finish54
+  (make-struct-type-install-properties
    '(rx:repeat)
    4
    0
@@ -1082,6 +1072,16 @@
    '(0 1 2 3)
    #f
    'rx:repeat))
+(define struct:rx:repeat
+  (make-record-type-descriptor*
+   'rx:repeat
+   #f
+   (|#%nongenerative-uid| rx:repeat)
+   #f
+   #f
+   4
+   0))
+(define effect_2312 (finish54 struct:rx:repeat))
 (define rx:repeat4.1
   (|#%name|
    rx:repeat
@@ -1161,18 +1161,8 @@
          s
          'rx:repeat
          'non-greedy?))))))
-(define struct:rx:maybe
-  (make-record-type-descriptor*
-   'rx:maybe
-   #f
-   (|#%nongenerative-uid| rx:maybe)
-   #f
-   #f
-   2
-   0))
-(define effect_1615
-  (struct-type-install-properties!
-   struct:rx:maybe
+(define finish61
+  (make-struct-type-install-properties
    '(rx:maybe)
    2
    0
@@ -1183,6 +1173,16 @@
    '(0 1)
    #f
    'rx:maybe))
+(define struct:rx:maybe
+  (make-record-type-descriptor*
+   'rx:maybe
+   #f
+   (|#%nongenerative-uid| rx:maybe)
+   #f
+   #f
+   2
+   0))
+(define effect_2202 (finish61 struct:rx:maybe))
 (define rx:maybe5.1
   (|#%name|
    rx:maybe
@@ -1229,18 +1229,8 @@
          s
          'rx:maybe
          'non-greedy?))))))
-(define struct:rx:conditional
-  (make-record-type-descriptor*
-   'rx:conditional
-   #f
-   (|#%nongenerative-uid| rx:conditional)
-   #f
-   #f
-   6
-   0))
-(define effect_2714
-  (struct-type-install-properties!
-   struct:rx:conditional
+(define finish66
+  (make-struct-type-install-properties
    '(rx:conditional)
    6
    0
@@ -1251,6 +1241,16 @@
    '(0 1 2 3 4 5)
    #f
    'rx:conditional))
+(define struct:rx:conditional
+  (make-record-type-descriptor*
+   'rx:conditional
+   #f
+   (|#%nongenerative-uid| rx:conditional)
+   #f
+   #f
+   6
+   0))
+(define effect_2905 (finish66 struct:rx:conditional))
 (define rx:conditional6.1
   (|#%name|
    rx:conditional
@@ -1366,18 +1366,8 @@
          s
          'rx:conditional
          'needs-backtrack?))))))
-(define struct:rx:lookahead
-  (make-record-type-descriptor*
-   'rx:lookahead
-   #f
-   (|#%nongenerative-uid| rx:lookahead)
-   #f
-   #f
-   4
-   0))
-(define effect_2193
-  (struct-type-install-properties!
-   struct:rx:lookahead
+(define finish75
+  (make-struct-type-install-properties
    '(rx:lookahead)
    4
    0
@@ -1388,6 +1378,16 @@
    '(0 1 2 3)
    #f
    'rx:lookahead))
+(define struct:rx:lookahead
+  (make-record-type-descriptor*
+   'rx:lookahead
+   #f
+   (|#%nongenerative-uid| rx:lookahead)
+   #f
+   #f
+   4
+   0))
+(define effect_2486 (finish75 struct:rx:lookahead))
 (define rx:lookahead7.1
   (|#%name|
    rx:lookahead
@@ -1469,18 +1469,8 @@
          s
          'rx:lookahead
          'num-n))))))
-(define struct:rx:lookbehind
-  (make-record-type-descriptor*
-   'rx:lookbehind
-   #f
-   (|#%nongenerative-uid| rx:lookbehind)
-   #f
-   #f
-   6
-   12))
-(define effect_2578
-  (struct-type-install-properties!
-   struct:rx:lookbehind
+(define finish82
+  (make-struct-type-install-properties
    '(rx:lookbehind)
    6
    0
@@ -1491,6 +1481,16 @@
    '(0 1 4 5)
    #f
    'rx:lookbehind))
+(define struct:rx:lookbehind
+  (make-record-type-descriptor*
+   'rx:lookbehind
+   #f
+   (|#%nongenerative-uid| rx:lookbehind)
+   #f
+   #f
+   6
+   12))
+(define effect_2468 (finish82 struct:rx:lookbehind))
 (define rx:lookbehind8.1
   (|#%name|
    rx:lookbehind
@@ -1640,18 +1640,8 @@
          v
          'rx:lookbehind
          'lb-max))))))
-(define struct:rx:cut
-  (make-record-type-descriptor*
-   'rx:cut
-   #f
-   (|#%nongenerative-uid| rx:cut)
-   #f
-   #f
-   4
-   0))
-(define effect_2428
-  (struct-type-install-properties!
-   struct:rx:cut
+(define finish93
+  (make-struct-type-install-properties
    '(rx:cut)
    4
    0
@@ -1662,6 +1652,16 @@
    '(0 1 2 3)
    #f
    'rx:cut))
+(define struct:rx:cut
+  (make-record-type-descriptor*
+   'rx:cut
+   #f
+   (|#%nongenerative-uid| rx:cut)
+   #f
+   #f
+   4
+   0))
+(define effect_2158 (finish93 struct:rx:cut))
 (define rx:cut9.1
   (|#%name|
    rx:cut
@@ -1733,18 +1733,8 @@
          s
          'rx:cut
          'needs-backtrack?))))))
-(define struct:rx:reference
-  (make-record-type-descriptor*
-   'rx:reference
-   #f
-   (|#%nongenerative-uid| rx:reference)
-   #f
-   #f
-   2
-   0))
-(define effect_2572
-  (struct-type-install-properties!
-   struct:rx:reference
+(define finish100
+  (make-struct-type-install-properties
    '(rx:reference)
    2
    0
@@ -1755,6 +1745,16 @@
    '(0 1)
    #f
    'rx:reference))
+(define struct:rx:reference
+  (make-record-type-descriptor*
+   'rx:reference
+   #f
+   (|#%nongenerative-uid| rx:reference)
+   #f
+   #f
+   2
+   0))
+(define effect_2306 (finish100 struct:rx:reference))
 (define rx:reference10.1
   (|#%name|
    rx:reference
@@ -1806,18 +1806,8 @@
          s
          'rx:reference
          'case-sensitive?))))))
-(define struct:rx:range
-  (make-record-type-descriptor*
-   'rx:range
-   #f
-   (|#%nongenerative-uid| rx:range)
-   #f
-   #f
-   1
-   0))
-(define effect_2430
-  (struct-type-install-properties!
-   struct:rx:range
+(define finish105
+  (make-struct-type-install-properties
    '(rx:range)
    1
    0
@@ -1828,6 +1818,16 @@
    '(0)
    #f
    'rx:range))
+(define struct:rx:range
+  (make-record-type-descriptor*
+   'rx:range
+   #f
+   (|#%nongenerative-uid| rx:range)
+   #f
+   #f
+   1
+   0))
+(define effect_2071 (finish105 struct:rx:range))
 (define rx:range11.1
   (|#%name|
    rx:range
@@ -1858,18 +1858,8 @@
          s
          'rx:range
          'range))))))
-(define struct:rx:unicode-categories
-  (make-record-type-descriptor*
-   'rx:unicode-categories
-   #f
-   (|#%nongenerative-uid| rx:unicode-categories)
-   #f
-   #f
-   2
-   0))
-(define effect_2489
-  (struct-type-install-properties!
-   struct:rx:unicode-categories
+(define finish109
+  (make-struct-type-install-properties
    '(rx:unicode-categories)
    2
    0
@@ -1880,6 +1870,16 @@
    '(0 1)
    #f
    'rx:unicode-categories))
+(define struct:rx:unicode-categories
+  (make-record-type-descriptor*
+   'rx:unicode-categories
+   #f
+   (|#%nongenerative-uid| rx:unicode-categories)
+   #f
+   #f
+   2
+   0))
+(define effect_2341 (finish109 struct:rx:unicode-categories))
 (define rx:unicode-categories12.1
   (|#%name|
    rx:unicode-categories
@@ -2129,18 +2129,8 @@
      num-n_0
      (let ((or-part_0 (needs-backtrack? pces1_0)))
        (if or-part_0 or-part_0 (needs-backtrack? pces2_0))))))
-(define struct:parse-config
-  (make-record-type-descriptor*
-   'parse-config
-   #f
-   (|#%nongenerative-uid| parse-config)
-   #f
-   #f
-   7
-   0))
-(define effect_2522
-  (struct-type-install-properties!
-   struct:parse-config
+(define finish123
+  (make-struct-type-install-properties
    '(parse-config)
    7
    0
@@ -2151,6 +2141,16 @@
    '(0 1 2 3 4 5 6)
    #f
    'parse-config))
+(define struct:parse-config
+  (make-record-type-descriptor*
+   'parse-config
+   #f
+   (|#%nongenerative-uid| parse-config)
+   #f
+   #f
+   7
+   0))
+(define effect_2622 (finish123 struct:parse-config))
 (define parse-config1.1
   (|#%name|
    parse-config
@@ -4697,18 +4697,8 @@
                                       (zero-sized? (rx:cut-rx rx_0))
                                       #f)))))))))))))))))))
 (define union (lambda (a_0 b_0) (if a_0 (if b_0 (range-union a_0 b_0) #f) #f)))
-(define struct:lazy-bytes
-  (make-record-type-descriptor*
-   'lazy-bytes
-   #f
-   (|#%nongenerative-uid| lazy-bytes)
-   #f
-   #f
-   13
-   3075))
-(define effect_2409
-  (struct-type-install-properties!
-   struct:lazy-bytes
+(define finish535
+  (make-struct-type-install-properties
    '(lazy-bytes)
    13
    0
@@ -4719,6 +4709,16 @@
    '(2 3 4 5 6 7 8 9 12)
    #f
    'lazy-bytes))
+(define struct:lazy-bytes
+  (make-record-type-descriptor*
+   'lazy-bytes
+   #f
+   (|#%nongenerative-uid| lazy-bytes)
+   #f
+   #f
+   13
+   3075))
+(define effect_2741 (finish535 struct:lazy-bytes))
 (define lazy-bytes1.1
   (|#%name|
    lazy-bytes
@@ -7242,18 +7242,8 @@
           (if (rx:range? rx_0)
             (range-matcher* (compile-range (rx:range-range rx_0)) max_0)
             #f))))))
-(define struct:rx:regexp
-  (make-record-type-descriptor*
-   'regexp
-   #f
-   (|#%nongenerative-uid| regexp)
-   #f
-   #f
-   10
-   0))
-(define effect_2528
-  (struct-type-install-properties!
-   struct:rx:regexp
+(define finish621
+  (make-struct-type-install-properties
    '(regexp)
    10
    0
@@ -7281,6 +7271,16 @@
    '(0 1 2 3 4 5 6 7 8 9)
    #f
    'rx:regexp))
+(define struct:rx:regexp
+  (make-record-type-descriptor*
+   'regexp
+   #f
+   (|#%nongenerative-uid| regexp)
+   #f
+   #f
+   10
+   0))
+(define effect_2726 (finish621 struct:rx:regexp))
 (define rx:regexp1.1
   (|#%name|
    rx:regexp

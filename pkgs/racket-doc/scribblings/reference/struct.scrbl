@@ -275,6 +275,22 @@ structure type if @racket[field-name] is a symbol.
 For examples, see @racket[make-struct-type].}
 
 
+@defthing[prop:sealed struct-type-property?]{
+
+A @tech{structure type property} that declares a structure type as
+@deftech{sealed}. The value associated with the property is ignored;
+the presence of the property itself makes the structure type
+sealed.
+
+A @tech{sealed} structure type cannot be used as the supertype of
+another structure type. Declaring a structure type as @tech{sealed} is
+typically just a performance hint, since checking for an instance of a
+sealed structure type can be slightly faster than checking for an
+instance of a structure type that might have subtypes.
+
+@history[#:added "8.0.0.7"]}
+
+
 @;------------------------------------------------------------------------
 @section[#:tag "structprops"]{Structure Type Properties}
 

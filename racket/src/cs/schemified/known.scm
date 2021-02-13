@@ -134,18 +134,8 @@
      (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 1)))
      (lambda (v_0) (|#%app| (|#%app| do-stream-ref v_0 2))))))))
 (define empty-stream (make-do-stream (lambda () #t) void void))
-(define struct:known-constant
-  (make-record-type-descriptor*
-   'known-constant
-   #f
-   (structure-type-lookup-prefab-uid 'known-constant #f 0 0 #f '())
-   #f
-   #f
-   0
-   0))
-(define effect_2175
-  (struct-type-install-properties!
-   struct:known-constant
+(define finish7
+  (make-struct-type-install-properties
    '(known-constant)
    0
    0
@@ -156,6 +146,16 @@
    '()
    #f
    'known-constant))
+(define struct:known-constant
+  (make-record-type-descriptor*
+   'known-constant
+   #f
+   (structure-type-lookup-prefab-uid 'known-constant #f 0 0 #f '())
+   #f
+   #f
+   0
+   0))
+(define effect_2537 (finish7 struct:known-constant))
 (define known-constant
   (|#%name|
    known-constant
@@ -173,6 +173,20 @@
         (if (impersonator? v)
           (known-constant?_2598 (impersonator-val v))
           #f))))))
+(define finish10
+  (make-struct-type-install-properties
+   '(known-consistent)
+   0
+   0
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-consistent))
 (define struct:known-consistent
   (make-record-type-descriptor*
    'known-consistent
@@ -192,21 +206,7 @@
    #f
    0
    0))
-(define effect_2225
-  (struct-type-install-properties!
-   struct:known-consistent
-   '(known-consistent)
-   0
-   0
-   (if (struct-type? struct:known-constant)
-     struct:known-constant
-     (check-struct-type 'struct struct:known-constant))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-consistent))
+(define effect_2382 (finish10 struct:known-consistent))
 (define known-consistent
   (|#%name|
    known-consistent
@@ -224,6 +224,20 @@
         (if (impersonator? v)
           (known-consistent?_3048 (impersonator-val v))
           #f))))))
+(define finish13
+  (make-struct-type-install-properties
+   '(known-authentic)
+   0
+   0
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-authentic))
 (define struct:known-authentic
   (make-record-type-descriptor*
    'known-authentic
@@ -243,21 +257,7 @@
    #f
    0
    0))
-(define effect_3179
-  (struct-type-install-properties!
-   struct:known-authentic
-   '(known-authentic)
-   0
-   0
-   (if (struct-type? struct:known-constant)
-     struct:known-constant
-     (check-struct-type 'struct struct:known-constant))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-authentic))
+(define effect_2570 (finish13 struct:known-authentic))
 (define known-authentic
   (|#%name|
    known-authentic
@@ -275,6 +275,20 @@
         (if (impersonator? v)
           (known-authentic?_3119 (impersonator-val v))
           #f))))))
+(define finish16
+  (make-struct-type-install-properties
+   '(known-copy)
+   1
+   0
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-copy))
 (define struct:known-copy
   (make-record-type-descriptor*
    'known-copy
@@ -294,21 +308,7 @@
    #f
    1
    1))
-(define effect_1974
-  (struct-type-install-properties!
-   struct:known-copy
-   '(known-copy)
-   1
-   0
-   (if (struct-type? struct:known-constant)
-     struct:known-constant
-     (check-struct-type 'struct struct:known-constant))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-copy))
+(define effect_2542 (finish16 struct:known-copy))
 (define known-copy
   (|#%name|
    known-copy
@@ -340,6 +340,20 @@
          s
          'known-copy
          'id))))))
+(define finish20
+  (make-struct-type-install-properties
+   '(known-literal)
+   1
+   0
+   (if (struct-type? struct:known-consistent)
+     struct:known-consistent
+     (check-struct-type 'struct struct:known-consistent))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-literal))
 (define struct:known-literal
   (make-record-type-descriptor*
    'known-literal
@@ -359,21 +373,7 @@
    #f
    1
    1))
-(define effect_2741
-  (struct-type-install-properties!
-   struct:known-literal
-   '(known-literal)
-   1
-   0
-   (if (struct-type? struct:known-consistent)
-     struct:known-consistent
-     (check-struct-type 'struct struct:known-consistent))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-literal))
+(define effect_2788 (finish20 struct:known-literal))
 (define known-literal
   (|#%name|
    known-literal
@@ -407,6 +407,20 @@
          s
          'known-literal
          'value))))))
+(define finish24
+  (make-struct-type-install-properties
+   '(known-procedure)
+   1
+   0
+   (if (struct-type? struct:known-consistent)
+     struct:known-consistent
+     (check-struct-type 'struct struct:known-consistent))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure))
 (define struct:known-procedure
   (make-record-type-descriptor*
    'known-procedure
@@ -426,21 +440,7 @@
    #f
    1
    1))
-(define effect_1867
-  (struct-type-install-properties!
-   struct:known-procedure
-   '(known-procedure)
-   1
-   0
-   (if (struct-type? struct:known-consistent)
-     struct:known-consistent
-     (check-struct-type 'struct struct:known-consistent))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure))
+(define effect_2677 (finish24 struct:known-procedure))
 (define known-procedure
   (|#%name|
    known-procedure
@@ -476,6 +476,20 @@
          s
          'known-procedure
          'arity-mask))))))
+(define finish28
+  (make-struct-type-install-properties
+   '(known-procedure/single-valued)
+   0
+   0
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/single-valued))
 (define struct:known-procedure/single-valued
   (make-record-type-descriptor*
    'known-procedure/single-valued
@@ -495,21 +509,7 @@
    #f
    0
    0))
-(define effect_2708
-  (struct-type-install-properties!
-   struct:known-procedure/single-valued
-   '(known-procedure/single-valued)
-   0
-   0
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/single-valued))
+(define effect_2532 (finish28 struct:known-procedure/single-valued))
 (define known-procedure/single-valued
   (|#%name|
    known-procedure/single-valued
@@ -532,6 +532,20 @@
         (if (impersonator? v)
           (known-procedure/single-valued?_3105 (impersonator-val v))
           #f))))))
+(define finish31
+  (make-struct-type-install-properties
+   '(known-procedure/no-prompt)
+   0
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/no-prompt))
 (define struct:known-procedure/no-prompt
   (make-record-type-descriptor*
    'known-procedure/no-prompt
@@ -551,21 +565,7 @@
    #f
    0
    0))
-(define effect_2348
-  (struct-type-install-properties!
-   struct:known-procedure/no-prompt
-   '(known-procedure/no-prompt)
-   0
-   0
-   (if (struct-type? struct:known-procedure/single-valued)
-     struct:known-procedure/single-valued
-     (check-struct-type 'struct struct:known-procedure/single-valued))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/no-prompt))
+(define effect_1771 (finish31 struct:known-procedure/no-prompt))
 (define known-procedure/no-prompt
   (|#%name|
    known-procedure/no-prompt
@@ -588,6 +588,20 @@
         (if (impersonator? v)
           (known-procedure/no-prompt?_2036 (impersonator-val v))
           #f))))))
+(define finish34
+  (make-struct-type-install-properties
+   '(known-procedure/no-prompt/multi)
+   0
+   0
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/no-prompt/multi))
 (define struct:known-procedure/no-prompt/multi
   (make-record-type-descriptor*
    'known-procedure/no-prompt/multi
@@ -607,21 +621,7 @@
    #f
    0
    0))
-(define effect_2331
-  (struct-type-install-properties!
-   struct:known-procedure/no-prompt/multi
-   '(known-procedure/no-prompt/multi)
-   0
-   0
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/no-prompt/multi))
+(define effect_2793 (finish34 struct:known-procedure/no-prompt/multi))
 (define known-procedure/no-prompt/multi
   (|#%name|
    known-procedure/no-prompt/multi
@@ -644,6 +644,20 @@
         (if (impersonator? v)
           (known-procedure/no-prompt/multi?_2394 (impersonator-val v))
           #f))))))
+(define finish37
+  (make-struct-type-install-properties
+   '(known-procedure/no-return)
+   0
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/no-return))
 (define struct:known-procedure/no-return
   (make-record-type-descriptor*
    'known-procedure/no-return
@@ -663,21 +677,7 @@
    #f
    0
    0))
-(define effect_2377
-  (struct-type-install-properties!
-   struct:known-procedure/no-return
-   '(known-procedure/no-return)
-   0
-   0
-   (if (struct-type? struct:known-procedure/single-valued)
-     struct:known-procedure/single-valued
-     (check-struct-type 'struct struct:known-procedure/single-valued))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/no-return))
+(define effect_2517 (finish37 struct:known-procedure/no-return))
 (define known-procedure/no-return
   (|#%name|
    known-procedure/no-return
@@ -700,6 +700,20 @@
         (if (impersonator? v)
           (known-procedure/no-return?_1763 (impersonator-val v))
           #f))))))
+(define finish40
+  (make-struct-type-install-properties
+   '(known-procedure/can-inline)
+   1
+   0
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/can-inline))
 (define struct:known-procedure/can-inline
   (make-record-type-descriptor*
    'known-procedure/can-inline
@@ -719,21 +733,7 @@
    #f
    1
    1))
-(define effect_2149
-  (struct-type-install-properties!
-   struct:known-procedure/can-inline
-   '(known-procedure/can-inline)
-   1
-   0
-   (if (struct-type? struct:known-procedure)
-     struct:known-procedure
-     (check-struct-type 'struct struct:known-procedure))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure/can-inline))
+(define effect_2308 (finish40 struct:known-procedure/can-inline))
 (define known-procedure/can-inline
   (|#%name|
    known-procedure/can-inline
@@ -774,6 +774,20 @@
          s
          'known-procedure/can-inline
          'expr))))))
+(define finish44
+  (make-struct-type-install-properties
+   '(known-procedure/can-inline/need-imports)
+   1
+   0
+   (if (struct-type? struct:known-procedure/can-inline)
+     struct:known-procedure/can-inline
+     (check-struct-type 'struct struct:known-procedure/can-inline))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/can-inline/need-imports))
 (define struct:known-procedure/can-inline/need-imports
   (make-record-type-descriptor*
    'known-procedure/can-inline/need-imports
@@ -793,21 +807,7 @@
    #f
    1
    1))
-(define effect_2717
-  (struct-type-install-properties!
-   struct:known-procedure/can-inline/need-imports
-   '(known-procedure/can-inline/need-imports)
-   1
-   0
-   (if (struct-type? struct:known-procedure/can-inline)
-     struct:known-procedure/can-inline
-     (check-struct-type 'struct struct:known-procedure/can-inline))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure/can-inline/need-imports))
+(define effect_2618 (finish44 struct:known-procedure/can-inline/need-imports))
 (define known-procedure/can-inline/need-imports
   (|#%name|
    known-procedure/can-inline/need-imports
@@ -848,6 +848,20 @@
          s
          'known-procedure/can-inline/need-imports
          'needed))))))
+(define finish48
+  (make-struct-type-install-properties
+   '(known-procedure/folding)
+   0
+   0
+   (if (struct-type? struct:known-procedure/no-prompt)
+     struct:known-procedure/no-prompt
+     (check-struct-type 'struct struct:known-procedure/no-prompt))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/folding))
 (define struct:known-procedure/folding
   (make-record-type-descriptor*
    'known-procedure/folding
@@ -867,21 +881,7 @@
    #f
    0
    0))
-(define effect_2516
-  (struct-type-install-properties!
-   struct:known-procedure/folding
-   '(known-procedure/folding)
-   0
-   0
-   (if (struct-type? struct:known-procedure/no-prompt)
-     struct:known-procedure/no-prompt
-     (check-struct-type 'struct struct:known-procedure/no-prompt))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/folding))
+(define effect_2478 (finish48 struct:known-procedure/folding))
 (define known-procedure/folding
   (|#%name|
    known-procedure/folding
@@ -904,6 +904,20 @@
         (if (impersonator? v)
           (known-procedure/folding?_2882 (impersonator-val v))
           #f))))))
+(define finish51
+  (make-struct-type-install-properties
+   '(known-procedure/folding/limited)
+   1
+   0
+   (if (struct-type? struct:known-procedure/folding)
+     struct:known-procedure/folding
+     (check-struct-type 'struct struct:known-procedure/folding))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/folding/limited))
 (define struct:known-procedure/folding/limited
   (make-record-type-descriptor*
    'known-procedure/folding/limited
@@ -923,21 +937,7 @@
    #f
    1
    1))
-(define effect_2551
-  (struct-type-install-properties!
-   struct:known-procedure/folding/limited
-   '(known-procedure/folding/limited)
-   1
-   0
-   (if (struct-type? struct:known-procedure/folding)
-     struct:known-procedure/folding
-     (check-struct-type 'struct struct:known-procedure/folding))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure/folding/limited))
+(define effect_2518 (finish51 struct:known-procedure/folding/limited))
 (define known-procedure/folding/limited
   (|#%name|
    known-procedure/folding/limited
@@ -978,6 +978,20 @@
          s
          'known-procedure/folding/limited
          'kind))))))
+(define finish55
+  (make-struct-type-install-properties
+   '(known-procedure/succeeds)
+   0
+   0
+   (if (struct-type? struct:known-procedure/no-prompt)
+     struct:known-procedure/no-prompt
+     (check-struct-type 'struct struct:known-procedure/no-prompt))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/succeeds))
 (define struct:known-procedure/succeeds
   (make-record-type-descriptor*
    'known-procedure/succeeds
@@ -997,21 +1011,7 @@
    #f
    0
    0))
-(define effect_2332
-  (struct-type-install-properties!
-   struct:known-procedure/succeeds
-   '(known-procedure/succeeds)
-   0
-   0
-   (if (struct-type? struct:known-procedure/no-prompt)
-     struct:known-procedure/no-prompt
-     (check-struct-type 'struct struct:known-procedure/no-prompt))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/succeeds))
+(define effect_2467 (finish55 struct:known-procedure/succeeds))
 (define known-procedure/succeeds
   (|#%name|
    known-procedure/succeeds
@@ -1034,6 +1034,20 @@
         (if (impersonator? v)
           (known-procedure/succeeds?_3041 (impersonator-val v))
           #f))))))
+(define finish58
+  (make-struct-type-install-properties
+   '(known-procedure/allocates)
+   0
+   0
+   (if (struct-type? struct:known-procedure/succeeds)
+     struct:known-procedure/succeeds
+     (check-struct-type 'struct struct:known-procedure/succeeds))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/allocates))
 (define struct:known-procedure/allocates
   (make-record-type-descriptor*
    'known-procedure/allocates
@@ -1053,21 +1067,7 @@
    #f
    0
    0))
-(define effect_2307
-  (struct-type-install-properties!
-   struct:known-procedure/allocates
-   '(known-procedure/allocates)
-   0
-   0
-   (if (struct-type? struct:known-procedure/succeeds)
-     struct:known-procedure/succeeds
-     (check-struct-type 'struct struct:known-procedure/succeeds))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/allocates))
+(define effect_2336 (finish58 struct:known-procedure/allocates))
 (define known-procedure/allocates
   (|#%name|
    known-procedure/allocates
@@ -1090,6 +1090,20 @@
         (if (impersonator? v)
           (known-procedure/allocates?_2244 (impersonator-val v))
           #f))))))
+(define finish61
+  (make-struct-type-install-properties
+   '(known-procedure/pure)
+   0
+   0
+   (if (struct-type? struct:known-procedure/allocates)
+     struct:known-procedure/allocates
+     (check-struct-type 'struct struct:known-procedure/allocates))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/pure))
 (define struct:known-procedure/pure
   (make-record-type-descriptor*
    'known-procedure/pure
@@ -1109,21 +1123,7 @@
    #f
    0
    0))
-(define effect_2394
-  (struct-type-install-properties!
-   struct:known-procedure/pure
-   '(known-procedure/pure)
-   0
-   0
-   (if (struct-type? struct:known-procedure/allocates)
-     struct:known-procedure/allocates
-     (check-struct-type 'struct struct:known-procedure/allocates))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/pure))
+(define effect_3058 (finish61 struct:known-procedure/pure))
 (define known-procedure/pure
   (|#%name|
    known-procedure/pure
@@ -1143,6 +1143,20 @@
         (if (impersonator? v)
           (known-procedure/pure?_2240 (impersonator-val v))
           #f))))))
+(define finish64
+  (make-struct-type-install-properties
+   '(known-procedure/pure/folding)
+   0
+   0
+   (if (struct-type? struct:known-procedure/pure)
+     struct:known-procedure/pure
+     (check-struct-type 'struct struct:known-procedure/pure))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/pure/folding))
 (define struct:known-procedure/pure/folding
   (make-record-type-descriptor*
    'known-procedure/pure/folding
@@ -1162,21 +1176,7 @@
    #f
    0
    0))
-(define effect_2781
-  (struct-type-install-properties!
-   struct:known-procedure/pure/folding
-   '(known-procedure/pure/folding)
-   0
-   0
-   (if (struct-type? struct:known-procedure/pure)
-     struct:known-procedure/pure
-     (check-struct-type 'struct struct:known-procedure/pure))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/pure/folding))
+(define effect_2264 (finish64 struct:known-procedure/pure/folding))
 (define known-procedure/pure/folding
   (|#%name|
    known-procedure/pure/folding
@@ -1199,6 +1199,20 @@
         (if (impersonator? v)
           (known-procedure/pure/folding?_2719 (impersonator-val v))
           #f))))))
+(define finish67
+  (make-struct-type-install-properties
+   '(known-procedure/pure/folding-unsafe)
+   1
+   0
+   (if (struct-type? struct:known-procedure/pure/folding)
+     struct:known-procedure/pure/folding
+     (check-struct-type 'struct struct:known-procedure/pure/folding))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/pure/folding-unsafe))
 (define struct:known-procedure/pure/folding-unsafe
   (make-record-type-descriptor*
    'known-procedure/pure/folding-unsafe
@@ -1218,21 +1232,7 @@
    #f
    1
    1))
-(define effect_2709
-  (struct-type-install-properties!
-   struct:known-procedure/pure/folding-unsafe
-   '(known-procedure/pure/folding-unsafe)
-   1
-   0
-   (if (struct-type? struct:known-procedure/pure/folding)
-     struct:known-procedure/pure/folding
-     (check-struct-type 'struct struct:known-procedure/pure/folding))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure/pure/folding-unsafe))
+(define effect_2657 (finish67 struct:known-procedure/pure/folding-unsafe))
 (define known-procedure/pure/folding-unsafe
   (|#%name|
    known-procedure/pure/folding-unsafe
@@ -1273,6 +1273,20 @@
          s
          'known-procedure/pure/folding-unsafe
          'safe))))))
+(define finish71
+  (make-struct-type-install-properties
+   '(known-procedure/has-unsafe)
+   1
+   0
+   (if (struct-type? struct:known-procedure/no-prompt)
+     struct:known-procedure/no-prompt
+     (check-struct-type 'struct struct:known-procedure/no-prompt))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/has-unsafe))
 (define struct:known-procedure/has-unsafe
   (make-record-type-descriptor*
    'known-procedure/has-unsafe
@@ -1292,21 +1306,7 @@
    #f
    1
    1))
-(define effect_2998
-  (struct-type-install-properties!
-   struct:known-procedure/has-unsafe
-   '(known-procedure/has-unsafe)
-   1
-   0
-   (if (struct-type? struct:known-procedure/no-prompt)
-     struct:known-procedure/no-prompt
-     (check-struct-type 'struct struct:known-procedure/no-prompt))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure/has-unsafe))
+(define effect_1752 (finish71 struct:known-procedure/has-unsafe))
 (define known-procedure/has-unsafe
   (|#%name|
    known-procedure/has-unsafe
@@ -1347,6 +1347,20 @@
          s
          'known-procedure/has-unsafe
          'alternate))))))
+(define finish75
+  (make-struct-type-install-properties
+   '(known-procedure/has-unsafe/folding)
+   0
+   0
+   (if (struct-type? struct:known-procedure/has-unsafe)
+     struct:known-procedure/has-unsafe
+     (check-struct-type 'struct struct:known-procedure/has-unsafe))
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-procedure/has-unsafe/folding))
 (define struct:known-procedure/has-unsafe/folding
   (make-record-type-descriptor*
    'known-procedure/has-unsafe/folding
@@ -1366,21 +1380,7 @@
    #f
    0
    0))
-(define effect_2584
-  (struct-type-install-properties!
-   struct:known-procedure/has-unsafe/folding
-   '(known-procedure/has-unsafe/folding)
-   0
-   0
-   (if (struct-type? struct:known-procedure/has-unsafe)
-     struct:known-procedure/has-unsafe
-     (check-struct-type 'struct struct:known-procedure/has-unsafe))
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-procedure/has-unsafe/folding))
+(define effect_2489 (finish75 struct:known-procedure/has-unsafe/folding))
 (define known-procedure/has-unsafe/folding
   (|#%name|
    known-procedure/has-unsafe/folding
@@ -1403,6 +1403,20 @@
         (if (impersonator? v)
           (known-procedure/has-unsafe/folding?_2169 (impersonator-val v))
           #f))))))
+(define finish78
+  (make-struct-type-install-properties
+   '(known-procedure/has-unsafe/folding/limited)
+   1
+   0
+   (if (struct-type? struct:known-procedure/has-unsafe/folding)
+     struct:known-procedure/has-unsafe/folding
+     (check-struct-type 'struct struct:known-procedure/has-unsafe/folding))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/has-unsafe/folding/limited))
 (define struct:known-procedure/has-unsafe/folding/limited
   (make-record-type-descriptor*
    'known-procedure/has-unsafe/folding/limited
@@ -1422,21 +1436,8 @@
    #f
    1
    1))
-(define effect_2633
-  (struct-type-install-properties!
-   struct:known-procedure/has-unsafe/folding/limited
-   '(known-procedure/has-unsafe/folding/limited)
-   1
-   0
-   (if (struct-type? struct:known-procedure/has-unsafe/folding)
-     struct:known-procedure/has-unsafe/folding
-     (check-struct-type 'struct struct:known-procedure/has-unsafe/folding))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-procedure/has-unsafe/folding/limited))
+(define effect_2512
+  (finish78 struct:known-procedure/has-unsafe/folding/limited))
 (define known-procedure/has-unsafe/folding/limited
   (|#%name|
    known-procedure/has-unsafe/folding/limited
@@ -1478,6 +1479,20 @@
          s
          'known-procedure/has-unsafe/folding/limited
          'kind))))))
+(define finish82
+  (make-struct-type-install-properties
+   '(known-struct-type)
+   4
+   0
+   (if (struct-type? struct:known-consistent)
+     struct:known-consistent
+     (check-struct-type 'struct struct:known-consistent))
+   null
+   'prefab
+   #f
+   '(0 1 2 3)
+   #f
+   'known-struct-type))
 (define struct:known-struct-type
   (make-record-type-descriptor*
    'known-struct-type
@@ -1489,29 +1504,15 @@
     (if (struct-type? struct:known-consistent)
       struct:known-consistent
       (check-struct-type 'struct struct:known-consistent))
-    3
+    4
     0
     #f
-    '(0 1 2))
+    '(0 1 2 3))
    #f
    #f
-   3
-   7))
-(define effect_2547
-  (struct-type-install-properties!
-   struct:known-struct-type
-   '(known-struct-type)
-   3
-   0
-   (if (struct-type? struct:known-consistent)
-     struct:known-consistent
-     (check-struct-type 'struct struct:known-consistent))
-   null
-   'prefab
-   #f
-   '(0 1 2)
-   #f
-   'known-struct-type))
+   4
+   15))
+(define effect_2667 (finish82 struct:known-struct-type))
 (define known-struct-type
   (|#%name|
    known-struct-type
@@ -1583,6 +1584,38 @@
          s
          'known-struct-type
          'pure-constructor?))))))
+(define known-struct-type-sealed?_2229
+  (|#%name|
+   known-struct-type-sealed?
+   (record-accessor struct:known-struct-type 3)))
+(define known-struct-type-sealed?
+  (|#%name|
+   known-struct-type-sealed?
+   (lambda (s)
+     (if (known-struct-type?_2572 s)
+       (known-struct-type-sealed?_2229 s)
+       ($value
+        (impersonate-ref
+         known-struct-type-sealed?_2229
+         struct:known-struct-type
+         3
+         s
+         'known-struct-type
+         'sealed?))))))
+(define finish89
+  (make-struct-type-install-properties
+   '(known-constructor)
+   1
+   0
+   (if (struct-type? struct:known-procedure/allocates)
+     struct:known-procedure/allocates
+     (check-struct-type 'struct struct:known-procedure/allocates))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-constructor))
 (define struct:known-constructor
   (make-record-type-descriptor*
    'known-constructor
@@ -1602,21 +1635,7 @@
    #f
    1
    1))
-(define effect_2090
-  (struct-type-install-properties!
-   struct:known-constructor
-   '(known-constructor)
-   1
-   0
-   (if (struct-type? struct:known-procedure/allocates)
-     struct:known-procedure/allocates
-     (check-struct-type 'struct struct:known-procedure/allocates))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-constructor))
+(define effect_1913 (finish89 struct:known-constructor))
 (define known-constructor
   (|#%name|
    known-constructor
@@ -1652,6 +1671,20 @@
          s
          'known-constructor
          'type))))))
+(define finish93
+  (make-struct-type-install-properties
+   '(known-predicate)
+   1
+   0
+   (if (struct-type? struct:known-procedure/pure)
+     struct:known-procedure/pure
+     (check-struct-type 'struct struct:known-procedure/pure))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-predicate))
 (define struct:known-predicate
   (make-record-type-descriptor*
    'known-predicate
@@ -1671,21 +1704,7 @@
    #f
    1
    1))
-(define effect_2975
-  (struct-type-install-properties!
-   struct:known-predicate
-   '(known-predicate)
-   1
-   0
-   (if (struct-type? struct:known-procedure/pure)
-     struct:known-procedure/pure
-     (check-struct-type 'struct struct:known-procedure/pure))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-predicate))
+(define effect_2144 (finish93 struct:known-predicate))
 (define known-predicate
   (|#%name|
    known-predicate
@@ -1719,6 +1738,20 @@
          s
          'known-predicate
          'type))))))
+(define finish97
+  (make-struct-type-install-properties
+   '(known-accessor)
+   1
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-accessor))
 (define struct:known-accessor
   (make-record-type-descriptor*
    'known-accessor
@@ -1738,21 +1771,7 @@
    #f
    1
    1))
-(define effect_2542
-  (struct-type-install-properties!
-   struct:known-accessor
-   '(known-accessor)
-   1
-   0
-   (if (struct-type? struct:known-procedure/single-valued)
-     struct:known-procedure/single-valued
-     (check-struct-type 'struct struct:known-procedure/single-valued))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-accessor))
+(define effect_2905 (finish97 struct:known-accessor))
 (define known-accessor
   (|#%name|
    known-accessor
@@ -1786,6 +1805,20 @@
          s
          'known-accessor
          'type))))))
+(define finish101
+  (make-struct-type-install-properties
+   '(known-mutator)
+   1
+   0
+   (if (struct-type? struct:known-procedure/single-valued)
+     struct:known-procedure/single-valued
+     (check-struct-type 'struct struct:known-procedure/single-valued))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-mutator))
 (define struct:known-mutator
   (make-record-type-descriptor*
    'known-mutator
@@ -1805,21 +1838,7 @@
    #f
    1
    1))
-(define effect_2533
-  (struct-type-install-properties!
-   struct:known-mutator
-   '(known-mutator)
-   1
-   0
-   (if (struct-type? struct:known-procedure/single-valued)
-     struct:known-procedure/single-valued
-     (check-struct-type 'struct struct:known-procedure/single-valued))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-mutator))
+(define effect_2521 (finish101 struct:known-mutator))
 (define known-mutator
   (|#%name|
    known-mutator
@@ -1853,6 +1872,20 @@
          s
          'known-mutator
          'type))))))
+(define finish105
+  (make-struct-type-install-properties
+   '(known-struct-constructor)
+   1
+   0
+   (if (struct-type? struct:known-constructor)
+     struct:known-constructor
+     (check-struct-type 'struct struct:known-constructor))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-struct-constructor))
 (define struct:known-struct-constructor
   (make-record-type-descriptor*
    'known-struct-constructor
@@ -1872,21 +1905,7 @@
    #f
    1
    1))
-(define effect_2411
-  (struct-type-install-properties!
-   struct:known-struct-constructor
-   '(known-struct-constructor)
-   1
-   0
-   (if (struct-type? struct:known-constructor)
-     struct:known-constructor
-     (check-struct-type 'struct struct:known-constructor))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-struct-constructor))
+(define effect_3238 (finish105 struct:known-struct-constructor))
 (define known-struct-constructor
   (|#%name|
    known-struct-constructor
@@ -1927,6 +1946,20 @@
          s
          'known-struct-constructor
          'type-id))))))
+(define finish109
+  (make-struct-type-install-properties
+   '(known-struct-predicate)
+   3
+   0
+   (if (struct-type? struct:known-predicate)
+     struct:known-predicate
+     (check-struct-type 'struct struct:known-predicate))
+   null
+   'prefab
+   #f
+   '(0 1 2)
+   #f
+   'known-struct-predicate))
 (define struct:known-struct-predicate
   (make-record-type-descriptor*
    'known-struct-predicate
@@ -1938,29 +1971,15 @@
     (if (struct-type? struct:known-predicate)
       struct:known-predicate
       (check-struct-type 'struct struct:known-predicate))
-    2
+    3
     0
     #f
-    '(0 1))
+    '(0 1 2))
    #f
    #f
-   2
-   3))
-(define effect_2929
-  (struct-type-install-properties!
-   struct:known-struct-predicate
-   '(known-struct-predicate)
-   2
-   0
-   (if (struct-type? struct:known-predicate)
-     struct:known-predicate
-     (check-struct-type 'struct struct:known-predicate))
-   null
-   'prefab
-   #f
-   '(0 1)
-   #f
-   'known-struct-predicate))
+   3
+   7))
+(define effect_2384 (finish109 struct:known-struct-predicate))
 (define known-struct-predicate
   (|#%name|
    known-struct-predicate
@@ -2016,6 +2035,38 @@
          s
          'known-struct-predicate
          'authentic?))))))
+(define known-struct-predicate-sealed?_2251
+  (|#%name|
+   known-struct-predicate-sealed?
+   (record-accessor struct:known-struct-predicate 2)))
+(define known-struct-predicate-sealed?
+  (|#%name|
+   known-struct-predicate-sealed?
+   (lambda (s)
+     (if (known-struct-predicate?_2418 s)
+       (known-struct-predicate-sealed?_2251 s)
+       ($value
+        (impersonate-ref
+         known-struct-predicate-sealed?_2251
+         struct:known-struct-predicate
+         2
+         s
+         'known-struct-predicate
+         'sealed?))))))
+(define finish115
+  (make-struct-type-install-properties
+   '(known-field-accessor)
+   4
+   0
+   (if (struct-type? struct:known-accessor)
+     struct:known-accessor
+     (check-struct-type 'struct struct:known-accessor))
+   null
+   'prefab
+   #f
+   '(0 1 2 3)
+   #f
+   'known-field-accessor))
 (define struct:known-field-accessor
   (make-record-type-descriptor*
    'known-field-accessor
@@ -2035,21 +2086,7 @@
    #f
    4
    15))
-(define effect_2971
-  (struct-type-install-properties!
-   struct:known-field-accessor
-   '(known-field-accessor)
-   4
-   0
-   (if (struct-type? struct:known-accessor)
-     struct:known-accessor
-     (check-struct-type 'struct struct:known-accessor))
-   null
-   'prefab
-   #f
-   '(0 1 2 3)
-   #f
-   'known-field-accessor))
+(define effect_2259 (finish115 struct:known-field-accessor))
 (define known-field-accessor
   (|#%name|
    known-field-accessor
@@ -2141,6 +2178,20 @@
          s
          'known-field-accessor
          'known-immutable?))))))
+(define finish122
+  (make-struct-type-install-properties
+   '(known-field-mutator)
+   3
+   0
+   (if (struct-type? struct:known-mutator)
+     struct:known-mutator
+     (check-struct-type 'struct struct:known-mutator))
+   null
+   'prefab
+   #f
+   '(0 1 2)
+   #f
+   'known-field-mutator))
 (define struct:known-field-mutator
   (make-record-type-descriptor*
    'known-field-mutator
@@ -2160,21 +2211,7 @@
    #f
    3
    7))
-(define effect_2493
-  (struct-type-install-properties!
-   struct:known-field-mutator
-   '(known-field-mutator)
-   3
-   0
-   (if (struct-type? struct:known-mutator)
-     struct:known-mutator
-     (check-struct-type 'struct struct:known-mutator))
-   null
-   'prefab
-   #f
-   '(0 1 2)
-   #f
-   'known-field-mutator))
+(define effect_2603 (finish122 struct:known-field-mutator))
 (define known-field-mutator
   (|#%name|
    known-field-mutator
@@ -2248,6 +2285,20 @@
          s
          'known-field-mutator
          'pos))))))
+(define finish128
+  (make-struct-type-install-properties
+   '(known-struct-constructor/need-imports)
+   1
+   0
+   (if (struct-type? struct:known-struct-constructor)
+     struct:known-struct-constructor
+     (check-struct-type 'struct struct:known-struct-constructor))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-struct-constructor/need-imports))
 (define struct:known-struct-constructor/need-imports
   (make-record-type-descriptor*
    'known-struct-constructor/need-imports
@@ -2267,21 +2318,7 @@
    #f
    1
    1))
-(define effect_3135
-  (struct-type-install-properties!
-   struct:known-struct-constructor/need-imports
-   '(known-struct-constructor/need-imports)
-   1
-   0
-   (if (struct-type? struct:known-struct-constructor)
-     struct:known-struct-constructor
-     (check-struct-type 'struct struct:known-struct-constructor))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-struct-constructor/need-imports))
+(define effect_2146 (finish128 struct:known-struct-constructor/need-imports))
 (define known-struct-constructor/need-imports
   (|#%name|
    known-struct-constructor/need-imports
@@ -2322,6 +2359,20 @@
          s
          'known-struct-constructor/need-imports
          'needed))))))
+(define finish132
+  (make-struct-type-install-properties
+   '(known-struct-predicate/need-imports)
+   1
+   0
+   (if (struct-type? struct:known-struct-predicate)
+     struct:known-struct-predicate
+     (check-struct-type 'struct struct:known-struct-predicate))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-struct-predicate/need-imports))
 (define struct:known-struct-predicate/need-imports
   (make-record-type-descriptor*
    'known-struct-predicate/need-imports
@@ -2341,21 +2392,7 @@
    #f
    1
    1))
-(define effect_2453
-  (struct-type-install-properties!
-   struct:known-struct-predicate/need-imports
-   '(known-struct-predicate/need-imports)
-   1
-   0
-   (if (struct-type? struct:known-struct-predicate)
-     struct:known-struct-predicate
-     (check-struct-type 'struct struct:known-struct-predicate))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-struct-predicate/need-imports))
+(define effect_3156 (finish132 struct:known-struct-predicate/need-imports))
 (define known-struct-predicate/need-imports
   (|#%name|
    known-struct-predicate/need-imports
@@ -2396,6 +2433,20 @@
          s
          'known-struct-predicate/need-imports
          'needed))))))
+(define finish136
+  (make-struct-type-install-properties
+   '(known-field-accessor/need-imports)
+   1
+   0
+   (if (struct-type? struct:known-field-accessor)
+     struct:known-field-accessor
+     (check-struct-type 'struct struct:known-field-accessor))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-field-accessor/need-imports))
 (define struct:known-field-accessor/need-imports
   (make-record-type-descriptor*
    'known-field-accessor/need-imports
@@ -2415,21 +2466,7 @@
    #f
    1
    1))
-(define effect_2353
-  (struct-type-install-properties!
-   struct:known-field-accessor/need-imports
-   '(known-field-accessor/need-imports)
-   1
-   0
-   (if (struct-type? struct:known-field-accessor)
-     struct:known-field-accessor
-     (check-struct-type 'struct struct:known-field-accessor))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-field-accessor/need-imports))
+(define effect_2513 (finish136 struct:known-field-accessor/need-imports))
 (define known-field-accessor/need-imports
   (|#%name|
    known-field-accessor/need-imports
@@ -2470,6 +2507,20 @@
          s
          'known-field-accessor/need-imports
          'needed))))))
+(define finish140
+  (make-struct-type-install-properties
+   '(known-field-mutator/need-imports)
+   1
+   0
+   (if (struct-type? struct:known-field-mutator)
+     struct:known-field-mutator
+     (check-struct-type 'struct struct:known-field-mutator))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-field-mutator/need-imports))
 (define struct:known-field-mutator/need-imports
   (make-record-type-descriptor*
    'known-field-mutator/need-imports
@@ -2489,21 +2540,7 @@
    #f
    1
    1))
-(define effect_2148
-  (struct-type-install-properties!
-   struct:known-field-mutator/need-imports
-   '(known-field-mutator/need-imports)
-   1
-   0
-   (if (struct-type? struct:known-field-mutator)
-     struct:known-field-mutator
-     (check-struct-type 'struct struct:known-field-mutator))
-   null
-   'prefab
-   #f
-   '(0)
-   #f
-   'known-field-mutator/need-imports))
+(define effect_2273 (finish140 struct:known-field-mutator/need-imports))
 (define known-field-mutator/need-imports
   (|#%name|
    known-field-mutator/need-imports
@@ -2544,6 +2581,18 @@
          s
          'known-field-mutator/need-imports
          'needed))))))
+(define finish144
+  (make-struct-type-install-properties
+   '(known-struct-type-property/immediate-guard)
+   0
+   0
+   #f
+   null
+   'prefab
+   #f
+   '()
+   #f
+   'known-struct-type-property/immediate-guard))
 (define struct:known-struct-type-property/immediate-guard
   (make-record-type-descriptor*
    'known-struct-type-property/immediate-guard
@@ -2559,19 +2608,8 @@
    #f
    0
    0))
-(define effect_2693
-  (struct-type-install-properties!
-   struct:known-struct-type-property/immediate-guard
-   '(known-struct-type-property/immediate-guard)
-   0
-   0
-   #f
-   null
-   'prefab
-   #f
-   '()
-   #f
-   'known-struct-type-property/immediate-guard))
+(define effect_2294
+  (finish144 struct:known-struct-type-property/immediate-guard))
 (define known-struct-type-property/immediate-guard
   (|#%name|
    known-struct-type-property/immediate-guard

@@ -497,6 +497,8 @@
 (syntax-test #'(define-struct a (b c) #:prefab #:property 1 10))
 (syntax-test #'(define-struct a (b c) #:guard 10 #:prefab))
 (syntax-test #'(define-struct a (b c) #:property 1 10 #:prefab))
+(syntax-test #'(define-struct a (b c) #:sealed #:prefab))
+(syntax-test #'(define-struct a (b c) #:prefab #:sealed))
 
 (define-struct base0 ())
 (define-struct base1 (a))
@@ -841,6 +843,47 @@
     (test 'three v-c vw3)))
 
 (err/rt-test (make-struct-type 'bad struct:date 2 0 #f null 'prefab))
+
+;; ------------------------------------------------------------
+;; Sealed
+
+(err/rt-test (let ()
+               (struct x () #:sealed)
+               (struct y x ())
+               (y))
+             exn:fail:contract?
+             "make-struct-type: cannot make a subtype of a sealed type")
+
+(err/rt-test (let ()
+               (struct x () #:sealed)
+               (struct y x () #:sealed)
+               (y))
+             exn:fail:contract?
+             "make-struct-type: cannot make a subtype of a sealed type")
+
+(err/rt-test (let ()
+               (define-values (prop:s s? s-ref)
+                 (make-struct-type-property 's #f (list (cons prop:sealed (lambda (x) #t)))))
+               (struct x () #:property prop:s #t)
+               (struct y x ())
+               (y))
+             exn:fail:contract?
+             "make-struct-type: cannot make a subtype of a sealed type")
+
+(test '(#f #t) cdr (let ()
+                     (struct x ())
+                     (struct y x () #:sealed)
+                     (list (y)
+                           (struct-type-sealed? struct:x)
+                           (struct-type-sealed? struct:y))))
+
+(err/rt-test (let ()
+               (struct x ())
+               (struct y x () #:sealed)
+               (struct z y ())
+               (y))
+             exn:fail:contract?
+             "make-struct-type: cannot make a subtype of a sealed type")
 
 ;; ------------------------------------------------------------
 ;; Misc. built-in structures
@@ -1325,6 +1368,7 @@
 (let ()
   (struct posn (x y) #:authentic)
   (test 1 posn-x (posn 1 2))
+  (test #t struct-type-authentic? struct:posn)
   (err/rt-test (chaperone-struct (posn 1 2) posn-x (lambda (p x) x)))
 
   ;; Subtype must be consistent:
@@ -1334,6 +1378,7 @@
 
 (let ()
   (struct posn (x y))
+  (test #f struct-type-authentic? struct:posn)
 
   ;; Subtype must be consistent:
   (err/rt-test (let ()
@@ -1565,6 +1610,30 @@
 
 
 ;; ----------------------------------------
+
+(err/rt-test
+ (let ()
+   (struct x ())
+   (define unknown struct:x)
+   (set! unknown unknown)
+
+   (define-values (struct:y y y? y-z)
+     (let-values ([(struct:_1 make-_2 ?_3 -ref_4 -set!_5)
+                   (let-values ()
+                     (let-values ()
+                       (make-struct-type 'y unknown 1 0 #f
+                                         (list)
+                                         'prefab ; (current-inspector)
+                                         #f '() #f 'y)))])
+       (values
+        struct:_1
+        make-_2
+        ?_3
+        (make-struct-field-accessor -ref_4 0 'z))))
+
+   'done)
+ exn:fail:contract?
+ "generative supertype disallowed for non-generative structure type")
 
 (err/rt-test
  (let ()

@@ -60,7 +60,24 @@
         (define system-opaque? (and (aim? target 'system)
                                     (or (not exports)
                                         (eq? 'no (hash-ref exports (unwrap struct:s) 'no)))))
+        (define finish!-id (and (or (pair? (struct-type-info-rest sti))
+                                    (and (struct-type-info-prefab-immutables sti)
+                                         ;; to ensure that the super is also a prefab:
+                                         (unwrap (struct-type-info-parent sti))))
+                                (deterministic-gensym "finish")))
         `(begin
+           ,@(if finish!-id
+                 `((define ,finish!-id
+                     (make-struct-type-install-properties ',(if system-opaque?
+                                                                ;; list is recognized by `struct-type-install-properties!`
+                                                                ;; to indicate a system structure type:
+                                                                (list (struct-type-info-name sti))
+                                                                (struct-type-info-name sti))
+                                                          ,(struct-type-info-immediate-field-count sti)
+                                                          0
+                                                          ,(schemify (struct-type-info-parent sti) knowns)
+                                                          ,@(schemify-body schemify knowns (struct-type-info-rest sti)))))
+                 null)
            (define ,struct:s (make-record-type-descriptor* ',(struct-type-info-name sti)
                                                            ,(schemify (struct-type-info-parent sti) knowns)
                                                            ,(if (not (struct-type-info-prefab-immutables sti))
@@ -74,7 +91,7 @@
                                                                   ,(struct-type-info-immediate-field-count sti)
                                                                   0 #f
                                                                   ',(struct-type-info-prefab-immutables sti)))
-                                                           #f
+                                                           ,(struct-type-info-sealed? sti)
                                                            #f
                                                            ,(struct-type-info-immediate-field-count sti)
                                                            ,(let* ([n (struct-type-info-immediate-field-count sti)]
@@ -91,19 +108,9 @@
                                                                          (loop (cdr imms) (bitwise-and mask m)))])))]
                                                                 [else
                                                                  mask]))))
-           ,@(if (null? (struct-type-info-rest sti))
-                 null
-                 `((define ,(deterministic-gensym "effect")
-                     (struct-type-install-properties! ,struct:s
-                                                      ',(if system-opaque?
-                                                            ;; list is recognized by `struct-type-install-properties!`
-                                                            ;; to indincate a system structure type:
-                                                            (list (struct-type-info-name sti))
-                                                            (struct-type-info-name sti))
-                                                      ,(struct-type-info-immediate-field-count sti)
-                                                      0
-                                                      ,(schemify (struct-type-info-parent sti) knowns)
-                                                      ,@(schemify-body schemify knowns (struct-type-info-rest sti))))))
+           ,@(if finish!-id
+                 `((define ,(deterministic-gensym "effect") (,finish!-id ,struct:s)))
+                 null)
            (define ,make-s ,(let ([ctr `(record-constructor
                                          (make-record-constructor-descriptor ,struct:s #f #f))])
                               (define ctr-expr

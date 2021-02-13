@@ -29,13 +29,14 @@
          known-procedure/has-unsafe/folding/limited known-procedure/has-unsafe/folding/limited?
          known-procedure/has-unsafe/folding/limited-kind
          known-struct-type known-struct-type? known-struct-type-type
-         known-struct-type-field-count known-struct-type-pure-constructor?
+         known-struct-type-field-count known-struct-type-pure-constructor? known-struct-type-sealed?
          known-constructor known-constructor? known-constructor-type
          known-predicate known-predicate? known-predicate-type
          known-accessor known-accessor? known-accessor-type
          known-mutator known-mutator? known-mutator-type
          known-struct-constructor known-struct-constructor? known-struct-constructor-type-id
-         known-struct-predicate known-struct-predicate? known-struct-predicate-type-id known-struct-predicate-authentic?
+         known-struct-predicate known-struct-predicate? known-struct-predicate-type-id
+         known-struct-predicate-authentic? known-struct-predicate-sealed?
          known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-authentic?
          known-field-accessor-pos known-field-accessor-known-immutable?
          known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-authentic?
@@ -115,7 +116,7 @@
 (struct known-procedure/has-unsafe/folding () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/has-unsafe)
 (struct known-procedure/has-unsafe/folding/limited (kind) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/has-unsafe/folding)
 
-(struct known-struct-type (type field-count pure-constructor?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
+(struct known-struct-type (type field-count pure-constructor? sealed?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedures with a known connection to a structure type:
 (struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/allocates)
@@ -123,7 +124,7 @@
 (struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
 (struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
 (struct known-struct-constructor (type-id) #:prefab #:omit-define-syntaxes #:super struct:known-constructor)
-(struct known-struct-predicate (type-id authentic?) #:prefab #:omit-define-syntaxes #:super struct:known-predicate)
+(struct known-struct-predicate (type-id authentic? sealed?) #:prefab #:omit-define-syntaxes #:super struct:known-predicate)
 (struct known-field-accessor (type-id authentic? pos known-immutable?) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
 (struct known-field-mutator (type-id authentic? pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
 (struct known-struct-constructor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-constructor)

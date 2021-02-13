@@ -17,6 +17,7 @@
                                field-count
                                pure-constructor?
                                authentic?
+                               sealed?
                                prefab-immutables ; #f or immutable expression to be quoted
                                non-prefab-immutables ; #f or immutable expression to be quoted
                                constructor-name-expr  ; an expression
@@ -107,6 +108,7 @@
                                               (not (unwrap (list-ref rest 4))))
                                           (not (includes-property? 'prop:chaperone-unsafe-undefined)))
                                      (includes-property? 'prop:authentic)
+                                     (includes-property? 'prop:sealed)
                                      (if (eq? prefab-imms 'non-prefab)
                                          #f
                                          prefab-imms)

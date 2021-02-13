@@ -218,8 +218,8 @@
           struct-type-property-accessor-procedure?
           struct-type-property-predicate-procedure?
           make-struct-type
-          struct-type-install-properties! ; not exported to Racket
-          structure-type-lookup-prefab-uid ; not exported to Racket
+          make-struct-type-install-properties ; not exported to Racket
+          structure-type-lookup-prefab-uid    ; not exported to Racket
           make-struct-field-accessor
           make-struct-field-mutator
           struct-type-constructor-add-guards ; not exported to Racket
@@ -237,6 +237,8 @@
           struct-type?
           procedure-struct-type?
           struct-type-info
+          struct-type-sealed?
+          struct-type-authentic?
           struct-info
           struct-type-make-constructor
           struct-type-make-predicate
@@ -247,6 +249,7 @@
           make-prefab-struct
           prop:authentic
           prop:equal+hash
+          prop:sealed
           inspector?
           inspector-superior?
           impersonate-struct
@@ -696,8 +699,9 @@
           unsafe-struct*-ref
           unsafe-struct*-set!
           unsafe-struct*-cas!
-          unsafe-struct? ; not exported to racket
-          unsafe-struct  ; not exported to racket
+          unsafe-struct?        ; not exported to racket
+          unsafe-sealed-struct? ; not exported to racket
+          unsafe-struct         ; not exported to racket
 
           unsafe-s16vector-ref
           unsafe-s16vector-set!

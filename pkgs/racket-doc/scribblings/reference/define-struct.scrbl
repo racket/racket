@@ -25,6 +25,7 @@
                               (code:line #:property prop-expr val-expr)
                               (code:line #:transparent)
                               (code:line #:prefab)
+                              (code:line #:sealed)
                               (code:line #:authentic)
                               (code:line #:name name-id)
                               (code:line #:extra-name name-id)
@@ -155,9 +156,10 @@ so on. By convention, property names start with @racketidfont{prop:}.}
 The @racket[#:prefab] option obtains a @techlink{prefab} (pre-defined,
 globally shared) structure type, as opposed to creating a new
 structure type. Such a structure type is inherently transparent and
-cannot have a guard or properties, so using @racket[#:prefab] with
+non-sealed, and it cannot have a guard or properties, so using @racket[#:prefab] with
 @racket[#:transparent], @racket[#:inspector], @racket[#:guard],
-@racket[#:property], @racket[#:authentic], or @racket[#:methods] is a syntax error.
+@racket[#:property], @racket[#:sealed], @racket[#:authentic],
+or @racket[#:methods] is a syntax error.
 If a supertype is specified, it must also be a @tech{prefab} structure type.
 
 @examples[#:eval posn-eval
@@ -165,6 +167,11 @@ If a supertype is specified, it must also be a @tech{prefab} structure type.
   (prefab-point 1 2)
   (prefab-point? #s(prefab-point 1 2))
 ]
+
+The @racket[#:sealed] option is a shorthand for @racket[#:property
+prop:sealed #t], which prevents the structure type from being
+used as the supertype of another structure type. See
+@racket[prop:sealed] for more information.
 
 The @racket[#:authentic] option is a shorthand for @racket[#:property
 prop:authentic #t], which prevents instances of the structure type
@@ -299,7 +306,8 @@ cp
 
 For serialization, see @racket[define-serializable-struct].
 
-@history[#:changed "6.9.0.4" @elem{Added @racket[#:authentic].}]}
+@history[#:changed "6.9.0.4" @elem{Added @racket[#:authentic].}
+         #:changed "8.0.0.7" @elem{Added @racket[#:sealed].}]}
 
 
 @defform[(struct-field-index field-id)]{

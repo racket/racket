@@ -8,7 +8,7 @@
   [impersonator-val (known-constant)]
   [impersonate-ref (known-constant)]
   [impersonate-set! (known-constant)]
-  [struct-type-install-properties! (known-constant)]
+  [make-struct-type-install-properties (known-constant)]
   [structure-type-lookup-prefab-uid (known-constant)]
   [struct-type-constructor-add-guards (known-constant)]
   [|#%call-with-values| (known-constant)]
