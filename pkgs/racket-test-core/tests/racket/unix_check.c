@@ -11,6 +11,10 @@ int main()
   struct sigaction sa;
   int i;
 
+  /* This would be nice to check, but tests might be run in a nohup
+     environment, and it seems that signals get set ot ignored by
+     shells for various reasons. */
+#if 0
   /* SIGPROF tends to be near the end of the range of signal IDs */
   for (i = 1; i <= SIGPROF; i++) {
     if (sigaction(i, NULL, &sa) == 0) {
@@ -23,6 +27,7 @@ int main()
          for example, so ignore that failure */
     }
   }
+#endif
 
   sigemptyset(&set);
   sigprocmask(SIG_BLOCK, &set, &old_set);
