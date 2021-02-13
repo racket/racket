@@ -757,7 +757,8 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     int pos, tpos, jkind, authentic;
 
     tpos = ((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->name_pos;
-    authentic = ((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->authentic;
+    authentic = (((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->more_flags
+                 & STRUCT_TYPE_FLAG_AUTHENTIC);
 
     if (kind == INLINE_STRUCT_PROC_PRED) {
       pos = 0;
