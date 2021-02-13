@@ -1563,6 +1563,27 @@
   (struct exn:foo exn () #:constructor-name make-exn:foo)
   (test "foo" exn-message (make-exn:foo "foo" (current-continuation-marks))))
 
+
+;; ----------------------------------------
+
+(err/rt-test
+ (let ()
+   ;; Should be arity error (as opposed to a crash)
+   (define-values (struct:y y y? y-z)
+     (let-values ([(struct:_1 make-_2 ?_3 -ref_4 -set!_5)
+                   (let-values ()
+                     (let-values ()
+                       (make-struct-type 'y #f 1 0 #f
+                                         (list)
+                                         (current-inspector)
+                                         #f '() #f 'y 'extra)))])
+       (values
+        struct:_1
+        make-_2
+        ?_3
+        (make-struct-field-accessor -ref_4 0 'z))))
+   5))
+
 ;; ----------------------------------------
 
 (report-errs)

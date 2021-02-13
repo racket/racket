@@ -39,6 +39,7 @@
                 (known-struct-type?
                  (find-known u-parent prim-knowns knowns imports mutated)))
             (exact-nonnegative-integer? fields)
+            ((length rest) . <= . 6)
             (let ([prefab-imms
                    ;; The inspector argument needs to be missing or duplicable,
                    ;; and if it's not known to produce a value other than 'prefab,
