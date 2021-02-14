@@ -281,7 +281,8 @@
     ;; Create a lazy string from the port:
     (define lb-in (make-lazy-bytes port-in (if peek? start-offset 0) prefix
                                    peek? immediate-only? progress-evt
-                                   out (rx:regexp-max-lookbehind rx)
+                                   out (max (rx:regexp-max-lookbehind rx)
+                                            (or end-bytes-count 0))
                                    (and (input-port? in)
                                         (not (eq? 'eof end-offset))
                                         (- end-offset start-offset))))
@@ -355,7 +356,7 @@
                                               #:start-index (- ms-pos delta)
                                               #:delta delta
                                               #:result-offset (+ ms-str-pos start-offset))]))
-        (add-end-bytes positions end-bytes-count bstr me-pos)]
+        (add-end-bytes positions end-bytes-count bstr (- me-pos (lazy-bytes-discarded-count lb-in)))]
        [(strings)
         ;; The byte string may be shifted by discarded bytes, if not
         ;; in `peek?` mode
@@ -368,7 +369,7 @@
             (byte-positions->bytess bstr ms-pos me-pos state #:delta delta)]
            [else
             (byte-positions->strings bstr ms-pos me-pos state #:delta delta)]))
-        (add-end-bytes bytes/strings end-bytes-count bstr me-pos)])
+        (add-end-bytes bytes/strings end-bytes-count bstr (- me-pos delta))])
      
      ;; Now, write and consume port content:
      (write/consume-skipped))]))

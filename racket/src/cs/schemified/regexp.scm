@@ -8810,8 +8810,14 @@
                                                        start-offset_0
                                                        0)))
                                                 (let ((max-lookbehind_0
-                                                       (rx:regexp-max-lookbehind
-                                                        rx_0)))
+                                                       (let ((app_0
+                                                              (rx:regexp-max-lookbehind
+                                                               rx_0)))
+                                                         (max
+                                                          app_0
+                                                          (if end-bytes-count9_0
+                                                            end-bytes-count9_0
+                                                            0)))))
                                                   (let ((max-peek_0
                                                          (if (input-port? in_0)
                                                            (if (not
@@ -8997,7 +9003,10 @@
                                                                positions_0
                                                                end-bytes-count9_0
                                                                bstr_0
-                                                               me-pos_0)))
+                                                               (-
+                                                                me-pos_0
+                                                                (lazy-bytes-discarded-count
+                                                                 lb-in_0)))))
                                                           (if (eq?
                                                                tmp_0
                                                                'strings)
@@ -9032,7 +9041,9 @@
                                                                    bytes/strings_0
                                                                    end-bytes-count9_0
                                                                    bstr_0
-                                                                   me-pos_0))))
+                                                                   (-
+                                                                    me-pos_0
+                                                                    delta_0)))))
                                                             (void))))))
                                                   (write/consume-skipped_0))))
                                              (args
