@@ -4,10 +4,9 @@
          ffi/unsafe
          ffi/unsafe/atomic
          ffi/unsafe/custodian
-         ffi/unsafe/os-thread
-         ffi/unsafe/os-async-channel
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
+         "../generic/ffi-common.rkt"
          "../generic/prepared.rkt"
          "../generic/sql-data.rkt"
          "ffi.rkt"
@@ -25,7 +24,7 @@
 ;; == Connection
 
 (define connection%
-  (class* statement-cache% (connection<%>)
+  (class* (ffi-connection-mixin statement-cache%) (connection<%>)
     (init db)
     (init-private db-spec ;; #f or (list path mode)
                   busy-retry-limit
@@ -55,7 +54,9 @@
              check-statement/tx
              dprintf
              prepare1
-             check/invalidate-cache)
+             check/invalidate-cache
+             get-use-os-thread?
+             sync-call-in-os-thread)
     (inherit-field DEBUG?)
 
     (define/override (call-with-lock fsym proc)
@@ -75,6 +76,7 @@
 
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
+    (define/override (-get-db) -db)
 
     (define/public (get-dbsystem) dbsystem)
     (define/override (connected?) (and -db #t))
@@ -193,7 +195,7 @@
                        (lambda (e)
                          (A* (when -db (sqlite3_reset stmt) (sqlite3_clear_bindings stmt)))
                          (raise e))])
-        ((cond [use-os-thread?
+        ((cond [(get-use-os-thread?)
                 (define timeout (inexact->exact (ceiling (* 1000 busy-retry-delay))))
                 (sync-call-in-os-thread
                  (lambda (db)
@@ -307,50 +309,26 @@
                          (owner this))])
           pst)))
 
-    (define/override (disconnect* _politely?)
-      (super disconnect* _politely?)
-      (real-disconnect #f))
-
-    (define/public (real-disconnect from-custodian?)
-      (call-as-atomic
-       (lambda ()
-         (when -db
-           ;; Save and clear fields
-           (define dont-gc this%)
-           (define db -db)
-           (define stmts (hash-keys stmt-table))
-           (set! -db #f)
-           (hash-clear! stmt-table)
-           ;; Unregister custodian shutdown, unless called from custodian.
-           (unless from-custodian? (unregister-custodian-shutdown this creg))
-           (set! creg #f)
-           ;; Close db connection
-           (cond [os-req-chan
-                  ;; OS thread might be using db, stmts
-                  (define resp-chan (make-os-async-channel))
-                  (define (shutdown _db)
-                    (finish-disconnect db stmts)
-                    (when resp-chan (os-async-channel-put resp-chan 'done))
-                    (void/reference-sink dont-gc))
-                  (log-db-debug "disconnect delayed to OS thread")
-                  (os-async-channel-put os-req-chan (cons shutdown #f))
-                  (when resp-chan
-                    (parameterize ((current-custodian (make-custodian-at-root)))
-                      (thread
-                       (lambda ()
-                         (void (sync resp-chan))
-                         (log-db-debug "finished delayed disconnect")))))
-                  (void)]
-                 [else
-                  (finish-disconnect db stmts)
-                  (void/reference-sink dont-gc)])))))
-
-    (define/private (finish-disconnect db stmts) ;; PRE: in atomic mode
-      ;; Free all of connection's prepared statements. This will leave
-      ;; pst objects with dangling foreign objects, so don't try to free
-      ;; them again---check that -db is not-#f.
-      (for-each sqlite3_finalize stmts)
-      (HANDLE 'disconnect (sqlite3_close db)))
+    (define/override (-get-do-disconnect) ;; PRE: atomic
+      ;; Save and clear fields
+      (define dont-gc this%)
+      (define db -db)
+      (define stmts (hash-keys stmt-table))
+      (set! -db #f)
+      (hash-clear! stmt-table)
+      ;; Unregister custodian shutdown, unless called from custodian.
+      (when creg (unregister-custodian-shutdown this creg))
+      (set! creg #f)
+      ;; Actually disconnect
+      (lambda ()
+        ;; Free all of connection's prepared statements. This will leave
+        ;; pst objects with dangling foreign objects, so don't try to free
+        ;; them again---check that -db is not-#f.
+        (for-each sqlite3_finalize stmts)
+        (HANDLE 'disconnect (sqlite3_close db))
+        (void/reference-sink dont-gc)
+        ;; FIXME: move handle here?
+        void))
 
     (define/public (get-base) this)
 
@@ -516,43 +494,6 @@
 
     (define/public (get-error-message)
       (A (sqlite3_errmsg -db)))
-
-    ;; == OS Thread Support
-
-    (define use-os-thread? #f)
-    (define os-req-chan #f)  ;; #f or OS-Async-Channel
-    (define os-resp-chan #f) ;; #f or OS-Async-Channel
-
-    (define/public (use-os-thread use?)
-      (when use?
-        (unless (os-thread-enabled?)
-          (raise (exn:fail:unsupported "use-os-thread: not supported"
-                                       (current-continuation-marks)))))
-      (call-with-lock 'use-os-thread
-        (lambda ()
-          (set! use-os-thread? (and use? #t))
-          (when use?
-            (call-as-atomic
-             (lambda ()
-               (unless os-req-chan
-                 (define db -db)
-                 (define req-chan (make-os-async-channel))
-                 (define resp-chan (make-os-async-channel))
-                 (call-in-os-thread
-                  (lambda ()
-                    (let loop ()
-                      (define msg (os-async-channel-get req-chan))
-                      (define proc (car msg))
-                      (define loop? (cdr msg))
-                      (os-async-channel-put resp-chan (proc db))
-                      (when loop? (loop)))))
-                 (set! os-req-chan req-chan)
-                 (set! os-resp-chan resp-chan))))))))
-
-    (define/private (sync-call-in-os-thread proc)
-      (A (when os-req-chan
-           (os-async-channel-put os-req-chan (cons proc #t))))
-      (sync os-resp-chan))
     ))
 
 (define shutdown-connection
@@ -560,7 +501,7 @@
   ;; (eg, sqlite3_close) used by its methods from being finalized.
   (let ([dont-gc connection%])
     (lambda (obj)
-      (send obj real-disconnect #t)
+      (send obj real-disconnect)
       ;; Dummy result to prevent reference from being optimized away
       dont-gc)))
 
