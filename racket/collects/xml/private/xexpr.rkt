@@ -164,11 +164,11 @@
        (write-bytes #";" out)]
       ; Embedded XML
       [(cdata? x)
-       (write-xml-cdata x 0 void out)]
+       (write-xml-cdata x 0 'none out)]
       [(comment? x)
-       (write-xml-comment x 0 void out)]
+       (write-xml-comment x 0 'none out)]
       [(p-i? x)
-       (write-xml-p-i x 0 void out)]))
+       (write-xml-p-i x 0 'none out)]))
   (void))
 
 ;; given a string, encode it in the style required for attributes. Specifically,
