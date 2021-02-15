@@ -52,6 +52,20 @@
 (define (test-display-xml/content str res)
   (test-equal? str (with-output-to-string (lambda () (display-xml/content (document-element (read-xml (open-input-string str)))))) res))
 
+(define (indent indentation xexpr)
+  ; The indentation tests will ignore the leading newline
+  (string-trim
+   (with-output-to-string
+     (lambda () (display-xml/content (xexpr->xml xexpr)
+                                     (current-output-port)
+                                     #:indentation indentation)))))
+(define-syntax (test-indentation stx)
+  (syntax-case stx ()
+    [(_ indentation xexpr expected-xml)
+     (syntax/loc stx
+       (check-equal? (fix-newline expected-xml)
+                     (indent indentation xexpr)))]))
+
 (define (test-xexpr? xe)
   (test-not-false (format "~S" xe) (xexpr? xe)))
 (define (test-not-xexpr? xe)
@@ -560,6 +574,60 @@ END
      (test-display-xml/content "<root>&#40;</root>" "\n<root>&#40;\n</root>")
      (test-display-xml/content "<br />" "\n<br />")
      ; XXX need more display-xml/content tests
+     )
+
+    (test-suite
+     "indentation"
+     (let ([el '(div (p "'Abstract' is a heteronym:")
+                     (ul (li (b "Ab")"stract is an adjective.")
+                         (li "Ab"(b"stract")" is a verb.")))])
+       (test-indentation 'none el "<div><p>'Abstract' is a heteronym:</p><ul><li><b>Ab</b>stract is an adjective.</li><li>Ab<b>stract</b> is a verb.</li></ul></div>")
+       (test-indentation 'classic el #<<XML
+<div>
+  <p>
+    'Abstract' is a heteronym:
+  </p>
+  <ul>
+    <li>
+      <b>
+        Ab
+      </b>
+      stract is an adjective.
+    </li>
+    <li>
+      Ab
+      <b>
+        stract
+      </b>
+       is a verb.
+    </li>
+  </ul>
+</div>
+XML
+                         )
+       (test-indentation 'peek el #<<XML
+<div>
+  <p>'Abstract' is a heteronym:</p>
+  <ul>
+    <li>
+      <b>Ab</b>
+      stract is an adjective.
+    </li>
+    <li>Ab<b>stract</b> is a verb.</li>
+  </ul>
+</div>
+XML
+                         )
+       (test-indentation 'scan el #<<XML
+<div>
+  <p>'Abstract' is a heteronym:</p>
+  <ul>
+    <li><b>Ab</b>stract is an adjective.</li>
+    <li>Ab<b>stract</b> is a verb.</li>
+  </ul>
+</div>
+XML
+                         ))
      )
     )
    
