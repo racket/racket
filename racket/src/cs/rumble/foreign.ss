@@ -2048,43 +2048,7 @@
      [else #f])))
 
 ;; function is called with interrupts disabled
-(define get-errno
-  (cond
-   [(and (not (chez:memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
-         (foreign-entry? "racket_errno"))
-    (foreign-procedure "racket_errno" () int)]
-   [else
-    ;; We get here when (i) during a bootstrapping process, (ii) in a
-    ;; development mode that is not running in a Racket executable,
-    ;; or (iii) running on Windows.
-    ;; In the third case, `errno` could be a different one from
-    ;; `_errno` in MSVCRT. Therefore fallback to the foreign function.
-    ;; See `save_errno_values` in `foreign.c` from Racket BC for more
-    ;; information.
-    (let ([get-&errno-name
-           (case (machine-type)
-             [(a6nt ta6nt i3nt ti3nt)
-              (load-shared-object "msvcrt.dll")
-              "_errno"]
-             [(a6osx ta6osx i3osx ti3osx)
-              (load-shared-object "libc.dylib")
-              "__error"]
-             [(a6le ta6le i3le ti3le)
-              (load-shared-object "libc.so.6")
-              "__errno_location"]
-             [else #f])])
-      (cond
-       [get-&errno-name
-        (let ([get-&errno (foreign-procedure get-&errno-name () void*)])
-          (lambda ()
-            (foreign-ref 'int (get-&errno) 0)))]
-       [else
-        (let ([warned? #f])
-          (lambda ()
-            (unless warned?
-              (set! warned? #t)
-              (#%printf "Warning: not recording actual errno value\n"))
-            0))]))]))
+(define get-errno (foreign-procedure "(cs)s_errno" () int))
 
 ;; function is called with interrupts disabled
 (define get-last-error

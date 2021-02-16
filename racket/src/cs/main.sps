@@ -79,10 +79,16 @@
    (define (getenv-bytes str)
      (environment-variables-ref (current-environment-variables) (string->utf8 str)))
 
+   (define (startup-error fmt . args)
+     (#%fprintf (#%current-error-port) "~a: " (path->string (find-system-path 'exec-file)))
+     (#%apply #%fprintf (#%current-error-port) fmt args)
+     (#%newline (#%current-error-port))
+     (exit 1))
+
    (define builtin-argc 10)
    (seq
     (unless (>= (length the-command-line-arguments) builtin-argc)
-      (error 'racket (string-append
+      (startup-error (string-append
 		      "expected `embedded-interactive-mode?`,"
                       " `exec-file`, `run-file`, `collects`, and `etc` paths"
 		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
@@ -132,7 +138,7 @@
               => (lambda (s)
                    (unless (and (not (equal? s #vu8()))
                                 (relative-path? (->path s)))
-                     (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
+                     (startup-error "PLT_ZO_PATH environment variable is not a valid path"))
                    (->path s))]
              [cs-compiled-subdir?
               (build-path "compiled"
@@ -172,7 +178,7 @@
                    "given: " str)])
          (cond
           [exit-on-fail?
-           (raise-user-error 'racket msg)]
+           (startup-error msg)]
           [else
            (eprintf "~a\n" msg)])))
      (let loop ([str str] [default #f])
@@ -264,7 +270,7 @@
      (let loop ([args (cdr args)] [accum '()])
        (cond
         [(null? args)
-         (error 'racket "missing ~a after ~a switch" what (or within-flag flag))]
+         (startup-error "missing ~a after ~a switch" what (or within-flag flag))]
         [(pair? (car args))
          (loop (cdr args) (cons (car args) accum))]
         [else
@@ -272,24 +278,23 @@
 
    (define (check-path-arg what flag within-flag)
      (when (equal? what "")
-       (error 'racket "empty ~a after ~a switch" what (or within-flag flag))))
+       (startup-error "empty ~a after ~a switch" what (or within-flag flag))))
 
    (define (raise-bad-switch arg within-arg)
-     (raise-user-error 'racket "bad switch: ~a~a"
-                       arg
-                       (if within-arg
-                           (format " within: ~a" within-arg)
-                           "")))
+     (startup-error "bad switch: ~a~a"
+                    arg
+                    (if within-arg
+                        (format " within: ~a" within-arg)
+                        "")))
 
    (define (no-front!)
      (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-no-front") #vu8(1)))
 
    (define (add-namespace-require-load! mod-path arg)
      (unless (module-path? mod-path)
-       (raise-user-error 'require
-                         "bad module path: ~V derived from command-line argument: ~a"
-                         mod-path
-                         arg))
+       (startup-error "bad module path: ~V derived from command-line argument: ~a"
+                      mod-path
+                      arg))
      (set! loads
            (cons (lambda () (namespace-require+ mod-path))
                  loads)))
@@ -403,7 +408,7 @@
                         (lambda (s what)
                           (let ([n (#%string->number s)])
                             (unless (exact-integer? n)
-                              (raise-user-error 'racket "bad ~a: ~a" what s))
+                              (startup-error "bad ~a: ~a" what s))
                             (#%number->string (+ n segment-offset))))]
                        [n (add-segment-offset n "starting offset")]
                        [m (add-segment-offset m "first ending offset")]
@@ -533,7 +538,7 @@
               (let-values ([(mach-str rest-args) (next-arg "target machine" arg within-arg args)])
                 (let ([mach (string->symbol mach-str)])
                   (unless (compile-target-machine? mach)
-                    (raise-user-error 'racket "machine not supported as a compile target: ~a" mach))
+                    (startup-error "machine not supported as a compile target: ~a" mach))
                   (set! compile-target-machine mach))
                 (loop rest-args))]
              [("--cross-compiler")
@@ -549,8 +554,8 @@
                   (let-values ([(scheme-xpatch-file rest-args) (next-arg "library xpatch path" arg within-arg (cons arg rest-args))])
                     (when (or (saw-something? saw)
                               (not (null? rest-args)))
-                      (raise-user-error 'racket "--cross-server cannot be combined with any other arguments"))
-                    (raise-user-error 'racket "--cross-server should have been handled earlier"))))
+                      (startup-error "--cross-server cannot be combined with any other arguments"))
+                    (startup-error "--cross-server should have been handled earlier"))))
               (flags-loop null (see saw 'non-config))]
              [("-j" "--no-jit")
               (loop (cdr args))]

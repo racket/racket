@@ -81,21 +81,9 @@ static void run_cross_server(char **argv)
   (void)Scall1(c, a);
 }
 
-static void racket_exit(int v)
-{
-  exit(v);
-}
-
-static int racket_errno()
-{
-  return errno;
-}
-
 static void init_foreign()
 {
 # include "rktio.inc"
-  Sforeign_symbol("racket_exit", (void *)racket_exit);
-  Sforeign_symbol("racket_errno", (void *)racket_errno);
 }
 
 void racket_boot(racket_boot_arguments_t *ba)
@@ -161,7 +149,7 @@ void racket_boot(racket_boot_arguments_t *ba)
     /* Don't run Racket as usual. Instead, load the patch
        file and run `serve-cross-compile` */
     run_cross_server(ba->argv);
-    racket_exit(0);
+    exit(0);
   }
 
   {
