@@ -2048,7 +2048,19 @@
      [else #f])))
 
 ;; function is called with interrupts disabled
-(define get-errno (foreign-procedure "(cs)s_errno" () int))
+(define get-errno
+  (cond
+   [(not (chez:memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
+    (foreign-procedure "(cs)s_errno" () int)]
+   [else
+    ;; On Windows, `errno` could be a different one from
+    ;; `_errno` in MSVCRT. Therefore fallback to the foreign function.
+    ;; See `save_errno_values` in `foreign.c` from Racket BC for more
+    ;; information.
+    (load-shared-object "msvcrt.dll")
+    (let ([get-&errno (foreign-procedure "_errno" () void*)])
+      (lambda ()
+        (foreign-ref 'int (get-&errno) 0)))]))
 
 ;; function is called with interrupts disabled
 (define get-last-error
