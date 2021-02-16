@@ -27,6 +27,7 @@
                        "default-value expression missing"))
 
 (define-syntax-class formals
+  #:attributes (params)
   (pattern (~or* (args:formals-no-rest)
                  (args:formals-no-rest . rest-id:id))
            #:attr params #'((~@ . args.params) (~? rest-id))
