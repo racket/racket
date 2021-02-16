@@ -529,19 +529,18 @@
       `(cons/dc [,(vector-ref info 0) (,(vector-ref info 1))
                                       ,(vector-ref info 2)]
                 [,(vector-ref info 1) ,(contract-name (the-cons/dc-undep ctc))])))
-(define (cons/dc-first-order ctc)
-  (λ (val)
-    (and (pair? val)
-         (let-values ([(undep-val dep-val)
-                       (if (the-cons/dc-forwards? ctc)
-                           (values (car val) (cdr val))
-                           (values (cdr val) (car val)))])
-           (and (contract-first-order-passes?
-                 (the-cons/dc-undep ctc)
-                 undep-val)
-                (contract-first-order-passes?
-                 ((the-cons/dc-dep ctc) undep-val)
-                 dep-val))))))
+(define ((cons/dc-first-order ctc) val)
+  (and (pair? val)
+       (let-values ([(undep-val dep-val)
+                     (if (the-cons/dc-forwards? ctc)
+                         (values (car val) (cdr val))
+                         (values (cdr val) (car val)))])
+         (and (contract-first-order-passes?
+               (the-cons/dc-undep ctc)
+               undep-val)
+              (contract-first-order-passes?
+               ((the-cons/dc-dep ctc) undep-val)
+               dep-val)))))
 
 (define (cons/dc-stronger? this that) #f)
 (define (cons/dc-equivalent? this that) #f)
@@ -886,20 +885,19 @@
       [(null? val) (values #f #f)]
       [else (loop (cdr val) (- i 1))])))
 
-(define (*list/c-generate ctc)
-  (λ (fuel)
-    (define prefix-gen (contract-random-generate/choose (*list-ctc-prefix ctc) fuel))
-    (define suffix-gens
-      (for/list ([suf (*list-ctc-suffix ctc)])
-        (contract-random-generate/choose suf fuel)))
-    (and prefix-gen
-         (for/and ([i (in-list suffix-gens)]) i)
-         (λ ()
-           (let loop ()
-             (rand-choice
-              [1/5 (for/list ([suffix-gen (in-list suffix-gens)])
-                     (suffix-gen))]
-              [else (cons (prefix-gen) (loop))]))))))
+(define ((*list/c-generate ctc) fuel)
+  (define prefix-gen (contract-random-generate/choose (*list-ctc-prefix ctc) fuel))
+  (define suffix-gens
+    (for/list ([suf (*list-ctc-suffix ctc)])
+      (contract-random-generate/choose suf fuel)))
+  (and prefix-gen
+       (for/and ([i (in-list suffix-gens)]) i)
+       (λ ()
+         (let loop ()
+           (rand-choice
+            [1/5 (for/list ([suffix-gen (in-list suffix-gens)])
+                   (suffix-gen))]
+            [else (cons (prefix-gen) (loop))])))))
 
 (define (*list/c-exercise ctc)
   (define suffix (reverse (*list-ctc-suffix ctc)))

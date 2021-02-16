@@ -8,21 +8,19 @@
          provide-protected
          make-not-available)
 
-(define (make-not-available id)
-  (lambda ()
-    (lambda args
-      (error id "implementation not found; ~a"
-             (if (null? args)
-                 "no arguments provided"
-                 (apply
-                  string-append
-                  "arguments:"
-                  (let loop ([args args])
-                    (if (null? args)
-                        null
-                        (cons (format " ~e"
-                                      (car args))
-                              (loop (cdr args)))))))))))
+(define (((make-not-available id)) . args)
+  (error id "implementation not found; ~a"
+         (if (null? args)
+             "no arguments provided"
+             (apply
+              string-append
+              "arguments:"
+              (let loop ([args args])
+                (if (null? args)
+                    null
+                    (cons (format " ~e"
+                                  (car args))
+                          (loop (cdr args)))))))))
 
 (define-syntax-rule (provide-protected p ...)
   (provide (protect-out p ...)))

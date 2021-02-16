@@ -315,14 +315,14 @@
 
   ;; These callback must be retained so that they're not GCed
   ;; until the run loop is terminated:
-  (define in-callback (lambda (_in evt _null)
-                        (void (semaphore-try-wait? in-ready))
-                        (semaphore-post in-ready)
-                        (unsafe-signal-received)))
-  (define out-callback (lambda (_out evt _null)
-                         (void (semaphore-try-wait? out-ready))
-                         (semaphore-post out-ready)
-                         (unsafe-signal-received)))
+  (define (in-callback _in evt _null)
+    (void (semaphore-try-wait? in-ready))
+    (semaphore-post in-ready)
+    (unsafe-signal-received))
+  (define (out-callback _out evt _null)
+    (void (semaphore-try-wait? out-ready))
+    (semaphore-post out-ready)
+    (unsafe-signal-received))
 
   (define context (make-CFStreamClientContext 0 #f #f #f #f))
   (check-ok (CFReadStreamSetClient in all-evts in-callback context))

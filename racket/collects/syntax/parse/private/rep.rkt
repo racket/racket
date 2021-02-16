@@ -91,11 +91,10 @@
         (regexp? datum)
         (byte-regexp? datum))))
 
-(define (id-predicate kw)
-  (lambda (stx)
-    (and (identifier? stx)
-         (free-identifier=? stx kw)
-         (begin (disappeared! stx) #t))))
+(define ((id-predicate kw) stx)
+  (and (identifier? stx)
+       (free-identifier=? stx kw)
+       (begin (disappeared! stx) #t)))
 
 (define wildcard?  (id-predicate (quote-syntax _)))
 (define epsilon?   (id-predicate (quote-syntax ||)))

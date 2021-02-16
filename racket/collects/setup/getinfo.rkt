@@ -345,7 +345,7 @@
     (if (eq? name 'same) (dir->sort-key base) (path->bytes name))))
 
 (define info? (->* [symbol?] [(-> any/c)] any/c))
-(define path-or-string? (lambda (x) (or (path? x) (string? x))))
+(define (path-or-string? x) (or (path? x) (string? x)))
 
 (provide/contract
  (reset-relevant-directories-state! (-> any))

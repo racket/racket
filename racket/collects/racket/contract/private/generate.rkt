@@ -50,54 +50,53 @@
   env)
 
 ;; multi-exercise : (listof contract?) -> fuel -> (values (listof ctc) (-> (listof val[ctcs]) void)
-(define (multi-exercise orig-ctcs #:allow-shuffle? [allow-shuffle? #f])
-  (λ (fuel)
-    (let loop ([ctcs orig-ctcs]
-               [exers '()]
-               [previously-available-ctcs '()]
-               [available-ctcs '()]
-               [max-iterations 4])
-      (cond
-        [(null? ctcs)
-         (cond
-           [(or (zero? max-iterations)
-                (equal? previously-available-ctcs available-ctcs))
-            (define rev-exers (vector->immutable-vector (list->vector (reverse exers))))
-            (define (do-exercise orig-vals shuffle?)
-              (define vals (vector->immutable-vector (list->vector orig-vals)))
-              (define exercise-order
-                (cond
-                  [shuffle? (shuffle (range (vector-length rev-exers)))]
-                  [else (range (vector-length rev-exers))]))
-              (for ([index (in-list exercise-order)])
-                (define exer (vector-ref rev-exers index))
-                (define val  (vector-ref vals (modulo index (vector-length vals))))
-                (let/ec k
-                  (parameterize ([fail-escape (λ () (k))])
-                    (exer val)))))
-            (define (exercise/shuffle orig-vals #:shuffle? [shuffle? #f])
-              (do-exercise orig-vals shuffle?))
-            (define (exercise orig-vals)
-              (do-exercise orig-vals #f))
-            (values (if allow-shuffle? exercise/shuffle exercise)
-                    available-ctcs)]
-           [else
-            (loop orig-ctcs
-                  exers
-                  available-ctcs
-                  available-ctcs
-                  (- max-iterations 1))])]
-        [else
-         (define-values (exer newly-available-ctcs) 
-           (with-definitely-available-contracts
-            available-ctcs
-            (λ ()
-              ((contract-struct-exercise (car ctcs)) fuel))))
-         (loop (cdr ctcs)
-               (cons exer exers)
-               previously-available-ctcs
-               (add-new-contracts newly-available-ctcs available-ctcs)
-               max-iterations)]))))
+(define ((multi-exercise orig-ctcs #:allow-shuffle? [allow-shuffle? #f]) fuel)
+  (let loop ([ctcs orig-ctcs]
+             [exers '()]
+             [previously-available-ctcs '()]
+             [available-ctcs '()]
+             [max-iterations 4])
+    (cond
+      [(null? ctcs)
+       (cond
+         [(or (zero? max-iterations)
+              (equal? previously-available-ctcs available-ctcs))
+          (define rev-exers (vector->immutable-vector (list->vector (reverse exers))))
+          (define (do-exercise orig-vals shuffle?)
+            (define vals (vector->immutable-vector (list->vector orig-vals)))
+            (define exercise-order
+              (cond
+                [shuffle? (shuffle (range (vector-length rev-exers)))]
+                [else (range (vector-length rev-exers))]))
+            (for ([index (in-list exercise-order)])
+              (define exer (vector-ref rev-exers index))
+              (define val  (vector-ref vals (modulo index (vector-length vals))))
+              (let/ec k
+                (parameterize ([fail-escape (λ () (k))])
+                  (exer val)))))
+          (define (exercise/shuffle orig-vals #:shuffle? [shuffle? #f])
+            (do-exercise orig-vals shuffle?))
+          (define (exercise orig-vals)
+            (do-exercise orig-vals #f))
+          (values (if allow-shuffle? exercise/shuffle exercise)
+                  available-ctcs)]
+         [else
+          (loop orig-ctcs
+                exers
+                available-ctcs
+                available-ctcs
+                (- max-iterations 1))])]
+      [else
+       (define-values (exer newly-available-ctcs) 
+         (with-definitely-available-contracts
+             available-ctcs
+           (λ ()
+             ((contract-struct-exercise (car ctcs)) fuel))))
+       (loop (cdr ctcs)
+             (cons exer exers)
+             previously-available-ctcs
+             (add-new-contracts newly-available-ctcs available-ctcs)
+             max-iterations)])))
 
 (define (add-new-contracts newly-available-ctcs available-ctcs)
   (let loop ([available-ctcs available-ctcs]

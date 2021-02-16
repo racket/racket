@@ -154,54 +154,53 @@
             (late-neg-proj (unbox val) neg-party)
             val]))))))
 
-(define (ho-late-neg-projection chaperone/impersonate-box)
-  (λ (ctc)
-    (define elem-w-ctc (base-box/c-content-w ctc))
-    (define elem-r-ctc (base-box/c-content-r ctc))
-    (define immutable (base-box/c-immutable ctc))
-    (define w-vfp (get/build-late-neg-projection elem-w-ctc))
-    (define r-vfp (get/build-late-neg-projection elem-r-ctc))
-    (λ (blame)
-      (define box-blame (add-box-context blame))
-      (define-values (filled? maybe-pos-elem-r-proj maybe-neg-elem-w-proj)
-        (contract-pos/neg-doubling (r-vfp box-blame)
-                                   (w-vfp (blame-swap box-blame))))
-      (define (make-val-np/proc pos-elem-r-proj neg-elem-w-proj)
-        (λ (val neg-party)
-          (define blame+neg-party (cons blame neg-party))
-          (cond
-            [(check-box/c-np ctc val blame)
-             =>
-             (λ (f) (f neg-party))]
-            [else
-             (if (and (immutable? val) (not (chaperone? val)))
-                 (box-immutable (pos-elem-r-proj (unbox val) neg-party))
-                 (chaperone/impersonate-box 
-                  val
-                  (λ (b v)
-                    (with-contract-continuation-mark
-                        blame+neg-party
-                      (pos-elem-r-proj v neg-party)))
-                  (λ (b v)
-                    (with-contract-continuation-mark
-                        blame+neg-party
-                      (neg-elem-w-proj v neg-party)))
-                  impersonator-prop:contracted ctc
-                  impersonator-prop:blame blame+neg-party))])))
-      (cond
-        [filled?
-         (make-val-np/proc maybe-pos-elem-r-proj maybe-neg-elem-w-proj)]
-        [else
-         (define tc (make-thread-cell #f))
-         (λ (val neg-party)
-           (cond
-             [(thread-cell-ref tc)
-              =>
-              (λ (f) (f val neg-party))]
-             [else
-              (define proc (make-val-np/proc (maybe-pos-elem-r-proj) (maybe-neg-elem-w-proj)))
-              (thread-cell-set! tc proc)
-              (proc val neg-party)]))]))))
+(define ((ho-late-neg-projection chaperone/impersonate-box) ctc)
+  (define elem-w-ctc (base-box/c-content-w ctc))
+  (define elem-r-ctc (base-box/c-content-r ctc))
+  (define immutable (base-box/c-immutable ctc))
+  (define w-vfp (get/build-late-neg-projection elem-w-ctc))
+  (define r-vfp (get/build-late-neg-projection elem-r-ctc))
+  (λ (blame)
+    (define box-blame (add-box-context blame))
+    (define-values (filled? maybe-pos-elem-r-proj maybe-neg-elem-w-proj)
+      (contract-pos/neg-doubling (r-vfp box-blame)
+                                 (w-vfp (blame-swap box-blame))))
+    (define (make-val-np/proc pos-elem-r-proj neg-elem-w-proj)
+      (λ (val neg-party)
+        (define blame+neg-party (cons blame neg-party))
+        (cond
+          [(check-box/c-np ctc val blame)
+           =>
+           (λ (f) (f neg-party))]
+          [else
+           (if (and (immutable? val) (not (chaperone? val)))
+               (box-immutable (pos-elem-r-proj (unbox val) neg-party))
+               (chaperone/impersonate-box 
+                val
+                (λ (b v)
+                  (with-contract-continuation-mark
+                      blame+neg-party
+                    (pos-elem-r-proj v neg-party)))
+                (λ (b v)
+                  (with-contract-continuation-mark
+                      blame+neg-party
+                    (neg-elem-w-proj v neg-party)))
+                impersonator-prop:contracted ctc
+                impersonator-prop:blame blame+neg-party))])))
+    (cond
+      [filled?
+       (make-val-np/proc maybe-pos-elem-r-proj maybe-neg-elem-w-proj)]
+      [else
+       (define tc (make-thread-cell #f))
+       (λ (val neg-party)
+         (cond
+           [(thread-cell-ref tc)
+            =>
+            (λ (f) (f val neg-party))]
+           [else
+            (define proc (make-val-np/proc (maybe-pos-elem-r-proj) (maybe-neg-elem-w-proj)))
+            (thread-cell-set! tc proc)
+            (proc val neg-party)]))])))
 
 (define-struct (chaperone-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc

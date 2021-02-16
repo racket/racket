@@ -28,12 +28,11 @@
 
   (define-syntaxes [syntax/loc/props quasisyntax/loc/props]
     (let ()
-      (define (mk-syntax/loc/props syntax-id)
-        (λ (stx)
-          (syntax-case stx ()
-            [(_ src-expr template)
-             #`(let ([src src-expr])
-                 (datum->syntax (quote-syntax #,stx) (syntax-e (#,syntax-id template)) src src))])))
+      (define ((mk-syntax/loc/props syntax-id) stx)
+        (syntax-case stx ()
+          [(_ src-expr template)
+           #`(let ([src src-expr])
+               (datum->syntax (quote-syntax #,stx) (syntax-e (#,syntax-id template)) src src))]))
       (values (mk-syntax/loc/props #'syntax)
               (mk-syntax/loc/props #'quasisyntax)))))
 

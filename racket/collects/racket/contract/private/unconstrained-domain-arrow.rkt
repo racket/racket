@@ -96,9 +96,8 @@
   (apply build-compound-type-name 'unconstrained-domain->
          (map contract-name (unconstrained-domain->-ranges ud))))
 
-(define (unconstrained-domain->-first-order ud)
-  (λ (val)
-    (procedure? val)))
+(define ((unconstrained-domain->-first-order ud) val)
+  (procedure? val))
 
 (define (unconstrained-domain->-stronger this that)
   (and (unconstrained-domain->? that)

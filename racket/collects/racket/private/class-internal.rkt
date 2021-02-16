@@ -3798,32 +3798,31 @@ An example
                   (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
           'feature-profile:send-dispatch #t))))
     
-    (define (core-send apply? kws?)
-      (lambda (stx)
-        (syntax-case stx ()
-          [(form obj name . args)
-           (identifier? (syntax name))
-           (if (stx-list? (syntax args))
-               ;; (send obj name arg ...) or (send/apply obj name arg ...)
-               (do-method stx #'form #'obj #'name 
-                          (if kws? (cddr (syntax->list #'args)) #'args)
-                          apply? 
-                          (and kws? 
-                               (let ([l (syntax->list #'args)])
-                                 (list (car l) (cadr l)))))
-               (if apply?
-                   ;; (send/apply obj name arg ... . rest)
-                   (raise-syntax-error
-                    #f "bad syntax (illegal use of `.')" stx)
-                   ;; (send obj name arg ... . rest)
-                   (do-method stx #'form #'obj #'name
-                              (flatten-args #'args) #t #f)))]
-          [(form obj name . args)
-           (raise-syntax-error
-            #f "method name is not an identifier" stx #'name)]
-          [(form obj)
-           (raise-syntax-error
-            #f "expected a method name" stx)])))
+    (define ((core-send apply? kws?) stx)
+      (syntax-case stx ()
+        [(form obj name . args)
+         (identifier? (syntax name))
+         (if (stx-list? (syntax args))
+             ;; (send obj name arg ...) or (send/apply obj name arg ...)
+             (do-method stx #'form #'obj #'name 
+                        (if kws? (cddr (syntax->list #'args)) #'args)
+                        apply? 
+                        (and kws? 
+                             (let ([l (syntax->list #'args)])
+                               (list (car l) (cadr l)))))
+             (if apply?
+                 ;; (send/apply obj name arg ... . rest)
+                 (raise-syntax-error
+                  #f "bad syntax (illegal use of `.')" stx)
+                 ;; (send obj name arg ... . rest)
+                 (do-method stx #'form #'obj #'name
+                            (flatten-args #'args) #t #f)))]
+        [(form obj name . args)
+         (raise-syntax-error
+          #f "method name is not an identifier" stx #'name)]
+        [(form obj)
+         (raise-syntax-error
+          #f "expected a method name" stx)]))
 
     (define (send/keyword-apply stx)
       (syntax-case stx ()
@@ -4430,31 +4429,30 @@ An example
       (raise-arguments-error 'class-info "current inspector cannot inspect class" 
                              "class" c)))
 
-(define object->vector
-  (lambda (in-o [opaque-v '...])
-    (unless (object? in-o)
-      (raise-argument-error 'object->vector "object?" in-o))
-    (let ([o in-o])
-      (list->vector
-       (cons
-        (string->symbol (format "object:~a" (class-name (object-ref/unwrap o))))
-        (reverse
-         (let-values ([(c skipped?) (object-info o)])
-           (let loop ([c c][skipped? skipped?])
-             (cond
-               [(not c) (if skipped? (list opaque-v) null)]
-               [else (let-values ([(name num-fields field-ids field-ref
-                                         field-set next next-skipped?)
-                                   (class-info c)])
-                       (let ([rest (loop next next-skipped?)]
-                             [here (let loop ([n num-fields])
-                                     (if (zero? n)
-                                         null
-                                         (cons (field-ref o (sub1 n))
-                                               (loop (sub1 n)))))])
-                         (append (if skipped? (list opaque-v) null)
-                                 here
-                                 rest)))])))))))))
+(define (object->vector in-o [opaque-v '...])
+  (unless (object? in-o)
+    (raise-argument-error 'object->vector "object?" in-o))
+  (let ([o in-o])
+    (list->vector
+     (cons
+      (string->symbol (format "object:~a" (class-name (object-ref/unwrap o))))
+      (reverse
+       (let-values ([(c skipped?) (object-info o)])
+         (let loop ([c c][skipped? skipped?])
+           (cond
+             [(not c) (if skipped? (list opaque-v) null)]
+             [else (let-values ([(name num-fields field-ids field-ref
+                                       field-set next next-skipped?)
+                                 (class-info c)])
+                     (let ([rest (loop next next-skipped?)]
+                           [here (let loop ([n num-fields])
+                                   (if (zero? n)
+                                       null
+                                       (cons (field-ref o (sub1 n))
+                                             (loop (sub1 n)))))])
+                       (append (if skipped? (list opaque-v) null)
+                               here
+                               rest)))]))))))))
 
 (define (object=? o1 o2)
   (cond

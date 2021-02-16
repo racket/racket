@@ -13,22 +13,21 @@
          transplant-output-port
          transplant-to-relocate)
 
-(define open-output-nowhere
-  (lambda ([name 'nowhere] [specials-ok? #t])
-    (make-output-port
-     name
-     always-evt
-     (lambda (s start end non-block? breakable?) (- end start))
-     void
-     (and specials-ok?
-          (lambda (special non-block? breakable?) #t))
-     (lambda (s start end) (wrap-evt
-                            always-evt
-                            (lambda (x)
-                              (- end start))))
-     (and specials-ok?
-          (lambda (special)
-            (wrap-evt always-evt (lambda (x) #t)))))))
+(define (open-output-nowhere [name 'nowhere] [specials-ok? #t])
+  (make-output-port
+   name
+   always-evt
+   (lambda (s start end non-block? breakable?) (- end start))
+   void
+   (and specials-ok?
+        (lambda (special non-block? breakable?) #t))
+   (lambda (s start end) (wrap-evt
+                          always-evt
+                          (lambda (x)
+                            (- end start))))
+   (and specials-ok?
+        (lambda (special)
+          (wrap-evt always-evt (lambda (x) #t))))))
 
 (define (transplant-to-relocate transplant p line col pos close? name)
   (let-values ([(init-l init-c init-p) (port-next-location p)])
@@ -45,70 +44,68 @@
      close?
      #:name name)))
 
-(define relocate-output-port
-  (lambda (p line col pos [close? #t] #:name [name (object-name p)])
-    (transplant-to-relocate
-     transplant-output-port
-     p line col pos close? name)))
+(define (relocate-output-port p line col pos [close? #t] #:name [name (object-name p)])
+  (transplant-to-relocate
+   transplant-output-port
+   p line col pos close? name))
 
-(define transplant-output-port
-  (lambda (p location-proc pos [close? #t] [count-lines!-proc void] #:name [name (object-name p)])
-    (make-output-port
-     name
-     p
-     p ; `write' just redirects to `p'
-     ;; Here's the slow way to redirect:
-     #;
-     (lambda (s start end nonblock? breakable?)
-       (if (= start end)
-           (parameterize-break
-            breakable?
-            (flush-output p)
-            0)
-           (let ([v (if nonblock?
-                        (write-bytes-avail* s p start end)
-                        (if breakable?
-                            (parameterize-break
-                             #t
-                             (write-bytes s p start end))
-                            (write-bytes s p start end)))])
-             (if (and (zero? v) (not (= start end)))
-                 (wrap-evt p (lambda (x) #f))
-                 v))))
-     (lambda ()
-       (when close?
-         (close-output-port p)))
-     (and (port-writes-special? p)
-          p ; `write-special' just redirects to `p'
-          ;; Here's the slow way to redirect:
-          #;
-          (lambda (special nonblock? breakable?)
-            ((if nonblock?
-                 write-special-avail*
-                 (if breakable?
-                     (lambda (spec p)
-                       (parameterize-break #t
-                         (write-special spec p)))
-                     write-special))
-             special p)))
-     (and (port-writes-atomic? p)
-          (lambda (s start end)
-            (write-bytes-avail-evt s p start end)))
-     (and (port-writes-atomic? p)
-          (port-writes-special? p)
-          (lambda (spec)
-            (write-special-evt spec p)))
-     location-proc
-     count-lines!-proc
-     (let ([delta (- pos (or (file-position* p) pos))])
-       (if (= delta 1)
-           p
-           (lambda ()
-             (define v (file-position* p))
-             (and v (max 1 (+ delta v))))))
-     (case-lambda
-      [(mode) (file-stream-buffer-mode p mode)]
-      [() (file-stream-buffer-mode p)]))))
+(define (transplant-output-port p location-proc pos [close? #t] [count-lines!-proc void] #:name [name (object-name p)])
+  (make-output-port
+   name
+   p
+   p ; `write' just redirects to `p'
+   ;; Here's the slow way to redirect:
+   #;
+   (lambda (s start end nonblock? breakable?)
+     (if (= start end)
+         (parameterize-break
+             breakable?
+           (flush-output p)
+           0)
+         (let ([v (if nonblock?
+                      (write-bytes-avail* s p start end)
+                      (if breakable?
+                          (parameterize-break
+                              #t
+                            (write-bytes s p start end))
+                          (write-bytes s p start end)))])
+           (if (and (zero? v) (not (= start end)))
+               (wrap-evt p (lambda (x) #f))
+               v))))
+   (lambda ()
+     (when close?
+       (close-output-port p)))
+   (and (port-writes-special? p)
+        p ; `write-special' just redirects to `p'
+        ;; Here's the slow way to redirect:
+        #;
+        (lambda (special nonblock? breakable?)
+          ((if nonblock?
+               write-special-avail*
+               (if breakable?
+                   (lambda (spec p)
+                     (parameterize-break #t
+                       (write-special spec p)))
+                   write-special))
+           special p)))
+   (and (port-writes-atomic? p)
+        (lambda (s start end)
+          (write-bytes-avail-evt s p start end)))
+   (and (port-writes-atomic? p)
+        (port-writes-special? p)
+        (lambda (spec)
+          (write-special-evt spec p)))
+   location-proc
+   count-lines!-proc
+   (let ([delta (- pos (or (file-position* p) pos))])
+     (if (= delta 1)
+         p
+         (lambda ()
+           (define v (file-position* p))
+           (and v (max 1 (+ delta v))))))
+   (case-lambda
+     [(mode) (file-stream-buffer-mode p mode)]
+     [() (file-stream-buffer-mode p)])))
 
 (define (copy-port src dest . dests*)
   (unless (input-port? src)

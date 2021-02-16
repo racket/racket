@@ -719,16 +719,15 @@
 
 (define-struct base-struct/dc (subcontracts constructor pred struct-name here name-info struct/c?))
 
-(define (struct/dc-exercise stct)
-  (λ (fuel)
-    (define env (contract-random-generate-get-current-environment))
-    (values
-     (λ (val) 
-       ;; need to extract the fields and do it in 
-       ;; the right order to figure out the contracts
-       ;; and then throw them into the environment
-       (void))
-     (map indep-ctc (filter indep? (base-struct/dc-subcontracts stct))))))
+(define ((struct/dc-exercise stct) fuel)
+  (define env (contract-random-generate-get-current-environment))
+  (values
+   (λ (val) 
+     ;; need to extract the fields and do it in 
+     ;; the right order to figure out the contracts
+     ;; and then throw them into the environment
+     (void))
+   (map indep-ctc (filter indep? (base-struct/dc-subcontracts stct)))))
 
 (define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract

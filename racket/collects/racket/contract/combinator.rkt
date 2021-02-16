@@ -177,56 +177,48 @@
        #:list-contract? is-list-contract?))
     build-chaperone-contract-property))
 
-(define (add-prop-collapsible-late-neg-chaperone-check get-collapsible-late-neg)
-  (λ (c)
-    (add-collapsible-late-neg-chaperone-check (get-collapsible-late-neg c))))
+(define ((add-prop-collapsible-late-neg-chaperone-check get-collapsible-late-neg) c)
+  (add-collapsible-late-neg-chaperone-check (get-collapsible-late-neg c)))
 
-(define (add-collapsible-late-neg-chaperone-check accepts-blame)
-  (λ (b)
-    (define-values (accepts-val-and-np collapsible-ctc) (accepts-blame b))
-    (values
-     (λ (x neg-party)
-       (check-and-signal x
-                         (accepts-val-and-np x neg-party)
-                         'make-chaperone-contract::collapsible-late-neg-projection))
-     collapsible-ctc)))
+(define ((add-collapsible-late-neg-chaperone-check accepts-blame) b)
+  (define-values (accepts-val-and-np collapsible-ctc) (accepts-blame b))
+  (values
+   (λ (x neg-party)
+     (check-and-signal x
+                       (accepts-val-and-np x neg-party)
+                       'make-chaperone-contract::collapsible-late-neg-projection))
+   collapsible-ctc))
 
-(define (add-prop-late-neg-chaperone-check get-late-neg)
-  (λ (c)
-    (add-late-neg-chaperone-check (get-late-neg c))))
+(define ((add-prop-late-neg-chaperone-check get-late-neg) c)
+  (add-late-neg-chaperone-check (get-late-neg c)))
 
-(define (add-late-neg-chaperone-check accepts-blame)
-  (λ (b)
-    (define accepts-val-and-np (accepts-blame b))
-    (λ (x neg-party)
+(define ((add-late-neg-chaperone-check accepts-blame) b)
+  (define accepts-val-and-np (accepts-blame b))
+  (λ (x neg-party)
+    (check-and-signal x
+                      (accepts-val-and-np x neg-party)
+                      'make-chaperone-contract::late-neg-projection)))
+
+(define ((add-prop-val-first-chaperone-check get) c)
+  (add-val-first-chaperone-check (get c)))
+
+(define ((add-val-first-chaperone-check vfp) b)
+  (define x-acceptor (vfp b))
+  (λ (x)
+    (define neg-acceptor (x-acceptor x))
+    (λ (neg-party)
       (check-and-signal x
-                        (accepts-val-and-np x neg-party)
+                        (neg-acceptor neg-party)
                         'make-chaperone-contract::late-neg-projection))))
 
-(define (add-prop-val-first-chaperone-check get)
-  (λ (c)
-    (add-val-first-chaperone-check (get c))))
+(define ((add-prop-chaperone-check get) c)
+  (add-projection-chaperone-check (get c)))
 
-(define (add-val-first-chaperone-check vfp)
-  (λ (b)
-    (define x-acceptor (vfp b))
-    (λ (x)
-      (define neg-acceptor (x-acceptor x))
-      (λ (neg-party)
-        (check-and-signal x
-                          (neg-acceptor neg-party)
-                          'make-chaperone-contract::late-neg-projection)))))
-
-(define (add-prop-chaperone-check get)
-  (λ (c)
-    (add-projection-chaperone-check (get c))))
-
-(define (add-projection-chaperone-check proj)
-  (λ (b)
-    (define x-acceptor (proj b))
-    (λ (x)
-      (check-and-signal x (x-acceptor x)
-                        'make-chaperone-contract::projection))))
+(define ((add-projection-chaperone-check proj) b)
+  (define x-acceptor (proj b))
+  (λ (x)
+    (check-and-signal x (x-acceptor x)
+                      'make-chaperone-contract::projection)))
            
 
 (define (check-and-signal val chapd-val who)

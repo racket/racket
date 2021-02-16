@@ -321,15 +321,14 @@
 (define (generics-contract-first-order ctc)
   (generics-contract-predicate ctc))
 
-(define (generics-late-neg-contract-projection mode)
-  (lambda (c)
-    (define mk-late-neg-projs (map contract-late-neg-projection (generics-contract-contracts c)))
-    (lambda (blame)
-      (define late-neg-projs
-        (for/list ([m (in-list (generics-contract-methods c))]
-                   [mk-late-neg-proj (in-list mk-late-neg-projs)])
-          (mk-late-neg-proj (blame-add-method-context blame m))))
-      (apply (generics-contract-redirect c) mode late-neg-projs))))
+(define ((generics-late-neg-contract-projection mode) c)
+  (define mk-late-neg-projs (map contract-late-neg-projection (generics-contract-contracts c)))
+  (lambda (blame)
+    (define late-neg-projs
+      (for/list ([m (in-list (generics-contract-methods c))]
+                 [mk-late-neg-proj (in-list mk-late-neg-projs)])
+        (mk-late-neg-proj (blame-add-method-context blame m))))
+    (apply (generics-contract-redirect c) mode late-neg-projs)))
 
 (struct chaperone-generics-contract generics-contract []
   #:property prop:chaperone-contract

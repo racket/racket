@@ -202,11 +202,8 @@
 
 (define-control-macros shift0 shift0-at call-with-shift0)
 
-(define call-with-prompt0
-  (case-lambda
-   [(thunk) (call-with-prompt0 thunk (default-continuation-prompt-tag))]
-   [(thunk tag)
-    (call-with-continuation-prompt thunk tag (lambda (thunk) (thunk)))]))
+(define (call-with-prompt0 thunk [tag (default-continuation-prompt-tag)])
+  (call-with-continuation-prompt thunk tag (lambda (thunk) (thunk))))
 
 (define-prompt-macros prompt0 prompt0-at call-with-prompt0)
 

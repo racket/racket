@@ -1331,7 +1331,7 @@
                                               val args))))
       (define original-obj (if (has-original-object? val) (original-object val) val))
       (define new-cls (p (object-ref val) neg-party))
-      (define p-closed-over-neg-party (λ (v) (p v neg-party)))
+      (define (p-closed-over-neg-party v) (p v neg-party))
       (cond
         [(impersonator-prop:has-wrapped-class-neg-party? new-cls)
          (define the-info (impersonator-prop:get-wrapped-class-info new-cls))
@@ -1549,13 +1549,12 @@
           (fail "no public field ~a" m)))))
   #t)
 
-(define (object/c-first-order ctc)
-  (λ (obj)
-    (let/ec ret
-      (check-object-contract obj
-                             (base-object/c-methods ctc)
-                             (base-object/c-fields ctc)
-                             (λ args (ret #f))))))
+(define ((object/c-first-order ctc) obj)
+  (let/ec ret
+    (check-object-contract obj
+                           (base-object/c-methods ctc)
+                           (base-object/c-fields ctc)
+                           (λ args (ret #f)))))
 
 (define (object/c-stronger this that)
   (cond

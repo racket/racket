@@ -311,18 +311,17 @@
    proc))
 
 ;; unzip : [(or/c path-string? input-port) (bytes boolean input-port -> any)] -> any
-(define unzip
-  (lambda (in [read-entry (make-filesystem-entry-reader)]
-              #:preserve-timestamps? [preserve-timestamps? #f]
-              #:utc-timestamps? [utc? #f])
-    (call-with-input
-     in
-     (lambda (in)
-       (when (= (peek-integer 4 #f in #f) *local-file-header*)
-         (unzip-one-entry in read-entry preserve-timestamps? utc?)
-         (unzip in read-entry
-                #:preserve-timestamps? preserve-timestamps?
-                #:utc-timestamps? utc?))))))
+(define (unzip in [read-entry (make-filesystem-entry-reader)]
+               #:preserve-timestamps? [preserve-timestamps? #f]
+               #:utc-timestamps? [utc? #f])
+  (call-with-input
+   in
+   (lambda (in)
+     (when (= (peek-integer 4 #f in #f) *local-file-header*)
+       (unzip-one-entry in read-entry preserve-timestamps? utc?)
+       (unzip in read-entry
+              #:preserve-timestamps? preserve-timestamps?
+              #:utc-timestamps? utc?)))))
 
 (define (input-size in)
   (file-position in eof)
@@ -340,19 +339,18 @@
                               (input-size in))))))
 
 ;; unzip-entry : (union string path) zip-directory bytes [(bytes boolean input-port -> a)] -> a
-(define unzip-entry
-  (lambda (in dir entry-name [read-entry (make-filesystem-entry-reader)]
-              #:preserve-timestamps? [preserve-timestamps? #f]
-              #:utc-timestamps? [utc? #f])
-    (cond
-     [(zip-directory-lookup entry-name dir)
-      => (lambda (entry)
-           (call-with-input
-            in
-            (lambda (in)
-              (file-position in (zip-entry-offset entry))
-              (unzip-one-entry in read-entry preserve-timestamps? utc?))))]
-     [else (raise-entry-not-found entry-name)])))
+(define (unzip-entry in dir entry-name [read-entry (make-filesystem-entry-reader)]
+                     #:preserve-timestamps? [preserve-timestamps? #f]
+                     #:utc-timestamps? [utc? #f])
+  (cond
+    [(zip-directory-lookup entry-name dir)
+     => (lambda (entry)
+          (call-with-input
+           in
+           (lambda (in)
+             (file-position in (zip-entry-offset entry))
+             (unzip-one-entry in read-entry preserve-timestamps? utc?))))]
+    [else (raise-entry-not-found entry-name)]))
 
 ;; ===========================================================================
 ;; ENTRY PARSERS

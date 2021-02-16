@@ -939,13 +939,10 @@
   (define (gunzip-through-ports in out)
     (do-gunzip in out void))
   
-  (define gunzip
-    (case-lambda
-     [(src) (gunzip src (lambda (name from-file?) name))]
-     [(src name-filter)
-      (let ([in (open-input-file src #:mode 'binary)])
-	(dynamic-wind
-	 void
-	 (lambda () (do-gunzip in #f name-filter))
-	 (lambda () (close-input-port in))))]))
+  (define (gunzip src [name-filter (lambda (name from-file?) name)])
+    (let ([in (open-input-file src #:mode 'binary)])
+      (dynamic-wind
+       void
+       (lambda () (do-gunzip in #f name-filter))
+       (lambda () (close-input-port in)))))
 

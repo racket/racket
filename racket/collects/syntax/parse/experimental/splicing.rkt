@@ -76,20 +76,19 @@
             (for/list ([index (in-vector indexes)])
               (list-ref result index)))))))
 
-(define (mk-check-result pr name attr-count permute x cx undos fh)
-  (lambda (result)
-    (unless (list? result)
-      (error name "parser returned non-list"))
-    (let ([rlength (length result)])
-      (unless (= rlength (+ 1 attr-count))
-        (error name "parser returned list of wrong length; expected length ~s, got ~e"
-               (+ 1 attr-count)
-               result))
-      (let ([skip (car result)])
-        ;; Compute rest-x & rest-cx from skip
-        (unless (exact-nonnegative-integer? skip)
-          (error name "expected exact nonnegative integer for first element of result list, got ~e"
-                 skip))
-        (let-values ([(rest-x rest-cx) (stx-list-drop/cx x cx skip)])
-          (list* fh undos rest-x rest-cx (ps-add-cdr pr skip)
-                 (permute (cdr result))))))))
+(define ((mk-check-result pr name attr-count permute x cx undos fh) result)
+  (unless (list? result)
+    (error name "parser returned non-list"))
+  (let ([rlength (length result)])
+    (unless (= rlength (+ 1 attr-count))
+      (error name "parser returned list of wrong length; expected length ~s, got ~e"
+             (+ 1 attr-count)
+             result))
+    (let ([skip (car result)])
+      ;; Compute rest-x & rest-cx from skip
+      (unless (exact-nonnegative-integer? skip)
+        (error name "expected exact nonnegative integer for first element of result list, got ~e"
+               skip))
+      (let-values ([(rest-x rest-cx) (stx-list-drop/cx x cx skip)])
+        (list* fh undos rest-x rest-cx (ps-add-cdr pr skip)
+               (permute (cdr result)))))))

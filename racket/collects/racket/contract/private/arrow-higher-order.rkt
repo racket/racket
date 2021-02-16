@@ -680,11 +680,10 @@
             (successfully-got-the-right-kind-of-function val neg-party)]))
        (cond
          [okay-to-do-only-arity-check?
-          (define lnp
-            (λ (val neg-party)
-              (cond
-                [(arrow:procedure-arity-exactly/no-kwds val min-arity) val]
-                [else (arrow-higher-order:lnp val neg-party)])))
+          (define (lnp val neg-party)
+            (cond
+              [(arrow:procedure-arity-exactly/no-kwds val min-arity) val]
+              [else (arrow-higher-order:lnp val neg-party)]))
           (values lnp (or c-c-mergable (build-collapsible-leaf lnp ctc orig-blame)))]
          [else
           (values

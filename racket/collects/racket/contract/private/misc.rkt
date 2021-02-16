@@ -526,11 +526,10 @@
          (define blame+neg-party (cons blame/c neg-party))
          (cond
            [(parameter? val)
-            (define (add-profiling f)
-              (λ (x)
-                (with-contract-continuation-mark
-                 blame+neg-party
-                 (f x neg-party))))
+            (define ((add-profiling f) x)
+              (with-contract-continuation-mark
+                  blame+neg-party
+                (f x neg-party)))
             ;; TODO this ought to have the `contracted` property, but it's not a chaperone...
             (make-derived-parameter
              val
@@ -596,8 +595,8 @@
 
 (define (get-any? c) any?)
 (define (any? x) #t)
-(define any/c-blame->neg-party-fn (λ (blame) any/c-neg-party-fn))
-(define any/c-neg-party-fn (λ (val neg-party) val))
+(define (any/c-blame->neg-party-fn blame) any/c-neg-party-fn)
+(define (any/c-neg-party-fn val neg-party) val)
 
 (define (random-any/c env fuel)
   (define env-hash (contract-random-generate-env-hash env))
@@ -732,14 +731,13 @@
     (define ho-pos-projs (for/list ([proj (in-list ho-projs)]) (proj blame)))
     (define cc-neg-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped)))
     (define cc-pos-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame)))
-    (define (make-proj projs neg-party blame+neg-party)
-      (λ vs
-        (with-contract-continuation-mark
-         blame+neg-party
-         (apply values
-                (for/list ([proj (in-list projs)]
-                           [v (in-list vs)])
-                  (proj v neg-party))))))
+    (define ((make-proj projs neg-party blame+neg-party) . vs)
+      (with-contract-continuation-mark
+          blame+neg-party
+        (apply values
+               (for/list ([proj (in-list projs)]
+                          [v (in-list vs)])
+                 (proj v neg-party)))))
     (λ (val neg-party)
       (define blame+neg-party (cons blame neg-party))
       ;; now do the actual wrapping
@@ -750,12 +748,11 @@
          (define proj2 (make-proj ho-neg-projs neg-party blame+neg-party))
          ;; call/cc projections
          (define call/cc-guard (make-proj cc-pos-projs neg-party blame+neg-party))
-         (define call/cc-proxy
-           (λ (f)
-             (proc-proxy
-              f
-              (λ args
-                (apply values (make-proj cc-neg-projs neg-party blame+neg-party) args)))))
+         (define (call/cc-proxy f)
+           (proc-proxy
+            f
+            (λ args
+              (apply values (make-proj cc-neg-projs neg-party blame+neg-party) args))))
          (proxy val
                 proj1 proj2
                 call/cc-guard call/cc-proxy

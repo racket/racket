@@ -126,27 +126,26 @@
 ;; including during `success-handler`, then call `failure-handler` with
 ;; the exception after logging it. Note that breaks are disabled when
 ;; calling the failure handler, so it should return quickly.
-(define call-with-cache-db/catch-exn-until-success-finishes
-  (lambda (cache-dir log-error-string lock-mode 
-                     success-handler
-                     failure-handler)
-    (define cache-db-file (build-path cache-dir "cache.rktd"))
-    (define (succeed db)
-      (success-handler db cache-db-file))
-    (with-handlers ([exn:fail?
-                     (lambda (exn)
-                       (log-error-string (format "cache attempt failed: ~a"
-                                                 (exn-message exn)))
-                       (failure-handler exn))])
-      (make-directory* cache-dir)
-      (call-with-file-lock/timeout
-       cache-db-file
-       lock-mode
-       (lambda ()
-         (succeed (read-db cache-db-file log-error-string)))
-       (lambda ()
-         ;; raise exception to be caught above:
-         (error (format "could not acquire ~s lock" lock-mode)))))))
+(define (call-with-cache-db/catch-exn-until-success-finishes cache-dir log-error-string lock-mode 
+                                                             success-handler
+                                                             failure-handler)
+  (define cache-db-file (build-path cache-dir "cache.rktd"))
+  (define (succeed db)
+    (success-handler db cache-db-file))
+  (with-handlers ([exn:fail?
+                   (lambda (exn)
+                     (log-error-string (format "cache attempt failed: ~a"
+                                               (exn-message exn)))
+                     (failure-handler exn))])
+    (make-directory* cache-dir)
+    (call-with-file-lock/timeout
+     cache-db-file
+     lock-mode
+     (lambda ()
+       (succeed (read-db cache-db-file log-error-string)))
+     (lambda ()
+       ;; raise exception to be caught above:
+       (error (format "could not acquire ~s lock" lock-mode))))))
 
 ;; Called with read lock, and handles failure by returning
 ;; an empty db:

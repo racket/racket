@@ -31,11 +31,10 @@
 (define-place-local monitor-owner #f)
 
 ;; An exception may be constructed while we're entered:
-(define entered-err-string-handler
-  (lambda (s n)
-    (call-as-nonatomic
-     (lambda ()
-       ((error-value->string-handler) s n)))))
+(define (entered-err-string-handler s n)
+  (call-as-nonatomic
+   (lambda ()
+     ((error-value->string-handler) s n))))
 
 (define-place-local old-paramz #f)
 (define-place-local old-break-paramz #f)

@@ -171,13 +171,12 @@
      (unless (set? x)
        (raise-blame-error b #:missing-party neg-party x "expected an immutable set"))]))
 
-(define (set-contract-late-neg-projection chaperone-ctc?)
-  (lambda (ctc)
-    (cond
-      [(allows-generic-sets? ctc)
-       (generic-set-late-neg-projection ctc chaperone-ctc?)]
-      [else
-       (hash-set-late-neg-projection ctc chaperone-ctc?)])))
+(define ((set-contract-late-neg-projection chaperone-ctc?) ctc)
+  (cond
+    [(allows-generic-sets? ctc)
+     (generic-set-late-neg-projection ctc chaperone-ctc?)]
+    [else
+     (hash-set-late-neg-projection ctc chaperone-ctc?)]))
 
 (define (allows-generic-sets? ctc)
   (and (equal? 'dont-care (set-contract-kind ctc))

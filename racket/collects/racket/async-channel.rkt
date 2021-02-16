@@ -16,60 +16,59 @@
 
 ;; Make ----------------------------------------
 
-(define make-async-channel
-  (lambda ([limit #f])
-    (let* ([enqueue-ch (make-channel)]   ; for puts
-           [dequeue-ch (make-channel)]   ; for gets
-           [empty-ch (make-channel)]     ; for get polls
-           [full-ch (make-channel)]      ; for put polls
-           [queue-first (mcons #f null)] ; queue head
-           [queue-last queue-first]      ; queue tail
-           [size 0]                      ; queue size
-           ;; Events:
-           [tell-empty 
-            (channel-put-evt empty-ch (make-semaphore))] ; see poll->ch
-           [tell-full 
-            (channel-put-evt full-ch (make-semaphore))]  ; see poll->ch
-           [enqueue (handle-evt
-                     enqueue-ch
-                     (lambda (v)
-                       ;; We received a put; enqueue it:
-                       (let ([p (mcons #f null)])
-                         (set-mcar! queue-last v)
-                         (set-mcdr! queue-last p)
-                         (set! queue-last p)
-                         (set! size (add1 size)))))]
-           [mk-dequeue
-            (lambda ()
-              (handle-evt
-               (channel-put-evt dequeue-ch (mcar queue-first))
-               (lambda (ignored)
-                 ;; A get succeeded; dequeue it:
-                 (set! size (sub1 size))
-                 (set! queue-first (mcdr queue-first)))))]
-           [manager-thread
-            ;; This thread is the part that makes the channel asynchronous.
-            ;; It waits for a combination of gets and puts as appropriate.
-            ;; Note that we start it with `thread/suspend-kill', and we
-            ;; resume the manager thread with the current thread every time
-            ;; we want to talk to the manager thread, which effectively
-            ;; means that the manager thread is not bound by a custodian
-            ;; that is weaker than any of its user's custodians (and thus,
-            ;; from the user's perspective, is not bound by any custodian
-            ;; at all).
-            (thread/suspend-to-kill
-             (lambda ()
-               (let loop ()
-                 (cond
-                  [(zero? size)
-                   ;; The queue is currently empty:
-                   (sync enqueue tell-empty)]
-                  [(or (not limit) (size . < . limit))
-                   (sync enqueue (mk-dequeue))]
-                  [else
-                   (sync (mk-dequeue) tell-full)])
-                 (loop))))])
-      (make-ac enqueue-ch dequeue-ch empty-ch full-ch manager-thread))))
+(define (make-async-channel [limit #f])
+  (let* ([enqueue-ch (make-channel)]   ; for puts
+         [dequeue-ch (make-channel)]   ; for gets
+         [empty-ch (make-channel)]     ; for get polls
+         [full-ch (make-channel)]      ; for put polls
+         [queue-first (mcons #f null)] ; queue head
+         [queue-last queue-first]      ; queue tail
+         [size 0]                      ; queue size
+         ;; Events:
+         [tell-empty 
+          (channel-put-evt empty-ch (make-semaphore))] ; see poll->ch
+         [tell-full 
+          (channel-put-evt full-ch (make-semaphore))]  ; see poll->ch
+         [enqueue (handle-evt
+                   enqueue-ch
+                   (lambda (v)
+                     ;; We received a put; enqueue it:
+                     (let ([p (mcons #f null)])
+                       (set-mcar! queue-last v)
+                       (set-mcdr! queue-last p)
+                       (set! queue-last p)
+                       (set! size (add1 size)))))]
+         [mk-dequeue
+          (lambda ()
+            (handle-evt
+             (channel-put-evt dequeue-ch (mcar queue-first))
+             (lambda (ignored)
+               ;; A get succeeded; dequeue it:
+               (set! size (sub1 size))
+               (set! queue-first (mcdr queue-first)))))]
+         [manager-thread
+          ;; This thread is the part that makes the channel asynchronous.
+          ;; It waits for a combination of gets and puts as appropriate.
+          ;; Note that we start it with `thread/suspend-kill', and we
+          ;; resume the manager thread with the current thread every time
+          ;; we want to talk to the manager thread, which effectively
+          ;; means that the manager thread is not bound by a custodian
+          ;; that is weaker than any of its user's custodians (and thus,
+          ;; from the user's perspective, is not bound by any custodian
+          ;; at all).
+          (thread/suspend-to-kill
+           (lambda ()
+             (let loop ()
+               (cond
+                 [(zero? size)
+                  ;; The queue is currently empty:
+                  (sync enqueue tell-empty)]
+                 [(or (not limit) (size . < . limit))
+                  (sync enqueue (mk-dequeue))]
+                 [else
+                  (sync (mk-dequeue) tell-full)])
+               (loop))))])
+    (make-ac enqueue-ch dequeue-ch empty-ch full-ch manager-thread)))
 
 ;; Get ----------------------------------------
 

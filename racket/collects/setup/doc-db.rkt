@@ -210,14 +210,12 @@
      (query-exec db "DELETE FROM searches WHERE pathid=$1"
                  pathid))))
 
-(define (maybe-attach attach-db-path)
-  (lambda (db)
-    (when attach-db-path
-      (attach-db db attach-db-path))))
-(define (maybe-detach attach-db-path)
-  (lambda (db)
-    (when attach-db-path
-      (detach-db db attach-db-path))))
+(define ((maybe-attach attach-db-path) db)
+  (when attach-db-path
+    (attach-db db attach-db-path)))
+(define ((maybe-detach attach-db-path) db)
+  (when attach-db-path
+    (detach-db db attach-db-path)))
 
 (define (doc-db-check-duplicates db-file
                                  #:attach [attach-db-path #f]

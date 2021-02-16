@@ -294,7 +294,7 @@
   (match-define (http-conn _ _ _ t:to t:from _
                            auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) hc)
   (cond [(not ssl?) ; it's just a tunnel... no ssl
-         (define abandon-p (lambda (p) ((http-conn-abandon-p hc) p)))
+         (define (abandon-p p) ((http-conn-abandon-p hc) p))
          (values ssl? t:from t:to abandon-p)]
 
         [else ; ssl

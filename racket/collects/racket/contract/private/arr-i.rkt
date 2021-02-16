@@ -105,12 +105,11 @@
                  (->i-rng-dep-ctcs ctc)
                  partial-indy-rngs)))
 
-(define arr->i-late-neg-proj
-  (λ (ctc c-or-i-procedure)
-    (define func (->i-mk-wrapper ctc))
-    (λ (blame)
-      (define ???-args (build-??-args c-or-i-procedure ctc blame))
-      (apply func ???-args))))
+(define (arr->i-late-neg-proj ctc c-or-i-procedure)
+  (define func (->i-mk-wrapper ctc))
+  (λ (blame)
+    (define ???-args (build-??-args c-or-i-procedure ctc blame))
+    (apply func ???-args)))
 
 
 (define (exercise->i ctc)

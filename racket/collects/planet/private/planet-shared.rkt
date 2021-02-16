@@ -497,27 +497,26 @@ Various common pieces of code that both the client and server need to access
   ; makes a new input port that reads the first n characters from the given port, then
   ; returns eof. If n characters are not available from the given input port, calls
   ; the given function and then returns eof
-  (define make-cutoff-port
-    (lambda (ip n [underflow-fn void])
-      (let ((to-read n))
-        (make-input-port 
-         'cutoff-port
+  (define (make-cutoff-port ip n [underflow-fn void])
+  (let ((to-read n))
+    (make-input-port 
+     'cutoff-port
          
-         (lambda (bytestr)
-           (cond
-             [(= to-read 0) eof]
-             [else
-              (let ((bytes-read (read-bytes-avail! bytestr ip 0 (min n (bytes-length bytestr)))))
-                (if (eof-object? bytes-read)
-                    (begin
-                      (underflow-fn (- to-read bytes-read))
-                      (set! to-read 0)
-                      eof)
-                    (begin
-                      (set! to-read (- to-read bytes-read))
-                      bytes-read)))]))
-         #f
-         void))))
+     (lambda (bytestr)
+       (cond
+         [(= to-read 0) eof]
+         [else
+          (let ((bytes-read (read-bytes-avail! bytestr ip 0 (min n (bytes-length bytestr)))))
+            (if (eof-object? bytes-read)
+                (begin
+                  (underflow-fn (- to-read bytes-read))
+                  (set! to-read 0)
+                  eof)
+                (begin
+                  (set! to-read (- to-read bytes-read))
+                  bytes-read)))]))
+     #f
+     void)))
   
   ; write-line : X output-port -> void
   ; writes the given value followed by a newline to the given port
@@ -590,14 +589,11 @@ Various common pieces of code that both the client and server need to access
   
   ;; note: this can be done faster by reading a copy-port'ed port with
   ;; ( and ) tacked around it
-  (define read-all
-    (case-lambda
-      [() (read-all (current-input-port))]
-      [(ip)
-       (let ((sexpr (read ip)))
-         (cond
-           [(eof-object? sexpr) '()]
-           [else (cons sexpr (read-all ip))]))]))
+  (define (read-all [ip (current-input-port)])
+    (let ((sexpr (read ip)))
+      (cond
+        [(eof-object? sexpr) '()]
+        [else (cons sexpr (read-all ip))])))
   
   (define (wrap x) (begin (write x) (newline) x))
   

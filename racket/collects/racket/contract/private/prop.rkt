@@ -427,15 +427,13 @@
          ((vp val) #f)))]))
 
 (begin-encourage-inline
-  (define (first-order-projection name first-order)
-    (λ (b)
-      (λ (x)
-        (if (first-order x)
-            x
-            (raise-blame-error b x
-                               '(expected: "~s" given: "~e")
-                               name 
-                               x))))))
+  (define (((first-order-projection name first-order) b) x)
+    (if (first-order x)
+        x
+        (raise-blame-error b x
+                           '(expected: "~s" given: "~e")
+                           name 
+                           x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -562,17 +560,15 @@
       generate exercise
       (and list-contract? #t)))
 
-(define (late-neg-first-order-projection name p?)
-  (λ (b)
-    (λ (v neg-party)
-      (if (p? v)
-          v
-          (raise-blame-error
-           b #:missing-party neg-party
-           v
-           '(expected: "~s" given: "~e")
-           name
-           v)))))
+(define (((late-neg-first-order-projection name p?) b) v neg-party)
+  (if (p? v)
+      v
+      (raise-blame-error
+       b #:missing-party neg-party
+       v
+       '(expected: "~s" given: "~e")
+       name
+       v)))
 
 (define make-contract
   (procedure-rename 

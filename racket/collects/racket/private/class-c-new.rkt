@@ -78,96 +78,94 @@
             augments augment-ctcs
             augrides augride-ctcs)))))))
 
-(define (class/c2-proj this)
-  (λ (blame)
-    (λ (cls)
-      (let/ec k
-        (define (maybe-err neg-accepter)
-          (if (blame-original? blame)
-              (neg-accepter #f)
-              (k neg-accepter)))
-        (cond
-          [(impersonator-prop:has-wrapped-class-neg-party? cls)
-           (define wrapper-neg-party (impersonator-prop:get-wrapped-class-neg-party cls))
-           (define the-info (impersonator-prop:get-wrapped-class-info cls))
-           (define neg-acceptors (wrapped-class-info-neg-acceptors-ht the-info))
-           (define mth->idx (class-method-ht cls))
-           (define new-mths (make-vector (vector-length (class-methods cls)) #f))
-           (for ([(mth neg-acceptor) (in-hash neg-acceptors)])
-             (define mth-idx (hash-ref mth->idx mth))
-             (vector-set! new-mths mth-idx (neg-acceptor wrapper-neg-party)))
-           (define fixed-neg-init-projs
-             (for/list ([proj-pair (wrapped-class-info-init-proj-pairs the-info)])
-               (cons (list-ref proj-pair 0)
-                     (for/list ([func (in-list (cdr proj-pair))])
-                       (λ (val) (λ (neg-party) 
-                                  ((func val) wrapper-neg-party)))))))
-           (build-neg-acceptor-proc this maybe-err blame 
-                                    cls
-                                    new-mths
-                                    fixed-neg-init-projs
-                                    (wrapped-class-info-pos-field-projs the-info)
-                                    (wrapped-class-info-neg-field-projs the-info))]
-          [(class-struct-predicate? cls)
-           (define mtd-vec (class-methods cls))
-           (cond
-             [(for/or ([x (in-vector mtd-vec)])
-                (pair? x))
-              ;; if we find what appears to be an interface contract
-              ;; in the given class, then we fall back to the old-style
-              ;; class/c contracts by making up a class/c record and 
-              ;; handing it off to old-style class/c projection.
-              (define mth-lst 
-                (for/list ([(mth ctc) 
-                            (in-hash (ext-class/c-contract-table-of-meths-to-ctcs this))])
-                  (cons mth 
-                        (if (just-check-existence? ctc) 
-                            any/c
-                            ctc))))
+(define (((class/c2-proj this) blame) cls)
+  (let/ec k
+    (define (maybe-err neg-accepter)
+      (if (blame-original? blame)
+          (neg-accepter #f)
+          (k neg-accepter)))
+    (cond
+      [(impersonator-prop:has-wrapped-class-neg-party? cls)
+       (define wrapper-neg-party (impersonator-prop:get-wrapped-class-neg-party cls))
+       (define the-info (impersonator-prop:get-wrapped-class-info cls))
+       (define neg-acceptors (wrapped-class-info-neg-acceptors-ht the-info))
+       (define mth->idx (class-method-ht cls))
+       (define new-mths (make-vector (vector-length (class-methods cls)) #f))
+       (for ([(mth neg-acceptor) (in-hash neg-acceptors)])
+         (define mth-idx (hash-ref mth->idx mth))
+         (vector-set! new-mths mth-idx (neg-acceptor wrapper-neg-party)))
+       (define fixed-neg-init-projs
+         (for/list ([proj-pair (wrapped-class-info-init-proj-pairs the-info)])
+           (cons (list-ref proj-pair 0)
+                 (for/list ([func (in-list (cdr proj-pair))])
+                   (λ (val) (λ (neg-party) 
+                              ((func val) wrapper-neg-party)))))))
+       (build-neg-acceptor-proc this maybe-err blame 
+                                cls
+                                new-mths
+                                fixed-neg-init-projs
+                                (wrapped-class-info-pos-field-projs the-info)
+                                (wrapped-class-info-neg-field-projs the-info))]
+      [(class-struct-predicate? cls)
+       (define mtd-vec (class-methods cls))
+       (cond
+         [(for/or ([x (in-vector mtd-vec)])
+            (pair? x))
+          ;; if we find what appears to be an interface contract
+          ;; in the given class, then we fall back to the old-style
+          ;; class/c contracts by making up a class/c record and 
+          ;; handing it off to old-style class/c projection.
+          (define mth-lst 
+            (for/list ([(mth ctc) 
+                        (in-hash (ext-class/c-contract-table-of-meths-to-ctcs this))])
+              (cons mth 
+                    (if (just-check-existence? ctc) 
+                        any/c
+                        ctc))))
               
-              (define fields 
-                (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs this))])
-                  fld))
-              (define field-ctcs
-                (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs this))])
-                  (if (just-check-existence? ctc)
-                      #f
-                      ctc)))
+          (define fields 
+            (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs this))])
+              fld))
+          (define field-ctcs
+            (for/list ([(fld ctc) (in-hash (ext-class/c-contract-table-of-flds-to-ctcs this))])
+              (if (just-check-existence? ctc)
+                  #f
+                  ctc)))
               
-              (define ctc
-                (make-class/c
-                 ;; methods
-                 (map car mth-lst)
-                 (map cdr mth-lst)
+          (define ctc
+            (make-class/c
+             ;; methods
+             (map car mth-lst)
+             (map cdr mth-lst)
                  
-                 fields field-ctcs
+             fields field-ctcs
                  
-                 ;; inits
-                 (map (λ (x) (list-ref x 0)) (ext-class/c-contract-init-ctc-pairs this))
-                 (map (λ (x) 
-                        (define ctc (list-ref x 1))
-                        (if (just-check-existence? ctc)
-                            any/c
-                            ctc))
-                      (ext-class/c-contract-init-ctc-pairs this))
+             ;; inits
+             (map (λ (x) (list-ref x 0)) (ext-class/c-contract-init-ctc-pairs this))
+             (map (λ (x) 
+                    (define ctc (list-ref x 1))
+                    (if (just-check-existence? ctc)
+                        any/c
+                        ctc))
+                  (ext-class/c-contract-init-ctc-pairs this))
                  
-                 (ext-class/c-contract-absent-methods this)
-                 (ext-class/c-contract-absent-fields this)
+             (ext-class/c-contract-absent-methods this)
+             (ext-class/c-contract-absent-fields this)
 
-                 (ext-class/c-contract-internal-ctc this)
-                 (ext-class/c-contract-opaque? this)
-                 (ext-class/c-contract-name this)))
-              (λ (neg-party)
-                (((class/c-late-neg-proj ctc) blame) cls neg-party))]
-             [else 
-              (build-neg-acceptor-proc this maybe-err blame cls #f '() 
-                                       (make-hasheq) (make-hasheq))])]
-          [else
-           (maybe-err
-            (λ (neg-party)
-              (raise-blame-error 
-               blame #:missing-party neg-party cls
-               '(expected: "a class"))))])))))
+             (ext-class/c-contract-internal-ctc this)
+             (ext-class/c-contract-opaque? this)
+             (ext-class/c-contract-name this)))
+          (λ (neg-party)
+            (((class/c-late-neg-proj ctc) blame) cls neg-party))]
+         [else 
+          (build-neg-acceptor-proc this maybe-err blame cls #f '() 
+                                   (make-hasheq) (make-hasheq))])]
+      [else
+       (maybe-err
+        (λ (neg-party)
+          (raise-blame-error 
+           blame #:missing-party neg-party cls
+           '(expected: "a class"))))])))
 
 (define (build-neg-acceptor-proc this maybe-err blame cls old-mths-vec old-init-pairs 
                                  old-pos-fld-ht old-neg-fld-ht)

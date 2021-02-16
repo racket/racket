@@ -1451,26 +1451,25 @@
 
 
 ;; The old interface:
-(define make-embedding-executable
-  (lambda (dest mred? verbose? 
-                modules 
-                literal-files literal-expression
-                cmdline
-                [aux null]
-                [launcher? #f]
-                [variant (cross-system-type 'gc)]
-                [collects-path #f])
-    (create-embedding-executable dest
-                                 #:mred? mred?
-                                 #:verbose? verbose?
-                                 #:modules modules
-                                 #:literal-files literal-files
-                                 #:literal-expression literal-expression
-                                 #:cmdline cmdline
-                                 #:aux aux
-                                 #:launcher? launcher?
-                                 #:variant variant
-                                 #:collects-path collects-path)))
+(define (make-embedding-executable dest mred? verbose? 
+                                   modules 
+                                   literal-files literal-expression
+                                   cmdline
+                                   [aux null]
+                                   [launcher? #f]
+                                   [variant (cross-system-type 'gc)]
+                                   [collects-path #f])
+  (create-embedding-executable dest
+                               #:mred? mred?
+                               #:verbose? verbose?
+                               #:modules modules
+                               #:literal-files literal-files
+                               #:literal-expression literal-expression
+                               #:cmdline cmdline
+                               #:aux aux
+                               #:launcher? launcher?
+                               #:variant variant
+                               #:collects-path collects-path))
 
 ;; Use `write-module-bundle', but figure out how to put it into an executable
 (define (create-embedding-executable dest

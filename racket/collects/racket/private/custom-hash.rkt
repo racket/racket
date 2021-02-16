@@ -196,12 +196,11 @@
     [(hash-weak? table) (weak-custom-hash (custom-hash-spec d) table)]
     [else (mutable-custom-hash (custom-hash-spec d) table)]))
 
-(define (key-failure who d key)
-  (lambda ()
-    (raise-arguments-error who
-                           "no value found for key"
-                           "key" key
-                           "all keys" (dict-keys d))))
+(define ((key-failure who d key))
+  (raise-arguments-error who
+                         "no value found for key"
+                         "key" key
+                         "all keys" (dict-keys d)))
 
 (struct custom-key [contents])
 

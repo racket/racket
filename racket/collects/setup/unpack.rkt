@@ -258,209 +258,208 @@
       (let ([v (info flag mk-default)]) (test v) v)
       (mk-default)))
 
-(define unpack
-  (lambda (archive 
-           [main-collects-parent-dir (current-directory)]
-           [print-status (lambda (x) (printf "~a\n" x))]
-           [get-target-directory (lambda () (current-directory))]
-           [force? #f]
-           [get-target-plt-directory
-            (lambda (preferred main-collects-parent-dir options)
-              preferred)])
-    (let*-values ([(p64gz) (open-input-file archive)]
-                  [(p kill) (port64gz->port p64gz)])
-      (dynamic-wind
-       void
-       (lambda ()
-         (unless (and (eq? #\P (read-char p))
-                      (eq? #\L (read-char p))
-                      (eq? #\T (read-char p)))
-           (error "not an unpackable distribution archive"))
-         (let* ([info (let ([v (read p)])
-                        (match v
-                          [`(lambda (request failure)
-                              (case request
-                                [(name) ,name]
-                                [(unpacker) 'mzscheme]
-                                [(requires) ',requires]
-                                [(conflicts) ',conflicts]
-                                [(plt-relative?) ,plt-relative?]
-                                [(plt-home-relative?) ,plt-home-relative?]
-                                . ,(or `([(test-plt-dirs) ,test-dirs] ; #f or `(quote ,dirs)
-                                         [else (failure)])
-                                       `([,(and 'else test-dirs) (failure)]))))
-                           (lambda (request failure)
-                             (case request
-                               [(name) name]
-                               [(unpacker) 'mzscheme]
-                               [(requires) requires]
-                               [(conflicts) conflicts]
-                               [(plt-relative?) plt-relative?]
-                               [(plt-home-relative?) plt-home-relative?]
-                               [(test-plt-dirs) (and test-dirs
-                                                     (not (eq? test-dirs 'else))
-                                                     (cadr test-dirs))]
-                               [else (failure)]))]
-                          [_
-                           (error "info-procedure S-expression did not have the expected shape: "
-                                  v)]))])
-           (unless (and (procedure? info)
-                        (procedure-arity-includes? info 2))
-             (error "expected a procedure of arity 2, got" info))
-           (let ([name (call-info info 'name (lambda () #f)
-                                  (lambda (n) 
-                                    (unless (string? n)
-                                      (if n
-                                          (error "couldn't find the package name")
-                                          (error "expected a string")))))]
-                 [unpacker (call-info info 'unpacker (lambda () #f)
-                                      (lambda (n) 
-                                        (unless (eq? n 'mzscheme)
-                                          (error "unpacker isn't mzscheme:" n))))]
-                 [target-dir-info
-                  (let ([rel? (call-info info 'plt-relative? (lambda () #f) values)]
-                        [not-user-rel? (call-info info 'plt-home-relative? (lambda () #f) values)]
-                        [test-dirs (call-info info 'test-plt-dirs (lambda () #f) values)])
-                    (if rel?
-                        ;; Shuffling...
-                        (if (and not-user-rel? 
-                                 ;; Check for void because old unpacker didn't use
-                                 ;;  the failure thunk.
-                                 (not (void? not-user-rel?))
-                                 ;; Non-user optional if test-dirs are writable
-                                 (or (not test-dirs)
-                                     (andmap
-                                      (lambda (p)
-                                        (and (string? p)
-                                             (let ([dir (let-values ([(base dir)
-                                                                      (shuffle-path main-collects-parent-dir
-                                                                                    (lambda (a b) (a))
-                                                                                    #t (list p))])
-                                                          (build-path base dir))])
-                                               (memq 'write
-                                                     (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
-                                                       (file-or-directory-permissions dir))))))
-                                      test-dirs)))
-                            ;; Shuffle to main directory always:
-                            (let ([dir (get-target-plt-directory main-collects-parent-dir
-                                                                 main-collects-parent-dir
-                                                                 (list main-collects-parent-dir))])
+(define (unpack archive 
+                [main-collects-parent-dir (current-directory)]
+                [print-status (lambda (x) (printf "~a\n" x))]
+                [get-target-directory (lambda () (current-directory))]
+                [force? #f]
+                [get-target-plt-directory
+                 (lambda (preferred main-collects-parent-dir options)
+                   preferred)])
+  (let*-values ([(p64gz) (open-input-file archive)]
+                [(p kill) (port64gz->port p64gz)])
+    (dynamic-wind
+     void
+     (lambda ()
+       (unless (and (eq? #\P (read-char p))
+                    (eq? #\L (read-char p))
+                    (eq? #\T (read-char p)))
+         (error "not an unpackable distribution archive"))
+       (let* ([info (let ([v (read p)])
+                      (match v
+                        [`(lambda (request failure)
+                            (case request
+                              [(name) ,name]
+                              [(unpacker) 'mzscheme]
+                              [(requires) ',requires]
+                              [(conflicts) ',conflicts]
+                              [(plt-relative?) ,plt-relative?]
+                              [(plt-home-relative?) ,plt-home-relative?]
+                              . ,(or `([(test-plt-dirs) ,test-dirs] ; #f or `(quote ,dirs)
+                                       [else (failure)])
+                                     `([,(and 'else test-dirs) (failure)]))))
+                         (lambda (request failure)
+                           (case request
+                             [(name) name]
+                             [(unpacker) 'mzscheme]
+                             [(requires) requires]
+                             [(conflicts) conflicts]
+                             [(plt-relative?) plt-relative?]
+                             [(plt-home-relative?) plt-home-relative?]
+                             [(test-plt-dirs) (and test-dirs
+                                                   (not (eq? test-dirs 'else))
+                                                   (cadr test-dirs))]
+                             [else (failure)]))]
+                        [_
+                         (error "info-procedure S-expression did not have the expected shape: "
+                                v)]))])
+         (unless (and (procedure? info)
+                      (procedure-arity-includes? info 2))
+           (error "expected a procedure of arity 2, got" info))
+         (let ([name (call-info info 'name (lambda () #f)
+                                (lambda (n) 
+                                  (unless (string? n)
+                                    (if n
+                                        (error "couldn't find the package name")
+                                        (error "expected a string")))))]
+               [unpacker (call-info info 'unpacker (lambda () #f)
+                                    (lambda (n) 
+                                      (unless (eq? n 'mzscheme)
+                                        (error "unpacker isn't mzscheme:" n))))]
+               [target-dir-info
+                (let ([rel? (call-info info 'plt-relative? (lambda () #f) values)]
+                      [not-user-rel? (call-info info 'plt-home-relative? (lambda () #f) values)]
+                      [test-dirs (call-info info 'test-plt-dirs (lambda () #f) values)])
+                  (if rel?
+                      ;; Shuffling...
+                      (if (and not-user-rel? 
+                               ;; Check for void because old unpacker didn't use
+                               ;;  the failure thunk.
+                               (not (void? not-user-rel?))
+                               ;; Non-user optional if test-dirs are writable
+                               (or (not test-dirs)
+                                   (andmap
+                                    (lambda (p)
+                                      (and (string? p)
+                                           (let ([dir (let-values ([(base dir)
+                                                                    (shuffle-path main-collects-parent-dir
+                                                                                  (lambda (a b) (a))
+                                                                                  #t (list p))])
+                                                        (build-path base dir))])
+                                             (memq 'write
+                                                   (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+                                                     (file-or-directory-permissions dir))))))
+                                    test-dirs)))
+                          ;; Shuffle to main directory always:
+                          (let ([dir (get-target-plt-directory main-collects-parent-dir
+                                                               main-collects-parent-dir
+                                                               (list main-collects-parent-dir))])
+                            (list dir (lambda (sys user)
+                                        (let ([a (sys)])
+                                          (get-target-plt-directory a a (list a))))))
+                          ;; Prefer to shuffle to user directory:
+                          (let ([addons (find-user-collects-dir)])
+                            (let ([dir (get-target-plt-directory
+                                        addons
+                                        main-collects-parent-dir
+                                        (list addons main-collects-parent-dir))])
                               (list dir (lambda (sys user)
-                                          (let ([a (sys)])
-                                            (get-target-plt-directory a a (list a))))))
-                            ;; Prefer to shuffle to user directory:
-                            (let ([addons (find-user-collects-dir)])
-                              (let ([dir (get-target-plt-directory
-                                          addons
-                                          main-collects-parent-dir
-                                          (list addons main-collects-parent-dir))])
-                                (list dir (lambda (sys user)
-                                            (let ([a (sys)]
-                                                  [b (user)])
-                                              (get-target-plt-directory b a (list b a))))))))
-                        ;; No shuffling --- install to target directory:
-                        (list (get-target-directory))))])
+                                          (let ([a (sys)]
+                                                [b (user)])
+                                            (get-target-plt-directory b a (list b a))))))))
+                      ;; No shuffling --- install to target directory:
+                      (list (get-target-directory))))])
 
-             ;; Stop if no target directory:
-             (if (car target-dir-info)
+           ;; Stop if no target directory:
+           (if (car target-dir-info)
 
-                 ;; Check declared dependencies (none means v103)
-                 (begin
-                   (call-info 
-                    info 'requires (lambda () null)
-                    (lambda (l) 
-                      (define (bad)
-                        (error "`requires' info is corrupt:" l))
-                      (when (void? l)
-                        (if force?
-                            (print-status "warning: archive is for an older version of Racket")
-                            (error "cannot install; archive is for an older version of Racket")))
-                      (unless (or (list? l) (and force? (void? l)))
-                        (bad))
-                      ;; Check each dependency:
-                      (when (list? l)
-                        (for-each
-                         (lambda (d)
-                           (unless (and (list? d) (= 2 (length d)))
-                             (bad))
-                           (let ([coll-path (car d)]
-                                 [version (cadr d)])
-                             (unless (and (pair? coll-path)
-                                          (list? coll-path)
-                                          (andmap string? coll-path)
-                                          (list? version)
-                                          (andmap number? version))
-                               (bad))
-                             (with-handlers ([exn:fail:filesystem?
-                                              (lambda (x)
-                                                (if force?
-                                                    (print-status 
-                                                     (format "warning: missing required collection ~s" coll-path))
-                                                    (error "cannot install; missing required collection" coll-path)))])
-                               (apply collection-path coll-path))
-                             (let ([inst-version 
-                                    (with-handlers ([void (lambda (x) 
-                                                            (if (exn:break? x)
-                                                                (raise x)
-                                                                null))])
-                                      (let ([info (get-info coll-path)])
-                                        (info 'version (lambda () null))))])
-                               (let loop ([v version][iv inst-version])
-                                 (unless (null? v)
-                                   (when (or (null? iv)
-                                             (not (= (car v) (car iv))))
-                                     (let ([msg (format "version ~a of collection ~s is required, but version ~a is installed"
-                                                        version coll-path 
-                                                        (if (null? inst-version)
-                                                            '<unknown>
-                                                            inst-version))])
-                                       (if force?
-                                           (print-status (format "warning: ~a" msg))
-                                           (error (format "cannot install; ~a" msg)))))
-                                   (loop (cdr v) (cdr iv)))))))
-                         l))))
-
-                   ;; Check for conflicts:
-                   (call-info
-                    info 'conflicts (lambda () null)
-                    (lambda (l) 
-                      (define (bad)
-                        (error "`conflicts' info is corrupt:" l))
-                      (unless (or (list? l) (and force? (void? l)))
-                        (bad))
-                      (when (list? l)
-                        (for-each
-                         (lambda (coll-path)
+               ;; Check declared dependencies (none means v103)
+               (begin
+                 (call-info 
+                  info 'requires (lambda () null)
+                  (lambda (l) 
+                    (define (bad)
+                      (error "`requires' info is corrupt:" l))
+                    (when (void? l)
+                      (if force?
+                          (print-status "warning: archive is for an older version of Racket")
+                          (error "cannot install; archive is for an older version of Racket")))
+                    (unless (or (list? l) (and force? (void? l)))
+                      (bad))
+                    ;; Check each dependency:
+                    (when (list? l)
+                      (for-each
+                       (lambda (d)
+                         (unless (and (list? d) (= 2 (length d)))
+                           (bad))
+                         (let ([coll-path (car d)]
+                               [version (cadr d)])
                            (unless (and (pair? coll-path)
                                         (list? coll-path)
-                                        (andmap string? coll-path))
+                                        (andmap string? coll-path)
+                                        (list? version)
+                                        (andmap number? version))
                              (bad))
-                           (when (with-handlers ([exn:fail? (lambda (x) #f)])
-                                   (apply collection-path coll-path))
-                             (error "cannot install; conflict with installed collection"
-                                    coll-path)))
-                         l))))
-                   
-                   (unless (and name unpacker)
-                     (error "bad name or unpacker"))
-                   (print-status (format "Unpacking ~a from ~a" name archive))
-                   (let ([u (read p)])
-                     (match u
-                       [`(unit (import ,(? symbol?) mzuntar) 
-                               (export)
-                               (mzuntar void)
-                               (quote ,collections))
-                        (make-directory* (car target-dir-info))
-                        (unmztar p void
-                                 (car target-dir-info) 
-                                 (lambda (a b)
-                                   ((cadr target-dir-info) a b))
-                                 ((length target-dir-info) . > . 1)
-                                 print-status)
-                        collections]
-                       [_
-                        (error "expected a `unit' pattern, got" u)])))
+                           (with-handlers ([exn:fail:filesystem?
+                                            (lambda (x)
+                                              (if force?
+                                                  (print-status 
+                                                   (format "warning: missing required collection ~s" coll-path))
+                                                  (error "cannot install; missing required collection" coll-path)))])
+                             (apply collection-path coll-path))
+                           (let ([inst-version 
+                                  (with-handlers ([void (lambda (x) 
+                                                          (if (exn:break? x)
+                                                              (raise x)
+                                                              null))])
+                                    (let ([info (get-info coll-path)])
+                                      (info 'version (lambda () null))))])
+                             (let loop ([v version][iv inst-version])
+                               (unless (null? v)
+                                 (when (or (null? iv)
+                                           (not (= (car v) (car iv))))
+                                   (let ([msg (format "version ~a of collection ~s is required, but version ~a is installed"
+                                                      version coll-path 
+                                                      (if (null? inst-version)
+                                                          '<unknown>
+                                                          inst-version))])
+                                     (if force?
+                                         (print-status (format "warning: ~a" msg))
+                                         (error (format "cannot install; ~a" msg)))))
+                                 (loop (cdr v) (cdr iv)))))))
+                       l))))
 
-                 ;; Cancelled: no collections
-                 null))))
-       (lambda () (kill) (close-input-port p64gz))))))
+                 ;; Check for conflicts:
+                 (call-info
+                  info 'conflicts (lambda () null)
+                  (lambda (l) 
+                    (define (bad)
+                      (error "`conflicts' info is corrupt:" l))
+                    (unless (or (list? l) (and force? (void? l)))
+                      (bad))
+                    (when (list? l)
+                      (for-each
+                       (lambda (coll-path)
+                         (unless (and (pair? coll-path)
+                                      (list? coll-path)
+                                      (andmap string? coll-path))
+                           (bad))
+                         (when (with-handlers ([exn:fail? (lambda (x) #f)])
+                                 (apply collection-path coll-path))
+                           (error "cannot install; conflict with installed collection"
+                                  coll-path)))
+                       l))))
+                   
+                 (unless (and name unpacker)
+                   (error "bad name or unpacker"))
+                 (print-status (format "Unpacking ~a from ~a" name archive))
+                 (let ([u (read p)])
+                   (match u
+                     [`(unit (import ,(? symbol?) mzuntar) 
+                             (export)
+                             (mzuntar void)
+                             (quote ,collections))
+                      (make-directory* (car target-dir-info))
+                      (unmztar p void
+                               (car target-dir-info) 
+                               (lambda (a b)
+                                 ((cadr target-dir-info) a b))
+                               ((length target-dir-info) . > . 1)
+                               print-status)
+                      collections]
+                     [_
+                      (error "expected a `unit' pattern, got" u)])))
+
+               ;; Cancelled: no collections
+               null))))
+     (lambda () (kill) (close-input-port p64gz)))))

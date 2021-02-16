@@ -61,11 +61,10 @@
        #`(source-location->prefix
            #,(syntax-quote-srcloc stx))]))
 
-  (define (source-transformer proc)
-    (lambda (stx)
-      (syntax-case stx ()
-        [(_) (proc stx)]
-        [(_ here) (proc #'here)]))))
+  (define ((source-transformer proc) stx)
+    (syntax-case stx ()
+      [(_) (proc stx)]
+      [(_ here) (proc #'here)])))
 
 (define-syntax quote-srcloc
   (source-transformer syntax-quote-srcloc))

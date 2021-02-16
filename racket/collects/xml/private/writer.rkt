@@ -23,8 +23,7 @@
          (error 'empty-tag-shorthand "expected 'always, 'never, or a list of symbols: received ~e" x)))))
 
 ;; gen-write/display-xml/content : (Nat Output-port -> Void) -> Content [Output-Port]-> Void
-(define (gen-write/display-xml/content dent)
-  (lambda (c [out (current-output-port)]) (write-xml-content c 0 dent out)))
+(define ((gen-write/display-xml/content dent) c [out (current-output-port)]) (write-xml-content c 0 dent out))
 
 ;; indent : Nat Output-port -> Void
 (define (indent n out)
@@ -41,14 +40,13 @@
 (define display-xml/content (gen-write/display-xml/content indent))
 
 ;; gen-write/display-xml : (Content [Output-port] -> Void) -> Document [Output-port] -> Void
-(define (gen-write/display-xml output-content)
-  (lambda (doc [out (current-output-port)])
-    (let ([prolog (document-prolog doc)])
-      (display-outside-misc (prolog-misc prolog) out)
-      (display-dtd (prolog-dtd prolog) out)
-      (display-outside-misc (prolog-misc2 prolog) out))
-    (output-content (document-element doc) out)
-    (display-outside-misc (document-misc doc) out)))
+(define ((gen-write/display-xml output-content) doc [out (current-output-port)])
+  (let ([prolog (document-prolog doc)])
+    (display-outside-misc (prolog-misc prolog) out)
+    (display-dtd (prolog-dtd prolog) out)
+    (display-outside-misc (prolog-misc2 prolog) out))
+  (output-content (document-element doc) out)
+  (display-outside-misc (document-misc doc) out))
 
 ; display-dtd : document-type oport -> void
 (define (display-dtd dtd out)

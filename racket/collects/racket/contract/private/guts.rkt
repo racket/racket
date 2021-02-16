@@ -847,25 +847,20 @@
         (first-order->late-neg-projection (contract-struct-first-order ctc)
                                           (contract-struct-name ctc))])]))
      
-(define (projection->late-neg-projection proj)
-  (λ (b)
-    (λ (x neg-party)
-      ((proj (blame-add-missing-party b neg-party)) x))))
-(define (val-first-projection->late-neg-projection vf-proj)
-  (λ (b)
-    (define vf-val-accepter (vf-proj b))
-    (λ (x neg-party)
-      ((vf-val-accepter x) neg-party))))
-(define (first-order->late-neg-projection p? name)
-  (λ (b)
-    (λ (x neg-party)
-      (if (p? x)
-          x
-          (raise-blame-error
-           b x #:missing-party neg-party
-           '(expected: "~a" given: "~e")
-           name
-           x)))))
+(define (((projection->late-neg-projection proj) b) x neg-party)
+  ((proj (blame-add-missing-party b neg-party)) x))
+(define ((val-first-projection->late-neg-projection vf-proj) b)
+  (define vf-val-accepter (vf-proj b))
+  (λ (x neg-party)
+    ((vf-val-accepter x) neg-party)))
+(define (((first-order->late-neg-projection p? name) b) x neg-party)
+  (if (p? x)
+      x
+      (raise-blame-error
+       b x #:missing-party neg-party
+       '(expected: "~a" given: "~e")
+       name
+       x)))
 
 (define warn-about-val-first? (make-parameter #t))
 (define (maybe-warn-about-val-first ctc)
@@ -882,12 +877,11 @@
      (maybe-warn-about-val-first ctc)
      (late-neg-projection->val-first-projection
       (get/build-late-neg-projection ctc))]))
-(define (late-neg-projection->val-first-projection lnp)
-  (λ (b)
-    (define val+neg-party-accepter (lnp b))
-    (λ (x)
-      (λ (neg-party)
-        (val+neg-party-accepter x neg-party)))))
+(define ((late-neg-projection->val-first-projection lnp) b)
+  (define val+neg-party-accepter (lnp b))
+  (λ (x)
+    (λ (neg-party)
+      (val+neg-party-accepter x neg-party))))
 
 (define (get/build-projection ctc)
   (cond
@@ -899,11 +893,10 @@
       (build-context))
      (late-neg-projection->projection
       (get/build-late-neg-projection ctc))]))
-(define (late-neg-projection->projection lnp)
-  (λ (b)
-    (define val+np-acceptor (lnp b))
-    (λ (x)
-      (val+np-acceptor x #f))))
+(define ((late-neg-projection->projection lnp) b)
+  (define val+np-acceptor (lnp b))
+  (λ (x)
+    (val+np-acceptor x #f)))
 
 
 (define contract-first-order-okay-to-give-up-key (gensym 'contract-first-order-okay-to-give-up-key))

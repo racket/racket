@@ -231,33 +231,27 @@
 
 ;; This is better handled with `make-c-parameter'
 (provide (protect-out ffi-obj-ref))
-(define ffi-obj-ref
-  (case-lambda
-   [(name lib) (ffi-obj-ref name lib #f)]
-   [(name lib failure)
-    (let ([name (get-ffi-obj-name 'ffi-obj-ref name)]
-          [lib  (get-ffi-lib-internal lib)])
-      (with-handlers ([exn:fail:filesystem?
-                       (lambda (e) (if failure (failure) (raise e)))])
-        (ffi-obj name lib)))]))
+(define (ffi-obj-ref name lib [failure #f])
+  (let ([name (get-ffi-obj-name 'ffi-obj-ref name)]
+        [lib  (get-ffi-lib-internal lib)])
+    (with-handlers ([exn:fail:filesystem?
+                     (lambda (e) (if failure (failure) (raise e)))])
+      (ffi-obj name lib))))
 
 ;; get-ffi-obj is implemented as a syntax only to be able to propagate the
 ;; foreign name into the type syntax, which allows generated wrappers to have a
 ;; proper name.
 (provide (protect-out get-ffi-obj))
-(define get-ffi-obj*
-  (case-lambda
-   [(name lib type) (get-ffi-obj* name lib type #f)]
-   [(name lib type failure)
-    (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
-          [lib  (get-ffi-lib-internal lib)])
-      (let-values ([(obj error?)
-                    (with-handlers
-                        ([exn:fail:filesystem?
-                          (lambda (e)
-                            (if failure (values (failure) #t) (raise e)))])
-                      (values (ffi-obj name lib) #f))])
-        (if error? obj (ffi-get obj type))))]))
+(define (get-ffi-obj* name lib type [failure #f])
+  (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
+        [lib  (get-ffi-lib-internal lib)])
+    (let-values ([(obj error?)
+                  (with-handlers
+                      ([exn:fail:filesystem?
+                        (lambda (e)
+                          (if failure (values (failure) #t) (raise e)))])
+                    (values (ffi-obj name lib) #f))])
+      (if error? obj (ffi-get obj type)))))
 (define-syntax (get-ffi-obj stx)
   (syntax-case stx ()
     [(_ name lib type)

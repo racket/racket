@@ -185,10 +185,9 @@
        impersonator-prop:contracted ctc
        impersonator-prop:blame blame+neg-party)))
 
-(define (raise-no-keywords-error f blame neg-party)
-  (λ (kwds kwd-args . args)
-    (raise-blame-error blame f #:missing-party neg-party
-                       "expected no keywords, got keyword ~a" (car kwds))))
+(define ((raise-no-keywords-error f blame neg-party) kwds kwd-args . args)
+  (raise-blame-error blame f #:missing-party neg-party
+                     "expected no keywords, got keyword ~a" (car kwds)))
 
 ;; dom-ctcs : (listof (listof contract))
 ;; rst-ctcs : (listof (or/c #f contract))
@@ -200,63 +199,62 @@
 ;;     generates a wrapper from projections
 (define-struct base-case-> (dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))
 
-(define (case->-proj wrapper)
-  (λ (ctc)
-    (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
-    (define rng-ctcs (get-case->-rng-ctcs ctc))
-    (define rng-lol-ctcs (base-case->-rng-ctcs ctc))
-    (define rng-late-neg-ctcs (map get/build-late-neg-projection rng-ctcs))
-    (define rst-ctcs (base-case->-rst-ctcs ctc))
-    (define specs (base-case->-specs ctc))
-    (λ (blame)
-      (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
-      (define rng-blame (blame-add-context blame "the range of"))
-      (define blame-party-info (get-blame-party-info blame))
-      (define projs (append rng-lol-ctcs
-                            (map (λ (f) ((cdr f)
-                                         (blame-add-context 
-                                          (blame-add-context 
-                                           blame 
-                                           (nth-case-of (+ (car f) 1)))
-                                          "the domain of"
-                                          #:swap? #t)))
-                                 dom-ctcs+case-nums)
-                            (map (let ([memo '()])
-                                   ;; to preserve procedure-closure-contents-eq?ness of the
-                                   ;; wrapped procedures, memoize with f as the key.
-                                   (λ (f)
-                                     (define target
-                                       (assoc f memo procedure-closure-contents-eq?))
-                                     (if target
-                                         (cdr target)
-                                         (let* ([p   (f rng-blame)]
-                                                [new (lambda args
-                                                       (with-contract-continuation-mark
-                                                        ;; last arg is missing party
-                                                        (cons blame (last args))
-                                                        (apply p args)))])
-                                           (set! memo (cons (cons f new) memo))
-                                           new))))
-                                 rng-late-neg-ctcs)))
-      (define (chk val mtd?) 
-        (cond
-          [(null? specs)
-           (unless (procedure? val)
-             (raise-blame-error blame val "expected a procedure"))]
-          [else
-           (for-each 
-            (λ (dom-length has-rest?)
-              (if has-rest?
-                  (check-procedure/more val mtd? dom-length '() '() blame #f)
-                  (check-procedure val mtd? dom-length 0 '() '() blame #f)))
-            specs rst-ctcs)]))
-      (apply (base-case->-wrapper ctc)
-             chk
-             wrapper
-             blame
-             blame-party-info
-             ctc
-             projs))))
+(define ((case->-proj wrapper) ctc)
+  (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
+  (define rng-ctcs (get-case->-rng-ctcs ctc))
+  (define rng-lol-ctcs (base-case->-rng-ctcs ctc))
+  (define rng-late-neg-ctcs (map get/build-late-neg-projection rng-ctcs))
+  (define rst-ctcs (base-case->-rst-ctcs ctc))
+  (define specs (base-case->-specs ctc))
+  (λ (blame)
+    (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
+    (define rng-blame (blame-add-context blame "the range of"))
+    (define blame-party-info (get-blame-party-info blame))
+    (define projs (append rng-lol-ctcs
+                          (map (λ (f) ((cdr f)
+                                       (blame-add-context 
+                                        (blame-add-context 
+                                         blame 
+                                         (nth-case-of (+ (car f) 1)))
+                                        "the domain of"
+                                        #:swap? #t)))
+                               dom-ctcs+case-nums)
+                          (map (let ([memo '()])
+                                 ;; to preserve procedure-closure-contents-eq?ness of the
+                                 ;; wrapped procedures, memoize with f as the key.
+                                 (λ (f)
+                                   (define target
+                                     (assoc f memo procedure-closure-contents-eq?))
+                                   (if target
+                                       (cdr target)
+                                       (let* ([p   (f rng-blame)]
+                                              [new (lambda args
+                                                     (with-contract-continuation-mark
+                                                         ;; last arg is missing party
+                                                         (cons blame (last args))
+                                                       (apply p args)))])
+                                         (set! memo (cons (cons f new) memo))
+                                         new))))
+                               rng-late-neg-ctcs)))
+    (define (chk val mtd?) 
+      (cond
+        [(null? specs)
+         (unless (procedure? val)
+           (raise-blame-error blame val "expected a procedure"))]
+        [else
+         (for-each 
+          (λ (dom-length has-rest?)
+            (if has-rest?
+                (check-procedure/more val mtd? dom-length '() '() blame #f)
+                (check-procedure val mtd? dom-length 0 '() '() blame #f)))
+          specs rst-ctcs)]))
+    (apply (base-case->-wrapper ctc)
+           chk
+           wrapper
+           blame
+           blame-party-info
+           ctc
+           projs)))
 
 ;; Re `print-as-method-if-method?`: See comment before `base->-name` in arrow-val-first.rkt
 (define ((case->-name print-as-method-if-method?) ctc)
@@ -281,7 +279,7 @@
         (base-case->-rst-ctcs ctc)
         (base-case->-rng-ctcs ctc))))
 
-(define (case->-first-order ctc) (λ (val) (procedure? val)))
+(define ((case->-first-order ctc) val) (procedure? val))
 
 (define (case->-stronger? this that) #f)
 

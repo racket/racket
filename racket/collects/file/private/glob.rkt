@@ -133,14 +133,13 @@
   (cons/c path-string? (cons/c path-string? (listof path-string?))))
 
 ;; : glob-recursive? boolean? #:capture-dotfiles? boolean? -> (path-string? -> boolean?)
-(define (glob->regexp-matcher g pattern-starts-with-dot? #:capture-dotfiles? capture-dotfiles?)
-  (λ (ps)
-    (and
-      (if (starts-with-dot? ps)
-        (or capture-dotfiles?
-            pattern-starts-with-dot?)
-        #t)
-      (regexp-match? g (normalize-path ps)))))
+(define ((glob->regexp-matcher g pattern-starts-with-dot? #:capture-dotfiles? capture-dotfiles?) ps)
+  (and
+   (if (starts-with-dot? ps)
+       (or capture-dotfiles?
+           pattern-starts-with-dot?)
+       #t)
+   (regexp-match? g (normalize-path ps))))
 
 ;; glob->unamb+amb* : glob-split? -> (values path? (listof path?))
 (define (glob->unamb+amb* g)

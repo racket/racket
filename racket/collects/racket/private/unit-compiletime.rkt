@@ -230,13 +230,12 @@
      (lambda (x) x)
      sig)))
 
-(define (make-relative-introducer ref-id orig-id)
-  (lambda (id)
-    ((make-syntax-delta-introducer id orig-id)
-     (datum->syntax ref-id
-                    (syntax-e id)
-                    id
-                    id))))
+(define ((make-relative-introducer ref-id orig-id) id)
+  ((make-syntax-delta-introducer id orig-id)
+   (datum->syntax ref-id
+                  (syntax-e id)
+                  id
+                  id)))
 
 ;; do-identifier : identifier syntax-object (box (cons identifier siginfo)) -> sig
 (define (do-identifier spec spec-bind res bind? add-prefix)

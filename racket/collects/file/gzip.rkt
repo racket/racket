@@ -1785,72 +1785,71 @@
     ;;  * Save the match info and tally the frequency counts. Return true if
     ;;  * the current block must be flushed.
     ;;  */
-    (define ct_tally
-      (lambda (dist lc)
-        ;; int dist;  ;; /* distance of matched string */
-        ;; int lc;    ;; /* match length-MIN_MATCH or unmatched char (if dist==0) */
+    (define (ct_tally dist lc)
+      ;; int dist;  ;; /* distance of matched string */
+      ;; int lc;    ;; /* match length-MIN_MATCH or unmatched char (if dist==0) */
 
-        (bytes-set! l_buf last_lit lc)
-        (set! last_lit (add1 last_lit))
-        (if (= dist 0)
-            ;; /* lc is the unmatched char */
-            (set-ct_data-freq! (vector-ref dyn_ltree lc)
-                               (add1 (ct_data-freq (vector-ref dyn_ltree lc))))
-            (begin
-              ;; /* Here, lc is the match length - MIN_MATCH */
-              (set! dist (sub1 dist)) ;; /* dist = match distance - 1 */
-              (Assert
-               (unless (and (< dist MAX_DIST)
-                            (<= lc (- MAX_MATCH MIN_MATCH))
-                            (< (d_code dist) D_CODES))
-                 (error "ct_tally: bad match")))
+      (bytes-set! l_buf last_lit lc)
+      (set! last_lit (add1 last_lit))
+      (if (= dist 0)
+          ;; /* lc is the unmatched char */
+          (set-ct_data-freq! (vector-ref dyn_ltree lc)
+                             (add1 (ct_data-freq (vector-ref dyn_ltree lc))))
+          (begin
+            ;; /* Here, lc is the match length - MIN_MATCH */
+            (set! dist (sub1 dist)) ;; /* dist = match distance - 1 */
+            (Assert
+             (unless (and (< dist MAX_DIST)
+                          (<= lc (- MAX_MATCH MIN_MATCH))
+                          (< (d_code dist) D_CODES))
+               (error "ct_tally: bad match")))
 
-              (let* ([i (+ (vector-ref length_code lc) LITERALS 1)]
-                     [ct (vector-ref dyn_ltree i)])
-                (DEBUG (Trace stderr "Set: ~a -> ~a\n" lc i))
-                (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
-              (let ([ct (vector-ref dyn_dtree (d_code dist))])
-                (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
+            (let* ([i (+ (vector-ref length_code lc) LITERALS 1)]
+                   [ct (vector-ref dyn_ltree i)])
+              (DEBUG (Trace stderr "Set: ~a -> ~a\n" lc i))
+              (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
+            (let ([ct (vector-ref dyn_dtree (d_code dist))])
+              (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
 
-              (vector-set! d_buf last_dist dist)
-              (set! last_dist (add1 last_dist))
-              (set! flags (bitwise-ior flags flag_bit))))
+            (vector-set! d_buf last_dist dist)
+            (set! last_dist (add1 last_dist))
+            (set! flags (bitwise-ior flags flag_bit))))
 
-        (set! flag_bit (<< flag_bit 1))
+      (set! flag_bit (<< flag_bit 1))
 
-        ;; /* Output the flags if they fill a byte: */
-        (when (= (bitwise-and last_lit 7) 0)
-          (vector-set! flag_buf last_flags flags)
-          (set! last_flags (add1 last_flags))
-          (set! flags 0) (set! flag_bit 1))
+      ;; /* Output the flags if they fill a byte: */
+      (when (= (bitwise-and last_lit 7) 0)
+        (vector-set! flag_buf last_flags flags)
+        (set! last_flags (add1 last_flags))
+        (set! flags 0) (set! flag_bit 1))
 
-        (or
-         ;; /* Try to guess if it is profitable to stop the current block here */
-         (and (and (> LEVEL 2) (= (bitwise-and last_lit #xfff) 0))
-              (let ()
-                ;; /* Compute an upper bound for the compressed length */
-                (define out_length (* last_lit 8))
-                (define in_length (- strstart block_start))
+      (or
+       ;; /* Try to guess if it is profitable to stop the current block here */
+       (and (and (> LEVEL 2) (= (bitwise-and last_lit #xfff) 0))
+            (let ()
+              ;; /* Compute an upper bound for the compressed length */
+              (define out_length (* last_lit 8))
+              (define in_length (- strstart block_start))
 
-                (for dcode := 0 < D_CODES do
-                     (set! out_length
-                           (+ out_length
-                              (* (ct_data-freq (vector-ref dyn_dtree dcode))
-                                 (+ 5 (vector-ref extra_dbits dcode))))))
-                (set! out_length (>> out_length 3))
-                (DEBUG (Trace stderr "\nlast_lit ~a, last_dist ~a, in ~a, out ~~~a(~a%) "
-                              last_lit last_dist in_length out_length
-                              (- 100 (/ (* out_length 100) in_length))))
-                (and (< last_dist (quotient last_lit 2))
-                     (< out_length (quotient in_length 2)))))
+              (for dcode := 0 < D_CODES do
+                (set! out_length
+                      (+ out_length
+                         (* (ct_data-freq (vector-ref dyn_dtree dcode))
+                            (+ 5 (vector-ref extra_dbits dcode))))))
+              (set! out_length (>> out_length 3))
+              (DEBUG (Trace stderr "\nlast_lit ~a, last_dist ~a, in ~a, out ~~~a(~a%) "
+                            last_lit last_dist in_length out_length
+                            (- 100 (/ (* out_length 100) in_length))))
+              (and (< last_dist (quotient last_lit 2))
+                   (< out_length (quotient in_length 2)))))
 
-         (or (= last_lit (- LIT_BUFSIZE 1))
-             (= last_dist DIST_BUFSIZE))
-         ;; /* We avoid equality with LIT_BUFSIZE because of wraparound at 64K
-         ;;  * on 16 bit machines and because stored blocks are restricted to
-         ;;  * 64K-1 bytes.
-         ;;  */
-         )))
+       (or (= last_lit (- LIT_BUFSIZE 1))
+           (= last_dist DIST_BUFSIZE))
+       ;; /* We avoid equality with LIT_BUFSIZE because of wraparound at 64K
+       ;;  * on 16 bit machines and because stored blocks are restricted to
+       ;;  * 64K-1 bytes.
+       ;;  */
+       ))
 
     ;; /* ===========================================================================
     ;;  * Send the block data compressed using the given Huffman trees
@@ -2206,10 +2205,8 @@
 
     (list gzip gzip-through-ports deflate)))
 
-(define gzip
-  (case-lambda
-   [(infile) (gzip infile (path-add-extension infile ".gz" #"."))]
-   [(infile outfile) ((car (code)) infile outfile)]))
+(define (gzip infile [outfile (path-add-extension infile ".gz" #".")])
+  ((car (code)) infile outfile))
 
 (define (gzip-through-ports in out origname time_stamp)
   ((cadr (code)) in out origname time_stamp))

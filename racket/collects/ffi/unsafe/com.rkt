@@ -313,11 +313,10 @@
                 refiid))
      (and p (cast p _pointer _type)))))
 
-(define AddRef/no-release
-  (lambda (obj)
-    (check-com-type 'AddRef 'IUknown IUnknown? obj)
-    ((IUnknown_vt-AddRef (cast (IUnknown-vt obj) _pointer _IUnknown_vt-pointer))
-     obj)))
+(define (AddRef/no-release obj)
+  (check-com-type 'AddRef 'IUknown IUnknown? obj)
+  ((IUnknown_vt-AddRef (cast (IUnknown-vt obj) _pointer _IUnknown_vt-pointer))
+   obj))
 
 (define AddRef
   ((retainer Release) AddRef/no-release))

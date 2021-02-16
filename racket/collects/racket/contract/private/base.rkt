@@ -266,10 +266,9 @@
             (set! f-of-blame (f blame))
             (f-of-blame val neg-party)]))])))
 
-(define (recursive-contract-late-neg-projection ctc)
-  (λ (blame)
-    (force-recursive-contract ctc)
-    ((recursive-contract-blame->val-np->val ctc) blame)))
+(define ((recursive-contract-late-neg-projection ctc) blame)
+  (force-recursive-contract ctc)
+  ((recursive-contract-blame->val-np->val ctc) blame))
 
 (define (flat-recursive-contract-late-neg-projection ctc)
   (cond
@@ -305,13 +304,12 @@
            (contract-first-order-passes? (force-recursive-contract ctc)
                                          val))]))
 
-(define (recursive-contract-generate ctc)
-  (λ (fuel)
-    (cond
-      [(zero? fuel) #f]
-      [else
-       (force-recursive-contract ctc)
-       (contract-random-generate/choose (recursive-contract-ctc ctc) (- fuel 1))])))
+(define ((recursive-contract-generate ctc) fuel)
+  (cond
+    [(zero? fuel) #f]
+    [else
+     (force-recursive-contract ctc)
+     (contract-random-generate/choose (recursive-contract-ctc ctc) (- fuel 1))]))
 
 (struct recursive-contract ([name #:mutable]
                             thunk

@@ -82,11 +82,10 @@
                                 (sub1 (file-position p)))])
         ((current-trace-notify) (bytes->string/utf-8 b)))))
 
-  (define -:trace-print-args
-    (lambda (name args kws kw-vals level)
-      (as-trace-notify
-        (lambda ()
-          ((current-trace-print-args) name args kws kw-vals level)))))
+  (define (-:trace-print-args name args kws kw-vals level)
+    (as-trace-notify
+     (lambda ()
+       ((current-trace-print-args) name args kws kw-vals level))))
 
   (struct plain (val)
           #:property prop:custom-write (lambda (p port mode)
@@ -135,11 +134,10 @@
       #f
       'current-trace-print-args))
 
-  (define -:trace-print-results
-    (lambda (name results level)
-      (as-trace-notify
-        (lambda ()
-          ((current-trace-print-results) name results level)))))
+  (define (-:trace-print-results name results level)
+    (as-trace-notify
+     (lambda ()
+       ((current-trace-print-results) name results level))))
 
   (define current-trace-print-results
     (make-parameter

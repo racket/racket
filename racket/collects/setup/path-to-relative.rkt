@@ -12,7 +12,7 @@
          path->relative-string/library
          path->relative-string/setup)
 
-(define default-default (lambda (x) (if (path? x) (path->string x) x)))
+(define (default-default x) (if (path? x) (path->string x) x))
 
 (define (make-path->relative-string dirs [default default-default])
   (unless (and (list? dirs)
@@ -59,25 +59,24 @@
              (cons find-planet-dir        "<planet>/")
              (cons find-doc-dir           "<doc>/")
              (cons find-user-doc-dir      "<user-doc>/"))))
-    (define (make-default cache default)
-      (lambda (x)        
-        (define-values (pkg sub) (if (complete-path? x)
-                                     (path->pkg+subpath x #:cache cache)
-                                     (values #f #f)))
-        (cond
-         [pkg
-          (apply string-append 
-                 "<pkgs>" "/" pkg
-                 (if (eq? sub 'same)
-                     null
-                     (let loop ([l (explode-path sub)])
-                       (cond
+    (define ((make-default cache default) x)        
+      (define-values (pkg sub) (if (complete-path? x)
+                                   (path->pkg+subpath x #:cache cache)
+                                   (values #f #f)))
+      (cond
+        [pkg
+         (apply string-append 
+                "<pkgs>" "/" pkg
+                (if (eq? sub 'same)
+                    null
+                    (let loop ([l (explode-path sub)])
+                      (cond
                         [(null? l) null]
                         [else (list* "/" 
                                      (path-element->string (car l))
                                      (loop (cdr l)))]))))]
-         [(path? x) (path->string x)]
-         [else (if (procedure? default) (default x) default)])))
+        [(path? x) (path->string x)]
+        [else (if (procedure? default) (default x) default)]))
     (lambda (x [default default-default] #:cache [cache #f])
       (p->r x (make-default cache default)))))
 

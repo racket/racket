@@ -85,8 +85,7 @@
   (xml->xexpr (document-element (read-xml (open-input-string str)))))
 
 ;; bcompose : (a a -> c) (b -> a) -> (b b -> c)
-(define (bcompose f g)
-  (lambda (x y) (f (g x) (g y))))
+(define ((bcompose f g) x y) (f (g x) (g y)))
 
 (provide xexpr? 
          validate-xexpr

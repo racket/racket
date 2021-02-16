@@ -18,20 +18,19 @@
 (define indent (make-parameter 0))
 
 (define managed-compiled-context-key (gensym))
-(define (make-compilation-context-error-display-handler orig)
-  (lambda (str exn)
-    (define l (continuation-mark-set->list
-               (exn-continuation-marks exn)
-               managed-compiled-context-key))
-    (orig (if (null? l)
-              str
-              (apply
-               string-append
-               str
-               "\n  compilation context...:"
-               (for/list ([i (in-list l)])
-                 (format "\n   ~a" i))))
-          exn)))
+(define ((make-compilation-context-error-display-handler orig) str exn)
+  (define l (continuation-mark-set->list
+             (exn-continuation-marks exn)
+             managed-compiled-context-key))
+  (orig (if (null? l)
+            str
+            (apply
+             string-append
+             str
+             "\n  compilation context...:"
+             (for/list ([i (in-list l)])
+               (format "\n   ~a" i))))
+        exn))
 
 (define (trace-printf fmt . args)
   (let ([t (manager-trace-handler)])

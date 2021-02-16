@@ -312,12 +312,11 @@
                   stx)
                'id))])))))
 
-(define super-error-map
-  (lambda (stx)
-    (raise-syntax-error 
-     'class
-     "cannot use superclass initialization form in a method"
-     stx)))
+(define (super-error-map stx)
+  (raise-syntax-error 
+   'class
+   "cannot use superclass initialization form in a method"
+   stx))
 
 (define (make-with-method-map set!-stx id-stx
                               method-stx method-obj-stx)

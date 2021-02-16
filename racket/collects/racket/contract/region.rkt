@@ -129,9 +129,8 @@
                          (define-struct field-info (stx ctc [mutable? #:mutable] auto?))
                          (define-struct s-info (auto-value-stx transparent? def-stxs? def-vals?))
 
-                         (define syntax-error
-                           (lambda v
-                             (apply raise-syntax-error type v)))
+                         (define (syntax-error . v)
+                           (apply raise-syntax-error type v))
 
                          (define (build-struct-names name supertype field-infos)
                            (let ([name-str (symbol->string (syntax-e name))])

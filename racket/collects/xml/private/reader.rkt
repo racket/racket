@@ -26,25 +26,24 @@
 (define collapse-whitespace (make-parameter #f))
 
 ;; read-xml : [Input-port] -> Document
-(define read-xml
-  (lambda ([in (current-input-port)])
-    (let*-values ([(in pos) (positionify in)]
-                  [(misc0 start) (read-misc in pos)])
-      (make-document (make-prolog misc0 #f empty)
-                     (read-xml-element-helper pos in start)
-                     (let-values ([(misc1 end-of-file) (read-misc in pos)])
-                       (unless (EOF? end-of-file)
-                         (parse-error (list
-                                       (make-srcloc
-                                        (object-name in)
-                                        #f
-                                        #f
-                                        (location-offset (source-start end-of-file))
-                                        (- (location-offset (source-stop end-of-file))
-                                           (location-offset (source-start end-of-file)))))
-                                      "extra stuff at end of document ~e"
-                                      end-of-file))
-                       misc1)))))
+(define (read-xml [in (current-input-port)])
+  (let*-values ([(in pos) (positionify in)]
+                [(misc0 start) (read-misc in pos)])
+    (make-document (make-prolog misc0 #f empty)
+                   (read-xml-element-helper pos in start)
+                   (let-values ([(misc1 end-of-file) (read-misc in pos)])
+                     (unless (EOF? end-of-file)
+                       (parse-error (list
+                                     (make-srcloc
+                                      (object-name in)
+                                      #f
+                                      #f
+                                      (location-offset (source-start end-of-file))
+                                      (- (location-offset (source-stop end-of-file))
+                                         (location-offset (source-start end-of-file)))))
+                                    "extra stuff at end of document ~e"
+                                    end-of-file))
+                     misc1))))
 
 ;; read-xml : [Input-port] -> Document
 (define (read-xml/document [in (current-input-port)])
@@ -55,11 +54,10 @@
                    empty)))
 
 ;; read-xml/element : [Input-port] -> Element
-(define read-xml/element
-  (lambda ([in (current-input-port)])
-    (let-values ([(in pos) (positionify in)])
-      (skip-space in)
-      (read-xml-element-helper pos in (lex in pos)))))
+(define (read-xml/element [in (current-input-port)])
+  (let-values ([(in pos) (positionify in)])
+    (skip-space in)
+    (read-xml-element-helper pos in (lex in pos))))
 
 ;; read-xml-element-helper : Nat Iport Token -> Element
 (define (read-xml-element-helper pos in start)

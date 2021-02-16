@@ -228,83 +228,82 @@
                  (elem-neg-proj val neg-party))))]))
       (define p? (and (flat-contract-struct? elem-ctc)
                       (flat-contract-predicate elem-ctc)))
-      (define late-neg-proj
-        (λ (val neg-party)
-          (check-vectorof elem-ctc immutable val blame neg-party #f #t)
-          (define immutable-non-chaperone?
-            (and (immutable? val) (not (chaperone? val))))
-          ;; avoid traversing large vectors
-          ;; unless `eager` is specified
-          (cond
-            [(and flat-subcontract?
-                  immutable-non-chaperone?
-                  (or (equal? eager #t)
-                      (and eager (<= (vector-length val) eager))))
-             (define elem-pos-proj (if filled?
-                                       maybe-elem-pos-proj
-                                       (car (fetch-tc-pos))))
-             (for ([e (in-vector val)])
-               (unless (p? e)
-                 (elem-pos-proj e neg-party)))
-             val]
-            [(and (not flat-subcontract?) immutable-non-chaperone?)
-             (define elem-pos-proj (if filled?
-                                       maybe-elem-pos-proj
-                                       (car (fetch-tc-pos))))
-             (vector->immutable-vector
-              (for/vector #:length (vector-length val) ([e (in-vector val)])
-                (elem-pos-proj e neg-party)))]
-            [else
-             (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
-             (define safe-for-c-c?
-               (if old-c-c-prop
-                   (and (collapsible-property? old-c-c-prop)
-                        (eq? (collapsible-property-ref old-c-c-prop) val))
-                   (not (impersonator? val))))
-             (define wrapper-count
-               (if (collapsible-count-property? old-c-c-prop)
-                   (collapsible-count-property-count old-c-c-prop)
-                   0))
-             (cond
-               [(not safe-for-c-c?)
+      (define (late-neg-proj val neg-party)
+        (check-vectorof elem-ctc immutable val blame neg-party #f #t)
+        (define immutable-non-chaperone?
+          (and (immutable? val) (not (chaperone? val))))
+        ;; avoid traversing large vectors
+        ;; unless `eager` is specified
+        (cond
+          [(and flat-subcontract?
+                immutable-non-chaperone?
+                (or (equal? eager #t)
+                    (and eager (<= (vector-length val) eager))))
+           (define elem-pos-proj (if filled?
+                                     maybe-elem-pos-proj
+                                     (car (fetch-tc-pos))))
+           (for ([e (in-vector val)])
+             (unless (p? e)
+               (elem-pos-proj e neg-party)))
+           val]
+          [(and (not flat-subcontract?) immutable-non-chaperone?)
+           (define elem-pos-proj (if filled?
+                                     maybe-elem-pos-proj
+                                     (car (fetch-tc-pos))))
+           (vector->immutable-vector
+            (for/vector #:length (vector-length val) ([e (in-vector val)])
+              (elem-pos-proj e neg-party)))]
+          [else
+           (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
+           (define safe-for-c-c?
+             (if old-c-c-prop
+                 (and (collapsible-property? old-c-c-prop)
+                      (eq? (collapsible-property-ref old-c-c-prop) val))
+                 (not (impersonator? val))))
+           (define wrapper-count
+             (if (collapsible-count-property? old-c-c-prop)
+                 (collapsible-count-property-count old-c-c-prop)
+                 0))
+           (cond
+             [(not safe-for-c-c?)
+              (chaperone-or-impersonate-vector
+               val
+               (checked-ref neg-party)
+               (checked-set neg-party)
+               impersonator-prop:contracted ctc
+               impersonator-prop:blame (cons blame neg-party))]
+             [(wrapper-count . >= . COLLAPSIBLE-LIMIT)
+              (vector-enter-collapsible-mode/collapse
+               c-c-vector
+               val
+               neg-party
+               old-c-c-prop
+               chap-not-imp?)]
+             [(collapsible-wrapper-property? old-c-c-prop)
+              (vector-enter-collapsible-mode/continue
+               c-c-vector
+               val
+               neg-party
+               (collapsible-property-c-c old-c-c-prop)
+               (collapsible-property-neg-party old-c-c-prop)
+               (collapsible-wrapper-property-checking-wrapper old-c-c-prop)
+               chap-not-imp?)]
+             [else
+              (define c-c-prop
+                (collapsible-count-property
+                 c-c-vector
+                 neg-party
+                 #f
+                 (add1 wrapper-count)
+                 (or old-c-c-prop val)))
+              (define wrapped
                 (chaperone-or-impersonate-vector
                  val
                  (checked-ref neg-party)
                  (checked-set neg-party)
-                 impersonator-prop:contracted ctc
-                 impersonator-prop:blame (cons blame neg-party))]
-               [(wrapper-count . >= . COLLAPSIBLE-LIMIT)
-                (vector-enter-collapsible-mode/collapse
-                 c-c-vector
-                 val
-                 neg-party
-                 old-c-c-prop
-                 chap-not-imp?)]
-               [(collapsible-wrapper-property? old-c-c-prop)
-                (vector-enter-collapsible-mode/continue
-                 c-c-vector
-                 val
-                 neg-party
-                 (collapsible-property-c-c old-c-c-prop)
-                 (collapsible-property-neg-party old-c-c-prop)
-                 (collapsible-wrapper-property-checking-wrapper old-c-c-prop)
-                 chap-not-imp?)]
-               [else
-                (define c-c-prop
-                  (collapsible-count-property
-                   c-c-vector
-                   neg-party
-                   #f
-                   (add1 wrapper-count)
-                   (or old-c-c-prop val)))
-                (define wrapped
-                  (chaperone-or-impersonate-vector
-                   val
-                   (checked-ref neg-party)
-                   (checked-set neg-party)
-                   impersonator-prop:collapsible c-c-prop))
-                (set-collapsible-property-ref! c-c-prop wrapped)
-                wrapped])])))
+                 impersonator-prop:collapsible c-c-prop))
+              (set-collapsible-property-ref! c-c-prop wrapped)
+              wrapped])]))
       (values
        late-neg-proj
        c-c-vector))))
@@ -578,70 +577,69 @@
                  (define elem-neg-projs (car (fetch-tc-neg)))
                  ((vector-ref elem-neg-projs i) val neg-party))))]))
       
-      (define late-neg-proj
-        (λ (val neg-party)
-          (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
-          (define safe-for-c-c
-            (if old-c-c-prop
-                (and (collapsible-property? old-c-c-prop)
-                     (eq? (collapsible-property-ref old-c-c-prop) val))
-                (not (impersonator? val))))
-          (define wrapper-count
-            (if (collapsible-count-property? old-c-c-prop)
-                (collapsible-count-property-count old-c-c-prop)
-                0))
-          (check-vector/c val blame immutable elems-length neg-party)
-          (define blame+neg-party (cons blame neg-party))
-          (cond
-            [(and (immutable? val) (not (chaperone? val)))
-             (define elem-pos-projs
-               (if filled?
-                   maybe-elem-pos-projs
-                   (car (fetch-tc-pos))))
-             (apply vector-immutable
-                    (for/list ([i (in-naturals)]
-                               [elem-val (in-vector val)])
-                      ((vector-ref elem-pos-projs i) elem-val neg-party)))]
-            [(not safe-for-c-c)
+      (define (late-neg-proj val neg-party)
+        (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
+        (define safe-for-c-c
+          (if old-c-c-prop
+              (and (collapsible-property? old-c-c-prop)
+                   (eq? (collapsible-property-ref old-c-c-prop) val))
+              (not (impersonator? val))))
+        (define wrapper-count
+          (if (collapsible-count-property? old-c-c-prop)
+              (collapsible-count-property-count old-c-c-prop)
+              0))
+        (check-vector/c val blame immutable elems-length neg-party)
+        (define blame+neg-party (cons blame neg-party))
+        (cond
+          [(and (immutable? val) (not (chaperone? val)))
+           (define elem-pos-projs
+             (if filled?
+                 maybe-elem-pos-projs
+                 (car (fetch-tc-pos))))
+           (apply vector-immutable
+                  (for/list ([i (in-naturals)]
+                             [elem-val (in-vector val)])
+                    ((vector-ref elem-pos-projs i) elem-val neg-party)))]
+          [(not safe-for-c-c)
+           (vector-wrapper
+            val
+            (chaperone-get-proc neg-party blame+neg-party)
+            (chaperone-set-proc neg-party blame+neg-party)
+            ;; TODO: should this be a collapsible property instead??
+            impersonator-prop:contracted ctc
+            impersonator-prop:blame blame+neg-party)]
+          [(wrapper-count . >= . COLLAPSIBLE-LIMIT)
+           (vector-enter-collapsible-mode/collapse
+            c-c-vector
+            val
+            neg-party
+            old-c-c-prop
+            chap-not-imp?)]
+          [(collapsible-wrapper-property? old-c-c-prop)
+           (vector-enter-collapsible-mode/continue
+            c-c-vector
+            val
+            neg-party
+            (collapsible-property-c-c old-c-c-prop)
+            (collapsible-property-neg-party old-c-c-prop)
+            (collapsible-wrapper-property-checking-wrapper old-c-c-prop)
+            chap-not-imp?)]
+          [else
+           (define c-c-prop
+             (collapsible-count-property
+              c-c-vector
+              neg-party
+              #f
+              (add1 wrapper-count)
+              (or old-c-c-prop val)))
+           (define wrapped
              (vector-wrapper
               val
               (chaperone-get-proc neg-party blame+neg-party)
               (chaperone-set-proc neg-party blame+neg-party)
-              ;; TODO: should this be a collapsible property instead??
-              impersonator-prop:contracted ctc
-              impersonator-prop:blame blame+neg-party)]
-            [(wrapper-count . >= . COLLAPSIBLE-LIMIT)
-             (vector-enter-collapsible-mode/collapse
-              c-c-vector
-              val
-              neg-party
-              old-c-c-prop
-              chap-not-imp?)]
-            [(collapsible-wrapper-property? old-c-c-prop)
-             (vector-enter-collapsible-mode/continue
-              c-c-vector
-              val
-              neg-party
-              (collapsible-property-c-c old-c-c-prop)
-              (collapsible-property-neg-party old-c-c-prop)
-              (collapsible-wrapper-property-checking-wrapper old-c-c-prop)
-              chap-not-imp?)]
-            [else
-             (define c-c-prop
-               (collapsible-count-property
-                c-c-vector
-                neg-party
-                #f
-                (add1 wrapper-count)
-                (or old-c-c-prop val)))
-             (define wrapped
-               (vector-wrapper
-                val
-                (chaperone-get-proc neg-party blame+neg-party)
-                (chaperone-set-proc neg-party blame+neg-party)
-                impersonator-prop:collapsible c-c-prop))
-             (set-collapsible-property-ref! c-c-prop wrapped)
-             wrapped])))
+              impersonator-prop:collapsible c-c-prop))
+           (set-collapsible-property-ref! c-c-prop wrapped)
+           wrapped]))
       (values
        late-neg-proj
        c-c-vector))))

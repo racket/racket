@@ -220,16 +220,16 @@
   ;; normally.
   (define normal-finish? #f)
 
-  (define log-exn (lambda (exn [msg #f])
-                    (log-error (let ([s (if (exn? exn)
-                                            (let ([p (open-output-string)])
-                                              (parameterize ([current-error-port p])
-                                                ((error-display-handler) (exn-message exn) exn))
-                                              (get-output-string p))
-                                            (format "exception: ~v" exn))])
-                                 (if msg
-                                     (format "~a; ~a" msg s)
-                                     s)))))
+  (define (log-exn exn [msg #f])
+    (log-error (let ([s (if (exn? exn)
+                            (let ([p (open-output-string)])
+                              (parameterize ([current-error-port p])
+                                ((error-display-handler) (exn-message exn) exn))
+                              (get-output-string p))
+                            (format "exception: ~v" exn))])
+                 (if msg
+                     (format "~a; ~a" msg s)
+                     s))))
 
   (dynamic-wind
     (lambda () (void))

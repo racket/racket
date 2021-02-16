@@ -214,17 +214,14 @@
 ;; The algorithm consists of four steps an encoding the result.  All we need to
 ;; do, is to call them in order.
 ;; md5 : string/bytes/port [bool] -> string
-(define md5
-  (case-lambda
-    [(a-thing) (md5 a-thing #t)]
-    [(a-thing hex-encode?)
-     (let ([a-port
-            (cond [(bytes? a-thing)  (open-input-bytes a-thing)]
-                  [(string? a-thing) (open-input-string a-thing)]
-                  [(input-port? a-thing) a-thing]
-                  [else (raise-type-error 'md5 "input-port, bytes, or string"
-                                          a-thing)])])
-       (encode (step4 a-port) hex-encode?))]))
+(define (md5 a-thing [hex-encode? #t])
+  (let ([a-port
+         (cond [(bytes? a-thing)  (open-input-bytes a-thing)]
+               [(string? a-thing) (open-input-string a-thing)]
+               [(input-port? a-thing) a-thing]
+               [else (raise-type-error 'md5 "input-port, bytes, or string"
+                                       a-thing)])])
+    (encode (step4 a-port) hex-encode?)))
 
 ;; Step 1  -  Append Padding Bits
 ;; The message is padded so the length (in bits) becomes 448 modulo 512.  We

@@ -268,54 +268,53 @@
               (rng-proj v neg-party))
             val]))))))
 
-(define (ho-projection chaperone-or-impersonate-hash)
-  (λ (ctc)
-    (define immutable (base-hash/c-immutable ctc))
-    (define dom-ctc (base-hash/c-dom ctc))
-    (define flat? (flat-hash/c? ctc))
-    (define dom-proc (get/build-late-neg-projection dom-ctc))
-    (define rng-proc (get/build-late-neg-projection (base-hash/c-rng ctc)))
-    (λ (blame)
-      (define-values (dom-filled? maybe-pos-dom-proj maybe-neg-dom-proj)
-        (contract-pos/neg-doubling (dom-proc (blame-add-key-context blame #f))
-                                   (dom-proc (blame-add-key-context blame #t))))
-      (define-values (rng-filled? maybe-pos-rng-proj maybe-neg-rng-proj)
-        (contract-pos/neg-doubling (rng-proc (blame-add-value-context blame #f))
-                                   (rng-proc (blame-add-value-context blame #t))))
-      (cond
-        [(and dom-filled? rng-filled?)
-         (λ (val neg-party)
+(define ((ho-projection chaperone-or-impersonate-hash) ctc)
+  (define immutable (base-hash/c-immutable ctc))
+  (define dom-ctc (base-hash/c-dom ctc))
+  (define flat? (flat-hash/c? ctc))
+  (define dom-proc (get/build-late-neg-projection dom-ctc))
+  (define rng-proc (get/build-late-neg-projection (base-hash/c-rng ctc)))
+  (λ (blame)
+    (define-values (dom-filled? maybe-pos-dom-proj maybe-neg-dom-proj)
+      (contract-pos/neg-doubling (dom-proc (blame-add-key-context blame #f))
+                                 (dom-proc (blame-add-key-context blame #t))))
+    (define-values (rng-filled? maybe-pos-rng-proj maybe-neg-rng-proj)
+      (contract-pos/neg-doubling (rng-proc (blame-add-value-context blame #f))
+                                 (rng-proc (blame-add-value-context blame #t))))
+    (cond
+      [(and dom-filled? rng-filled?)
+       (λ (val neg-party)
+         (cond
+           [(check-hash/c dom-ctc immutable flat? val blame neg-party)
+            val]
+           [else
+            (handle-the-hash val neg-party
+                             maybe-pos-dom-proj maybe-neg-dom-proj
+                             (λ (v) maybe-pos-rng-proj) (λ (v) maybe-neg-rng-proj)
+                             chaperone-or-impersonate-hash ctc blame)]))]
+      [else
+       (define tc (make-thread-cell #f))
+       (λ (val neg-party)
+         (define-values (pos-dom-proj neg-dom-proj pos-rng-proj neg-rng-proj)
            (cond
-             [(check-hash/c dom-ctc immutable flat? val blame neg-party)
-              val]
+             [(thread-cell-ref tc)
+              =>
+              (λ (v) (values (vector-ref v 1) (vector-ref v 2) (vector-ref v 3) (vector-ref v 4)))]
              [else
-              (handle-the-hash val neg-party
-                               maybe-pos-dom-proj maybe-neg-dom-proj
-                               (λ (v) maybe-pos-rng-proj) (λ (v) maybe-neg-rng-proj)
-                               chaperone-or-impersonate-hash ctc blame)]))]
-        [else
-         (define tc (make-thread-cell #f))
-         (λ (val neg-party)
-           (define-values (pos-dom-proj neg-dom-proj pos-rng-proj neg-rng-proj)
-             (cond
-               [(thread-cell-ref tc)
-                =>
-                (λ (v) (values (vector-ref v 1) (vector-ref v 2) (vector-ref v 3) (vector-ref v 4)))]
-               [else
-                (define pos-dom-proj (maybe-pos-dom-proj))
-                (define neg-dom-proj (maybe-neg-dom-proj))
-                (define pos-rng-proj (maybe-pos-rng-proj))
-                (define neg-rng-proj (maybe-neg-rng-proj))
-                (thread-cell-set! tc (vector pos-dom-proj neg-dom-proj pos-rng-proj neg-rng-proj))
-                (values pos-dom-proj neg-dom-proj pos-rng-proj neg-rng-proj)]))
-           (cond
-             [(check-hash/c dom-ctc immutable flat? val blame neg-party)
-              val]
-             [else
-              (handle-the-hash val neg-party
-                               pos-dom-proj neg-dom-proj
-                               (λ (v) pos-rng-proj) (λ (v) neg-rng-proj)
-                               chaperone-or-impersonate-hash ctc blame)]))]))))
+              (define pos-dom-proj (maybe-pos-dom-proj))
+              (define neg-dom-proj (maybe-neg-dom-proj))
+              (define pos-rng-proj (maybe-pos-rng-proj))
+              (define neg-rng-proj (maybe-neg-rng-proj))
+              (thread-cell-set! tc (vector pos-dom-proj neg-dom-proj pos-rng-proj neg-rng-proj))
+              (values pos-dom-proj neg-dom-proj pos-rng-proj neg-rng-proj)]))
+         (cond
+           [(check-hash/c dom-ctc immutable flat? val blame neg-party)
+            val]
+           [else
+            (handle-the-hash val neg-party
+                             pos-dom-proj neg-dom-proj
+                             (λ (v) pos-rng-proj) (λ (v) neg-rng-proj)
+                             chaperone-or-impersonate-hash ctc blame)]))])))
 
 (define (blame-add-key-context blame swap?) (blame-add-context blame "the keys of" #:swap? swap?))
 (define (blame-add-value-context blame swap?) (blame-add-context blame "the values of" #:swap? swap?))

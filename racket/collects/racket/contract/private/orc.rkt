@@ -149,21 +149,20 @@
     [(base-first-or/c? ctc) (base-first-or/c-ctcs ctc)]
     [else #f]))
 
-(define (or/c-exercise ho-contracts)
-  (λ (fuel)
-    (define env (contract-random-generate-get-current-environment))
-    (values (λ (val)
-              (let loop ([ho-contracts ho-contracts])
-                (unless (null? ho-contracts)
-                  (define ctc (car ho-contracts))
-                  (cond
-                    [((contract-first-order ctc) val)
-                     (define-values (exercise ctcs) ((contract-struct-exercise ctc) fuel))
-                     (exercise val)
-                     (contract-random-generate-stash env ctc val)]
-                    [else
-                     (loop (cdr ho-contracts))]))))
-            '())))
+(define ((or/c-exercise ho-contracts) fuel)
+  (define env (contract-random-generate-get-current-environment))
+  (values (λ (val)
+            (let loop ([ho-contracts ho-contracts])
+              (unless (null? ho-contracts)
+                (define ctc (car ho-contracts))
+                (cond
+                  [((contract-first-order ctc) val)
+                   (define-values (exercise ctcs) ((contract-struct-exercise ctc) fuel))
+                   (exercise val)
+                   (contract-random-generate-stash env ctc val)]
+                  [else
+                   (loop (cdr ho-contracts))]))))
+          '()))
 
 (define ((or/c-generate or/c-ctc ctcs) fuel)
   (define directs 
@@ -538,11 +537,10 @@
          elems))
   (apply or/c or/c-args))
 
-(define atomic-value? 
-  (λ (x)
-     (or (char? x) (symbol? x) (boolean? x)
-         (null? x) (keyword? x) (number? x)
-         (void? x))))
+(define (atomic-value? x)
+  (or (char? x) (symbol? x) (boolean? x)
+      (null? x) (keyword? x) (number? x)
+      (void? x)))
 
 (define (get-flat-rec-me ctc)
   (define ans (flat-rec-contract-me ctc))

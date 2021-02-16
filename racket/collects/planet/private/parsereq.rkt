@@ -65,7 +65,7 @@
                    path)]
     [(list (? (lambda (x) (or (symbol? x) (string? x))) s))
      (let ([str (if (symbol? s) (symbol->string s) s)])
-       (define (yell msg) (λ (str) (raise-syntax-error #f (format msg str) stx)))
+       (define ((yell msg) str) (raise-syntax-error #f (format msg str) stx))
        (let* ([pkg-spec/tail (short-pkg-string->spec str yell)]
               [pkg-spec (car pkg-spec/tail)]
               [tail (cadr pkg-spec/tail)]
@@ -151,6 +151,6 @@
      (fail (format "Version specification expected number for major version, received: ~e" maj))]
     [_  (fail "Invalid version specification")]))
 
-(define (o f g) (λ (x) (f (g x))))
-(define (o/and . es) (λ (x) (andmap (λ (f) (f x)) es)))
-(define (o/or . es) (λ (x) (ormap (λ (f) (f x)) es)))
+(define ((o f g) x) (f (g x)))
+(define ((o/and . es) x) (andmap (λ (f) (f x)) es))
+(define ((o/or . es) x) (ormap (λ (f) (f x)) es))

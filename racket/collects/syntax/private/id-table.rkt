@@ -11,22 +11,20 @@
 ;; where hash maps symbol => (nonempty-listof (cons identifier value))
 ;;       phase is a phase-level (integer or #f)
 
-(define (make-id-table-hash-code identifier->symbol)
-  (lambda (d hash-code)
-    (let ([phase (id-table-phase d)])
-      (+ (hash-code phase)
-         (for/sum (((k v) (in-dict d)))
-           (* (hash-code (identifier->symbol k phase)) (hash-code v)))))))
+(define ((make-id-table-hash-code identifier->symbol) d hash-code)
+  (let ([phase (id-table-phase d)])
+    (+ (hash-code phase)
+       (for/sum (((k v) (in-dict d)))
+         (* (hash-code (identifier->symbol k phase)) (hash-code v))))))
 
-(define (make-id-table-equal? idtbl-count idtbl-ref)
-  (lambda (left right equal?)
-    ;; gen:equal+hash guarantees that left, right are same kind of hash
-    (and (equal? (id-table-phase left) (id-table-phase right))
-         (equal? (idtbl-count left) (idtbl-count right))
-         (let/ec k
-           (for*/and ([l-alist (in-hash-values (id-table-hash left))]
-                      [entry (in-list l-alist)])
-             (equal? (idtbl-ref right (car entry) (lambda () (k #f))) (cdr entry)))))))
+(define ((make-id-table-equal? idtbl-count idtbl-ref) left right equal?)
+  ;; gen:equal+hash guarantees that left, right are same kind of hash
+  (and (equal? (id-table-phase left) (id-table-phase right))
+       (equal? (idtbl-count left) (idtbl-count right))
+       (let/ec k
+         (for*/and ([l-alist (in-hash-values (id-table-hash left))]
+                    [entry (in-list l-alist)])
+           (equal? (idtbl-ref right (car entry) (lambda () (k #f))) (cdr entry))))))
 
 #|
 prop:id-table-impersonator : (vector wrapped-id-table key-in key-out value-in value-out)

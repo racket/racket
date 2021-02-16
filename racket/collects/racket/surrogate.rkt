@@ -124,25 +124,24 @@
            stx
            method-spec)]))
   
-     (define (make-super-proc-case name def-expr)
-       (lambda (spec)
-         (with-syntax ([name name])
-           (syntax-case spec ()
-             ;; Not a rest arg: normal mode
-             [(id ...) (quasisyntax [(id ...)
-                                     (#,@(if def-expr 
-                                             (list #'inner def-expr)
-                                             (list #'super))
-                                      name
-                                      id ...)])]
-             ;; A rest arg: take args as list
-             [id 
-              (identifier? (syntax id))
-              (quasisyntax [(id) (#,@(if def-expr 
-                                         (list #'inner def-expr)
-                                         (list #'super))
-                                  name
-                                  . id)])]))))
+     (define ((make-super-proc-case name def-expr) spec)
+       (with-syntax ([name name])
+         (syntax-case spec ()
+           ;; Not a rest arg: normal mode
+           [(id ...) (quasisyntax [(id ...)
+                                   (#,@(if def-expr 
+                                           (list #'inner def-expr)
+                                           (list #'super))
+                                    name
+                                    id ...)])]
+           ;; A rest arg: take args as list
+           [id 
+            (identifier? (syntax id))
+            (quasisyntax [(id) (#,@(if def-expr 
+                                       (list #'inner def-expr)
+                                       (list #'super))
+                                name
+                                . id)])])))
   
      (define (maybe-call-surrogate-wrapper-proc id fallback-stx body-stx)
        (if use-surrogate-wrapper-proc?

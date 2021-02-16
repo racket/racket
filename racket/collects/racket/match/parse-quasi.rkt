@@ -32,12 +32,11 @@
                               #f)]
         [else (error 'match "illegal input to append-pats")]))
 
-(define hard-case?
-  (lambda (p)
-    (or (ddk? p)
-        (syntax-case p (unquote-splicing)
-          [(unquote-splicing . _) #t]
-          [_ #f]))))
+(define (hard-case? p)
+  (or (ddk? p)
+      (syntax-case p (unquote-splicing)
+        [(unquote-splicing . _) #t]
+        [_ #f])))
 
 ;; parse stx as a quasi-pattern
 ;; parse parses unquote

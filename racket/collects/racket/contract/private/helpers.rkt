@@ -142,29 +142,28 @@
           (string-append source ":" location)
           (or location source)))))
 
-(define build-struct-names
-  (lambda (name-stx fields omit-sel? omit-set? srcloc-stx)
-    (let ([name (symbol->string (syntax-e name-stx))]
-          [fields (map symbol->string (map syntax-e fields))]
-          [+ string-append])
-      (map (lambda (s)
-             (datum->syntax name-stx (string->symbol s) srcloc-stx))
-           (append
-            (list 
-             (+ "struct:" name)
-             (+ "make-" name)
-             (+ name "?"))
-            (let loop ([l fields])
-              (if (null? l)
-                  null
-                  (append
-                   (if omit-sel?
-                       null
-                       (list (+ name "-" (car l))))
-                   (if omit-set?
-                       null
-                       (list (+ "set-" name "-" (car l) "!")))
-                   (loop (cdr l))))))))))
+(define (build-struct-names name-stx fields omit-sel? omit-set? srcloc-stx)
+  (let ([name (symbol->string (syntax-e name-stx))]
+        [fields (map symbol->string (map syntax-e fields))]
+        [+ string-append])
+    (map (lambda (s)
+           (datum->syntax name-stx (string->symbol s) srcloc-stx))
+         (append
+          (list 
+           (+ "struct:" name)
+           (+ "make-" name)
+           (+ name "?"))
+          (let loop ([l fields])
+            (if (null? l)
+                null
+                (append
+                 (if omit-sel?
+                     null
+                     (list (+ name "-" (car l))))
+                 (if omit-set?
+                     null
+                     (list (+ "set-" name "-" (car l) "!")))
+                 (loop (cdr l)))))))))
 
 (define (nums-up-to n)
   (let loop ([i 0])

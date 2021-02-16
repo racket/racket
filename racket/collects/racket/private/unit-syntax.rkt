@@ -29,22 +29,21 @@
   l)
 
 ;; check-tagged : (syntax-object -> X) -> syntax-object -> (cons (or symbol #f) X)
-(define (check-tagged check)
-  (λ (o)
-    (let loop ([o o])
-      (syntax-case o (bind-at tag)
-        ((bind-at bind o)
-         (loop #'o))
-        ((tag . s)
-         (syntax-case #'s ()
-           ((sym spec) 
-            (begin
-              (unless (symbol? (syntax-e #'sym))
-                (raise-stx-err "tag must be a symbol" #'sym))
-              (cons (syntax-e #'sym) (check #'spec))))
-           (_ (raise-stx-err "expected (tag <identifier> <syntax>)" #'s))))
-        (_ 
-         (cons #f (check o)))))))
+(define ((check-tagged check) o)
+  (let loop ([o o])
+    (syntax-case o (bind-at tag)
+      ((bind-at bind o)
+       (loop #'o))
+      ((tag . s)
+       (syntax-case #'s ()
+         ((sym spec) 
+          (begin
+            (unless (symbol? (syntax-e #'sym))
+              (raise-stx-err "tag must be a symbol" #'sym))
+            (cons (syntax-e #'sym) (check #'spec))))
+         (_ (raise-stx-err "expected (tag <identifier> <syntax>)" #'s))))
+      (_ 
+       (cons #f (check o))))))
 
 ;; check-tagged-:-clause : syntax-object -> (cons identifier identifier)
 ;; ensures that clause matches (a : b) or (a : (tag t b))

@@ -1162,10 +1162,9 @@
   (define ref "master")
   (define tmp-dir #f)
   (define transport 'git)
-  (define status-printf
-    (lambda args
-      (apply printf args)
-      (flush-output)))
+  (define (status-printf . args)
+    (apply printf args)
+    (flush-output))
 
   (define-values (host repo dest)
     (command-line
