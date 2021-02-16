@@ -276,7 +276,7 @@ Note that the literal-set uses the names @racket[#%plain-lambda] and
   [(_ (fml:formal) body ...+) #'(fml fml.name fml.kw fml.default)])
 ]
 
-@defstxclass[splicing-formals-no-rest #:splicing]{
+@defstxclass[formals-no-rest #:splicing]{
  Like @racket[formals] but without dotted-tail identifier.
  @defattribute[params syntax?]{
   The list of parameters.

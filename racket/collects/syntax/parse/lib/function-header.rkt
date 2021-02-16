@@ -4,7 +4,7 @@
          racket/dict
          racket/list)
 
-(provide function-header formal formals splicing-formals-no-rest)
+(provide function-header formal formals formals-no-rest)
 
 (define-syntax-class function-header
   #:attributes (name params args)
@@ -12,7 +12,7 @@
            #:attr params #'((~@ . (~? header.params ())) . args.params)
            #:attr name   #'(~? header.name name*)))
 
-(define-splicing-syntax-class splicing-formals-no-rest
+(define-splicing-syntax-class formals-no-rest
   #:attributes (params)
   (pattern (~seq arg:formal ...)
            #:attr params #'(arg.name ...)
@@ -27,8 +27,8 @@
                        "default-value expression missing"))
 
 (define-syntax-class formals
-  (pattern (~or* (args:splicing-formals-no-rest)
-                 (args:splicing-formals-no-rest . rest-id:id))
+  (pattern (~or* (args:formals-no-rest)
+                 (args:formals-no-rest . rest-id:id))
            #:attr params #'((~@ . args.params) (~? rest-id))
            #:fail-when (and (attribute rest-id)
                             (member #'rest-id (syntax->list #'args.params) bound-identifier=?)
