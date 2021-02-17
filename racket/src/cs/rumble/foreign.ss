@@ -2004,12 +2004,16 @@
 (define call-with-c-return
   (let ([call (lambda (thunk) (thunk))])
     (define-ftype ptr->ptr (function (ptr) ptr))
-    (let ([fptr (make-ftype-pointer ptr->ptr call)])
-      (let ([v (ftype-ref ptr->ptr () fptr)])
-        (unlock-object
-         (foreign-callable-code-object
-          (ftype-pointer-address fptr)))
-        v))))
+    (cond
+      [(not (eq? (machine-type) (#%$target-machine)))
+       (lambda (thunk) (#%error 'call-with-c-return "cannot use while cross-compiling"))]
+      [else
+       (let ([fptr (make-ftype-pointer ptr->ptr call)])
+         (let ([v (ftype-ref ptr->ptr () fptr)])
+           (unlock-object
+            (foreign-callable-code-object
+             (ftype-pointer-address fptr)))
+           v))])))
 
 ;; ----------------------------------------
 
