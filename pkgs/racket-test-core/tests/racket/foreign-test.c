@@ -402,3 +402,8 @@ X long varargs_check(int init, int n, ...) {
 
   return accum;
 }
+
+X int callback_hungry(int (*f)(void*)) {
+  char use_stack_space[10000];
+  return f(use_stack_space);
+}

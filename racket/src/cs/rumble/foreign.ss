@@ -1532,39 +1532,48 @@
 (define/who ffi-call
   (case-lambda
    [(p in-types out-type)
-    (ffi-call p in-types out-type #f #f #f)]
+    (ffi-call p in-types out-type #f #f #f #f)]
    [(p in-types out-type abi)
-    (ffi-call p in-types out-type abi #f #f #f)]
+    (ffi-call p in-types out-type abi #f #f #f #f)]
    [(p in-types out-type abi save-errno)
-    (ffi-call p in-types out-type abi save-errno #f #f)]
+    (ffi-call p in-types out-type abi save-errno #f #f #f)]
    [(p in-types out-type abi save-errno orig-place?)
-    (ffi-call p in-types out-type abi save-errno orig-place? #f #f)]
+    (ffi-call p in-types out-type abi save-errno orig-place? #f #f #f)]
    [(p in-types out-type abi save-errno orig-place? lock-name)
-    (ffi-call p in-types out-type abi save-errno orig-place? lock-name #f #f)]
+    (ffi-call p in-types out-type abi save-errno orig-place? lock-name #f #f #f)]
    [(p in-types out-type abi save-errno orig-place? lock-name blocking?)
-    (ffi-call p in-types out-type abi save-errno orig-place? lock-name blocking? #f)]
+    (ffi-call p in-types out-type abi save-errno orig-place? lock-name blocking? #f #f)]
    [(p in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after)
+    (ffi-call p in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after #f)]
+   [(p in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after exns?)
     (check who cpointer? p)
     (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
-    ((ffi-call/callable #t in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? #f #f) p)]))
+    ((ffi-call/callable #t in-types out-type abi varargs-after
+                        save-errno lock-name (and blocking? #t) (and orig-place? #t) #f (and exns? #t)
+                        #f)
+     p)]))
 
 (define/who ffi-call-maker
   (case-lambda
    [(in-types out-type)
-    (ffi-call-maker in-types out-type #f #f #f #f)]
+    (ffi-call-maker in-types out-type #f #f #f #f #f)]
    [(in-types out-type abi)
-    (ffi-call-maker in-types out-type abi #f #f #f)]
+    (ffi-call-maker in-types out-type abi #f #f #f #f)]
    [(in-types out-type abi save-errno)
-    (ffi-call-maker in-types out-type abi save-errno #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno #f #f #f)]
    [(in-types out-type abi save-errno orig-place?)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? #f #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name #f #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name blocking?)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after)
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after #f)]
+   [(in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after exns?)
     (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
-    (ffi-call/callable #t in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? #f #f)]))
+    (ffi-call/callable #t in-types out-type abi varargs-after
+                       save-errno lock-name (and blocking? #t) (and orig-place? #t) #f (and exns? #t)
+                       #f)]))
 
 (define (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
   (check-ffi who in-types out-type abi varargs-after)
@@ -1586,7 +1595,9 @@
 
 (define call-locks (make-eq-hashtable))
 
-(define (ffi-call/callable call? in-types out-type abi varargs-after save-errno lock-name blocking? orig-place? atomic? async-apply)
+(define (ffi-call/callable call? in-types out-type abi varargs-after
+                           save-errno lock-name blocking? orig-place? atomic? exns?
+                           async-apply)
   (let* ([conv* (let ([conv* (case abi
                                [(stdcall) '(__stdcall)]
                                [(sysv) '(__cdecl)]
@@ -1686,6 +1697,7 @@
        [(and (not ret-id)
              (not blocking?)
              (not orig-place?)
+             (not exns?)
              (not save-errno)
              (#%andmap (lambda (in-type)
                          (case (ctype-host-rep in-type)
@@ -1787,22 +1799,31 @@
                                         (when blocking? (currently-blocking? #t))
                                         (retain
                                          orig-args
-                                         (let ([r (#%apply (gen-proc (cpointer-address proc-p))
-                                                           (append
-                                                            (if ret-ptr
-                                                                (begin
-                                                                  (lock-cpointer ret-ptr)
-                                                                  (list (ret-maker (cpointer-address ret-ptr))))
-                                                                '())
-                                                            (map (lambda (arg in-type maker)
-                                                                   (let ([host-rep (array-rep-to-pointer-rep
-                                                                                    (ctype-host-rep in-type))])
-                                                                     (case host-rep
-                                                                       [(void*) (cpointer-address arg)]
-                                                                       [(struct union)
-                                                                        (maker (cpointer-address arg))]
-                                                                       [else arg])))
-                                                                 args in-types arg-makers)))])
+                                         (let ([r (let ([args (append
+                                                               (if ret-ptr
+                                                                   (begin
+                                                                     (lock-cpointer ret-ptr)
+                                                                     (list (ret-maker (cpointer-address ret-ptr))))
+                                                                   '())
+                                                               (map (lambda (arg in-type maker)
+                                                                      (let ([host-rep (array-rep-to-pointer-rep
+                                                                                       (ctype-host-rep in-type))])
+                                                                        (case host-rep
+                                                                          [(void*) (cpointer-address arg)]
+                                                                          [(struct union)
+                                                                           (maker (cpointer-address arg))]
+                                                                          [else arg])))
+                                                                    args in-types arg-makers))]
+                                                        [proc (gen-proc (cpointer-address proc-p))])
+                                                    (cond
+                                                      [(not exns?)
+                                                       (#%apply proc args)]
+                                                      [else
+                                                       (call-guarding-foreign-escape
+                                                        (lambda () (#%apply proc args))
+                                                        (lambda ()
+                                                          (when lock (mutex-release lock))
+                                                          (when blocking? (currently-blocking? #f))))]))])
                                            (when lock (mutex-release lock))
                                            (when blocking? (currently-blocking? #f))
                                            (case save-errno
@@ -1843,7 +1864,7 @@
                                                    [arg (c->s type
                                                               (case (ctype-host-rep type)
                                                                 [(struct union)
-                                                                 ;; Like old Racket, refer to argument on stack:
+                                                                 ;; Like Racket BC, refer to argument on stack:
                                                                  (make-cpointer (ftype-pointer-address arg) #f)
                                                                  #;
                                                                  (let* ([size (compound-ctype-size type)]
@@ -1918,6 +1939,9 @@
       (scheduler-start-atomic)
       ;; Now that the schedule is in atomic mode, reenable interrupts (for GC)
       (enable-interrupts)
+      ;; See also `call-guarding-foreign-escape`, which will need to take
+      ;; appropriate steps if `(thunk)` escapes, which currently means ending
+      ;; the scheduler's atomic mode
       (let ([v (thunk)])
         (disable-interrupts)
         (scheduler-end-atomic)
@@ -1946,6 +1970,46 @@
 (define (set-scheduler-atomicity-callbacks! start-atomic end-atomic)
   (set! scheduler-start-atomic start-atomic)
   (set! scheduler-end-atomic end-atomic))
+
+;; ----------------------------------------
+
+;; Call `thunk` to enter a foreign call while wrapping it with a way
+;; to escape with an exception from a foreign callback during the
+;; call:
+(define (call-guarding-foreign-escape thunk clean-up)
+  ((call-with-c-return
+    (lambda ()
+      (call-with-current-continuation
+       (lambda (esc)
+         (call-with-exception-handler
+          (lambda (x)
+            ;; Deliver an exception re-raise after returning back
+            ;; from `call-with-c-return`:
+            (|#%app| esc (lambda ()
+                           (scheduler-end-atomic) ; error in callback means during atomic mode
+                           (clean-up)
+                           (raise x))))
+          (lambda ()
+            (call-with-values thunk
+              ;; Deliver successful values after returning back from
+              ;; `call-with-c-return`:
+              (case-lambda
+               [(v) (lambda () v)]
+               [args (lambda () (#%apply values args))]))))))))))
+
+;; `call-with-c-return` looks like a foreign function, due to a "cast"
+;; to and from a callback, so returning from `call-with-c-return` will
+;; pop and C frame stacks (via longjmp internally) that were pushed
+;; since `call-with-c-return` was called.
+(define call-with-c-return
+  (let ([call (lambda (thunk) (thunk))])
+    (define-ftype ptr->ptr (function (ptr) ptr))
+    (let ([fptr (make-ftype-pointer ptr->ptr call)])
+      (let ([v (ftype-ref ptr->ptr () fptr)])
+        (unlock-object
+         (foreign-callable-code-object
+          (ftype-pointer-address fptr)))
+        v))))
 
 ;; ----------------------------------------
 
@@ -1982,7 +2046,9 @@
     (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)]))
 
 (define (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)
-  (let ([make-code (ffi-call/callable #f in-types out-type abi varargs-after #f #f #f #f (and atomic? #t) async-apply)])
+  (let ([make-code (ffi-call/callable #f in-types out-type abi varargs-after
+                                      #f #f #f #f (and atomic? #t) #f
+                                      async-apply)])
     (lambda (proc)
       (check 'make-ffi-callback procedure? proc)
       (create-callback (make-code proc)))))

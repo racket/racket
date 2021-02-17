@@ -908,6 +908,26 @@
   (check (lambda (f) (f)) add1)
   (check (box 20) (lambda (x) 20)))
 
+;; check `#:callback-exns?`
+(let ([callback_hungry (get-ffi-obj 'callback_hungry test-lib
+                                    (_fun #:callback-exns? #t
+                                          (_fun #:atomic? #t -> _int) -> _int))])
+  (test 17 callback_hungry (lambda () 17))
+  (for ([i 1000])
+    (with-handlers ([(lambda (x) (eq? x 'out)) void])
+      (callback_hungry (lambda () (raise 'out))))
+    (sync (system-idle-evt))))
+;; Same thing, with a lock
+(let ([callback_hungry (get-ffi-obj 'callback_hungry test-lib
+                                    (_fun #:callback-exns? #t
+                                          #:lock-name "hungry"
+                                          (_fun #:atomic? #t -> _int) -> _int))])
+  (test 170 callback_hungry (lambda () 170))
+  (for ([i 1000])
+    (with-handlers ([(lambda (x) (eq? x 'out)) void])
+      (callback_hungry (lambda () (raise 'out))))
+    (sync (system-idle-evt))))
+
 ;; check in-array
 (let ()
   (define _t (_array _int 6))

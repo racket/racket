@@ -523,6 +523,7 @@ the later case, the result is the @racket[ctype]).}
                       [#:lock-name lock-name (or/c string? #f) #f]
                       [#:in-original-place? in-original-place? any/c #f]
                       [#:blocking? blocking? any/c #f]
+                      [#:callback-exns? callback-exns? any/c #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
@@ -624,6 +625,23 @@ For @tech{callouts} to foreign functions with the generated type:
        value of @racket[async-apply], even if they are always applied
        in the OS thread used to run Racket.}
 
+ @item{If @racket[callback-exns?] is true, then a foreign
+       @tech{callout} allows an atomic @tech{callback} during the
+       foreign call to raise an exception that escapes from the
+       foreign call. From the foreign library's perspective, the
+       exception escapes via @tt{longjmp}. Exception escapes are
+       implemented through an exception handler that catches and
+       reraises the exception.
+
+       A callback that raises an exception must be an atomic callback
+       in the @BC[] implementation of Racket (and callbacks are always
+       atomic in the @CS[] implementation). Raising an exception is
+       not allowed in a callback that has an @racket[async-apply],
+       since the callback will run in an unspecified context. Raising
+       an exception is also not allowed if the callout (that led to
+       the callback) was created with @racket[in-original-place?] as
+       true and called in a non-original place.}
+
  @item{Values that are provided to a @tech{callout} (i.e., the
        underlying callout, and not the replacement produced by a
        @racket[wrapper], if any) are always considered reachable by the
@@ -716,10 +734,12 @@ For @tech{callbacks} to Racket functions with the generated type:
        synchronization with other threads, or else it may lead to
        deadlock. In addition, the Racket code must not perform any
        potentially blocking operation (such as I/O), it must not raise
-       an uncaught exception, it must not perform any escaping
-       continuation jumps, and its non-tail recursion must be minimal
-       to avoid C-level stack overflow; otherwise, the process may
-       crash or misbehave.
+       an uncaught exception unless called through a @tech{callout}
+       that supports exception (with @racket[#:callback-exns? #t]), it
+       must not perform any escaping continuation jumps, and (at
+       least for the @BC[] implementation) its
+       non-tail recursion must be minimal to avoid C-level stack
+       overflow; otherwise, the process may crash or misbehave.
 
        Callbacks are always atomic in the @CS[] implementation of Racket,
        because Racket threads do not capture C-stack context. Even on
@@ -779,7 +799,8 @@ For @tech{callbacks} to Racket functions with the generated type:
 
 @history[#:changed "6.3" @elem{Added the @racket[#:lock-name] argument.}
          #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] argument.}
-         #:changed "7.9.0.16" @elem{Added the @racket[#:varargs-after] argument.}]}
+         #:changed "7.9.0.16" @elem{Added the @racket[#:varargs-after] argument.}
+         #:changed "8.0.0.8" @elem{Added the @racket[#:callback-exns?] argument.}]}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
@@ -793,6 +814,7 @@ For @tech{callbacks} to Racket functions with the generated type:
                            (code:line #:lock-name lock-name-expr)
                            (code:line #:in-original-place? in-original-place?-expr)
                            (code:line #:blocking? blocking?-expr)
+                           (code:line #:callback-exns? callback-exns?-expr)
                            (code:line #:retry (retry-id [arg-id init-expr]))]
                [maybe-args code:blank
                            (code:line formals ::)]
@@ -821,8 +843,8 @@ and returns an integer.
 See @racket[_cprocedure] for information about the @racket[#:abi],
 @racket[#:varargs-after],
 @racket[#:save-errno], @racket[#:keep], @racket[#:atomic?],
-@racket[#:async-apply], @racket[#:in-original-place?], and
-@racket[#:blocking] options.
+@racket[#:async-apply], @racket[#:in-original-place?],
+@racket[#:blocking], and @racket[#:callback-exns?] options.
 
 In its full form, the @racket[_fun] syntax provides an IDL-like
 language that creates a wrapper function around the
@@ -916,7 +938,8 @@ specifications:
 @history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}
          #:changed "6.3" @elem{Added the @racket[#:lock-name] option.}
          #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] option.}
-         #:changed "7.9.0.16" @elem{Added the @racket[#:varargs-after] option.}]}
+         #:changed "7.9.0.16" @elem{Added the @racket[#:varargs-after] option.}
+         #:changed "8.0.0.8" @elem{Added the @racket[#:callback-exns?] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])
