@@ -517,7 +517,7 @@
                 atomic? orig-place? blocking? callback-exns?
                 async-apply errno lock-name))
 
-;; A lightwegith delay meachnism for a single-argument function when
+;; A lightweight delay mechanism for a single-argument function when
 ;; it's ok (but unlikely) to evaluate `expr` more than once and keep
 ;; the first result:
 (define-syntax-rule (delay/cas expr)
