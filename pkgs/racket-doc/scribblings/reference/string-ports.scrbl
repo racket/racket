@@ -139,7 +139,7 @@ passing a second argument to @racket[subbytes].}
   (get-output-bytes op)]
 
 @defproc[(get-output-string [out (and/c output-port? string-port?)]) string?]{
-Returns @racket[(bytes->string/utf-8 (get-output-bytes out) #\?)].}
+Returns @racket[(bytes->string/utf-8 (get-output-bytes out) @#,racketvalfont{#\uFFFD})].}
 
 @examples[
 (define i (open-input-string "hello world"))
