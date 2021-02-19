@@ -38,7 +38,7 @@
                       repo
                       #:dest-dir dest-dir ; #f => only find checkout
                       #:transport [transport 'git]
-                      #:ref [ref "master"]
+                      #:ref [ref/head 'head]
                       #:depth [given-depth 1]
                       #:status-printf [status-printf (lambda args
                                                        (apply printf args)
@@ -76,7 +76,7 @@
                      "git-upload-pack " "/" repo "\0"
                      "host=" host "\0")
           (define pkts (if dumb-protocol?
-                           ;; dumb protocol provide plain lines:
+                           ;; dumb protocol provides plain lines:
                            (for/list ([l (in-lines i)]) (string-append l "\n"))
                            ;; smart protocol provides packets:
                            (read-pkts i)))
@@ -87,11 +87,16 @@
           (define server-capabilities (parse-server-capabilities (car pkts)))
           (define refs ; (list (list <name> <ID>) ...)
             (parse-initial-refs pkts initial-error))
-          
+
+          (define ref (head->ref ref/head
+                                 server-capabilities dumb-protocol?
+                                 transport host verify? port repo username password
+                                 status))
+
           ;; Find the commits needed for `ref`:
           (define-values (ref-commit    ; #f or an ID string
                           want-commits) ; list of ID string
-            (select-commits ref refs status try-only-master? repo))
+            (select-commits ref refs server-capabilities status try-only-master? repo))
 
           (unless dest-dir
             (write-pkt o) ; clean termination
@@ -313,6 +318,39 @@
            (list "Content-Type: application/x-git-upload-pack-request")))))
      (values i (open-output-nowhere))]))
 
+;; converts 'head to a branch/tag/commit ref
+(define (head->ref ref/head
+                   server-capabilities dumb-protocol?
+                   transport host verify? port repo username password
+                   status)
+  (cond
+    [(eq? ref/head 'head)
+     (or
+      ;; Git 1.8.5 and later (smart protocol) maps HEAD in capabilities
+      (for/or ([cap (in-list server-capabilities)])
+        (define m (regexp-match #rx"^symref=HEAD:(.*)$" cap))
+        (and m (refspec->ref (cadr m))))
+      ;; dumb protocol: fetch the "HEAD" reference
+      (case (and dumb-protocol? transport)
+        [(http https)
+         (status "Getting HEAD")
+         (define i
+           (parameterize ([current-https-protocol (ssl-context verify?)])
+             (get-pure-port
+              (string->url
+               (~a transport "://" host ":" port "/" repo
+                   "/HEAD"))
+              (append
+               (http-request-headers username password)
+               (list "Content-Type: application/x-git-upload-pack-request")))))
+         (define s (port->string i))
+         (define m (regexp-match #rx"(?m:^ref: (.*)$)" s))
+         (and m (refspec->ref (cadr m)))]
+        [else #f])
+      ;; If all else fails, keep 'head and try to match "HEAD" in refs
+      'head)]
+    [else ref/head]))
+
 (define (ssl-context verify?)
   (cond
    [(or (not verify?)
@@ -320,6 +358,12 @@
     (current-https-protocol)]
    [else
     'secure]))
+
+(define (refspec->ref refspec)
+  (cond
+    [(regexp-match #rx"^refs/(?:heads|tags)/(.*)$" refspec)
+     => (lambda (m) (cadr m))]
+    [else refspec]))
 
 ;; ----------------------------------------
 
@@ -349,20 +393,28 @@
        #f]
       [else (list name id)]))))
 
-;; select-commits : string (listof (list bytes string))
+;; select-commits : (or/c string 'head) (listof (list bytes string)) ....
 ;;                  -> (values string-or-#f (listof string))
 ;;  Convert the user's request `ref`, which is a branch or tag or ID,
 ;;  into a specific ID --- if we can determine it from the server's
 ;;  initial response. If we can, the list of requested IDs will be
 ;;  just that one. Otherwise, we'll have to return a list of all
 ;;  IDs, and then we'll look for the reference later.
-(define (select-commits ref refs status try-only-master? repo)
-  (define ref-looks-like-id? (regexp-match? #rx"^[0-9a-f]+$" ref))
+(define (select-commits ref refs server-capabilities status try-only-master? repo)
+  (define ref-looks-like-id? (and (string? ref)
+                                  (regexp-match? #rx"^[0-9a-f]+$" ref)))
+  (define ref-rx (cond
+                   [(eq? ref 'head)
+                    ;; some servers report "HEAD" early, and we can
+                    ;; expect it early in the list; if that fails,
+                    ;; fall back to trying a "master" branch:
+                    #"^HEAD|refs/heads/master$"]
+                   [else
+                    (byte-regexp (bytes-append
+                                  #"^refs/(?:heads|tags)/"
+                                  (regexp-quote (string->bytes/utf-8 ref))
+                                  #"$"))]))
 
-  (define ref-rx (byte-regexp (bytes-append
-                               #"^refs/(?:heads|tags)/"
-                               (regexp-quote (string->bytes/utf-8 ref))
-                               #"$")))
   (define ref-commit
     (or
      ;; Search list of branch and tag names:
@@ -370,12 +422,13 @@
        (and (regexp-match? ref-rx (car ref))
             (cadr ref)))
      ;; Try matching the references as a commit/tag ID of a branch or tag:
-     (let ([rx (id-ref->regexp ref)])
-       (for/or ([a-ref (in-list refs)])
-         (and (regexp-match? rx (cadr a-ref))
-              (begin
-                (status "Commit id ~s matches ~a" ref (car a-ref))
-                (cadr a-ref)))))))
+     (and (string? ref)
+          (let ([rx (id-ref->regexp ref)])
+            (for/or ([a-ref (in-list refs)])
+              (and (regexp-match? rx (cadr a-ref))
+                   (begin
+                     (status "Commit id ~s matches ~a" ref (car a-ref))
+                     (cadr a-ref))))))))
   
   (define want-commits
     (cond
@@ -385,7 +438,7 @@
         [try-only-master?
          (status "Requested reference looks like commit id; try within master")
          (define-values (master-ref-commit want-commits)
-           (select-commits "master" refs status #f repo))
+           (select-commits "master" refs '() status #f repo))
          want-commits]
         [else
          (status "Requested reference looks like commit id; getting all commits")
@@ -421,7 +474,7 @@
   (write-bytes full-msg o)
   (flush-output o))
 
-;; read-pkg : input-port -> bstr-or-eof
+;; read-pkt : input-port -> bstr-or-eof
 ;;  Reads one pkt, returning eof of the special "null" pkt
 (define (read-pkt i)
   (define len-bstr (read-bytes 4 i))

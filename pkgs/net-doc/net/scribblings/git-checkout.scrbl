@@ -22,7 +22,7 @@ for information on command-line arguments and flags.
 @defproc[(git-checkout [hostname string?]
                        [repository string?]
                        [#:dest-dir dest-dir (or/c path-string? #f)]
-                       [#:ref ref string? "master"]
+                       [#:ref ref (or/c string? 'head) 'head]
                        [#:transport transport (or/c 'git 'http 'https) 'git]
                        [#:depth depth (or/c #f exact-positive-integer?) 1]
                        [#:status-printf status-printf (string? any/c ... . -> . void?) (lambda args
@@ -41,14 +41,15 @@ for information on command-line arguments and flags.
                        [#:password password (or/c string? #f) (current-git-password)])
          string?]{
 
-Contacts the server at @racket[hostname] and @racket[port]
-(where @racket[#f] is replaced by the default)
-to download the repository whose name on the server is
-@racket[repository] (normally ending in @filepath{.git}).  The tree
-within the repository that is identified by @racket[ref] (which can be
-a branch, tag, commit ID, or tree ID) is extracted to
-@racket[dest-dir], and it returns a string containing a commit ID corresponding 
-to @racket[ref].
+Contacts the server at @racket[hostname] and @racket[port] (where
+@racket[#f] is replaced by the default) to download the repository
+whose name on the server is @racket[repository] (normally ending in
+@filepath{.git}). The tree within the repository that is identified by
+@racket[ref] is extracted to @racket[dest-dir], and it returns a
+string containing a commit ID corresponding to @racket[ref]. The
+@racket[ref] argument can be a string for a branch, tag, commit ID, or
+tree ID, or it can be @racket['head] to refer to the default branch as
+reported by the server.
 
 If @racket[transport] is @racket['git], then the server is contacted
 using Git's native transport. If @racket[transport] is
@@ -69,8 +70,8 @@ If @racket[dest-dir] does not exist, it is created. If
 @racket[dest-dir] does exist, its existing content is left in place
 except as replaced by content from the Git repository.
 
-If @racket[ref] identifies a branch or tag by either name or by
-commit ID, then the @tt{git://} protocol allows @racket[git-checkout]
+If @racket[ref] identifies a branch or tag by name, through @racket['head], or
+by its commit ID, then the @tt{git://} protocol allows @racket[git-checkout]
 to download only the commits and objects relevant to the branch or
 tag. Furthermore, the default @racket[depth] argument allows
 @racket[git-checkout] to obtain only the latest commit and its
@@ -109,7 +110,9 @@ Authentication.
          #:changed "6.2.900.17" @elem{Added the @racket[strict-links?] argument.}
          #:changed "6.6.0.5" @elem{Added the @racket[username] and @racket[password] arguments.}
          #:changed "6.6.0.5" @elem{Changed to raise @racket[exn:fail:git] exceptions
-                                   instead of @racket[exn:fail].}]}
+                                   instead of @racket[exn:fail].}
+         #:changed "8.0.0.8" @elem{Added support for @racket[ref] as @racket['head]
+                                   and made @racket['head] the default.}]}
 
 @deftogether[(@defparam[current-git-username username (or/c string? #f)]
               @defparam[current-git-password password (or/c string? #f)])]{
