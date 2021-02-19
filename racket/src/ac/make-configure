@@ -50,8 +50,9 @@ exit 0
 	 runstatedir
 	 infodir
          htmldir
-         ;; dvidir - converted to "collectsdir"
-         ;; pdfdir - converted to "appsdir"
+         ;; Note: any arguments converted this way need to be excluded in "rktio_keep.m4"
+         ;;  dvidir - converted to "collectsdir"
+         ;;  pdfdir - converted to "appsdir"
          psdir
          localedir)))
 
