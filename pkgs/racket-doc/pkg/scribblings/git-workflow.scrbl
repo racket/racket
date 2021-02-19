@@ -120,7 +120,7 @@ develops only a few of them. The intended workflow is as follows:
   repository by setting an @exec{upstream} remote, e.g. @exec{git
   remote add upstream @nonterm{url-of-central-repo}}. This gives you
   the option to periodically pull in commits from the central
-  repository with @exec{git pull --ff-only upstream master}.}
+  repository with @exec{git pull --ff-only upstream}.}
 
   Alternatively, use @exec{git} to clone the target @nonterm{url}
   first, and then supply the local clone's path as @nonterm{dir} in

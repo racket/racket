@@ -53,8 +53,8 @@
          $ "raco pkg remove pkg-test1-git-different-checksum"
          $ "racket -l pkg-test1/number" =exit> 1))))
 
- (test-remote "git://github.com/mflatt/pkg-test")
- (test-remote "https://github.com/mflatt/pkg-test.git")
+ (test-remote "git://github.com/racket/test-pkg-1")
+ (test-remote "https://github.com/racket/test-pkg-1.git")
  (test-remote "https://bitbucket.org/mflatt/pkg-test.git")
 
  (define (try-git-repo label type+repo)
@@ -69,10 +69,26 @@
      $ (~a "raco pkg update " type+repo)
      (finally
       (delete-directory/files tmp-dir)))))
- 
+
  (try-git-repo
   "remote/github with auto prefix and with branch"
-  "--type github mflatt/pkg-test?path=pkg-test1/#alt")
+  "--type github racket/test-pkg-1?path=pkg-test1/#alt")
  (try-git-repo
   "remote/git type"
-  "--type git https://bitbucket.org/mflatt/pkg-test?path=pkg-test1#alt"))
+  "--type git https://bitbucket.org/mflatt/pkg-test?path=pkg-test1#alt")
+
+ (define (try-git-repo-using-default-branch label repo)
+   (define tmp-dir (make-temporary-file "~a-clone" 'directory))
+   (shelly-wind
+    $ (~a "raco pkg install " repo)
+    $ "racket -l test-pkg-2/twelve" =stdout> "12\n"
+    $ (~a "raco pkg update --clone " tmp-dir " test-pkg-2")
+    $ "racket -l test-pkg-2/twelve" =stdout> "12\n"
+    $ (~a "raco pkg update " repo)
+    $ "raco pkg remove " repo
+    (finally
+     (delete-directory/files tmp-dir))))
+
+ (try-git-repo-using-default-branch
+  "remote/git with default branch"
+  "https://github.com/racket/test-pkg-2.git"))

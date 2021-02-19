@@ -383,8 +383,8 @@ is:
 
 @inset{@exec{https://github.com/@nonterm{user}/@nonterm{package}.git}}
 
-If you want the package to be @nonterm{branch} or @nonterm{tag}
-instead of @exec{master}, then add @filepath{#@nonterm{branch}} or
+If you want the package to be at @nonterm{branch} or @nonterm{tag}
+instead of the default branch, then add @filepath{#@nonterm{branch}} or
 @filepath{#@nonterm{tag}} to the end of the package source. If your
 package is a subdirectory @nonterm{path} within the repository, add
 @filepath{?path=@nonterm{path}} to the end of the package source.

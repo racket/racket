@@ -249,14 +249,15 @@ where @nonterm{scheme} is @litchar{git}, @litchar{http}, or
 reference). The @nonterm{path} can contain multiple
 @litchar{/}-separated elements to form a path within the repository,
 and it defaults to the empty path. The @nonterm{rev} can be a branch,
-tag, or commit, and it defaults to @exec{master}.
+tag, or commit, and it defaults to using the default branch as reported
+by the server.
 
 @margin-note{Due to properties of the Git protocol, the archive might
 be accessed more efficiently when @nonterm{rev} refers to a branch or
 tag (even if it is written as a commit). In those cases, the content
 typically can be obtained without downloading irrelevant history.}
 
-For example, @filepath{http://bitbucket.org/game/tic-tac-toe#master}
+For example, @filepath{http://bitbucket.org/game/tic-tac-toe#main}
 is a Git package source. 
 
 A checkout of the repository at @nonterm{rev} provides the content of
@@ -285,7 +286,7 @@ URLs is the same as for a Git repository reference starting
 @optional{@exec{.git}}@optional{@exec{/}}@optional{@exec{?path=}@nonterm{path}}@;
 @optional{@exec{#}@nonterm{rev}}}
 
-For example, @filepath{git://github.com/game/tic-tac-toe#master}
+For example, @filepath{git://github.com/game/tic-tac-toe#main}
 is a GitHub package source.
 
 @margin-note{A Github repository source that starts with

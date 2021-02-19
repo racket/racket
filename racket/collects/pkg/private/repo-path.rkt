@@ -41,7 +41,7 @@
           (string-join (map (compose ~a path/param-path)
                             (url-path/no-slash pkg-url))
                        "/")
-          (or (url-fragment pkg-url) "master")
+          (or (url-fragment pkg-url) 'head)
           (extract-git-path pkg-url)))
 
 (define (split-git-or-hub-url pkg-url #:type [type #f])
