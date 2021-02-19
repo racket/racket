@@ -43,7 +43,7 @@ and @racket[cdr] is pronounced ``could-er.'')
 Racket's pair datatype and its relation to lists is essentially a
 historical curiosity, along with the dot notation for printing and the
 funny names @racket[car] and @racket[cdr]. Pairs are deeply wired into
-to the culture, specification, and implementation of Racket, however,
+the culture, specification, and implementation of Racket, however,
 so they survive in the language.
 
 You are perhaps most likely to encounter a non-list pair when making a
