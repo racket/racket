@@ -244,26 +244,76 @@ Like @racket[syntax:real-xml], but it reads an XML element like
 @defproc[(write-xml [doc document?] [out output-port? (current-output-port)])
          void?]{
 
-Writes a document to the given output port, currently ignoring
-everything except the document's root element.}
+Same as @(racket display-xml) with @(racket #:indentation 'none).}
 
 @defproc[(write-xml/content [content content/c] [out output-port? (current-output-port)])
          void?]{
 
-Writes document content to the given output port.}
+Same as @(racket display-xml/content) with @(racket #:indentation 'none).}
 
-@defproc[(display-xml [doc document?] [out output-port? (current-output-port)])
+@defproc[(display-xml [doc document?] [out output-port? (current-output-port)]
+                      [#:indentation indentation (or/c 'none 'classic 'peek 'scan) 'classic])
          void?]{
 
-Like @racket[write-xml], but newlines and indentation make the output
-more readable, though less technically correct when whitespace is
-significant.}
+Writes the document to the given output port.
 
-@defproc[(display-xml/content [content content/c] [out output-port? (current-output-port)])
+See @(racket display-xml/content) for an explanation of @(racket indentation).}
+
+@(begin
+   (define indent-eval (make-base-eval))
+   (indent-eval '(require xml)))
+@defproc[(display-xml/content [content content/c] [out output-port? (current-output-port)]
+                              [#:indentation indentation (or/c 'none 'classic 'peek 'scan) 'classic])
          void?]{
+Writes document content to the given output port.
 
-Like @racket[write-xml/content], but with indentation and newlines
-like @racket[display-xml].}
+Indentation can make the output more readable, though less technically correct
+when whitespace is significant.
+The four @(racket indentation) modes are as follows:
+@(itemlist
+  @item{@(racket 'none) --- No whitespace is added.
+ This is the only mode that is guaranteed to be 100% accurate in all situations.}
+  @item{@(racket 'classic) --- Whitespace is added around almost every node.
+ This mode is mostly for compatibility.}
+  @item{@(racket 'scan) --- If any child of an @(racket element?) is @(racket pcdata?)
+ or @(racket entity?), then no whitespace will be added inside that element.
+ This mode works well for XML that does not contain mixed content, but @(racket 'peek)
+ should be equally good and faster.}
+  @item{@(racket 'peek) --- Like @(racket 'scan) except only the first child is checked.
+ This mode works well for XML that does not contain mixed content.})
+
+@(examples
+  #:eval indent-eval
+  (define example-data
+    '(root (a "nobody")
+           (b "some" "body")
+           (c "any" (i "body"))
+           (d (i "every") "body")))
+  (define (show indentation [data example-data])
+    (display-xml/content (xexpr->xml data)
+                         #:indentation indentation))
+  (code:comment "")
+  (code:comment "`none` is guaranteed to be accurate:")
+  (show 'none)
+  (code:comment "")
+  (code:comment "`classic` adds the most whitespace.")
+  (code:comment "Even the 'nobody' pcdata has whitespace added:")
+  (show 'classic)
+  (code:comment "")
+  (code:comment "`peek` cannot see that <d> contains a pcdata child:")
+  (show 'peek)
+  (code:comment "")
+  (code:comment "`scan` sees that <d> contains a pcdata child:")
+  (show 'scan))
+
+Be warned that even @(racket 'scan) does not handle HTML with 100% accuracy.
+The following example will be incorrectly rendered as "@italic{no} @bold{body}"
+instead of "@italic{no}@bold{body}":
+@(examples
+  #:eval indent-eval
+  (define html-data '(span (i "no") (b "body")))
+  (show 'scan html-data))
+}
                
 
 @defproc[(write-xexpr [xe xexpr/c] [out output-port? (current-output-port)]

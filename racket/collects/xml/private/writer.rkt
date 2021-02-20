@@ -3,7 +3,7 @@
          "structures.rkt")
 
 ; Within this file, `Dent` is used in comments and `dent` is used in code
-; to refer to this contract:
+; to refer to an indentation
 (define indentation? (or/c 'none 'classic 'peek 'scan))
 
 (provide/contract
@@ -50,12 +50,17 @@
 ;; display-xml : Document [Output-port] [#:indentation Dent] -> Void
 (define (display-xml doc [out (current-output-port)]
                      #:indentation [dent 'classic])
+  (define doc-misc (document-misc doc))
   (let ([prolog (document-prolog doc)])
     (display-outside-misc (prolog-misc prolog) out)
     (display-dtd (prolog-dtd prolog) out)
     (display-outside-misc (prolog-misc2 prolog) out))
   (display-xml/content (document-element doc) out #:indentation dent)
-  (display-outside-misc (document-misc doc) out))
+  (case dent
+    [(none classic) (void)]
+    [else (when (not (null? doc-misc))
+            (newline out))])
+  (display-outside-misc doc-misc out))
 
 ; display-dtd : document-type oport -> void
 (define (display-dtd dtd out)
@@ -94,7 +99,9 @@
      [else (error 'write-xml-content "received ~e" el)])
    el over dent out))
 
-(define whitespace-sensitive? pcdata?)
+(define (whitespace-sensitive? x)
+  (or (pcdata? x)
+      (entity? x)))
 
 ;; write-xml-element : Element Nat Dent Output-Stream -> Void
 (define (write-xml-element el over dent out)
@@ -147,7 +154,8 @@
     [(none)
      (void)]
     [else
-     (error "Bug in xml package - unexpected indentation: " dent)])
+     ; Either we have a bug or someone bypassed the contract
+     (error "xml: unexpected indentation: " dent)])
   (display el out))
 
 ;; write-xml-pcdata : Pcdata Nat Dent Output-Stream -> Void

@@ -52,19 +52,24 @@
 (define (test-display-xml/content str res)
   (test-equal? str (with-output-to-string (lambda () (display-xml/content (document-element (read-xml (open-input-string str)))))) res))
 
-(define (indent indentation xexpr)
-  ; The indentation tests will ignore the leading newline
-  (string-trim
-   (with-output-to-string
-     (lambda () (display-xml/content (xexpr->xml xexpr)
-                                     (current-output-port)
-                                     #:indentation indentation)))))
+(define/contract (indent indentation val)
+  (-> symbol? (or/c xexpr? document?) string?)
+  (let-values ([(proc val)
+                (cond
+                  [(document? val)
+                   (values display-xml val)]
+                  [else
+                   (values display-xml/content (xexpr->xml val))])])
+    ; The indentation tests will ignore the leading newline
+    (string-trim
+     (with-output-to-string
+       (lambda () (proc val (current-output-port) #:indentation indentation))))))
 (define-syntax (test-indentation stx)
   (syntax-case stx ()
-    [(_ indentation xexpr expected-xml)
+    [(_ arg ... expected-xml)
      (syntax/loc stx
-       (check-equal? (fix-newline expected-xml)
-                     (indent indentation xexpr)))]))
+       (check-equal? (indent arg ...)
+                     (fix-newline expected-xml)))]))
 
 (define (test-xexpr? xe)
   (test-not-false (format "~S" xe) (xexpr? xe)))
@@ -626,6 +631,147 @@ XML
     <li>Ab<b>stract</b> is a verb.</li>
   </ul>
 </div>
+XML
+                         ))
+     (let ([el '(foo (a)
+                     (b "1")
+                     (c "1" "2")
+                     ; Both symbolic and numeric entities are considered whitespace-sensitive
+                     (d sym)
+                     (span quot "blah" quot)
+                     (e 42))])
+       (test-indentation 'none el "<foo><a /><b>1</b><c>12</c><d>&sym;</d><span>&quot;blah&quot;</span><e>&#42;</e></foo>")
+       (test-indentation 'classic el #<<XML
+<foo>
+  <a />
+  <b>
+    1
+  </b>
+  <c>
+    1
+    2
+  </c>
+  <d>&sym;
+  </d>
+  <span>&quot;
+    blah&quot;
+  </span>
+  <e>&#42;
+  </e>
+</foo>
+XML
+                         )
+       (test-indentation 'peek el #<<XML
+<foo>
+  <a />
+  <b>1</b>
+  <c>12</c>
+  <d>&sym;</d>
+  <span>&quot;blah&quot;</span>
+  <e>&#42;</e>
+</foo>
+XML
+                         )
+       (test-indentation 'scan el #<<XML
+<foo>
+  <a />
+  <b>1</b>
+  <c>12</c>
+  <d>&sym;</d>
+  <span>&quot;blah&quot;</span>
+  <e>&#42;</e>
+</foo>
+XML
+                         ))
+     (let* ([comment (make-comment " comment ")]
+            [pi (make-p-i #f #f 'pi "ins")]
+            [misc (list comment pi)]
+            [prolog (make-prolog misc
+                                 (document-type 'my-doctype (external-dtd "ignored") #f)
+                                 misc)]
+            [xpr `(root ((aa "bb")
+                         (cc "dd"))
+                        (ee)
+                        (ff "1")
+                        (gg "1" "2")
+                        (hh symbolic)
+                        ,comment
+                        ,(make-cdata #f #f "<![CDATA[my cdata]]>")
+                        ,pi)]
+            [doc (make-document prolog (xexpr->xml xpr) misc)])
+       (test-indentation 'none doc #<<XML
+<!-- comment -->
+<?pi ins?>
+<!DOCTYPE my-doctype>
+<!-- comment -->
+<?pi ins?>
+<root aa="bb" cc="dd"><ee /><ff>1</ff><gg>12</gg><hh>&symbolic;</hh><!-- comment --><![CDATA[my cdata]]><?pi ins?></root><!-- comment -->
+<?pi ins?>
+XML
+                         )
+       (test-indentation 'classic doc #<<XML
+<!-- comment -->
+<?pi ins?>
+<!DOCTYPE my-doctype>
+<!-- comment -->
+<?pi ins?>
+
+<root aa="bb" cc="dd">
+  <ee />
+  <ff>
+    1
+  </ff>
+  <gg>
+    1
+    2
+  </gg>
+  <hh>&symbolic;
+  </hh>
+  <!-- comment -->
+  <![CDATA[my cdata]]>
+  <?pi ins?>
+</root><!-- comment -->
+<?pi ins?>
+XML
+                         )
+       (test-indentation 'peek doc #<<XML
+<!-- comment -->
+<?pi ins?>
+<!DOCTYPE my-doctype>
+<!-- comment -->
+<?pi ins?>
+
+<root aa="bb" cc="dd">
+  <ee />
+  <ff>1</ff>
+  <gg>12</gg>
+  <hh>&symbolic;</hh>
+  <!-- comment -->
+  <![CDATA[my cdata]]>
+  <?pi ins?>
+</root>
+<!-- comment -->
+<?pi ins?>
+XML
+                         )
+       (test-indentation 'scan doc #<<XML
+<!-- comment -->
+<?pi ins?>
+<!DOCTYPE my-doctype>
+<!-- comment -->
+<?pi ins?>
+
+<root aa="bb" cc="dd">
+  <ee />
+  <ff>1</ff>
+  <gg>12</gg>
+  <hh>&symbolic;</hh>
+  <!-- comment -->
+  <![CDATA[my cdata]]>
+  <?pi ins?>
+</root>
+<!-- comment -->
+<?pi ins?>
 XML
                          ))
      )
