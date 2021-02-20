@@ -95,6 +95,14 @@ directory}:
        @history[#:changed "7.0.0.19" @elem{Adapt the package-search path in
                                            a general way for a directory scope.}]}
 
+ @item{@indexed-racket['compiled-file-roots] --- a list of paths
+       and @racket['same] used to initialize @racket[current-compiled-file-roots].
+       A path, which is relative or absolute, can be specified as a string
+       or byte string that is converted to a path with @racket[string->path]
+       or @racket[bytes->path], respectively.
+
+       @history[#:added "8.0.0.9"]}
+
  @item{@indexed-racket['bin-dir] --- a path, string, or byte string for the
        installation's directory containing executables. It defaults to a
        @filepath{bin} sibling directory of the @tech{main collection

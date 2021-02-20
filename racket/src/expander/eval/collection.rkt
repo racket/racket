@@ -12,7 +12,8 @@
          collection-file-path
          find-library-collection-paths
          find-library-collection-links
-
+         find-compiled-file-roots
+         
          find-col-file
 
          collection-place-init!)
@@ -69,6 +70,12 @@
   (hash-ref config-table
             'installation-name 
             (version)))
+
+(define (coerce-to-relative-path p)
+  (cond
+    [(string? p) (string->path p)]
+    [(bytes? p) (bytes->path p)]
+    [else p]))
 
 (define (coerce-to-path p)
   (cond
@@ -492,3 +499,10 @@
                    (cons (simplify-path (path->complete-path v (current-directory)))
                          (loop (cdr l)))
                    (loop (cdr l)))))))))))
+
+(define (find-compiled-file-roots)
+  (define ht (get-config-table (find-main-config)))
+  (define paths (hash-ref ht 'compiled-file-roots #f))
+  (or (and (list? paths)
+           (map coerce-to-relative-path paths))
+      (list (build-path 'same))))

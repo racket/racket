@@ -3831,24 +3831,33 @@ void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths)
   save = p->error_buf;
   p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
-    Scheme_Object *rr, *ccfr, *pls2pl, *a[3];
+    Scheme_Object *rr, *ccfr, *fcfr, *pls2pl, *a[3];
 
-    rr = scheme_builtin_value("regexp-replace*");
+    fcfr = scheme_builtin_value("find-compiled-file-roots");
     ccfr = scheme_builtin_value("current-compiled-file-roots");
-    pls2pl = scheme_builtin_value("path-list-string->path-list");
+    if (paths) {
+      rr = scheme_builtin_value("regexp-replace*");
+      pls2pl = scheme_builtin_value("path-list-string->path-list");
+    } else
+      rr = pls2pl = scheme_false;
 
-    if (rr && ccfr && pls2pl) {
-      a[0] = scheme_make_utf8_string("@[(]version[)]");
-      a[1] = scheme_make_utf8_string(paths);
-      a[2] = scheme_make_utf8_string(scheme_version());
-      a[2] = _scheme_apply(rr, 3, a);
+    if (rr && fcfr && ccfr && pls2pl) {
+      if (paths) {
+        a[0] = scheme_make_utf8_string("@[(]version[)]");
+        a[1] = scheme_make_utf8_string(paths);
+        a[2] = scheme_make_utf8_string(scheme_version());
+        a[2] = _scheme_apply(rr, 3, a);
+      }
+        
+      a[1] = _scheme_apply(fcfr, 0, NULL);
 
-      a[0] = scheme_intern_symbol("same");
-      a[1] = scheme_build_path(1, a);
-
-      a[0] = a[2];
-      a[1] = scheme_make_pair(a[1], scheme_null);
-      a[0] = _scheme_apply(pls2pl, 2, a);
+      if (paths) {
+        a[0] = a[2];
+        a[0] = _scheme_apply(pls2pl, 2, a);
+      } else {
+        a[0] = a[1];
+      }
+      
       _scheme_apply(ccfr, 1, a);
     }
   } else {

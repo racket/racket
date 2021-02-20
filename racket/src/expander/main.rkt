@@ -69,6 +69,7 @@
 
          find-library-collection-paths
          find-library-collection-links
+         find-compiled-file-roots
          find-main-config
 
          current-library-collection-paths

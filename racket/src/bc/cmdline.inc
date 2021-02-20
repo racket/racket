@@ -1351,8 +1351,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   if (!skip_coll_dirs)
     scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
-  if (compiled_paths)
-    scheme_init_compiled_roots(global_env, compiled_paths);
+  scheme_init_compiled_roots(global_env, compiled_paths);
 
   scheme_seal_parameters();
 

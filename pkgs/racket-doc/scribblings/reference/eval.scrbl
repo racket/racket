@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label setup/dirs))
 
 @title[#:tag "eval"]{Evaluation and Compilation}
 
@@ -395,15 +396,32 @@ A list of paths and @racket['same]s that is is used by the default
 @tech{compiled-load handler} (see @racket[current-load/use-compiled]).
 
 The parameter is normally initialized to @racket[(list 'same)], but
-the parameter's initial value can be adjusted by the
+the parameter's initial value can be adjusted by the installation
+configuration as reported by @racket[(find-compiled-file-roots)],
+and it can be further adjusted by the
 @as-index{@envvar{PLTCOMPILEDROOTS}} environment variable or the
 @DFlag{compiled} or @Flag{R} command-line flag for @exec{racket}.  If
 the environment variable is defined and not overridden by a
 command-line flag, it is parsed by first replacing any
 @litchar["@(version)"] with the result of @racket[(version)], then using
-@racket[path-list-string->path-list] with a default path list
-@racket[(list (build-path 'same))] to arrive at the parameter's
+@racket[path-list-string->path-list] with a path list produced by
+@racket[(find-compiled-file-roots)] to arrive at the parameter's
 initial value.}
+
+
+@defproc[(find-compiled-file-roots) 
+         (listof (or/c path? 'same))]{
+
+Produces a list of paths and @racket['same], which is normally used to
+initialize @racket[current-compiled-file-roots]. The list is
+determined by consulting the @filepath{config.rtkd} file in the
+directory reported by @racket[(find-config-dir)], and it defaults to
+@racket[(list (build-path 'same))] if not configured there.
+
+See also @racket['compiled-file-roots] in @secref[#:doc raco-doc
+"config-file"].
+
+@history[#:added "8.0.0.9"]}
 
 
 @defparam[use-compiled-file-check check (or/c 'modify-seconds 'exists)]{

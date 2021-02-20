@@ -13,6 +13,7 @@
                find-library-collection-paths
                use-collection-link-paths
                current-compiled-file-roots
+               find-compiled-file-roots
                find-main-config
                executable-yield-handler
                load-on-demand-enabled
@@ -764,12 +765,14 @@
         (find-library-collection-links))
        (current-library-collection-paths
         (find-library-collection-paths collects-pre-extra (reverse rev-collects-post-extra))))
-     (when compiled-roots-path-list-string
-       (current-compiled-file-roots
-        (let ([s (regexp-replace* "@[(]version[)]"
-                                  compiled-roots-path-list-string
-                                  (version))])
-          (path-list-string->path-list s (list (build-path 'same)))))))
+     (let ([roots (find-compiled-file-roots)])
+       (if compiled-roots-path-list-string
+           (current-compiled-file-roots
+            (let ([s (regexp-replace* "@[(]version[)]"
+                                      compiled-roots-path-list-string
+                                      (version))])
+              (path-list-string->path-list s roots)))
+           (current-compiled-file-roots roots))))
 
    ;; Called when Racket is embedded in a larger application:
    (define (register-embedded-entry-info! escape)
