@@ -18,10 +18,14 @@
 ;;   - `make-install-copytree': copies some toplevel directories, skips ".*"
 ;;     subdirs, and rewrites "config.rkt", but no uninstaller
 ;;     (used by `make install') (requires an additional `origtree' argument)
+;;   - `make-install-libzo-move' : moves "compiled" directories from the
+;;     "collects" and "pkg" directories under sharerkt to a "compiled"
+;;     tree under librkt (requires DESTDIR to be set if it's being
+;;     used for the installation)
 ;;   - `make-install-destdir-fix': fixes paths in binaries, laucnhers, and
 ;;     config.rkt (used by `make install' to fix a DESTDIR) (requires exactly
-;;     the same args as `make-install-copytree' (prefixed) and requires a
-;;     DESTDIR setting)
+;;     the same args as `make-install-copytree' (prefixed) plus one more
+;;     to indicate libzo mode, and requires a DESTDIR setting)
 ;; * rktdir: The source racket directory
 ;; * Path names that should be moved/copied (bin, collects, doc, lib, ...)
 ;;   or a sigle path that is used to automatically build the set of
@@ -56,13 +60,14 @@
                 [(sharerkt) "share"]
                 [(config) "etc"]
                 [(collects) "collects"]
+                [(pkgs) "share/pkgs"]
                 [(apps) "share/applications"]
                 [else (symbol->string name)])))
 (define dirs (map (lambda (name) (list name 
                                        (if base-destdir
                                            (build-dest-arg name)
                                            (get-arg))))
-		  '(bin collects doc lib includerkt librkt sharerkt config apps man #|src|#)))
+		  '(bin collects pkgs doc lib includerkt librkt sharerkt config apps man #|src|#)))
 
 (define (dir: name)
   (cadr (or (assq name dirs) (error 'getdir "unknown dir name: ~e" name))))
@@ -81,6 +86,7 @@
     (case dir
       [(bin)      #f]
       [(collects) 1]
+      [(pkgs)     1]
       [(doc)      1]
       [(include)  1]
       ;; if shared libraries are used, then these files should be moved
@@ -149,6 +155,11 @@
     (lambda (f)
       (or (equal? f "share/applications")
           (skip-filter f)))))
+
+(define (add-pkgs-skip skip-filter)
+  (lambda (f)
+    (or (equal? f "share/pkgs")
+        (skip-filter f))))
 
 ;; copy a file or a directory (recursively), preserving time stamps
 ;; (racket's copy-file preservs permission bits)
@@ -300,6 +311,31 @@
           (lambda (o)
             (map (lambda (s) (displayln s o)) new-ls)))))))
 
+;; change references to "pkgs/..." to refer to `pkgs-dir`
+(define (fix-pkg-links share-dir pkgs-dir)
+  (define links-rktd (build-path share-dir "links.rktd"))
+  (when (file-exists? links-rktd)
+    (printf "Fixing package links at: ~a...\n" links-rktd)
+    (define entries (call-with-input-file links-rktd read))
+    (call-with-output-file*
+     links-rktd
+     #:exists 'truncate
+     (lambda (o)
+       (fprintf o "(\n")
+       (for ([e (in-list entries)])
+         (define p (cadr e))
+         (fprintf o " ")
+         (define m (regexp-match #rx"^pkgs/(.*)$" p))
+         (write
+          (if m
+              (list* (car e)
+                     (string-append pkgs-dir "/" (cadr m))
+                     (cddr e))
+              e)
+          o)
+         (newline o))
+       (fprintf o ")\n")))))
+
 ;; remove and record all empty dirs
 (define (remove-empty-dirs dir)
   (let loop ([dir dir] [recurse? #t])
@@ -367,7 +403,8 @@
 (define write-config
   (case-lambda
     [()  (write-config (dir: 'config))]
-    [(configdir)
+    [(configdir) (write-config configdir #f)]
+    [(configdir libzo?)
      (define (cpath . xs)
        (apply make-path configdir xs))
      (define (ftime file)
@@ -389,12 +426,18 @@
            (when (eq? 'shared (cross-system-type 'link)) ; never true for now
              (out! 'dll-dir (dir: 'lib)))
            (out! 'lib-dir (dir: 'librkt))
+           (out! 'pkgs-dir (dir: 'pkgs))
            (out! 'share-dir (dir: 'sharerkt))
            (out! 'include-dir (dir: 'includerkt))
            (out! 'bin-dir (dir: 'bin))
            (out! 'apps-dir (dir: 'apps))
            (out! 'man-dir (dir: 'man))
            (out! 'absolute-installation? #t)
+           (when libzo?
+             (out! 'compiled-file-roots
+                   (list 'same
+                         (path->string
+                          (build-path (dir: 'librkt) "compiled")))))
            ;; Preserve all other keys:
            (for ([(key val) (in-hash old)])
              (unless (hash-ref handled key #f)
@@ -470,6 +513,7 @@
 
 ;; --------------------------------------------------------------------------
 
+;; Does not support moving "collects" or "pkgs" outside of "share"
 (define (move/copy-distribution move? bundle?)
   (define do-tree (move/copy-tree move?))
   (current-directory rktdir)
@@ -486,12 +530,13 @@
         ;; All other platforms use "bin":
         (do-tree "bin"      'bin))
     (do-tree "collects" 'collects)
+    (do-tree "share/pkgs" 'pkgs)
     (do-tree "doc"      'doc #:missing 'skip) ; not included in text distros
     (do-tree "lib"      'librkt)
     (do-tree "include"  'includerkt)
     (define appfiles (ls* "share/applications"))
     (do-tree "share/applications" 'apps #:missing 'skip) ; Unix only
-    (parameterize ([current-skip-filter (make-apps-skip)])
+    (parameterize ([current-skip-filter (add-pkgs-skip (make-apps-skip))])
       (do-tree "share" 'sharerkt))
     (do-tree "etc"      'config)
     (unless (eq? 'windows (cross-system-type))
@@ -517,6 +562,9 @@
     (current-directory (dirname rktdir))
     (delete-directory rktdir)))
 
+(define (equal-path? a b)
+  (equal? (explode-path a) (explode-path b)))
+
 (define dot-file?
   ;; skip all dot-names, except ".LOCK..."
   (lambda (p) (regexp-match? #rx"^[.](?!LOCK)" (basename p))))
@@ -532,36 +580,70 @@
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
     (copytree "collects" 'collects)
-    (copytree "share"    'sharerkt #:missing 'skip)
+    (copytree "share/pkgs" 'pkgs #:missing 'skip)
+    (parameterize ([current-skip-filter (add-pkgs-skip (current-skip-filter))])
+      (copytree "share"  'sharerkt #:missing 'skip))
     (copytree "doc"      'doc      #:missing 'skip)
     (copytree "etc"      'config   #:missing 'skip)
+    (unless (equal-path? (dir: 'pkgs) (build-path (dir: 'sharerkt) "pkgs"))
+      (fix-pkg-links (dir: 'sharerkt) (dir: 'pkgs)))
     (unless origtree? (write-config))))
+
+(define (remove-dest destdir p)
+  (if destdir
+      (let* ([destdirlen (string-length destdir)]
+             [pfx (and (< destdirlen (string-length p))
+                       (substring p 0 destdirlen))])
+        (if (equal? pfx destdir)
+            (regexp-replace #rx"^/*" (substring p destdirlen) "/")
+            (error (format "expecting a DESTDIR prefix of ~s in ~s" destdir p))))
+      p))
+
+(define (make-install-libzo-move)
+  (define destdir (getenv "DESTDIR"))
+  (define collectsdir (dir: 'collects))
+  (define pkgsdir     (dir: 'pkgs))
+  (define configdir   (dir: 'config))
+  (define (move dir)
+    (define dest-rel (regexp-replace #rx"^/*" (remove-dest destdir dir) ""))
+    (define dest (build-path (dir: 'librkt) "compiled" dest-rel))
+    (printf "Moving \"compiled\" in ~a to ~a\n" dir dest)
+    (let loop ([dir dir] [dest dest])
+      (for ([f-path (in-list (directory-list dir))])
+        (define f (path->string f-path))
+        (define f-abs (build-path dir f))
+        (when (directory-exists? f-abs)
+          (define f-dest (build-path dest f-path))
+          (cond
+            [(equal? f "compiled")
+             (make-directory* dest)
+             (rm f-dest)
+             (rename-file-or-directory f-abs f-dest)]
+            [else
+             (loop f-abs f-dest)])))))
+  (move collectsdir)
+  (move pkgsdir)
+  (write-config configdir #t))
 
 (define (make-install-destdir-fix)
   (define destdir
     (or (getenv "DESTDIR")
         (error "missing DESTDIR value for make-install-destdir-fix")))
-  (define destdirlen (string-length destdir))
   (define origtree? (equal? "yes" (get-arg)))
+  (define libzo? (equal? "libzo" (get-arg)))
   ;; grab paths before we change them
   (define bindir      (dir: 'bin))
   (define librktdir   (dir: 'librkt))
   (define sharerktdir   (dir: 'sharerkt))
   (define configdir   (dir: 'config))
   (define appsdir   (dir: 'apps))
-  (define (remove-dest p)
-    (let ([pfx (and (< destdirlen (string-length p))
-                    (substring p 0 destdirlen))])
-      (if (equal? pfx destdir)
-        (regexp-replace #rx"^/*" (substring p destdirlen) "/")
-        (error (format "expecting a DESTDIR prefix of ~s in ~s" destdir p)))))
-  (set! dirs (map (lambda (d) (list (car d) (remove-dest (cadr d)))) dirs))
+  (set! dirs (map (lambda (d) (list (car d) (remove-dest destdir (cadr d)))) dirs))
   ;; no need to send an explicit binfiles argument -- this function is used
   ;; only when DESTDIR is present, so we're installing to a directory that
   ;; has only our binaries
   (fix-executables bindir librktdir)
   (fix-desktop-files appsdir bindir sharerktdir)
-  (unless origtree? (write-config configdir)))
+  (unless origtree? (write-config configdir libzo?)))
 
 (define (post-adjust)
   (when (regexp-match? #rx"--source" (car adjust-mode))
@@ -666,5 +748,6 @@
      (move/copy-distribution #f #t)]
     [(post-adjust) (post-adjust)]
     [(make-install-copytree)    (make-install-copytree)]
+    [(make-install-libzo-move)  (make-install-libzo-move)]
     [(make-install-destdir-fix) (make-install-destdir-fix)]
     [else   (error (format "unknown operation: ~e" op))]))

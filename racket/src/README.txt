@@ -232,6 +232,20 @@ Detailed instructions:
     compiling ".zo" files, creating launchers, or building
     documentation.
 
+    For a `--prefix` build, unless `--enable-sharezo` is specified,
+    "compiled" directories containin ".zo" files are moved from
+    "share" to "lib" as the last step of installation. (The
+    "config.rktd" file is updated so that `current-compile-file-roots`
+    is initialized to find the relocated ".zo" files.) For Racket BC,
+    ".zo" files are architecture-independent, and `--enable-sharezo`
+    was the default installation mode through Racket version 8.0. To
+    prepare additional packages (i.e., package that are not included
+    with the source distribution) in installation scope without
+    `--enable-sharezo`, then it's easiest to first install in-place,
+    then configure and install again for a `--prefix` build; that way,
+    the packages installed in-place will get carried along, and their
+    "compiled" directories will be moved appropriately.
+
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you want,
     then you can try repeating step 4 after running `configure` again

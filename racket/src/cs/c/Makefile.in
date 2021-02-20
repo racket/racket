@@ -207,10 +207,12 @@ EMBED_DEPS = $(srcdir)/embed-boot.rkt
 racketcs@NOT_OSX@@NOT_MINGW@: raw_racketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
 	@POST_LINKER@ racketcs
+	$(RESTORE_SIGNATURE) racketcs
 
 gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
 	@POST_LINKER@ gracketcs
+	$(RESTORE_SIGNATURE) gracketcs
 
 OWN_Z_LIB = $(SCHEME_TARGET_INC)/../../zlib/libz.a
 OWN_LZ4_LIB = $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a

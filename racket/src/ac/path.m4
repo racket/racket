@@ -43,6 +43,9 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
     unixstyle=yes
   fi
+  if test "${pkgsdir}" != '${datarootdir}/${PACKAGE}/pkgs' ; then
+    unixstyle=yes
+  fi
   if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
     unixstyle=yes
   fi
@@ -65,12 +68,17 @@ if test "${unixstyle}" = "no" ; then
   docdir='${prefix}/doc'
   mandir='${prefix}/man'
   collectsdir='${prefix}/collects'
+  pkgsdir='${prefix}/share/pkgs'
   appsdir='${prefix}/share/applications'
   COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
   GR_APP_COLLECTS_PATH="../../../../collects"
   GR_APP_CONFIG_PATH="../../../../etc"
   INSTALL_ORIG_TREE=yes
+  if test "${enable_sharezo}" = "yes" ; then
+    enable_sharezo=no
+    echo WARNING: --enable-sharezo is ignored for an origtree installation
+  fi
 else
   if test "${prefix}" = "NONE" ; then
     # Set prefix explicitly so we can use it during configure
@@ -97,6 +105,12 @@ fi
 GUI_COLLECTS_PATH="${COLLECTS_PATH}"
 GUI_CONFIG_PATH="${CONFIG_PATH}"
 
+if test "${enable_sharezo}" = "yes" ; then
+  INSTALL_LIBZO=no
+else
+  INSTALL_LIBZO=yes
+fi
+
 ########################################
 
 AC_SUBST(collectsdir)
@@ -107,6 +121,7 @@ AC_SUBST(sharepltdir)
 AC_SUBST(etcpltdir)
 AC_SUBST(includepltdir)
 AC_SUBST(docdir)
+AC_SUBST(pkgsdir)
 
 AC_SUBST(COLLECTS_PATH)
 AC_SUBST(GUI_COLLECTS_PATH)
@@ -119,6 +134,7 @@ AC_SUBST(MAKE_COPYTREE)
 AC_SUBST(MAKE_GRACKET)
 AC_SUBST(LIBFINISH)
 AC_SUBST(INSTALL_ORIG_TREE)
+AC_SUBST(INSTALL_LIBZO)
 
 AC_SUBST(MMM)
 AC_SUBST(MMM_INSTALLED)
@@ -157,6 +173,7 @@ show_path_results()
     echo " platform libraries : ${libpltdir}/..."
     echo " common libraries   : ${sharepltdir}/..."
     echo " base collections   : ${collectsdir}/..."
+    echo " installed pkgs     : ${pkgsdir}/..."
     echo " configuration      : ${etcpltdir}/..."
     echo " .desktop files     : ${appsdir}/..."
     echo " man pages          : ${mandir}/..."

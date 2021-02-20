@@ -227,6 +227,12 @@
                      'share
                      'path->main-share-relative
                      'main-share-relative->path))
+  (define-values (path->main-lib-relative
+                  main-lib-relative->path)
+    (make-relativize find-lib-dir
+                     'lib
+                     'path->main-lib-relative
+                     'main-lib-relative->path))
   (let ([colls (make-hash)])
     (for ([f+root-dir (reverse (table-paths t))])
       (let ([f (car f+root-dir)]
@@ -245,7 +251,7 @@
                                         "bad info-domain cache file: ~a" f)]))])
             (match i
               [(list (and pathbytes (or (? bytes?)
-                                        (list (or 'info 'share) (? bytes?) ...)
+                                        (list (or 'info 'share 'lib) (? bytes?) ...)
                                         (list 'rel (or 'up (? bytes?)) ...)))
                      (list (? symbol? fields) ...)
                      key ;; anything is okay here
@@ -265,7 +271,8 @@
                            (case (car pathbytes)
                              [(rel) (simplify-path (build-path root-dir (decode-relative-path pathbytes)))]
                              [(info) (info-relative->path pathbytes)]
-                             [(lib) (main-share-relative->path pathbytes)]))
+                             [(share) (main-share-relative->path pathbytes)]
+                             [(lib) (main-lib-relative->path pathbytes)]))
                        fields)])
                  (hash-set! colls key
                             ((table-insert t) root-dir new-item old-items)))]

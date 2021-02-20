@@ -1,5 +1,6 @@
 
 AC_ARG_ENABLE(origtree,  [  --enable-origtree       install with original directory structure])
+AC_ARG_ENABLE(sharezo,   [  --enable-sharezo        install ".zo"s to "share", not "lib"])
 AC_ARG_ENABLE(useprefix, [  --disable-useprefix     ignore any --prefix setting])
 AC_ARG_ENABLE(pkgscope,  [  --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared])
 

@@ -57,7 +57,7 @@
       [(macosx) versions]
       [else
        (case (path->string (system-library-subpath #f))
-         [("x86_64-darwin" "i386-darwin") versions]
+         [("x86_64-darwin" "i386-darwin" "aarch64-darwin") versions]
          [else
           (cons "" ; versionless (eg from devel pkg)
                 versions)])])))

@@ -731,6 +731,7 @@ CGC
 MMM_CAP_INSTALLED
 MMM_INSTALLED
 MMM
+INSTALL_LIBZO
 INSTALL_ORIG_TREE
 LIBFINISH
 MAKE_GRACKET
@@ -741,6 +742,7 @@ CONFIG_PATH
 GR_APP_COLLECTS_PATH
 GUI_COLLECTS_PATH
 COLLECTS_PATH
+pkgsdir
 includepltdir
 etcpltdir
 sharepltdir
@@ -770,10 +772,10 @@ ECHO_N
 ECHO_C
 DEFS
 mandir
-localedir
+appsdir
 libdir
 psdir
-appsdir
+pkgsdir
 collectsdir
 htmldir
 infodir
@@ -812,6 +814,7 @@ enable_floatinstead
 enable_extflonum
 enable_racket
 enable_origtree
+enable_sharezo
 enable_useprefix
 enable_pkgscope
 enable_docs
@@ -902,10 +905,10 @@ docdir='${datarootdir}/doc/${PACKAGE}'
 infodir='${datarootdir}/info'
 htmldir='${docdir}'
 collectsdir='${exec_prefix}/share/${PACKAGE}/collects'
-appsdir='${exec_prefix}/share/applications'
+pkgsdir='${datarootdir}/${PACKAGE}/pkgs'
 psdir='${docdir}'
 libdir='${exec_prefix}/lib'
-localedir='${datarootdir}/locale'
+appsdir='${exec_prefix}/share/applications'
 mandir='${datarootdir}/man'
 
 ac_prev=
@@ -1060,10 +1063,10 @@ do
   | --libexe=* | --libex=* | --libe=*)
     libexecdir=$ac_optarg ;;
 
-  -localedir | --localedir | --localedi | --localed | --locale)
-    ac_prev=localedir ;;
-  -localedir=* | --localedir=* | --localedi=* | --localed=* | --locale=*)
-    localedir=$ac_optarg ;;
+  -appsdir | --appsdir | --appsdi | --appsd | --apps)
+    ac_prev=appsdir ;;
+  -appsdir=* | --appsdir=* | --appsdi=* | --appsd=* | --apps=*)
+    appsdir=$ac_optarg ;;
 
   -localstatedir | --localstatedir | --localstatedi | --localstated \
   | --localstate | --localstat | --localsta | --localst | --locals)
@@ -1134,10 +1137,10 @@ do
   | --progr-tra=* | --program-tr=* | --program-t=*)
     program_transform_name=$ac_optarg ;;
 
-  -appsdir | --appsdir | --appsdi | --appsd | --apps | --pd)
-    ac_prev=appsdir ;;
-  -appsdir=* | --appsdir=* | --appsdi=* | --appsd=* | --apps=* | --pd=*)
-    appsdir=$ac_optarg ;;
+  -pkgsdir | --pkgsdir | --pkgsdi | --pkgsd | --pkgs | --pd)
+    ac_prev=pkgsdir ;;
+  -pkgsdir=* | --pkgsdir=* | --pkgsdi=* | --pkgsd=* | --pkgs=* | --pd=*)
+    pkgsdir=$ac_optarg ;;
 
   -psdir | --psdir | --psdi | --psd | --ps)
     ac_prev=psdir ;;
@@ -1285,7 +1288,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
-		libdir localedir mandir
+		libdir appsdir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1438,10 +1441,11 @@ Fine tuning of the installation directories:
   --includedir=DIR        C header files [PREFIX/include]
   --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
   --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
+  --appsdir=DIR           .desktop files [EPREFIX/share/applications]
   --mandir=DIR            man documentation [DATAROOTDIR/man]
   --docdir=DIR            documentation root [DATAROOTDIR/doc/PACKAGE]
   --collectsdir=DIR       base collections [EPREFIX/share/PACKAGE/collects]
-  --appsdir=DIR           .desktop files [EPREFIX/share/applications]
+  --pkgsdir=DIR           installed pkgs [EPREFIX/share/PACKAGE/pkgs]
 _ACEOF
 
   cat <<\_ACEOF
@@ -1471,6 +1475,7 @@ Optional Features:
   --enable-extflonum      support extflonums (enabled by default, if available)
   --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
   --enable-origtree       install with original directory structure
+  --enable-sharezo        install ".zo"s to "share", not "lib"
   --disable-useprefix     ignore any --prefix setting
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
@@ -2683,6 +2688,11 @@ if test "${enable_origtree+set}" = set; then :
   enableval=$enable_origtree;
 fi
 
+# Check whether --enable-sharezo was given.
+if test "${enable_sharezo+set}" = set; then :
+  enableval=$enable_sharezo;
+fi
+
 # Check whether --enable-useprefix was given.
 if test "${enable_useprefix+set}" = set; then :
   enableval=$enable_useprefix;
@@ -3079,6 +3089,9 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
     unixstyle=yes
   fi
+  if test "${pkgsdir}" != '${datarootdir}/${PACKAGE}/pkgs' ; then
+    unixstyle=yes
+  fi
   if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
     unixstyle=yes
   fi
@@ -3101,12 +3114,17 @@ if test "${unixstyle}" = "no" ; then
   docdir='${prefix}/doc'
   mandir='${prefix}/man'
   collectsdir='${prefix}/collects'
+  pkgsdir='${prefix}/share/pkgs'
   appsdir='${prefix}/share/applications'
   COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
   GR_APP_COLLECTS_PATH="../../../../collects"
   GR_APP_CONFIG_PATH="../../../../etc"
   INSTALL_ORIG_TREE=yes
+  if test "${enable_sharezo}" = "yes" ; then
+    enable_sharezo=no
+    echo WARNING: --enable-sharezo is ignored for an origtree installation
+  fi
 else
   if test "${prefix}" = "NONE" ; then
     # Set prefix explicitly so we can use it during configure
@@ -3133,7 +3151,15 @@ fi
 GUI_COLLECTS_PATH="${COLLECTS_PATH}"
 GUI_CONFIG_PATH="${CONFIG_PATH}"
 
+if test "${enable_sharezo}" = "yes" ; then
+  INSTALL_LIBZO=no
+else
+  INSTALL_LIBZO=yes
+fi
+
 ########################################
+
+
 
 
 
@@ -3193,6 +3219,7 @@ show_path_results()
     echo " platform libraries : ${libpltdir}/..."
     echo " common libraries   : ${sharepltdir}/..."
     echo " base collections   : ${collectsdir}/..."
+    echo " installed pkgs     : ${pkgsdir}/..."
     echo " configuration      : ${etcpltdir}/..."
     echo " .desktop files     : ${appsdir}/..."
     echo " man pages          : ${mandir}/..."
@@ -3296,6 +3323,8 @@ show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to libra
 
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
+show_explicitly_enabled "${enable_libzo}" 'Compiled ".zo" files moved to lib'
+
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
@@ -7283,7 +7312,9 @@ for fixup_arg
 do
   case $fixup_arg in
   # Strip away all feature choices
-  -enable* | --enable* | -disable* | --disable* | -collects* | --collects* | -apps* | --apps*)
+  -enable* | --enable* | -disable* | --disable*)
+    ;;
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
     ;;
   *)
     case $fixup_arg in
@@ -8454,11 +8485,11 @@ ac_sed_dataroot='
 /@datadir@/p
 /@docdir@/p
 /@infodir@/p
-/@localedir@/p
+/@appsdir@/p
 /@mandir@/p'
 case `eval "sed -n \"\$ac_sed_dataroot\" $ac_file_inputs"` in
 *datarootdir*) ac_datarootdir_seen=yes;;
-*@datadir@*|*@docdir@*|*@infodir@*|*@localedir@*|*@mandir@*)
+*@datadir@*|*@docdir@*|*@infodir@*|*@appsdir@*|*@mandir@*)
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&5
 $as_echo "$as_me: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&2;}
 _ACEOF
@@ -8467,7 +8498,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
   s&@datadir@&$datadir&g
   s&@docdir@&$docdir&g
   s&@infodir@&$infodir&g
-  s&@localedir@&$localedir&g
+  s&@appsdir@&$appsdir&g
   s&@mandir@&$mandir&g
   s&\\\${datarootdir}&$datarootdir&g' ;;
 esac

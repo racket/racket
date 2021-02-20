@@ -53,10 +53,12 @@
                    bstr3 terminator))
    (define pos
      (case (or target (path->string (system-library-subpath #f)))
-       [("x86_64-darwin" "i386-darwin" "aarch64-darwin"
+       [("ta6osx" "ti3osx" "tarm64osx"
+         "x86_64-darwin" "i386-darwin" "aarch64-darwin"
          "x86_64-macosx" "i386-macosx" "aarch64-macosx")
         ;; Mach-O
         (copy-file use-src-file dest-file #t)
+        (remove-signature dest-file)
         (add-plt-segment dest-file data #:name #"__RKTBOOT")
         ;; Find segment at run time:
         0]

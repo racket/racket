@@ -7,7 +7,9 @@ for fixup_arg
 do
   case $fixup_arg in
   # Strip away all feature choices
-  -enable* | --enable* | -disable* | --disable* | -collects* | --collects* | -apps* | --apps*)
+  -enable* | --enable* | -disable* | --disable*)
+    ;;
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
     ;;
   *)
     case $fixup_arg in

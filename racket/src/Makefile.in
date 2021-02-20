@@ -13,6 +13,7 @@ libpltdir = @libpltdir@
 sharepltdir = @sharepltdir@
 configdir = @etcpltdir@
 collectsdir = @collectsdir@
+pkgsdir = @pkgsdir@
 appsdir = @appsdir@
 mandir = @mandir@
 docdir = @docdir@
@@ -22,6 +23,7 @@ NOOP = :
 
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(collectsdir)" \
+             "$(DESTDIR)$(pkgsdir)" \
              "$(DESTDIR)$(docdir)" \
              "$(DESTDIR)$(libdir)" \
              "$(DESTDIR)$(includepltdir)" \
@@ -132,6 +134,7 @@ install-common-middle:
 	$(MAKE) @MAKE_COPYTREE@-run
 
 install-common-last:
+	$(MAKE) move-compiled-@INSTALL_LIBZO@
 	$(MAKE) fix-paths
 	$(MAKE) @MAKE_INSTALL_PKGSCOPE@-raco-pkg-default-scope
 	cp $(COPYING) "$(DESTDIR)$(sharepltdir)"/
@@ -157,13 +160,22 @@ preserve-raco-pkg-default-scope:
 install-no-post-collects:
 	$(NOOP)
 
+move-compiled-no:
+	$(NOOP)
+
+move-compiled-libzo:
+	@RUN_RACKET@ $(SELF_RACKET_FLAGS) -u \
+              "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
+              make-install-libzo-move "$(srcdir)/.." \
+              $(ALLDIRINFO) \
+
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
           if [ "$(SKIP_DESTDIR_FIX)" = "" ]; then \
             @RUN_RACKET@ $(SELF_RACKET_FLAGS) -u \
               "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
               make-install-destdir-fix "$(srcdir)/.." \
-              $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
+              $(ALLDIRINFO) "@INSTALL_ORIG_TREE@" "@INSTALL_LIBZO@"; \
           fi \
         fi
 

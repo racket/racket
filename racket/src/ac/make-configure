@@ -52,9 +52,10 @@ exit 0
          htmldir
          ;; Note: any arguments converted this way need to be excluded in "rktio_keep.m4"
          ;;  dvidir - converted to "collectsdir"
-         ;;  pdfdir - converted to "appsdir"
+         ;;  pdfdir - converted to "pkgsdir"
          psdir
-         localedir)))
+         ;;  localedir - converted to "appsdir"
+        )))
 
 (let loop ()
   (let ([l (read-line)])
@@ -76,14 +77,24 @@ exit 0
           (displayln (regexp-replace* "pdf" (regexp-replace* #rx"dvi" l "collects") "apps"))])
         (loop)]
        [(regexp-match #rx"pdfdir" l)
-        ;; Hack: take over "pdfdir" for "appsdir":
+        ;; Hack: take over "pdfdir" for "pkgsdir":
         (cond
          [(equal? l "pdfdir='${docdir}'")
-          (displayln "appsdir='${exec_prefix}/share/applications'")]
+          (displayln "pkgsdir='${datarootdir}/${PACKAGE}/pkgs'")]
          [(equal? l "  --pdfdir=DIR            pdf documentation [DOCDIR]")
+          (displayln "  --pkgsdir=DIR           installed pkgs [EPREFIX/share/PACKAGE/pkgs]")]
+         [else
+          (displayln (regexp-replace* #rx"pdf" l "pkgs"))])
+        (loop)]
+       [(regexp-match #rx"localedir" l)
+        ;; Hack: take over "localedir" for "appsdir":
+        (cond
+         [(equal? l "localedir='${datarootdir}/locale'")
+          (displayln "appsdir='${exec_prefix}/share/applications'")]
+         [(equal? l "  --localedir=DIR         locale-dependent data [DATAROOTDIR/locale]")
           (displayln "  --appsdir=DIR           .desktop files [EPREFIX/share/applications]")]
          [else
-          (displayln (regexp-replace* #rx"pdf" l "apps"))])
+          (displayln (regexp-replace* #rx"locale" l "apps"))])
         (loop)]
        [else
         ;; Copy
