@@ -1397,7 +1397,7 @@ Raises an error if the input list contains more than 256 elements.
 
 @index["in-rearrangements"]{Returns} a sequence of all permutations of the input list.  It is
 equivalent to @racket[(in-list (permutations l))] but much faster since
-it builds the permutations one-by-one on each iteration
+it builds the permutations one-by-one on each iteration.
 Raises an error if the input list contains more than 256 elements.}
 
 
