@@ -1068,7 +1068,7 @@ accum-list
            ;; Cheap strategy: block until the list is unlocked,
            ;;   then return 0, so we get called again
            (wrap-evt
-            lock-peek
+            lock-peek-evt
             (lambda (x) 0))))
      void)))
 (display "hello" accumulator)
