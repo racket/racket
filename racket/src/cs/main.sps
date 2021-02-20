@@ -681,8 +681,6 @@
                      (log-message* root-logger 'debug 'GC:major msg data #f in-interrupt?)))))))))))
 
    (define (initialize-exit-handler!)
-     (when (foreign-entry? "racket_exit")
-       (#%exit-handler (foreign-procedure "racket_exit" (int) void)))
      (#%exit-handler
       (let ([orig (#%exit-handler)]
             [root-logger (current-logger)])
