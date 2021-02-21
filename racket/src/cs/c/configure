@@ -3087,9 +3087,9 @@ if test "${unixstyle}" = "no" ; then
   GR_APP_CONFIG_PATH="../../../../etc"
   INSTALL_ORIG_TREE=yes
   if test "${enable_sharezo}" = "yes" ; then
-    enable_sharezo=no
     echo WARNING: --enable-sharezo is ignored for an origtree installation
   fi
+  INSTALL_LIBZO=no
 else
   if test "${prefix}" = "NONE" ; then
     # Set prefix explicitly so we can use it during configure
@@ -3111,16 +3111,15 @@ else
   GR_APP_COLLECTS_PATH="${COLLECTS_PATH}"
   GR_APP_CONFIG_PATH="${CONFIG_PATH}"
   INSTALL_ORIG_TREE=no
+  if test "${enable_sharezo}" = "yes" ; then
+    INSTALL_LIBZO=no
+  else
+    INSTALL_LIBZO=libzo
+  fi
 fi
 
 GUI_COLLECTS_PATH="${COLLECTS_PATH}"
 GUI_CONFIG_PATH="${CONFIG_PATH}"
-
-if test "${enable_sharezo}" = "yes" ; then
-  INSTALL_LIBZO=no
-else
-  INSTALL_LIBZO=libzo
-fi
 
 ########################################
 
