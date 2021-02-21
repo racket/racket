@@ -193,9 +193,13 @@
 (test (file-or-directory-modify-seconds
        (let ([dir (path-only (collection-file-path "zip.rkt" "file"))])
          (for/or ([root (in-list (current-compiled-file-roots))])
-           (define file (if (relative-path? root)
-                            (build-path dir root compiled-dir "zip_rkt.zo")
-                            (build-path (reroot-path dir root) compiled-dir "zip_rkt.zo")))
+           (define file (cond
+                          [(eq? root 'same)
+                           (build-path dir compiled-dir "zip_rkt.zo")]
+                          [(relative-path? root)
+                           (build-path dir root compiled-dir "zip_rkt.zo")]
+                          [else
+                           (build-path (reroot-path dir root) compiled-dir "zip_rkt.zo")]))
            (and (file-exists? file)
                 file))))
       car
