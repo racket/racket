@@ -190,9 +190,14 @@
 ;; ----------------------------------------
 
 ;; test `file-stamp-in-paths'
-(test (file-or-directory-modify-seconds (build-path (path-only (collection-file-path "zip.rkt" "file"))
-                                                    compiled-dir
-                                                    "zip_rkt.zo"))
+(test (file-or-directory-modify-seconds
+       (let ([dir (path-only (collection-file-path "zip.rkt" "file"))])
+         (for/or ([root (in-list (current-compiled-file-roots))])
+           (define file (if (relative-path? root)
+                            (build-path dir root compiled-dir "zip_rkt.zo")
+                            (build-path (reroot-path dir root) compiled-dir "zip_rkt.zo")))
+           (and (file-exists? file)
+                file))))
       car
       (file-stamp-in-collection
        (collection-file-path "zip.rkt" "file")))
