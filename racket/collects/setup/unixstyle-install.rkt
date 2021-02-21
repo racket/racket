@@ -618,6 +618,11 @@
         (when (directory-exists? f-abs)
           (define f-dest (build-path dest f-path))
           (cond
+            [(equal? f "info-domain")
+             ;; Skip move for "info-domain', because the file
+             ;; in "compiled" is not a ".zo" file and needs
+             ;; to stay with the "info-domain" collection
+             (void)]
             [(equal? f "compiled")
              (make-directory* dest)
              (rm f-dest)
