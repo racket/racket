@@ -3119,7 +3119,7 @@ GUI_CONFIG_PATH="${CONFIG_PATH}"
 if test "${enable_sharezo}" = "yes" ; then
   INSTALL_LIBZO=no
 else
-  INSTALL_LIBZO=yes
+  INSTALL_LIBZO=libzo
 fi
 
 ########################################
