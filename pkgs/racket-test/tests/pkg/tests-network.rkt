@@ -85,7 +85,7 @@
     $ (~a "raco pkg update --clone " tmp-dir " test-pkg-2")
     $ "racket -l test-pkg-2/twelve" =stdout> "12\n"
     $ (~a "raco pkg update " repo)
-    $ "raco pkg remove " repo
+    $ "raco pkg remove test-pkg-2"
     (finally
      (delete-directory/files tmp-dir))))
 
