@@ -254,7 +254,7 @@ is not reached.}
                                          [in input-port? (current-input-port)]
                                          [start-pos exact-nonnegative-integer? 0]
                                          [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         (or/c exact-positive-integer? eof-object? procedure?)]{
+         (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
 Like @racket[read-bytes-avail!], but breaks are enabled during the
 read (see also @secref["breakhandler"]). If breaking is disabled
