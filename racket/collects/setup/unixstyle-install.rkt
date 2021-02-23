@@ -60,8 +60,8 @@
                 [(sharerkt) "share"]
                 [(config) "etc"]
                 [(collects) "collects"]
-                [(pkgs) "share/pkgs"]
-                [(apps) "share/applications"]
+                [(pkgs) (build-path "share" "pkgs")]
+                [(apps) (build-path "share" "applications")]
                 [else (symbol->string name)])))
 (define dirs (map (lambda (name) (list name 
                                        (if base-destdir
@@ -157,9 +157,10 @@
           (skip-filter f)))))
 
 (define (add-pkgs-skip skip-filter)
-  (lambda (f)
-    (or (equal? f "share/pkgs")
-        (skip-filter f))))
+  (let ([share/pkgs (make-path "share" "pkgs")])
+    (lambda (f)
+      (or (equal? f share/pkgs)
+          (skip-filter f)))))
 
 ;; copy a file or a directory (recursively), preserving time stamps
 ;; (racket's copy-file preservs permission bits)
@@ -533,7 +534,7 @@
         ;; All other platforms use "bin":
         (do-tree "bin"      'bin))
     (do-tree "collects" 'collects)
-    (do-tree "share/pkgs" 'pkgs)
+    (do-tree (make-path "share" "pkgs") 'pkgs #:missing 'skip)
     (do-tree "doc"      'doc #:missing 'skip) ; not included in text distros
     (do-tree "lib"      'librkt)
     (do-tree "include"  'includerkt)
@@ -583,7 +584,7 @@
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
     (copytree "collects" 'collects)
-    (copytree "share/pkgs" 'pkgs #:missing 'skip)
+    (copytree (make-path "share" "pkgs") 'pkgs #:missing 'skip)
     (parameterize ([current-skip-filter (add-pkgs-skip (current-skip-filter))])
       (copytree "share"  'sharerkt #:missing 'skip))
     (copytree "doc"      'doc      #:missing 'skip)
