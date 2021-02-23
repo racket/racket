@@ -526,7 +526,7 @@
      (|#%app|
       p
       (make-composable-continuation
-       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f)
+       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) (not wind?))
        k
        (current-winders)
        (current-mark-stack)

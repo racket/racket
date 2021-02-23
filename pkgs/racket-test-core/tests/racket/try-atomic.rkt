@@ -19,3 +19,19 @@
  'no)
 
 (check done? #t)
+
+(set! done? #f)
+
+(check
+ (call-as-nonatomic-retry-point
+  (lambda ()
+    (try-atomic
+     (lambda ()
+       (call-with-continuation-barrier
+        (lambda ()
+          (sync/timeout 0.25 ch)))
+       (set! done? #t))
+     'barrier)))
+ 'barrier)
+
+(check done? #t)
