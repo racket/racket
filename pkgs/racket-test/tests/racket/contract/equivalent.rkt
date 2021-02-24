@@ -352,6 +352,15 @@
       (define x (flat-rec-contract x (first-or/c (cons/c x '()) '())))
       (,test #:test-case-name 'flat-rec.2 #t contract-equivalent? x (first-or/c (cons/c x '()) '()))))
   
+  (contract-eval
+   `(let ()
+      (define x (flat-murec-contract ([x (or/c (cons/c x '()) '())]) x))
+      (,test #:test-case-name 'flat-murec.1 #t contract-equivalent? x (or/c (cons/c x '()) '()))))
+  (contract-eval
+   `(let ()
+      (define x (flat-murec-contract ([x (first-or/c (cons/c x '()) '())]) x))
+      (,test #:test-case-name 'flat-murec.2 #t contract-equivalent? x (first-or/c (cons/c x '()) '()))))
+
   (ctest #f contract-equivalent? "x" string?)
   (ctest #f contract-equivalent? string? "x")
 

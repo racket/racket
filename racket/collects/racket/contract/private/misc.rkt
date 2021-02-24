@@ -11,8 +11,7 @@
          "generate.rkt"
          "generate-base.rkt")
 
-(provide flat-murec-contract
-         not/c
+(provide not/c
          =/c >=/c <=/c </c >/c between/c
          renamed->-ctc renamed-<-ctc
          char-in
@@ -62,37 +61,6 @@
          (struct-out <-ctc)
          (struct-out >-ctc)
          renamed-between/c)
-
-(define-syntax (flat-murec-contract stx)
-  (syntax-case stx  ()
-    [(_ ([name ctc ...] ...) body1 body ...)
-     (andmap identifier? (syntax->list (syntax (name ...))))
-     (with-syntax ([((ctc-id ...) ...) (map generate-temporaries
-                                            (syntax->list (syntax ((ctc ...) ...))))]
-                   [(pred-id ...) (generate-temporaries (syntax (name ...)))]
-                   [((pred-arm-id ...) ...) (map generate-temporaries
-                                                 (syntax->list (syntax ((ctc ...) ...))))])
-       (syntax 
-        (let* ([pred-id flat-murec-contract/init] ...
-               [name (flat-contract (let ([name (λ (x) (pred-id x))]) name))] ...)
-          (let-values ([(ctc-id ...) (values (coerce-flat-contract 'flat-rec-contract ctc) ...)] ...)
-            (set! pred-id
-                  (let ([pred-arm-id (flat-contract-predicate ctc-id)] ...)
-                    (λ (x)
-                      (or (pred-arm-id x) ...)))) ...
-            body1
-            body ...))))]
-    [(_ ([name ctc ...] ...) body1 body ...)
-     (for-each (λ (name)
-                 (unless (identifier? name)
-                   (raise-syntax-error 'flat-rec-contract
-                                       "expected an identifier" stx name)))
-               (syntax->list (syntax (name ...))))]
-    [(_ ([name ctc ...] ...))
-     (raise-syntax-error 'flat-rec-contract "expected at least one body expression" stx)]))
-
-(define (flat-murec-contract/init x) (error 'flat-murec-contract "applied too soon"))
-
 
 (define false/c #f)
 

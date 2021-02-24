@@ -348,6 +348,15 @@
       (define x (flat-rec-contract x (first-or/c (cons/c x '()) '())))
       (,test #t trust/not-stronger? x (first-or/c (cons/c x '()) '()))))
 
+  (contract-eval
+   `(let ()
+      (define x (flat-murec-contract ([x (or/c (cons/c x '()) '())]) x))
+      (,test #t trust/not-stronger? x (or/c (cons/c x '()) '()))))
+  (contract-eval
+   `(let ()
+      (define x (flat-murec-contract ([x (first-or/c (cons/c x '()) '())]) x))
+      (,test #t trust/not-stronger? x (first-or/c (cons/c x '()) '()))))
+
   (ctest #t trust/not-stronger? "x" string?)
   (ctest #f trust/not-stronger? string? "x")
 

@@ -91,6 +91,13 @@
 
   (ctest #f contract-first-order-passes? (flat-rec-contract the-name) 1)
 
+  (ctest #f contract-first-order-passes?
+         (flat-murec-contract ([one 1]) one)
+         0)
+  (ctest #t contract-first-order-passes?
+         (flat-murec-contract ([one 1]) one)
+         1)
+
   (ctest #t contract-first-order-passes?
          (couple/c any/c any/c)
          (make-couple 1 2))

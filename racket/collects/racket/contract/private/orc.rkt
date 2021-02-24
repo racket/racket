@@ -10,7 +10,8 @@
 (provide symbols or/c first-or/c one-of/c
          blame-add-or-context
          blame-add-ior-context
-         (rename-out [_flat-rec-contract flat-rec-contract]))
+         (rename-out [_flat-rec-contract flat-rec-contract]
+                     [_flat-murec-contract flat-murec-contract]))
 
 (define/subexpression-pos-prop/name or/c-name or/c
   (case-lambda 
@@ -601,5 +602,27 @@
                          "expected first argument to be an identifier"
                          stx
                          (syntax name))]))
+
 (define (flat-rec-contract/init x) 
   (error 'flat-rec-contract "applied too soon"))
+
+(define-syntax (_flat-murec-contract stx)
+  (syntax-case stx  ()
+    [(_ ([name ctc ...] ...) body1 body ...)
+     (andmap identifier? (syntax->list (syntax (name ...))))
+     (syntax
+      (let ([name (flat-rec-contract #f 'name)] ...)
+        (set-flat-rec-contract-me!
+         name
+         (or/c (coerce-flat-contract 'flat-murec-contract ctc)
+               ...)) ...
+        body1
+        body ...))]
+    [(_ ([name ctc ...] ...) body1 body ...)
+     (for-each (λ (name)
+                 (unless (identifier? name)
+                   (raise-syntax-error 'flat-murec-contract
+                                       "expected an identifier" stx name)))
+               (syntax->list (syntax (name ...))))]
+    [(_ ([name ctc ...] ...))
+     (raise-syntax-error 'flat-murec-contract "expected at least one body expression" stx)]))

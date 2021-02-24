@@ -133,6 +133,14 @@
 (check-not-exn
  (λ ()
    (test-contract-generation
+    (flat-murec-contract
+     ([even-length-list/c '() (cons/c any/c odd-length-list/c)]
+      [odd-length-list/c (cons/c any/c even-length-list/c)])
+     even-length-list/c))))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
     null?)))
 
 (check-not-exn
@@ -195,6 +203,19 @@
                        [l tree/c]
                        [r tree/c])
             #f)))))
+
+(check-not-exn
+ (λ ()
+   (struct node (v l r) #:transparent)
+   (struct red node () #:transparent)
+   (struct black node () #:transparent)
+   (test-contract-generation
+    (flat-murec-contract
+      ([red-or-black/c red/c black/c]
+       [red/c (struct/c red integer? black/c black/c)]
+       [black/c (struct/c black integer? red-or-black/c red-or-black/c)
+                null])
+      red-or-black/c))))
 
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))
