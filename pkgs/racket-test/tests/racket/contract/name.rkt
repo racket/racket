@@ -359,6 +359,7 @@
   (test-name '(box/c boolean?) (box/c boolean?))
   (test-name '(box/c boolean?) (box/c (flat-contract boolean?)))
   (test-name 'the-name (flat-rec-contract the-name))
+  (test-name 'the-name (flat-murec-contract ([the-name none/c]) the-name))
 
   (test-name '(object-contract) (object-contract))
   (test-name '(object-contract (field x integer?)) (object-contract (field x integer?)))
