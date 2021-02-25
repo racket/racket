@@ -410,7 +410,10 @@
 (define/who (quotient/remainder n m)
   (check who integer? n)
   (check who integer? m)
-  (values (quotient n m) (remainder n m)))
+  (if (and (exact? n) (exact? m))
+      (let ([q+r (#%$quotient-remainder n m)])
+        (values (car q+r) (cdr q+r)))
+      (values (quotient n m) (remainder n m))))
 
 (define/who gcd
   (case-lambda
