@@ -127,6 +127,7 @@
                      (* 1.0 choice)
                      choice))]
         [else choice]))]
+    [(> n m) #f]
     [else
      (λ ()
        (rand-choice

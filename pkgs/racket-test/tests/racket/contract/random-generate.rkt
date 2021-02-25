@@ -245,7 +245,9 @@
                      (exn-message x))))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation some-crazy-predicate?)))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation (list/c some-crazy-predicate?))))
-
+(check-exn cannot-generate-exn? (λ () (test-contract-generation (between/c 10 0))))
+(check-exn cannot-generate-exn? (λ () (test-contract-generation (integer-in 10 0))))
+(check-exn cannot-generate-exn? (λ () (test-contract-generation (char-in #\z #\a))))
 
 (check-not-exn (lambda () (test-contract-generation (or/c #f number?))))
 (check-not-exn (lambda () (test-contract-generation (first-or/c #f number?))))
