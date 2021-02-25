@@ -459,11 +459,11 @@
              (ormap (lambda (d)
                       (ormap (lambda (mode)
                                (file-exists?
-                                (let ([p (build-path dir mode try-path)])
-                                  (cond
-                                    [(eq? d 'same) p]
-                                    [(relative-path? d) (build-path p d)]
-                                    [else (reroot-path p d)]))))
+                                (let ([dir (cond
+                                             [(eq? d 'same) dir]
+                                             [(relative-path? d) (build-path dir d)]
+                                             [else (reroot-path dir d)])])
+                                  (build-path dir mode try-path))))
                              modes))
                     roots)))))
 
@@ -505,4 +505,4 @@
   (define paths (hash-ref ht 'compiled-file-roots #f))
   (or (and (list? paths)
            (map coerce-to-relative-path paths))
-      (list (build-path 'same))))
+      (list 'same)))

@@ -416,7 +416,7 @@ Produces a list of paths and @racket['same], which is normally used to
 initialize @racket[current-compiled-file-roots]. The list is
 determined by consulting the @filepath{config.rtkd} file in the
 directory reported by @racket[(find-config-dir)], and it defaults to
-@racket[(list (build-path 'same))] if not configured there.
+@racket[(list 'same)] if not configured there.
 
 See also @racket['compiled-file-roots] in @secref[#:doc raco-doc
 "config-file"].
