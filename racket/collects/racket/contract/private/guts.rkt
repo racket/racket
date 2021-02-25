@@ -723,8 +723,9 @@
      (define high (char->integer (char-in/c-high ctc)))
      (define delta (+ (- high low) 1))
      (λ (fuel)
-       (λ ()
-         (integer->char (+ low (random delta))))))))
+       (and (>= delta 1)
+            (λ ()
+              (integer->char (+ low (random delta)))))))))
 
 (define (regexp/c-equivalent this that)
   (and (regexp/c? that)

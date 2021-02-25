@@ -348,9 +348,11 @@
     [(or start end)
      (define _start (or start (- end max-random-range)))
      (define _end (or end (+ start max-random-range)))
+     (define upper-bound (min 4294967087 (+ (- _end _start) 1)))
      (λ (fuel)
-       (λ ()
-         (+ _start (random (min 4294967087 (+ (- _end _start) 1))))))]
+       (and (>= upper-bound 1)
+            (λ ()
+              (+ _start (random upper-bound)))))]
     [else
      (λ (fuel)
        (λ ()
