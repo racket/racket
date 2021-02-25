@@ -427,6 +427,62 @@
     [else (substring s start end)]))
 
 ;; ----------------------------------------
+;; The simple strategy of accumuling digits --- adding a digit to
+;; the accumulator muliplties by the radix --- is O(n^2). A
+;; "digits" starts with that simple strategy, but it then falls
+;; back to a list representation if the accumulator gets large,
+;; and accumulated values are combined in a divide-and-conquer
+;; style.
+;;;;
+;; A digits is either
+;;   - val-integer
+;;   - (cons (cons val-integer shift-integer) digits)
+;;      where `shift-integer` is an amount to shift `digits` by radix
+;;      before adding `val-integer`
+
+(define (add-digit d c radix)
+  (cond
+    [(pair? d)
+     (define p (car d))
+     (define digits (add-digit (car p) c radix))
+     (if (pair? digits)
+         (list* (car digits)
+                (cons (cdr digits) (cdr p))
+                (cdr d))
+         (cons (cons digits (fx+ 1 (cdr p)))
+               (cdr d)))]
+    [(eqv? d 0) c]
+    [(< d (expt 2 100)) (+ (* d radix) c)]
+    [else
+     (cons (cons c 1) d)]))
+
+(define (digits->integer d radix)
+  (cond
+    [(pair? d)
+     (define len (let loop ([d d])
+                   (if (pair? d)
+                       (fx+ 1 (loop (cdr d)))
+                       1)))
+     (let loop ([d d] [len len])
+       (cond
+         [(fx= len 1) (if (pair? d)
+                          (caar d)
+                          d)]
+         [else
+          (define hi-len (fxrshift len 1))
+          (define lo-len (fx- len hi-len))
+          (define hi (loop d hi-len))
+          (let split-loop ([shift 0] [hi-len hi-len] [d d])
+            (if (fx= hi-len 0)
+                (+ hi
+                   (* (expt radix shift)
+                      (loop d lo-len)))
+                (split-loop (fx+ shift (cdar d))
+                            (fx- hi-len 1)
+                            (cdr d))))]))]
+    [else d]))
+
+;; ----------------------------------------
 
 ;; The parser is implemented as a kind of state machine that is driven
 ;; by the next input character. The current function mostly represents
@@ -525,20 +581,20 @@
 
 ;; consumed some digits
 (define (read-integer sgn n s start end radix state)
-  (define (get-n) (* sgn n))
+  (define (get-n) (* sgn (digits->integer n radix)))
   (parse-case
    s start end radix => c
    [(eof) (finish sgn (get-n) s state)]
    [(digit)
-    (read-integer sgn (+ (* n radix) c) s (fx+ 1 start) end radix state)]
+    (read-integer sgn (add-digit n c radix) s (fx+ 1 start) end radix state)]
    [(#\.)
-    (read-decimal sgn n 0 s (fx+ 1 start) end radix (set-exactness state 'approx))]
+    (read-decimal sgn (digits->integer n radix) 0 s (fx+ 1 start) end radix (set-exactness state 'approx))]
    [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
     (read-exponent sgn (get-n) 0 s (fx+ 1 start) end radix (set-exactness-by-char state c))]
    [(#\/)
     (read-rational sgn (get-n) #f s (fx+ 1 start) end radix state)]
    [(#\#)
-    (read-approx sgn n 1 #f s (fx+ 1 start) end radix (set-exactness state 'approx))]
+    (read-approx sgn (digits->integer n radix) 1 #f s (fx+ 1 start) end radix (set-exactness state 'approx))]
    [(#\+ #\-)
     (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
    [(#\@)
@@ -551,11 +607,11 @@
 ;; consumed digits and "."
 (define (read-decimal sgn n exp s start end radix state)
   (define (get-n) (if n
-                      (lazy-number (* sgn n) radix (- exp))
+                      (lazy-number (* sgn (digits->integer n radix)) radix (- exp))
                       (bad-no-digits "." s state)))
   (parse-case
    s start end radix => c
-   [(eof) (or (and n (fast-inexact state sgn n radix 0 -1 exp))
+   [(eof) (or (and n (fast-inexact state sgn (digits->integer n radix) radix 0 -1 exp))
               (maybe (get-n)
                      (lambda (n)
                        (finish sgn n s state))))]
@@ -567,18 +623,18 @@
        ;; avoid extra work when ".0" is used to get an inexact zero
        (read-decimal sgn (or n 0) exp s next end radix state)]
       [else
-       (read-decimal sgn (+ (* (or n 0) radix) c) (fx+ 1 exp) s (fx+ 1 start) end radix state)])]
+       (read-decimal sgn (add-digit (or n 0) c radix) (fx+ 1 exp) s (fx+ 1 start) end radix state)])]
    [(#\.)
     (bad-misplaced "." s state)]
    [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
     (if n
-        (read-exponent sgn (* sgn n) (- exp) s (fx+ 1 start) end radix (set-exactness-by-char state c))
+        (read-exponent sgn (* sgn (digits->integer n radix)) (- exp) s (fx+ 1 start) end radix (set-exactness-by-char state c))
         (bad-no-digits "." s state))]
    [(#\/)
     (bad-mixed-decimal-fraction s state)]
    [(#\#)
     (if n
-        (read-approx sgn n (fx- 0 exp) #t s (fx+ 1 start) end radix state)
+        (read-approx sgn (digits->integer n radix) (fx- 0 exp) #t s (fx+ 1 start) end radix state)
         (bad-misplaced "#" s state))]
    [(#\+ #\-)
     (if n
@@ -646,18 +702,18 @@
 ;; consumed digits and "e" (or similar) and "+" or "-" (if any) and maybe digits
 (define (read-signed-exponent sgn sgn-n exp sgn2 exp2 s start end radix state)
   (define (get-n) (if exp2
-                      (lazy-number sgn-n radix (+ exp (* sgn2 exp2)))
+                      (lazy-number sgn-n radix (+ exp (* sgn2 (digits->integer exp2 radix))))
                       (fail state "empty exponent `~.a`" s)))
   (parse-case
    s start end radix => c
    [(eof) (or (and exp2
                    (number? sgn-n)
-                   (fast-inexact state (if (eqv? sgn-n 0) sgn 1) sgn-n radix exp sgn2 exp2))
+                   (fast-inexact state (if (eqv? sgn-n 0) sgn 1) sgn-n radix exp sgn2 (digits->integer exp2 radix)))
               (maybe (get-n)
                      (lambda (n)
                        (finish sgn n s state))))]
    [(digit)
-    (define new-exp2 (+ (if exp2 (* exp2 radix) 0) c))
+    (define new-exp2 (add-digit (or exp2 0) c radix))
     (read-signed-exponent sgn sgn-n exp sgn2 new-exp2 s (fx+ 1 start) end radix state)]
    [(#\+ #\-)
     (maybe (get-n)
@@ -728,7 +784,7 @@
 ;; consumed digits and "/"
 (define (read-rational sgn sgn-n d s start end radix state)
   (define (get-n) (if d
-                      (lazy-divide sgn-n d 'exact)
+                      (lazy-divide sgn-n (digits->integer d radix) 'exact)
                       (bad-no-digits "/" s state)))
   (parse-case
    s start end radix => c
@@ -737,12 +793,12 @@
            (lambda (n)
              (finish sgn n s state)))]
    [(digit)
-    (read-rational sgn sgn-n (+ (if d (* d radix) 0) c) s (fx+ 1 start) end radix state)]
+    (read-rational sgn sgn-n (add-digit (or d 0) c radix) s (fx+ 1 start) end radix state)]
    [(#\.)
     (bad-mixed-decimal-fraction s state)]
    [(#\#)
     (if d
-        (read-denom-approx sgn sgn-n d 1 s (fx+ 1 start) end radix (set-exactness state 'approx))
+        (read-denom-approx sgn sgn-n (digits->integer d radix) 1 s (fx+ 1 start) end radix (set-exactness state 'approx))
         (bad-misplaced "#" s state))]
    [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
     (maybe (get-n)
@@ -827,6 +883,12 @@
 (module+ test
   (require (only-in racket/base
                     [string->number racket:string->number]))
+
+  (let ([s (make-string 1000000 #\9)])
+    (unless (equal? (time (string->number s))
+                    (sub1 (expt 10 1000000)))
+      (error 'fail "large number")))
+  
   (define (try s)
     (define expect (racket:string->number s 10 'read 'decimal-as-inexact))
     (define got (string->number s 10 'read 'decimal-as-inexact))
