@@ -164,6 +164,30 @@
 	     exn:fail?)
 (err/rt-test (port-commit-peeked 100 never-evt always-evt /dev/null-in))
 
+;; A port that produces a stream of 1s, but always
+;; though an evt:
+(let ()
+  (define stubborn-infinite-ones
+    (make-input-port
+     'ones
+     (lambda (s)
+       (wrap-evt always-evt
+                 (lambda (ae)
+                   (bytes-set! s 0 (char->integer #\1))
+                   1)))
+     (lambda (s skip-n progress-evt)
+       (wrap-evt always-evt
+                 (lambda (ae)
+                   (bytes-set! s 0 (char->integer #\1))
+                   1)))
+     void))
+  (test "11111" read-string 5 stubborn-infinite-ones)
+  (test "11111" peek-string 5 0 stubborn-infinite-ones)
+  (test #t byte-ready? stubborn-infinite-ones)
+  (test #t char-ready? stubborn-infinite-ones)
+  (test "11111" read-string 5 stubborn-infinite-ones)
+  (test stubborn-infinite-ones sync/timeout 0 stubborn-infinite-ones))
+
 ;; A port that produces a stream of 1s:
 (define infinite-ones 
   (make-input-port

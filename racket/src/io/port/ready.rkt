@@ -26,7 +26,8 @@
        (check-not-closed who in)
        (define r (byte-ready in void))
        (end-atomic)
-       (eq? #t r)])))
+       (or (eq? #t r)
+           (and r (sync/timeout 0 r) #t))])))
 
 (define/who (char-ready? [in (current-input-port)])
   (check who input-port? in)

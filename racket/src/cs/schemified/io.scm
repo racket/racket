@@ -28732,7 +28732,12 @@
                                            (|#%app| byte-ready_0 in_1 void)))
                                       (begin
                                         (unsafe-end-atomic)
-                                        (eq? #t r_0)))))))))))))
+                                        (let ((or-part_0 (eq? #t r_0)))
+                                          (if or-part_0
+                                            or-part_0
+                                            (if r_0
+                                              (if (sync/timeout 0 r_0) #t #f)
+                                              #f)))))))))))))))
                    (loop_0
                     (->core-input-port.1 unsafe-undefined in_0 #f))))))))))
     (|#%name|
