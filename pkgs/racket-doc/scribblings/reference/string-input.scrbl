@@ -516,7 +516,19 @@ applied to @racket[in], then @exnraise[exn:fail:contract].}
 
 Returns @racket[#t] if @racket[(read-byte in)] would not block (at the
 time that @racket[byte-ready?] was called, at least).  Equivalent to
-@racket[(and (sync/timeout 0 in) #t)].}
+@racket[(and (sync/timeout 0 in) #t)].
+
+The @racket[byte-ready?] and @racket[char-ready?] functions are
+appropriate for relatively few applications, because ports are meant
+to support streaming data among concurrent producers and consumers;
+the fact that a byte or character is not ready in some instant does
+not necessarily mean that the producer is finished supplying data.
+(Also, if a port has multiple consumers, data might get consumed
+between the time that a given process uses @racket[byte-ready?] to
+poll the port and the time that it reads data from the port.) Using
+@racket[byte-ready?] makes sense if you are implementing your own
+scheduler or if you know that the port's implementation and use are
+particularly constrained.}
 
 
 @defproc[(char-ready? [in input-port? (current-input-port)])
@@ -525,7 +537,10 @@ time that @racket[byte-ready?] was called, at least).  Equivalent to
 Returns @racket[#t] if @racket[(read-char in)] would not block (at the
 time that @racket[char-ready?] was called, at least). Depending on the
 initial bytes of the stream, multiple bytes may be needed to form a
-UTF-8 encoding.}
+UTF-8 encoding.
+
+See @racket[byte-ready?] for a note on how @racket[byte-ready?] and
+@racket[char-ready?] are rarely the right choice.}
 
 
 @defproc*[([(progress-evt? [v any/c]) boolean?]
