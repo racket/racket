@@ -146,15 +146,22 @@ Raised for @techlink{generic methods} that do not support the given
 
 @defform[(define/generic local-id method-id)]{
 
-When used inside the method definitions associated with the
-@racket[#:methods] keyword, binds @racket[local-id] to the generic for
-@racket[method-id]. This form is useful for method specializations to
-use generic methods (as opposed to the local specialization) on other
-values.
+When used inside the method definitions associated with the @racket[#:methods],
+@racket[#:fallbacks], @racket[#:defaults] or @racket[#:fast-defaults] keyword,
+binds @racket[local-id] to the generic for @racket[method-id]. This form is
+useful for method specializations to use generic methods (as opposed to the
+local specialization) on other values.
 
-Using the @racket[define/generic] form outside a @racket[#:methods]
-specification in @racket[struct] (or @racket[define-struct]) is an
-syntax error.}
+The @racket[define/generic] form is only allowed inside:
+@itemlist[
+ @item{a @racket[#:methods] specification in @racket[struct] (or @racket[define-struct])}
+
+ @item{the specification of @racket[#:fallbacks], @racket[#:defaults] or
+       @racket[#:fast-defaults] in @racket[define-generics]}
+]
+
+Using this form elsewhere is a syntax error.
+}
 
 
 @; Examples
@@ -178,6 +185,7 @@ syntax error.}
                (define (gen-print s [port (current-output-port)])
                  (fprintf port "String: ~a" s))
                (define (gen-port-print port s)
+                 @code:comment{we can call gen-print alternatively}
                  (super-print s port))
                (define (gen-print* s [port (current-output-port)]
                                    #:width w #:height [h 0])
@@ -185,36 +193,39 @@ syntax error.}
 
 (struct num (v)
   #:methods gen:printable
-  [(define/generic super-print gen-print)
-   (define (gen-print n [port (current-output-port)])
+  [(define (gen-print n [port (current-output-port)])
      (fprintf port "Num: ~a" (num-v n)))
    (define (gen-port-print port n)
-     (super-print n port))
+     (gen-print n port))
    (define (gen-print* n [port (current-output-port)]
                        #:width w #:height [h 0])
      (fprintf port "Num (~ax~a): ~a" w h (num-v n)))])
 
-(struct bool (v)
+(struct string+num (v n)
   #:methods gen:printable
   [(define/generic super-print gen-print)
+   (define/generic super-print* gen-print*)
    (define (gen-print b [port (current-output-port)])
-     (fprintf port "Bool: ~a"
-              (if (bool-v b) "Yes" "No")))
+     (super-print (string+num-v b) port)
+     (fprintf port " ")
+     (super-print (string+num-n b) port))
    (define (gen-port-print port b)
-     (super-print b port))
+     (gen-print b port))
    (define (gen-print* b [port (current-output-port)]
                        #:width w #:height [h 0])
-     (fprintf port "Bool (~ax~a): ~a" w h
-              (if (bool-v b) "Yes" "No")))])
+     (super-print* (string+num-v b) #:width w #:height h)
+     (fprintf port " ")
+     (super-print* (string+num-n b) #:width w #:height h))])
 
 (define x (num 10))
 (gen-print x)
 (gen-port-print (current-output-port) x)
 (gen-print* x #:width 100 #:height 90)
 
-(gen-print "Strings are printable too!")
+(define str "Strings are printable too!")
+(gen-print str)
 
-(define y (bool #t))
+(define y (string+num str x))
 (gen-print y)
 (gen-port-print (current-output-port) y)
 (gen-print* y #:width 100 #:height 90)
