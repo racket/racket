@@ -88,6 +88,7 @@
  blame-swapped?
  blame-swap
  blame-replace-negative ;; used for indy blame
+ blame-replaced-negative?
  blame-update ;; used for option contract transfers
  blame-add-context
  blame-add-unknown-context

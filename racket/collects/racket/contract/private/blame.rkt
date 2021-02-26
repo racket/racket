@@ -12,10 +12,12 @@
          blame-swapped?
          blame-swap
          blame-replace-negative ;; used for indy blame
+         blame-replaced-negative? ;; used for indy blame
          blame-update ;; used for option contract transfers
          blame-add-context
          blame-add-unknown-context
          blame-context
+         blame-replaced-negative?
          
          blame-add-missing-party
          blame-missing-party?
@@ -55,7 +57,8 @@
 (define-struct all-the-info
   [positive
    negative
-   source value build-name important missing-party? context-limit extra-fields]
+   source value build-name important missing-party? context-limit extra-fields
+   replaced-negative?]
   #:transparent)
 
 ;; and-more : (or/c blame-no-swap? blame-swap? all-the-info?)
@@ -83,6 +86,7 @@
 (define (blame-contract b) ((all-the-info-build-name (blame->all-the-info b))))
 (define (blame-extra-fields b) (all-the-info-extra-fields (blame->all-the-info b)))
 (define (blame-context-limit b) (all-the-info-context-limit (blame->all-the-info b)))
+(define (blame-replaced-negative? b) (all-the-info-replaced-negative? (blame->all-the-info b)))
 
 (define (blame-get-info b f)
   (let loop ([b b]
@@ -153,7 +157,8 @@
               #f
               (not negative)
               context-limit
-              '()))
+              '()
+              #f))
            ;; we always start with a yes-swap or no-swap struct
            ;; so be careful in other parts of the code to ignore
            ;; it, as appropriate.
@@ -283,22 +288,16 @@
          (all-the-info-replace-positive an-all-the-info new-neg)
          (all-the-info-replace-negative an-all-the-info new-neg)))))
 
-(define (blame-replace-positive b new-pos)
-  (update-the-info
-   b
-   (λ (an-all-the-info swap?)
-     (if swap?
-         (all-the-info-replace-negative an-all-the-info new-pos)
-         (all-the-info-replace-positive an-all-the-info new-pos)))))
-
 (define (all-the-info-replace-positive an-all-the-info new-pos)
   (struct-copy
    all-the-info an-all-the-info
+   [replaced-negative? #t]
    [positive (list new-pos)]))
 
 (define (all-the-info-replace-negative an-all-the-info new-neg)
   (struct-copy
    all-the-info an-all-the-info
+   [replaced-negative? #t]
    [negative (list new-neg)]))
 
 (define (blame-update b extra-positive extra-negative)

@@ -2776,6 +2776,12 @@ the other; both are provided for convenience and clarity.
              position @racket[b] has.
 }
 
+@defproc[(blame-replaced-negative? [b blame?]) boolean?]{
+ Returns @racket[#t] if @racket[b] is the result of calling
+ @racket[blame-replace-negative] (or the result of some other function
+ whose input was the result of @racket[blame-replace-negative]).
+}
+
 @defproc[(blame-update [b blame?] [pos any/c] [neg any/c]) blame?]{
   Produces a @racket[blame?] object just like @racket[b] except
              that it adds @racket[pos] and @racket[neg] to the positive

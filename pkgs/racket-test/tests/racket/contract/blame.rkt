@@ -178,6 +178,36 @@
        "4")
       "5"))
    'neg)
+  (test/spec-passed/result
+   'blame-selector.19
+   '(blame-replaced-negative?
+     (blame-replace-negative
+      (make-blame (srcloc "src.rkt" #f #f #f #f)
+                  'whatever (λ () 'the-name) 'pos 'neg #t)
+      'neg2))
+   #t)
+  (test/spec-passed/result
+   'blame-selector.20
+   '(blame-replaced-negative?
+     (make-blame (srcloc "src.rkt" #f #f #f #f)
+                 'whatever (λ () 'the-name) 'pos 'neg #t))
+   #f)
+  (test/spec-passed/result
+   'blame-selector.21
+   '(blame-replaced-negative?
+     (blame-swap
+      (blame-replace-negative
+       (make-blame (srcloc "src.rkt" #f #f #f #f)
+                   'whatever (λ () 'the-name) 'pos 'neg #t)
+       'neg2)))
+   #t)
+  (test/spec-passed/result
+   'blame-selector.22
+   '(blame-replaced-negative?
+     (blame-swap
+      (make-blame (srcloc "src.rkt" #f #f #f #f)
+                  'whatever (λ () 'the-name) 'pos 'neg #t)))
+   #f)
 
   (contract-eval
    #:test-case-name "blame.rkt setup.1"
