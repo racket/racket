@@ -350,6 +350,8 @@
                 (extend-config config '#:inspector #'#f)
                 nongen?)]
          [(eq? '#:authentic (syntax-e (car p)))
+          (when nongen?
+            (bad "cannot use" (car p) " for prefab structure type"))
           (when (lookup config '#:authentic)
             (bad "multiple" "#:authentic" "s" (car p)))
           (loop (cdr p)
@@ -403,6 +405,8 @@
             (bad "cannot use" (car p) " for a sealed structure type"))
           (when (lookup config '#:guard)
             (bad "cannot use" (car p) " for a structure type with a guard"))
+          (when (lookup config '#:authentic)
+            (bad "cannot use" (car p) " for an authentic structure type"))
           (loop (cdr p)
                 (extend-config config '#:inspector #''prefab)
                 #t)]

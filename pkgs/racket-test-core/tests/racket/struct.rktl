@@ -499,6 +499,8 @@
 (syntax-test #'(define-struct a (b c) #:property 1 10 #:prefab))
 (syntax-test #'(define-struct a (b c) #:sealed #:prefab))
 (syntax-test #'(define-struct a (b c) #:prefab #:sealed))
+(syntax-test #'(define-struct a (b c) #:prefab #:authentic))
+(syntax-test #'(define-struct a (b c) #:authentic #:prefab))
 
 (define-struct base0 ())
 (define-struct base1 (a))
