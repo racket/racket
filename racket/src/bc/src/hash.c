@@ -765,9 +765,11 @@ scheme_make_bucket_table (intptr_t size, int type)
   }
 
   if (type == SCHEME_hash_weak_ptr)
-    table->weak = 1;
+    table->weak = SCHEME_BT_KIND_WEAK;
   else if (type == SCHEME_hash_late_weak_ptr)
-    table->weak = 2;
+    table->weak = SCHEME_BT_KIND_LATE;
+  else if (type == SCHEME_hash_ephemeron_ptr)
+    table->weak = SCHEME_BT_KIND_EPHEMERON;
   else
     table->weak = 0;
   
@@ -809,15 +811,15 @@ allocate_bucket (Scheme_Bucket_Table *table, const char *key, void *val)
   if (table->weak) {
 #ifdef MZ_PRECISE_GC
     void *kb;
-    kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket, 
-                            (table->weak > 1));
+    kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val XFORM_OK_MINUS (void **)bucket, 
+                            (table->weak == SCHEME_BT_KIND_LATE));
     bucket->key = (char *)kb;
 #else
     char *kb;
     kb = (char *)MALLOC_ONE_WEAK(void *);
     bucket->key = kb;
     *(void **)bucket->key = (void *)key;
-    if (table->weak > 1) {
+    if (table->weak == SCHEME_BT_KIND_LATE) {
       scheme_late_weak_reference_indirect((void **)bucket->key, (void *)key);
       scheme_late_weak_reference_indirect((void **)&bucket->val, (void *)key);
     } else {
@@ -825,6 +827,10 @@ allocate_bucket (Scheme_Bucket_Table *table, const char *key, void *val)
       scheme_weak_reference_indirect((void **)&bucket->val, (void *)key);
     }
 #endif
+    if (table->weak == SCHEME_BT_KIND_EPHEMERON) {
+      /* we expect this ephemeron to be cleared if the bcket key is cleared */
+      val = scheme_make_ephemeron((Scheme_Object *)key, val);
+    }
   } else
     bucket->key = (char *)key;
   bucket->val = val;
@@ -1009,8 +1015,11 @@ scheme_add_to_table_w_key_wraps (Scheme_Bucket_Table *table, const char *key, vo
 
   b = get_bucket(table, key, 1, NULL, key_wraps);
 
-  if (val)
+  if (val) {
+    if (table->weak == SCHEME_BT_KIND_EPHEMERON)
+      val = scheme_make_ephemeron((Scheme_Object *)key, val);
     b->val = val;
+  }
   if (constant && table->with_home)
     ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_CONST;
 }
@@ -1040,10 +1049,13 @@ scheme_lookup_in_table_w_key_wraps (Scheme_Bucket_Table *table, const char *key,
     if (_interned_key) {
       if (table->weak)
 	*_interned_key = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
-  else
+      else
 	*_interned_key = (Scheme_Object *)bucket->key;
     }
-    return bucket->val;
+    if (table->weak == SCHEME_BT_KIND_EPHEMERON)
+      return scheme_ephemeron_value(bucket->val);
+    else
+      return bucket->val;
   } else {
     return NULL;
 }
@@ -1074,8 +1086,11 @@ scheme_change_in_table (Scheme_Bucket_Table *table, const char *key, void *naya)
 
   bucket = get_bucket(table, key, 0, NULL, NULL);
 
-  if (bucket)
+  if (bucket) {
+    if (table->weak == SCHEME_BT_KIND_EPHEMERON)
+      naya = scheme_make_ephemeron((Scheme_Object *)key, naya);
     bucket->val = naya;
+  }
 }
 
 int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t1,
@@ -1108,20 +1123,25 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t
       if (key) {
         if (!SAME_OBJ((Scheme_Object *)t1, orig_t1))
           val1 = scheme_chaperone_hash_traversal_get(orig_t1, key, &key);
-        else
+        else {
           val1 = (Scheme_Object *)bucket->val;
+          if (weak == SCHEME_BT_KIND_EPHEMERON) {
+            val1 = scheme_ephemeron_value(val1);
+            MZ_ASSERT(val1);
+          }
+        }
 
 	checked++;
-      
+
         if (!SAME_OBJ((Scheme_Object *)t2, orig_t2))
           val2 = scheme_chaperone_hash_get(orig_t2, key);
         else
           val2 = (Scheme_Object *)scheme_lookup_in_table(t2, (const char *)key);
-
-	if (!val2)
-	  return 0;
-	if (!scheme_recur_equal(val1, val2, eql))
-	  return 0;
+        
+        if (!val2)
+          return 0;
+        if (!scheme_recur_equal(val1, val2, eql))
+          return 0;
       }
     }
   }
@@ -1189,8 +1209,16 @@ Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
         if (bucket->key) {
           if (table->weak) {
             void *hk = (void *)HT_EXTRACT_WEAK(bucket->key);
-            if (hk)
-              bucket = allocate_bucket(table, hk, bucket->val);
+            if (hk) {
+              Scheme_Object *val = bucket->val;
+              if (table->weak == SCHEME_BT_KIND_EPHEMERON) {
+                val = scheme_ephemeron_value(val);
+                MZ_ASSERT(val);
+              }
+              bucket = allocate_bucket(table, hk, val);
+            } else {
+              /* ok to use the same keyless bucket */
+            }
           } else
             bucket = allocate_bucket(table, bucket->key, bucket->val);
           ba[i] = bucket;
@@ -1210,7 +1238,7 @@ Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash,
     
   if (start >= 0) {
     bucket = ((start < sz) ? hash->buckets[start] : NULL);
-    if (!bucket || !bucket->val || !bucket->key) 
+    if (!bucket || !bucket->val || !bucket->key)
       return NULL;      
   }
   for (i = start + 1; i < sz; i++) {
@@ -1234,8 +1262,12 @@ int scheme_bucket_table_index(Scheme_Bucket_Table *hash, mzlonglong pos, Scheme_
 	*_key = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
       else
 	*_key = (Scheme_Object *)bucket->key;
-      if (_val)
-	*_val = (Scheme_Object *)bucket->val;
+      if (_val) {
+        Scheme_Object *val = bucket->val;
+        if (hash->weak == SCHEME_BT_KIND_EPHEMERON)
+          val = scheme_ephemeron_value(val);
+	*_val = val;
+      }
       return 1;
     }
   }
@@ -1858,9 +1890,13 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 	    _key = bucket->key;
 	  if (_key) {
             key = (Scheme_Object *)_key;
-            if (SAME_OBJ(o, orig_obj))
+            if (SAME_OBJ(o, orig_obj)) {
               val = (Scheme_Object *)bucket->val;
-            else
+              if (weak == SCHEME_BT_KIND_EPHEMERON) {
+                val = scheme_ephemeron_value(val);
+                MZ_ASSERT(val);
+              }
+            } else
               val = scheme_chaperone_hash_traversal_get(orig_obj, key, &key);
 	    vk = equal_hash_key(val, 0, hi);
             MZ_MIX(vk);
@@ -2344,9 +2380,13 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 	    _key = bucket->key;
 	  if (_key) {
             key = (Scheme_Object *)_key;
-            if (SAME_OBJ(o, orig_obj))
+            if (SAME_OBJ(o, orig_obj)) {
               val = (Scheme_Object *)bucket->val;
-            else
+              if (weak == SCHEME_BT_KIND_EPHEMERON) {
+                val = scheme_ephemeron_value(val);
+                MZ_ASSERT(val);
+              }
+          } else
               val = scheme_chaperone_hash_traversal_get(orig_obj, key, &key);
 	    k += equal_hash_key2(val, hi);
 	    k += equal_hash_key2(key, hi);

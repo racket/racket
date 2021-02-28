@@ -20,13 +20,13 @@
 A @deftech{hash table} (or simply @deftech{hash}) maps each of its
 keys to a single value. For a given hash table, keys are equivalent
 via @racket[equal?], @racket[eqv?], or @racket[eq?], and keys are
-retained either strongly or weakly (see @secref["weakbox"]). A hash
-table is also either mutable or immutable. Immutable hash tables
-support effectively constant-time access and update, just like mutable
-hash tables; the constant on immutable operations is usually larger,
-but the functional nature of immutable hash tables can pay off in
-certain algorithms. Use @racket[immutable?] to check whether a hash
-table is immutable.
+retained either strongly, weakly (see @secref["weakbox"]), or like
+@tech{ephemerons}. A hash table is also either mutable or immutable.
+Immutable hash tables support effectively constant-time access and
+update, just like mutable hash tables; the constant on immutable
+operations is usually larger, but the functional nature of immutable
+hash tables can pay off in certain algorithms. Use @racket[immutable?]
+to check whether a hash table is immutable.
 
 @margin-note{Immutable hash tables actually provide @math{O(log N)}
 access and update. Since @math{N} is limited by the address space so
@@ -53,11 +53,11 @@ table during iteration, then an iteration step may fail with
 keys and values.  See also @racket[in-hash], @racket[in-hash-keys],
 @racket[in-hash-values], and @racket[in-hash-pairs].
 
-Two hash tables cannot be @racket[equal?] unless they use the same
-key-comparison procedure (@racket[equal?], @racket[eqv?], or
-@racket[eq?]), both hold keys strongly or weakly, and have the same
-mutability. Empty immutable hash tables are @racket[eq?] when they
-are @racket[equal?].
+Two hash tables cannot be @racket[equal?] unless they have the same
+mutability, use the same key-comparison procedure (@racket[equal?],
+@racket[eqv?], or @racket[eq?]), both hold keys strongly, weakly, or
+like @tech{ephemerons}. Empty immutable hash tables are @racket[eq?]
+when they are @racket[equal?].
 
 @history[#:changed "7.2.0.9" @elem{Made empty immutable hash tables
                                    @racket[eq?] when they are
@@ -122,10 +122,28 @@ Returns @racket[#t] if @racket[hash] compares keys with @racket[eq?],
 @racket[#f] if it compares with @racket[equal?] or @racket[eqv?].}
 
 
+@defproc[(hash-strong? [hash hash?]) boolean?]{
+
+Returns @racket[#t] if @racket[hash] retains its keys strongly,
+@racket[#f] if it retains keys strongly or like @tech{ephemerons}.
+
+@history[#:added "8.0.0.10"]}
+
+
 @defproc[(hash-weak? [hash hash?]) boolean?]{
 
 Returns @racket[#t] if @racket[hash] retains its keys weakly,
-@racket[#f] if it retains keys strongly.}
+@racket[#f] if it retains keys strongly or like @tech{ephemerons}.}
+
+
+@defproc[(hash-ephemeron? [hash hash?]) boolean?]{
+
+Returns @racket[#t] if @racket[hash] retains its keys like
+@tech{ephemerons}, @racket[#f] if it retains keys strongly or merely
+weakly.
+
+@history[#:added "8.0.0.10"]}
+
 
 @deftogether[(
 @defproc[(hash [key any/c] [val any/c] ... ...) (and/c hash? hash-equal? immutable?)]
@@ -178,18 +196,38 @@ Like @racket[make-hash], @racket[make-hasheq], and
 @racket[make-hasheqv], but creates a mutable hash table that holds
 keys weakly.
 
-Beware that values in the table are retained normally. If a value in
+Beware that values in a weak hash table are retained normally. If a value in
 the table refers back to its key, then the table will retain the value
 and therefore the key; the mapping will never be removed from the
 table even if the key becomes otherwise inaccessible. To avoid that
-problem, instead of mapping the key to the value, map the key to an
-@tech{ephemeron} that pairs the key and value. Beware further,
-however, that an ephemeron's value might be cleared between retrieving
-an ephemeron and extracting its value, depending on whether the key is
-otherwise reachable. For @racket[eq?]-based mappings, consider using
-the pattern @racket[(ephemeron-value _ephemeron #f _key)] to extract
-the value of @racket[_ephemeron] while ensuring that @racket[_key] is
-retained until the value is extracted.}
+problem, use an ephemeron hash table as created by
+@racket[make-ephemeron-hash], @racket[make-ephemeron-hasheqv], or
+@racket[make-ephemeron-hasheq]. For values that do not refer to keys,
+there is a modest extra cost to using an ephemeron hash table instead
+of a weak hash table, but prefer an ephemeron hash table when in
+doubt.}
+
+
+@deftogether[(
+@defproc[(make-ephemeron-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? hash-ephemeron?)]
+@defproc[(make-ephemeron-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? hash-ephemeron?)]
+@defproc[(make-ephemeron-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? hash-ephemeron?)]
+)]{
+
+Like @racket[make-hash], @racket[make-hasheq], and
+@racket[make-hasheqv], but creates a mutable hash table that holds
+keys-value combinations in the same way as an @tech{ephemeron}.
+
+Using an ephemeron hash table is like using a weak hash table and
+mapping each key to a @tech{ephemeron} that pairs the key and value.
+An advantage of an ephemeron hash table is that the value need not be
+extracted with @racket[ephemeron-value] from the result of functions
+like @racket[hash-ref]. An ephemeron hash table might also be
+represented more compactly than a weak hash table with explicit
+@tech{ephemeron} values.
+
+@history[#:added "8.0.0.10"]}
+
 
 @deftogether[(
 @defproc[(make-immutable-hash [assocs (listof pair?) null])
@@ -546,10 +584,13 @@ about modifying @racket[hash] within @racket[proc].
 @defproc[(hash-count [hash hash?])
          exact-nonnegative-integer?]{
 
-Returns the number of keys mapped by @racket[hash]. Unless @racket[hash]
-retains keys weakly, the result is computed in
-constant time and atomically. If @racket[hash] retains it keys weakly, a
-traversal is required to count the keys.}
+Returns the number of keys mapped by @racket[hash].
+
+For the @tech{CS} implementation of Racket, the result is always
+computed in time and atomically. For the @tech{BC} implementation of
+Racket, the result is computed in constant time and atomically only if
+@racket[hash] does not retain keys weakly or like an @tech{ephemeron},
+otherwise, a traversal is required to count the keys.}
 
 
 @defproc[(hash-empty? [hash hash?]) boolean?]{
@@ -569,12 +610,13 @@ integers.
 For a mutable @racket[hash], this index is guaranteed to refer to the
 first item only as long as no items are added to or removed from
 @racket[hash]. More generally, an index is guaranteed to be a
-@deftech{valid hash index} for a given hash table only as long it comes
-from @racket[hash-iterate-first] or @racket[hash-iterate-next], and
-only as long as the hash table is not modified. In the case of a hash
-table with weakly held keys, the hash table can be implicitly modified
-by the garbage collector (see @secref["gc-model"]) when it discovers
-that the key is not reachable.}
+@deftech{valid hash index} for a given hash table only as long it
+comes from @racket[hash-iterate-first] or @racket[hash-iterate-next],
+and only as long as the hash table is not modified. In the case of a
+hash table with weakly held keys or keys held like @tech{ephemerons},
+the hash table can be implicitly modified by the garbage collector
+(see @secref["gc-model"]) when it discovers that the key is not
+reachable.}
 
 
 @defproc[(hash-iterate-next [hash hash?]

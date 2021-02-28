@@ -57,7 +57,8 @@ are the same.
 One particularly common use of ephemerons is to combine them with a
 weak hash table (see @secref["hashtables"]) to produce a mapping where
 the memory manager can reclaim key--value pairs even when the value
-refers to the key. A related use is to retain a reference to a value
+refers to the key; see @racket[make-ephemeron-hash].
+A related use is to retain a reference to a value
 as long as any value for which it is an @tech{impersonator} is
 reachable; see @racket[impersonator-ephemeron].
 

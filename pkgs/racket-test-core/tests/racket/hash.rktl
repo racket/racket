@@ -161,15 +161,15 @@
     (syntax-case stx ()
      [(_ tag -in-hash -in-pairs -in-keys -in-values)
       #'(define-hash-iterations-tester tag
-          -in-hash -in-hash -in-hash
-          -in-pairs -in-pairs -in-pairs
-          -in-keys -in-keys -in-keys
-          -in-values -in-values -in-values)]
+          -in-hash -in-hash -in-hash -in-hash
+          -in-pairs -in-pairs -in-pairs -in-pairs
+          -in-keys -in-keys -in-keys -in-keys
+          -in-values -in-values -in-values -in-values)]
      [(_ tag
-         -in-immut-hash -in-mut-hash -in-weak-hash
-         -in-immut-hash-pairs -in-mut-hash-pairs -in-weak-hash-pairs
-         -in-immut-hash-keys -in-mut-hash-keys -in-weak-hash-keys
-         -in-immut-hash-values -in-mut-hash-values -in-weak-hash-values)
+         -in-immut-hash -in-mut-hash -in-weak-hash -in-ephemeron-hash
+         -in-immut-hash-pairs -in-mut-hash-pairs -in-weak-hash-pairs -in-ephemeron-hash-pairs
+         -in-immut-hash-keys -in-mut-hash-keys -in-weak-hash-keys -in-ephemeron-hash-keys
+         -in-immut-hash-values -in-mut-hash-values -in-weak-hash-values -in-ephemeron-hash-values)
       (with-syntax 
        ([name 
          (datum->syntax #'tag 
@@ -179,6 +179,7 @@
           (define ht/immut (make-immutable-hash (map cons lst1 lst2)))
           (define ht/mut (make-hash (map cons lst1 lst2)))
           (define ht/weak (make-weak-hash (map cons lst1 lst2)))
+          (define ht/ephemeron (make-ephemeron-hash (map cons lst1 lst2)))
             
           (define fake-ht/immut
             (chaperone-hash 
@@ -200,36 +201,52 @@
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
+              (lambda (h k) k)))
+          (define fake-ht/ephemeron
+            (impersonate-hash 
+                ht/ephemeron
+              (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
+              (lambda (h k v) values k v) ; set-proc
+              (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
             
           (define ht/immut/seq (-in-immut-hash ht/immut))
           (define ht/mut/seq (-in-mut-hash ht/mut))
           (define ht/weak/seq (-in-weak-hash ht/weak))
+          (define ht/ephemeron/seq (-in-ephemeron-hash ht/ephemeron))
           (define ht/immut-pair/seq (-in-immut-hash-pairs ht/immut))
           (define ht/mut-pair/seq (-in-mut-hash-pairs ht/mut))
           (define ht/weak-pair/seq (-in-weak-hash-pairs ht/weak))
+          (define ht/ephemeron-pair/seq (-in-ephemeron-hash-pairs ht/ephemeron))
           (define ht/immut-keys/seq (-in-immut-hash-keys ht/immut))
           (define ht/mut-keys/seq (-in-mut-hash-keys ht/mut))
           (define ht/weak-keys/seq (-in-weak-hash-keys ht/weak))
+          (define ht/ephemeron-keys/seq (-in-ephemeron-hash-keys ht/ephemeron))
           (define ht/immut-vals/seq (-in-immut-hash-values ht/immut))
           (define ht/mut-vals/seq (-in-mut-hash-values ht/mut))
           (define ht/weak-vals/seq (-in-weak-hash-values ht/weak))
+          (define ht/ephemeron-vals/seq (-in-ephemeron-hash-values ht/ephemeron))
     
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) (+ k v))
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) (+ k v))
            (for/sum ([(k v) (-in-weak-hash ht/weak)]) (+ k v))
+           (for/sum ([(k v) (-in-ephemeron-hash ht/ephemeron)]) (+ k v))
            (for/sum ([(k v) (-in-immut-hash fake-ht/immut)]) (+ k v))
            (for/sum ([(k v) (-in-mut-hash fake-ht/mut)]) (+ k v))
            (for/sum ([(k v) (-in-weak-hash fake-ht/weak)]) (+ k v))
+           (for/sum ([(k v) (-in-ephemeron-hash fake-ht/ephemeron)]) (+ k v))
            (for/sum ([(k v) ht/immut/seq]) (+ k v))
            (for/sum ([(k v) ht/mut/seq]) (+ k v))
            (for/sum ([(k v) ht/weak/seq]) (+ k v))
+           (for/sum ([(k v) ht/ephemeron/seq]) (+ k v))
            (for/sum ([k+v (-in-immut-hash-pairs ht/immut)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-mut-hash-pairs ht/mut)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-weak-hash-pairs ht/weak)])
+             (+ (car k+v) (cdr k+v)))
+           (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) 
              (+ (car k+v) (cdr k+v)))
@@ -237,92 +254,119 @@
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) 
              (+ (car k+v) (cdr k+v)))
+           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) 
+             (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/immut-pair/seq]) (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/mut-pair/seq]) (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/weak-pair/seq]) (+ (car k+v) (cdr k+v)))
+           (for/sum ([k+v ht/ephemeron-pair/seq]) (+ (car k+v) (cdr k+v)))
            (+ (for/sum ([k (-in-immut-hash-keys ht/immut)]) k)
               (for/sum ([v (-in-immut-hash-values ht/immut)]) v))
            (+ (for/sum ([k (-in-mut-hash-keys ht/mut)]) k)
               (for/sum ([v (-in-mut-hash-values ht/mut)]) v))
            (+ (for/sum ([k (-in-weak-hash-keys ht/weak)]) k)
               (for/sum ([v (-in-weak-hash-values ht/weak)]) v))
+           (+ (for/sum ([k (-in-ephemeron-hash-keys ht/ephemeron)]) k)
+              (for/sum ([v (-in-ephemeron-hash-values ht/ephemeron)]) v))
            (+ (for/sum ([k (-in-immut-hash-keys fake-ht/immut)]) k)
               (for/sum ([v (-in-immut-hash-values fake-ht/immut)]) v))
            (+ (for/sum ([k (-in-mut-hash-keys fake-ht/mut)]) k)
               (for/sum ([v (-in-mut-hash-values fake-ht/mut)]) v))
            (+ (for/sum ([k (-in-weak-hash-keys fake-ht/weak)]) k)
               (for/sum ([v (-in-weak-hash-values fake-ht/weak)]) v))
+           (+ (for/sum ([k (-in-ephemeron-hash-keys fake-ht/ephemeron)]) k)
+              (for/sum ([v (-in-ephemeron-hash-values fake-ht/ephemeron)]) v))
            (+ (for/sum ([k ht/immut-keys/seq]) k)
               (for/sum ([v ht/immut-vals/seq]) v))
            (+ (for/sum ([k ht/mut-keys/seq]) k)
               (for/sum ([v ht/mut-vals/seq]) v))
            (+ (for/sum ([k ht/weak-keys/seq]) k)
-              (for/sum ([v ht/weak-vals/seq]) v)))
+              (for/sum ([v ht/weak-vals/seq]) v))
+           (+ (for/sum ([k ht/ephemeron-keys/seq]) k)
+              (for/sum ([v ht/ephemeron-vals/seq]) v)))
           
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) k)
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) k)
            (for/sum ([(k v) (-in-weak-hash ht/weak)]) k)
+           (for/sum ([(k v) (-in-ephemeron-hash ht/ephemeron)]) k)
            (for/sum ([(k v) (-in-immut-hash fake-ht/immut)]) k)
            (for/sum ([(k v) (-in-mut-hash fake-ht/mut)]) k)
            (for/sum ([(k v) (-in-weak-hash fake-ht/weak)]) k)
+           (for/sum ([(k v) (-in-ephemeron-hash fake-ht/ephemeron)]) k)
            (for/sum ([(k v) ht/immut/seq]) k)
            (for/sum ([(k v) ht/mut/seq]) k)
            (for/sum ([(k v) ht/weak/seq]) k)
+           (for/sum ([(k v) ht/ephemeron/seq]) k)
            (for/sum ([k+v (-in-immut-hash-pairs ht/immut)]) (car k+v))
            (for/sum ([k+v (-in-mut-hash-pairs ht/mut)]) (car k+v))
            (for/sum ([k+v (-in-weak-hash-pairs ht/weak)]) (car k+v))
+           (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)]) (car k+v))
            (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) (car k+v))
            (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)]) (car k+v))
            (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) (car k+v))
+           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) (car k+v))
            (for/sum ([k+v ht/immut-pair/seq]) (car k+v))
            (for/sum ([k+v ht/mut-pair/seq]) (car k+v))
            (for/sum ([k+v ht/weak-pair/seq]) (car k+v))
+           (for/sum ([k+v ht/ephemeron-pair/seq]) (car k+v))
            (for/sum ([k (-in-immut-hash-keys ht/immut)]) k)
            (for/sum ([k (-in-mut-hash-keys ht/mut)]) k)
            (for/sum ([k (-in-weak-hash-keys ht/weak)]) k)
+           (for/sum ([k (-in-ephemeron-hash-keys ht/ephemeron)]) k)
            (for/sum ([k (-in-immut-hash-keys fake-ht/immut)]) k)
            (for/sum ([k (-in-mut-hash-keys fake-ht/mut)]) k)
            (for/sum ([k (-in-weak-hash-keys fake-ht/weak)]) k)
+           (for/sum ([k (-in-ephemeron-hash-keys fake-ht/ephemeron)]) k)
            (for/sum ([k ht/immut-keys/seq]) k)
            (for/sum ([k ht/mut-keys/seq]) k)
-           (for/sum ([k ht/weak-keys/seq]) k))
+           (for/sum ([k ht/weak-keys/seq]) k)
+           (for/sum ([k ht/ephemeron-keys/seq]) k))
     
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) v)
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) v)
            (for/sum ([(k v) (-in-weak-hash ht/weak)]) v)
+           (for/sum ([(k v) (-in-ephemeron-hash ht/ephemeron)]) v)
            (for/sum ([(k v) (-in-immut-hash fake-ht/immut)]) v)
            (for/sum ([(k v) (-in-mut-hash fake-ht/mut)]) v)
            (for/sum ([(k v) (-in-weak-hash fake-ht/weak)]) v)
+           (for/sum ([(k v) (-in-ephemeron-hash fake-ht/ephemeron)]) v)
            (for/sum ([(k v) ht/immut/seq]) v)
            (for/sum ([(k v) ht/mut/seq]) v)
            (for/sum ([(k v) ht/weak/seq]) v)
+           (for/sum ([(k v) ht/ephemeron/seq]) v)
            (for/sum ([k+v (-in-immut-hash-pairs ht/immut)]) (cdr k+v))
            (for/sum ([k+v (-in-mut-hash-pairs ht/mut)]) (cdr k+v))
            (for/sum ([k+v (-in-weak-hash-pairs ht/weak)]) (cdr k+v))
+           (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)]) (cdr k+v))
            (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) (cdr k+v))
            (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)]) (cdr k+v))
            (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) (cdr k+v))
+           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) (cdr k+v))
            (for/sum ([k+v ht/immut-pair/seq]) (cdr k+v))
            (for/sum ([k+v ht/mut-pair/seq]) (cdr k+v))
            (for/sum ([k+v ht/weak-pair/seq]) (cdr k+v))
+           (for/sum ([k+v ht/ephemeron-pair/seq]) (cdr k+v))
            (for/sum ([v (-in-immut-hash-values ht/immut)]) v)
            (for/sum ([v (-in-mut-hash-values ht/mut)]) v)
            (for/sum ([v (-in-weak-hash-values ht/weak)]) v)
+           (for/sum ([v (-in-ephemeron-hash-values ht/ephemeron)]) v)
            (for/sum ([v (-in-immut-hash-values fake-ht/immut)]) v)
            (for/sum ([v (-in-mut-hash-values fake-ht/mut)]) v)
            (for/sum ([v (-in-weak-hash-values fake-ht/weak)]) v)
+           (for/sum ([v (-in-ephemeron-hash-values fake-ht/ephemeron)]) v)
            (for/sum ([v ht/immut-vals/seq]) v)
            (for/sum ([v ht/mut-vals/seq]) v)
-           (for/sum ([v ht/weak-vals/seq]) v))))]))
+           (for/sum ([v ht/weak-vals/seq]) v)
+           (for/sum ([v ht/ephemeron-vals/seq]) v))))]))
   (define-hash-iterations-tester generic
     in-hash in-hash-pairs in-hash-keys in-hash-values)
   (define-hash-iterations-tester specific
-    in-immutable-hash in-mutable-hash in-weak-hash
-    in-immutable-hash-pairs in-mutable-hash-pairs in-weak-hash-pairs
-    in-immutable-hash-keys in-mutable-hash-keys in-weak-hash-keys
-    in-immutable-hash-values in-mutable-hash-values in-weak-hash-values)
+    in-immutable-hash in-mutable-hash in-weak-hash in-ephemeron-hash
+    in-immutable-hash-pairs in-mutable-hash-pairs in-weak-hash-pairs in-ephemeron-hash-pairs
+    in-immutable-hash-keys in-mutable-hash-keys in-weak-hash-keys in-ephemeron-hash-keys
+    in-immutable-hash-values in-mutable-hash-values in-weak-hash-values in-ephemeron-hash-values)
   
   (define lst1 (build-list 10 values))
   (define lst2 (build-list 10 add1))
@@ -493,6 +537,38 @@
                           (v) in-hash-values in-weak-hash-values values)
 (hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
                            (p) in-hash-pairs in-weak-hash-pairs car)
+
+;; ----------------------------------------
+;; weak and ephemeron hash tables
+
+(unless (eq? 'cgc (system-type 'gc))
+  (let ([wht (make-weak-hash)]
+        [eht (make-ephemeron-hash)])
+    (define key1 (gensym "key"))
+    (define key2 (gensym "key"))
+    (define key3 (gensym "key"))
+
+    (hash-set! wht key1 (list key1))
+    (hash-set! wht key2 'ok)
+    (hash-set! wht key3 'not-key3)
+    (hash-set! eht key1 (list key1))
+    (hash-set! eht key2 'ok)
+    (hash-set! eht key3 (box key3))
+
+    (test (list key1) hash-ref wht key1)
+    (test 'ok hash-ref wht key2)
+    (test (list key1) hash-ref eht key1)
+    (test 'ok hash-ref eht key2)
+
+    (collect-garbage)
+    
+    (test 1 values (hash-count wht))
+    (test 1 values (hash-count eht))
+
+    (test (list key1) hash-ref wht key1)
+    (test (list key1) hash-ref eht key1)
+
+    (void)))
 
 ;; ----------------------------------------
 ;; hash-ref-key

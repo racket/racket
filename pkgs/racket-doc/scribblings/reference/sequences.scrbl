@@ -502,13 +502,42 @@ each element in the sequence.
          (in-weak-hash-pairs
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
+@defproc[(in-ephemeron-hash
+          [hash (and/c hash? hash-ephemeron?)])
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-ephemeron-hash
+          [hash (and/c hash? hash-ephemeron?)] [bad-index-v any/c])
+	  sequence?]
+@defproc[(in-ephemeron-hash-keys
+          [hash (and/c hash? hash-ephemeron?)])
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-ephemeron-hash-keys
+          [hash (and/c hash? hash-ephemeron?)] [bad-index-v any/c])
+	  sequence?]
+@defproc[(in-ephemeron-hash-values
+          [hash (and/c hash? hash-ephemeron?)])
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-ephemeron-hash-keys
+          [hash (and/c hash? hash-ephemeron?)] [bad-index-v any/c])
+	  sequence?]
+@defproc[(in-ephemeron-hash-pairs
+          [hash (and/c hash? hash-ephemeron?)])
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-ephemeron-hash-pairs
+          [hash (and/c hash? hash-ephemeron?)] [bad-index-v any/c])
+	  sequence?]
 )]{
    Sequence constructors for specific kinds of hash tables.
    These may perform better than the analogous @racket[in-hash]
    forms.
 
    @history[#:added "6.4.0.6"
-            #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]
+            #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+         #:changed "8.0.0.10" @elem{Added @schemeidfont{ephemeron} variants.}]
 }
 
 

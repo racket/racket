@@ -1140,8 +1140,8 @@ MZ_EXTERN Scheme_Object *scheme_make_weak_box(Scheme_Object *v);
 MZ_EXTERN Scheme_Object *scheme_make_late_weak_box(Scheme_Object *v);
 
 MZ_EXTERN Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_ephemeron_value(Scheme_Object *o);
-MZ_EXTERN Scheme_Object *scheme_ephemeron_key(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_ephemeron_value(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_ephemeron_key(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_make_late_will_executor();
 

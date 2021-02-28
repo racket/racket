@@ -953,7 +953,8 @@ enum {
   SCHEME_hash_string,
   SCHEME_hash_ptr,
   SCHEME_hash_weak_ptr,
-  SCHEME_hash_late_weak_ptr
+  SCHEME_hash_late_weak_ptr,
+  SCHEME_hash_ephemeron_ptr
 };
 
 enum {

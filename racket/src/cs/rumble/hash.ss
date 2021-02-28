@@ -25,40 +25,55 @@
                       (and (impersonator? v)
                            (authentic-hash? (impersonator-val v)))))
 
-(define make-hash
+(define/who make-hash
   (case-lambda
    [() (create-mutable-hash (make-hashtable key-equal-hash-code key-equal?) 'equal?)]
-   [(alist) (fill-hash! 'make-hash (make-hash) alist)]))
+   [(alist) (fill-hash! who (make-hash) alist)]))
 
-(define make-weak-hash
+(define/who make-weak-hash
   (case-lambda
    [() (create-mutable-hash (make-weak-hashtable key-equal-hash-code key-equal?) 'equal?)]
-   [(alist) (fill-hash! 'make-weak-hash (make-weak-hash) alist)]))
+   [(alist) (fill-hash! who (make-weak-hash) alist)]))
 
-(define make-hasheq
+(define/who make-ephemeron-hash
+  (case-lambda
+   [() (create-mutable-hash (make-ephemeron-hashtable key-equal-hash-code key-equal?) 'equal?)]
+   [(alist) (fill-hash! who (make-ephemeron-hash) alist)]))
+
+(define/who make-hasheq
   (case-lambda
    [() (create-eq-mutable-hash (make-eq-hashtable))]
-   [(alist) (fill-hash! 'make-hasheq (make-hasheq) alist)]))
+   [(alist) (fill-hash! who (make-hasheq) alist)]))
 
 (define (eq-hashtable->hash ht)
   (create-eq-mutable-hash ht))
 (define (hash->eq-hashtable ht)
   (mutable-hash-ht ht))
 
-(define make-weak-hasheq
+(define/who make-weak-hasheq
   (case-lambda
    [() (create-eq-mutable-hash (make-weak-eq-hashtable))]
-   [(alist) (fill-hash! 'make-weak-hasheq (make-weak-hasheq) alist)]))
+   [(alist) (fill-hash! who (make-weak-hasheq) alist)]))
 
-(define make-hasheqv
+(define/who make-ephemeron-hasheq
+  (case-lambda
+   [() (create-eq-mutable-hash (make-ephemeron-eq-hashtable))]
+   [(alist) (fill-hash! who (make-ephemeron-hasheq) alist)]))
+
+(define/who make-hasheqv
   (case-lambda
    [() (create-mutable-hash (make-eqv-hashtable) 'eqv?)]
-   [(alist) (fill-hash! 'make-hasheqv (make-hasheqv) alist)]))
+   [(alist) (fill-hash! who (make-hasheqv) alist)]))
 
-(define make-weak-hasheqv
+(define/who make-weak-hasheqv
   (case-lambda
    [() (create-mutable-hash (make-weak-eqv-hashtable) 'eqv?)]
-   [(alist) (fill-hash! 'make-weak-hasheqv (make-weak-hasheqv) alist)]))
+   [(alist) (fill-hash! who (make-weak-hasheqv) alist)]))
+
+(define/who make-ephemeron-hasheqv
+  (case-lambda
+   [() (create-mutable-hash (make-ephemeron-eqv-hashtable) 'eqv?)]
+   [(alist) (fill-hash! who (make-ephemeron-hasheqv) alist)]))
 
 (define/who (fill-hash! who ht alist)
   (check who :test (and (list? alist) (andmap pair? alist)) :contract "(listof pair?)" alist)
@@ -248,7 +263,7 @@
   (prepare-iterate! ht (hash-count ht))
   (set-locked-iterable-hash-lock! ht #f))
 
-(define (hash-eq? ht)
+(define/who (hash-eq? ht)
   (cond
    [(mutable-hash? ht) (eq-mutable-hash? ht)]
    [(intmap? ht)
@@ -256,9 +271,9 @@
    [(and (impersonator? ht)
          (authentic-hash? (impersonator-val ht)))
     (hash-eq? (impersonator-val ht))]
-   [else (raise-argument-error 'hash-eq? "hash?" ht)]))
+   [else (raise-argument-error who "hash?" ht)]))
 
-(define (hash-eqv? ht)
+(define/who (hash-eqv? ht)
   (cond
    [(mutable-hash? ht)
     (eq? (hashtable-equivalence-function (mutable-hash-ht ht)) eqv?)]
@@ -267,9 +282,9 @@
    [(and (impersonator? ht)
          (authentic-hash? (impersonator-val ht)))
     (hash-eqv? (impersonator-val ht))]
-   [else (raise-argument-error 'hash-eqv? "hash?" ht)]))
+   [else (raise-argument-error who "hash?" ht)]))
 
-(define (hash-equal? ht)
+(define/who (hash-equal? ht)
   (cond
    [(mutable-hash? ht)
     (eq? (hashtable-equivalence-function (mutable-hash-ht ht)) key-equal?)]
@@ -278,9 +293,21 @@
    [(and (impersonator? ht)
          (authentic-hash? (impersonator-val ht)))
     (hash-equal? (impersonator-val ht))]
-   [else (raise-argument-error 'hash-equal? "hash?" ht)]))
+   [else (raise-argument-error who "hash?" ht)]))
 
-(define (hash-weak? ht)
+(define/who (hash-strong? ht)
+  (cond
+    [(mutable-hash? ht)
+     (let ([t (mutable-hash-ht ht)])
+       (not (or (hashtable-weak? t)
+                (hashtable-ephemeron? t))))]
+    [(intmap? ht) #t]
+    [(and (impersonator? ht)
+          (authentic-hash? (impersonator-val ht)))
+     (hash-strong? (impersonator-val ht))]
+    [else (raise-argument-error who "hash?" ht)]))
+
+(define/who (hash-weak? ht)
   (cond
    [(mutable-hash? ht)
     (hashtable-weak? (mutable-hash-ht ht))]
@@ -288,7 +315,17 @@
    [(and (impersonator? ht)
          (authentic-hash? (impersonator-val ht)))
     (hash-weak? (impersonator-val ht))]
-   [else (raise-argument-error 'hash-weak? "hash?" ht)]))
+   [else (raise-argument-error who "hash?" ht)]))
+
+(define/who (hash-ephemeron? ht)
+  (cond
+   [(mutable-hash? ht)
+    (hashtable-ephemeron? (mutable-hash-ht ht))]
+   [(intmap? ht) #f]
+   [(and (impersonator? ht)
+         (authentic-hash? (impersonator-val ht)))
+    (hash-ephemeron? (impersonator-val ht))]
+   [else (raise-argument-error who "hash?" ht)]))
 
 (define/who hash-ref
   (case-lambda
@@ -577,7 +614,8 @@
              (and (hash-equal? ht1)
                   (hash-equal? ht2)))
          ;; Same weakness?
-         (eq? (hash-weak? ht1) (hash-weak? ht2)))
+         (eq? (hash-weak? ht1) (hash-weak? ht2))
+         (eq? (hash-ephemeron? ht1) (hash-ephemeron? ht2)))
     (and (= (hash-count ht1) (hash-count ht2))
          ;; This generic comparison supports impersonators
          (let loop ([i (hash-iterate-first ht1)])
@@ -885,13 +923,12 @@
 (define unsafe-weak-hash-iterate-key+value hash-iterate-key+value)
 (define unsafe-weak-hash-iterate-pair hash-iterate-pair)
 
-;; ----------------------------------------
-;; When `eq?`ness of flonums is not preserved by
-;; the GC, then we need special handling for flonums.
-;; But the GC now does preserve `eq?`ness.
-
-(define (weak/fl-cons key d)
-  (weak-cons key d))
+(define unsafe-ephemeron-hash-iterate-first hash-iterate-first)
+(define unsafe-ephemeron-hash-iterate-next hash-iterate-next)
+(define unsafe-ephemeron-hash-iterate-key hash-iterate-key)
+(define unsafe-ephemeron-hash-iterate-value hash-iterate-value)
+(define unsafe-ephemeron-hash-iterate-key+value hash-iterate-key+value)
+(define unsafe-ephemeron-hash-iterate-pair hash-iterate-pair)
 
 ;; ----------------------------------------
 
@@ -1140,6 +1177,11 @@
                [(hash-eq? val-ht) (make-weak-hasheq)]
                [(hash-eqv? val-ht) (make-weak-hasheq)]
                [else (make-weak-hash)])]
+             [(hash-ephemeron? ht)
+              (cond
+               [(hash-eq? val-ht) (make-ephemeron-hasheq)]
+               [(hash-eqv? val-ht) (make-ephemeron-hasheq)]
+               [else (make-ephemeron-hash)])]
              [else
               (cond
                [(hash-eq? val-ht) (make-hasheq)]

@@ -1020,6 +1020,10 @@ struct Scheme_Hash_Tree {
 Scheme_Object *scheme_intern_literal_string(Scheme_Object *str);
 Scheme_Object *scheme_intern_literal_number(Scheme_Object *num);
 
+#define SCHEME_BT_KIND_WEAK      1
+#define SCHEME_BT_KIND_LATE      2
+#define SCHEME_BT_KIND_EPHEMERON 3
+
 /*========================================================================*/
 /*                    hash functions                                      */
 /*========================================================================*/
@@ -3833,6 +3837,9 @@ Scheme_Object *scheme_weak_box_value(Scheme_Object *obj);
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 Scheme_Bucket_Table *scheme_make_weak_eqv_table(void);
 Scheme_Bucket_Table *scheme_make_nonlock_equal_bucket_table(void);
+
+Scheme_Bucket_Table *scheme_make_ephemeron_equal_table(void);
+Scheme_Bucket_Table *scheme_make_ephemeron_eqv_table(void);
 
 int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Object *orig_t1,
                                 Scheme_Hash_Table *t2, Scheme_Object *orig_t2,

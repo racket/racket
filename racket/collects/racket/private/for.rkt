@@ -69,6 +69,10 @@
              in-weak-hash-keys
              in-weak-hash-values
              in-weak-hash-pairs
+             in-ephemeron-hash
+             in-ephemeron-hash-keys
+             in-ephemeron-hash-values
+             in-ephemeron-hash-pairs
 
              (rename *in-directory in-directory)
 
@@ -797,7 +801,6 @@
                #f)]))
 
   (define (mutable? ht) (not (immutable? ht)))
-  (define (not-weak? ht) (not (hash-weak? ht)))
 
   ;; Each call defines 4 in-HASHTYPE-VALs sequences,
   ;;   where VAL = key, value, pair, key+value (key+value not used in seq name)
@@ -892,9 +895,10 @@
                         [_ #f]))))))]))
           ;; 2) define sequence syntaxes (using just-defined definer):
           (IN-HASH-DEFINER hash-type: hash)
-          (IN-HASH-DEFINER hash-type: mutable-hash   checks: mutable? not-weak?)
+          (IN-HASH-DEFINER hash-type: mutable-hash   checks: mutable? hash-strong?)
           (IN-HASH-DEFINER hash-type: immutable-hash checks: immutable?)
-          (IN-HASH-DEFINER hash-type: weak-hash      checks: hash-weak?))))]))
+          (IN-HASH-DEFINER hash-type: weak-hash      checks: hash-weak?)
+          (IN-HASH-DEFINER hash-type: ephemeron-hash checks: hash-ephemeron?))))]))
   (define-in-hash-sequences element-types: key value)
   (define-in-hash-sequences element-types: key)
   (define-in-hash-sequences element-types: value)

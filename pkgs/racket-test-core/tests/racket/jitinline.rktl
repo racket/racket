@@ -255,6 +255,7 @@
     (un #f 'immutable? (make-hash))
     (un #f 'immutable? (make-hasheq))
     (un #f 'immutable? (make-weak-hasheq))
+    (un #f 'immutable? (make-ephemeron-hasheq))
     (un #t 'immutable? #hash())
     (un #t 'immutable? #hasheq())
     (un #t 'immutable? #hasheqv())

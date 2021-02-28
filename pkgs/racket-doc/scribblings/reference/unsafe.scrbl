@@ -474,49 +474,49 @@ is analogous to @racket[box-cas!] to perform an atomic compare-and-set.
 
 @deftogether[(
 @defproc[(unsafe-mutable-hash-iterate-first
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) hash-strong?)])
 	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-next
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c])
 	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-key
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]) 
 	  any/c]
 @defproc[#:link-target? #f
          (unsafe-mutable-hash-iterate-key
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]
           [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-mutable-hash-iterate-value
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]) 
 	  any/c]
 @defproc[#:link-target? #f
          (unsafe-mutable-hash-iterate-value
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]
           [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-mutable-hash-iterate-key+value
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]) 
 	  (values any/c any/c)]
 @defproc[#:link-target? #f
          (unsafe-mutable-hash-iterate-key+value
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]
           [bad-index-v any/c])
 	  (values any/c any/c)]
 @defproc[(unsafe-mutable-hash-iterate-pair
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]) 
 	  pair?]
 @defproc[#:link-target? #f
          (unsafe-mutable-hash-iterate-pair
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+          [hash (and/c hash? (not/c immutable?) hash-strong?)]
 	  [pos any/c]
           [bad-index-v any/c]) 
 	  pair?]
@@ -614,6 +614,53 @@ is analogous to @racket[box-cas!] to perform an atomic compare-and-set.
 	  [pos any/c]
           [bad-index-v any/c]) 
 	  pair?]
+@defproc[(unsafe-ephemeron-hash-iterate-first
+          [hash (and/c hash? hash-ephemeron?)])
+	  (or/c #f any/c)]
+@defproc[(unsafe-ephemeron-hash-iterate-next
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-ephemeron-hash-iterate-key
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-ephemeron-hash-iterate-key
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
+	  any/c]
+@defproc[(unsafe-ephemeron-hash-iterate-value
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-ephemeron-hash-iterate-value
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
+	  any/c]
+@defproc[(unsafe-ephemeron-hash-iterate-key+value
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]) 
+	  (values any/c any/c)]
+@defproc[#:link-target? #f
+         (unsafe-ephemeron-hash-iterate-key+value
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-ephemeron-hash-iterate-pair
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]) 
+	  pair?]
+@defproc[#:link-target? #f
+         (unsafe-ephemeron-hash-iterate-pair
+          [hash (and/c hash? hash-ephemeron?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
+	  pair?]
 )]{
 Unsafe versions of @racket[hash-iterate-key] and similar procedures.
 These operations support @tech{chaperones} and @tech{impersonators}.
@@ -635,7 +682,8 @@ not useful for the @code{unsafe-immutable-hash-iterate-} functions,
 since an index cannot become invalid for an immutable @racket[hash].
 
 @history[#:added "6.4.0.6"
-         #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+         #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+         #:changed "8.0.0.10" @elem{Added @schemeidfont{ephemeron} variants.}]}
 
 @defproc[(unsafe-make-srcloc [source any/c]
                              [line (or/c exact-positive-integer? #f)]

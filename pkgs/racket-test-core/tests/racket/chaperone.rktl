@@ -1909,7 +1909,8 @@
  (list
   make-hash make-hasheq make-hasheqv
   (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv())
-  make-weak-hash make-weak-hasheq make-weak-hasheqv))
+  make-weak-hash make-weak-hasheq make-weak-hasheqv
+  make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))
 
 (let ([mk (lambda clear-proc+more
             (apply chaperone-hash (make-hash)
@@ -1941,7 +1942,8 @@
      (test #t (lambda (x) (hash? x)) h)))
  (list
   make-hash make-hasheq make-hasheqv
-  make-weak-hash make-weak-hasheq make-weak-hasheqv))
+  make-weak-hash make-weak-hasheq make-weak-hasheqv
+  make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv))
 
 (for-each 
  (lambda (make-hash)
@@ -2038,7 +2040,8 @@
       (void)))
   (list
    make-hash make-hasheq make-hasheqv
-   make-weak-hash make-weak-hasheq make-weak-hasheqv)))
+   make-weak-hash make-weak-hasheq make-weak-hasheqv
+   make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv)))
 
 (for-each
  (lambda (h1)   
@@ -2249,7 +2252,7 @@
                    (lambda (h k) k)
                    #f
                    (lambda (h k) (set! saw (cons k saw)) k)))
- (for ([make-hash (in-list (list make-hash make-weak-hash))])
+ (for ([make-hash (in-list (list make-hash make-weak-hash make-ephemeron-hash))])
    (set! saw null)
    (define ht (make-hash))
    (define cht (mk ht))
@@ -2300,7 +2303,7 @@
                       (lambda (h k) k)
                       #f
                       (lambda (h k) (inexact->exact (floor k)))))
-  (for ([make-hash (in-list (list make-hash make-weak-hash))])
+  (for ([make-hash (in-list (list make-hash make-weak-hash make-ephemeron-hash))])
     (define ht (make-hash))
     (define cht (mk ht))
     (hash-set! cht 1.2 'one)
@@ -2335,7 +2338,7 @@
       (define ht1 (hash-set cht (vector 1) 'vec))
       (test 'vec hash-ref ht1 (vector 1) #f)
       (test #f hash-ref ht1 (vector 2) #f))
-    (for ([make-hash (in-list (list make-hash make-weak-hash))])
+    (for ([make-hash (in-list (list make-hash make-weak-hash make-ephemeron-hash))])
       (define ht (make-hash))
       (define cht (mk ht))
       (define key (vector 1 2))
@@ -2353,7 +2356,7 @@
 ;; ----------------------------------------
 ;; Make sure chaperoned hash tables use a lock
 
-(for ([make-hash (list make-hash make-weak-hash)])
+(for ([make-hash (list make-hash make-weak-hash make-ephemeron-hash)])
   (define ht (make-hash))
 
   (struct a (v)
@@ -2432,7 +2435,9 @@
   (check (make-hash))
   (check (make-hasheq))
   (check (make-weak-hash))
-  (check (make-weak-hasheq)))
+  (check (make-weak-hasheq))
+  (check (make-ephemeron-hash))
+  (check (make-ephemeron-hasheq)))
 
 (let ([check
        (lambda (orig)

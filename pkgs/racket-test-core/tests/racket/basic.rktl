@@ -408,6 +408,8 @@
 (test #f immutable? (make-hash))
 (test #f immutable? (make-weak-hasheq))
 (test #f immutable? (make-weak-hash))
+(test #f immutable? (make-ephemeron-hasheq))
+(test #f immutable? (make-ephemeron-hash))
 
 (test #t eq? (hash) #hash())
 (test #t eq? (hasheq) #hasheq())
@@ -428,6 +430,9 @@
 (err/rt-test (make-weak-hash 1))
 (err/rt-test (make-weak-hasheqv 1))
 (err/rt-test (make-weak-hasheq 1))
+(err/rt-test (make-ephemeron-hash 1))
+(err/rt-test (make-ephemeron-hasheqv 1))
+(err/rt-test (make-ephemeron-hasheq 1))
 
 (test #t symbol? 'foo)
 (test #t symbol? (car '(a b)))
@@ -2343,9 +2348,13 @@
 (arity-test make-weak-hash 0 1)
 (arity-test make-weak-hasheq 0 1)
 (arity-test make-weak-hasheqv 0 1)
+(arity-test make-ephemeron-hash 0 1)
+(arity-test make-ephemeron-hasheq 0 1)
+(arity-test make-ephemeron-hasheqv 0 1)
 
 (define (hash-tests make-hash make-hasheq make-hasheqv
                     make-weak-hash make-weak-hasheq make-weak-hasheqv
+                    make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv
                     hash-ref hash-set! hash-ref! hash-update! hash-has-key?
                     hash-remove! hash-count
                     hash-map hash-for-each
@@ -2362,8 +2371,11 @@
     (let ([x null]) (case-lambda [() x] [(a) (set! x (cons a x)) a])))
   (define an-ax (make-ax 1 2))
 
-  (define (check-hash-tables weak? reorder?)
-    (let ([h1 (if weak? (make-weak-hasheq) (make-hasheq))]
+  (define (check-hash-tables weak-kind reorder?)
+    (let ([h1 (case weak-kind
+                [(weak) (make-weak-hasheq)]
+                [(ephemeron) (make-ephemeron-hasheq)]
+                [else (make-hasheq)])]
           [l (list 1 2 3)])
       (test #t eq? (eq-hash-code l) (eq-hash-code l))
       (test #t eq? (eqv-hash-code l) (eqv-hash-code l))
@@ -2392,7 +2404,10 @@
       (test 1 hash-ref h1 l)
       (hash-remove! h1 l))
 
-    (let ([h1 (if weak? (make-weak-hasheqv) (make-hasheqv))]
+    (let ([h1 (case weak-kind
+                [(weak) (make-weak-hasheqv)]
+                [(ephemeron) (make-ephemeron-hasheqv)]
+                [else (make-hasheqv)])]
           [n (expt 2 500)]
           [q (/ 1 2)]
           [s (make-string 2 #\q)])
@@ -2403,7 +2418,10 @@
       (test 'half hash-ref h1 (/ 1 (read (open-input-string "2"))))
       (test #f hash-ref h1 (make-string (read (open-input-string "2")) #\q) #f))
 
-    (let ([h1 (if weak? (make-weak-hash) (make-hash))]
+    (let ([h1 (case weak-kind
+                [(weak) (make-weak-hash)]
+                [(ephemeron) (make-ephemeron-hash)]
+                [else (make-hash)])]
           [l (list 1 2 3)]
           [v (vector 5 6 7)]
           [a (make-a 1 (make-a 2 3))]
@@ -2506,12 +2524,15 @@
       ;; return the hash table:
       h1))
 
-  (define (check-tables-equal mode t1 t2 weak?)
+  (define (check-tables-equal mode t1 t2 weak-kind)
     (test #t equal? t1 t2)
     (test #t hash-keys-subset? t1 t2)
     (test (equal-hash-code t1) equal-hash-code t2)
     (test #t equal? t1 (hash-copy t1))
-    (let ([again (if weak? (make-weak-hash) (make-hash))])
+    (let ([again (case weak-kind
+                   [(weak) (make-weak-hash)]
+                   [(ephemeron) (make-ephemeron-hash)]
+                   [else (make-hash)])])
       (let loop ([i (hash-iterate-first t1)])
         (when i
           (hash-set! again
@@ -2530,13 +2551,18 @@
                       #f)
   (when make-weak-hash
     (check-tables-equal 'the-weak-table
-                        (check-hash-tables #t #f)
-                        (check-hash-tables #t #t)
-                        #t))
+                        (check-hash-tables 'weak #f)
+                        (check-hash-tables 'weak #t)
+                        'weak)
+    (check-tables-equal 'the-ephemeron-table
+                        (check-hash-tables 'ephemeron #f)
+                        (check-hash-tables 'ephemeron #t)
+                        'ephemeron))
   
   ;; Make sure copy doesn't share:
   (for ([make-hash (list make-hash
-                         make-weak-hash)])
+                         make-weak-hash
+                         make-ephemeron-hash)])
     (when make-hash
       (define c1 (make-hash))
       (hash-set! c1 'the-key1 'the-val1)
@@ -2554,7 +2580,8 @@
       (test 'the-val4 hash-ref c1 'the-key4)))
 
   (for ([make-hash (list make-hash
-                         make-weak-hash)])
+                         make-weak-hash
+                         make-ephemeron-hash)])
     (when make-hash
       (define c1 (make-hash))
       (hash-set! c1 'the-key1 'the-val1)
@@ -2569,6 +2596,7 @@
 
 (hash-tests make-hash make-hasheq make-hasheqv
             make-weak-hash make-weak-hasheq make-weak-hasheqv
+            make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv
             hash-ref hash-set! hash-ref! hash-update! hash-has-key?
             hash-remove! hash-count
             hash-map hash-for-each
@@ -2584,6 +2612,7 @@
   (hash-tests (lambda () (box #hash()))
               (lambda () (box #hasheq()))
               (lambda () (box #hasheqv()))
+              #f #f #f
               #f #f #f
               (ub-wrap hash-ref)
               (lambda (ht k v) (set-box! ht (hash-set (unbox ht) k v)))
@@ -2610,24 +2639,66 @@
 (test #f hash? 5)
 (test #t hash? (make-hasheq))
 (test #t hash? (make-hasheqv))
+(test #t hash-eq? (hasheq))
+(test #f hash-eq? (hash))
+(test #f hash-eq? (hasheqv))
 (test #t hash-eq? (make-hasheq))
 (test #f hash-eq? (make-hash))
 (test #f hash-eq? (make-hasheqv))
 (test #t hash-eq? (make-weak-hasheq))
 (test #f hash-eq? (make-weak-hash))
 (test #f hash-eq? (make-weak-hasheqv))
-(test #f hash-eqv? (make-hasheq))
+(test #t hash-eq? (make-ephemeron-hasheq))
+(test #f hash-eq? (make-ephemeron-hash))
+(test #f hash-eq? (make-ephemeron-hasheqv))
+(test #f hash-eqv? (hasheq))
+(test #f hash-eqv? (hash))
+(test #t hash-eqv? (hasheqv))
+(test #f hash-eqv? (hasheq))
 (test #f hash-eqv? (make-hash))
 (test #t hash-eqv? (make-hasheqv))
 (test #f hash-eqv? (make-weak-hasheq))
 (test #f hash-eqv? (make-weak-hash))
 (test #t hash-eqv? (make-weak-hasheqv))
+(test #f hash-eqv? (make-ephemeron-hasheq))
+(test #f hash-eqv? (make-ephemeron-hash))
+(test #t hash-eqv? (make-ephemeron-hasheqv))
+(test #f hash-weak? (hasheq))
+(test #f hash-weak? (hash))
+(test #f hash-weak? (hasheqv))
 (test #f hash-weak? (make-hasheq))
 (test #f hash-weak? (make-hash))
 (test #f hash-weak? (make-hasheqv))
 (test #t hash-weak? (make-weak-hasheq))
 (test #t hash-weak? (make-weak-hash))
 (test #t hash-weak? (make-weak-hasheqv))
+(test #f hash-weak? (make-ephemeron-hasheq))
+(test #f hash-weak? (make-ephemeron-hash))
+(test #f hash-weak? (make-ephemeron-hasheqv))
+(test #f hash-ephemeron? (hasheq))
+(test #f hash-ephemeron? (hash))
+(test #f hash-ephemeron? (hasheqv))
+(test #f hash-ephemeron? (make-hasheq))
+(test #f hash-ephemeron? (make-hash))
+(test #f hash-ephemeron? (make-hasheqv))
+(test #f hash-ephemeron? (make-weak-hasheq))
+(test #f hash-ephemeron? (make-weak-hash))
+(test #f hash-ephemeron? (make-weak-hasheqv))
+(test #t hash-ephemeron? (make-ephemeron-hasheq))
+(test #t hash-ephemeron? (make-ephemeron-hash))
+(test #t hash-ephemeron? (make-ephemeron-hasheqv))
+(test #t hash-strong? (hasheq))
+(test #t hash-strong? (hash))
+(test #t hash-strong? (hasheqv))
+(test #t hash-strong? (make-hasheq))
+(test #t hash-strong? (make-hash))
+(test #t hash-strong? (make-hasheqv))
+(test #f hash-strong? (make-weak-hasheq))
+(test #f hash-strong? (make-weak-hash))
+(test #f hash-strong? (make-weak-hasheqv))
+(test #f hash-strong? (make-ephemeron-hasheq))
+(test #f hash-strong? (make-ephemeron-hash))
+(test #f hash-strong? (make-ephemeron-hasheqv))
 
 (let ([ht (make-hasheqv)]
       [l (list #x03B1 #x03B2 #x03B3)]
@@ -2644,6 +2715,8 @@
 (err/rt-test (hash-eq? 5))
 (err/rt-test (hash-eqv? 5))
 (err/rt-test (hash-weak? 5))
+(err/rt-test (hash-ephemeron? 5))
+(err/rt-test (hash-strong? 5))
 
 (let ([a (expt 2 500)]
       [b (expt (read (open-input-string "2")) 500)])
@@ -2652,13 +2725,16 @@
 
 ;; Check for proper clearing of weak hash tables
 ;; (internally, value should get cleared along with key):
-(let ([ht (make-weak-hasheq)])
+(let ([ht (make-weak-hasheq)]
+      [et (make-ephemeron-hasheq)])
   (let loop ([n 10])
     (unless (zero? n)
       (hash-set! ht (make-string 10) #f)
+      (hash-set! et (make-string 10) #f)
       (loop (sub1 n))))
   (collect-garbage)
-  (map (lambda (i) (format "~a" i)) (hash-map ht cons)))
+  (map (lambda (i) (format "~a" i)) (hash-map ht cons))
+  (map (lambda (i) (format "~a" i)) (hash-map et cons)))
 
 ;; Double check that table are equal after deletions
 (let ([test-del-eq
@@ -2676,7 +2752,9 @@
   (test-del-eq make-hasheq)
   (test-del-eq make-hash)
   (test-del-eq make-weak-hasheq)
-  (test-del-eq make-weak-hash))
+  (test-del-eq make-weak-hash)
+  (test-del-eq make-ephemeron-hasheq)
+  (test-del-eq make-ephemeron-hash))
 
 (err/rt-test (hash-count 0))
 (err/rt-test (hash-set! 1 2 3))
@@ -2696,7 +2774,13 @@
   (test #f equal? (mk make-hasheq) (mk make-hasheqv))
   (test #f equal? (mk make-hash) (mk make-weak-hash))
   (test #f equal? (mk make-hasheq) (mk make-weak-hasheq))
-  (test #f equal? (mk make-hasheqv) (mk make-weak-hasheqv)))
+  (test #f equal? (mk make-hasheqv) (mk make-weak-hasheqv))
+  (test #f equal? (mk make-hash) (mk make-ephemeron-hash))
+  (test #f equal? (mk make-hasheq) (mk make-ephemeron-hasheq))
+  (test #f equal? (mk make-hasheqv) (mk make-ephemeron-hasheqv))
+  (test #f equal? (mk make-weak-hash) (mk make-ephemeron-hash))
+  (test #f equal? (mk make-weak-hasheq) (mk make-ephemeron-hasheq))
+  (test #f equal? (mk make-weak-hasheqv) (mk make-ephemeron-hasheqv)))
 (let ([mk (lambda (mk)
             (mk `((1 . 2))))])
   (test #t equal? (mk make-immutable-hash) (mk make-immutable-hash))
@@ -2733,11 +2817,15 @@
   (check-subset hash hash #:k1 (cons 1 2) #:k2 (cons 1 2))
   (check-subset hasheq (make-make-hash make-hasheq))
   (check-subset hasheq (make-make-hash make-weak-hasheq))
+  (check-subset hasheq (make-make-hash make-ephemeron-hasheq))
   (check-subset hasheqv (make-make-hash make-hasheqv))
   (check-subset hasheqv (make-make-hash make-weak-hasheqv))
+  (check-subset hasheqv (make-make-hash make-ephemeron-hasheqv))
   (check-subset hash (make-make-hash make-hash))
   (check-subset hash (make-make-hash make-weak-hash))
+  (check-subset hash (make-make-hash make-ephemeron-hash))
   (check-subset (make-make-hash make-hash) (make-make-hash make-weak-hash))
+  (check-subset (make-make-hash make-hash) (make-make-hash make-ephemeron-hash))
   (check-subset hash (make-make-hash make-hash) #:k1 (expt 2 70) #:k2 (expt 2 70)))
 
 (let ([not-same-comparison? (lambda (x)
@@ -2746,7 +2834,8 @@
   (err/rt-test (hash-keys-subset? #hash() #hasheqv()) not-same-comparison?)
   (err/rt-test (hash-keys-subset? #hasheq() #hasheqv()) not-same-comparison?)
   (err/rt-test (hash-keys-subset? (make-hasheq #hasheqv()) not-same-comparison?))
-  (err/rt-test (hash-keys-subset? (make-weak-hasheq #hasheqv()) not-same-comparison?)))
+  (err/rt-test (hash-keys-subset? (make-weak-hasheq #hasheqv()) not-same-comparison?))
+  (err/rt-test (hash-keys-subset? (make-ephemeron-hasheq #hasheqv()) not-same-comparison?)))
 
 (define im-t (make-immutable-hasheq null))
 (test #t hash? im-t)
@@ -2781,8 +2870,10 @@
 
 (test #f hash-iterate-first (make-hasheq))
 (test #f hash-iterate-first (make-weak-hasheq))
+(test #f hash-iterate-first (make-ephemeron-hasheq))
 (test #f hash-iterate-next (make-hasheq) 0)
 (test #f hash-iterate-next (make-weak-hasheq) 0)
+(test #f hash-iterate-next (make-ephemeron-hasheq) 0)
 
 (let ([hts (list (make-hash)
                  (make-hasheq)
@@ -2790,6 +2881,9 @@
                  (make-weak-hash)
                  (make-weak-hasheq)
                  (make-weak-hasheqv)
+                 (make-ephemeron-hash)
+                 (make-ephemeron-hasheq)
+                 (make-ephemeron-hasheqv)
                  (hash)
                  (hasheq)
                  (hasheqv))])
@@ -2873,6 +2967,8 @@
 (arity-test hash? 1 1)
 (arity-test hash-eq? 1 1)
 (arity-test hash-weak? 1 1)
+(arity-test hash-ephemeron? 1 1)
+(arity-test hash-strong? 1 1)
 
 ;; Ensure that hash-table hashing is not sensitive to the
 ;; order of key+value additions
@@ -2881,6 +2977,8 @@
   (define ht2 (make-hash))
   (define wht (make-weak-hash))
   (define wht2 (make-weak-hash))
+  (define eht (make-ephemeron-hash))
+  (define eht2 (make-ephemeron-hash))
   (define keys (make-hasheq))
 
   (struct a (x) #:transparent)
@@ -2919,10 +3017,17 @@
   (for ([i (in-list l2)])
     (hash-set! wht2 (reg (a i)) (a (a i))))
   
+  (for ([i (in-list l)])
+    (hash-set! eht (reg (a i)) (a (a i))))
+  (for ([i (in-list l2)])
+    (hash-set! eht2 (reg (a i)) (a (a i))))
+  
   (test (equal-hash-code ht) values (equal-hash-code ht2))
   (test (equal-hash-code wht) values (equal-hash-code wht2))
+  (test (equal-hash-code eht) values (equal-hash-code eht2))
   (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))
   (test (equal-secondary-hash-code wht) values (equal-secondary-hash-code wht2))
+  (test (equal-secondary-hash-code eht) values (equal-secondary-hash-code eht2))
 
   (let ([ht (for/hash ([i (in-list l)])
               (values (a i) (a (a i))))]
