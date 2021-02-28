@@ -27,7 +27,7 @@
                 (string? s))
       (raise-argument-error 'path-list-string->path-list "(or/c bytes? string?)" s))
     (unless (and (list? default)
-                 (andmap path? default))
+                 (andmap (lambda (p) (or (eq? p 'same) path?)) default))
       (raise-argument-error 'path-list-string->path-list "(listof path?)" default))
     (init-rx:path-list!)
     (let loop ([s (if (string? s)

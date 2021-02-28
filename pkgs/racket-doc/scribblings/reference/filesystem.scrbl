@@ -252,8 +252,8 @@ by @racket[kind], which must be one of the following:
                                    with similar adjustments for Mac OS.}]}
 
 @defproc[(path-list-string->path-list [str (or/c string? bytes?)]
-                                      [default-path-list (listof path?)])
-         (listof path?)]{
+                                      [default-path-list (listof (or/c path? 'same))])
+         (listof (or/c path? 'same))]{
 
 Parses a string or byte string containing a list of paths, and returns
 a list of path strings. On @|AllUnix|, paths in a path list are
@@ -262,7 +262,10 @@ separated by a @litchar{:}; on Windows, paths are separated by a
 list contains an empty path, the list
 @racket[default-path-list] is spliced into the returned list of
 paths. Parts of @racket[str] that do not form a valid path are not
-included in the returned list.}
+included in the returned list.
+
+@history[#:changed "8.0.0.10" @elem{Changed to allow @racket['same] in
+                                    @racket[default-path-list].}]}
 
 
 @defproc[(find-executable-path [program path-string?]
