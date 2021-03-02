@@ -20,6 +20,8 @@
 (define logger (make-logger 'demodularizer (current-logger)))
 
 (define (demodularize input-file [given-output-file #f])
+  (unless (eq? (system-type 'vm) 'racket)
+    (raise-user-error "`raco demodularize` is only supported on Racket BC."))
   (parameterize ([current-logger logger]
                  [current-excluded-modules (for/set ([path (in-set (current-excluded-modules))])
                                              (normal-case-path (simplify-path (path->complete-path path))))])
