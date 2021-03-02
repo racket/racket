@@ -39,14 +39,14 @@
          (if (and (relative-path? program)
                   (let-values ([(base name dir?) (split-path program)])
                     (eq? base 'relative)))
-             (let ([paths-str (environment-variables-ref (current-environment-variables)
-                                                         #"PATH")]
+             (let ([paths-bstr (environment-variables-ref (current-environment-variables)
+                                                          #"PATH")]
                    [win-add (lambda (s) (if (eq? (system-type) 'windows) 
                                        (cons (bytes->path #".") s) 
                                        s))])
                (let loop ([paths (win-add 
-                                  (if paths-str
-                                      (path-list-string->path-list (bytes->string/locale paths-str #\?)
+                                  (if paths-bstr
+                                      (path-list-string->path-list paths-bstr
                                                                    null)
                                       null))])
                  (if (null? paths)

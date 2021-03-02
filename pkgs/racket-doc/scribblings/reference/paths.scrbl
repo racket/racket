@@ -87,8 +87,8 @@ on how strings encode paths.
          path?]{
 
 Produces a path (for some platform) whose byte-string encoding is
-@racket[bstr]. The optional @racket[type] specifies the convention to
-use for the path.
+@racket[bstr], where @racket[bstr] must not contain a nul byte. The
+optional @racket[type] specifies the convention to use for the path.
 
 For converting relative @tech{path elements} from literals, use instead
 @racket[bytes->path-element], which applies a suitable encoding for

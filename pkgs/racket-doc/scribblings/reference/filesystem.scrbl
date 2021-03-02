@@ -256,13 +256,14 @@ by @racket[kind], which must be one of the following:
          (listof (or/c path? 'same))]{
 
 Parses a string or byte string containing a list of paths, and returns
-a list of path strings. On @|AllUnix|, paths in a path list are
+a list of paths. On @|AllUnix|, paths in a path-list string are
 separated by a @litchar{:}; on Windows, paths are separated by a
 @litchar{;}, and all @litchar{"}s in the string are discarded. Whenever the path 
 list contains an empty path, the list
 @racket[default-path-list] is spliced into the returned list of
 paths. Parts of @racket[str] that do not form a valid path are not
-included in the returned list.
+included in the returned list. The given @racket[str] must not contain
+a nul character or nul byte.
 
 @history[#:changed "8.0.0.10" @elem{Changed to allow @racket['same] in
                                     @racket[default-path-list].}]}

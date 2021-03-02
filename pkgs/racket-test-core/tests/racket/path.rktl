@@ -1044,5 +1044,17 @@
         reroot-path/w "\\\\?\\UNC\\machine\\path\\x/y\\z" "q:/tmp/b"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure `path-list-string->path-list` can deal with
+;; bytes that (likely) don't fit into the current locale's encoding
+
+(test (list (bytes->path #"a\200c")
+            (bytes->path #"def"))
+      path-list-string->path-list
+      (if (eq? (system-type) 'windows)
+          #"a\200c;def"
+          #"a\200c:def")
+      null)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
