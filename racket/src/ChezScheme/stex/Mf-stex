@@ -139,12 +139,12 @@ $(x).spell: $(x).bbl $(x).tex
 	latexspell $(x).tex
 
 clean: $(x).clean
-	-/bin/rm -f *.log *.dvi *.aux *.out *.toc *.tmp *.idx *.ilg *.ind *.blg *.bbl *.rfm *.sfm *.firstrun *.secondrun *.thirdrun
-	-/bin/rm -f *.haux *.htoc *.hidx *.hfirstrun *.hsecondrun *.hthirdrun *.mathrun
-	-/bin/rm -f *.tex
+	-rm -f *.log *.dvi *.aux *.out *.toc *.tmp *.idx *.ilg *.ind *.blg *.bbl *.rfm *.sfm *.firstrun *.secondrun *.thirdrun
+	-rm -f *.haux *.htoc *.hidx *.hfirstrun *.hsecondrun *.hthirdrun *.mathrun
+	-rm -f *.tex
 
 reallyclean: clean $(x).reallyclean
-	-/bin/rm -f *.html *.ps *.pdf *.png
+	-rm -f *.html *.ps *.pdf *.png
 
 reallyreallyclean: reallyclean $(x).reallyreallyclean
-	-/bin/rm -rf $(mathdir)
+	-rm -rf $(mathdir)
