@@ -135,11 +135,11 @@ scheme-via-rktboot:
 
 scheme-via-rktboot-at:
 	SCHEME_SRC="$(SCHEME_DIR)" MACH="$(MACH)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) $(BOOTSTRAP_BOOTFILE_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
-	/bin/sh $(srcdir)/reset_boot.sh $(MACH) $(SCHEME_WORKAREA)
+	$(SHELL) $(srcdir)/reset_boot.sh $(MACH) $(SCHEME_WORKAREA)
 	$(MAKE) mach-make
 
 scheme-via-pb:
-	/bin/sh $(srcdir)/check_boot.sh $(MACH) "$(SCHEME_DIR)" $(SCHEME_WORKAREA)
+	$(SHELL) $(srcdir)/check_boot.sh $(MACH) "$(SCHEME_DIR)" $(SCHEME_WORKAREA)
 	if [ -f boot_pending ] ; then $(MAKE) pb-bootquick ; fi
 	$(MAKE) mach-make
 
@@ -149,7 +149,7 @@ pb-bootquick:
 	cd $(SCHEME_WORKAREA) && $(MAKE) ${MACH}.bootquick
 	$(MAKE) config-scheme
 	cd $(SCHEME_WORKAREA) && $(MAKE) reset
-	/bin/sh $(srcdir)/ready_boot.sh $(MACH) $(SCHEME_WORKAREA)
+	$(SHELL) $(srcdir)/ready_boot.sh $(MACH) $(SCHEME_WORKAREA)
 
 mach-make:
 	$(MAKE) config-scheme
@@ -170,7 +170,7 @@ config-scheme:
 
 scheme-cross:
 	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_DIR)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
-	/bin/sh $(srcdir)/reset_boot.sh $(TARGET_MACH) $(SCHEME_WORKAREA)
+	$(SHELL) $(srcdir)/reset_boot.sh $(TARGET_MACH) $(SCHEME_WORKAREA)
 	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
 	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/c && $(CHOST_HACK@T_CROSS_MODE@) $(MAKE) o=o cross=t
 	$(MAKE) $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
