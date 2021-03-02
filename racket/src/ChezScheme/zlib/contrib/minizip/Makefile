@@ -22,4 +22,4 @@ test:	miniunz minizip
 	./miniunz test.zip
 
 clean:
-	/bin/rm -f *.o *~ minizip miniunz
+	rm -f *.o *~ minizip miniunz

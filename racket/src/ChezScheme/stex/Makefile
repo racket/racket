@@ -49,10 +49,10 @@ install: $(exec)
 	(umask 022; sed -e 's;include ~/stex/Mf-stex;include $(LIB)/Mf-stex;' Makefile.template > $(LIB)/Makefile.template)
 
 uninstall:
-	/bin/rm -rf $(LIB)
+	rm -rf $(LIB)
 
 clean:
-	/bin/rm -f Make.out
+	rm -f Make.out
 
 distclean: clean
-	/bin/rm -rf $m
+	rm -rf $m
