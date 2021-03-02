@@ -147,7 +147,7 @@ Raised for @techlink{generic methods} that do not support the given
 @defform[(define/generic local-id method-id)]{
 
 When used inside the method definitions associated with the @racket[#:methods],
-@racket[#:fallbacks], @racket[#:defaults] or @racket[#:fast-defaults] keyword,
+@racket[#:fallbacks], @racket[#:defaults] or @racket[#:fast-defaults] keywords,
 binds @racket[local-id] to the generic for @racket[method-id]. This form is
 useful for method specializations to use generic methods (as opposed to the
 local specialization) on other values.
