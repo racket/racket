@@ -160,7 +160,7 @@ The @racket[define/generic] form is only allowed inside:
        @racket[#:fast-defaults] in @racket[define-generics]}
 ]
 
-Using this form elsewhere is a syntax error.
+Using @racket[define/generic] elsewhere is a syntax error.
 }
 
 
