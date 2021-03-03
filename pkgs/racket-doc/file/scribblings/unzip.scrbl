@@ -13,11 +13,15 @@ a function to extract items from a @exec{zip} archive.}
                                    . -> . any)
                                   (bytes? boolean? input-port? . -> . any))
                               (make-filesystem-entry-reader)]
+                [#:must-unzip? must-unzip? any/c #f]
                 [#:preserve-timestamps? preserve-timestamps? any/c #f]
                 [#:utc-timestamps? utc-timestamps? any/c #f])
          void?]{
 
-Unzips an entire @exec{zip} archive from @racket[in].
+Unzips an entire @exec{zip} archive from @racket[in]. If @racket[in]
+does not start with @exec{zip}-archive magic bytes, an error is
+reported only if @racket[must-unzip?] is true, otherwise the result is
+@racket[(void)] with no bytes consumed from @racket[in].
 
 For each entry in the archive, the @racket[entry-reader] procedure is
 called with three or four arguments: the byte string representing the entry
@@ -33,18 +37,24 @@ but if @racket[utc-timestamps?] is true, then the time in the archive
 is interpreted as UTC.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:preserve-timestamps?] argument.}
-         #:changed "6.0.1.12" @elem{Added the @racket[#:utc-timestamps?] argument.}]}
+         #:changed "6.0.1.12" @elem{Added the @racket[#:utc-timestamps?] argument.}
+         #:changed "8.0.0.10" @elem{Added the @racket[#:must-unzip?] argument.}]}
 
 
 @defproc[(call-with-unzip [in (or/c path-string? input-port?)]
-                          [proc (-> path-string? any)])
+                          [proc (-> path-string? any)]
+                          [#:must-unzip? must-unzip? any/c #f])
          any]{
 
 Unpacks @racket[in] to a temporary directory, calls @racket[proc] on
 the temporary directory's path, and then deletes the temporary
 directory while returning the result of @racket[proc].
 
-@history[#:added "6.0.1.6"]}
+Like @racket[unzip], no error is reported in the case @racket[in] is
+not a @exec{zip} archive, unless @racket[must-unzip?] is true.
+
+@history[#:added "6.0.1.6"
+         #:changed "8.0.0.10" @elem{Added the @racket[#:must-unzip?] argument.}]}
 
 
 @defproc[(make-filesystem-entry-reader

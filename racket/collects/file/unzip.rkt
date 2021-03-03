@@ -18,7 +18,8 @@
            (or/c (bytes? boolean? input-port? (or/c #f exact-integer?) . -> . any)
                  (bytes? boolean? input-port? . -> . any))
            #:preserve-timestamps? any/c
-           #:utc-timestamps? any/c)
+           #:utc-timestamps? any/c
+           #:must-unzip? any/c)
           . ->* . any)]
   
   [make-filesystem-entry-reader (() (#:dest 
@@ -48,9 +49,10 @@
                 . ->* .
                 any)]
 
-  [call-with-unzip (-> (or/c path-string? input-port?)
-                       (-> path-string? any)
-                       any)]
+  [call-with-unzip (((or/c path-string? input-port?)
+                     (-> path-string? any))
+                    (#:must-unzip? any/c)
+                    . ->* . any)]
   [call-with-unzip-entry (-> (or/c path-string? input-port?)
                              path-string?
                              (-> path-string? any)
@@ -309,17 +311,22 @@
 
 ;; unzip : [(or/c path-string? input-port) (bytes boolean input-port -> any)] -> any
 (define unzip
-  (lambda (in [read-entry (make-filesystem-entry-reader)]
-              #:preserve-timestamps? [preserve-timestamps? #f]
-              #:utc-timestamps? [utc? #f])
+  (lambda (orig-in [read-entry (make-filesystem-entry-reader)]
+                   #:must-unzip? [must-unzip? #f]
+                   #:preserve-timestamps? [preserve-timestamps? #f]
+                   #:utc-timestamps? [utc? #f])
     (call-with-input
-     in
+     orig-in
      (lambda (in)
-       (when (= (peek-integer 4 #f in #f) *local-file-header*)
-         (unzip-one-entry in read-entry preserve-timestamps? utc?)
-         (unzip in read-entry
-                #:preserve-timestamps? preserve-timestamps?
-                #:utc-timestamps? utc?))))))
+       (cond
+         [(= (peek-integer 4 #f in #f) *local-file-header*)
+          (unzip-one-entry in read-entry preserve-timestamps? utc?)
+          (unzip in read-entry
+                 #:preserve-timestamps? preserve-timestamps?
+                 #:utc-timestamps? utc?)]
+         [must-unzip?
+          (error 'unzip "input does not appear to be an archive\n  input: ~e" orig-in)]
+         [else (void)])))))
 
 (define (input-size in)
   (file-position in eof)
@@ -403,13 +410,17 @@
         (lambda ()
           (delete-directory/files temp-dir)))))
 
-(define (call-with-unzip zip-file user-proc)
+(define (call-with-unzip zip-file user-proc
+                         #:must-unzip? [must-unzip? #f])
   (let ([temp-dir #f])
     (dynamic-wind
         (lambda ()
           (set! temp-dir (make-temporary-file "ziptmp~a" 'directory)))
         (lambda ()
-          (unzip zip-file (make-filesystem-entry-reader #:dest temp-dir #:exists 'replace))
+          (unzip zip-file (make-filesystem-entry-reader
+                           #:dest temp-dir
+                           #:exists 'replace)
+                 #:must-unzip? must-unzip?)
           (user-proc temp-dir))
         (lambda ()
           (delete-directory/files temp-dir)))))

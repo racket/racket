@@ -62,7 +62,14 @@
             (break-thread t)
             (sync t)
             'done))
-        => 'done))
+        => 'done)
+
+  (test (call-with-unzip (open-input-bytes #"not a zip stream") void)
+        => (void))
+  (test (call-with-unzip (open-input-bytes #"not a zip stream")
+                         void
+                         #:must-unzip? #t)
+        =error> "input does not appear to be an archive"))
 
 
 (provide tests)
