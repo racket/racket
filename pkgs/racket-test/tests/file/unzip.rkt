@@ -39,7 +39,31 @@
              (lambda (skip s evt) (lambda args 'void))
              void))
           (inflate infinite-voids out))
-        =error> "non-character in an unsupported context"))
+        =error> "non-character in an unsupported context")
+
+  ;; Check that a blocked input port can be interrupted:
+  (test (let ()
+          (define zip
+            (bytes-append
+             #"PK\3\4\24\0\0\0\b\0\35FbR\237b\371AO\0\0\0x\0\0\0\5\0\34\0x.rkt"
+             #"UT\t\0\3j^>`l^>`ux\v\0\1\4\365\1\0\0\4\0\0\0\0S\316I\314KW(JL\316N-\321OJ,"
+             #"N\345\342\322HIM\313\314KU\320HS\250\320\344RP\320\310LS\320(KM."
+             #"\311/\262W\250P0\4\211\201\200\2066LX7'5/\275$\3\242\34\n0\244`r\352\371"
+             #"\331@6\0PK\1\2\36\3\24\0\0\0\b\0\35FbR\237b\371AO\0\0\0x\0\0\0\5\0"
+             #"\30\0\0\0\0\0\1\0\0\0\244\201\0\0\0\0x.rktUT\5\0\3j^>`ux\v\0\1\4\365\1"
+             #"\0\0\4\0\0\0\0PK\5\6\0\0\0\0\1\0\1\0K\0\0\0\216\0\0\0\0\0"))
+          (define-values (i o) (make-pipe))
+          (void (write-bytes (subbytes zip 0 100) o))
+          (let ([t (thread
+                    (lambda ()
+                      (with-handlers ([exn:break? void])
+                        (call-with-unzip i void))))])
+            (sync (system-idle-evt))
+            (break-thread t)
+            (sync t)
+            'done))
+        => 'done))
+
 
 (provide tests)
 (module+ main (tests))
