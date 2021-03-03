@@ -2414,7 +2414,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
       Scheme_Object *str;
 
       s = rktio_uname(scheme_rktio);
-      str = scheme_make_utf8_string(s);
+      str = scheme_make_locale_string(s);
       rktio_free(s);
 
       return str;

@@ -1,12 +1,12 @@
 #lang racket/base
 (require "../host/rktio.rkt"
          "../host/thread.rkt"
-         "../string/convert.rkt")
+         "../locale/string.rkt")
 
 (provide get-machine-info)
 
 (define (get-machine-info)
-  (bytes->string/utf-8
+  (bytes->string/locale
    (atomically
     (define v (rktio_uname rktio))
     (begin0

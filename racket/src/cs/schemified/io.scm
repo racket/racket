@@ -38895,7 +38895,7 @@
        (unsafe-poll-fd_0 system-fd_0 mode_0 socket?1_0))))))
 (define get-machine-info
   (lambda ()
-    (1/bytes->string/utf-8
+    (1/bytes->string/locale
      (begin
        (unsafe-start-atomic)
        (begin0
