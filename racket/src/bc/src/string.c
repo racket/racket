@@ -2400,8 +2400,6 @@ void scheme_set_cross_compile_mode(int v)
   cross_compile_mode = v;
 }
 
-static void machine_details(char *s);
-
 #include "systype.inc"
 
 static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
@@ -2412,11 +2410,14 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
     }
 
     if (SAME_OBJ(argv[0], machine_symbol)) {
-      char buff[1024];
-      
-      machine_details(buff);
-    
-      return scheme_make_utf8_string(buff);
+      char *s;
+      Scheme_Object *str;
+
+      s = rktio_uname(scheme_rktio);
+      str = scheme_make_utf8_string(s);
+      rktio_free(s);
+
+      return str;
     }
 
     if (SAME_OBJ(argv[0], gc_symbol)) {
@@ -5476,147 +5477,6 @@ mzchar *scheme_utf16_to_ucs4(const unsigned short *text, intptr_t start, intptr_
 
   return buf;
 }
-
-/**********************************************************************/
-/*                     machine type details                           */
-/**********************************************************************/
-
-/*************************** Windows **********************************/
-
-#ifdef DOS_FILE_SYSTEM
-# include <windows.h>
-void machine_details(char *buff)
-{
-  OSVERSIONINFO info;
-  BOOL hasInfo;
-  char *p;
-
-  info.dwOSVersionInfoSize = sizeof(info);
-
-  GetVersionEx(&info);
-
-  hasInfo = FALSE;
-
-  p = info.szCSDVersion;
-
-  while (p < info.szCSDVersion + sizeof(info.szCSDVersion) &&
-	 *p) {
-    if (*p != ' ') {
-      hasInfo = TRUE;
-      break;
-    }
-    p = p XFORM_OK_PLUS 1;
-  }
-
-  sprintf(buff,"Windows %s %ld.%ld (Build %ld)%s%s",
-	  (info.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS) ?
-	  "9x" :
-	  (info.dwPlatformId == VER_PLATFORM_WIN32_NT) ?
-	  "NT" : "Unknown platform",
-	  info.dwMajorVersion,info.dwMinorVersion,
-	  (info.dwPlatformId == VER_PLATFORM_WIN32_NT) ?
-	  info.dwBuildNumber :
-	  info.dwBuildNumber & 0xFFFF,
-	  hasInfo ? " " : "",hasInfo ? info.szCSDVersion : "");
-}
-#endif
-
-/***************************** Unix ***********************************/
-
-#if !defined(DOS_FILE_SYSTEM)
-READ_ONLY static char *uname_locations[] = { "/bin/uname",
-				   "/usr/bin/uname",
-				   /* The above should cover everything, but
-				      just in case... */
-				   "/sbin/uname",
-				   "/usr/sbin/uname",
-				   "/usr/local/bin/uname",
-				   "/usr/local/uname",
-				   NULL };
-
-static int try_subproc(Scheme_Object *subprocess_proc, char *prog)
-{
-  Scheme_Object *a[5];
-  mz_jmp_buf * volatile savebuf, newbuf;
-
-  savebuf = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
-
-  if (!scheme_setjmp(newbuf)) {
-    a[0] = scheme_false;
-    a[1] = scheme_false;
-    a[2] = scheme_false;
-    a[3] = scheme_make_locale_string(prog);
-    a[4] = scheme_make_locale_string("-a");
-    _scheme_apply_multi(subprocess_proc, 5, a);
-    scheme_current_thread->error_buf = savebuf;
-    return 1;
-  } else {
-    scheme_clear_escape();
-    scheme_current_thread->error_buf = savebuf;
-    return 0;
-  }
-}
-
-void machine_details(char *buff)
-{
-  Scheme_Object *subprocess_proc;
-  int i;
-  Scheme_Config *config;
-  Scheme_Security_Guard *sg;
-  Scheme_Cont_Frame_Data cframe;
- 
-  /* Use the root security guard so we can test for and run
-     executables. */
-  config = scheme_current_config();
-  sg = (Scheme_Security_Guard *)scheme_get_param(config, MZCONFIG_SECURITY_GUARD);
-  while (sg->parent) { sg = sg->parent; }
-  config = scheme_extend_config(config, MZCONFIG_SECURITY_GUARD, (Scheme_Object *)sg);
-
-  scheme_push_continuation_frame(&cframe);
-  scheme_install_config(config);
-
-  subprocess_proc = scheme_builtin_value("subprocess");
-
-  for (i = 0; uname_locations[i]; i++) {
-    if (scheme_file_exists(uname_locations[i])) {
-      /* Try running it. */
-      if (try_subproc(subprocess_proc, uname_locations[i])) {
-	Scheme_Object *sout, *sin, *serr;
-	intptr_t c;
-
-	sout = scheme_current_thread->ku.multiple.array[1];
-	sin = scheme_current_thread->ku.multiple.array[2];
-	serr = scheme_current_thread->ku.multiple.array[3];
-
-	scheme_close_output_port(sin);
-	scheme_close_input_port(serr);
-
-	/* Read result: */
-	strcpy(buff, "<unknown machine>");
-	c = scheme_get_bytes(sout, 1023, buff, 0);
-	buff[c] = 0;
-
-	scheme_close_input_port(sout);
-
-	/* Remove trailing whitespace (especially newlines) */
-	while (c && portable_isspace(((unsigned char *)buff)[c - 1])) {
-	  buff[--c] = 0;
-	}
-
-        scheme_pop_continuation_frame(&cframe);
-
-	return;
-      }
-    }
-  }
-
-  strcpy(buff, "<unknown machine>");
-
-  scheme_pop_continuation_frame(&cframe);
-}
-#endif
-
 
 /**********************************************************************/
 /*                           Precise GC                               */

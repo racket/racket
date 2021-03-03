@@ -15,6 +15,8 @@
 (path->string (current-directory))
 (set-string->number?! string->number)
 
+(get-machine-info)
+
 (let ()
   (define-values (i o) (make-pipe 4096))
 

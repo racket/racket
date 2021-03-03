@@ -156,10 +156,3 @@
                          'unsafe-add-pre-poll-callback! (lambda (proc) (void))
                          'set-get-subprocesses-time! void
                          'prop:place-message prop:place-message))
-
-(primitive-table '#%windows-version
-                 (hasheq 'get-windows-version (lambda ()
-                                                (values 'major
-                                                        'minor
-                                                        'build-number
-                                                        #"CSDVersion (possibly empty)"))))

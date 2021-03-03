@@ -157,6 +157,7 @@ rktio_copy_file_finish_permissions
 rktio_copy_file_stop
 rktio_system_path
 rktio_expand_user_tilde
+rktio_uname
 rktio_get_signal_handle
 rktio_signal_received_at
 rktio_signal_received
@@ -164,6 +165,7 @@ rktio_wait_until_signal_received
 rktio_flush_signals_received
 rktio_install_os_signal_handler
 rktio_poll_os_signal
+rktio_will_modify_os_signal_handler
 rktio_get_milliseconds
 rktio_get_inexact_milliseconds
 rktio_get_process_milliseconds

@@ -1171,6 +1171,7 @@
  (ref char)
  rktio_expand_user_tilde
  (((ref rktio_t) rktio) (rktio_const_string_t filename)))
+(define-function () (ref char) rktio_uname (((ref rktio_t) rktio)))
 (define-function
  ()
  (ref rktio_signal_handle_t)
@@ -1194,6 +1195,7 @@
  rktio_install_os_signal_handler
  (((ref rktio_t) rktio)))
 (define-function () int rktio_poll_os_signal (((ref rktio_t) rktio)))
+(define-function () void rktio_will_modify_os_signal_handler ((int sig_id)))
 (define-function () uintptr_t rktio_get_milliseconds ())
 (define-function () double rktio_get_inexact_milliseconds ())
 (define-function

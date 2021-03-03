@@ -13,8 +13,10 @@
 # include <grp.h>
 # include <dirent.h>
 # include <sys/time.h>
+# include <sys/utsname.h>
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
+# include <windows.h>
 # include <shlobj.h>
 # include <direct.h>
 # include <sys/stat.h>
@@ -2236,3 +2238,92 @@ char *rktio_system_path(rktio_t *rktio, int which)
   }
 #endif
 }
+
+/*========================================================================*/
+/* system information as a string                                         */
+/*========================================================================*/
+
+
+#ifdef RKTIO_SYSTEM_UNIX
+char *rktio_uname(rktio_t *rktio) {
+  char *s;
+  struct utsname u;
+  int ok, len;
+  int syslen, nodelen, rellen, verlen, machlen;
+
+  do {
+    ok = uname(&u);
+  } while ((ok == -1) && (errno == EINTR));
+    
+  if (ok != 0)
+    return strdup("<unknown machine>");
+
+  syslen = strlen(u.sysname);
+  nodelen = strlen(u.nodename);
+  rellen = strlen(u.release);
+  verlen = strlen(u.version);
+  machlen = strlen(u.machine);
+
+  len = (syslen + 1 + nodelen + 1 + rellen + 1 + verlen + 1 + machlen + 1);
+
+  s = malloc(len);
+
+# define ADD_UNAME_STR(sn, slen) do {                  \
+    memcpy(s + len, sn, slen);                         \
+    len += slen;                                       \
+    s[len++] = ' ';                                    \
+  } while (0)
+
+  len = 0;
+  ADD_UNAME_STR(u.sysname, syslen);
+  ADD_UNAME_STR(u.nodename, nodelen);
+  ADD_UNAME_STR(u.release, rellen);
+  ADD_UNAME_STR(u.version, verlen);
+  ADD_UNAME_STR(u.machine, machlen);
+  s[len - 1] = 0;
+
+# undef ADD_UNAME_STR
+  
+  return s;
+}
+#endif
+ 
+#ifdef RKTIO_SYSTEM_WINDOWS
+char *rktio_uname(rktio_t *rktio) {
+  char buff[1024], *r;
+  OSVERSIONINFO info;
+  BOOL hasInfo;
+  char *p;
+  int len;
+
+  info.dwOSVersionInfoSize = sizeof(info);
+
+  GetVersionEx(&info);
+
+  hasInfo = FALSE;
+
+  p = info.szCSDVersion;
+
+  while (p < info.szCSDVersion + sizeof(info.szCSDVersion) &&
+	 *p) {
+    if (*p != ' ') {
+      hasInfo = TRUE;
+      break;
+    }
+    p = p + 1;
+  }
+
+  sprintf(buff,"Windows %s %ld.%ld (Build %ld)%s%s",
+	  (info.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS) ?
+	  "9x" :
+	  (info.dwPlatformId == VER_PLATFORM_WIN32_NT) ?
+	  "NT" : "Unknown platform",
+	  info.dwMajorVersion,info.dwMinorVersion,
+	  (info.dwPlatformId == VER_PLATFORM_WIN32_NT) ?
+	  info.dwBuildNumber :
+	  info.dwBuildNumber & 0xFFFF,
+	  hasInfo ? " " : "",hasInfo ? info.szCSDVersion : "");
+
+  return strdup(buff);
+}
+#endif

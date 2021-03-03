@@ -448,7 +448,6 @@
    '11
    'sw_shownormal
    '12))
-(define call/ec call-with-escape-continuation)
 (define bad-list$1
   (|#%name|
    bad-list
@@ -3317,6 +3316,7 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_system_path)))
 (define rktio_expand_user_tilde
   (begin-unsafe (hash-ref rktio-table 'rktio_expand_user_tilde)))
+(define rktio_uname (begin-unsafe (hash-ref rktio-table 'rktio_uname)))
 (define rktio_get_signal_handle
   (begin-unsafe (hash-ref rktio-table 'rktio_get_signal_handle)))
 (define rktio_signal_received_at
@@ -3331,6 +3331,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_install_os_signal_handler)))
 (define rktio_poll_os_signal
   (begin-unsafe (hash-ref rktio-table 'rktio_poll_os_signal)))
+(define rktio_will_modify_os_signal_handler
+  (begin-unsafe (hash-ref rktio-table 'rktio_will_modify_os_signal_handler)))
 (define rktio_get_milliseconds
   (begin-unsafe (hash-ref rktio-table 'rktio_get_milliseconds)))
 (define rktio_get_inexact_milliseconds
@@ -3589,7 +3591,7 @@
                         (|#%app| rktio_free h_0)
                         (loop_0 #t))))))))))
          (loop_0 #f))))))
-(define finish319
+(define finish321
   (make-struct-type-install-properties
    '(exts)
    2
@@ -3610,7 +3612,7 @@
    #f
    2
    0))
-(define effect_2505 (finish319 struct:exts))
+(define effect_2505 (finish321 struct:exts))
 (define exts1.1
   (|#%name|
    exts
@@ -3882,7 +3884,7 @@
     (if (input-port-evt? p_0)
       (wrap-evt (|#%app| (input-port-evt-ref p_0) p_0) (lambda (v_0) p_0))
       (wrap-evt (|#%app| (output-port-evt-ref p_0) p_0) (lambda (v_0) p_0)))))
-(define finish334
+(define finish336
   (make-struct-type-install-properties
    '(core-port)
    7
@@ -3907,7 +3909,7 @@
    #f
    7
    124))
-(define effect_2337 (finish334 struct:core-port))
+(define effect_2337 (finish336 struct:core-port))
 (define create-core-port
   (|#%name|
    create-core-port
@@ -3938,7 +3940,7 @@
   (|#%name| set-core-port-offset! (record-mutator struct:core-port 5)))
 (define set-core-port-count!
   (|#%name| set-core-port-count! (record-mutator struct:core-port 6)))
-(define finish337
+(define finish339
   (make-struct-type-install-properties
    '(core-port-methods)
    5
@@ -3959,7 +3961,7 @@
    #f
    5
    0))
-(define effect_2309 (finish337 struct:core-port-methods.1))
+(define effect_2309 (finish339 struct:core-port-methods.1))
 (define core-port-methods1.1
   (|#%name|
    core-port-methods
@@ -4074,7 +4076,7 @@
    #f
    #f
    #f))
-(define finish344
+(define finish346
   (make-struct-type-install-properties
    '(direct)
    3
@@ -4095,7 +4097,7 @@
    #f
    3
    7))
-(define effect_2682 (finish344 struct:direct))
+(define effect_2682 (finish346 struct:direct))
 (define direct2.1
   (|#%name|
    direct
@@ -4111,7 +4113,7 @@
   (|#%name| set-direct-pos! (record-mutator struct:direct 1)))
 (define set-direct-end!
   (|#%name| set-direct-end! (record-mutator struct:direct 2)))
-(define finish346
+(define finish348
   (make-struct-type-install-properties
    '(location)
    5
@@ -4132,7 +4134,7 @@
    #f
    5
    31))
-(define effect_3131 (finish346 struct:location))
+(define effect_3131 (finish348 struct:location))
 (define location3.1
   (|#%name|
    location
@@ -4218,7 +4220,7 @@
                (if who3_0
                  (raise-argument-error who3_0 "input-port?" v4_0)
                  default_0)))))))))
-(define finish348
+(define finish350
   (make-struct-type-install-properties
    '(core-input-port)
    2
@@ -4269,7 +4271,7 @@
    #f
    2
    3))
-(define effect_2528 (finish348 struct:core-input-port))
+(define effect_2528 (finish350 struct:core-input-port))
 (define create-core-input-port
   (|#%name|
    create-core-input-port
@@ -4293,7 +4295,7 @@
   (|#%name|
    set-core-input-port-read-handler!
    (record-mutator struct:core-input-port 1)))
-(define finish351
+(define finish353
   (make-struct-type-install-properties
    '(core-input-port-methods)
    6
@@ -4314,7 +4316,7 @@
    #f
    6
    0))
-(define effect_2085 (finish351 struct:core-input-port-methods.1))
+(define effect_2085 (finish353 struct:core-input-port-methods.1))
 (define core-input-port-methods6.1
   (|#%name|
    core-input-port-methods
@@ -4537,7 +4539,7 @@
                (if who3_0
                  (raise-argument-error who3_0 "output-port?" v4_0)
                  default_0)))))))))
-(define finish363
+(define finish365
   (make-struct-type-install-properties
    '(core-output-port)
    4
@@ -4575,7 +4577,7 @@
    #f
    4
    15))
-(define effect_2808 (finish363 struct:core-output-port))
+(define effect_2808 (finish365 struct:core-output-port))
 (define create-core-output-port
   (|#%name|
    create-core-output-port
@@ -4613,7 +4615,7 @@
   (|#%name|
    set-core-output-port-display-handler!
    (record-mutator struct:core-output-port 3)))
-(define finish367
+(define finish369
   (make-struct-type-install-properties
    '(core-output-port-methods)
    4
@@ -4634,7 +4636,7 @@
    #f
    4
    0))
-(define effect_2050 (finish367 struct:core-output-port-methods.1))
+(define effect_2050 (finish369 struct:core-output-port-methods.1))
 (define core-output-port-methods6.1
   (|#%name|
    core-output-port-methods
@@ -4784,7 +4786,7 @@
              (if (evt? v_0)
                (values #f (replace-evt v_0 self-evt_0))
                (values (list v_0) #f)))))))))
-(define finish378
+(define finish380
   (make-struct-type-install-properties
    '(write-evt)
    1
@@ -4811,7 +4813,7 @@
    #f
    1
    0))
-(define effect_2493 (finish378 struct:write-evt))
+(define effect_2493 (finish380 struct:write-evt))
 (define write-evt7.1
   (|#%name|
    write-evt
@@ -4856,7 +4858,7 @@
    #f
    #f
    #f))
-(define finish382
+(define finish384
   (make-struct-type-install-properties
    '(utf-8-state)
    3
@@ -4877,7 +4879,7 @@
    #f
    3
    0))
-(define effect_2751 (finish382 struct:utf-8-state))
+(define effect_2751 (finish384 struct:utf-8-state))
 (define utf-8-state1.1
   (|#%name|
    utf-8-state
@@ -6683,7 +6685,7 @@
         (if old-offset_0
           (set-core-port-offset! in_0 (+ amt_0 old-offset_0))
           (void))))))
-(define finish462
+(define finish464
   (make-struct-type-install-properties
    '(commit-manager)
    3
@@ -6704,7 +6706,7 @@
    #f
    3
    0))
-(define effect_2594 (finish462 struct:commit-manager))
+(define effect_2594 (finish464 struct:commit-manager))
 (define commit-manager1.1
   (|#%name|
    commit-manager
@@ -6774,7 +6776,7 @@
          s
          'commit-manager
          'thread))))))
-(define finish468
+(define finish470
   (make-struct-type-install-properties
    '(commit-request)
    5
@@ -6795,7 +6797,7 @@
    #f
    5
    0))
-(define effect_2646 (finish468 struct:commit-request))
+(define effect_2646 (finish470 struct:commit-request))
 (define commit-request2.1
   (|#%name|
    commit-request
@@ -6899,7 +6901,7 @@
          s
          'commit-request
          'result-ch))))))
-(define finish476
+(define finish478
   (make-struct-type-install-properties
    '(commit-response)
    2
@@ -6920,7 +6922,7 @@
    #f
    2
    0))
-(define effect_2529 (finish476 struct:commit-response))
+(define effect_2529 (finish478 struct:commit-response))
 (define commit-response3.1
   (|#%name|
    commit-response
@@ -7217,7 +7219,7 @@
                  (sync result-ch_0))
                (unsafe-start-atomic))))
          (lambda () (semaphore-post abandon-evt_0)))))))
-(define finish495
+(define finish497
   (make-struct-type-install-properties
    '(commit-input-port)
    2
@@ -7238,7 +7240,7 @@
    #f
    2
    3))
-(define effect_2802 (finish495 struct:commit-input-port))
+(define effect_2802 (finish497 struct:commit-input-port))
 (define create-commit-input-port
   (|#%name|
    create-commit-input-port
@@ -7262,7 +7264,7 @@
   (|#%name|
    set-commit-input-port-commit-manager!
    (record-mutator struct:commit-input-port 1)))
-(define finish498
+(define finish500
   (make-struct-type-install-properties
    '(commit-input-port-methods)
    0
@@ -7283,7 +7285,7 @@
    #f
    0
    0))
-(define effect_3199 (finish498 struct:commit-input-port-methods.1))
+(define effect_3199 (finish500 struct:commit-input-port-methods.1))
 (define commit-input-port-methods5.1
   (|#%name|
    commit-input-port-methods
@@ -7437,7 +7439,7 @@
            (begin0
              (begin (temp3.1$3 d_0) (temp4.1$2 d_0))
              (unsafe-end-atomic))))))))
-(define finish510
+(define finish512
   (make-struct-type-install-properties
    '(pipe-data)
    16
@@ -7458,7 +7460,7 @@
    #f
    16
    65534))
-(define effect_3021 (finish510 struct:pipe-data))
+(define effect_3021 (finish512 struct:pipe-data))
 (define create-pipe-data
   (|#%name|
    create-pipe-data
@@ -7539,7 +7541,7 @@
   (|#%name|
    set-pipe-data-write-ready-evt!
    (record-mutator struct:pipe-data 15)))
-(define finish513
+(define finish515
   (make-struct-type-install-properties
    '(pipe-data-methods)
    0
@@ -7560,7 +7562,7 @@
    #f
    0
    0))
-(define effect_2537 (finish513 struct:pipe-data-methods.1))
+(define effect_2537 (finish515 struct:pipe-data-methods.1))
 (define pipe-data-methods10.1
   (|#%name|
    pipe-data-methods
@@ -7673,7 +7675,7 @@
          (void))))))
 (define make-ref (lambda (v_0) (make-weak-box v_0)))
 (define ref-value (lambda (r_0) (weak-box-value r_0)))
-(define finish517
+(define finish519
   (make-struct-type-install-properties
    '(pipe-input-port)
    1
@@ -7694,7 +7696,7 @@
    #f
    1
    1))
-(define effect_2318 (finish517 struct:pipe-input-port))
+(define effect_2318 (finish519 struct:pipe-input-port))
 (define create-pipe-input-port
   (|#%name|
    create-pipe-input-port
@@ -7706,7 +7708,7 @@
   (|#%name| pipe-input-port-d (record-accessor struct:pipe-input-port 0)))
 (define set-pipe-input-port-d!
   (|#%name| set-pipe-input-port-d! (record-mutator struct:pipe-input-port 0)))
-(define finish520
+(define finish522
   (make-struct-type-install-properties
    '(pipe-input-port-methods)
    0
@@ -7727,7 +7729,7 @@
    #f
    0
    0))
-(define effect_2335 (finish520 struct:pipe-input-port-methods.1))
+(define effect_2335 (finish522 struct:pipe-input-port-methods.1))
 (define pipe-input-port-methods15.1
   (|#%name|
    pipe-input-port-methods
@@ -8069,7 +8071,7 @@
                      (set-direct-pos! b_0 (direct-end b_0)))))
                (void))
              (temp2.1$2 o_0))))))))
-(define finish539
+(define finish541
   (make-struct-type-install-properties
    '(pipe-output-port)
    1
@@ -8090,7 +8092,7 @@
    #f
    1
    1))
-(define effect_2635 (finish539 struct:pipe-output-port))
+(define effect_2635 (finish541 struct:pipe-output-port))
 (define create-pipe-output-port
   (|#%name|
    create-pipe-output-port
@@ -8104,7 +8106,7 @@
   (|#%name|
    set-pipe-output-port-d!
    (record-mutator struct:pipe-output-port 0)))
-(define finish542
+(define finish544
   (make-struct-type-install-properties
    '(pipe-output-port-methods)
    0
@@ -8125,7 +8127,7 @@
    #f
    0
    0))
-(define effect_3193 (finish542 struct:pipe-output-port-methods.1))
+(define effect_3193 (finish544 struct:pipe-output-port-methods.1))
 (define pipe-output-port-methods20.1
   (|#%name|
    pipe-output-port-methods
@@ -8681,7 +8683,7 @@
        (make-pipe_0 limit_0 input-name_0 output-name26_0))
       ((limit_0 input-name25_0) (make-pipe_0 limit_0 input-name25_0 'pipe))
       ((limit24_0) (make-pipe_0 limit24_0 'pipe 'pipe))))))
-(define finish578
+(define finish580
   (make-struct-type-install-properties
    '(pipe-write-poller)
    1
@@ -8732,7 +8734,7 @@
    #f
    1
    0))
-(define effect_2599 (finish578 struct:pipe-write-poller))
+(define effect_2599 (finish580 struct:pipe-write-poller))
 (define pipe-write-poller27.1
   (|#%name|
    pipe-write-poller
@@ -8766,7 +8768,7 @@
          s
          'pipe-write-poller
          'd))))))
-(define finish583
+(define finish585
   (make-struct-type-install-properties
    '(pipe-read-poller)
    1
@@ -8817,7 +8819,7 @@
    #f
    1
    0))
-(define effect_2907 (finish583 struct:pipe-read-poller))
+(define effect_2907 (finish585 struct:pipe-read-poller))
 (define pipe-read-poller28.1
   (|#%name|
    pipe-read-poller
@@ -8851,7 +8853,7 @@
          s
          'pipe-read-poller
          'd))))))
-(define finish587
+(define finish589
   (make-struct-type-install-properties
    '(peek-via-read-input-port)
    5
@@ -8872,7 +8874,7 @@
    #f
    5
    31))
-(define effect_2578 (finish587 struct:peek-via-read-input-port))
+(define effect_2578 (finish589 struct:peek-via-read-input-port))
 (define create-peek-via-read-input-port
   (|#%name|
    create-peek-via-read-input-port
@@ -8925,7 +8927,7 @@
   (|#%name|
    set-peek-via-read-input-port-buffer-mode!
    (record-mutator struct:peek-via-read-input-port 4)))
-(define finish590
+(define finish592
   (make-struct-type-install-properties
    '(peek-via-read-input-port-methods)
    1
@@ -8946,7 +8948,7 @@
    #f
    1
    0))
-(define effect_2499 (finish590 struct:peek-via-read-input-port-methods.1))
+(define effect_2499 (finish592 struct:peek-via-read-input-port-methods.1))
 (define peek-via-read-input-port-methods10.1
   (|#%name|
    peek-via-read-input-port-methods
@@ -9631,7 +9633,7 @@
                           (current-continuation-marks)))))))
                  (void))))
            (void)))))))
-(define finish626
+(define finish628
   (make-struct-type-install-properties
    '(fd-input-port)
    3
@@ -9657,7 +9659,7 @@
    #f
    3
    7))
-(define effect_1979 (finish626 struct:fd-input-port))
+(define effect_1979 (finish628 struct:fd-input-port))
 (define create-fd-input-port
   (|#%name|
    create-fd-input-port
@@ -9685,7 +9687,7 @@
   (|#%name|
    set-fd-input-port-custodian-reference!
    (record-mutator struct:fd-input-port 2)))
-(define finish629
+(define finish631
   (make-struct-type-install-properties
    '(fd-input-port-methods)
    2
@@ -9706,7 +9708,7 @@
    #f
    2
    0))
-(define effect_2420 (finish629 struct:fd-input-port-methods.1))
+(define effect_2420 (finish631 struct:fd-input-port-methods.1))
 (define fd-input-port-methods6.1
   (|#%name|
    fd-input-port-methods
@@ -9939,7 +9941,7 @@
                 p16_0
                 (register-fd-close cust_0 fd_0 fd-refcount_0 #f p16_0))
                (finish-port/count p16_0)))))))))
-(define finish645
+(define finish647
   (make-struct-type-install-properties
    '(fd-output-port)
    8
@@ -9989,7 +9991,7 @@
    #f
    8
    255))
-(define effect_2896 (finish645 struct:fd-output-port))
+(define effect_2896 (finish647 struct:fd-output-port))
 (define create-fd-output-port
   (|#%name|
    create-fd-output-port
@@ -10051,7 +10053,7 @@
   (|#%name|
    set-fd-output-port-custodian-reference!
    (record-mutator struct:fd-output-port 7)))
-(define finish652
+(define finish654
   (make-struct-type-install-properties
    '(fd-output-port-methods)
    2
@@ -10072,7 +10074,7 @@
    #f
    2
    0))
-(define effect_1955 (finish652 struct:fd-output-port-methods.1))
+(define effect_1955 (finish654 struct:fd-output-port-methods.1))
 (define fd-output-port-methods26.1
   (|#%name|
    fd-output-port-methods
@@ -10652,7 +10654,7 @@
                      (format-rktio-message 'file-position r_0 base-msg_0)))
                 (|#%app| exn:fail app_0 (current-continuation-marks)))))))
         (void)))))
-(define finish680
+(define finish682
   (make-struct-type-install-properties
    '(fd-evt)
    3
@@ -10723,7 +10725,7 @@
    #f
    3
    4))
-(define effect_2660 (finish680 struct:fd-evt))
+(define effect_2660 (finish682 struct:fd-evt))
 (define fd-evt44.1
   (|#%name|
    fd-evt
@@ -10791,7 +10793,7 @@
          v
          'fd-evt
          'closed))))))
-(define finish689
+(define finish691
   (make-struct-type-install-properties
    '(rktio-fd-flushed-evt)
    1
@@ -10836,7 +10838,7 @@
    #f
    1
    0))
-(define effect_2170 (finish689 struct:rktio-fd-flushed-evt))
+(define effect_2170 (finish691 struct:rktio-fd-flushed-evt))
 (define rktio-fd-flushed-evt45.1
   (|#%name|
    rktio-fd-flushed-evt
@@ -11583,7 +11585,7 @@
                                     (loop_0 (fx+ i_0 1))))
                                 (loop_0 (fx+ i_0 1)))))))))))
                  (loop_0 pos_0))))))))))
-(define finish702
+(define finish704
   (make-struct-type-install-properties
    '(progress-evt)
    2
@@ -11607,7 +11609,7 @@
    #f
    2
    0))
-(define effect_2490 (finish702 struct:progress-evt))
+(define effect_2490 (finish704 struct:progress-evt))
 (define progress-evt1.1
   (|#%name|
    progress-evt
@@ -14906,7 +14908,7 @@
       (begin
         (unsafe-bytes-set! out-bstr_0 j_0 lo_0)
         (unsafe-bytes-set! out-bstr_0 (+ j_0 1) hi_0)))))
-(define finish730
+(define finish732
   (make-struct-type-install-properties
    '(utf-8-converter)
    2
@@ -14927,7 +14929,7 @@
    #f
    2
    0))
-(define effect_2402 (finish730 struct:utf-8-converter))
+(define effect_2402 (finish732 struct:utf-8-converter))
 (define utf-8-converter1.1
   (|#%name|
    utf-8-converter
@@ -15840,7 +15842,7 @@
                                    (done_0 'error)))
                                (continue_0 v_0 (+ i_0 2)))))))))))))))
         (loop_0 in-start20_0 out-start23_0))))))
-(define finish781
+(define finish783
   (make-struct-type-install-properties
    '(bytes-converter)
    2
@@ -15861,7 +15863,7 @@
    #f
    2
    3))
-(define effect_2496 (finish781 struct:bytes-converter))
+(define effect_2496 (finish783 struct:bytes-converter))
 (define bytes-converter1.1
   (|#%name|
    bytes-converter
@@ -16717,7 +16719,7 @@
                 (args (raise-binding-result-arity-error 4 args))))
               (void)))
           (check-not-unsafe-undefined bstr_0 'bstr_119))))))
-(define finish806
+(define finish808
   (make-struct-type-install-properties
    '(cache)
    4
@@ -16738,7 +16740,7 @@
    #f
    4
    15))
-(define effect_2561 (finish806 struct:cache))
+(define effect_2561 (finish808 struct:cache))
 (define cache1.1
   (|#%name|
    cache
@@ -17091,7 +17093,7 @@
        (bytes->string/locale_0 in-bstr_0 err-char_0 start6_0 unsafe-undefined))
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
-(define finish813
+(define finish815
   (make-struct-type-install-properties
    '(path)
    2
@@ -17137,7 +17139,7 @@
    #f
    2
    0))
-(define effect_2995 (finish813 struct:path))
+(define effect_2995 (finish815 struct:path))
 (define path1.1
   (|#%name|
    path
@@ -18393,7 +18395,7 @@
      (case-lambda
       ((bstr_0) (begin (open-input-bytes_0 bstr_0 'string)))
       ((bstr_0 name1_0) (open-input-bytes_0 bstr_0 name1_0))))))
-(define finish822
+(define finish824
   (make-struct-type-install-properties
    '(bytes-input-port)
    3
@@ -18414,7 +18416,7 @@
    #f
    3
    7))
-(define effect_2847 (finish822 struct:bytes-input-port))
+(define effect_2847 (finish824 struct:bytes-input-port))
 (define create-bytes-input-port
   (|#%name|
    create-bytes-input-port
@@ -18442,7 +18444,7 @@
   (|#%name|
    set-bytes-input-port-alt-pos!
    (record-mutator struct:bytes-input-port 2)))
-(define finish825
+(define finish827
   (make-struct-type-install-properties
    '(bytes-input-port-methods)
    0
@@ -18463,7 +18465,7 @@
    #f
    0
    0))
-(define effect_2130 (finish825 struct:bytes-input-port-methods.1))
+(define effect_2130 (finish827 struct:bytes-input-port-methods.1))
 (define bytes-input-port-methods4.1
   (|#%name|
    bytes-input-port-methods
@@ -18673,7 +18675,7 @@
       bstr_0
       0
       #f))))
-(define finish833
+(define finish835
   (make-struct-type-install-properties
    '(bytes-output-port)
    3
@@ -18694,7 +18696,7 @@
    #f
    3
    7))
-(define effect_2052 (finish833 struct:bytes-output-port))
+(define effect_2052 (finish835 struct:bytes-output-port))
 (define create-bytes-output-port
   (|#%name|
    create-bytes-output-port
@@ -18726,7 +18728,7 @@
   (|#%name|
    set-bytes-output-port-max-pos!
    (record-mutator struct:bytes-output-port 2)))
-(define finish836
+(define finish838
   (make-struct-type-install-properties
    '(bytes-output-port-methods)
    2
@@ -18747,7 +18749,7 @@
    #f
    2
    0))
-(define effect_2430 (finish836 struct:bytes-output-port-methods.1))
+(define effect_2430 (finish838 struct:bytes-output-port-methods.1))
 (define bytes-output-port-methods8.1
   (|#%name|
    bytes-output-port-methods
@@ -19179,7 +19181,7 @@
                 (if (string? str_0)
                   (1/string->bytes/utf-8 str_0 #f start_0 end_0)
                   (subbytes str_0 start_0 end_0)))))))))))
-(define finish852
+(define finish854
   (make-struct-type-install-properties
    '(max-output-port)
    2
@@ -19200,7 +19202,7 @@
    #f
    2
    3))
-(define effect_3019 (finish852 struct:max-output-port))
+(define effect_3019 (finish854 struct:max-output-port))
 (define create-max-output-port
   (|#%name|
    create-max-output-port
@@ -19220,7 +19222,7 @@
   (|#%name|
    set-max-output-port-max-length!
    (record-mutator struct:max-output-port 1)))
-(define finish855
+(define finish857
   (make-struct-type-install-properties
    '(max-output-port-methods)
    0
@@ -19241,7 +19243,7 @@
    #f
    0
    0))
-(define effect_2933 (finish855 struct:max-output-port-methods.1))
+(define effect_2933 (finish857 struct:max-output-port-methods.1))
 (define max-output-port-methods1.1
   (|#%name|
    max-output-port-methods
@@ -20142,7 +20144,7 @@
   (lambda (mode_0)
     (let ((or-part_0 (eq? mode_0 0)))
       (if or-part_0 or-part_0 (eq? mode_0 1)))))
-(define finish869
+(define finish871
   (make-struct-type-install-properties
    '(nowhere-output-port)
    0
@@ -20163,7 +20165,7 @@
    #f
    0
    0))
-(define effect_2267 (finish869 struct:nowhere-output-port))
+(define effect_2267 (finish871 struct:nowhere-output-port))
 (define create-nowhere-output-port
   (|#%name|
    create-nowhere-output-port
@@ -20173,7 +20175,7 @@
   (|#%name|
    nowhere-output-port?
    (record-predicate struct:nowhere-output-port)))
-(define finish872
+(define finish874
   (make-struct-type-install-properties
    '(nowhere-output-port-methods)
    0
@@ -20194,7 +20196,7 @@
    #f
    0
    0))
-(define effect_2301 (finish872 struct:nowhere-output-port-methods.1))
+(define effect_2301 (finish874 struct:nowhere-output-port-methods.1))
 (define nowhere-output-port-methods1.1
   (|#%name|
    nowhere-output-port-methods
@@ -20420,7 +20422,7 @@
                               #f)
                             fuel_1)))))))))))))
      (quick-no-graph?_0 v_0 fuel_0))))
-(define finish889
+(define finish891
   (make-struct-type-install-properties
    '(as-constructor)
    1
@@ -20441,7 +20443,7 @@
    #f
    1
    0))
-(define effect_2645 (finish889 struct:as-constructor))
+(define effect_2645 (finish891 struct:as-constructor))
 (define as-constructor1.1
   (|#%name|
    as-constructor
@@ -23418,7 +23420,7 @@
           (if (letter-drive-start? s_0 (unsafe-bytes-length s_0))
             (just-separators-after? s_0 2)
             #f))))))
-(define finish969
+(define finish971
   (make-struct-type-install-properties
    '(starting-point)
    7
@@ -23439,7 +23441,7 @@
    #f
    7
    0))
-(define effect_2521 (finish969 struct:starting-point))
+(define effect_2521 (finish971 struct:starting-point))
 (define starting-point7.1
   (|#%name|
    starting-point
@@ -25400,7 +25402,7 @@
 (define port-number? (lambda (v_0) (if (fixnum? v_0) (<= 1 v_0 65535) #f)))
 (define listen-port-number?
   (lambda (v_0) (if (fixnum? v_0) (<= 0 v_0 65535) #f)))
-(define finish1011
+(define finish1013
   (make-struct-type-install-properties
    '(security-guard)
    4
@@ -25421,7 +25423,7 @@
    #f
    4
    0))
-(define effect_2369 (finish1011 struct:security-guard))
+(define effect_2369 (finish1013 struct:security-guard))
 (define security-guard1.1
   (|#%name|
    security-guard
@@ -29860,7 +29862,7 @@
       (bytes->immutable-bytes
        (1/string->bytes/locale (string-foldcase (1/bytes->string/locale k_0))))
       k_0)))
-(define finish1096
+(define finish1098
   (make-struct-type-install-properties
    '(environment-variables)
    1
@@ -29881,7 +29883,7 @@
    #f
    1
    1))
-(define effect_2329 (finish1096 struct:environment-variables))
+(define effect_2329 (finish1098 struct:environment-variables))
 (define environment-variables1.1
   (|#%name|
    environment-variables
@@ -31594,7 +31596,7 @@
            #f))))))
 (define adjust-path
   (lambda (p_0) (if (is-path? p_0) (relative-to-user-directory p_0) p_0)))
-(define finish1173
+(define finish1175
   (make-struct-type-install-properties
    '(logger)
    11
@@ -31615,7 +31617,7 @@
    #f
    11
    376))
-(define effect_2687 (finish1173 struct:logger))
+(define effect_2687 (finish1175 struct:logger))
 (define logger1.1
   (|#%name|
    logger
@@ -32065,7 +32067,7 @@
      (loop_0 filters_0 'none))))
 (define level->user-representation
   (lambda (lvl_0) (if (eq? lvl_0 'none) #f lvl_0)))
-(define finish1198
+(define finish1200
   (make-struct-type-install-properties
    '(queue)
    2
@@ -32086,7 +32088,7 @@
    #f
    2
    3))
-(define effect_2998 (finish1198 struct:queue))
+(define effect_2998 (finish1200 struct:queue))
 (define queue1.1
   (|#%name|
    queue
@@ -32099,7 +32101,7 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define finish1200
+(define finish1202
   (make-struct-type-install-properties
    '(node)
    3
@@ -32120,7 +32122,7 @@
    #f
    3
    6))
-(define effect_2547 (finish1200 struct:node))
+(define effect_2547 (finish1202 struct:node))
 (define node2.1
   (|#%name|
    node
@@ -32163,7 +32165,7 @@
       (if (node-next n_0)
         (let ((app_0 (node-next n_0))) (set-node-prev! app_0 (node-prev n_0)))
         (set-queue-end! q_0 (node-prev n_0))))))
-(define finish1205
+(define finish1207
   (make-struct-type-install-properties
    '(log-receiver)
    1
@@ -32184,7 +32186,7 @@
    #f
    1
    0))
-(define effect_2969 (finish1205 struct:log-receiver))
+(define effect_2969 (finish1207 struct:log-receiver))
 (define log-receiver1.1
   (|#%name|
    log-receiver
@@ -32221,7 +32223,7 @@
 (define-values
  (prop:receiver-send receiver-send? receiver-send-ref)
  (make-struct-type-property 'receiver-send))
-(define finish1209
+(define finish1211
   (make-struct-type-install-properties
    '(log-receiver)
    3
@@ -32296,7 +32298,7 @@
    #f
    3
    0))
-(define effect_2324 (finish1209 struct:queue-log-receiver))
+(define effect_2324 (finish1211 struct:queue-log-receiver))
 (define queue-log-receiver2.1
   (|#%name|
    queue-log-receiver
@@ -32402,7 +32404,7 @@
           (begin-unsafe (not (queue-start q_0))))
       (set-box! (queue-log-receiver-backref lr_0) lr_0)
       (void))))
-(define finish1221
+(define finish1223
   (make-struct-type-install-properties
    '(stdio-log-receiver)
    2
@@ -32458,7 +32460,7 @@
    #f
    2
    0))
-(define effect_2591 (finish1221 struct:stdio-log-receiver))
+(define effect_2591 (finish1223 struct:stdio-log-receiver))
 (define stdio-log-receiver3.1
   (|#%name|
    stdio-log-receiver
@@ -32548,7 +32550,7 @@
      args_0
      'make-stdio-log-receiver
      1)))
-(define finish1226
+(define finish1228
   (make-struct-type-install-properties
    '(syslog-log-receiver)
    2
@@ -32593,7 +32595,7 @@
    #f
    2
    0))
-(define effect_2288 (finish1226 struct:syslog-log-receiver))
+(define effect_2288 (finish1228 struct:syslog-log-receiver))
 (define syslog-log-receiver4.1
   (|#%name|
    syslog-log-receiver
@@ -33514,7 +33516,7 @@
                       (void)))))))))
          (loop_0 logger_0))
         (void)))))
-(define finish1268
+(define finish1270
   (make-struct-type-install-properties
    '(filesystem-change-evt)
    2
@@ -33560,7 +33562,7 @@
    #f
    2
    3))
-(define effect_3368 (finish1268 struct:fs-change-evt))
+(define effect_3368 (finish1270 struct:fs-change-evt))
 (define fs-change-evt1.1
   (|#%name|
    fs-change-evt
@@ -34016,7 +34018,7 @@
                        (loop_0 start_0)))))
                 (let ((bstr_0 (make-bytes sz_0)))
                   (begin (|#%app| final_0 p_0 bstr_0) bstr_0))))))))))
-(define finish1280
+(define finish1282
   (make-struct-type-install-properties
    '(subprocess)
    3
@@ -34059,7 +34061,7 @@
    #f
    3
    3))
-(define effect_2289 (finish1280 struct:subprocess))
+(define effect_2289 (finish1282 struct:subprocess))
 (define make-subprocess
   (|#%name|
    make-subprocess
@@ -34205,11 +34207,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1287 unsafe-undefined)
+             (let ((lr1289 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1287
+               (set! lr1289
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34264,9 +34266,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1287 0))
-               (set! command_0 (unsafe-vector*-ref lr1287 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1287 2))
+               (set! group_0 (unsafe-vector*-ref lr1289 0))
+               (set! command_0 (unsafe-vector*-ref lr1289 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1289 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
@@ -34893,7 +34895,7 @@
 (define raise-network-option-error
   (lambda (who_0 mode_0 v_0)
     (raise-network-error who_0 v_0 (string-append mode_0 "sockopt failed"))))
-(define finish1319
+(define finish1321
   (make-struct-type-install-properties
    '(tcp-input-port)
    1
@@ -34920,7 +34922,7 @@
    #f
    1
    1))
-(define effect_2486 (finish1319 struct:tcp-input-port))
+(define effect_2486 (finish1321 struct:tcp-input-port))
 (define create-tcp-input-port
   (|#%name|
    create-tcp-input-port
@@ -34934,7 +34936,7 @@
   (|#%name|
    set-tcp-input-port-abandon?!
    (record-mutator struct:tcp-input-port 0)))
-(define finish1322
+(define finish1324
   (make-struct-type-install-properties
    '(tcp-input-port-methods)
    0
@@ -34955,7 +34957,7 @@
    #f
    0
    0))
-(define effect_2506 (finish1322 struct:tcp-input-port-methods.1))
+(define effect_2506 (finish1324 struct:tcp-input-port-methods.1))
 (define tcp-input-port-methods1.1
   (|#%name|
    tcp-input-port-methods
@@ -35070,7 +35072,7 @@
                    #f
                    #f)))
              (finish-fd-input-port.1 unsafe-undefined temp80_0))))))))
-(define finish1336
+(define finish1338
   (make-struct-type-install-properties
    '(tcp-output-port)
    1
@@ -35097,7 +35099,7 @@
    #f
    1
    1))
-(define effect_2179 (finish1336 struct:tcp-output-port))
+(define effect_2179 (finish1338 struct:tcp-output-port))
 (define create-tcp-output-port
   (|#%name|
    create-tcp-output-port
@@ -35113,7 +35115,7 @@
   (|#%name|
    set-tcp-output-port-abandon?!
    (record-mutator struct:tcp-output-port 0)))
-(define finish1339
+(define finish1341
   (make-struct-type-install-properties
    '(tcp-output-port-methods)
    0
@@ -35134,7 +35136,7 @@
    #f
    0
    0))
-(define effect_2820 (finish1339 struct:tcp-output-port-methods.1))
+(define effect_2820 (finish1341 struct:tcp-output-port-methods.1))
 (define tcp-output-port-methods7.1
   (|#%name|
    tcp-output-port-methods
@@ -35270,7 +35272,7 @@
            (if (tcp-output-port? cp_0)
              (begin (set-tcp-output-port-abandon?! cp_0 #t) (close-port p_0))
              (void))))))))
-(define finish1351
+(define finish1353
   (make-struct-type-install-properties
    '(rktio-evt)
    2
@@ -35305,7 +35307,7 @@
    #f
    2
    0))
-(define effect_1868 (finish1351 struct:rktio-evt))
+(define effect_1868 (finish1353 struct:rktio-evt))
 (define rktio-evt1.1
   (|#%name|
    rktio-evt
@@ -35461,7 +35463,7 @@
       (void))))
 (define address-init!
   (lambda () (unsafe-place-local-set! cell.1$3 (make-will-executor))))
-(define finish1357
+(define finish1359
   (make-struct-type-install-properties
    '(connect-progress)
    2
@@ -35482,7 +35484,7 @@
    #f
    2
    3))
-(define effect_2319 (finish1357 struct:connect-progress))
+(define effect_2319 (finish1359 struct:connect-progress))
 (define connect-progress1.1
   (|#%name|
    connect-progress
@@ -35834,7 +35836,7 @@
           (fd-semaphore-update! fd_0 'remove)
           (set-connect-progress-trying-fd! conn-prog_0 #f))
         (void)))))
-(define finish1362
+(define finish1364
   (make-struct-type-install-properties
    '(tcp-listener)
    3
@@ -35858,7 +35860,7 @@
    #f
    3
    0))
-(define effect_2347 (finish1362 struct:tcp-listener))
+(define effect_2347 (finish1364 struct:tcp-listener))
 (define tcp-listener1.1
   (|#%name|
    tcp-listener
@@ -36214,7 +36216,7 @@
            (void)
            (raise-argument-error 'tcp-accept-evt "tcp-listener?" listener_0))
          (accept-evt6.1 listener_0))))))
-(define finish1372
+(define finish1374
   (make-struct-type-install-properties
    '(tcp-accept-evt)
    1
@@ -36302,7 +36304,7 @@
    #f
    1
    0))
-(define effect_2608 (finish1372 struct:accept-evt))
+(define effect_2608 (finish1374 struct:accept-evt))
 (define accept-evt6.1
   (|#%name|
    accept-evt
@@ -36385,7 +36387,7 @@
                    v_0))))))
           (for-loop_0 0 0))))
       (args (raise-binding-result-arity-error 2 args))))))
-(define finish1377
+(define finish1379
   (make-struct-type-install-properties
    '(udp)
    3
@@ -36399,7 +36401,7 @@
    'udp))
 (define struct:udp
   (make-record-type-descriptor* 'udp #f (|#%nongenerative-uid| udp) #f #f 3 7))
-(define effect_2743 (finish1377 struct:udp))
+(define effect_2743 (finish1379 struct:udp))
 (define udp1.1
   (|#%name|
    udp
@@ -37543,7 +37545,7 @@
                     who59_0
                     u60_0)))))))
           (loop_0)))))))
-(define finish1393
+(define finish1395
   (make-struct-type-install-properties
    '(udp-send-evt)
    2
@@ -37588,7 +37590,7 @@
    #f
    2
    0))
-(define effect_2114 (finish1393 struct:udp-sending-evt))
+(define effect_2114 (finish1395 struct:udp-sending-evt))
 (define udp-sending-evt66.1
   (|#%name|
    udp-sending-evt
@@ -37600,7 +37602,7 @@
   (|#%name| udp-send-evt-u (record-accessor struct:udp-sending-evt 0)))
 (define udp-sending-evt-try
   (|#%name| udp-send-evt-try (record-accessor struct:udp-sending-evt 1)))
-(define finish1396
+(define finish1398
   (make-struct-type-install-properties
    '(udp-send-ready-evt)
    0
@@ -37621,7 +37623,7 @@
    #f
    0
    0))
-(define effect_2524 (finish1396 struct:udp-sending-ready-evt))
+(define effect_2524 (finish1398 struct:udp-sending-ready-evt))
 (define udp-sending-ready-evt67.1
   (|#%name|
    udp-sending-ready-evt
@@ -37932,7 +37934,7 @@
           (loop_0)))))))
 (define cell.1$2 (unsafe-make-place-local #vu8()))
 (define cell.2 (unsafe-make-place-local ""))
-(define finish1400
+(define finish1402
   (make-struct-type-install-properties
    '(udp-receive-evt)
    2
@@ -37982,7 +37984,7 @@
    #f
    2
    0))
-(define effect_2638 (finish1400 struct:udp-receiving-evt))
+(define effect_2638 (finish1402 struct:udp-receiving-evt))
 (define udp-receiving-evt39.1
   (|#%name|
    udp-receiving-evt
@@ -37994,7 +37996,7 @@
   (|#%name| udp-receive-evt-u (record-accessor struct:udp-receiving-evt 0)))
 (define udp-receiving-evt-try
   (|#%name| udp-receive-evt-try (record-accessor struct:udp-receiving-evt 1)))
-(define finish1403
+(define finish1405
   (make-struct-type-install-properties
    '(udp-receive-ready-evt)
    0
@@ -38015,7 +38017,7 @@
    #f
    0
    0))
-(define effect_2865 (finish1403 struct:udp-receiving-ready-evt))
+(define effect_2865 (finish1405 struct:udp-receiving-ready-evt))
 (define udp-receiving-ready-evt40.1
   (|#%name|
    udp-receiving-ready-evt
@@ -38891,115 +38893,15 @@
       ((system-fd_0 mode_0) (begin (unsafe-poll-fd_0 system-fd_0 mode_0 #t)))
       ((system-fd_0 mode_0 socket?1_0)
        (unsafe-poll-fd_0 system-fd_0 mode_0 socket?1_0))))))
-(define windows-version-table
-  (let ((or-part_0 (primitive-table '|#%windows-version|)))
-    (if or-part_0
-      or-part_0
-      (error '|#%windows-version| "windows-version not supported by host"))))
-(define get-windows-version
-  (hash-ref windows-version-table 'get-windows-version))
-(define uname-paths
-  (list
-   "/bin/uname"
-   "/usr/bin/uname"
-   "/sbin/uname"
-   "/usr/sbin/uname"
-   "/usr/local/bin/uname"
-   "/usr/local/uname"))
 (define get-machine-info
   (lambda ()
-    (let ((tmp_0 (system-type)))
-      (if (eq? tmp_0 'windows)
-        (call-with-values
-         (lambda () (|#%app| get-windows-version))
-         (case-lambda
-          ((major_0 minor_0 build-number_0 CSD-vers_0)
-           (1/format
-            "Windows NT ~a.~a (Build ~a)~a~a"
-            major_0
-            minor_0
-            build-number_0
-            (if (equal? CSD-vers_0 #vu8()) "" " ")
-            CSD-vers_0))
-          (args (raise-binding-result-arity-error 4 args))))
-        (call-with-escape-continuation
-         (lambda (done_0)
-           (begin
-             (with-continuation-mark*
-              push-authentic
-              parameterization-key
-              (let ((app_0
-                     (continuation-mark-set-first #f parameterization-key)))
-                (extend-parameterization
-                 app_0
-                 1/current-security-guard
-                 (1/unsafe-make-security-guard-at-root)))
-              (begin
-                (begin
-                  (letrec*
-                   ((for-loop_0
-                     (|#%name|
-                      for-loop
-                      (lambda (lst_0)
-                        (begin
-                          (if (pair? lst_0)
-                            (let ((uname_0 (unsafe-car lst_0)))
-                              (let ((rest_0 (unsafe-cdr lst_0)))
-                                (begin
-                                  (if (1/file-exists? uname_0)
-                                    (call-with-values
-                                     (lambda ()
-                                       (do-subprocess #f #f #f uname_0 "-a"))
-                                     (case-lambda
-                                      ((subproc_0 stdout_0 stdin_0 stderr_0)
-                                       (begin
-                                         (1/close-output-port stdin_0)
-                                         (begin
-                                           (1/close-input-port stderr_0)
-                                           (let ((bstr_0
-                                                  (1/read-bytes
-                                                   1024
-                                                   stdout_0)))
-                                             (begin
-                                               (1/close-input-port stdout_0)
-                                               (1/subprocess-wait subproc_0)
-                                               (if (bytes? bstr_0)
-                                                 (letrec*
-                                                  ((loop_0
-                                                    (|#%name|
-                                                     loop
-                                                     (lambda (i_0)
-                                                       (begin
-                                                         (if (zero? i_0)
-                                                           (|#%app| done_0 "")
-                                                           (if (char-whitespace?
-                                                                (integer->char
-                                                                 (unsafe-bytes-ref
-                                                                  bstr_0
-                                                                  (sub1 i_0))))
-                                                             (loop_0
-                                                              (sub1 i_0))
-                                                             (|#%app|
-                                                              done_0
-                                                              (1/bytes->string/locale
-                                                               (subbytes
-                                                                bstr_0
-                                                                0
-                                                                i_0))))))))))
-                                                  (loop_0
-                                                   (unsafe-bytes-length
-                                                    bstr_0)))
-                                                 (void)))))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        4
-                                        args))))
-                                    (void))
-                                  (for-loop_0 rest_0))))
-                            (values)))))))
-                   (for-loop_0 uname-paths)))
-                (void)))
-             "<unknown machine>")))))))
+    (1/bytes->string/utf-8
+     (begin
+       (unsafe-start-atomic)
+       (begin0
+         (let ((v_0 (|#%app| rktio_uname (unsafe-place-local-ref cell.1))))
+           (begin0 (|#%app| rktio_to_bytes v_0) (|#%app| rktio_free v_0)))
+         (unsafe-end-atomic))))))
 (define 1/executable-yield-handler
   (make-parameter
    void

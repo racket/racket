@@ -26,7 +26,7 @@
     (unless (or (bytes? s)
                 (string? s))
       (raise-argument-error 'path-list-string->path-list "(or/c bytes? string?)" s))
-    (when (regexp-match? #rx"\0" s)
+    (when (regexp-match? #rx#"\0" s)
       (let ([label (if (bytes? s) "byte string" "string")])
         (raise-arguments-error 'path-list-string->path-list
                                (format "given ~a contains a nul character" label)

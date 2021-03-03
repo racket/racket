@@ -972,6 +972,12 @@ RKTIO_EXTERN char *rktio_expand_user_tilde(rktio_t *rktio, rktio_const_string_t 
    Other possible errors are `RKTIO_ERROR_ILL_FORMED_USER` and
    `RKTIO_ERROR_UNKNOWN_USER`. */
 
+RKTIO_EXTERN_NOERR char *rktio_uname(rktio_t *rktio);
+/* Returns a string describing the current machine and installation,
+   similar to the return of `uname -a` on Unix. If machine information
+   cannot be obtained for some reason, the result is a copy of
+   "<unknown machine>". */
+
 /*************************************************/
 /* Sleep and signals                             */
 

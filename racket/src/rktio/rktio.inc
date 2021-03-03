@@ -157,6 +157,7 @@ Sforeign_symbol("rktio_copy_file_finish_permissions", (void *)rktio_copy_file_fi
 Sforeign_symbol("rktio_copy_file_stop", (void *)rktio_copy_file_stop);
 Sforeign_symbol("rktio_system_path", (void *)rktio_system_path);
 Sforeign_symbol("rktio_expand_user_tilde", (void *)rktio_expand_user_tilde);
+Sforeign_symbol("rktio_uname", (void *)rktio_uname);
 Sforeign_symbol("rktio_get_signal_handle", (void *)rktio_get_signal_handle);
 Sforeign_symbol("rktio_signal_received_at", (void *)rktio_signal_received_at);
 Sforeign_symbol("rktio_signal_received", (void *)rktio_signal_received);
@@ -164,6 +165,7 @@ Sforeign_symbol("rktio_wait_until_signal_received", (void *)rktio_wait_until_sig
 Sforeign_symbol("rktio_flush_signals_received", (void *)rktio_flush_signals_received);
 Sforeign_symbol("rktio_install_os_signal_handler", (void *)rktio_install_os_signal_handler);
 Sforeign_symbol("rktio_poll_os_signal", (void *)rktio_poll_os_signal);
+Sforeign_symbol("rktio_will_modify_os_signal_handler", (void *)rktio_will_modify_os_signal_handler);
 Sforeign_symbol("rktio_get_milliseconds", (void *)rktio_get_milliseconds);
 Sforeign_symbol("rktio_get_inexact_milliseconds", (void *)rktio_get_inexact_milliseconds);
 Sforeign_symbol("rktio_get_process_milliseconds", (void *)rktio_get_process_milliseconds);
