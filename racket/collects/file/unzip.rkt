@@ -203,21 +203,22 @@
              [in0 (if (bitwise-bit-set? bits 3)
                       in
                       (make-limited-input-port in compressed #f))])
-        (define-values (in t)
-          (if (zero? compression)
-              (values in0 #f)
-              (make-filter-input-port inflate in0)))
-        
-        (if preserve-timestamps?
-            (read-entry filename dir? in (and (not dir?)
-                                              (msdos-date+time->seconds date time utc?)))
-            (read-entry filename dir? in))
+        (let ()
+          (define-values (in t)
+            (if (zero? compression)
+                (values in0 #f)
+                (make-filter-input-port inflate in0)))
+          
+          (if preserve-timestamps?
+              (read-entry filename dir? in (and (not dir?)
+                                                (msdos-date+time->seconds date time utc?)))
+              (read-entry filename dir? in))
 
-        ;; Read until the end of the deflated stream when compressed size unknown
-        (when (bitwise-bit-set? bits 3)
-          (let loop () (unless (eof-object? (read-bytes 1024 in)) (loop))))
+          ;; Read until the end of the deflated stream when compressed size unknown
+          (when (bitwise-bit-set? bits 3)
+            (let loop () (unless (eof-object? (read-bytes 1024 in)) (loop))))
 
-        (when t (kill-thread t))
+          (when t (kill-thread t)))
 
         ;; appnote VI-C : if bit 3 is set, then the file data
         ;; is immediately followed by a data descriptor
