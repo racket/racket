@@ -18,6 +18,7 @@
 (define HKEY_CURRENT_CONFIG (const-hkey #x80000005))
 
 (define REG_SZ 1)
+(define REG_EXPAND_SZ 2)
 (define REG_BINARY 3)
 (define REG_DWORD 4)
 
@@ -144,8 +145,8 @@
   (unless (or (not file)
               (path-string? file))
     (raise-type-error 'get-resource "path string or #f" file))
-  (unless (memq rtype '(string bytes integer))
-    (raise-type-error 'get-resource "'string, 'bytes, or 'integer" rtype))
+  (unless (memq rtype '(string string/utf-16 bytes bytes* integer))
+    (raise-type-error 'get-resource "'string, 'string/utf-16, 'bytes, 'bytes*, or 'integer" rtype))
   
   (define (to-rtype s)
     (let ([to-string (lambda (s)
@@ -154,6 +155,9 @@
                            s))])
       (cond
        [(eq? rtype 'string) (to-string s)]
+       [(eq? rtype 'string/utf-16) (if (bytes? s)
+				       (cast s _pointer _string/utf-16)
+				       s)]
        [(eq? rtype 'integer)
         (let ([n (string->number (to-string s))])
           (or (and n (exact-integer? n) n)
@@ -182,7 +186,9 @@
                             ;; Unmarhsal according to requested type:
                             (let ([s (cond
                                       [(= type REG_SZ)
-                                       (cast s _pointer _string/utf-16)]
+				       (if (eq? rtype 'bytes*)
+					   s
+					   (cast s _pointer _string/utf-16))]
                                       [(= type REG_DWORD)
                                        (number->string (ptr-ref s _DWORD))]
                                       [else
@@ -223,8 +229,10 @@
   (unless (or (not file)
               (path-string? file))
     (raise-type-error 'write-resource "path string or #f" file))
-  (unless (memq type '(string bytes dword))
-    (raise-type-error 'write-resource "'string, 'bytes, or 'dword" type))
+  (unless (memq type '(string expand-string bytes bytes/string bytes/expand-string dword))
+    (raise-type-error 'write-resource
+		      "'string, 'expand-string, 'bytes, 'bytes/string, 'bytes/expand-string, or 'dword"
+		      type))
 
   (define (to-string value)
     (cond
@@ -239,9 +247,15 @@
    [sub-hkey
     (begin0
      (let ([v (case type
-                [(string) 
+                [(string expand-string)
                  (to-utf-16 (to-string value))]
-                [(bytes) 
+                [(bytes/string bytes/expand-string)
+                 (cond
+                  [(exact-integer? value) 
+                   (to-utf-16 (number->string value))]
+                  [(string? value) (to-utf-16 value)]
+                  [else value])]
+                [(bytes)
                  (cond
                   [(exact-integer? value) 
                    (string->bytes/utf-8 (number->string value))]
@@ -255,7 +269,8 @@
                    [(bytes? value) 
                     (string->number (bytes->string/utf-8 value #\?))]))])]
            [ty (case type
-                 [(string) REG_SZ]
+                 [(string bytes/string) REG_SZ]
+                 [(expand-string bytes/expand-string) REG_EXPAND_SZ]
                  [(bytes) REG_BINARY]
                  [(dword) REG_DWORD])])
        (RegSetValueExW sub-hkey sub-entry ty v (bytes-length v)))

@@ -27,7 +27,10 @@
   ;; A string-valued resource:
   (rtest #t write-resource key (entry "Stuff") "Hola")
   (rtest "Hola" get-resource key (entry "Stuff"))
+  (rtest "Hola" get-resource key (entry "Stuff") #:type 'string)
+  (rtest "Hola" get-resource key (entry "Stuff") #:type 'string/utf-16)
   (rtest #"Hola" get-resource key (entry "Stuff") #:type 'bytes)
+  (rtest #"H\0o\0l\0a\0\0\0" get-resource key (entry "Stuff") #:type 'bytes*)
   (rtest 0 get-resource key (entry "Stuff") #:type 'integer)
   (let ([b (box "")])
     (rtest #t get-resource key (entry "Stuff") b)
@@ -42,7 +45,24 @@
   (rtest "88" get-resource key (entry "Stuff"))
   (rtest #t write-resource key (entry "Stuff") #"!")
   (rtest "!" get-resource key (entry "Stuff"))
-  
+
+  ;; A string-valued resource written as bytes:
+  (rtest #t write-resource key (entry "Stuff") #"H\0o\0l\0a\0\0\0" #:type 'bytes/string)
+  (rtest "Hola" get-resource key (entry "Stuff"))
+
+  ;; An expand-string-valued resource:
+  (rtest #t write-resource key (entry "Stuff") "Hola" #:type 'expand-string)
+  (rtest "H\0o\0l\0a\0\0\0" get-resource key (entry "Stuff")) ; as specified, though undesireable
+  (rtest "H\0o\0l\0a\0\0\0" get-resource key (entry "Stuff") #:type 'string)
+  (rtest "Hola" get-resource key (entry "Stuff") #:type 'string/utf-16)
+  (rtest #"H\0o\0l\0a\0\0\0" get-resource key (entry "Stuff") #:type 'bytes)
+  (rtest #"H\0o\0l\0a\0\0\0" get-resource key (entry "Stuff") #:type 'bytes*)
+
+  ;; An expand-string-valued resource written as bytes:
+  (rtest #t write-resource key (entry "Stuff") #"H\0o\0l\0a\0\0\0" #:type 'bytes/expand-string)
+  (rtest "H\0o\0l\0a\0\0\0" get-resource key (entry "Stuff"))
+  (rtest "Hola" get-resource key (entry "Stuff") #:type 'string/utf-16)
+
   ;; An integer-valued resource
   (rtest #t write-resource key (entry "Count") 17 #:type 'dword)
   (rtest "17" get-resource key (entry "Count"))
