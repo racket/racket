@@ -63,7 +63,7 @@
     (parameterize ([current-directory name])
 
       ;; LICENSE files
-      (displayln "Generating LICENSE-APACHE and LICENSE-MIT files. You are free to change the license.")
+      (displayln "Generating LICENSE-APACHE and LICENSE-MIT files.\nYou are free to change the license.")
       (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
 <<name>> 
