@@ -182,6 +182,8 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([
    #include <locale.h>
    int main() {
       locale_t l = newlocale(LC_COLLATE_MASK | LC_CTYPE_MASK, "C", NULL);
+      locale_t old_l = uselocale(l);
+      uselocale(old_l);
       freelocale(l);
       return 0;
    }])],

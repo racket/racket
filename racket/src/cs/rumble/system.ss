@@ -51,6 +51,7 @@
             a6nt ta6nt
             a6le ta6le
             a6ob ta6ob
+            a6nb ta6nb
             a6fb ta6fb
             a6s2 ta6s2)
      'x86_64]
@@ -58,6 +59,7 @@
             i3nt ti3nt
             i3le ti3le
             i3ob ti3ob
+            i3nb ti3nb
             i3fb ti3fb
             i3s2 ti3s2
             i3qnx)
