@@ -12,3 +12,4 @@
 @include-section["cont-marks.scrbl"]
 @include-section["breaks.scrbl"]
 @include-section["exit.scrbl"]
+@include-section["unreachable.scrbl"]

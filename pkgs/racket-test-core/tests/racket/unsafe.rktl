@@ -1058,4 +1058,32 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-syntax-rule (module-claiming-unreachable-part name flag ...)
+  (module name racket/base
+    (require racket/unreachable)
+    (provide f1 f2)
+    (#%declare flag ...)
+    (struct s (a) #:authentic)
+    (define (f1 x)
+      (if (s? x)
+          (s-a x)
+          (assert-unreachable)))
+    (define (f2 x)
+      (if (s? x)
+          (s-a x)
+          (with-assert-unreachable
+            (raise-argument-error 'f2 "oops" x))))))
+
+(module-claiming-unreachable-part claims-unreachable-parts/safe)
+(module-claiming-unreachable-part claims-unreachable-parts/unsafe #:unsafe)
+
+(err/rt-test ((dynamic-require ''claims-unreachable-parts/safe 'f1) (arity-at-least 7)))
+(err/rt-test ((dynamic-require ''claims-unreachable-parts/safe 'f2) (arity-at-least 7)))
+
+(when (eq? 'chez-scheme (system-type 'vm))
+  (test 7 (dynamic-require ''claims-unreachable-parts/unsafe 'f1) (arity-at-least 7))
+  (test 7 (dynamic-require ''claims-unreachable-parts/unsafe 'f2) (arity-at-least 7)))
+  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

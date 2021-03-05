@@ -8,6 +8,7 @@
   [unsafe-add-global-finalizer (known-procedure 4)]
   [unsafe-add-post-custodian-shutdown (known-procedure 2)]
   [unsafe-add-collect-callbacks (known-procedure 4)]
+  [unsafe-assert-unreachable (known-procedure/no-return 1)]
   [unsafe-box*-cas! (known-procedure/succeeds 8)]
   [unsafe-bytes-length (known-procedure/pure 2)]
   [unsafe-bytes-ref (known-procedure/succeeds 4)]

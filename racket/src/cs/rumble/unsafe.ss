@@ -245,3 +245,5 @@
             (current-continuation-marks)
             sym)))
   v)
+
+(define unsafe-assert-unreachable (unsafe-primitive assert-unreachable))

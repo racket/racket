@@ -29,6 +29,7 @@
   [arity-at-least-value (known-procedure 2)]
   [arity-at-least? (known-procedure/pure/folding 2)]
   [asin (known-procedure/folding 2)]
+  [assert-unreachable (known-procedure/no-return 1)]
   [assoc (known-procedure/single-valued 12)]
   [assq (known-procedure/no-prompt 4)]
   [assv (known-procedure/no-prompt 4)]

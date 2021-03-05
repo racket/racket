@@ -54,7 +54,7 @@ operations can be prevented by adjusting the code inspector (see
 For @tech{fixnums}: Unchecked versions of @racket[fx+], @racket[fx-],
 @racket[fx*], @racket[fxquotient],
 @racket[fxremainder], @racket[fxmodulo], and
-@racket[fxabs]. 
+@racket[fxabs].
 
 @history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[unsafe-fx+] and @racket[unsafe-fx*]
                                     and allow one or more arguments for @racket[unsafe-fx-].}]}
@@ -911,4 +911,39 @@ fixnum).}
 
 @; ------------------------------------------------------------------------
 
+@section[#:tag "unsafeassert"]{Unsafe Assertions}
+
+@defproc[(unsafe-assert-unreachable) none/c]{
+
+Like @racket[assert-unreachable], but the contract of
+@racket[unsafe-assert-unreachable] is never satisfied, and the
+``unsafe'' implication is that anything at all can happen if a call to
+@racket[unsafe-assert-unreachable] is reached.
+
+The compiler may take advantage of its liberty to pick convenient or
+efficient behavior in place of a call to
+@racket[unsafe-assert-unreachable]. For example, the expression
+
+@racketblock[
+(lambda (x)
+  (if (pair? x)
+      (car x)
+      (unsafe-assert-unreachable)))
+]
+
+may be compiled to code equivalent to
+
+@racketblock[
+(lambda (x) (unsafe-car x))
+]
+
+because choosing to make @racket[(unsafe-assert-unreachable)] behave
+the same as @racket[(unsafe-car x)] makes both branches of the
+@racket[if] the same, and then @racket[pair?] test can be eliminated.
+
+@history[#:added "8.0.0.11"]}
+
+@; ------------------------------------------------------------------------
+
 @include-section["unsafe-undefined.scrbl"]
+

@@ -720,6 +720,8 @@
           unsafe-string->immutable-string!
           unsafe-vector*->immutable-vector!
 
+          unsafe-assert-unreachable
+
           ;; --- not exported to Racket: ---
           make-pthread-parameter
           fork-pthread
