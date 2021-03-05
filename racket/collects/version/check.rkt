@@ -1,15 +1,20 @@
 #lang racket/base
 
 (require net/url
-         racket/tcp
+         net/url-connect
          "utils.rkt")
 
-(define version-url "http://download.racket-lang.org/version.txt")
+(module+ test) ;; see below
+
+(define version-url "https://download.racket-lang.org/version.txt")
 (define timeout 30)
 
+(define-logger version/check)
+
 (define (url->port url)
-  (get-pure-port (string->url url)
-                 #:redirections 5))
+  (parameterize ([current-https-protocol 'secure])
+    (get-pure-port (string->url url)
+                   #:redirections 5)))
 
 (define error-value
   (case-lambda
@@ -20,15 +25,22 @@
                           [else         (format "(~a)" more)]))]))
 
 (define (with-timeout timeout thunk)
-  (define result #f)
-  (define r (sync/timeout timeout
-              (thread (λ ()
-                        (set! result
-                              (with-handlers
-                                  ([void (λ (e)
-                                           (error-value "internal error" e))])
-                                (thunk)))))))
-  (if r result (error-value "timeout")))
+  (define cust (make-custodian))
+  (define ch (make-channel))
+  (parameterize ([current-custodian cust])
+    (thread
+     (λ ()
+       (define result
+         (with-handlers ([void (λ (e)
+                                 (error-value "internal error" e))])
+           (thunk)))
+       (channel-put ch result))))
+  (cond
+    [(sync/timeout timeout ch)]
+    [else
+     (custodian-shutdown-all cust)
+     (log-version/check-info "killed thread due to timeout")
+     (error-value "timeout")]))
 
 (define (check-version-raw)
   (let/ec escape
@@ -40,7 +52,14 @@
       (parameterize ([current-input-port
                       (try (url->port (format "~a?~a" version-url (version)))
                            "could not connect to website")])
-        (try (read) "unexpected response from server")))
+        (when (simulate-timeout-for-testing?)
+          (log-version/check-warning
+           "starting to sleep due to PLT_CHECK_VERSION_SIMULATE_TIMEOUT")
+          (sleep (+ 5 timeout))
+          (log-version/check-error
+           "internal error: thread was not killed after simulated timeout"))
+        (try (call-with-default-reading-parameterization read)
+             "unexpected response from server")))
     (define (get key)
       (cond [(assq key version-info) => cadr]
             [else (err (format "no `~s' in response" key) version-info)]))
@@ -93,7 +112,41 @@
 (define (check-version)
   (with-timeout timeout check-version-raw))
 
+(define (simulate-timeout-for-testing?)
+  (getenv "PLT_CHECK_VERSION_SIMULATE_TIMEOUT"))
+
 (module+ test
   (let ([result (check-version)])
     (unless (eq? result 'ok)
-      (error 'check-version "failed due to non-ok result: ~v" result))))
+      (error 'check-version "failed due to non-ok result: ~v" result)))
+  (parameterize ([current-environment-variables
+                  (make-environment-variables
+                   #"PLT_CHECK_VERSION_SIMULATE_TIMEOUT" #"1")])
+    (define receiver
+      (make-log-receiver version/check-logger 'warning))
+    (define result
+      (check-version))
+    (define warning-message
+      (sync/timeout 0 receiver))
+    (unless (equal? result '(error "timeout"))
+      (raise-arguments-error 'check-version "failed to simulate timeout"
+                             "result" result
+                             "logged message" warning-message))
+    (unless warning-message
+      (error 'check-version "failed to log a message before simulating timeout"))
+    (unless (and (vector? warning-message)
+                 (eq? 'warning (vector-ref warning-message 0))
+                 (eq? 'version/check (vector-ref warning-message 3)))
+      (raise-arguments-error
+       'check-version
+       "unexpected log message while simulating timeout"
+       "expected" (unquoted-printing-string
+                   "topic 'version/check at level 'warning")
+       "received" warning-message))
+    (cond
+      [(sync/timeout 7 receiver)
+       => (λ (msg)
+            (error 'check-version "~a;\n ~a\n  ~a: ~e"
+                   "unexpected log message"
+                   "may have failed to kill thread after simulated timeout"
+                   "message" msg))])))
