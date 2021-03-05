@@ -1059,3 +1059,44 @@
 (convert-compile-time-error
  (syntax-parse #'(1 2 'bar 4 5 'bar 'foo)
    [((~seq (~between x:nat 2 2) ... z) ...+ expr) (void)]))
+
+;; from Laurent Orseau, issue #3603 (1/2021)
+(require syntax/parse/lib/function-header)
+(check-equal?
+ (syntax->datum
+  (syntax-parse #'(#:a [a 1] #:b b)
+    [fmls:formals #'(fmls fmls.params)]))
+ '((#:a (a 1) #:b b) (a b)))
+
+(check-equal?
+ (syntax->datum
+  (syntax-parse #'(a #:b [b 1] c #:d d [e 2] #:f [f 3] [g 4] . rest)
+    [fmls:formals #'(fmls fmls.params)]))
+ '((a #:b [b 1] c #:d d [e 2] #:f [f 3] [g 4] . rest) (a b c d e f g rest)))
+
+(check-equal?
+ (syntax->datum
+  (syntax-parse #'(a #:b [b 1] c)
+    [fmls:formals #'(fmls fmls.params)]))
+  '((a #:b [b 1] c) (a b c)))
+
+(check-exn
+ #rx"me: default-value expression missing"
+ (lambda ()
+   (syntax-parse #'(a [b 1] c)
+     #:context 'me
+     [fmls:formals #'(fmls fmls.params)])))
+
+(check-exn
+ #rx"me: duplicate argument identifier"
+ (lambda ()
+   (syntax-parse #'(a . a)
+     #:context 'me
+     [fmls:formals #'(fmls fmls.params)])))
+
+(check-exn
+ #rx"me: duplicate argument identifier"
+ (lambda ()
+   (syntax-parse #'(#:a a . a)
+     #:context 'me
+     [fmls:formals #'(fmls fmls.params)])))

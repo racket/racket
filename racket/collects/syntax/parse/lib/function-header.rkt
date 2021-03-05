@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require "../../parse.rkt"
-         racket/dict)
+         racket/list)
 
-(provide function-header formal formals)
+(provide function-header formal formals formals-no-rest)
 
 (define-syntax-class function-header
   #:attributes (name params args)
@@ -11,32 +11,29 @@
            #:attr params #'((~@ . (~? header.params ())) . args.params)
            #:attr name   #'(~? header.name name*)))
 
-(define-syntax-class formals
+(define-splicing-syntax-class formals-no-rest
   #:attributes (params)
-  (pattern (arg:formal ...)
+  (pattern (~seq arg:formal ...)
            #:attr params #'(arg.name ...)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
                        "duplicate argument name"
-           #:fail-when (check-duplicate (attribute arg.kw)
-                                        #:same? (λ (x y)
-                                                  (and x y (equal? (syntax-e x)
-                                                                   (syntax-e y)))))
+           #:fail-when (check-duplicates (attribute arg.kw)
+                                         (lambda (x y)
+                                           (and x y (equal? (syntax-e x) (syntax-e y)))))
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
-                        (attribute arg.name) (attribute arg.default))
-                       "default-value expression missing")
-  (pattern (arg:formal ... . rest:id)
-           #:attr params #'(arg.name ... rest)
-           #:fail-when (check-duplicate-identifier (syntax->list #'params))
-                       "duplicate argument name"
-           #:fail-when (check-duplicate (attribute arg.kw)
-                                        #:same? (λ (x y)
-                                                  (and x y (equal? (syntax-e x)
-                                                                   (syntax-e y)))))
-                       "duplicate keyword for argument"
-           #:fail-when (invalid-option-placement
-                        (attribute arg.name) (attribute arg.default))
+                        (attribute arg.kw) (attribute arg.name) (attribute arg.default))
                        "default-value expression missing"))
+
+(define-syntax-class formals
+  #:attributes (params)
+  (pattern (~or* (args:formals-no-rest)
+                 (args:formals-no-rest . rest-id:id))
+           #:attr params #'((~@ . args.params) (~? rest-id))
+           #:fail-when (and (attribute rest-id)
+                            (member #'rest-id (syntax->list #'args.params) bound-identifier=?)
+                            #'rest-id)
+                       "duplicate argument identifier"))
 
 (define-splicing-syntax-class formal
   #:attributes (name kw default)
@@ -49,63 +46,25 @@
            #:attr default #f)
   (pattern (~seq kw:keyword [name:id default])))
 
-;; invalid-option-placement : (Listof Id) (Listof Syntax/#f) -> Id/#f
+;; invalid-option-placement : (Listof Keyword) (Listof Id) (Listof Syntax/#f) -> Id/#f
 ;; Checks for mandatory argument after optional argument; if found, returns
 ;; identifier of mandatory argument.
-(define (invalid-option-placement names defaults)
-  ;; find-mandatory : (Listof Id) (Listof Syntax/#f) -> Id/#f
+(define (invalid-option-placement kws names defaults)
+  ;; find-mandatory : (Listof Keyword) (Listof Id) (Listof Syntax/#f) -> Id/#f
   ;; Finds first name w/o corresponding default.
-  (define (find-mandatory names defaults)
-    (for/first ([name (in-list names)]
+  (define (find-mandatory kws names defaults)
+    (for/first ([kw (in-list kws)]
+                [name (in-list names)]
                 [default (in-list defaults)]
-                #:when (not default))
+                #:when (and (not kw) (not default)))
       name))
   ;; Skip through mandatory args until first optional found, then search
   ;; for another mandatory.
-  (let loop ([names names] [defaults defaults])
+  (let loop ([kws kws] [names names] [defaults defaults])
     (cond [(or (null? names) (null? defaults))
            #f]
-          [(eq? (car defaults) #f) ;; mandatory
-           (loop (cdr names) (cdr defaults))]
+          [(or (car kws) ;; keyword
+               (eq? (car defaults) #f)) ;; mandatory arg
+           (loop (cdr kws) (cdr names) (cdr defaults))]
           [else ;; found optional
-           (find-mandatory (cdr names) (cdr defaults))])))
-
-;; Copied from unstable/list
-;; check-duplicate : (listof X)
-;;                   #:key (X -> K)
-;;                   #:same? (or/c (K K -> bool) dict?)
-;;                -> X or #f
-(define (check-duplicate items
-                        #:key [key values]
-                        #:same? [same? equal?])
-  (cond [(procedure? same?)
-         (cond [(eq? same? equal?)
-                (check-duplicate/t items key (make-hash) #t)]
-               [(eq? same? eq?)
-                (check-duplicate/t items key (make-hasheq) #t)]
-               [(eq? same? eqv?)
-                (check-duplicate/t items key (make-hasheqv) #t)]
-               [else
-                (check-duplicate/list items key same?)])]
-        [(dict? same?)
-         (let ([dict same?])
-           (if (dict-mutable? dict)
-               (check-duplicate/t items key dict #t)
-               (check-duplicate/t items key dict #f)))]))
-(define (check-duplicate/t items key table mutating?)
-  (let loop ([items items] [table table])
-    (and (pair? items)
-         (let ([key-item (key (car items))])
-           (if (dict-ref table key-item #f)
-               (car items)
-               (loop (cdr items) (if mutating?
-                                     (begin (dict-set! table key-item #t) table)
-                                     (dict-set table key-item #t))))))))
-(define (check-duplicate/list items key same?)
-  (let loop ([items items] [sofar null])
-    (and (pair? items)
-         (let ([key-item (key (car items))])
-           (if (for/or ([prev (in-list sofar)])
-                 (same? key-item prev))
-               (car items)
-               (loop (cdr items) (cons key-item sofar)))))))
+           (find-mandatory (cdr kws) (cdr names) (cdr defaults))])))

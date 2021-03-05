@@ -275,3 +275,10 @@ Note that the literal-set uses the names @racket[#%plain-lambda] and
 (syntax-parse #'(lambda (#:kw [kw 42]) kw)
   [(_ (fml:formal) body ...+) #'(fml fml.name fml.kw fml.default)])
 ]
+
+@defstxclass[formals-no-rest #:splicing]{
+ Like @racket[formals] but without dotted-tail identifier.
+ @defattribute[params syntax?]{
+  The list of parameters.
+ }
+}
