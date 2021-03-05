@@ -182,6 +182,7 @@
   [unsafe-unbox (known-procedure 2)]
   [unsafe-unbox* (known-procedure/succeeds 2)]
   [unsafe-undefined (known-constant)]
+  [unsafe-unreachable (known-procedure/no-return 1)]
   [unsafe-vector*-cas! (known-procedure/succeeds 16)]
   [unsafe-vector*-length (known-procedure/pure 2)]
   [unsafe-vector*-ref (known-procedure/succeeds 4)]

@@ -377,6 +377,7 @@ void scheme_init_bool(Scheme_Startup_Env *env);
 void scheme_init_syntax(Scheme_Startup_Env *env);
 void scheme_init_marshal(Scheme_Startup_Env *env);
 void scheme_init_error(Scheme_Startup_Env *env);
+void scheme_init_unsafe_error(Scheme_Startup_Env *env);
 void scheme_init_exn(Scheme_Startup_Env *env);
 void scheme_init_debug(Scheme_Startup_Env *env);
 void scheme_init_thread(Scheme_Startup_Env *env);

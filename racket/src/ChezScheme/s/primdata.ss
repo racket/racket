@@ -2423,6 +2423,7 @@
   ($uncprep [flags single-valued]) ; side-effects preinfo-sexpr, at least
   ($undefined-violation [flags abort-op])
   ($unknown-undefined-violation [flags abort-op])
+  ($unreachable [flags abort-op])
   ($untrace [flags single-valued])
   ($unwrap-ftype-pointer [flags single-valued])
   ($value [sig [(ptr) -> (ptr)]] [flags pure unrestricted discard cp02])

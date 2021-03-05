@@ -245,3 +245,5 @@
             (current-continuation-marks)
             sym)))
   v)
+
+(define unsafe-unreachable (unsafe-primitive $unreachable))

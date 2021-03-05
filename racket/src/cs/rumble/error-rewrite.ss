@@ -60,7 +60,8 @@
                 fxsll/wraparound fxlshift/wraparound
                 real->flonum ->fl
                 time-utc->date seconds->date
-                make-record-type-descriptor* make-struct-type)
+                make-record-type-descriptor* make-struct-type
+                $unreachable unsafe-unreachable)
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 

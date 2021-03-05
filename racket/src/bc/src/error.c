@@ -72,6 +72,7 @@ static void *glib_log_signal_handle;
 
 /* locals */
 static Scheme_Object *error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *scheme_unsafe_unreachable(int argc, Scheme_Object* argv[]);
 static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_argument_error(int argc, Scheme_Object *argv[]);
@@ -771,6 +772,12 @@ int scheme_last_error_is_racket(int errid)
   p = scheme_make_noncm_prim(func, name, a1, a2); \
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_ALWAYS_ESCAPES); \
   scheme_addto_prim_instance(name, p, env);
+
+void scheme_init_unsafe_error(Scheme_Startup_Env *env)
+{
+  Scheme_Object *p;
+  ESCAPING_NONCM_PRIM("unsafe-unreachable",         scheme_unsafe_unreachable,    0, 0, env); 
+}
 
 void scheme_init_error(Scheme_Startup_Env *env)
 {
@@ -2707,6 +2714,12 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
 static Scheme_Object *error(int argc, Scheme_Object *argv[])
 {
   return do_error("error", MZEXN_FAIL, argc, argv);
+}
+
+static Scheme_Object *scheme_unsafe_unreachable(int argc, Scheme_Object* argv[])
+{
+  scheme_contract_error("unsafe-unreachable", "unreachable code reached", NULL);
+  return scheme_void;
 }
 
 static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[])
