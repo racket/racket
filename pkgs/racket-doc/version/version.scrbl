@@ -1,6 +1,5 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
+#lang scribble/manual
+@(require scribble/bnf
           (for-label version/patchlevel
                      version/check
                      version/utils
@@ -34,9 +33,9 @@ but may be updated by patches to DrRacket.}
 
 @defproc[(check-version) (or/c symbol? list?)]{
 
-Checks the currently available version on the PLT website
-(@selflink["http://download.racket-lang.org"]) and returns a value that
-indicates the current state of the current installation:
+Checks the currently available version on the Racket website
+(@selflink["https://download.racket-lang.org"]) and returns a value that
+indicates the state of the current installation:
 
 @itemize[
 
@@ -65,7 +64,17 @@ indicates the current state of the current installation:
    @racket[(string-append message " " additional-info)] is a
    verbose one.}
 
-]}
+]
+ Note that, depending on network conditions, @racket[check-version]
+ may keep trying for a long time (currently 30 seconds)
+ before returning @racket['(error "timeout")].
+ For testing purposes, when the environment variable
+ @indexed-envvar{PLT_CHECK_VERSION_SIMULATE_TIMEOUT}
+ is set, @racket[check-version] will simulate such network conditions,
+ @seclink["logging" #:doc '(lib "scribblings/reference/reference.scrbl")]{logging}
+ a @racket['warning]-level message with the topic @racket['version/check]
+ and then sleeping until the timeout.
+}
 
 @; ----------------------------------------------------------------------
 
