@@ -944,6 +944,8 @@
     (test (bytes->path #"../") simplify-path (bytes->path #"../") #f)
     (test (bytes->path #"../") simplify-path (bytes->path #"..//") #f)
     (test (bytes->path #"../") simplify-path (bytes->path #"..//./") #f)
+    (test (bytes->path #"/x") simplify-path (bytes->path #"/../../x") #f)
+    (test (bytes->path #"/") simplify-path (bytes->path #"/x/../..") #f)
     (test (bytes->path #"x/") path->directory-path (bytes->path #"x"))
     (test (bytes->path #"x/") path->directory-path (bytes->path #"x/"))
     (test (bytes->path #"x/./") path->directory-path (bytes->path #"x/."))

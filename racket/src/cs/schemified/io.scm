@@ -25003,11 +25003,20 @@
                                                        accum_0)
                                                       (if (eq? 'up (car l_1))
                                                         (if (pair? accum_0)
-                                                          (let ((app_0
-                                                                 (cdr l_1)))
+                                                          (if (if (null?
+                                                                   (cdr
+                                                                    accum_0))
+                                                                (1/absolute-path?
+                                                                 (car accum_0))
+                                                                #f)
                                                             (loop_0
-                                                             app_0
-                                                             (cdr accum_0)))
+                                                             (cdr l_1)
+                                                             accum_0)
+                                                            (let ((app_0
+                                                                   (cdr l_1)))
+                                                              (loop_0
+                                                               app_0
+                                                               (cdr accum_0))))
                                                           (cons
                                                            'up
                                                            (loop_0

@@ -8,7 +8,8 @@
          "directory-path.rkt"
          "complete.rkt"
          "parameter.rkt"
-         "windows.rkt")
+         "windows.rkt"
+         "relativity.rkt")
 
 (provide simplify-path-syntactically)
 
@@ -52,7 +53,13 @@
                   [(eq? 'up (car l))
                    (cond
                      [(pair? accum)
-                      (loop (cdr l) (cdr accum))]
+                      (cond
+                        [(and (null? (cdr accum))
+                              (absolute-path? (car accum)))
+                         ;; for 'up at root, just keep the root
+                         (loop (cdr l) accum)]
+                        [else
+                         (loop (cdr l) (cdr accum))])]
                      [else
                       (cons 'up (loop (cdr l) null))])]
                   [else (loop (cdr l) (cons (car l) accum))])))
