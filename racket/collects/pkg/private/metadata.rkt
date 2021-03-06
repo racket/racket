@@ -14,43 +14,61 @@
 (provide (all-defined-out))
 
 (define ((check-dependencies which) deps)
-  (unless (and (list? deps)
-               (for/and ([dep (in-list deps)])
-                 (define (package-source? dep)
-                   (and (string? dep)
-                        (package-source->name dep)))
-                 (define (version? s)
-                   (and (string? s)
-                        (valid-version? s)))
-                 (or (package-source? dep)
-                     (and (list? dep)
-                          (= 2 (length dep))
-                          (package-source? (car dep))
-                          (version? (cadr dep)))
-                     (and (list? dep)
-                          ((length dep) . >= . 1)
-                          (odd? (length dep))
-                          (package-source? (car dep))
-                          (let loop ([saw (hash)] [dep (cdr dep)])
-                            (cond 
-                             [(null? dep) #t]
-                             [(hash-ref saw (car dep) #f) #f]
-                             [else
-                              (define kw (car dep))
-                              (define val (cadr dep))
-                              (and
-                               (cond
-                                [(eq? kw '#:version) (version? val)]
-                                [(eq? kw '#:platform)
-                                 (or (string? val)
-                                     (regexp? val)
-                                     (memq val '(unix windows macosx)))]
-                                [else #f])
-                               (loop (hash-set saw (car dep) #t)
-                                     (cddr dep)))]))))))
+  (unless (list? deps)
     (pkg-error (~a "invalid `" which "' specification\n"
-                   "  specification: ~e")
-               deps)))
+                   "  expected: (listof pkg-dep?)"
+                   "  given: ~e")
+               deps))
+
+  (define (package-source? dep)
+    (and (string? dep)
+         (package-source->name dep)))
+
+  (define (version? s)
+    (and (string? s)
+         (valid-version? s)))
+
+  (define (pkg-dep? dep)
+    (or (package-source? dep)
+        (and (list? dep)
+             (= 2 (length dep))
+             (package-source? (car dep))
+             (version? (cadr dep)))
+        (and (list? dep)
+             ((length dep) . >= . 1)
+             (odd? (length dep))
+             (package-source? (car dep))
+             (let loop ([saw (hash)] [dep (cdr dep)])
+               (cond
+                 [(null? dep) #t]
+                 [(hash-ref saw (car dep) #f) #f]
+                 [else
+                  (define kw (car dep))
+                  (define val (cadr dep))
+                  (and
+                   (cond
+                     [(eq? kw '#:version) (version? val)]
+                     [(eq? kw '#:platform)
+                      (or (string? val)
+                          (regexp? val)
+                          (memq val '(unix windows macosx)))]
+                     [else #f])
+                   (loop (hash-set saw (car dep) #t)
+                         (cddr dep)))])))))
+
+  (define invalid-deps
+    (filter (compose1 not pkg-dep?) deps))
+
+  (unless (null? invalid-deps)
+    (pkg-error (~a "invalid `" which "' specification\n"
+                   "  specification: ~e\n"
+                   (if ((length invalid-deps) . = . 1)
+                       "  bad dep: ~e"
+                       "  bad deps: ~e"))
+               deps
+               (if ((length invalid-deps) . = . 1)
+                   (car invalid-deps)
+                   invalid-deps))))
 
 (define (get-all-deps* metadata-ns pkg-dir)
   (values
