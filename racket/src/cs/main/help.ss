@@ -51,7 +51,8 @@
     "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
     "  -R <paths>, --compiled <paths> : Set compiled-file search roots to <paths>\n"
     "  -C, --cross : Cross-build mode; save current collects and config as host\n"
-    "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"))
+    "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
+    "  -E <file>, --exec <file> : Sets `(find-system-path 'exec-file)' to <file>\n"))
   (when gracket?
     (#%printf
      "  -J <name>, ---wm-class <name> : Set WM_CLASS class to <name> (Unix)\n"))

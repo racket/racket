@@ -277,8 +277,8 @@
         [else
          (values (car args) (append (reverse accum) (cdr args)))])))
 
-   (define (check-path-arg what flag within-flag)
-     (when (equal? what "")
+   (define (check-path-arg path what flag within-flag)
+     (when (equal? path "")
        (startup-error "empty ~a after ~a switch" what (or within-flag flag))))
 
    (define (raise-bad-switch arg within-arg)
@@ -363,6 +363,7 @@
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (add-namespace-require-load! `(file ,file-name) file-name)
                 (no-init! saw)
+                (check-path-arg file-name "file name" arg within-arg)
                 (set-run-file! (string->path file-name))
                 (flags-loop (cons "--" rest-args) (see saw 'non-config 'lib)))]
              [("-f" "--load")
@@ -374,6 +375,7 @@
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads (cons (lambda () (load file-name))
                                   loads))
+                (check-path-arg file-name "file name" arg within-arg)
                 (set-run-file! (string->path file-name))
                 (flags-loop (cons "--" rest-args) (see saw 'non-config)))]
              [("-e" "--eval")
@@ -458,18 +460,18 @@
                 (cond
                  [(equal? collects-path "")
                   (set! init-collects-dir 'disable)]
-                 [else 
-                  (check-path-arg "collects path" arg within-arg)
+                 [else
+                  (check-path-arg collects-path "collects path" arg within-arg)
                   (set! init-collects-dir (path->complete-path (->path (find-original-bytes collects-path))))])
                 (loop rest-args))]
              [("-S" "--search")
               (let-values ([(collects-path rest-args) (next-arg "path" arg within-arg args)])
-                (check-path-arg "collects path" collects-path within-arg)
+                (check-path-arg collects-path "collects path" collects-path within-arg)
                 (set! rev-collects-post-extra (cons (->path (find-original-bytes collects-path)) rev-collects-post-extra))
                 (loop rest-args))]
              [("-G" "--config")
               (let-values ([(config-path rest-args) (next-arg "config path" arg within-arg args)])
-                (check-path-arg "config path" config-path within-arg)
+                (check-path-arg config-path "config path" config-path within-arg)
                 (set! init-config-dir (path->complete-path (->path (find-original-bytes config-path))))
                 (loop rest-args))]
              [("-C" "--cross")
@@ -506,7 +508,13 @@
                 (loop rest-args))]
              [("-N" "--name")
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
+                (check-path-arg name "name" arg within-arg)
                 (set-run-file! (string->path name))
+                (loop rest-args))]
+             [("-E" "--exec")
+              (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
+                (check-path-arg name "name" arg within-arg)
+                (set-exec-file! (string->path name))
                 (loop rest-args))]
              [("-J")
               (cond

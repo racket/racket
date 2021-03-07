@@ -456,7 +456,7 @@ int main(int argc, char **argv)
   }
 
   data = (char *)malloc(end - prog_end);
-  new_argv = (char **)malloc((count + argc + (2 * collcount) + 10) * sizeof(char*));
+  new_argv = (char **)malloc((count + argc + (2 * collcount) + 12) * sizeof(char*));
 
   fd = open(me, O_RDONLY, 0);
   lseek(fd, prog_end, SEEK_SET);
@@ -495,10 +495,17 @@ int main(int argc, char **argv)
     putenv(dll_path);
   }
 
-  new_argv[0] = me;
+  new_argv[0] = exe_path;
 
   argpos = 1;
   inpos = 1;
+
+  /* Add -E flag; we can't just put `me` in `argv[0]`, because some
+     OSes (well, just OpenBSD) cannot find the executable path of a
+     process, and the actual executable may be needed to find embedded
+     boot images. */
+  new_argv[argpos++] = "-E";
+  new_argv[argpos++] = me;
 
   /* Keep all X11 flags to the front: */
   if (x11) {

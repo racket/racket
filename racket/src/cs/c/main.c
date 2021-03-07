@@ -172,7 +172,7 @@ static char *get_self_path(char *exec_file)
 # undef USE_GENERIC_GET_SELF_PATH
 #endif
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 # include <sys/sysctl.h>
 # include <errno.h>
 static char *get_self_path(char *exec_file)
@@ -183,9 +183,15 @@ static char *get_self_path(char *exec_file)
   int r;
 
   mib[0] = CTL_KERN;
+#if defined(__NetBSD__)
+  mib[1] = KERN_PROC_ARGS;
+  mib[2] = getpid();
+  mib[3] = KERN_PROC_PATHNAME;
+#else
   mib[1] = KERN_PROC;
   mib[2] = KERN_PROC_PATHNAME;
   mib[3] = -1;
+#endif
 
   r = sysctl(mib, 4, NULL, &len, NULL, 0);
   if (r < 0) {

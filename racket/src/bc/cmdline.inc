@@ -768,6 +768,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-m";
     else if (!strcmp("--name", argv[0]))
       argv[0] = "-N";
+    else if (!strcmp("--exec", argv[0]))
+      argv[0] = "-E";
     else if (!strcmp("--no-compiled", argv[0]))
       argv[0] = "-c";
     else if (!strcmp("--no-lib", argv[0]))
@@ -1017,6 +1019,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  eval_kind[num_enl++] = mzcmd_EMBEDDED;
 	  break;
 	case 'N':
+	case 'E':
 	  if (argc < 2) {
 	    PRINTF("%s: missing name after %s switch\n", 
 		   prog, 
@@ -1025,13 +1028,16 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  }
 	  argv++;
 	  --argc;
-	  sprog = argv[0];
-          if (!*sprog) {
+          if (!*(argv[0])) {
             PRINTF("%s: empty path after %s switch\n", 
 		   prog, 
 		   real_switch);
 	    goto show_need_help;
           }
+          if (*str == 'N')
+            sprog = argv[0];
+          else
+            prog = argv[0];
           was_config_flag = 1;
 	  break;
 	case 'q':
@@ -1439,6 +1445,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
          "  -R <paths>, --compiled <paths> : Set compiled-file search roots to <paths>\n"
 	 "  -C, --cross : Cross-build mode; save current collects and config as host\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
+	 "  -E <file>, --exec <file> : Sets `(find-system-path 'exec-file)' to <file>\n"
 # ifdef CMDLINE_STDIO_FLAG
          "  -J <name>, ---wm-class <name> : Set WM_CLASS class to <name> (Unix)\n"
 # endif

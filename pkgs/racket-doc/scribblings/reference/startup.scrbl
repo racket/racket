@@ -333,6 +333,11 @@ flags:
         by @racket[(find-system-path 'run-file)] to
         @nonterm{file}.}
 
+  @item{@FlagFirst{E} @nonterm{file} or @DFlagFirst{exe}
+        @nonterm{file} : sets the name of the executable as reported
+        by @racket[(find-system-path 'exec-file)] to
+        @nonterm{file}.}
+
   @item{@FlagFirst{J} @nonterm{name} or @DFlagFirst{wm-class}
         @nonterm{name} : GRacket, Unix only; sets the @tt{WM_CLASS}
         program class to @nonterm{name} (while the @tt{WM_CLASS}
@@ -467,7 +472,8 @@ Extra arguments following the last option are available from the
 
 @history[#:changed "6.90.0.17" @elem{Added @Flag{O}/@DFlag{stdout}.}
          #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}
-         #:changed "7.8.0.6" @elem{Added @Flag{Z}.}]
+         #:changed "7.8.0.6" @elem{Added @Flag{Z}.}
+         #:changed "8.0.0.10" @elem{Added @Flag{E}.}]
 
 @; ----------------------------------------------------------------------
 
