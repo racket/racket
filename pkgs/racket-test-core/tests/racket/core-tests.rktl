@@ -41,8 +41,7 @@
 (load-relative "path.rktl")
 (unless (or building-flat-tests? in-drscheme?)
   (load-relative "jitinline.rktl")
-  (when (eq? 'racket (system-type 'vm))
-    (load-relative "optimize.rktl")))
+  (load-relative "optimize.rktl"))
 (unless building-flat-tests?
   (load-relative "name.rktl"))
 (load-relative "srcloc.rktl")
