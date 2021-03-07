@@ -911,4 +911,17 @@ fixnum).}
 
 @; ------------------------------------------------------------------------
 
+@section[#:tag "unsafeassert"]{Unsafe Assertions}
+
+@defproc[(unsafe-assert-unreachable)
+         any]{
+ The contract on @racket[unsafe-assert-unreachable] is @racket[(->i () #:pre () #false any)],
+ which is a contract that is never satisfied by any call, and "unsafe" has its usual meaning:
+ if a contract check would fail, anything at all can happen afterward.
+ @history[#:added "8.0.0.11"]
+}
+
+@; ------------------------------------------------------------------------
+
 @include-section["unsafe-undefined.scrbl"]
+
