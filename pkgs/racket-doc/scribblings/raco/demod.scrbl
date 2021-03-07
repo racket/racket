@@ -3,10 +3,11 @@
 
 @title[#:tag "demod"]{@exec{raco demod}: Demodularizing Programs}
 
-The @exec{raco demod} command takes a Racket module and flattens
-all of its dependencies into a single compiled module. 
-A file @filepath{@nonterm{name}.rkt} is demodularized into 
+The @exec{raco demod} command, which works only for Racket @tech[#:doc
+guide-doc]{BC}, takes a Racket module and flattens all of its
+dependencies into a single compiled module. A file
+@filepath{@nonterm{name}.rkt} is demodularized into
 @filepath{@nonterm{name}_rkt_merged.zo}.
 
-The demodularized zo file can be run by passing it as an argument to
-the @exec{racket} command-line program.
+The demodularized @filepath{.zo} file can be run by passing it as an
+argument to the @exec{racket} command-line program.
