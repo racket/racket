@@ -267,6 +267,9 @@
                   (build-path dir (bytes->path (cadr m)))))]
           [else null])))
 
+(module+ private-for-testing
+  (provide make-macosx-default-get-fallbacks))
+
 ;; String -> (Listof Path-String)
 (define default-get-fallbacks
   (case (system-type 'os)
