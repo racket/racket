@@ -818,10 +818,12 @@
                    (cond
                      [(null? formal-args)
                       (and (null? args)
-                           (schemify/knowns knowns
-                                            inline-fuel
-                                            wcm-state
-                                            `(let-values ,(reverse binds) . ,bodys)))]
+                           (let ([r (schemify/knowns knowns
+                                                     inline-fuel
+                                                     wcm-state
+                                                     `(let-values ,(reverse binds) . ,bodys))])
+                             ;; make suure constant-fold to #f counts as success:
+                             (or r `(quote #f))))]
                      [(null? args) #f]
                      [(not (pair? formal-args))
                       (loop '() '() (cons (list (list formal-args)

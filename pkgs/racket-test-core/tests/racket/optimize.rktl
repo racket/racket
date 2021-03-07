@@ -56,6 +56,7 @@
       (define bundle (if (linkl-directory? lnkl)
                          (hash-ref (linkl-directory-table lnkl) '() #f)
                          lnkl))
+      (define top-level? (not (hash-ref (linkl-bundle-table bundle) 'decl #f)))
       (unless bundle
         (error 'compile/optimize (string-append "didn't find main linklet bundle in directory;"
                                                 " maybe a top-level `begin` sequence?")))
@@ -71,15 +72,22 @@
         (error 'compile/optimize "compiled content does not have expected shape: ~s"
                s-exp))
 
-      ;; Support cross-module inlining, at least through one layer of `require`
       (define-values (mpi-vector requires provides phase-to-link-modules)
-        (deserialize-requires-and-provides bundle))
+          (deserialize-requires-and-provides bundle))
       (define link-modules (hash-ref phase-to-link-modules 0 '()))
-      (define keys (for/list ([r (in-list link-modules)])
-                     (gensym)))
-      (define mod-uses (for/hasheq ([key (in-list keys)]
-                                    [mod-use (in-list link-modules)])
-                         (values key mod-use)))
+
+      ;; Support cross-module inlining
+      (define (bundle->keys+uses bundle)
+        (define-values (mpi-vector requires provides phase-to-link-modules)
+          (deserialize-requires-and-provides bundle))
+        (define link-modules (hash-ref phase-to-link-modules 0 '()))
+        (define keys (for/list ([r (in-list link-modules)])
+                       (gensym)))
+        (define mod-uses (for/hasheq ([key (in-list keys)]
+                                      [mod-use (in-list link-modules)])
+                           (values key mod-use)))
+        (values keys mod-uses))
+      (define-values (keys mod-uses) (bundle->keys+uses bundle))
       (define (get-module-info key)
         (define mu (hash-ref mod-uses key #f))
         (cond
@@ -95,7 +103,8 @@
                     mpi
                     (module-path-index-join name new-base))]
                [else mpi]))
-           (define mp (module-path-index-resolve (replace-self (module-use-module mu)) #f))
+           (define mpi (replace-self (module-use-module mu)))
+           (define mp (module-path-index-resolve mpi #f))
            (define path (resolved-module-path-name mp))
            (cond
              [(path? path)
@@ -105,7 +114,10 @@
                                  (hash-ref (linkl-directory-table lnkl) '() #f)
                                  lnkl))
               (define code (hash-ref (linkl-bundle-table bundle) (module-use-phase mu) #f))
-              (values code #f)]
+              (define-values (new-keys new-mod-uses) (bundle->keys+uses bundle))
+              (for ([(k mu) (in-hash new-mod-uses)])
+                (set! mod-uses (hash-set mod-uses k mu)))
+              (values code (list->vector (append '(#f #f) new-keys)))]
              [else
               (values #f #f)])]
           [else (values #f #f)]))
@@ -114,7 +126,10 @@
                     (expand/optimize-linklet s-exp)
                     (expand/optimize-linklet s-exp
                                              #f
-                                             (list->vector (append '(#f #f #f) keys))
+                                             (list->vector (append (if top-level?
+                                                                       '(#f #f #f)
+                                                                       '(#f #f))
+                                                                   keys))
                                              get-module-info
                                              '())))
       
@@ -3147,17 +3162,17 @@
                       (unsafe-fl+ 10 x)
                       f)))))
 ;; double-check that previous test doesn't succeed due to copying
-(test-comp '(lambda (y)
+(test-comp '(lambda (y g)
               (let ([q (unsafe-fl* y y)])
                 (let ([x (unsafe-fl* q q)])
                   (define (f z) (unsafe-fl+ z x))
-                  (if y
+                  (if (g)
                       (unsafe-fl+ 10 x)
                       f))))
-           '(lambda (y)
+           '(lambda (y g)
               (let ([q (unsafe-fl* y y)])
                 (define (f z) (unsafe-fl+ z (unsafe-fl* q q)))
-                (if y
+                (if (g)
                     (unsafe-fl+ 10 (unsafe-fl* q q))
                     f)))
            #f)
@@ -3212,7 +3227,8 @@
                       (+ p m (- p p) t))
                     'ok))))
 
-(test-comp '(lambda (n)
+(test-comp #:except 'chez-scheme ; reordering is not important to Chez Scheme backend
+           '(lambda (n)
               (let ([p (fx+ n n)])
                 (if n
                     (let ([m (unsafe-fx- p 1)]
@@ -3245,16 +3261,18 @@
            '(lambda (n)
               (let ([p (fx+ n n)])
                 (fx+ p p))))
-(test-comp '(lambda (n)
-              (let ([p (extfl+ n n)])
-                (if (extflonum? p)
-                    (extfl+ p p)
-                    'bad)))
-           '(lambda (n)
-              (let ([p (extfl+ n n)])
-                (extfl+ p p))))
+(when (extflonum-available?)
+  (test-comp '(lambda (n)
+                (let ([p (extfl+ n n)])
+                  (if (extflonum? p)
+                      (extfl+ p p)
+                      'bad)))
+             '(lambda (n)
+                (let ([p (extfl+ n n)])
+                  (extfl+ p p)))))
 
-(test-comp '(lambda (n)
+(test-comp #:except 'chez-scheme ; lifting out `random` requires another pass?
+           '(lambda (n)
               (let ([p (fl+ n n)])
                 (list
                   p p
@@ -3269,7 +3287,8 @@
                   (begin (random) #t)
                   (letrec ([x (lambda (t) x)]) (x x) #t)))))
 
-(test-comp '(lambda (n)
+(test-comp #:except 'chez-scheme ; lifting out `random` requires another pass?
+           '(lambda (n)
               (let ([p (fx+ n n)])
                 (list
                   p p
@@ -3283,27 +3302,30 @@
                   #t  
                   (begin (random) #t)
                   (letrec ([x (lambda (t) x)]) (x x) #t)))))
-(test-comp '(lambda (n)
-              (let ([p (extfl+ n n)])
-                (list
-                  p p
-                  (extflonum? p)
-                  (extflonum? (begin (random) p))
-                  (extflonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
-           '(lambda (n)
-              (let ([p (extfl+ n n)])
-                (list
-                  p p
-                  #t
-                  (begin (random) #t)
-                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
+(when (extflonum-available?)
+  (test-comp '(lambda (n)
+                (let ([p (extfl+ n n)])
+                  (list
+                   p p
+                   (extflonum? p)
+                   (extflonum? (begin (random) p))
+                   (extflonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+             '(lambda (n)
+                (let ([p (extfl+ n n)])
+                  (list
+                   p p
+                   #t
+                   (begin (random) #t)
+                   (letrec ([x (lambda (t) x)]) (x x) #t))))))
 
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 
               (require racket/bool)
+              true
               (list true))
            `(module m racket/base 
               (require racket/bool)
+              true ; so that it counts as imported
               (list #t)))
 
 (test-comp `(module m racket/base 

@@ -29866,15 +29866,19 @@
                                                                                                                                formal-args_1)
                                                                                                                             (if (null?
                                                                                                                                  args_0)
-                                                                                                                              (schemify/knowns_0
-                                                                                                                               knowns_1
-                                                                                                                               inline-fuel_1
-                                                                                                                               wcm-state_2
-                                                                                                                               (list*
-                                                                                                                                'let-values
-                                                                                                                                (reverse$1
-                                                                                                                                 binds_0)
-                                                                                                                                bodys_0))
+                                                                                                                              (let ((r_0
+                                                                                                                                     (schemify/knowns_0
+                                                                                                                                      knowns_1
+                                                                                                                                      inline-fuel_1
+                                                                                                                                      wcm-state_2
+                                                                                                                                      (list*
+                                                                                                                                       'let-values
+                                                                                                                                       (reverse$1
+                                                                                                                                        binds_0)
+                                                                                                                                       bodys_0))))
+                                                                                                                                (if r_0
+                                                                                                                                  r_0
+                                                                                                                                  ''#f))
                                                                                                                               #f)
                                                                                                                             (if (null?
                                                                                                                                  args_0)
