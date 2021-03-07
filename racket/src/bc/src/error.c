@@ -72,7 +72,7 @@ static void *glib_log_signal_handle;
 
 /* locals */
 static Scheme_Object *error(int argc, Scheme_Object *argv[]);
-static Scheme_Object *scheme_unsafe_unreachable(int argc, Scheme_Object* argv[]);
+static Scheme_Object *scheme_unsafe_assert_unreachable(int argc, Scheme_Object* argv[]);
 static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_argument_error(int argc, Scheme_Object *argv[]);
@@ -776,7 +776,7 @@ int scheme_last_error_is_racket(int errid)
 void scheme_init_unsafe_error(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
-  ESCAPING_NONCM_PRIM("unsafe-unreachable",         scheme_unsafe_unreachable,    0, 0, env); 
+  ESCAPING_NONCM_PRIM("unsafe-assert-unreachable",         scheme_unsafe_assert_unreachable,    0, 0, env); 
 }
 
 void scheme_init_error(Scheme_Startup_Env *env)
@@ -2716,9 +2716,9 @@ static Scheme_Object *error(int argc, Scheme_Object *argv[])
   return do_error("error", MZEXN_FAIL, argc, argv);
 }
 
-static Scheme_Object *scheme_unsafe_unreachable(int argc, Scheme_Object* argv[])
+static Scheme_Object *scheme_unsafe_assert_unreachable(int argc, Scheme_Object* argv[])
 {
-  scheme_contract_error("unsafe-unreachable", "unreachable code reached", NULL);
+  scheme_contract_error("unsafe-assert-unreachable", "unreachable code reached", NULL);
   return scheme_void;
 }
 

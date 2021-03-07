@@ -246,4 +246,4 @@
             sym)))
   v)
 
-(define unsafe-unreachable (unsafe-primitive $unreachable))
+(define unsafe-assert-unreachable (unsafe-primitive $unreachable))
