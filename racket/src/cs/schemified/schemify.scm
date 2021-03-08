@@ -30297,9 +30297,16 @@
                                                                                                                                               'if
                                                                                                                                               app_0
                                                                                                                                               app_1
-                                                                                                                                              (list
-                                                                                                                                               s-rator_0
-                                                                                                                                               tmp_0)))))))
+                                                                                                                                              (let ((a_0
+                                                                                                                                                     (list
+                                                                                                                                                      s-rator_0
+                                                                                                                                                      tmp_0)))
+                                                                                                                                                (if (known-field-accessor-authentic?
+                                                                                                                                                     k_0)
+                                                                                                                                                  (cons
+                                                                                                                                                   '|#%app/no-return|
+                                                                                                                                                   a_0)
+                                                                                                                                                  a_0))))))))
                                                                                                                                   (wrap-tmp_0
                                                                                                                                    tmp_0
                                                                                                                                    (car
@@ -30372,10 +30379,17 @@
                                                                                                                                                   'if
                                                                                                                                                   app_0
                                                                                                                                                   app_1
-                                                                                                                                                  (list
-                                                                                                                                                   s-rator_0
-                                                                                                                                                   tmp_0
-                                                                                                                                                   tmp-rhs_0)))))))
+                                                                                                                                                  (let ((a_0
+                                                                                                                                                         (list
+                                                                                                                                                          s-rator_0
+                                                                                                                                                          tmp_0
+                                                                                                                                                          tmp-rhs_0)))
+                                                                                                                                                    (if (known-field-mutator-authentic?
+                                                                                                                                                         k_0)
+                                                                                                                                                      (cons
+                                                                                                                                                       '|#%app/no-return|
+                                                                                                                                                       a_0)
+                                                                                                                                                      a_0))))))))
                                                                                                                                       (let ((app_0
                                                                                                                                              (car
                                                                                                                                               args_0)))

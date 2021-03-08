@@ -909,7 +909,10 @@
                                  `(unsafe-struct*-ref ,tmp ,(known-field-accessor-pos k))
                                  `(if (unsafe-struct? ,tmp ,(schemify type-id 'fresh))
                                       (unsafe-struct*-ref ,tmp ,(known-field-accessor-pos k))
-                                      (,s-rator ,tmp))))
+                                      ,(let ([a `(,s-rator ,tmp)])
+                                         (if (known-field-accessor-authentic? k)
+                                             (cons '#%app/no-return a)
+                                             a)))))
                  (wrap-tmp tmp (car args)
                            sel)]
                 [else #f]))
@@ -927,7 +930,10 @@
                                  `(unsafe-struct*-set! ,tmp ,(known-field-mutator-pos k) ,tmp-rhs)
                                  `(if (unsafe-struct? ,tmp ,(schemify type-id 'fresh))
                                       (unsafe-struct*-set! ,tmp ,(known-field-mutator-pos k) ,tmp-rhs)
-                                      (,s-rator ,tmp ,tmp-rhs))))
+                                      ,(let ([a `(,s-rator ,tmp ,tmp-rhs)])
+                                         (if (known-field-mutator-authentic? k)
+                                             (cons '#%app/no-return a)
+                                             a)))))
                  (wrap-tmp tmp (car args)
                            (wrap-tmp tmp-rhs (cadr args)
                                      mut))]

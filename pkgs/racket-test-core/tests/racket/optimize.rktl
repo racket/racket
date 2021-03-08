@@ -22,6 +22,12 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define saved-top-level-modules (make-hasheq))
+(define-syntax-rule (register-top-level-module m)
+  (begin
+    (hash-set! saved-top-level-modules (cadr 'm) 'm)
+    m))
+
 ;; For CS:
 (define compile/optimize
   (let ()
@@ -106,18 +112,30 @@
            (define mpi (replace-self (module-use-module mu)))
            (define mp (module-path-index-resolve mpi #f))
            (define path (resolved-module-path-name mp))
+           (define (handle-linklet lnkl)
+             (define bundle (if (linkl-directory? lnkl)
+                                (hash-ref (linkl-directory-table lnkl) '() #f)
+                                lnkl))
+             (define code (hash-ref (linkl-bundle-table bundle) (module-use-phase mu) #f))
+             (define-values (new-keys new-mod-uses) (bundle->keys+uses bundle))
+             (for ([(k mu) (in-hash new-mod-uses)])
+               (set! mod-uses (hash-set mod-uses k mu)))
+             (values code (list->vector (append '(#f #f) new-keys))))
            (cond
              [(path? path)
               (define zo-path (get-compilation-bytecode-file path))
-              (define lnkl (call-with-input-file* zo-path zo-parse))
-              (define bundle (if (linkl-directory? lnkl)
-                                 (hash-ref (linkl-directory-table lnkl) '() #f)
-                                 lnkl))
-              (define code (hash-ref (linkl-bundle-table bundle) (module-use-phase mu) #f))
-              (define-values (new-keys new-mod-uses) (bundle->keys+uses bundle))
-              (for ([(k mu) (in-hash new-mod-uses)])
-                (set! mod-uses (hash-set mod-uses k mu)))
-              (values code (list->vector (append '(#f #f) new-keys)))]
+              (handle-linklet (call-with-input-file* zo-path zo-parse))]
+             [(hash-ref saved-top-level-modules path #f)
+              => (lambda (m)
+                   (handle-linklet
+                    (cond
+                      [(list? m)
+                       (define o (open-output-bytes))
+                       (write (compile m) o)
+                       (define linkl (zo-parse (open-input-bytes (get-output-bytes o))))
+                       (hash-set! saved-top-level-modules path linkl)
+                       linkl]
+                      [else m])))]
              [else
               (values #f #f)])]
           [else (values #f #f)]))
@@ -3416,17 +3434,18 @@
                c
                c)))
 
-(module check-inline-request racket/base
-  (require racket/performance-hint)
-  (provide loop)
-  (begin-encourage-inline
-   (define loop
-     ;; large enough that the compiler wouldn't infer inlining:
-     (lambda (f n)
-       (let loop ([i n])
-         (if (zero? i)
-             10
-             (cons (f i) (loop (sub1 n)))))))))
+(register-top-level-module
+ (module check-inline-request racket/base
+   (require racket/performance-hint)
+   (provide loop)
+   (begin-encourage-inline
+     (define loop
+       ;; large enough that the compiler wouldn't infer inlining:
+       (lambda (f n)
+         (let loop ([i n])
+           (if (zero? i)
+               10
+               (cons (f i) (loop (sub1 n))))))))))
 
 (test-comp `(module m racket/base 
               (require 'check-inline-request)
@@ -3524,37 +3543,43 @@
      (displayln (list expr 3 '!))
   )
   (map check-omit-ok
-       '((unsafe-vector*-ref x y)
-         (unsafe-struct*-ref x y)
-         (unsafe-mcar x)
-         (unsafe-mcdr x)
-         (unsafe-unbox* x)
-         (unsafe-bytes-ref x y)
-         (unsafe-string-ref x y)
-         (unsafe-flvector-ref x y)
-         (unsafe-fxvector-ref x y)
-         (unsafe-f64vector-ref x y)
-         (unsafe-s16vector-ref x y)
-         (unsafe-u16vector-ref x y)))
+       (append
+        '((unsafe-vector*-ref x y)
+          (unsafe-struct*-ref x y)
+          (unsafe-mcar x)
+          (unsafe-mcdr x)
+          (unsafe-unbox* x)
+          (unsafe-bytes-ref x y)
+          (unsafe-string-ref x y)
+          (unsafe-flvector-ref x y)
+          (unsafe-fxvector-ref x y))
+        (if (eq? 'chez-scheme (system-type 'vm))
+            '()
+            '((unsafe-f64vector-ref x y)
+              (unsafe-s16vector-ref x y)
+              (unsafe-u16vector-ref x y)))))
   (map (lambda (x) (check-omit-ok x #f))
-       '((unsafe-vector-ref x y)
-         (unsafe-struct-ref x y)
-         (unsafe-vector-set! x y z)
-         (unsafe-vector*-set! x y z)
-         (unsafe-struct-set! x y z)
-         (unsafe-struct*-set! x y z)
-         (unsafe-set-mcar! x y)
-         (unsafe-set-mcdr! x y)
-         (unsafe-unbox y)
-         (unsafe-set-box! x y)
-         (unsafe-set-box*! x y)
-         (unsafe-bytes-set! x y z)
-         (unsafe-string-set! x y z)
-         (unsafe-flvector-set! x y z)
-         (unsafe-fxvector-set! x y z)
-         (unsafe-f64vector-set! x y z)
-         (unsafe-s16vector-set! x y z)
-         (unsafe-u16vector-set! x y z)))
+       (append
+        '((unsafe-vector-ref x y)
+          (unsafe-struct-ref x y)
+          (unsafe-vector-set! x y z)
+          (unsafe-vector*-set! x y z)
+          (unsafe-struct-set! x y z)
+          (unsafe-struct*-set! x y z)
+          (unsafe-set-mcar! x y)
+          (unsafe-set-mcdr! x y)
+          (unsafe-unbox y)
+          (unsafe-set-box! x y)
+          (unsafe-set-box*! x y)
+          (unsafe-bytes-set! x y z)
+          (unsafe-string-set! x y z)
+          (unsafe-flvector-set! x y z)
+          (unsafe-fxvector-set! x y z))
+        (if (eq? 'chez-scheme (system-type 'vm))
+            '()
+            '((unsafe-f64vector-set! x y z)
+              (unsafe-s16vector-set! x y z)
+              (unsafe-u16vector-set! x y z)))))
 
   (when (extflonum-available?)
     (map check-omit-ok
@@ -3567,11 +3592,13 @@
            ))
     ))
 
-(test-comp '(lambda (x)
+(test-comp #:except 'chez-scheme
+           '(lambda (x)
               (hash-ref '#hash((x . y)) x (lambda () 10)))
            '(lambda (x)
               (hash-ref '#hash((x . y)) x 10)))
-(test-comp '(lambda (x)
+(test-comp #:except 'chez-scheme
+           '(lambda (x)
               (hash-ref x x (lambda () 10)))
            '(lambda (x)
               (hash-ref x x 10))
@@ -3582,7 +3609,8 @@
               (hash-ref '#hash((x . y)) x add1))
            #f)
 
-(test-comp '(lambda ()
+(test-comp #:except 'chez-scheme
+           '(lambda ()
              (hash-ref #hash()
                        'missing
                        (λ ()
@@ -3602,7 +3630,7 @@
                        'UNEXPECTED!))
            #f)
 
-(let ()
+(unless (eq? 'chez-scheme (system-type 'vm))
   (define (check-empty-allocation hash-sym)
     (test-comp `(lambda () (,hash-sym) 5)
                '(lambda () 5))
@@ -3664,16 +3692,18 @@
   (define (check-discard-iterate op-name)
     (test-comp `(lambda (ht i) (,op-name ht i) 5)
                `(lambda (ht i) 5)))
-  (check-discard-iterate 'unsafe-immutable-hash-iterate-next)
-  (check-discard-iterate 'unsafe-immutable-hash-iterate-key)
-  (check-discard-iterate 'unsafe-immutable-hash-iterate-value)
-  (check-discard-iterate 'unsafe-immutable-hash-iterate-key+value)
-  (check-discard-iterate 'unsafe-immutable-hash-iterate-pair))
+  (unless (eq? 'chez-scheme (system-type 'vm))
+    (check-discard-iterate 'unsafe-immutable-hash-iterate-next)
+    (check-discard-iterate 'unsafe-immutable-hash-iterate-key)
+    (check-discard-iterate 'unsafe-immutable-hash-iterate-value)
+    (check-discard-iterate 'unsafe-immutable-hash-iterate-key+value)
+    (check-discard-iterate 'unsafe-immutable-hash-iterate-pair)))
 
 ;; Check elimination of ignored structure predicate
 ;; and constructor applications:
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme ; schemify doesn't specialize raw accessor+mutator form
+           '(module m racket/base
               (define-values (struct:a a a? a-ref a-set!)
                 (make-struct-type 'a #f 2 0))
               (begin0
@@ -3694,7 +3724,7 @@
 (test-comp '(module m racket/base
               (define-values (struct:a a a? a-x a-y)
                 (let-values ([(struct:a a a? a-ref a-set!)
-                              (make-struct-type 'a #f 2 0)])
+                              (make-struct-type 'a #f 2 0 #f)])
                   (values struct:a a a?
                           (make-struct-field-accessor a-ref 0)
                           (make-struct-field-accessor a-ref 1))))
@@ -3709,7 +3739,7 @@
            '(module m racket/base
               (define-values (struct:a a a? a-x a-y)
                 (let-values ([(struct:a a a? a-ref a-set!)
-                              (make-struct-type 'a #f 2 0)])
+                              (make-struct-type 'a #f 2 0 #f)])
                   (values struct:a a a?
                           (make-struct-field-accessor a-ref 0)
                           (make-struct-field-accessor a-ref 1))))
@@ -3816,16 +3846,18 @@
                (a? (a-x (a 1 2)))
                5)))
 
-(module struct-a-for-optimize racket/base
-  (provide (struct-out a)
-           (struct-out b))
-  (struct a (x y))
-  (struct b a (z)))
+(register-top-level-module
+ (module struct-a-for-optimize racket/base
+   (provide (struct-out a)
+            (struct-out b))
+   (struct a (x y))
+   (struct b a (z))))
 
-(module struct-c-for-optimize racket/base
-  (require 'struct-a-for-optimize)
-  (provide (struct-out c))
-  (struct c a (q)))
+(register-top-level-module
+ (module struct-c-for-optimize racket/base
+   (require 'struct-a-for-optimize)
+   (provide (struct-out c))
+   (struct c a (q))))
 
 (test-comp '(module m racket/base
               (require 'struct-a-for-optimize)
@@ -3864,7 +3896,8 @@
                (list (c? (c-q (c 1 2 3))))
                5)))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme ; compilation of known accessor is not the same as `unsafe-struct-ref`
+           '(module m racket/base
              (require racket/unsafe/ops)
              (struct a (x y))
              (define (f v)
@@ -3896,7 +3929,8 @@
                          (unsafe-struct*-ref v 1))
                    (void)))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme ; compilation of known accessor is not the same as `unsafe-struct-ref`
+           '(module m racket/base
              (require racket/unsafe/ops)
              (struct a (x y))
              (define (f v)
@@ -3909,6 +3943,18 @@
                      (unsafe-struct-ref v 1)))))
 
 (test-comp '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y) #:authentic)
+             (define (f v)
+               (list (a-x v) (a? v))))
+           '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y) #:authentic)
+             (define (f v)
+               (list (a-x v) #t))))
+
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
              (require racket/unsafe/ops)
              (struct a (x y))
              (define (f v)
