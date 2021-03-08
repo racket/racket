@@ -3953,7 +3953,7 @@
              (define (f v)
                (list (a-x v) #t))))
 
-(test-comp #:except 'chez-scheme
+(test-comp #:except 'chez-scheme ; cptypes can't see through chaperone support
            '(module m racket/base
              (require racket/unsafe/ops)
              (struct a (x y))
@@ -3965,7 +3965,8 @@
              (define (f v)
                (list (a-x v) #t))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
              (require racket/unsafe/ops)
              (struct a (x y))
              (struct b a (z))
@@ -3978,7 +3979,8 @@
              (define (f v)
                (and (b? v) (unsafe-struct-ref v 2)))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
              (require racket/unsafe/ops)
              (struct a (x y))
              (struct b a (z))
@@ -3991,7 +3993,8 @@
              (define (f v)
                (list (b-z v) #t))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
              (require 'struct-a-for-optimize
                       racket/unsafe/ops)
              (struct c b (m))
@@ -4022,7 +4025,8 @@
                (a? (a-x (a 1 2)))
                5)))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme ; `procedure?` is not primitive enough
+           '(module m racket/base
               (struct a (x) #:omit-define-syntaxes #:mutable)
 
               (procedure? a)
@@ -4098,13 +4102,15 @@
               #t
               (lambda (x) (set-a-x! x 5))))
 
-(test-comp '(lambda ()
+(test-comp #:except 'chez-scheme ; not able to remove pure `make-struct-type`
+           '(lambda ()
              (make-struct-type 'a #f 0 0 #f)
              10)
            '(lambda ()
              10))
 
-(test-comp '(lambda ()
+(test-comp #:except 'chez-scheme ; not able to remove pure `make-struct-type-property`
+           '(lambda ()
              (make-struct-type-property 'a)
              10)
            '(lambda ()
@@ -4121,7 +4127,8 @@
            '(lambda () 5)
            #f)
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
              (lambda (x)
                (a? x)
@@ -4130,7 +4137,8 @@
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
              (lambda (x)
                x)))
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme
+           '(module m racket/base
               (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
 
               (procedure? a?)
@@ -4168,10 +4176,10 @@
              (struct b () #:property prop:a 'a)
              (define (g y) (list y))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'racket ; a property type with a guard inhibits inlining, because the
+           ;;                 guard might raise an error
+           '(module m racket/base
              (define (f x) (list (g x) g))
-             ;; A property type with a guard inhibits inlining, because the
-             ;; guard might raise an error
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a error))
              (struct b () #:property prop:a 'a)
              (define (g y) (list y)))
@@ -4179,8 +4187,7 @@
              (define (f x) (list (list x) g))
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a error))
              (struct b () #:property prop:a 'a)
-             (define (g y) (list y)))
-           #f)
+             (define (g y) (list y))))
 
 (test-comp '(lambda ()
               ;; The built-in `prop:object-name` property has a guard:
@@ -4189,9 +4196,10 @@
            '(lambda () 5)
            #f)
 
-(module struct-type-property-a racket/base
-  (provide prop:a)
-  (define-values (prop:a a? a-ref) (make-struct-type-property 'a)))
+(register-top-level-module
+ (module struct-type-property-a racket/base
+   (provide prop:a)
+   (define-values (prop:a a? a-ref) (make-struct-type-property 'a))))
 
 (test-comp '(module m racket/base
              (require 'struct-type-property-a)
@@ -4204,11 +4212,13 @@
              (struct b () #:property prop:a 'a)
              (define (g y) (list y))))
 
-(module struct-type-property-a-with-guard racket/base
-  (provide prop:a)
-  (define-values (prop:a a? a-ref) (make-struct-type-property 'a error)))
+(register-top-level-module
+ (module struct-type-property-a-with-guard racket/base
+   (provide prop:a)
+   (define-values (prop:a a? a-ref) (make-struct-type-property 'a error))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'racket ; a property type with a guard inhibits inlining
+           '(module m racket/base
              (require 'struct-type-property-a-with-guard)
              (define (f x) (list (g x) g))
              (struct b () #:property prop:a 'a)
@@ -4217,10 +4227,10 @@
              (require 'struct-type-property-a-with-guard)
              (define (f x) (list (list x) g))
              (struct b () #:property prop:a 'a)
-             (define (g y) (list y)))
-           #f)
+             (define (g y) (list y))))
 
-(test-comp '(module m racket/base
+(test-comp #:except 'chez-scheme ; not able to remove pure `make-struct-type`
+           '(module m racket/base
               (struct posn (x y) #:prefab)
               (let ()
                 ;; Should be able to tell that `struct:posn` is prefab
@@ -4278,6 +4288,16 @@
            #f)
 (test-comp `(lambda (x)
              (with-continuation-mark
+               'x 1
+               (with-continuation-mark
+                'x 2
+                (x))))
+            `(lambda (x)
+              (with-continuation-mark
+                'x 2
+                (x))))
+(test-comp `(lambda (x) ; `x` might be chaperoned
+             (with-continuation-mark
                x 1
                (with-continuation-mark
                 x 2
@@ -4285,27 +4305,28 @@
             `(lambda (x)
               (with-continuation-mark
                 x 2
-                (x))))
+                (x)))
+            #f)
 (test-comp `(lambda (x)
              (with-continuation-mark
-               x (display x)
+               'x (display x)
                (with-continuation-mark
-                x 2
+                'x 2
                 (x))))
             `(lambda (x)
               (display x)
               (with-continuation-mark
-                x 2
+                'x 2
                 (x))))
 (test-comp `(lambda (x)
              (with-continuation-mark
-               x 1
+               'x 1
                (with-continuation-mark
-                x (current-continuation-marks)
+                'x (current-continuation-marks)
                 (x))))
             `(lambda (x)
               (with-continuation-mark
-                x (current-continuation-marks)
+                'x (current-continuation-marks)
                (x)))
             #f)
 (test-comp '(lambda (v)

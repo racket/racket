@@ -998,7 +998,7 @@
    [(pair? a)
     (if (eq? key (car a))
         (cons key val)
-        (make-mark-frame (mark-table-add/replace* (pair->mark-table a) key val)
+        (make-mark-frame (mark-table-add/replace* (pair->mark-table a) a key val)
                          #f))]
    [(eq? a 'empty)
     ;; The current frame is the mark-splice frame, so update
@@ -1006,7 +1006,7 @@
     (current-mark-splice (mark-frame-update (current-mark-splice) key val))
     'empty]
    [(mark-frame? a)
-    (make-mark-frame (mark-table-add/replace* (mark-frame-table a) key val)
+    (make-mark-frame (mark-table-add/replace* (mark-frame-table a) a key val)
                      (mark-frame-end-uninterupted? a))]
    [else
     ;; assert: (elem+cache? a)
@@ -1578,7 +1578,7 @@
            (authentic-continuation-mark-key? (impersonator-val v)))))
 
 ;; Like `mark-table-add/replace`, but handles continuation-mark-key impersonators
-(define (mark-table-add/replace* ht k v)
+(define (mark-table-add/replace* ht old-a k v)
   (cond
    [(and (impersonator? k)
          (authentic-continuation-mark-key? (impersonator-val k)))
@@ -1586,14 +1586,20 @@
       (cond
        [(or (continuation-mark-key-impersonator? k)
             (continuation-mark-key-chaperone? k))
-        (let ([new-v (|#%app|
-                      (if (continuation-mark-key-impersonator? k)
-                          (continuation-mark-key-impersonator-set k)
-                          (continuation-mark-key-chaperone-set k))
-                      v)])
-          (unless (or (continuation-mark-key-impersonator? k)
-                      (chaperone-of? new-v v))
-            (raise-chaperone-error 'with-continuation-mark "value" v new-v))
+        (let ([new-v
+               ;; Restore attachment while interposing
+               (call-setting-continuation-attachment
+                old-a
+                (lambda ()
+                  (let ([new-v (|#%app|
+                                (if (continuation-mark-key-impersonator? k)
+                                    (continuation-mark-key-impersonator-set k)
+                                    (continuation-mark-key-chaperone-set k))
+                                v)])
+                    (unless (or (continuation-mark-key-impersonator? k)
+                                (chaperone-of? new-v v))
+                      (raise-chaperone-error 'with-continuation-mark "value" v new-v))
+                    new-v)))])
           (loop (impersonator-next k) new-v))]
        [(impersonator? k)
         (loop (impersonator-next k) v)]

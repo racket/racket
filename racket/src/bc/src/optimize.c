@@ -530,7 +530,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
       if (!(flags & OMITTABLE_KEEP_VARS)
           && ((SCHEME_IR_TOPLEVEL_FLAGS((Scheme_IR_Toplevel *)o) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_READY))
         return 1;
-      else if ((SCHEME_IR_TOPLEVEL_FLAGS((Scheme_IR_Toplevel *)o) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED)
+      else if ((SCHEME_IR_TOPLEVEL_FLAGS((Scheme_IR_Toplevel *)o) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)
         return 1;
       else
         return 0;
@@ -6296,7 +6296,7 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 {
   Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
   Scheme_Object *k, *v, *b;
-  int init_vclock;
+  int init_vclock, can_omit_key;
   Optimize_Info_Sequence info_seq;
 
   optimize_info_seq_init(info, &info_seq);
@@ -6337,7 +6337,8 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   /* If the body cannot inspect the continution, and if the key is not
      a chaperone, no need to add the mark: */
-  if (omittable_key(k, info)
+  can_omit_key = omittable_key(k, info);
+  if (can_omit_key
       && scheme_omittable_expr(b, -1, 20, 0, info, info))
     return make_discarding_first_sequence(v, b, info);
 
@@ -6358,7 +6359,8 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
          (with-continuation-mark <same-key> <val2>
          <body>))
      as long as <val2> doesn't inspect the continuation. */
-  if (SAME_TYPE(SCHEME_TYPE(wcm->body), scheme_with_cont_mark_type)
+  if (can_omit_key
+      && SAME_TYPE(SCHEME_TYPE(wcm->body), scheme_with_cont_mark_type)
       && equivalent_exprs(wcm->key, ((Scheme_With_Continuation_Mark *)wcm->body)->key, NULL, NULL, 0)
       && scheme_omittable_expr(((Scheme_With_Continuation_Mark *)wcm->body)->val, 1, 20, 0, info, info))
     return make_discarding_first_sequence(wcm->val, wcm->body, info);

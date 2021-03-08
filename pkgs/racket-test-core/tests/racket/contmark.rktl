@@ -1074,6 +1074,29 @@
   (err/rt-test (do-test bad-mark 5) exn:fail?)
   (err/rt-test (do-test bad-mark-2 5) exn:fail?))
 
+;; Make sure chaperoned keys are not collapsed, and make sure
+;; parameters are in place for a chaperone invoked for a mark
+;; that is in tail position with respect to `parameterize`
+(module regression-test-for-chaperoned-keys racket/base
+  (provide f)
+  (define key
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (v) (printf "get\n") v)
+     (lambda (v) (printf "set\n") v)))
+  (define (f)
+    (with-continuation-mark
+     key 1
+     (with-continuation-mark
+      key 2
+      'ok))))
+
+(let ([o (open-output-bytes)])
+  (let ([f (dynamic-require ''regression-test-for-chaperoned-keys 'f)])
+    (parameterize ([current-output-port o])
+      (f)))
+  (test #"set\nset\n" get-output-bytes o))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that caching works right for marks in continuations that
 ;; capture metacontinuations
