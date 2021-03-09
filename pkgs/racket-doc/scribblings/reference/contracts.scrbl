@@ -2564,28 +2564,6 @@ contracts.  The error messages assume that the function named by
   the value cannot be coerced to a contract.
 }
 
-@defproc[(get/build-val-first-projection [c contract?])
-         (-> blame? (-> any/c (-> any/c any/c)))]{
-  Returns the @racket[_val-first] projection for @racket[c].
-              
-  See @racket[make-contract] for more details.
-  
-@history[#:added "6.1.1.5"]
-}
-
-@defproc[(get/build-late-neg-projection [c contract?])
-         (-> blame? (-> any/c any/c any/c))]{
- Returns the @racket[_late-neg] projection for @racket[c].
-              
- If @racket[c] does not have a @racket[_late-neg] contract,
- then this function uses the original projection for it
- and logs a warning to the @racket['racket/contract] logger.
- 
- See @racket[make-contract] for more details.
-  
- @history[#:added "6.2.900.11"]
-}
-
 @defparam[skip-projection-wrapper? wrap? boolean? #:value #f]{
  The functions @racket[make-chaperone-contract] and 
  @racket[build-chaperone-contract-property] wrap their
@@ -3655,8 +3633,27 @@ currently being checked.
   @history[#:added "6.3"]
 }
 
+@defproc[(get/build-val-first-projection [c contract?])
+         (-> blame? (-> any/c (-> any/c any/c)))]{
+  Returns the @racket[_val-first] projection for @racket[c].
 
+  See @racket[make-contract] for more details.
 
+  @history[#:added "6.1.1.5"]
+}
+
+@defproc[(get/build-late-neg-projection [c contract?])
+         (-> blame? (-> any/c any/c any/c))]{
+ Returns the @racket[_late-neg] projection for @racket[c].
+
+ If @racket[c] does not have a @racket[_late-neg] contract,
+ then this function uses the original projection for it
+ and logs a warning to the @racket['racket/contract] logger.
+
+ See @racket[make-contract] for more details.
+
+ @history[#:added "6.2.900.11"]
+}
 
 @section{@racketmodname[racket/contract/base]}
 
