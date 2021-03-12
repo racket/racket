@@ -201,6 +201,11 @@ flags:
         @racket[module-predefined?]. This option is normally embedded
         in a stand-alone binary that also embeds Racket code.}
 
+  @item{@FlagFirst{Y} @nonterm{file} @nonterm{n} @nonterm{m} @nonterm{p} :
+        Like @Flag{k} @nonterm{n} @nonterm{m} @nonterm{p}, but reading
+        from @nonterm{file} (without any adjustment on Mac OS or Windows
+        for a segment or resource offset).}
+
   @item{@FlagFirst{m} or @DFlagFirst{main} : Evaluates a call to
         @racketidfont{main} as bound in the top-level environment. All
         of the command-line arguments that are not processed as
@@ -473,7 +478,8 @@ Extra arguments following the last option are available from the
 @history[#:changed "6.90.0.17" @elem{Added @Flag{O}/@DFlag{stdout}.}
          #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}
          #:changed "7.8.0.6" @elem{Added @Flag{Z}.}
-         #:changed "8.0.0.10" @elem{Added @Flag{E}.}]
+         #:changed "8.0.0.10" @elem{Added @Flag{E}.}
+         #:changed "8.0.0.11" @elem{Added @Flag{Y}.}]
 
 @; ----------------------------------------------------------------------
 

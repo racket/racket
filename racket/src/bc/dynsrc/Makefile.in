@@ -60,7 +60,7 @@ MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/racket.e
 dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 	$(PLAIN_CC) $(ALL_CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
 
-../starter@NOT_MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/ustart.c
+../starter@NOT_MINGW@@EXE_SUFFIX@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/unix_self.inc
 	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter@EXE_SUFFIX@ $(srcdir)/../../start/ustart.c
 
 PARSE_CMDL = $(srcdir)/../../start/parse_cmdl.inc

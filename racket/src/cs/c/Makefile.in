@@ -421,7 +421,9 @@ DEF_COLLECTS_DIR@MINGW@ =
 DEF_CONFIG_DIR@MINGW@ =
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
-MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h $(srcdir)/../../start/config.inc cs_config.h
+MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h cs_config.h \
+            $(srcdir)/../../start/config.inc \
+            $(srcdir)/../../start/unix_self.inc
 
 main.o: $(MAIN_DEPS)
 	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o main.o $(srcdir)/main.c
@@ -432,7 +434,7 @@ grmain.o: $(srcdir)/grmain.c $(MAIN_DEPS) $(srcdir)/../../start/gui_filter.inc
 boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
 	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
 
-starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c
+starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/unix_self.inc
 	$(CC) $(CFLAGS) -o starter $(srcdir)/../../start/ustart.c
 
 

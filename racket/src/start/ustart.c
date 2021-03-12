@@ -262,6 +262,20 @@ static char *next_string(char *s)
   return s + strlen(s) + 1;
 }
 
+#include "unix_self.inc"
+
+#ifdef USE_GENERIC_GET_SELF_PATH
+static char *adjust_self_reference(char *me)
+{
+  return me;
+}
+#else
+static char *adjust_self_reference(char *me)
+{
+  return get_self_path(me);
+}
+#endif
+
 typedef unsigned short ELF__Half;
 typedef unsigned int ELF__Word;
 typedef unsigned long ELF__Xword;
@@ -353,7 +367,7 @@ static int try_elf_section(const char *me, int *_start, int *_decl_end, int *_pr
 
 int main(int argc, char **argv)
 {
-  char *me = argv[0], *data, **new_argv;
+  char *me = argv[0], *embedding_me, *data, **new_argv;
   char *exe_path, *lib_path, *dll_path;
   int start, decl_end, prog_end, end, count, fd, v, en, x11;
   int argpos, inpos, collcount = 1, fix_argv;
@@ -434,6 +448,11 @@ int main(int argc, char **argv)
     }
   }
 
+  /* use `me` for `-k`, unless we have a way to more directly get the
+     executable file that contains embedded code; if we do, then
+     argv[0] doesn't have to match the executable */
+  embedding_me = adjust_self_reference(me);
+
   start = as_int(config + 8);
   decl_end = as_int(config + 12);
   prog_end = as_int(config + 16);
@@ -441,7 +460,7 @@ int main(int argc, char **argv)
   count = as_int(config + 24);
   x11 = as_int(config + 28);
 
-  fix_argv = try_elf_section(me, &start, &decl_end, &prog_end, &end);
+  fix_argv = try_elf_section(embedding_me, &start, &decl_end, &prog_end, &end);
 
   {
     int offset, len;
@@ -456,14 +475,14 @@ int main(int argc, char **argv)
   }
 
   data = (char *)malloc(end - prog_end);
-  new_argv = (char **)malloc((count + argc + (2 * collcount) + 12) * sizeof(char*));
+  new_argv = (char **)malloc((count + argc + (2 * collcount) + 13) * sizeof(char*));
 
-  fd = open(me, O_RDONLY, 0);
+  fd = open(embedding_me, O_RDONLY, 0);
   lseek(fd, prog_end, SEEK_SET);
   {
     int expected_length = end - prog_end;
     if (expected_length != read(fd, data, expected_length)) {
-      printf("read failed to read all %i bytes from file %s\n", expected_length, me);
+      printf("read failed to read all %i bytes from file %s\n", expected_length, embedding_me);
       abort();
     }
   }
@@ -548,9 +567,11 @@ int main(int argc, char **argv)
   new_argv[argpos++] = absolutize(_configdir + _configdir_offset, me);
 
   if (fix_argv) {
-    /* next three args are "-k" and numbers; fix 
-       the numbers to match start, decl_end, and prog_end */
-    fix_argv = argpos + 1;
+    /* next four args are "-k" and numbers; leave room to insert the
+       filename in place of "-k", and fix the numbers to match start,
+       decl_end, and prog_end */
+    new_argv[argpos++] = "-Y";
+    fix_argv = argpos;
   }
 
   /* Add built-in flags: */
@@ -567,9 +588,10 @@ int main(int argc, char **argv)
   new_argv[argpos] = NULL;
 
   if (fix_argv) {
-    new_argv[fix_argv] = num_to_string(start);
-    new_argv[fix_argv+1] = num_to_string(decl_end);
-    new_argv[fix_argv+2] = num_to_string(prog_end);
+    new_argv[fix_argv] = embedding_me;
+    new_argv[fix_argv+1] = num_to_string(start);
+    new_argv[fix_argv+2] = num_to_string(decl_end);
+    new_argv[fix_argv+3] = num_to_string(prog_end);
   }
 
   /* Execute the original binary: */

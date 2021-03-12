@@ -403,10 +403,13 @@
                              (loop))))
                        loads))
                 (flags-loop rest-args (see saw 'non-config 'top)))]
-             [("-k")
-              (let*-values ([(n rest-args) (next-arg "starting and ending offsets" arg within-arg args)]
-                            [(m rest-args) (next-arg "first ending offset" arg within-arg (cons "-k" rest-args))]
-                            [(p rest-args) (next-arg "second ending offset" arg within-arg (cons "-k" rest-args))])
+             [("-k" "-Y")
+              (let*-values ([(f rest-args) (if (equal? arg "-Y")
+                                               (next-arg "file" arg within-arg args)
+                                               (values #f (cdr args)))]
+                            [(n rest-args) (next-arg "starting and ending offsets" arg within-arg (cons arg rest-args))]
+                            [(m rest-args) (next-arg "first ending offset" arg within-arg (cons arg rest-args))]
+                            [(p rest-args) (next-arg "second ending offset" arg within-arg (cons arg rest-args))])
                 (let* ([add-segment-offset
                         (lambda (s what)
                           (let ([n (#%string->number s)])
@@ -419,9 +422,9 @@
                   (set! loads
                         (cons
                          (lambda ()
-                           (set! embedded-load-in-places (cons (list #f n m #f) embedded-load-in-places))
-                           (embedded-load n m #f #t)
-                           (embedded-load m p #f #f))
+                           (set! embedded-load-in-places (cons (list f n m #f) embedded-load-in-places))
+                           (embedded-load n m #f #t f)
+                           (embedded-load m p #f #f f))
                          loads)))
                 (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config)))]
