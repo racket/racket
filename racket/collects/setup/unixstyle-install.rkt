@@ -221,21 +221,24 @@
   (cp src dst #:build-path? #t)
   (register-change! 'cp src dst))
 
-(define (fix-executable file)
+(define (fix-executable file #:ignore-non-executable? [ignore-non-executable? #f])
   (define (fix-binary file)
     (define (fix-one tag dir)
       (let-values ([(i o) (open-input-output-file file #:exists 'update)])
-        (let ([m (regexp-match-positions tag i)])
-          (unless m
-            (error
-             (format "could not find collection-path label in executable: ~a"
-                     file)))
-          (file-position o (cdar m))
-          (display dir o)
-          (write-byte 0 o)
-          (write-byte 0 o)
-          (close-input-port i)
-          (close-output-port o))))
+        (cond
+          [(regexp-match-positions tag i)
+           => (lambda (m)
+                (file-position o (cdar m))
+                (display dir o)
+                (write-byte 0 o)
+                (write-byte 0 o))]
+          [else
+           (unless ignore-non-executable?
+             (error
+              (format "could not find collection-path label in executable: ~a"
+                      file)))])
+        (close-input-port i)
+        (close-output-port o)))
     (fix-one #rx#"coLLECTs dIRECTORy:" (dir: 'collects))
     (fix-one #rx#"coNFIg dIRECTORy:" (dir: 'config)))
   (define (fix-script file)
@@ -258,7 +261,10 @@
             (write-bytes buf (current-output-port) (cdadr m) (caadr m2))
             (printf "librktdir=\"~a\"\n" (escaped-dir: 'librkt)))
           (write-bytes buf (current-output-port) (cdadr (or m2 m)))))))
-  (let ([magic (with-input-from-file file (lambda () (read-bytes 10)))])
+  (let ([magic (with-input-from-file file (lambda () (let ([r (read-bytes 10)])
+                                                       (if (eof-object? r)
+                                                           #""
+                                                           r))))])
     (cond [(or (regexp-match #rx#"^\177ELF" magic)
                (regexp-match #rx#"^\316\372\355\376" magic)
                (regexp-match #rx#"^\317\372\355\376" magic))
@@ -273,16 +279,16 @@
                (mv temp file)))]
           [(regexp-match #rx#"^#!/bin/sh" magic)
            (fix-script file)]
+          [ignore-non-executable? (void)]
           [else (error (format "unknown executable: ~a" file))])))
 
-(define (fix-executables bindir librktdir [binfiles #f])
-  (parameterize ([current-directory bindir])
-    (for ([f (in-list (or binfiles (ls)))] #:when (file-exists? f))
-      (fix-executable f)))
-  ;; fix the gracket & starter executables too
-  (parameterize ([current-directory librktdir])
-    (when (file-exists? "gracket") (fix-executable "gracket"))
-    (when (file-exists? "starter") (fix-executable "starter"))))
+(define (fix-executables bindir librktdir [binfiles #f] [libfiles #f])
+  (for ([dir (in-list (list bindir librktdir))]
+        [files (in-list (list binfiles libfiles))]
+        [ignore-non-executable? (in-list (list #f #t))])
+    (parameterize ([current-directory dir])
+      (for ([f (in-list (or files (ls)))] #:when (file-exists? f))
+        (fix-executable f #:ignore-non-executable? ignore-non-executable?)))))
 
 (define (fix-desktop-files appsdir bindir sharerktdir [appfiles #f])
   ;; For absolute mode, change `Exec' and `Icon' lines to
@@ -525,6 +531,7 @@
     (error "Cannot handle distribution of shared-libraries (yet)"))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (define binfiles (ls* "bin"))
+    (define libfiles (ls* "lib"))
     (if (eq? 'windows (cross-system-type))
         ;; Windows executables appear in the immediate directory:
         (for ([f (in-list (directory-list))])
@@ -558,7 +565,7 @@
       (error (format "leftovers in source tree: ~s" (ls))))
     ;; we need to know which files need fixing
     (unless bundle?
-      (fix-executables (dir: 'bin) (dir: 'librkt) binfiles)
+      (fix-executables (dir: 'bin) (dir: 'librkt) binfiles libfiles)
       (fix-desktop-files (dir: 'apps) (dir: 'bin) (dir: 'sharerkt) appfiles)
       (write-uninstaller)
       (write-config)))
