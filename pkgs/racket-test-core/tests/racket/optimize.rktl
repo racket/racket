@@ -2680,6 +2680,10 @@
 
 (let ([test-implies
        (lambda (pred1 pred2 [val '=>])
+         (test-comp `(lambda (z) (when (,pred1 z) (,pred1 z)))
+                    `(lambda (z) (when (,pred1 z) #t)))
+         (test-comp `(lambda (z) (when (,pred2 z) (,pred2 z)))
+                    `(lambda (z) (when (,pred2 z) #t)))
          (cond
            [(eq? val '=>) 
             (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
@@ -2690,6 +2694,11 @@
             (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
                        `(lambda (z) (when (,pred2 z) #f))
                        #f)]
+           [(eq? val '=)
+            (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
+                       `(lambda (z) (when (,pred1 z) #t)))
+            (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
+                       `(lambda (z) (when (,pred2 z) #t)))]
            [(eq? val '!=) 
             (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
                        `(lambda (z) (when (,pred1 z) #f)))
@@ -2714,17 +2723,15 @@
   (test-implies 'null? 'k:list-pair? '!=)
   (test-implies 'null? 'pair? '!=)
   (test-implies 'null? 'list?)
-  (unless (eq? 'chez-scheme (system-type 'vm))
-    (test-implies 'k:list-pair? 'pair?)
-    (test-implies 'k:list-pair? 'list?))
+  (test-implies 'k:list-pair? 'pair?)
+  (test-implies 'k:list-pair? 'list?)
   (test-implies 'list? 'pair? '?)
-  (test-implies 'k:interned-char? 'char?)
+  (test-implies 'k:interned-char? 'char? (if (eq? 'chez-scheme (system-type 'vm)) '= '=>))
   (test-implies 'not 'boolean?)
   (test-implies 'k:true-object? 'boolean?)
 )
 
-(test-comp #:except 'chez-scheme ; list-pair? is not primitive enough for cptypes
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (list? z)
                          (pair? z))
                 (k:list-pair? z)))
@@ -2732,7 +2739,7 @@
               (when (and (list? z)
                          (pair? z))
                 #t)))
-(test-comp #:except 'chez-scheme
+(test-comp #:except 'chez-scheme 
            '(lambda (z)
               (when (and (list? z)
                          (not (null? z)))
@@ -2787,20 +2794,20 @@
                     `(let ([e ,expr])
                        (list ',pred-name e e ,val))))])
 
-  (unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't yet specialize `list?`
-    (test-reduce 'list? 0 #f)
-    (test-reduce 'list? ''())
-    (test-reduce 'list? ''(1))
-    (test-reduce 'list? ''(1 2))
-    #;(test-reduce 'list? ''(1 . 2) #f)
+  (test-reduce 'list? 0 #f)
+  (test-reduce 'list? ''())
+  (test-reduce 'list? ''(1))
+  (test-reduce 'list? ''(1 2))
+  #;(test-reduce 'list? ''(1 . 2) #f)
+  (unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't yet consider (list ...) as immutable
     (test-reduce 'list? '(list))
     (test-reduce 'list? '(list 1))
     (test-reduce 'list? '(list 1 2))
     #;(test-reduce 'list? '(cons 1 2) #f)
     (test-reduce 'list? '(cons 1 null))
     (test-reduce 'list? '(cons 1 (list 2 3)))
-    (test-reduce 'list? '(cdr (list 1 2)))
-    (test-reduce 'list? '(cdr (list 1))))
+    (test-reduce 'list? '(cdr (list 1 2))))
+  (test-reduce 'list? '(cdr (list 1)))
 
   (test-reduce 'null? 0 #f)
   (test-reduce 'null? ''())

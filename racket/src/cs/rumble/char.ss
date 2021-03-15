@@ -29,7 +29,7 @@
   (and (#%memq (#%char-general-category x) '(Sm Sc Sk So)) #t))
 
 (define (interned-char? v)
-  (and (char? v) (< (char->integer v) 256)))
+  (char? v))
 
 (define (char-general-category ch)
   (or (with-global-lock* (getprop (#%char-general-category ch) 'downcase #f))
