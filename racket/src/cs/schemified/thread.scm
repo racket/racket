@@ -13861,13 +13861,13 @@
                                                   (|#%app|
                                                    host:fork-place
                                                    (lambda ()
-                                                     (call-in-another-main-thread
-                                                      orig-cust_0
-                                                      (lambda ()
-                                                        (begin
-                                                          (unsafe-place-local-set!
-                                                           cell.1$2
-                                                           new-place_0)
+                                                     (begin
+                                                       (unsafe-place-local-set!
+                                                        cell.1$2
+                                                        new-place_0)
+                                                       (call-in-another-main-thread
+                                                        orig-cust_0
+                                                        (lambda ()
                                                           (begin
                                                             (set-place-id!
                                                              new-place_0
@@ -14448,7 +14448,7 @@
 (define make-message-queue
   (lambda ()
     (let ((app_0 (|#%app| host:make-mutex)))
-      (message-queue4.1 app_0 '() '() (box #f) hash2725 (box #f)))))
+      (message-queue4.1 app_0 '() '() (box #f) hash2610 (box #f)))))
 (define enqueue!
   (lambda (mq_0 msg_0 wk_0)
     (let ((lock_0 (message-queue-lock mq_0)))
@@ -14463,7 +14463,7 @@
                (cons msg_0 (message-queue-rev-q mq_0)))
               (let ((waiters_0 (message-queue-waiters mq_0)))
                 (begin
-                  (set-message-queue-waiters! mq_0 hash2725)
+                  (set-message-queue-waiters! mq_0 hash2610)
                   (set-box! (message-queue-out-key-box mq_0) wk_0)
                   (set-box! (message-queue-in-key-box mq_0) #f)
                   (|#%app| host:mutex-release lock_0)

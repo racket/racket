@@ -90,11 +90,11 @@
   (define host-thread
     (host:fork-place
      (lambda ()
+       (set! current-place new-place)
        (start-implicit-atomic-mode)
        (call-in-another-main-thread
         orig-cust
         (lambda ()
-          (set! current-place new-place)
           (set-place-id! new-place (get-pthread-id))
           (set-place-host-roots! new-place (host:current-place-roots))
           (current-thread-group root-thread-group)
@@ -155,6 +155,7 @@
      (place-has-activity! p))
    (host:mutex-release (place-lock p))))
 
+;; called with place's lock held or for the current place
 (define (place-has-activity! p)
   (set-box! (place-activity-canary p) #t)
   (sandman-wakeup (place-wakeup-handle p)))
@@ -277,7 +278,7 @@
                  '()
                  '()
                  (box #f)
-                 #hash()
+                 #hasheq()
                  (box #f)))
 
 (define (enqueue! mq msg wk)
@@ -286,7 +287,7 @@
    (host:mutex-acquire lock)
    (set-message-queue-rev-q! mq (cons msg (message-queue-rev-q mq)))
    (define waiters (message-queue-waiters mq))
-   (set-message-queue-waiters! mq '#hash())
+   (set-message-queue-waiters! mq '#hasheq())
    (set-box! (message-queue-out-key-box mq) wk)
    (set-box! (message-queue-in-key-box mq) #f)
    (host:mutex-release lock)

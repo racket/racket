@@ -97,6 +97,7 @@
 
 ;; In atomic mode
 (define (semaphore-post-all/atomic s)
+  (assert-atomic-mode)
   (set-semaphore-count! s +inf.0)
   (queue-remove-all!
    s
