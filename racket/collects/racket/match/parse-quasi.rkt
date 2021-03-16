@@ -42,6 +42,8 @@
 ;; parse stx as a quasi-pattern
 ;; parse parses unquote
 (define (parse-quasi stx parse)
+  (define (rearm new-stx) (syntax-rearm new-stx stx))
+  (define (rearm+pq new-stx) (pq (rearm new-stx)))
   (define (pq s) (parse-quasi s parse))
   (syntax-case stx (quasiquote unquote quote unquote-splicing)
     [(unquote p) (parse #'p)]
@@ -57,19 +59,7 @@
                                stx #'p)))]
     [(p dd . rest)
      (ddk? #'dd)
-     ;; FIXME: parameterize dd-parse so that it can be used here
-     (let* ([count (ddk? #'dd)]
-            [min (and (number? count) count)])
-       (make-GSeq
-        (parameterize ([match-...-nesting (add1 (match-...-nesting))])
-          (list (list (pq #'p))))
-        (list min)
-        ;; no upper bound
-        (list #f)
-        ;; patterns in p get bound to lists
-        (list #f)
-        (pq #'rest)
-        #f))]
+     (dd-parse rearm+pq #'p #'dd #'rest #'list?)]
     [(a . b) (make-Pair (pq #'a) (pq #'b))]
     ;; prefab structs
     [struct
