@@ -451,5 +451,8 @@
                             other-plt-tests)
              'verbose))
 
-(unless (= 0 (run-all-tests))
-  (error "Match Tests did not pass."))
+(module+ main
+  (unless (= 0 (run-all-tests))
+    (error "Match Tests did not pass.")))
+(module+ test
+  (run-all-tests))
