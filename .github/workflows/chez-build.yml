@@ -16,8 +16,9 @@ on:
       
 jobs:
   build-linux:
-    runs-on: ubuntu-18.04
-    
+    runs-on: ubuntu-20.04
+    container: ubuntu:20.04
+
     strategy:
       fail-fast: false
       matrix:
@@ -27,6 +28,10 @@ jobs:
       MACH: ${{ matrix.mach }}
 
     steps:
+      - name: Download base dependencies
+        run: |
+          apt-get update
+          apt-get install -y make git gcc
       - uses: actions/checkout@v2
         with:
           fetch-depth: 50
@@ -37,13 +42,13 @@ jobs:
       - name: Install libs for 32-bit
         if: matrix.mach == 'i3le' || matrix.mach == 'ti3le'
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib lib32ncurses5-dev libx32ncurses5-dev libssl-dev:i386
+          dpkg --add-architecture i386
+          apt-get update
+          apt-get install -y gcc-multilib lib32ncurses-dev libssl-dev:i386
       - name: Install libs for 64-bit
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libncurses5-dev libssl-dev
+          apt-get update
+          apt-get install -y libncurses5-dev libssl-dev libx11-dev
       - name: Build Chez with PB boot files
         working-directory: racket/src/ChezScheme
         run: |
