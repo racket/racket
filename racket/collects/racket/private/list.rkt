@@ -132,11 +132,10 @@
                           "not a proper list: "
                           orig-l))
   (define (bad-item who a orig-l)
-    (raise-mismatch-error who
-                          "non-pair found in list: "
-                          a
-                          " in "
-                          orig-l))
+    (raise-arguments-error who
+                           "non-pair found in list"
+                           "non-pair" a
+                           "list" orig-l))
 
   (define-values (assq assv assoc assf)
     (let ()
