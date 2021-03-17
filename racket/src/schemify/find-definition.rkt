@@ -129,7 +129,7 @@
               (for/fold ([knowns knowns]) ([id (in-list ids)]
                                            [rhs (in-list rhss)])
                 (define-values (new-knowns info)
-                  (find-definitions `(define-values (,id) ,rhs)
+                  (find-definitions (propagate-inline-hint v `(define-values (,id) ,rhs))
                                     prim-knowns knowns imports mutated simples unsafe-mode? target
                                     #:optimize? optimize?))
                 new-knowns)
@@ -137,3 +137,10 @@
             [else (values knowns #f)])]
          [`,_  (values knowns #f)]))]
     [`,_ (values knowns #f)]))
+
+;; ----------------------------------------
+
+(define (propagate-inline-hint defn new-defn)
+  (if (wrap-property defn 'compiler-hint:cross-module-inline)
+      (wrap-property-set new-defn 'compiler-hint:cross-module-inline #t)
+      new-defn))

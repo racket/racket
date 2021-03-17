@@ -16028,11 +16028,13 @@
                                                                            (call-with-values
                                                                             (lambda ()
                                                                               (let ((temp26_0
-                                                                                     (list
-                                                                                      'define-values
+                                                                                     (propagate-inline-hint
+                                                                                      v5_0
                                                                                       (list
-                                                                                       id_0)
-                                                                                      rhs_2)))
+                                                                                       'define-values
+                                                                                       (list
+                                                                                        id_0)
+                                                                                       rhs_2))))
                                                                                 (find-definitions.1
                                                                                  optimize?2_0
                                                                                  hash2610
@@ -16069,6 +16071,11 @@
                        (loop_0 rhs_0)))
                      (args (raise-binding-result-arity-error 2 args))))
                    (values knowns7_0 #f)))))))))))
+(define propagate-inline-hint
+  (lambda (defn_0 new-defn_0)
+    (if (wrap-property defn_0 'compiler-hint:cross-module-inline)
+      (wrap-property-set new-defn_0 'compiler-hint:cross-module-inline #t)
+      new-defn_0)))
 (define struct-convert
   (lambda (form_0
            prim-knowns_0
