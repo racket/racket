@@ -580,24 +580,32 @@ effectively shuffles the list.}
 @; ----------------------------------------
 @section{List Searching}
 
-@defproc[(member [v any/c] [lst list?]
+@defproc[(member [v any/c] [lst (or/c list? any/c)]
                  [is-equal? (any/c any/c -> any/c) equal?])
-         (or/c list? #f)]{
+         (or/c #f list? any/c)]{
 
 Locates the first element of @racket[lst] that is @racket[equal?] to
 @racket[v].  If such an element exists, the tail of @racket[lst]
 starting with that element is returned.  Otherwise, the result is
 @racket[#f].
 
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely start with a chain of pairs until a matching element is
+found. If no matching element is found, then @racket[lst] must be a
+list (and not a cyclic list). The result can be a non-list in the case
+that an element is found and the returned tail of @racket[lst] is a
+non-list.
+
 @mz-examples[
   (member 2 (list 1 2 3 4))
   (member 9 (list 1 2 3 4))
   (member #'x (list #'x #'y) free-identifier=?)
-  (member #'a (list #'x #'y) free-identifier=?)]}
+  (member #'a (list #'x #'y) free-identifier=?)
+  (member 'b '(a b . etc))]}
 
 
-@defproc[(memv [v any/c] [lst list?])
-         (or/c list? #f)]{
+@defproc[(memv [v any/c] [lst (or/c list? any/c)])
+         (or/c #f list? any/c)]{
 
 Like @racket[member], but finds an element using @racket[eqv?].
 
@@ -606,8 +614,8 @@ Like @racket[member], but finds an element using @racket[eqv?].
   (memv 9 (list 1 2 3 4))]}
 
 
-@defproc[(memq [v any/c] [lst list?])
-         (or/c list? #f)]{
+@defproc[(memq [v any/c] [lst (or/c list? any/c)])
+         (or/c #f list? any/c)]{
 
 Like @racket[member], but finds an element using @racket[eq?].
 
@@ -616,8 +624,8 @@ Like @racket[member], but finds an element using @racket[eq?].
   (memq 9 (list 1 2 3 4))]}
 
 
-@defproc[(memf [proc procedure?] [lst list?])
-         (or/c list? #f)]{
+@defproc[(memf [proc procedure?] [lst (or/c list? any/c)])
+         (or/c #f list? any/c)]{
 
 Like @racket[member], but finds an element using the predicate
 @racket[proc]; an element is found when @racket[proc] applied to the
@@ -642,7 +650,7 @@ tail of @racket[lst] or @racket[#f].
 
 
 @defproc[(assoc [v any/c]
-                [lst (listof pair?)]
+                [lst (or/c (listof pair?) any/c)]
                 [is-equal? (any/c any/c -> any/c) equal?])
          (or/c pair? #f)]{
 
@@ -650,6 +658,11 @@ Locates the first element of @racket[lst] whose @racket[car] is equal to
 @racket[v] according to @racket[is-equal?].  If such an element exists,
 the pair (i.e., an element of @racket[lst]) is returned.  Otherwise, the
 result is @racket[#f].
+
+The @racket[lst] argument need not actually be a list of pairs;
+@racket[lst] must merely start with a chain of pairs contains pairs
+until a matching element is found. If no matching element is found,
+then @racket[lst] must be a list of pairs (and not a cyclic list).
 
 @mz-examples[
   (assoc 3 (list (list 1 2) (list 3 4) (list 5 6)))
@@ -659,7 +672,7 @@ result is @racket[#f].
          (lambda (a b) (< (abs (- a b)) 1)))]}
 
 
-@defproc[(assv [v any/c] [lst (listof pair?)])
+@defproc[(assv [v any/c] [lst (or/c (listof pair?) any/c)])
          (or/c pair? #f)]{
 
 Like @racket[assoc], but finds an element using @racket[eqv?].
@@ -668,7 +681,7 @@ Like @racket[assoc], but finds an element using @racket[eqv?].
   (assv 3 (list (list 1 2) (list 3 4) (list 5 6)))]}
 
 
-@defproc[(assq [v any/c] [lst (listof pair?)])
+@defproc[(assq [v any/c] [lst (or/c (listof pair?) any/c)])
          (or/c pair? #f)]{
 
 Like @racket[assoc], but finds an element using @racket[eq?].
@@ -677,7 +690,7 @@ Like @racket[assoc], but finds an element using @racket[eq?].
   (assq 'c (list (list 'a 'b) (list 'c 'd) (list 'e 'f)))]}
 
 
-@defproc[(assf [proc procedure?] [lst (listof pair?)])
+@defproc[(assf [proc procedure?] [lst (or/c (listof pair?) any/c)])
          (or/c pair? #f)]{
 
 Like @racket[assoc], but finds an element using the predicate
