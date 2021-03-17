@@ -559,6 +559,8 @@
   [mcons (known-procedure/allocates 4)]
   [memory-order-acquire (known-procedure/single-valued 1)]
   [memory-order-release (known-procedure/single-valued 1)]
+  [memq (known-procedure/single-valued 4)]
+  [memv (known-procedure/single-valued 4)]
   [min (known-procedure/folding -2)]
   [modulo (known-procedure/folding 4)]
   [mpair? (known-procedure/pure/folding 2)]

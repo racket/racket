@@ -328,8 +328,9 @@
   (if (eq? memq-name 'member)
       (arity-test memq 2 3)
       (arity-test memq 2 2))
-  (err/rt-test (memq 'a 1) exn:application:mismatch?)
-  (err/rt-test (memq 'a '(1 . 2)) exn:application:mismatch?))
+  (err/rt-test (memq 'a 1) exn:fail:contract? #rx"not a proper list")
+  (err/rt-test (memq 'a '(1 . 2)) exn:fail:contract? #rx"not a proper list")
+  (err/rt-test (memq 'a (read (open-input-string "#0=(1 . #0#)"))) exn:fail:contract? #rx"not a proper list"))
 
 (test-mem memq 'memq)
 (test-mem memv 'memv)

@@ -78,8 +78,6 @@
                    [delete-directory chez:delete-directory]
                    [filter chez:filter]
                    [member chez:member]
-                   [memv chez:memv]
-                   [memq chez:memq]
                    [error chez:error]
                    [raise chez:raise]
                    [exit-handler chez:exit-handler]

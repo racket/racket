@@ -162,113 +162,6 @@
 (define hash2610 (hasheq))
 (define hash2589 (hasheqv))
 (define hash2725 (hash))
-(define bad-list$1
-  (|#%name|
-   bad-list
-   (lambda (who_0 orig-l_0)
-     (begin (raise-mismatch-error who_0 "not a proper list: " orig-l_0)))))
-(define memq
-  (|#%name|
-   memq
-   (lambda (v_0 orig-l_0)
-     (begin
-       (letrec*
-        ((loop_0
-          (|#%name|
-           loop
-           (lambda (ls_0)
-             (begin
-               (if (null? ls_0)
-                 #f
-                 (if (not (pair? ls_0))
-                   (begin-unsafe
-                    (raise-mismatch-error
-                     'memq
-                     "not a proper list: "
-                     orig-l_0))
-                   (if (eq? v_0 (car ls_0)) ls_0 (loop_0 (cdr ls_0))))))))))
-        (loop_0 orig-l_0))))))
-(define memv
-  (|#%name|
-   memv
-   (lambda (v_0 orig-l_0)
-     (begin
-       (letrec*
-        ((loop_0
-          (|#%name|
-           loop
-           (lambda (ls_0)
-             (begin
-               (if (null? ls_0)
-                 #f
-                 (if (not (pair? ls_0))
-                   (begin-unsafe
-                    (raise-mismatch-error
-                     'memv
-                     "not a proper list: "
-                     orig-l_0))
-                   (if (eqv? v_0 (car ls_0)) ls_0 (loop_0 (cdr ls_0))))))))))
-        (loop_0 orig-l_0))))))
-(define member
-  (let ((default_0
-         (|#%name|
-          member
-          (lambda (v_0 orig-l_0)
-            (begin
-              (letrec*
-               ((loop_0
-                 (|#%name|
-                  loop
-                  (lambda (ls_0)
-                    (begin
-                      (if (null? ls_0)
-                        #f
-                        (if (not (pair? ls_0))
-                          (begin-unsafe
-                           (raise-mismatch-error
-                            'member
-                            "not a proper list: "
-                            orig-l_0))
-                          (if (equal? v_0 (car ls_0))
-                            ls_0
-                            (loop_0 (cdr ls_0))))))))))
-               (loop_0 orig-l_0)))))))
-    (|#%name|
-     member
-     (case-lambda
-      ((v_0 orig-l_0) (begin (default_0 v_0 orig-l_0)))
-      ((v_0 orig-l_0 eq?_0)
-       (begin
-         (if (if (procedure? eq?_0) (procedure-arity-includes? eq?_0 2) #f)
-           (void)
-           (raise-argument-error
-            'member
-            "(procedure-arity-includes/c 2)"
-            eq?_0))
-         ((|#%name|
-           member
-           (lambda (v_1 orig-l_1)
-             (begin
-               (letrec*
-                ((loop_0
-                  (|#%name|
-                   loop
-                   (lambda (ls_0)
-                     (begin
-                       (if (null? ls_0)
-                         #f
-                         (if (not (pair? ls_0))
-                           (begin-unsafe
-                            (raise-mismatch-error
-                             'member
-                             "not a proper list: "
-                             orig-l_1))
-                           (if (|#%app| eq?_0 v_1 (car ls_0))
-                             ls_0
-                             (loop_0 (cdr ls_0))))))))))
-                (loop_0 orig-l_1)))))
-          v_0
-          orig-l_0)))))))
 (define select-handler/no-breaks
   (lambda (e_0 bpz_0 l_0)
     (with-continuation-mark*
@@ -972,7 +865,7 @@
         (void)
         (raise-argument-error 'hash-empty? "hash?" table_0))
       (zero? (hash-count table_0)))))
-(define finish35
+(define finish27
   (make-struct-type-install-properties
    '(queue)
    2
@@ -993,7 +886,7 @@
    #f
    2
    3))
-(define effect_2998 (finish35 struct:queue))
+(define effect_2998 (finish27 struct:queue))
 (define queue1.1
   (|#%name|
    queue
@@ -1006,7 +899,7 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define finish37
+(define finish29
   (make-struct-type-install-properties
    '(node)
    3
@@ -1027,7 +920,7 @@
    #f
    3
    6))
-(define effect_1943 (finish37 struct:node$2))
+(define effect_1943 (finish29 struct:node$2))
 (define node2.1
   (|#%name|
    node
@@ -1240,7 +1133,7 @@
   (hash-ref (primitive-table '|#%engine|) 'continuation-current-primitive #f))
 (define host:prop:unsafe-authentic-override
   (hash-ref (primitive-table '|#%engine|) 'prop:unsafe-authentic-override #f))
-(define finish45
+(define finish37
   (make-struct-type-install-properties
    '(node)
    5
@@ -1261,7 +1154,7 @@
    #f
    5
    0))
-(define effect_1944 (finish45 struct:node$1))
+(define effect_1944 (finish37 struct:node$1))
 (define node1.1$1
   (|#%name|
    node
@@ -1513,7 +1406,7 @@
     (if (not (node-right t_0))
       (let ((app_0 (node-key t_0))) (values app_0 (node-val t_0)))
       (max-key+value (node-right t_0)))))
-(define finish75
+(define finish67
   (make-struct-type-install-properties
    '(sandman)
    11
@@ -1540,7 +1433,7 @@
    #f
    11
    2047))
-(define effect_2951 (finish75 struct:sandman))
+(define effect_2951 (finish67 struct:sandman))
 (define sandman1.1
   (|#%name|
    sandman
@@ -1978,7 +1871,7 @@
              'guard-for-prop:evt
              "(or/c evt? (procedure-arity-includes/c 1) exact-nonnegative-integer?)"
              v_0))))))))
-(define finish93
+(define finish85
   (make-struct-type-install-properties
    '(selector-prop-evt-value)
    1
@@ -1999,7 +1892,7 @@
    #f
    1
    0))
-(define effect_2735 (finish93 struct:selector-prop-evt-value))
+(define effect_2735 (finish85 struct:selector-prop-evt-value))
 (define selector-prop-evt-value1.1
   (|#%name|
    selector-prop-evt-value
@@ -2026,7 +1919,7 @@
      (begin
        (let ((or-part_0 (primary-evt? v_0)))
          (if or-part_0 or-part_0 (secondary-evt? v_0)))))))
-(define finish95
+(define finish87
   (make-struct-type-install-properties
    '(poller)
    1
@@ -2047,7 +1940,7 @@
    #f
    1
    0))
-(define effect_2545 (finish95 struct:poller))
+(define effect_2545 (finish87 struct:poller))
 (define poller2.1
   (|#%name|
    poller
@@ -2055,7 +1948,7 @@
     (make-record-constructor-descriptor struct:poller #f #f))))
 (define poller? (|#%name| poller? (record-predicate struct:poller)))
 (define poller-proc (|#%name| poller-proc (record-accessor struct:poller 0)))
-(define finish97
+(define finish89
   (make-struct-type-install-properties
    '(poll-ctx)
    4
@@ -2076,7 +1969,7 @@
    #f
    4
    8))
-(define effect_2667 (finish97 struct:poll-ctx))
+(define effect_2667 (finish89 struct:poll-ctx))
 (define poll-ctx3.1
   (|#%name|
    poll-ctx
@@ -2093,7 +1986,7 @@
   (|#%name| poll-ctx-incomplete? (record-accessor struct:poll-ctx 3)))
 (define set-poll-ctx-incomplete?!
   (|#%name| set-poll-ctx-incomplete?! (record-mutator struct:poll-ctx 3)))
-(define finish100
+(define finish92
   (make-struct-type-install-properties
    '(never-evt)
    0
@@ -2117,7 +2010,7 @@
    #f
    0
    0))
-(define effect_2474 (finish100 struct:never-evt))
+(define effect_2474 (finish92 struct:never-evt))
 (define never-evt4.1
   (|#%name|
    never-evt
@@ -2134,7 +2027,7 @@
        ($value
         (if (impersonator? v) (never-evt?_1958 (impersonator-val v)) #f))))))
 (define the-never-evt (never-evt4.1))
-(define finish103
+(define finish95
   (make-struct-type-install-properties
    '(always-evt)
    0
@@ -2158,7 +2051,7 @@
    #f
    0
    0))
-(define effect_2333 (finish103 struct:always-evt))
+(define effect_2333 (finish95 struct:always-evt))
 (define always-evt5.1
   (|#%name|
    always-evt
@@ -2175,7 +2068,7 @@
        ($value
         (if (impersonator? v) (always-evt?_2466 (impersonator-val v)) #f))))))
 (define the-always-evt (always-evt5.1))
-(define finish106
+(define finish98
   (make-struct-type-install-properties
    '(async-evt)
    0
@@ -2199,7 +2092,7 @@
    #f
    0
    0))
-(define effect_2210 (finish106 struct:async-evt))
+(define effect_2210 (finish98 struct:async-evt))
 (define async-evt6.1
   (|#%name|
    async-evt
@@ -2216,7 +2109,7 @@
        ($value
         (if (impersonator? v) (async-evt?_2619 (impersonator-val v)) #f))))))
 (define the-async-evt (async-evt6.1))
-(define finish109
+(define finish101
   (make-struct-type-install-properties
    '(evt)
    2
@@ -2233,7 +2126,7 @@
    'wrap-evt))
 (define struct:wrap-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 2 0))
-(define effect_2815 (finish109 struct:wrap-evt))
+(define effect_2815 (finish101 struct:wrap-evt))
 (define wrap-evt7.1
   (|#%name|
    wrap-evt
@@ -2274,7 +2167,7 @@
          s
          'evt
          'wrap))))))
-(define finish114
+(define finish106
   (make-struct-type-install-properties
    '(handle-evt)
    0
@@ -2295,7 +2188,7 @@
    #f
    0
    0))
-(define effect_3118 (finish114 struct:handle-evt))
+(define effect_3118 (finish106 struct:handle-evt))
 (define handle-evt8.1
   (|#%name|
    handle-evt
@@ -2313,7 +2206,7 @@
         (if (impersonator? v)
           (handle-evt?$1_2894 (impersonator-val v))
           #f))))))
-(define finish117
+(define finish109
   (make-struct-type-install-properties
    '(control-state-evt)
    5
@@ -2337,7 +2230,7 @@
    #f
    5
    0))
-(define effect_3002 (finish117 struct:control-state-evt))
+(define effect_3002 (finish109 struct:control-state-evt))
 (define control-state-evt9.1
   (|#%name|
    control-state-evt
@@ -2445,7 +2338,7 @@
          s
          'control-state-evt
          'retry-proc))))))
-(define finish125
+(define finish117
   (make-struct-type-install-properties
    '(evt)
    1
@@ -2462,7 +2355,7 @@
    'poll-guard-evt))
 (define struct:poll-guard-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2169 (finish125 struct:poll-guard-evt))
+(define effect_2169 (finish117 struct:poll-guard-evt))
 (define poll-guard-evt10.1
   (|#%name|
    poll-guard-evt
@@ -2496,7 +2389,7 @@
          s
          'evt
          'proc))))))
-(define finish129
+(define finish121
   (make-struct-type-install-properties
    '(evt)
    1
@@ -2513,7 +2406,7 @@
    'choice-evt))
 (define struct:choice-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2613 (finish129 struct:choice-evt))
+(define effect_2613 (finish121 struct:choice-evt))
 (define choice-evt11.1
   (|#%name|
    choice-evt
@@ -2575,7 +2468,7 @@
           (if (poller? v_1)
             (|#%app| (poller-proc v_1) evt_0 poll-ctx_0)
             (if (1/evt? v_1) (values #f v_1) (values #f the-never-evt))))))))
-(define finish132
+(define finish124
   (make-struct-type-install-properties
    '(delayed-poll)
    1
@@ -2596,7 +2489,7 @@
    #f
    1
    0))
-(define effect_2263 (finish132 struct:delayed-poll))
+(define effect_2263 (finish124 struct:delayed-poll))
 (define delayed-poll12.1
   (|#%name|
    delayed-poll
@@ -2606,7 +2499,7 @@
   (|#%name| delayed-poll? (record-predicate struct:delayed-poll)))
 (define delayed-poll-resume
   (|#%name| delayed-poll-resume (record-accessor struct:delayed-poll 0)))
-(define finish135
+(define finish127
   (make-struct-type-install-properties
    '(poller-evt)
    1
@@ -2627,7 +2520,7 @@
    #f
    1
    0))
-(define effect_2260 (finish135 struct:poller-evt))
+(define effect_2260 (finish127 struct:poller-evt))
 (define poller-evt13.1
   (|#%name|
    poller-evt
@@ -2662,7 +2555,7 @@
 (define-values
  (prop:waiter waiter? waiter-ref)
  (make-struct-type-property 'waiter))
-(define finish138
+(define finish130
   (make-struct-type-install-properties
    '(waiter-methods)
    2
@@ -2683,7 +2576,7 @@
    #f
    2
    0))
-(define effect_2191 (finish138 struct:waiter-methods))
+(define effect_2191 (finish130 struct:waiter-methods))
 (define waiter-methods1.1
   (|#%name|
    waiter-methods
@@ -2706,7 +2599,7 @@
 (define waiter-suspend!
   (lambda (w_0 interrupt-cb_0)
     (|#%app| (waiter-methods-suspend (waiter-ref w_0)) w_0 interrupt-cb_0)))
-(define finish141
+(define finish133
   (make-struct-type-install-properties
    '(select-waiter)
    1
@@ -2735,7 +2628,7 @@
    #f
    1
    0))
-(define effect_2826 (finish141 struct:select-waiter))
+(define effect_2826 (finish133 struct:select-waiter))
 (define select-waiter7.1
   (|#%name|
    select-waiter
@@ -2769,7 +2662,7 @@
          s
          'select-waiter
          'proc))))))
-(define finish144
+(define finish136
   (make-struct-type-install-properties
    '(custodian)
    13
@@ -2790,7 +2683,7 @@
    #f
    13
    8188))
-(define effect_2161 (finish144 struct:custodian))
+(define effect_2161 (finish136 struct:custodian))
 (define custodian1.1
   (|#%name|
    custodian
@@ -2902,7 +2795,7 @@
 (define-values
  (prop:place-message place-message? place-message-ref)
  (make-struct-type-property 'place-message))
-(define finish147
+(define finish139
   (make-struct-type-install-properties
    '(message-ized)
    1
@@ -2923,7 +2816,7 @@
    #f
    1
    0))
-(define effect_2995 (finish147 struct:message-ized))
+(define effect_2995 (finish139 struct:message-ized))
 (define message-ized1.1
   (|#%name|
    message-ized
@@ -3997,7 +3890,7 @@
                               (|#%app| (message-ized-unmessage v_1))
                               v_1)))))))))))))
        (loop_0 v_0)))))
-(define finish157
+(define finish149
   (make-struct-type-install-properties
    '(place)
    19
@@ -4024,7 +3917,7 @@
    #f
    19
    491440))
-(define effect_2619 (finish157 struct:place))
+(define effect_2619 (finish149 struct:place))
 (define place1.1
   (|#%name|
    place
@@ -4160,7 +4053,7 @@
                    (for-loop_0 lst_0))))
               (void)))))
       (void))))
-(define finish162
+(define finish154
   (make-struct-type-install-properties
    '(semaphore)
    1
@@ -4188,7 +4081,7 @@
    #f
    1
    1))
-(define effect_2927 (finish162 struct:semaphore))
+(define effect_2927 (finish154 struct:semaphore))
 (define semaphore1.1
   (|#%name|
    semaphore
@@ -4200,7 +4093,7 @@
 (define set-semaphore-count!
   (|#%name| set-semaphore-count! (record-mutator struct:semaphore 0)))
 (define count-field-pos 2)
-(define finish165
+(define finish157
   (make-struct-type-install-properties
    '(semaphore-peek-evt)
    1
@@ -4227,7 +4120,7 @@
    #f
    1
    0))
-(define effect_2414 (finish165 struct:semaphore-peek-evt))
+(define effect_2414 (finish157 struct:semaphore-peek-evt))
 (define semaphore-peek-evt2.1
   (|#%name|
    semaphore-peek-evt
@@ -4263,7 +4156,7 @@
          s
          'semaphore-peek-evt
          'sema))))))
-(define finish169
+(define finish161
   (make-struct-type-install-properties
    '(semaphore-peek-select-waiter)
    0
@@ -4284,7 +4177,7 @@
    #f
    0
    0))
-(define effect_2387 (finish169 struct:semaphore-peek-select-waiter))
+(define effect_2387 (finish161 struct:semaphore-peek-select-waiter))
 (define semaphore-peek-select-waiter3.1
   (|#%name|
    semaphore-peek-select-waiter
@@ -4505,7 +4398,7 @@
         (set-semaphore-count! s_0 (sub1 c_0))
         (internal-error
          "semaphore-wait/atomic: cannot decrement semaphore")))))
-(define finish182
+(define finish174
   (make-struct-type-install-properties
    '(node)
    2
@@ -4526,7 +4419,7 @@
    #f
    2
    3))
-(define effect_2547 (finish182 struct:node))
+(define effect_2547 (finish174 struct:node))
 (define node1.1
   (|#%name|
    node
@@ -4541,7 +4434,7 @@
   (|#%name| set-node-next! (record-mutator struct:node 1)))
 (define child-node (lambda (child_0) child_0))
 (define node-child (lambda (n_0) n_0))
-(define finish184
+(define finish176
   (make-struct-type-install-properties
    '(thread-group)
    4
@@ -4562,7 +4455,7 @@
    #f
    4
    14))
-(define effect_2514 (finish184 struct:thread-group))
+(define effect_2514 (finish176 struct:thread-group))
 (define thread-group2.1
   (|#%name|
    thread-group
@@ -4713,7 +4606,7 @@
                     (begin-unsafe n_0)
                     accum_1)))))))))
        (loop_0 (thread-group-chain-start parent_0) accum_0)))))
-(define finish196
+(define finish188
   (make-struct-type-install-properties
    '(schedule-info)
    2
@@ -4734,7 +4627,7 @@
    #f
    2
    3))
-(define effect_2462 (finish196 struct:schedule-info))
+(define effect_2462 (finish188 struct:schedule-info))
 (define schedule-info1.1
   (|#%name|
    schedule-info
@@ -4844,7 +4737,7 @@
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
 (define reference-sink
   (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
-(define finish204
+(define finish196
   (make-struct-type-install-properties
    '(plumber)
    2
@@ -4865,7 +4758,7 @@
    #f
    2
    0))
-(define effect_2412 (finish204 struct:plumber))
+(define effect_2412 (finish196 struct:plumber))
 (define plumber1.1
   (|#%name|
    plumber
@@ -4892,7 +4785,7 @@
          (raise-argument-error 'current-plumber "plumber?" v_0))
        v_0))
    'current-plumber))
-(define finish208
+(define finish200
   (make-struct-type-install-properties
    '(plumber-flush-handle)
    2
@@ -4913,7 +4806,7 @@
    #f
    2
    0))
-(define effect_2328 (finish208 struct:plumber-flush-handle))
+(define effect_2328 (finish200 struct:plumber-flush-handle))
 (define plumber-flush-handle2.1
   (|#%name|
    plumber-flush-handle
@@ -5124,7 +5017,7 @@
     (|#%name|
      exit
      (case-lambda (() (begin (exit_0 #t))) ((v1_0) (exit_0 v1_0))))))
-(define finish212
+(define finish204
   (make-struct-type-install-properties
    '(custodian-box)
    2
@@ -5150,7 +5043,7 @@
    #f
    2
    1))
-(define effect_2694 (finish212 struct:custodian-box))
+(define effect_2694 (finish204 struct:custodian-box))
 (define custodian-box1.1
   (|#%name|
    custodian-box
@@ -5164,7 +5057,7 @@
   (|#%name| custodian-box-sema (record-accessor struct:custodian-box 1)))
 (define set-custodian-box-v!
   (|#%name| set-custodian-box-v! (record-mutator struct:custodian-box 0)))
-(define finish214
+(define finish206
   (make-struct-type-install-properties
    '(willed-callback)
    2
@@ -5185,7 +5078,7 @@
    #f
    2
    0))
-(define effect_2527 (finish214 struct:willed-callback))
+(define effect_2527 (finish206 struct:willed-callback))
 (define willed-callback2.1
   (|#%name|
    willed-callback
@@ -5197,7 +5090,7 @@
   (|#%name| willed-callback-proc (record-accessor struct:willed-callback 0)))
 (define willed-callback-will
   (|#%name| willed-callback-will (record-accessor struct:willed-callback 1)))
-(define finish216
+(define finish208
   (make-struct-type-install-properties
    '(at-exit-callback)
    0
@@ -5218,7 +5111,7 @@
    #f
    0
    0))
-(define effect_2512 (finish216 struct:at-exit-callback))
+(define effect_2512 (finish208 struct:at-exit-callback))
 (define at-exit-callback3.1
   (|#%name|
    at-exit-callback
@@ -5226,7 +5119,7 @@
     (make-record-constructor-descriptor struct:at-exit-callback #f #f))))
 (define at-exit-callback?
   (|#%name| at-exit-callback? (record-predicate struct:at-exit-callback)))
-(define finish218
+(define finish210
   (make-struct-type-install-properties
    '(custodian-reference)
    1
@@ -5247,7 +5140,7 @@
    #f
    1
    1))
-(define effect_2141 (finish218 struct:custodian-reference))
+(define effect_2141 (finish210 struct:custodian-reference))
 (define custodian-reference4.1
   (|#%name|
    custodian-reference
@@ -6565,7 +6458,7 @@
                   (void)))
               (void)))))))
      (loop_0 mref_0))))
-(define finish235
+(define finish227
   (make-struct-type-install-properties
    '(thread)
    24
@@ -6612,7 +6505,7 @@
    #f
    24
    16777082))
-(define effect_2668 (finish235 struct:thread))
+(define effect_2668 (finish227 struct:thread))
 (define thread1.1
   (|#%name|
    thread
@@ -7081,7 +6974,7 @@
            (void)
            (raise-argument-error 'thread-wait "thread?" t_0))
          (1/semaphore-wait (|#%app| get-thread-dead-sema t_0)))))))
-(define finish248
+(define finish240
   (make-struct-type-install-properties
    '(thread-dead-evt)
    1
@@ -7106,7 +6999,7 @@
    #f
    1
    0))
-(define effect_2691 (finish248 struct:dead-evt))
+(define effect_2691 (finish240 struct:dead-evt))
 (define dead-evt13.1
   (|#%name|
    dead-evt
@@ -7418,7 +7311,7 @@
                     (let ((app_0 (cdr crs_0)))
                       (loop_0 app_0 (cons (car crs_0) accum_0))))))))))))
      (loop_0 (thread-custodian-references t_0) null))))
-(define finish260
+(define finish252
   (make-struct-type-install-properties
    '(transitive-resume)
    2
@@ -7439,7 +7332,7 @@
    #f
    2
    0))
-(define effect_3100 (finish260 struct:transitive-resume))
+(define effect_3100 (finish252 struct:transitive-resume))
 (define transitive-resume16.1
   (|#%name|
    transitive-resume
@@ -7549,7 +7442,7 @@
           (set-thread-interrupt-callback! t_0 #f)
           (|#%app| interrupt-callback_0))
         (void)))))
-(define finish266
+(define finish258
   (make-struct-type-install-properties
    '(suspend-resume-evt)
    2
@@ -7576,7 +7469,7 @@
    #f
    2
    2))
-(define effect_2478 (finish266 struct:suspend-resume-evt))
+(define effect_2478 (finish258 struct:suspend-resume-evt))
 (define suspend-resume-evt17.1
   (|#%name|
    suspend-resume-evt
@@ -7650,7 +7543,7 @@
          v
          'suspend-resume-evt
          'thread))))))
-(define finish272
+(define finish264
   (make-struct-type-install-properties
    '(thread-suspend-evt)
    0
@@ -7671,7 +7564,7 @@
    #f
    0
    0))
-(define effect_2442 (finish272 struct:suspend-evt))
+(define effect_2442 (finish264 struct:suspend-evt))
 (define suspend-evt18.1
   (|#%name|
    suspend-evt
@@ -7687,7 +7580,7 @@
        #t
        ($value
         (if (impersonator? v) (suspend-evt?_3224 (impersonator-val v)) #f))))))
-(define finish275
+(define finish267
   (make-struct-type-install-properties
    '(thread-resume-evt)
    0
@@ -7708,7 +7601,7 @@
    #f
    0
    0))
-(define effect_2874 (finish275 struct:resume-evt))
+(define effect_2874 (finish267 struct:resume-evt))
 (define resume-evt19.1
   (|#%name|
    resume-evt
@@ -8126,7 +8019,7 @@
                 (begin-unsafe (queue-add-front! (thread-mailbox t_0) msg_0)))
               lst_0))
            (end-atomic)))))))
-(define finish290
+(define finish282
   (make-struct-type-install-properties
    '(thread-receive-evt)
    0
@@ -8187,7 +8080,7 @@
    #f
    0
    0))
-(define effect_2506 (finish290 struct:thread-receiver-evt))
+(define effect_2506 (finish282 struct:thread-receiver-evt))
 (define thread-receiver-evt26.1
   (|#%name|
    thread-receiver-evt
@@ -8234,7 +8127,7 @@
                 #f))))
        (begin-unsafe (set! thread-engine-for-roots thread-engine_0))))
     (void)))
-(define finish294
+(define finish286
   (make-struct-type-install-properties
    '(channel)
    2
@@ -8259,7 +8152,7 @@
    #f
    2
    0))
-(define effect_2481 (finish294 struct:channel))
+(define effect_2481 (finish286 struct:channel))
 (define channel1.1
   (|#%name|
    channel
@@ -8306,7 +8199,7 @@
          s
          'channel
          'put-queue))))))
-(define finish301
+(define finish293
   (make-struct-type-install-properties
    '(channel-put-evt)
    2
@@ -8337,7 +8230,7 @@
    #f
    2
    0))
-(define effect_2715 (finish301 struct:channel-put-evt*))
+(define effect_2715 (finish293 struct:channel-put-evt*))
 (define channel-put-evt*2.1
   (|#%name|
    channel-put-evt*
@@ -8387,7 +8280,7 @@
          s
          'channel-put-evt
          'v))))))
-(define finish307
+(define finish299
   (make-struct-type-install-properties
    '(channel-select-waiter)
    1
@@ -8408,7 +8301,7 @@
    #f
    1
    0))
-(define effect_2956 (finish307 struct:channel-select-waiter))
+(define effect_2956 (finish299 struct:channel-select-waiter))
 (define channel-select-waiter3.1
   (|#%name|
    channel-select-waiter
@@ -8901,7 +8794,7 @@
                    (car args_1))
                   (loop_0 (cddr args_1))))))))))
      (loop_0 args_0))))
-(define finish337
+(define finish329
   (make-struct-type-install-properties
    '(syncing)
    5
@@ -8922,7 +8815,7 @@
    #f
    5
    31))
-(define effect_2363 (finish337 struct:syncing))
+(define effect_2363 (finish329 struct:syncing))
 (define syncing1.1
   (|#%name|
    syncing
@@ -9107,7 +9000,7 @@
          v
          'syncing
          'need-retry?))))))
-(define finish350
+(define finish342
   (make-struct-type-install-properties
    '(syncer)
    9
@@ -9128,7 +9021,7 @@
    #f
    9
    511))
-(define effect_2176 (finish350 struct:syncer))
+(define effect_2176 (finish342 struct:syncer))
 (define syncer2.1
   (|#%name|
    syncer
@@ -10637,7 +10530,7 @@
                                      (end-atomic)))))))))))))))))
           (retry_0))
          (end-atomic))))))
-(define finish400
+(define finish392
   (make-struct-type-install-properties
    '(evt)
    1
@@ -10655,7 +10548,7 @@
    'replacing-evt))
 (define struct:replacing-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 1 0))
-(define effect_2704 (finish400 struct:replacing-evt))
+(define effect_2704 (finish392 struct:replacing-evt))
 (define replacing-evt34.1
   (|#%name|
    replacing-evt
@@ -10689,7 +10582,7 @@
          s
          'evt
          'guard))))))
-(define finish404
+(define finish396
   (make-struct-type-install-properties
    '(evt)
    3
@@ -10706,7 +10599,7 @@
    'nested-sync-evt))
 (define struct:nested-sync-evt
   (make-record-type-descriptor* 'evt #f (|#%nongenerative-uid| evt) #f #f 3 0))
-(define effect_2461 (finish404 struct:nested-sync-evt))
+(define effect_2461 (finish396 struct:nested-sync-evt))
 (define nested-sync-evt35.1
   (|#%name|
    nested-sync-evt
@@ -10906,7 +10799,7 @@
 (define cell.2$3
   (unsafe-make-place-local
    (wrap-evt7.1 (unsafe-place-local-ref cell.1$5) void)))
-(define finish413
+(define finish405
   (make-struct-type-install-properties
    '(system-idle-evt)
    0
@@ -10927,7 +10820,7 @@
    #f
    0
    0))
-(define effect_2195 (finish413 struct:system-idle-evt))
+(define effect_2195 (finish405 struct:system-idle-evt))
 (define system-idle-evt1.1
   (|#%name|
    system-idle-evt
@@ -10967,7 +10860,7 @@
        (wrap-evt7.1 (unsafe-place-local-ref cell.1$5) void)))))
 (define TICKS 100000)
 (define set-schedule-quantum! (lambda (n_0) (set! TICKS n_0)))
-(define finish419
+(define finish411
   (make-struct-type-install-properties
    '(future)
    10
@@ -10988,7 +10881,7 @@
    #f
    10
    1016))
-(define effect_2258 (finish419 struct:future*))
+(define effect_2258 (finish411 struct:future*))
 (define future*1.1
   (|#%name|
    future*
@@ -11070,7 +10963,7 @@
       (if (eq? (unbox lock_0) 0)
         (internal-error "lock release failed!")
         (lock-release lock_0)))))
-(define finish422
+(define finish414
   (make-struct-type-install-properties
    '(future-event)
    6
@@ -11091,7 +10984,7 @@
    #f
    6
    63))
-(define effect_2115 (finish422 struct:future-event))
+(define effect_2115 (finish414 struct:future-event))
 (define future-event1.1
   (|#%name|
    future-event
@@ -11362,7 +11255,7 @@
 (define init-future-place! (lambda () (init-future-logging-place!)))
 (define 1/futures-enabled?
   (|#%name| futures-enabled? (lambda () (begin (|#%app| threaded?)))))
-(define finish437
+(define finish429
   (make-struct-type-install-properties
    '(future-evt)
    1
@@ -11397,7 +11290,7 @@
    #f
    1
    0))
-(define effect_2000 (finish437 struct:future-evt))
+(define effect_2000 (finish429 struct:future-evt))
 (define future-evt1.1
   (|#%name|
    future-evt
@@ -11805,7 +11698,7 @@
                    v_0))))))))))
 (define pthread-count 1)
 (define set-processor-count! (lambda (n_0) (set! pthread-count n_0)))
-(define finish441
+(define finish433
   (make-struct-type-install-properties
    '(scheduler)
    6
@@ -11826,7 +11719,7 @@
    #f
    6
    7))
-(define effect_2657 (finish441 struct:scheduler))
+(define effect_2657 (finish433 struct:scheduler))
 (define scheduler7.1
   (|#%name|
    scheduler
@@ -11851,7 +11744,7 @@
   (|#%name| set-scheduler-futures-head! (record-mutator struct:scheduler 1)))
 (define set-scheduler-futures-tail!
   (|#%name| set-scheduler-futures-tail! (record-mutator struct:scheduler 2)))
-(define finish443
+(define finish435
   (make-struct-type-install-properties
    '(worker)
    5
@@ -11872,7 +11765,7 @@
    #f
    5
    26))
-(define effect_2821 (finish443 struct:worker))
+(define effect_2821 (finish435 struct:worker))
 (define worker8.1
   (|#%name|
    worker
@@ -12699,7 +12592,7 @@
 (define check-place-activity void)
 (define set-check-place-activity!
   (lambda (proc_0) (set! check-place-activity proc_0)))
-(define finish462
+(define finish454
   (make-struct-type-install-properties
    '(alarm-evt)
    1
@@ -12732,7 +12625,7 @@
    #f
    1
    0))
-(define effect_2822 (finish462 struct:alarm-evt))
+(define effect_2822 (finish454 struct:alarm-evt))
 (define alarm-evt1.1
   (|#%name|
    alarm-evt
@@ -13258,7 +13151,7 @@
        (begin (call-with-semaphore/enable-break_0 s_0 proc_0 #f null)))
       ((s_0 proc_0 try-fail12_0 . args_0)
        (call-with-semaphore/enable-break_0 s_0 proc_0 try-fail12_0 args_0))))))
-(define finish467
+(define finish459
   (make-struct-type-install-properties
    '(will-executor)
    2
@@ -13287,7 +13180,7 @@
    #f
    2
    0))
-(define effect_2170 (finish467 struct:will-executor))
+(define effect_2170 (finish459 struct:will-executor))
 (define will-executor1.1
   (|#%name|
    will-executor
@@ -13604,7 +13497,7 @@
           v_0))
        v_0))
    'current-thread-initial-stack-size))
-(define finish471
+(define finish463
   (make-struct-type-install-properties
    '(place-event)
    4
@@ -13625,7 +13518,7 @@
    #f
    4
    15))
-(define effect_2598 (finish471 struct:place-event))
+(define effect_2598 (finish463 struct:place-event))
 (define place-event1.1
   (|#%name|
    place-event
@@ -14288,7 +14181,7 @@
                          (|#%app| (sandman-do-sleep the-sandman) #f))
                         (loop_0)))))))))))
        (loop_0)))))
-(define finish487
+(define finish479
   (make-struct-type-install-properties
    '(place-dead-evt)
    2
@@ -14332,7 +14225,7 @@
    #f
    2
    0))
-(define effect_2480 (finish487 struct:place-done-evt))
+(define effect_2480 (finish479 struct:place-done-evt))
 (define place-done-evt3.1
   (|#%name|
    place-done-evt
@@ -14394,7 +14287,7 @@
            (void)
            (raise-argument-error 'place-dead-evt "place?" p_0))
          (place-done-evt3.1 p_0 #f))))))
-(define finish491
+(define finish483
   (make-struct-type-install-properties
    '(message-queue)
    6
@@ -14415,7 +14308,7 @@
    #f
    6
    22))
-(define effect_2109 (finish491 struct:message-queue))
+(define effect_2109 (finish483 struct:message-queue))
 (define message-queue4.1
   (|#%name|
    message-queue
@@ -14549,7 +14442,7 @@
                       (void))
                     (|#%app| host:mutex-release lock_0)
                     (|#%app| success-k_0 (car q_0))))))))))))
-(define finish495
+(define finish487
   (make-struct-type-install-properties
    '(place-channel)
    6
@@ -14589,7 +14482,7 @@
    #f
    6
    0))
-(define effect_2172 (finish495 struct:pchannel))
+(define effect_2172 (finish487 struct:pchannel))
 (define pchannel5.1
   (|#%name|
    pchannel
@@ -14838,7 +14731,7 @@
       (lambda () (place-has-activity! (unsafe-place-local-ref cell.1$2)))
       (lambda () (ensure-wakeup-handle!))))
     (void)))
-(define finish505
+(define finish497
   (make-struct-type-install-properties
    '(fsemaphore)
    4
@@ -14859,7 +14752,7 @@
    #f
    4
    13))
-(define effect_2528 (finish505 struct:fsemaphore))
+(define effect_2528 (finish497 struct:fsemaphore))
 (define fsemaphore1.1
   (|#%name|
    fsemaphore
@@ -14881,7 +14774,7 @@
   (|#%name| set-fsemaphore-dependents! (record-mutator struct:fsemaphore 2)))
 (define set-fsemaphore-dep-box!
   (|#%name| set-fsemaphore-dep-box! (record-mutator struct:fsemaphore 3)))
-(define finish510
+(define finish502
   (make-struct-type-install-properties
    '(fsemaphore-box-evt)
    1
@@ -14908,7 +14801,7 @@
    #f
    1
    0))
-(define effect_2415 (finish510 struct:fsemaphore-box-evt))
+(define effect_2415 (finish502 struct:fsemaphore-box-evt))
 (define fsemaphore-box-evt2.1
   (|#%name|
    fsemaphore-box-evt
@@ -15083,7 +14976,7 @@
           fork-pthread
           (lambda () (begin (start-atomic) (|#%app| proc_0))))
          (void))))))
-(define finish513
+(define finish505
   (make-struct-type-install-properties
    '(os-semaphore)
    3
@@ -15104,7 +14997,7 @@
    #f
    3
    1))
-(define effect_2703 (finish513 struct:os-semaphore))
+(define effect_2703 (finish505 struct:os-semaphore))
 (define os-semaphore1.1
   (|#%name|
    os-semaphore

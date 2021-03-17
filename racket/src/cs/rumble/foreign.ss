@@ -24,7 +24,7 @@
                                    (raise-arguments-error 'prop:cpointer
                                                           "index is out of range"
                                                           "index" v))
-                                 (unless (chez:memv v (list-ref info 5))
+                                 (unless (#%memv v (list-ref info 5))
                                    (raise-arguments-error 'prop:cpointer
                                                           "index does not refer to an immutable field"
                                                           "index" v))
@@ -1485,9 +1485,9 @@
   (make-cpointer/cell (addr->vector a) #f))
 
 (define (malloc-mode? v)
-  (chez:memq v '(raw atomic nonatomic tagged
-                     atomic-interior interior
-                     stubborn uncollectable eternal)))
+  (#%memq v '(raw atomic nonatomic tagged
+                  atomic-interior interior
+                  stubborn uncollectable eternal)))
 
 (define (end-stubborn-change p)
   (raise-unsupported-error 'end-stubborn-change))
@@ -1609,7 +1609,7 @@
                       ;; An 'array rep is compound, but should be
                       ;; passed as a pointer, so only pass 'struct and
                       ;; 'union "by value":
-                      (chez:memq (ctype-host-rep type) '(struct union)))]
+                      (#%memq (ctype-host-rep type) '(struct union)))]
          [array-rep-to-pointer-rep (lambda (host-rep)
                                      (if (eq? host-rep 'array)
                                          'void*
@@ -2120,7 +2120,7 @@
 ;; function is called with interrupts disabled
 (define get-errno
   (cond
-   [(not (chez:memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
+   [(not (#%memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
     (foreign-procedure "(cs)s_errno" () int)]
    [else
     ;; On Windows, `errno` could be a different one from

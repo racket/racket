@@ -9,7 +9,7 @@
                                                           "field index >= initialized-field count for structure type"
                                                           "field index" v
                                                           "initialized-field count" (list-ref info 1)))
-                                 (unless (chez:memv v (list-ref info 5))
+                                 (unless (#%memv v (list-ref info 5))
                                    (raise-arguments-error 'guard-for-prop:object-name "field index not declared immutable"
                                                           "field index" v))
                                  (+ v (let ([p (list-ref info 6)])

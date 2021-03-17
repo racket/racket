@@ -50,6 +50,8 @@ static Scheme_Object *immutablep (int argc, Scheme_Object *argv[]);
 static Scheme_Object *length_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *append_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *reverse_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *memv (int argc, Scheme_Object *argv[]);
+static Scheme_Object *memq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *assv (int argc, Scheme_Object *argv[]);
 static Scheme_Object *assq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *assoc (int argc, Scheme_Object *argv[]);
@@ -344,6 +346,17 @@ scheme_init_list (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance ("list-ref",p, env);
+
+  scheme_addto_prim_instance ("memq",
+			      scheme_make_immed_prim(memq,
+						     "memq",
+						     2, 2),
+			      env);
+  scheme_addto_prim_instance ("memv",
+			      scheme_make_immed_prim(memv,
+						     "memv",
+						     2, 2),
+			      env);
 
   scheme_addto_prim_instance ("assq",
 			      scheme_make_immed_prim(assq,
@@ -1734,6 +1747,39 @@ static void mem_past_end(const char *name, Scheme_Object *s_arg, Scheme_Object *
                         "looking for", 1, s_arg,
                         NULL);
 }
+
+#define GEN_MEM(name, scheme_name, comp)                \
+  static Scheme_Object *                                \
+  name (int argc, Scheme_Object *argv[])                \
+  {                                                     \
+    Scheme_Object *list, *turtle;                       \
+    list = turtle = argv[1];                            \
+    while (SCHEME_PAIRP(list))                          \
+      {                                                 \
+        if (comp (argv[0], SCHEME_CAR (list)))          \
+          {                                             \
+            return list;                                \
+          }                                             \
+        list = SCHEME_CDR (list);                       \
+        if (SCHEME_PAIRP(list)) {                       \
+          if (comp (argv[0], SCHEME_CAR (list)))        \
+            {                                           \
+              return list;                              \
+            }                                           \
+          if (SAME_OBJ(list, turtle)) break;            \
+          list = SCHEME_CDR (list);                     \
+          turtle = SCHEME_CDR (turtle);                 \
+          SCHEME_USE_FUEL(1);                           \
+        }                                               \
+      }                                                 \
+    if (!SCHEME_NULLP(list)) {                          \
+      mem_past_end(#scheme_name, argv[0], argv[1]);     \
+    }                                                   \
+    return (scheme_false);                              \
+  }
+
+GEN_MEM(memv, memv, scheme_eqv)
+GEN_MEM(memq, memq, SAME_OBJ)
 
 static void ass_non_pair(const char *name, Scheme_Object *np, Scheme_Object *s_arg, Scheme_Object *arg)
 {

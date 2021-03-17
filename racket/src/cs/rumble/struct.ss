@@ -329,7 +329,7 @@
                                            "index for procedure >= initialized-field count"
                                            "index" v
                                            "field count" init-count))
-                  (unless (or (eq? v proc-spec) (chez:memv v immutables))
+                  (unless (or (eq? v proc-spec) (#%memv v immutables))
                     (raise-arguments-error who
                                            "field is not specified as immutable for a prop:procedure index"
                                            "index" v))]
