@@ -602,6 +602,10 @@ If @racket[z] is exact @racket[0], the result is as follows:
  @item{otherwise --- result is @racket[0]}
 ]
 
+If @racket[w] is exact @racket[1/2], the result is the same as @racket[(sqrt z)],
+which can be exact. Other fractional powers are not treated specially in this manner:
+@mz-examples[(expt 9 1/2) (expt 9 0.5) (expt 16 1/4) (expt 16 0.25)]
+
 Further special cases when @racket[w] is a @tech{real number}:
 @margin-note*{These special cases correspond to @tt{pow} in C99 @cite["C99"],
 except when @racket[z] is negative and @racket[w] is a not an
