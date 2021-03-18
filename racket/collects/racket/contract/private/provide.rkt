@@ -293,7 +293,11 @@
                                                 mangle-for-maker?
                                                 provide?)
   (define ex-id (or reflect-id id))
-  (define id-rename (id-for-one-id user-rename-id reflect-id id mangle-for-maker?))
+  (define id-rename-without-source (id-for-one-id user-rename-id reflect-id id mangle-for-maker?))
+  (define id-rename (datum->syntax id-rename-without-source
+                                   (syntax-e id-rename-without-source)
+                                   ex-id
+                                   id-rename-without-source))
   (with-syntax ([ctrct (syntax-property 
                         (syntax-property
                          ctrct/no-prop
