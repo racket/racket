@@ -5,7 +5,8 @@
   ;; helper for member error cases
   (define-values (bad-list)
     (λ (who orig-l)
-      (raise-mismatch-error who "not a proper list: " orig-l)))
+      (raise-arguments-error who "not a proper list"
+                             "in" orig-l)))
 
   (define-values (member)
     (letrec-values ([(member)

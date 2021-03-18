@@ -111,7 +111,7 @@
                            "  in: ~s")
             irritants)]
    [(or (eq? who 'memq) (eq? who 'memv))
-    (values "not a proper list: ~s" irritants)]
+    (values "not a proper list\n  in: ~s" irritants)]
    [(equal? str  "~s is not a valid index for ~s")
     (cond
      [(exact-nonnegative-integer? (car irritants))

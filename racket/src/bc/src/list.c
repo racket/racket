@@ -1742,7 +1742,7 @@ scheme_checked_list_ref(int argc, Scheme_Object *argv[])
 static void mem_past_end(const char *name, Scheme_Object *s_arg, Scheme_Object *arg)
 {
   scheme_contract_error(name,
-                        "reached a non-pair",
+                        "not a proper list",
                         "in", 1, arg,
                         "looking for", 1, s_arg,
                         NULL);
