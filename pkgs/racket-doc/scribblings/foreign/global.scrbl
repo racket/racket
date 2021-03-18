@@ -30,7 +30,7 @@ not refer to garbage-collected memory.
 This function is intended for infrequent use with a small number of
 keys.}
 
-@defproc[(get-place-table-global) hash?]{
+@defproc[(get-place-table) hash?]{
 
 Returns a place-specific, mutable, @racket[eq?]-based hash table.
 The result is always the same for a particular place.
