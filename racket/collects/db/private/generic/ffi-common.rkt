@@ -105,7 +105,7 @@
              (end-atomic)]
             [else
              (end-atomic)
-             (error)])
+             (error/disconnect-in-lock 'sqlite3)])
       (sync os-resp-chan))
 
     ;; sync-call : (DB/#f -> X) -> X
