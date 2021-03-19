@@ -2010,9 +2010,7 @@
       [else
        (let ([fptr (make-ftype-pointer ptr->ptr call)])
          (let ([v (ftype-ref ptr->ptr () fptr)])
-           (unlock-object
-            (foreign-callable-code-object
-             (ftype-pointer-address fptr)))
+           ;; must leave the callable code object locked
            v))])))
 
 ;; ----------------------------------------
