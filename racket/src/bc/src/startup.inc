@@ -75,7 +75,7 @@ static const char *startup_source =
 "  (lambda (a_0 b_0) (begin (if (list? a_0) (append a_0 b_0) (raise-argument-error 'unquote-splicing \"list?\" a_0)))))"
 "(define-values"
 "(bad-list$1)"
-"  (lambda (who_0 orig-l_0) (begin 'bad-list (raise-mismatch-error who_0 \"not a proper list: \" orig-l_0))))"
+"  (lambda (who_0 orig-l_0) (begin 'bad-list (raise-arguments-error who_0 \"not a proper list\" \"in\" orig-l_0))))"
 "(define-values"
 "(member)"
 "(letrec-values(((member_0)"
