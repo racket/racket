@@ -444,7 +444,7 @@
                               [y (random)])
                        (list x x y y))
                     #f)
-         (test-comp #:except 'chez-scheme ; cptypes could improve here
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
                     `(lambda (x y) (when (and (pair? x) (box? y)) (,e? x y)))
                     `(lambda (x y) (when (and (pair? x) (box? y)) #f)))
          (test-comp #:except 'chez-scheme ; cptypes could improve here
@@ -453,6 +453,15 @@
          (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
                     `(lambda (x) (car x) (,e? x (box 0)))
                     `(lambda (x) (car x) #f))
+         (test-comp #:except 'chez-scheme ; cptypes gets confused with chaperones
+                    `(lambda (x y) (when (and (vector? x) (box? y)) (,e? x y)))
+                    `(lambda (x y) (when (and (vector? x) (box? y)) #f)))
+         (test-comp #:except 'chez-scheme
+                    `(lambda (x y) (vector-ref x 0) (unbox y) (,e? x y))
+                    `(lambda (x y) (vector-ref x 0) (unbox y) #f))
+         (test-comp #:except 'chez-scheme
+                    `(lambda (x) (vector-ref x 0) (,e? x (box 0)))
+                    `(lambda (x) (vector-ref x 0) #f))
          ;Ensure that the reduction doesn't eliminate side effects
          (test-comp `(lambda (x) (car x) (,e? (begin (newline) x) (box 0)))
                     `(lambda (x) (car x) #f)
@@ -1377,9 +1386,8 @@
 	   '(let* ([x (cons 1 1)]) (cons x x)))
 (test-comp '(let* ([x 1][y (add1 x)]) (+ y x))
 	   '3)
-(test-comp #:except 'chez-scheme
-           '(letrec ([x (cons 1 1)][y x]) (cons x y))
-	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
+(test-comp '(letrec ([x (cons 1 1)][y x]) (cons x y))
+           '(letrec ([x (cons 1 1)][y x]) (cons x x)))
 
 ;; Remove unnecessary bindings 
 (test-comp '(let ([f (lambda (x) x)]) f)
@@ -1521,8 +1529,7 @@
 (test-comp #:except 'chez-scheme
            '(lambda (x) (void (if x 1 (random))))
            '(lambda (x) (void (if x 2 (random)))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) (void (if x (random) 1)))
+(test-comp '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void))
            #f)
 (test-comp '(lambda (x) (void (if x 1 (random))))
@@ -2775,8 +2782,7 @@
               (when (and (boolean? z)
                          (not (k:true-object? z)))
                 #t)))
-(test-comp #:except 'chez-scheme
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (boolean? z)
                          (not (not z)))
                 (k:true-object? z)))
@@ -3604,8 +3610,7 @@
               (hash-ref '#hash((x . y)) x (lambda () 10)))
            '(lambda (x)
               (hash-ref '#hash((x . y)) x 10)))
-(test-comp #:except 'chez-scheme
-           '(lambda (x)
+(test-comp '(lambda (x)
               (hash-ref x x (lambda () 10)))
            '(lambda (x)
               (hash-ref x x 10))
@@ -5189,8 +5194,7 @@
 (test-comp #:except 'chez-scheme ; `call-with-values` conversion currently requires a lambda consumer
            '(lambda () (car 7))
            '(lambda () (call-with-values (lambda () 7) car)))
-(test-comp #:except 'chez-scheme
-           '(lambda () ('not-a-procedure 7))
+(test-comp '(lambda () ('not-a-procedure 7))
            '(lambda () (call-with-values (lambda () 7) 'not-a-procedure))
            #f)
 (test-comp #:except 'chez-scheme
