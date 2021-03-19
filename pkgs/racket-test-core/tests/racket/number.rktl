@@ -2726,12 +2726,27 @@
 (err/rt-test (vector->pseudo-random-generator #()))
 (err/rt-test (vector->pseudo-random-generator #(0 0 0 1 2 3)))
 ;; Known state should produce known values:
-(parameterize ([current-pseudo-random-generator
-                (vector->pseudo-random-generator
-                 #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
-  (test 5353 random 10000)
-  (test 8571 random 10000)
-  (test 9729 random 10000))
+(let* ([check-known
+        (lambda (vector->pseudo-random-generator wrap)
+          (parameterize ([current-pseudo-random-generator
+                          (vector->pseudo-random-generator
+                           (wrap #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638)))])
+            (test 5353 random 10000)
+            (test 8571 random 10000)
+            (test 9729 random 10000)))]
+       [hits 0]
+       [chaperone-it (lambda (vec) (chaperone-vector vec
+                                                     (lambda (vec i v) (set! hits (add1 hits)) v)
+                                                     (lambda (vec i v) (error "should not mutate"))))]
+       [make (lambda (vec)
+               (define p (vector->pseudo-random-generator '#(1 2 3 4 5 6)))
+               (vector->pseudo-random-generator! p vec)
+               p)])
+  (check-known vector->pseudo-random-generator values)
+  (check-known vector->pseudo-random-generator chaperone-it)
+  (check-known make values)
+  (check-known make chaperone-it)
+  (test 12 values hits))
 (parameterize ([current-pseudo-random-generator
                 (vector->pseudo-random-generator
                  #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
@@ -2750,6 +2765,7 @@
         (map length (group-by values
                               (apply append (for/list ([i 10000])
                                               (random-sample (range 10) 100)))))))
+
 
 (parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])
   (random-seed 2)

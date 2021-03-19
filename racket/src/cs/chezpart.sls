@@ -47,7 +47,9 @@
                            bitwise-not
                            fllog flatan
                            fxquotient
-                           make-flvector flvector-copy)
+                           make-flvector flvector-copy
+                           vector->pseudo-random-generator
+                           vector->pseudo-random-generator!)
                    [make-parameter chez:make-parameter]
                    [date-second chez:date-second]
                    [date-minute chez:date-minute]

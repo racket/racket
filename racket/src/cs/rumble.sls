@@ -432,6 +432,8 @@
           random-seed
           current-pseudo-random-generator
           pseudo-random-generator-vector?
+          vector->pseudo-random-generator
+          vector->pseudo-random-generator!
 
           mpair?
           mcons

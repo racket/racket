@@ -2923,7 +2923,7 @@ double scheme_double_random(Scheme_Object *rand_state)
 static Scheme_Object *
 do_pack(const char *name, int argc, Scheme_Object *argv[], int set, int check)
 {
-  Scheme_Object *s;
+  Scheme_Object *s, *vec;
   GC_CAN_IGNORE Scheme_Random_State rs;
 
   if (set) {
@@ -2933,7 +2933,11 @@ do_pack(const char *name, int argc, Scheme_Object *argv[], int set, int check)
     }
   }
 
-  if (SCHEME_VECTORP(argv[set]) && (SCHEME_VEC_SIZE(argv[set]) == 6))
+  vec = argv[set];
+  if (SCHEME_NP_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);
+
+  if (SCHEME_VECTORP(vec) && (SCHEME_VEC_SIZE(vec) == 6))
     s = pack_rand_state(argv[set], ((set || check) ? &rs : NULL));
   else
     s = NULL;

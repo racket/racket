@@ -85,7 +85,7 @@ static Scheme_Object *pack_rand_state(Scheme_Object *vec, Scheme_Random_State *s
 #define REF(r, i, top) \
   { \
     uintptr_t l; \
-    if (!scheme_get_unsigned_int_val(SCHEME_VEC_ELS(vec)[i],  &l)) \
+    if (!scheme_get_unsigned_int_val(scheme_chaperone_vector_ref(vec, i),  &l)) \
       return NULL; \
     if (l > top - 1) \
       return NULL; \

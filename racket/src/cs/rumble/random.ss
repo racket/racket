@@ -353,3 +353,25 @@
          (in-range? 5 4294944442)
          (or (nonzero? 0) (nonzero? 1) (nonzero? 2))
          (or (nonzero? 3) (nonzero? 4) (nonzero? 5)))))
+
+(define (vector->pseudo-random-generator v)
+  (#%vector->pseudo-random-generator (unwrap-pseudo-random-generator-vector v)))
+
+(define (vector->pseudo-random-generator! s v)
+  (#%vector->pseudo-random-generator! s (if (pseudo-random-generator? s)
+                                            (unwrap-pseudo-random-generator-vector v)
+                                            v)))
+
+;; convert a vector for chaperoned form:
+(define (unwrap-pseudo-random-generator-vector v)
+  (cond
+    [(and (not (#%vector? v))
+          (vector? v)
+          (= 6 (vector-length v)))
+     (vector (vector-ref v 0)
+             (vector-ref v 1)
+             (vector-ref v 2)
+             (vector-ref v 3)
+             (vector-ref v 4)
+             (vector-ref v 5))]
+    [else v]))
