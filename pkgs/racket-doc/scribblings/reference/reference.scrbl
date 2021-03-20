@@ -209,6 +209,12 @@ The @racketmodname[racket] library combines
              #:url "https://doi.org/10.1017/CBO9780511574962"
              #:date "1999")
 
+  (bib-entry #:key "Roux14"
+             #:author "Pierre Roux"
+             #:title "Innocuous Double Rounding of Basic Arithmetic Operations"
+             #:location @elem{@italic{Journal of Formalized Reasoning}, 7(1)}
+             #:date "2014")
+
   (bib-entry #:key "Sapin18"
              #:author "Simon Sapin"
              #:title "The WTF-8 Encoding"
