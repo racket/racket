@@ -103,7 +103,6 @@
   (require ffi/unsafe/atomic)
   (provide lock?
            make-lock
-           lock-acquire
            lock-release
            call-with-lock
            (protect-out
@@ -124,21 +123,11 @@
     (lock sema (semaphore-peek-evt sema) never-evt))
 
   ;; PRE: not in atomic mode
-  ;; Warning: If hopeless callback can return normally (especially if it returns
-  ;; #<void>), then it is ambiguous whether lock was acquired.
-  (define (lock-acquire lk [hopeless #f] #:enable-break? [enable-break? #f])
-    (lock-acquire/start-atomic lk hopeless end-atomic #:enable-break? enable-break?))
-
-  ;; PRE: not in atomic mode
-  ;; Warning: If hopeless callback can return normally (especially #<void>), it
-  ;; is ambiguous whether lock was acquired (and whether still in atomic mode).
-  (define (lock-acquire/start-atomic lk [hopeless #f] [acquired #f]
+  ;; Returns #t if acquired and in atomic mode
+  ;;         #f if hopeless and not in atomic mode
+  (define (lock-acquire/start-atomic lk
                                      #:enable-break? [enable-break? #f])
-    (unless (lock? lk) (raise-argument-error 'lock-acquire "lock?" lk))
-    (unless (or (eq? hopeless #f) (procedure? hopeless) (symbol? hopeless))
-      (raise-argument-error 'lock-acquire "(or/c #f procedure? symbol?)" hopeless))
-    (unless (or (eq? acquired #f) (procedure? acquired))
-      (raise-argument-error 'lock-acquire "(or/c #f procedure?)" acquired))
+    (unless (lock? lk) (raise-argument-error 'lock-acquire/start-atomic "lock?" lk))
     (define me (thread-dead-evt (current-thread)))
     (define sema (lock-sema lk))
     (define sema-peek (lock-sema-peek lk))
@@ -154,16 +143,14 @@
                     (set-lock-owner! lk me)
                     (semaphore-wait sema)
                     ;; Still in atomic mode!
-                    (if acquired (acquired) (void))]
+                    #t]
                    [else
                     ;; Other thread got here first => retry
                     (end-atomic)
                     (loop)])]
             [(eq? result (lock-owner lk))
              ;; Thread holding lock is dead
-             (if (procedure? hopeless)
-                 (hopeless)
-                 (error (or hopeless 'lock-acquire) "the thread owning the lock is dead"))]
+             #f]
             [(eq? result me)
              ;; Attempt to recursively acquire lock
              (error 'lock-acquire "attempted to recursively acquire lock")]
@@ -184,12 +171,20 @@
   ;; PRE: not in atomic mode
   (define (call-with-lock lk proc [hopeless #f]
                           #:enable-break? [enable-break? #f])
-    (lock-acquire/start-atomic lk hopeless #:enable-break? enable-break?)
-    (with-handlers ([(lambda (e) #t)
-                     (lambda (e) (lock-release lk) (raise e))])
-      (end-atomic)
-      (begin0 (proc)
-        (lock-release lk)))))
+    (unless (lock? lk) (raise-argument-error 'call-with-lock "lock?" lk))
+    (unless (procedure? proc)
+      (raise-argument-error 'call-with-lock "procedure?" proc))
+    (unless (or (eq? hopeless #f) (procedure? hopeless) (symbol? hopeless))
+      (raise-argument-error 'call-with-lock "(or/c #f procedure? symbol?)" hopeless))
+    (if (lock-acquire/start-atomic lk #:enable-break? enable-break?)
+        (with-handlers ([(lambda (e) #t)
+                         (lambda (e) (lock-release lk) (raise e))])
+          (end-atomic)
+          (begin0 (proc)
+            (lock-release lk)))
+        (if (procedure? hopeless)
+            (hopeless)
+            (error (or hopeless 'call-with-lock) "the thread owning the lock is dead")))))
 
 (require (rename-in (submod "." lock)
                     [call-with-lock lock:call-with-lock]))
