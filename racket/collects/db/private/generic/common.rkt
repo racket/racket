@@ -133,8 +133,11 @@
     (define sema-peek (lock-sema-peek lk))
     (let loop ()
       (define result
-        (cond [enable-break? (sync/enable-break sema-peek (lock-owner lk))]
-              [else (sync sema-peek (lock-owner lk))]))
+        (let ([owner (lock-owner lk)])
+          (cond [(eq? owner me)
+                 (error 'lock-acquire "attempted to recursively acquire lock")]
+                [enable-break? (sync/enable-break sema-peek owner)]
+                [else (sync sema-peek owner)])))
       (cond [(eq? result sema-peek)
              ;; Got past outer stage
              (start-atomic)
@@ -151,9 +154,6 @@
             [(eq? result (lock-owner lk))
              ;; Thread holding lock is dead
              #f]
-            [(eq? result me)
-             ;; Attempt to recursively acquire lock
-             (error 'lock-acquire "attempted to recursively acquire lock")]
             [else
              ;; Owner was stale => retry
              ;; This can happen if the thread holding the lock releases
