@@ -7110,5 +7110,25 @@
          h)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test related to propagation of flonums
+;; from eqv? tests in CS
+
+(test #t
+      (lambda ()
+        ; optimizer unfriendly 1
+        (define (one)
+          (let ([r (random 2)])
+            (if (= r 0) (one) r)))
+
+        (define (f x y)
+          (define first-comparison (eq? x y))
+          (when (and (eqv? x 7.0)
+                     (eqv? y 7.0))
+            (define second-comparison (eq? x y))
+            (eq? first-comparison second-comparison)))
+
+        (f (+ 6.0 (one)) (+ 6.0 (one)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
