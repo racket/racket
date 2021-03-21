@@ -2949,9 +2949,15 @@ static Scheme_Object *hash_table_clear_bang(int argc, Scheme_Object *argv[])
   }
 
   if (SCHEME_BUCKTP(v)) {
-    scheme_clear_bucket_table((Scheme_Bucket_Table *)v);
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
+    if (t->mutex) scheme_wait_sema(t->mutex, 0);
+    scheme_clear_bucket_table(t);
+    if (t->mutex) scheme_post_sema(t->mutex);
   } else{
-    scheme_clear_hash_table((Scheme_Hash_Table *)v);
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
+    if (t->mutex) scheme_wait_sema(t->mutex, 0);
+    scheme_clear_hash_table(t);
+    if (t->mutex) scheme_post_sema(t->mutex);
   }
 
   return scheme_void;
@@ -3100,6 +3106,8 @@ static Scheme_Object *do_map_hash_table(int argc,
           } else
             _scheme_apply_multi(f, 2, p);
         }
+        /* since we didn't take a lock, the size could have changed */
+        if (i > hash->size) i = hash->size;
       }
     }
   } else if (SCHEME_HASHTP(obj)) {
@@ -3132,6 +3140,8 @@ static Scheme_Object *do_map_hash_table(int argc,
           } else
             _scheme_apply_multi(f, 2, p);
         }
+        /* since we didn't take a lock, the size could have changed */
+        if (i > hash->size) i = hash->size;
       }
     }
   } else {

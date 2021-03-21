@@ -3,11 +3,6 @@
 
 @title[#:tag "hashtables"]{Hash Tables}
 
-@(define (concurrency-caveat)
-  @elemref['(caveat "concurrency")]{caveats concerning concurrent modification})
-@(define (mutable-key-caveat)
-  @elemref['(caveat "mutable-keys")]{caveat concerning mutable keys})
-
 @(define (see-also-caveats)
    @t{See also the @concurrency-caveat[] and the @mutable-key-caveat[] above.})
 @(define (see-also-concurrency-caveat)
@@ -67,18 +62,20 @@ when they are @racket[equal?].
 modification:}} A mutable hash table can be manipulated with
 @racket[hash-ref], @racket[hash-set!], and @racket[hash-remove!]
 concurrently by multiple threads, and the operations are protected by
-a table-specific semaphore as needed. Three caveats apply, however:
+a table-specific semaphore as needed. Several caveats apply, however:
 
  @itemize[
 
   @item{If a thread is terminated while applying @racket[hash-ref],
   @racket[hash-ref-key], @racket[hash-set!], @racket[hash-remove!],
-  @racket[hash-ref!], or @racket[hash-update!] to a hash table that
+  @racket[hash-ref!], @racket[hash-update!], or @racket[hash-clear!]
+  to a hash table that
   uses @racket[equal?] or @racket[eqv?] key comparisons, all current
   and future operations on the hash table may block indefinitely.}
 
   @item{The @racket[hash-map], @racket[hash-for-each], and @racket[hash-clear!] procedures do
-  not use the table's semaphore to guard the traversal as a whole.
+  not use the table's semaphore to guard the traversal as a whole
+  (if a traversal is needed, in the case of @racket[hash-clear!]).
   Changes by one thread to a hash table can affect the keys and values
   seen by another thread part-way through its traversal of the same
   hash table.}
@@ -88,6 +85,13 @@ a table-specific semaphore as needed. Three caveats apply, however:
  independently for the @racket[hash-ref] and @racket[hash-set!] parts
  of their functionality, which means that the update as a whole is not
  ``atomic.''}
+
+ @item{Adding a mutable hash table as a key in itself is trouble on
+  the grounds that the key is being mutated (see the caveat below),
+  but it is also a kind of concurrent use of the hash table: computing
+  a hash table's hash code may require waiting on the table's
+  semaphore, but the semaphore is already held for modifying the hash
+  table, so the hash-table addition can block indefinitely.}
 
  ]
 

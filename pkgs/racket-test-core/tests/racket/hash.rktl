@@ -704,4 +704,60 @@
 
 ;; ----------------------------------------
 
+(for ([make-hash (in-list (list make-hash make-weak-hash make-ephemeron-hash))]
+      [hash-clear! (in-list (list hash-clear!
+                                  (lambda (ht)
+                                    (hash-for-each ht (lambda (k v) (hash-remove! ht k))))))]
+      [op (in-list (list
+                    (lambda (ht ht2) (hash-set! ht ht #t))
+                    (lambda (ht ht2) (equal? ht ht2))
+                    (lambda (ht ht2) (equal-hash-code ht))
+                    (lambda (ht ht2) (equal-secondary-hash-code ht))
+                    (lambda (ht ht2) (hash-map ht (lambda (k v) (hash-clear! ht) k)))
+                    (lambda (ht ht2) (hash-for-each ht (lambda (k v) (hash-clear! ht) k)))))])
+  (define amok? #f)
+
+  (define ht (make-hash))
+  (define ht2 (make-hash))
+
+  (struct a (x)
+    #:property prop:equal+hash (list (lambda (a1 a2 eql?)
+                                       (when amok?
+                                         (hash-clear! ht))
+                                       (eql? (a-x a1) (a-x a2)))
+                                     (lambda (a1 hc)
+                                       (when amok?
+                                         (hash-clear! ht))
+                                       (a-x a1))
+                                     (lambda (a2 hc)
+                                       (when amok?
+                                         (hash-clear! ht))
+                                       (a-x a2))))
+
+  (define saved null)
+  (define (save v)
+    (set! saved (cons v saved))
+    v)
+
+  (for ([i (in-range 1000)])
+    (hash-set! ht (save (a i)) #t)
+    (hash-set! ht2 (save (a i)) #t))
+
+  (set! amok? #t)
+
+  ;; This operation can get stuck or raise an exception,
+  ;; but it should not crash
+  (let* ([fail? #f]
+         [t (thread
+             (lambda ()
+               (with-handlers ([exn:fail:contract? void]
+                               [exn:fail? (lambda (x)
+                                            (set! fail? #t)
+                                            (raise x))])
+                 (op ht ht2))))])
+    (sync (system-idle-evt))
+    (test #f `(no-crash? ,op) fail?)))
+
+;; ----------------------------------------
+
 (report-errs)

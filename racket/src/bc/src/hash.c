@@ -647,6 +647,9 @@ int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Object *orig_t1,
 	return 0;
       if (!scheme_recur_equal(val1, val2, eql))
 	return 0;
+
+      /* since we didn't take a lock, the size could have changed */
+      if (i > t1->size) i = t1->size;
     }
   }
 
@@ -1823,6 +1826,8 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
           MZ_MIX(vk);
           k += vk;  /* can't mix k, because the key order shouldn't matter */
           hi->depth = old_depth; /* also needed to avoid order-sensitivity */
+          /* since we didn't take a lock, the size could have changed */
+          if (i > ht->size) i = ht->size;
 	}
       }
       
@@ -1904,6 +1909,8 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
             MZ_MIX(vk);
             k += vk; /* can't mix k, because the key order shouldn't matter */
             hi->depth = old_depth; /* also needed to avoid order-sensitivity */
+            /* since we didn't take a lock, the size could have changed */
+            if (i > ht->size) i = ht->size;
 	  }
 	}
       }
@@ -2313,6 +2320,8 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 	  k += equal_hash_key2(key, hi);
 	  k += equal_hash_key2(val, hi);
           hi->depth = old_depth;
+          /* since we didn't take a lock, the size could have changed */
+          if (i > ht->size) i = ht->size;
 	}
       }
       
@@ -2392,6 +2401,8 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 	    k += equal_hash_key2(key, hi);
             hi->depth = old_depth;
 	  }
+          /* since we didn't take a lock, the size could have changed */
+          if (i > ht->size) i = ht->size;
 	}
       }
     

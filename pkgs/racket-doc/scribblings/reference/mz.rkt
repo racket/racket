@@ -175,3 +175,10 @@
 (provide envvar-indexed)
 (define (envvar-indexed s)
   (as-index (envvar s)))
+
+(provide concurrency-caveat
+         mutable-key-caveat)
+@(define (concurrency-caveat)
+  @elemref['(caveat "concurrency")]{caveats concerning concurrent modification})
+@(define (mutable-key-caveat)
+  @elemref['(caveat "mutable-keys")]{caveat concerning mutable keys})

@@ -470,26 +470,32 @@
   ;; of calling `hash-iterate-...` for each step
   (let vec-loop ([old-n 0] [try? #t])
     (let ([vec (prepare-iterate! ht old-n)])
-      (let loop ([i old-n])
-        (cond
-         [(= i (#%vector-length vec))
-          (if try?
-              (vec-loop i (> i  old-n))
-              (if map? '() (void)))]
-         [else
-          (let ([p (#%vector-ref vec i)])
-            (let ([key (car p)]
-                  [val (cdr p)])
-              (cond
-               [(or (eq? key #!bwp)
-                    (eq? val #!bwp))
-                (loop (fx+ i 1))]
-               [map?
-                (cons (|#%app| proc key val)
-                      (loop (fx+ i 1)))]
-               [else
-                (|#%app| proc key val)
-                (loop (fx+ i 1))])))])))))
+      (cond
+        [(fx>= old-n (#%vector-length vec))
+         ;; If `old-n` is not zero, the hash table changed while we
+         ;; iterated, which is possible since we haven't taken a lock
+         (if map? '() (void))]
+        [else
+         (let loop ([i old-n])
+           (cond
+             [(fx= i (#%vector-length vec))
+              (if try?
+                  (vec-loop i (fx> i old-n))
+                  (if map? '() (void)))]
+             [else
+              (let ([p (#%vector-ref vec i)])
+                (let ([key (car p)]
+                      [val (cdr p)])
+                  (cond
+                    [(or (eq? key #!bwp)
+                         (eq? val #!bwp))
+                     (loop (fx+ i 1))]
+                    [map?
+                     (cons (|#%app| proc key val)
+                           (loop (fx+ i 1)))]
+                    [else
+                     (|#%app| proc key val)
+                     (loop (fx+ i 1))])))]))]))))
 
 ;; In sorted hash-table travesals, make some effort to sort the key.
 ;; This attempt is useful for making hash-table traversals more
