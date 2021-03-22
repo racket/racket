@@ -922,8 +922,7 @@
 ;Test types inference for string?
 (test-arg-types '(string-length string?) 'fixnum? 'may-omit)
 (test-arg-types '(string-ref string? fixnum?) 'char?)
-(unless (eq? (system-type 'vm) 'chez-scheme) ;; cptypes doesn't know that void? => eq? to (void)
-  (test-arg-types '(string-set! string? fixnum? char?) 'void?))
+(test-arg-types '(string-set! string? fixnum? char?) 'void?)
 (test-arg-types '(string->immutable-string string?) 'string? 'may-omit)
 (test-arg-types '(string-append) 'string? 'may-omit)
 (test-arg-types '(string-append string?) 'string? 'may-omit)
@@ -934,8 +933,7 @@
 ;Test types inference for bytes?
 (test-arg-types '(bytes-length bytes?) 'fixnum? 'may-omit)
 (test-arg-types '(bytes-ref bytes? fixnum?) 'fixnum?)
-(unless (eq? (system-type 'vm) 'chez-scheme) ;; cptypes doesn't know that void? => eq? to (void)
-  (test-arg-types '(bytes-set! bytes? fixnum? fixnum?) 'void?))
+(test-arg-types '(bytes-set! bytes? fixnum? fixnum?) 'void?)
 (unless (eq? (system-type 'vm) 'chez-scheme) ;; ???
   (test-arg-types '(bytes->immutable-bytes bytes?) 'bytes? 'may-omit))
 (unless (eq? (system-type 'vm) 'chez-scheme) ;; bytes-append is not primitive
