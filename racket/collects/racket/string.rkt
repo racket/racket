@@ -124,8 +124,33 @@
   ;; don't do that for all nulls).)
   (if (equal? strs '("")) '() strs))
 
+;; A faster split implementation when splitting on whitespace. The
+;; string will also be trimmed.
+(define (internal-split-whitespace str)
+  (define (is-whitespace? c)
+    (or (eq? c #\space)
+        (eq? c #\tab)
+        (eq? c #\newline)
+        (eq? c #\return)
+        (eq? c #\page)))
+  (define len (string-length str))
+  (let loop ([beg 0] [end 0])
+    (cond [(= end len)
+           (if (= beg end)
+               '()
+               (list (substring str beg end)))]
+          [(is-whitespace? (string-ref str end))
+           (let ([pos (add1 end)])
+             (if (= beg end)
+                 (loop pos pos)
+                 (cons (substring str beg end)
+                       (loop pos pos))))]
+          [else (loop beg (add1 end))])))
+
 (define (string-split str [sep none] #:trim? [trim? #t] #:repeat? [+? #f])
-  (internal-split 'string-split str sep trim? +?))
+  (if (and (eq? sep none) trim?)
+      (internal-split-whitespace str)
+      (internal-split 'string-split str sep trim? +?)))
 
 (define (string-normalize-spaces str [sep none] [space " "]
                                  #:trim? [trim? #t] #:repeat? [+? #f])
