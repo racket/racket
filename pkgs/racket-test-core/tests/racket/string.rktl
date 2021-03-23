@@ -482,7 +482,7 @@
 
 ;; ---------- string-split ----------
 (let ()
-  (for ([s (in-list '("x y z" " x y z "  "\nx y z" "  \t x\r\r\ry    z\n"))])
+  (for ([s (in-list '("x y z" " x y z "  "\nx y z" "  \t x\r\r\ry \n\f\n   z\n"))])
     (test '("x" "y" "z") string-split s))
   (for ([s (in-list '(" " "   "  "\n\t\r"))])
     (test '() string-split s))
