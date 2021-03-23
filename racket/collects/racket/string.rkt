@@ -148,7 +148,9 @@
           [else (loop beg (add1 end))])))
 
 (define (string-split str [sep none] #:trim? [trim? #t] #:repeat? [+? #f])
-  (if (and (string? str) (eq? sep none) trim?)
+  (if (and (string? str)
+           (or (eq? sep none) (eq? sep #px"\\s+"))
+           trim?)
       (internal-split-whitespace str)
       (internal-split 'string-split str sep trim? +?)))
 
