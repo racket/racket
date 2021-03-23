@@ -342,11 +342,11 @@ flags:
 
 When building @exec{racket}, flags can be provided to @exec{raco
 setup} as run by @exec{make install} by setting the
-@as-index{@envvar{PLT_SETUP_OPTIONS}} environment variable. For
+@as-index{@envvar{PLT_SETUP_OPTIONS}} makefile variable. For
 example, the following command line uses a single process to build
 collections during an install:
 
-   @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
+   @commandline{make install PLT_SETUP_OPTIONS="-j 1"}
 
 Running @exec{raco setup} is sensitive to the
 @envvar{PLT_COMPILED_FILE_CHECK} environment variable in the same way
