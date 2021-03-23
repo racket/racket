@@ -347,6 +347,9 @@ RACKET_FOR_BUILD = $(RACKET)
 PB_BRANCH == circa-8.0.0.10-1
 PB_REPO = https://github.com/racket/pb
 
+# Set to empty for Git before v1.7.10:
+SINGLE_BRANCH_FLAG = --single-branch
+
 # Alternative source for Chez Scheme boot files, normally set by
 # the distro-build client driver
 EXTRA_REPOS_BASE =
@@ -443,7 +446,7 @@ PB_DIR == racket/src/ChezScheme/boot/pb
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
 	if [ ! -d racket/src/ChezScheme/boot/pb ] ; \
-	  then git clone -q -b $(PB_BRANCH) $(PB_REPO) $(PB_DIR) ; \
+	  then git clone -q $(SINGLE_BRANCH_FLAG) -b $(PB_BRANCH) $(PB_REPO) $(PB_DIR) ; \
 	  else cd $(PB_DIR) && git fetch -q origin $(PB_BRANCH):remotes/origin/$(PB_BRANCH) ; fi
 	cd $(PB_DIR) && git checkout -q $(PB_BRANCH)
 
