@@ -154,6 +154,11 @@ element.
   (error "doesn't get here"))
 ]}
 
+@defform[(for/mlist (for-clause ...) body-or-break ... body)]{
+Like @racket[for/list], but for @tech{mutable lists}.
+@history[#:added "8.0.0.12"]}
+
+
 @defform/subs[(for/vector maybe-length (for-clause ...) body-or-break ... body)
               ([maybe-length (code:line)
                              (code:line #:length length-expr)
@@ -161,7 +166,7 @@ element.
               #:contracts ([length-expr exact-nonnegative-integer?])]{
 
 Iterates like @racket[for/list], but results are accumulated into
-a vector instead of a list. 
+a vector instead of a list.
 
 If the optional @racket[#:length] clause is specified, the result of
 @racket[length-expr] determines the length of the result vector.  In
@@ -267,8 +272,7 @@ is accumulated into a result with @racket[*].
 ]}
 
 
-@defform[(for/lists (id ... maybe-result)
-                    (for-clause ...)
+@defform[(for/lists (id ... maybe-result) (for-clause ...)
            body-or-break ... body)
          #:grammar
          ([maybe-result (code:line) (code:line #:result result-expr)])]{
@@ -307,6 +311,15 @@ can cause a final @racket[reverse] for each @racket[id] to fail.
 @history[
  #:changed "7.1.0.2" @elem{Added the @racket[#:result] form.}
  ]}
+
+
+@defform[(for/mlists (id ... maybe-result) (for-clause ...)
+           body-or-break ... body)
+         #:grammar
+         ([maybe-result (code:line) (code:line #:result result-expr)])]{
+
+Like @racket[for/lists], but for @tech{mutable lists}.
+@history[#:added "8.0.0.12"]}
 
 
 @defform[(for/first (for-clause ...) body-or-break ... body)]{ Iterates like
@@ -546,7 +559,10 @@ nested.
 
 @deftogether[(
 @defform[(for*/list (for-clause ...) body-or-break ... body)]
-@defform[(for*/lists (id ... maybe-result) (for-clause ...) 
+@defform[(for*/lists (id ... maybe-result) (for-clause ...)
+           body-or-break ... body)]
+@defform[(for*/mlist (for-clause ...) body-or-break ... body)]
+@defform[(for*/mlists (id ... maybe-result) (for-clause ...)
            body-or-break ... body)]
 @defform[(for*/vector maybe-length (for-clause ...) body-or-break ... body)]
 @defform[(for*/hash (for-clause ...) body-or-break ... body)]
@@ -574,7 +590,8 @@ Like @racket[for/list], etc., but with the implicit nesting of
   (list i j))
 ]
 
-@history[#:changed "7.3.0.3" @elem{Added the @racket[for*/foldr] form.}]}
+@history[#:changed "7.3.0.3" @elem{Added the @racket[for*/foldr] form.}
+         #:changed "8.8.0.12" @elem{Added the @racket[for*/mlist] and @racket[for*/mlists] forms.}]}
 
 @;------------------------------------------------------------------------
 @section{Deriving New Iteration Forms}
@@ -723,7 +740,7 @@ The result can be either @racket[#f], to indicate that the forms
 should not be treated specially (perhaps because the number of bound
 identifiers is inconsistent with the @racket[(id . _rest)] form), or a
 new @racket[_for-clause] to replace the given one. The new clause might
-use @racket[:do-in]. To protect identifiers in the result of 
+use @racket[:do-in]. To protect identifiers in the result of
 @racket[clause-transform-expr], use @racket[for-clause-syntax-protect]
 instead of @racket[syntax-protect].
 
