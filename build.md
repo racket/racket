@@ -233,7 +233,7 @@ downloaded from a separate Git repository by `make`. If you have Racket
 v7.1 or later, then you can choose instead to bootstrap using that
 Racket implementation with
 
-  `make cs RACKET=racket`
+  `make cs RACKET_FOR_BOOTFILES=racket`
 
 The `make bc` target (or `make bc-as-is` for a rebuild, or `nmake
 win-bc` on Windows with Visual Studio) builds an older variant of

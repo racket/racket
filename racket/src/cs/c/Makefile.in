@@ -50,6 +50,10 @@ DEFAULT_RACKET = ./raw_racketcs
 RACKET = @RACKET@
 BOOTFILE_RACKET = @BOOTFILE_RACKET@
 
+# Potentially supplied by makefile that calls this one, and
+# overrides `BOOTFILE_RACKET` if non-empty:
+RACKET_FOR_BOOTFILES =
+
 CS_INSTALLED = @CS_INSTALLED@
 
 NOOP = :
@@ -124,7 +128,9 @@ bounce:
 
 scheme:
 	mkdir -p $(SCHEME_WORKAREA)
-	if [ "$(BOOTFILE_RACKET)" != "$(DEFAULT_RACKET)" ] ; \
+	if [ "$(RACKET_FOR_BOOTFILES)" != "" ] ; \
+          then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(RACKET_FOR_BOOTFILES)" SETUP_BOOT_MODE=--chain ; \
+	elif [ "$(BOOTFILE_RACKET)" != "$(DEFAULT_RACKET)" ] ; \
           then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
           else $(MAKE) scheme-via-pb ; fi
 
