@@ -299,4 +299,56 @@ a @tech{chaperone} of @racket[val-expr] otherwise.
 
 }
 
+@defform[(make-struct-type-property/generic
+           name-expr
+           maybe-guard-expr
+           maybe-supers-expr
+           maybe-can-impersonate?-expr
+           property-option
+           ...)
+  #:grammar
+  ([maybe-guard-expr (code:line) guard-expr]
+   [maybe-supers-expr (code:line) supers-expr]
+   [maybe-can-impersonate?-expr (code:line) can-impersonate?-expr]
+   [property-option (code:line #:property prop-expr val-expr)
+                    (code:line #:methods gen:name-id method-defs)]
+   [method-defs (definition ...)])
+  #:contracts
+  ([name-expr symbol?]
+   [guard-expr (or/c procedure? #f 'can-impersonate)]
+   [supers-expr (listof (cons/c struct-type-property? (-> any/c any/c)))]
+   [can-impersonate?-expr any/c]
+   [prop-expr struct-type-property?]
+   [val-expr any/c])]{
+Creates a new structure type property and returns three
+values, just like @racket[make-struct-type-property] would:
+
+@itemize[
+ @item{a @tech{structure type property descriptor}}
+ @item{a @tech{property predicate} procedure}
+ @item{a @tech{property accessor} procedure}
+]
+
+Any struct that implements this property will also implement
+the properties and @tech{generic interfaces} given in the
+@racket[#:property] and @racket[#:methods] declarations.
+The property @racket[val-expr]s and @racket[method-def]s are
+evaluated eagerly when the property is created, not when
+it is attached to a structure type.
+}
+
+@defform[(make-generic-struct-type-property
+            gen:name-id
+            method-def
+            ...)]{
+Creates a new structure type property and returns the
+@tech{structure type property descriptor}.
+
+Any struct that implements this property will also implement
+the @tech{generic interface} given by @racket[gen:name-id]
+with the given @racket[method-def]s. The @racket[method-def]s
+are evaluated eagerly when the property is created, not when
+it is attached to a structure type.
+}
+
 @close-eval[evaluator]

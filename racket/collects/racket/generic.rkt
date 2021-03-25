@@ -3,6 +3,7 @@
          racket/contract/combinator
          "private/generic.rkt"
          "private/generic-methods.rkt"
+         "private/struct-type-property.rkt"
          (for-syntax racket/base racket/syntax syntax/stx))
 
 ;; Convenience layer on top of racket/private/generic.
@@ -19,7 +20,9 @@
          chaperone-generics
          impersonate-generics
          redirect-generics
-         generic-instance/c)
+         generic-instance/c
+         make-struct-type-property/generic
+         make-generic-struct-type-property)
 
 (begin-for-syntax
 
