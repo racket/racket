@@ -11,7 +11,8 @@
          "private/sequence.rkt"
          (only-in "private/stream-cons.rkt"
                   stream-cons
-                  stream-lazy)
+                  stream-lazy
+                  stream-force)
          "private/generic-methods.rkt"
          (for-syntax racket/base))
 
@@ -28,6 +29,8 @@
          stream-rest
          prop:stream
          in-stream
+         stream-lazy
+         stream-force
 
          stream
          stream*
@@ -67,20 +70,18 @@
   (syntax-rules ()
     ((_)
      empty-stream)
+    ((_ tl)
+     ;; shortcut:
+     (stream-cons tl #:eager empty-stream))
     ((_ hd tl ...)
      (stream-cons hd (stream tl ...)))))
 
 (define-syntax stream*
   (syntax-rules ()
     [(_ tl)
-     (assert-stream? 'stream* tl)]
+     (stream-lazy #:who 'stream* tl)]
     [(_ hd tl ...)
      (stream-cons hd (stream* tl ...))]))
-
-(define (assert-stream? who st)
-  (if (stream? st)
-    st
-    (raise-argument-error who "stream?" st)))
 
 (define (stream->list s)
   (for/list ([v (in-stream s)]) v))

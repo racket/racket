@@ -1072,18 +1072,71 @@ stream, but plain lists can be used as streams, and functions such as
   element.
 }
 
-@defform[(stream-cons first-expr rest-expr)]{
+@defform*[[(stream-cons first-expr rest-expr)
+           (stream-cons #:eager first-expr rest-expr)
+           (stream-cons first-expr #:eager rest-expr)
+           (stream-cons #:eager first-expr #:eager rest-expr)]]{
 
-  Produces a lazy stream for which @racket[stream-first] forces the
-  evaluation of @racket[first-expr] to produce the first element of
-  the stream, and @racket[stream-rest] forces the evaluation of
-  @racket[rest-expr] to produce a stream for the rest of the returned
-  stream.
+  Produces a stream whose first element is determined by
+  @racket[first-expr] and whose rest is determined by
+  @racket[rest-expr].
+
+  If @racket[first-expr] is not preceded by @racket[#:eager], then
+  @racket[first-expr] is not evaluated immediately. Instead,
+  @racket[stream-first] on the result stream forces the evaluation of
+  @racket[first-expr] (once) to produce the first element of the
+  stream. If evaluating @racket[first-expr] raises an exception or
+  tries to force itself, then an @exnraise[exn:fail:contract], and
+  future attempts to force evaluation will trigger another exception.
+
+  If @racket[rest-expr] is not preceded by @racket[#:eager], then
+  @racket[rest-expr] is not evaluated immediately. Instead,
+  @racket[stream-rest] on the result stream produces another stream
+  that is like the one produced by @racket[(stream-lazy rest-expr)].
 
   The first element of the stream as produced by @racket[first-expr]
   must be a single value. The @racket[rest-expr] must produce a stream
   when it is evaluated, otherwise the @exnraise[exn:fail:contract?].
-}
+
+  @history[#:changed "8.0.0.12" @elem{Added @racket[#:eager] options.}]}
+
+@defform*[[(stream-lazy stream-expr)
+           (stream-lazy #:who who-expr stream-expr)]]{
+
+ Similar to @racket[(delay stream-expr)], but the result is a stream
+ instead of a @tech{promise}, and @racket[stream-expr] must produce a
+ stream when it is eventually forced. The stream produced by
+ @racket[stream-lazy] has the same content as the stream produced by
+ @racket[stream-expr]; that is, operations like @racket[stream-first]
+ on the result stream will force @racket[stream-expr] and retry on its
+ result.
+
+ If evaluating @racket[stream-expr] raises an exception or tries to
+ force itself, then an @exnraise[exn:fail:contract], and future
+ attempts to force evaluation will trigger another exception.
+
+ If @racket[who-expr] is provided, it is evaluated when constructing
+ the delayed stream. If @racket[stream-expr] later produces a value
+ that is not a stream, and if @racket[who-expr] produced a symbol
+ value, then the symbol is used for the error message.
+
+ @history[#:added "8.0.0.12"]}
+
+@defproc[(stream-force [s stream?]) stream?]{
+
+ Forces the evaluation of a delayed stream from @racket[stream-lazy],
+ from the @racket[stream-rest] of a @racket[stream-cons], etc.,
+ returning the forced stream. If @racket[s] is not a delayed stream,
+ then @racket[s] is returned.
+
+ Normally, @racket[stream-force] is not needed, because operations
+ like @racket[stream-first], @racket[stream-rest], and
+ @racket[stream-empty?] force a delayed stream as needed. In rare
+ cases, @racket[stream-force] can be useful to reveal the underlying
+ implementation of a stream (e.g., a stream that is an instance of a
+ structure type that has the @racket[prop:stream] property).
+
+ @history[#:added "8.0.0.12"]}
 
 @defform[(stream expr ...)]{
   A shorthand for nested @racket[stream-cons]es ending with
@@ -1092,10 +1145,12 @@ stream, but plain lists can be used as streams, and functions such as
 
 @defform[(stream* expr ... rest-expr)]{
   A shorthand for nested @racket[stream-cons]es, but the @racket[rest-expr]
-  must be a stream, and it is used as the rest of the stream instead of
+  must produce a stream when it is forced, and that stream is used as the rest of the stream instead of
   @racket[empty-stream]. Similar to @racket[list*] but for streams.
 
-@history[#:added "6.3"]}
+@history[#:added "6.3"
+         #:changed "8.0.0.12" @elem{Changed to delay @racket[rest-expr] even
+                                    if zero @racket[expr]s are provided.}]}
 
 @defproc[(in-stream [s stream?]) sequence?]{
   Returns a sequence that is equivalent to @racket[s].

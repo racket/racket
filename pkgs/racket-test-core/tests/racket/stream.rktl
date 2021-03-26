@@ -41,7 +41,7 @@
 (test 'a 'stream* (stream-first (stream* 'a (stream (/ 0)))))
 (test 4 'stream* (stream-length (stream* 'a 'b 'c (stream (/ 0)))))
 (test 'c 'stream* (stream-first (stream-rest (stream-rest (stream* 'a 'b 'c (stream (/ 0)))))))
-(err/rt-test (stream* 2) exn:fail:contract? "stream*")
+(err/rt-test (stream-force (stream* 2)) exn:fail:contract? "stream*")
 (test #true 'stream* (stream? (stream* 1 0)))
 (err/rt-test (stream-length (stream* 1 2)) exn:fail:contract? "stream*")
 
@@ -133,5 +133,49 @@
           (sequence->stream
            (in-parallel '(1 3) '(2 4))))))
       list)
+
+;; stream-rest doesn't force rest expr
+(test #t stream? (stream-rest (stream-cons 1 'oops)))
+
+;; stream-force does force
+(err/rt-test (stream-force (stream-rest (stream-cons 1 'oops))))
+(err/rt-test (stream-empty? (stream-rest (stream-cons 1 'oops))))
+(err/rt-test (stream-first (stream-rest (stream-cons 1 'oops))))
+(err/rt-test (stream-rest (stream-rest (stream-cons 1 'oops))))
+
+(test #t stream? (stream-lazy 'oops))
+(err/rt-test (stream-force (stream-lazy 'oops)))
+(err/rt-test (stream-empty? (stream-lazy 'oops)))
+(err/rt-test (stream-first (stream-lazy 'oops)))
+(err/rt-test (stream-rest (stream-lazy 'oops)))
+
+(test #t stream? (stream* 'oops))
+(err/rt-test (stream-force (stream* 'oops)))
+(err/rt-test (stream-empty? (stream* 'oops)))
+(err/rt-test (stream-first (stream* 'oops)))
+(err/rt-test (stream-rest (stream* 'oops)))
+
+(err/rt-test (stream-force (stream-lazy #:who 'alice 'oops))
+             exn:fail:contract?
+             #rx"^alice: ")
+
+(test #f null? (stream-lazy '()))
+(test #t null? (stream-force (stream-lazy '())))
+(test #t stream-empty? (stream-lazy '()))
+
+;; lazy forcing errors => stays erroring
+(let ([s (stream-cons (error "oops") null)])
+  (err/rt-test/once (stream-first s) exn:fail?)
+  (err/rt-test (stream-first s) exn:fail:contract? #rx"reentrant or broken"))
+(let ([s (stream-cons 0 (error "oops"))])
+  (test #t stream? (stream-rest s))
+  (err/rt-test/once (stream-empty? (stream-rest s)) exn:fail?)
+  (err/rt-test (stream-empty? (stream-rest s)) exn:fail:contract? #rx"reentrant or broken"))
+
+;; lazy forcing is non-reentrant
+(letrec ([s (stream-cons (stream-first s) null)])
+  (err/rt-test (stream-first s) exn:fail:contract? #rx"reentrant or broken"))
+(letrec ([s (stream-cons 1 (stream-force (stream-rest s)))])
+  (err/rt-test (stream-empty? (stream-rest s)) exn:fail:contract? #rx"reentrant or broken"))
 
 (report-errs)

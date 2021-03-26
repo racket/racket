@@ -22,92 +22,132 @@
 (require (prefix-in for: racket/private/for))
 
 (provide stream-null stream-cons stream? stream-null? stream-pair?
-         stream-car stream-cdr stream-lambda stream-lazy)
+         stream-car stream-cdr stream-lambda stream-lazy stream-force)
+
+;; An eagerly constructed stream has a lazy first element, and
+;; normaly its rest is a lazily constructed stream.
+(define-struct eagerly-created-stream ([first-forced? #:mutable] [first #:mutable] rest)
+  #:reflection-name 'stream
+  #:property for:prop:stream (vector
+                              (lambda (p) #f)
+                              (lambda (p) (stream-force-first p))
+                              (lambda (p) (eagerly-created-stream-rest p))))
+
+;; A lazily constructed stream uses an mpair redirection to facilitate
+;; flattening chains of lazily constructed streams. The pair starts with
+;; #f if the stream is forced, a symbol for the constructing form otherwise
+(define-struct lazily-created-stream (mpair) 
+  #:mutable
+  #:reflection-name 'stream
+  #:property for:prop:stream (vector
+                              (lambda (p) (stream-null? p))
+                              (lambda (p) (stream-car p))
+                              (lambda (p) (stream-cdr p))))
+
+;; Recognize just the streams created by this layer:
+(define (stream? p)
+  (or (eagerly-created-stream? p)
+      (lazily-created-stream? p)))
 
 (define-syntax stream-lazy
  (syntax-rules ()
-  ((stream-lazy expr)
-   (make-stream
-    (mcons 'lazy (lambda () expr))))))
+   [(stream-lazy expr)
+    (make-lazily-created-stream (mcons 'stream-lazy (lambda () expr)))]
+   [(stream-lazy #:who who-expr expr)
+    (make-lazily-created-stream (mcons (or who-expr 'stream-lazy) (lambda () expr)))]))
 
-(define (stream-eager expr)
- (make-stream
-  (mcons 'eager expr)))
+(define reentrant-error
+  (lambda () (raise-arguments-error 'stream "reentrant or broken delay")))
 
-(define-syntax stream-delay
- (syntax-rules ()
-  ((stream-delay expr)
-   (stream-lazy (stream-eager expr)))))
+;; Forces a lazily constructed stream to a stream of any other kind
+(define (stream-force s)
+  (cond
+    [(lazily-created-stream? s)
+     (define p (lazily-created-stream-mpair s))
+     (cond
+       [(not (mcar p)) (mcdr p)]
+       [else
+        (define thunk (mcdr p))
+        (set-mcdr! p reentrant-error)
+        (define v (thunk))
+        (cond
+          [(lazily-created-stream? v)
+           ;; flatten the result lazy stream and try again
+           (set-lazily-created-stream-mpair! s (lazily-created-stream-mpair v))
+           (stream-force v)]
+          [(for:stream? v)
+           ;; any other kind of stream is success
+           (set-mcar! p #f)
+           (set-mcdr! p v)
+           v]
+          [else
+           (define who (mcar p))
+           (if (symbol? who)
+               (raise-arguments-error 
+                who
+                "delayed expression produced a non-stream"
+                "result" v)
+               (raise-arguments-error 
+                'stream-cons
+                "rest expression produced a non-stream"
+                "rest result" v))])])]
+    [(for:stream? s) s]
+    [else (raise-argument-error 'stream-force "stream?" s)]))
 
-(define (stream-force promise)
- (let ((content (stream-promise promise)))
-  (case (mcar content)
-   ((eager) (mcdr content))
-   ((lazy)  (let* ((promise* ((mcdr content))))
-              ;; check mcar again, it can it was set in the
-              ;; process of evaluating `(mcdr content)':
-              (if (eq? (mcar content) 'eager)
-                  ;; yes, it was set
-                  (mcdr content)
-                  ;; normal case: no, it wasn't set:
-                  (if (stream? promise*)
-                      ;; Flatten the result lazy stream and try again:
-                      (let ([new-content (stream-promise promise*)])
-                        (set-mcar! content (mcar new-content))
-                        (set-mcdr! content (mcdr new-content))
-                        (set-stream-promise! promise* content)
-                        (stream-force promise))
-                      ;; Forced result is not a lazy stream:
-                      (begin
-                        (unless (for:stream? promise*)
-                          (raise-mismatch-error 
-                           'stream-cons
-                           "rest expression produced a non-stream: "
-                           promise*))
-                        (set-mcdr! content promise*)
-                        (set-mcar! content 'eager)
-                        promise*))))))))
-                
+;; Forces the first element of an eagerly consttructed stream
+(define (stream-force-first p)
+  (cond
+    [(eagerly-created-stream-first-forced? p)
+     (eagerly-created-stream-first p)]
+    [else
+     (define thunk (eagerly-created-stream-first p))
+     (set-eagerly-created-stream-first! p reentrant-error)
+     (define v (thunk))
+     (set-eagerly-created-stream-first! p v)
+     (set-eagerly-created-stream-first-forced?! p #t)
+     v]))
 
 (define-syntax stream-lambda
  (syntax-rules ()
   ((stream-lambda formals body0 body1 ...)
    (lambda formals (stream-lazy (let () body0 body1 ...))))))
 
-(define-struct stream-pare (kar kdr))
-
 (define (stream-null? obj)
-  (let ([v (stream-force obj)])
-    (if (stream-pare? v)
-        #f
-        (or (eqv? v (stream-force stream-null))
-            (for:stream-empty? v)))))
+  (for:stream-empty? (stream-force obj)))
 
 (define (stream-pair? obj)
- (and (stream? obj) (stream-pare? (stream-force obj))))
+  (eagerly-created-stream? (stream-force obj)))
 
 (define-syntax stream-cons
- (syntax-rules ()
-  ((stream-cons obj strm)
-   (stream-eager (make-stream-pare (stream-delay obj) (stream-lazy strm))))))
+  (syntax-rules ()
+    ((stream-cons obj strm)
+     (eagerly-created-stream #f (lambda () obj)
+                             (lazily-created-stream (mcons #t (lambda () strm)))))
+    ((stream-cons #:eager obj strm)
+     (eagerly-created-stream #t obj
+                             (lazily-created-stream (mcons #t (lambda () strm)))))
+    ((stream-cons obj #:eager strm)
+     (eagerly-created-stream #f (lambda () obj)
+                             (stream-assert strm)))
+    ((stream-cons #:eager obj #:eager strm)
+     (eagerly-created-stream #t obj
+                             (stream-assert strm)))))
+
+(define (stream-assert v)
+  (if (for:stream? v)
+      v
+      (raise-argument-error 'stream-cons "stream?" v)))
 
 (define (stream-car strm)
   (let ([v (stream-force strm)])
-    (if (stream-pare? v)
-        (stream-force (stream-pare-kar v))
+    (if (eagerly-created-stream? v) ; shortcut
+        (stream-force-first v)
         (for:stream-first v))))
 
 (define (stream-cdr strm)
   (let ([v (stream-force strm)])
-    (if (stream-pare? v)
-        (stream-pare-kdr v)
+    (if (eagerly-created-stream? v) ; shortcut
+        (eagerly-created-stream-rest v)
         (for:stream-rest v))))
 
-(define-struct stream (promise) 
-  #:mutable
-  #:property for:prop:stream (vector
-                              stream-null?
-                              stream-car
-                              stream-cdr))
-
-(define stream-null (stream-delay (cons 'stream 'null)))
+(define stream-null (lazily-created-stream (mcons #f '())))
