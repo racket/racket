@@ -134,6 +134,17 @@
            (in-parallel '(1 3) '(2 4))))))
       list)
 
+;; check `#:eager`
+(test #t stream? (stream-cons (/ 1 0) (/ 1 0)))
+(test #t stream? (stream-cons #:eager 1 (/ 1 0)))
+(test #t stream? (stream-cons (/ 1 0) #:eager '(1)))
+(test #t stream? (stream-cons #:eager 0 #:eager '(1)))
+(err/rt-test (stream-cons 1 #:eager (/ 1 0)))
+(err/rt-test (stream-cons #:eager (/ 1 0) '(1)))
+(err/rt-test (stream-cons #:eager (/ 1 0) #:eager '(1)))
+(err/rt-test (stream-cons #:eager 1 #:eager (/ 1 0)))
+(err/rt-test (stream-cons #:eager 1 #:eager 1))
+
 ;; stream-rest doesn't force rest expr
 (test #t stream? (stream-rest (stream-cons 1 'oops)))
 
@@ -177,5 +188,10 @@
   (err/rt-test (stream-first s) exn:fail:contract? #rx"reentrant or broken"))
 (letrec ([s (stream-cons 1 (stream-force (stream-rest s)))])
   (err/rt-test (stream-empty? (stream-rest s)) exn:fail:contract? #rx"reentrant or broken"))
+
+;; regression test for chain of lazy streams
+(test 1 stream-first (stream-lazy
+                      (stream-lazy
+                       (stream-lazy '(1)))))
 
 (report-errs)

@@ -33,10 +33,10 @@
                               (lambda (p) (stream-force-first p))
                               (lambda (p) (eagerly-created-stream-rest p))))
 
-;; A lazily constructed stream uses an mpair redirection to facilitate
-;; flattening chains of lazily constructed streams. The pair starts with
-;; #f if the stream is forced, a symbol for the constructing form otherwise
-(define-struct lazily-created-stream (mpair) 
+;; A lazily constructed stream starts with #f if the stream is forced,
+;; a symbol for the constructing form otherwise; a #t in place of a
+;; symbol means 'stream-cons
+(define-struct lazily-created-stream (creator-if-unforced thunk-or-stream)
   #:mutable
   #:reflection-name 'stream
   #:property for:prop:stream (vector
@@ -52,9 +52,9 @@
 (define-syntax stream-lazy
  (syntax-rules ()
    [(stream-lazy expr)
-    (make-lazily-created-stream (mcons 'stream-lazy (lambda () expr)))]
+    (make-lazily-created-stream 'stream-lazy (lambda () expr))]
    [(stream-lazy #:who who-expr expr)
-    (make-lazily-created-stream (mcons (or who-expr 'stream-lazy) (lambda () expr)))]))
+    (make-lazily-created-stream (or who-expr 'stream-lazy) (lambda () expr))]))
 
 (define reentrant-error
   (lambda () (raise-arguments-error 'stream "reentrant or broken delay")))
@@ -63,34 +63,40 @@
 (define (stream-force s)
   (cond
     [(lazily-created-stream? s)
-     (define p (lazily-created-stream-mpair s))
-     (cond
-       [(not (mcar p)) (mcdr p)]
-       [else
-        (define thunk (mcdr p))
-        (set-mcdr! p reentrant-error)
-        (define v (thunk))
-        (cond
-          [(lazily-created-stream? v)
-           ;; flatten the result lazy stream and try again
-           (set-lazily-created-stream-mpair! s (lazily-created-stream-mpair v))
-           (stream-force v)]
-          [(for:stream? v)
-           ;; any other kind of stream is success
-           (set-mcar! p #f)
-           (set-mcdr! p v)
-           v]
-          [else
-           (define who (mcar p))
-           (if (symbol? who)
-               (raise-arguments-error 
-                who
-                "delayed expression produced a non-stream"
-                "result" v)
-               (raise-arguments-error 
-                'stream-cons
-                "rest expression produced a non-stream"
-                "rest result" v))])])]
+     (let loop ([s s] [dep-ses '()])
+       (cond
+         [(not (lazily-created-stream-creator-if-unforced s))
+          (define v (lazily-created-stream-thunk-or-stream s))
+          (for ([dep-s (in-list dep-ses)])
+            (set-lazily-created-stream-creator-if-unforced! dep-s #f)
+            (set-lazily-created-stream-thunk-or-stream! dep-s v))
+          v]
+         [else
+          (define thunk (lazily-created-stream-thunk-or-stream s))
+          (set-lazily-created-stream-thunk-or-stream! s reentrant-error)
+          (define v (thunk))
+          (cond
+            [(lazily-created-stream? v)
+             ;; try again
+             (loop v (cons s dep-ses))]
+            [(for:stream? v)
+             ;; any other kind of stream is success
+             (set-lazily-created-stream-creator-if-unforced! s #f)
+             (set-lazily-created-stream-thunk-or-stream! s v)
+             (if (null? dep-ses)
+                 v
+                 (loop s dep-ses))]
+            [else
+             (define who (lazily-created-stream-creator-if-unforced s))
+             (if (symbol? who)
+                 (raise-arguments-error
+                  who
+                  "delayed expression produced a non-stream"
+                  "result" v)
+                 (raise-arguments-error
+                  'stream-cons
+                  "rest expression produced a non-stream"
+                  "rest result" v))])]))]
     [(for:stream? s) s]
     [else (raise-argument-error 'stream-force "stream?" s)]))
 
@@ -122,10 +128,10 @@
   (syntax-rules ()
     ((stream-cons obj strm)
      (eagerly-created-stream #f (lambda () obj)
-                             (lazily-created-stream (mcons #t (lambda () strm)))))
+                             (lazily-created-stream #t (lambda () strm))))
     ((stream-cons #:eager obj strm)
      (eagerly-created-stream #t obj
-                             (lazily-created-stream (mcons #t (lambda () strm)))))
+                             (lazily-created-stream #t (lambda () strm))))
     ((stream-cons obj #:eager strm)
      (eagerly-created-stream #f (lambda () obj)
                              (stream-assert strm)))
@@ -150,4 +156,4 @@
         (eagerly-created-stream-rest v)
         (for:stream-rest v))))
 
-(define stream-null (lazily-created-stream (mcons #f '())))
+(define stream-null (lazily-created-stream #f '()))
