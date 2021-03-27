@@ -82,7 +82,8 @@
               (ptr-add sql-buffer (c-string-length sql-buffer))))
 
 (define-sqlite sqlite3_prepare
-  (_fun (db sql) ::
+  (_fun #:blocking? #t
+        (db sql) ::
         (db : _sqlite3_database)
         (sql-buffer : _gcpointer = (trim-and-copy-buffer sql))
         ((c-string-length sql-buffer) : _int)
@@ -93,7 +94,8 @@
                                          (not (points-to-end? tail sql-buffer))))))
 
 (define-sqlite sqlite3_prepare_v2
-  (_fun (db sql) ::
+  (_fun #:blocking? #t
+        (db sql) ::
         (db : _sqlite3_database)
         (sql-buffer : _gcpointer = (trim-and-copy-buffer sql))
         ((c-string-length sql-buffer) : _int)
@@ -181,7 +183,8 @@
 ;; ----------------------------------------
 
 (define-sqlite sqlite3_step
-  (_fun _sqlite3_statement -> _int))
+  (_fun #:blocking? #t
+        _sqlite3_statement -> _int))
 
 (define-sqlite sqlite3_column_type
   (_fun _sqlite3_statement _int -> _int))
