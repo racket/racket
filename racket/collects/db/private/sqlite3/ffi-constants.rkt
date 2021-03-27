@@ -62,3 +62,4 @@
 
 (define SQLITE_UTF8           1)
 (define SQLITE_DETERMINISTIC  #x800)
+(define SQLITE_DIRECTONLY     #x80000)

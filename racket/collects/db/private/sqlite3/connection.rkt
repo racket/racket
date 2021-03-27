@@ -440,14 +440,17 @@
 
     (define dont-gc null)
 
-    (define/public (unsafe-create-function who name arity proc)
+    (define/public (unsafe-create-function who name arity proc
+                                           #:flags [flags null])
       (define wrapped (wrap-fun name proc))
       (call-with-lock who
        (lambda ()
          (set! dont-gc (cons wrapped dont-gc))
-         (HANDLE who (A (sqlite3_create_function_v2 -db name (or arity -1) wrapped))))))
+         (HANDLE who (A (sqlite3_create_function_v2/scalar
+                         -db name (or arity -1) flags wrapped))))))
 
-    (define/public (unsafe-create-aggregate who name arity step final [init #f])
+    (define/public (unsafe-create-aggregate who name arity step final [init #f]
+                                            #:flags [flags null])
       (define aggbox (box init))
       (define wrapped-step (wrap-agg-step name step aggbox init))
       (define wrapped-final (wrap-agg-final name final aggbox init))
@@ -455,8 +458,8 @@
        (lambda ()
          (set! dont-gc (list* wrapped-step wrapped-final dont-gc))
          (HANDLE who
-                 (A (sqlite3_create_aggregate -db name (or arity -1)
-                                              wrapped-step wrapped-final))))))
+                 (A (sqlite3_create_function_v2/aggregate
+                     -db name (or arity -1) flags wrapped-step wrapped-final))))))
 
     ;; == Error handling
 
