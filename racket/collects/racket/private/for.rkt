@@ -40,6 +40,7 @@
              (for-syntax (rename expand-clause expand-for-clause))
 
              (rename *in-range in-range)
+             (rename *in-inclusive-range in-inclusive-range)
              (rename *in-naturals in-naturals)
              (rename *in-list in-list)
              (rename *in-mlist in-mlist)
@@ -634,10 +635,13 @@
                                      #f))))))
 
   (define (check-range a b step)
-    (unless (real? a) (raise-argument-error 'in-range "real?" a))
-    (unless (real? b) (raise-argument-error 'in-range "real?" b))
-    (unless (real? step) (raise-argument-error 'in-range "real?" step)))
-  
+    (check-range-generic 'in-range a b step))
+
+  (define (check-range-generic who a b step)
+    (unless (real? a) (raise-argument-error who "real?" a))
+    (unless (real? b) (raise-argument-error who "real?" b))
+    (unless (real? step) (raise-argument-error who "real?" step)))
+
   (define in-range
     (case-lambda
       [(b) (in-range 0 b 1)]
@@ -647,6 +651,17 @@
        (let* ([cont? (if (step . >= . 0)
                          (lambda (x) (< x b))
                          (lambda (x) (> x b)))]
+              [inc (lambda (x) (+ x step))])
+         (make-range a inc cont?))]))
+
+  (define in-inclusive-range
+    (case-lambda
+      [(a b) (in-inclusive-range a b 1)]
+      [(a b step)
+       (check-range-generic 'in-inclusive-range a b step)
+       (let* ([cont? (if (step . >= . 0)
+                         (lambda (x) (<= x b))
+                         (lambda (x) (>= x b)))]
               [inc (lambda (x) (+ x step))])
          (make-range a inc cont?))]))
 
@@ -2133,6 +2148,50 @@
                   ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))]))]
           [[(id) (_ a b)] (loop #'[(id) (_ a b 1)])]
           [[(id) (_ b)] (loop #'[(id) (_ 0 b 1)])]
+          [_ #f]))))
+
+  (define-sequence-syntax *in-inclusive-range
+    (lambda () #'in-inclusive-range)
+    (lambda (stx)
+      (let loop ([stx stx])
+        (syntax-case stx ()
+          [[(id) (_ a b step)]
+           (let* ([the-step (syntax-e #'step)]
+                  [all-fx? (and (memq the-step '(1 -1))
+                                (fixnum? (syntax-e #'a))
+                                (fixnum? ((if (eq? the-step 1) add1 sub1) (syntax-e #'b))))])
+             (for-clause-syntax-protect
+              #`[(id)
+                 (:do-in
+                  ;; outer bindings:
+                  ([(start) a] [(end) b] [(inc) step])
+                  ;; outer check:
+                  ;; let `check-range' report the error:
+                  (unless-unsafe (check-range-generic 'in-inclusive-range start end inc))
+                  ;; loop bindings:
+                  ([pos start])
+                  ;; pos check
+                  #,(cond [all-fx?
+                           ;; Special case, can use unsafe ops:
+                           (if ((syntax-e #'step) . >= . 0)
+                               #'(unsafe-fx<= pos end)
+                               #'(unsafe-fx>= pos end))]
+                          ;; General cases:
+                          [(not (number? (syntax-e #'step)))
+                           #`(if (step . >= . 0) (<= pos end) (>= pos end))]
+                          [((syntax-e #'step) . >= . 0)
+                           #'(<= pos end)]
+                          [else
+                           #'(>= pos end)])
+                  ;; inner bindings
+                  ([(id) pos])
+                  ;; pre guard
+                  #t
+                  ;; post guard
+                  #t
+                  ;; loop args
+                  ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))]))]
+          [[(id) (_ a b)] (loop #'[(id) (_ a b 1)])]
           [_ #f]))))
 
   (define-sequence-syntax *in-naturals
