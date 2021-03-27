@@ -1,4 +1,3 @@
-
 (load-relative "loadtest.rktl")
 
 (Section 'for)
@@ -13,17 +12,21 @@
 (test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5)] (in-range 3.0 6.0 0.5))
 (test-sequence [(3.0 3.1 3.2)] (in-range 3.0 3.3 0.1))
 (err/rt-test (for/list ([x (in-range)]) x))
+(err/rt-test (for/mlist ([x (in-range)]) x))
 (err/rt-test (in-range))
 (err/rt-test (for/list ([x (in-naturals 0 1)]) x))
+(err/rt-test (for/mlist ([x (in-naturals 0 1)]) x))
 (err/rt-test (in-naturals 0 1))
 
 (test-sequence [(a b c)] '(a b c))
 (test-sequence [(a b c)] (in-list '(a b c)))
 (err/rt-test (for/list ([x (in-list '(a b c) '?)]) x))
+(err/rt-test (for/mlist ([x (in-list '(a b c) '?)]) x))
 (err/rt-test (in-list '(a b c) '?))
 (test-sequence [(a b c)] (mcons 'a (mcons 'b (mcons 'c empty))))
 (test-sequence [(a b c)] (in-mlist (mcons 'a (mcons 'b (mcons 'c empty)))))
 (err/rt-test (for/list ([x (in-mlist (mcons 'a (mcons 'b (mcons 'c empty))) '?)]) x))
+(err/rt-test (for/mlist ([x (in-mlist (mcons 'a (mcons 'b (mcons 'c empty))) '?)]) x))
 (err/rt-test (in-mlist (mcons 'a (mcons 'b (mcons 'c empty))) '?))
 (test-sequence [(a b c)] #(a b c))
 (test-sequence [(a b c)] (in-vector #(a b c)))
@@ -39,6 +42,9 @@
 (err/rt-test (for/list ([x (in-vector #(a b c d) 0 6 2)]) x) exn:fail:contract?)
 (err/rt-test (for/list ([x (in-vector #(a b c d) 6 0 -2)]) x) exn:fail:contract?)
 (err/rt-test (for/list ([x (in-vector)]) x))
+(err/rt-test (for/mlist ([x (in-vector #(a b c d) 0 6 2)]) x) exn:fail:contract?)
+(err/rt-test (for/mlist ([x (in-vector #(a b c d) 6 0 -2)]) x) exn:fail:contract?)
+(err/rt-test (for/mlist ([x (in-vector)]) x))
 (err/rt-test (in-vector))
 (test-sequence [(#\a #\b #\c)] "abc")
 (test-sequence [(#\a #\u3bb #\c)] "a\u03BBc")
@@ -50,6 +56,7 @@
 (test-sequence [(#\a #\b #\c)] (in-string "zzaxbyc" 2 #f 2))
 (test-sequence [(#\a #\b #\c)] (in-string "zzaxbycy" 2 #f 2))
 (err/rt-test (for/list ([x (in-string)]) x))
+(err/rt-test (for/mlist ([x (in-string)]) x))
 (err/rt-test (in-string))
 (test-sequence [(65 66 67)] #"ABC")
 (test-sequence [(65 66 67)] (in-bytes #"ABC"))
@@ -59,18 +66,24 @@
 (test-sequence [(65 66 67)] (in-bytes #"ZZAXBYC" 2 #f 2))
 (test-sequence [(65 66 67)] (in-bytes #"ZZAXBYCY" 2 #f 2))
 (err/rt-test (for/list ([x (in-bytes)]) x))
+(err/rt-test (for/mlist ([x (in-bytes)]) x))
 (err/rt-test (in-bytes))
 (test-sequence [(#\a #\b #\c)] (in-input-port-chars (open-input-string "abc")))
 (err/rt-test (for/list ([c (in-input-port-chars (open-input-string "abc") '?)]) c))
+(err/rt-test (for/mlist ([c (in-input-port-chars (open-input-string "abc") '?)]) c))
 (err/rt-test (in-input-port-chars (open-input-string "abc") '?))
 (test-sequence [(65 66 67)] (open-input-bytes #"ABC"))
 (test-sequence [(65 66 67)] (in-input-port-bytes (open-input-bytes #"ABC")))
 (err/rt-test (for/list ([b (in-input-port-bytes (open-input-bytes #"ABC") '?)]) b))
+(err/rt-test (for/mlist ([b (in-input-port-bytes (open-input-bytes #"ABC") '?)]) b))
 (err/rt-test (in-input-port-bytes (open-input-bytes #"ABC") '?))
 
 ;; Test optimized:
 (test '(2) 'in-list-of-list (for/list ([v (in-list (list 1))]) (add1 v)))
 (test '(0) 'in-mlist-of-mlist (for/list ([v (in-mlist (mlist 1))]) (sub1 v)))
+
+(test (mcons 2 '()) 'in-list-of-list (for/mlist ([v (in-list (list 1))]) (add1 v)))
+(test (mcons 0 '()) 'in-mlist-of-mlist (for/mlist ([v (in-mlist (mlist 1))]) (sub1 v)))
 
 (test-sequence [(1 2 3)] (in-port read (open-input-string "1 2 3")))
 (test-sequence [((123) 4)] (in-port read (open-input-string "(123) 4")))
@@ -79,10 +92,12 @@
 (test-sequence [("abc" "def")] (in-lines (open-input-string "abc\ndef")))
 (test-sequence [("abc" "def")] (in-lines (open-input-string "abc\ndef") 'any))
 (err/rt-test (for/list ([l (in-lines (open-input-string "abc\ndef") 'any '?)]) l))
+(err/rt-test (for/mlist ([l (in-lines (open-input-string "abc\ndef") 'any '?)]) l))
 (err/rt-test (in-lines (open-input-string "abc\ndef") 'any '?))
 (test-sequence [(#"abc" #"def")] (in-bytes-lines (open-input-string "abc\ndef")))
 (test-sequence [(#"abc" #"def")] (in-bytes-lines (open-input-string "abc\ndef") 'any))
 (err/rt-test (for/list ([l (in-bytes-lines (open-input-string "abc\ndef") 'any '?)]) l))
+(err/rt-test (for/mlist ([l (in-bytes-lines (open-input-string "abc\ndef") 'any '?)]) l))
 (err/rt-test (in-bytes-lines (open-input-string "abc\ndef") 'any '?))
 
 (test-sequence [(0 1 2 3 4 5)] (in-sequences (in-range 6)))
@@ -99,6 +114,10 @@
 (test '() 'empty-seq (for/list ([v (in-sequences)]) v))
 (test '() 'empty-seq (for/list ([v (in-sequences '())]) v))
 (test '() 'empty-seq (for/list ([v (in-sequences '() '())]) v))
+
+(test '() 'empty-seq (for/mlist ([v (in-sequences)]) v))
+(test '() 'empty-seq (for/mlist ([v (in-sequences '())]) v))
+(test '() 'empty-seq (for/mlist ([v (in-sequences '() '())]) v))
 
 ;; use in-parallel to get a finite number of items
 (test-sequence [(0 1 2 3 0 1 2 3) (0 1 2 3 4 5 6 7)]
@@ -124,6 +143,9 @@
 (err/rt-test (for/list ([(x y) (in-indexed '(a b c) '?)]) x))
 (err/rt-test (for/list ([(x y) (in-indexed '(a b c) '?)]) x))
 (err/rt-test (for/list ([x (in-indexed '(a b c))]) x))
+(err/rt-test (for/mlist ([(x y) (in-indexed '(a b c) '?)]) x))
+(err/rt-test (for/mlist ([(x y) (in-indexed '(a b c) '?)]) x))
+(err/rt-test (for/mlist ([x (in-indexed '(a b c))]) x))
 (err/rt-test (in-indexed '(a b c) '?))
 
 ;; Make sure `in-indexed` doesn't provide a bad position to the underlying
@@ -149,21 +171,41 @@
   (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter))] #:break (= x 5)) x))
   (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter) 5)]) x))
   (test-sequence [(1/2 1 3/2 2 5/2 3 7/2 4 9/2)]
-    (for/list ([x (in-producer (counter) 5 1/2)]) x))
+                 (for/list ([x (in-producer (counter) 5 1/2)]) x))
+  (test-sequence [(1 2 3 4)] (for/mlist ([x (in-producer (counter))] [y (in-range 4)]) x))
+  (test-sequence [(1 2 3 4)] (for/mlist ([x (in-producer (counter))] #:break (= x 5)) x))
+  (test-sequence [(1 2 3 4)] (for/mlist ([x (in-producer (counter) 5)]) x))
+  (test-sequence [(1/2 1 3/2 2 5/2 3 7/2 4 9/2)]
+                 (for/mlist ([x (in-producer (counter) 5 1/2)]) x))
   ;; test in-producer outside of for loops
   (test 6 sequence-ref (in-producer (counter)) 5)
   (err/rt-test (for/list ([x (in-producer)]) x))
+  (err/rt-test (for/mlist ([x (in-producer)]) x))
   (err/rt-test (in-producer)))
 
 (test-sequence [(1 2 3 4 5)]
-  (parameterize ([current-input-port (open-input-string "1 2 3\n4 5")])
-    (for/list ([i (in-producer read eof)]) i)))
+               (parameterize ([current-input-port (open-input-string "1 2 3\n4 5")])
+                 (for/list ([i (in-producer read eof)]) i)))
 (test-sequence [(1 2 3 4 5)]
-  (for/list ([i (in-producer read eof (open-input-string "1 2 3\n4 5"))]) i))
+               (for/list ([i (in-producer read eof (open-input-string "1 2 3\n4 5"))]) i))
 (test-sequence [("1 2 3" "4 5")]
-  (for/list ([i (in-producer read-line eof-object? (open-input-string "1 2 3\n4 5"))]) i))
+               (for/list ([i (in-producer read-line eof-object? (open-input-string "1 2 3\n4 5"))]) i))
 (test-sequence [((1 2) (3 4) (5 ,eof))]
-  (for/list ([(i j)
+               (for/list ([(i j)
+                           (in-producer (lambda (p) (values (read p) (read p)))
+                                        (lambda (x y) (and (eof-object? x) (eof-object? y)))
+                                        (open-input-string "1 2 3\n4 5"))])
+                 (list i j)))
+
+(test-sequence [(1 2 3 4 5)]
+  (parameterize ([current-input-port (open-input-string "1 2 3\n4 5")])
+    (for/mlist ([i (in-producer read eof)]) i)))
+(test-sequence [(1 2 3 4 5)]
+  (for/mlist ([i (in-producer read eof (open-input-string "1 2 3\n4 5"))]) i))
+(test-sequence [("1 2 3" "4 5")]
+  (for/mlist ([i (in-producer read-line eof-object? (open-input-string "1 2 3\n4 5"))]) i))
+(test-sequence [((1 2) (3 4) (5 ,eof))]
+  (for/mlist ([(i j)
               (in-producer (lambda (p) (values (read p) (read p)))
                            (lambda (x y) (and (eof-object? x) (eof-object? y)))
                            (open-input-string "1 2 3\n4 5"))])
@@ -176,8 +218,8 @@
                                             (values add1
                                                     add1
                                                     0
-                                                    pos 
-                                                    pre 
+                                                    pos
+                                                    pre
                                                     post)))))])
   (five-seq (lambda (pos) (pos . < . 5))
             #f
@@ -197,8 +239,8 @@
                                                     add1 ; "pre" next
                                                     add1
                                                     0
-                                                    pos 
-                                                    pre 
+                                                    pos
+                                                    pre
                                                     post)))))])
   (five-odd-seq (lambda (pos) (pos . < . 5))
                 #f
@@ -218,8 +260,8 @@
                                                                         (number->string n)))
                                                     add1
                                                     0
-                                                    pos 
-                                                    pre 
+                                                    pos
+                                                    pre
                                                     post)))))])
   (fives-seq (lambda (pos) (pos . < . 5))
              #f
@@ -249,6 +291,17 @@
         #:final (= i 3)
         (add1 i)))
 
+(test (mcons 1 (mcons 2 (mcons 3 '())))
+      'three
+      (for/mlist ([i 10])
+        #:break (= i 3)
+        (add1 i)))
+(test (mcons 1 (mcons 2 (mcons 3 (mcons 4 '()))))
+      'three
+      (for/mlist ([i 10])
+        #:final (= i 3)
+        (add1 i)))
+
 ;; Make sure that breaking a sequence stops before consuming another element:
 (test '(("1" "2" "3" "4" "5" "6" "7" "8" "9") . 10)
       'producer
@@ -264,6 +317,24 @@
         (cons
          (for*/list ([j '(0)]
                      [i (in-producer (lambda () (set! c (add1 c)) c))])
+           #:break (= i 10)
+           (number->string i))
+         c)))
+
+(test (mcons (mcons "1" (mcons "2" (mcons "3" (mcons "4" (mcons "5" (mcons "6" (mcons "7" (mcons "8" (mcons "9" '()))))))))) 10)
+      'producer
+      (let ([c 0])
+        (mcons
+         (for/mlist ([i (in-producer (lambda () (set! c (add1 c)) c))])
+           #:break (= i 10)
+           (number->string i))
+         c)))
+(test (mcons (mcons "1" (mcons "2" (mcons "3" (mcons "4" (mcons "5" (mcons "6" (mcons "7" (mcons "8" (mcons "9" '()))))))))) 10)
+      'producer
+      (let ([c 0])
+        (mcons
+         (for*/mlist ([j '(0)]
+                      [i (in-producer (lambda () (set! c (add1 c)) c))])
            #:break (= i 10)
            (number->string i))
          c)))
@@ -299,12 +370,12 @@
 
 (test 2 'for/vector-long-iter
       (vector-length (for/vector #:length 2 ((i (in-range 10))) i)))
-(test 5 'for*/vector-long-iter 
+(test 5 'for*/vector-long-iter
       (vector-length (for*/vector #:length 5 ((i (in-range 3)) (j (in-range 3))) (+ i j))))
 
 ;; Test for many body expressions
 (let* ((v (vector 1.0 2.0 3.0))
-       (v2 (for/vector ((i (in-range 3))) 
+       (v2 (for/vector ((i (in-range 3)))
              (vector-set! v i (+ (vector-ref v i) 1.0))
              (vector-ref v i)))
        (v3 (for/vector #:length 3 ((i (in-range 3)))
@@ -334,7 +405,7 @@
       'producer
       (let ([c 0])
         (cons
-         (for/vector #:length 10 ([i (in-producer (lambda () (set! c (add1 c)) c))]) 
+         (for/vector #:length 10 ([i (in-producer (lambda () (set! c (add1 c)) c))])
                      (number->string i))
          c)))
 (test '(#("1" "2" "3" "4" "5" "6" "7" "8" "9" "10") . 10)
@@ -415,20 +486,22 @@
                 (values v v)))
 
 (test 1 'parallel-or-first
-      (for/or (((a b) (in-parallel '(1 #f) '(#t #f)))) 
+      (for/or (((a b) (in-parallel '(1 #f) '(#t #f))))
               a))
 (test 1 'parallel-or-last
-      (for/or (((a b) (in-parallel '(#f 1) '(#t #f)))) 
+      (for/or (((a b) (in-parallel '(#f 1) '(#t #f))))
               a))
 (test #f 'parallel-and-first
-      (for/and (((a b) (in-parallel '(1 #f) '(#t #f)))) 
+      (for/and (((a b) (in-parallel '(1 #f) '(#t #f))))
               a))
 (test #f 'parallel-and-last
-      (for/and (((a b) (in-parallel '(#f 1) '(#t #f)))) 
+      (for/and (((a b) (in-parallel '(#f 1) '(#t #f))))
               a))
 
 (test '(11) 'in-value (for/list ([i (in-value 11)]) i))
+(test (mcons 11 '()) 'in-value (for/mlist ([i (in-value 11)]) i))
 (err/rt-test (for/list ([i (in-value 1 2)]) i))
+(err/rt-test (for/mlist ([i (in-value 1 2)]) i))
 (err/rt-test (in-value 1 2))
 (let-values ([(more? next) (sequence-generate (in-value 13))])
   (test #t more?)
@@ -453,6 +526,23 @@
         (define-sequence-syntax in-X* (lambda () #'in-X) (lambda (stx) #f))
         (for/list ([x (in-X* #:x '(1 2 3))]) x)))
 
+(test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/mlist ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#() 0)]) (for/mlist ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#() 0 0)]) (for/mlist ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 1)]) (for/mlist ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 1 1)]) (for/mlist ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 0 0)]) (for/mlist ([e v]) e)))
+(test (mcons 1 '()) 'in-empty-vector (let ([v (in-vector '#(1) 0 1)]) (for/mlist ([e v]) e)))
+
+(test (mcons 1 (mcons 2 (mcons 3 '())))
+      'sequence-syntax-with-keywords
+      (let ()
+        (define (in-X #:x seq) seq)
+        (for/mlist ([x (in-X #:x '(1 2 3))]) x)
+        ;; => (mcons 1 (mcons 2 (mcons 3 '())))
+        (define-sequence-syntax in-X* (lambda () #'in-X) (lambda (stx) #f))
+        (for/mlist ([x (in-X* #:x '(1 2 3))]) x)))
+
 
 ;; extra tests for #:break and #:final
 (test '((0 0) (0 1) (1 0) (1 1)) 'multi-level-break
@@ -463,16 +553,36 @@
 (test '((0 0) (0 1) (1 0) (1 1) (2 0)) 'outer-loop-final
       (for*/list ([i 4][j 2] #:final (= i 2)) (list i j)))
 (test '((0 0) (0 1) (1 0) (1 1) (2 0)) 'outer-loop-final
-      (for/list ([i 4]  #:final (= i 2) [j 2]) (list i j)))
+      (for/list ([i 4] #:final (= i 2) [j 2]) (list i j)))
 
 (test '((0 0) (0 1) (1 0) (1 1)) 'break-and-final
- (for*/list ([i 4][j 2] #:final (= i 2) #:break (= i 2)) (list i j)))
+      (for*/list ([i 4][j 2] #:final (= i 2) #:break (= i 2)) (list i j)))
 
 (test '((0 0) (0 1) (1 0) (1 1)) 'break-and-final
- (for*/list ([i 4][j 2] #:break (= i 2) #:final (= i 2)) (list i j)))
+      (for*/list ([i 4][j 2] #:break (= i 2) #:final (= i 2)) (list i j)))
 
 (test '((0 1) (1 1)) 'skipped-final
       (for*/list ([i 4][j 2] #:final (= i 2) #:unless (= j 0)) (list i j)))
+
+
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) '())))) 'multi-level-break
+      (for*/mlist ([i 4] [j 2] #:break (= i 2)) (list i j)))
+(test (mcons '(1 0 0) (mcons '(1 0 1) (mcons '(1 1 0) (mcons '(1 1 1) '())))) 'multi-level-break
+      (for/mlist ([i 5] #:when (odd? i) [j 2] #:when #t [k 2] #:break (= i 3))
+        (list i j k)))
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) (mcons '(2 0) '()))))) 'outer-loop-final
+      (for*/mlist ([i 4][j 2] #:final (= i 2)) (list i j)))
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) (mcons '(2 0) '()))))) 'outer-loop-final
+      (for/mlist ([i 4] #:final (= i 2) [j 2]) (list i j)))
+
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) '())))) 'break-and-final
+      (for*/mlist ([i 4][j 2] #:final (= i 2) #:break (= i 2)) (list i j)))
+
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) '())))) 'break-and-final
+      (for*/mlist ([i 4][j 2] #:break (= i 2) #:final (= i 2)) (list i j)))
+
+(test (mcons '(0 1) (mcons '(1 1) '())) 'skipped-final
+      (for*/mlist ([i 4][j 2] #:final (= i 2) #:unless (= j 0)) (list i j)))
 
 ;; check #:break and #:final in body with exprs in between
 (test (list 0 1) 'nested-body-break
@@ -480,13 +590,28 @@
 (test (list 0 1 2) 'nested-body-final
       (for/list ([i 4]) (define j (add1 i)) #:final (= j 3) i))
 (test '((0 0) (0 1) (1 0) (1 1)) 'nested-body-break-and-final
-      (for*/list ([i 4][j 2]) 
+      (for*/list ([i 4][j 2])
         (define k i) #:final (= k 2)
-        (define m i) #:break (= m 2) 
+        (define m i) #:break (= m 2)
         (list i j)))
 (test '((0 0) (0 1) (1 0) (1 1)) 'nested-body-break-and-final
-      (for*/list ([i 4][j 2]) 
-        (define m i) #:break (= m 2) 
+      (for*/list ([i 4][j 2])
+        (define m i) #:break (= m 2)
+        (define k i) #:final (= k 2)
+        (list i j)))
+
+(test (mcons 0 (mcons 1 '())) 'nested-body-break
+      (for/mlist ([i 4]) (define j (add1 i)) #:break (= j 3) i))
+(test (mcons 0 (mcons 1 (mcons 2 '()))) 'nested-body-final
+      (for/mlist ([i 4]) (define j (add1 i)) #:final (= j 3) i))
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) '())))) 'nested-body-break-and-final
+      (for*/mlist ([i 4][j 2])
+        (define k i) #:final (= k 2)
+        (define m i) #:break (= m 2)
+        (list i j)))
+(test (mcons '(0 0) (mcons '(0 1) (mcons '(1 0) (mcons '(1 1) '())))) 'nested-body-break-and-final
+      (for*/mlist ([i 4][j 2])
+        (define m i) #:break (= m 2)
         (define k i) #:final (= k 2)
         (list i j)))
 
@@ -621,6 +746,41 @@
                                  [pr (in-list lst)])
                       (values (car pr) (cdr pr)))])
         (list firsts seconds other)))
+(test (list (mcons 1 (mcons 3 (mcons 5 '()))) (mcons 2 (mcons 4 (mcons 6 '()))))
+      'for/mlists-result-clause1
+      (for/mlists (firsts seconds #:result (list firsts seconds))
+        ([pr '((1 . 2) (3 . 4) (5 . 6))])
+        (values (car pr) (cdr pr))))
+(test (list (mcons 1 (mcons 3 (mcons 5 '()))) (mcons 2 (mcons 4 (mcons 6 '()))) '())
+      'for/mlists-result-clause2
+      (let-values ([(firsts seconds other)
+                    (for/mlists (firsts
+                                 seconds
+                                 #:result (values firsts seconds '()))
+                      ([pr '((1 . 2) (3 . 4) (5 . 6))])
+                      (values (car pr) (cdr pr)))])
+        (list firsts seconds other)))
+(test (list (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 '())))))
+            (mcons 2 (mcons 4 (mcons 6 (mcons 8 (mcons 10 '()))))))
+      'for*/mlists-result-clause1
+      (for*/mlists (firsts seconds #:result (list firsts seconds))
+                  ([lst '(((1 . 2) (3 . 4) (5 . 6))
+                          ((7 . 8) (9 . 10)))]
+                   [pr (in-list lst)])
+        (values (car pr) (cdr pr))))
+(test (list (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 '())))))
+            (mcons 2 (mcons 4 (mcons 6 (mcons 8 (mcons 10 '())))))
+            '())
+      'for*/mlists-result-clause2
+      (let-values ([(firsts seconds other)
+                    (for*/mlists (firsts
+                                 seconds
+                                 #:result (values firsts seconds '()))
+                                ([lst '(((1 . 2) (3 . 4) (5 . 6))
+                                        ((7 . 8) (9 . 10)))]
+                                 [pr (in-list lst)])
+                      (values (car pr) (cdr pr)))])
+        (list firsts seconds other)))
 
 (test '()
       'for/lists-split-body
@@ -651,6 +811,36 @@
           (set! acc '(bad)))
         v))
 
+
+(test '()
+      'for/mlists-split-body
+      (for/mlists (lst) ([x '()])
+        #:break #f
+        x))
+(test '()
+      'for/mlists-split-body
+      (for/mlists (lst) ([x '()])
+        (define-syntax (m stx) #'0)
+        m))
+(test '()
+      'for*/mlists-split-body
+      (for*/mlists (lst) ([x '()])
+        #:break #f
+        x))
+(test '()
+      'for*/mlists-split-body
+      (for*/mlists (lst) ([x '()])
+        (define-syntax (m stx) #'0)
+        m))
+
+(test (mcons 'bad (mcons 1 '()))
+      'for/mlists-weird-set!
+      (for/mlists (acc)
+          ([v (in-range 2)])
+        (unless (zero? v)
+          (set! acc (mcons 'bad '())))
+        v))
+
 ;; for should discard any results and return void
 (test (void) 'for-0-values (for ([x '(1 2 3)] [y '(a b c)]) (values)))
 (test (void) 'for*-0-values (for* ([x '(1 2 3)] [y '(a b c)]) (values)))
@@ -660,9 +850,9 @@
 (test (void) 'for*-2-values (for* ([x '(1 2 3)] [y '(a b c)]) (values x y)))
 
 ;; for/fold with no accums
-(test '() 'for/fold-no-accum 
+(test '() 'for/fold-no-accum
       (call-with-values (λ () (for/fold () ([x '(1 2)]) (values))) (λ x x)))
-(test '() 'for*/fold-no-accum 
+(test '() 'for*/fold-no-accum
       (call-with-values (λ () (for*/fold () ([x '(1 2)]) (values))) (λ x x)))
 (err/rt-test (for/fold () ([x '(1 2)]) x) exn:fail:contract:arity?)
 (err/rt-test (for*/fold () ([x '(1 2)]) x) exn:fail:contract:arity?)
@@ -877,102 +1067,102 @@
            (for/sum ([x (in-mutable-set m)]) x)
            (for/sum ([x (in-weak-set w)]) x))))
 
-(err/rt-test 
+(err/rt-test
     (for ([(k v) (in-immutable-hash (make-hash '((1 . 2))))]) (+ k v))
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([(k v) (in-immutable-hash (make-weak-hash '((1 . 2))))]) (+ k v))
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([(k v) (in-mutable-hash (make-immutable-hash '((1 . 2))))]) (+ k v))
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([(k v) (in-mutable-hash (make-weak-hash '((1 . 2))))]) (+ k v))
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([(k v) (in-weak-hash (make-immutable-hash '((1 . 2))))]) (+ k v))
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
-(err/rt-test 
+(err/rt-test
     (for ([(k v) (in-weak-hash (make-hash '((1 . 2))))]) (+ k v))
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
 ;; keys
-(err/rt-test 
+(err/rt-test
     (for ([k (in-immutable-hash-keys (make-hash '((1 . 2))))]) k)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([k (in-immutable-hash-keys (make-weak-hash '((1 . 2))))]) k)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
-    (for ([k (in-mutable-hash-keys (make-immutable-hash '((1 . 2))))]) k) 
+(err/rt-test
+    (for ([k (in-mutable-hash-keys (make-immutable-hash '((1 . 2))))]) k)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([k (in-mutable-hash-keys (make-weak-hash '((1 . 2))))]) k)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([k (in-weak-hash-keys (make-immutable-hash '((1 . 2))))]) k)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
-(err/rt-test 
+(err/rt-test
     (for ([k (in-weak-hash-keys (make-hash '((1 . 2))))]) k)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
 ;; values
-(err/rt-test 
+(err/rt-test
     (for ([v (in-immutable-hash-values (make-hash '((1 . 2))))]) v)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([v (in-immutable-hash-values (make-weak-hash '((1 . 2))))]) v)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
-    (for ([v (in-mutable-hash-values (make-immutable-hash '((1 . 2))))]) v) 
+(err/rt-test
+    (for ([v (in-mutable-hash-values (make-immutable-hash '((1 . 2))))]) v)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([v (in-mutable-hash-values (make-weak-hash '((1 . 2))))]) v)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([v (in-weak-hash-values (make-immutable-hash '((1 . 2))))]) v)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
-(err/rt-test 
+(err/rt-test
     (for ([v (in-weak-hash-values (make-hash '((1 . 2))))]) v)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
 ;; pairs
-(err/rt-test 
+(err/rt-test
     (for ([p (in-immutable-hash-pairs (make-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([p (in-immutable-hash-pairs (make-weak-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? immutable\\?")
-(err/rt-test 
-    (for ([p (in-mutable-hash-pairs (make-immutable-hash '((1 . 2))))]) p) 
+(err/rt-test
+    (for ([p (in-mutable-hash-pairs (make-immutable-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([p (in-mutable-hash-pairs (make-weak-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? mutable\\?")
-(err/rt-test 
+(err/rt-test
     (for ([p (in-weak-hash-pairs (make-immutable-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
-(err/rt-test 
+(err/rt-test
     (for ([p (in-weak-hash-pairs (make-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
@@ -1009,7 +1199,7 @@
   (define-syntax-rule (values-stop-before e)
     (values (values (stop-before e (lambda (v) #f)))))
   (check for/list values-stop-before #f)
-  
+
   ;; Check `map`, etc., too
   (check for/list values map)
   (check for/list values map extra) ; 1 and 2 arguments are special-cased

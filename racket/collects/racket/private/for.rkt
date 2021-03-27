@@ -5,6 +5,7 @@
              "letstx-scheme.rkt"
              "member.rkt"
              "reverse.rkt"
+             "mreverse.rkt"
              "sort.rkt"
              "performance-hint.rkt"
              "promise.rkt"
@@ -22,8 +23,10 @@
              for/foldr for*/foldr
              for for*
              for/list for*/list
+             for/mlist for*/mlist
              for/vector for*/vector
              for/lists for*/lists
+             for/mlists for*/mlists
              for/and for*/and
              for/or for*/or
              for/first for*/first
@@ -52,7 +55,7 @@
              (rename *in-port in-port)
              (rename *in-lines in-lines)
              (rename *in-bytes-lines in-bytes-lines)
-             
+
              in-hash
              in-hash-keys
              in-hash-values
@@ -113,14 +116,14 @@
   ;; redefininition of functions not in #%kernel
   (begin-for-syntax
     (define (format-id ctx str . args)
-      (define datum 
+      (define datum
         (string->symbol (apply format str (map syntax->datum args))))
       (datum->syntax ctx datum))
     (define (join-ids ids sep) ; joins ids with sep; ids = stx-pair
       (syntax-case ids ()
        [(id) #'id]
        [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))])))
-  
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
 
@@ -637,7 +640,7 @@
     (unless (real? a) (raise-argument-error 'in-range "real?" a))
     (unless (real? b) (raise-argument-error 'in-range "real?" b))
     (unless (real? step) (raise-argument-error 'in-range "real?" step)))
-  
+
   (define in-range
     (case-lambda
       [(b) (in-range 0 b 1)]
@@ -770,16 +773,16 @@
   (define (in-stream l)
     (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
     (make-do-sequence (lambda () (:stream-gen l))))
-  
+
   (define (:stream-gen l)
-    (values 
+    (values
      unsafe-stream-first unsafe-stream-rest values l unsafe-stream-not-empty? #f #f))
 
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; hash sequences
-  
+
   ;; assembles hash iterator functions to give to make-do-sequence
   (define :hash-gen
     (case-lambda
@@ -811,7 +814,7 @@
      [(_ element-types: V ...)
       (with-syntax
        ([VAL (join-ids #'(V ...) #'+)])
-       (with-syntax 
+       (with-syntax
         ([IN-HASH-DEFINER (format-id #'VAL "define-in-hash-~as-seq" #'VAL)])
         #'(begin
            ;; 1) define sequence syntax definer
@@ -834,12 +837,12 @@
                 [HASHTYPE? #'(lambda (ht) (and (hash? ht) (p? ht) (... ...)))]
                 [ERR-STR
                  (datum->syntax #'HASHTYPE
-                  (if (null? (syntax->list #'(p? (... ...)))) 
+                  (if (null? (syntax->list #'(p? (... ...))))
                       "hash?"
-                      (string-append 
+                      (string-append
                         "(and/c hash? "
-                        (symbol->string 
-                          (syntax->datum (join-ids #'(p? (... ...)) #'" "))) 
+                        (symbol->string
+                          (syntax->datum (join-ids #'(p? (... ...)) #'" ")))
                         ")")))])
                (with-syntax
                 ([-first (format-id #'PREFIX "~a-first" #'PREFIX)]
@@ -920,13 +923,13 @@
     (unless (and (exact-integer? step) (not (zero? step)))
       (raise-argument-error who "(and/c exact-integer? (not/c zero?))" step))
     (when (and (< start stop) (< step 0))
-      (raise-arguments-error who 
+      (raise-arguments-error who
                              "starting index less than stopping index, but given a negative step"
                              "starting index" start
                              "stopping index" stop
                              "step" step))
     (when (and (< stop start) (> step 0))
-      (raise-arguments-error who 
+      (raise-arguments-error who
                              "starting index more than stopping index, but given a positive step"
                              "starting index" start
                              "stopping index" stop
@@ -1481,7 +1484,7 @@
     (syntax-rules ()
       [(_ x) x]
       [(_ x ...) (values x ...)]))
-  
+
   (define-syntax-rule (inner-recur/fold (fold-var ...) [expr ...] next-k)
     (let-values ([(fold-var ...) (let-values () expr ...)])
       next-k))
@@ -1509,13 +1512,13 @@
                          ...)]
                      [else #'()]))
              expr ...))]))
-  
+
   (define-syntax (push-under-break stx)
     (syntax-case stx ()
       [(_ inner-recur fold-vars [expr ...] next-k break-k final?-id)
        (let loop ([l (syntax->list #'(expr ...))] [pre-accum null])
          (cond
-          [(null? l) 
+          [(null? l)
            ;; No #:break form
            (syntax-protect
             #'(inner-recur fold-vars [expr ...] (if final?-id break-k next-k)))]
@@ -1817,7 +1820,7 @@
                   (list (reverse pre-kw) (reverse post-kw)))]
              [(memq (syntax-e (car exprs)) '(#:break #:final))
               (if (pair? (cdr exprs))
-                  (loop (cddr exprs) 
+                  (loop (cddr exprs)
                         (append (list* (cadr exprs) (car exprs) post-kw)
                                 pre-kw)
                         null)
@@ -1865,7 +1868,7 @@
         ;; Let `derived-id' complain about the missing bindings and body expression:
         [(_ . rest)
          #`(derived-id #,stx fold-bind . rest)])))
-  
+
   (define-syntax define-syntax-via-derived
     (syntax-rules ()
       [(_ id derived-id fold-bind wrap rhs-wrap combine)
@@ -1903,6 +1906,12 @@
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
 
+  (define-for-variants (for/mlist for*/mlist)
+    ([fold-var null])
+    (lambda (x) `(,#'alt-mreverse ,x))
+    (lambda (x) x)
+    (lambda (x) `(,#'mcons ,x ,#'fold-var)))
+
   (define (grow-vector vec)
     (define n (vector-length vec))
     (define new-vec (make-vector (* 2 n)))
@@ -1927,7 +1936,7 @@
                            orig-stx
                            ([vec (make-vector 16)]
                             [i 0])
-                           (for-clause ...) 
+                           (for-clause ...)
                            middle-body ...
                            (let ([new-vec (if (eq? i (unsafe-vector*-length vec))
                                               (grow-vector vec)
@@ -1975,7 +1984,7 @@
               (let ([v (make-vector len fill-expr)])
                 (unless (zero? len)
                   (for_/fold/derived
-                   orig-stx 
+                   orig-stx
                    ([i 0])
                    (limited-for-clause ...)
                    middle-body ...
@@ -1983,7 +1992,7 @@
                    (unsafe-fx+ 1 i)))
                 v)))))]
       [(_ #:length length-expr (for-clause ...) body ...)
-       (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 
+       (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...)
                     orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)]))
 
   (define-syntax (for/vector stx)
@@ -1992,7 +2001,7 @@
   (define-syntax (for*/vector stx)
     (for_/vector stx stx #'for*/vector #'for*/fold/derived #t))
 
-  (define-for-syntax (do-for/lists for/fold-id stx)
+  (define-for-syntax (do-for/sequences for/fold-id init-id constructor-id reverse-id stx)
     (define (do-without-result-clause normalized-stx)
       (with-syntax ([(_ (id ...) bindings expr1 expr ...)
                      normalized-stx])
@@ -2006,14 +2015,17 @@
                   ids)
         (with-syntax ([(id2 ...) (generate-temporaries ids)]
                       [for/fold for/fold-id]
+                      [init init-id]
+                      [constructor constructor-id]
+                      [reverse reverse-id]
                       [orig-stx stx]
                       [((middle-body ...) (body ...)) (split-for-body stx #'(expr1 expr ...))])
           #'(let-values ([(id ...)
-                          (for/fold orig-stx ([id null] ...) bindings
+                          (for/fold orig-stx ([id init] ...) bindings
                             middle-body ...
                             (let-values ([(id2 ...) (let () body ...)])
-                              (values* (cons id2 id) ...)))])
-              (values* (alt-reverse id) ...)))))
+                              (values* (constructor id2 id) ...)))])
+              (values* (reverse id) ...)))))
     (syntax-case stx ()
       [(_ (id ... #:result result-expr) bindings expr1 expr ...)
        (syntax-protect
@@ -2025,8 +2037,11 @@
        (syntax-protect
         (do-without-result-clause stx))]))
 
-  (define-syntax (for/lists stx) (do-for/lists #'for/fold/derived stx))
-  (define-syntax (for*/lists stx) (do-for/lists #'for*/fold/derived stx))
+  (define-syntax (for/lists stx) (do-for/sequences #'for/fold/derived #'null #'cons #'alt-reverse stx))
+  (define-syntax (for*/lists stx) (do-for/sequences #'for*/fold/derived #'null #'cons #'alt-reverse stx))
+
+  (define-syntax (for/mlists stx) (do-for/sequences #'for/fold/derived #'null #'mcons #'alt-mreverse stx))
+  (define-syntax (for*/mlists stx) (do-for/sequences #'for*/fold/derived #'null #'mcons #'alt-mreverse stx))
 
   (define-for-variants (for/and for*/and)
     ([result #t])
@@ -2375,62 +2390,62 @@
 
   (define (dir-list full-d d acc)
     (for/fold ([acc acc]) ([f (in-list (reverse (sort (directory-list full-d) path<?)))])
-	      (cons (build-path d f) acc)))
+      (cons (build-path d f) acc)))
 
   (define (next-body l d init-dir use-dir?)
     (let ([full-d (path->complete-path d init-dir)])
       (if (and (directory-exists? full-d)
                (use-dir? full-d))
-	  (dir-list full-d d (cdr l))
-	  (cdr l))))
+          (dir-list full-d d (cdr l))
+          (cdr l))))
 
   (define (initial-state orig-dir init-dir)
     (if orig-dir
-	(dir-list (path->complete-path orig-dir init-dir)
-		  orig-dir null)
-	(sort (directory-list init-dir) path<?)))
+        (dir-list (path->complete-path orig-dir init-dir)
+                  orig-dir null)
+        (sort (directory-list init-dir) path<?)))
 
   (define in-directory
-    (case-lambda 
-     [() (in-directory #f (lambda (d) #t))]
-     [(orig-dir) (in-directory orig-dir (lambda (d) #t))]
-     [(orig-dir use-dir?)
-      (define init-dir (current-directory))
-      ;; current state of the sequence is a list of paths to produce; when
-      ;; incrementing past a directory, add the directory's immediate
-      ;; content to the front of the list:
-      (define (next l)
-	(define d (car l))
-	(next-body l d init-dir use-dir?))
-      (make-do-sequence
-       (lambda ()
-	 (values
-	  car
-	  next
-	  (initial-state orig-dir init-dir)
-	  pair?
-	  #f
-	  #f)))]))
-     
+    (case-lambda
+      [() (in-directory #f (lambda (d) #t))]
+      [(orig-dir) (in-directory orig-dir (lambda (d) #t))]
+      [(orig-dir use-dir?)
+       (define init-dir (current-directory))
+       ;; current state of the sequence is a list of paths to produce; when
+       ;; incrementing past a directory, add the directory's immediate
+       ;; content to the front of the list:
+       (define (next l)
+         (define d (car l))
+         (next-body l d init-dir use-dir?))
+       (make-do-sequence
+        (lambda ()
+          (values
+           car
+           next
+           (initial-state orig-dir init-dir)
+           pair?
+           #f
+           #f)))]))
+
   (define-sequence-syntax *in-directory
     (λ () #'in-directory)
     (λ (stx)
-       (syntax-case stx ()
-	 [((d) (_)) #'[(d) (in-directory #f)]]
-	 [((d) (_ dir)) #'[(d) (in-directory dir (lambda (d) #t))]]
-	 [((d) (_ dir use-dir?-expr))
-	  #'[(d) 
-	     (:do-in
-	      ([(orig-dir) (or dir #f)]
-               [(init-dir) (current-directory)]
-               [(use-dir?) use-dir?-expr])
-	      #true
-	      ([l (initial-state orig-dir init-dir)])
-	      (pair? l)
-	      ([(d) (car l)])
-	      #true
-	      #true
-	      [(next-body l (car l) init-dir use-dir?)])]]
-	 [_ #f])))
+      (syntax-case stx ()
+        [((d) (_)) #'[(d) (in-directory #f)]]
+        [((d) (_ dir)) #'[(d) (in-directory dir (lambda (d) #t))]]
+        [((d) (_ dir use-dir?-expr))
+         #'[(d)
+            (:do-in
+             ([(orig-dir) (or dir #f)]
+              [(init-dir) (current-directory)]
+              [(use-dir?) use-dir?-expr])
+             #true
+             ([l (initial-state orig-dir init-dir)])
+             (pair? l)
+             ([(d) (car l)])
+             #true
+             #true
+             [(next-body l (car l) init-dir use-dir?)])]]
+        [_ #f])))
 
   )
