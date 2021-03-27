@@ -710,8 +710,9 @@ information, for example).
                                  [#:indirect? indirect? any/c #f])
          void?]{
 
-Logs a message (see @racket[log-message]) at level @racket['info] to a
-logger named @racket['cm-accomplice]. The message data is a
+Logs a message (see @racket[log-message]) to the current logger
+at level @racket['info] with the
+topic @racket['cm-accomplice]. The message data is a
 @racketidfont{file-dependency} prefab structure type with two fields;
 the first field's value is @racket[file] and the second field's value
 is @racket[#f] (to indicate a non-module dependency). If the
