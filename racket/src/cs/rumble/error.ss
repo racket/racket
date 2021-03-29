@@ -150,7 +150,7 @@
         [(null? more) '()]
         [(string? (car more))
          (cond
-          [(null? more)
+          [(null? (cdr more))
            (raise-arguments-error 'raise-arguments-error
                                   "missing value after field string"
                                   "string"
