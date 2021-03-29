@@ -7,6 +7,7 @@
 ;; run if it takes a lock)
 
 (define (box-cas!* b old new)
+  (memory-order-release) ; makes spurious-failure check meaningful (I think)
   (or (box-cas! b old new)
       ;; Try again if failure looks spurious:
       (and (eq? (unbox b) old)
