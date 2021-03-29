@@ -110,7 +110,8 @@
 (define (write-xexpr x [out (current-output-port)]
                      #:insert-newlines? [insert-newlines? #f])
   (define short (empty-tag-shorthand))
-  (let loop ([x x])
+  (define unescaped (current-unescaped-tags))
+  (let loop ([x x] [escape? #t])
     (cond
       ; Element
       [(cons? x)
@@ -145,14 +146,16 @@
           (write-bytes #">" out)
           ; Write body
           (for ([xe (in-list content)])
-            (loop xe))
+            (loop xe (not (memq name unescaped))))
           ; Write closing tag
           (write-bytes #"</" out)
           (write-string (symbol->immutable-string name) out)
           (write-bytes #">" out)])]
       ; PCData
       [(string? x)
-       (write-string/escape x escape-table out)]
+       (if escape?
+           (write-string/escape x escape-table out)
+           (write-string x out))]
       ; Entities
       [(symbol? x)
        (write-bytes #"&" out)

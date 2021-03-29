@@ -826,6 +826,23 @@ XML
                            "<root>&#40;</root>")
        (test-xexpr->string '(root () "\f")
                            "<root>\f</root>")
+
+       (test-equal?
+        "escapes"
+        (xexpr->string
+         '(html
+           (p "1 < 2")
+           (script () "1 < 2")))
+        "<html><p>1 &lt; 2</p><script>1 &lt; 2</script></html>")
+
+       (test-equal?
+        "unescaped tags"
+        (parameterize ([current-unescaped-tags '(script)])
+          (xexpr->string
+           '(html
+             (p "1 < 2")
+             (script "1 < 2"))))
+        "<html><p>1 &lt; 2</p><script>1 < 2</script></html>")
        ; XXX more xexpr->string tests
        )
       
