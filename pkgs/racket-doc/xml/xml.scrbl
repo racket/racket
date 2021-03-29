@@ -416,6 +416,25 @@ or otherwise escaping. Results from the leaves are combined with
 
 @section{Parameters}
 
+@defparam[current-unescaped-tags tags (listof symbol?) #:value null]{
+  A parameter that determines which tags' string contents should not
+  be escaped.  For backwards compatibility, this defaults to the empty
+  list.
+}
+
+@defthing[html-unescaped-tags (listof symbol?) #:value '(script style)]{
+  The list of tags whose contents are normally not escaped in HTML.
+  See @racket[current-unescaped-tags].
+
+  @examples[
+  #:eval xml-eval
+  (parameterize ([current-unescaped-tags html-unescaped-tags])
+    (write-xexpr '(html
+                   (p "1 < 2")
+                   (script "1 < 2"))))
+  ]
+}
+
 @defparam[empty-tag-shorthand shorthand (or/c (one-of/c 'always 'never) (listof symbol?))]{
 
 A parameter that determines whether output functions should use the

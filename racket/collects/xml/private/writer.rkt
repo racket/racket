@@ -12,7 +12,9 @@
  [write-xml/content ((content/c) (output-port?) . ->* . void?)]
  [display-xml/content ((content/c) (output-port? #:indentation indentation?) . ->* . void?)]
  [empty-tag-shorthand (parameter/c (or/c (symbols 'always 'never) (listof symbol?)))]
- [html-empty-tags (listof symbol?)])
+ [html-empty-tags (listof symbol?)]
+ [html-unescaped-tags (listof symbol?)]
+ [current-unescaped-tags (parameter/c (listof symbol?))])
 
 (define html-empty-tags
   '(param meta link isindex input img hr frame col br basefont base area))
@@ -25,6 +27,12 @@
      (if (or (eq? x 'always) (eq? x 'never) (and (list? x) (andmap symbol? x)))
          x
          (error 'empty-tag-shorthand "expected 'always, 'never, or a list of symbols: received ~e" x)))))
+
+(define html-unescaped-tags
+  '(script style))
+
+(define current-unescaped-tags
+  (make-parameter null))
 
 ;; indent : Nat Output-port -> Void
 (define (indent n out)
