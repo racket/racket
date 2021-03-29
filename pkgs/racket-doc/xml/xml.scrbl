@@ -420,6 +420,8 @@ or otherwise escaping. Results from the leaves are combined with
   A parameter that determines which tags' string contents should not
   be escaped.  For backwards compatibility, this defaults to the empty
   list.
+
+  @history[#:added "8.0.0.12"]
 }
 
 @defthing[html-unescaped-tags (listof symbol?) #:value '(script style)]{
@@ -433,6 +435,8 @@ or otherwise escaping. Results from the leaves are combined with
                    (p "1 < 2")
                    (script "1 < 2"))))
   ]
+
+  @history[#:added "8.0.0.12"]
 }
 
 @defparam[empty-tag-shorthand shorthand (or/c (one-of/c 'always 'never) (listof symbol?))]{
