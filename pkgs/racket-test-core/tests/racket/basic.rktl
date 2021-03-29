@@ -2335,6 +2335,14 @@
 (err/rt-test (raise-arity-mask-error 'f -5.0) exn:fail:contract?)
 (err/rt-test (raise-arity-mask-error 1 1) exn:fail:contract?)
 
+
+(err/rt-test (raise-arguments-error 'proc-with-error "invalid") exn:fail:contract? #rx"proc-with-error: invalid")
+(err/rt-test (raise-arguments-error "f" "invalid") exn:fail:contract? #rx"raise-arguments-error:")
+(err/rt-test (raise-arguments-error 'f 'invalid) exn:fail:contract? #rx"raise-arguments-error:")
+(err/rt-test (raise-arguments-error 'f "invalid" "x") exn:fail:contract? #rx"raise-arguments-error:")
+(err/rt-test (raise-arguments-error 'f "invalid" 'x 5) exn:fail:contract? #rx"raise-arguments-error:")
+(err/rt-test (raise-arguments-error 'f "invalid" "x" 5 "y") exn:fail:contract? #rx"raise-arguments-error:")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations
 
