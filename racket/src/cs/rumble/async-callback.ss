@@ -13,13 +13,13 @@
                                                          void)))
 
 (define (call-as-asynchronous-callback thunk)
-  (async-callback-queue-call (current-async-callback-queue) thunk #f #t #t))
+  (async-callback-queue-call (current-async-callback-queue) (lambda (th) (th)) thunk #f #t #t))
 
 (define (post-as-asynchronous-callback thunk)
-  (async-callback-queue-call (current-async-callback-queue) thunk #f #t #f)
+  (async-callback-queue-call (current-async-callback-queue) (lambda (th) (th)) thunk #f #t #f)
   (void))
 
-(define (async-callback-queue-call async-callback-queue thunk interrupts-disabled? need-atomic? wait-for-result?)
+(define (async-callback-queue-call async-callback-queue run-thunk thunk interrupts-disabled? need-atomic? wait-for-result?)
   (let* ([result-done? (box #f)]
          [result #f]
          [q async-callback-queue]
@@ -28,11 +28,17 @@
     (when need-atomic? (scheduler-start-atomic)) ; don't abandon engine after mutex is acquired
     (mutex-acquire m)
     (set-async-callback-queue-in! q (cons (lambda ()
-                                            (set! result (thunk))
-                                            (mutex-acquire m)
-                                            (set-box! result-done? #t)
-                                            (condition-broadcast (async-callback-queue-condition q))
-                                            (mutex-release m))
+                                            (run-thunk
+                                             (lambda ()
+                                               (set! result (thunk))
+                                               ;; the thunk is not necessarily called in atomic
+                                               ;; mode, so make the mode atomic if needed:
+                                               (when need-atomic? (scheduler-start-atomic))
+                                               (mutex-acquire m)
+                                               (set-box! result-done? #t)
+                                               (condition-broadcast (async-callback-queue-condition q))
+                                               (mutex-release m)
+                                               (when need-atomic? (scheduler-end-atomic)))))
                                           (async-callback-queue-in q)))
     ((async-callback-queue-wakeup q))
     (when wait-for-result?
@@ -44,7 +50,7 @@
           (loop))))
     (mutex-release m)
     (when need-atomic? (scheduler-end-atomic))
-    (when interrupts-disabled? (enable-interrupts))
+    (when interrupts-disabled? (disable-interrupts))
     result))
 
 ;; Called with all threads all stopped:

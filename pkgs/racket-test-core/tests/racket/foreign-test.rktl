@@ -10,6 +10,7 @@
          ffi/unsafe/define/conventions
          ffi/unsafe/global
          ffi/unsafe/atomic
+         ffi/unsafe/os-async-channel
          ffi/vector
          racket/extflonum
          racket/place
@@ -906,6 +907,27 @@
            (loop)))
        (test (like 16) foreign_thread_callback_finish d)]))
   (check (lambda (f) (f)) add1)
+  (check (lambda (f) (thread f)) add1)
+  (let ()
+    ;; using thread mailboxes
+    (define runner
+      (thread
+       (lambda ()
+         (let loop ()
+           (define p (thread-receive))
+           (p)
+           (loop)))))
+    (check (lambda (f) (thread-send runner f)) add1))
+  (when (eq? 'chez-scheme (system-type 'vm))
+    (define chan (make-os-async-channel))
+    (void
+     (thread
+      (lambda ()
+        (let loop ()
+          (define p (sync chan))
+          (p)
+          (loop)))))
+    (check (lambda (f) (os-async-channel-put chan f)) add1))
   (check (box 20) (lambda (x) 20)))
 
 ;; check `#:callback-exns?`

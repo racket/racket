@@ -1836,7 +1836,7 @@
                                             [else r])))))])
                              (if (and orig-place?
                                       (not (eqv? 0 (get-thread-id))))
-                                 (async-callback-queue-call orig-place-async-callback-queue (lambda () (go)) #f #t #t)
+                                 (async-callback-queue-call orig-place-async-callback-queue (lambda (th) (th)) (lambda () (go)) #f #t #t)
                                  (go))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
@@ -1954,7 +1954,8 @@
     ;; and wait for the response
     (let ([known-thread? (eqv? (place-thread-category) PLACE-KNOWN-THREAD)])
       (async-callback-queue-call async-callback-queue
-                                 (lambda () (|#%app| async-apply thunk))
+                                 async-apply
+                                 thunk
                                  ;; If we created this thread by `fork-pthread`, we must
                                  ;; have gotten here by a foreign call, so interrupts are
                                  ;; currently disabled
