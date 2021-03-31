@@ -100,7 +100,7 @@ when they are @racket[eqv?].
 
 Two real numbers are @racket[eqv?] when they are both inexact with the same precision or both
 exact, and when they are @racket[=] (except for @racket[+nan.0], @racketvalfont{+nan.f},
-@racket[+0.0], @racket[+0.0f0], @racket[-0.0], and @racket[-0.0f0], as noted above). 
+@racket[+0.0], @racketvalfont{+0.0f0}, @racket[-0.0], and @racketvalfont{-0.0f0}, as noted above).
 Two complex numbers are @racket[eqv?] when their real and imaginary parts are @racket[eqv?].
 Two numbers are @racket[equal?] when they are @racket[eqv?].
 
