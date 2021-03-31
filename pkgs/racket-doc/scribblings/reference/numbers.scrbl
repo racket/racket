@@ -71,7 +71,7 @@ or @racketvalfont{-inf.f}, depending on the sign and precision of the dividend. 
 is @racket[eqv?] to itself, and @racketvalfont{+nan.f} is similarly @racket[eqv?] but 
 not @racket[=] to itself. Conversely, @racket[(= 0.0 -0.0)] is
 @racket[#t], but @racket[(eqv? 0.0 -0.0)] is @racket[#f], and the 
-same for @racket[0.0f0] and @racket[-0.0f0] (which are single-precision variants). The datum
+same for @racketvalfont{0.0f0} and @racketvalfont{-0.0f0} (which are single-precision variants). The datum
 @racketvalfont{-nan.0} refers to the same constant as @racket[+nan.0],
 and @racketvalfont{-nan.f} is the same as @racketvalfont{+nan.f}.
 
