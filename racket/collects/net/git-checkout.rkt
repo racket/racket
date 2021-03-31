@@ -429,7 +429,6 @@
                    (begin
                      (status "Commit id ~s matches ~a" ref (car a-ref))
                      (cadr a-ref))))))))
-  
   (define want-commits
     (cond
      [ref-commit (list ref-commit)]

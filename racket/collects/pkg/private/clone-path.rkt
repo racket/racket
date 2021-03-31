@@ -9,6 +9,7 @@
          "pkg-db.rkt"
          "catalog.rkt"
          "repo-path.rkt"
+         "git-url-scheme.rkt"
          "desc.rkt"
          "dirs.rkt"
          "print.rkt")
@@ -259,7 +260,7 @@
          (define-values (new-name new-type)
             (package-source->name+type src #f))
          (case new-type
-           [(git github)
+           [(git git-url github)
             (pkg-desc src 'clone name
                       (pkg-desc-checksum desc)
                       (pkg-desc-auto? desc)
@@ -392,7 +393,7 @@
                              #:prefetch? prefetch?
                              #:prefetch-group prefetch-group))]
            [else #f])]
-         [(git github clone)
+         [(git git-url github clone)
           (define pkg-url (string->url (pkg-desc-source d)))
           (define-values (transport host port repo branch path)
             (split-git-or-hub-url #:type type pkg-url))
@@ -418,9 +419,11 @@
     [`(catalog ,lookup-name ,url-str)
      (pkg-desc url-str (if reject-existing?
                            'clone
-                           (if (equal? "github" (url-scheme (string->url url-str)))
-                               'github
-                               'git))
+                           (let ([scheme (url-scheme (string->url url-str))])
+                             (cond
+                               [(equal? "github" scheme) 'github]
+                               [(git-url-scheme? scheme) 'git-url]
+                               [else 'git])))
                name
                checksum auto? extra-path)]
     [`(url ,url-str)
@@ -432,6 +435,11 @@
         (pkg-desc url-str (if reject-existing? 'clone current-type) name
                   checksum auto? extra-path)]
        [else #f])]
+    [`(git ,url-str)
+     (define-values (current-name current-type)
+       (package-source->name+type url-str 'git-url))
+     (pkg-desc url-str (if reject-existing? 'clone current-type) name
+               checksum auto? extra-path)]
     [_ #f]))
 
 ;; For a `desc`, extract it's clone location, if it's a clone

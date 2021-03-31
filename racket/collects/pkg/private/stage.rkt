@@ -48,7 +48,9 @@
   (if (and (eq? type 'github)
            use-git-for-github?)
       'git
-      type))
+      (if (eq? type 'git-url)
+          'git
+          type)))
 
 (define (remote-package-checksum pkg download-printf pkg-name
                                  #:type [type #f]
@@ -67,6 +69,11 @@
         [`(url ,pkg-url-str)
          (package-url->checksum pkg-url-str
                                 #:type type
+                                #:download-printf download-printf
+                                #:pkg-name pkg-name)]
+        [`(git ,pkg-url-str)
+         (package-url->checksum pkg-url-str
+                                #:type (or type 'git-url)
                                 #:download-printf download-printf
                                 #:pkg-name pkg-name)]
         [`(clone ,_ ,pkg-url-str)
@@ -269,7 +276,8 @@
    [(or (eq? type 'file-url)
         (eq? type 'dir-url)
         (eq? type 'github)
-        (eq? type 'git))
+        (eq? type 'git)
+        (eq? type 'git-url))
     (define pkg-url-str (normalize-url type pkg (string->url pkg)))
     (define pkg-url (string->url pkg-url-str))
     (define scheme (url-scheme pkg-url))
@@ -301,7 +309,7 @@
             (make-temporary-file
              (string-append
               "~a-"
-              (regexp-replace* #rx"[:/\\.]" (format "~a.~a" repo branch) "_"))
+              (regexp-replace* #rx"[:/\\.~]" (format "~a.~a" repo branch) "_"))
              'directory))
           
           (define staged? #f)
@@ -689,8 +697,9 @@
     (when check-sums?
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
-    (define-values (new-name new-type)  (package-source->name+type source #f))
+    (define-values (new-name new-type) (package-source->name+type source #f))
     (define repo-url (and (or (eq? new-type 'git)
+                              (eq? new-type 'git-url)
                               (eq? new-type 'github))
                           source))
     (case new-type
@@ -859,7 +868,7 @@
 ;; `type` in the future.
 (define (normalize-url type str as-url)
   (case type
-    [(git)
+    [(git) ; not git-url, which should not be normalized by adding ".git"
      (cond
       [(equal? "git" (url-scheme as-url))
        str]

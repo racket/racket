@@ -143,6 +143,18 @@
   (check-equal-values? (parse "http://racket-lang.org/racket/fish.git?path=catfish" #f #f) (values "catfish" 'git #t))
   (check-equal-values? (parse "http://racket-lang.org/racket/.." 'git #rx"indicator") (values #f 'git #f))
 
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish" 'git-url #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+https://racket-lang.org/racket/fish" 'git-url #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+https://racket-lang.org/racket/fish?path=catfish" 'git-url #f) (values "catfish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish.git" 'git-url #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish.git" #f #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+https://racket-lang.org/racket/fish.git" #f #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish.git/" 'git-url #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish.git/" #f #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish.git#release" #f #f) (values "fish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/fish.git?path=catfish" #f #f) (values "catfish" 'git-url #t))
+  (check-equal-values? (parse "git+http://racket-lang.org/racket/.." 'git-url #rx"indicator") (values #f 'git-url #f))
+
   (check-equal-values? (parse "racket/fish" 'github) (values "fish" 'github #t))
   (check-equal-values? (parse "racket/fish.git" 'github) (values "fish" 'github #t))
   (check-equal-values? (parse "racket/fish/" 'github) (values "fish" 'github #t))
@@ -169,6 +181,7 @@
   (check-equal-values? (parse "" 'file-url) (values #f 'file-url #f))
   (check-equal-values? (parse "" 'dir-url) (values #f 'dir-url #f))
   (check-equal-values? (parse "" 'git) (values #f 'git #f))
+  (check-equal-values? (parse "" 'git-url) (values #f 'git-url #f))
   (check-equal-values? (parse "" 'github #rx"two path elements") (values #f 'github #f))
 
   (void))
