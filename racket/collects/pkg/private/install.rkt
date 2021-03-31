@@ -48,7 +48,7 @@
                                  #:catalog-lookup-cache [catalog-lookup-cache #f] ; [prefetch-shared]
                                  #:remote-checksum-cache [remote-checksum-cache #f])  ; [prefetch-shared]
   (case type
-    [(file-url dir-url github git clone)
+    [(file-url dir-url github git git-url clone)
      (or given-checksum
          (remote-package-checksum `(url ,pkg-source) download-printf pkg-name
                                   #:type type
@@ -1210,17 +1210,20 @@
                (skip/update-dependencies "package installed locally"))]
           [_
            (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
-             (if (eq? 'clone (car orig-pkg))
-                 (values (caddr orig-pkg)
-                         'clone
-                         (enclosing-path-for-repo (caddr orig-pkg)
-                                                  (path->complete-path
-                                                   (cadr orig-pkg)
-                                                   (pkg-installed-dir))))
-                 ;; It would be better if the type were preseved
-                 ;; from install time, but we always make the
-                 ;; URL unambigious:
-                 (values (cadr orig-pkg) #f #f)))
+             (case (car orig-pkg)
+               [(clone)
+                (values (caddr orig-pkg)
+                        'clone
+                        (enclosing-path-for-repo (caddr orig-pkg)
+                                                 (path->complete-path
+                                                  (cadr orig-pkg)
+                                                  (pkg-installed-dir))))]
+               [(git) (values (cadr orig-pkg) 'git-url #f)]
+               [else
+                ;; It would be better if the type were preseved
+                ;; from install time, but we always make the
+                ;; URL unambigious:
+                (values (cadr orig-pkg) #f #f)]))
            (define new-checksum
              (hash-ref update-cache pkg-name
                        (lambda ()

@@ -77,7 +77,7 @@
   [rename
    pkg-desc/opt pkg-desc
    (->* (string?
-         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'github 'clone 'name)
+         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'git-url 'github 'clone 'name)
          (or/c string? #f)
          (or/c string? #f)
          boolean?)

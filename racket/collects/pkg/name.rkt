@@ -4,7 +4,8 @@
          racket/format
          racket/string
          racket/path
-         net/url)
+         net/url
+         "private/git-url-scheme.rkt")
 
 (provide
  package-source-format?
@@ -26,7 +27,7 @@
 (define rx:git #rx"[.]git$")
 
 (define package-source-format?
-  (or/c 'name 'file 'dir 'git 'github 'clone 'file-url 'dir-url 'link 'static-link))
+  (or/c 'name 'file 'dir 'git 'github 'clone 'file-url 'dir-url 'git-url 'link 'static-link))
 
 (define (validate-name name complain inferred?)
   (and name
@@ -136,8 +137,8 @@
         (regexp-match? rx:package-name s))
     (values (validate-name s complain #f) 'name)]
    [(and (eq? type 'clone)
-         (not (regexp-match? #rx"^(?:https?|git(?:hub)?)://" s)))
-    (complain "repository URL must start 'http', 'https', 'git', or 'github'")
+         (not (regexp-match? #rx"^(?:https?|git(?:hub|[+]https?)?)://" s)))
+    (complain "repository URL must start 'http', 'https', 'git', 'git+http', 'git+https', or 'github'")
     (values #f 'clone)]
    [(and (eq? type 'github)
          (not (regexp-match? #rx"^git(?:hub)?://" s)))
@@ -150,10 +151,11 @@
    [(if type
         (or (eq? type 'github)
             (eq? type 'git)
+            (eq? type 'git-url)
             (eq? type 'clone)
             (eq? type 'file-url)
             (eq? type 'dir-url))
-        (regexp-match? #rx"^(https?|github|git)://" s))
+        (regexp-match? #rx"^(https?|github|git([+]https?)?)://" s))
     (define url (with-handlers ([exn:fail? (lambda (exn)
                                              (complain "cannot parse URL")
                                              #f)])
@@ -239,10 +241,12 @@
               (values name 'file-url)]
              [(if type
                   (or (eq? type 'git)
+                      (eq? type 'git-url)
                       (eq? type 'clone))
-                  (and (last-non-empty p)
-                       (string-and-regexp-match? rx:git (last-non-empty p))
-                       ((num-empty p) . < . 2)))
+                  (or (git-url-scheme? (url-scheme url))
+                      (and (last-non-empty p)
+                           (string-and-regexp-match? rx:git (last-non-empty p))
+                           ((num-empty p) . < . 2))))
               (define name
                 (and (cor (last-non-empty p)
                           (complain "URL path is empty"))
@@ -251,7 +255,9 @@
                      (cor (string? (last-non-empty p))
                           (complain "URL path ends with a directory indicator"))
                      (extract-git-name url p complain-name)))
-              (values name 'git)]
+              (values name (if (git-url-scheme? (url-scheme url))
+                               'git-url
+                               'git))]
              [else
               (define name
                 (and (cor (pair? p)

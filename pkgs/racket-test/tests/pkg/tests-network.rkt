@@ -55,7 +55,9 @@
 
  (test-remote "git://github.com/racket/test-pkg-1")
  (test-remote "https://github.com/racket/test-pkg-1.git")
+ (test-remote "git+https://github.com/racket/test-pkg-1")
  (test-remote "https://bitbucket.org/mflatt/pkg-test.git")
+ (test-remote "git+https://bitbucket.org/mflatt/pkg-test")
 
  (define (try-git-repo label type+repo)
    (define tmp-dir (make-temporary-file "~a-clone" 'directory))
@@ -76,6 +78,9 @@
  (try-git-repo
   "remote/git type"
   "--type git https://bitbucket.org/mflatt/pkg-test?path=pkg-test1#alt")
+ (try-git-repo
+  "remote/git-url type"
+  "--type git-url https://bitbucket.org/mflatt/pkg-test?path=pkg-test1#alt")
 
  (define (try-git-repo-using-default-branch label repo)
    (define tmp-dir (make-temporary-file "~a-clone" 'directory))

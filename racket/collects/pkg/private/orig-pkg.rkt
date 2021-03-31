@@ -35,6 +35,7 @@
                                    #:more-than-root? #t))
        ,src)]
     [(file dir) `(,type ,(simple-form-path* src))]
+    [(git-url) `(git ,src)]
     [else `(url ,src)]))
 
 ;; Ignore URL that is potentially recorded for a 'catalog kind:
