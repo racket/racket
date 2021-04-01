@@ -36,6 +36,7 @@
          (only-in "syntax/cache.rkt" cache-place-init!)
          (only-in "syntax/syntax.rkt" syntax-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
+         "syntax/serialize.rkt"
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
          (only-in "common/performance.rkt" performance-place-init!)
          (only-in "eval/shadow-directory.rkt" shadow-directory-place-init!))
@@ -134,6 +135,9 @@
 
          syntax-shift-phase-level
          bound-identifier=?
+
+         syntax-serialize
+         syntax-deserialize
 
          compiled-expression-recompile)
 

@@ -21,6 +21,7 @@
          "../syntax/api.rkt"
          "../syntax/api-taint.rkt"
          "../syntax/error.rkt"
+         "../syntax/serialize.rkt"
          "../read/api.rkt"
          "../common/module-path.rkt"
          "../namespace/variable-reference.rkt"
@@ -84,6 +85,9 @@
                       syntax-binding-set?
                       syntax-binding-set-extend
                       syntax-binding-set->syntax
+
+                      syntax-serialize
+                      syntax-deserialize
 
                       raise-syntax-error
                       struct:exn:fail:syntax

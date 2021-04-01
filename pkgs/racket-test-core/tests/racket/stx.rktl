@@ -2769,6 +2769,33 @@
                 (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(for ([provides-namespace (list (current-namespace) #f)])
+  (let ([s (syntax-serialize #'list #:provides-namespace provides-namespace)])
+    (test 'list syntax->datum (syntax-deserialize s))
+    (let ([id (syntax-deserialize s)])
+      (test (identifier-binding #'list) identifier-binding id)
+      (test (identifier-binding #'cons) identifier-binding (datum->syntax id 'cons)))))
+
+(let ([s (syntax-serialize (syntax-property #'something 'wicked "this way comes")
+                           #:preserve-property-keys '(wicked))])
+  (let ([id (syntax-deserialize s)])
+    (test "this way comes" syntax-property id 'wicked)))
+
+(module has-syntax-to-serialize-with-base-mpi racket/base
+  (provide id mpi)
+  (define id #'id)
+  (define mpi (variable-reference->module-path-index (#%variable-reference))))
+
+(let ([id (dynamic-require ''has-syntax-to-serialize-with-base-mpi 'id)]
+      [mpi (dynamic-require ''has-syntax-to-serialize-with-base-mpi 'mpi)])
+  (test (list mpi 'id mpi 'id 0 0 0) identifier-binding id)
+  (let* ([new-mpi (module-path-index-join 'somewhere-over-the-rainbow #f)]
+         [id2 (syntax-deserialize (syntax-serialize id #:base-module-path-index mpi)
+                                  #:base-module-path-index new-mpi)])
+    (test (list new-mpi 'id new-mpi 'id 0 0 0) identifier-binding id2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that paths from the current installation are not
 ;; preserved in marshaled bytecode
 

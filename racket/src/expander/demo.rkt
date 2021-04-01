@@ -21,6 +21,10 @@
                                    #:namespace [ns demo-ns]
                                    #:serializable? [serializable? #f])
   (define exp-e (expand-expression e #:namespace ns))
+  (when check-serialize?
+    (unless (equal? (syntax->datum (syntax-deserialize (syntax-serialize exp-e)))
+                    (syntax->datum exp-e))
+      (error "serialization problem")))
   (define c (compile (if check-reexpand? exp-e e) ns (or serializable?
                                                          check-serialize?)))
   (define ready-c (if check-serialize?
@@ -1452,3 +1456,13 @@
     (check-print
      (namespace-require ''to-recompile demo-ns)
      0)))
+
+;; ----------------------------------------
+;; Serialization with otherwise non-preserved properties
+
+(let ([s (syntax-property (datum->syntax #f 'hello)
+                          'keep-me
+                          17)])
+  (check-value (syntax-property s 'keep-me) 17)
+  (check-value (syntax-property (syntax-deserialize (syntax-serialize s)) 'keep-me) #f)
+  (check-value (syntax-property (syntax-deserialize (syntax-serialize s #f '(keep-me))) 'keep-me) 17))

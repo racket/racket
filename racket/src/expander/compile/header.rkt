@@ -160,7 +160,7 @@
                ,(generate-deserialize (vector->immutable-vector
                                        (list->vector
                                         (reverse (syntax-literals-stxes sl))))
-                                      mpis)))
+                                      #:mpis mpis)))
             (set! ,deserialize-syntax-id #f)))))]))
 
 (define (generate-lazy-syntax-literal-lookup pos)
@@ -180,7 +180,7 @@
                                                       (encode-namespace-scopes ns)
                                                       (reverse
                                                        (syntax-literals-stxes sl)))
-                                                     mpis)])
+                                                     #:mpis mpis)])
       (let-values ([(ns-scope-s) (car ns+stxss)])
         (list->vector
          (map (lambda (stx)

@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../compile/serialize-property.rkt"
+         "../compile/serialize-state.rkt"
          "binding-table.rkt" ; defines `prop:bulk-binding`
          "binding.rkt"
          "../common/module-path.rkt"
@@ -14,7 +15,8 @@
          bulk-binding
          
          bulk-provides-add-prefix-remove-exceptions
-         deserialize-bulk-binding)
+         deserialize-bulk-binding
+         deserialize-bulk-binding+provides)
 
 ;; When a require is something like `(require racket/base)`, then
 ;; we'd like to import the many bindings from `racket/base` in one
@@ -82,13 +84,11 @@
   #:authentic
   #:property prop:bulk-binding
   (bulk-binding-class
+   ;; get-symbols
    (lambda (b mpi-shifts)
      (or (bulk-binding-provides b)
          ;; Here's where we find provided bindings for unmarshaled syntax
-         (let ([mod-name (module-path-index-resolve
-                          (apply-syntax-shifts
-                           (bulk-binding-mpi b)
-                           mpi-shifts))])
+         (let ([mod-name (bulk-binding-module-name b mpi-shifts)])
            (unless (bulk-binding-bulk-binding-registry b)
              (error "namespace mismatch: no bulk-binding registry available:"
                     mod-name))
@@ -112,6 +112,7 @@
            ;; Record the adjusted `provides` table for quick future access:
            (set-bulk-binding-provides! b adjusted-provides)
            adjusted-provides)))
+   ;; create
    (lambda (b binding sym)
      ;; Convert the provided binding to a required binding on
      ;; demand during binding resolution
@@ -124,11 +125,21 @@
       #:self (bulk-binding-self b)
       #:mpi (bulk-binding-mpi b)
       #:provide-phase-level (bulk-binding-provide-phase-level b)
-      #:phase-shift (bulk-binding-phase-shift b))))
+      #:phase-shift (bulk-binding-phase-shift b)))
+   ;; modname
+   (lambda (b mpi-shifts)
+     (bulk-binding-module-name b mpi-shifts)))
   #:property prop:serialize
   ;; Serialization drops the `provides` table and the providing module's `self`
-  (lambda (b ser-push! reachable-scopes)
-    (ser-push! 'tag '#:bulk-binding)
+  (lambda (b ser-push! state)
+    (cond
+      [(and (serialize-state-keep-provides? state)
+            ((serialize-state-keep-provides? state) b))
+       (ser-push! 'tag '#:bulk-binding+provides)
+       (ser-push! (bulk-binding-provides b))
+       (ser-push! (bulk-binding-self b))]
+      [else
+       (ser-push! 'tag '#:bulk-binding)])
     (ser-push! (bulk-binding-prefix b))
     (ser-push! (bulk-binding-excepts b))
     (ser-push! (bulk-binding-mpi b))
@@ -139,6 +150,9 @@
 (define (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry)
   (bulk-binding #f prefix excepts #f mpi provide-phase-level phase-shift bulk-binding-registry))
 
+(define (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry)
+  (bulk-binding provides prefix excepts self mpi provide-phase-level phase-shift bulk-binding-registry))
+
 (define (bulk-provides-add-prefix-remove-exceptions provides prefix excepts)
   (for/hash ([(sym val) (in-hash provides)]
              #:unless (hash-ref excepts sym #f)
@@ -148,6 +162,12 @@
                 (string->symbol (format "~a~a" prefix sym))
                 sym)
             val)))
+
+(define (bulk-binding-module-name b mpi-shifts)
+  (module-path-index-resolve
+   (apply-syntax-shifts
+    (bulk-binding-mpi b)
+    mpi-shifts)))
 
 ;; ----------------------------------------
 

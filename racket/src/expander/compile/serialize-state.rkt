@@ -28,10 +28,14 @@
                          props                  ; map full props to previously calculated
                          interned-props         ; intern filtered props
                          syntax-context         ; used to collapse encoding of syntax literals
-                         sharing-syntaxes)      ; record which syntax objects are `datum->syntax` form
+                         sharing-syntaxes       ; record which syntax objects are `datum->syntax` form
+                         preserve-prop-keys     ; property keys to preserve (that otherwise wouldn't be)
+                         keep-provides?)        ; non-#f => predicate for when to keep bulk provides
   #:authentic)
 
-(define (make-serialize-state reachable-scopes)
+(define (make-serialize-state reachable-scopes
+                              preserve-prop-keys
+                              keep-provides?)
   (define state
     (serialize-state reachable-scopes
                      (make-hasheq)   ; bindings-intern
@@ -44,7 +48,9 @@
                      (make-hasheq)   ; props
                      (make-hash)     ; interned-props
                      (box null)      ; syntax-context
-                     (make-hasheq))) ; sharing-syntaxes
+                     (make-hasheq)   ; sharing-syntaxes
+                     preserve-prop-keys
+                     keep-provides?))
   ;; Seed intern tables for sets and hashes to use the canonical
   ;; empty version for consistent sharing:
   (define empty-seteq (seteq))
