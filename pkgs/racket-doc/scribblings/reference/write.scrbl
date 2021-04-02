@@ -272,6 +272,16 @@ A @tech{parameter} that controls printing of @tech{syntax objects}. Up to
 object within @litchar{#<syntax}...@litchar{>} (after the
 @tech{syntax object}'s source location, if any).}
 
+@defparam[print-value-columns columns (or/c +inf.0 (and/c exact-integer? (>/c 5)))]{
+
+A @tech{parameter} that contains a recommendation for the number of
+columns that should be used for printing values via @racket[print].
+May or may not be respected by @racket[print] - the current default
+handler for @racket[print] does not.  It is expected that REPLs that use
+some form of pretty-printing for values respect this parameter.
+
+@history[#:added "8.0.0.13"]
+}
 
 @defparam*[current-write-relative-directory path 
                                             (or/c (and/c path-string? complete-path?) 

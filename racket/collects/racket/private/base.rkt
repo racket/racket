@@ -12,6 +12,7 @@
              "cert.rkt"
              "submodule.rkt"
              "generic-interfaces.rkt"
+             "print-value-columns.rkt"
              "kw-syntax-binding.rkt" ; shadows `syntax-binding-set-extend`
              "kw-syntax-serialize.rkt" ; shadows `syntax-serialize` and `syntax-deserialize
              (for-syntax "stxcase-scheme.rkt"))
@@ -40,6 +41,7 @@
              (all-from "cert.rkt")
              (all-from "submodule.rkt")
              (all-from "generic-interfaces.rkt")
+             (all-from "print-value-columns.rkt")
              (all-from "kw-syntax-binding.rkt")
              (all-from "kw-syntax-serialize.rkt")
              (for-syntax syntax-rules syntax-id-rules ... _)
