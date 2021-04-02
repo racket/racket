@@ -1465,35 +1465,46 @@
   (cond
    [(and (cpointer? p)
          (cpointer-gcable? p))
-    (define from-t (ctype-coretype from-type))
-    (define to-t (ctype-coretype to-type))
     (let loop ([p p])
       (cond
-       [(and (not (zero? (ptr-offset p)))
-             (or (or (eq? to-t 'pointer)
-                     (eq? to-t 'gcpointer))))
-        (define o (ptr-offset p))
-        (define from-t (cpointer-tag p))
-        (define z (ptr-add p (- o)))
-        (when from-t
-          (set-cpointer-tag! z from-t))
-        (define q (loop z))
-        (define to-t (cpointer-tag q))
-        (define r (ptr-add q o))
-        (when to-t
-          (set-cpointer-tag! r to-t))
-        r]
-       [else
-        (if (and (or (eq? from-t 'pointer)
-                     (eq? to-t 'pointer))
-                 (or (eq? from-t 'pointer)
-                     (eq? from-t 'gcpointer))
-                 (or (eq? to-t 'pointer)
-                     (eq? to-t 'gcpointer)))
-            (convert p (_gcable from-type) (_gcable to-type))
-            (convert p from-type to-type))]))]
+        [(and (not (zero? (ptr-offset p)))
+              (let ([ct (ctype-coretype to-type)])
+                (or (eq? ct 'pointer)
+                    (eq? ct 'gcpointer))))
+         (define o (ptr-offset p))
+         (define from-t (cpointer-tag p))
+         (define z (ptr-add p (- o)))
+         (when from-t
+           (set-cpointer-tag! z from-t))
+         (define q (loop z))
+         (define to-t (cpointer-tag q))
+         (define r (ptr-add q o))
+         (when to-t
+           (set-cpointer-tag! r to-t))
+         r]
+        [(ctype-pointer? to-type)
+         (define (pointer->cpointer t)
+           (define ct (ctype-coretype t))
+           (if (eq? ct 'pointer)
+               (_gcable t)
+               t))
+         (convert p (pointer->cpointer from-type) (pointer->cpointer to-type))]
+        [else
+         (convert p from-type to-type)]))]
    [else
     (convert p from-type to-type)]))
+
+(define (ctype-pointer? ctype)
+  (define coretype (ctype-coretype ctype))
+  (memq coretype '(pointer
+                   gcpointer
+                   fpointer
+                   bytes
+                   scheme
+                   string
+                   string/ucs-4
+                   string/utf-16
+                   symbol)))
 
 (define* (_or-null ctype)
   (let ([coretype (ctype-coretype ctype)])

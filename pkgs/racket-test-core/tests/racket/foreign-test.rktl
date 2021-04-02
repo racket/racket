@@ -729,6 +729,23 @@
   (test (cast p _thing-pointer _intptr)
         cast q _stuff-pointer _intptr))
 
+;; `cast` should auto-upgrade target pointer types using `_gcable` for a GCable argument
+(test #t cpointer-gcable? (cast #"x" _pointer _pointer))
+(test #t cpointer-gcable? (cast #"x" _gcpointer _pointer))
+(test #t cpointer-gcable? (cast #"x" _pointer _gcpointer))
+(test #t cpointer-gcable? (cast (malloc 8) _pointer _pointer))
+(test #t cpointer-gcable? (cast (malloc 8) _gcpointer _pointer))
+(test #t cpointer-gcable? (cast (malloc 8) _pointer _gcpointer))
+(test #t cpointer-gcable? (cast #"x" _bytes _pointer))
+(test #t cpointer-gcable? (cast #"x" _bytes _gcpointer))
+(test #t cpointer-gcable? (cast #"x" _bytes _bytes))
+(test #t
+      'many-casts
+      (for/and ([i (in-range 1000)])
+        (cpointer-gcable? (cast (bytes 1 2 3 4)
+                                _bytes
+                                _pointer))))
+
 ;; test 'interior allocation mode
 (when (eq? 'racket (system-type 'vm))
   ;; Example by Ron Garcia

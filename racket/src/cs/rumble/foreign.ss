@@ -688,7 +688,9 @@
 (define (ctype-malloc-mode c)
   (let ([t (ctype-our-rep c)])
     (if (or (eq? t 'gcpointer)
+            (eq? t 'bytes)
             (eq? t 'scheme)
+            (eq? t 'string)
             (eq? t 'string/ucs-4)
             (eq? t 'string/utf-16))
         'nonatomic
