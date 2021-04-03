@@ -6,7 +6,7 @@
 @title{Serializing Syntax}
 
 @defproc[(syntax-serialize [stx syntax?]
-                           [#:preserve-property-keys preserve-property-keys (listof symbol)]
+                           [#:preserve-property-keys preserve-property-keys (listof symbol?)]
                            [#:provides-namespace provides-namespace (or/c namespace? #f) (current-namespace)]
                            [#:base-module-path-index base-module-path-index (or/c module-path-index? #f) #f])
          any/c]{
