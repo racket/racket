@@ -1872,9 +1872,9 @@ positions of the contract.}
 The contracts of @racket[contract-out] are placed at the boundary of the
 enclosing module. This means that, for example, if the module provides a form
 @racketid[my-form] with @racket[contract-out], the contract is checked only
-when @racketid[my-form] is called from outside the module, but when called
-from within the module. When @racketid[my-form] is called from outside the
-module, its input values are checked against the corresponding parts of the
+when @racketid[my-form] is called from outside of the module, but not when
+called from within the module. When @racketid[my-form] is called from outside of
+the module, its input values are checked against the corresponding parts of the
 contract before actually performing the call to @racketid[my-form], while
 values produced by the call to @racketid[my-form] are checked against the
 remaining parts of the contract before actually returning these values at the
