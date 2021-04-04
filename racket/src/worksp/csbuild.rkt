@@ -139,6 +139,7 @@
 (parameterize ([current-directory (build-path 'up "cs")])
   (define convert.d (build-path build-dir "compiled" "convert.d"))
   (unless (file-exists? convert.d) (call-with-output-file convert.d void))
+  (putenv "PLT_CS_MAKE_COMPRESSED" "yes")
   (system*! "nmake"
 	    (build-path "../build/racket.so") ; need forward slashes
 	    (format "RACKET=~a" rel-racket)
