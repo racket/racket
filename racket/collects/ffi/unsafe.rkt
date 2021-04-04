@@ -1476,46 +1476,79 @@
   (cond
    [(and (cpointer? p)
          (cpointer-gcable? p))
+    (define to-ct (ctype-coretype to-type))
+    (define (pointer->gcpointer t)
+      (define ct (ctype-coretype t))
+      (if (eq? ct 'pointer)
+          (_gcable t)
+          t))
     (let loop ([p p])
       (cond
-        [(and (not (zero? (ptr-offset p)))
-              (let ([ct (ctype-coretype to-type)])
-                (or (eq? ct 'pointer)
-                    (eq? ct 'gcpointer))))
-         (define o (ptr-offset p))
-         (define from-t (cpointer-tag p))
-         (define z (ptr-add p (- o)))
-         (when from-t
-           (set-cpointer-tag! z from-t))
-         (define q (loop z))
-         (define to-t (cpointer-tag q))
-         (define r (ptr-add q o))
-         (when to-t
-           (set-cpointer-tag! r to-t))
-         r]
-        [(ctype-pointer? to-type)
-         (define (pointer->cpointer t)
-           (define ct (ctype-coretype t))
-           (if (eq? ct 'pointer)
-               (_gcable t)
-               t))
-         (convert p (pointer->cpointer from-type) (pointer->cpointer to-type))]
+        [(coretype-pointer? to-ct)
+         (cond
+           [(not (zero? (ptr-offset p)))
+            (cond
+              [(coretype-plain-pointer? to-ct)
+               (define o (ptr-offset p))
+               (define from-t (cpointer-tag p))
+               (define z (ptr-add p (- o)))
+               (when from-t
+                 (set-cpointer-tag! z from-t))
+               (define q (loop z))
+               (define to-t (cpointer-tag q))
+               (define r (ptr-add q o))
+               (when to-t
+                 (set-cpointer-tag! r to-t))
+               r]
+              [(coretype-noncopying? to-ct)
+               ;; we assume that an interior pointer is ok/wanted
+               (convert p (pointer->gcpointer from-type) to-type)]
+              [else
+               ;; converting to a string or similar;
+               ;; we can't store an offset pointer into
+               ;; GCable memory, so copy to fresh GCable
+               ;; memory, first
+               (define nul-count (case to-ct
+                                   [(string/ucs-4) 4]
+                                   [(string/utf-16) 2]
+                                   [else 1]))
+               (define len (let loop ([i 0] [count nul-count])
+                             (if (zero? (ptr-ref p _byte i))
+                                 (if (= count 1)
+                                     (+ i nul-count)
+                                     (loop (add1 i) (sub1 count)))
+                                 (loop (add1 i) nul-count))))
+               (define p2 (malloc len 'atomic))
+               (memcpy p2 p len)
+               (loop p2)])]
+           [else
+            (convert p (pointer->gcpointer from-type) (pointer->gcpointer to-type))])]
         [else
          (convert p from-type to-type)]))]
    [else
     (convert p from-type to-type)]))
 
-(define (ctype-pointer? ctype)
-  (define coretype (ctype-coretype ctype))
-  (memq coretype '(pointer
-                   gcpointer
-                   fpointer
-                   bytes
-                   scheme
-                   string
-                   string/ucs-4
-                   string/utf-16
-                   symbol)))
+(define (coretype-pointer? ct)
+  (memq ct '(pointer
+             gcpointer
+             fpointer
+             bytes
+             scheme
+             string
+             string/ucs-4
+             string/utf-16
+             symbol)))
+
+(define (coretype-plain-pointer? ct)
+  (or (eq? ct 'pointer)
+      (eq? ct 'gcpointer)
+      (eq? ct 'fpointer)))
+
+(define (coretype-noncopying? ct)
+  (or (and (eq? 'racket (system-type 'vm))
+           (or (eq? ct 'bytes)
+               (eq? ct 'string/ucs-4)))
+      (eq? ct 'scheme)))
 
 (define* (_or-null ctype)
   (let ([coretype (ctype-coretype ctype)])

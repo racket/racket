@@ -731,6 +731,15 @@
   (test (cast p _thing-pointer _intptr)
         cast q _stuff-pointer _intptr))
 
+;; For casts where the BC output might share with the input, so
+;; an offset pointer needs to be 'atomic-interior
+(define (share-protect bstr)
+  (if (eq? 'racket (system-type 'vm))
+      (let ([new-bstr (malloc 'atomic-interior (add1 (bytes-length bstr)))])
+        (memcpy new-bstr bstr (add1 (bytes-length bstr)))
+        (make-sized-byte-string new-bstr (bytes-length bstr)))
+      bstr))
+
 ;; `cast` should auto-upgrade target pointer types using `_gcable` for a GCable argument
 (test #t cpointer-gcable? (cast #"x" _pointer _pointer))
 (test #t cpointer-gcable? (cast #"x" _gcpointer _pointer))
@@ -738,9 +747,22 @@
 (test #t cpointer-gcable? (cast (malloc 8) _pointer _pointer))
 (test #t cpointer-gcable? (cast (malloc 8) _gcpointer _pointer))
 (test #t cpointer-gcable? (cast (malloc 8) _pointer _gcpointer))
+(test #t cpointer-gcable? (cast (ptr-add (malloc 8) 5) _pointer _pointer))
 (test #t cpointer-gcable? (cast #"x" _bytes _pointer))
 (test #t cpointer-gcable? (cast #"x" _bytes _gcpointer))
 (test #t cpointer-gcable? (cast #"x" _bytes _bytes))
+(test "lo" cast #"lo\0" _pointer _string/utf-8)
+(test "lo" cast (if (system-big-endian?) #"l\0o\0\0\0" #"l\0o\0\0\0") _pointer _string/utf-16)
+(test "lo" cast (if (system-big-endian?) #"\0\0\0l\0\0\0o\0\0\0\0\0\0\0\0" #"l\0\0\0o\0\0\0\0\0\0\0")
+      _pointer _string/ucs-4)
+(test #t cpointer-gcable? (cast (ptr-add #"xy" 1) _pointer _bytes))
+(test #t cpointer-gcable? (cast (ptr-add #"xy" 1) _pointer _pointer))
+(test (char->integer #\y) ptr-ref (cast (ptr-add #"xy" 1) _pointer _pointer) _byte)
+(test #"lo" cast (ptr-add (share-protect #"hello\0") 3) _pointer _bytes)
+(test "lo" cast (ptr-add #"hello\0" 3) _pointer _string/utf-8)
+(test "lo" cast (ptr-add (if (system-big-endian?) #"e\0l\0l\0o\0\0\0" #"\0l\0l\0o\0\0\0") 3) _pointer _string/utf-16)
+(test "lo" cast (ptr-add (share-protect (if (system-big-endian?) #"\0\0\0l\0\0\0l\0\0\0o\0\0\0\0\0\0\0\0" #"\0\0\0\0l\0\0\0o\0\0\0\0\0\0\0")) 4)
+      _pointer _string/ucs-4)
 (test #t
       'many-casts
       (for/and ([i (in-range 1000)])
