@@ -49,6 +49,9 @@ TO DO:
 (define protocol-symbol/c
   (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
 
+(define (alpn-protocol-bytes/c v)
+  (and (bytes? v) (< 0 (bytes-length v) 256)))
+
 (define curve-nid-alist
   '((sect163k1 . 721)
     (sect163r1 . 722)
@@ -163,6 +166,8 @@ TO DO:
    (c-> ssl-port? (or/c bytes? #f))]
   [ssl-channel-binding
    (c-> ssl-port? (or/c 'tls-unique 'tls-server-end-point) bytes?)]
+  [ssl-get-alpn-selected
+   (c-> ssl-port? (or/c bytes? #f))]
   [ports->ssl-ports
    (->* [input-port?
          output-port?]
@@ -172,7 +177,8 @@ TO DO:
          #:close-original? any/c
          #:shutdown-on-close? any/c
          #:error/ssl procedure?
-         #:hostname (or/c string? #f)]
+         #:hostname (or/c string? #f)
+         #:alpn (listof alpn-protocol-bytes/c)]
         (values input-port? output-port?))]
   [ssl-listen
    (->* [listen-port-number?]
@@ -192,12 +198,14 @@ TO DO:
   [ssl-connect
    (->* [string?
          (integer-in 1 (sub1 (expt 2 16)))]
-        [(or/c ssl-client-context? protocol-symbol/c)]
+        [(or/c ssl-client-context? protocol-symbol/c)
+         #:alpn (listof alpn-protocol-bytes/c)]
         (values input-port? output-port?))]
   [ssl-connect/enable-break
    (->* [string?
          (integer-in 1 (sub1 (expt 2 16)))]
-        [(or/c ssl-client-context? protocol-symbol/c)]
+        [(or/c ssl-client-context? protocol-symbol/c)
+         #:alpn (listof alpn-protocol-bytes/c)]
         (values input-port? output-port?))]
   [ssl-listener?
    (c-> any/c boolean?)]
@@ -376,6 +384,27 @@ TO DO:
 
 (define-ssl SSL_get_peer_finished (_fun _SSL* _pointer _size -> _size))
 (define-ssl SSL_get_finished (_fun _SSL* _pointer _size -> _size))
+
+(define-ssl SSL_CTX_set_alpn_protos
+  (_fun _SSL_CTX*
+        (bs : _bytes)
+        (_uint = (bytes-length bs))
+        -> _int)) ;; Note: 0 means success, other means failure!
+(define-ssl SSL_set_alpn_protos
+  (_fun _SSL*
+        (bs : _bytes)
+        (_uint = (bytes-length bs))
+        -> _int)) ;; Note: 0 means success, other means failure!
+(define-ssl SSL_get0_alpn_selected
+  (_fun _SSL*
+        (p : (_ptr o _pointer))
+        (len : (_ptr o _uint))
+        -> _void
+        -> (cond [(and p (> len 0))
+                  (let ([bs (make-bytes len)])
+                    (memcpy bs p len)
+                    bs)]
+                 [else #f])))
 
 (define-cpointer-type _EVP_MD*)
 (define-crypto EVP_sha224 (_fun -> _EVP_MD*/null))
@@ -1470,10 +1499,11 @@ TO DO:
                           #:close-original? [close-original? #f]
                           #:shutdown-on-close? [shutdown-on-close? #f]
                           #:error/ssl [error/ssl error]
-                          #:hostname [hostname #f])
+                          #:hostname [hostname #f]
+                          #:alpn [alpn null])
   (wrap-ports 'port->ssl-ports i o (or context encrypt) mode
               close-original? shutdown-on-close? error/ssl
-              hostname))
+              hostname alpn))
 
 (define (create-ssl who context-or-encrypt-method connect/accept error/ssl)
   (define connect?
@@ -1519,10 +1549,10 @@ TO DO:
 
 (define (wrap-ports who i o context-or-encrypt-method connect/accept
                     close? shutdown-on-close? error/ssl
-                    hostname)
+                    hostname alpn)
   ;; Create the SSL connection:
   (let-values ([(ssl r-bio w-bio connect?)
-          (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
+                (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
                [(verify-hostname?)
                 (cond [(ssl-context? context-or-encrypt-method)
                        (ssl-context-verify-hostname? context-or-encrypt-method)]
@@ -1530,6 +1560,14 @@ TO DO:
     (when (string? hostname)
       (SSL_ctrl/bytes ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
                       TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
+    (when (pair? alpn)
+      (unless (eq? connect/accept 'connect)
+        (error who "ALPN is currently supported only in connect mode"))
+      (define proto-list
+        (apply bytes-append (for/list ([proto (in-list alpn)])
+                              (bytes-append (bytes (bytes-length proto)) proto))))
+      (unless (zero? (SSL_set_alpn_protos ssl proto-list))
+        (error who "failed setting ALPN protocol list")))
 
     ;; connect/accept:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
@@ -1754,6 +1792,11 @@ TO DO:
      (X509_free x509)
      (if (> r 0) buf (error who "internal error: certificate digest failed"))]))
 
+(define (ssl-get-alpn-selected p)
+  (define-values (mzssl _in?) (lookup 'ssl-get-alpn-selected p))
+  (define ssl (mzssl-ssl mzssl))
+  (SSL_get0_alpn_selected ssl))
+
 (define (ssl-port? v)
   (and (hash-ref ssl-ports v #f) #t))
 
@@ -1799,7 +1842,7 @@ TO DO:
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SSL connect
 
-(define (do-ssl-connect who tcp-connect hostname port-k client-context-or-protocol-symbol)
+(define (do-ssl-connect who tcp-connect hostname port-k client-context-or-protocol-symbol alpn)
   (let-values ([(i o) (tcp-connect hostname port-k)])
     ;; See do-ssl-accept for note on race condition here:
     (with-handlers ([void (lambda (exn)
@@ -1807,23 +1850,27 @@ TO DO:
                             (close-output-port o)
                             (raise exn))])
       (wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f error/network
-                  hostname))))
+                  hostname alpn))))
 
 (define (ssl-connect hostname port-k
-                     [client-context-or-protocol-symbol default-encrypt])
+                     [client-context-or-protocol-symbol default-encrypt]
+                     #:alpn [alpn null])
   (do-ssl-connect 'ssl-connect
                   tcp-connect
                   hostname
                   port-k
-                  client-context-or-protocol-symbol))
+                  client-context-or-protocol-symbol
+                  alpn))
 
 (define (ssl-connect/enable-break hostname port-k
-                                  [client-context-or-protocol-symbol default-encrypt])
+                                  [client-context-or-protocol-symbol default-encrypt]
+                                  #:alpn [alpn null])
   (do-ssl-connect 'ssl-connect/enable-break
                   tcp-connect/enable-break
                   hostname
                   port-k
-                  client-context-or-protocol-symbol))
+                  client-context-or-protocol-symbol
+                  alpn))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialization

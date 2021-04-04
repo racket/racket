@@ -77,7 +77,8 @@ using the functions described in @secref["cert-procs"].
                              'secure
                              'auto
                              'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                       'auto])
+                       'auto]
+                      [#:alpn alpn-protocols (listof bytes?) null])
          (values input-port? output-port?)]{
 
 Connect to the host given by @racket[hostname], on the port given by
@@ -103,6 +104,13 @@ If hostname verification is enabled (see
 @racket[ssl-set-verify-hostname!]), the peer's certificate is checked
 against @racket[hostname].
 
+If @racket[alpn-protocols] is not empty, the client attempts to use
+@hyperlink["https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation"]{ALPN}
+to negotiate the application-level protocol. The protocols should be
+listed in order of preference, and each protocol must be a byte string
+with a length between 1 and 255 (inclusive). See also
+@racket[ssl-get-alpn-selected].
+
 @;{
 See `enforce-retry?' in "mzssl.rkt", currently set to #f so that this
 paragraph does not apply:
@@ -119,7 +127,8 @@ whether the other end is supposed to be sending or reading data.
 }
 
 @history[#:changed "6.3.0.12" @elem{Added @racket['secure] for
-                                    @racket[client-protocol].}]}
+                                    @racket[client-protocol].}
+         #:changed "8.0.0.13" @elem{Added @racket[#:alpn] argument.}]}
 
 @defproc[(ssl-connect/enable-break
           [hostname string?]
@@ -414,7 +423,8 @@ current platform for server connections.
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
 	   [#:error/ssl error procedure? error]
-           [#:hostname hostname (or/c string? #f) #f])
+           [#:hostname hostname (or/c string? #f) #f]
+           [#:alpn alpn-protocols (listof bytes?) null])
          (values input-port? output-port?)]{
 
 Returns two values---an input port and an output port---that
@@ -464,7 +474,15 @@ writing to an SSL connection (i.e., one direction at a time).
 If hostname verification is enabled (see
 @racket[ssl-set-verify-hostname!]), the peer's certificate is checked
 against @racket[hostname].
-}
+
+If @racket[alpn-protocols] is not empty and @racket[mode] is
+@racket['connect], then the client attempts to use
+@hyperlink["https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation"]{ALPN};
+see also @racket[ssl-connect] and @racket[ssl-get-alpn-selected]. If
+@racket[alpn-protocols] is not empty and @racket[mode] is
+@racket['accept], an exception (@racket[exn:fail]) is raised.
+
+@history[#:changed "8.0.0.13" @elem{Added @racket[#:alpn] argument.}]}
 
 @; ----------------------------------------------------------------------
 
@@ -855,6 +873,25 @@ connection is closed), an exception is raised.
 
 @history[#:added "7.7.0.9"]}
 
+
+@defproc[(ssl-get-alpn-selected [p ssl-port?])
+         (or/c bytes? #f)]{
+
+Returns the ALPN protocol selected during negotiation, or @racket[#f]
+if no protocol was selected.
+
+This library currently only supports ALPN for client connections.
+
+According to @hyperlink["https://tools.ietf.org/html/rfc7301"]{RFC
+7301}, if a server does not support any of the protocols proposed by
+the client, it must reject the connection with a
+``no_application_protocol'' alert. In practice, however, some servers
+simply continue without selecting an application protocol (see
+@hyperlink["https://github.com/openssl/openssl/issues/2708"]{this
+OpenSSL bug}, for example), so it is recommended to always check the
+selected protocol after making a connection.
+
+@history[#:added "8.0.0.13"]}
 
 @; ----------------------------------------------------------------------
 
