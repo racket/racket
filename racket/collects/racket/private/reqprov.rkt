@@ -763,7 +763,13 @@
                                        (export-local-id export)
                                        (quasisyntax/loc out
                                          (rename #,(export-local-id export)
-                                                 #,(export-out-sym export))))]
+                                                 #,(if (eq? (syntax-e (export-orig-stx export))
+                                                            (export-out-sym export))
+                                                       (export-orig-stx export)
+                                                       (datum->syntax
+                                                        #f
+                                                        (export-out-sym export)
+                                                        (export-orig-stx export))))))]
                                   [mode (export-mode export)])
                               (let ([phased
                                      (cond
