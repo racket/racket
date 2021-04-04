@@ -176,6 +176,8 @@
 
 ;; Make sure `_box` at least compiles:
 (test #t ctype? (_fun (_box _int) -> _void))
+(test #t ctype? (_fun (_box _int #f) -> _void))
+(test #t ctype? (_fun (_box _int atomic-interior) -> _void))
 
 ;; Check error message on bad _fun form
 (syntax-test #'(_fun (b) :: _bool -> _void) #rx"unnamed argument .without an expression. is not allowed")
@@ -811,6 +813,12 @@
         86 1.0 2 3 4.0)
   (test 67
         (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 4) (_ptr i _int) (_int = 1) _int))
+        50 8 9)
+  (test 67
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 4) (_ptr i _int #f) (_int = 1) _int))
+        50 8 9)
+  (test 67
+        (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 4) (_ptr i _int atomic-interior) (_int = 1) _int))
         50 8 9)
   (test 16
         (get-ffi-obj 'varargs_check test-lib (_varargs (_int = 5) (_fun #:varargs-after 2 _int _long _double -> _int)))

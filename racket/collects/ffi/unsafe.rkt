@@ -1075,21 +1075,31 @@
       (syntax-case* stx (lit ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
         [pat (syntax-protect (syntax/loc stx tmpl))] ...))))
 
-;; (_ptr <mode> <type>)
+(define-syntax malloc/static-mode
+  (syntax-rules ()
+    [(_ who t #f) (malloc t)]
+    [(_ who t mode) (begin
+                      (check-malloc-mode _who mode)
+                      (malloc t 'mode))]))
+
+;; (_ptr <mode> <type> [<malloc-mode>])
 ;; This is for pointers, where mode indicates input or output pointers (or
 ;; both).  If the mode is `o' (output), then the wrapper will not get an
 ;; argument for it, instead it generates the matching argument.
 (provide _ptr)
 (define-fun-syntax _ptr
   (syntax-rules/symbol-literals (i o io)
-    [(_ i  t) (type: _pointer
-               pre:  (x => (let ([p (malloc t)]) (ptr-set! p t x) p)))]
-    [(_ o  t) (type: _pointer
-               pre:  (malloc t)
-               post: (x => (ptr-ref x t)))]
-    [(_ io t) (type: _pointer
-               pre:  (x => (let ([p (malloc t)]) (ptr-set! p t x) p))
-               post: (x => (ptr-ref x t)))]))
+    [(_ i  t) (_ptr i t #f)]
+    [(_ i  t mode) (type: _pointer
+                          pre:  (x => (let ([p (malloc/static-mode _ptr t mode)]) (ptr-set! p t x) p)))]
+    [(_ o  t) (_ptr o t #f)]
+    [(_ o  t mode) (type: _pointer
+                          pre:  (malloc/static-mode _ptr t mode)
+                          post: (x => (ptr-ref x t)))]
+    [(_ io t) (_ptr io t #f)]
+    [(_ io t mode) (type: _pointer
+                          pre:  (x => (let ([p (malloc/static-mode _ptr t mode)]) (ptr-set! p t x) p))
+                          post: (x => (ptr-ref x t)))]))
 
 ;; (_box <type>)
 ;; This is similar to a (_ptr io <type>) argument, where the input is expected
@@ -1097,10 +1107,11 @@
 (provide _box)
 (define-fun-syntax _box
   (syntax-rules ()
-    [(_ t) (type: _pointer
-            bind: tmp ; need to save the box so we can get back to it
-            pre:  (x => (let ([p (malloc t)]) (ptr-set! p t (unbox x)) p))
-            post: (x => (begin (set-box! tmp (ptr-ref x t)) tmp)))]))
+    [(_ t) (_box t #f)]
+    [(_ t mode) (type: _pointer
+                       bind: tmp ; need to save the box so we can get back to it
+                       pre:  (x => (let ([p (malloc/static-mode _box t mode)]) (ptr-set! p t (unbox x)) p))
+                       post: (x => (begin (set-box! tmp (ptr-ref x t)) tmp)))]))
 
 ;; (_list <mode> <type> [<len>])
 ;; Similar to _ptr, except that it is used for converting lists to/from C

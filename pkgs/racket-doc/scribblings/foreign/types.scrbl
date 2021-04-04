@@ -619,7 +619,12 @@ For @tech{callouts} to foreign functions with the generated type:
        value of @racket[blocking?] affects only the @CS[] implementation of
        Racket, where it enable activity
        such as garbage collection in other OS threads while the
-       @tech{callout} blocks. If the blocking @tech{callout} can
+       @tech{callout} blocks. Since a garbage collection can happen during
+       the foreign call, objects passed to the foreign call need to be
+       immobile if they're managed by the garbage collector; in particular,
+       any @racket[_ptr] arguments should normally specify @racket['atomic-interior]
+       allocation mode.
+       If the blocking @tech{callout} can
        invoke any @tech{callbacks} back to Racket, those
        @tech{callbacks} must be constructed with a non-@racket[#f]
        value of @racket[async-apply], even if they are always applied
@@ -1064,8 +1069,11 @@ Examples:
 
 
 @defform/subs[#:literals (i o io)
-              (_ptr mode type-expr)
-              ([mode i o io])]{
+              (_ptr mode type-expr maybe-malloc-mode)
+              ([mode i o io]
+               [maybe-malloc-mode (code:line) #f raw atomic nonatomic tagged
+                                  atomic-interior interior
+                                  stubborn uncollectable eternal])]{
 
 Creates a C pointer type, where @racket[mode] indicates input or
 output pointers (or both).  The @racket[mode] can be one of the
@@ -1083,9 +1091,8 @@ following (matched as a symbol independent of binding):
   the foreign function expects a pointer to a place where it will save
   some value, and this value is accessible after the call, to be used
   by an extra return expression.  If @racket[_ptr] is used in this
-  mode, then the generated wrapper does not expect an argument since
-  one will be freshly allocated before the call. The argument is
-  allocated using @racket[(malloc type-expr)].}
+  mode, then the generated wrapper does not expect an argument, since
+  one will be freshly allocated before the call.}
 
  @item{@racket[io] --- combines the above into an
   @italic{input/output} pointer argument: the wrapper gets the Racket
@@ -1113,17 +1120,24 @@ creates a function that calls the foreign function with a fresh
 integer pointer, and use the value that is placed there as a second
 return value.
 
+The pointer argument created by @racket[_ptr] is allocated using
+allocated using @racket[(malloc type-expr)] if
+@racket[maybe-malloc-mode] is not specified or if it is @racket[#f],
+@racket[(malloc type-expr '@#,racket[maybe-malloc-mode])] otherwise.
+
 @history[#:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
                                    and @racket[io] match as symbols
-                                   instead of free identifiers.}]}
+                                   instead of free identifiers.}
+         #:changed "8.0.0.13" @elem{Added @racket[malloc-mode].}]}
 
 
-@defform[(_box type)]{
+@defform[(_box type maybe-malloc-mode)]{
 
 A @tech{custom function type} similar to a @racket[(_ptr io _type)]
 argument, where the input is expected to be a box holding an
 appropriate value, which is unboxed on entry and modified accordingly
-on exit.
+on exit. The optional @racket[maybe-malloc-mode] is the same as for
+@racket[_ptr].
 
 Example:
 
