@@ -87,8 +87,8 @@
         (db : _sqlite3_database)
         (sql-buffer : _gcpointer = (trim-and-copy-buffer sql))
         ((c-string-length sql-buffer) : _int)
-        (statement : (_ptr o _sqlite3_statement/null))
-        (tail : (_ptr o _pointer)) ;; points into sql-buffer (atomic-interior)
+        (statement : (_ptr o _sqlite3_statement/null atomic-interior))
+        (tail : (_ptr o _pointer atomic-interior)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
         -> (values result statement (and tail
                                          (not (points-to-end? tail sql-buffer))))))
@@ -100,8 +100,8 @@
         (sql-buffer : _gcpointer = (trim-and-copy-buffer sql))
         ((c-string-length sql-buffer) : _int)
         ;; bad prepare statements set statement to NULL, with no error reported
-        (statement : (_ptr o _sqlite3_statement/null))
-        (tail : (_ptr o _pointer)) ;; points into sql-buffer (atomic-interior)
+        (statement : (_ptr o _sqlite3_statement/null atomic-interior))
+        (tail : (_ptr o _pointer atomic-interior)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
         -> (values result statement (and tail
                                          (not (points-to-end? tail sql-buffer)))))
