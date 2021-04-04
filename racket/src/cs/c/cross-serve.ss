@@ -16,10 +16,9 @@
   ;; Restore output
   (current-output-port original-output-port)
   ;; Racket compilation mode
-  (generate-inspector-information #f)
-  (enable-arithmetic-left-associative #t)
-  (generate-procedure-source-information #t)
-  (expand-omit-library-invocations #t)
+  (let ([omit-debugging? #t]
+        [measure-performance? #f])
+    (include "../linklet/config.ss"))
   ;; Set up the environment; ../expander/env.ss must be loaded before compiling
   (expand (let-syntax ([env (lambda (stx)
                               (datum->syntax stx (list 'quote environment-imports)))])
@@ -30,38 +29,41 @@
     (let loop ()
       (let ([cmd (get-u8 in)])
         (unless (eof-object? cmd)
-          (get-u8 in) ; newline
-          (let-values ([(o get) (open-bytevector-output-port)])
-            (let ([literals
-                   (case (integer->char cmd)
-                     [(#\c #\u)
-                      (call-with-fasled
-                       in
-                       (lambda (v pred)
-                         (parameterize ([optimize-level (if (fx= cmd (char->integer #\u))
-                                                            3
-                                                            (optimize-level))])
-                           (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred))))]
-                     [(#\f)
-                      ;; Reads host fasl format, then writes target fasl format
-                      (call-with-fasled
-                       in
-                       (lambda (v pred)
-                         (parameterize ([#%$target-machine (string->symbol target)])
-                           (fasl-write v o pred))))]
-                     [else
-                      (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])])
-              (let ([result (get)])
-                (put-num out (bytevector-length result))
-                (put-bytevector out result)
-                (let ([len (vector-length literals)])
-                  (put-num out len)
-                  (let loop ([i 0])
-                    (unless (fx= i len)
-                      (put-num out (vector-ref literals i))
-                      (loop (fx+ i 1)))))
-                (flush-output-port out)))
-            (loop)))))))
+          (let ([compress-code? (eqv? (get-u8 in) (char->integer #\y))])
+            (get-u8 in) ; newline
+            (let-values ([(o get) (open-bytevector-output-port)])
+              (let ([literals
+                     (case (integer->char cmd)
+                       [(#\c #\u)
+                        (call-with-fasled
+                         in
+                         (lambda (v pred)
+                           (parameterize ([optimize-level (if (fx= cmd (char->integer #\u))
+                                                              3
+                                                              (optimize-level))]
+                                          [fasl-compressed compress-code?])
+                             (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred))))]
+                       [(#\f)
+                        ;; Reads host fasl format, then writes target fasl format
+                        (call-with-fasled
+                         in
+                         (lambda (v pred)
+                           (parameterize ([#%$target-machine (string->symbol target)]
+                                          [fasl-compressed compress-code?])
+                             (fasl-write v o pred))))]
+                       [else
+                        (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])])
+                (let ([result (get)])
+                  (put-num out (bytevector-length result))
+                  (put-bytevector out result)
+                  (let ([len (vector-length literals)])
+                    (put-num out len)
+                    (let loop ([i 0])
+                      (unless (fx= i len)
+                        (put-num out (vector-ref literals i))
+                        (loop (fx+ i 1)))))
+                  (flush-output-port out)))
+              (loop))))))))
 
 ;; ----------------------------------------
 

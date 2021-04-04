@@ -113,8 +113,8 @@
              (will-register we msg-ch (lambda (msg-ch) (custodian-shutdown-all c)))
              (let loop ()
                (let ([msg (channel-get msg-ch)])
-                 ;; msg is (list <command> <value> <reply-channel>)
-                 (write-string (#%format "~a\n" (car msg)) to)
+                 ;; msg is (list <command> <value> <quoted> <reply-channel>)
+                 (write-string (#%format "~a~a\n" (car msg) (if compress-code? #\y #\n)) to)
                  (let-values ([(bv literals) (fasl-to-bytevector (cadr msg) (caddr msg))])
                    ;; We can't send all literals to the cross compiler, but we can send
                    ;; strings and byte stringa, which might affect compilation. Otherwise,

@@ -408,8 +408,11 @@ install-cross:
 
 SCHEME_XPATCH = $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
 
-compile-xpatch.$(TARGET_MACH): $(SCHEME_XPATCH) $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss $(srcdir)/../expander/env.ss
-	$(SCHEME) --script $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss $(srcdir)/../expander/env.ss
+CROSS_SERVE_DEPS = $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss \
+                   $(srcdir)/../expander/env.ss $(srcdir)/../linklet/config.ss
+
+compile-xpatch.$(TARGET_MACH): $(SCHEME_XPATCH) $(CROSS_SERVE_DEPS)
+	$(SCHEME) --script $(srcdir)/mk-cross-serve.ss $(srcdir) cross-serve.ss $(srcdir)/../expander/env.ss
 	cat cross-serve.so $(SCHEME_XPATCH) > compile-xpatch.$(TARGET_MACH)
 
 RACKET_XPATCH = chezpart.$(MACH) rumble.$(MACH)	thread.$(MACH) \
