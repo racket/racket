@@ -1437,12 +1437,14 @@
    [(eq? mode 'nonatomic)
     (make-cpointer (#%make-vector (quotient size ptr-size-in-bytes) 0) #f)]
    [(eq? mode 'atomic-interior)
-    ;; This is not quite the same as traditional Racket, because
-    ;; a finalizer is associated with the cpointer (as opposed to
-    ;; the address that is wrapped by the cpointer). Also, interior
-    ;; pointers are not allowed as GCable pointers.
+    ;; This is not quite the same as Racket BC, because interior
+    ;; pointers are not allowed as GCable pointers. So, "interior"
+    ;; just means "doesn't move".
     (let* ([bstr (make-immobile-bytevector size)])
       (make-cpointer bstr #f))]
+   [(eq? mode 'interior)
+    ;; Ditto
+    (make-cpointer (#%make-immobile-vector (quotient size ptr-size-in-bytes) 0) #f)]
    [else
     (raise-unsupported-error 'malloc
                              (format "'~a mode is not supported" mode))]))

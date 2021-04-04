@@ -747,7 +747,7 @@
                                 _pointer))))
 
 ;; test 'interior allocation mode
-(when (eq? 'racket (system-type 'vm))
+(let ()
   ;; Example by Ron Garcia
   (define-struct data (a b))
   (define (cbox s)

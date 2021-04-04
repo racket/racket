@@ -289,14 +289,15 @@ specification is required at minimum:
        This allocation mode corresponds to
        @cpp{scheme_malloc_atomic_allow_interior} in the C API.}
 
-     @item{@indexed-racket['nonatomic-interior] --- Like
+     @item{@indexed-racket['interior] --- Like
        @racket['nonatomic], but the allocated object will not be moved
        by the garbage collector as long as the allocated object is
        retained.
 
-       This mode is supported only for the @BC[] Racket implementation, and
-       it corresponds to @cpp{scheme_malloc_allow_interior} in the C
-       API.}
+       For the @BC[] Racket implementation, a reference can point
+       to the interior of the object, instead of its starting address.
+       This allocation mode corresponds to
+       @cpp{scheme_malloc_allow_interior} in the C API.}
 
      @item{@indexed-racket['tagged] --- Allocates memory that must
        start with a @tt{short} value that is registered as a tag with
@@ -337,7 +338,8 @@ If no mode is specified, then @racket['nonatomic] allocation is used
 when the type is a @racket[_gcpointer]- or @racket[_scheme]-based
 type, and @racket['atomic] allocation is used otherwise.
 
-@history[#:changed "6.4.0.10" @elem{Added the @racket['tagged] allocation mode.}]}
+@history[#:changed "6.4.0.10" @elem{Added the @racket['tagged] allocation mode.}
+         #:changed "8.0.0.13" @elem{Changed CS to support the @racket['interior] allocation mode.}]}
 
 
 @defproc[(free [cptr cpointer?]) void]{
