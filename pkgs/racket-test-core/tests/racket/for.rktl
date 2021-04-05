@@ -5,6 +5,17 @@
 
 (require "for-util.rkt")
 
+;; These are copied from
+;; https://github.com/racket/r6rs/blob/master/r6rs-lib/rnrs/arithmetic/fixnums-6.rkt
+(define CS? (eq? 'chez-scheme (system-type 'vm)))
+(define 64-bit? (fixnum? (expt 2 33)))
+(define (least-fixnum) (if CS?
+                           (if 64-bit? (- (expt 2 60)) -536870912)
+                           (if 64-bit? (- (expt 2 62)) -1073741824)))
+(define (greatest-fixnum) (if CS?
+                              (if 64-bit? (- (expt 2 60) 1) +536870911)
+                              (if 64-bit? (- (expt 2 62) 1) +1073741823)))
+
 (test-sequence [(0 1 2)] 3)
 (test-sequence [(0 1 2)] (in-range 3))
 (test-sequence [(3 4 5)] (in-range 3 6))
@@ -12,8 +23,23 @@
 (test-sequence [(3.0 4.0 5.0)] (in-range 3.0 6.0))
 (test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5)] (in-range 3.0 6.0 0.5))
 (test-sequence [(3.0 3.1 3.2)] (in-range 3.0 3.3 0.1))
+(test-sequence [(6 7)] (in-inclusive-range 6 7))
+(test-sequence [(3 4 5 6)] (in-inclusive-range 3 6))
+(test-sequence [(7 6 5 4)] (in-inclusive-range 7 4 -1))
+(test-sequence [(3.0 4.0 5.0 6.0)] (in-inclusive-range 3.0 6.0))
+(test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5 6.0)] (in-inclusive-range 3.0 6.0 0.5))
+(test-sequence [(#e3.0 #e3.1 #e3.2 #e3.3)] (in-inclusive-range #e3.0 #e3.3 #e0.1))
+(test-sequence [(,(least-fixnum)
+                 ,(+ (least-fixnum) 1))]
+               (in-inclusive-range (least-fixnum)
+                                   (+ (least-fixnum) 1)))
+(test-sequence [(,(- (greatest-fixnum) 1)
+                 ,(greatest-fixnum))]
+               (in-inclusive-range (- (greatest-fixnum) 1)
+                                   (greatest-fixnum)))
 (err/rt-test (for/list ([x (in-range)]) x))
 (err/rt-test (in-range))
+(err/rt-test (for/list ([x (in-inclusive-range 1)]) x))
 (err/rt-test (for/list ([x (in-naturals 0 1)]) x))
 (err/rt-test (in-naturals 0 1))
 

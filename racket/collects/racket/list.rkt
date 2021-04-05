@@ -47,6 +47,7 @@
 
          ;; convenience
          range
+         inclusive-range
          append-map
          filter-not
          shuffle
@@ -573,6 +574,15 @@
         [(start end step) (for/list ([i (in-range start end step)]) i)]))
     range))
 
+(define inclusive-range-proc
+  (let ()
+    ; make sure range has the right runtime name
+    (define inclusive-range
+      (case-lambda
+        [(start end)      (for/list ([i (in-inclusive-range start end)])      i)]
+        [(start end step) (for/list ([i (in-inclusive-range start end step)]) i)]))
+    inclusive-range))
+
 (define-sequence-syntax range
   (λ () #'range-proc)
   (λ (stx)
@@ -580,6 +590,14 @@
       [[(n) (_ end)]            #'[(n) (in-range end)]]
       [[(n) (_ start end)]      #'[(n) (in-range start end)]]
       [[(n) (_ start end step)] #'[(n) (in-range start end step)]]
+      [[ids range-expr]         #'[ids (#%expression range-expr)]])))
+
+(define-sequence-syntax inclusive-range
+  (λ () #'inclusive-range-proc)
+  (λ (stx)
+    (syntax-case stx ()
+      [[(n) (_ start end)]      #'[(n) (in-inclusive-range start end)]]
+      [[(n) (_ start end step)] #'[(n) (in-inclusive-range start end step)]]
       [[ids range-expr]         #'[ids (#%expression range-expr)]])))
 
 (define append-map

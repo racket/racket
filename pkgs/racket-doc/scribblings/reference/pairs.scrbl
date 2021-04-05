@@ -1338,6 +1338,29 @@ performance when it appears directly in a @racket[for] clause.
                way that @racket[in-range] does.}]}
 
 
+@defproc[(inclusive-range [start real?] [end real?] [step real? 1]) list?]{
+
+Similar to @racket[in-inclusive-range], but returns lists.
+
+The resulting list holds numbers starting at @racket[start] and whose
+successive elements are computed by adding @racket[step] to their
+predecessor until @racket[end] (included) is reached.
+If no @racket[step] argument is provided, @racket[1] is used.
+
+Like @racket[in-inclusive-range], a @racket[inclusive-range] application can provide better
+performance when it appears directly in a @racket[for] clause.
+
+@mz-examples[#:eval list-eval
+  (inclusive-range 10 20)
+  (inclusive-range 20 40 2)
+  (inclusive-range 20 10 -1)
+  (inclusive-range 10 15 1.5)]
+
+@history[#:added "8.0.0.13"]
+
+}
+
+
 @defproc[(append-map [proc procedure?] [lst list?] ...+)
          list?]{
 

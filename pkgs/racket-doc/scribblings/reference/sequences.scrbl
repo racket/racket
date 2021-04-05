@@ -189,6 +189,20 @@ each element in the sequence.
   floating-point numbers.
 }
 
+@defproc[(in-inclusive-range [start real?] [end real?] [step real? 1]) stream?]{
+
+  Similar to @racket[in-range], but the sequence stopping condition is changed so that
+  the last element is allowed to be equal to @racket[end]. @speed[in-inclusive-range "number"]
+
+  @examples[#:eval sequence-evaluator
+    (sequence->list (in-inclusive-range 7 11))
+    (sequence->list (in-inclusive-range 7 11 2))
+    (sequence->list (in-inclusive-range 7 10 2))
+  ]
+
+  @history[#:added "8.0.0.13"]
+}
+
 
 @defproc[(in-naturals [start exact-nonnegative-integer? 0]) stream?]{
   Returns an infinite sequence (that is also a @tech{stream}) of exact
