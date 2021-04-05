@@ -1347,7 +1347,7 @@ successive elements are computed by adding @racket[step] to their
 predecessor until @racket[end] (included) is reached.
 If no @racket[step] argument is provided, @racket[1] is used.
 
-Like @racket[in-inclusive-range], a @racket[inclusive-range] application can provide better
+Like @racket[in-inclusive-range], an @racket[inclusive-range] application can provide better
 performance when it appears directly in a @racket[for] clause.
 
 @mz-examples[#:eval list-eval
