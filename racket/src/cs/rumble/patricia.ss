@@ -258,10 +258,13 @@
         [(eq? et 'eqv) (eqv? k1 k2)]
         [else          (key-equal? k1 k2)]))
 
+(define-syntax-rule (to-fxpositive e)
+  (fxand e (most-positive-fixnum)))
+
 (define-syntax-rule (hash-code et k)
-  (cond [(eq? et 'eq)  (eq-hash-code k)]
-        [(eq? et 'eqv) (eqv-hash-code k)]
-        [else          (key-equal-hash-code k)]))
+  (cond [(eq? et 'eq)  (to-fxpositive (eq-hash-code k))]
+        [(eq? et 'eqv) (to-fxpositive (eqv-hash-code k))]
+        [else          (to-fxpositive (key-equal-hash-code k))]))
 
 ;; iteration
 (define (intmap-iterate-first t)
