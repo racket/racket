@@ -200,7 +200,7 @@ each element in the sequence.
     (sequence->list (in-inclusive-range 7 10 2))
   ]
 
-  @history[#:added "8.0.0.12"]
+  @history[#:added "8.0.0.13"]
 }
 
 

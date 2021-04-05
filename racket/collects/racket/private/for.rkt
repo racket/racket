@@ -2106,46 +2106,64 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  specific sequences
 
+  (define-for-syntax (generate-for-clause-for-in-range-like
+                      id a b step
+                      all-fx? check
+                      unsafe-fx< unsafe-fx> < >)
+    (with-syntax ([id id]
+                  [a a]
+                  [b b]
+                  [step step]
+                  [(check ...) check]
+                  [unsafe-fx< unsafe-fx<]
+                  [unsafe-fx> unsafe-fx>]
+                  [< <]
+                  [> >])
+      (for-clause-syntax-protect
+       #`[(id)
+          (:do-in
+           ;; outer bindings:
+           ([(start) a] [(end) b] [(inc) step])
+           ;; outer check:
+           ;; let `check' report the error:
+           (unless-unsafe (check ... start end inc))
+           ;; loop bindings:
+           ([pos start])
+           ;; pos check
+           #,(cond [all-fx?
+                    ;; Special case, can use unsafe ops:
+                    (if ((syntax-e #'step) . >= . 0)
+                        #'(unsafe-fx< pos end)
+                        #'(unsafe-fx> pos end))]
+                   ;; General cases:
+                   [(not (number? (syntax-e #'step)))
+                    #'(if (step . >= . 0) (< pos end) (> pos end))]
+                   [((syntax-e #'step) . >= . 0)
+                    #'(< pos end)]
+                   [else
+                    #'(> pos end)])
+           ;; inner bindings
+           ([(id) pos])
+           ;; pre guard
+           #t
+           ;; post guard
+           #t
+           ;; loop args
+           ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))])))
+
   (define-sequence-syntax *in-range
     (lambda () #'in-range)
     (lambda (stx)
       (let loop ([stx stx])
         (syntax-case stx ()
           [[(id) (_ a b step)]
-           (let ([all-fx? (and (fixnum? (syntax-e #'a))
-                               (fixnum? (syntax-e #'b))
-                               (memq (syntax-e #'step) '(1 -1)))])
-             (for-clause-syntax-protect
-              #`[(id)
-                 (:do-in
-                  ;; outer bindings:
-                  ([(start) a] [(end) b] [(inc) step])
-                  ;; outer check:
-                  ;; let `check-range' report the error:
-                  (unless-unsafe (check-range start end inc))
-                  ;; loop bindings:
-                  ([pos start])
-                  ;; pos check
-                  #,(cond [all-fx?
-                           ;; Special case, can use unsafe ops:
-                           (if ((syntax-e #'step) . >= . 0)
-                               #'(unsafe-fx< pos end)
-                               #'(unsafe-fx> pos end))]
-                          ;; General cases:
-                          [(not (number? (syntax-e #'step)))
-                           #`(if (step . >= . 0) (< pos end) (> pos end))]
-                          [((syntax-e #'step) . >= . 0)
-                           #'(< pos end)]
-                          [else
-                           #'(> pos end)])
-                  ;; inner bindings
-                  ([(id) pos])
-                  ;; pre guard
-                  #t
-                  ;; post guard
-                  #t
-                  ;; loop args
-                  ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))]))]
+           (generate-for-clause-for-in-range-like
+            #'id #'a #'b #'step
+            (and (memq (syntax-e #'step) '(1 -1))
+                 (fixnum? (syntax-e #'a))
+                 (fixnum? (syntax-e #'b)))
+            #'(check-range)
+            #'unsafe-fx< #'unsafe-fx> #'< #'>)]
           [[(id) (_ a b)] (loop #'[(id) (_ a b 1)])]
           [[(id) (_ b)] (loop #'[(id) (_ 0 b 1)])]
           [_ #f]))))
@@ -2156,41 +2174,14 @@
       (let loop ([stx stx])
         (syntax-case stx ()
           [[(id) (_ a b step)]
-           (let* ([the-step (syntax-e #'step)]
-                  [all-fx? (and (memq the-step '(1 -1))
-                                (fixnum? (syntax-e #'a))
-                                (fixnum? ((if (eq? the-step 1) add1 sub1) (syntax-e #'b))))])
-             (for-clause-syntax-protect
-              #`[(id)
-                 (:do-in
-                  ;; outer bindings:
-                  ([(start) a] [(end) b] [(inc) step])
-                  ;; outer check:
-                  ;; let `check-range' report the error:
-                  (unless-unsafe (check-range-generic 'in-inclusive-range start end inc))
-                  ;; loop bindings:
-                  ([pos start])
-                  ;; pos check
-                  #,(cond [all-fx?
-                           ;; Special case, can use unsafe ops:
-                           (if ((syntax-e #'step) . >= . 0)
-                               #'(unsafe-fx<= pos end)
-                               #'(unsafe-fx>= pos end))]
-                          ;; General cases:
-                          [(not (number? (syntax-e #'step)))
-                           #`(if (step . >= . 0) (<= pos end) (>= pos end))]
-                          [((syntax-e #'step) . >= . 0)
-                           #'(<= pos end)]
-                          [else
-                           #'(>= pos end)])
-                  ;; inner bindings
-                  ([(id) pos])
-                  ;; pre guard
-                  #t
-                  ;; post guard
-                  #t
-                  ;; loop args
-                  ((#,(if all-fx? #'unsafe-fx+ #'+) pos inc)))]))]
+           (generate-for-clause-for-in-range-like
+            #'id #'a #'b #'step
+            (and (memq (syntax-e #'step) '(1 -1))
+                 (fixnum? (syntax-e #'a))
+                 (fixnum? ((if (eq? (syntax-e #'step) 1) add1 sub1)
+                           (syntax-e #'b))))
+            #'(check-range-generic 'in-inclusive-range)
+            #'unsafe-fx<= #'unsafe-fx>= #'<= #'>=)]
           [[(id) (_ a b)] (loop #'[(id) (_ a b 1)])]
           [_ #f]))))
 

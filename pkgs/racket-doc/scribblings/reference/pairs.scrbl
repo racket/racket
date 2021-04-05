@@ -1356,7 +1356,7 @@ performance when it appears directly in a @racket[for] clause.
   (inclusive-range 20 10 -1)
   (inclusive-range 10 15 1.5)]
 
-@history[#:added "8.0.0.12"]
+@history[#:added "8.0.0.13"]
 
 }
 
