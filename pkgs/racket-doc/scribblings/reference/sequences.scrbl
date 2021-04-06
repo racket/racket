@@ -1152,15 +1152,19 @@ stream, but plain lists can be used as streams, and functions such as
 
  @history[#:added "8.0.0.12"]}
 
-@defform[(stream expr ...)]{
+@defform[(stream e ...)]{
   A shorthand for nested @racket[stream-cons]es ending with
-  @racket[empty-stream].
+  @racket[empty-stream]. As a match pattern, @racket[stream]
+  matches a stream with as many elements as @racket[e]s,
+  and each element must match the corresponding @racket[e] pattern.
 }
 
-@defform[(stream* expr ... rest-expr)]{
-  A shorthand for nested @racket[stream-cons]es, but the @racket[rest-expr]
+@defform[(stream* e ... tail)]{
+  A shorthand for nested @racket[stream-cons]es, but the @racket[tail]
   must produce a stream when it is forced, and that stream is used as the rest of the stream instead of
   @racket[empty-stream]. Similar to @racket[list*] but for streams.
+  As a match pattern, @racket[stream*] is similar to a @racket[stream] pattern,
+  but the @racket[tail] pattern matches the ``rest'' of the stream after the last @racket[e].
 
 @history[#:added "6.3"
          #:changed "8.0.0.12" @elem{Changed to delay @racket[rest-expr] even
