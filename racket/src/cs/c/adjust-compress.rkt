@@ -183,9 +183,9 @@
    [("--gzip") "Compress using gzip"
                (enable-compress!)
                (set-compress-format! 'gzip)]
-   [("--lz4") "Compress using lz4"
-              (enable-compress!)
-              (set-compress-format! 'lz4)]
+   [("--lz4" "--compress") "Compress using lz4"
+                           (enable-compress!)
+                           (set-compress-format! 'lz4)]
    #:args path
    (for ([path (in-list path)])
      (define bstr (file->bytes path))
