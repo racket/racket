@@ -42,7 +42,7 @@
                                                               3
                                                               (optimize-level))]
                                           [fasl-compressed compress-code?])
-                             (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred))))]
+                             (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred 'omit-rtds))))]
                        [(#\f)
                         ;; Reads host fasl format, then writes target fasl format
                         (call-with-fasled

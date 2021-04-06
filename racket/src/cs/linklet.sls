@@ -258,6 +258,8 @@
                                (call-getting-literals
                                 quoteds
                                 (lambda (pred)
+                                  ;; If arguments change here, then probably they should change in
+                                  ;; "cross-serve.ss", too:
                                   (compile-to-port s o #f #f #f (machine-type) #f pred 'omit-rtds)))))))
   (define (expand/optimize* e unsafe?)
     (call-with-system-wind (lambda ()
