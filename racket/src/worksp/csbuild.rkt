@@ -8,6 +8,11 @@
 	 "cs/prep.rkt"
 	 "cs/recompile.rkt")
 
+;; Environment variables that affect the build:
+;;  PLT_BOOTFILE_COMPRESS - enables compression of boot files
+;;  PLT_CS_MAKE_COMPRESSED_DATA - enables more ".zo" compression
+;;  PLT_CS_MAKE_NO_COMPRESSED - disables default ".zo" compression
+
 (define-runtime-path here ".")
 
 (define scheme-dir (build-path 'up "ChezScheme"))
@@ -139,7 +144,8 @@
 (parameterize ([current-directory (build-path 'up "cs")])
   (define convert.d (build-path build-dir "compiled" "convert.d"))
   (unless (file-exists? convert.d) (call-with-output-file convert.d void))
-  (putenv "PLT_CS_MAKE_COMPRESSED" "yes")
+  (unless (getenv "PLT_CS_MAKE_NO_COMPRESSED")
+    (putenv "PLT_CS_MAKE_COMPRESSED" "yes"))
   (system*! "nmake"
 	    (build-path "../build/racket.so") ; need forward slashes
 	    (format "RACKET=~a" rel-racket)
@@ -220,13 +226,19 @@
          args))
 
 (make-directory* "../../lib")
-(bootstrap-racket! "../cs/c/embed-boot.rkt"
-                   "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
-                   "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
-                   "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
-                   "../build/petite-v.boot"
-                   "../build/scheme-v.boot"
-                   "../build/racket-v.boot")
+(apply bootstrap-racket!
+       "../cs/c/embed-boot.rkt"
+       (append
+        (if (getenv "PLT_BOOTFILE_COMPRESS")
+            '("--compress")
+            '())
+        (list
+         "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
+         "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
+         "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+         "../build/petite-v.boot"
+         "../build/scheme-v.boot"
+         "../build/racket-v.boot")))
 
 (system*! "mt"
 	  "-manifest" "racket/racket.manifest"

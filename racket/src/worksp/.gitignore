@@ -39,3 +39,6 @@ cstartup.exe
 /bc_suffix_new.h
 
 /compiled
+/liblz4.dll
+/liblz4.lib
+/liblz4.exp

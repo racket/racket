@@ -67,6 +67,12 @@
            (fasl-compressed #t)
            (putenv "PLT_CS_MAKE_COMPRESSED" "y") ; for "linklet.sls"
            (loop args))]
+     [(get-opt args "--compress-more" 0)
+      => (lambda (args)
+           (fasl-compressed #t)
+           (putenv "PLT_CS_MAKE_COMPRESSED" "y") ; for "linklet.sls"
+           (putenv "PLT_CS_MAKE_COMPRESSED_DATA" "y") ; ditto
+           (loop args))]
      [(get-opt args "--whole-program" 0)
       => (lambda (args)
            (set! whole-program? #t)

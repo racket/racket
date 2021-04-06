@@ -783,6 +783,7 @@ enable_pthread
 enable_iconv
 enable_wpo
 enable_compress
+enable_compressmore
 enable_compressboot
 enable_origtree
 enable_sharezo
@@ -1432,6 +1433,7 @@ Optional Features:
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-wpo            agressively optimize Racket core (enabled by default)
   --enable-compress       compress compiled code (enabled by default)
+  --enable-compressmore   compress compiled code even more
   --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
   --enable-sharezo        install ".zo"s to "share", not "lib"
@@ -2550,6 +2552,11 @@ if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
 fi
 
+# Check whether --enable-compressmore was given.
+if test "${enable_compressmore+set}" = set; then :
+  enableval=$enable_compressmore;
+fi
+
 # Check whether --enable-compressboot was given.
 if test "${enable_compressboot+set}" = set; then :
   enableval=$enable_compressboot;
@@ -2821,6 +2828,7 @@ fi
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
+show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_libzo}" 'Compiled ".zo" files moved to lib'
@@ -4676,6 +4684,9 @@ fi
 
 if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
+fi
+if test "${enable_compressmore}" = "yes" ; then
+  COMPRESS_COMP="--compress-more"
 fi
 
 if test "${enable_compressboot}" = "yes" ; then

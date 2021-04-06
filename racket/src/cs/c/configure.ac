@@ -18,6 +18,7 @@ AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
 AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
+AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code even more])
 AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for build; or "auto" to create])
@@ -72,6 +73,7 @@ fi
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
+show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 m4_include(../ac/path_show.m4)
@@ -488,6 +490,9 @@ fi
 
 if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
+fi
+if test "${enable_compressmore}" = "yes" ; then
+  COMPRESS_COMP="--compress-more"
 fi
 
 if test "${enable_compressboot}" = "yes" ; then
