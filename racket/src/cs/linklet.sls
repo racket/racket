@@ -174,6 +174,17 @@
                             [(getenv "PLT_CS_MAKE_COMPRESSED") #t]
                             [else #f])]))
 
+  ;; Note: compressing data also compresses serialized code, which is
+  ;; a redundant layer of compression if `compress-code?`
+  (define compress-data? (cond
+                           [(getenv "PLT_LINKLET_COMPRESS_DATA") #t]
+                           [(getenv "PLT_LINKLET_NO_COMPRESS_DATA") #f]
+                           [else
+                            ;; Default selected at compile time, as above
+                            (meta-cond
+                             [(getenv "PLT_CS_MAKE_COMPRESSED_DATA") #t]
+                             [else #f])]))
+
   (define gensym-on? (getenv "PLT_LINKLET_SHOW_GENSYM"))
   (define pre-jit-on? (getenv "PLT_LINKLET_SHOW_PRE_JIT"))
   (define lambda-on? (getenv "PLT_LINKLET_SHOW_LAMBDA"))
@@ -235,7 +246,9 @@
   (define (interpret* e) ; result is not safe for space
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
-    (call-with-system-wind (lambda () (fasl-write s o))))
+    (call-with-system-wind (lambda ()
+                             (parameterize ([fasl-compressed compress-data?])
+                               (fasl-write s o)))))
   (define (fasl-write/literals* s quoteds o)
     (call-with-system-wind (lambda ()
                              (call-getting-literals
@@ -334,7 +347,7 @@
   ;; returns code bytevector and literals vector
   (define (cross-compile-to-bytevector machine s quoteds format unsafe?)
     (cond
-      [(eq? format 'interpret) (cross-fasl-to-string machine s quoteds)]
+      [(eq? format 'interpret) (cross-fasl-to-string machine s quoteds 'code)]
       [else (cross-compile machine (lambda->linklet-lambda s) quoteds unsafe?)]))
 
   (define (eval-from-bytevector bv literals format)

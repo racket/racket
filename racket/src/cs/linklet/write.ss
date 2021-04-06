@@ -6,7 +6,7 @@
 (define (write-linklet-bundle-hash ht dest-o)
   (let-values ([(ls cross-machine) (encode-linklet-literals ht)])
     (let ([bstr (if cross-machine
-                    (let-values ([(bstr literals) (cross-fasl-to-string cross-machine ls #f)])
+                    (let-values ([(bstr literals) (cross-fasl-to-string cross-machine ls #f 'data)])
                       (unless (equal? literals '#())
                         (#%error 'write-linklet "cross fasl produced additional literals"))
                       bstr)

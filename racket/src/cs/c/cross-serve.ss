@@ -29,7 +29,7 @@
     (let loop ()
       (let ([cmd (get-u8 in)])
         (unless (eof-object? cmd)
-          (let ([compress-code? (eqv? (get-u8 in) (char->integer #\y))])
+          (let ([compress? (eqv? (get-u8 in) (char->integer #\y))])
             (get-u8 in) ; newline
             (let-values ([(o get) (open-bytevector-output-port)])
               (let ([literals
@@ -41,15 +41,15 @@
                            (parameterize ([optimize-level (if (fx= cmd (char->integer #\u))
                                                               3
                                                               (optimize-level))]
-                                          [fasl-compressed compress-code?])
+                                          [fasl-compressed compress?])
                              (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred 'omit-rtds))))]
-                       [(#\f)
+                       [(#\f #\d)
                         ;; Reads host fasl format, then writes target fasl format
                         (call-with-fasled
                          in
                          (lambda (v pred)
                            (parameterize ([#%$target-machine (string->symbol target)]
-                                          [fasl-compressed compress-code?])
+                                          [fasl-compressed compress?])
                              (fasl-write v o pred))))]
                        [else
                         (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])])

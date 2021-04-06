@@ -67,8 +67,8 @@
 (define (cross-compile machine v quoteds unsafe?)
   (do-cross (if unsafe? 'u 'c) machine v quoteds))
 
-(define (cross-fasl-to-string machine v quoteds)
-  (do-cross 'f machine v quoteds))
+(define (cross-fasl-to-string machine v quoteds mode)
+  (do-cross (if (eq? mode 'code) 'f 'd) machine v quoteds))
 
 ;; Start a compiler as a Racket thread under the root custodian.
 ;; Using Racket's scheduler lets us use the event and I/O system,
@@ -112,9 +112,12 @@
              ;; called is interrupted, then shut this compiler down:
              (will-register we msg-ch (lambda (msg-ch) (custodian-shutdown-all c)))
              (let loop ()
-               (let ([msg (channel-get msg-ch)])
+               (let* ([msg (channel-get msg-ch)]
+                      [compress? (case (car msg)
+                                   [(d) compress-data?]
+                                   [else compress-code?])])
                  ;; msg is (list <command> <value> <quoted> <reply-channel>)
-                 (write-string (#%format "~a~a\n" (car msg) (if compress-code? #\y #\n)) to)
+                 (write-string (#%format "~a~a\n" (car msg) (if compress? #\y #\n)) to)
                  (let-values ([(bv literals) (fasl-to-bytevector (cadr msg) (caddr msg))])
                    ;; We can't send all literals to the cross compiler, but we can send
                    ;; strings and byte stringa, which might affect compilation. Otherwise,
