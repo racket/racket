@@ -222,7 +222,7 @@ Produces a list of paths, which is normally used to initialize
          (listof (or/c #f (and/c path? complete-path?)))]{
 
 Produces a list of paths and @racket[#f], which is normally used to
-initialized @racket[current-library-collection-links], as follows:
+initialize @racket[current-library-collection-links], as follows:
 
 @itemlist[
 
