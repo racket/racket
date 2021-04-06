@@ -138,7 +138,7 @@ In more detail, patterns match as follows:
 
  @item{@racket[(#,(racketidfont "list") _lvp ...)] --- matches a list
        of elements. In the case of @racket[(#,(racketidfont "list")
-       _pat ...)], the pattern matches a list with as many element as
+       _pat ...)], the pattern matches a list with as many elements as
        @racket[_pat]s, and each element must match the corresponding
        @racket[_pat]. In the more general case, each @racket[_lvp]
        corresponds to a ``spliced'' list of greedy matches.

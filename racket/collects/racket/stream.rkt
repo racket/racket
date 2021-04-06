@@ -6,6 +6,7 @@
          racket/contract/combinator
          racket/function
          racket/generator
+         racket/match
          (rename-in "private/for.rkt"
                     [stream-ref stream-get-generics])
          "private/sequence.rkt"
@@ -66,7 +67,13 @@
                            (quote-syntax stream-first)
                            (quote-syntax stream-rest))))
 
-(define-syntax stream
+(define-match-expander stream
+  (syntax-rules ()
+    [(_) (? stream-empty?)]
+    [(_ hd tl ...)
+     (? stream-cons?
+        (app stream-first hd)
+        (app stream-rest (stream tl ...)))])
   (syntax-rules ()
     ((_)
      empty-stream)
@@ -76,12 +83,21 @@
     ((_ hd tl ...)
      (stream-cons hd (stream tl ...)))))
 
-(define-syntax stream*
+(define-match-expander stream*
+  (syntax-rules ()
+    [(_ tl) (? stream? tl)]
+    [(_ hd tl ...)
+     (? stream-cons?
+        (app stream-first hd)
+        (app stream-rest (stream* tl ...)))])
   (syntax-rules ()
     [(_ tl)
      (stream-lazy #:who 'stream* tl)]
     [(_ hd tl ...)
      (stream-cons hd (stream* tl ...))]))
+
+(define (stream-cons? st)
+  (and (stream? st) (not (stream-empty? st))))
 
 (define (stream->list s)
   (for/list ([v (in-stream s)]) v))

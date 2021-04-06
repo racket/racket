@@ -216,5 +216,14 @@
     (check (lambda (s n) (stream-first (stream-tail s n))))
     (check (lambda (s n) (stream-ref (stream-take s (add1 n)) n)))))
 
+;; match tests
+(test #t 'stream (match '() [(stream) #t]))
+(test 1 'stream (match '(1) [(stream x) x]))
+(test 3 'stream (match '(1 2) [(stream x y) (+ x y)]))
+(test '(1 2) 'stream* (match '(1 2) [(stream* xs) xs]))
+(test 1 'stream* (match '(1 2) [(stream* hd _) hd]))
+(test '(2) 'stream* (match '(1 2) [(stream* _ tl) tl]))
+(test -1 'stream* (match '(1 2 3 4) [(stream* x y tl) (- x y)]))
+(test '(3 4) 'stream* (match '(1 2 3 4) [(stream* x y tl) tl]))
 
 (report-errs)
