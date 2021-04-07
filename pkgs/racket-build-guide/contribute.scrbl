@@ -68,10 +68,6 @@ usual GitHub-based workflow:
 
 See the @secref["contribute-guidelines"].
 
-The variant of Chez Scheme that is needed to build Racket on Chez
-Scheme has its own repository (to preserve the shape of the original
-Chez Scheme reporitory): @url{https://github.com/racket/ChezScheme}.
-
 @; ------------------------------------------------------------
 @section[#:tag "pkg-contribute"]{Distribution-Package Contributions}
 

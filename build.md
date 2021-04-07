@@ -741,11 +741,6 @@ usual GitHub-based workflow:
 See the [General Contribution
 Guidelines](#33-general-contribution-guidelines).
 
-The variant of Chez Scheme that is needed to build Racket on Chez Scheme
-has its own repository (to preserve the shape of the original Chez
-Scheme reporitory):
-[https://github.com/racket/ChezScheme](https://github.com/racket/ChezScheme).
-
 ### 3.2. Distribution-Package Contributions
 
 If you find yourself changing a file that is in a `"share/pkgs"`
