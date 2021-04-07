@@ -9,7 +9,7 @@
 	 "cs/recompile.rkt")
 
 ;; Environment variables that affect the build:
-;;  PLT_BOOTFILE_COMPRESS - enables compression of boot files
+;;  PLT_BOOTFILE_NO_COMPRESS - disables compression of boot files
 ;;  PLT_CS_MAKE_COMPRESSED_DATA - enables more ".zo" compression
 ;;  PLT_CS_MAKE_NO_COMPRESSED - disables default ".zo" compression
 
@@ -47,7 +47,11 @@
 
 (current-directory here)
 
-(define (system*! prog . args)
+;; filters #f from arguments
+(define (system*! prog . all-args)
+  (define args (for/list ([arg (in-list all-args)]
+                          #:when arg)
+                 arg))
   (printf "{in ~a}\n" (current-directory))
   (printf "~a" prog)
   (for ([arg (in-list args)])
@@ -190,6 +194,10 @@
 
 ;; ----------------------------------------
 
+(define compress-flag
+  (and (not (getenv "PLT_BOOTFILE_NO_COMPRESS"))
+       "--compress"))
+
 (system*! scheme
 	  "--script"
 	  "../cs/c/convert-to-boot.ss"
@@ -200,12 +208,14 @@
 (system*! scheme
 	  "--script"
 	  "../cs/c/to-vfasl.ss"
+          compress-flag
 	  (build-path scheme-dir machine "boot" machine "petite.boot")
 	  "../build/petite-v.boot")
 
 (system*! scheme
 	  "--script"
 	  "../cs/c/to-vfasl.ss"
+          compress-flag
 	  (build-path scheme-dir machine "boot" machine "scheme.boot")
 	  "../build/scheme-v.boot"
           "petite")
@@ -213,6 +223,7 @@
 (system*! scheme
 	  "--script"
 	  "../cs/c/to-vfasl.ss"
+          compress-flag
 	  "../build/racket.boot"
 	  "../build/racket-v.boot"
           "petite"
@@ -226,19 +237,14 @@
          args))
 
 (make-directory* "../../lib")
-(apply bootstrap-racket!
-       "../cs/c/embed-boot.rkt"
-       (append
-        (if (getenv "PLT_BOOTFILE_COMPRESS")
-            '("--compress")
-            '())
-        (list
-         "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
-         "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
-         "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
-         "../build/petite-v.boot"
-         "../build/scheme-v.boot"
-         "../build/racket-v.boot")))
+(bootstrap-racket! "../cs/c/embed-boot.rkt"
+                   compress-flag
+                   "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
+                   "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
+                   "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+                   "../build/petite-v.boot"
+                   "../build/scheme-v.boot"
+                   "../build/racket-v.boot")
 
 (system*! "mt"
 	  "-manifest" "racket/racket.manifest"

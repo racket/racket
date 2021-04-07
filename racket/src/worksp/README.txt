@@ -50,8 +50,8 @@ Many intermediate files will be put in "../build".
 To add a "CS" suffix to the generated executables, call "csbuild.rkt"
 with `--racketcs-suffix "CS"`.
 
-To enable compression of embedded boot files, set the
-`PLT_BOOTFILE_COMPRESS` environment variable (to anything). To
+To disable compression of embedded boot files, set the
+`PLT_BOOTFILE_NO_COMPRESS` environment variable (to anything). To
 increase compression of compiled code (at the expense of load times),
 set the `PLT_CS_MAKE_COMPRESSED_DATA`. To instead disable the
 compression of compiled code, set `PLT_CS_MAKE_NO_COMPRESSED`.

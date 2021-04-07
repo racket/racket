@@ -75,6 +75,7 @@ show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
 show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
+show_explicitly_disabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 m4_include(../ac/path_show.m4)
 show_explicitly_set "${enable_racket}" "Racket"
@@ -165,6 +166,8 @@ CS_HOST_WORKAREA_PREFIX=
 PLT_CS_SLSP_SUFFIX=
 
 enable_pthread_by_default=yes
+
+compress_boot_files_by_default=no
 
 cs_auto_flags=--disable-auto-flags
 
@@ -275,6 +278,7 @@ case "$host_os" in
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW=""
     NOT_MINGW="mingw"
+    compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
     fi
@@ -497,6 +501,10 @@ fi
 
 if test "${enable_compressboot}" = "yes" ; then
   BOOT_COMPRESS_COMP="--compress"
+elif test "${compress_boot_files_by_default}" = "yes" ; then
+  if test "${enable_compressboot}" != "no" ; then
+    BOOT_COMPRESS_COMP="--compress"
+  fi
 fi
 
 DIFF_MACH=skip
