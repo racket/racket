@@ -4,6 +4,7 @@
          syntax/modcode
          racket/linklet
          "../private/deserialize.rkt"
+         "linklet.rkt"
          "module-path.rkt"
          "run.rkt")
 

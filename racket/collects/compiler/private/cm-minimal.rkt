@@ -74,6 +74,7 @@
 
          current-path->mode
 
+         current-multi-compile-any
          cross-multi-compile?)
 
 (module+ cm-internal
@@ -583,7 +584,8 @@
                       #:assume-compiled-sha1 mi-sha1
                       #:use-existing-deps mi-deps
                       #:compile-dependency compile-dependency)))
-     (when (cross-system-type 'target-machine)
+     (when (and (not (current-multi-compile-any))
+                (cross-system-type 'target-machine))
        ;; Recompile to cross-compile target form:
        (parameterize ([current-compile-target-machine (cross-system-type 'target-machine)])
          (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
@@ -844,6 +846,9 @@
 
 ;; ----------------------------------------
 
+(define current-multi-compile-any
+  (make-parameter #f (lambda (x) (and x #t))))
+
 (define (cross-multi-compile? roots)
   ;; Combination of cross-installation mode, compiling to machine-independent form,
   ;; and multiple compiled-file roots triggers a special multi-target compilation mode.
@@ -851,7 +856,8 @@
   ;; the cross-compile target to the second root --- but count the cross-compile target
   ;; as machine-independent if it would be the same as the current target.
   (and ((length roots) . > . 1)
-       (cross-installation?)
+       (or (current-multi-compile-any)
+           (cross-installation?))
        (not (current-compile-target-machine))))
 
 ;; Find a path with a suitable search, depending on the compilation mode

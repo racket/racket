@@ -271,14 +271,17 @@ the @filepath{.dep} file also records the SHA-1 hash of the
 machine-independent form, since the recompiled module's behavior should
 be exactly the same.
 
-The special combination of @racket[(cross-installation?)] as
+The special combination of @racket[(cross-installation?)] or
+@racket[(current-multi-compile-any)] as
 @racket[#t], @racket[(current-compile-target-machine)] as @racket[#f],
 and @racket[(current-compiled-file-roots)] having two or more elements
 triggers a special compilation mode. Bytecode specific to the running
 Racket is written to the directory determined by the first element of
-@racket[(current-compiled-file-roots)]. Bytecode specific to the
-cross-compilation target is written to the directory determined by the
-first element of @racket[(current-compiled-file-roots)]. By
+@racket[(current-compiled-file-roots)]. Bytecode specific to either the
+cross-compilation target for @racket[(cross-installation?)] or
+machine-independent format if @racket[(current-multi-compile-any)]
+is written to the directory determined by the
+second element of @racket[(current-compiled-file-roots)]. By
 configuring @racket[(current-compiled-file-roots)] so that the first
 element is outside a build tree and the second element is inside the
 build tree, cross-compilation can create a build tree suitable for the
@@ -601,6 +604,14 @@ zero bytes in place of each hash string, which is what @racket[write]
 produces for a compiled form.
 
 @history[#:added "6.3"]}
+
+@defboolparam[current-multi-compile-any on?]{
+
+A parameter that enables compilation of both current-machine bytecode
+and machine-independent bytecode by a handler created with
+@racket[make-compilation-manager-load/use-compiled-handler].
+
+@history[#:added "8.1.0.2"]}
 
 @; ----------------------------------------------------------------------
 

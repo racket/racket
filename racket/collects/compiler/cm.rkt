@@ -7,7 +7,8 @@
          racket/promise)
 
 (provide (except-out (all-from-out "private/cm-minimal.rkt")
-                     current-path->mode)
+                     current-path->mode
+                     cross-multi-compile?)
 
          file-stamp-in-collection
          file-stamp-in-paths

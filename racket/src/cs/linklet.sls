@@ -1073,7 +1073,7 @@
       (instance-variable-value i
                                sym
                                (lambda ()
-                                 (raise-argument-error
+                                 (raise-arguments-error
                                   'instance-variable-value
                                   "instance variable not found"
                                   "name" sym)))]))
@@ -1253,6 +1253,7 @@
 
   (define schemify-table
     (primitive-table
+     make-internal-variable
      variable-set!
      variable-set!/check-undefined
      variable-set!/define
@@ -1270,6 +1271,7 @@
 
   (interpreter-link! primitives
                      correlated->datum
+                     make-internal-variable
                      variable-ref variable-ref/no-check
                      variable-set! variable-set!/define
                      make-interp-procedure)

@@ -179,6 +179,9 @@
                                    #:register-builtin? #t
                                    #:protected? #t)
        (declare-hash-based-module! '#%linklet-expander linklet-expander-primitives #:namespace ns
+                                   ;; Names that shadow linklet primitives need to be registered,
+                                   ;; and it's ok if we register a few more:
+                                   #:register-builtin? #t
                                    #:protected? #t)
        (declare-reexporting-module! '#%linklet (list '#%linklet-primitive
                                                      '#%linklet-expander)

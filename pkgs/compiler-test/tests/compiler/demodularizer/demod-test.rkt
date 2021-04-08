@@ -63,15 +63,14 @@
   (and (not (regexp-match #rx"merged" filename))
        (regexp-match #rx"rkt$" filename)))
 
-(unless (eq? (system-type 'vm) 'chez-scheme)
-  (test
-   (for ([i (in-list (directory-list tests))])
-     (define ip (build-path tests i))
-     (when (modular-program? ip)
-       (printf "Checking ~a\n" ip)
-       (test-on-program (path->string ip))
-       (printf "Checking ~a, skip racket/private/pre-base\n" ip)
-       (test-on-program (path->string ip)
-                        (list "-e"
-                              (path->string
-                               (collection-file-path "pre-base.rkt" "racket/private"))))))))
+(test
+ (for ([i (in-list (directory-list tests))])
+   (define ip (build-path tests i))
+   (when (modular-program? ip)
+     (printf "Checking ~a\n" ip)
+     (test-on-program (path->string ip))
+     (printf "Checking ~a, skip racket/private/pre-base\n" ip)
+     (test-on-program (path->string ip)
+                      (list "-e"
+                            (path->string
+                             (collection-file-path "pre-base.rkt" "racket/private")))))))

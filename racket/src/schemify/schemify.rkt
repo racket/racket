@@ -24,6 +24,7 @@
          "literal.rkt"
          "authentic.rkt"
          "single-valued.rkt"
+         "id-to-var.rkt"
          "gensym.rkt"
          "aim.rkt")
 
@@ -200,12 +201,20 @@
 (define (schemify-body* l prim-knowns primitives imports exports
                         serializable?-box datum-intern? allow-set!-undefined? add-import!
                         target unsafe-mode? enforce-constant? allow-inline? no-prompt? explicit-unnamed?)
+  ;; For non-exported definitions, we may need to create some variables
+  ;; to guard against multiple returns or early references
+  (define extra-variables (make-hasheq))
+  (define (add-extra-variables l)
+    (append (for/list ([(int-id ex) (in-hash extra-variables)])
+              `(define ,(export-id ex) (make-internal-variable ',int-id)))
+            l))
   ;; Keep simple checking efficient by caching results
   (define simples (make-hasheq))
   ;; Various conversion steps need information about mutated variables,
   ;; where "mutated" here includes visible implicit mutation, such as
   ;; a variable that might be used before it is defined:
-  (define mutated (mutated-in-body l exports prim-knowns (hasheq) imports simples unsafe-mode? target enforce-constant?))
+  (define mutated (mutated-in-body l exports extra-variables prim-knowns (hasheq) imports simples
+                                   unsafe-mode? target enforce-constant?))
   ;; Make another pass to gather known-binding information:
   (define knowns
     (for/fold ([knowns (hasheq)]) ([form (in-list l)])
@@ -214,13 +223,6 @@
                           #:primitives primitives
                           #:optimize? #t))
       new-knowns))
-  ;; For non-exported definitions, we may need to create some variables
-  ;; to guard against multiple returns
-  (define extra-variables (make-hasheq))
-  (define (add-extra-variables l)
-    (append (for/list ([(int-id ex) (in-hash extra-variables)])
-              `(define ,(export-id ex) (make-internal-variable 'int-id)))
-            l))
   ;; Mutated to communicate the final `knowns`
   (define final-knowns knowns)
   ;; While schemifying, add calls to install exported values in to the
@@ -234,25 +236,27 @@
         (cond
           [(or (aim? target 'cify) (aim? target 'interp))
            (for/list ([id (in-list accum-ids)]
-                      #:when (hash-ref exports (unwrap id) #f))
-             (make-set-variable id exports knowns mutated))]
+                      #:when (or (hash-ref exports (unwrap id) #f)
+                                 (hash-ref extra-variables (unwrap id) #f)))
+             (make-set-variable id exports knowns mutated extra-variables))]
           [else
            ;; Group 'consistent variables in one `set-consistent-variables!/define` call
            (let loop ([accum-ids accum-ids] [consistent-ids null])
              (cond
                [(null? accum-ids)
-                (make-set-consistent-variables consistent-ids exports knowns mutated)]
+                (make-set-consistent-variables consistent-ids exports knowns mutated extra-variables)]
                [else
                 (define id (car accum-ids))
                 (define u-id (unwrap id))
                 (cond
-                  [(hash-ref exports u-id #f)
+                  [(or (hash-ref exports u-id #f)
+                       (hash-ref extra-variables u-id #f))
                    (cond
                      [(eq? 'consistent (variable-constance u-id knowns mutated))
                       (loop (cdr accum-ids) (cons id consistent-ids))]
                      [else
-                      (append (make-set-consistent-variables consistent-ids exports knowns mutated)
-                              (cons (make-set-variable id exports knowns mutated)
+                      (append (make-set-consistent-variables consistent-ids exports knowns mutated extra-variables)
+                              (cons (make-set-variable id exports knowns mutated extra-variables)
                                     (loop (cdr accum-ids) '())))])]
                   [else
                    (loop (cdr accum-ids) consistent-ids)])]))]))
@@ -276,7 +280,7 @@
        [else
         (define form (car l))
         (define schemified (schemify form
-                                     prim-knowns primitives knowns mutated imports exports simples
+                                     prim-knowns primitives knowns mutated imports exports extra-variables simples
                                      allow-set!-undefined?
                                      add-import!
                                      serializable?-box datum-intern? target
@@ -319,9 +323,10 @@
                      (via-variable-mutated-state? (hash-ref mutated (unwrap (car ids)) #f)))
                  (define id (unwrap (car ids)))
                  (cond
-                   [(hash-ref exports id #f)
+                   [(or (hash-ref exports id #f)
+                        (hash-ref extra-variables id #f))
                     (id-loop (cdr ids)
-                             (cons (make-set-variable id exports knowns mutated)
+                             (cons (make-set-variable id exports knowns mutated extra-variables)
                                    accum-exprs)
                              accum-ids)]
                    [else
@@ -363,7 +368,7 @@
                   ',(for/list ([id (in-list ids)])
                       (variable-constance (unwrap id) knowns mutated))
                   ,@(for/list ([id (in-list ids)])
-                      (id-to-variable (unwrap id) exports knowns mutated extra-variables))))
+                      (id-to-variable (unwrap id) exports extra-variables))))
               (define defns
                 (for/list ([id (in-list ids)])
                   (make-define-variable id exports knowns mutated extra-variables)))
@@ -438,27 +443,18 @@
 
 (define (make-set-variable id exports knowns mutated [extra-variables #f])
   (define int-id (unwrap id))
-  (define ex-id (id-to-variable int-id exports knowns mutated extra-variables))
+  (define ex-id (id-to-variable int-id exports extra-variables))
   `(variable-set!/define ,ex-id ,id ',(variable-constance int-id knowns mutated)))
 
 ;; returns a list equilanet to a sequence of `variable-set!/define` forms
-(define (make-set-consistent-variables ids exports knowns mutated)
+(define (make-set-consistent-variables ids exports knowns mutated extra-variables)
   (cond
     [(null? ids) null]
-    [(null? (cdr ids)) (list (make-set-variable (car ids) exports knowns mutated))]
+    [(null? (cdr ids)) (list (make-set-variable (car ids) exports knowns mutated extra-variables))]
     [else
      (define ex-ids (for/list ([id (in-list ids)])
-                      (id-to-variable (unwrap id) exports knowns mutated #f)))
+                      (id-to-variable (unwrap id) exports extra-variables)))
      `((set-consistent-variables!/define (vector ,@ex-ids) (vector ,@ids)))]))
-
-(define (id-to-variable int-id exports knowns mutated extra-variables)
-  (export-id
-   (or (hash-ref exports int-id #f)
-       (and extra-variables
-            (or (hash-ref extra-variables int-id #f)
-                (let ([ex (export (deterministic-gensym int-id) int-id)])
-                  (hash-set! extra-variables int-id ex)
-                  ex))))))
 
 (define (make-define-variable id exports knowns mutated extra-variables)
   (define int-id (unwrap id))
@@ -485,7 +481,7 @@
 ;; Non-simple `mutated` state overrides bindings in `knowns`; a
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
-(define (schemify v prim-knowns primitives knowns mutated imports exports simples allow-set!-undefined? add-import!
+(define (schemify v prim-knowns primitives knowns mutated imports exports extra-variables simples allow-set!-undefined? add-import!
                   serializable?-box datum-intern? target unsafe-mode? allow-inline? no-prompt? explicit-unnamed?
                   wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
@@ -716,7 +712,8 @@
             `(begin0 ,(schemify exp 'fresh) . ,(schemify-body exps 'fresh))]
            [`(set! ,id ,rhs)
             (define int-id (unwrap id))
-            (define ex (hash-ref exports int-id #f))
+            (define ex (or (hash-ref exports int-id #f)
+                           (hash-ref extra-variables int-id #f)))
             (define new-rhs (schemify rhs 'fresh))
             (define state (hash-ref mutated int-id #f))
             (cond
@@ -764,7 +761,8 @@
             'instance-variable-reference]
            [`(#%variable-reference ,id)
             (define u (unwrap id))
-            (define v (or (let ([ex (hash-ref exports u #f)])
+            (define v (or (let ([ex (or (hash-ref exports u #f)
+                                        (hash-ref extra-variables u #f))])
                             (and ex (export-id ex)))
                           (let ([im (hash-ref imports u #f)])
                             (and im (import-id im)))))
@@ -1013,7 +1011,8 @@
                  (define state (hash-ref mutated u-v #f))
                  (cond
                    [(and (via-variable-mutated-state? state)
-                         (hash-ref exports u-v #f))
+                         (or (hash-ref exports u-v #f)
+                             (hash-ref extra-variables u-v #f)))
                     => (lambda (ex)
                          (if (too-early-mutated-state? state)
                              `(variable-ref ,(export-id ex))

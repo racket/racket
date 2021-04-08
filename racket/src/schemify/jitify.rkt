@@ -373,28 +373,33 @@
                   new-lifts)])]
       [`,var
        (define id (unwrap var))
-       (define dest (hash-ref env id #f))
        (cond
-         [(and (not in-name)
+         [(symbol? id)
+          (define dest (hash-ref env id #f))
+          (cond
+            [(and (not in-name)
+                  (match dest
+                    [`(variable-ref ,_) #t]
+                    [`,_ #f]))
+             ;; Not under lambda: don't rewrite references to definitions
+             (values var free lifts)]
+            [else
+             (define new-var
                (match dest
-                 [`(variable-ref ,_) #t]
-                 [`,_ #f]))
-          ;; Not under lambda: don't rewrite references to definitions
-          (values var free lifts)]
-         [else
-          (define new-var
-            (match dest
-              [`#f var]
-              [`#:direct var]
-              [`(self ,u . ,_) (reannotate v u)]
-              [`,u (reannotate v u)]))
-          (define new-free
-            (if dest
-                (hash-set free id dest)
-                free))
-          (values new-var
-                  new-free
-                  lifts)])]))
+                 [`#f var]
+                 [`#:direct var]
+                 [`(self ,u . ,_) (reannotate v u)]
+                 [`,u (reannotate v u)]))
+             (define new-free
+               (if dest
+                   (hash-set free id dest)
+                   free))
+             (values new-var
+                     new-free
+                     lifts)])]
+         [else (values v
+                       free
+                       lifts)])]))
 
   (define (lambda? v)
     (match v

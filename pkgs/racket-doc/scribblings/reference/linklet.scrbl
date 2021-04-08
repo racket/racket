@@ -92,8 +92,9 @@ with some exceptions: @racket[quote-syntax] and @racket[#%top] are not allowed;
 @racket[letrec-values] can have only a single body expression; and
 numbers, booleans, strings, and byte strings are self-quoting.
 Primitives are accessed directly by name, and shadowing is not allowed
-within a @racketidfont{linklet} form for primitive names, imported
-variables, defined variables, or local variables.
+within a @racketidfont{linklet} form for primitive names (see
+@racket[linklet-body-reserved-symbol?]), imported variables, defined
+variables, or local variables.
 
 When an @racket[_exported-id/renamed] has no corresponding definition
 among the @racket[_defn-or-expr]s, then the variable is effectively
@@ -358,6 +359,15 @@ be recovered from @racket[write] output by @racket[read].}
 
 Extracts the content of a @tech{linklet bundle} into a @tech{hash
 table}.}
+
+
+@defproc[(linklet-body-reserved-symbol? [sym symbol?]) boolean?]{
+
+Return @racket[#t] if @racket[sym] is a primitive name or other
+identifier that is not allowed as a binding within a linklet,
+@racket[#f] otherwise.
+
+@history[#:added "8.2.0.1"]}
          
 
 @defproc[(instance? [v any/c]) boolean?]{

@@ -34,6 +34,7 @@
 
 (define primitives '#hasheq())
 (define strip-annotations (lambda (e) e))
+(define make-internal-variable (lambda (name) (box unsafe-undefined)))
 (define variable-ref (lambda (var) (unbox var)))
 (define variable-ref/no-check (lambda (var) (unbox var)))
 (define variable-set! (lambda (var v) (set-box! var v)))
@@ -42,11 +43,13 @@
 
 (define (interpreter-link! prims
                            strip
+                           make-var
                            var-ref var-ref/no-check
                            var-set! var-set!/def
                            make-proc)
   (set! primitives prims)
   (set! strip-annotations strip)
+  (set! make-internal-variable make-var)
   (set! variable-ref var-ref)
   (set! variable-ref/no-check var-ref/no-check)
   (set! variable-set! var-set!)
@@ -80,14 +83,24 @@
   ;; the list, for example.
 
   (define (start linklet-e)
-    (define-values (compiled-body num-body-vars)
+    (define-values (compiled-body num-body-vars internal-var-syms)
       (compile-linklet-body linklet-e '#hasheq() 0))
-    (vector num-body-vars
+    (vector internal-var-syms
+            num-body-vars
             compiled-body))
 
   (define (compile-linklet-body v env stack-depth)
     (match v
-      [`(lambda ,args . ,body)
+      [`(lambda ,args . ,vars+body)
+       ;; Split unexported-variable creation from the rest of the body
+       (define-values (create-vars body)
+         (let loop ([rev-create-vars '()] [body vars+body])
+           (if (null? body)
+               (values (reverse rev-create-vars) body)
+               (match (car body)
+                 [`(define ,id (make-internal-variable . ,_))
+                  (loop (cons (car body) rev-create-vars) (cdr body))]
+                 [`,_ (values (reverse rev-create-vars) body)]))))
        ;; Gather all `set!`ed variables, since they'll need to be boxed
        ;; if they're not top-level `define`s
        (define mutated (extract-list-mutated body '#hasheq()))
@@ -97,14 +110,23 @@
          (for/fold ([env env]) ([arg (in-list args)]
                                 [i (in-naturals)])
            (hash-set env arg (+ stack-depth i))))
-       (define body-vars-index (+ num-args stack-depth))
+       (define num-creates (length create-vars))
+       (define args+creates-env
+         (for/fold ([env args-env]) ([e (in-list create-vars)]
+                                     [i (in-naturals)])
+           (match e
+             [`(define ,id (make-internal-variable . ,_))
+              (hash-set env id (+ stack-depth num-args i))])))
+       (define body-vars-index (+ num-args num-creates stack-depth))
        ;; Gather all the names that have `define`s, and build up the
        ;; environment that has them consceptually pushed after the
        ;; import and export variables.
        (define-values (body-env num-body-vars)
-         (for/fold ([env args-env] [num-body-vars 0]) ([e (in-wrap-list body)])
+         (for/fold ([env args+creates-env] [num-body-vars 0]) ([e (in-wrap-list body)])
            (let loop ([e e] [env env] [num-body-vars num-body-vars])
              (match e
+               [`(define ,id (make-internal-variable . ,_))
+                (error 'compile "misplaced make-internal-variable")]
                [`(define ,id . ,_)
                 (values (hash-set env (unwrap id) (boxed (+ body-vars-index num-body-vars)))
                         (add1 num-body-vars))]
@@ -116,15 +138,22 @@
                 (for/fold ([env env] [num-body-vars num-body-vars]) ([e (in-wrap-list body)])
                   (loop e env num-body-vars))]
                [`,_ (values env num-body-vars)]))))
-       (define body-stack-depth (+ num-body-vars num-args stack-depth))
+       (define body-stack-depth (+ num-body-vars num-args num-creates stack-depth))
        ;; This `stack-info` is mutated as expressions are compiled,
        ;; because that's more convenient than threading it through as
        ;; both an argument and a result
        (define stk-i (make-stack-info #:track-use? #t))
        (define new-body
          (compile-top-body body body-env body-stack-depth stk-i mutated))
+       ;; Gets names for variables that have to be created
+       (define internal-var-syms
+         (for/list ([e (in-list create-vars)])
+           (match e
+             [`(define ,_ (make-internal-variable (quote ,id)))
+              id])))
        (values new-body
-               num-body-vars)]))
+               num-body-vars
+               internal-var-syms)]))
 
   ;; Like `compile-body`, but flatten top-level `begin`s
   (define (compile-top-body body env stack-depth stk-i mutated)
@@ -602,15 +631,19 @@
 (define (interpret-linklet b)
   (interp-match
    b
-   [#(,num-body-vars ,b)
+   [#(,internal-var-syms ,num-body-vars ,b)
     (lambda args
       (define start-stack empty-stack)
       (define args-stack (for/fold ([stack start-stack]) ([arg (in-list args)]
                                                           [i (in-naturals 0)])
                            (stack-set stack i arg)))
       (define post-args-pos (stack-count args-stack))
-      (define stack (for/fold ([stack args-stack]) ([i (in-range num-body-vars)])
-                      (stack-set stack (+ i post-args-pos) (box unsafe-undefined))))
+      (define args+vars-stack (for/fold ([stack args-stack]) ([var (in-list internal-var-syms)]
+                                                              [i (in-naturals 0)])
+                                (stack-set stack (+ i post-args-pos) (make-internal-variable var))))
+      (define post-args+vars-pos (stack-count args+vars-stack))
+      (define stack (for/fold ([stack args+vars-stack]) ([i (in-range num-body-vars)])
+                      (stack-set stack (+ i post-args+vars-pos) (box unsafe-undefined))))
       (interpret-expr b stack))]))
 
 (define (interpret-expr b stack)
@@ -1033,50 +1066,50 @@
   (struct var ([val #:mutable]) #:transparent)
   (interpreter-link! primitives
                      values
+                     var
                      var-val var-val
                      (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
                      (lambda (proc mask name) proc))
   (define b
-    (interpretable-jitified-linklet '(let* ([s "string"])
-                                       (lambda (x two-box)
-                                         (define other 5)
-                                         (begin
-                                           (define f (lambda (y)
-                                                       (let ([z y])
-                                                         (vector x z))))
-                                           (define g (case-lambda
-                                                       [() (let ([unused (g)])
-                                                             (let ([also-unused (g)])
-                                                               (begin
-                                                                 (list (g no)))))]
-                                                       [ys
-                                                        (vector x ys)])))
-                                         (define h (lambda (t x y a b)
-                                                     (list (if t (list x a) (list y b))
-                                                           (list a b))))
-                                         (define h2 (lambda (t x)
-                                                      (if t
-                                                          x
-                                                          (let ([y 10])
-                                                            y))))
-                                         (define h3 (lambda (t x)
-                                                      (let ([y (let ([z 0])
-                                                                 z)])
-                                                        (list x y (let ([z 2])
-                                                                    z)))))
-                                         (define-values (one two) (values 100 200))
-                                         (variable-set!/define two-box two 'constant)
-                                         (letrec ([ok 'ok])
-                                           (set! other (call-with-values (lambda () (values 71 (begin0 88 ok)))
-                                                         (lambda (v q) (list q v))))
-                                           (with-continuation-mark*
-                                            general
-                                            'x 'cm/x
-                                            (list (if s s #f) x ok other
-                                                  (f 'vec) (g 'also-vec 'more)
-                                                  one two (variable-ref two-box)
-                                                  (continuation-mark-set-first #f 'x 'no))))))
+    (interpretable-jitified-linklet '(lambda (x two-box)
+                                       (define other 5)
+                                       (begin
+                                         (define f (lambda (y)
+                                                     (let ([z y])
+                                                       (vector x z))))
+                                         (define g (case-lambda
+                                                     [() (let ([unused (g)])
+                                                           (let ([also-unused (g)])
+                                                             (begin
+                                                               (list (g no)))))]
+                                                     [ys
+                                                      (vector x ys)])))
+                                       (define h (lambda (t x y a b)
+                                                   (list (if t (list x a) (list y b))
+                                                         (list a b))))
+                                       (define h2 (lambda (t x)
+                                                    (if t
+                                                        x
+                                                        (let ([y 10])
+                                                          y))))
+                                       (define h3 (lambda (t x)
+                                                    (let ([y (let ([z 0])
+                                                               z)])
+                                                      (list x y (let ([z 2])
+                                                                  z)))))
+                                       (define-values (one two) (values 100 200))
+                                       (variable-set!/define two-box two 'constant)
+                                       (letrec ([ok 'ok])
+                                         (set! other (call-with-values (lambda () (values 71 (begin0 88 ok)))
+                                                                       (lambda (v q) (list q v))))
+                                         (with-continuation-mark*
+                                           general
+                                           'x 'cm/x
+                                           (list (if "s" "s" #f) x ok other
+                                                 (f 'vec) (g 'also-vec 'more)
+                                                 one two (variable-ref two-box)
+                                                 (continuation-mark-set-first #f 'x 'no)))))
                                     #f))
   (pretty-print b)
-  (define l (interpret-linklet b null))
+  (define l (interpret-linklet b))
   (l 'the-x (var #f)))

@@ -19,7 +19,6 @@
          "boot/kernel.rkt"
          "run/cache.rkt"
          "boot/runtime-primitive.rkt"
-         "host/linklet.rkt"
          "run/status.rkt"
          "run/submodule.rkt"
          (only-in "run/linklet.rkt"

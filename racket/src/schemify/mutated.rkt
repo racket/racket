@@ -9,7 +9,9 @@
          "mutated-state.rkt"
          "find-known.rkt"
          "infer-known.rkt"
-         "letrec.rkt")
+         "letrec.rkt"
+         "id-to-var.rkt"
+         "aim.rkt")
 
 (provide mutated-in-body
          update-mutated-state!)
@@ -24,7 +26,8 @@
 ;; This pass is also responsible for recording when a letrec binding
 ;; must be mutated implicitly via `call/cc`.
 
-(define (mutated-in-body l exports prim-knowns knowns imports simples unsafe-mode? target enforce-constant?)
+(define (mutated-in-body l exports extra-variables prim-knowns knowns imports simples
+                         unsafe-mode? target enforce-constant?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -33,17 +36,35 @@
   ;; undefined state and must be accessed through a `variable`:
   (for ([id (in-hash-keys exports)])
     (hash-set! mutated id 'undefined))
-  ;; Find all defined variables:
-  (for ([form (in-list l)])
-    (match form
-      [`(define-values (,ids ...) ,rhs)
-       (for ([id (in-list ids)])
-         (hash-set! mutated (unwrap id) (if enforce-constant?
-                                            'not-ready
-                                            ;; If constants should not be enforced, then
-                                            ;; treat all variable as mutated:
-                                            'set!ed-too-early)))]
-      [`,_ (void)]))
+  ;; Find all defined variables, and find variables that are not exported:
+  (define unexported-ids
+    (for/fold ([unexported-ids '()]) ([form (in-list l)])
+      (match form
+        [`(define-values (,ids ...) ,rhs)
+         (for/fold ([unexported-ids unexported-ids]) ([id (in-list ids)])
+           (define u-id (unwrap id))
+           (hash-set! mutated u-id (if enforce-constant?
+                                       'not-ready
+                                       ;; If constants should not be enforced, then
+                                       ;; treat all variable as mutated:
+                                       'set!ed-too-early))
+           (if (hash-ref exports u-id #f)
+               unexported-ids
+               (cons u-id unexported-ids)))]
+        [`,_ unexported-ids])))
+  ;; To support jitify, if an unexported and unmutated variable is
+  ;; captured in a closure before it is defined, will want to reify
+  ;; it like an export; so, set those variables to 'too-early
+  ;; until they are really initialized
+  (define unexported-ready (and (pair? unexported-ids)
+                                (aim? target 'interp)
+                                (make-hasheq)))
+  (when unexported-ready
+    (for ([id (in-list unexported-ids)])
+      (hash-set! mutated id (lambda ()
+                              (unless (or (hash-ref unexported-ready id #f)
+                                          (set!ed-mutated-state? (hash-ref mutated id #f)))
+                                (hash-set! mutated id 'too-early))))))
   ;; Walk through the body:
   (for/fold ([prev-knowns knowns]) ([form (in-list l)])
     ;; Accumulate known-binding information in this pass, because it's
@@ -76,7 +97,7 @@
          (find-mutated! rhs ids prim-knowns knowns imports mutated simples unsafe-mode?)])
        ;; For any among `ids` that didn't get a delay and wasn't used
        ;; too early, the variable is now ready, so remove from
-       ;; `mutated`:
+       ;; `mutated`
        (for ([id (in-list ids)])
          (let ([id (unwrap id)])
            (when (eq? 'not-ready (hash-ref mutated id #f))
@@ -91,10 +112,21 @@
        (for ([id (in-list ids)])
          (let ([id (unwrap id)])
            (define state (hash-ref mutated id #f))
+           (when unexported-ready
+             (when (not (hash-ref exports id #f))
+               (hash-set! unexported-ready id #t)))
            (when (delayed-mutated-state? state)
              (hash-remove! mutated id)
              (state))))]
       [`,_ (void)]))
+  ;; Check for unexported variables that need to be implemented like exports:
+  (unless (or unsafe-mode?
+              (aim? target 'system))
+    (for ([id (in-list unexported-ids)])
+      (define state (hash-ref mutated id #f))
+      (when (via-variable-mutated-state? state)
+        ;; force creation of variable
+        (id-to-variable id exports extra-variables))))
   ;; Everything else in `mutated` is either 'set!ed, 'too-early,
   ;; 'undefined, or unreachable:
   mutated)

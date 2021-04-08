@@ -7,7 +7,7 @@
          recompile-linklet
          eval-linklet         
          instantiate-linklet
-         
+                  
          linklet-import-variables
          linklet-export-variables
 
@@ -18,7 +18,9 @@
          linklet-bundle?
          hash->linklet-bundle
          linklet-bundle->hash
-         
+
+         linklet-body-reserved-symbol?
+
          instance?
          make-instance
          instance-name
@@ -29,7 +31,7 @@
          instance-unset-variable!
 
          variable-reference->instance
-         
+
          correlated?
          datum->correlated
          correlated->datum
@@ -44,7 +46,8 @@
          correlated-span)
 
 ;; The `#%kernel` primitive table is more primitive than the
-;; `#%kernel` module:
+;; `#%kernel` module, and the "syntax" functions there are really
+;; "correlated" functions:
 (define kernel (primitive-table '#%kernel))
 (define-syntax-rule (bounce id ...)
   (begin (define id (hash-ref kernel 'id)) ...))

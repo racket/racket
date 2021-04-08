@@ -2,4 +2,4 @@
 
 (provide (struct-out import))
 
-(struct import (name shape [pos #:mutable]))
+(struct import (name shape int-name [pos #:mutable]))

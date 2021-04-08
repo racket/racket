@@ -735,7 +735,7 @@
                                                                        ;; Assert: base should refer to this module:
                                                                        (let-values ([(path2 base2) (module-path-index-split base)])
                                                                          (when (or path2 base2)
-                                                                           (error 'embed "unexpected nested module path index")))
+                                                                           (error 'embed "unexpected nested module path index ~s" base)))
                                                                        (cons path (lookup-full-name sub-filename)))))
                                                               ;; a run-time path:
                                                               (cons sub-path (lookup-full-name sub-filename)))))
