@@ -71,16 +71,16 @@ recognizable despite the "pretty" formatting.
 
 ;; ssl-connect automatically passes along hostname  (for tls, not sslv3)
 (test-case "TLS ssl-connect localhost"
-  (go "localhost" (lambda (port) (ssl-connect "localhost" port 'tls))))
+  (go "localhost" (lambda (port) (ssl-connect "localhost" port))))
 
 ;; check alternate hostname by using ports->ssl-ports
-(define ((make-connect/hostname protocol hostname) port)
+(define ((make-connect/hostname hostname) port)
   (define-values (in out) (tcp-connect "localhost" port))
-  (ports->ssl-ports in out #:encrypt protocol #:hostname hostname))
+  (ports->ssl-ports in out #:encrypt 'auto #:hostname hostname))
 
 (test-case "TLS w/ SNI, #1"
-  (go "test.com" (make-connect/hostname 'tls "test.com")))
+  (go "test.com" (make-connect/hostname "test.com")))
 (test-case "TLS w/ SNI, #2"
-  (go "another.org" (make-connect/hostname 'tls "another.org")))
+  (go "another.org" (make-connect/hostname "another.org")))
 (test-case "TLS w/o SNI"
-  (go #f (make-connect/hostname 'tls #f)))
+  (go #f (make-connect/hostname #f)))

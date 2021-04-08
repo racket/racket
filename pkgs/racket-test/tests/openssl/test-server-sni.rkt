@@ -4,7 +4,7 @@
          racket/runtime-path)
 
 (define (make-sctx pem)
-  (define sctx (ssl-make-server-context 'tls))
+  (define sctx (ssl-make-server-context 'auto))
   (ssl-load-default-verify-sources! sctx)
   (ssl-set-ciphers! sctx "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2")
   (ssl-load-certificate-chain! sctx pem)
@@ -37,7 +37,7 @@
   (let*-values ([(in out) (tcp-connect "localhost" 4433)]
 		[(ssl-in ssl-out)
                  (ports->ssl-ports in out
-                                   #:encrypt 'tls
+                                   #:encrypt 'auto
                                    #:hostname name)])
     ;; (printf "testing ~a: ~a~n" name (ssl-peer-certificate-hostnames ssl-in))
     (list (ssl-peer-certificate-hostnames ssl-in)
