@@ -2018,13 +2018,13 @@
         (let ((app_1 (|#%app| range-ref v_0 0)))
           (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define check-range
-  (lambda (a_0 b_0 step_0)
+  (lambda (a_0 b_0 step_0) (check-range-generic 'in-range a_0 b_0 step_0)))
+(define check-range-generic
+  (lambda (who_0 a_0 b_0 step_0)
     (begin
-      (if (real? a_0) (void) (raise-argument-error 'in-range "real?" a_0))
-      (if (real? b_0) (void) (raise-argument-error 'in-range "real?" b_0))
-      (if (real? step_0)
-        (void)
-        (raise-argument-error 'in-range "real?" step_0)))))
+      (if (real? a_0) (void) (raise-argument-error who_0 "real?" a_0))
+      (if (real? b_0) (void) (raise-argument-error who_0 "real?" b_0))
+      (if (real? step_0) (void) (raise-argument-error who_0 "real?" step_0)))))
 (define check-naturals
   (lambda (n_0)
     (if (if (integer? n_0) (if (exact? n_0) (>= n_0 0) #f) #f)
@@ -2490,6 +2490,18 @@
                     (cons app_0 (loop_0 (cdr list_1)))))))))))
        (loop_0 list_0)))))
 (define remq (lambda (item_0 list_0) (do-remove 'remq item_0 list_0 eq?)))
+(define print-value-columns
+  (make-parameter
+   +inf.0
+   (lambda (c_0)
+     (if (let ((or-part_0 (eqv? c_0 +inf.0)))
+           (if or-part_0 or-part_0 (if (exact-integer? c_0) (> c_0 5) #f)))
+       c_0
+       (raise-argument-error
+        'print-value-columns
+        "(or/c +inf.0 (and/c exact-integer? (>/c 5)))"
+        c_0)))
+   'print-value-columns))
 (define internal-error
   (lambda (msg_0)
     (raise
@@ -2508,7 +2520,7 @@
 (define 1/unsafe-add-global-finalizer unsafe-add-global-finalizer)
 (define 1/malloc-immobile-cell malloc-immobile-cell)
 (define 1/free-immobile-cell free-immobile-cell)
-(define finish57
+(define finish_1970
   (make-struct-type-install-properties
    '(sandman)
    11
@@ -2535,7 +2547,7 @@
    #f
    11
    2047))
-(define effect_2951 (finish57 struct:sandman))
+(define effect_2951 (finish_1970 struct:sandman))
 (define sandman1.1
   (|#%name|
    sandman
@@ -2966,6 +2978,8 @@
   (begin-unsafe (hash-ref rktio-table 'rktio_read_converted)))
 (define rktio_read_in (begin-unsafe (hash-ref rktio-table 'rktio_read_in)))
 (define rktio_write_in (begin-unsafe (hash-ref rktio-table 'rktio_write_in)))
+(define rktio_read_converted_in
+  (begin-unsafe (hash-ref rktio-table 'rktio_read_converted_in)))
 (define rktio_buffered_byte_count
   (begin-unsafe (hash-ref rktio-table 'rktio_buffered_byte_count)))
 (define rktio_poll_read_ready
@@ -3484,7 +3498,7 @@
                         (|#%app| rktio_free h_0)
                         (loop_0 #t))))))))))
          (loop_0 #f))))))
-(define finish313
+(define finish_2882
   (make-struct-type-install-properties
    '(exts)
    2
@@ -3505,7 +3519,7 @@
    #f
    2
    0))
-(define effect_2505 (finish313 struct:exts))
+(define effect_2505 (finish_2882 struct:exts))
 (define exts1.1
   (|#%name|
    exts
@@ -3777,7 +3791,7 @@
     (if (input-port-evt? p_0)
       (wrap-evt (|#%app| (input-port-evt-ref p_0) p_0) (lambda (v_0) p_0))
       (wrap-evt (|#%app| (output-port-evt-ref p_0) p_0) (lambda (v_0) p_0)))))
-(define finish328
+(define finish_2455
   (make-struct-type-install-properties
    '(core-port)
    7
@@ -3802,7 +3816,7 @@
    #f
    7
    124))
-(define effect_2337 (finish328 struct:core-port))
+(define effect_2337 (finish_2455 struct:core-port))
 (define create-core-port
   (|#%name|
    create-core-port
@@ -3833,7 +3847,7 @@
   (|#%name| set-core-port-offset! (record-mutator struct:core-port 5)))
 (define set-core-port-count!
   (|#%name| set-core-port-count! (record-mutator struct:core-port 6)))
-(define finish331
+(define finish_2057
   (make-struct-type-install-properties
    '(core-port-methods)
    5
@@ -3854,7 +3868,7 @@
    #f
    5
    0))
-(define effect_2309 (finish331 struct:core-port-methods.1))
+(define effect_2309 (finish_2057 struct:core-port-methods.1))
 (define core-port-methods1.1
   (|#%name|
    core-port-methods
@@ -3969,7 +3983,7 @@
    #f
    #f
    #f))
-(define finish338
+(define finish_2711
   (make-struct-type-install-properties
    '(direct)
    3
@@ -3990,7 +4004,7 @@
    #f
    3
    7))
-(define effect_2682 (finish338 struct:direct))
+(define effect_2682 (finish_2711 struct:direct))
 (define direct2.1
   (|#%name|
    direct
@@ -4006,7 +4020,7 @@
   (|#%name| set-direct-pos! (record-mutator struct:direct 1)))
 (define set-direct-end!
   (|#%name| set-direct-end! (record-mutator struct:direct 2)))
-(define finish340
+(define finish_2554
   (make-struct-type-install-properties
    '(location)
    5
@@ -4027,7 +4041,7 @@
    #f
    5
    31))
-(define effect_3131 (finish340 struct:location))
+(define effect_3131 (finish_2554 struct:location))
 (define location3.1
   (|#%name|
    location
@@ -4113,7 +4127,7 @@
                (if who3_0
                  (raise-argument-error who3_0 "input-port?" v4_0)
                  default_0)))))))))
-(define finish342
+(define finish_2969
   (make-struct-type-install-properties
    '(core-input-port)
    2
@@ -4164,7 +4178,7 @@
    #f
    2
    3))
-(define effect_2528 (finish342 struct:core-input-port))
+(define effect_2528 (finish_2969 struct:core-input-port))
 (define create-core-input-port
   (|#%name|
    create-core-input-port
@@ -4188,7 +4202,7 @@
   (|#%name|
    set-core-input-port-read-handler!
    (record-mutator struct:core-input-port 1)))
-(define finish345
+(define finish_2853
   (make-struct-type-install-properties
    '(core-input-port-methods)
    6
@@ -4209,7 +4223,7 @@
    #f
    6
    0))
-(define effect_2085 (finish345 struct:core-input-port-methods.1))
+(define effect_2085 (finish_2853 struct:core-input-port-methods.1))
 (define core-input-port-methods6.1
   (|#%name|
    core-input-port-methods
@@ -4432,7 +4446,7 @@
                (if who3_0
                  (raise-argument-error who3_0 "output-port?" v4_0)
                  default_0)))))))))
-(define finish357
+(define finish_2574
   (make-struct-type-install-properties
    '(core-output-port)
    4
@@ -4470,7 +4484,7 @@
    #f
    4
    15))
-(define effect_2808 (finish357 struct:core-output-port))
+(define effect_2808 (finish_2574 struct:core-output-port))
 (define create-core-output-port
   (|#%name|
    create-core-output-port
@@ -4508,7 +4522,7 @@
   (|#%name|
    set-core-output-port-display-handler!
    (record-mutator struct:core-output-port 3)))
-(define finish361
+(define finish_2648
   (make-struct-type-install-properties
    '(core-output-port-methods)
    4
@@ -4529,7 +4543,7 @@
    #f
    4
    0))
-(define effect_2050 (finish361 struct:core-output-port-methods.1))
+(define effect_2050 (finish_2648 struct:core-output-port-methods.1))
 (define core-output-port-methods6.1
   (|#%name|
    core-output-port-methods
@@ -4679,7 +4693,7 @@
              (if (evt? v_0)
                (values #f (replace-evt v_0 self-evt_0))
                (values (list v_0) #f)))))))))
-(define finish372
+(define finish_2671
   (make-struct-type-install-properties
    '(write-evt)
    1
@@ -4706,7 +4720,7 @@
    #f
    1
    0))
-(define effect_2493 (finish372 struct:write-evt))
+(define effect_2493 (finish_2671 struct:write-evt))
 (define write-evt7.1
   (|#%name|
    write-evt
@@ -4751,7 +4765,7 @@
    #f
    #f
    #f))
-(define finish376
+(define finish_2110
   (make-struct-type-install-properties
    '(utf-8-state)
    3
@@ -4772,7 +4786,7 @@
    #f
    3
    0))
-(define effect_2751 (finish376 struct:utf-8-state))
+(define effect_2751 (finish_2110 struct:utf-8-state))
 (define utf-8-state1.1
   (|#%name|
    utf-8-state
@@ -6578,7 +6592,7 @@
         (if old-offset_0
           (set-core-port-offset! in_0 (+ amt_0 old-offset_0))
           (void))))))
-(define finish456
+(define finish_2616
   (make-struct-type-install-properties
    '(commit-manager)
    3
@@ -6599,7 +6613,7 @@
    #f
    3
    0))
-(define effect_2594 (finish456 struct:commit-manager))
+(define effect_2594 (finish_2616 struct:commit-manager))
 (define commit-manager1.1
   (|#%name|
    commit-manager
@@ -6669,7 +6683,7 @@
          s
          'commit-manager
          'thread))))))
-(define finish462
+(define finish_2581
   (make-struct-type-install-properties
    '(commit-request)
    5
@@ -6690,7 +6704,7 @@
    #f
    5
    0))
-(define effect_2646 (finish462 struct:commit-request))
+(define effect_2646 (finish_2581 struct:commit-request))
 (define commit-request2.1
   (|#%name|
    commit-request
@@ -6794,7 +6808,7 @@
          s
          'commit-request
          'result-ch))))))
-(define finish470
+(define finish_2113
   (make-struct-type-install-properties
    '(commit-response)
    2
@@ -6815,7 +6829,7 @@
    #f
    2
    0))
-(define effect_2529 (finish470 struct:commit-response))
+(define effect_2529 (finish_2113 struct:commit-response))
 (define commit-response3.1
   (|#%name|
    commit-response
@@ -7112,7 +7126,7 @@
                  (sync result-ch_0))
                (unsafe-start-atomic))))
          (lambda () (semaphore-post abandon-evt_0)))))))
-(define finish489
+(define finish_3101
   (make-struct-type-install-properties
    '(commit-input-port)
    2
@@ -7133,7 +7147,7 @@
    #f
    2
    3))
-(define effect_2802 (finish489 struct:commit-input-port))
+(define effect_2802 (finish_3101 struct:commit-input-port))
 (define create-commit-input-port
   (|#%name|
    create-commit-input-port
@@ -7157,7 +7171,7 @@
   (|#%name|
    set-commit-input-port-commit-manager!
    (record-mutator struct:commit-input-port 1)))
-(define finish492
+(define finish_2744
   (make-struct-type-install-properties
    '(commit-input-port-methods)
    0
@@ -7178,7 +7192,7 @@
    #f
    0
    0))
-(define effect_3199 (finish492 struct:commit-input-port-methods.1))
+(define effect_3199 (finish_2744 struct:commit-input-port-methods.1))
 (define commit-input-port-methods5.1
   (|#%name|
    commit-input-port-methods
@@ -7332,7 +7346,7 @@
            (begin0
              (begin (temp3.1$3 d_0) (temp4.1$2 d_0))
              (unsafe-end-atomic))))))))
-(define finish504
+(define finish_2207
   (make-struct-type-install-properties
    '(pipe-data)
    16
@@ -7353,7 +7367,7 @@
    #f
    16
    65534))
-(define effect_3021 (finish504 struct:pipe-data))
+(define effect_3021 (finish_2207 struct:pipe-data))
 (define create-pipe-data
   (|#%name|
    create-pipe-data
@@ -7434,7 +7448,7 @@
   (|#%name|
    set-pipe-data-write-ready-evt!
    (record-mutator struct:pipe-data 15)))
-(define finish507
+(define finish_2129
   (make-struct-type-install-properties
    '(pipe-data-methods)
    0
@@ -7455,7 +7469,7 @@
    #f
    0
    0))
-(define effect_2537 (finish507 struct:pipe-data-methods.1))
+(define effect_2537 (finish_2129 struct:pipe-data-methods.1))
 (define pipe-data-methods10.1
   (|#%name|
    pipe-data-methods
@@ -7568,7 +7582,7 @@
          (void))))))
 (define make-ref (lambda (v_0) (make-weak-box v_0)))
 (define ref-value (lambda (r_0) (weak-box-value r_0)))
-(define finish511
+(define finish_3163
   (make-struct-type-install-properties
    '(pipe-input-port)
    1
@@ -7589,7 +7603,7 @@
    #f
    1
    1))
-(define effect_2318 (finish511 struct:pipe-input-port))
+(define effect_2318 (finish_3163 struct:pipe-input-port))
 (define create-pipe-input-port
   (|#%name|
    create-pipe-input-port
@@ -7601,7 +7615,7 @@
   (|#%name| pipe-input-port-d (record-accessor struct:pipe-input-port 0)))
 (define set-pipe-input-port-d!
   (|#%name| set-pipe-input-port-d! (record-mutator struct:pipe-input-port 0)))
-(define finish514
+(define finish_2415
   (make-struct-type-install-properties
    '(pipe-input-port-methods)
    0
@@ -7622,7 +7636,7 @@
    #f
    0
    0))
-(define effect_2335 (finish514 struct:pipe-input-port-methods.1))
+(define effect_2335 (finish_2415 struct:pipe-input-port-methods.1))
 (define pipe-input-port-methods15.1
   (|#%name|
    pipe-input-port-methods
@@ -7964,7 +7978,7 @@
                      (set-direct-pos! b_0 (direct-end b_0)))))
                (void))
              (temp2.1$2 o_0))))))))
-(define finish533
+(define finish_2124
   (make-struct-type-install-properties
    '(pipe-output-port)
    1
@@ -7985,7 +7999,7 @@
    #f
    1
    1))
-(define effect_2635 (finish533 struct:pipe-output-port))
+(define effect_2635 (finish_2124 struct:pipe-output-port))
 (define create-pipe-output-port
   (|#%name|
    create-pipe-output-port
@@ -7999,7 +8013,7 @@
   (|#%name|
    set-pipe-output-port-d!
    (record-mutator struct:pipe-output-port 0)))
-(define finish536
+(define finish_2185
   (make-struct-type-install-properties
    '(pipe-output-port-methods)
    0
@@ -8020,7 +8034,7 @@
    #f
    0
    0))
-(define effect_3193 (finish536 struct:pipe-output-port-methods.1))
+(define effect_3193 (finish_2185 struct:pipe-output-port-methods.1))
 (define pipe-output-port-methods20.1
   (|#%name|
    pipe-output-port-methods
@@ -8576,7 +8590,7 @@
        (make-pipe_0 limit_0 input-name_0 output-name26_0))
       ((limit_0 input-name25_0) (make-pipe_0 limit_0 input-name25_0 'pipe))
       ((limit24_0) (make-pipe_0 limit24_0 'pipe 'pipe))))))
-(define finish572
+(define finish_2922
   (make-struct-type-install-properties
    '(pipe-write-poller)
    1
@@ -8627,7 +8641,7 @@
    #f
    1
    0))
-(define effect_2599 (finish572 struct:pipe-write-poller))
+(define effect_2599 (finish_2922 struct:pipe-write-poller))
 (define pipe-write-poller27.1
   (|#%name|
    pipe-write-poller
@@ -8661,7 +8675,7 @@
          s
          'pipe-write-poller
          'd))))))
-(define finish577
+(define finish_2669
   (make-struct-type-install-properties
    '(pipe-read-poller)
    1
@@ -8712,7 +8726,7 @@
    #f
    1
    0))
-(define effect_2907 (finish577 struct:pipe-read-poller))
+(define effect_2907 (finish_2669 struct:pipe-read-poller))
 (define pipe-read-poller28.1
   (|#%name|
    pipe-read-poller
@@ -8746,7 +8760,7 @@
          s
          'pipe-read-poller
          'd))))))
-(define finish581
+(define finish_2316
   (make-struct-type-install-properties
    '(peek-via-read-input-port)
    5
@@ -8767,7 +8781,7 @@
    #f
    5
    31))
-(define effect_2578 (finish581 struct:peek-via-read-input-port))
+(define effect_2578 (finish_2316 struct:peek-via-read-input-port))
 (define create-peek-via-read-input-port
   (|#%name|
    create-peek-via-read-input-port
@@ -8820,7 +8834,7 @@
   (|#%name|
    set-peek-via-read-input-port-buffer-mode!
    (record-mutator struct:peek-via-read-input-port 4)))
-(define finish584
+(define finish_3197
   (make-struct-type-install-properties
    '(peek-via-read-input-port-methods)
    1
@@ -8841,7 +8855,7 @@
    #f
    1
    0))
-(define effect_2499 (finish584 struct:peek-via-read-input-port-methods.1))
+(define effect_2499 (finish_3197 struct:peek-via-read-input-port-methods.1))
 (define peek-via-read-input-port-methods10.1
   (|#%name|
    peek-via-read-input-port-methods
@@ -8980,7 +8994,8 @@
                                     dest-bstr131_0
                                     start132_0
                                     end133_0
-                                    copy?134_0)))
+                                    copy?134_0
+                                    #f)))
                               (begin
                                 (if (eqv? v_0 0) (void) (temp1.1 this-id_0))
                                 v_0))))))))))
@@ -9140,7 +9155,12 @@
                          (|#%app| finish272_0 dest-bstr_0)))))))))))
        (|#%name|
         read-in/inner
-        (lambda (this-id_0 dest-bstr306_0 start307_0 end308_0 copy?309_0)
+        (lambda (this-id_0
+                 dest-bstr306_0
+                 start307_0
+                 end308_0
+                 copy?309_0
+                 to-buffer?310_0)
           (begin 0)))))))
 (define temp6.1$1
   (|#%name|
@@ -9164,70 +9184,94 @@
 (define temp8.1
   (|#%name|
    buffer-adjust-pos
-   (lambda (this-id_0 i401_0)
+   (lambda (this-id_0 i403_0 is-converted404_0)
      (begin
        (let ((b_0 (core-port-buffer this-id_0)))
-         (-
-          i401_0
-          (let ((app_0 (peek-via-read-input-port-end-pos this-id_0)))
-            (fx-
-             app_0
-             (if (direct-bstr b_0)
-               (direct-pos b_0)
-               (peek-via-read-input-port-pos this-id_0))))))))))
+         (let ((start-pos_0
+                (if (direct-bstr b_0)
+                  (direct-pos b_0)
+                  (peek-via-read-input-port-pos this-id_0))))
+           (let ((r_0
+                  (-
+                   i403_0
+                   (fx-
+                    (peek-via-read-input-port-end-pos this-id_0)
+                    start-pos_0))))
+             (if is-converted404_0
+               (letrec*
+                ((loop_0
+                  (|#%name|
+                   loop
+                   (lambda (pos_0 r_1)
+                     (begin
+                       (if (fx=
+                            pos_0
+                            (peek-via-read-input-port-end-pos this-id_0))
+                         r_1
+                         (let ((app_0 (fx+ pos_0 1)))
+                           (loop_0
+                            app_0
+                            (if (eqv?
+                                 0
+                                 (unsafe-bytes-ref is-converted404_0 pos_0))
+                              r_1
+                              (- r_1 1))))))))))
+                (loop_0 start-pos_0 r_0))
+               r_0))))))))
 (define temp9.1
   (|#%name|
    default-buffer-mode
    (case-lambda
     ((this-id_0) (begin (peek-via-read-input-port-buffer-mode this-id_0)))
-    ((this-id_0 mode432_0)
-     (set-peek-via-read-input-port-buffer-mode! this-id_0 mode432_0)))))
+    ((this-id_0 mode436_0)
+     (set-peek-via-read-input-port-buffer-mode! this-id_0 mode436_0)))))
 (define temp1.1$1
   (let ((pull-some-bytes_0
          (|#%name|
           pull-some-bytes
-          (lambda (this-id498_0 amt492495_0 offset493496_0 init-pos494497_0)
+          (lambda (this-id502_0 amt496499_0 offset497500_0 init-pos498501_0)
             (begin
-              (let ((amt492_0
-                     (if (eq? amt492495_0 unsafe-undefined)
+              (let ((amt496_0
+                     (if (eq? amt496499_0 unsafe-undefined)
                        (if (eq?
                             'block
                             (peek-via-read-input-port-buffer-mode
-                             this-id498_0))
+                             this-id502_0))
                          (unsafe-bytes-length
-                          (peek-via-read-input-port-bstr this-id498_0))
+                          (peek-via-read-input-port-bstr this-id502_0))
                          1)
-                       amt492495_0)))
-                (let ((offset493_0
-                       (if (eq? offset493496_0 unsafe-undefined)
+                       amt496499_0)))
+                (let ((offset497_0
+                       (if (eq? offset497500_0 unsafe-undefined)
                          0
-                         offset493496_0)))
-                  (let ((init-pos494_0
-                         (if (eq? init-pos494497_0 unsafe-undefined)
+                         offset497500_0)))
+                  (let ((init-pos498_0
+                         (if (eq? init-pos498501_0 unsafe-undefined)
                            0
-                           init-pos494497_0)))
+                           init-pos498501_0)))
                     (let ((get-end_0
-                           (let ((app_0 (+ amt492_0 offset493_0)))
+                           (let ((app_0 (+ amt496_0 offset497_0)))
                              (min
                               app_0
                               (unsafe-bytes-length
                                (peek-via-read-input-port-bstr
-                                this-id498_0))))))
+                                this-id502_0))))))
                       (let ((v_0
                              (let ((app_0
                                     (peek-via-read-input-port-methods-read-in/inner.1
-                                     (core-port-vtable this-id498_0))))
+                                     (core-port-vtable this-id502_0))))
                                (|#%app|
                                 app_0
-                                this-id498_0
-                                (peek-via-read-input-port-bstr this-id498_0)
-                                offset493_0
+                                this-id502_0
+                                (peek-via-read-input-port-bstr this-id502_0)
+                                offset497_0
                                 get-end_0
-                                #f))))
+                                #f
+                                #t))))
                         (if (eof-object? v_0)
                           (begin
                             (set-peek-via-read-input-port-peeked-eof?!
-                             this-id498_0
+                             this-id502_0
                              #t)
                             eof)
                           (if (evt? v_0)
@@ -9236,11 +9280,11 @@
                               0
                               (begin
                                 (set-peek-via-read-input-port-pos!
-                                 this-id498_0
-                                 init-pos494_0)
+                                 this-id502_0
+                                 init-pos498_0)
                                 (set-peek-via-read-input-port-end-pos!
-                                 this-id498_0
-                                 (fx+ offset493_0 v_0))
+                                 this-id502_0
+                                 (fx+ offset497_0 v_0))
                                 v_0))))))))))))))
     (|#%name|
      pull-some-bytes
@@ -9252,20 +9296,20 @@
           unsafe-undefined
           unsafe-undefined
           unsafe-undefined)))
-      ((this-id_0 amt492_0 offset493_0 init-pos494497_0)
-       (pull-some-bytes_0 this-id_0 amt492_0 offset493_0 init-pos494497_0))
-      ((this-id_0 amt492_0 offset493496_0)
-       (pull-some-bytes_0 this-id_0 amt492_0 offset493496_0 unsafe-undefined))
-      ((this-id_0 amt492495_0)
+      ((this-id_0 amt496_0 offset497_0 init-pos498501_0)
+       (pull-some-bytes_0 this-id_0 amt496_0 offset497_0 init-pos498501_0))
+      ((this-id_0 amt496_0 offset497500_0)
+       (pull-some-bytes_0 this-id_0 amt496_0 offset497500_0 unsafe-undefined))
+      ((this-id_0 amt496499_0)
        (pull-some-bytes_0
         this-id_0
-        amt492495_0
+        amt496499_0
         unsafe-undefined
         unsafe-undefined))))))
 (define temp2.1$1
   (|#%name|
    pull-more-bytes
-   (lambda (this-id_0 amt621_0)
+   (lambda (this-id_0 amt625_0)
      (begin
        (if (let ((app_0 (peek-via-read-input-port-end-pos this-id_0)))
              (fx<
@@ -9279,7 +9323,7 @@
                          (unsafe-bytes-length
                           (peek-via-read-input-port-bstr this-id_0))))
                     (fx- app_0 (peek-via-read-input-port-end-pos this-id_0)))
-                  amt621_0)))
+                  amt625_0)))
            (let ((app_0 temp1.1$1))
              (let ((app_1 (peek-via-read-input-port-end-pos this-id_0)))
                (|#%app|
@@ -9308,7 +9352,7 @@
                  (|#%app|
                   app_0
                   this-id_0
-                  amt621_0
+                  amt625_0
                   (peek-via-read-input-port-end-pos this-id_0)))))
            (begin
              (let ((app_0 (peek-via-read-input-port-bstr this-id_0)))
@@ -9325,16 +9369,16 @@
               (let ((app_0 (peek-via-read-input-port-end-pos this-id_0)))
                 (fx- app_0 (peek-via-read-input-port-pos this-id_0))))
              (set-peek-via-read-input-port-pos! this-id_0 0)
-             (temp2.1$1 this-id_0 amt621_0))))))))
+             (temp2.1$1 this-id_0 amt625_0))))))))
 (define temp3.1$2
   (|#%name|
    retry-pull?
-   (lambda (this-id_0 v652_0)
-     (begin (if (integer? v652_0) (not (eqv? v652_0 0)) #f)))))
+   (lambda (this-id_0 v656_0)
+     (begin (if (integer? v656_0) (not (eqv? v656_0 0)) #f)))))
 (define temp4.1$1
   (|#%name|
    fast-mode!
-   (lambda (this-id_0 amt683_0)
+   (lambda (this-id_0 amt687_0)
      (begin
        (let ((b_0 (core-port-buffer this-id_0)))
          (begin
@@ -9348,7 +9392,7 @@
                   (peek-via-read-input-port-end-pos this-id_0))
                  (let ((o_0 (core-port-offset this-id_0)))
                    (if o_0
-                     (set-core-port-offset! this-id_0 (- (+ o_0 amt683_0) s_0))
+                     (set-core-port-offset! this-id_0 (- (+ o_0 amt687_0) s_0))
                      (void))))))))))))
 (define temp5.1$1
   (|#%name|
@@ -9526,10 +9570,10 @@
                           (current-continuation-marks)))))))
                  (void))))
            (void)))))))
-(define finish620
+(define finish_2872
   (make-struct-type-install-properties
    '(fd-input-port)
-   3
+   4
    0
    struct:peek-via-read-input-port
    (list
@@ -9550,9 +9594,9 @@
    (|#%nongenerative-uid| fd-input-port)
    #f
    #f
-   3
-   7))
-(define effect_1979 (finish620 struct:fd-input-port))
+   4
+   15))
+(define effect_1979 (finish_2872 struct:fd-input-port))
 (define create-fd-input-port
   (|#%name|
    create-fd-input-port
@@ -9570,6 +9614,10 @@
   (|#%name|
    fd-input-port-custodian-reference
    (record-accessor struct:fd-input-port 2)))
+(define fd-input-port-is-converted
+  (|#%name|
+   fd-input-port-is-converted
+   (record-accessor struct:fd-input-port 3)))
 (define set-fd-input-port-fd!
   (|#%name| set-fd-input-port-fd! (record-mutator struct:fd-input-port 0)))
 (define set-fd-input-port-fd-refcount!
@@ -9580,7 +9628,11 @@
   (|#%name|
    set-fd-input-port-custodian-reference!
    (record-mutator struct:fd-input-port 2)))
-(define finish623
+(define set-fd-input-port-is-converted!
+  (|#%name|
+   set-fd-input-port-is-converted!
+   (record-mutator struct:fd-input-port 3)))
+(define finish_2012
   (make-struct-type-install-properties
    '(fd-input-port-methods)
    2
@@ -9601,7 +9653,7 @@
    #f
    2
    0))
-(define effect_2420 (finish623 struct:fd-input-port-methods.1))
+(define effect_2420 (finish_2012 struct:fd-input-port-methods.1))
 (define fd-input-port-methods6.1
   (|#%name|
    fd-input-port-methods
@@ -9694,11 +9746,11 @@
                            (fd-input-port-methods-on-close.1
                             (core-port-vtable this-id_0))
                            this-id_0)
-                          (let ((fd75_0 (fd-input-port-fd this-id_0)))
-                            (let ((fd-refcount76_0
+                          (let ((fd76_0 (fd-input-port-fd this-id_0)))
+                            (let ((fd-refcount77_0
                                    (fd-input-port-fd-refcount this-id_0)))
-                              (let ((fd75_1 fd75_0))
-                                (fd-close.1 #f fd75_1 fd-refcount76_0))))
+                              (let ((fd76_1 fd76_0))
+                                (fd-close.1 #f fd76_1 fd-refcount77_0))))
                           (|#%app|
                            1/unsafe-custodian-unregister
                            this-id_0
@@ -9716,15 +9768,20 @@
                                  (|#%app|
                                   app_8
                                   (fd-input-port-fd this-id_0)))))
-                          (if pos_0 (temp8.1 this-id_0 pos_0) #f))))
-                     ((this-id_0 pos77_0)
+                          (if pos_0
+                            (temp8.1
+                             this-id_0
+                             pos_0
+                             (fd-input-port-is-converted this-id_0))
+                            #f))))
+                     ((this-id_0 pos78_0)
                       (begin
                         (temp6.1$1 this-id_0)
                         (let ((app_8 set-file-position))
                           (|#%app|
                            app_8
                            (fd-input-port-fd this-id_0)
-                           pos77_0))))))
+                           pos78_0))))))
                    app_2
                    app_3
                    app_4
@@ -9736,19 +9793,63 @@
                    (|#%name|
                     read-in/inner
                     (lambda (this-id_0
-                             dest-bstr133_0
-                             start134_0
-                             end135_0
-                             copy?136_0)
+                             dest-bstr136_0
+                             start137_0
+                             end138_0
+                             copy?139_0
+                             to-buffer?140_0)
                       (begin
                         (let ((n_0
-                               (|#%app|
-                                rktio_read_in
-                                (unsafe-place-local-ref cell.1)
-                                (fd-input-port-fd this-id_0)
-                                dest-bstr133_0
-                                start134_0
-                                end135_0)))
+                               (if (if to-buffer?140_0
+                                     (|#%app|
+                                      rktio_fd_is_text_converted
+                                      (unsafe-place-local-ref cell.1)
+                                      (fd-input-port-fd this-id_0))
+                                     #f)
+                                 (begin
+                                   (if (let ((or-part_0
+                                              (not
+                                               (fd-input-port-is-converted
+                                                this-id_0))))
+                                         (if or-part_0
+                                           or-part_0
+                                           (<
+                                            (unsafe-bytes-length
+                                             (fd-input-port-is-converted
+                                              this-id_0))
+                                            end138_0)))
+                                     (let ((new-is-converted_0
+                                            (make-bytes end138_0)))
+                                       (begin
+                                         (if (fd-input-port-is-converted
+                                              this-id_0)
+                                           (unsafe-bytes-copy!
+                                            new-is-converted_0
+                                            0
+                                            (fd-input-port-is-converted
+                                             this-id_0))
+                                           (void))
+                                         (set-fd-input-port-is-converted!
+                                          this-id_0
+                                          new-is-converted_0)))
+                                     (void))
+                                   (let ((app_8 (fd-input-port-fd this-id_0)))
+                                     (|#%app|
+                                      rktio_read_converted_in
+                                      (unsafe-place-local-ref cell.1)
+                                      app_8
+                                      dest-bstr136_0
+                                      start137_0
+                                      end138_0
+                                      (fd-input-port-is-converted this-id_0)
+                                      start137_0)))
+                                 (|#%app|
+                                  rktio_read_in
+                                  (unsafe-place-local-ref cell.1)
+                                  (fd-input-port-fd this-id_0)
+                                  dest-bstr136_0
+                                  start137_0
+                                  end138_0))))
                           (if (vector? n_0)
                             (begin
                               (unsafe-end-atomic)
@@ -9776,11 +9877,11 @@
                    (|#%name| on-close (lambda (this-id_0) (begin (void))))
                    (|#%name|
                     raise-read-error
-                    (lambda (this-id_0 n195_0)
+                    (lambda (this-id_0 n202_0)
                       (begin
                         (raise-filesystem-error
                          #f
-                         n195_0
+                         n202_0
                          "error reading from stream port"))))))))))))))
 (define open-input-fd.1
   (|#%name|
@@ -9796,7 +9897,7 @@
                   (current-custodian)
                   custodian8_0)))
            (let ((app_0 (direct2.1 #f 0 0)))
-             (let ((temp224_0
+             (let ((temp232_0
                     (create-fd-input-port
                      fd-input-port-vtable.1
                      name12_0
@@ -9816,8 +9917,9 @@
                      'block
                      fd11_0
                      fd-refcount_0
+                     #f
                      #f)))
-               (finish-fd-input-port.1 cust_0 temp224_0)))))))))
+               (finish-fd-input-port.1 cust_0 temp232_0)))))))))
 (define finish-fd-input-port.1
   (|#%name|
    finish-fd-input-port
@@ -9834,7 +9936,7 @@
                 p16_0
                 (register-fd-close cust_0 fd_0 fd-refcount_0 #f p16_0))
                (finish-port/count p16_0)))))))))
-(define finish639
+(define finish_2363
   (make-struct-type-install-properties
    '(fd-output-port)
    8
@@ -9884,7 +9986,7 @@
    #f
    8
    255))
-(define effect_2896 (finish639 struct:fd-output-port))
+(define effect_2896 (finish_2363 struct:fd-output-port))
 (define create-fd-output-port
   (|#%name|
    create-fd-output-port
@@ -9946,7 +10048,7 @@
   (|#%name|
    set-fd-output-port-custodian-reference!
    (record-mutator struct:fd-output-port 7)))
-(define finish646
+(define finish_2810
   (make-struct-type-install-properties
    '(fd-output-port-methods)
    2
@@ -9967,7 +10069,7 @@
    #f
    2
    0))
-(define effect_1955 (finish646 struct:fd-output-port-methods.1))
+(define effect_1955 (finish_2810 struct:fd-output-port-methods.1))
 (define fd-output-port-methods26.1
   (|#%name|
    fd-output-port-methods
@@ -10057,11 +10159,11 @@
                          (fd-output-port-flush-handle this-id_0))
                         (void))
                       (set-fd-output-port-bstr! this-id_0 #f)
-                      (let ((fd255_0 (fd-output-port-fd this-id_0)))
-                        (let ((fd-refcount256_0
+                      (let ((fd263_0 (fd-output-port-fd this-id_0)))
+                        (let ((fd-refcount264_0
                                (fd-output-port-fd-refcount this-id_0)))
-                          (let ((fd255_1 fd255_0))
-                            (fd-close.1 #f fd255_1 fd-refcount256_0))))
+                          (let ((fd263_1 fd263_0))
+                            (fd-close.1 #f fd263_1 fd-refcount264_0))))
                       (|#%app|
                        1/unsafe-custodian-unregister
                        this-id_0
@@ -10087,33 +10189,33 @@
                                 (fd-output-port-end-pos this-id_0))))
                          (fx- app_4 (fd-output-port-start-pos this-id_0))))
                       #f)))))
-             ((this-id_0 pos257_0)
+             ((this-id_0 pos265_0)
               (begin
                 (|#%app| temp19.1 this-id_0 #f)
                 (if (fd-output-port-bstr this-id_0)
                   (void)
                   (check-not-closed 'file-position this-id_0))
                 (let ((app_4 set-file-position))
-                  (|#%app| app_4 (fd-output-port-fd this-id_0) pos257_0))))))
+                  (|#%app| app_4 (fd-output-port-fd this-id_0) pos265_0))))))
            (|#%name|
             buffer-mode
             (case-lambda
              ((this-id_0) (begin (fd-output-port-buffer-mode this-id_0)))
-             ((this-id_0 mode313_0)
-              (set-fd-output-port-buffer-mode! this-id_0 mode313_0))))
+             ((this-id_0 mode321_0)
+              (set-fd-output-port-buffer-mode! this-id_0 mode321_0))))
            (|#%name|
             write-out
             (lambda (this-id_0
-                     src-bstr369_0
-                     src-start370_0
-                     src-end371_0
-                     nonbuffer/nonblock?372_0
-                     enable-break?373_0
-                     copy?374_0)
+                     src-bstr377_0
+                     src-start378_0
+                     src-end379_0
+                     nonbuffer/nonblock?380_0
+                     enable-break?381_0
+                     copy?382_0)
               (begin
                 (begin
                   (|#%app| temp23.1 this-id_0)
-                  (if (fx= src-start370_0 src-end371_0)
+                  (if (fx= src-start378_0 src-end379_0)
                     (let ((or-part_0 (if (|#%app| temp18.1 this-id_0) 0 #f)))
                       (if or-part_0
                         or-part_0
@@ -10124,7 +10226,7 @@
                              (eq?
                               (fd-output-port-buffer-mode this-id_0)
                               'none))
-                          (if (not nonbuffer/nonblock?372_0)
+                          (if (not nonbuffer/nonblock?380_0)
                             (let ((app_4 (fd-output-port-end-pos this-id_0)))
                               (fx<
                                app_4
@@ -10133,7 +10235,7 @@
                             #f)
                           #f)
                       (let ((amt_0
-                             (let ((app_4 (fx- src-end371_0 src-start370_0)))
+                             (let ((app_4 (fx- src-end379_0 src-start378_0)))
                                (fxmin
                                 app_4
                                 (let ((app_5
@@ -10148,9 +10250,9 @@
                               (unsafe-bytes-copy!
                                app_4
                                app_5
-                               src-bstr369_0
-                               src-start370_0
-                               (fx+ src-start370_0 amt_0))))
+                               src-bstr377_0
+                               src-start378_0
+                               (fx+ src-start378_0 amt_0))))
                           (set-fd-output-port-end-pos!
                            this-id_0
                            (fx+ (fd-output-port-end-pos this-id_0) amt_0))
@@ -10160,10 +10262,10 @@
                             (|#%app|
                              temp20.1
                              this-id_0
-                             src-bstr369_0
-                             src-start370_0
-                             src-end371_0
-                             enable-break?373_0)
+                             src-bstr377_0
+                             src-start378_0
+                             src-end379_0
+                             enable-break?381_0)
                             (void))
                           (|#%app| temp22.1 this-id_0 amt_0)
                           amt_0))
@@ -10176,9 +10278,9 @@
                                 rktio_write_in
                                 (unsafe-place-local-ref cell.1)
                                 (fd-output-port-fd this-id_0)
-                                src-bstr369_0
-                                src-start370_0
-                                src-end371_0)))
+                                src-bstr377_0
+                                src-start378_0
+                                src-end379_0)))
                           (if (vector? n_0)
                             (begin
                               (unsafe-end-atomic)
@@ -10199,16 +10301,16 @@
            (|#%name| on-close (lambda (this-id_0) (begin (void))))
            (|#%name|
             raise-write-error
-            (lambda (this-id_0 n435_0)
+            (lambda (this-id_0 n443_0)
               (begin
                 (raise-filesystem-error
                  #f
-                 n435_0
+                 n443_0
                  "error writing to stream port"))))))))))
 (define temp22.1
   (|#%name|
    fast-mode!
-   (lambda (this-id_0 amt464_0)
+   (lambda (this-id_0 amt472_0)
      (begin
        (if (eq? (fd-output-port-buffer-mode this-id_0) 'block)
          (let ((b_0 (core-port-buffer this-id_0)))
@@ -10225,7 +10327,7 @@
                      (if o_0
                        (set-core-port-offset!
                         this-id_0
-                        (- (+ o_0 amt464_0) e_0))
+                        (- (+ o_0 amt472_0) e_0))
                        (void))))))))
          (void))))))
 (define temp23.1
@@ -10312,7 +10414,7 @@
 (define temp19.1
   (|#%name|
    flush-buffer-fully
-   (lambda (this-id_0 enable-break?601_0)
+   (lambda (this-id_0 enable-break?609_0)
      (begin
        (letrec*
         ((loop_0
@@ -10324,7 +10426,7 @@
                  (void)
                  (begin
                    (unsafe-end-atomic)
-                   (if enable-break?601_0
+                   (if enable-break?609_0
                      (sync/enable-break (core-output-port-evt this-id_0))
                      (sync (core-output-port-evt this-id_0)))
                    (unsafe-start-atomic)
@@ -10334,19 +10436,19 @@
   (|#%name|
    flush-buffer-fully-if-newline
    (lambda (this-id_0
-            src-bstr630_0
-            src-start631_0
-            src-end632_0
-            enable-break?633_0)
+            src-bstr638_0
+            src-start639_0
+            src-end640_0
+            enable-break?641_0)
      (begin
        (begin
          (call-with-values
           (lambda ()
             (unsafe-normalise-inputs
              unsafe-bytes-length
-             src-bstr630_0
-             src-start631_0
-             src-end632_0
+             src-bstr638_0
+             src-start639_0
+             src-end640_0
              1))
           (case-lambda
            ((v*_0 start*_0 stop*_0 step*_0)
@@ -10371,7 +10473,7 @@
                                      (if or-part_0 or-part_0 (eqv? b_0 13))))
                                 (begin
                                   (if newline?_0
-                                    (temp19.1 this-id_0 enable-break?633_0)
+                                    (temp19.1 this-id_0 enable-break?641_0)
                                     (void))
                                   (if newline?_0 (values) (next-k-proc_0)))))))
                         (values)))))))
@@ -10413,7 +10515,7 @@
                     (current-custodian)
                     custodian30_0)))
              (let ((app_0 (direct2.1 #f 0 0)))
-               (let ((temp692_0
+               (let ((temp700_0
                       (let ((app_1 (make-bytes 4096)))
                         (create-fd-output-port
                          fd-output-port-vtable.1
@@ -10442,7 +10544,7 @@
                              'block)
                            buffer-mode27_0)
                          #f))))
-                 (finish-fd-output-port.1 cust_0 plumber_0 temp692_0))))))))))
+                 (finish-fd-output-port.1 cust_0 plumber_0 temp700_0))))))))))
 (define finish-fd-output-port.1
   (|#%name|
    finish-fd-output-port
@@ -10547,7 +10649,7 @@
                      (format-rktio-message 'file-position r_0 base-msg_0)))
                 (|#%app| exn:fail app_0 (current-continuation-marks)))))))
         (void)))))
-(define finish674
+(define finish_2118
   (make-struct-type-install-properties
    '(fd-evt)
    3
@@ -10618,7 +10720,7 @@
    #f
    3
    4))
-(define effect_2660 (finish674 struct:fd-evt))
+(define effect_2660 (finish_2118 struct:fd-evt))
 (define fd-evt44.1
   (|#%name|
    fd-evt
@@ -10686,7 +10788,7 @@
          v
          'fd-evt
          'closed))))))
-(define finish683
+(define finish_2932
   (make-struct-type-install-properties
    '(rktio-fd-flushed-evt)
    1
@@ -10731,7 +10833,7 @@
    #f
    1
    0))
-(define effect_2170 (finish683 struct:rktio-fd-flushed-evt))
+(define effect_2170 (finish_2932 struct:rktio-fd-flushed-evt))
 (define rktio-fd-flushed-evt45.1
   (|#%name|
    rktio-fd-flushed-evt
@@ -11478,7 +11580,7 @@
                                     (loop_0 (fx+ i_0 1))))
                                 (loop_0 (fx+ i_0 1)))))))))))
                  (loop_0 pos_0))))))))))
-(define finish696
+(define finish_2338
   (make-struct-type-install-properties
    '(progress-evt)
    2
@@ -11502,7 +11604,7 @@
    #f
    2
    0))
-(define effect_2490 (finish696 struct:progress-evt))
+(define effect_2490 (finish_2338 struct:progress-evt))
 (define progress-evt1.1
   (|#%name|
    progress-evt
@@ -14801,7 +14903,7 @@
       (begin
         (unsafe-bytes-set! out-bstr_0 j_0 lo_0)
         (unsafe-bytes-set! out-bstr_0 (+ j_0 1) hi_0)))))
-(define finish724
+(define finish_2760
   (make-struct-type-install-properties
    '(utf-8-converter)
    2
@@ -14822,7 +14924,7 @@
    #f
    2
    0))
-(define effect_2402 (finish724 struct:utf-8-converter))
+(define effect_2402 (finish_2760 struct:utf-8-converter))
 (define utf-8-converter1.1
   (|#%name|
    utf-8-converter
@@ -15735,7 +15837,7 @@
                                    (done_0 'error)))
                                (continue_0 v_0 (+ i_0 2)))))))))))))))
         (loop_0 in-start20_0 out-start23_0))))))
-(define finish775
+(define finish_2770
   (make-struct-type-install-properties
    '(bytes-converter)
    2
@@ -15756,7 +15858,7 @@
    #f
    2
    3))
-(define effect_2496 (finish775 struct:bytes-converter))
+(define effect_2496 (finish_2770 struct:bytes-converter))
 (define bytes-converter1.1
   (|#%name|
    bytes-converter
@@ -16612,7 +16714,7 @@
                 (args (raise-binding-result-arity-error 4 args))))
               (void)))
           (check-not-unsafe-undefined bstr_0 'bstr_119))))))
-(define finish800
+(define finish_1919
   (make-struct-type-install-properties
    '(cache)
    4
@@ -16633,7 +16735,7 @@
    #f
    4
    15))
-(define effect_2561 (finish800 struct:cache))
+(define effect_2561 (finish_1919 struct:cache))
 (define cache1.1
   (|#%name|
    cache
@@ -16986,7 +17088,7 @@
        (bytes->string/locale_0 in-bstr_0 err-char_0 start6_0 unsafe-undefined))
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
-(define finish807
+(define finish_2714
   (make-struct-type-install-properties
    '(path)
    2
@@ -17032,7 +17134,7 @@
    #f
    2
    0))
-(define effect_2995 (finish807 struct:path))
+(define effect_2995 (finish_2714 struct:path))
 (define path1.1
   (|#%name|
    path
@@ -18288,7 +18390,7 @@
      (case-lambda
       ((bstr_0) (begin (open-input-bytes_0 bstr_0 'string)))
       ((bstr_0 name1_0) (open-input-bytes_0 bstr_0 name1_0))))))
-(define finish816
+(define finish_2933
   (make-struct-type-install-properties
    '(bytes-input-port)
    3
@@ -18309,7 +18411,7 @@
    #f
    3
    7))
-(define effect_2847 (finish816 struct:bytes-input-port))
+(define effect_2847 (finish_2933 struct:bytes-input-port))
 (define create-bytes-input-port
   (|#%name|
    create-bytes-input-port
@@ -18337,7 +18439,7 @@
   (|#%name|
    set-bytes-input-port-alt-pos!
    (record-mutator struct:bytes-input-port 2)))
-(define finish819
+(define finish_2871
   (make-struct-type-install-properties
    '(bytes-input-port-methods)
    0
@@ -18358,7 +18460,7 @@
    #f
    0
    0))
-(define effect_2130 (finish819 struct:bytes-input-port-methods.1))
+(define effect_2130 (finish_2871 struct:bytes-input-port-methods.1))
 (define bytes-input-port-methods4.1
   (|#%name|
    bytes-input-port-methods
@@ -18568,7 +18670,7 @@
       bstr_0
       0
       #f))))
-(define finish827
+(define finish_2411
   (make-struct-type-install-properties
    '(bytes-output-port)
    3
@@ -18589,7 +18691,7 @@
    #f
    3
    7))
-(define effect_2052 (finish827 struct:bytes-output-port))
+(define effect_2052 (finish_2411 struct:bytes-output-port))
 (define create-bytes-output-port
   (|#%name|
    create-bytes-output-port
@@ -18621,7 +18723,7 @@
   (|#%name|
    set-bytes-output-port-max-pos!
    (record-mutator struct:bytes-output-port 2)))
-(define finish830
+(define finish_2698
   (make-struct-type-install-properties
    '(bytes-output-port-methods)
    2
@@ -18642,7 +18744,7 @@
    #f
    2
    0))
-(define effect_2430 (finish830 struct:bytes-output-port-methods.1))
+(define effect_2430 (finish_2698 struct:bytes-output-port-methods.1))
 (define bytes-output-port-methods8.1
   (|#%name|
    bytes-output-port-methods
@@ -19074,7 +19176,7 @@
                 (if (string? str_0)
                   (1/string->bytes/utf-8 str_0 #f start_0 end_0)
                   (subbytes str_0 start_0 end_0)))))))))))
-(define finish846
+(define finish_2069
   (make-struct-type-install-properties
    '(max-output-port)
    2
@@ -19095,7 +19197,7 @@
    #f
    2
    3))
-(define effect_3019 (finish846 struct:max-output-port))
+(define effect_3019 (finish_2069 struct:max-output-port))
 (define create-max-output-port
   (|#%name|
    create-max-output-port
@@ -19115,7 +19217,7 @@
   (|#%name|
    set-max-output-port-max-length!
    (record-mutator struct:max-output-port 1)))
-(define finish849
+(define finish_2618
   (make-struct-type-install-properties
    '(max-output-port-methods)
    0
@@ -19136,7 +19238,7 @@
    #f
    0
    0))
-(define effect_2933 (finish849 struct:max-output-port-methods.1))
+(define effect_2933 (finish_2618 struct:max-output-port-methods.1))
 (define max-output-port-methods1.1
   (|#%name|
    max-output-port-methods
@@ -20037,7 +20139,7 @@
   (lambda (mode_0)
     (let ((or-part_0 (eq? mode_0 0)))
       (if or-part_0 or-part_0 (eq? mode_0 1)))))
-(define finish863
+(define finish_2460
   (make-struct-type-install-properties
    '(nowhere-output-port)
    0
@@ -20058,7 +20160,7 @@
    #f
    0
    0))
-(define effect_2267 (finish863 struct:nowhere-output-port))
+(define effect_2267 (finish_2460 struct:nowhere-output-port))
 (define create-nowhere-output-port
   (|#%name|
    create-nowhere-output-port
@@ -20068,7 +20170,7 @@
   (|#%name|
    nowhere-output-port?
    (record-predicate struct:nowhere-output-port)))
-(define finish866
+(define finish_2952
   (make-struct-type-install-properties
    '(nowhere-output-port-methods)
    0
@@ -20089,7 +20191,7 @@
    #f
    0
    0))
-(define effect_2301 (finish866 struct:nowhere-output-port-methods.1))
+(define effect_2301 (finish_2952 struct:nowhere-output-port-methods.1))
 (define nowhere-output-port-methods1.1
   (|#%name|
    nowhere-output-port-methods
@@ -20315,7 +20417,7 @@
                               #f)
                             fuel_1)))))))))))))
      (quick-no-graph?_0 v_0 fuel_0))))
-(define finish883
+(define finish_2175
   (make-struct-type-install-properties
    '(as-constructor)
    1
@@ -20336,7 +20438,7 @@
    #f
    1
    0))
-(define effect_2645 (finish883 struct:as-constructor))
+(define effect_2645 (finish_2175 struct:as-constructor))
 (define as-constructor1.1
   (|#%name|
    as-constructor
@@ -23313,7 +23415,7 @@
           (if (letter-drive-start? s_0 (unsafe-bytes-length s_0))
             (just-separators-after? s_0 2)
             #f))))))
-(define finish963
+(define finish_3672
   (make-struct-type-install-properties
    '(starting-point)
    7
@@ -23334,7 +23436,7 @@
    #f
    7
    0))
-(define effect_2521 (finish963 struct:starting-point))
+(define effect_2521 (finish_3672 struct:starting-point))
 (define starting-point7.1
   (|#%name|
    starting-point
@@ -25304,7 +25406,7 @@
 (define port-number? (lambda (v_0) (if (fixnum? v_0) (<= 1 v_0 65535) #f)))
 (define listen-port-number?
   (lambda (v_0) (if (fixnum? v_0) (<= 0 v_0 65535) #f)))
-(define finish1005
+(define finish_2262
   (make-struct-type-install-properties
    '(security-guard)
    4
@@ -25325,7 +25427,7 @@
    #f
    4
    0))
-(define effect_2369 (finish1005 struct:security-guard))
+(define effect_2369 (finish_2262 struct:security-guard))
 (define security-guard1.1
   (|#%name|
    security-guard
@@ -25886,7 +25988,7 @@
                  mode->flags
                  (lambda (mode_0)
                    (begin
-                     (if (eq? mode_0 'test)
+                     (if (eq? mode_0 'text)
                        4
                        (if (if (eq? mode_0 'truncate)
                              #t
@@ -27113,80 +27215,42 @@
                                                                      (wrap-procedure-result_0
                                                                       r_0)
                                                                      r_0)))))))))))
-                                                  (letrec*
-                                                   ((peek-in_0
-                                                     (|#%name|
-                                                      peek-in
-                                                      (lambda (self_0
+                                                  (let ((read-in/inner_0
+                                                         (|#%name|
+                                                          read-in/inner
+                                                          (lambda (self_0
+                                                                   dest-bstr_0
+                                                                   dest-start_0
+                                                                   dest-end_0
+                                                                   copy?_0
+                                                                   to-buffer_0)
+                                                            (begin
+                                                              (read-in_0
+                                                               self_0
                                                                dest-bstr_0
                                                                dest-start_0
                                                                dest-end_0
-                                                               skip-k_0
-                                                               progress-evt_0
-                                                               copy?_0)
-                                                        (begin
-                                                          (if input-pipe_0
-                                                            (if (<=
-                                                                 (1/pipe-content-length
-                                                                  input-pipe_0)
-                                                                 skip-k_0)
-                                                              (begin
-                                                                (set! input-pipe_0
-                                                                  #f)
-                                                                (peek-in_0
-                                                                 self_0
+                                                               copy?_0))))))
+                                                    (letrec*
+                                                     ((peek-in_0
+                                                       (|#%name|
+                                                        peek-in
+                                                        (lambda (self_0
                                                                  dest-bstr_0
                                                                  dest-start_0
                                                                  dest-end_0
                                                                  skip-k_0
                                                                  progress-evt_0
-                                                                 copy?_0))
-                                                              (let ((o_0
-                                                                     input-pipe_0))
-                                                                (|#%app|
-                                                                 (core-input-port-methods-peek-in.1
-                                                                  (core-port-vtable
-                                                                   o_0))
-                                                                 o_0
-                                                                 dest-bstr_0
-                                                                 dest-start_0
-                                                                 dest-end_0
-                                                                 skip-k_0
-                                                                 progress-evt_0
-                                                                 copy?_0)))
-                                                            (let ((r_0
-                                                                   (with-continuation-mark*
-                                                                    push-authentic
-                                                                    break-enabled-key
-                                                                    (make-thread-cell
-                                                                     #f)
-                                                                    (begin
-                                                                      (check-for-break)
-                                                                      (begin
-                                                                        (unsafe-end-atomic)
-                                                                        (begin0
-                                                                          (protect-in_0
-                                                                           dest-bstr_0
-                                                                           dest-start_0
-                                                                           dest-end_0
-                                                                           copy?_0
-                                                                           (lambda (user-bstr_0)
-                                                                             (|#%app|
-                                                                              user-peek-in9_0
-                                                                              user-bstr_0
-                                                                              skip-k_0
-                                                                              progress-evt_0)))
-                                                                          (unsafe-start-atomic)))))))
-                                                              (begin
-                                                                (check-read-result_0
-                                                                 progress-evt_0
-                                                                 #t
-                                                                 '|user port peek|
-                                                                 r_0
-                                                                 dest-start_0
-                                                                 dest-end_0)
-                                                                (if (pipe-input-port?*
-                                                                     r_0)
+                                                                 copy?_0)
+                                                          (begin
+                                                            (if input-pipe_0
+                                                              (if (<=
+                                                                   (1/pipe-content-length
+                                                                    input-pipe_0)
+                                                                   skip-k_0)
+                                                                (begin
+                                                                  (set! input-pipe_0
+                                                                    #f)
                                                                   (peek-in_0
                                                                    self_0
                                                                    dest-bstr_0
@@ -27194,282 +27258,336 @@
                                                                    dest-end_0
                                                                    skip-k_0
                                                                    progress-evt_0
-                                                                   copy?_0)
-                                                                  (if (evt?
+                                                                   copy?_0))
+                                                                (let ((o_0
+                                                                       input-pipe_0))
+                                                                  (|#%app|
+                                                                   (core-input-port-methods-peek-in.1
+                                                                    (core-port-vtable
+                                                                     o_0))
+                                                                   o_0
+                                                                   dest-bstr_0
+                                                                   dest-start_0
+                                                                   dest-end_0
+                                                                   skip-k_0
+                                                                   progress-evt_0
+                                                                   copy?_0)))
+                                                              (let ((r_0
+                                                                     (with-continuation-mark*
+                                                                      push-authentic
+                                                                      break-enabled-key
+                                                                      (make-thread-cell
+                                                                       #f)
+                                                                      (begin
+                                                                        (check-for-break)
+                                                                        (begin
+                                                                          (unsafe-end-atomic)
+                                                                          (begin0
+                                                                            (protect-in_0
+                                                                             dest-bstr_0
+                                                                             dest-start_0
+                                                                             dest-end_0
+                                                                             copy?_0
+                                                                             (lambda (user-bstr_0)
+                                                                               (|#%app|
+                                                                                user-peek-in9_0
+                                                                                user-bstr_0
+                                                                                skip-k_0
+                                                                                progress-evt_0)))
+                                                                            (unsafe-start-atomic)))))))
+                                                                (begin
+                                                                  (check-read-result_0
+                                                                   progress-evt_0
+                                                                   #t
+                                                                   '|user port peek|
+                                                                   r_0
+                                                                   dest-start_0
+                                                                   dest-end_0)
+                                                                  (if (pipe-input-port?*
                                                                        r_0)
-                                                                    (wrap-check-read-evt-result_0
-                                                                     '|user port peek|
-                                                                     r_0
+                                                                    (peek-in_0
+                                                                     self_0
+                                                                     dest-bstr_0
                                                                      dest-start_0
                                                                      dest-end_0
-                                                                     #t
-                                                                     progress-evt_0)
-                                                                    (if (procedure?
+                                                                     skip-k_0
+                                                                     progress-evt_0
+                                                                     copy?_0)
+                                                                    (if (evt?
                                                                          r_0)
-                                                                      (wrap-procedure-result_0
-                                                                       r_0)
-                                                                      r_0)))))))))))
-                                                   (let ((byte-ready_0
-                                                          (|#%name|
-                                                           byte-ready
-                                                           (lambda (self_0
-                                                                    work-done!_0)
-                                                             (begin
-                                                               (if (if input-pipe_0
-                                                                     (positive?
-                                                                      (1/pipe-content-length
-                                                                       input-pipe_0))
-                                                                     #f)
-                                                                 #t
-                                                                 (let ((bstr_0
-                                                                        (make-bytes
-                                                                         1)))
-                                                                   (let ((v_0
-                                                                          (peek-in_0
-                                                                           self_0
-                                                                           bstr_0
-                                                                           0
-                                                                           1
-                                                                           0
-                                                                           #f
-                                                                           #f)))
-                                                                     (begin
-                                                                       (|#%app|
-                                                                        work-done!_0)
-                                                                       (if (evt?
-                                                                            v_0)
-                                                                         v_0
-                                                                         (not
-                                                                          (eqv?
-                                                                           v_0
-                                                                           0))))))))))))
-                                                     (let ((close_0
+                                                                      (wrap-check-read-evt-result_0
+                                                                       '|user port peek|
+                                                                       r_0
+                                                                       dest-start_0
+                                                                       dest-end_0
+                                                                       #t
+                                                                       progress-evt_0)
+                                                                      (if (procedure?
+                                                                           r_0)
+                                                                        (wrap-procedure-result_0
+                                                                         r_0)
+                                                                        r_0)))))))))))
+                                                     (let ((byte-ready_0
                                                             (|#%name|
-                                                             close
-                                                             (lambda (self_0)
+                                                             byte-ready
+                                                             (lambda (self_0
+                                                                      work-done!_0)
                                                                (begin
-                                                                 (begin
-                                                                   (unsafe-end-atomic)
-                                                                   (|#%app|
-                                                                    user-close10_0)
-                                                                   (unsafe-start-atomic)))))))
-                                                       (let ((get-progress-evt_0
+                                                                 (if (if input-pipe_0
+                                                                       (positive?
+                                                                        (1/pipe-content-length
+                                                                         input-pipe_0))
+                                                                       #f)
+                                                                   #t
+                                                                   (let ((bstr_0
+                                                                          (make-bytes
+                                                                           1)))
+                                                                     (let ((v_0
+                                                                            (peek-in_0
+                                                                             self_0
+                                                                             bstr_0
+                                                                             0
+                                                                             1
+                                                                             0
+                                                                             #f
+                                                                             #f)))
+                                                                       (begin
+                                                                         (|#%app|
+                                                                          work-done!_0)
+                                                                         (if (evt?
+                                                                              v_0)
+                                                                           v_0
+                                                                           (not
+                                                                            (eqv?
+                                                                             v_0
+                                                                             0))))))))))))
+                                                       (let ((close_0
                                                               (|#%name|
-                                                               get-progress-evt
+                                                               close
                                                                (lambda (self_0)
                                                                  (begin
-                                                                   (let ((r_0
-                                                                          (|#%app|
-                                                                           user-get-progress-evt1_0)))
-                                                                     (begin
-                                                                       (if (evt?
-                                                                            r_0)
-                                                                         (void)
-                                                                         (raise-result-error
-                                                                          '|user port progress-evt|
-                                                                          "evt?"
-                                                                          r_0))
-                                                                       r_0)))))))
-                                                         (let ((commit_0
+                                                                   (begin
+                                                                     (unsafe-end-atomic)
+                                                                     (|#%app|
+                                                                      user-close10_0)
+                                                                     (unsafe-start-atomic)))))))
+                                                         (let ((get-progress-evt_0
                                                                 (|#%name|
-                                                                 commit
-                                                                 (lambda (self_0
-                                                                          amt_0
-                                                                          evt_0
-                                                                          ext-evt_0
-                                                                          finish_0)
+                                                                 get-progress-evt
+                                                                 (lambda (self_0)
                                                                    (begin
                                                                      (let ((r_0
-                                                                            (with-continuation-mark*
-                                                                             push-authentic
-                                                                             break-enabled-key
-                                                                             (make-thread-cell
-                                                                              #f)
-                                                                             (begin
-                                                                               (check-for-break)
+                                                                            (|#%app|
+                                                                             user-get-progress-evt1_0)))
+                                                                       (begin
+                                                                         (if (evt?
+                                                                              r_0)
+                                                                           (void)
+                                                                           (raise-result-error
+                                                                            '|user port progress-evt|
+                                                                            "evt?"
+                                                                            r_0))
+                                                                         r_0)))))))
+                                                           (let ((commit_0
+                                                                  (|#%name|
+                                                                   commit
+                                                                   (lambda (self_0
+                                                                            amt_0
+                                                                            evt_0
+                                                                            ext-evt_0
+                                                                            finish_0)
+                                                                     (begin
+                                                                       (let ((r_0
+                                                                              (with-continuation-mark*
+                                                                               push-authentic
+                                                                               break-enabled-key
+                                                                               (make-thread-cell
+                                                                                #f)
                                                                                (begin
-                                                                                 (unsafe-end-atomic)
-                                                                                 (begin0
-                                                                                   (|#%app|
-                                                                                    user-commit2_0
-                                                                                    amt_0
-                                                                                    evt_0
-                                                                                    ext-evt_0)
-                                                                                   (unsafe-start-atomic)))))))
-                                                                       (if (not
-                                                                            r_0)
-                                                                         #f
-                                                                         (if (bytes?
+                                                                                 (check-for-break)
+                                                                                 (begin
+                                                                                   (unsafe-end-atomic)
+                                                                                   (begin0
+                                                                                     (|#%app|
+                                                                                      user-commit2_0
+                                                                                      amt_0
+                                                                                      evt_0
+                                                                                      ext-evt_0)
+                                                                                     (unsafe-start-atomic)))))))
+                                                                         (if (not
                                                                               r_0)
-                                                                           (begin
-                                                                             (|#%app|
-                                                                              finish_0
-                                                                              r_0)
-                                                                             #t)
-                                                                           (begin
-                                                                             (|#%app|
-                                                                              finish_0
-                                                                              (make-bytes
-                                                                               amt_0
-                                                                               120))
-                                                                             #t)))))))))
-                                                           (let ((get-location_0
-                                                                  (if user-get-location3_0
-                                                                    (make-get-location
-                                                                     user-get-location3_0)
-                                                                    #f)))
-                                                             (let ((count-lines!_0
-                                                                    (if user-count-lines!4_0
-                                                                      (|#%name|
-                                                                       count-lines!
-                                                                       (lambda (self_0)
-                                                                         (begin
-                                                                           (begin
-                                                                             (unsafe-end-atomic)
-                                                                             (|#%app|
-                                                                              user-count-lines!4_0)
-                                                                             (unsafe-start-atomic)))))
+                                                                           #f
+                                                                           (if (bytes?
+                                                                                r_0)
+                                                                             (begin
+                                                                               (|#%app|
+                                                                                finish_0
+                                                                                r_0)
+                                                                               #t)
+                                                                             (begin
+                                                                               (|#%app|
+                                                                                finish_0
+                                                                                (make-bytes
+                                                                                 amt_0
+                                                                                 120))
+                                                                               #t)))))))))
+                                                             (let ((get-location_0
+                                                                    (if user-get-location3_0
+                                                                      (make-get-location
+                                                                       user-get-location3_0)
                                                                       #f)))
-                                                               (call-with-values
-                                                                (lambda ()
-                                                                  (make-init-offset+file-position
-                                                                   user-init-position5_0))
-                                                                (case-lambda
-                                                                 ((init-offset_0
-                                                                   file-position_0)
-                                                                  (let ((buffer-mode_0
-                                                                         (if user-buffer-mode6_0
-                                                                           (make-buffer-mode.1
-                                                                            #f
-                                                                            user-buffer-mode6_0)
-                                                                           #f)))
-                                                                    (finish-port/count
-                                                                     (if user-peek-in9_0
-                                                                       (let ((app_0
-                                                                              (let ((app_0
-                                                                                     (core-input-port-methods-prepare-change.1
-                                                                                      core-input-port-vtable.1)))
-                                                                                (let ((app_1
-                                                                                       (if (1/input-port?
-                                                                                            user-read-in8_0)
-                                                                                         user-read-in8_0
-                                                                                         read-in_0)))
-                                                                                  (let ((app_2
+                                                               (let ((count-lines!_0
+                                                                      (if user-count-lines!4_0
+                                                                        (|#%name|
+                                                                         count-lines!
+                                                                         (lambda (self_0)
+                                                                           (begin
+                                                                             (begin
+                                                                               (unsafe-end-atomic)
+                                                                               (|#%app|
+                                                                                user-count-lines!4_0)
+                                                                               (unsafe-start-atomic)))))
+                                                                        #f)))
+                                                                 (call-with-values
+                                                                  (lambda ()
+                                                                    (make-init-offset+file-position
+                                                                     user-init-position5_0))
+                                                                  (case-lambda
+                                                                   ((init-offset_0
+                                                                     file-position_0)
+                                                                    (let ((buffer-mode_0
+                                                                           (if user-buffer-mode6_0
+                                                                             (make-buffer-mode.1
+                                                                              #f
+                                                                              user-buffer-mode6_0)
+                                                                             #f)))
+                                                                      (finish-port/count
+                                                                       (if user-peek-in9_0
+                                                                         (let ((app_0
+                                                                                (let ((app_0
+                                                                                       (core-input-port-methods-prepare-change.1
+                                                                                        core-input-port-vtable.1)))
+                                                                                  (let ((app_1
                                                                                          (if (1/input-port?
-                                                                                              user-peek-in9_0)
-                                                                                           user-peek-in9_0
-                                                                                           peek-in_0)))
-                                                                                    (let ((app_3
+                                                                                              user-read-in8_0)
+                                                                                           user-read-in8_0
+                                                                                           read-in_0)))
+                                                                                    (let ((app_2
                                                                                            (if (1/input-port?
                                                                                                 user-peek-in9_0)
                                                                                              user-peek-in9_0
-                                                                                             byte-ready_0)))
-                                                                                      (let ((app_4
-                                                                                             (if user-get-progress-evt1_0
-                                                                                               get-progress-evt_0
-                                                                                               #f)))
-                                                                                        (core-input-port-methods6.1
-                                                                                         close_0
-                                                                                         count-lines!_0
-                                                                                         get-location_0
-                                                                                         file-position_0
-                                                                                         buffer-mode_0
-                                                                                         app_0
-                                                                                         app_1
-                                                                                         app_2
-                                                                                         app_3
-                                                                                         app_4
-                                                                                         (if user-commit2_0
-                                                                                           commit_0
-                                                                                           #f)))))))))
-                                                                         (create-core-input-port
-                                                                          app_0
-                                                                          name7_0
-                                                                          (direct2.1
-                                                                           #f
-                                                                           0
-                                                                           0)
-                                                                          #f
-                                                                          #f
-                                                                          init-offset_0
-                                                                          #f
-                                                                          #f
-                                                                          #f))
-                                                                       (let ((app_0
-                                                                              (let ((app_0
-                                                                                     (if buffer-mode_0
-                                                                                       buffer-mode_0
-                                                                                       (case-lambda
-                                                                                        ((self_0)
-                                                                                         (temp9.1
-                                                                                          self_0))
-                                                                                        ((self_0
-                                                                                          mode_0)
-                                                                                         (temp9.1
-                                                                                          self_0
-                                                                                          mode_0))))))
-                                                                                (let ((app_1
-                                                                                       (core-input-port-methods-prepare-change.1
-                                                                                        peek-via-read-input-port-vtable.1)))
-                                                                                  (let ((app_2
-                                                                                         (core-input-port-methods-read-in.1
-                                                                                          peek-via-read-input-port-vtable.1)))
-                                                                                    (let ((app_3
-                                                                                           (core-input-port-methods-peek-in.1
-                                                                                            peek-via-read-input-port-vtable.1)))
-                                                                                      (let ((app_4
-                                                                                             (core-input-port-methods-byte-ready.1
-                                                                                              peek-via-read-input-port-vtable.1)))
-                                                                                        (let ((app_5
-                                                                                               (core-input-port-methods-get-progress-evt.1
-                                                                                                peek-via-read-input-port-vtable.1)))
-                                                                                          (peek-via-read-input-port-methods10.1
-                                                                                           (values
-                                                                                            (lambda (self_0)
-                                                                                              (begin
-                                                                                                (close_0
-                                                                                                 self_0)
-                                                                                                (temp7.1
-                                                                                                 self_0))))
+                                                                                             peek-in_0)))
+                                                                                      (let ((app_3
+                                                                                             (if (1/input-port?
+                                                                                                  user-peek-in9_0)
+                                                                                               user-peek-in9_0
+                                                                                               byte-ready_0)))
+                                                                                        (let ((app_4
+                                                                                               (if user-get-progress-evt1_0
+                                                                                                 get-progress-evt_0
+                                                                                                 #f)))
+                                                                                          (core-input-port-methods6.1
+                                                                                           close_0
                                                                                            count-lines!_0
                                                                                            get-location_0
                                                                                            file-position_0
+                                                                                           buffer-mode_0
                                                                                            app_0
                                                                                            app_1
                                                                                            app_2
                                                                                            app_3
                                                                                            app_4
-                                                                                           app_5
-                                                                                           (core-input-port-methods-commit.1
-                                                                                            peek-via-read-input-port-vtable.1)
-                                                                                           read-in_0)))))))))
-                                                                         (let ((app_1
-                                                                                (direct2.1
-                                                                                 #f
-                                                                                 0
-                                                                                 0)))
-                                                                           (create-peek-via-read-input-port
+                                                                                           (if user-commit2_0
+                                                                                             commit_0
+                                                                                             #f)))))))))
+                                                                           (create-core-input-port
                                                                             app_0
                                                                             name7_0
-                                                                            app_1
+                                                                            (direct2.1
+                                                                             #f
+                                                                             0
+                                                                             0)
                                                                             #f
                                                                             #f
                                                                             init-offset_0
                                                                             #f
                                                                             #f
-                                                                            #f
-                                                                            #f
-                                                                            #f
-                                                                            (make-bytes
-                                                                             4096)
-                                                                            0
-                                                                            0
-                                                                            #f
-                                                                            'block)))))))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args)))))))))))))))))))))))))))))))))))
+                                                                            #f))
+                                                                         (let ((app_0
+                                                                                (let ((app_0
+                                                                                       (if buffer-mode_0
+                                                                                         buffer-mode_0
+                                                                                         (case-lambda
+                                                                                          ((self_0)
+                                                                                           (temp9.1
+                                                                                            self_0))
+                                                                                          ((self_0
+                                                                                            mode_0)
+                                                                                           (temp9.1
+                                                                                            self_0
+                                                                                            mode_0))))))
+                                                                                  (let ((app_1
+                                                                                         (core-input-port-methods-prepare-change.1
+                                                                                          peek-via-read-input-port-vtable.1)))
+                                                                                    (let ((app_2
+                                                                                           (core-input-port-methods-read-in.1
+                                                                                            peek-via-read-input-port-vtable.1)))
+                                                                                      (let ((app_3
+                                                                                             (core-input-port-methods-peek-in.1
+                                                                                              peek-via-read-input-port-vtable.1)))
+                                                                                        (let ((app_4
+                                                                                               (core-input-port-methods-byte-ready.1
+                                                                                                peek-via-read-input-port-vtable.1)))
+                                                                                          (let ((app_5
+                                                                                                 (core-input-port-methods-get-progress-evt.1
+                                                                                                  peek-via-read-input-port-vtable.1)))
+                                                                                            (peek-via-read-input-port-methods10.1
+                                                                                             (values
+                                                                                              (lambda (self_0)
+                                                                                                (begin
+                                                                                                  (close_0
+                                                                                                   self_0)
+                                                                                                  (temp7.1
+                                                                                                   self_0))))
+                                                                                             count-lines!_0
+                                                                                             get-location_0
+                                                                                             file-position_0
+                                                                                             app_0
+                                                                                             app_1
+                                                                                             app_2
+                                                                                             app_3
+                                                                                             app_4
+                                                                                             app_5
+                                                                                             (core-input-port-methods-commit.1
+                                                                                              peek-via-read-input-port-vtable.1)
+                                                                                             read-in/inner_0)))))))))
+                                                                           (let ((app_1
+                                                                                  (direct2.1
+                                                                                   #f
+                                                                                   0
+                                                                                   0)))
+                                                                             (create-peek-via-read-input-port
+                                                                              app_0
+                                                                              name7_0
+                                                                              app_1
+                                                                              #f
+                                                                              #f
+                                                                              init-offset_0
+                                                                              #f
+                                                                              #f
+                                                                              #f
+                                                                              #f
+                                                                              #f
+                                                                              (make-bytes
+                                                                               4096)
+                                                                              0
+                                                                              0
+                                                                              #f
+                                                                              'block)))))))
+                                                                   (args
+                                                                    (raise-binding-result-arity-error
+                                                                     2
+                                                                     args))))))))))))))))))))))))))))))))))))
     (|#%name|
      make-input-port
      (case-lambda
@@ -29764,7 +29882,7 @@
       (bytes->immutable-bytes
        (1/string->bytes/locale (string-foldcase (1/bytes->string/locale k_0))))
       k_0)))
-(define finish1090
+(define finish_2186
   (make-struct-type-install-properties
    '(environment-variables)
    1
@@ -29785,7 +29903,7 @@
    #f
    1
    1))
-(define effect_2329 (finish1090 struct:environment-variables))
+(define effect_2329 (finish_2186 struct:environment-variables))
 (define environment-variables1.1
   (|#%name|
    environment-variables
@@ -31498,7 +31616,7 @@
            #f))))))
 (define adjust-path
   (lambda (p_0) (if (is-path? p_0) (relative-to-user-directory p_0) p_0)))
-(define finish1167
+(define finish_1890
   (make-struct-type-install-properties
    '(logger)
    11
@@ -31519,7 +31637,7 @@
    #f
    11
    376))
-(define effect_2687 (finish1167 struct:logger))
+(define effect_2687 (finish_1890 struct:logger))
 (define logger1.1
   (|#%name|
    logger
@@ -31969,7 +32087,7 @@
      (loop_0 filters_0 'none))))
 (define level->user-representation
   (lambda (lvl_0) (if (eq? lvl_0 'none) #f lvl_0)))
-(define finish1192
+(define finish_2164
   (make-struct-type-install-properties
    '(queue)
    2
@@ -31990,7 +32108,7 @@
    #f
    2
    3))
-(define effect_2998 (finish1192 struct:queue))
+(define effect_2998 (finish_2164 struct:queue))
 (define queue1.1
   (|#%name|
    queue
@@ -32003,7 +32121,7 @@
   (|#%name| set-queue-start! (record-mutator struct:queue 0)))
 (define set-queue-end!
   (|#%name| set-queue-end! (record-mutator struct:queue 1)))
-(define finish1194
+(define finish_2845
   (make-struct-type-install-properties
    '(node)
    3
@@ -32024,7 +32142,7 @@
    #f
    3
    6))
-(define effect_2547 (finish1194 struct:node))
+(define effect_2547 (finish_2845 struct:node))
 (define node2.1
   (|#%name|
    node
@@ -32067,7 +32185,7 @@
       (if (node-next n_0)
         (let ((app_0 (node-next n_0))) (set-node-prev! app_0 (node-prev n_0)))
         (set-queue-end! q_0 (node-prev n_0))))))
-(define finish1199
+(define finish_2335
   (make-struct-type-install-properties
    '(log-receiver)
    1
@@ -32088,7 +32206,7 @@
    #f
    1
    0))
-(define effect_2969 (finish1199 struct:log-receiver))
+(define effect_2969 (finish_2335 struct:log-receiver))
 (define log-receiver1.1
   (|#%name|
    log-receiver
@@ -32125,7 +32243,7 @@
 (define-values
  (prop:receiver-send receiver-send? receiver-send-ref)
  (make-struct-type-property 'receiver-send))
-(define finish1203
+(define finish_2611
   (make-struct-type-install-properties
    '(log-receiver)
    3
@@ -32200,7 +32318,7 @@
    #f
    3
    0))
-(define effect_2324 (finish1203 struct:queue-log-receiver))
+(define effect_2324 (finish_2611 struct:queue-log-receiver))
 (define queue-log-receiver2.1
   (|#%name|
    queue-log-receiver
@@ -32306,7 +32424,7 @@
           (begin-unsafe (not (queue-start q_0))))
       (set-box! (queue-log-receiver-backref lr_0) lr_0)
       (void))))
-(define finish1215
+(define finish_2868
   (make-struct-type-install-properties
    '(stdio-log-receiver)
    2
@@ -32362,7 +32480,7 @@
    #f
    2
    0))
-(define effect_2591 (finish1215 struct:stdio-log-receiver))
+(define effect_2591 (finish_2868 struct:stdio-log-receiver))
 (define stdio-log-receiver3.1
   (|#%name|
    stdio-log-receiver
@@ -32452,7 +32570,7 @@
      args_0
      'make-stdio-log-receiver
      1)))
-(define finish1220
+(define finish_2533
   (make-struct-type-install-properties
    '(syslog-log-receiver)
    2
@@ -32497,7 +32615,7 @@
    #f
    2
    0))
-(define effect_2288 (finish1220 struct:syslog-log-receiver))
+(define effect_2288 (finish_2533 struct:syslog-log-receiver))
 (define syslog-log-receiver4.1
   (|#%name|
    syslog-log-receiver
@@ -33418,7 +33536,7 @@
                       (void)))))))))
          (loop_0 logger_0))
         (void)))))
-(define finish1262
+(define finish_2904
   (make-struct-type-install-properties
    '(filesystem-change-evt)
    2
@@ -33464,7 +33582,7 @@
    #f
    2
    3))
-(define effect_3368 (finish1262 struct:fs-change-evt))
+(define effect_3368 (finish_2904 struct:fs-change-evt))
 (define fs-change-evt1.1
   (|#%name|
    fs-change-evt
@@ -33920,7 +34038,7 @@
                        (loop_0 start_0)))))
                 (let ((bstr_0 (make-bytes sz_0)))
                   (begin (|#%app| final_0 p_0 bstr_0) bstr_0))))))))))
-(define finish1274
+(define finish_2250
   (make-struct-type-install-properties
    '(subprocess)
    3
@@ -33963,7 +34081,7 @@
    #f
    3
    3))
-(define effect_2289 (finish1274 struct:subprocess))
+(define effect_2289 (finish_2250 struct:subprocess))
 (define make-subprocess
   (|#%name|
    make-subprocess
@@ -34109,11 +34227,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1281 unsafe-undefined)
+             (let ((lr1319 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1281
+               (set! lr1319
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34168,9 +34286,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1281 0))
-               (set! command_0 (unsafe-vector*-ref lr1281 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1281 2))
+               (set! group_0 (unsafe-vector*-ref lr1319 0))
+               (set! command_0 (unsafe-vector*-ref lr1319 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1319 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
@@ -34797,7 +34915,7 @@
 (define raise-network-option-error
   (lambda (who_0 mode_0 v_0)
     (raise-network-error who_0 v_0 (string-append mode_0 "sockopt failed"))))
-(define finish1313
+(define finish_2569
   (make-struct-type-install-properties
    '(tcp-input-port)
    1
@@ -34824,7 +34942,7 @@
    #f
    1
    1))
-(define effect_2486 (finish1313 struct:tcp-input-port))
+(define effect_2486 (finish_2569 struct:tcp-input-port))
 (define create-tcp-input-port
   (|#%name|
    create-tcp-input-port
@@ -34838,7 +34956,7 @@
   (|#%name|
    set-tcp-input-port-abandon?!
    (record-mutator struct:tcp-input-port 0)))
-(define finish1316
+(define finish_2584
   (make-struct-type-install-properties
    '(tcp-input-port-methods)
    0
@@ -34859,7 +34977,7 @@
    #f
    0
    0))
-(define effect_2506 (finish1316 struct:tcp-input-port-methods.1))
+(define effect_2506 (finish_2584 struct:tcp-input-port-methods.1))
 (define tcp-input-port-methods1.1
   (|#%name|
    tcp-input-port-methods
@@ -34935,11 +35053,11 @@
                                  0)))))
                          (|#%name|
                           raise-read-error
-                          (lambda (this-id_0 n50_0)
+                          (lambda (this-id_0 n51_0)
                             (begin
                               (raise-network-error
                                #f
-                               n50_0
+                               n51_0
                                "error reading from stream port")))))))))))))))))
 (define make-tcp-input-port.1
   (|#%name|
@@ -34951,7 +35069,7 @@
                 (box 1)
                 fd-refcount2_0)))
          (let ((app_0 (direct2.1 #f 0 0)))
-           (let ((temp80_0
+           (let ((temp82_0
                   (create-tcp-input-port
                    tcp-input-port-vtable.1
                    name5_0
@@ -34972,9 +35090,10 @@
                    fd4_0
                    fd-refcount_0
                    #f
+                   #f
                    #f)))
-             (finish-fd-input-port.1 unsafe-undefined temp80_0))))))))
-(define finish1330
+             (finish-fd-input-port.1 unsafe-undefined temp82_0))))))))
+(define finish_2197
   (make-struct-type-install-properties
    '(tcp-output-port)
    1
@@ -35001,7 +35120,7 @@
    #f
    1
    1))
-(define effect_2179 (finish1330 struct:tcp-output-port))
+(define effect_2179 (finish_2197 struct:tcp-output-port))
 (define create-tcp-output-port
   (|#%name|
    create-tcp-output-port
@@ -35017,7 +35136,7 @@
   (|#%name|
    set-tcp-output-port-abandon?!
    (record-mutator struct:tcp-output-port 0)))
-(define finish1333
+(define finish_2811
   (make-struct-type-install-properties
    '(tcp-output-port-methods)
    0
@@ -35038,7 +35157,7 @@
    #f
    0
    0))
-(define effect_2820 (finish1333 struct:tcp-output-port-methods.1))
+(define effect_2820 (finish_2811 struct:tcp-output-port-methods.1))
 (define tcp-output-port-methods7.1
   (|#%name|
    tcp-output-port-methods
@@ -35102,11 +35221,11 @@
                            1)))))
                    (|#%name|
                     raise-write-error
-                    (lambda (this-id_0 n109_0)
+                    (lambda (this-id_0 n111_0)
                       (begin
                         (raise-network-error
                          #f
-                         n109_0
+                         n111_0
                          "error writing to stream port"))))))))))))))
 (define make-tcp-output-port.1
   (|#%name|
@@ -35118,7 +35237,7 @@
                 (box 1)
                 fd-refcount8_0)))
          (let ((app_0 (direct2.1 #f 0 0)))
-           (let ((temp135_0
+           (let ((temp137_0
                   (create-tcp-output-port
                    tcp-output-port-vtable.1
                    name11_0
@@ -35140,7 +35259,7 @@
                    'block
                    #f
                    #f)))
-             (finish-fd-output-port.1 unsafe-undefined #f temp135_0))))))))
+             (finish-fd-output-port.1 unsafe-undefined #f temp137_0))))))))
 (define open-input-output-tcp.1
   (|#%name|
    open-input-output-tcp
@@ -35174,7 +35293,7 @@
            (if (tcp-output-port? cp_0)
              (begin (set-tcp-output-port-abandon?! cp_0 #t) (close-port p_0))
              (void))))))))
-(define finish1345
+(define finish_3040
   (make-struct-type-install-properties
    '(rktio-evt)
    2
@@ -35209,7 +35328,7 @@
    #f
    2
    0))
-(define effect_1868 (finish1345 struct:rktio-evt))
+(define effect_1868 (finish_3040 struct:rktio-evt))
 (define rktio-evt1.1
   (|#%name|
    rktio-evt
@@ -35365,7 +35484,7 @@
       (void))))
 (define address-init!
   (lambda () (unsafe-place-local-set! cell.1$3 (make-will-executor))))
-(define finish1351
+(define finish_3124
   (make-struct-type-install-properties
    '(connect-progress)
    2
@@ -35386,7 +35505,7 @@
    #f
    2
    3))
-(define effect_2319 (finish1351 struct:connect-progress))
+(define effect_2319 (finish_3124 struct:connect-progress))
 (define connect-progress1.1
   (|#%name|
    connect-progress
@@ -35738,7 +35857,7 @@
           (fd-semaphore-update! fd_0 'remove)
           (set-connect-progress-trying-fd! conn-prog_0 #f))
         (void)))))
-(define finish1356
+(define finish_2761
   (make-struct-type-install-properties
    '(tcp-listener)
    3
@@ -35762,7 +35881,7 @@
    #f
    3
    0))
-(define effect_2347 (finish1356 struct:tcp-listener))
+(define effect_2347 (finish_2761 struct:tcp-listener))
 (define tcp-listener1.1
   (|#%name|
    tcp-listener
@@ -36118,7 +36237,7 @@
            (void)
            (raise-argument-error 'tcp-accept-evt "tcp-listener?" listener_0))
          (accept-evt6.1 listener_0))))))
-(define finish1366
+(define finish_2736
   (make-struct-type-install-properties
    '(tcp-accept-evt)
    1
@@ -36206,7 +36325,7 @@
    #f
    1
    0))
-(define effect_2608 (finish1366 struct:accept-evt))
+(define effect_2608 (finish_2736 struct:accept-evt))
 (define accept-evt6.1
   (|#%name|
    accept-evt
@@ -36289,7 +36408,7 @@
                    v_0))))))
           (for-loop_0 0 0))))
       (args (raise-binding-result-arity-error 2 args))))))
-(define finish1371
+(define finish_2217
   (make-struct-type-install-properties
    '(udp)
    3
@@ -36303,7 +36422,7 @@
    'udp))
 (define struct:udp
   (make-record-type-descriptor* 'udp #f (|#%nongenerative-uid| udp) #f #f 3 7))
-(define effect_2743 (finish1371 struct:udp))
+(define effect_2743 (finish_2217 struct:udp))
 (define udp1.1
   (|#%name|
    udp
@@ -37447,7 +37566,7 @@
                     who59_0
                     u60_0)))))))
           (loop_0)))))))
-(define finish1387
+(define finish_2174
   (make-struct-type-install-properties
    '(udp-send-evt)
    2
@@ -37492,7 +37611,7 @@
    #f
    2
    0))
-(define effect_2114 (finish1387 struct:udp-sending-evt))
+(define effect_2114 (finish_2174 struct:udp-sending-evt))
 (define udp-sending-evt66.1
   (|#%name|
    udp-sending-evt
@@ -37504,7 +37623,7 @@
   (|#%name| udp-send-evt-u (record-accessor struct:udp-sending-evt 0)))
 (define udp-sending-evt-try
   (|#%name| udp-send-evt-try (record-accessor struct:udp-sending-evt 1)))
-(define finish1390
+(define finish_2617
   (make-struct-type-install-properties
    '(udp-send-ready-evt)
    0
@@ -37525,7 +37644,7 @@
    #f
    0
    0))
-(define effect_2524 (finish1390 struct:udp-sending-ready-evt))
+(define effect_2524 (finish_2617 struct:udp-sending-ready-evt))
 (define udp-sending-ready-evt67.1
   (|#%name|
    udp-sending-ready-evt
@@ -37836,7 +37955,7 @@
           (loop_0)))))))
 (define cell.1$2 (unsafe-make-place-local #vu8()))
 (define cell.2 (unsafe-make-place-local ""))
-(define finish1394
+(define finish_2188
   (make-struct-type-install-properties
    '(udp-receive-evt)
    2
@@ -37886,7 +38005,7 @@
    #f
    2
    0))
-(define effect_2638 (finish1394 struct:udp-receiving-evt))
+(define effect_2638 (finish_2188 struct:udp-receiving-evt))
 (define udp-receiving-evt39.1
   (|#%name|
    udp-receiving-evt
@@ -37898,7 +38017,7 @@
   (|#%name| udp-receive-evt-u (record-accessor struct:udp-receiving-evt 0)))
 (define udp-receiving-evt-try
   (|#%name| udp-receive-evt-try (record-accessor struct:udp-receiving-evt 1)))
-(define finish1397
+(define finish_2856
   (make-struct-type-install-properties
    '(udp-receive-ready-evt)
    0
@@ -37919,7 +38038,7 @@
    #f
    0
    0))
-(define effect_2865 (finish1397 struct:udp-receiving-ready-evt))
+(define effect_2865 (finish_2856 struct:udp-receiving-ready-evt))
 (define udp-receiving-ready-evt40.1
   (|#%name|
    udp-receiving-ready-evt

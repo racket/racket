@@ -1011,17 +1011,14 @@
   (test 'line file-stream-buffer-mode ofile)
   (close-output-port ofile)
 
-  (let ()
-    (define ifile (open-input-file path #:mode 'text))
-    (test "abc" read-line ifile)
-    (define pos (file-position ifile))
-    (test "def" read-line ifile)
-    (file-position ifile pos)
-    (test "def" read-line ifile))
+  (test (if (eq? 'windows (system-type))
+            #"abc\r\ndef\r\nghi\r\n"
+            #"abc\ndef\nghi\n")
+        call-with-input-file path (lambda (i) (read-bytes 100 i)))
 
-  (let ()
+  (for ([i '(none block)])
     (define ifile (open-input-file path #:mode 'text))
-    (file-stream-buffer-mode ifile 'none)
+    (file-stream-buffer-mode ifile)
     (test "abc" read-line ifile)
     (define pos (file-position ifile))
     (test "def" read-line ifile)

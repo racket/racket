@@ -1123,20 +1123,20 @@
 (provide _list)
 (define-fun-syntax _list
   (syntax-rules/symbol-literals (i o io)
-    [(_ i  t  )      (type: _pointer
+    [(_ i  t  )      (type: _gcpointer
                       pre:  (x => (list->cblock x t)))]
-    [(_ i  t mode)   (type: _pointer
+    [(_ i  t mode)   (type: (malloc-mode-type mode)
                       pre:  (x => (list->cblock x t #:malloc-mode (check-malloc-mode _list mode))))]
-    [(_ o  t n)      (type: _pointer
+    [(_ o  t n)      (type: _gcpointer
                       pre:  (malloc n t)
                       post: (x => (cblock->list x t n)))]
-    [(_ o  t n mode) (type: _pointer
+    [(_ o  t n mode) (type: (malloc-mode-type mode)
                       pre:  (malloc n t (check-malloc-mode _list mode))
                       post: (x => (cblock->list x t n)))]
-    [(_ io t n)      (type: _pointer
+    [(_ io t n)      (type: _gcpointer
                       pre:  (x => (list->cblock x t))
                       post: (x => (cblock->list x t n)))]
-    [(_ io t n mode) (type: _pointer
+    [(_ io t n mode) (type: (malloc-mode-type mode)
                       pre:  (x => (list->cblock x t #:malloc-mode (check-malloc-mode _list mode)))
                       post: (x => (cblock->list x t n)))]))
 
@@ -1145,20 +1145,20 @@
 (provide _vector)
 (define-fun-syntax _vector
   (syntax-rules/symbol-literals (i o io)
-    [(_ i  t  )      (type: _pointer
+    [(_ i  t  )      (type: _gcpointer
                       pre:  (x => (vector->cblock x t)))]
-    [(_ i  t mode)   (type: _pointer
+    [(_ i  t mode)   (type: (malloc-mode-type mode)
                       pre:  (x => (vector->cblock x t #:malloc-mode (check-malloc-mode _vector mode))))]
-    [(_ o  t n)      (type: _pointer
+    [(_ o  t n)      (type: _gcpointer
                       pre:  (malloc n t)
                       post: (x => (cblock->vector x t n)))]
-    [(_ o  t n mode) (type: _pointer
+    [(_ o  t n mode) (type: (malloc-mode-type mode)
                       pre:  (malloc n t (check-malloc-mode _vector mode))
                       post: (x => (cblock->vector x t n)))]
-    [(_ io t n)      (type: _pointer
+    [(_ io t n)      (type: _gcpointer
                       pre:  (x => (vector->cblock x t))
                       post: (x => (cblock->vector x t n)))]
-    [(_ io t n mode) (type: _pointer
+    [(_ io t n mode) (type: (malloc-mode-type mode)
                       pre:  (x => (vector->cblock x t #:malloc-mode (check-malloc-mode _vector mode)))
                       post: (x => (cblock->vector x t n)))]))
 
@@ -1174,6 +1174,11 @@
      (raise-syntax-error (syntax-e #'who)
                          "invalid malloc mode"
                          #'mode)]))
+
+(define-syntax (malloc-mode-type stx)
+  (syntax-case stx (raw)
+    [(_ raw) #'_pointer]
+    [_ #'_gcpointer]))
 
 ;; Reflect the difference between 'racket and 'chez-scheme
 ;; VMs for `_bytes` in `_bytes*`:

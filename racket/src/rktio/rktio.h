@@ -204,7 +204,7 @@ RKTIO_EXTERN rktio_bool_t rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
 /* The functions mostly report values of recorded mode flags. */
 
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd);
-/* Reports whether `RKTIO_OPEN_TEXT` was use and has an effect. The
+/* Reports whether `RKTIO_OPEN_TEXT` was used and has an effect. The
    `RKTIO_OPEN_TEXT` flag has an effect only on Windows. */
 
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
@@ -295,8 +295,11 @@ RKTIO_EXTERN_ERR(RKTIO_READ_ERROR)
 intptr_t rktio_read_in(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t start, intptr_t end);
 RKTIO_EXTERN_ERR(RKTIO_WRITE_ERROR)
 intptr_t rktio_write_in(rktio_t *rktio, rktio_fd_t *fd, const char *buffer, intptr_t start, intptr_t end);
-/* Like `rktio_read` and `rktio_write`, but accepting start and end
-   positions within `buffer`. */
+RKTIO_EXTERN_ERR(RKTIO_READ_ERROR)
+intptr_t rktio_read_converted_in(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t start, intptr_t len,
+                                 char *is_converted, intptr_t converted_start);
+/* Like `rktio_read`, `rktio_write`, and `rktio_read_converted` but
+   accepting start and end positions within `buffer`. */
 
 RKTIO_EXTERN_NOERR intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd);
 /* Reports the number of bytes that are buffered from the file descriptor.

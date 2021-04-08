@@ -270,7 +270,10 @@
         [`(define ,id ,rhs)
          (if (or (eqv? 1 (hash-ref counts id))
                  (and (wrap-property rhs 'inferred-name)
-                      (not (hash-ref export-counts id #f))))
+                      (not (hash-ref export-counts id #f)))
+                 (match rhs
+                   [`(make-struct-type-install-properties . ,_) #t]
+                   [_ #f]))
              (add-new-names id env #:top? #t #:count-from (expression-shape rhs))
              env)]
         [`(define-values ,ids ,rhs)

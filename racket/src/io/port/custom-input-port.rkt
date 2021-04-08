@@ -181,6 +181,10 @@
          [else r])]))
 
   ;; in atomic mode
+  (define (read-in/inner self dest-bstr dest-start dest-end copy? to-buffer)
+    (read-in self dest-bstr dest-start dest-end copy?))
+
+  ;; in atomic mode
   ;; Used only if `user-peek-in` is a function:
   (define (peek-in self dest-bstr dest-start dest-end skip-k progress-evt copy?)
     (cond
@@ -290,7 +294,7 @@
            [name name]
            [offset init-offset]
            #:override
-           [read-in/inner read-in]
+           [read-in/inner read-in/inner]
            [close (values
                    (lambda (self)
                      (close self)

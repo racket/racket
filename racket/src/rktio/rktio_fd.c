@@ -1024,6 +1024,12 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 #endif
 }
 
+intptr_t rktio_read_converted_in(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end,
+                                 char *is_converted, intptr_t converted_start)
+{
+  return rktio_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start);
+}
+
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
   return rktio_read_converted(rktio, rfd, buffer, len, NULL);

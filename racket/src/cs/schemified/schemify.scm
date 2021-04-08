@@ -1583,13 +1583,13 @@
         (let ((app_1 (|#%app| range-ref v_0 0)))
           (values values #f app_0 app_1 (|#%app| range-ref v_0 2) #f #f))))))))
 (define check-range
-  (lambda (a_0 b_0 step_0)
+  (lambda (a_0 b_0 step_0) (check-range-generic 'in-range a_0 b_0 step_0)))
+(define check-range-generic
+  (lambda (who_0 a_0 b_0 step_0)
     (begin
-      (if (real? a_0) (void) (raise-argument-error 'in-range "real?" a_0))
-      (if (real? b_0) (void) (raise-argument-error 'in-range "real?" b_0))
-      (if (real? step_0)
-        (void)
-        (raise-argument-error 'in-range "real?" step_0)))))
+      (if (real? a_0) (void) (raise-argument-error who_0 "real?" a_0))
+      (if (real? b_0) (void) (raise-argument-error who_0 "real?" b_0))
+      (if (real? step_0) (void) (raise-argument-error who_0 "real?" step_0)))))
 (define check-naturals
   (lambda (n_0)
     (if (if (integer? n_0) (if (exact? n_0) (>= n_0 0) #f) #f)
@@ -1780,6 +1780,18 @@
             (check-not-unsafe-undefined sort 'sort)
             lst5_0
             less?6_0)))))))
+(define print-value-columns
+  (make-parameter
+   +inf.0
+   (lambda (c_0)
+     (if (let ((or-part_0 (eqv? c_0 +inf.0)))
+           (if or-part_0 or-part_0 (if (exact-integer? c_0) (> c_0 5) #f)))
+       c_0
+       (raise-argument-error
+        'print-value-columns
+        "(or/c +inf.0 (and/c exact-integer? (>/c 5)))"
+        c_0)))
+   'print-value-columns))
 (define correlated?$1 syntax?)
 (define correlated-e$1 syntax-e)
 (define correlated-property$1 syntax-property)
@@ -1850,7 +1862,7 @@
 (define reannotate/new-srcloc
   (lambda (old-term_0 new-term_0 new-srcloc_0)
     (datum->syntax #f new-term_0 new-srcloc_0 old-term_0)))
-(define finish48
+(define finish_2045
   (make-struct-type-install-properties
    '(known-constant)
    0
@@ -1871,7 +1883,7 @@
    #f
    0
    0))
-(define effect_2537 (finish48 struct:known-constant))
+(define effect_2537 (finish_2045 struct:known-constant))
 (define known-constant
   (|#%name|
    known-constant
@@ -1889,7 +1901,7 @@
         (if (impersonator? v)
           (known-constant?_2598 (impersonator-val v))
           #f))))))
-(define finish51
+(define finish_2081
   (make-struct-type-install-properties
    '(known-consistent)
    0
@@ -1922,7 +1934,7 @@
    #f
    0
    0))
-(define effect_2382 (finish51 struct:known-consistent))
+(define effect_2382 (finish_2081 struct:known-consistent))
 (define known-consistent
   (|#%name|
    known-consistent
@@ -1940,7 +1952,7 @@
         (if (impersonator? v)
           (known-consistent?_3048 (impersonator-val v))
           #f))))))
-(define finish54
+(define finish_2443
   (make-struct-type-install-properties
    '(known-authentic)
    0
@@ -1973,7 +1985,7 @@
    #f
    0
    0))
-(define effect_2570 (finish54 struct:known-authentic))
+(define effect_2570 (finish_2443 struct:known-authentic))
 (define known-authentic
   (|#%name|
    known-authentic
@@ -1991,7 +2003,7 @@
         (if (impersonator? v)
           (known-authentic?_3119 (impersonator-val v))
           #f))))))
-(define finish57
+(define finish_2536
   (make-struct-type-install-properties
    '(known-copy)
    1
@@ -2024,7 +2036,7 @@
    #f
    1
    1))
-(define effect_2542 (finish57 struct:known-copy))
+(define effect_2542 (finish_2536 struct:known-copy))
 (define known-copy
   (|#%name|
    known-copy
@@ -2056,7 +2068,7 @@
          s
          'known-copy
          'id))))))
-(define finish61
+(define finish_2861
   (make-struct-type-install-properties
    '(known-literal)
    1
@@ -2089,7 +2101,7 @@
    #f
    1
    1))
-(define effect_2788 (finish61 struct:known-literal))
+(define effect_2788 (finish_2861 struct:known-literal))
 (define known-literal
   (|#%name|
    known-literal
@@ -2123,7 +2135,7 @@
          s
          'known-literal
          'value))))))
-(define finish65
+(define finish_2897
   (make-struct-type-install-properties
    '(known-procedure)
    1
@@ -2156,7 +2168,7 @@
    #f
    1
    1))
-(define effect_2677 (finish65 struct:known-procedure))
+(define effect_2677 (finish_2897 struct:known-procedure))
 (define known-procedure
   (|#%name|
    known-procedure
@@ -2192,7 +2204,7 @@
          s
          'known-procedure
          'arity-mask))))))
-(define finish69
+(define finish_2542
   (make-struct-type-install-properties
    '(known-procedure/single-valued)
    0
@@ -2225,7 +2237,7 @@
    #f
    0
    0))
-(define effect_2532 (finish69 struct:known-procedure/single-valued))
+(define effect_2532 (finish_2542 struct:known-procedure/single-valued))
 (define known-procedure/single-valued
   (|#%name|
    known-procedure/single-valued
@@ -2248,7 +2260,7 @@
         (if (impersonator? v)
           (known-procedure/single-valued?_3105 (impersonator-val v))
           #f))))))
-(define finish72
+(define finish_2099
   (make-struct-type-install-properties
    '(known-procedure/no-prompt)
    0
@@ -2281,7 +2293,7 @@
    #f
    0
    0))
-(define effect_1771 (finish72 struct:known-procedure/no-prompt))
+(define effect_1771 (finish_2099 struct:known-procedure/no-prompt))
 (define known-procedure/no-prompt
   (|#%name|
    known-procedure/no-prompt
@@ -2304,7 +2316,7 @@
         (if (impersonator? v)
           (known-procedure/no-prompt?_2036 (impersonator-val v))
           #f))))))
-(define finish75
+(define finish_2719
   (make-struct-type-install-properties
    '(known-procedure/no-prompt/multi)
    0
@@ -2337,7 +2349,7 @@
    #f
    0
    0))
-(define effect_2793 (finish75 struct:known-procedure/no-prompt/multi))
+(define effect_2793 (finish_2719 struct:known-procedure/no-prompt/multi))
 (define known-procedure/no-prompt/multi
   (|#%name|
    known-procedure/no-prompt/multi
@@ -2360,7 +2372,7 @@
         (if (impersonator? v)
           (known-procedure/no-prompt/multi?_2394 (impersonator-val v))
           #f))))))
-(define finish78
+(define finish_2574
   (make-struct-type-install-properties
    '(known-procedure/no-return)
    0
@@ -2393,7 +2405,7 @@
    #f
    0
    0))
-(define effect_2517 (finish78 struct:known-procedure/no-return))
+(define effect_2517 (finish_2574 struct:known-procedure/no-return))
 (define known-procedure/no-return
   (|#%name|
    known-procedure/no-return
@@ -2416,7 +2428,7 @@
         (if (impersonator? v)
           (known-procedure/no-return?_1763 (impersonator-val v))
           #f))))))
-(define finish81
+(define finish_2550
   (make-struct-type-install-properties
    '(known-procedure/can-inline)
    1
@@ -2449,7 +2461,7 @@
    #f
    1
    1))
-(define effect_2308 (finish81 struct:known-procedure/can-inline))
+(define effect_2308 (finish_2550 struct:known-procedure/can-inline))
 (define known-procedure/can-inline
   (|#%name|
    known-procedure/can-inline
@@ -2490,7 +2502,7 @@
          s
          'known-procedure/can-inline
          'expr))))))
-(define finish85
+(define finish_1976
   (make-struct-type-install-properties
    '(known-procedure/can-inline/need-imports)
    1
@@ -2523,7 +2535,8 @@
    #f
    1
    1))
-(define effect_2618 (finish85 struct:known-procedure/can-inline/need-imports))
+(define effect_2618
+  (finish_1976 struct:known-procedure/can-inline/need-imports))
 (define known-procedure/can-inline/need-imports
   (|#%name|
    known-procedure/can-inline/need-imports
@@ -2564,7 +2577,7 @@
          s
          'known-procedure/can-inline/need-imports
          'needed))))))
-(define finish89
+(define finish_1734
   (make-struct-type-install-properties
    '(known-procedure/folding)
    0
@@ -2597,7 +2610,7 @@
    #f
    0
    0))
-(define effect_2478 (finish89 struct:known-procedure/folding))
+(define effect_2478 (finish_1734 struct:known-procedure/folding))
 (define known-procedure/folding
   (|#%name|
    known-procedure/folding
@@ -2620,7 +2633,7 @@
         (if (impersonator? v)
           (known-procedure/folding?_2882 (impersonator-val v))
           #f))))))
-(define finish92
+(define finish_2008
   (make-struct-type-install-properties
    '(known-procedure/folding/limited)
    1
@@ -2653,7 +2666,7 @@
    #f
    1
    1))
-(define effect_2518 (finish92 struct:known-procedure/folding/limited))
+(define effect_2518 (finish_2008 struct:known-procedure/folding/limited))
 (define known-procedure/folding/limited
   (|#%name|
    known-procedure/folding/limited
@@ -2694,7 +2707,7 @@
          s
          'known-procedure/folding/limited
          'kind))))))
-(define finish96
+(define finish_2826
   (make-struct-type-install-properties
    '(known-procedure/succeeds)
    0
@@ -2727,7 +2740,7 @@
    #f
    0
    0))
-(define effect_2467 (finish96 struct:known-procedure/succeeds))
+(define effect_2467 (finish_2826 struct:known-procedure/succeeds))
 (define known-procedure/succeeds
   (|#%name|
    known-procedure/succeeds
@@ -2750,7 +2763,7 @@
         (if (impersonator? v)
           (known-procedure/succeeds?_3041 (impersonator-val v))
           #f))))))
-(define finish99
+(define finish_2051
   (make-struct-type-install-properties
    '(known-procedure/allocates)
    0
@@ -2783,7 +2796,7 @@
    #f
    0
    0))
-(define effect_2336 (finish99 struct:known-procedure/allocates))
+(define effect_2336 (finish_2051 struct:known-procedure/allocates))
 (define known-procedure/allocates
   (|#%name|
    known-procedure/allocates
@@ -2806,7 +2819,7 @@
         (if (impersonator? v)
           (known-procedure/allocates?_2244 (impersonator-val v))
           #f))))))
-(define finish102
+(define finish_2724
   (make-struct-type-install-properties
    '(known-procedure/pure)
    0
@@ -2839,7 +2852,7 @@
    #f
    0
    0))
-(define effect_3058 (finish102 struct:known-procedure/pure))
+(define effect_3058 (finish_2724 struct:known-procedure/pure))
 (define known-procedure/pure
   (|#%name|
    known-procedure/pure
@@ -2859,7 +2872,7 @@
         (if (impersonator? v)
           (known-procedure/pure?_2240 (impersonator-val v))
           #f))))))
-(define finish105
+(define finish_2466
   (make-struct-type-install-properties
    '(known-procedure/pure/folding)
    0
@@ -2892,7 +2905,7 @@
    #f
    0
    0))
-(define effect_2264 (finish105 struct:known-procedure/pure/folding))
+(define effect_2264 (finish_2466 struct:known-procedure/pure/folding))
 (define known-procedure/pure/folding
   (|#%name|
    known-procedure/pure/folding
@@ -2915,7 +2928,7 @@
         (if (impersonator? v)
           (known-procedure/pure/folding?_2719 (impersonator-val v))
           #f))))))
-(define finish108
+(define finish_2978
   (make-struct-type-install-properties
    '(known-procedure/pure/folding-unsafe)
    1
@@ -2948,7 +2961,7 @@
    #f
    1
    1))
-(define effect_2657 (finish108 struct:known-procedure/pure/folding-unsafe))
+(define effect_2657 (finish_2978 struct:known-procedure/pure/folding-unsafe))
 (define known-procedure/pure/folding-unsafe
   (|#%name|
    known-procedure/pure/folding-unsafe
@@ -2989,7 +3002,7 @@
          s
          'known-procedure/pure/folding-unsafe
          'safe))))))
-(define finish112
+(define finish_3128
   (make-struct-type-install-properties
    '(known-procedure/has-unsafe)
    1
@@ -3022,7 +3035,7 @@
    #f
    1
    1))
-(define effect_1752 (finish112 struct:known-procedure/has-unsafe))
+(define effect_1752 (finish_3128 struct:known-procedure/has-unsafe))
 (define known-procedure/has-unsafe
   (|#%name|
    known-procedure/has-unsafe
@@ -3063,7 +3076,7 @@
          s
          'known-procedure/has-unsafe
          'alternate))))))
-(define finish116
+(define finish_2439
   (make-struct-type-install-properties
    '(known-procedure/has-unsafe/folding)
    0
@@ -3096,7 +3109,7 @@
    #f
    0
    0))
-(define effect_2489 (finish116 struct:known-procedure/has-unsafe/folding))
+(define effect_2489 (finish_2439 struct:known-procedure/has-unsafe/folding))
 (define known-procedure/has-unsafe/folding
   (|#%name|
    known-procedure/has-unsafe/folding
@@ -3119,7 +3132,7 @@
         (if (impersonator? v)
           (known-procedure/has-unsafe/folding?_2169 (impersonator-val v))
           #f))))))
-(define finish119
+(define finish_2602
   (make-struct-type-install-properties
    '(known-procedure/has-unsafe/folding/limited)
    1
@@ -3153,7 +3166,7 @@
    1
    1))
 (define effect_2512
-  (finish119 struct:known-procedure/has-unsafe/folding/limited))
+  (finish_2602 struct:known-procedure/has-unsafe/folding/limited))
 (define known-procedure/has-unsafe/folding/limited
   (|#%name|
    known-procedure/has-unsafe/folding/limited
@@ -3195,7 +3208,7 @@
          s
          'known-procedure/has-unsafe/folding/limited
          'kind))))))
-(define finish123
+(define finish_2844
   (make-struct-type-install-properties
    '(known-struct-type)
    4
@@ -3228,7 +3241,7 @@
    #f
    4
    15))
-(define effect_2667 (finish123 struct:known-struct-type))
+(define effect_2667 (finish_2844 struct:known-struct-type))
 (define known-struct-type
   (|#%name|
    known-struct-type
@@ -3318,7 +3331,7 @@
          s
          'known-struct-type
          'sealed?))))))
-(define finish130
+(define finish_2453
   (make-struct-type-install-properties
    '(known-constructor)
    1
@@ -3351,7 +3364,7 @@
    #f
    1
    1))
-(define effect_1913 (finish130 struct:known-constructor))
+(define effect_1913 (finish_2453 struct:known-constructor))
 (define known-constructor
   (|#%name|
    known-constructor
@@ -3387,7 +3400,7 @@
          s
          'known-constructor
          'type))))))
-(define finish134
+(define finish_2917
   (make-struct-type-install-properties
    '(known-predicate)
    1
@@ -3420,7 +3433,7 @@
    #f
    1
    1))
-(define effect_2144 (finish134 struct:known-predicate))
+(define effect_2144 (finish_2917 struct:known-predicate))
 (define known-predicate
   (|#%name|
    known-predicate
@@ -3454,7 +3467,7 @@
          s
          'known-predicate
          'type))))))
-(define finish138
+(define finish_2548
   (make-struct-type-install-properties
    '(known-accessor)
    1
@@ -3487,7 +3500,7 @@
    #f
    1
    1))
-(define effect_2905 (finish138 struct:known-accessor))
+(define effect_2905 (finish_2548 struct:known-accessor))
 (define known-accessor
   (|#%name|
    known-accessor
@@ -3521,7 +3534,7 @@
          s
          'known-accessor
          'type))))))
-(define finish142
+(define finish_2552
   (make-struct-type-install-properties
    '(known-mutator)
    1
@@ -3554,7 +3567,7 @@
    #f
    1
    1))
-(define effect_2521 (finish142 struct:known-mutator))
+(define effect_2521 (finish_2552 struct:known-mutator))
 (define known-mutator
   (|#%name|
    known-mutator
@@ -3588,7 +3601,7 @@
          s
          'known-mutator
          'type))))))
-(define finish146
+(define finish_2184
   (make-struct-type-install-properties
    '(known-struct-constructor)
    1
@@ -3621,7 +3634,7 @@
    #f
    1
    1))
-(define effect_3238 (finish146 struct:known-struct-constructor))
+(define effect_3238 (finish_2184 struct:known-struct-constructor))
 (define known-struct-constructor
   (|#%name|
    known-struct-constructor
@@ -3662,7 +3675,7 @@
          s
          'known-struct-constructor
          'type-id))))))
-(define finish150
+(define finish_2304
   (make-struct-type-install-properties
    '(known-struct-predicate)
    3
@@ -3695,7 +3708,7 @@
    #f
    3
    7))
-(define effect_2384 (finish150 struct:known-struct-predicate))
+(define effect_2384 (finish_2304 struct:known-struct-predicate))
 (define known-struct-predicate
   (|#%name|
    known-struct-predicate
@@ -3769,7 +3782,7 @@
          s
          'known-struct-predicate
          'sealed?))))))
-(define finish156
+(define finish_3014
   (make-struct-type-install-properties
    '(known-field-accessor)
    4
@@ -3802,7 +3815,7 @@
    #f
    4
    15))
-(define effect_2259 (finish156 struct:known-field-accessor))
+(define effect_2259 (finish_3014 struct:known-field-accessor))
 (define known-field-accessor
   (|#%name|
    known-field-accessor
@@ -3894,7 +3907,7 @@
          s
          'known-field-accessor
          'known-immutable?))))))
-(define finish163
+(define finish_2908
   (make-struct-type-install-properties
    '(known-field-mutator)
    3
@@ -3927,7 +3940,7 @@
    #f
    3
    7))
-(define effect_2603 (finish163 struct:known-field-mutator))
+(define effect_2603 (finish_2908 struct:known-field-mutator))
 (define known-field-mutator
   (|#%name|
    known-field-mutator
@@ -4001,7 +4014,7 @@
          s
          'known-field-mutator
          'pos))))))
-(define finish169
+(define finish_2543
   (make-struct-type-install-properties
    '(known-struct-constructor/need-imports)
    1
@@ -4034,7 +4047,7 @@
    #f
    1
    1))
-(define effect_2146 (finish169 struct:known-struct-constructor/need-imports))
+(define effect_2146 (finish_2543 struct:known-struct-constructor/need-imports))
 (define known-struct-constructor/need-imports
   (|#%name|
    known-struct-constructor/need-imports
@@ -4075,7 +4088,7 @@
          s
          'known-struct-constructor/need-imports
          'needed))))))
-(define finish173
+(define finish_2626
   (make-struct-type-install-properties
    '(known-struct-predicate/need-imports)
    1
@@ -4108,7 +4121,7 @@
    #f
    1
    1))
-(define effect_3156 (finish173 struct:known-struct-predicate/need-imports))
+(define effect_3156 (finish_2626 struct:known-struct-predicate/need-imports))
 (define known-struct-predicate/need-imports
   (|#%name|
    known-struct-predicate/need-imports
@@ -4149,7 +4162,7 @@
          s
          'known-struct-predicate/need-imports
          'needed))))))
-(define finish177
+(define finish_2444
   (make-struct-type-install-properties
    '(known-field-accessor/need-imports)
    1
@@ -4182,7 +4195,7 @@
    #f
    1
    1))
-(define effect_2513 (finish177 struct:known-field-accessor/need-imports))
+(define effect_2513 (finish_2444 struct:known-field-accessor/need-imports))
 (define known-field-accessor/need-imports
   (|#%name|
    known-field-accessor/need-imports
@@ -4223,7 +4236,7 @@
          s
          'known-field-accessor/need-imports
          'needed))))))
-(define finish181
+(define finish_2153
   (make-struct-type-install-properties
    '(known-field-mutator/need-imports)
    1
@@ -4256,7 +4269,7 @@
    #f
    1
    1))
-(define effect_2273 (finish181 struct:known-field-mutator/need-imports))
+(define effect_2273 (finish_2153 struct:known-field-mutator/need-imports))
 (define known-field-mutator/need-imports
   (|#%name|
    known-field-mutator/need-imports
@@ -4297,7 +4310,7 @@
          s
          'known-field-mutator/need-imports
          'needed))))))
-(define finish185
+(define finish_2492
   (make-struct-type-install-properties
    '(known-struct-type-property/immediate-guard)
    0
@@ -4325,7 +4338,7 @@
    0
    0))
 (define effect_2294
-  (finish185 struct:known-struct-type-property/immediate-guard))
+  (finish_2492 struct:known-struct-type-property/immediate-guard))
 (define known-struct-type-property/immediate-guard
   (|#%name|
    known-struct-type-property/immediate-guard
@@ -4366,7 +4379,7 @@
          (let ((app_0
                 (if (string? prefix_0) prefix_0 (symbol->string prefix_0))))
            (string-append app_0 (number->string (unbox b_0)))))))))
-(define finish189
+(define finish_2816
   (make-struct-type-install-properties
    '(import)
    4
@@ -4387,7 +4400,7 @@
    #f
    4
    0))
-(define effect_2192 (finish189 struct:import))
+(define effect_2192 (finish_2816 struct:import))
 (define import1.1
   (|#%name|
    import
@@ -4453,7 +4466,7 @@
          s
          'import
          'ext-id))))))
-(define finish196
+(define finish_1986
   (make-struct-type-install-properties
    '(import-group)
    6
@@ -4474,7 +4487,7 @@
    #f
    6
    60))
-(define effect_2739 (finish196 struct:import-group))
+(define effect_2739 (finish_1986 struct:import-group))
 (define import-group2.1
   (|#%name|
    import-group
@@ -4823,7 +4836,7 @@
             (|#%app| inc-index!_0)
             (|#%app| add-group!_0 grp_0)
             grp_0))))))
-(define finish210
+(define finish_2351
   (make-struct-type-install-properties
    '(export)
    2
@@ -4844,7 +4857,7 @@
    #f
    2
    0))
-(define effect_2782 (finish210 struct:export))
+(define effect_2782 (finish_2351 struct:export))
 (define export1.1
   (|#%name|
    export
@@ -4884,7 +4897,7 @@
          s
          'export
          'ext-id))))))
-(define finish215
+(define finish_2682
   (make-struct-type-install-properties
    '(too-early)
    2
@@ -4905,7 +4918,7 @@
    #f
    2
    0))
-(define effect_2833 (finish215 struct:too-early))
+(define effect_2833 (finish_2682 struct:too-early))
 (define too-early1.1
   (|#%name|
    too-early
@@ -7193,7 +7206,7 @@
      (case-lambda
       ((k_0 im_0) k_0)
       (args (raise-binding-result-arity-error 2 args))))))
-(define finish303
+(define finish_2858
   (make-struct-type-install-properties
    '(struct-type-info)
    11
@@ -7214,7 +7227,7 @@
    #f
    11
    0))
-(define effect_2037 (finish303 struct:struct-type-info))
+(define effect_2037 (finish_2858 struct:struct-type-info))
 (define struct-type-info1.1
   (|#%name|
    struct-type-info
@@ -30642,7 +30655,7 @@
                            (schemify-body_0 (cdr l_0) wcm-state_2))))))))))
              (schemify_0 v_1 wcm-state_1)))))))
      (schemify/knowns_0 knowns_0 8 wcm-state_0 v_0))))
-(define finish1668
+(define finish_2118
   (make-struct-type-install-properties
    '(convert-mode)
    4
@@ -30663,7 +30676,7 @@
    #f
    4
    0))
-(define effect_2443 (finish1668 struct:convert-mode))
+(define effect_2443 (finish_2118 struct:convert-mode))
 (define convert-mode1.1
   (|#%name|
    convert-mode
@@ -39786,7 +39799,7 @@
                         (if (|#%app| need-exposed?_0 q_0)
                           #t
                           (if (extflonum? q_0) #t #f))))))))))))))
-(define finish2138
+(define finish_3138
   (make-struct-type-install-properties
    '(to-unfasl)
    3
@@ -39807,7 +39820,7 @@
    #f
    3
    0))
-(define effect_2898 (finish2138 struct:to-unfasl))
+(define effect_2898 (finish_3138 struct:to-unfasl))
 (define to-unfasl1.1
   (|#%name|
    to-unfasl
@@ -39937,7 +39950,7 @@
      'write
      "cannot marshal value that is embedded in compiled code\n  value: ~v"
      v_0)))
-(define finish2146
+(define finish_2779
   (make-struct-type-install-properties
    '(node)
    5
@@ -39958,7 +39971,7 @@
    #f
    5
    0))
-(define effect_2547 (finish2146 struct:node))
+(define effect_2547 (finish_2779 struct:node))
 (define node1.1
   (|#%name|
    node
@@ -40259,7 +40272,7 @@
                          app_2
                          (stack-set stack_1 pos_1 (car vals_1))))))))))))
          (loop_0 pos_0 vals_0 count_0 stack_0))))))
-(define finish2192
+(define finish_2471
   (make-struct-type-install-properties
    '(stack-info)
    5
@@ -40280,7 +40293,7 @@
    #f
    5
    28))
-(define effect_2334 (finish2192 struct:stack-info))
+(define effect_2334 (finish_2471 struct:stack-info))
 (define stack-info4.1
   (|#%name|
    stack-info
@@ -40617,7 +40630,7 @@
 (define stack-info-non-tail!
   (lambda (stk-i_0 stack-depth_0)
     (set-stack-info-non-tail-call-later?! stk-i_0 #t)))
-(define finish2206
+(define finish_2360
   (make-struct-type-install-properties
    '(indirect)
    2
@@ -40638,7 +40651,7 @@
    #f
    2
    0))
-(define effect_2125 (finish2206 struct:indirect))
+(define effect_2125 (finish_2360 struct:indirect))
 (define indirect1.1
   (|#%name|
    indirect
@@ -40685,7 +40698,7 @@
          s
          'indirect
          'element))))))
-(define finish2211
+(define finish_2373
   (make-struct-type-install-properties
    '(boxed)
    1
@@ -40706,7 +40719,7 @@
    #f
    1
    0))
-(define effect_2970 (finish2211 struct:boxed))
+(define effect_2970 (finish_2373 struct:boxed))
 (define boxed2.1
   (|#%name|
    boxed
@@ -40730,7 +40743,7 @@
        (boxed-pos_2515 s)
        ($value
         (impersonate-ref boxed-pos_2515 struct:boxed 0 s 'boxed 'pos))))))
-(define finish2215
+(define finish_2767
   (make-struct-type-install-properties
    '(boxed/check)
    0
@@ -40751,7 +40764,7 @@
    #f
    0
    0))
-(define effect_2937 (finish2215 struct:boxed/check))
+(define effect_2937 (finish_2767 struct:boxed/check))
 (define boxed/check3.1
   (|#%name|
    boxed/check

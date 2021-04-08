@@ -290,13 +290,13 @@
   (|#%name|
    check-range
    (lambda (a_0 b_0 step_0)
-     (begin
-       (begin
-         (if (real? a_0) (void) (raise-argument-error 'in-range "real?" a_0))
-         (if (real? b_0) (void) (raise-argument-error 'in-range "real?" b_0))
-         (if (real? step_0)
-           (void)
-           (raise-argument-error 'in-range "real?" step_0)))))))
+     (begin (check-range-generic 'in-range a_0 b_0 step_0)))))
+(define check-range-generic
+  (lambda (who_0 a_0 b_0 step_0)
+    (begin
+      (if (real? a_0) (void) (raise-argument-error who_0 "real?" a_0))
+      (if (real? b_0) (void) (raise-argument-error who_0 "real?" b_0))
+      (if (real? step_0) (void) (raise-argument-error who_0 "real?" step_0)))))
 (define check-naturals
   (lambda (n_0)
     (if (if (integer? n_0) (if (exact? n_0) (>= n_0 0) #f) #f)
@@ -687,6 +687,18 @@
                     (let ((or-part_0 (apply f_0 (map_1346 car ls_1))))
                       (if or-part_0 or-part_0 (loop_0 next-ls_0)))))))))))
        (loop_0 ls_0)))))
+(define print-value-columns
+  (make-parameter
+   +inf.0
+   (lambda (c_0)
+     (if (let ((or-part_0 (eqv? c_0 +inf.0)))
+           (if or-part_0 or-part_0 (if (exact-integer? c_0) (> c_0 5) #f)))
+       c_0
+       (raise-argument-error
+        'print-value-columns
+        "(or/c +inf.0 (and/c exact-integer? (>/c 5)))"
+        c_0)))
+   'print-value-columns))
 (define regexp-error-tag (make-continuation-prompt-tag 'regexp-error))
 (define regexp-error
   (lambda (fmt_0 . args_0)
@@ -865,7 +877,7 @@
 (define rx:line-end 'line-end)
 (define rx:word-boundary 'word-boundary)
 (define rx:not-word-boundary 'not-word-boundary)
-(define finish39
+(define finish_2542
   (make-struct-type-install-properties
    '(rx:alts)
    2
@@ -886,7 +898,7 @@
    #f
    2
    0))
-(define effect_2414 (finish39 struct:rx:alts))
+(define effect_2414 (finish_2542 struct:rx:alts))
 (define rx:alts1.1
   (|#%name|
    rx:alts
@@ -921,7 +933,7 @@
        (rx:alts-rx_2917 s)
        ($value
         (impersonate-ref rx:alts-rx_2917 struct:rx:alts 1 s 'rx:alts 'rx2))))))
-(define finish44
+(define finish_2732
   (make-struct-type-install-properties
    '(rx:sequence)
    2
@@ -942,7 +954,7 @@
    #f
    2
    0))
-(define effect_2459 (finish44 struct:rx:sequence))
+(define effect_2459 (finish_2732 struct:rx:sequence))
 (define rx:sequence2.1
   (|#%name|
    rx:sequence
@@ -992,7 +1004,7 @@
          s
          'rx:sequence
          'needs-backtrack?))))))
-(define finish49
+(define finish_2954
   (make-struct-type-install-properties
    '(rx:group)
    2
@@ -1013,7 +1025,7 @@
    #f
    2
    0))
-(define effect_1819 (finish49 struct:rx:group))
+(define effect_1819 (finish_2954 struct:rx:group))
 (define rx:group3.1
   (|#%name|
    rx:group
@@ -1060,7 +1072,7 @@
          s
          'rx:group
          'number))))))
-(define finish54
+(define finish_1837
   (make-struct-type-install-properties
    '(rx:repeat)
    4
@@ -1081,7 +1093,7 @@
    #f
    4
    0))
-(define effect_2312 (finish54 struct:rx:repeat))
+(define effect_2312 (finish_1837 struct:rx:repeat))
 (define rx:repeat4.1
   (|#%name|
    rx:repeat
@@ -1161,7 +1173,7 @@
          s
          'rx:repeat
          'non-greedy?))))))
-(define finish61
+(define finish_3260
   (make-struct-type-install-properties
    '(rx:maybe)
    2
@@ -1182,7 +1194,7 @@
    #f
    2
    0))
-(define effect_2202 (finish61 struct:rx:maybe))
+(define effect_2202 (finish_3260 struct:rx:maybe))
 (define rx:maybe5.1
   (|#%name|
    rx:maybe
@@ -1229,7 +1241,7 @@
          s
          'rx:maybe
          'non-greedy?))))))
-(define finish66
+(define finish_2500
   (make-struct-type-install-properties
    '(rx:conditional)
    6
@@ -1250,7 +1262,7 @@
    #f
    6
    0))
-(define effect_2905 (finish66 struct:rx:conditional))
+(define effect_2905 (finish_2500 struct:rx:conditional))
 (define rx:conditional6.1
   (|#%name|
    rx:conditional
@@ -1366,7 +1378,7 @@
          s
          'rx:conditional
          'needs-backtrack?))))))
-(define finish75
+(define finish_2488
   (make-struct-type-install-properties
    '(rx:lookahead)
    4
@@ -1387,7 +1399,7 @@
    #f
    4
    0))
-(define effect_2486 (finish75 struct:rx:lookahead))
+(define effect_2486 (finish_2488 struct:rx:lookahead))
 (define rx:lookahead7.1
   (|#%name|
    rx:lookahead
@@ -1469,7 +1481,7 @@
          s
          'rx:lookahead
          'num-n))))))
-(define finish82
+(define finish_3095
   (make-struct-type-install-properties
    '(rx:lookbehind)
    6
@@ -1490,7 +1502,7 @@
    #f
    6
    12))
-(define effect_2468 (finish82 struct:rx:lookbehind))
+(define effect_2468 (finish_3095 struct:rx:lookbehind))
 (define rx:lookbehind8.1
   (|#%name|
    rx:lookbehind
@@ -1640,7 +1652,7 @@
          v
          'rx:lookbehind
          'lb-max))))))
-(define finish93
+(define finish_2346
   (make-struct-type-install-properties
    '(rx:cut)
    4
@@ -1661,7 +1673,7 @@
    #f
    4
    0))
-(define effect_2158 (finish93 struct:rx:cut))
+(define effect_2158 (finish_2346 struct:rx:cut))
 (define rx:cut9.1
   (|#%name|
    rx:cut
@@ -1733,7 +1745,7 @@
          s
          'rx:cut
          'needs-backtrack?))))))
-(define finish100
+(define finish_1921
   (make-struct-type-install-properties
    '(rx:reference)
    2
@@ -1754,7 +1766,7 @@
    #f
    2
    0))
-(define effect_2306 (finish100 struct:rx:reference))
+(define effect_2306 (finish_1921 struct:rx:reference))
 (define rx:reference10.1
   (|#%name|
    rx:reference
@@ -1806,7 +1818,7 @@
          s
          'rx:reference
          'case-sensitive?))))))
-(define finish105
+(define finish_2471
   (make-struct-type-install-properties
    '(rx:range)
    1
@@ -1827,7 +1839,7 @@
    #f
    1
    0))
-(define effect_2071 (finish105 struct:rx:range))
+(define effect_2071 (finish_2471 struct:rx:range))
 (define rx:range11.1
   (|#%name|
    rx:range
@@ -1858,7 +1870,7 @@
          s
          'rx:range
          'range))))))
-(define finish109
+(define finish_2339
   (make-struct-type-install-properties
    '(rx:unicode-categories)
    2
@@ -1879,7 +1891,7 @@
    #f
    2
    0))
-(define effect_2341 (finish109 struct:rx:unicode-categories))
+(define effect_2341 (finish_2339 struct:rx:unicode-categories))
 (define rx:unicode-categories12.1
   (|#%name|
    rx:unicode-categories
@@ -2129,7 +2141,7 @@
      num-n_0
      (let ((or-part_0 (needs-backtrack? pces1_0)))
        (if or-part_0 or-part_0 (needs-backtrack? pces2_0))))))
-(define finish123
+(define finish_2581
   (make-struct-type-install-properties
    '(parse-config)
    7
@@ -2150,7 +2162,7 @@
    #f
    7
    0))
-(define effect_2622 (finish123 struct:parse-config))
+(define effect_2622 (finish_2581 struct:parse-config))
 (define parse-config1.1
   (|#%name|
    parse-config
@@ -4697,7 +4709,7 @@
                                       (zero-sized? (rx:cut-rx rx_0))
                                       #f)))))))))))))))))))
 (define union (lambda (a_0 b_0) (if a_0 (if b_0 (range-union a_0 b_0) #f) #f)))
-(define finish535
+(define finish_2590
   (make-struct-type-install-properties
    '(lazy-bytes)
    13
@@ -4718,7 +4730,7 @@
    #f
    13
    3075))
-(define effect_2741 (finish535 struct:lazy-bytes))
+(define effect_2741 (finish_2590 struct:lazy-bytes))
 (define lazy-bytes1.1
   (|#%name|
    lazy-bytes
@@ -7242,7 +7254,7 @@
           (if (rx:range? rx_0)
             (range-matcher* (compile-range (rx:range-range rx_0)) max_0)
             #f))))))
-(define finish621
+(define finish_2797
   (make-struct-type-install-properties
    '(regexp)
    10
@@ -7280,7 +7292,7 @@
    #f
    10
    0))
-(define effect_2726 (finish621 struct:rx:regexp))
+(define effect_2726 (finish_2797 struct:rx:regexp))
 (define rx:regexp1.1
   (|#%name|
    rx:regexp

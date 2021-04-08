@@ -355,6 +355,18 @@
   ((*ref char) buffer)
   (intptr_t start)
   (intptr_t end)))
+(define-function/errno
+ RKTIO_READ_ERROR
+ ()
+ intptr_t
+ rktio_read_converted_in
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) fd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t len)
+  ((*ref char) is_converted)
+  (intptr_t converted_start)))
 (define-function
  ()
  intptr_t

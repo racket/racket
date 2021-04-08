@@ -763,6 +763,7 @@
 (test "lo" cast (ptr-add (if (system-big-endian?) #"e\0l\0l\0o\0\0\0" #"\0l\0l\0o\0\0\0") 3) _pointer _string/utf-16)
 (test "lo" cast (ptr-add (share-protect (if (system-big-endian?) #"\0\0\0l\0\0\0l\0\0\0o\0\0\0\0\0\0\0\0" #"\0\0\0\0l\0\0\0o\0\0\0\0\0\0\0")) 4)
       _pointer _string/ucs-4)
+(test #t cpointer-gcable? (cast '(#"apple") (_list i _bytes) _gcpointer))
 (test #t
       'many-casts
       (for/and ([i (in-range 1000)])

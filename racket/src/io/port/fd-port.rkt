@@ -50,16 +50,30 @@
   [fd #f]
   [fd-refcount (box 1)]
   [custodian-reference #f]
+  [is-converted #f]
   
   #:public
   [on-close (lambda () (void))]
   [raise-read-error (lambda (n)
                       (raise-filesystem-error #f n "error reading from stream port"))]
-  
+
   #:override
   [read-in/inner
-   (lambda (dest-bstr start end copy?)
-     (define n (rktio_read_in rktio fd dest-bstr start end))
+   (lambda (dest-bstr start end copy? to-buffer?)
+     (define n
+       (cond
+         [(and to-buffer?
+               (rktio_fd_is_text_converted rktio fd))
+          ;; need to keep track of whether any bytes in the buffer were converted
+          (when (or (not is-converted)
+                    ((bytes-length is-converted) . < . end))
+            (define new-is-converted (make-bytes end))
+            (when is-converted
+              (bytes-copy! new-is-converted 0 is-converted))
+            (set! is-converted new-is-converted))
+          (rktio_read_converted_in rktio fd dest-bstr start end is-converted start)]
+         [else
+          (rktio_read_in rktio fd dest-bstr start end)]))
      (cond
        [(rktio-error? n)
         (end-atomic)
@@ -80,7 +94,7 @@
    (case-lambda
      [()
       (define pos (get-file-position fd))
-      (and pos (buffer-adjust-pos pos))]
+      (and pos (buffer-adjust-pos pos is-converted))]
      [(pos)
       (purge-buffer)
       (set-file-position fd pos)])]
