@@ -58,7 +58,7 @@
   (check who path-string? path)
   (define (mode->flags mode)
     (case mode
-      [(test) RKTIO_OPEN_TEXT]
+      [(text) RKTIO_OPEN_TEXT]
       [(truncate truncate/replace) (+ RKTIO_OPEN_TRUNCATE
                                       RKTIO_OPEN_CAN_EXIST)]
       [(must-truncate) (+ RKTIO_OPEN_TRUNCATE
