@@ -1831,7 +1831,7 @@ TO DO:
                             (close-input-port i)
                             (close-output-port o)
                             (raise exn))])
-      (wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f error/network #f))))
+      (wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f error/network #f null))))
 
 (define (ssl-accept ssl-listener)
   (do-ssl-accept 'ssl-accept tcp-accept ssl-listener))
