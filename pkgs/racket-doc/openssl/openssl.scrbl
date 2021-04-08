@@ -15,6 +15,9 @@
      (define sha1-bytes-id @racket[sha1-bytes])))
 @(define-racket/base racket:sha1-bytes)
 
+@(define alpn-url
+   "https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation")
+
 @title{OpenSSL: Secure Communication}
 
 @defmodule[openssl]
@@ -105,11 +108,10 @@ If hostname verification is enabled (see
 against @racket[hostname].
 
 If @racket[alpn-protocols] is not empty, the client attempts to use
-@hyperlink["https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation"]{ALPN}
-to negotiate the application-level protocol. The protocols should be
-listed in order of preference, and each protocol must be a byte string
-with a length between 1 and 255 (inclusive). See also
-@racket[ssl-get-alpn-selected].
+@hyperlink[alpn-url]{ALPN} to negotiate the application-level
+protocol. The protocols should be listed in order of preference, and
+each protocol must be a byte string with a length between 1 and 255
+(inclusive). See also @racket[ssl-get-alpn-selected].
 
 @;{
 See `enforce-retry?' in "mzssl.rkt", currently set to #f so that this
@@ -477,10 +479,10 @@ against @racket[hostname].
 
 If @racket[alpn-protocols] is not empty and @racket[mode] is
 @racket['connect], then the client attempts to use
-@hyperlink["https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation"]{ALPN};
-see also @racket[ssl-connect] and @racket[ssl-get-alpn-selected]. If
-@racket[alpn-protocols] is not empty and @racket[mode] is
-@racket['accept], an exception (@racket[exn:fail]) is raised.
+@hyperlink[alpn-url]{ALPN}; see also @racket[ssl-connect] and
+@racket[ssl-get-alpn-selected]. If @racket[alpn-protocols] is not
+empty and @racket[mode] is @racket['accept], an exception
+(@racket[exn:fail]) is raised.
 
 @history[#:changed "8.0.0.13" @elem{Added @racket[#:alpn] argument.}]}
 
