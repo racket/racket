@@ -126,7 +126,7 @@ identifiers used by the @racket[reader-option]s.
        @racket[read-syntax] functions are called. A
        @racket[#:wrapper1]-specified function must accept a thunk, and
        it normally calls the thunk to produce a result while
-       @racket[parameterizing] the call. Optionally, a
+       @racket[parameterize]-ing the call. Optionally, a
        @racket[#:wrapper1]-specified function can accept a boolean
        that indicates whether it is used in @racket[read]
        (@racket[#f]) or @racket[read-syntax] (@racket[#t]) mode.
