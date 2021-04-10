@@ -134,7 +134,7 @@
                    (hash-ref positions new-name/import))]))
           (when (eq? linkl-mode 's-exp) (error 'demosularize "inconsistent linklet representations"))
           (set! linkl-mode 'linkl)
-          (remap-positions (linklet*-body linkl)
+          (remap-positions (linkl-body linkl)
                            remap-toplevel-pos
                            #:application-hook
                            (lambda (rator rands remap)
