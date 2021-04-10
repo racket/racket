@@ -205,5 +205,9 @@
    '((caddr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?) (-> char? char?))
                       (list (λ (x) x) (λ (y) y) (λ (y) 'not-a-bool) (λ (y) y)) 'pos 'neg))
      #f))
+  (test/spec-passed/result
+   '*list/c8
+   '(chaperone-contract? (*list/c (-> integer? integer?) boolean?))
+   #t)
   
   )

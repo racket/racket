@@ -1025,8 +1025,8 @@
     #:property prop:custom-write custom-write-property-proc)
 
 (struct flat-*list/c *list-ctc ()
-  #:property prop:contract
-  (build-contract-property
+  #:property prop:flat-contract
+  (build-flat-contract-property
    #:trusted trust-me
    #:name *list/c-name-proc
    #:first-order *list/c-first-order
@@ -1037,8 +1037,8 @@
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #t))
    #:list-contract? (λ (c) #t)))
 (struct chaperone-*list/c *list-ctc ()
-  #:property prop:contract
-  (build-contract-property
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
    #:trusted trust-me
    #:name *list/c-name-proc
    #:first-order *list/c-first-order

@@ -168,6 +168,7 @@
 
   (test-flat-contract '(listof boolean?) (list #t #f) (list #f 3 #t))
   (test-flat-contract '(listof any/c) (list #t #f) 3)
+  (test-flat-contract '(*list/c boolean? integer?) (list #t #f 1) (list #t #f))
 
   (test-flat-contract '(vectorof boolean? #:flat? #t) (vector #t #f) (vector #f 3 #t))
   (test-flat-contract '(vectorof any/c #:flat? #t) (vector #t #f) 3)
