@@ -1,3 +1,17 @@
+Version 8.1, April 2021
+Add ephemeron hash tables
+Added support for "git+https://" packages sources
+Changed Git package references to default to repo-indicated
+ default branch (HEAD, roughly) instead of "master"
+CS: compiler improvements, especially related to structures
+Unix-style installation puts ".zo" files in "lib" instead
+ of "share", since they're platform-specific for CS
+CS: cross-compilation support in `raco exe`
+CS: faster multiplication and division for very large numbers
+ffi: added ffi/os-async-channel and support for callbacks
+ that can raise exceptions on CS
+Other bug repairs and other changes noted in the documentation
+
 Version 8.0, January 2021
 Racket CS is now the default variant of Racket
 Add support for Apple Silicon Mac OS (AArch64)
