@@ -22,7 +22,7 @@ limit, and check @racket['info] logging at the @racket['linklet] topic
 (e.g., set @envvar{PLTSTDERR} to @tt["info@linklet"]) for
 information about when compilation is restricted to smaller functions.
 
-The @exec{raco make} command accepts these flags:
+The @exec{raco demod} command accepts these flags:
 
 @itemlist[
 
