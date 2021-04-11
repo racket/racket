@@ -6057,13 +6057,24 @@
       (begin
         (unsafe-end-atomic)
         (let ((input?_0 (core-input-port? cp_0)))
-          (let ((app_0
-                 (if input?_0 "input port is closed" "output port is closed")))
-            (raise-arguments-error
-             who_0
-             app_0
-             (if input?_0 "input port" "output port")
-             cp_0))))
+          (raise
+           (let ((app_0
+                  (let ((app_0 (symbol->string who_0)))
+                    (let ((app_1
+                           (if input?_0
+                             "input port is closed"
+                             "output port is closed")))
+                      (let ((app_2
+                             (if input?_0 "input port: " "output port: ")))
+                        (string-append
+                         app_0
+                         ": "
+                         app_1
+                         "\n  "
+                         app_2
+                         (let ((app_3 (error-value->string-handler)))
+                           (|#%app| app_3 cp_0 (error-print-width)))))))))
+             (|#%app| exn:fail app_0 (current-continuation-marks))))))
       (void))))
 (define 1/file-position
   (|#%name|
@@ -34229,11 +34240,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1319 unsafe-undefined)
+             (let ((lr1323 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1319
+               (set! lr1323
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34288,9 +34299,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1319 0))
-               (set! command_0 (unsafe-vector*-ref lr1319 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1319 2))
+               (set! group_0 (unsafe-vector*-ref lr1323 0))
+               (set! command_0 (unsafe-vector*-ref lr1323 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1323 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

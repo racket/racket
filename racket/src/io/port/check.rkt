@@ -15,11 +15,16 @@
   (when (core-port-closed? cp)
     (end-atomic)
     (define input? (core-input-port? cp))
-    (raise-arguments-error who
-                           (if input?
-                               "input port is closed"
-                               "output port is closed")
-                           (if input?
-                               "input port"
-                               "output port")
-                           cp)))
+    (raise
+     (exn:fail
+      (string-append (symbol->string who)
+                     ": "
+                     (if input?
+                         "input port is closed"
+                         "output port is closed")
+                     "\n  "
+                     (if input?
+                         "input port: "
+                         "output port: ")
+                     ((error-value->string-handler) cp (error-print-width)))
+      (current-continuation-marks)))))
