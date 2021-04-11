@@ -15,7 +15,7 @@ parameters.
 See @secref["reader"] for information on the default reader and
 @secref["parse-reader"] for the protocol of @racket[read].}
 
-@defproc[(read-syntax [source-name any/c (object-name in)]
+@defproc[(read-syntax [source-name any/c (object-name (current-input-port))]
                       [in input-port? (current-input-port)])
          (or/c syntax? eof-object?)]{
 
