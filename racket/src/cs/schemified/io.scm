@@ -18500,9 +18500,11 @@
                   (set-bytes-input-port-bstr! this-id_0 #f)
                   (let ((b_0 (core-port-buffer this-id_0)))
                     (if (direct-bstr b_0)
-                      (begin
-                        (set-core-port-offset! this-id_0 (direct-pos b_0))
-                        (set-direct-bstr! b_0 #f))
+                      (let ((pos_0 (direct-pos b_0)))
+                        (begin
+                          (set-core-port-offset! this-id_0 pos_0)
+                          (set-direct-end! b_0 pos_0)
+                          (set-direct-bstr! b_0 #f)))
                       (void)))))))))
        app_0
        app_1

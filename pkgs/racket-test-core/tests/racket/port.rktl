@@ -935,6 +935,35 @@
   (check-all port-count-lines!))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; attempting to read from or write to a closed byte-string port
+
+(let ()
+  (define (check proc)
+    (define p (open-input-bytes #"x"))
+    (close-input-port p)
+    (err/rt-test (proc p) exn:fail:contract? #rx"closed"))
+  (check read-byte)
+  (check peek-byte)
+  (check (lambda (p) (peek-byte p 10)))
+  (check (lambda (p) (read-bytes 10 p)))
+  (check read-char)
+  (check read-char-or-special)
+  (check peek-char)
+  (check (lambda (p) (read-string 10 p)))
+  (check read)
+  (check (lambda (p) (read-syntax (object-name p) p))))
+
+(let ()
+  (define (check proc)
+    (define p (open-output-bytes))
+    (close-output-port p)
+    (err/rt-test (proc p) exn:fail:contract? #rx"closed"))
+  (check (lambda (p) (write-byte 10 p)))
+  (check (lambda (p) (write-bytes #"hello" p)))
+  (check (lambda (p) (write-char #\x p)))
+  (check (lambda (p) (write-string "hello" p))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; port-closed events
 
 (let ()
