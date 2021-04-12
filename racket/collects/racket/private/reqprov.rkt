@@ -360,7 +360,13 @@
                                                      (quasisyntax/loc in
                                                        (rename #,(import-src-mod-path import)
                                                                #,(import-local-id import)
-                                                               #,(import-src-sym import))))))
+                                                               #,(if (eq? (syntax-e (import-orig-stx import))
+                                                                          (import-src-sym import))
+                                                                     (import-orig-stx import)
+                                                                     (datum->syntax
+                                                                      #f
+                                                                      (import-src-sym import)
+                                                                      (import-orig-stx import))))))))
                                    imports)
                               (map (lambda (src)
                                      (mode-wrap (phase+ base-mode (import-source-mode src))
