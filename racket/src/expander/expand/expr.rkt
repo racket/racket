@@ -573,7 +573,9 @@
        (define disarmed-s (syntax-disarm s))
        (define-match m disarmed-s #:try '(begin))
        (if (m)
-           s
+           (if (expand-context-to-parsed? ctx)
+               (parsed-begin (keep-as-needed ctx s) '())
+               s)
            (nonempty-begin s ctx))]
       [else
        (nonempty-begin s ctx)]))))

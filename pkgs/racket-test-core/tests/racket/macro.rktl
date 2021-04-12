@@ -2618,5 +2618,20 @@
 
 (test 1 dynamic-require ''block-define-syntax-evaluation 'final-counter)
 
+;; ----------------------------------------
+;; Allow `#%app` at the top level to expand to a definition
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(define-syntax-rule (#%app id) (begin (define id 'id) id)))
+  (test 'v eval '(v))
+  (test 'v eval 'v))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax-rule (#%app id) (begin (define-syntax (id stx) #''id) (begin))))
+  (eval '(v))
+  (test 'v eval 'v))
+
+;; ----------------------------------------
 
 (report-errs)
