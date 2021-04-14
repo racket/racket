@@ -31,22 +31,6 @@ and 3m variants with a "3m" suffix.
  Additional Compilation Notes
 ========================================================================
 
-CGC Build Options
------------------
-
-As noted above in "CGC versus 3m", Racket builds a CGC variant in the
-process of creating the normal 3m variant. Within the CGC variant, two
-implementations are possible.
-
-By default, Racket CGC is implemented with SenoraGC (in the "sgc"
-directory), which is relativey portable. Provide `--disable-sgc` to
-instead use the Boehm GC (in the "gc" directory), which should perform
-better and was the default for Racket CGC through version 6.1.
-
-The variant of the Boehm GC that is included with Racket has been
-modified slightly from Boehm's standard distribution; mostly, the
-changes modify the way that object finalization is handled.
-
 Floating point, x87, SSE, Extflonums, and the JIT
 -------------------------------------------------
 
