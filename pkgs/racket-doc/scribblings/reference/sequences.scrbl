@@ -1395,11 +1395,13 @@ values from the generator.
   @racket[#f] otherwise.
 }
 
-@defform[(generator formals body ...+)]{
-  Creates a @tech{generator}, where @racket[formals] is like the
-  @racket[formals] of @racket[case-lambda] (i.e., the
-  @racket[_kw-formals] of @racket[lambda] restricted to non-optional
-  and non-keyword arguments).
+@defform/subs[(generator formals body ...+)
+              ([formals (id ...)
+                        (id ...+ . rest-id)
+                        rest-id])]{
+  Creates a @tech{generator}, where @racket[formals] specify the arguments.
+  Keyword and optional arguments are not supported. This is the same as the
+  @racket[formals] of @racket[case-lambda] without any matching ocurring.
 
   For the first call to a generator, the arguments are bound to the
   @racket[formals] and evaluation of @racket[body] starts. During the
