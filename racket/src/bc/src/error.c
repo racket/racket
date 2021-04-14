@@ -3829,26 +3829,35 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
     }
 
     if (extract_spec_level(logger->stderr_level, name) >= level) {
-      if (name && prefix_msg) {
-        intptr_t slen;
-        slen = SCHEME_SYM_LEN(name);
-        fwrite(SCHEME_SYM_VAL(name), slen, 1, stderr);
-        fwrite(": ", 2, 1, stderr);
+      rktio_fd_t *fd;
+      fd = rktio_std_fd(scheme_rktio, RKTIO_STDERR);
+      if (fd) {
+        if (name && prefix_msg) {
+          intptr_t slen;
+          slen = SCHEME_SYM_LEN(name);
+          scheme_rktio_write_all(fd, SCHEME_SYM_VAL(name), slen);
+          scheme_rktio_write_all(fd, ": ", 2);
+        }
+        scheme_rktio_write_all(fd, buffer, len);
+        scheme_rktio_write_all(fd, "\n", 1);
+        rktio_forget(scheme_rktio, fd);
       }
-      fwrite(buffer, len, 1, stderr);
-      fwrite("\n", 1, 1, stderr);
     }
 
     if (extract_spec_level(logger->stdout_level, name) >= level) {
-      if (name && prefix_msg) {
-        intptr_t slen;
-        slen = SCHEME_SYM_LEN(name);
-        fwrite(SCHEME_SYM_VAL(name), slen, 1, stdout);
-        fwrite(": ", 2, 1, stdout);
+      rktio_fd_t *fd;
+      fd = rktio_std_fd(scheme_rktio, RKTIO_STDOUT);
+      if (fd) {
+        if (name && prefix_msg) {
+          intptr_t slen;
+          slen = SCHEME_SYM_LEN(name);
+          scheme_rktio_write_all(fd, SCHEME_SYM_VAL(name), slen);
+          scheme_rktio_write_all(fd, ": ", 2);
+        }
+        scheme_rktio_write_all(fd, buffer, len);
+        scheme_rktio_write_all(fd, "\n", 1);
+        rktio_forget(scheme_rktio, fd);
       }
-      fwrite(buffer, len, 1, stdout);
-      fwrite("\n", 1, 1, stdout);
-      fflush(stdout);
     }
 
     queue = logger->readers;

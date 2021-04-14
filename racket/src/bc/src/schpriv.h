@@ -3672,6 +3672,8 @@ void scheme_rktio_socket_to_input_port(struct rktio_fd_t *fd, Scheme_Object *nam
 void scheme_rktio_socket_to_output_port(struct rktio_fd_t *fd, Scheme_Object *name, int takeover,
                                         Scheme_Object **_outp);
 
+void scheme_rktio_write_all(struct rktio_fd_t *fd, const char *data, intptr_t len);
+
 void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level);
 
 THREAD_LOCAL_DECL(extern struct rktio_ltps_t *scheme_semaphore_fd_set);

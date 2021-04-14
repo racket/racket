@@ -5607,6 +5607,17 @@ scheme_make_rktio_fd_output_port(rktio_fd_t *rfd, Scheme_Object *name, int read_
   return make_fd_output_port(rfd, name, read_too, -1, NULL);
 }
 
+void scheme_rktio_write_all(struct rktio_fd_t *fd, const char *data, intptr_t len)
+{
+  while (len > 0) {
+    intptr_t r;
+    r = rktio_write(scheme_rktio, fd, data, len);
+    if (r == RKTIO_WRITE_ERROR)
+      break;
+    len -= r;
+  }
+}
+
 /*========================================================================*/
 /*                           null output ports                            */
 /*========================================================================*/
