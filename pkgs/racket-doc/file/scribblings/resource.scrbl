@@ -116,7 +116,7 @@ for starting a browser:
                          [entry string?]
                          [value (or/c string? bytes? exact-integer?)]
                          [file (or/c path-string? #f) #f]
-                         [#:type type (or/c 'string 'expand-string 'bytes 'integer
+                         [#:type type (or/c 'string 'expand-string 'bytes 'dword
                                             'bytes/string 'bytes/expand-string)
                                  'string]
                          [#:create-key? create-key? any/c #f])
