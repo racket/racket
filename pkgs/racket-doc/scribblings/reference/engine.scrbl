@@ -62,7 +62,7 @@ The @racket[engine-run] procedure returns @racket[#t] if
 and the result is available via @racket[engine-result].  The
 @racket[engine-run] procedure returns @racket[#f] if
 @racket[engine]'s procedure does not complete before it is
-suspended after @racket[timeout-secs]. If @racket[engine]'s
+suspended after the @racket[until] condition is met. If @racket[engine]'s
 procedure raises an exception, then it is re-raised by
 @racket[engine-run].}
 
