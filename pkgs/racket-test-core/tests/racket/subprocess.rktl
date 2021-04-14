@@ -691,6 +691,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Check that a-exit custodians are run on exit, even if the
+
+(for ([cust (list '(current-custodian)
+                  '(make-custodian)
+                  '(make-custodian (make-custodian)))])
+  (define-values (sp o i e) (subprocess #f #f #f self
+                                        "-l" "racket/base"
+                                        "-l" "ffi/unsafe/custodian"
+                                        "-W" "error"
+                                        "-e" "(eval (read))"))
+  (write `(register-custodian-shutdown 'hello
+                                       (lambda (x)
+                                         (log-error "bye"))
+                                       ,cust
+                                       #:at-exit? #t)
+         i)
+  (close-output-port i)
+  (read-bytes 1024 o)
+  (close-input-port o)
+  (test #"bye\n" read-bytes 1024 e)
+  (close-input-port e)
+  (subprocess-wait sp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 
 

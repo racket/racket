@@ -58,11 +58,15 @@
   #:property prop:evt (lambda (cb)
                         (wrap-evt (custodian-box-sema cb) (lambda (v) cb))))
 
-(struct willed-callback (proc will)
+(struct willed-callback (proc will late?)
   #:property prop:procedure (struct-field-index proc)
   #:authentic)
 
 (struct at-exit-callback willed-callback ()
+  #:authentic)
+
+(struct late-callback (proc)
+  #:property prop:procedure (struct-field-index proc)
   #:authentic)
 
 ;; Reporting registration in a custodian through this indirection
@@ -98,7 +102,6 @@
                                           (reference-sink children)
                                           (do-custodian-shutdown-all c)))
                                       #:weak? #t
-                                      #:at-exit? #t
                                       #:gc-root? #t))
   (set-custodian-parent-reference! c cref)
   (unless cref (raise-custodian-is-shut-down who parent))
@@ -132,9 +135,9 @@
       (hash-set! (custodian-children cust)
                  obj
                  (cond
-                   [weak? callback]
-                   [at-exit? (at-exit-callback callback we)]
-                   [else (willed-callback callback we)]))
+                   [weak? (if late? (late-callback callback) callback)]
+                   [at-exit? (at-exit-callback callback we late?)]
+                   [else (willed-callback callback we late?)]))
       (when we
         ;; Registering with a will executor that we retain but never
         ;; poll has the effect of turning a semi-weak reference
@@ -193,10 +196,15 @@
           [(willed-callback? callback)
            (do-custodian-register parent child (willed-callback-proc callback)
                                   #:at-exit? (at-exit-callback? callback)
-                                  #:gc-root? gc-root?)]
+                                  #:gc-root? gc-root?
+                                  #:late? (willed-callback-late? callback))]
           [else
-           (do-custodian-register parent child callback
-                                  #:gc-root? gc-root?)])))
+           (do-custodian-register parent child (if (late-callback? callback)
+                                                   (late-callback-proc callback)
+                                                   callback)
+                                  #:weak? #t
+                                  #:gc-root? gc-root?
+                                  #:late? (late-callback? callback))])))
     (define self-ref (custodian-self-reference c))
     (when self-ref
       (set-custodian-reference-weak-c! self-ref (custodian-self-reference parent)))
@@ -309,12 +317,17 @@
     (when (custodian-sync-futures? c)
       (futures-sync-for-custodian-shutdown))
     (for ([(child callback) (in-hash (custodian-children c) #f)])
-      (when (and child
-                 (or (not only-at-exit?)
-                     (at-exit-callback? callback)))
-        (if (procedure-arity-includes? callback 2)
-            (callback child c)
-            (callback child))))
+      (when child
+        (cond
+          [(and only-at-exit?
+                (custodian? child))
+           ;; propagate `only-at-exit?`
+           (do-custodian-shutdown-all child #t)]
+          [(or (not only-at-exit?)
+               (at-exit-callback? callback))
+           (if (procedure-arity-includes? callback 2)
+               (callback child c)
+               (callback child))])))
     (hash-clear! (custodian-children c))
     (when (custodian-gc-roots c)
       (hash-clear! (custodian-gc-roots c)))
