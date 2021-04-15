@@ -103,7 +103,7 @@
                 (lambda ()
                   (call-with-continuation-prompt ; to catch aborts
                    (lambda ()
-                     (when (unsafe-set-on-atomic-timeout! handler)
+                     (when (unsafe-set-on-atomic-timeout! handler) ; also records current atomicity level
                        (error 'try-atomic "nested atomic timeout"))
                      (set! ready? #t)
                      (begin0

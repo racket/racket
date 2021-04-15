@@ -12444,7 +12444,7 @@
 (define check-for-atomic-timeout
   (lambda ()
     (if (unsafe-place-local-ref cell.4)
-      (if (positive? (current-atomic))
+      (if (eq? (unsafe-place-local-ref cell.5) (current-atomic))
         (|#%app| (unsafe-place-local-ref cell.4) #f)
         (void))
       (void))))
@@ -12586,18 +12586,22 @@
              (let ((app_0 (thread-cpu-time t_0)))
                (+ app_0 (- now_0 start_0))))))))))
 (define cell.4 (unsafe-make-place-local #f))
+(define cell.5 (unsafe-make-place-local #f))
 (define set-atomic-timeout-callback!
   (lambda (cb_0)
     (begin0
       (unsafe-place-local-ref cell.4)
+      (unsafe-place-local-set! cell.5 (current-atomic))
       (unsafe-place-local-set! cell.4 cb_0))))
-(define effect_2769
+(define effect_2825
   (begin
     (void
      (let ((proc_0
             (lambda ()
               (if (unsafe-place-local-ref cell.4)
-                (begin (|#%app| (unsafe-place-local-ref cell.4) #t) #t)
+                (if (eq? (unsafe-place-local-ref cell.5) (current-atomic))
+                  (begin (|#%app| (unsafe-place-local-ref cell.4) #t) #t)
+                  #f)
                 #f))))
        (begin-unsafe (set! force-atomic-timeout-callback proc_0))))
     (void)))
