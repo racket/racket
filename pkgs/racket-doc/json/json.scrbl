@@ -162,6 +162,9 @@ the @rfc for more information about JSON.
       "false42" (code:comment "invalid JSON text sequence")
       (λ () (read-json))))
 ]
+
+@history[#:changed "8.1.0.2" @list{Adjusted the whitespace handling to reject whitespace that isn't either
+           @racket[#\space], @racket[#\tab], @racket[#\newline], or @racket[#\return].}]
 }
 
 @defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])

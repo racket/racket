@@ -174,12 +174,23 @@
     (define-values [l c p] (port-next-location i))
     (raise-read-error (format "~a: ~a" who (apply format fmt args))
                       (object-name i) l c p #f))
+  (define (json-whitespace? ch)
+    (or (eq? ch #\space)
+        (eq? ch #\tab)
+        (eq? ch #\newline)
+        (eq? ch #\return)))
   (define (skip-whitespace)
     (define ch (peek-char i))
     (cond
-      [(and (char? ch) (char-whitespace? ch))
-       (read-char i)
-       (skip-whitespace)]
+      [(char? ch)
+       (cond
+         [(json-whitespace? ch)
+          (read-char i)
+          (skip-whitespace)]
+         [(char-whitespace? ch)
+          (err "found whitespace that is not allowed by the json spec\n  char: ~s"
+               ch)]
+         [else ch])]
       [else ch]))
   (define (byte-char=? b ch)
     (eqv? b (char->integer ch)))

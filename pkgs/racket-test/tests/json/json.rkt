@@ -151,6 +151,20 @@
         ;; Invalid UTF-8 input.
         (bytes->jsexpr #"\"\377\377\377\"") =error> exn:fail?
 
+        ;; whitespace should be only the four allowed charactes
+        (string->jsexpr (string-append
+                         "{ \"x\" :"
+                         (string #\u00A0)
+                         " 123 }"))
+        =error>
+        #rx"whitespace that is not allowed"
+        (string->jsexpr (string-append
+                         "[ 1,"
+                         (string #\u00A0)
+                         " 2 ]"))
+        =error>
+        #rx"whitespace that is not allowed"
+
         ;; More string escapes:
         (string->jsexpr @T{ "hel\"lo" }) => "hel\"lo"
         (string->jsexpr @T{ "\\//\\\\//" }) => "\\//\\\\//"
