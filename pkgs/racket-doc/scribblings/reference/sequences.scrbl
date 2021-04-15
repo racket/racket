@@ -1401,7 +1401,7 @@ values from the generator.
                         rest-id])]{
   Creates a @tech{generator}, where @racket[formals] specify the arguments.
   Keyword and optional arguments are not supported. This is the same as the
-  @racket[formals] of @racket[case-lambda] without any matching ocurring.
+  @racket[formals] of a single @racket[case-lambda] clause.
 
   For the first call to a generator, the arguments are bound to the
   @racket[formals] and evaluation of @racket[body] starts. During the
