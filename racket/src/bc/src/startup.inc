@@ -54515,7 +54515,7 @@ static const char *startup_source =
 "(let-values()"
 "(raise-arguments-error"
 " 'make-readtable"
-"(if key_0"
+"(if(char? mode_0)"
 "                                                                   \"expected readtable or #f argument after character argument\""
 "                                                                   \"expected procedure argument after symbol argument\")"
 "                                                                 \"given\""
