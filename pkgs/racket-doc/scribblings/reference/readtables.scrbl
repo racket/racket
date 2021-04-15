@@ -166,8 +166,8 @@ character to be treated as whitespace, and it might use
 
 @defproc[(readtable-mapping [readtable readtable?] [char char?])
          (values (or/c char?
-                       (or/c 'terminating-macro
-                             'non-terminating-macro))
+                       'terminating-macro
+                       'non-terminating-macro)
                  (or/c #f procedure?)
                  (or/c #f procedure?))]{
 
