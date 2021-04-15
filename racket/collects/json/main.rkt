@@ -188,7 +188,7 @@
           (read-char i)
           (skip-whitespace)]
          [(char-whitespace? ch)
-          (err "found whitespace that is not allowed by the json spec\n  char: ~s"
+          (err "found whitespace that is not allowed by the JSON specification\n  char: ~s"
                ch)]
          [else ch])]
       [else ch]))
