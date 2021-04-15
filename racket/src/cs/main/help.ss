@@ -36,15 +36,15 @@
     "  -Y <file> <n> <m> <p>\n"
     "     Like -k <n> <m> <p>, but from <file>\n"
     "  -m, --main\n"
-    "     Call `main' with command-line arguments, print results\n"
+    "     Call `main` with command-line arguments, print results\n"
     "\n"
-    " [*] Also `require's a `main' submodule, if any\n"
+    " [*] Also `require`s a `main` submodule, if any\n"
     "\n"
     "Interaction options:\n\n"
     "  -i, --repl\n"
     "     Run interactive read-eval-print loop; implies -v\n"
     "  -n, --no-lib\n"
-    "     Skip `(require (lib \"<init-lib>\"))' for -i/-e/-f/-r\n"
+    "     Skip `(require (lib \"<init-lib>\"))` for -i/-e/-f/-r\n"
     "  -v, --version\n"
     "     Show version\n"))
   (when gracket?
@@ -55,7 +55,7 @@
   (#%printf
    (string-append
     "  -V, --no-yield\n"
-    "     Skip `((executable-yield-handler) <status>)' on exit\n"
+    "     Skip `((executable-yield-handler) <status>)` on exit\n"
     "\n"
     "Configuration options:\n\n"
     "  -c, --no-compiled\n"
@@ -66,7 +66,7 @@
     (#%printf
      (string-append
       "  -z, --text-repl\n"
-      "     Use text `read-eval-print-loop' for -i\n")))
+      "     Use text `read-eval-print-loop` for -i\n")))
   (#%printf
    (string-append
     "  -I <path>\n"
@@ -87,9 +87,9 @@
     "     Cross-build mode; save current collects and config\n"
     "     as host\n"
     "  -N <file>, --name <file>\n"
-    "     Sets `(find-system-path 'run-file)' to <file>\n"
+    "     Sets `(find-system-path 'run-file)` to <file>\n"
     "  -E <file>, --exec <file>\n"
-    "     Sets `(find-system-path 'exec-file)' to <file>\n"))
+    "     Sets `(find-system-path 'exec-file)` to <file>\n"))
   (when gracket?
     (#%printf
      (string-append
@@ -148,11 +148,11 @@
     "      -i -f file -v -e expr\n"
     "\n"
     "Start-up sequence:\n\n"
-    "  1. Set `current-library-collection-paths'\n"
-    "  2. Require `(lib \"<init-lib>\")' [when -i/-e/-f/-r, unless -n]\n"
+    "  1. Set `current-library-collection-paths`\n"
+    "  2. Require `(lib \"<init-lib>\")` [when -i/-e/-f/-r, unless -n]\n"
     "  3. Evaluate/load expressions/files in order, until first error\n"
     "  4. Load \"" init-filename "\" [when -i]\n"
     "  5. Run read-eval-print loop [when -i]\n"))
   (when gracket?
     (#%printf
-     "  6. Run `((executable-yield-handler) <status>)' [unless -V]\n")))
+     "  6. Run `((executable-yield-handler) <status>)` [unless -V]\n")))
