@@ -185,7 +185,7 @@
 
 (define (check-for-atomic-timeout)
   (when atomic-timeout-callback
-    (when (positive? (current-atomic))
+    (when (eq? atomic-timeout-level (current-atomic))
       (atomic-timeout-callback #f))))
 
 (define (maybe-done callbacks)
@@ -316,16 +316,18 @@
 ;; ----------------------------------------
 
 (define-place-local atomic-timeout-callback #f)
+(define-place-local atomic-timeout-level #f)
 
 (define (set-atomic-timeout-callback! cb)
   (begin0
     atomic-timeout-callback
+    (set! atomic-timeout-level (current-atomic))
     (set! atomic-timeout-callback cb)))
-
 
 (void (set-force-atomic-timeout-callback!
        (lambda ()
          (and atomic-timeout-callback
+              (eq? atomic-timeout-level (current-atomic))
               (begin
                 (atomic-timeout-callback #t)
                 #t)))))
