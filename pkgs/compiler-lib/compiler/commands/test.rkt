@@ -1002,7 +1002,7 @@
   (set! packages? #t)]
  [("--modules" "-m")
   ("Interpret arguments as modules"
-   "  (ignore argument unless \".rkt\", \".scrbl\", or enabled by \"info.rkt\")")
+   "(ignore argument unless \".rkt\", \".scrbl\", or enabled by \"info.rkt\")")
   (set! check-top-suffix? #t)]
  #:once-each
  [("--drdr")

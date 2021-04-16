@@ -101,12 +101,17 @@ command-line arguments with
 so that @exec{raco decompile --help} prints
 
 @verbatim[#:indent 2]{
- raco decompile [ <option> ... ] [<source-or-bytecode-file>] ...
- where <option> is one of
-  --help, -h : Show this help
-  -- : Do not treat any remaining argument as a switch (at this level)
- Multiple single-letter switches can be combined after one `-'; for
-  example: `-h-' is the same as `-h --'
+usage: raco decompile [ <option> ... ] [<source-or-bytecode-file>] ...
+
+<option> is one of
+
+  --help, -h
+     Show this help
+  --
+     Do not treat any remaining argument as a switch (at this level)
+
+ Multiple single-letter switches can be combined after
+ one `-`. For example, `-h-` is the same as `-h --`.
 }}
 
 @defproc[(program+command-name) string?]{

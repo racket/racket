@@ -356,13 +356,13 @@
                   (list "--help" "-h")
                   (lambda (f)
                     (let ([sp (open-output-string)])
-                      (fprintf sp "~a [ <option> ... ]" (program-name program))
+                      (fprintf sp "usage: ~a [ <option> ... ]" (program-name program))
                       (print-args sp finish-help finish)
                       (for ([set (in-list table)]
                             #:when (eq? (car set) 'usage-help))
                         (for ([line (in-list (cdr set))])
                           (fprintf sp "\n  ~a" line)))
-                      (fprintf sp "\n where <option> is one of\n")
+                      (fprintf sp "\n\n<option> is one of\n\n")
                       (for ([set (in-list table)] ; the original table
                             #:unless (memq (car set) '(ps usage-help)))
                         (if (eq? (car set) 'help-labels)
@@ -380,7 +380,8 @@
                                                         (first? help helps))
                                                    "/"]
                                                   [(and (last? line (cdr set))
-                                                        (last? help helps))
+                                                        (last? help helps)
+                                                        (> (length helps) 1))
                                                    "\\"]
                                                   [else "|"])]
                                                [(and (memq (car set) '(multi final))
@@ -396,17 +397,31 @@
                                       (unless (null? (cdr flags))
                                         (fprintf sp ",")
                                         (loop (cdr flags))))
-                                    (fprintf sp " :"))
-                                  (fprintf sp "  "))
+                                    (if (and (eq? (car set) 'once-any)
+                                             (pair? (cddr set)))
+                                      (if (and (last? line (cdr set))
+                                                (last? help helps))
+                                        ; | -i
+                                        ; \    description  <-
+                                        (fprintf sp "\n\\   ")
+                                        ; | -i
+                                        ; |    description 1  <-
+                                        ; \    description 2
+                                        (fprintf sp "\n|   "))
+                                      (fprintf sp "\n    ")))
+                                  (fprintf sp "   "))
                                 (fprintf sp " ~a\n" help))))))
-                      (fprintf sp "  --help, -h : Show this help\n")
-                      (fprintf sp "  -- : Do not treat any remaining argument as a switch (at this level)\n")
+                      (fprintf sp "  --help, -h\n     Show this help\n")
+                      (fprintf sp "  --\n     Do not treat any remaining argument as a switch (at this level)\n")
+                      (fprintf sp "\n")
                       (when (or (assq 'multi table) (assq 'final table))
-                        (fprintf sp " * Asterisks indicate options allowed multiple times.\n"))
+                        (fprintf sp " *   Asterisks indicate options allowed multiple times.\n"))
                       (when (assq 'once-any table)
                         (fprintf sp " /|\\ Brackets indicate mutually exclusive options.\n"))
-                      (fprintf sp " Multiple single-letter switches can be combined after one `-'; for\n")
-                      (fprintf sp "  example: `-h-' is the same as `-h --'\n")
+                      (when (or (assq 'multi table) (assq 'final table) (assq 'once-any table))
+                        (fprintf sp "\n"))
+                      (fprintf sp " Multiple single-letter switches can be combined after\n")
+                      (fprintf sp " one `-`. For example, `-h-` is the same as `-h --`.\n")
                       (for ([set (in-list table)] ; the original table
                             #:when (eq? (car set) 'ps))
                         (for ([line (in-list (cdr set))])
