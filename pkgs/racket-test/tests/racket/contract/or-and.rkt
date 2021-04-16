@@ -79,6 +79,42 @@
   (test/spec-passed
    'or/c14
    '(contract (or/c not) #f 'pos 'neg))
+
+  (test/spec-passed
+   'or/c15
+   '(contract (or/c 'x 'y 1 2) 'x 'pos 'neg))
+
+  (test/spec-passed
+   'or/c16
+   '(contract (or/c 'x 'y 1 2) 'y 'pos 'neg))
+
+  (test/spec-passed
+   'or/c17
+   '(contract (or/c 'x 'y 1 2) 1 'pos 'neg))
+
+  (test/spec-passed
+   'or/c18
+   '(contract (or/c 'x 'y 1 2) 1 'pos 'neg))
+
+  (test/spec-passed
+   'or/c19
+   '(contract (or/c 'x 'y 1 2) 1.0 'pos 'neg))
+
+  (test/spec-passed
+   'or/c20
+   '(contract (or/c 'x 'y 1 2) 2 'pos 'neg))
+
+  (test/spec-passed
+   'or/c21
+   '(contract (or/c 'x 'y 1 2) 2.0 'pos 'neg))
+
+  (test/pos-blame
+   'or/c22
+   '(contract (or/c 'x 'y 1 2) 'z 'pos 'neg))
+
+  (test/pos-blame
+   'or/c23
+   '(contract (or/c 'x 'y 1 2) 3 'pos 'neg))
   
   (test/spec-passed/result
    'or/c-not-error-early
