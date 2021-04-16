@@ -380,7 +380,8 @@
                                                         (first? help helps))
                                                    "/"]
                                                   [(and (last? line (cdr set))
-                                                        (last? help helps))
+                                                        (last? help helps)
+                                                        (> (length helps) 1))
                                                    "\\"]
                                                   [else "|"])]
                                                [(and (memq (car set) '(multi final))
@@ -398,7 +399,15 @@
                                         (loop (cdr flags))))
                                     (if (and (eq? (car set) 'once-any)
                                              (pair? (cddr set)))
-                                      (fprintf sp "\n|   ")
+                                      (if (and (last? line (cdr set))
+                                                (last? help helps))
+                                        ; | -i
+                                        ; \    description  <-
+                                        (fprintf sp "\n\\   ")
+                                        ; | -i
+                                        ; |    description 1  <-
+                                        ; \    description 2
+                                        (fprintf sp "\n|   "))
                                       (fprintf sp "\n    ")))
                                   (fprintf sp "   "))
                                 (fprintf sp " ~a\n" help))))))
