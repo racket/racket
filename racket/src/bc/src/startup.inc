@@ -54518,7 +54518,7 @@ static const char *startup_source =
 "(if(char? mode_0)"
 "                                                                   \"expected readtable or #f argument after character argument\""
 "                                                                   \"expected procedure argument after symbol argument\")"
-"                                                                 \"given\""
+"                                                                 (if (char? mode_0) \"character\" \"symbol\")"
 " mode_0))"
 "(void))"
 "(values))))"
