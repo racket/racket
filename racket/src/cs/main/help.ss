@@ -2,7 +2,7 @@
   (define init-filename
     (let-values ([(base name dir?) (split-path (find-system-path 'init-file))])
       (path->string name)))
-  (#%printf "~a: [<option> ...] <argument> ...\n" (if gracket? "gracket" "racket"))
+  (#%printf "usage: ~a [<option> ...] <argument> ...\n" (if gracket? "gracket" "racket"))
   (when (and gracket? (eq? 'unix (system-type)))
     (#%printf
      (string-append
