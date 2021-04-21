@@ -532,7 +532,7 @@
   (include "include.ss")
   (include-generated "io.scm")
 
-   ;; Initialize:
+  ;; Initialize:
   (set-log-system-message! (lambda (level str)
                              (1/log-message (|#%app| 1/current-logger) level str #f)))
   (set-error-display-eprintf! (lambda (fmt . args)

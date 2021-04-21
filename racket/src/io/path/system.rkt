@@ -71,7 +71,14 @@
 
 (define orig-dir
   (let ()
-    (define os-host-dir (rktio_to_bytes (rktio_get_current_directory rktio)))
+    (define os-host-dir (let ([dir (rktio_get_current_directory rktio)])
+                          (if (rktio-error? dir)
+                              ;; If there's an error getting the current directory,
+                              ;; just use a root directory
+                              (case (system-path-convention-type)
+                                [(unix) #"/"]
+                                [(windows) #"C:\\"])
+                              (rktio_to_bytes dir))))
     (define os-dir (path->directory-path (host-> os-host-dir)))
     (case (system-type 'os)
       [(windows) os-dir]

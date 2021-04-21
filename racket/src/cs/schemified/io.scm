@@ -30352,11 +30352,16 @@
 (define set-run-file! (lambda (p_0) (set! run-file p_0)))
 (define orig-dir
   (let ((os-host-dir_0
-         (|#%app|
-          rktio_to_bytes
-          (|#%app|
-           rktio_get_current_directory
-           (unsafe-place-local-ref cell.1)))))
+         (let ((dir_0
+                (|#%app|
+                 rktio_get_current_directory
+                 (unsafe-place-local-ref cell.1))))
+           (if (vector? dir_0)
+             (let ((tmp_0 (system-path-convention-type)))
+               (if (eq? tmp_0 'unix)
+                 #vu8(47)
+                 (if (eq? tmp_0 'windows) #vu8(67 58 92) (void))))
+             (|#%app| rktio_to_bytes dir_0)))))
     (let ((os-dir_0 (1/path->directory-path (host-> os-host-dir_0))))
       (let ((tmp_0 (system-type 'os)))
         (if (eq? tmp_0 'windows)
