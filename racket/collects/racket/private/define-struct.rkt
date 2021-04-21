@@ -732,7 +732,7 @@
                                           (list
                                            (quote-syntax #,(prune struct:))
                                            (quote-syntax #,(prune (if (and ctor-name self-ctor?)
-                                                                      id
+                                                                      ctor-name
                                                                       make-)))
                                            (quote-syntax #,(prune ?))
                                            (list

@@ -1610,6 +1610,13 @@
   (struct exn:foo exn () #:constructor-name make-exn:foo)
   (test "foo" exn-message (make-exn:foo "foo" (current-continuation-marks))))
 
+(let ()
+  (struct foo (x) #:constructor-name Foo #:name Foo)
+  (test #t foo? (Foo 1))
+  (test 1 foo-x (Foo 1))
+  (test #t foo? (let-syntax ([mk (lambda (stx)
+                                   #`(#,(cadr (extract-struct-info (syntax-local-value #'Foo))) 1))])
+                  (mk))))
 
 ;; ----------------------------------------
 
