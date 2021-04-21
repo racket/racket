@@ -74,14 +74,14 @@ The @exec{raco test} command accepts several flags:
 
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
-       system: ignore non-modules, run tests in separate processes,
-       use as many jobs as available processors,
-       set the default timeout to 90 seconds, 
-       create a fresh @envvar{PLTUSERHOME} and @envvar{TMPDIR} for each test,
-       count stderr output as a test failure,
-       quiet program output, 
-       provide empty program input,
-       and print a table of results.}
+       system: ignore non-modules, run tests in separate processes
+       (unless @DFlag{thread} or @DFlag{direct} is specified) use as
+       many jobs as available processors (unless @DFlag{jobs} is
+       specified), set the default timeout to 90 seconds (unless
+       @DFlag{timeout} is specified), create a fresh
+       @envvar{PLTUSERHOME} and @envvar{TMPDIR} for each test, count
+       stderr output as a test failure, quiet program output, provide
+       empty program input, and print a table of results.}
 
  @item{@Flag{s} @nonterm{name} or @DFlag{submodule} @nonterm{name}
        --- Requires the submodule @nonterm{name} rather than @racket[test].
@@ -132,7 +132,9 @@ The @exec{raco test} command accepts several flags:
       to @nonterm{seconds}. Use @exec{+inf.0} to allow tests to run without
       limit but allow @racket[timeout] sub-submodule configuration.
       If any test fails due to a timeout, the exit status of @exec{raco test}
-      is 2 (as opposed to 1 for only non-timeout failures or 0 for success).}
+      is 2 (as opposed to 1 for only non-timeout failures or 0 for success).
+      The default timeout corresponds to @exec{+inf.0} if not specified
+      via @DFlag{timeout} or @DFlag{drdr}.}
 
  @item{@DFlag{fresh-user}
       --- When running tests in a separate process, creates a fresh
