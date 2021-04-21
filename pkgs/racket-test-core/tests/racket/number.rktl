@@ -1328,6 +1328,8 @@
 (test -1 arithmetic-shift -1 (- (expt 2 100)))
 (test -1 arithmetic-shift (- (expt 2 100)) (- (expt 2 100)))
 
+(test (- (expt 16 232)) arithmetic-shift (- 307 (expt 16 240)) -32)
+
 (arity-test arithmetic-shift 2 2)
 (err/rt-test (arithmetic-shift "a" 1))
 (err/rt-test (arithmetic-shift 1 "a"))
