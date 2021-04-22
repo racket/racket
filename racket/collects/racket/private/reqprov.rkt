@@ -517,7 +517,7 @@
                                                               (import-mode import)
                                                               (import-req-mode import)
                                                               (import-orig-mode import)
-                                                              new-id))))
+                                                              orig-id))))
                                       imports))])
                          (if (null? l)
                              (raise-syntax-error
@@ -654,7 +654,7 @@
                                                        (import-mode import)
                                                        (import-req-mode import)
                                                        (import-orig-mode import)
-                                                       bind-id)
+                                                       orig-id)
                                           import))
                                   rename-imports)))
                          orig-ids bind-ids))])
