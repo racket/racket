@@ -132,6 +132,10 @@
 ;; linking extra libraries:
 (define-runtime-path cairo-nofortfy-patch "patches/cairo-nofortify.patch")
 
+;; Adds cairo_quartz_get_cg_context_with_clip, which is based on
+;; https://hg.mozilla.org/mozilla-central/file/tip/gfx/cairo/native-clipping.patch
+(define-runtime-path cairo-cg-surface-patch "patches/cairo-cg-surface.patch")
+
 ;; Define some functions that aren't in Mac OS 10.5 (for the 32-bit build)
 (define-runtime-path pango-surrogate-patch "patches/pango-surrogate.patch")
 
@@ -565,7 +569,8 @@
              #:patches (append
                         (list cairo-emptyglyph.patch
                               cairo-coretext-patch
-                              courier-new-patch)
+                              courier-new-patch
+                              cairo-cg-surface-patch)
                         (if win?
                             (list cairo-nofortfy-patch)
                             null)))]

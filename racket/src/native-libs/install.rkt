@@ -17,7 +17,7 @@
    dest-dir))
 
 ;; Hack to make AArch64 Mac OS libraries look like other Macs:
-(define renames
+(define mac-aarch64-renames
   `(("libffi.7" "libffi.6")))
 
 (define libs
@@ -233,7 +233,7 @@
   (or (equal? p "fonts")
       (framework? p)))
 
-(define (revert-name p)
+(define (revert-name p renames)
   (or (for/or ([pr (in-list renames)])
 	(and (equal? (cadr pr) p)
 	     (car pr)))
@@ -327,7 +327,7 @@
        (displayln l o))
      (display lic-end o))))
 
-(define (install platform i-platform so fixup libs)
+(define (install platform i-platform so fixup libs renames)
   (define pkgs (make-hash))
   (define pkgs-lic (make-hash))
 
@@ -340,7 +340,7 @@
 	 [(procedure? so) (both (so lib))]
 	 [else
 	  (define (make lib) (format "~a.~a" lib so))
-	  (values (make lib) (make (revert-name lib)))])))
+	  (values (make lib) (make (revert-name lib renames)))])))
     (define-values (pkg suffix subdir lic) (find-pkg lib))
     (define dir (build-path dest-dir
                             (~a pkg "-" platform suffix)
@@ -389,7 +389,7 @@
       (system (format "install_name_tool -id ~a ~a" (file-name-from-path p-new) p-new))
       (for-each (lambda (s)
                   (system (format "install_name_tool -change ~a @loader_path/~a ~a"
-                                  (format "~a/~a.dylib" from (revert-name s))
+                                  (format "~a/~a.dylib" from (revert-name s renames))
                                   (format "~a.dylib" s)
                                   p-new)))
                 (append libs nonwin-libs))
@@ -402,15 +402,21 @@
 			   (if aarch64? "aarch64" "x86_64"))
                        "-macosx"))
 
-  (install platform platform "dylib" fixup (append libs
-                                                   mac-libs
-                                                   (cond
-                                                     [m32? '()]
-                                                     [else mac64-libs])
-                                                   (cond
-                                                     [aarch64? '()]
-                                                     [else macx86-libs])
-                                                   nonwin-libs)))
+  (define renames (if aarch64?
+                      mac-aarch64-renames
+                      null))
+
+  (install platform platform "dylib" fixup
+           (append libs
+                   mac-libs
+                   (cond
+                     [m32? '()]
+                     [else mac64-libs])
+                   (cond
+                     [aarch64? '()]
+                     [else macx86-libs])
+                   nonwin-libs)
+           renames))
 
 (define (install-win)
   (define exe-prefix (if m32?
@@ -439,7 +445,8 @@
                                (regexp-replace* #rx"[.]"
                                                 (regexp-replace #rx"[.](?=.*[.])" s "!")
                                                 "-")
-                               ".")))))
+                               "."))
+             null)))
 
 (define (install-linux)
   (define (fixup p p-new)
@@ -469,10 +476,12 @@
          [else
           (error 'add-so "not found: ~s" orig-p)])])))
 
-  (install platform platform add-so fixup (append (remove* linux-remove-libs
-							   libs)
-                                                  nonwin-libs
-						  linux-libs)))
+  (install platform platform add-so fixup
+           (append (remove* linux-remove-libs
+                            libs)
+                   nonwin-libs
+                   linux-libs)
+           null))
 
 (cond
  [win? (install-win)]
