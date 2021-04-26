@@ -61,13 +61,25 @@
                  [path (normal-case-path (simplify-path path))])
             ;; Record module timestamp and dependencies:
             (define-values (ts actual-path) (get-timestamp path))
+            (define (code->dependencies code)
+              (apply append
+                     (map cdr (module-compiled-imports code))))
             (let ([a-mod (mod name
                               ts
                               (if code
-                                  (apply append 
-                                         (map cdr (module-compiled-imports code)))
+                                  (code->dependencies code)
                                   null))])
-              (hash-set! loaded path a-mod))
+              (hash-set! loaded path a-mod)
+              ;; Register all submodules, too; even though we load at the
+              ;; file granularity, we need submodules for dependencies
+              (when code
+                (let loop ([code code])
+                  (for ([submod-code (in-list (append (module-compiled-submodules code #t)
+                                                      (module-compiled-submodules code #f)))])
+                    (define name (module-compiled-name submod-code))
+                    (hash-set! loaded (cons path (cdr name))
+                               (mod name ts (code->dependencies submod-code)))
+                    (loop submod-code)))))
             ;; Evaluate the module:
             (parameterize ([current-module-declare-source actual-path])
               (eval code))))
@@ -89,17 +101,30 @@
 (define (check-latest mod verbosity path-collector)
   (define mpi (module-path-index-join mod #f))
   (define done (make-hash))
-  (let loop ([mpi mpi])
+  (let loop ([mpi mpi] [wrt-mpi #f] [wrt-path #f])
     (define rpath (module-path-index-resolve mpi))
-    (define path (let ([p (resolved-module-path-name rpath)])
-                   (if (pair? p) (car p) p)))
+    (define name (resolved-module-path-name rpath))
+    (define path (if (pair? name)
+                     (let ([path (car name)])
+                       (if (and (symbol? path)
+                                ;; If the code was compiled from source, then the
+                                ;; "self" modidx may be reported for a submodule
+                                ;; import, so manually resolve to `wrt-path`:
+                                (self-modidx-base? mpi))
+                           wrt-path
+                           path))
+                     name))
     (when (path? path)
       (define npath (normal-case-path path))
-      (unless (hash-ref done npath #f)
-        (hash-set! done npath #t)
-        (define mod (hash-ref loaded npath #f))
+      (define key (if (pair? name)
+                      (cons npath (cdr name))
+                      npath))
+      (unless (hash-ref done key #f)
+        (hash-set! done key #t)
+        (define mod (hash-ref loaded key #f))
         (when mod
-          (for-each loop (mod-depends mod))
+          (for ([dep-mpi (in-list (mod-depends mod))])
+            (loop dep-mpi mpi path))
           (define-values (ts actual-path) (get-timestamp npath))
           (when (ts . > . (mod-timestamp mod))
             (define orig (current-load/use-compiled))
@@ -109,3 +134,16 @@
                            [current-module-declare-source actual-path])
               ((rerequire-load/use-compiled orig #t verbosity path-collector)
                npath (mod-name mod)))))))))
+
+;; Is `mpi` a submod relative to "self"?
+(define (self-modidx-base? mpi)
+  (define-values (mp base) (module-path-index-split mpi))
+  (cond
+    [(and base
+          (pair? mp)
+          (eq? (car mp) 'submod)
+          (member (cadr mp) '("." "..")))
+     (define-values (base-base base-path) (module-path-index-split base))
+     (or (and (not base-base) (not base-path))
+         (self-modidx-base? base))]
+    [else #f]))
