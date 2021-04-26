@@ -30,6 +30,11 @@ Declaration (DTD) processing, including preservation of DTDs in read documents, 
 It also does not expand user-defined entities or read user-defined entities in attributes.
 It does not interpret namespaces either.
 
+@margin-note{In addition to the library described by this document, there is another
+ @racket[sxml] library based on work by Oleg Kiselyov
+ which users may find faster in processing large documents. It is
+ available through racket's package server.}
+
 @; ----------------------------------------------------------------------
 
 @section{Datatypes}
