@@ -54,7 +54,7 @@ Racket BC
 
 To build Racket BC on Unix variants or Mac OS:
 
- * ... in addition Racket CS: supply `--enable-cs --enable-bc` to
+ * ... in addition to Racket CS: supply `--enable-cs --enable-bc` to
    `configure`.
 
    The generated Racket BC executables will have a "bc" suffix. A
