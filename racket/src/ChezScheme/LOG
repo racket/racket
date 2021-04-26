@@ -2190,3 +2190,6 @@
     release_notes/math/Makefile s/Mf-base stex/Makefile stex/Mf-stex
     stex/gifs/Makefile stex/math/Makefile workarea
     zlib/contrib/minizip/Makefile
+- fixed the documentation of load-shared-object to mention an up-to-date
+  dll for Windows
+    foreign.stex
