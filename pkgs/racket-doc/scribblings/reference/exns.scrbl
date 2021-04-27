@@ -383,6 +383,10 @@ record, else the @racket[expr] is used if provided and not
 @racket[extra-sources] to produce the @racket[exprs] field, or
 @racket[extra-sources] is used directly for @racket[exprs] if neither
 @racket[expr] nor @racket[sub-expr] is provided and not @racket[#f].
+The @racket[extra-sources] argument is also used directly for
+@racket[exprs] in the unusual case that the @racket[sub-expr] or
+@racket[expr] that would be included in @racket[exprs] cannot be
+converted to a syntax object (because it contains a cycle).
 
 The form name used in the generated error message is determined
 through a combination of the @racket[name], @racket[expr], and

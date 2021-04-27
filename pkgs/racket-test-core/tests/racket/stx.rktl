@@ -2482,6 +2482,20 @@
   (check #f a-stx))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `raise-syntax-error` forges ahead even if
+;; it's given a cyclic S-expression
+
+(let ()
+  (define v (vector #f))
+  (vector-set! v 0 v)
+  (define (check-err v v-detail)
+    (err/rt-test (raise-syntax-error 'something "" v v-detail)
+                 exn:fail:syntax?
+                 #rx"^something: .*#0=#[(]#0#[)]"))
+  (check-err v #f)
+  (check-err 'bad v))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test prop:rename-transformer with procedure content
 
 (begin-for-syntax

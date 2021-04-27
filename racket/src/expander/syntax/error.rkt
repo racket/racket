@@ -75,12 +75,12 @@
   (define at-message
     (or (and sub-expr
              (error-print-source-location)
-             (format "\n  at: ~.s" (syntax->datum (datum->syntax #f sub-expr))))
+             (format "\n  at: ~.s" (->datum sub-expr)))
         ""))
   (define in-message
     (or (and expr
              (error-print-source-location)
-             (format "\n  in: ~.s" (syntax->datum (datum->syntax #f expr))))
+             (format "\n  in: ~.s" (->datum expr)))
         ""))
   (define src-loc-str
     (or (and (error-print-source-location)
@@ -98,8 +98,10 @@
           (current-continuation-marks)
           (map syntax-taint
                (if (or sub-expr expr)
-                   (cons (datum->syntax #f (or sub-expr expr))
-                         extra-sources)
+                   ;; accomodate `datum->syntax` failure similar to `->datum`:
+                   (with-handlers ([exn:fail:contract? (lambda (exn) extra-sources)])
+                     (cons (datum->syntax #f (or sub-expr expr))
+                           extra-sources))
                    extra-sources)))))
 
 (define (extract-form-name s)
@@ -120,6 +122,16 @@
        (let ([str (srcloc->string (syntax-srcloc s))])
          (and str
               (string-append str ": ")))))
+
+;; `raise-syntax-error` is meant to accept either syntax objects or
+;; S-expressions, and it has traditionally supported hybird values by
+;; coercing to a syntax object and them back; in case the expression
+;; cannot be represented as a syntax object due to cycles, though,
+;; fall back to showing the value in raw form (instead of constraining
+;; `raise-syntax-error`)
+(define (->datum expr)
+  (with-handlers ([exn:fail:contract? (lambda (exn) expr)])
+    (syntax->datum (datum->syntax #f expr))))
 
 ;; Hook for the expander:
 (define current-previously-unbound (lambda () #f))
