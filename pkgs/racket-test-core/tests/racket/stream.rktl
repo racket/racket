@@ -194,4 +194,27 @@
                       (stream-lazy
                        (stream-lazy '(1)))))
 
+;; Make sure certain operations that could encounter a too-short stream don't
+;; retain the original stream just in case of the error:
+(unless (eq? 'cgc (system-type 'gc))
+  (let ([check (lambda (op)
+                 (define s (stream-cons
+                            1
+                            (stream-cons
+                             2
+                             (begin
+                               (collect-garbage)
+                               (let ([v (weak-box-value wb)])
+                                 (stream-cons
+                                  3
+                                  (stream-cons
+                                   v
+                                   empty)))))))
+                 (define wb (make-weak-box s))
+                 (test #f 'check-stream-no-retain (op s 3)))])
+    (check stream-ref)
+    (check (lambda (s n) (stream-first (stream-tail s n))))
+    (check (lambda (s n) (stream-ref (stream-take s (add1 n)) n)))))
+
+
 (report-errs)

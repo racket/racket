@@ -103,7 +103,14 @@
       (raise-arguments-error 'stream-ref
                              "stream ended before index"
                              "index" i
-                             "stream" st)]
+                             ;; Why `"stream" st` is omitted:
+                             ;; including `st` in the error message
+                             ;; means that it has to be kept live;
+                             ;; that's not so great for a stream, where
+                             ;; lazy construction could otherwise allow
+                             ;; a element to be reached without consuming
+                             ;; proportional memory
+                             #;"stream" #;st)]
      [(zero? n)
       (stream-first s)]
      [else
@@ -120,11 +127,10 @@
       (raise-arguments-error 'stream-tail
                              "stream ended before index"
                              "index" i
-                             "stream" st)]
+                             ;; See "Why `"stream" st` is omitted" above
+                             #;"stream" #;st)]
      [else
       (loop (sub1 n) (stream-rest s))])))
-
-
 
 (define (stream-take st i)
   (unless (stream? st) (raise-argument-error 'stream-take "stream?" st))
@@ -137,7 +143,8 @@
       (raise-arguments-error 'stream-take
                              "stream ended before index"
                              "index" i
-                             "stream" st)]
+                             ;; See "Why `"stream" st` is omitted" above
+                             #;"stream" #;st)]
      [else
       (make-do-stream (lambda () #f)
                       (lambda () (stream-first s))
