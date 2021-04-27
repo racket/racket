@@ -1652,5 +1652,25 @@
   (thread-wait t))
 
 ;; ----------------------------------------
+;; regression test to check that when a choice evt replaces a single
+;; event, an already-chosen event (perhaps represented as an index) is
+;; not misinterpreted later
+
+(for ([i (in-range 10)])
+  (define ch (make-channel))
+  (define v
+    (sync (guard-evt
+           (lambda ()
+             (thread (lambda () (channel-put ch 0)))
+             (sync (system-idle-evt))
+             (choice-evt
+              (wrap-evt always-evt (lambda (v) 1))
+              (wrap-evt always-evt (lambda (v) 2))
+              (wrap-evt always-evt (lambda (v) 3)))))
+          ch))
+  (unless (memq v '(0 1 2 3))
+    (error "bad sync result" v)))
+
+;; ----------------------------------------
 
 (report-errs)

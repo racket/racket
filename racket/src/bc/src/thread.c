@@ -6560,7 +6560,10 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
       /* Inline the set (in place) */
       Scheme_Object **argv;
       Evt **ws;
-       
+
+      if (syncing->result > i+1)
+        syncing->result += wts->argc-1;
+
       argv = (Scheme_Object **)splice_ptr_array((void **)evt_set->argv, 
 						evt_set->argc,
 						(void **)wts->argv, 
