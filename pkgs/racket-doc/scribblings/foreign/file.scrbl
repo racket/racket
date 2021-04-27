@@ -56,8 +56,8 @@ the same as for @racket[security-guard-check-file].
 
 @defproc[(security-guard-check-network
            [who symbol?]
-           [host string?]
-           [port (integer-in 1 65535)]
+           [host (or/c string? #f)]
+           [port (or/c (integer-in 1 65535) #f)]
            [mode (or/c 'client 'server)])
          void?]{
 

@@ -2122,7 +2122,9 @@
     (sc-run #t #:check security-guard-check-network
             "localhost" 500 'client)
     (sc-run #t #:check security-guard-check-network
-            "localhost" 500 'server))
+            "localhost" 500 'server)
+    (sc-run #t #:check security-guard-check-network
+            #f #f 'server))
 
   (parameterize ((current-security-guard sg-ro))
     (sc-run #t "foo.txt" '(read))
@@ -2138,7 +2140,9 @@
     (sc-run #t #:check security-guard-check-network
             "localhost" 500 'client)
     (sc-run #f #:check security-guard-check-network
-            "localhost" 500 'server))
+            "localhost" 500 'server)
+    (sc-run #f #:check security-guard-check-network
+            #f #f 'server))
 
   (parameterize ((current-security-guard sg-priv))
     (sc-run #t pub-mod '(read))

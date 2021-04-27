@@ -8589,22 +8589,26 @@ static Scheme_Object *security_guard_check_network(int argc, Scheme_Object *argv
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_contract("security-guard-check-network", "symbol?", 0, argc, argv);
 
-  if (!SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_contract("security-guard-check-network", "string?", 1, argc, argv);
+  if (SCHEME_TRUEP(argv[1]) && !SCHEME_CHAR_STRINGP(argv[1]))
+    scheme_wrong_contract("security-guard-check-network", "(or/c string? #f)", 1, argc, argv);
 
-  if (!SCHEME_INTP(argv[2])
-      || (SCHEME_INT_VAL(argv[2]) < 1)
-      || (SCHEME_INT_VAL(argv[2]) > 65535))
-    scheme_wrong_contract("security-guard-check-network", "(integer-in 1 65535)", 2, argc, argv);
+  if (SCHEME_TRUEP(argv[2])
+      && (!SCHEME_INTP(argv[2])
+          || (SCHEME_INT_VAL(argv[2]) < 1)
+          || (SCHEME_INT_VAL(argv[2]) > 65535)))
+    scheme_wrong_contract("security-guard-check-network", "(or/c (integer-in 1 65535) #f)", 2, argc, argv);
   
   if (!SAME_OBJ(argv[3], client_symbol) && !SAME_OBJ(argv[3], server_symbol))
     scheme_wrong_contract("security-guard-check-network", "(or/c 'client'server)", 3, argc, argv);
 
-  a = scheme_char_string_to_byte_string(argv[1]);
+  if (SCHEME_TRUEP(argv[1]))
+    a = scheme_char_string_to_byte_string(argv[1]);
+  else
+    a = NULL;
   
   scheme_security_check_network(scheme_symbol_val(argv[0]),
-                                SCHEME_BYTE_STR_VAL(a),
-                                SCHEME_INT_VAL(argv[2]),
+                                a ? SCHEME_BYTE_STR_VAL(a) : NULL,
+                                SCHEME_TRUEP(argv[2]) ? SCHEME_INT_VAL(argv[2]) : 0,
                                 SAME_OBJ(argv[3], client_symbol));
 
   return scheme_void;
