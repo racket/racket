@@ -963,7 +963,8 @@
   (check (lambda (p) (write-byte 10 p)))
   (check (lambda (p) (write-bytes #"hello" p)))
   (check (lambda (p) (write-char #\x p)))
-  (check (lambda (p) (write-string "hello" p))))
+  (check (lambda (p) (write-string "hello" p)))
+  (check flush-output))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; port-closed events

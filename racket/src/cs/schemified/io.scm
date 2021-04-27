@@ -11838,10 +11838,13 @@
                                     loop
                                     (lambda ()
                                       (begin
-                                        (let ((r_0
-                                               (begin
-                                                 (unsafe-start-atomic)
-                                                 (begin0
+                                        (begin
+                                          (unsafe-start-atomic)
+                                          (begin
+                                            (check-not-closed
+                                             'flush-output
+                                             out_0)
+                                            (let ((r_0
                                                    (|#%app|
                                                     write-out_0
                                                     out_0
@@ -11850,26 +11853,33 @@
                                                     0
                                                     #f
                                                     #f
-                                                    #f)
-                                                   (unsafe-end-atomic)))))
-                                          (letrec*
-                                           ((r-loop_0
-                                             (|#%name|
-                                              r-loop
-                                              (lambda (r_1)
-                                                (begin
-                                                  (if (eq? r_1 0)
-                                                    (void)
-                                                    (if (not r_1)
-                                                      (loop_0)
-                                                      (if (evt? r_1)
-                                                        (r-loop_0 (sync r_1))
-                                                        (error
-                                                         'flush-output
-                                                         "weird result")))))))))
-                                           (r-loop_0 r_0))))))))
+                                                    #f)))
+                                              (begin
+                                                (unsafe-end-atomic)
+                                                (letrec*
+                                                 ((r-loop_0
+                                                   (|#%name|
+                                                    r-loop
+                                                    (lambda (r_1)
+                                                      (begin
+                                                        (if (eq? r_1 0)
+                                                          (void)
+                                                          (if (not r_1)
+                                                            (loop_0)
+                                                            (if (evt? r_1)
+                                                              (r-loop_0
+                                                               (sync r_1))
+                                                              (error
+                                                               'flush-output
+                                                               "weird result")))))))))
+                                                 (r-loop_0 r_0)))))))))))
                                  (loop_0))
-                                (wo-loop_0 write-out_0)))))))))
+                                (begin
+                                  (unsafe-start-atomic)
+                                  (begin0
+                                    (check-not-closed 'flush-output out_0)
+                                    (unsafe-end-atomic))
+                                  (wo-loop_0 write-out_0))))))))))
                    (wo-loop_0 p_0)))))))))
     (|#%name|
      flush-output
