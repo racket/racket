@@ -1114,7 +1114,7 @@ TO DO:
     (set-mzssl-in-progress-sema! mzssl #f)))
 
 (define (out-ready-evt mzssl)
-  ;; Similar to `out-ready-evt`, we may need a kind of
+  ;; Similar to `in-ready-evt`, we may need a kind of
   ;; progress evt to wait on:
   (choice-evt (mzssl-o mzssl)
               (or (mzssl-out-progress-sema mzssl)
