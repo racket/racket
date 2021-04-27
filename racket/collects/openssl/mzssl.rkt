@@ -627,13 +627,14 @@ TO DO:
 
 ;; internal:
 (define-struct mzssl (ssl i o r-bio w-bio pipe-r pipe-w 
-                    buffer lock 
-                    w-closed? r-closed?
-                    flushing? must-write must-read
-                    refcount 
-                    close-original? shutdown-on-close?
+                          buffer lock
+                          w-closed? r-closed?
+                          flushing? must-write must-read
+                          refcount
+                          close-original? shutdown-on-close?
                           error
-                          server?)
+                          server?
+                          in-progress-sema out-progress-sema)
   #:mutable)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1091,18 +1092,55 @@ TO DO:
       (close-input-port (mzssl-i mzssl))
       (close-output-port (mzssl-o mzssl)))))
 
+(define (in-ready-evt mzssl)
+  (define i (mzssl-i mzssl))
+  ;; Using `i` to indicate that more input is available will usually
+  ;; work, but it's possible for more input to become available and
+  ;; then concurrently pumped in, after which `i` may not be ready
+  ;; again. We can use progress evts if `i` supports that, otherwise
+  ;; make our own progress evt.
+  (choice-evt i
+              (or (and (port-provides-progress-evts? i)
+                       (port-progress-evt i))
+                  (mzssl-in-progress-sema mzssl)
+                  (let ([s (make-semaphore)])
+                    (set-mzssl-in-progress-sema! mzssl s)
+                    s))))
+
+(define (in-progress! mzssl)
+  (define s (mzssl-in-progress-sema mzssl))
+  (when s
+    (semaphore-post s)
+    (set-mzssl-in-progress-sema! mzssl #f)))
+
+(define (out-ready-evt mzssl)
+  ;; Similar to `out-ready-evt`, we may need a kind of
+  ;; progress evt to wait on:
+  (choice-evt (mzssl-o mzssl)
+              (or (mzssl-out-progress-sema mzssl)
+                  (let ([s (make-semaphore)])
+                    (set-mzssl-out-progress-sema! mzssl s)
+                    s))))
+
+(define (out-progress! mzssl)
+  (define s (mzssl-out-progress-sema mzssl))
+  (when s
+    (semaphore-post s)
+    (set-mzssl-out-progress-sema! mzssl #f)))
+
 (define (pump-input-once mzssl need-progress?/out)
   (let ([buffer (mzssl-buffer mzssl)]
         [i (mzssl-i mzssl)]
         [r-bio (mzssl-r-bio mzssl)])
     (let ([n ((if (and need-progress?/out 
-                 (not (output-port? need-progress?/out)))
-            read-bytes-avail! 
-            read-bytes-avail!*)
-        buffer i)])
+                       (not (output-port? need-progress?/out)))
+                  read-bytes-avail!
+                  read-bytes-avail!*)
+              buffer i)])
       (cond
        [(eof-object? n) 
         (BIO_set_mem_eof_return r-bio 0)
+        (in-progress! mzssl)
         eof]
        [(zero? n)
         (when need-progress?/out
@@ -1112,6 +1150,7 @@ TO DO:
         (let ([m (BIO_write r-bio buffer n)])
           (unless (= m n)
             ((mzssl-error mzssl) 'pump-input-once "couldn't write all bytes to BIO!"))
+          (in-progress! mzssl)
           m)]))))
 
 (define (pump-output-once mzssl need-progress? output-blocked-result)
@@ -1124,19 +1163,20 @@ TO DO:
       (if (zero? n)
           (let ([n (BIO_read w-bio buffer (bytes-length buffer))])
             (if (n . <= . 0)
-          (begin
-            (when need-progress?
-              ((mzssl-error mzssl) 'pump-output-once "no output to pump!"))
-            #f)
-          (begin
-            (write-bytes buffer pipe-w 0 n)
-            (pump-output-once mzssl need-progress? output-blocked-result))))
+                (begin
+                  (when need-progress?
+                    ((mzssl-error mzssl) 'pump-output-once "no output to pump!"))
+                  #f)
+                (begin
+                  (write-bytes buffer pipe-w 0 n)
+                  (pump-output-once mzssl need-progress? output-blocked-result))))
           (let ([n ((if need-progress? write-bytes-avail write-bytes-avail*) buffer o 0 n)])
             (if (zero? n)
-          output-blocked-result
-          (begin
-            (port-commit-peeked n (port-progress-evt pipe-r) always-evt pipe-r)
-            #t)))))))
+                output-blocked-result
+                (begin
+                  (out-progress! mzssl)
+                  (port-commit-peeked n (port-progress-evt pipe-r) always-evt pipe-r)
+                  #t)))))))
 
 ;; result is #t if there's more data to send out the
 ;;  underlying output port, but the port is full
@@ -1187,33 +1227,33 @@ TO DO:
                        eof]
                       [(= err SSL_ERROR_WANT_READ)
                        (when enforce-retry?
-                               (set! must-read-len len))
+                         (set! must-read-len len))
                        (let ([n (pump-input-once mzssl #f)])
                          (if (eq? n 0)
                              (let ([out-blocked? (pump-output mzssl)])
-                                     (when enforce-retry?
-                                       (set-mzssl-must-read! mzssl (make-semaphore)))
+                               (when enforce-retry?
+                                 (set-mzssl-must-read! mzssl (make-semaphore)))
                                (wrap-evt (choice-evt
-                                          (mzssl-i mzssl) 
+                                          (in-ready-evt mzssl)
                                           (if out-blocked?
-                                              (mzssl-o mzssl) 
+                                              (out-ready-evt mzssl)
                                               never-evt))
                                          (lambda (x) 0)))
                              (do-read buffer)))]
                       [(= err SSL_ERROR_WANT_WRITE)
-                             (when enforce-retry?
-                               (set! must-read-len len))
+                       (when enforce-retry?
+                         (set! must-read-len len))
                        (if (pump-output-once mzssl #f #f)
                            (do-read buffer)
                            (begin
-                                   (when enforce-retry?
-                                     (set-mzssl-must-read! mzssl (make-semaphore)))
-                             (wrap-evt (mzssl-o mzssl) (lambda (x) 0))))]
+                             (when enforce-retry?
+                               (set-mzssl-must-read! mzssl (make-semaphore)))
+                             (wrap-evt (out-ready-evt mzssl) (lambda (x) 0))))]
                       [else
-                             (set! must-read-len #f)
+                       (set! must-read-len #f)
                        ((mzssl-error mzssl) 'read-bytes 
-                              "SSL read failed ~a"
-                              estr)]))))))]
+                                            "SSL read failed ~a"
+                                            estr)]))))))]
         [top-read
          (lambda (buffer)
            (cond
@@ -1353,9 +1393,9 @@ TO DO:
                                          (when enforce-retry?
                                            (set-mzssl-must-write! mzssl (make-semaphore)))
                                    (wrap-evt (choice-evt
-                                              (mzssl-i mzssl)
+                                              (in-ready-evt mzssl)
                                               (if out-blocked?
-                                                  (mzssl-o mzssl)
+                                                  (out-ready-evt mzssl)
                                                   never-evt))
                                              (lambda (x) #f)))
                                  (do-write len non-block? enable-break?)))]
@@ -1370,7 +1410,7 @@ TO DO:
                                            (begin
                                              (when enforce-retry?
                                                (set-mzssl-must-write! mzssl (make-semaphore)))
-                                             (wrap-evt (mzssl-o mzssl) (lambda (x) #f))))))]
+                                             (wrap-evt (out-ready-evt mzssl) (lambda (x) #f))))))]
                           [else
                            (set! must-write-len #f)
                            ((mzssl-error mzssl) 'write-bytes 
@@ -1573,12 +1613,13 @@ TO DO:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
            [(pipe-r pipe-w) (make-pipe)])
       (let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
-                         buffer (make-semaphore 1) 
-                         #f #f
-                         #f #f #f 2 
-                         close? shutdown-on-close?
+                               buffer (make-semaphore 1)
+                               #f #f
+                               #f #f #f 2
+                               close? shutdown-on-close?
                                error/ssl
-                               (eq? connect/accept 'accept))])
+                               (eq? connect/accept 'accept)
+                               #f #f)])
         (let loop ()
           (let-values ([(status err estr) (save-errors (if connect?
                                                            (SSL_connect ssl)
