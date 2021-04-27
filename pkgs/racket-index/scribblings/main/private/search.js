@@ -679,11 +679,23 @@ function UncompactHtml(x) {
   }
 }
 
+function StripQArg(args) {
+  // Don't propagate the `q=...` argument that is used to communicate
+  // to this search page
+  if (!args)
+      return false;
+  args = args.replace(/^[?]q=[^&]*&/,"?").replace(/^[?]q=[^&]*$/,"?").replace(/&q=[^&]*/,"");
+  if (args == "?")
+    return false;
+  else
+    return args;
+}
+
 function UpdateResults() {
   if (first_search_result < 0 ||
       first_search_result >= search_results.length)
     first_search_result = 0;
-  var link_args = (page_query_string && ("?"+page_query_string));
+  var link_args = page_query_string && StripQArg("?"+page_query_string);
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
     if (n < search_results.length) {
