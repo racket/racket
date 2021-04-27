@@ -6,7 +6,8 @@
          "port.rkt"
          "output-port.rkt"
          "pipe.rkt"
-         "check.rkt")
+         "check.rkt"
+         "fd-port.rkt")
 
 (provide flush-output
          maybe-flush-stdout)
@@ -37,5 +38,7 @@
 
 (define (maybe-flush-stdout in)
   (when (eq? in orig-input-port)
-    (flush-output orig-output-port)
-    (flush-output orig-error-port)))
+    (when (terminal-port? orig-output-port)
+      (flush-output orig-output-port))
+    (when (terminal-port? orig-error-port)
+      (flush-output orig-error-port))))

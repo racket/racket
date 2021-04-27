@@ -11890,8 +11890,12 @@
   (lambda (in_0)
     (if (eq? in_0 (unsafe-place-local-ref cell.1$9))
       (begin
-        (1/flush-output (unsafe-place-local-ref cell.2$2))
-        (1/flush-output (unsafe-place-local-ref cell.3)))
+        (if (1/terminal-port? (unsafe-place-local-ref cell.2$2))
+          (1/flush-output (unsafe-place-local-ref cell.2$2))
+          (void))
+        (if (1/terminal-port? (unsafe-place-local-ref cell.3))
+          (1/flush-output (unsafe-place-local-ref cell.3))
+          (void)))
       (void))))
 (define do-read-bytes!
   (lambda (who_0 in_0 bstr_0 start_0 end_0)

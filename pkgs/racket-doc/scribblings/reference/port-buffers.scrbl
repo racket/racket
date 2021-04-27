@@ -43,10 +43,12 @@ one byte is read for @racket[read-bytes-avail!*],
 buffered bytes, but no further bytes are read.
 
 In addition, the initial current output and error ports are
-automatically flushed when @racket[read], @racket[read-line],
+automatically flushed when they are terminal ports (see
+@racket[terminal-port?]) and when @racket[read], @racket[read-line],
 @racket[read-bytes], @racket[read-string], etc., are performed on the
-initial standard input port; more precisely, flushing is performed by
-the default port read handler (see @racket[port-read-handler]).
+initial standard input port. (More precisely, instead of
+@racket[read], flushing is performed by the default port read handler;
+see @racket[port-read-handler].)
 
 @defproc[(flush-output [out output-port? (current-output-port)]) void?]{
 
