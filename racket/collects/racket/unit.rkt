@@ -892,19 +892,26 @@
   (cons (car x)
         (signature-siginfo (lookup-signature (cdr x)))))
 
-(define-for-syntax (make-import-unboxing var renamings loc ctc)
+(define-for-syntax (make-import-make-unboxing var renamings loc ctc)
   (if ctc
       (with-syntax ([ctc-stx (syntax-property ctc 'inferred-name var)])
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (let ([v/c (#,loc)])
-                          (if (pair? v/c)
-                              (contract (let-syntax #,renamings ctc-stx) (car v/c) (cdr v/c)
-                                        (current-contract-region)
-                                        (quote #,var) (quote-srcloc #,var))
-                              (error 'unit "contracted import ~a used before definition"
-                                     (quote #,(syntax->datum var))))))))
+          (lambda (stx)
+            (with-syntax ([app (datum->syntax (quote-syntax here)
+                                              (list (quote-syntax #,loc))
+                                              stx)])
+              (syntax (let ([v/c app])
+                        (if (pair? v/c)
+                            (contract (let-syntax #,renamings ctc-stx) (car v/c) (cdr v/c)
+                                      (current-contract-region)
+                                      (quote #,var) (quote-srcloc #,var))
+                            (error 'unit "contracted import ~a used before definition"
+                                   (quote #,(syntax->datum var))))))))))
       (quasisyntax/loc (error-syntax)
-        (quote-syntax (#,loc)))))
+        (lambda (stx)
+          (datum->syntax (quote-syntax here)
+                         (list (quote-syntax #,loc))
+                         stx)))))
 
 ;; build-unit : syntax-object -> 
 ;;             (values syntax-object (listof identifier) (listof identifier))
@@ -1009,7 +1016,7 @@
                                                         [#,ivs
                                                          (make-id-mappers
                                                           #,@(map (lambda (iv l c)
-                                                                    (make-import-unboxing iv #'renamings l c))
+                                                                    (make-import-make-unboxing iv #'renamings l c))
                                                                   (syntax->list ivs)
                                                                   (syntax->list ils)
                                                                   ics))])))
@@ -1191,7 +1198,7 @@
                                                           tmp)))
                                       #,(quasisyntax/loc defn-or-expr
                                           (define-syntax #,id
-                                            (make-id-mapper (quote-syntax #,tmp)))))
+                                            (make-id-mapper (lambda (stx) (quote-syntax #,tmp))))))
                                   (and ctc
                                        #`(contract #,ctc #,tmp
                                                    (current-contract-region)

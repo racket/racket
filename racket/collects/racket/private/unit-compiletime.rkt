@@ -575,16 +575,16 @@
       #`(tag #,(link-record-tag lr) #,(link-record-linkid lr))
       (link-record-linkid lr)))
 
-(define (make-id-mappers . unbox-stxes)
-  (apply values (map make-id-mapper unbox-stxes)))
+(define (make-id-mappers . make-unbox-stxes)
+  (apply values (map make-id-mapper make-unbox-stxes)))
 
-(define (make-id-mapper unbox-stx)
+(define (make-id-mapper make-unbox-stx)
   (make-set!-transformer
    (lambda (sstx)
      (syntax-case sstx (set!)
        [x
         (identifier? #'x) 
-        unbox-stx]
+        (make-unbox-stx sstx)]
        [(set! . x)
         (raise-syntax-error
          'unit
@@ -593,7 +593,7 @@
        [(_ . x)
         (datum->syntax
          sstx
-         (cons unbox-stx #'x)
+         (cons (make-unbox-stx sstx) #'x)
          sstx)]))))
 
 ;; This utility function returns a list of natural numbers for use as a syntax
