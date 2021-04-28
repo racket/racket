@@ -1235,6 +1235,40 @@
 	      (super-new)))])
   (test 16 'send-using-local (send (new c%) pub 3)))
 
+;; Make sure local names are checked correctly for deciding
+;; conflicting method names:
+(let ()
+  (define-syntax-rule (defclss name% x y)
+    (begin
+      (define-local-member-name f)
+      (define name%
+        (class object%
+          (super-new)
+          (define/public (f) 5)
+          (define/public (x) 6)
+          (define/public (y) 7)))
+      (test 5 'local-f (send (new name%) f))))
+
+  (defclss one% f y)
+  (test 6 'normal-f (send (new one%) f))
+  (test 7 'normal-y (send (new one%) y))
+  
+  (define-syntax-rule (defclss2 name% x)
+    (begin
+      (define-local-member-name f)
+      (defclss name% f x)
+      (test 6 'middle-f (send (new name%) f))))
+
+  (defclss2 two% f)
+  (test 7 'normal-f (send (new two%) f)))
+
+(syntax-test #'(let ()
+                 (define-local-member-name f)
+                 (class object%
+                   (super-new)
+                   (define/public (f) 5)
+                   (define/public (f) 6))))
+
 ;; ------------------------------------------------------------
 ;; `send+' tests
 

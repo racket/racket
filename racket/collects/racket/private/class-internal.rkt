@@ -1137,9 +1137,15 @@
                            (lambda (what l)
                              (let ([ht (make-hasheq)])
                                (for-each (lambda (id)
-                                           (when (hash-ref ht (syntax-e id) #f)
+                                           (define key (let ([l-id (lookup-localize id)])
+                                                         (if (identifier? l-id)
+                                                             (syntax-e l-id)
+                                                             ;; For a given localized id, `lookup-localize`
+                                                             ;; will return the same (eq?) value
+                                                             l-id)))
+                                           (when (hash-ref ht key #f)
                                              (bad (format "duplicate declared external ~a name" what) id))
-                                           (hash-set! ht (syntax-e id) #t))
+                                           (hash-set! ht key #t))
                                          l)))])
                       ;; method names
                       (check-dup "method" (map cdr (append publics overrides augrides
