@@ -215,6 +215,7 @@
   [current-gc-milliseconds (known-procedure/no-prompt 1)]
   [current-get-interaction-input-port (known-procedure/single-valued 3)]
   [current-inexact-milliseconds (known-procedure/no-prompt 1)]
+  [current-inexact-monotonic-milliseconds (known-procedure/no-prompt 1)]
   [current-input-port (known-procedure/single-valued 3)]
   [current-inspector (known-procedure/single-valued 3)]
   [current-load-extension (known-procedure/single-valued 3)]

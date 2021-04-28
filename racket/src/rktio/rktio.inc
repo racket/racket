@@ -170,6 +170,7 @@ Sforeign_symbol("rktio_poll_os_signal", (void *)rktio_poll_os_signal);
 Sforeign_symbol("rktio_will_modify_os_signal_handler", (void *)rktio_will_modify_os_signal_handler);
 Sforeign_symbol("rktio_get_milliseconds", (void *)rktio_get_milliseconds);
 Sforeign_symbol("rktio_get_inexact_milliseconds", (void *)rktio_get_inexact_milliseconds);
+Sforeign_symbol("rktio_get_inexact_monotonic_milliseconds", (void *)rktio_get_inexact_monotonic_milliseconds);
 Sforeign_symbol("rktio_get_process_milliseconds", (void *)rktio_get_process_milliseconds);
 Sforeign_symbol("rktio_get_process_children_milliseconds", (void *)rktio_get_process_children_milliseconds);
 Sforeign_symbol("rktio_get_seconds", (void *)rktio_get_seconds);

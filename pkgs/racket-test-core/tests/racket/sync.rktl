@@ -8,6 +8,8 @@
 (define SYNC-SLEEP-DELAY 0.025)
 (define SYNC-BUSY-DELAY 0.1) ; go a little slower to check busy waits
 
+(define starting-monotonic-time (current-inexact-monotonic-milliseconds))
+
 ;; ----------------------------------------
 ;;  Semaphore peeks
 
@@ -1670,6 +1672,10 @@
           ch))
   (unless (memq v '(0 1 2 3))
     (error "bad sync result" v)))
+
+;; ----------------------------------------
+
+(test #t <= starting-monotonic-time (current-inexact-monotonic-milliseconds))
 
 ;; ----------------------------------------
 

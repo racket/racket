@@ -117,6 +117,7 @@ static Scheme_Object *dynamic_wind (int argc, Scheme_Object *argv[]);
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv);
+static Scheme_Object *current_inexact_monotonic_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_seconds(int argc, Scheme_Object **argv);
@@ -485,6 +486,11 @@ scheme_init_fun (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("current-inexact-milliseconds",
 			     scheme_make_immed_prim(current_inexact_milliseconds,
                                                     "current-inexact-milliseconds",
+                                                    0, 0),
+			     env);
+  scheme_addto_prim_instance("current-inexact-monotonic-milliseconds",
+			     scheme_make_immed_prim(current_inexact_monotonic_milliseconds,
+                                                    "current-inexact-monotonic-milliseconds",
                                                     0, 0),
 			     env);
   scheme_addto_prim_instance("current-process-milliseconds",
@@ -9772,6 +9778,12 @@ double scheme_get_inexact_milliseconds(void)
   return rktio_get_inexact_milliseconds();
 }
 
+static double get_inexact_monotonic_milliseconds(void)
+/* this function can be called from any OS thread */
+{
+  return rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
+}
+
 intptr_t scheme_get_process_milliseconds(void)
 {
   return rktio_get_process_milliseconds(scheme_rktio);
@@ -9886,7 +9898,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
 {
-  uintptr_t start, end;
+  double start, end;
   uintptr_t cpustart, cpuend;
   uintptr_t gcstart, gcend;
   uintptr_t dur, cpudur, gcdur;
@@ -9922,14 +9934,14 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
   }
 
   gcstart = scheme_total_gc_time;
-  start = scheme_get_milliseconds();
+  start = get_inexact_monotonic_milliseconds();
   cpustart = scheme_get_process_milliseconds();
   v = _scheme_apply_multi(argv[0], num_rands, rand_vec);
   cpuend = scheme_get_process_milliseconds();
-  end = scheme_get_milliseconds();
+  end = get_inexact_monotonic_milliseconds();
   gcend = scheme_total_gc_time;
 
-  dur = end - start;
+  dur = (uintptr_t)(end - start);
   cpudur = cpuend - cpustart;
   gcdur = gcend - gcstart;
 
@@ -9960,6 +9972,11 @@ static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv)
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv)
 {
   return scheme_make_double(scheme_get_inexact_milliseconds());
+}
+
+static Scheme_Object *current_inexact_monotonic_milliseconds(int argc, Scheme_Object **argv)
+{
+  return scheme_make_double(get_inexact_monotonic_milliseconds());
 }
 
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv)

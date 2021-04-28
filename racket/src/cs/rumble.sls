@@ -477,6 +477,7 @@
 
           time-apply
           current-inexact-milliseconds
+          current-inexact-monotonic-milliseconds
           current-milliseconds
           current-gc-milliseconds
           current-seconds

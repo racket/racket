@@ -170,6 +170,7 @@ rktio_poll_os_signal
 rktio_will_modify_os_signal_handler
 rktio_get_milliseconds
 rktio_get_inexact_milliseconds
+rktio_get_inexact_monotonic_milliseconds
 rktio_get_process_milliseconds
 rktio_get_process_children_milliseconds
 rktio_get_seconds

@@ -107,6 +107,42 @@ double rktio_get_inexact_milliseconds(void)
 #endif
 }
 
+double rktio_get_inexact_monotonic_milliseconds(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (!rktio->got_hires_freq) {
+    if (!QueryPerformanceFrequency(&rktio->hires_freq))
+      rktio->hires_freq.QuadPart = 0;
+    rktio->got_hires_freq = 1;
+  }
+
+  if (rktio->hires_freq.QuadPart != 0) {
+    LARGE_INTEGER count;
+    if (QueryPerformanceCounter(&count))
+      return ((double)count.QuadPart * 1000.0) / (double)rktio->hires_freq.QuadPart;
+  }
+#else
+# ifdef CLOCK_MONOTONIC_HR
+#  define RKTIO_CLOCK_MONOTONIC CLOCK_MONOTONIC_HR
+# endif
+# ifdef CLOCK_MONOTONIC
+#  define RKTIO_CLOCK_MONOTONIC CLOCK_MONOTONIC
+# endif
+# ifdef CLOCK_HIGHRES
+#  define RKTIO_CLOCK_MONOTONIC CLOCK_HIGHRES
+# endif
+# ifdef RKTIO_CLOCK_MONOTONIC
+  {
+    struct timespec tp;
+    if (clock_gettime(RKTIO_CLOCK_MONOTONIC, &tp) == 0)
+      return (double)tp.tv_sec * 1000.0 + (double)tp.tv_nsec / 1000000.0;
+  }
+# endif
+#endif
+  /* fallback: */
+  return rktio_get_inexact_milliseconds();
+}
+
 uintptr_t rktio_get_process_milliseconds(rktio_t *rktio)
 {
 #ifdef USER_TIME_IS_CLOCK

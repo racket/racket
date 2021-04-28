@@ -101,6 +101,9 @@
 (define (current-inexact-milliseconds)
   (time->ms (current-time 'time-utc)))
 
+(define (current-inexact-monotonic-milliseconds)
+  (time->ms (current-time 'time-monotonic)))
+
 (define (current-seconds)
   (let ((t (current-time 'time-utc)))
     (time-second t)))

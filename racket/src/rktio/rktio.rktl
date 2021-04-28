@@ -1222,6 +1222,11 @@
 (define-function () double rktio_get_inexact_milliseconds ())
 (define-function
  ()
+ double
+ rktio_get_inexact_monotonic_milliseconds
+ (((ref rktio_t) rktio)))
+(define-function
+ ()
  uintptr_t
  rktio_get_process_milliseconds
  (((ref rktio_t) rktio)))
