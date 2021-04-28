@@ -3784,6 +3784,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   char *filename;
   char mode[4];
   int typepos;
+  int perms;
   rktio_fd_t *fd;
 
   mode[0] = 'w';
@@ -3791,79 +3792,86 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   mode[2] = 0;
   mode[3] = 0;
   typepos = 1;
+  perms = RKTIO_DEFAULT_PERM_BITS;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract(name, "path-string?", 0, argc, argv);
 
   for (i = 1 + offset; argc > i; i++) {
-    if (!SCHEME_SYMBOLP(argv[i]))
-      scheme_wrong_contract(name, "symbol?", i, argc, argv);
-
-    if (SAME_OBJ(argv[i], append_symbol)) {
-      mode[0] = 'a';
-      open_flags = RKTIO_OPEN_APPEND;
-      e_set++;
-    } else if (SAME_OBJ(argv[i], replace_symbol)) {
-      try_replace = 1;
-      e_set++;
-    } else if (SAME_OBJ(argv[i], truncate_symbol)) {
-      open_flags = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
-      e_set++;
-    } else if (SAME_OBJ(argv[i], must_truncate_symbol)) {
-      open_flags = RKTIO_OPEN_MUST_EXIST | RKTIO_OPEN_TRUNCATE;
-      e_set++;
-    } else if (SAME_OBJ(argv[i], truncate_replace_symbol)) {
-      open_flags = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
-      try_replace = 1;
-      e_set++;
-    } else if (SAME_OBJ(argv[i], update_symbol)) {
-      open_flags = RKTIO_OPEN_MUST_EXIST;
-      if (typepos == 1) {
-	mode[2] = mode[1];
-	typepos = 2;
-      }
-      mode[0] = 'r';
-      mode[1] = '+';
-      e_set++;
-    } else if (SAME_OBJ(argv[i], can_update_symbol)) {
-      open_flags = RKTIO_OPEN_CAN_EXIST;
-      if (typepos == 1) {
-	mode[2] = mode[1];
-	typepos = 2;
-      }
-      mode[0] = 'r';
-      mode[1] = '+';
-      e_set++;
-    } else if (SAME_OBJ(argv[i], error_symbol)) {
-      /* This is the default */
-      e_set++;
-    } else if (SAME_OBJ(argv[i], text_symbol)) {
-      mode[typepos] = 't';
-      m_set++;
-    } else if (SAME_OBJ(argv[i], binary_symbol)) {
-      /* This is the default */
-      m_set++;
+    if (SCHEME_INTP(argv[i])
+        && (SCHEME_INT_VAL(argv[i]) >= 0)
+        && (SCHEME_INT_VAL(argv[i]) <= 65535)) {
+      perms = SCHEME_INT_VAL(argv[i]);
     } else {
-      char *astr;
-      intptr_t alen;
+      if (!SCHEME_SYMBOLP(argv[i]))
+        scheme_wrong_contract(name, "(or/c symbol? (integer-in 0 65535))", i, argc, argv);
 
-      astr = scheme_make_args_string("other ", i, argc, argv, &alen);
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: bad mode symbol\n"
-                       "  given symbol: : %s%s", name,
-		       scheme_make_provided_string(argv[i], 1, NULL),
-		       astr, alen);
-    }
+      if (SAME_OBJ(argv[i], append_symbol)) {
+        mode[0] = 'a';
+        open_flags = RKTIO_OPEN_APPEND;
+        e_set++;
+      } else if (SAME_OBJ(argv[i], replace_symbol)) {
+        try_replace = 1;
+        e_set++;
+      } else if (SAME_OBJ(argv[i], truncate_symbol)) {
+        open_flags = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
+        e_set++;
+      } else if (SAME_OBJ(argv[i], must_truncate_symbol)) {
+        open_flags = RKTIO_OPEN_MUST_EXIST | RKTIO_OPEN_TRUNCATE;
+        e_set++;
+      } else if (SAME_OBJ(argv[i], truncate_replace_symbol)) {
+        open_flags = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
+        try_replace = 1;
+        e_set++;
+      } else if (SAME_OBJ(argv[i], update_symbol)) {
+        open_flags = RKTIO_OPEN_MUST_EXIST;
+        if (typepos == 1) {
+          mode[2] = mode[1];
+          typepos = 2;
+        }
+        mode[0] = 'r';
+        mode[1] = '+';
+        e_set++;
+      } else if (SAME_OBJ(argv[i], can_update_symbol)) {
+        open_flags = RKTIO_OPEN_CAN_EXIST;
+        if (typepos == 1) {
+          mode[2] = mode[1];
+          typepos = 2;
+        }
+        mode[0] = 'r';
+        mode[1] = '+';
+        e_set++;
+      } else if (SAME_OBJ(argv[i], error_symbol)) {
+        /* This is the default */
+        e_set++;
+      } else if (SAME_OBJ(argv[i], text_symbol)) {
+        mode[typepos] = 't';
+        m_set++;
+      } else if (SAME_OBJ(argv[i], binary_symbol)) {
+        /* This is the default */
+        m_set++;
+      } else {
+        char *astr;
+        intptr_t alen;
 
-    if (m_set > 1 || e_set > 1) {
-      char *astr;
-      intptr_t alen;
+        astr = scheme_make_args_string("other ", i, argc, argv, &alen);
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "%s: bad mode symbol\n"
+                         "  given symbol: : %s%s", name,
+                         scheme_make_provided_string(argv[i], 1, NULL),
+                         astr, alen);
+      }
 
-      astr = scheme_make_args_string("", -1, argc, argv, &alen);
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: conflicting or redundant file modes given%t", 
-                       name,
-		       astr, alen);
+      if (m_set > 1 || e_set > 1) {
+        char *astr;
+        intptr_t alen;
+
+        astr = scheme_make_args_string("", -1, argc, argv, &alen);
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "%s: conflicting or redundant file modes given%t", 
+                         name,
+                         astr, alen);
+      }
     }
   }
 
@@ -3890,10 +3898,12 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   scheme_custodian_check_available(NULL, name, "file-stream");
 
   while (1) {
-    fd = rktio_open(scheme_rktio, filename, (RKTIO_OPEN_WRITE
+    fd = rktio_open_with_create_permissions(scheme_rktio, filename,
+                                            (RKTIO_OPEN_WRITE
                                              | open_flags
                                              | (and_read ? RKTIO_OPEN_READ : 0)
-                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)));
+                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)),
+                                            perms);
     
     if (!fd
         && try_replace

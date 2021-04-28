@@ -15,6 +15,7 @@ Sforeign_symbol("rktio_fd_is_text_converted", (void *)rktio_fd_is_text_converted
 Sforeign_symbol("rktio_fd_is_pending_open", (void *)rktio_fd_is_pending_open);
 Sforeign_symbol("rktio_fd_modes", (void *)rktio_fd_modes);
 Sforeign_symbol("rktio_open", (void *)rktio_open);
+Sforeign_symbol("rktio_open_with_create_permissions", (void *)rktio_open_with_create_permissions);
 Sforeign_symbol("rktio_close", (void *)rktio_close);
 Sforeign_symbol("rktio_close_noerr", (void *)rktio_close_noerr);
 Sforeign_symbol("rktio_dup", (void *)rktio_dup);

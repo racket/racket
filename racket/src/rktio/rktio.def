@@ -15,6 +15,7 @@ rktio_fd_is_text_converted
 rktio_fd_is_pending_open
 rktio_fd_modes
 rktio_open
+rktio_open_with_create_permissions
 rktio_close
 rktio_close_noerr
 rktio_dup

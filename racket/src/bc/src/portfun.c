@@ -227,20 +227,20 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_NONCM_PRIM("open-input-file",          open_input_file,        1, 3, env);
   ADD_NONCM_PRIM("open-input-bytes",         open_input_byte_string, 1, 2, env);
   ADD_NONCM_PRIM("open-input-string",        open_input_char_string, 1, 2, env);
-  ADD_NONCM_PRIM("open-output-file",         open_output_file,       1, 3, env);
+  ADD_NONCM_PRIM("open-output-file",         open_output_file,       1, 4, env);
   ADD_NONCM_PRIM("open-output-bytes",        open_output_string,     0, 1, env);
   ADD_NONCM_PRIM("open-output-string",       open_output_string,     0, 1, env);
   ADD_NONCM_PRIM("get-output-bytes",         get_output_byte_string, 1, 4, env);
   ADD_NONCM_PRIM("get-output-string",        get_output_char_string, 1, 1, env);
-  ADD_NONCM_PRIM("open-input-output-file",   open_input_output_file, 1, 3, env);
+  ADD_NONCM_PRIM("open-input-output-file",   open_input_output_file, 1, 4, env);
   ADD_NONCM_PRIM("close-input-port",         close_input_port,       1, 1, env);
   ADD_NONCM_PRIM("close-output-port",        close_output_port,      1, 1, env);
   ADD_NONCM_PRIM("make-input-port",          make_input_port,        4, 10, env);
   ADD_NONCM_PRIM("make-output-port",         make_output_port,       4, 11, env);
   
-  ADD_PRIM_W_ARITY2("call-with-output-file", call_with_output_file,  2, 4, 0, -1, env);
+  ADD_PRIM_W_ARITY2("call-with-output-file", call_with_output_file,  2, 5, 0, -1, env);
   ADD_PRIM_W_ARITY2("call-with-input-file",  call_with_input_file,   2, 3, 0, -1, env);
-  ADD_PRIM_W_ARITY2("with-output-to-file",   with_output_to_file,    2, 4, 0, -1, env);
+  ADD_PRIM_W_ARITY2("with-output-to-file",   with_output_to_file,    2, 5, 0, -1, env);
   ADD_PRIM_W_ARITY2("with-input-from-file",  with_input_from_file,   2, 3, 0, -1, env);
   ADD_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
   ADD_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);

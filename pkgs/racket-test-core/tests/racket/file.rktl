@@ -2441,6 +2441,42 @@
   (delete-file file)
   (delete-directory dir))
 
+;; Check that permissions for file creation work
+(let ()
+  (define dir (make-temporary-file "~a-tmp" 'directory))
+  (define file (build-path dir "f"))
+
+  (define (check open)
+    (open file #x444)
+    (err/rt-test/once (open file #x666) exn:fail:filesystem?)
+    (delete-file file))
+
+  (check (lambda (file perms)
+           (close-output-port (open-output-file file #:exists 'truncate #:permissions perms))))
+  (check (lambda (file perms)
+           (define-values (i o)
+             (open-input-output-file file #:exists 'truncate #:permissions perms))
+           (close-input-port i)
+           (close-output-port o)))
+  (check (lambda (file perms)
+           (with-output-to-file file
+             #:permissions perms
+             #:exists 'truncate
+             void)))
+  (check (lambda (file perms)
+           (call-with-output-file file
+             #:permissions perms
+             #:exists 'truncate
+             void)))
+  (check (lambda (file perms)
+           (call-with-output-file* file
+             #:permissions perms
+             #:exists 'truncate
+             void)))
+
+  (delete-directory dir))
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ([tf (make-temporary-file)])

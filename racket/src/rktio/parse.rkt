@@ -88,6 +88,8 @@
    [(:seq (:or #\_ (:/ #\A #\Z #\a #\z))
           (:* (:or #\_ (:/ #\A #\Z #\a #\z #\0 #\9))))
     (token-ID (string->symbol lexeme))]
+   [(:seq (:? "-") "0" (:+ (:/ "0" "7")))
+    (token-NUM (string->number lexeme 8))]
    [(:seq (:? "-") (:+ (:/ "0" "9")))
     (token-NUM (string->number lexeme))]
    [(:seq "0x" (:+ (:/ "0" "9") (:/ "A" "F") (:/ "a" "f")))

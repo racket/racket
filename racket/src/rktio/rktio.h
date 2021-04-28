@@ -227,6 +227,16 @@ RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, rktio_const_string_t src, in
    without `RKTIO_OPEN_READ`, then the result may be a file descriptor
    in pending-open mode until the read end is opened. */
 
+RKTIO_EXTERN rktio_fd_t *rktio_open_with_create_permissions(rktio_t *rktio,
+                                                            rktio_const_string_t src,
+                                                            int modes, int perm_bits);
+/* Like `rktio_open`, but accepts permission bits that are used if the
+   file is created (which is only relevant if `modes` includes
+   `RKTIO_OPEN_WRITE`). On Unix, perm_bits are adjusted by a umask.
+   Otherwise, permission bits are treated in the same way as
+   by `rktio_set_file_or_directory_permissions`. */
+#define RKTIO_DEFAULT_PERM_BITS 0666
+
 RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 /* Can report `RKTIO_ERROR_EXISTS` in place of system error,
    and can report `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE` on Windows.
