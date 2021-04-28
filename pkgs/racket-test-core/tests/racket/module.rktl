@@ -2704,6 +2704,61 @@ case of module-leve bindings; it doesn't cover local bindings.
   (dynamic-require '(submod 'm-use main) #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that syntax-local-lift-require works in `#%module-begin` expansion
+
+(module adds-racket-promise-but-without-reachable-bindings racket/base
+  (require (for-syntax racket/base))
+  
+  (provide (except-out (all-from-out racket/base)
+                       #%module-begin)
+           (rename-out [module-begin #%module-begin]))
+  
+  (define-syntax (module-begin stx)
+    (syntax-case stx ()
+      [(_ . body)
+       (syntax-local-lift-require 'racket/promise #'body)
+       #'(#%module-begin . body)])))
+
+(test '(module m 'adds-racket-promise-but-without-reachable-bindings
+         (#%module-begin
+          (#%require racket/promise)
+          (module configure-runtime '#%kernel
+            (#%module-begin
+             (#%require racket/runtime-config)
+             (#%app configure '#f)))))
+      syntax->datum
+      (expand '(module m 'adds-racket-promise-but-without-reachable-bindings)))
+
+(err/rt-test/once (expand '(module m 'adds-racket-promise-but-without-reachable-bindings
+                             force))
+                  exn:fail:syntax?)
+
+(module adds-racket-promise-with-reachable-bindings racket/base
+  (require (for-syntax racket/base))
+  
+  (provide (except-out (all-from-out racket/base)
+                       #%module-begin)
+           (rename-out [module-begin #%module-begin]))
+  
+  (define-syntax (module-begin stx)
+    (syntax-case stx ()
+      [(_ . body)
+       (with-syntax ([body (syntax-local-lift-require 'racket/promise #'body)])
+         #'(#%module-begin . body))])))
+
+(test '(module m 'adds-racket-promise-with-reachable-bindings
+         (#%module-begin
+          (#%require racket/promise)
+          (module configure-runtime '#%kernel
+            (#%module-begin
+             (#%require racket/runtime-config)
+             (#%app configure '#f)))
+          (#%app call-with-values (lambda () force) print-values)))
+      syntax->datum
+      (expand '(module m 'adds-racket-promise-with-reachable-bindings
+                 force)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that a module can be attached without a recorded namespace syntax context
 
 (eval

@@ -1075,9 +1075,7 @@
 
 (for ([lift-attempt+rx:expected-error
        (in-list
-        (list (cons '(syntax-local-lift-require 'racket #'body)
-                    #rx"could not find target context")
-              (cons '(syntax-local-lift-expression #'body)
+        (list (cons '(syntax-local-lift-expression #'body)
                     #rx"no lift target")
               (cons '(syntax-local-lift-module  #'(module m racket/base))
                     #rx"not currently transforming within a module declaration or top level")

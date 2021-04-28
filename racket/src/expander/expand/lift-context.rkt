@@ -30,6 +30,7 @@
          
          make-require-lift-context
          add-lifted-require!
+         get-require-lifts
          get-and-clear-require-lifts!
          require-lift-context-wrt-phase
          
@@ -182,8 +183,11 @@
                               requires)   ; records lifted requires
   #:authentic)
 
-(define (make-require-lift-context wrt-phase do-require)
-  (require-lift-context do-require wrt-phase (box null)))
+(define (make-require-lift-context wrt-phase do-require [initial-lifts null])
+  (require-lift-context do-require wrt-phase (box initial-lifts)))
+
+(define (get-require-lifts require-lifts)
+  (unbox (require-lift-context-requires require-lifts)))
 
 (define (get-and-clear-require-lifts! require-lifts)
   (box-clear! (require-lift-context-requires require-lifts)))
