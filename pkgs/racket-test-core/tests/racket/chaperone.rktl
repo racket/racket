@@ -3005,6 +3005,50 @@
         ((wrap (lambda (x) (+ ((wrap (lambda (x) x)) x) 0))) 42))
   (test '(#f #f) values msgs))
 
+;; Make sure that `impersonator-prop:application-mark'
+;; works with keyword-based procedures:
+(let ()
+  (define (f x #:y y)
+    (call-with-immediate-continuation-mark
+     'z
+     (lambda (val)
+       (list val
+             (continuation-mark-set->list (current-continuation-marks) 'z)))))
+  (define g (chaperone-procedure
+             f
+             (lambda (a #:y y)
+               (values (lambda (r) r)
+                       (list y)
+                       a))
+             impersonator-prop:application-mark
+             (cons 'z 12)))
+  (test '(#f ()) 'kw-y-f (f 10 #:y 3))
+  (test '(12 (12)) 'kw-y-g (g 10 #:y 3))
+  (void))
+(let ()
+  (define (f x #:y [y 'no])
+    (call-with-immediate-continuation-mark
+     'z
+     (lambda (val)
+       (list val
+             (continuation-mark-set->list (current-continuation-marks) 'z)))))
+  (define g (chaperone-procedure
+             f
+             (lambda (a #:y [y 'no])
+               (if (eq? y 'no)
+                   (values (lambda (r) r)
+                           a)
+                   (values (lambda (r) r)
+                           (list y)
+                           a)))
+             impersonator-prop:application-mark
+             (cons 'z 12)))
+  (test '(#f ()) 'kw-no-y-f (f 10))
+  (test '(12 (12)) 'kw-no-y-g (g 10))
+  (test '(#f ()) 'kw-y-f (f 10 #:y 3))
+  (test '(12 (12)) 'kw-y-g (g 10 #:y 3))
+  (void))
+
 ;; ----------------------------------------
 
 ;; Check that supplying a procedure `to make-keyword-procedure' that 
