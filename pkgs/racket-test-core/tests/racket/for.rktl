@@ -461,6 +461,25 @@
   (test 13 next)
   (test #f more?))
 
+(test 1 'in-value-bind-correctly (for/fold ([x #f])
+                                           ([x (in-value 1)])
+                                   x))
+(test 2 'in-value-bind-correctly (for/fold ([x #f])
+                                           ([x (values (in-value 2))])
+                                   x))
+
+(let ([x 'out]
+      [prints '()])
+  (for/fold ([x (begin
+                  (set! prints (cons (list 'top x) prints))
+                  'top)])
+            ([x (in-list (begin
+                           (set! prints (cons (list 'rhs x) prints))
+                           (list 1 2 3)))])
+    (set! prints (cons x prints))
+    x)
+  (test '(3 2 1 (top out) (rhs out)) values prints))
+
 ;; check ranges on `in-vector', especially as a value
 (test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0)]) (for/list ([e v]) e)))

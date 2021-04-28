@@ -2309,8 +2309,8 @@
     (lambda () #'in-value)
     (lambda (stx)
       (syntax-case stx ()
-        [[(id) (_ expr)]
-         #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
+        [[<(id) (_ expr)]
+         #'[(id) (:do-in ([(id*) expr]) #t () #t ([(id) id*]) #t #f ())]]
         [_ #f])))
 
   (define-sequence-syntax *in-producer
