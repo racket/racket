@@ -87,7 +87,11 @@ The @exec{raco test} command accepts several flags:
        --- Requires the submodule @nonterm{name} rather than @racket[test].
        Supply @Flag{s} or @DFlag{submodule} to run multiple submodules,
        or combine multiple submodules with @DFlag{first-avail} to
-       run the first available of the listed modules.}
+       run the first available of the listed modules.
+       Beware that if you use @Flag{s} multiple times but supply a
+       single module file as an argument, the default mode is still
+       @DFlag{direct} (which likely means fewer fresh module
+       instantiations than @DFlag{process} or @DFlag{place} mode).}
 
  @item{@Flag{r} or @DFlag{run-if-absent}
        --- Requires the top-level module of a file if a relevant submodule is not 
@@ -109,9 +113,10 @@ The @exec{raco test} command accepts several flags:
        via @Flag{s} or @DFlag{submodule}.}
 
  @item{@DFlag{direct}
-      --- Runs each test in a thread. This mode is the default if
+      --- Runs each test in a thread, using a single namespace's module
+      registry to load all tests. This mode is the default if
       a single file is specified. Multiple tests can interfere with
-      each other and the overall test run by exiting, unsafe operations
+      each other and the overall test run by exiting, using unsafe operations
       that block (and thus prevent timeout), and so on.}
 
  @item{@DFlag{process}
