@@ -4697,7 +4697,9 @@ An example
                          [(or (as-write-list? val)
                               (as-value-list? val))
                           (apply string-append
-                                 (for/list ([v (in-list (as-write-list-content val))])
+                                 (for/list ([v (in-list (if (as-write-list? val)
+                                                            (as-write-list-content val)
+                                                            (as-value-list-content val)))])
                                    (format (if (as-write-list? val)
                                                "\n   ~s"
                                                "\n   ~e")

@@ -1999,7 +1999,11 @@
       (define/public (n) 2)
       (super-new)))
   (test 3 'mixin-with-local-member-names (send (new (mix c%)) x)))
-  
+
+(err/rt-test (mixin (object%) () (super-new))
+             exn:fail:object?
+             #rx"not an interface")
+
 ;; ----------------------------------------
 ;; Class contracts & generics
 
