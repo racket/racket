@@ -112,7 +112,7 @@
                        ;; If the test did not use `rackunit`, claim
                        ;; success:
                        (if (zero? (cdr test-results))
-                           (cons 0 1)
+                           (cons 0 0)
                            test-results))))
 
 ;; Run each test in its own place or process, and collect both test
