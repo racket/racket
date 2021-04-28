@@ -30,14 +30,15 @@
              (phase+ at-phase (module-binding-phase b)))
      id))
   (unless mi
-    (error 'expand
-           (string-append "namespace mismatch; cannot locate module instance\n"
-                          "  module: ~s\n"
-                          "  use phase: ~a\n"
-                          "  definition phase: ~a\n"
-                          "  for identifier: ~s")
-           (module-binding-module b)
-           phase
-           (module-binding-phase b)
-           id))
+    (raise-syntax-error
+     #f
+     (format (string-append "namespace mismatch;\n"
+                            " cannot locate module instance\n"
+                            "  module: ~a\n"
+                            "  use phase: ~a\n"
+                            "  definition phase: ~a")
+             (module-path-index-resolve (module-binding-module b))
+             phase
+             (module-binding-phase b))
+     id))
   mi)

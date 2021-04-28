@@ -270,7 +270,14 @@
         (let ([c-ns (or (namespace-root-namespace ns) ns)])
           (hash-ref (namespace-module-instances c-ns) name #f))
         (and complain-on-failure?
-             (error "no module instance found:" name 0-phase))))
+             (error 'require
+                    (string-append
+                     "namespace mismatch;\n"
+                     " reference to a module that is not instantiated\n"
+                     "  module: ~a\n"
+                     "  phase: ~a")
+                    name
+                    0-phase))))
   (if (and mi check-available-at-phase-level)
       (check-availablilty mi check-available-at-phase-level unavailable-callback)
       mi))
