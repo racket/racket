@@ -97,10 +97,44 @@
                 (syntax-property (quote-syntax aux-name)
                                  'not-provide-all-defined #t))) ...)))]))
 
+(struct reentrant-lock (box))
+
+(define (make-reentrant-lock) (reentrant-lock (box #f)))
+
+(define (call-with-reentrant-lock r proc)
+  (define lock-box (reentrant-lock-box r))
+  (let loop ()
+    (define v (unbox lock-box))
+    (cond
+     [(or (not v)
+          (sync/timeout 0 (car v) (or (weak-box-value (cdr v)) never-evt)))
+      (define sema (make-semaphore))
+      (define lock (cons (semaphore-peek-evt sema) (make-weak-box (current-thread))))
+      ((dynamic-wind
+        void
+        (lambda ()
+          (cond
+           [(box-cas! lock-box v lock)
+            (let ([v (proc)]) (lambda () v))]
+           [else
+            ;; CAS failed; take it from the top
+            (lambda () (loop))]))
+        (lambda ()
+          (semaphore-post sema))))]
+     [(eq? (current-thread) (weak-box-value (cdr v)))
+      ;; This thread already holds the lock
+      (proc)]
+     [else
+      ; Wait and try again:
+      (sync (car v) (or (weak-box-value (cdr v)) never-evt))
+      (loop)])))
+
+(define lazy-require-lock (make-reentrant-lock))
+
 (define (make-lazy-function exp-name bind-name get-sym)
   ;; Use 'delay/sync' because 'delay' promise is not reentrant.
   ;; FIXME: OTOH, 'delay/sync' promise is not kill-safe.
-  (let ([fun-p (delay/sync (get-sym exp-name))])
+  (let ([fun-p (delay/sync (call-with-reentrant-lock lazy-require-lock (lambda () (get-sym exp-name))))])
     (procedure-rename
      (make-keyword-procedure
       (lambda (kws kwargs . args)
