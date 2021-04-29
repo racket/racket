@@ -3,7 +3,10 @@
 
 (provide inside-doc
          guide-doc
-         reference-doc)
+         reference-doc
+
+         CS
+         BC)
 
 (define inside-doc
   '(lib "scribblings/inside/inside.scrbl"))
@@ -13,3 +16,6 @@
 
 (define reference-doc
   '(lib "scribblings/reference/reference.scrbl"))
+
+(define CS (tech #:doc guide-doc "CS"))
+(define BC (tech #:doc guide-doc "BC"))

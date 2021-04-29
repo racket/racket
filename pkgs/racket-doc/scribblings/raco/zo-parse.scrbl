@@ -1,8 +1,11 @@
 #lang scribble/doc
 @(require scribble/manual
+          "common.rkt"
           (for-label racket/base
                      racket/contract
                      compiler/zo-parse
+                     compiler/decompile
+                     compiler/faslable-correlated
                      racket/set))
 
 @(define-syntax-rule (defstruct+ id fields . rest)
@@ -20,11 +23,32 @@ The @racketmodname[compiler/zo-parse] module re-exports
   Parses a port (typically the result of opening a @filepath{.zo} file)
   containing bytecode.  Beware that the structure types used to
   represent the bytecode are subject to frequent changes across Racket
-  versons.
+  versions.
 
   The parsed bytecode is returned in a @racket[linkl-directory] or
   @racket[linkl-bundle] structure---the latter only for the compilation
   of a module that contains no submodules.
+
+  Beyond the linklet bundle or directory structure, the result of
+  @racket[zo-parse] contains linklets that depend on the machine for
+  which the bytecode is compiled:
+
+  @itemlist[
+
+    @item{For a machine-independent bytecode file, a linklet is
+          represented as a @racket[faslable-correlated-linklet].}
+
+    @item{For a Racket @CS bytecode file, a linklet is opaque, because
+          it is primarily machine code, but @racket[decompile] can
+          extract some information and potentially disassemble the
+          machine code.}
+
+    @item{For Racket @BC bytecode, the bytecode can be parsed into
+          structures as described below.}
+
+   ]
+
+  The rest of this section is specific to @BC bytecode.
 
   Within a linklet, the bytecode representation of an expression is closer to an
   S-expression than a traditional, flat control string.  For example, an

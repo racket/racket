@@ -5,7 +5,7 @@
 (define deps '(["base" #:version "8.1.0.2"]
                "scheme-lib"
                "rackunit-lib"
-               "zo-lib"))
+               ["zo-lib" #:version "1.3"]))
 
 (define implies '("zo-lib"))
 

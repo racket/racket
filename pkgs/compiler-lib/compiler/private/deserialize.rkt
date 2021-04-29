@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/linklet
          compiler/zo-parse
-         compiler/zo-marshal)
+         compiler/zo-marshal
+         compiler/faslable-correlated)
 
 ;; Re-implement just enough deserialization to deal with 'decl
 ;; linklets, so we can get `required`, etc.
@@ -135,24 +136,6 @@
                  '.bulk-binding-registry #f
                  '.inspector (current-inspector)
                  'swap-top-level-scopes (lambda (s original-scopes-s new-ns) s)))
-
-;; ----------------------------------------
-
-(struct faslable-correlated-linklet (expr name)
-  #:prefab)
-
-(struct faslable-correlated (e source position line column span props)
-  #:prefab)
-
-(define (strip-correlated v)
-  (let strip ([v v])
-    (cond
-      [(pair? v)
-       (cons (strip (car v))
-             (strip (cdr v)))]
-      [(faslable-correlated? v)
-       (strip (faslable-correlated-e v))]
-      [else v])))
 
 ;; ----------------------------------------
 

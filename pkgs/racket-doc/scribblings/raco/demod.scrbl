@@ -45,7 +45,7 @@ The @exec{raco demod} command accepts these flags:
 
  @item{@Flag{r} or @DFlag{recompile} --- (re)compiles the module to
         machine-dependent form after flattening; this mode is the
-        default except on @tech[#:doc guide-doc]{BC}, where flattening
+        default except on @BC, where flattening
         can work in terms of bytecode files.}
 
  @item{@DFlag{work} @nonterm{dir} --- uses @nonterm{dir} to cache

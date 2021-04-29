@@ -7,7 +7,7 @@
                      compiler/embed
                      launcher/launcher))
 
-@(define (gtech s) (tech #:doc '(lib "scribblings/guide/guide.scrbl") s))
+@(define (gtech s) (tech #:doc guide-doc s))
 
 @title[#:tag "exe"]{@exec{raco exe}: Creating Stand-Alone Executables}
 

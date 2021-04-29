@@ -2163,7 +2163,7 @@ does not match the running Racket's information, then the
 @racketmodname[setup/cross-system] module infers that Racket is being
 run in cross-installation mode.
 
-For example, if an in-place Racket @tech[#:doc guide-doc]{BC}
+For example, if an in-place Racket @BC
 installation for a different platform resides at @nonterm{cross-dir},
 then running Racket BC as
 
@@ -2177,7 +2177,7 @@ libraries need to run to perform the requested @exec{raco pkg} action
 (e.g., when installing built packages), or as long as the current
 platform's installation already includes those libraries.
 
-For Racket @tech[#:doc guide-doc]{CS}, cross compilation is more
+For Racket @CS, cross compilation is more
 complicated, because Racket CS @filepath{.zo} files are
 platform-specific:
 

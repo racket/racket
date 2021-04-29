@@ -1,12 +1,15 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/core
+          "common.rkt"
           (for-label racket/base
                      racket/contract
+                     racket/linklet
                      compiler/zo-structs
                      compiler/zo-parse
                      compiler/zo-marshal
                      compiler/decompile
+                     compiler/faslable-correlated
                      racket/set))
 
 @(define-syntax-rule (defstruct+ id fields . rest)
@@ -61,7 +64,13 @@ structures that are produced by @racket[zo-parse] and consumed by
  
  For a module with submodules, the linklet directory maps submodule
  paths (as lists of symbols) to linklet bundles for the corresponding
- submodules.}
+ submodules.
+
+ An individual linklet is represented as a @racket[linkl] only if the
+ source bytecode file was for Racket @|BC|. A @CS bytecode linklet will
+ be represented by an opaque linklet (in the sense of @racket[linklet?]
+ from @racketmodname[racket/linklet]). A machine-independent linklet
+ is represented as a @racket[faslable-correlated-linklet] structure.}
 
 @defstruct+[(linkl zo)
             ([name symbol?]
