@@ -35,7 +35,8 @@ Returns @racket[#t] if @racket[v] is a @tech{syntax object} and
 
 @defproc[(syntax-source [stx syntax?]) any/c]{
 
-Returns the source for the @tech{syntax object} @racket[stx], or @racket[#f]
+Returns the source component of the @tech{source location}
+for the @tech{syntax object} @racket[stx], or @racket[#f]
 if none is known. The source is represented by an arbitrary value
 (e.g., one passed to @racket[read-syntax]), but it is typically a file
 path string.}
@@ -44,7 +45,8 @@ path string.}
 @defproc[(syntax-line [stx syntax?]) 
          (or/c exact-positive-integer? #f)]{
 
-Returns the line number (positive exact integer) for the start of the
+Returns the line number (positive exact integer)
+of the @tech{source location} for the start of the
 @tech{syntax object} in its source, or @racket[#f] if the line number or
 source is unknown. The result is @racket[#f] if and only if
 @racket[(syntax-column stx)] produces @racket[#f]. See also
@@ -54,7 +56,8 @@ source is unknown. The result is @racket[#f] if and only if
 @defproc[(syntax-column [stx syntax?])
          (or/c exact-nonnegative-integer? #f)]{
 
-Returns the column number (non-negative exact integer) for the start
+Returns the column number (non-negative exact integer)
+of the @tech{source location} for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
 column is unknown. The result is @racket[#f] if and only if
 @racket[(syntax-line stx)] produces @racket[#f]. See also
@@ -64,7 +67,8 @@ column is unknown. The result is @racket[#f] if and only if
 @defproc[(syntax-position [stx syntax?])
          (or/c exact-positive-integer? #f)]{
 
-Returns the character position (positive exact integer) for the start
+Returns the character position (positive exact integer)
+of the @tech{source location} for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
 position is unknown. See also @secref["linecol"].}
 
@@ -72,7 +76,8 @@ position is unknown. See also @secref["linecol"].}
 @defproc[(syntax-span [stx syntax?])
          (or/c exact-nonnegative-integer? #f)]{
 
-Returns the span (non-negative exact integer) in characters of the
+Returns the span (non-negative exact integer) in characters
+of the @tech{source location} for
 @tech{syntax object} in its source, or @racket[#f] if the span is
 unknown.}
 

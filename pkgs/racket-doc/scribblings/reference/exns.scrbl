@@ -981,6 +981,18 @@ Returns the @racket[srcloc]-getting procedure associated with @racket[v].}
                    [span (or/c exact-nonnegative-integer? #f)])
                   #:inspector #f]{
 
+A @deftech{source location} is most frequently represented by a
+@racket[srcloc] structure. More generally, a source location has the
+same information as a @racket[srcloc] structure, but potentially
+represented or accessed differently. For example, source-location
+information is accessed from a @tech{syntax object} with functions
+like @racket[syntax-source] and @racket[syntax-line], while
+@racket[datum->syntax] accepts a source location as a list, vector, or
+another syntax object. For ports, a combination of
+@racket[object-name] and @racket[port-next-location] provides location
+information, especially in a port for which counting has been enabled
+through @racket[port-count-lines!].
+
 The fields of a @racket[srcloc] instance are as follows:
 
 @itemize[
