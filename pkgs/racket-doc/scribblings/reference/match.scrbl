@@ -616,21 +616,21 @@ the @racket[match] form.
 
 @section{Extending @racket[match]}
 
-@defform*[((define-match-expander id proc-expr)
-           (define-match-expander id proc-expr proc-expr))]{
+@defform*[((define-match-expander id pattern-transformer)
+           (define-match-expander id pattern-transformer other-transformer))]{
 
 Binds @racket[id] to a @deftech{match expander}.
 
-The first @racket[proc-expr] sub-expression must evaluate to a
+ The @racket[pattern-transformer] sub-expression must evaluate to a
  transformer that produces a @racket[_pat] for @racket[match].
  Whenever @racket[id] appears as the beginning of a pattern, this
  transformer is given, at expansion time, a syntax object
  corresponding to the entire pattern (including @racket[id]).  The
  pattern is replaced with the result of the transformer.
 
-A transformer produced by a second @racket[proc-expr] sub-expression is
- used when @racket[id] is used in an expression context. Using the
- second @racket[proc-expr], @racket[id] can be given meaning both
+ The transformer produced by the @racket[other-transformer] sub-expression is
+ used when @racket[id] is used in an expression context. The
+ @racket[other-transformer] sub-expression can be used to give @racket[id] meaning both
  inside and outside patterns.
 
 Match expanders are not invoked unless @racket[id] appears in the first
@@ -638,7 +638,16 @@ position in a sequence. Instead, identifiers bound by @racket[define-match-expan
 are used as binding identifiers (like any other identifier) when they appear
 anywhere except the first position in a sequence.
 
- @examples[
+ For example, we can use @racket[define-match-expander] to add syntax sugar
+ for destructuring @racket[struct]s, shown here with a result type that can
+ contain either a failure or a success value. Note the @tech{rename
+  transformer} used as the @racket[other-transformer] sub-expression so that
+ @racket[success] (and @racket[failure]) can be used to construct
+ @racket[success] structs normally outside of patterns as well as
+ destructuring within patterns.
+ 
+ @#reader scribble/comment-reader
+ @examples[#:label #false
  #:eval match-eval
  (eval:no-prompt
   (struct result () #:transparent)
@@ -654,17 +663,13 @@ anywhere except the first position in a sequence.
     #:omit-define-syntaxes)
   
   (define-match-expander success
-    (syntax-parser
-      [(_ value-pattern)
-       #'(? success?
-            (app success-value value-pattern))])
+    (syntax-parser [(_ value-pattern)
+                    #'(? success? (app success-value value-pattern))])
     (make-rename-transformer #'constructor:success))
   
   (define-match-expander failure
-    (syntax-parser
-      [(_ error-pattern)
-       #'(? failure?
-            (app failure-error error-pattern))])
+    (syntax-parser [(_ error-pattern)
+                    #'(? failure? (app failure-error error-pattern))])
     (make-rename-transformer #'constructor:failure)))
  
  (success 4)
