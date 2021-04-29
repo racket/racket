@@ -2,8 +2,10 @@
 @(require "mz.rkt" "match-grammar.rkt" racket/match)
 
 @(define match-eval (make-base-eval))
-@examples[#:hidden #:eval match-eval (require racket/match racket/list)]
-@examples[#:hidden #:eval match-eval (require (for-syntax racket/base))]
+@examples[#:hidden #:eval match-eval (require racket/match
+                                              racket/list
+                                              (for-syntax racket/base
+                                                          syntax/parse))]
 
 @title[#:tag "match"]{Pattern Matching}
 
@@ -635,8 +637,45 @@ Match expanders are not invoked unless @racket[id] appears in the first
 position in a sequence. Instead, identifiers bound by @racket[define-match-expander]
 are used as binding identifiers (like any other identifier) when they appear
 anywhere except the first position in a sequence.
+
+ @examples[
+ #:eval match-eval
+ (eval:no-prompt
+  (struct result () #:transparent)
+  
+  (struct failure result (error)
+    #:transparent
+    #:constructor-name constructor:failure
+    #:omit-define-syntaxes)
+  
+  (struct success result (value)
+    #:transparent
+    #:constructor-name constructor:success
+    #:omit-define-syntaxes)
+  
+  (define-match-expander success
+    (syntax-parser
+      [(_ value-pattern)
+       #'(? success?
+            (app success-value value-pattern))])
+    (make-rename-transformer #'constructor:success))
+  
+  (define-match-expander failure
+    (syntax-parser
+      [(_ error-pattern)
+       #'(? failure?
+            (app failure-error error-pattern))])
+    (make-rename-transformer #'constructor:failure)))
  
-For example, to extend the pattern matcher and destructure syntax lists,
+ (success 4)
+ (failure 'oops)
+ 
+ (match (success 4)
+   [(success x) (format "Success: ~v" x)]
+   [(failure err) (format "Failure: ~v" err)])
+ ]
+ 
+ Extending the pattern matcher to destructure syntax lists:
 @examples[#:label #f
   #:eval match-eval
   (eval:no-prompt
