@@ -162,7 +162,8 @@
                      (parameterize ([current-module-declare-source alt-path])
                        (with-dir (lambda () ((current-load) (car zo-d) expect-module)))))]
                [(or (not (pair? expect-module))
-                    (car expect-module))
+                    (car expect-module)
+                    (is-compiled-file? (if try-main? path alt-path)))
                 (let ([p (if try-main? path alt-path)])
                   ;; "quiet" failure when asking for a submodule:
                   (unless (and (pair? expect-module)
@@ -175,6 +176,10 @@
 (define (register-zo-path name ns-hts path src-path base)
   (when ns-hts
     (hash-set! (cdr ns-hts) name (list path src-path base))))
+
+(define (is-compiled-file? p)
+  (and (file-exists? p)
+       (call-with-input-file* p linklet-directory-start)))
 
 (define (default-reader-guard path)
   path)

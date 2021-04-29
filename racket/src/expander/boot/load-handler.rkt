@@ -14,7 +14,8 @@
          "../read/api.rkt"
          "../read/primitive-parameter.rkt")
 
-(provide default-load-handler)
+(provide default-load-handler
+         linklet-directory-start)
 
 (define default-load-handler
   (lambda (path expected-mod)
@@ -157,7 +158,7 @@
   (cond
    [(module-cache-ref (make-module-cache-key (linklet-bundle-hash-code i)))
     => (lambda (declare-module)
-         ;; The `declare-module` function has registered in the cace by
+         ;; The `declare-module` function was registered in the cache by
          ;; `eval-module` in "eval/module.rkt"; we can call the function
          ;; instead of loading from scratch and `eval`ing;
          ;; FIXME: go though `current-eval`
