@@ -2446,7 +2446,10 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
   while (SCHEME_CHAPERONE_PROC_STRUCTP(a)) {
     if (SCHEME_CHAPERONEP(a))
       a = SCHEME_CHAPERONE_VAL(a);
-    if (scheme_reduced_procedure_struct
+    if (scheme_object_name_property
+        && scheme_struct_type_property_ref(scheme_object_name_property, a)) {
+      return a;
+    } else if (scheme_reduced_procedure_struct
         && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)
         && SCHEME_TRUEP(((Scheme_Structure *)a)->slots[2])) {
       return a;

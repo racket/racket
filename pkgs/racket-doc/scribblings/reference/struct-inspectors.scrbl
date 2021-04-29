@@ -175,10 +175,6 @@ only (some) procedures, @tech{structures}, @tech{structure types},
 @tech{ports}, @tech{loggers}, and @tech{prompt tags} have names.
 See also @secref["infernames"].
 
-The name (if any) of a procedure is always a symbol. The
-@racket[procedure-rename] function creates a procedure with a specific
-name.
-
 If a @tech{structure}'s type implements the @racket[prop:object-name] property,
 and the value of the @racket[prop:object-name] property is an integer, then the
 corresponding field of the structure is the name of the structure.
@@ -189,6 +185,12 @@ fields (i.e., the @racket[prop:procedure] property value for the structure's
 type is an integer), then its name is the implementing procedure's name.
 Otherwise, its name matches the name of the @tech{structure type} that it
 instantiates.
+
+The name (if any) of a procedure is a symbol, unless the procedure is
+also a structure whose type has the @racket[prop:object-name]
+property, in which case @racket[prop:object-name] takes precedence.
+The @racket[procedure-rename] function creates a procedure with a
+specific name.
 
 The name of a @tech{regexp value} is a string or byte string. Passing
 the string or byte string to @racket[regexp], @racket[byte-regexp],

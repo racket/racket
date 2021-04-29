@@ -2300,8 +2300,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (SCHEME_TRUEP(prefab))
             notdisplay = to_quoted(obj, pp, notdisplay);
           if (notdisplay == 3) {
+            if (SCHEME_CHAPERONEP(obj))
+              obj = SCHEME_CHAPERONE_VAL(obj);
             vec = scheme_vector_to_list(vec);
-            vec = scheme_make_pair(scheme_object_name(obj), SCHEME_CDR(vec));
+            vec = scheme_make_pair(SCHEME_STRUCT_NAME_SYM(obj), SCHEME_CDR(vec));
             print_pair(vec, notdisplay, compact, ht, mt, pp, scheme_pair_type, 1, 1);
           } else {
             if (SCHEME_TRUEP(prefab))
@@ -2311,6 +2313,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  closed = 1;
 	} else {
 	  Scheme_Object *src;
+          int check_object_name;
 
           if (SCHEME_CHAPERONEP(obj))
             obj = SCHEME_CHAPERONE_VAL(obj);
@@ -2318,8 +2321,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  if (SCHEME_PROC_STRUCTP(obj)) {
 	    /* Name by procedure? */
 	    src = scheme_proc_struct_name_source(obj);
-	  } else
+            check_object_name = 1;
+	  } else {
 	    src = obj;
+            check_object_name = 0;
+          }
 
 	  if (SAME_OBJ(src, obj)) {
             intptr_t l;
@@ -2327,8 +2333,17 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
             Scheme_Object *name;
 
 	    print_utf8_string(pp, "#<", 0, 2); /* used to have "struct:" prefix */
-            if (scheme_reduced_procedure_struct
-                && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj)) {
+            if (check_object_name
+                && scheme_object_name_property
+                && scheme_struct_type_property_ref(scheme_object_name_property, obj)) {
+              name = scheme_object_name(obj);
+              if (SCHEME_PATHP(name)) /* consistency with CS */
+                name = scheme_path_to_char_string(name);
+              print_utf8_string(pp, "procedure:", 0, ((SCHEME_SYMBOLP(name) || SCHEME_CHAR_STRINGP(name))
+                                                      ? 10
+                                                      : 9));
+            } else if (scheme_reduced_procedure_struct
+                       && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj)) {
               /* Since scheme_proc_struct_name_source() didn't redirect, this one
                  must have a name. */
               print_utf8_string(pp, "procedure:", 0, 10);
@@ -2339,10 +2354,15 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	      name = SCHEME_STRUCT_NAME_SYM(obj);
             }
 
-            s = scheme_symbol_val(name);
-            l = SCHEME_SYM_LEN(name);
-
-            print_utf8_string(pp, s, 0, l);
+            if (SCHEME_SYMBOLP(name)) {
+              s = scheme_symbol_val(name);
+              l = SCHEME_SYM_LEN(name);
+              
+              print_utf8_string(pp, s, 0, l);
+            } else if (SCHEME_CHAR_STRINGP(name)) {
+              name = scheme_char_string_to_byte_string(name);
+              print_utf8_string(pp, SCHEME_BYTE_STR_VAL(name), 0, SCHEME_BYTE_STRLEN_VAL(name));
+            }
 	    PRINTADDRESS(pp, obj);
 	    print_utf8_string(pp, ">", 0, 1);
 	  } else {
