@@ -2447,8 +2447,8 @@
   (define file (build-path dir "f"))
 
   (define (check open)
-    (open file #x444)
-    (err/rt-test/once (open file #x666) exn:fail:filesystem?)
+    (open file #o444)
+    (test #f memq 'write (file-or-directory-permissions file))
     (delete-file file))
 
   (check (lambda (file perms)
