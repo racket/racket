@@ -4927,7 +4927,7 @@ CGC_X86_64=""
 case "$host_os" in
   solaris2*)
     STATICLINK="-Wl,-Bstatic" # after -ldl
-    LIBS="$LIBS -lsocket -lnsl -lintl"
+    LIBS="$LIBS -lsocket -lnsl -lintl -lrt"
     need_gcc_static_libgcc="yes"
     check_gcc_dash_e="yes"
     use_flag_pthread="no"
@@ -4967,7 +4967,7 @@ case "$host_os" in
     fi
     ;;
   linux*)
-    LIBS="$LIBS -ldl -lm -rdynamic"
+    LIBS="$LIBS -ldl -lm -lrt -rdynamic"
     DYN_CFLAGS="-fPIC"
     case "$host_cpu" in
       #Required for CentOS 4.6
