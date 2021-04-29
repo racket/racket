@@ -44,7 +44,8 @@
 ;; proxied-scheme
 (define (env->c-p-s-entries . envarses)
   (define (in1 proxied-scheme envvar)
-    (match (getenv envvar)
+    (match (let ([s (getenv envvar)])
+             (and s (string-trim s)))
       [#f #f]
       ["" null]
       [(app string->url*
