@@ -2448,7 +2448,10 @@
 
   (define (check open)
     (open file #o444)
-    (test #f memq 'write (file-or-directory-permissions file))
+    (if (eq? 'windows (system-type))
+        (test #f memq 'write (file-or-directory-permissions file))
+        ;; umask might drop additional bits from mode #o444
+        (test 0 bitwise-and (bitwise-not #o444) (file-or-directory-permissions file 'bits)))
     (delete-file file))
 
   (check (lambda (file perms)
