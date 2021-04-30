@@ -438,6 +438,14 @@
 	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me30.rkt")))
     (try-exe (mk-dest mred?) "Hello from a place!\n" mred?)
 
+    ;; raco exe on a module with a `main' submodule+ with a define-runtime-path within it
+    (system+ raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me39.rkt")))
+    (try-exe (mk-dest mred?) "found license\n" mred?)
+
     ;; raco exe --launcher
     (printf/flush ">>launcher\n")
     (system+ raco
