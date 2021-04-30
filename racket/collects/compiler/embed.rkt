@@ -331,7 +331,7 @@
         actual-file-path
         use-source?))
 
-(define (mod-file m) (car m))
+(define (mod-file m) (strip-submod (car m)))
 (define (mod-mod-path m) (cadr m))
 (define (mod-code m) (caddr m))
 (define (mod-name m) (list-ref m 3))
