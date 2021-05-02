@@ -9,6 +9,7 @@
          "../syntax/mapped-name.rkt"
          "namespace.rkt"
          "module.rkt"
+         "registry.rkt"
          "attach.rkt"
          "core.rkt"
          "../common/set.rkt"
@@ -41,7 +42,9 @@
          
          namespace-mapped-symbols
 
-         namespace-base-phase)
+         namespace-base-phase
+
+         namespace-call-with-registry-lock)
 
 (define (make-empty-namespace)
   (define current-ns (current-namespace))
@@ -258,3 +261,10 @@
 (define/who (namespace-base-phase [ns (current-namespace)])
   (check who namespace? ns)
   (namespace-phase ns))
+
+(define/who (namespace-call-with-registry-lock ns thunk)
+  (check who namespace? ns)
+  (check who (procedure-arity-includes/c 0) thunk)
+  (registry-call-with-lock
+   (namespace-module-registry ns)
+   thunk))

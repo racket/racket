@@ -77,7 +77,8 @@
           'namespace-set-variable-value! namespace-set-variable-value!
           'namespace-undefine-variable!	namespace-undefine-variable!
           'namespace-mapped-symbols namespace-mapped-symbols 
-          'namespace-base-phase namespace-base-phase          
+          'namespace-base-phase namespace-base-phase
+          'namespace-call-with-registry-lock namespace-call-with-registry-lock
           
           'module-declared? module-declared?
           'module-predefined? module-predefined?

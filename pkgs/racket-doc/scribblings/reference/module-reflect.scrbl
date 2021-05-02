@@ -532,7 +532,9 @@ phase}, if it is not yet @tech{instantiate}d. The current @tech{module
 name resolver} may load a module declaration to resolve @racket[mod]
 (see @racket[current-module-name-resolver]); the path is resolved
 relative to @racket[current-load-relative-directory] and/or
-@racket[current-directory].
+@racket[current-directory]. Beware that concurrent @racket[dynamic-require]s
+in namespaces that share a @tech{module registry} can create race
+conditions; see also @racket[namespace-call-with-registry-lock].
 
 If @racket[provided] is @racket[#f], then the result is @|void-const|,
 and the module is not @tech{visit}ed (see @secref["mod-parse"]) or

@@ -208,6 +208,26 @@
 
 ;; ----------------------------------------
 
+(test 'ok namespace-call-with-registry-lock (current-namespace) (lambda () 'ok))
+(test-values '(1 2 3) (lambda () (namespace-call-with-registry-lock (current-namespace)
+                                                                    (lambda () (values 1 2 3)))))
+
+(test 'rentrant namespace-call-with-registry-lock (current-namespace)
+      (lambda ()
+        (namespace-call-with-registry-lock (current-namespace)
+                                           (lambda () 'rentrant))))
+
+(test 'fine namespace-call-with-registry-lock (current-namespace)
+      (lambda ()
+        (let ([result 'fine])
+          (thread (lambda ()
+                    (namespace-call-with-registry-lock (current-namespace)
+                                                       (lambda () (set! result 'lock-oops)))))
+          (sync (system-idle-evt))
+          result)))
+
+;; ----------------------------------------
+
 (parameterize ([current-namespace (make-base-namespace)])
   (eval '(define-namespace-anchor anchor))
   (test 1 eval '(eval 1 (namespace-anchor->namespace anchor))))

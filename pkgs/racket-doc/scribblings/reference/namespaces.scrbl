@@ -366,6 +366,21 @@ Returns the @tech{module registry} of the given namespace. This value
 is useful only for identification via @racket[eq?].}
 
 
+@defproc[(namespace-call-with-registry-lock [namespace namespace?]
+                                            [thunk (-> any)])
+         any]{
+
+Calls @racket[thunk] while holding a reentrant lock for the namespace's
+@tech{module registry}.
+
+Namespace functions do not automatically use the registry lock, but it
+can be used via @racket[namespace-call-with-registry-lock] among
+threads that load and instantiate modules to avoid internal race
+conditions. On-demand @tech{instantiation} of @tech{available} modules
+also takes the lock; see @secref["mod-parse"].
+
+@history[#:added "8.1.0.5"]}
+
 @defproc[(module->namespace [mod (or/c module-path? 
                                        resolved-module-path? 
                                        module-path-index?)]

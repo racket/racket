@@ -89,7 +89,10 @@
              (define (get-sym sym)
                (parameterize ((current-namespace (variable-reference->namespace (#%variable-reference))))
                  (begin0
-                     (dynamic-require mpi-var sym)
+                   (namespace-call-with-registry-lock
+                    (current-namespace)
+                    (lambda ()
+                      (dynamic-require mpi-var sym)))
                    (do-registration (#%variable-reference) (quote modpath)))))
              (define aux-name (make-lazy-function 'exp-name 'bind-name get-sym)) ...
              (define-syntax bind-name

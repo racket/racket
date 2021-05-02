@@ -919,7 +919,9 @@ are visited. More generally, initiating expansion at @tech{phase}
 @tech{visits} and @tech{instantiations} apply to @tech{available}
 modules in the enclosing @tech{namespace}'s @tech{module registry};
 a per-registry lock prevents multiple threads from concurrently
-instantiating and visiting available modules.
+instantiating and visiting available modules. On-demand instantiation
+of available modules uses the same reentrant lock as
+@racket[namespace-call-with-registry-lock].
 
 When the expander encounters @racket[require] and @racket[(require
 (for-syntax ....))] within a @tech{module context}, the resulting

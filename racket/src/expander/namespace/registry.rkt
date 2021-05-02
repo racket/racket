@@ -24,8 +24,10 @@
         (lambda ()
           (cond
            [(box-cas! lock-box v lock)
-            (proc)
-            void]
+            (call-with-values
+             proc
+             (lambda results
+               (lambda () (apply values results))))]
            [else
             ;; CAS failed; take it from the top
             (lambda () (loop))]))
