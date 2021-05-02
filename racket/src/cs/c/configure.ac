@@ -375,10 +375,20 @@ case "$MACH_HOST_CPU" in
   arm*)
     MACH="${thread_prefix}arm32${MACH_OS}"
     ;;
+  powerpc64*)
+    MACH=""
+    # MACH="${thread_prefix}ppc64${MACH_OS}"
+    ;;
   power*)
     MACH="${thread_prefix}ppc32${MACH_OS}"
     ;;
 esac
+
+if test "$MACH" = "" -o "$MACH_OS" = "" ; then
+   echo "Platform is not supported by Racket CS."
+   echo 'Try `--enable-bcdefault`, instead.'
+   exit 1
+fi
 
 if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
@@ -432,8 +442,15 @@ elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
     arm*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}arm32${BUILD_OS}"
       ;;
+    powerpc64*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}ppc64${BUILD_OS}"
+      ;;
     power*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}ppc32${BUILD_OS}"
+      ;;
+    *)
+      echo "unknown build CPU"
+      exit 1
       ;;
   esac
   TARGET_MACH=${MACH}
