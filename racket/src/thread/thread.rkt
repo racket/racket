@@ -1033,7 +1033,11 @@
                                         ;; abandon:
                                         (lambda () (set! receive void))
                                         ;; retry (was interrupted, but not abandoned):
-                                        (lambda () (add-wakeup-callback!))))])))
+                                        (lambda ()
+                                          (add-wakeup-callback!)
+                                          (if (is-mail? t)
+                                              (values self #t)
+                                              (values #f #f)))))])))
   #:reflection-name 'thread-receive-evt)
 
 (define/who (thread-receive-evt)
