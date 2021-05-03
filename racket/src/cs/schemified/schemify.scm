@@ -14046,14 +14046,14 @@
                                               prim-knowns_0
                                               imports_0
                                               mutated_0
-                                              (fxrshift fuel_0 1))
+                                              (unsafe-fxrshift fuel_0 1))
                                            (single-valued?
                                             els_0
                                             knowns_0
                                             prim-knowns_0
                                             imports_0
                                             mutated_0
-                                            (fxrshift fuel_0 1))
+                                            (unsafe-fxrshift fuel_0 1))
                                            #f))
                                         (args
                                          (raise-binding-result-arity-error
@@ -39877,8 +39877,8 @@
             (let ((lo_0 (read-byte/no-eof i_0)))
               (let ((hi_0 (read-byte/no-eof i_0)))
                 (if (fx> hi_0 127)
-                  (fxior (fxlshift (fx+ -256 hi_0) 8) lo_0)
-                  (fxior (fxlshift hi_0 8) lo_0))))
+                  (fxior (unsafe-fxlshift (fx+ -256 hi_0) 8) lo_0)
+                  (fxior (unsafe-fxlshift hi_0 8) lo_0))))
             (if (eqv? b_0 129)
               (let ((a_0 (read-byte/no-eof i_0)))
                 (let ((b_1 (read-byte/no-eof i_0)))
@@ -39888,10 +39888,14 @@
                        a_0
                        (arithmetic-shift
                         (if (fx> d_0 127)
-                          (let ((app_0 (fxlshift (fx+ -256 d_0) 16)))
-                            (fxior app_0 (fxlshift c_0 8) b_1))
-                          (let ((app_0 (fxlshift d_0 16)))
-                            (fxior app_0 (fxlshift c_0 8) b_1)))
+                          (fxior
+                           (unsafe-fxlshift (fx+ -256 d_0) 16)
+                           (unsafe-fxlshift c_0 8)
+                           b_1)
+                          (fxior
+                           (unsafe-fxlshift d_0 16)
+                           (unsafe-fxlshift c_0 8)
+                           b_1))
                         8))))))
               (if (eqv? b_0 130)
                 (integer-bytes->integer (read-bytes/exactly 8 i_0) #t #f)
@@ -39917,8 +39921,8 @@
             (let ((lo_0 (read-byte/no-eof* i_0)))
               (let ((hi_0 (read-byte/no-eof* i_0)))
                 (if (fx> hi_0 127)
-                  (fxior (fxlshift (fx+ -256 hi_0) 8) lo_0)
-                  (fxior (fxlshift hi_0 8) lo_0))))
+                  (fxior (unsafe-fxlshift (fx+ -256 hi_0) 8) lo_0)
+                  (fxior (unsafe-fxlshift hi_0 8) lo_0))))
             (if (eqv? b_0 129)
               (let ((a_0 (read-byte/no-eof* i_0)))
                 (let ((b_1 (read-byte/no-eof* i_0)))
@@ -39928,10 +39932,14 @@
                        a_0
                        (arithmetic-shift
                         (if (fx> d_0 127)
-                          (let ((app_0 (fxlshift (fx+ -256 d_0) 16)))
-                            (fxior app_0 (fxlshift c_0 8) b_1))
-                          (let ((app_0 (fxlshift d_0 16)))
-                            (fxior app_0 (fxlshift c_0 8) b_1)))
+                          (fxior
+                           (unsafe-fxlshift (fx+ -256 d_0) 16)
+                           (unsafe-fxlshift c_0 8)
+                           b_1)
+                          (fxior
+                           (unsafe-fxlshift d_0 16)
+                           (unsafe-fxlshift c_0 8)
+                           b_1))
                         8))))))
               (if (eqv? b_0 130)
                 (integer-bytes->integer (read-bytes/exactly* 8 i_0) #t #f)

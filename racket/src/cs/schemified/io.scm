@@ -4990,7 +4990,7 @@
                                      (let ((next_0 (fxand b_0 63)))
                                        (let ((next-accum_0
                                               (fxior
-                                               (fxlshift accum_1 6)
+                                               (unsafe-fxlshift accum_1 6)
                                                next_0)))
                                          (if (fx= 1 remaining_1)
                                            (if (if (fx> next-accum_0 127)
@@ -5066,7 +5066,7 @@
         (if (fx= remaining_0 0)
           (values #f 0 'error)
           (let ((next_0 (fxand b_0 63)))
-            (let ((next-accum_0 (fxior (fxlshift accum_0 6) next_0)))
+            (let ((next-accum_0 (fxior (unsafe-fxlshift accum_0 6) next_0)))
               (if (fx= 1 remaining_0)
                 (if (if (fx> next-accum_0 127)
                       (if (fx<= next-accum_0 1114111)
@@ -5215,7 +5215,7 @@
                               (unsafe-bytes-set!
                                out-bstr_0
                                j_0
-                               (fxior 192 (fxrshift b_0 6)))
+                               (fxior 192 (unsafe-fxrshift b_0 6)))
                               (let ((app_0 (fx+ j_0 1)))
                                 (unsafe-bytes-set!
                                  out-bstr_0
@@ -5233,12 +5233,14 @@
                                 (unsafe-bytes-set!
                                  out-bstr_0
                                  j_0
-                                 (fxior 224 (fxrshift b_0 12)))
+                                 (fxior 224 (unsafe-fxrshift b_0 12)))
                                 (let ((app_0 (fx+ j_0 1)))
                                   (unsafe-bytes-set!
                                    out-bstr_0
                                    app_0
-                                   (fxior 128 (fxand (fxrshift b_0 6) 63))))
+                                   (fxior
+                                    128
+                                    (fxand (unsafe-fxrshift b_0 6) 63))))
                                 (let ((app_0 (fx+ j_0 2)))
                                   (unsafe-bytes-set!
                                    out-bstr_0
@@ -5255,17 +5257,21 @@
                                 (unsafe-bytes-set!
                                  out-bstr_0
                                  j_0
-                                 (fxior 240 (fxrshift b_0 18)))
+                                 (fxior 240 (unsafe-fxrshift b_0 18)))
                                 (let ((app_0 (fx+ j_0 1)))
                                   (unsafe-bytes-set!
                                    out-bstr_0
                                    app_0
-                                   (fxior 128 (fxand (fxrshift b_0 12) 63))))
+                                   (fxior
+                                    128
+                                    (fxand (unsafe-fxrshift b_0 12) 63))))
                                 (let ((app_0 (fx+ j_0 2)))
                                   (unsafe-bytes-set!
                                    out-bstr_0
                                    app_0
-                                   (fxior 128 (fxand (fxrshift b_0 6) 63))))
+                                   (fxior
+                                    128
+                                    (fxand (unsafe-fxrshift b_0 6) 63))))
                                 (let ((app_0 (fx+ j_0 3)))
                                   (unsafe-bytes-set!
                                    out-bstr_0
@@ -8992,7 +8998,7 @@
                                 (let ((app_2 (fx- end133_0 start132_0)))
                                   (fx<
                                    app_2
-                                   (fxrshift
+                                   (unsafe-fxrshift
                                     (unsafe-bytes-length
                                      (peek-via-read-input-port-bstr this-id_0))
                                     1)))
@@ -15695,7 +15701,9 @@
                                                       j_0
                                                       (fxior
                                                        192
-                                                       (fxrshift v_1 6)))
+                                                       (unsafe-fxrshift
+                                                        v_1
+                                                        6)))
                                                      (let ((app_0 (fx+ j_0 1)))
                                                        (unsafe-bytes-set!
                                                         out-bstr22_0
@@ -15732,7 +15740,9 @@
                                                         j_0
                                                         (fxior
                                                          224
-                                                         (fxrshift v_1 12)))
+                                                         (unsafe-fxrshift
+                                                          v_1
+                                                          12)))
                                                        (let ((app_0
                                                               (fx+ j_0 1)))
                                                          (unsafe-bytes-set!
@@ -15741,7 +15751,9 @@
                                                           (fxior
                                                            128
                                                            (fxand
-                                                            (fxrshift v_1 6)
+                                                            (unsafe-fxrshift
+                                                             v_1
+                                                             6)
                                                             63))))
                                                        (let ((app_0
                                                               (fx+ j_0 2)))
@@ -15780,7 +15792,9 @@
                                                         j_0
                                                         (fxior
                                                          240
-                                                         (fxrshift v_1 18)))
+                                                         (unsafe-fxrshift
+                                                          v_1
+                                                          18)))
                                                        (let ((app_0
                                                               (fx+ j_0 1)))
                                                          (unsafe-bytes-set!
@@ -15789,7 +15803,9 @@
                                                           (fxior
                                                            128
                                                            (fxand
-                                                            (fxrshift v_1 12)
+                                                            (unsafe-fxrshift
+                                                             v_1
+                                                             12)
                                                             63))))
                                                        (let ((app_0
                                                               (fx+ j_0 2)))
@@ -15799,7 +15815,9 @@
                                                           (fxior
                                                            128
                                                            (fxand
-                                                            (fxrshift v_1 6)
+                                                            (unsafe-fxrshift
+                                                             v_1
+                                                             6)
                                                             63))))
                                                        (let ((app_0
                                                               (fx+ j_0 3)))
@@ -31013,35 +31031,32 @@
                                                       (fxior
                                                        55296
                                                        (fxand
-                                                        (fxrshift av_0 10)
+                                                        (unsafe-fxrshift
+                                                         av_0
+                                                         10)
                                                         1023))))
                                                  (let ((lo_0
                                                         (fxior
                                                          56320
                                                          (fxand av_0 1023))))
                                                    (begin
-                                                     (let ((app_0
-                                                            (fxrshift hi_0 8)))
-                                                       (bytes-set-two!
-                                                        bstr_0
-                                                        pos_0
-                                                        app_0
-                                                        (fxand hi_0 255)))
-                                                     (let ((app_0
-                                                            (fxrshift lo_0 8)))
-                                                       (bytes-set-two!
-                                                        bstr_0
-                                                        pos_0
-                                                        app_0
-                                                        (fxand lo_0 255)))
+                                                     (bytes-set-two!
+                                                      bstr_0
+                                                      pos_0
+                                                      (unsafe-fxrshift hi_0 8)
+                                                      (fxand hi_0 255))
+                                                     (bytes-set-two!
+                                                      bstr_0
+                                                      pos_0
+                                                      (unsafe-fxrshift lo_0 8)
+                                                      (fxand lo_0 255))
                                                      (fx+ pos_0 4)))))
                                              (begin
-                                               (let ((app_0 (fxrshift v_0 8)))
-                                                 (bytes-set-two!
-                                                  bstr_0
-                                                  pos_0
-                                                  app_0
-                                                  (fxand v_0 255)))
+                                               (bytes-set-two!
+                                                bstr_0
+                                                pos_0
+                                                (unsafe-fxrshift v_0 8)
+                                                (fxand v_0 255))
                                                (fx+ pos_0 2))))))
                                     (values pos_2))))
                              (for-loop_0 pos_2 (unsafe-fx+ 1 pos_1))))
@@ -31086,7 +31101,9 @@
                               n_0))))))
                      (for-loop_0 0 start*_0))))
                  (args (raise-binding-result-arity-error 4 args)))))))
-        (let ((str_0 (make-string (fx- (fxrshift len_0 1) surrogate-count_0))))
+        (let ((str_0
+               (make-string
+                (fx- (unsafe-fxrshift len_0 1) surrogate-count_0))))
           (begin
             (letrec*
              ((loop_0
@@ -31100,8 +31117,8 @@
                         (let ((b_0 (unsafe-bytes-ref bstr_0 (fx+ i_0 1))))
                           (let ((v_0
                                  (if big-endian?
-                                   (fxior (fxlshift a_0 8) b_0)
-                                   (fxior (fxlshift b_0 8) a_0))))
+                                   (fxior (unsafe-fxlshift a_0 8) b_0)
+                                   (fxior (unsafe-fxlshift b_0 8) a_0))))
                             (if (fx= (fxand v_0 56320) 56320)
                               (let ((a_1
                                      (unsafe-bytes-ref bstr_0 (fx+ i_0 2))))
@@ -31109,13 +31126,15 @@
                                        (unsafe-bytes-ref bstr_0 (fx+ i_0 3))))
                                   (let ((v2_0
                                          (if big-endian?
-                                           (fxior (fxlshift a_1 8) b_1)
-                                           (fxior (fxlshift b_1 8) a_1))))
+                                           (fxior (unsafe-fxlshift a_1 8) b_1)
+                                           (fxior
+                                            (unsafe-fxlshift b_1 8)
+                                            a_1))))
                                     (let ((all-v_0
                                            (fx+
                                             65536
                                             (let ((app_0
-                                                   (fxlshift
+                                                   (unsafe-fxlshift
                                                     (fxand v_0 1023)
                                                     10)))
                                               (fxior
@@ -31223,7 +31242,7 @@
                   (unsafe-place-local-ref cell.1)
                   up?_0
                   s-16_0
-                  (fxrshift (unsafe-bytes-length s-16_0) 1)
+                  (unsafe-fxrshift (unsafe-bytes-length s-16_0) 1)
                   #f)))
             (let ((sr_0 (|#%app| rktio_to_shorts r_0)))
               (begin
@@ -31265,7 +31284,7 @@
                                                  (string
                                                   (string-ref
                                                    s_0
-                                                   (fxrshift
+                                                   (unsafe-fxrshift
                                                     (+ pos_0 in-used_0)
                                                     2)))))
                                             (if (eqv? pos_0 0)
@@ -34356,11 +34375,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1325 unsafe-undefined)
+             (let ((lr1322 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1325
+               (set! lr1322
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34415,9 +34434,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1325 0))
-               (set! command_0 (unsafe-vector*-ref lr1325 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1325 2))
+               (set! group_0 (unsafe-vector*-ref lr1322 0))
+               (set! command_0 (unsafe-vector*-ref lr1322 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1322 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)
