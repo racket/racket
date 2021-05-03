@@ -8,13 +8,17 @@ utilities for Base 64 (MIME-standard) encoding and decoding.}
 
 @section[#:tag "base64-procs"]{Functions}
 
-@defproc[(base64-encode [bstr bytes?] [newline-bstr bytes? #"\r\n"]) bytes?]{
+@defproc[(base64-encode [bstr bytes?] [newline any/c #"\r\n"]) bytes?]{
 
 Consumes a byte string and returns its Base 64 encoding as a new byte
 string.  The returned string is broken into 72-byte lines separated by
-@racket[newline-bstr], which defaults to a CRLF combination, and the
+@racket[newline], which defaults to a CRLF combination, and the
 result always ends with a @racket[newline-bstr] unless the
-input is empty.}
+input is empty.
+
+Although @racket[newline] is intended to be a byte string, it can be
+any value (possibly with a performance penalty), and it is converted
+to a byte string using @racket[display].}
 
 
 @defproc[(base64-decode [bstr bytes?]) bytes?]{
@@ -25,15 +29,18 @@ string.}
 
 @defproc[(base64-encode-stream [in input-port?]
                                [out output-port?]
-                               [newline-bstr bytes? #"\n"])
+                               [newline any/c #"\n"])
          void?]{
 
 Reads bytes from @racket[in] and writes the encoded result to
 @racket[out], breaking the output into 72-character lines separated by
-@racket[newline-bstr], and ending with @racket[newline-bstr] unless
-the input stream is empty. Note that the default @racket[newline-bstr]
+@racket[newline], and ending with @racket[newline] unless
+the input stream is empty. Note that the default @racket[newline]
 is just @racket[#"\n"], not @racket[#"\r\n"]. The procedure returns when
-it encounters an end-of-file from @racket[in].}
+it encounters an end-of-file from @racket[in].
+
+Although @racket[newline] is intended to be a byte string, it can be
+any value, and it is written using @racket[display].}
 
 @defproc[(base64-decode-stream [in input-port?]
                                [out output-port?])
