@@ -8085,7 +8085,7 @@
                 (begin-unsafe (queue-add-front! (thread-mailbox t_0) msg_0)))
               lst_0))
            (end-atomic)))))))
-(define finish_2470
+(define finish_2013
   (make-struct-type-install-properties
    '(thread-receive-evt)
    0
@@ -8131,7 +8131,12 @@
                         (lambda (v_0) self_0)
                         (lambda () (set-thread-mailbox-wakeup! t_0 void))
                         (lambda () (set! receive_0 void))
-                        (lambda () (add-wakeup-callback!_0)))))))))))))))
+                        (lambda ()
+                          (begin
+                            (add-wakeup-callback!_0)
+                            (if (is-mail? t_0)
+                              (values self_0 #t)
+                              (values #f #f)))))))))))))))))
    (current-inspector)
    #f
    '()
@@ -8146,7 +8151,7 @@
    #f
    0
    0))
-(define effect_2506 (finish_2470 struct:thread-receiver-evt))
+(define effect_2506 (finish_2013 struct:thread-receiver-evt))
 (define thread-receiver-evt26.1
   (|#%name|
    thread-receiver-evt

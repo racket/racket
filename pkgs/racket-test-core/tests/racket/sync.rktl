@@ -1041,6 +1041,23 @@
 ;; make sure it's ok for rewind to be the first action:
 (test (void) thread-wait (thread (lambda () (thread-rewind-receive '(1 2 3)))))
 
+(let* ([t (thread/suspend-to-kill
+           (lambda ()
+             (let loop ()
+               (sync
+                (handle-evt
+                 (thread-receive-evt)
+                 (λ (_)
+                   (channel-put (thread-receive) 'ok)
+                   (loop)))))))]
+       [res (for/list ([_ (in-range 2)])
+              (thread-suspend t)
+              (thread-resume t (current-thread))
+              (define ch (make-channel))
+              (thread-send t ch)
+              (channel-get ch))])
+  (test '(ok ok) values res))
+
 ;; ----------------------------------------
 ;; Unsafe poller
 
