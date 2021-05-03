@@ -127,6 +127,12 @@
     (with-fake-root
      (shelly-begin
       $ (~a "raco pkg install --copy test-pkgs/pkg-add-base " c) =exit> 0))))
+  (shelly-case
+   "no doc conflict with excluded subcollections"
+   (for ([c '("test-pkgs/pkg-add-excl")])
+    (with-fake-root
+     (shelly-begin
+      $ (~a "raco pkg install --copy --strict-doc-conflicts test-pkgs/pkg-add-base " c) =exit> 0))))
   (putenv "PLT_PKG_NOSETUP" "")
   (with-fake-root
    (shelly-case

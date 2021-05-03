@@ -25,34 +25,56 @@
                                         #:system-library-subpath [sys-lib-subpath #f])
   (define single-collect
     (pkg-single-collection dir #:name pkg-name #:namespace metadata-ns))
-  (let loop ([s (set)] [f dir] [top? #t] [omits (set)])
+  ;; In this loop `omits` is a set of paths built on `dir`, and `prefix+rxes`
+  ;; is a set of regular expressions to continue using as we recur down;
+  ;; each regular expression is matched relative to the directory where it was
+  ;; introduced, so we have to build up a prefix to use with each regexp
+  (let loop ([s (set)] [f-rel dir] [wrt #f] [top? #t] [omits (set)] [prefix+rxs '()])
+    (define f (if wrt (build-path wrt f-rel) f-rel))
     (cond
-     [(and (directory-exists? f)
-           (not (set-member? omits (simplify-path f))))
-      (define i (get-pkg-info f metadata-ns))
-      (define omit-paths (if i
-                             (i 'compile-omit-paths (lambda () null))
-                             null))
-      (cond
-       [(eq? omit-paths 'all)
-        s]
-       [else
-        (define omit-files (if i
-                               (i 'compile-omit-files (lambda () null))
-                               null))
-        (define new-s
-          (if (and i (or single-collect (not top?)))
-              (set-union (extract-additional-installs i sys-type sys-lib-subpath)
-                         s)
-              s))
-        (define new-omits
-          (set-union
-           omits
-           (for/set ([i (in-list (append omit-paths omit-files))])
-             (simplify-path (build-path f i)))))
-        (for/fold ([s new-s]) ([f (directory-list f #:build? #t)])
-          (loop s f #f new-omits))])]
-     [else s])))
+      [(and (directory-exists? f)
+            (let ([sf (simplify-path f)])
+              (and (not (set-member? omits sf))
+                   (not (for/or ([prefix+rx (in-list prefix+rxs)])
+                          (define prefix (car prefix+rx))
+                          (regexp-match? (cdr prefix+rx) (if (eq? prefix 'same)
+                                                             f-rel
+                                                             (build-path prefix f-rel))))))))
+       (define i (get-pkg-info f metadata-ns))
+       (define omit-paths (if i
+                              (i 'compile-omit-paths (lambda () null))
+                              null))
+       (cond
+         [(eq? omit-paths 'all)
+          s]
+         [else
+          (define omit-files (if i
+                                 (i 'compile-omit-files (lambda () null))
+                                 null))
+          (define new-s
+            (if (and i (or single-collect (not top?)))
+                (set-union (extract-additional-installs i sys-type sys-lib-subpath)
+                           s)
+                s))
+          (define new-omits
+            (set-union omits
+                       (for/set ([i (in-list (append omit-paths omit-files))]
+                                 #:unless (regexp? i))
+                         (simplify-path (build-path f i)))))
+          (define new-prefix+rxs
+            (append (for/list ([i (in-list (append omit-paths omit-files))]
+                               #:when (regexp? i))
+                      (cons 'same i))
+                    ;; add to prefix for rxs accumulated so far
+                    (for/list ([prefix+rx (in-list prefix+rxs)])
+                      (define prefix (car prefix+rx))
+                      (cons (if (eq? prefix 'same)
+                                f-rel
+                                (build-path prefix f-rel))
+                            (cdr prefix+rx)))))
+          (for/fold ([s new-s]) ([sub-f (directory-list f)])
+            (loop s sub-f f #f new-omits new-prefix+rxs))])]
+      [else s])))
 
 (define (extract-additional-installs i sys-type sys-lib-subpath)
   (define (extract-documents i)
