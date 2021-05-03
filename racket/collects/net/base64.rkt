@@ -26,35 +26,49 @@
     (if (>= bits 8)
       (let ([bits (- bits 8)])
         (write-byte (arithmetic-shift data (- bits)) out)
-        (loop (bitwise-and data (vector-ref ones bits)) bits))
+        (loop (bitwise-and data (vector*-ref ones bits)) bits))
       (let ([c (read-byte in)])
         (unless (or (eof-object? c) (eq? c =byte))
-          (let ([v (vector-ref base64-digit c)])
+          (let ([v (vector*-ref base64-digit c)])
             (if v
               (loop (+ (arithmetic-shift data 6) v) (+ bits 6))
               (loop data bits))))))))
 
 (define (base64-encode-stream in out [linesep #"\n"])
-  (let loop ([data 0] [bits 0] [width 0])
-    (define (write-char)
-      (write-byte (vector-ref digit-base64 (arithmetic-shift data (- 6 bits)))
-                  out)
-      (let ([width (modulo (add1 width) 72)])
-        (when (zero? width) (display linesep out))
-        width))
-    (if (>= bits 6)
-      (let ([bits (- bits 6)])
-        (loop (bitwise-and data (vector-ref ones bits)) bits (write-char)))
-      (let ([c (read-byte in)])
-        (if (eof-object? c)
-          ;; flush extra bits
-          (begin
-            (let ([width (if (> bits 0) (write-char) width)])
-              (when (> width 0)
-                (for ([i (in-range (modulo (- width) 4))])
-                  (write-byte =byte out))
-                (display linesep out))))
-          (loop (+ (arithmetic-shift data 8) c) (+ bits 8) width))))))
+  ;; each set of three input bytes turns into four output bytes
+  (define (o! c) (write-byte (vector*-ref digit-base64 c) out))
+  (define (fill!) (write-byte (char->integer #\=) out))
+  (define (line!) (display linesep out))
+  (let loop ([width 0])
+    (define b1 (read-byte in))
+    (unless (eof-object? b1)
+      (let ([width (if (eqv? width 72)
+                       (begin
+                         (display linesep out)
+                         0)
+                       width)])
+        (o! (arithmetic-shift b1 -2))
+        (define b2 (read-byte in))
+        (cond
+          [(eof-object? b2)
+           (o! (arithmetic-shift (bitwise-and b1 #b11) 4))
+           (fill!)
+           (fill!)
+           (line!)]
+          [else
+           (o! (bitwise-ior (arithmetic-shift (bitwise-and b1 #b11) 4)
+                            (arithmetic-shift b2 -4)))
+           (define b3 (read-byte in))
+           (cond
+             [(eof-object? b3)
+              (o! (arithmetic-shift (bitwise-and b2 #b1111) 2))
+              (fill!)
+              (line!)]
+             [else
+              (o! (bitwise-ior (arithmetic-shift (bitwise-and b2 #b1111) 2)
+                               (arithmetic-shift b3 -6)))
+              (o! (bitwise-and b3 #b111111))
+              (loop (+ width 4))])])))))
 
 (define (base64-decode src)
   (let ([s (open-output-bytes)])
