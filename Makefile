@@ -311,6 +311,7 @@ maybe-fetch-pb-as-is:
 fetch-pb-from:
 	mkdir -p racket/src/ChezScheme/boot
 	if [ ! -d racket/src/ChezScheme/boot/pb ] ; 	  then git clone -q $(SINGLE_BRANCH_FLAG) -b circa-8.1.0.4-1 $(PB_REPO) racket/src/ChezScheme/boot/pb ; 	  else cd racket/src/ChezScheme/boot/pb && git fetch -q origin circa-8.1.0.4-1:remotes/origin/circa-8.1.0.4-1 ; fi
+	cd racket/src/ChezScheme/boot/pb && git remote set-branches origin circa-8.1.0.4-1
 	cd racket/src/ChezScheme/boot/pb && git checkout -q circa-8.1.0.4-1
 pb-fetch:
 	$(MAKE) fetch-pb EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" PB_REPO="$(PB_REPO)" SINGLE_BRANCH_FLAG="$(SINGLE_BRANCH_FLAG)"
