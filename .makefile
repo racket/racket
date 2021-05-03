@@ -344,7 +344,7 @@ RACKET_FOR_BOOTFILES = $(RACKET)
 RACKET_FOR_BUILD = $(RACKET)
 
 # This branch name changes each time the pb boot files are updated:
-PB_BRANCH == circa-8.0.0.10-1
+PB_BRANCH == v8.1
 PB_REPO = https://github.com/racket/pb
 
 # Set to empty for Git before v1.7.10:
