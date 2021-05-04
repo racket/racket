@@ -448,6 +448,7 @@ fetch-pb-from:
 	if [ ! -d racket/src/ChezScheme/boot/pb ] ; \
 	  then git clone -q $(SINGLE_BRANCH_FLAG) -b $(PB_BRANCH) $(PB_REPO) $(PB_DIR) ; \
 	  else cd $(PB_DIR) && git fetch -q origin $(PB_BRANCH):remotes/origin/$(PB_BRANCH) ; fi
+	cd $(PB_DIR) && git remote set-branches origin $(PB_BRANCH)
 	cd $(PB_DIR) && git checkout -q $(PB_BRANCH)
 
 pb-fetch:
