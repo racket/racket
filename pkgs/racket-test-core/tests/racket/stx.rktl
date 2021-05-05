@@ -2353,6 +2353,7 @@
     (test '((1) (2)) syntax->datum (quasisyntax ((a) ((unsyntax b)))))
     (test '#(1 2) syntax->datum (quasisyntax #(a (unsyntax b))))
     (test '#(1 2 3 4 5) syntax->datum (quasisyntax #(a (unsyntax b) c ...)))
+    (test '#&2 syntax->datum (quasisyntax #&(unsyntax b)))
     (test '#s(PS 1 2) syntax->datum (quasisyntax #s(PS a (unsyntax b))))
     (test '#s(PS 1 2 3 4 5) syntax->datum (quasisyntax #s(PS a (unsyntax b) c ...)))
     (test '#(1 2 3 4 5) syntax->datum (quasisyntax #(a (unsyntax b) (unsyntax-splicing ds))))
@@ -2368,6 +2369,7 @@
 (syntax-test #'(quasisyntax unsyntax-splicing))
 (syntax-test #'(quasisyntax (unsyntax-splicing)))
 (syntax-test #'(quasisyntax (unsyntax-splicing 1 2)))
+(syntax-test #'(quasisyntax #&(unsyntax-splicing 1 2)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check preservation of properties by `quasisyntax'

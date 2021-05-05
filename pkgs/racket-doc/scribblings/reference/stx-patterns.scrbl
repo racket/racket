@@ -449,15 +449,16 @@ variables, then @racket[#'template] is equivalent to
 
 @defform[(quasisyntax template)]{
 
-Like @racket[syntax], but @racket[(#,(racketkeywordfont "unsyntax")
-_expr)] and @racket[(#,(racketkeywordfont "unsyntax-splicing") _expr)]
+Like @racket[syntax], but @racket[(@#,racket[unsyntax]
+_expr)] and @racket[(@#,racket[unsyntax-splicing] _expr)]
 escape to an expression within the @racket[template].
 
 The @racket[_expr] must produce a syntax object (or syntax list) to be
 substituted in place of the @racket[unsyntax] or
 @racket[unsyntax-splicing] form within the quasiquoting template, just
 like @racket[unquote] and @racket[unquote-splicing] within
-@racket[quasiquote]. (If the escaped expression does not generate a
+@racket[quasiquote], except that a hash table value position is not
+an escape position for @racket[quasisyntax]. (If the escaped expression does not generate a
 syntax object, it is converted to one in the same way as for the
 right-hand side of @racket[with-syntax].)  Nested
 @racket[quasisyntax]es introduce quasiquoting layers in the same way

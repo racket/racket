@@ -250,6 +250,17 @@
                                              stx
                                              stx)
                                             bindings))))]
+                      [(box? (syntax-e stx))
+                       (loop (unbox (syntax-e stx))
+                             depth
+                             same-k
+                             (lambda (v bindings)
+                               (convert-k (datum->syntax
+                                           stx
+                                           (box v)
+                                           stx
+                                           stx)
+                                          bindings)))]
                       [(prefab-struct-key (syntax-e stx))
                        (let* ([d (syntax-e stx)]
                               [key (prefab-struct-key d)]
