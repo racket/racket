@@ -756,7 +756,8 @@
                    (lambda ()
                      (cond 
                       [(pair? l) 
-                       (if (and (eq? (do-remap (car l)) 'unquote)
+                       (if (and check?
+                                (eq? (do-remap (car l)) 'unquote)
                                 (not (equal? qd 1))
                                 (pair? (cdr l))
                                 (null? (cdr (cdr l))))
@@ -806,8 +807,8 @@
            #f #f
            (lambda ()
              (if (and qd (zero? qd))
-                 (wr-expr (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                          depth pair? car cdr "(" ")" qd)
+                 (wr-lst (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
+                         #f depth pair? car cdr "(" ")" qd)
                  (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))))]
          [(null? obj)
           (let ([qd (to-quoted out qd obj)])
@@ -1048,8 +1049,8 @@
                                    qd))]
                        [(mpair? obj)
                         (if (and qd (zero? qd))
-                            (pp-pair (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                                     extra depth
+                            (pp-list (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
+                                     extra pp-expr #f depth
                                      pair? car cdr "(" ")"
                                      qd)
                             (pp-pair obj extra depth 
@@ -1058,8 +1059,8 @@
                        [(vector? obj)
                         (let ([qd (to-quoted out qd obj)])
                           (if (and qd (zero? qd))
-                              (pp-pair (cons (make-unquoted 'vector) (vector->list obj))
-                                       extra depth
+                              (pp-list (cons (make-unquoted 'vector) (vector->list obj))
+                                       extra pp-expr #f depth
                                        pair? car cdr pair-open pair-close
                                        qd)
                               (begin

@@ -670,6 +670,14 @@
                     "('a ,a `a ,@a #'a #,a #`a #,@a)"
                     "'('a ,a `a ,@a #'a #,a #`a #,@a)"
                     "('a ,a `a ,@a #'a #,a #`a #,@a)"))
+
+  (parameterize ([print-reader-abbreviations #t])
+    (test-print/all (list (mcons 'unquote '()) (vector (mcons 1 2) 'unquote '()))
+                    "({unquote} #({1 . 2} unquote ()))"
+                    "({unquote} #({1 . 2} unquote ()))"
+                    "({unquote} #({1 . 2} unquote ()))"
+                    "(list (mcons 'unquote '()) (vector (mcons 1 2) 'unquote '()))"
+                    "({unquote} #({1 . 2} unquote ()))"))
     
   (void)))
 
