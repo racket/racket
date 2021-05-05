@@ -83,7 +83,7 @@ The arguments implement the port as follows:
       @item{a @tech{synchronizable event} (see @secref["sync"]) other
       than a pipe input port or procedure of arity four; the event
       becomes ready when the read is complete (roughly): the event's
-      value can be one of the above three results or another event like
+      value can be one of the above four results or another event like
       itself; in the last case, a reading process loops with
       @racket[sync] until it gets a non-event result.}
 
