@@ -163,14 +163,16 @@ default @tech{error display handler} does not show a ``stack trace'' for
 for end users.}
 
 
-@defproc*[([(raise-argument-error [name symbol?] [expected string?] [v any/c]) any]
-           [(raise-argument-error [name symbol?] [expected string?] [bad-pos exact-nonnegative-integer?] [v any/c] ...) any])]{
+@defproc*[([(raise-argument-error [name symbol?] [expected string?] [v any/c] [#:more-info more-info string? #f]) any]
+           [(raise-argument-error [name symbol?] [expected string?] [bad-pos exact-nonnegative-integer?] [v any/c] ... [#:more-info more-info string? #f]) any])]{
 
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
 an exception.  The @racket[name] argument is used as the source
 procedure's name in the error message. The @racket[expected] argument
 is used as a description of the expected contract (i.e., as a string,
-but the string is intended to contain a contract expression).
+but the string is intended to contain a contract expression). The optional
+@racket[more-info] argument is included in the exception's error message,
+its purpose is to provide more detail about the bad argument's role.
 
 In the first form, @racket[v] is the value received by the procedure
 that does not have the expected type.
@@ -198,7 +200,17 @@ message names the bad argument and also lists the other arguments. If
     (raise-argument-error 'feed-animals "'goose" 2 cow sheep goose cat)
     "fed the animals"))
 (eval:error (feed-animals 'cow 'sheep 'dog 'cat))
-]}
+(define (feed-calf kind)
+  (if (not (eq? kind 'milk))
+    (raise-argument-error 'feed-calf "'milk" kind
+                          #:more-info "what kind of food to feed the calf")
+    "fed the calf"))
+(eval:error (feed-calf 'seeds))
+]
+
+@history[#:changed "7.2.0.10" @elem{Added @racket[#:more-info]}]
+
+}
 
 
 @defproc*[([(raise-result-error [name symbol?] [expected string?] [v any/c]) any]
