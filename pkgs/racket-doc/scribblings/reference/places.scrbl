@@ -91,12 +91,13 @@ message to each, and then waits for the places to terminate:
    (map place-wait pls))
 ]
 
-The @filepath{place-worker.rkt} module must export the
+The @filepath{place-worker.rkt} module (in a file that
+is separate from the above code) must export the
 @racket[place-main] function that each place executes, where
 @racket[place-main] must accept a single @tech{place channel}
 argument:
 
-@racketmod[
+@racketmod[#:file "place-worker.rkt"
 racket
 (provide place-main)
 
