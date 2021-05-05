@@ -177,7 +177,7 @@
             [else (or src default)])
           (if line
             (if col
-              (format ":~a.~a" line col)
+              (format ":~a:~a" line col)
               (format ":~a" line))
             (if pos
               (if span

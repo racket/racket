@@ -218,7 +218,8 @@ The first produces a string describing the source location; the second appends
 (source-location->prefix (make-srcloc #f #f #f #f #f))
 ]
 
-}
+@history[#:changed "8.1.0.5" @elem{Changed format to separate a line and column
+                                   with @litchar{:} instead of @litchar{.}}]}
 
 @section[#:tag "location"]{Source Location Utilities}
 
