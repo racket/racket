@@ -3047,12 +3047,15 @@ which has fewer dependencies than @racketmodname[racket/performance-hint].
                       (code:line keyword [arg-id default-expr])])]{
 Like @racket[define], but ensures that the definition will be inlined at its
 call sites. Recursive calls are not inlined, to avoid infinite inlining.
-Higher-order uses are supported, but also not inlined.
+Higher-order uses are supported, but also not inlined. Misapplication (by
+supplying the wrong number of arguments or incorrect keyword arguments) is
+also not inlined and left as a run-time error.
 
-@racket[define-inline] may interfere with the Racket compiler's own inlining
+The @racket[define-inline] form may interfere with the Racket compiler's own inlining
 heuristics, and should only be used when other inlining attempts (such as
 @racket[begin-encourage-inline]) fail.
-}
+
+@history[#:changed "8.1.0.5" @elem{Changed to treat misapplication as a run-time error.}]}
 
 
 @;------------------------------------------------------------------------

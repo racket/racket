@@ -61,9 +61,9 @@
 (define-syntax (define-inline-helper stx)
   (syntax-parse stx
     [(_ (name:id . args:formals) . body)
-     (with-syntax* ([internal-name     (format-id #'name "~a-internal" #'name)]
-                    [inline-name       (format-id #'name "~a-inline"   #'name)]
-                    [function-aux      (format-id #'name "~a-aux"      #'name)]
+     (with-syntax* ([internal-name     (format-id #'here "~a-internal" #'name)]
+                    [inline-name       (format-id #'here "~a-inline"   #'name)]
+                    [function-aux      (format-id #'here "~a-aux"      #'name)]
                     [(arg-id ...)      #'args.ids]
                     [(rest-arg-id ...) #'args.rest-arg]
                     [(tmp-arg-id ...)  (generate-temporaries #'(arg-id ...))]
@@ -76,7 +76,9 @@
        #`(begin
            ;; define a function version that recursive calls fall back to, to
            ;; avoid infinite expansion
-           (define (internal-name . args) body*)
+           (define internal-name
+             (let ([name (lambda args body*)])
+               name))
            (define-syntax-parameter name
              (syntax-id-rules ()
                [(_ . rest) (inline-name . rest)]
@@ -97,25 +99,44 @@
              (...
               (syntax-parse stx*
                 [(_ arg*:actual ...)
-                 ;; let*-bind the actuals, to ensure that they're evaluated
-                 ;; only once, and in order
-                 #`(let* ([arg*.tmp arg*.arg] ...)
-                     (syntax-parameterize
-                         ([name (make-rename-transformer #'internal-name)])
-                       #,(let* ([arg-entries     (attribute arg*.for-aux)]
-                                [keyword-entries (filter car arg-entries)]
-                                [positional-entries
-                                 (filter (lambda (x) (not (car x)))
-                                         arg-entries)]
-                                [sorted-keyword-entries
-                                 (sort keyword-entries
-                                       string<?
-                                       #:key (lambda (kw)
-                                               (keyword->string
-                                                (syntax-e (car kw)))))])
-                           (keyword-apply
-                            function-aux
-                            (map (lambda (x) (syntax-e (car x)))
-                                 sorted-keyword-entries)
-                            (map cadr sorted-keyword-entries)
-                            (map cadr positional-entries)))))])))))]))
+                 ;; BEWARE! Catching all contract failures here, on the
+                 ;; grounds that the only possible error *should* be
+                 ;; an application of the inlined function to bad arguments:
+                 (with-handlers ([exn:fail:contract?
+                                  ;; If the arity or keywords are wrong, turn that
+                                  ;; into a run-time error
+                                  (lambda (exn)
+                                    (let ([loc (srcloc->string (srcloc (syntax-source stx*)
+                                                                       (syntax-line stx*)
+                                                                       (syntax-column stx*)
+                                                                       (syntax-position stx*)
+                                                                       (syntax-span stx*)))])
+                                      (log-warning "~aincorrect call to would-be-inlined function: ~s"
+                                                   (if loc (format "~a: " loc) "")
+                                                   (syntax-e #'name)))
+                                    (syntax-parse stx*
+                                      [(_ arg ...)
+                                       (syntax/loc stx*
+                                         (internal-name arg ...))]))])
+                   ;; let*-bind the actuals, to ensure that they're evaluated
+                   ;; only once, and in order
+                   #`(let* ([arg*.tmp arg*.arg] ...)
+                       (syntax-parameterize
+                           ([name (make-rename-transformer #'internal-name)])
+                         #,(let* ([arg-entries     (attribute arg*.for-aux)]
+                                  [keyword-entries (filter car arg-entries)]
+                                  [positional-entries
+                                   (filter (lambda (x) (not (car x)))
+                                           arg-entries)]
+                                  [sorted-keyword-entries
+                                   (sort keyword-entries
+                                         string<?
+                                         #:key (lambda (kw)
+                                                 (keyword->string
+                                                  (syntax-e (car kw)))))])
+                             (keyword-apply
+                              function-aux
+                              (map (lambda (x) (syntax-e (car x)))
+                                   sorted-keyword-entries)
+                              (map cadr sorted-keyword-entries)
+                              (map cadr positional-entries))))))])))))]))

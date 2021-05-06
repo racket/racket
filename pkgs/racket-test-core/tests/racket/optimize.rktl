@@ -5896,6 +5896,11 @@
                1 "")
   (test/output (sub #:b 1 #:a 2)
                1 "")
+
+  ;; a bad call is a runtime error, not a compile-time error
+  (test #t procedure? (lambda () (sub 'oops)))
+  (test #t procedure? (lambda () (sub #:oops 77)))
+  (test #t procedure? sub)
   )
 
 
