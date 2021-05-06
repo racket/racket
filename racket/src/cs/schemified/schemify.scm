@@ -12722,10 +12722,12 @@
                                           (values id_1 rhs_0)))))))
                               (case-lambda
                                ((id_0 rhs_0)
-                                (list
-                                 'set!
-                                 id_0
-                                 (clone-expr rhs_0 env_0 mutated_0)))
+                                (let ((app_0
+                                       (clone-expr id_0 env_0 mutated_0)))
+                                  (list
+                                   'set!
+                                   app_0
+                                   (clone-expr rhs_0 env_0 mutated_0))))
                                (args
                                 (raise-binding-result-arity-error 2 args))))
                              (if (if (eq? '|#%variable-reference| hd_0)

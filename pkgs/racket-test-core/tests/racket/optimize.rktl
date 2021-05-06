@@ -7133,5 +7133,20 @@
         (f (+ 6.0 (one)) (+ 6.0 (one)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to checking inlingin with `set!`:
+
+(module check-inline-of-set!-expression racket/base
+  (require racket/performance-hint)
+  (begin-encourage-inline
+    (define (f x)
+      (let ([y 0])
+        (set! y (+ y x))
+        y)))
+  (define result (list (f 1) (f 2)))
+  (provide result))
+
+(test '(1 2) dynamic-require ''check-inline-of-set!-expression 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
