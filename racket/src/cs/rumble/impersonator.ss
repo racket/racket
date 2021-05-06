@@ -661,7 +661,7 @@
 
 (define (set-impersonator-applicables!)
   (let ([add (lambda (rtd)
-               (struct-property-set! prop:procedure rtd impersonate-apply)  
+               (struct-property-set! prop:procedure rtd 'impersonate-apply)
                (struct-property-set! prop:procedure-arity rtd 3))])
     (add (record-type-descriptor props-procedure-impersonator))
     (add (record-type-descriptor props-procedure-chaperone))

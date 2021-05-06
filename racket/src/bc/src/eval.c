@@ -2560,14 +2560,13 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
           UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
 
-          v = obj;
           obj = scheme_extract_struct_procedure(orig_obj, check_rands, rands, &is_method);
           if (is_method) {
             /* Have to add an extra argument to the front of rands */
             if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
               /* Common case: we can just push self onto the front: */
               rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
-              rands[0] = v;
+              rands[0] = orig_obj;
             } else {
               int i;
               Scheme_Object **a;
@@ -2585,7 +2584,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
               for (i = num_rands; i--; ) {
                 a[i + 1] = rands[i];
               }
-              a[0] = v;
+              a[0] = orig_obj;
               rands = a;
             }
             num_rands++;

@@ -3583,6 +3583,83 @@
   (test 1 'apply (group-rows* #:group 10)))
 
 ;; ----------------------------------------
+;; More checks on the interaction of procedure and struct impersonators
+
+(let ()
+  (struct foo ([val #:mutable])
+    #:property prop:procedure
+    (λ (self)
+      (log-error "getting")
+      (foo-val self)))
+
+  (define orig-foo (foo 'original))
+
+  (define the-foo
+    (impersonate-struct
+     orig-foo
+     foo-val
+     (λ (self val) 'impersonated)
+     set-foo-val!
+     (λ (self val) (error "cannot set!"))))
+
+  (test 'impersonated foo-val the-foo)
+  (test 'impersonated the-foo))
+
+(let ()
+  (define chaperoned 0)
+
+  (struct bar (proc)
+    #:property prop:procedure 0)
+
+  (define orig-bar (bar (lambda () 'ok)))
+
+  (define the-bar
+    (chaperone-struct
+     orig-bar
+     bar-proc
+     (lambda (self val) (set! chaperoned (add1 chaperoned)) val)))
+
+  (test 0 values chaperoned)
+  (test 'ok the-bar)
+  (test 1 values chaperoned)
+
+  (define proc-bar
+    (chaperone-procedure orig-bar (lambda () (values))))
+
+  (define another-bar
+    (chaperone-struct
+     proc-bar
+     bar-proc
+     (lambda (self val) (set! chaperoned (add1 chaperoned)) val)))
+
+  (test 1 values chaperoned)
+  (test 'ok another-bar)
+  (test 2 values chaperoned)
+
+  (define-values (prop:tagged tagged? tagged-ref) (make-impersonator-property 'tagged))
+
+  (define was-tagged? #f)
+  (define proc*-bar
+    (chaperone-procedure* orig-bar (lambda (orig)
+                                     (set! was-tagged? (tagged? orig))
+                                     (values))))
+
+  (define struct*-bar
+    (chaperone-struct
+     proc-bar
+     bar-proc
+     (lambda (self val) (set! chaperoned (add1 chaperoned)) val)))
+
+  (define the*-bar
+    (chaperone-procedure proc*-bar
+                         (lambda () (values))
+                         prop:tagged #t))
+
+  (test #f values was-tagged?)
+  (test 'ok the*-bar)
+  (test #t values was-tagged?))
+
+;; ----------------------------------------
 ;; Check that position-consuming accessor and mutators work with
 ;; `impersonate-struct`.
 
