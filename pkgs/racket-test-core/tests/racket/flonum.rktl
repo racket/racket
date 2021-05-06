@@ -47,6 +47,18 @@
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i k j))
         (test #t same-results (list-ref line 0) (list-ref line 1) (cons i more-flonums))))))
 
+(test 3.0 ->fl 3)
+(test (exact->inexact (expt 2 100)) ->fl (expt 2 100))
+(err/rt-test (->fl 3.0))
+(err/rt-test (->fl 1/3))
+
+(test 3 fl->exact-integer 3.0)
+(test (inexact->exact 1e100) fl->exact-integer 1e100)
+(err/rt-test (fl->exact-integer 3.1))
+(err/rt-test (fl->exact-integer 3))
+(err/rt-test (fl->exact-integer 1/3))
+(err/rt-test (fl->exact-integer 1.0+2.0i))
+
 (err/rt-test (flvector-ref (flvector 4.0 5.0 6.0) 4) exn:fail:contract? #rx"[[]0, 2[]]")
 (err/rt-test (flvector-set! (flvector 4.0 5.0 6.0) 4 0.0) exn:fail:contract? #rx"[[]0, 2[]]")
 

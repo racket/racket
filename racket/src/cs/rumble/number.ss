@@ -114,10 +114,14 @@
 (define (fxlshift/wraparound x y) (#2%fxsll/wraparound x y))
 
 (define (fl->fx x) (#2%flonum->fixnum x))
-(define (->fl x) (#2%real->flonum x))
+(define/who (->fl x)
+  (cond
+    [(fixnum? x) (fixnum->flonum x)]
+    [(bignum? x) (real->flonum x)]
+    [else (#%$app/no-inline raise-argument-error who "exact-integer?" x)]))
 (define/who (fl->exact-integer fl)
-  (check who flonum? fl)
-  (inexact->exact (flfloor fl)))
+  (check who (lambda (x) (and (flonum? x) (flinteger? x))) :contract "(and/c flonum? integer?)" fl)
+  (inexact->exact fl))
 
 (define/who (flreal-part a)
   (or (and
