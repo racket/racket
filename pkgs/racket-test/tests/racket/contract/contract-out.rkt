@@ -661,13 +661,13 @@
          (require 'provide/contract-35/m)
          (f #f)))))
     
-    (test (format "contract-out.rkt:~a.28"
+    (test (format "contract-out.rkt:~a:28"
                   (+ here-line 8))
           'provide/contract-compiled-source-locs
           (with-handlers ((exn:fail?
                            (λ (x)
                              (define m 
-                               (regexp-match #rx"contract-out[.]rkt[^ ]*.28" (exn-message x)))
+                               (regexp-match #rx"contract-out[.]rkt[^ ]*:28" (exn-message x)))
                              (if m 
                                  (car m) 
                                  (list 'regexp-match-failed (exn-message x))))))
