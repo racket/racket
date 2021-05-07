@@ -2803,13 +2803,7 @@ static Scheme_Object *get_frac(char *name, int low_p,
     return n;
 }
 
-static Scheme_Object *un_exp(Scheme_Object *o);
 static Scheme_Object *un_log(Scheme_Object *o);
-
-static Scheme_Object *un_exp(Scheme_Object *o)
-{
-  return exp_prim(1, &o);
-}
 
 static Scheme_Object *un_log(Scheme_Object *o)
 {
@@ -2889,27 +2883,53 @@ static Scheme_Object *bignum_log(Scheme_Object *b)
   return scheme_make_double(d);
 }
 
+static Scheme_Object *inexact_cosh(Scheme_Object *n) {
+  double r;
+  r = cosh(TO_DOUBLE_VAL(n));
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(n)) return scheme_make_float(r);
+#endif
+  return scheme_make_double(r);
+}
+
+static Scheme_Object *inexact_sinh(Scheme_Object *n) {
+  double r;
+  r = sinh(TO_DOUBLE_VAL(n));
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(n)) return scheme_make_float(r);
+#endif
+  return scheme_make_double(r);
+}
+
 static Scheme_Object *complex_sin(Scheme_Object *c)
 {
-  Scheme_Object *i_c;
+  Scheme_Object *a, *b;
 
-  i_c = scheme_bin_mult(c, scheme_plus_i);
-  
-  return scheme_bin_div(scheme_bin_minus(un_exp(i_c),
-					 un_exp(scheme_bin_minus(zeroi, i_c))),
-			scheme_bin_mult(scheme_make_integer(2), scheme_plus_i));
+  /* sin(a+bi) = sin(a)cosh(b)+cos(a)sinh(b)i */
+
+  a = _scheme_complex_real_part(c);
+  b = _scheme_complex_imaginary_part(c);
+
+  return scheme_make_complex(scheme_bin_mult(sin_prim(1, &a), inexact_cosh(b)),
+                             scheme_bin_mult(cos_prim(1, &a), inexact_sinh(b)));
 }
+
 
 static Scheme_Object *complex_cos(Scheme_Object *c)
 {
-  Scheme_Object *i_c;
+  Scheme_Object *a, *b;
 
-  i_c = scheme_bin_mult(c, scheme_plus_i);
+  /* cos(a+bi) = cos(a)cosh(b)-sin(a)sinh(b)i */
   
-  return scheme_bin_div(scheme_bin_plus(un_exp(i_c),
-					un_exp(scheme_bin_minus(zeroi, i_c))),
-			scheme_make_integer(2));
+  a = _scheme_complex_real_part(c);
+  b = _scheme_complex_imaginary_part(c);
+
+  return scheme_make_complex(scheme_bin_mult(cos_prim(1, &a), inexact_cosh(b)),
+                             scheme_bin_minus(scheme_make_integer(0),
+					      scheme_bin_mult(sin_prim(1, &a),
+							      inexact_sinh(b))));
 }
+
 
 static Scheme_Object *complex_tan(Scheme_Object *c)
 {
