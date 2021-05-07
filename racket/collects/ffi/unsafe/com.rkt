@@ -333,7 +333,7 @@
    [GetTypeInfo (_hmfun _UINT _LCID (p : (_ptr o _pointer))
                         -> GetTypeInfo (cast p _pointer _ITypeInfo-pointer))
                 #:release-with-function Release]
-   [GetIDsOfNames (_hmfun _REFIID (_ptr i _string/utf-16)
+   [GetIDsOfNames (_hmfun _REFIID _ptr-to-string/utf-16
                           (_UINT = 1) _LCID
                           (p : (_ptr o _DISPID))
                           -> GetIDsOfNames
