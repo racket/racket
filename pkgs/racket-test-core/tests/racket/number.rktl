@@ -3724,4 +3724,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+(load-relative "gambit-numeric.rktl")
+
 (report-errs)
