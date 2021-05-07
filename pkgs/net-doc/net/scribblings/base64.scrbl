@@ -13,7 +13,7 @@ utilities for Base 64 (MIME-standard) encoding and decoding.}
 Consumes a byte string and returns its Base 64 encoding as a new byte
 string.  The returned string is broken into 72-byte lines separated by
 @racket[newline], which defaults to a CRLF combination, and the
-result always ends with a @racket[newline-bstr] unless the
+result always ends with a @racket[newline] unless the
 input is empty.
 
 Although @racket[newline] is intended to be a byte string, it can be
