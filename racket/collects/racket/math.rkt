@@ -6,7 +6,8 @@
 
 (require "unsafe/ops.rkt"
          "performance-hint.rkt"
-         "private/math-predicates.rkt")
+         "private/math-predicates.rkt"
+         racket/flonum)
 
 (provide pi pi.f
          nan? infinite?
@@ -51,6 +52,38 @@
     (unless (number? z) (raise-argument-error 'conjugate "number?" z))
     (make-rectangular (real-part z) (- (imag-part z))))
 
+  ;; simpler version of the definition from the `math`
+  (define (flasinh x)
+    (fllog (fl+ x (flsqrt (fl+ (fl* x x) 1.0)))))
+
+  (define (flcopysign v s)
+    (if (or (and (negative? s) (negative? v))
+            (and (positive? s) (positive? v)))
+        v
+        (- v)))
+
+
+  ;; adapted from gambit
+  (define (ctanh xi+ieta)
+    ;; we assume that neither xi nor eta can be exact 0
+    (let* ((xi  (real-part xi+ieta))
+           (eta (imag-part xi+ieta)))
+      (if (< (/ (flasinh 1.7976931348623157e308) 4.0) (abs xi))
+          (make-rectangular (flcopysign 1.0 (exact->inexact xi))     ;; xi cannot be exact 0
+                             (flcopysign 0.0 (exact->inexact eta)))   ;; eta cannot be exact 0
+          (let* ((t (tan eta))                                    ;; sin(eta)/cos(eta) can't be exact 0, so can't be exact
+                 (beta (fl+ 1.0 (fl* t t)))                   ;; 1/cos^2(eta), can't be exact
+                 (s (sinh xi))                                    ;; sinh(xi), can't be exact zero, so can't be exact
+                 (rho (flsqrt (fl+ 1.0 (fl* s s)))))        ;; cosh(xi), can't be exact
+            (if (infinite? t)                                     ;; if sin(eta)/cos(eta) = infinity (how, I don't know)
+                (make-rectangular (fl/ rho s) (fl/ t))
+                (let ((one+beta*s^2 (fl+ 1.0 (fl* beta (fl* s s)))))
+                  (make-rectangular (fl/ (fl* beta (fl* rho s))
+                                         one+beta*s^2)
+                                    (fl/ t
+                                         one+beta*s^2))))))))
+
+
   ;; complex hyperbolic functions
   (define (sinh z)
     (unless (number? z) (raise-argument-error 'sinh "number?" z))
@@ -65,7 +98,11 @@
                     (define z^2 (* z z))
                     (+ z (* z z^2 (+ #i1/6 (* z^2 (+ #i1/120 (* z^2 (+ #i1/5040 (* z^2 #i1/362880))))))))]
                    [else        (/ (- (exp z) (exp (- z))) 2)]))]
-          [else (/ (- (exp z) (exp (- z))) 2)]))
+          [else
+           (define r (real-part z))
+           (define i (imag-part z))
+           (make-rectangular (* (sinh r) (cos i))
+                             (* (cosh r) (sin i)))]))
 
   (define (cosh z)
     (unless (number? z) (raise-argument-error 'cosh "number?" z))
@@ -95,8 +132,11 @@
                    [(z . < . 19.06154746539849600897D+00) (- 1 (/ 2 (+ 1 (exp (* 2 z)))))]
                    [(z . >= . 19.06154746539849600897D+00) (if (single-flonum? z) (real->single-flonum 1.0) 1.0)]
                    [else          z]))]  ; +nan.0 or +nan.f
-          [else (- 1 (/ 2 (+ 1 (exp (* 2 z)))))]))
-
+          [else
+           ;; special case taken from gambit
+           (if (eqv? (real-part z) 0)
+               (make-rectangular 0 (tan (imag-part z)))
+               (ctanh z))]))
   ;; angle conversion
   (define (degrees->radians x)
     (unless (real? x) (raise-argument-error 'degrees->radians "real?" x))
