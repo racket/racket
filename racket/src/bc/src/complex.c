@@ -339,7 +339,7 @@ Scheme_Object *scheme_complex_sqrt(const Scheme_Object *o)
   i = c->i;
 
   if (scheme_is_zero(i)) {
-    /* Special case for x+0.0i: */
+    /* Special case for x+0.0i and x-0.0i: */
     r = scheme_sqrt(1, &r);
     if (!SCHEME_COMPLEXP(r))
       return scheme_make_complex(r, i);
@@ -353,7 +353,12 @@ Scheme_Object *scheme_complex_sqrt(const Scheme_Object *o)
         else
 #endif
           r = scheme_make_double(0.0);
-        return scheme_make_complex(r, c->i);
+	if (scheme_minus_zero_p(scheme_real_to_double(i))) {
+	  /* we started with x-0.0i */
+	  return scheme_make_complex(r, scheme_bin_minus(scheme_make_integer(0), c->i));
+	}
+	else
+	  return scheme_make_complex(r, c->i);
       } else
         return r;
     }
