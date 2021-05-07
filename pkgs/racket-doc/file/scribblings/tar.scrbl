@@ -15,7 +15,7 @@ Symbolic links (on Unix and Mac OS) are not followed by default.}
 
 
 @defproc[(tar [tar-file path-string?]
-              [path path-string?] ...
+              [path-or-entry (or/c path-string? tar-entry?)] ...
               [#:follow-links? follow-links? any/c #f]
               [#:exists-ok? exists-ok? any/c #f]
               [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
@@ -30,10 +30,15 @@ Symbolic links (on Unix and Mac OS) are not followed by default.}
          exact-nonnegative-integer?]{
 
 Creates @racket[tar-file], which holds the complete content of all
-@racket[path]s.  The given @racket[path]s are all expected to be
+@racket[path-or-entry]s. Each @racket[path-or-entry] is either a path
+that refers to a file, directory, or link on the filesystem, or it is
+a @racket[tar-entry] that describes such an entity without requiring
+it to exist on the filesystem.
+
+The given paths among @racket[path-or-entry]s are all expected to be
 relative paths for existing directories and files (i.e., relative
-to the current directory).  If a nested path is provided as a
-@racket[path], its ancestor directories are also added to the
+to the current directory for a @racket[path-or-entry] is a path).  If a nested path is provided in a
+@racket[path-or-entry], its ancestor directories are also added to the
 resulting tar file, up to the current directory (using
 @racket[pathlist-closure]). If @racket[follow-links?] is false, then
 symbolic links are included in the resulting tar file as links.
@@ -62,10 +67,11 @@ date to record in the archive for each file or directory.
          #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
                                    effectively changed its default from @racket['ustar]
                                    to @racket['pax].}
-         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}]}
+         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}
+         #:changed "8.1.0.5" @elem{Added support for @racket[tar-entry] arguments.}]}
 
 
-@defproc[(tar->output [paths (listof path?)]
+@defproc[(tar->output [paths-and-entries (listof (or/c path? tar-entry?))]
                       [out output-port? (current-output-port)]
                       [#:follow-links? follow-links? any/c #f]
                       [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
@@ -79,9 +85,9 @@ date to record in the archive for each file or directory.
                                            file-or-directory-modify-seconds)])
          exact-nonnegative-integer?]{
 
-Like @racket[tar], but packages each of the given @racket[paths] in a @exec{tar} format
+Like @racket[tar], but packages each element of the given @racket[paths-and-entries] in a @exec{tar} format
 archive that is written directly to the @racket[out].  The specified
-@racket[paths] are included as-is (except for adding @racket[path-prefix], if any); if a directory is specified, its
+@racket[paths-and-entries] are included as-is (except for adding @racket[path-prefix], if any); if a directory is specified, its
 content is not automatically added, and nested directories are added
 without parent directories.
 
@@ -91,11 +97,12 @@ without parent directories.
          #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
                                    effectively changed its default from @racket['ustar]
                                    to @racket['pax].}
-         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}]}
+         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}
+         #:changed "8.1.0.5" @elem{Added support for @racket[tar-entry] arguments.}]}
 
 
 @defproc[(tar-gzip [tar-file path-string?]
-                   [paths path-string?] ...
+                   [paths-and-entries (and/c path-string? tar-entry?)] ...
                    [#:follow-links? follow-links? any/c #f]
                    [#:exists-ok? exists-ok? any/c #f]
                    [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
@@ -116,4 +123,53 @@ Like @racket[tar], but compresses the resulting file with @racket[gzip].
          #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
                                    effectively changed its default from @racket['ustar]
                                    to @racket['pax].}
-         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}]}
+         #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}
+         #:changed "8.1.0.5" @elem{Added support for @racket[tar-entry] arguments.}]}
+
+
+@defstruct[tar-entry ([kind (or/c 'file 'directory 'link)]
+                      [path (and/c path-string? relative-path?)]
+                      [content (or/c input-port? (-> input-port?) #f path-string?)]
+                      [size exact-nonnegative-integer?]
+                      [attribs (hash/c symbol? any/c)])]{
+
+Represents a file, directory, or link to be included in a USTAR file
+or stream.
+
+If @racket[kind] is @racket['file], then @racket[content] must be an
+input port or a thunk that produces an input port, and it must provide
+exactly @racket[size] bytes. If @racket[kind] is @racket['directory],
+then @racket[content] and @racket[size] are expected to be @racket[#f]
+and @racket[0]. If @racket[kind] is @racket['link], then
+@racket[content] must be a path, and @racket[size] is expected to be
+@racket[0].
+
+The @racket[attribs] field contains a hash table providing additional
+properties of the entry. The following keys are currently used when
+writing a USTAR file or stream:
+
+       @itemlist[
+
+        @item{@racket['permissions] --- an integer representing read,
+              write, and execute permissions in the form accepted by
+              @racket[file-or-directory-permissions].}
+
+        @item{@racket['modify-seconds] --- an integer representing a
+              modification time, which is consistent with
+              @racket[file-or-directory-modify-seconds].}
+
+        @item{@racket['owner] --- an exact integer presenting a file
+             owner ID.}
+
+        @item{@racket['owner-bytes] --- a byte string representing a
+             file owner name.}
+
+        @item{@racket['group] --- an exact integer presenting a file
+             group ID.}
+
+        @item{@racket['group-bytes] --- a byte string representing a
+             file group name.}
+
+       ]
+
+@history[#:added "8.1.0.5"]}

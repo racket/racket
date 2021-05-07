@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label file/untar))
+@(require "common.rkt" (for-label file/untar
+                                  (only-in file/tar tar-entry)))
 
 @title[#:tag "untar"]{@exec{tar} File Extraction}
 
@@ -17,7 +18,15 @@ pax extensions to support long pathnames.}
                                      exact-nonnegative-integer?
                                      exact-nonnegative-integer?
                                      . -> . any/c)
-                                    (lambda args #t)])
+                                    (lambda args #t)]
+                          [#:handle-entry handle-entry
+                                          ((or/c 'file 'directory 'link)
+                                           (and path? relative-path?)
+                                           (or/c input-port? #f path?)
+                                           exact-nonnegative-integer?
+                                           (hash/c symbol? any/c)
+                                           . -> . (listof (-> any)))
+                                          handle-tar-entry])
          void?]{
 
 Extracts TAR/USTAR content from @racket[in], recognizing
@@ -72,7 +81,58 @@ For each item in the archive, @racket[filter-proc] is applied to
 If the result of @racket[filter-proc] is @racket[#f], then the item is
 not unpacked.
 
+The @racket[handle-entry] function is called to unpack one entry, and
+the default @racket[handle-tar-entry] function for
+@racket[handle-entry] creates a directory, file, or link on the
+filesystem. The @racket[handle-entry] function must accept five
+arguments:
+@;
+@itemlist[
+
+ @item{@racket[_kind] --- one of @racket['file], @racket['directory],
+       or @racket['link].}
+
+ @item{@racket[_path] --- the relative path recorded in the TAR file.}
+
+ @item{@racket[_content] --- an input port that provides the content
+       for a @racket['file] entry, where exactly @racket[_size] bytes
+       must be read from the port before @racket[handle-entry]
+       returns. For a @racket['directory] entry, @racket[_content] is
+       @racket[#f]. For a @racket['link] entry, @racket[_content] is
+       a path for the link target.}
+
+ @item{@racket[_size] --- the number of bytes for a @racket['file]
+       entry, and @racket[0] for other entries.}
+
+ @item{@racket[_attribs] --- an immutable hash table mapping symbols
+       to attribute values. The available keys may change, but the
+       currently included keys are the same ones as recognized in
+       @racket[tar-entry].}
+
+]
+
+The result of @racket[handle-entry] is a list of thunks that are
+called in order after the TAR input is fully unpacked. A result thunk
+from @racket[handle-entry] is useful, for example, to set a
+directory's modification time after all files have been written to it.
+
 @history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}
          #:changed "6.7.0.4" @elem{Support long paths and long symbolic-link
                                    targets using POSIX.1-2001/pax and GNU
-                                   extensions.}]}
+                                   extensions.}
+         #:changed "8.1.0.5" @elem{Added the @racket[#:handle-entry] argument.}]}
+
+
+@defproc[(handle-tar-entry [kind (or/c 'file 'directory 'link)]
+                           [path (and path? relative-path?)]
+                           [content (or/c input-port? #f path?)]
+                           [size exact-nonnegative-integer?]
+                           [attribs (hash/c symbol? any/c)])
+         (listof (-> any))]{
+
+As the default entry handler for @racket[untar],
+@racket[handle-tar-entry] creates directories and files and returns a
+list of thunks that complete unpacking by setting directory
+permissions and modification times.
+
+@history[#:added "8.1.0.5"]}

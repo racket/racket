@@ -93,10 +93,14 @@
        "four")
 
 (unless (eq? 'windows (system-type))
+  (define (sanitize bstr)
+    (if (eq? 'macosx (system-type)) ; paths are always UTF-8 encodings
+        (string->bytes/utf-8 (bytes->string/utf-8 bstr #\?))
+        bstr))
   (check "encoding"
-         (bytes->path #"one\xF0")
+         (bytes->path (sanitize #"one\xF0"))
          "two\u3BB"
-         (bytes->path (bytes-append #"sub/three\xF1-" (make-bytes 93 (char->integer #\x))))
+         (bytes->path (bytes-append (sanitize #"sub/three\xF1-") (make-bytes 93 (char->integer #\x))))
          (string-append "sub/four\u3BB-" (make-string 93 #\x)))
   
   (check "long link"

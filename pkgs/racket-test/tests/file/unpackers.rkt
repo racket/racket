@@ -1,5 +1,6 @@
 #lang racket/base
 (require file/untar file/untgz file/unzip racket/file racket/system racket/set
+         (except-in file/tar tar)
          tests/eli-tester)
 
 (provide tests)
@@ -70,6 +71,24 @@
                  (begin (file-or-directory-permissions* dest "rwx") #t))))]
     [else #t]))
 
+(define (tar->entries a.tar)
+  (define got '())
+  (untar a.tar
+         #:handle-entry (lambda (kind path content len attribs)
+                          (set! got
+                                (cons (tar-entry kind
+                                                 path
+                                                 (if (input-port? content)
+                                                     (let ([bstr (read-bytes len content)])
+                                                       (lambda ()
+                                                         (open-input-bytes bstr)))
+                                                     content)
+                                                 len
+                                                 attribs)
+                                      got))
+                          null))
+  (reverse got))
+  
 (define (untar-tests*)
   (make-directory* "ex1")
   (make-file (build-path "ex1" "f1") (- (current-seconds) 12) "rw")
@@ -80,6 +99,35 @@
   (make-file (build-path more-dir "f4") (current-seconds) "rw")
   (file-or-directory-permissions* more-dir "rx") ; not "w"
   (tar "ex1" a.tar)
+  (let ([got1 (tar->entries a.tar)])
+    (define (check-find path)
+      (unless (for/or ([e (in-list got1)])
+                (equal? path (tar-entry-path e)))
+        (error "missing in entries" path)))
+    (check-find (build-path "ex1" "f1"))
+    (check-find (build-path "ex1" "f2"))
+    (check-find (build-path "ex1" "f3"))
+    (check-find (build-path "ex1" "f4"))
+    (check-find (build-path "ex1" "more" "f4"))
+    (define-values (i o) (make-pipe))
+    (tar->output got1 o)
+    (close-output-port o)
+    (let ([got2 (tar->entries i)])
+      (unless (= (length got1) (length got2))
+        (error "entries lists not the same length"))
+      (define (check what same?)
+        (unless same?
+          (error "entries differ at" what)))
+      (for ([e1 (in-list got1)]
+            [e2 (in-list got2)])
+        (check 'kind (eq? (tar-entry-kind e1)
+                          (tar-entry-kind e2)))
+        (check 'path (equal? (tar-entry-path e1)
+                             (tar-entry-path e2)))
+        (check 'len (equal? (tar-entry-size e1)
+                            (tar-entry-size e2)))
+        (check 'attribs (equal? (tar-entry-attribs e1)
+                                (tar-entry-attribs e2))))))
   (make-directory* "sub")
   (parameterize ([current-directory "sub"]) (untar a.tar))
   (test (diff "ex1" (build-path "sub" "ex1") #t))

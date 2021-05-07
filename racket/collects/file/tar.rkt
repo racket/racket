@@ -46,10 +46,22 @@
 
 (define 0-byte (char->integer #\0))
 
-(define ((tar-one-entry buf prefix get-timestamp follow-links? format) path)
-  (let* ([link?   (and (not follow-links?) (link-exists? path))]
-         [dir?    (and (not link?) (directory-exists? path))]
-         [size    (if (or dir? link?) 0 (file-size path))]
+(provide (struct-out tar-entry))
+(struct tar-entry (kind path content size attribs))
+
+(define ((tar-one-entry buf prefix get-timestamp follow-links? format) path-or-entry)
+  (define entry (and (tar-entry? path-or-entry) path-or-entry))
+  (define path (if entry (tar-entry-path entry) path-or-entry))
+  (let* ([link?   (if entry
+                      (eq? 'link (tar-entry-kind entry))
+                      (and (not follow-links?) (link-exists? path)))]
+         [dir?    (if entry
+                      (eq? 'directory (tar-entry-kind entry))
+                      (and (not link?) (directory-exists? path)))]
+         [size    (if (or dir? link?) 0 (if entry
+                                            (tar-entry-size entry)
+                                            (file-size path)))]
+         [attribs (and entry (tar-entry-attribs entry))]
          [p       0] ; write pointer
          [cksum   0]
          [cksum-p #f])
@@ -88,26 +100,37 @@
       (unless (zero? (modulo len tar-block-size))
         (write-bytes buf (current-output-port) (modulo len tar-block-size))))
     (define attrib-path
-      (if link?
-          ;; For a link, use attributes of the containing directory:
-          (let-values ([(base name dir?) (split-path path)])
-            (or (and (path? base)
-                     base)
-                (current-directory)))
-          path))
+      (and (not entry)
+           (if link?
+               ;; For a link, use attributes of the containing directory:
+               (let-values ([(base name dir?) (split-path path)])
+                 (or (and (path? base)
+                          base)
+                     (current-directory)))
+               path)))
     (define link-path-bytes (and link?
-                                 (path->bytes (resolve-path path))))
+                                 (if entry
+                                     (path->bytes (tar-entry-content entry))
+                                     (path->bytes (resolve-path path)))))
     ;; see http://www.mkssoftware.com/docs/man4/tar.4.asp for format spec
     (define (write-a-block file-name-bytes file-prefix size type link-path-bytes)
       (set! p 0)
       (set! cksum 0)
       (set! cksum-p #f)
       (write-block tar-name-length file-name-bytes)
-      (write-octal   8 (path-attributes attrib-path dir?))
-      (write-octal   8 0)          ; always root (uid)
-      (write-octal   8 0)          ; always root (gid)
+      (write-octal   8 (if attribs
+                           (hash-ref attribs 'permissions #o644)
+                           (path-attributes attrib-path dir?)))
+      (write-octal   8 (if attribs
+                           (hash-ref attribs 'owner 0)
+                           0))
+      (write-octal   8 (if attribs
+                           (hash-ref attribs 'group 0)
+                           0))
       (write-octal  12 size)
-      (write-octal  12 (get-timestamp attrib-path))
+      (write-octal  12 (if attribs
+                           (hash-ref attribs 'modify-seconds 0)
+                           (get-timestamp attrib-path)))
       ;; set checksum later, consider it "all blanks" for cksum
       (set! cksum-p p) (set! cksum (+ cksum (* 8 32))) (advance 8)
       (write-block*  1 type) ; type-flag
@@ -118,8 +141,12 @@
           (advance tar-link-name-length))        ; no link-name
       (write-block   6 #"ustar")   ; magic
       (write-block*  2 #"00")      ; version
-      (write-block  32 #"root")    ; always root (user-name)
-      (write-block  32 #"root")    ; always root (group-name)
+      (write-block  32 (if attribs
+                           (hash-ref attribs 'owner-bytes #"root")
+                           #"root"))
+      (write-block  32 (if attribs
+                           (hash-ref attribs 'group-bytes #"root")
+                           #"root"))
       (write-octal   8 0)          ; device-major
       (write-octal   8 0)          ; device-minor
       (write-block tar-prefix-length file-prefix)
@@ -175,23 +202,29 @@
     (if (or dir? link?)
       (zero-block! buf) ; must clean buffer for re-use
       ;; write the file
-      (with-input-from-file path
-        (lambda ()
-          (let loop ([n size])
-            (let ([l (read-bytes! buf)])
-              (cond
-                [(eq? l tar-block-size) (write-bytes buf) (loop (- n l))]
-                [(number? l) ; shouldn't happen
-                 (write-bytes buf (current-output-port) 0 l) (loop (- n l))]
-                [(not (eq? eof l)) (error 'tar "internal error")]
-                [(not (zero? n))
-                 (error 'tar "file changed while packing: ~e" path)]
-                [else (zero-block! buf) ; must clean buffer for re-use
-                      (let ([l (modulo size tar-block-size)])
-                        (unless (zero? l)
-                          ;; complete block (buf is now zeroed)
-                          (write-bytes buf (current-output-port)
-                                       0 (- tar-block-size l))))]))))))))
+      (let ([copy
+             (lambda (in)
+               (let loop ([n size])
+                 (let ([l (read-bytes! buf in)])
+                   (cond
+                     [(eq? l tar-block-size) (write-bytes buf) (loop (- n l))]
+                     [(number? l) ; shouldn't happen
+                      (write-bytes buf (current-output-port) 0 l) (loop (- n l))]
+                     [(not (eq? eof l)) (error 'tar "internal error")]
+                     [(not (zero? n))
+                      (error 'tar "file changed while packing: ~e" path)]
+                     [else (zero-block! buf) ; must clean buffer for re-use
+                           (let ([l (modulo size tar-block-size)])
+                             (unless (zero? l)
+                               ;; complete block (buf is now zeroed)
+                               (write-bytes buf (current-output-port)
+                                            0 (- tar-block-size l))))]))))])
+        (if entry
+            (let ([content (tar-entry-content entry)])
+              (if (input-port? content)
+                  (copy content)
+                  (copy (content))))
+            (call-with-input-file* path copy))))))
 
 ;; tar-write : (listof relative-path) ->
 ;; writes a tar file to current-output-port

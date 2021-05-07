@@ -15,8 +15,18 @@
                #:filter (path? (or/c path? #f)
                                symbol? exact-integer? (or/c path? #f)
                                exact-nonnegative-integer? exact-nonnegative-integer?
-                               . -> . any/c))
-              void?)]))
+                               . -> . any/c)
+               #:handle-entry ((or/c 'file 'directory 'link)
+                               (and path? relative-path?)
+                               (or/c input-port? #f path?) exact-nonnegative-integer?
+                               (hash/c symbol? any/c)
+                               . -> . (listof (procedure-arity-includes/c 0))))
+              void?)]
+  [handle-tar-entry ((or/c 'file 'directory 'link)
+                     (and path? relative-path?)
+                     (or/c input-port? #f path?) exact-nonnegative-integer?
+                     (hash/c symbol? any/c)
+                     . -> . (listof (procedure-arity-includes/c 0)))]))
 
 (define-logger untar)
 
@@ -24,7 +34,8 @@
                #:dest [dest #f]
                #:strip-count [strip-count 0]
                #:permissive? [permissive? #f]
-               #:filter [filter void])
+               #:filter [filter void]
+               #:handle-entry [handle-entry handle-tar-entry])
   ((if (input-port? in)
        (lambda (in f) (f in))
        call-with-input-file*)
@@ -35,7 +46,7 @@
        (if (for/and ([b (in-bytes bstr)]) (zero? b))
            (for ([delay (in-list (reverse delays))])
              (delay))
-           (loop (untar-one-from-port in delays
+           (loop (untar-one-from-port in handle-entry delays
                                       dest strip-count filter
                                       permissive?
                                       #f
@@ -48,7 +59,14 @@
     (error 'untar "unexpected EOF"))
   s)
 
-(define (untar-one-from-port in delays
+(define (trim-terminator bstr)
+  (let loop ([i 0])
+    (cond
+      [(= i (bytes-length bstr)) bstr]
+      [(zero? (bytes-ref bstr i)) (subbytes bstr 0 i)]
+      [else (loop (add1 i))])))
+
+(define (untar-one-from-port in handle-entry delays
                              dest strip-count filter
                              permissive?
                              path-from-extended-attributes
@@ -77,8 +95,8 @@
                  [else 'unknown]))
   (define link-target-bytes (read-bytes* 100 in))
   (define ustar? (bytes=? #"ustar\00000" (read-bytes* 8 in)))
-  (define owner-bytes (read-bytes* 32 in))
-  (define group-bytes (read-bytes* 32 in))
+  (define owner-bytes (trim-terminator (read-bytes* 32 in)))
+  (define group-bytes (trim-terminator (read-bytes* 32 in)))
   (define device-major-bytes (read-bytes* 8 in))
   (define device-minor-bytes (read-bytes* 8 in))
   (define filename-prefix-bytes (read-bytes* 155 in))
@@ -106,52 +124,44 @@
   (define create?
     (filter base-filename filename type size link-target mod-time mode))
   (define total-len (* (ceiling (/ size 512)) 512))
+  (define attribs (hasheq 'permissions mode
+                          'modify-seconds mod-time
+                          'owner owner
+                          'group group
+                          'owner-bytes owner-bytes
+                          'group-bytes group-bytes))
+  (define (accum delays new-delays) (append (reverse new-delays) delays))
   (cond
    [(and filename create?)
     (case type
       [(dir)
        (log-untar-info "directory: ~a" filename)
-       (make-directory* filename)
-       (cons
-        ;; delay directory meta-data updates until after any contained
-        ;; files are written
-        (lambda ()
-          (try-file-op
-           (lambda ()
-             (file-or-directory-permissions* filename mode #t)))
-          (try-file-op
-           (lambda ()
-             (file-or-directory-modify-seconds* filename mod-time #t))))
-        delays)]
+       (accum delays
+              (handle-entry 'directory
+                            filename
+                            #f 0
+                            attribs))]
       [(file)
        (log-untar-info "file: ~a" filename)
-       (define-values (base name dir?) (split-path filename))
-       (when (path? base) (make-directory* base))
-       (call-with-output-file*
-        filename
-        #:exists 'truncate
-        (lambda (out)
-          (copy-bytes size in out)))
-       (try-file-op
-        (lambda ()
-          (file-or-directory-permissions* filename mode #f)))
-       (try-file-op
-        (lambda ()
-          (file-or-directory-modify-seconds* filename mod-time #f)))
-       (copy-bytes (- total-len size) in #f)
-       delays]
+       (begin0
+         (accum delays
+                (handle-entry 'file
+                              filename
+                              in size ; expect `size` bytes read from `in`
+                              attribs))
+         (copy-bytes (- total-len size) in #f))]
       [(link)
        (log-untar-info "link: ~a" filename)
-       (define-values (base name dir?) (split-path filename))
-       (when (path? base) (make-directory* base))
-       (when (file-exists? filename) (delete-file filename))
-       (make-file-or-directory-link link-target filename)
-       delays]
+       (accum delays
+              (handle-entry 'link
+                            filename
+                            link-target 0
+                            attribs))]
       [(extended-header-for-next)
        ;; pax record to support long namesand other attributes
        (define extended-header (read-pax in total-len))
        ;; Recur to use given paths, if any:
-       (untar-one-from-port in delays
+       (untar-one-from-port in handle-entry delays
                             dest strip-count filter
                             permissive?
                             (or (let ([v (hash-ref extended-header 'path #f)])
@@ -165,7 +175,7 @@
        (define o (open-output-bytes))
        (copy-bytes total-len in o)
        ;; Recur to use given path:
-       (untar-one-from-port in delays
+       (untar-one-from-port in handle-entry delays
                             dest strip-count filter
                             permissive?
                             (bytes->path (nul-terminated (get-output-bytes o)))
@@ -175,7 +185,7 @@
        (define o (open-output-bytes))
        (copy-bytes total-len in o)
        ;; Recur to use given link target:
-       (untar-one-from-port in delays
+       (untar-one-from-port in handle-entry delays
                             dest strip-count filter
                             permissive?
                             path-from-extended-attributes
@@ -187,6 +197,51 @@
    [else
     (copy-bytes total-len in #f)
     delays]))
+
+(define (handle-tar-entry kind
+                          filename
+                          content size
+                          attribs)
+  (define mode (hash-ref attribs 'permissions))
+  (define mod-time (hash-ref attribs 'modify-seconds))
+  (case kind
+    [(directory)
+     (make-directory* filename)
+     (list
+      ;; delay directory meta-data updates until after any contained
+      ;; files are written
+      (lambda ()
+        (try-file-op
+         (lambda ()
+           (file-or-directory-modify-seconds* filename mod-time #t)))
+        (try-file-op
+         (lambda ()
+           (file-or-directory-permissions* filename mode #t)))))]
+    [(file)
+     (define in content)
+     (define-values (base name dir?) (split-path filename))
+     (when (path? base) (make-directory* base))
+     (call-with-output-file*
+      filename
+      #:exists 'truncate
+      (lambda (out)
+        (copy-bytes size in out)))
+     (try-file-op
+      (lambda ()
+        (file-or-directory-permissions* filename mode #f)))
+     (try-file-op
+      (lambda ()
+        (file-or-directory-modify-seconds* filename mod-time #f)))
+     null]
+    [(link)
+     (define link-target content)
+     (define-values (base name dir?) (split-path filename))
+     (when (path? base) (make-directory* base))
+     (when (file-exists? filename) (delete-file filename))
+     (make-file-or-directory-link link-target filename)
+     null]
+    [else
+     null]))
 
 (define (copy-bytes amt in out)
   (let ([bstr (make-bytes (min amt 4096))])
