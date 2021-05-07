@@ -38,6 +38,14 @@ the results of that (with equal?) to the value of the
 something that isn't a procedure. That name is used in the
 transcript.
 
+The `test/compare` form has similar shapes:
+
+  (test/compare <compare> <expected> <procedure> <argument1> <argument2> ...)
+
+  (test/compare <compare> <expected> <symbolic-name> <expression>)
+
+In both cases, it works like `test` but uses `compare` instead of `equal?`.
+
 |#
 (require (for-syntax racket/base))
 
@@ -104,13 +112,15 @@ transcript.
 
 (define wrong-result-retries (make-parameter 0))
 
-(define test
+(define-values (test test/compare)
   (let ()
-    (define (test* expect fun args kws kvs)
+    (define (test* expect fun args kws kvs cmp)
       (define form
         `(,fun ,@args ,@(apply append (if kws (map list kws kvs) '()))))
       (set! number-of-tests (add1 number-of-tests))
       (printf "~s ==> " form)
+      
+      (define compare (if cmp (format " (compared with ~s)" cmp) ""))
       (flush-output)
       (with-handlers ([(λ (e) (not (exn:break? e))) ;; handle "exceptions" that are arbitrary values
                        (λ (e)
@@ -121,7 +131,7 @@ transcript.
                        (if kws (keyword-apply fun kws kvs args) (apply fun args))
                        (car args))])
           (printf "~s\n" res)
-          (let ([ok? (equal? expect res)])
+          (let ([ok? ((or cmp equal?) expect res)])
             (cond
               [(and (not ok?)
                     (positive? (wrong-result-retries)))
@@ -131,11 +141,14 @@ transcript.
               [else
                (unless ok?
                  (record-error (list res expect form))
-                 (printf "  BUT EXPECTED ~s\n" expect))
+                 (printf "  BUT EXPECTED ~s~a\n" expect compare))
                ok?])))))
-    (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs))
-    (define (test    expect fun         . args) (test* expect fun args #f #f))
-    (make-keyword-procedure test/kw test)))
+    (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs #f))
+    (define (test    expect fun         . args) (test* expect fun args #f #f #f))
+    (define (test/compare compare expect fun . args) (test* expect fun args #f #f compare))
+    (define (test/compare/kw kws kvs compare expect fun . args) (test* expect fun args kws kvs compare))
+    (values (make-keyword-procedure test/kw test)
+            (make-keyword-procedure test/compare/kw test/compare))))
 
 (define (nonneg-exact? x)
   (and (exact? x)
