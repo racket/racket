@@ -3589,7 +3589,6 @@
   (struct foo ([val #:mutable])
     #:property prop:procedure
     (λ (self)
-      (log-error "getting")
       (foo-val self)))
 
   (define orig-foo (foo 'original))
