@@ -107,6 +107,9 @@
   (ptest "#<a>" (a 1 2))
   (ptest "(b 1 2)" (b 1 2))
   (ptest "'#s(c 1 2)" (c 1 2))
+  (test "#s(c 1 2)" 'prefab
+        (parameterize ([print-unreadable #f])
+          (format "~s" (c 1 2))))
 
   (let ([s (b 1 2)])
     (ptest "(list (cons (b 1 2) 0) (cons (b 1 2) 0))" (list (cons s 0) (cons s 0))))

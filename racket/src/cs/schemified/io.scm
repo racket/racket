@@ -22081,8 +22081,10 @@
                                                (config-get
                                                 config_0
                                                 1/print-unreadable))
-                                            (not
-                                             (|#%app| printable-regexp? v_0))
+                                            (if (not (prefab-struct-key v_0))
+                                              (not
+                                               (|#%app| printable-regexp? v_0))
+                                              #f)
                                             #f)
                                           #f)
                                       (fail-unreadable who_0 v_0)

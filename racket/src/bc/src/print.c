@@ -2276,7 +2276,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         vec = scheme_struct_to_vector(obj, (notdisplay >= 3) ? qq_ellipses : NULL, pp->inspector);
         SCHEME_VEC_ELS(vec)[0] = prefab;
         print_vector(vec, notdisplay, compact, ht, mt, pp, 1);
-      } else if (compact || !pp->print_unreadable) {
+      } else if (compact || (!pp->print_unreadable && !SCHEME_PREFABP(obj))) {
         cannot_print(pp, notdisplay, obj, ht, compact);
       } else if (scheme_is_writable_struct(obj)) {
         if (notdisplay == 3) {
