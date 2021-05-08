@@ -1717,7 +1717,7 @@
                    [unwrap (lambda (arg in-type)
                              (let ([c (s->c name in-type arg)])
                                (if (cpointer? c)
-                                   (unwrap-cpointer 'ffi-call c)
+                                   (unwrap-cpointer-for-foreign-call c arg proc-p)
                                    c)))]
                    [unpack (lambda (arg in-type)
                              (case (array-rep-to-pointer-rep (ctype-host-rep in-type))
@@ -1787,11 +1787,7 @@
                                    (let ([arg (s->c name in-type orig-arg)])
                                      (if (and (cpointer? arg)
                                               (not (eq? 'scheme-object (ctype-host-rep in-type))))
-                                         (let ([p (unwrap-cpointer 'ffi-call arg)])
-                                           (when (and (cpointer-nonatomic? p)
-                                                      (not (cpointer/cell? p)))
-                                             (disallow-nonatomic-pointer 'argument orig-arg proc-p))
-                                           p)
+                                         (unwrap-cpointer-for-foreign-call arg orig-arg proc-p)
                                          arg)))
                                  orig-args in-types)]
                       [r (let ([ret-ptr (and ret-id
@@ -1905,11 +1901,15 @@
               (loop (cdr types) (cons id reps) (append id-decls decls)))
             (loop (cdr types) (cons (ctype-host-rep type) reps) decls)))])))
 
-(define (disallow-nonatomic-pointer what arg proc-p)
-  (raise-arguments-error 'foreign-call "cannot pass non-atomic pointer to a function"
-                         "pointer" arg
-                         "function" (or (cpointer->name proc-p)
-                                        'unknown)))
+(define (unwrap-cpointer-for-foreign-call arg orig-arg proc-p)
+  (let ([p (unwrap-cpointer 'ffi-call arg)])
+    (when (and (cpointer-nonatomic? p)
+               (not (cpointer/cell? p)))
+      (raise-arguments-error 'foreign-call "cannot pass non-atomic pointer to a function"
+                             "pointer" arg
+                             "function" (or (cpointer->name proc-p)
+                                            'unknown)))
+    p))
 
 ;; Rely on the fact that a virtual register defaults to 0 to detect a
 ;; thread that we didn't start. For a thread that we did start, a

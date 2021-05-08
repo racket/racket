@@ -360,6 +360,13 @@
       (with-keeper b)
       (set-box! b #f)))
   ;; ---
+  ;; test error reported when trying to pass non-atomic on CS
+  (when (eq? 'chez-scheme (system-type 'vm))
+    (err/rt-test ((ffi 'grab7th (_fun (_list i _string) -> _int ))
+                  (list "hello"))
+                 exn:fail?
+                 "non-atomic"))
+  ;; ---
   ;; test exposing internal mzscheme functionality
   (when (eq? 'racket (system-type 'vm))
     (test '(1 2)

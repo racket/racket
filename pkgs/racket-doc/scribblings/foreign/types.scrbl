@@ -1125,6 +1125,11 @@ allocated using @racket[(malloc type-expr)] if
 @racket[maybe-malloc-mode] is not specified or if it is @racket[#f],
 @racket[(malloc type-expr '@#,racket[maybe-malloc-mode])] otherwise.
 
+Note that in the @CS[] implementation of Racket, a @racket[(_ptr i
+__ctype)] argument will trigger an error if @racket[__ctype] indicates
+values that are managed by the garbage collector, since pointers to
+non-atomic memory cannot be passed to foreign functions.
+
 @history[#:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
                                    and @racket[io] match as symbols
                                    instead of free identifiers.}
@@ -1194,6 +1199,11 @@ return two values, the vector and the boolean.
       -> [res : _bool]
       -> (values vec res))
 ]
+
+Note that in the @CS[] implementation of Racket, a @racket[(_list i
+__ctype)] argument will trigger an error if @racket[__ctype] indicates
+values that are managed by the garbage collector, since pointers to
+non-atomic memory cannot be passed to foreign functions.
 
 @history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]
          #:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
