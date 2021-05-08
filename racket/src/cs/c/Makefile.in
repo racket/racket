@@ -22,6 +22,7 @@ BASE_CFLAGS = @CFLAGS@ @CPPFLAGS@
 CFLAGS = $(BASE_CFLAGS) -I$(SCHEME_TARGET_INC) -I$(srcdir)/../../rktio -Irktio -I.
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
+LINK_DYNAMIC = @LINK_DYNAMIC@
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -229,11 +230,11 @@ BOOT_OBJ_DEPS = boot.o $(SCHEME_LIB_DEPS) rktio/librktio.a
 BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a
 
 raw_racketcs@NOT_OSX@: main.o boot.o $(BOOT_OBJ_DEPS)
-	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS) $(LINK_DYNAMIC)
 	@POST_LINKER@ raw_racketcs
 
 raw_gracketcs: grmain.o boot.o $(BOOT_OBJ_DEPS)
-	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS) $(LINK_DYNAMIC)
 	@POST_LINKER@ raw_gracketcs
 
 petite-v.boot: $(SCHEME_TARGET_INC)/petite.boot

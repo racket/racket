@@ -678,6 +678,7 @@ WINDRES
 STATIC_AR
 ARFLAGS
 AR
+LINK_DYNAMIC
 LD
 upsrcdir
 EGREP
@@ -4344,6 +4345,7 @@ case "$host_os" in
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LDFLAGS="${LDFLAGS} -L/usr/local/lib"
     LIBS="${LIBS} -lm -lpthread"
+    LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="-liconv"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -4353,18 +4355,22 @@ case "$host_os" in
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LDFLAGS="${LDFLAGS} -L/usr/local/lib"
     LIBS="${LIBS} -lm -lpthread"
+    LINK_DYNAMIC="-Wl,--export-dynamic"
     add_iconv_lib="-liconv"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
   bitrig*)
+    LINK_DYNAMIC="-Wl,--export-dynamic"
     ;;
   dragonfly*)
+    LINK_DYNAMIC="-Wl,--export-dynamic"
     ;;
   netbsd*)
     MACH_OS=nb
     LIBS="${LIBS} -lm -lpthread"
+    LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -4382,6 +4388,7 @@ case "$host_os" in
         ;;
     esac
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    LINK_DYNAMIC="-rdynamic"
     ELF_COMP="--expect-elf"
     ;;
   osf1*)
@@ -5722,6 +5729,7 @@ done
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${cs_auto_flags} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${cs_auto_flags} ${disable_curses_arg} ${extra_scheme_config_args}"
+
 
 
 

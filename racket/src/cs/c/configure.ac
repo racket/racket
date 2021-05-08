@@ -227,6 +227,7 @@ case "$host_os" in
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LDFLAGS="${LDFLAGS} -L/usr/local/lib"
     LIBS="${LIBS} -lm -lpthread"
+    LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="-liconv"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -236,18 +237,22 @@ case "$host_os" in
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LDFLAGS="${LDFLAGS} -L/usr/local/lib"
     LIBS="${LIBS} -lm -lpthread"
+    LINK_DYNAMIC="-Wl,--export-dynamic"
     add_iconv_lib="-liconv"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
   bitrig*)
+    LINK_DYNAMIC="-Wl,--export-dynamic"
     ;;
   dragonfly*)
+    LINK_DYNAMIC="-Wl,--export-dynamic"
     ;;
   netbsd*)
     MACH_OS=nb
     LIBS="${LIBS} -lm -lpthread"
+    LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
@@ -265,6 +270,7 @@ case "$host_os" in
         ;;
     esac
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    LINK_DYNAMIC="-rdynamic"
     ELF_COMP="--expect-elf"
     ;;
   osf1*)
@@ -773,6 +779,7 @@ AC_SUBST(CPPFLAGS)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LIBS)
+AC_SUBST(LINK_DYNAMIC)
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
