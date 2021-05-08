@@ -1203,7 +1203,8 @@ return two values, the vector and the boolean.
 Note that in the @CS[] implementation of Racket, a @racket[(_list i
 __ctype)] argument will trigger an error if @racket[__ctype] indicates
 values that are managed by the garbage collector, since pointers to
-non-atomic memory cannot be passed to foreign functions.
+non-atomic memory cannot be passed to foreign functions. See also
+@racketmodname[ffi/unsafe/string-list].
 
 @history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]
          #:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],

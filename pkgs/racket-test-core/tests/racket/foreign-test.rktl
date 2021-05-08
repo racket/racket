@@ -11,6 +11,7 @@
          ffi/unsafe/global
          ffi/unsafe/atomic
          ffi/unsafe/os-async-channel
+         ffi/unsafe/string-list
          ffi/vector
          racket/extflonum
          racket/place
@@ -1417,6 +1418,37 @@
   (test #t also_foo? p)
   (test #t cpointer-has-tag? p 'extra))
 (test #t cpointer-predicate-procedure? foo?)
+
+;; ----------------------------------------
+
+(define (try-strings _t-list
+                     #:latin-1? [latin-1? (not (equal? (locale-string-encoding) "UTF-8"))]
+                     #:bytes? [as-bytes? #f]
+                     #:add-nul? [add-nul? #f])
+  (define l (map
+             (if as-bytes? string->bytes/utf-8 values)
+             (if latin-1?
+                 '("apple" "banana" "\xFF")
+                 '("apple" "banana" "\u3BB x . x" "(\U1F600)"))))
+  (define l2 (cast (cast (if add-nul?
+                             (map (lambda (bstr) (bytes-append bstr #"\0")) l)
+                             l)
+                         _t-list
+                         _pointer)
+                   _pointer
+                   _t-list))
+  (unless (equal? l l2)
+    (error "failed ~s ~s ~s" _t-list l l2)))
+
+(try-strings _string-list)
+(try-strings _string-list/utf-8)
+(try-strings _string-list/latin-1 #:latin-1? #t)
+(try-strings _string-list/locale)
+(try-strings _string-list/utf-16)
+(try-strings _string-list/ucs-4)
+
+(try-strings _bytes-list #:bytes? #t #:add-nul? #t)
+(try-strings _bytes-list/nul-terminated #:bytes? #t)
 
 ;; ----------------------------------------
 ;; Test JIT inlining
