@@ -4,6 +4,7 @@
          ffi/winapi
          ffi/unsafe/atomic
          ffi/unsafe/custodian
+         ffi/unsafe/string-list
          ffi/file
          racket/date
          racket/runtime-path
@@ -333,7 +334,7 @@
    [GetTypeInfo (_hmfun _UINT _LCID (p : (_ptr o _pointer))
                         -> GetTypeInfo (cast p _pointer _ITypeInfo-pointer))
                 #:release-with-function Release]
-   [GetIDsOfNames (_hmfun _REFIID _ptr-to-string/utf-16
+   [GetIDsOfNames (_hmfun _REFIID _string-list/utf-16
                           (_UINT = 1) _LCID
                           (p : (_ptr o _DISPID))
                           -> GetIDsOfNames
@@ -1937,7 +1938,7 @@
 
 (define (find-memid who obj name)
   (define-values (r memid)
-    (GetIDsOfNames (com-object-get-dispatch obj) IID_NULL name LOCALE_SYSTEM_DEFAULT))
+    (GetIDsOfNames (com-object-get-dispatch obj) IID_NULL (list name) LOCALE_SYSTEM_DEFAULT))
   (cond
    [(zero? r) memid]
    [(= r DISP_E_UNKNOWNNAME) (error who "unknown method name: ~e" name)]

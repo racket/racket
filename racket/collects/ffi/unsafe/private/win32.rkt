@@ -371,29 +371,12 @@
            2
            1))))
 
-(define (string->pointer s [alloc SysAllocStringLen])
+(define (string->pointer s)
   (let ([v (malloc _gcpointer)])
     (ptr-set! v _string/utf-16 s)
     (let ([p (ptr-ref v _gcpointer)])
       (let ([len (utf-16-length s)])
-        (alloc p len)))))
-
-;; Like (_ptr i _string/utf-16), but as a single atomic (and immobile
-;; and GCable) object, so it can be passed to a function in CS:
-(define _ptr-to-string/utf-16
-  (make-ctype _gcpointer
-              (lambda (s)
-                (string->pointer
-                 s
-                 (lambda (p len)
-                   (define slen (+ len 2)) ; add terminator
-                   (define p2 (malloc 'atomic-interior
-                                      (+ slen (ctype-sizeof _pointer))))
-                   (memcpy p2 (ctype-sizeof _pointer) p slen)
-                   (ptr-set! p2 _pointer 0 p)
-                   p2)))
-              (lambda (p)
-                (cast p _pointer _string/utf-16))))
+        (SysAllocStringLen p len)))))
 
 (define _SAFEARRAY-pointer (_cpointer 'SAFEARRAY))
 
