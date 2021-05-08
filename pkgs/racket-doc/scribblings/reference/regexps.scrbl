@@ -617,6 +617,15 @@ entire content of @racket[input] matches @racket[pattern].
 @examples[
 (regexp-match-exact? #rx"x." "12x4x6")
 (regexp-match-exact? #rx"1.*x." "12x4x6")
+]
+
+Beware that @racket[regexp-match-exact?] can return @racket[#f] if
+@racket[pattern] generates a partial match for @racket[input] first,
+even if @racket[pattern] could also generate a complete match.
+
+@examples[
+(regexp-match-exact? #rx"a|ab" "ab")
+(regexp-match? #rx"^(a|ab)$" "ab")
 ]}
 
 
