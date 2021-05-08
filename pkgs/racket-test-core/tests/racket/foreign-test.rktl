@@ -1422,14 +1422,15 @@
 ;; ----------------------------------------
 
 (define (try-strings _t-list
-                     #:latin-1? [latin-1? (not (equal? (locale-string-encoding) "UTF-8"))]
+                     #:latin-1? [latin-1? #f]
                      #:bytes? [as-bytes? #f]
                      #:add-nul? [add-nul? #f])
   (define l (map
              (if as-bytes? string->bytes/utf-8 values)
-             (if latin-1?
-                 '("apple" "banana" "\xFF")
-                 '("apple" "banana" "\u3BB x . x" "(\U1F600)"))))
+             (cond
+               [latin-1? '("apple" "banana" "\xFF")]
+               [(not (equal? (locale-string-encoding) "UTF-8")) '("apple" "banana")]
+               [else '("apple" "banana" "\u3BB x . x" "(\U1F600)")])))
   (define l2 (cast (cast (if add-nul?
                              (map (lambda (bstr) (bytes-append bstr #"\0")) l)
                              l)
