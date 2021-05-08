@@ -31045,11 +31045,14 @@
                                                       pos_0
                                                       (unsafe-fxrshift hi_0 8)
                                                       (fxand hi_0 255))
-                                                     (bytes-set-two!
-                                                      bstr_0
-                                                      pos_0
-                                                      (unsafe-fxrshift lo_0 8)
-                                                      (fxand lo_0 255))
+                                                     (let ((app_0 (+ pos_0 2)))
+                                                       (bytes-set-two!
+                                                        bstr_0
+                                                        app_0
+                                                        (unsafe-fxrshift
+                                                         lo_0
+                                                         8)
+                                                        (fxand lo_0 255)))
                                                      (fx+ pos_0 4)))))
                                              (begin
                                                (bytes-set-two!
@@ -31119,7 +31122,7 @@
                                  (if big-endian?
                                    (fxior (unsafe-fxlshift a_0 8) b_0)
                                    (fxior (unsafe-fxlshift b_0 8) a_0))))
-                            (if (fx= (fxand v_0 56320) 56320)
+                            (if (fx= (fxand v_0 56320) 55296)
                               (let ((a_1
                                      (unsafe-bytes-ref bstr_0 (fx+ i_0 2))))
                                 (let ((b_1
@@ -34375,11 +34378,11 @@
                 'subprocess
                 "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
                 stderr_0))
-             (let ((lr1322 unsafe-undefined)
+             (let ((lr1323 unsafe-undefined)
                    (group_0 unsafe-undefined)
                    (command_0 unsafe-undefined)
                    (exact/args_0 unsafe-undefined))
-               (set! lr1322
+               (set! lr1323
                  (call-with-values
                   (lambda ()
                     (if (path-string? group/command_0)
@@ -34434,9 +34437,9 @@
                    ((group_1 command_1 exact/args_1)
                     (vector group_1 command_1 exact/args_1))
                    (args (raise-binding-result-arity-error 3 args)))))
-               (set! group_0 (unsafe-vector*-ref lr1322 0))
-               (set! command_0 (unsafe-vector*-ref lr1322 1))
-               (set! exact/args_0 (unsafe-vector*-ref lr1322 2))
+               (set! group_0 (unsafe-vector*-ref lr1323 0))
+               (set! command_0 (unsafe-vector*-ref lr1323 1))
+               (set! exact/args_0 (unsafe-vector*-ref lr1323 2))
                (call-with-values
                 (lambda ()
                   (if (if (pair? exact/args_0)

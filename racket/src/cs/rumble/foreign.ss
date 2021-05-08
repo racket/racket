@@ -433,14 +433,14 @@
               bstr)
             (loop (fx+ i 1))))])))
 
-(define (subbytes-at-2-byte-nul x)
+(define (subbytes-at-2-byte-nul x offset)
   (let ([len (fxand (bytes-length x) (fxnot 1))])
-    (let loop ([i 0])
+    (let loop ([i offset])
       (cond
-       [(fx= i len) x]
+       [(fx= i len) (if (fx= offset 0) x (subbytes x offset len))]
        [(and (fx= 0 (bytes-ref x i))
              (fx= 0 (bytes-ref x (fx+ i 1))))
-        (subbytes x 0 i)]
+        (subbytes x offset i)]
        [else (loop (fx+ i 2))]))))
 
 (define (uptr->bytes/2-byte-nul x)
@@ -452,16 +452,16 @@
           bstr)
         (loop (fx+ i 2)))))
 
-(define (subbytes-at-4-byte-nul x)
+(define (subbytes-at-4-byte-nul x offset)
   (let ([len (fxand (bytes-length x) (fxnot 3))])
-    (let loop ([i 0])
+    (let loop ([i offset])
       (cond
-       [(fx= i len) x]
+       [(fx= i len) (if (fx= offset 0) x (subbytes x offset len))]
        [(and (fx= 0 (bytes-ref x i))
              (fx= 0 (bytes-ref x (fx+ i 1)))
              (fx= 0 (bytes-ref x (fx+ i 2)))
              (fx= 0 (bytes-ref x (fx+ i 3))))
-        (subbytes x 0 i)]
+        (subbytes x offset i)]
        [else (loop (fx+ i 4))]))))
 
 (define (uptr->bytes/4-byte-nul x)
@@ -901,9 +901,9 @@
                                      'big)])
                      (cond
                       [(bytevector? v)
-                       (utf16->string (subbytes-at-2-byte-nul v) endian #t)]
+                       (utf16->string (subbytes-at-2-byte-nul v offset) endian #t)]
                       [(integer? v)
-                       (utf16->string (uptr->bytes/2-byte-nul v) endian #t)]
+                       (utf16->string (uptr->bytes/2-byte-nul (+ v offset)) endian #t)]
                       [else #f])))
               => (lambda (v) v)]
              [(and (word-aligned? offset)
@@ -915,9 +915,9 @@
                                      'big)])
                      (cond
                       [(bytevector? v)
-                       (utf32->string (subbytes-at-4-byte-nul v) endian #t)]
+                       (utf32->string (subbytes-at-4-byte-nul v offset) endian #t)]
                       [(integer? v)
-                       (utf32->string (uptr->bytes/4-byte-nul v) endian #t)]
+                       (utf32->string (uptr->bytes/4-byte-nul (+ v offset)) endian #t)]
                       [else #f])))
               => (lambda (v) v)]
              [else
@@ -930,12 +930,12 @@
               (eq? 'utf-32le host-rep)
               (eq? 'utf-32be host-rep))
           (let ([v (with-interrupts-disabled*
-                    (foreign-ref 'uptr (cpointer-address p) 0))])
+                    (foreign-ref 'uptr (cpointer-address p) offset))])
             (case host-rep
               [(utf-16le) (utf16->string (uptr->bytes/2-byte-nul v) 'little #t)]
               [(utf-16be) (utf16->string (uptr->bytes/2-byte-nul v) 'big #t)]
-              [(utf-32le) (utf16->string (uptr->bytes/4-byte-nul v) 'little #t)]
-              [(utf-32be) (utf16->string (uptr->bytes/4-byte-nul v) 'big #t)]))]
+              [(utf-32le) (utf32->string (uptr->bytes/4-byte-nul v) 'little #t)]
+              [(utf-32be) (utf32->string (uptr->bytes/4-byte-nul v) 'big #t)]))]
          [else
           ;; Disable interrupts to avoid a GC:
           (with-interrupts-disabled*

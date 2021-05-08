@@ -1214,6 +1214,11 @@
     (parameterize ([current-locale "C"])
       (go #t))))
 
+(when (or known-locale?
+          (eq? 'macosx (system-type)))
+  (test "\U1F600" string-locale-downcase "\U1F600")
+  (test "\U1F600" string-locale-upcase "\U1F600"))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  locale<->UTF-8 conversions
 

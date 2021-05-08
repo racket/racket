@@ -655,6 +655,8 @@
   (parameterize ([current-locale "en_US.ISO8859-1"])
     (test "Éric" (string-locale-downcase "Éric"))))
 
+(when (eq? 'macosx (system-type))
+  (test "\U1F600" (string-locale-downcase "\U1F600")))
 
 ;; ----------------------------------------
 

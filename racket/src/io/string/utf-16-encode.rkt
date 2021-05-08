@@ -19,7 +19,7 @@
        (define hi (fxior #xD800 (fxand (fxrshift av 10) #x3FF)))
        (define lo (fxior #xDC00 (fxand av #x3FF)))
        (bytes-set-two! bstr pos (fxrshift hi 8) (fxand hi #xFF))
-       (bytes-set-two! bstr pos (fxrshift lo 8) (fxand lo #xFF))
+       (bytes-set-two! bstr (+ pos 2) (fxrshift lo 8) (fxand lo #xFF))
        (fx+ pos 4)]
       [else
        (bytes-set-two! bstr pos (fxrshift v 8) (fxand v #xFF))

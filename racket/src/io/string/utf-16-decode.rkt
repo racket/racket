@@ -24,7 +24,7 @@
                     (fxior (fxlshift a 8) b)
                     (fxior (fxlshift b 8) a)))
       (cond
-        [(fx= (fxand v #xDC00) #xDC00)
+        [(fx= (fxand v #xDC00) #xD800)
          ;; surrogate pair
          (define a (bytes-ref bstr (fx+ i 2)))
          (define b (bytes-ref bstr (fx+ i 3)))
