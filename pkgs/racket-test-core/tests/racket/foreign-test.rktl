@@ -361,12 +361,16 @@
       (with-keeper b)
       (set-box! b #f)))
   ;; ---
-  ;; test error reported when trying to pass non-atomic on CS
-  (when (eq? 'chez-scheme (system-type 'vm))
-    (err/rt-test ((ffi 'grab7th (_fun (_list i _string) -> _int ))
-                  (list "hello"))
-                 exn:fail?
-                 "non-atomic"))
+  ;; test passing an array of strings
+  (test "world"
+        (ffi 'second_string (_fun (_list i _string) -> _string))
+        (list "hello" "world" "!"))
+  ;; check that an io array of strings can have GC_allocated strings get replaced
+  ;; by foreign addresses
+  (test '("olleh" "dlrow" "?!" #f)
+        (ffi 'reverse_strings (_fun (lst : (_list io _string 4)) -> _void -> lst))
+        (list "hello" "world" "!?" #f #f))
+  
   ;; ---
   ;; test exposing internal mzscheme functionality
   (when (eq? 'racket (system-type 'vm))
@@ -1151,7 +1155,6 @@
     (for ([s s-list] [b b-list] [i (in-naturals)])
       (check-equal? (array-ref (MISCPTR-as d) i) s)
       (check-equal? (array-ref (MISCPTR-ab d) i) b)))
-
 
   ;; --- simple failing tests
   (define-serializable-cstruct _F4 ([a _int]) #:malloc-mode 'abc)

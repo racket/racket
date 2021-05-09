@@ -61,13 +61,9 @@ memory that is (assumed to be) managed by the garbage collector,
 @racket[#f] otherwise.
 
 For a pointer based on @racket[_gcpointer] as a result type,
-@racket[cpointer-gcable?] will return @racket[#t]. In the @BC[]
-implementation of Racket, @racket[cpointer-gcable?] will return
-@racket[#f] for a pointer based on @racket[_pointer] as a result type.
-The @CS[] implementation is mostly the same, except that if a pointer is
-extracted using the @racket[_pointer] type from memory allocated as
-@racket['nonatomic], @racket[cpointer-gcable?] will report @racket[#t]
-for the extracted pointer.}
+@racket[cpointer-gcable?] will return @racket[#t]. For a pointer based
+on @racket[_pointer] as a result type, @racket[cpointer-gcable?] will
+return @racket[#f].}
 
 
 @; ----------------------------------------------------------------------
@@ -268,21 +264,21 @@ specification is required at minimum:
      @item{@indexed-racket['nonatomic] --- Allocates memory that can
        be reclaimed by the garbage collector, is treated by the
        garbage collector as holding only pointers, and is initially
-       filled with zeros.
+       filled with zeros. The memory is allowed to contain a mixture of
+       references to objects managed by the garbage collector and
+       addresses that are outside the garbage collector's space.
 
        For the @BC[] Racket implementation, this allocation mode corresponds
-       to @cpp{scheme_malloc} in the C API.
-
-       For the @CS[] Racket implementation, this mode is of limited use,
-       because a pointer allocated this way cannot be passed to
-       foreign functions that expect a pointer to pointers. The result
-       can only be used with functions like @racket[ptr-set!] and
-       @racket[ptr-ref].}
+       to @cpp{scheme_malloc} in the C API.}
 
      @item{@indexed-racket['atomic-interior] --- Like
        @racket['atomic], but the allocated object will not be moved by
        the garbage collector as long as the allocated object is
        retained.
+
+       A better name for this allocation mode would be
+       @racket['atomic-immobile], but it's @racket['atomic-interior]
+       for historical reasons.
 
        For the @BC[] Racket implementation, a reference can point
        to the interior of the object, instead of its starting address.
@@ -293,6 +289,10 @@ specification is required at minimum:
        @racket['nonatomic], but the allocated object will not be moved
        by the garbage collector as long as the allocated object is
        retained.
+
+       A better name for this allocation mode would be
+       @racket['nonatomic-immobile], but it's @racket['interior] for
+       historical reasons.
 
        For the @BC[] Racket implementation, a reference can point
        to the interior of the object, instead of its starting address.
@@ -339,7 +339,10 @@ when the type is a @racket[_gcpointer]- or @racket[_scheme]-based
 type, and @racket['atomic] allocation is used otherwise.
 
 @history[#:changed "6.4.0.10" @elem{Added the @racket['tagged] allocation mode.}
-         #:changed "8.0.0.13" @elem{Changed CS to support the @racket['interior] allocation mode.}]}
+         #:changed "8.0.0.13" @elem{Changed CS to support the @racket['interior] allocation mode.}
+         #:changed "8.1.0.6" @elem{Changed CS to remove constraints on the use of memory allocated
+                                   with the @racket['nonatomic] and @racket['interior] allocation
+                                   modes.}]}
 
 
 @defproc[(free [cptr cpointer?]) void]{

@@ -770,7 +770,6 @@
   (define none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
 
   (include "rumble/virtual-register.ss")
-  (include "rumble/layout.ss")
   (include "rumble/begin0.ss")
   (include "rumble/syntax-rule.ss")
   (include "rumble/value.ss")

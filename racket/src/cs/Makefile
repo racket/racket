@@ -259,7 +259,6 @@ future2-demo: $(BUILDDIR)rumble.$(CSO)
 	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/future2.ss
 
 RUMBLE_SRCS = rumble/virtual-register.ss \
-              rumble/layout.ss \
               rumble/check.ss \
 	      rumble/syntax-rule.ss \
               rumble/constant.ss \

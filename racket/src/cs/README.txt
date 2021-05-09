@@ -361,7 +361,7 @@ several different ways:
  * When `_bytes` is used as an argument type, beware that a byte
    string is not implicitly terminated with a NUL byte. When `_bytes`
    is used as a result type, the C result is copied into a fresh byte
-   string.
+   string. See also `_bytes/nul-terminated`.
 
  * A `_gcpointer` can only refer to the start of an allocated object,
    and never the interior of an 'atomic-interior allocation. Like
@@ -377,12 +377,10 @@ several different ways:
    a `_pointer`, setting the cell will not cooperate correctly with
    the garbage collector.
 
- * Memory allocated with 'nonatomic works only in limited ways. It
-   cannot be usefully passed to foreign functions, since the layout is
-   not actually an array of pointers.
-
  * Callbacks are always in atomic mode (i.e., the `#:atomic?` option
-   in `_fun` and `_cprocedure` is ignored).
+   in `_fun` and `_cprocedure` is ignored). A callback must be
+   declared with `#:callback-exns?` to raise an exception that escapes
+   to an enclosing foreign callout.
 
 Threads, Threads, Atomicity, Atomicity, and Atomicity
 -----------------------------------------------------
