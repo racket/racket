@@ -908,7 +908,7 @@
                __getreent ; Cygwin
 
                strlen cos cosl sin sinl tan tanl exp expl pow powl log logl sqrt sqrtl frexp
-               asin acos asinl acosl atan atanl atan2 atan2l
+               asin acos sinh cosh tanh asinl acosl atan atanl atan2 atan2l
                isnan isinf fpclass signbit _signbit _fpclass __fpclassify __fpclassifyf __fpclassifyl
 	       _isnan __isfinited __isnanl __isnan __signbit __signbitf __signbitd __signbitl __signbitf128
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf __isinff128
