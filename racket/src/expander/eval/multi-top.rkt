@@ -7,13 +7,14 @@
          "../compile/reserved-symbol.rkt"
          "../compile/namespace-scope.rkt"
          "../compile/multi-top.rkt"
-         "../compile/linklet.rkt")
+         "../compile/linklet.rkt"
+         "../compile/correlated-linklet.rkt")
 
 (provide create-compiled-in-memorys-using-shared-data)
 
 (define (create-compiled-in-memorys-using-shared-data tops data-linklet ns)
   (define data-instance
-    (instantiate-linklet data-linklet
+    (instantiate-linklet (force-compile-linklet data-linklet)
                          (list deserialize-instance
                                (make-eager-instance-instance
                                 #:namespace ns

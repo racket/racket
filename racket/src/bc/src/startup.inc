@@ -42662,7 +42662,7 @@ static const char *startup_source =
 "(begin"
 "(let-values(((data-instance_0)"
 "(instantiate-linklet$1"
-" data-linklet_0"
+"(force-compile-linklet data-linklet_0)"
 "(list"
 " deserialize-instance"
 "(let-values(((ns1_0) ns_0)"

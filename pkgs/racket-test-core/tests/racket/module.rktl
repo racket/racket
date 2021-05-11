@@ -3621,7 +3621,6 @@ case of module-leve bindings; it doesn't cover local bindings.
        #t
        `(has ,p)
        (for/or ([pr (in-list ctx)])
-         (printf ">> ~s\n" (cdr pr))
          (and (cdr pr)
               (equal? p (srcloc-source (cdr pr))))))))
   (let ([m1 (parameterize ([current-load-relative-directory #f])
@@ -3632,6 +3631,18 @@ case of module-leve bindings; it doesn't cover local bindings.
               (get))])
     (check-name m1 (build-path (find-system-path 'temp-dir) "the-file.rkt"))
     (void)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a top-level `begin` can be instantiated from
+;; machine-independent form
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-compile-target-machine #f])
+    (write (compile '(begin (random) 10)) o))
+
+  (test 10 'top-begin/compile-any
+        (eval (parameterize ([read-accept-compiled #t])
+                (read (open-input-bytes (get-output-bytes o)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
