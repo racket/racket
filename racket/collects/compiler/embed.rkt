@@ -1417,6 +1417,12 @@
               literal-files)
     (for-each (lambda (v) (write v outp)) literal-expressions)))
 
+(define (make-default-compiler expand-namespace)
+  (lambda (expr)
+    (parameterize ([current-namespace expand-namespace]
+                   [current-compile-target-machine (get-compile-target-machine)])
+      (compile expr))))
+
 (define (write-module-bundle #:verbose? [verbose? #f]
                              #:modules [modules null]
                              #:configure-via-first-module? [config? #f]
@@ -1425,10 +1431,7 @@
                              #:literal-expressions [literal-expressions null]
                              #:on-extension [on-extension #f]
                              #:expand-namespace [expand-namespace (current-namespace)]
-                             #:compiler [compiler (lambda (expr)
-                                                    (parameterize ([current-namespace expand-namespace]
-                                                                   [current-compile-target-machine (get-compile-target-machine)])
-                                                      (compile expr)))]
+                             #:compiler [compiler (make-default-compiler expand-namespace)]
                              #:src-filter [src-filter (lambda (filename) #f)]
                              #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
   (do-write-module-bundle (current-output-port) verbose? modules 
@@ -1494,9 +1497,7 @@
                                      #:collects-dest [collects-dest #f]
                                      #:on-extension [on-extension #f]
                                      #:expand-namespace [expand-namespace (current-namespace)]
-                                     #:compiler [compiler (lambda (expr)
-                                                            (parameterize ([current-namespace expand-namespace])
-                                                              (compile expr)))]
+                                     #:compiler [compiler (make-default-compiler expand-namespace)]
                                      #:src-filter [src-filter (lambda (filename) #f)]
                                      #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
   (define mred? (or really-mred? gracket?))
