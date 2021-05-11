@@ -287,7 +287,7 @@ int wmain(int argc_in, wchar_t **argv_in)
     sprintf(errbuff,"Can't find %S\n",go);
     WriteStr(out,errbuff);
 #endif
-    exit(-1);
+    exit(1);
   }
 
   args[0] = go;
@@ -336,7 +336,7 @@ int wmain(int argc_in, wchar_t **argv_in)
 	    cl_len, MAXCOMMANDLEN,command_line);
     WriteStr(out,errbuff);
 #endif
-    exit(-1);
+    exit(1);
   } 
 
   if (!CreateProcessW(go,

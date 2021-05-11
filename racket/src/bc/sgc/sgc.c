@@ -1122,7 +1122,7 @@ static void *malloc_plain_sector(int count, int executable)
     if (GC_out_of_memory)
       GC_out_of_memory();
     FPRINTF(STDERR, "out of memory\n");
-    exit(-1);
+    exit(1);
   }
 
   return m;
@@ -2342,7 +2342,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
 #if CHECK_COLLECTING
   if (collecting_now) {
-    exit(-1);
+    exit(1);
   }
 #endif
 
