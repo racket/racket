@@ -20,7 +20,7 @@
               4)
 
 (define-serializable-cstruct _aq ([a _fish-pointer]
-                                  [d _aq-pointer/null])
+                                  [d (_gcable _aq-pointer/null)])
   #:malloc-mode 'nonatomic)
 
 (define aq1 (make-aq/mode (make-fish 6) #f))
