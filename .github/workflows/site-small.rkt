@@ -76,6 +76,7 @@
  #:site-dest (build-path (or (getenv "DISTRO_BUILD_SITE_DEST") "/tmp/racket-snapshots/") (dest-dir-name))
  #:plt-web-style? #t
  #:site-title (format "Snapshot: ~a" (current-stamp))
+ #:build-stamp (substring (or (getenv "GITHUB_SHA") "0000000000000") 0 10)
  #:fail-on-client-failures #f
  (sequential
   (bc-machine #:name "Racket BC (Ubuntu 18.04, x86_64)")
