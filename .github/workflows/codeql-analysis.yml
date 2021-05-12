@@ -2,6 +2,9 @@ name: "LGTM Code Scanning"
 
 on: [push, pull_request]
 
+permissions:
+  security-events: write
+
 jobs:
   CodeQL-Build:
 
